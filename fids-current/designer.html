@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Designer · GIDS / FIDS / BIDS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
+  <link rel="stylesheet" href="css/designer.css?v=1">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js"></script>
+  <script src="js/airport-coords.js?v=1"></script>
+</head>
+<body class="dgn-page">
+
+  <!-- ── Top toolbar ─────────────────────────────────────────────────── -->
+  <header class="dgn-toolbar">
+    <div class="dgn-toolbar-left">
+      <a href="index.html" class="dgn-back" title="Back to FIDS">←</a>
+      <h1>Template Designer</h1>
+      <input id="dgnTplName" type="text" placeholder="Untitled template" autocomplete="off">
+      <select id="dgnTplPick" title="Open an existing template">
+        <option value="">Templates…</option>
+      </select>
+      <button id="dgnCopyBtn" type="button" class="dgn-btn-secondary" title="Duplicate the current template — edit the copy, original untouched">⧉ Copy</button>
+      <button id="dgnStartersBtn" type="button" class="dgn-btn-secondary" title="Browse pre-made starter templates">★ Starters</button>
+      <button id="dgnUndo" type="button" class="dgn-btn-secondary dgn-icon-btn" title="Undo (Ctrl/Cmd+Z)" disabled>↶</button>
+      <button id="dgnRedo" type="button" class="dgn-btn-secondary dgn-icon-btn" title="Redo (Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z)" disabled>↷</button>
+    </div>
+    <div class="dgn-toolbar-right">
+      <label class="dgn-assign-label" title="Snap to a grid while moving / resizing">
+        Snap:
+        <select id="dgnSnap">
+          <option value="0">Off</option>
+          <option value="5">5 px</option>
+          <option value="10" selected>10 px</option>
+          <option value="20">20 px</option>
+          <option value="50">50 px</option>
+        </select>
+      </label>
+      <label class="dgn-assign-label">
+        Apply to:
+        <select id="dgnAssign" title="Which screen should use this template?">
+          <option value="">— Not assigned —</option>
+          <option value="gids">Gate Display (gids)</option>
+          <option value="fids">Main Board (fids)</option>
+          <option value="bids">Baggage (bids)</option>
+        </select>
+      </label>
+      <label class="dgn-assign-label" id="dgnGateLabel" style="display:none;" title="Bind a specific gate to this display so {gate} and {flight.*} resolve to that gate's flight">
+        Gate:
+        <input id="dgnDisplayGate" type="text" placeholder="A3" maxlength="6" style="width:60px;text-transform:uppercase;">
+      </label>
+      <button id="dgnPreview" type="button" class="dgn-btn-secondary">Preview</button>
+      <button id="dgnSave"    type="button" class="dgn-btn-primary">Save</button>
+    </div>
+  </header>
+
+  <!-- ── Main 3-column layout ────────────────────────────────────────── -->
+  <main class="dgn-main">
+
+    <!-- LEFT: components palette -->
+    <aside class="dgn-palette" id="dgnPalette">
+      <div class="dgn-pane-h">
+        <span>Components</span>
+        <button class="dgn-drawer-close" data-drawer="palette" aria-label="Close">✕</button>
+      </div>
+      <div class="dgn-pane-help">Drag onto the canvas →</div>
+      <div class="dgn-palette-list">
+        <div class="dgn-comp-tile" draggable="true" data-comp="text">
+          <span class="dgn-comp-icon">T</span>
+          <div class="dgn-comp-body">
+            <div class="dgn-comp-name">Text</div>
+            <div class="dgn-comp-desc">Words on the screen</div>
+          </div>
+        </div>
+        <div class="dgn-comp-tile" draggable="true" data-comp="clock">
+          <span class="dgn-comp-icon">🕐</span>
+          <div class="dgn-comp-body">
+            <div class="dgn-comp-name">Clock</div>
+            <div class="dgn-comp-desc">Current time, auto-updates</div>
+          </div>
+        </div>
+        <div class="dgn-comp-tile" draggable="true" data-comp="image">
+          <span class="dgn-comp-icon">🖼</span>
+          <div class="dgn-comp-body">
+            <div class="dgn-comp-name">Image</div>
+            <div class="dgn-comp-desc">A picture from your computer</div>
+          </div>
+        </div>
+        <div class="dgn-comp-tile" draggable="true" data-comp="flightList">
+          <span class="dgn-comp-icon">✈</span>
+          <div class="dgn-comp-body">
+            <div class="dgn-comp-name">Flight List</div>
+            <div class="dgn-comp-desc">Live departures or arrivals</div>
+          </div>
+        </div>
+        <div class="dgn-comp-tile" draggable="true" data-comp="ad">
+          <span class="dgn-comp-icon">📢</span>
+          <div class="dgn-comp-body">
+            <div class="dgn-comp-name">Advertisement</div>
+            <div class="dgn-comp-desc">Rotating images and messages</div>
+          </div>
+        </div>
+        <div class="dgn-comp-tile" draggable="true" data-comp="message">
+          <span class="dgn-comp-icon">💬</span>
+          <div class="dgn-comp-body">
+            <div class="dgn-comp-name">Visual Message</div>
+            <div class="dgn-comp-desc">Styled announcement box</div>
+          </div>
+        </div>
+        <div class="dgn-comp-tile" draggable="true" data-comp="map">
+          <span class="dgn-comp-icon">🛫</span>
+          <div class="dgn-comp-body">
+            <div class="dgn-comp-name">Flight Map</div>
+            <div class="dgn-comp-desc">Route + aircraft position</div>
+          </div>
+        </div>
+        <div class="dgn-comp-soon">Weather, Video, and more coming next.</div>
+      </div>
+    </aside>
+
+    <!-- CENTER: canvas -->
+    <section class="dgn-canvas-wrap">
+      <div class="dgn-canvas-stage">
+        <div id="dgnCanvas" class="dgn-canvas" data-canvas-w="1920" data-canvas-h="1080">
+          <div class="dgn-canvas-empty" id="dgnCanvasEmpty">
+            <div class="dgn-canvas-empty-title">Empty canvas</div>
+            <div class="dgn-canvas-empty-sub">Drag a component from the left to start.</div>
+          </div>
+          <div id="dgnGuides" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="dgn-canvas-footer">
+        <span id="dgnCanvasInfo">1920 × 1080 — fit to view</span>
+      </div>
+    </section>
+
+    <!-- RIGHT: properties -->
+    <aside class="dgn-props" id="dgnProps">
+      <div class="dgn-pane-h">
+        <span id="dgnPropsTitle">Properties</span>
+        <button class="dgn-drawer-close" data-drawer="props" aria-label="Close">✕</button>
+      </div>
+      <div id="dgnPropsBody">
+        <p class="dgn-props-empty">Select a component on the canvas to edit its properties.</p>
+      </div>
+      <div class="dgn-props-actions" id="dgnPropsActions" hidden>
+        <div class="dgn-align-row">
+          <button type="button" class="dgn-btn-secondary dgn-mini" data-align="left"    title="Align to left edge">⇤</button>
+          <button type="button" class="dgn-btn-secondary dgn-mini" data-align="hcenter" title="Center horizontally">⇔</button>
+          <button type="button" class="dgn-btn-secondary dgn-mini" data-align="right"   title="Align to right edge">⇥</button>
+          <button type="button" class="dgn-btn-secondary dgn-mini" data-align="top"     title="Align to top">⤒</button>
+          <button type="button" class="dgn-btn-secondary dgn-mini" data-align="vcenter" title="Center vertically">⇕</button>
+          <button type="button" class="dgn-btn-secondary dgn-mini" data-align="bottom"  title="Align to bottom">⤓</button>
+        </div>
+        <div class="dgn-align-row">
+          <button type="button" class="dgn-btn-secondary" data-z="-1" title="Send back one layer">↓ Send back</button>
+          <button type="button" class="dgn-btn-secondary" data-z="1"  title="Bring forward one layer">↑ Bring forward</button>
+        </div>
+        <button id="dgnDupeBtn" class="dgn-btn-secondary" style="width:100%;margin-bottom:6px;" title="Duplicate (Ctrl/Cmd+D)">⧉ Duplicate</button>
+        <button id="dgnDeleteBtn" class="dgn-btn-danger">Delete this component</button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ── Mobile bottom bar (drawer toggles) ──────────────────────────── -->
+  <nav class="dgn-mobile-bar" aria-label="Designer actions">
+    <button class="dgn-mobile-btn" data-open-drawer="palette">＋ Add</button>
+    <button class="dgn-mobile-btn" data-open-drawer="props">✎ Edit</button>
+    <button class="dgn-mobile-btn" id="dgnMobileSave">Save</button>
+  </nav>
+
+  <!-- ── Starter templates modal ─────────────────────────────────────── -->
+  <div id="dgnStarterModal" class="dgn-modal" hidden>
+    <div class="dgn-modal-bg" data-close-starter></div>
+    <div class="dgn-modal-panel">
+      <button type="button" class="dgn-modal-close" data-close-starter aria-label="Close">✕</button>
+      <h2>Start with a template</h2>
+      <p class="dgn-modal-sub">Pick a starting point. Every component is editable after you load it.</p>
+      <div id="dgnStarterGrid" class="dgn-starter-grid"></div>
+    </div>
+  </div>
+
+  <!-- ── Toast ───────────────────────────────────────────────────────── -->
+  <div id="dgnToast"></div>
+
+  <script src="js/designer.js?v=1"></script>
+</body>
+</html>

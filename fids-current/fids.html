@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIDS — Flight Information Display</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
+  <link rel="stylesheet" href="css/font.css?v=311">
+  <link rel="stylesheet" href="css/airport-fonts.css?v=311">
+  <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
+  <link rel="stylesheet" href="css/shared.css?v=21899-19">
+  <link rel="stylesheet" href="css/menu.css?v=21899-22">
+  <link rel="stylesheet" href="css/fids.css?v=311">
+  <link rel="stylesheet" href="css/fids-v3.css?v=311">
+  <link rel="stylesheet" href="css/mobile.css?v=311">
+  <link rel="stylesheet" href="css/mobile-v216.css?v=311">
+  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=21899-9">
+  <link rel="stylesheet" href="css/gids-v218.78.css?v=21899-72">
+  <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
+  <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
+  <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg-v21853">
+</head>
+<body>
+<script>
+/* v218.99.19 — Apply console theme to boot loader immediately (no FOUC) */
+(function() {
+  try {
+    var t = localStorage.getItem('fids_console_theme');
+    if (t !== 'light' && t !== 'dark') {
+      var h = new Date().getHours();
+      t = (h >= 6 && h < 19) ? 'light' : 'dark';
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      var el = document.getElementById('fidsLoader');
+      if (el) el.setAttribute('data-theme', t);
+    });
+    /* Also set as early as possible — if the element already exists by the
+       time this runs */
+    var early = document.getElementById('fidsLoader');
+    if (early) early.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+<!-- Transition loader -->
+<div id="fidsLoader">
+  <div class="fids-loader-brand">FLIGHT INFORMATION DISPLAY</div>
+  <div class="fids-loader-title">FIDS</div>
+  <div class="fids-loader-sub">SYSTÈME D'INFORMATION DES VOLS</div>
+  <div class="fids-loader-bar"><div class="fids-loader-dot"></div></div>
+  <div class="fids-loader-status" id="fidsLoaderStatus">LOADING…</div>
+</div>
+
+<!-- ─── FIDS BOARD ────────────────────────────────────────────────── -->
+<div id="fidsBoard">
+<div class="ctrl show">
+  <button class="btn btn-menu" onclick="toggleToolbar()">☰ MENU</button>
+  <button class="btn btn-toggle" onclick="var p=document.getElementById(&#39;apPanel&#39;);p.classList.toggle(&#39;hidden&#39;);" id="btnAirport">✈ AIRPORT</button>
+  <div class="screen-type-wrap">
+    <label>DISPLAY:</label>
+    <select id="screenTypeSel" onfocus="blockRender()" onmousedown="blockRender()" onchange="changeScreenType(this.value)" style="width:120px;">
+      <option value="main">MAIN BOARD</option>
+      <option value="gate">GATE SCREEN</option>
+      <option value="baggage">BAGGAGE CLAIM</option>
+    </select>
+    <select id="subScreenSel" onfocus="blockRender()" onmousedown="blockRender()" style="display:none; width:130px; min-height:34px; font-size:14px; font-weight:700;" onchange="changeSubScreen(this.value)"></select>
+    <button id="testFlightBtn" style="display: inline-block; background: rgb(30, 111, 80); color: rgb(255, 255, 255); border: 1px solid rgb(16, 185, 129); padding: 4px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; cursor: pointer; border-radius: 4px;" onclick="openTestFlight()">✚ ADD FLIGHT</button>
+    <button id="overrideBtn" style="display:none; background:rgba(234,179,8,0.1); color:#eab308; border:1px solid #eab308; padding:4px 10px; font-size:11px; font-weight:700; letter-spacing:1px; cursor:pointer; border-radius:4px;" onclick="toggleOverridePanel()">⚙ OVERRIDE</button>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="searchInput" placeholder="FLIGHT · CITY · AIRLINE" oninput="onSearch(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+  </div>
+  <div class="ctrl-bg-group" id="ctrlBgGroup" style="display:none;">
+    <label style="font-size:9px;letter-spacing:1.5px;color:#a1a1aa;font-weight:700;">BG:</label>
+    <button class="ctrl-bg-btn active" onclick="setDedicatedBgMode(&#39;photo&#39;)" title="Photo"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.2);background:linear-gradient(135deg,#2d6a4f,#95d5b2)"></span></button>
+    <button class="ctrl-bg-btn" onclick="setDedicatedBgMode(&#39;airline&#39;)" title="Airline"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.2);background:linear-gradient(180deg,#0b1a33,#d8232a)"></span></button>
+    <button class="ctrl-bg-btn" onclick="setDedicatedBgMode(&#39;custom&#39;)" title="Custom (saved URLs)"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.2);background:linear-gradient(135deg,#7c3aed,#a78bfa)"></span></button>
+    <button class="ctrl-bg-btn" onclick="manageCustomBgUrls()" title="Manage Custom URLs" style="padding:0 6px;font-size:11px;">⚙</button>
+  </div>
+
+  <div class="ctrl-bg-group" id="ctrlFontGroup" style="display:flex;align-items:center;gap:4px;margin-left:6px;">
+    <label style="font-size:8px;letter-spacing:1px;color:#a1a1aa;font-weight:700;">FONT:</label>
+    <select id="fontSel" onchange="changeFont(this.value)" style="background:#27272a;color:#fff;border:1px solid #3f3f46;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;">
+      <option value="Geist">Geist</option>
+      <option value="Inter">Inter</option>
+      <option value="Manrope">Manrope</option>
+      <option value="Space Grotesk">Space Grotesk</option>
+      <option value="Airport">Airport</option>
+      <option value="Airport X">Airport X</option>
+      <option value="DM Sans">DM Sans</option>
+      <option value="JetBrains Mono">JetBrains Mono (mono)</option>
+    </select>
+  </div>
+  <div class="ctrl-spacer"></div>
+  <span class="ctrl-info" id="lastUp">LIVE · 11:40 a.m.</span>
+  <span class="ctrl-info" id="apiLabel">AERODATABOX</span>
+  <span class="mode-badge live" id="modeBadge">LIVE</span>
+  <div class="live-pill"><div class="live-dot" style="background: rgb(16, 185, 129);"></div><span id="liveLabel">LIVE</span></div>
+</div>
+<div id="apPanel" class="ap-panel hidden">
+  <div style="position:relative;display:inline-block;min-width:260px;">
+    <input id="apSelInput" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Search airport…" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 10px;
+             font-size:13px;border-radius:4px;outline:none;width:100%;" oninput="apAutoSearch(this.value,&#39;ctrl&#39;)" onkeydown="apAutoKey(event,&#39;ctrl&#39;)" onfocus="this.select()">
+    <div id="apDropdownCtrl" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:999;
+      background:#1c1c1f;border:1px solid #52525b;border-top:none;border-radius:0 0 6px 6px;
+      max-height:200px;overflow-y:auto;min-width:280px;"></div>
+  </div>
+  <input type="hidden" id="apSel" value="YQM">
+  <button class="btn" onclick="fetchLive()" style="display:none">⟳ LOAD LIVE</button>
+  <button class="btn btn-demo" onclick="loadDemo()" style="display:none">DEMO</button>
+  <button onclick="document.getElementById(&#39;apPanel&#39;).classList.add(&#39;hidden&#39;)" style="background:#dc2626;border:none;color:#fff;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700;">✕ CLOSE</button>
+</div>
+
+<!-- ── GATE OVERRIDE PANEL ──────────────────────────────────── -->
+<div id="overridePanel" class="gate-override-panel">
+  <div class="gov-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <span class="gov-title">⚙ Gate Screen Overrides <span id="govFlightTag" style="color:#fff;font-weight:700;"></span></span>
+      <button onclick="toggleOverridePanel()" style="background:none;border:none;color:#71717a;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div class="gov-grid">
+      <div class="gov-field">
+        <label class="gov-label">Gate Number</label>
+        <input id="govGate" class="gov-input" placeholder="e.g. C17" autocomplete="off">
+      </div>
+      <div class="gov-field">
+        <label class="gov-label">Aircraft Type</label>
+        <input id="govAircraft" class="gov-input" placeholder="e.g. Boeing 737 MAX 8" autocomplete="off">
+      </div>
+      <div class="gov-field">
+        <label class="gov-label">Registration</label>
+        <input id="govReg" class="gov-input" placeholder="e.g. C-FSNQ" autocomplete="off">
+      </div>
+      <div class="gov-field">
+        <label class="gov-label">Equipment Code</label>
+        <input id="govEquipCode" class="gov-input" placeholder="e.g. 7M8" autocomplete="off">
+      </div>
+      <div class="gov-field">
+        <label class="gov-label">Status Override</label>
+        <select id="govStatus" class="gov-input" style="cursor:pointer;">
+          <option value="">— No override —</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="ontime">On Time</option>
+          <option value="delayed">Delayed</option>
+          <option value="boarding">Boarding</option>
+          <option value="finalcall">Final Call</option>
+          <option value="gateclosed">Gate Closed</option>
+          <option value="departed">Departed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="gov-field">
+        <label class="gov-label">Revised Time (HH:MM)</label>
+        <input id="govRevisedTime" class="gov-input" type="time" autocomplete="off">
+      </div>
+      <div class="gov-field full">
+        <label class="gov-label">Custom Message (shown in row 3 message area)</label>
+        <input id="govMessage" class="gov-input" placeholder="e.g. Gate change — now boarding at C22" autocomplete="off" style="width:100%;">
+      </div>
+    </div>
+    <div class="gov-actions">
+      <button class="gov-btn gov-save" onclick="saveOverride()">SAVE OVERRIDE</button>
+      <button class="gov-btn gov-clear" onclick="clearOverride()">CLEAR</button>
+      <span class="gov-status" id="govStatusMsg">Saved!</span>
+      <div style="flex:1;"></div>
+      <button class="gov-btn" style="background:#27272a;color:#a1a1aa;border:1px solid #3f3f46;" onclick="showAllOverrides()">VIEW ALL</button>
+    </div>
+    <div class="gov-hint">Overrides persist in this browser. They apply to the specific flight number and take priority over API data.</div>
+  </div>
+</div>
+
+<!-- ── v2 chevron banner ──────────────────────────────────────────────
+     Replaces the legacy <div class="hdr"> grey/yellow strip. Themeable
+     per airport via body[data-fids-theme] and body[data-fids-layout].
+     Existing element IDs (hdrBoard, hdrApName, clock, clockDate) are
+     PRESERVED so the existing fids-core.js render code that updates
+     them via document.getElementById() continues to work unchanged. -->
+<div class="fids-banner" id="fidsBanner">
+  <div class="fids-banner-chevrons" aria-hidden="true"></div>
+
+  <!-- Time + date, top-right corner -->
+  <div class="fids-banner-time-block">
+    <div class="fids-banner-time" id="clock">--:--:--</div>
+    <div class="fids-banner-date" id="clockDate"></div>
+  </div>
+
+  <!-- Center pill: airport identity (logo + IATA + name) -->
+  <div class="fids-airport-pill" id="fidsAirportPill">
+    <img class="fids-airport-logo-img" id="fidsAirportLogoImg" alt="" style="display:none;">
+    <div class="fids-airport-text">
+      <div class="fids-airport-iata" id="fidsAirportIata">YQM</div>
+      <div class="fids-airport-name" id="hdrApName">Greater Moncton</div>
+    </div>
+  </div>
+
+  <!-- Right side: board name (Departures / Arrivals) + plane icon -->
+  <div class="fids-banner-board">
+    <div class="fids-board-icon" id="fidsBoardIcon" aria-hidden="true">
+      <!-- Default: departure (plane lifting off). For arrivals, the icon
+           is swapped at runtime by fids-core.js to a separate landing icon. -->
+      <svg class="fids-icon-dep" viewBox="0 0 24 24"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>
+      <svg class="fids-icon-arr" viewBox="0 0 24 24"><path d="M2.5 19h19v2h-19zM9.68 13.27l4.27 1.14 5.89 1.58c.94.25 1.96-.31 2.16-1.27.21-.97-.41-1.92-1.36-2.18l-5.89-1.58-3.21-7.21-1.93-.51v6.92L4.81 8.84l-.5-1.86-1.45-.39v5.17l1.45.39 1.93.51 3.44.61z"/></svg>
+    </div>
+    <div class="fids-board-label" id="hdrBoard">Departures</div>
+  </div>
+
+  <!-- Hidden — kept for fids-core.js code paths that reference these IDs.
+       The data is not displayed; banner shows airport name via the pill. -->
+  <div style="display:none">
+    <img id="hdrAirlineLogo" alt="">
+    <div id="hdrTemp"></div>
+  </div>
+</div>
+
+<div class="content-area">
+<table id="fidsTable" style="">
+  <colgroup>
+    <col class="col-date">
+    <col class="col-time">
+    <col class="col-wx">
+    <col class="col-dest">
+    <col class="col-logo">
+    <col class="col-flight">
+    <col class="col-term">
+    <col class="col-gate">
+    <col class="col-status">
+  </colgroup>
+  <thead>
+    <tr>
+      <th id="hDate">Date</th>
+      <th id="hTime">Heure</th>
+      <th id="hWx">Météo</th>
+      <th id="hDest">De</th>
+      <th class="col-logo" id="hAirline">Ligne aérienne</th>
+      <th id="hFlight">Vol</th>
+      <th class="col-term" id="hTerm">Terminal</th>
+      <th class="col-gate" id="hGate">Carrousel</th>
+      <th id="hStatus">Statut</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+<div id="panelEmpty" class="status-msg" style="display:none">NO FLIGHTS IN WINDOW<div class="sub">NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW</div></div>
+<div id="panelLoading" class="status-msg" style="display: none;"><div class="spinner"></div>FETCHING LIVE DATA</div>
+<div id="panelError" class="status-msg" style="display:none;color:#dc2626"></div>
+</div>
+
+<div id="gateView" style="display: none;"></div>
+<div id="baggageView" style="display: none;"></div>
+
+<!-- Login Modal -->
+<div id="loginModal" style="display: none; position: fixed; inset: 0px; z-index: 9500; background: rgba(0, 0, 0, 0.85); align-items: center; justify-content: center;">
+  <div style="background:#1e1e21;border:2px solid #eab308;border-radius:0;padding:40px;width:420px;max-width:94vw;color:#fff;text-align:center;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:6px;color:rgba(255,255,255,0.25);margin-bottom:12px;">✈ FIDS</div>
+    <div style="font-size:24px;font-weight:900;letter-spacing:4px;color:#eab308;margin-bottom:6px;">LIVE ACCESS</div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.35);margin-bottom:32px;">ACCÈS EN DIRECT</div>
+    <div style="width:80px;height:3px;background:#eab308;margin:0 auto 32px;"></div>
+    <div style="text-align:left;margin-bottom:16px;">
+      <label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:6px;">USERNAME · NOM D'UTILISATEUR</label>
+      <input id="loginUser" type="text" autocomplete="username" style="width: 100%; background: rgb(39, 39, 42); color: rgb(255, 255, 255); border: 1px solid rgb(82, 82, 91); padding: 12px 16px; font-size: 16px; font-weight: 600; border-radius: 0px; outline: none;" onfocus="this.style.borderColor=&#39;#eab308&#39;" onblur="this.style.borderColor=&#39;#52525b&#39;" onkeydown="if(event.key===&#39;Enter&#39;)document.getElementById(&#39;loginPass&#39;).focus()">
+    </div>
+    <div style="text-align:left;margin-bottom:24px;">
+      <label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:6px;">PASSWORD · MOT DE PASSE</label>
+      <input id="loginPass" type="password" autocomplete="current-password" style="width: 100%; background: rgb(39, 39, 42); color: rgb(255, 255, 255); border: 1px solid rgb(82, 82, 91); padding: 12px 16px; font-size: 16px; font-weight: 600; border-radius: 0px; outline: none;" onfocus="this.style.borderColor=&#39;#eab308&#39;" onblur="this.style.borderColor=&#39;#52525b&#39;" onkeydown="if(event.key===&#39;Enter&#39;)attemptLogin()">
+    </div>
+    <div id="loginError" style="display:none;color:#dc2626;font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="attemptLogin()" style="flex:1;padding:14px;background:#eab308;color:#18181b;border:none;font-size:15px;font-weight:900;letter-spacing:3px;cursor:pointer;">LOGIN</button>
+      <button onclick="cancelLogin()" style="flex:1;padding:14px;background:#3f3f46;color:#fff;border:none;font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;">CANCEL</button>
+    </div>
+    <div style="margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:1px;">LIVE DATA REQUIRES AERODATABOX API ACCESS</div>
+  </div>
+</div>
+
+<!-- Test Flight Modal -->
+<div id="testFlightModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
+  <div style="background:#1e1e21;border:1px solid #3f3f46;border-radius:8px;padding:32px;width:480px;max-width:94vw;color:#fff;">
+    <div style="font-size:18px;font-weight:900;letter-spacing:3px;color:#eab308;margin-bottom:20px;">✚ TEST FLIGHT / VOL TEST</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">GATE</label>
+        <input id="tfGate" value="A3" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
+      <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">AIRLINE (IATA)</label>
+        <input id="tfAirline" value="AC" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
+      <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">FLIGHT #</label>
+        <input id="tfFlight" value="AC 1234" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
+      <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">DESTINATION</label>
+        <input id="tfDest" value="TORONTO" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
+      <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">DEST IATA CODE</label>
+        <input id="tfDestIata" value="YYZ" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
+      <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">TIME (HH:MM)</label>
+        <input id="tfTime" type="time" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
+      <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">EQUIPMENT</label>
+        <select id="tfEquip" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;">
+          <option value="" selected>Auto / None</option><option value="7M8">737 MAX 8</option><option value="7M9">737 MAX 9</option><option value="738">737-800</option><option value="739">737-900</option><option value="73H">737-800 (73H)</option><option value="319">A319</option><option value="320">A320</option><option value="321">A321</option><option value="32N">A320neo</option><option value="223">A220-300</option><option value="333">A330-300</option><option value="339">A330-900</option><option value="359">A350-900</option><option value="77W">777-300ER</option><option value="789">787-9</option><option value="788">787-8</option><option value="DH4">Dash 8-Q400</option><option value="CR9">CRJ-900</option><option value="E75">E175</option><option value="E95">E195</option>
+        </select></div>
+      <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">OPERATED BY</label>
+        <select id="tfOperator" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;">
+          <option value="" selected>None (marketing carrier only)</option><option value="RV">Air Canada Rouge (RV)</option><option value="QK">Jazz Aviation (QK)</option><option value="WR">WestJet Encore (WR)</option><option value="9X">WestJet Link (9X)</option><option value="MQ">Envoy Air (MQ)</option><option value="OO">SkyWest (OO)</option><option value="YV">Mesa Airlines (YV)</option><option value="G7">GoJet (G7)</option><option value="YX">Republic Airways (YX)</option><option value="OH">PSA Airlines (OH)</option><option value="PT">Piedmont (PT)</option><option value="9E">Endeavor Air (9E)</option>
+        </select></div>
+      <div style="grid-column:span 2;"><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">STATUS</label>
+        <select id="tfStatus" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;">
+          <option value="ontime">On Time</option>
+          <option value="boarding">Boarding</option>
+          <option value="final">Final Call</option>
+          <option value="delayed">Delayed</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="gateclosed">Gate Closed</option>
+        </select></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button onclick="submitTestFlight()" style="flex:1;padding:12px;background:#eab308;color:#18181b;border:none;font-size:14px;font-weight:900;letter-spacing:2px;cursor:pointer;">ADD FLIGHT</button>
+      <button onclick="closeTestFlight()" style="flex:1;padding:12px;background:#3f3f46;color:#fff;border:none;font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer;">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MOBILE VIEW (cards only — hidden on desktop) ─────────────────── -->
+<div id="mobileView">
+  <div class="mobile-cards-scroll" id="mobileCardsScroll">
+    <div id="mobileCards"><div class="flight-card   " onclick="this.classList.toggle(&#39;expanded&#39;)">
+      <div class="card-row1">
+        <div class="card-time">10:46</div>
+        <div class="card-city">Montréal</div>
+        <div class="card-status p-arrived">Arrivé · 10:38</div>
+      </div>
+      <div class="card-row2">
+        <img class="card-logo" data-code="AC" alt="AIR CANADA" src="https://img.wway.io/pics/root/AC@svg" onerror="if(!this.dataset.tried){this.dataset.tried=&#39;1&#39;;this.src=&#39;https://img.wway.io/pics/root/AC@svg&#39;}else{this.outerHTML=&#39;&lt;span class=\&#39;card-logo-fb\&#39;&gt;AIR CANADA&lt;/span&gt;&#39;}">
+        <span class="card-flight">AC7992</span>
+        <span class="card-gate">Carrousel 4</span>
+        <span class="card-wx"> 34°F</span>
+      </div>
+      <div class="card-expanded-row">
+        <span>📅 WED, APR 8</span>
+        <span>⏱ HEURE RÉVISÉE: 10:38</span>
+      </div>
+    </div><div class="flight-card   " onclick="this.classList.toggle(&#39;expanded&#39;)">
+      <div class="card-row1">
+        <div class="card-time">13:00</div>
+        <div class="card-city">Toronto Centreville</div>
+        <div class="card-status p-scheduled">Prévu</div>
+      </div>
+      <div class="card-row2">
+        <img class="card-logo" data-code="PD" alt="PORTER" src="https://img.wway.io/pics/root/PD@svg" onerror="if(!this.dataset.tried){this.dataset.tried=&#39;1&#39;;this.src=&#39;https://img.wway.io/pics/root/PD@svg&#39;}else{this.outerHTML=&#39;&lt;span class=\&#39;card-logo-fb\&#39;&gt;PORTER&lt;/span&gt;&#39;}">
+        <span class="card-flight">PD2293</span>
+        <span class="card-gate">Carrousel 3</span>
+        <span class="card-wx"> 36°F</span>
+      </div>
+      <div class="card-expanded-row">
+        <span>📅 WED, APR 8</span>
+        
+      </div>
+    </div><div class="flight-card   " onclick="this.classList.toggle(&#39;expanded&#39;)">
+      <div class="card-row1">
+        <div class="card-time">17:02</div>
+        <div class="card-city">Toronto</div>
+        <div class="card-status p-scheduled">Prévu</div>
+      </div>
+      <div class="card-row2">
+        <img class="card-logo" data-code="AC" alt="AIR CANADA" src="https://img.wway.io/pics/root/AC@svg" onerror="if(!this.dataset.tried){this.dataset.tried=&#39;1&#39;;this.src=&#39;https://img.wway.io/pics/root/AC@svg&#39;}else{this.outerHTML=&#39;&lt;span class=\&#39;card-logo-fb\&#39;&gt;AIR CANADA&lt;/span&gt;&#39;}">
+        <span class="card-flight">AC646</span>
+        <span class="card-gate">Carrousel 4</span>
+        <span class="card-wx"> 36°F</span>
+      </div>
+      <div class="card-expanded-row">
+        <span>📅 WED, APR 8</span>
+        
+      </div>
+    </div><div class="flight-card   " onclick="this.classList.toggle(&#39;expanded&#39;)">
+      <div class="card-row1">
+        <div class="card-time">17:30</div>
+        <div class="card-city">Mont-Joli</div>
+        <div class="card-status p-scheduled">Prévu</div>
+      </div>
+      <div class="card-row2">
+        <img class="card-logo" data-code="PB" alt="PAL AIRLINES" src="https://img.wway.io/pics/root/PB@svg" onerror="if(!this.dataset.tried){this.dataset.tried=&#39;1&#39;;this.src=&#39;https://img.wway.io/pics/root/PB@svg&#39;}else{this.outerHTML=&#39;&lt;span class=\&#39;card-logo-fb\&#39;&gt;PAL AIRLINES&lt;/span&gt;&#39;}">
+        <span class="card-flight">PB924</span>
+        <span class="card-gate">Carrousel 2</span>
+        <span class="card-wx"> 27°F</span>
+      </div>
+      <div class="card-expanded-row">
+        <span>📅 WED, APR 8</span>
+        
+      </div>
+    </div><div class="flight-card   " onclick="this.classList.toggle(&#39;expanded&#39;)">
+      <div class="card-row1">
+        <div class="card-time">18:15</div>
+        <div class="card-city">Ottawa</div>
+        <div class="card-status p-scheduled">Prévu</div>
+      </div>
+      <div class="card-row2">
+        <img class="card-logo" data-code="PD" alt="PORTER" src="https://img.wway.io/pics/root/PD@svg" onerror="if(!this.dataset.tried){this.dataset.tried=&#39;1&#39;;this.src=&#39;https://img.wway.io/pics/root/PD@svg&#39;}else{this.outerHTML=&#39;&lt;span class=\&#39;card-logo-fb\&#39;&gt;PORTER&lt;/span&gt;&#39;}">
+        <span class="card-flight">PD2371</span>
+        <span class="card-gate">Carrousel 3</span>
+        <span class="card-wx"> 32°F</span>
+      </div>
+      <div class="card-expanded-row">
+        <span>📅 WED, APR 8</span>
+        
+      </div>
+    </div><div class="flight-card   " onclick="this.classList.toggle(&#39;expanded&#39;)">
+      <div class="card-row1">
+        <div class="card-time">20:38</div>
+        <div class="card-city">Ottawa</div>
+        <div class="card-status p-scheduled">Prévu</div>
+      </div>
+      <div class="card-row2">
+        <img class="card-logo" data-code="AC" alt="AIR CANADA" src="https://img.wway.io/pics/root/AC@svg" onerror="if(!this.dataset.tried){this.dataset.tried=&#39;1&#39;;this.src=&#39;https://img.wway.io/pics/root/AC@svg&#39;}else{this.outerHTML=&#39;&lt;span class=\&#39;card-logo-fb\&#39;&gt;AIR CANADA&lt;/span&gt;&#39;}">
+        <span class="card-flight">AC7890</span>
+        <span class="card-gate">Carrousel 4</span>
+        <span class="card-wx"> 32°F</span>
+      </div>
+      <div class="card-expanded-row">
+        <span>📅 WED, APR 8</span>
+        
+      </div>
+    </div><div class="flight-card   " onclick="this.classList.toggle(&#39;expanded&#39;)">
+      <div class="card-row1">
+        <div class="card-time">22:10</div>
+        <div class="card-city">Montréal</div>
+        <div class="card-status p-scheduled">Prévu</div>
+      </div>
+      <div class="card-row2">
+        <img class="card-logo" data-code="AC" alt="AIR CANADA" src="https://img.wway.io/pics/root/AC@svg" onerror="if(!this.dataset.tried){this.dataset.tried=&#39;1&#39;;this.src=&#39;https://img.wway.io/pics/root/AC@svg&#39;}else{this.outerHTML=&#39;&lt;span class=\&#39;card-logo-fb\&#39;&gt;AIR CANADA&lt;/span&gt;&#39;}">
+        <span class="card-flight">AC658</span>
+        <span class="card-gate">Carrousel 4</span>
+        <span class="card-wx"> 34°F</span>
+      </div>
+      <div class="card-expanded-row">
+        <span>📅 WED, APR 8</span>
+        
+      </div>
+    </div><div class="flight-card   " onclick="this.classList.toggle(&#39;expanded&#39;)">
+      <div class="card-row1">
+        <div class="card-time">23:47</div>
+        <div class="card-city">Toronto</div>
+        <div class="card-status p-scheduled">Prévu</div>
+      </div>
+      <div class="card-row2">
+        <img class="card-logo" data-code="AC" alt="AIR CANADA" src="https://img.wway.io/pics/root/AC@svg" onerror="if(!this.dataset.tried){this.dataset.tried=&#39;1&#39;;this.src=&#39;https://img.wway.io/pics/root/AC@svg&#39;}else{this.outerHTML=&#39;&lt;span class=\&#39;card-logo-fb\&#39;&gt;AIR CANADA&lt;/span&gt;&#39;}">
+        <span class="card-flight">AC1986</span>
+        <span class="card-gate">Carrousel 4</span>
+        <span class="card-wx"> 36°F</span>
+      </div>
+      <div class="card-expanded-row">
+        <span>📅 WED, APR 8</span>
+        
+      </div>
+    </div></div>
+  </div>
+  <div class="mobile-pager" id="mobilePager" style="display: flex;">
+    <button class="mobile-pager-btn" id="mPagerPrev" onclick="mobilePagePrev()" disabled="">‹</button>
+    <span class="mobile-pager-info" id="mPagerInfo">PAGE 1 / 2</span>
+    <button class="mobile-pager-btn" id="mPagerNext" onclick="mobilePageNext()">›</button>
+  </div>
+</div>
+
+<div class="ticker"><span>✈  PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES  ·  VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS  ·  ✈  UNATTENDED ITEMS WILL BE CONFISCATED BY SECURITY  ·  LES OBJETS SANS SURVEILLANCE SERONT CONFISQUÉS  ·  ✈  PROCEED TO YOUR GATE 30 MINUTES BEFORE DEPARTURE  ·  PRÉSENTEZ-VOUS À LA PORTE 30 MINUTES AVANT LE DÉPART  ·  ✈  BOARDING GATES CLOSE 15 MINUTES PRIOR TO DEPARTURE  ·  FERMETURE DES PORTES 15 MINUTES AVANT LE DÉPART  ·  ✈  REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF  ·  SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL  ·  ✈  CHECK MONITORS FOR UPDATED GATE INFORMATION  ·  CONSULTEZ LES ÉCRANS POUR TOUTE MISE À JOUR  ·  ✈</span></div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js"></script>
+<script src="js/fids-v2.js?v=311"></script>
+<script src="js/gids-layout.js?v=1"></script>
+<script src="js/fids-core.js?v=21899-72"></script>
+<script src="js/ui-options.js?v=1"></script>
+<script src="js/local-media.js?v=1"></script>
+<script src="js/media-base.js?v=1"></script>
+<script src="js/airport-coords.js?v=1"></script>
+<script src="js/template-renderer.js?v=1"></script>
+<script src="js/screen-capture.js?v=1"></script>
+<script src="js/menu.js?v=21899-33"></script>
+<script src="js/editor-roles.js?v=1"></script>
+<script>
+window.addEventListener("DOMContentLoaded", function() {
+
+    try { changeFont('Geist'); } catch(e) {}
+    if (typeof initApInputs === 'function') initApInputs();
+
+    // Loader helpers (defined early so we can update status text as we go)
+    function _fidsSetLoaderStatus(t) {
+      var el = document.getElementById('fidsLoaderStatus');
+      if (el) el.textContent = t;
+    }
+    function _fidsHideLoader() {
+      var el = document.getElementById('fidsLoader');
+      if (!el) return;
+      // Wait two animation frames so the board has had a chance to paint,
+      // then fade. (One rAF schedules after render; two guarantees paint.)
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          el.classList.add('is-hidden');
+          // Remove from layout after fade finishes (CSS transition is 0.5s + 0.1s delay)
+          setTimeout(function() { el.classList.add('is-gone'); }, 800);
+        });
+      });
+    }
+    // Failsafe: even if something throws, hide the loader after 8 seconds
+    setTimeout(_fidsHideLoader, 8000);
+
+    var params = new URLSearchParams(window.location.search);
+    var ap = params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM';
+    var startMode = params.get('mode') || sessionStorage.getItem('fids_mode') || 'demo';
+
+    var apSel = document.getElementById('apSel');
+    if (apSel) apSel.value = ap;
+
+    // Apply airport theme + user customize prefs IMMEDIATELY on page load.
+    // Without this, body[data-fids-theme] is never set until async config
+    // fetch completes — so the page renders with raw :root defaults
+    // (dark navy) even when user has picked cream / etc.
+    try {
+      if (typeof applyAirportConfigToBoard === 'function') {
+        applyAirportConfigToBoard(ap);
+      }
+    } catch(e) { console.error('[init] applyAirportConfigToBoard failed:', e); }
+
+    if (startMode === 'live') {
+      LIVE_MODE = true;
+      try {
+        var badge = document.getElementById('modeBadge');
+        if (badge) { badge.textContent = 'LIVE'; badge.className = 'mode-badge live'; }
+        var ll = document.getElementById('liveLabel');
+        if (ll) ll.textContent = 'LIVE';
+      } catch(e) {}
+      _fidsSetLoaderStatus('FETCHING LIVE DATA…');
+      Promise.resolve(fetchLive()).then(function() {
+        if (typeof startPaging === "function") startPaging();
+        _fidsHideLoader();
+      }).catch(function(e) {
+        console.error('[init] fetchLive failed:', e);
+        _fidsHideLoader();
+      });
+    } else {
+      _fidsSetLoaderStatus('LOADING DEMO DATA…');
+      Promise.resolve(loadDemo()).then(function() {
+        if (typeof startPaging === "function") startPaging();
+        _fidsHideLoader();
+      }).catch(function(e) {
+        console.error('[init] loadDemo failed:', e);
+        _fidsHideLoader();
+      });
+    }
+});
+</script>
+</body>
+</html>

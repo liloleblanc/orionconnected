@@ -1,0 +1,672 @@
+=== CLEANUP PROPOSAL ===
+Total files: 239
+KEEP: 187    DELETE: 52
+
+=== TO DELETE ===
+  alliances/Skyteam.png
+      → dup of full: kept skyteam.svg
+  alliances/star-alliance.png
+      → dup of full: kept star-alliance.svg
+  canadian/AC.TO.png
+      → dup of full: kept AC.TO.svg
+  canadian/AC.TO_BIG.png
+      → dup of full: kept AC.TO_BIG.svg
+  canadian/AC.TO_BIG.D.png
+      → dup of full: kept AC.TO_BIG.D.svg
+  canadian/AC.TO_BIG.D (1).svg
+      → dup of full: kept AC.TO_BIG.D.svg
+  canadian/Aeroplan2.svg
+      → dup of full: kept aeroplan.svg
+  canadian/aeroplan.png
+      → dup of full: kept aeroplan.svg
+  canadian/air-canada-big.svg
+      → dup of full: kept air-canada.svg
+  canadian/air-canada-logo.svg
+      → dup of full: kept air-canada.svg
+  canadian/logo-air-canada.svg
+      → dup of full: kept air-canada.svg
+  canadian/air-canada.png
+      → dup of full: kept air-canada.svg
+  canadian/air-canada@logotyp.us.svg
+      → dup of full: kept air-canada.svg
+  canadian/Air_Canada_Logo_2017_stacked_variant.png
+      → dup of stacked: kept Air_Canada_Logo_2017_stacked_variant.svg
+  canadian/flair.png
+      → dup of full: kept flair.svg
+  canadian/rouge.png
+      → dup of full: kept rouge.svg
+  canadian/air-transat.svg
+      → dup of full: kept transat.svg
+  canadian/transat1.svg
+      → dup of full: kept transat.svg
+  canadian/westjet.png
+      → dup of full: kept WestJet_Logo_2018.svg
+  canadian/westjet-encore2.png
+      → dup of full: kept encore.png
+  canadian-regional/PAL_Airlines_Canada_Logo.png
+      → dup of full: kept PAL-Airlines.svg
+  canadian-regional/perimeter-aviation-logo.svg
+      → dup of full: kept Perimeter_Aviation_Logo.svg
+  us-major/aaadvantage-transparent.png
+      → dup of full: kept aaadvantage.png
+  us-major/aaadvantage.avif
+      → dup of full: kept aaadvantage.png
+  us-major/american_airlines_logo-freelogovectors.net_.png
+      → dup of full: kept american-airlines.svg
+  us-major/american-airlines-logo-02-freelogovectors.net_.png
+      → dup of full: kept american-airlines.svg
+  us-major/delta_airlines_logo-freelogovectors.net_.png
+      → dup of full: kept delta.svg
+  us-major/delta-hotels.png
+      → dup of full: kept delta-hotels.svg
+  us-major/hawaiian-airlines.svg
+      → dup of full: kept Hawaiian.svg
+  us-major/hawaiian-airlines.png
+      → dup of full: kept Hawaiian.svg
+  us-major/Hawaiian_Airlines_logo.png
+      → dup of full: kept Hawaiian.svg
+  us-major/united-rebrand.svg
+      → dup of full: kept united.svg
+  us-major/United_Airlines_Logo_2019_full.svg
+      → dup of full: kept united.svg
+  us-major/united5.svg
+      → dup of full: kept united.svg
+  us-major/United_Airlines_Logo_2019_full_Star_Alliance.svg
+      → dup of full: kept united.svg
+  us-major/united.png
+      → dup of full: kept united.svg
+  us-major/united2.png
+      → dup of full: kept united.svg
+  us-major/United_Airlines_Logo_2019 (1).svg
+      → dup of full: kept united.svg
+  us-major/united-airlines-logo-freelogovectors.net_.png
+      → dup of full: kept united.svg
+  us-major/united_airlines-logo-freelogovectors.net_.png
+      → dup of full: kept united.svg
+  us-major/united-airlines-wordmark-dark.svg
+      → dup of wordmark-dark: kept united-wordmark-dark.svg
+  us-major/united-airlines-wordmark-light.svg
+      → dup of wordmark-light: kept united-wordmark-light.svg
+  us-major/united-globe-symbol.svg
+      → dup of emblem-symbol: kept united-globe-only.svg
+  us-regional/Envoy-01.eps
+      → dup of full: kept Envoy.png
+  us-regional/Piedmont_Airlines_Logo.png
+      → dup of full: kept piedmont.svg
+  us-regional/Piedmont.jpg
+      → dup of full: kept piedmont.svg
+  us-regional/psa-airlines.png
+      → dup of full: kept psa-airlines.svg
+  us-regional/PSa.jpg
+      → dup of full: kept psa-airlines.svg
+  us-regional/Skywest-Airlines-01.png
+      → dup of full: kept Skywest-Airlines-01.svg
+  us-regional/skywest-airlines-logo.png
+      → dup of full: kept Skywest-Airlines-01.svg
+  us-regional/Skywest-Airlines-01.jpg
+      → dup of full: kept Skywest-Airlines-01.svg
+  us-regional/Skywest-Airlines-01.eps
+      → dup of full: kept Skywest-Airlines-01.svg
+
+=== TO KEEP (one per format per carrier) ===
+
+[alliances] canonical full for flying-blue
+  KEEP  flying-blue.png
+
+[alliances] canonical full for flying-blue940x360px
+  KEEP  flying-blue940X360px.webp
+
+[alliances] canonical full for oneworld
+  KEEP  Oneworld.svg
+
+[alliances] canonical full for oneworld-logo
+  KEEP  Oneworld-Logo.png
+
+[alliances] canonical full for oneworld_logo
+  KEEP  Oneworld_logo.svg
+
+[alliances] canonical wordmark-dark for royal-air-maroc
+  KEEP  royal-air-maroc-wordmark-dark.svg
+
+[alliances] canonical wordmark-light for royal-air-maroc
+  KEEP  royal-air-maroc-wordmark-light.svg
+
+[alliances] canonical full for skyteam
+  KEEP  skyteam.svg
+
+[alliances] canonical white for skyteam
+  KEEP  skyteam-white.png
+
+[alliances] canonical full for star-alliance
+  KEEP  star-alliance.svg
+
+[alliances] canonical full for star-alliance-logo
+  KEEP  star-alliance-logo.svg
+
+[asian-other] canonical wordmark-dark for aeromexico
+  KEEP  aeromexico-wordmark-dark.svg
+
+[asian-other] canonical wordmark-light for aeromexico
+  KEEP  aeromexico-wordmark-light.svg
+
+[asian-other] canonical full for avianca
+  KEEP  avianca.svg
+
+[asian-other] canonical wordmark-dark for avianca
+  KEEP  avianca-wordmark-dark.svg
+
+[asian-other] canonical wordmark-light for avianca
+  KEEP  avianca-wordmark-light.svg
+
+[asian-other] canonical wordmark-dark for bahamasair
+  KEEP  bahamasair-wordmark-dark.svg
+
+[asian-other] canonical wordmark-light for bahamasair
+  KEEP  bahamasair-wordmark-light.svg
+
+[asian-other] canonical wordmark-dark for copa
+  KEEP  copa-wordmark-dark.svg
+
+[asian-other] canonical wordmark-light for copa
+  KEEP  copa-wordmark-light.svg
+
+[asian-other] canonical wordmark-dark for gol
+  KEEP  gol-wordmark-dark.svg
+
+[asian-other] canonical wordmark-light for gol
+  KEEP  gol-wordmark-light.svg
+
+[asian-other] canonical wordmark-dark for latam
+  KEEP  latam-wordmark-dark.svg
+
+[asian-other] canonical wordmark-light for latam
+  KEEP  latam-wordmark-light.svg
+
+[asian-other] canonical full for qantas
+  KEEP  qantas.png
+
+[asian-other] canonical full for qantas-ff
+  KEEP  qantas-ff.png
+
+[asian-other] canonical full for qantas_club_rgb_120816857024f6-206d-4b15-9467-6f7368f64a9c.tmb-postful
+  KEEP  qantas_club_rgb_120816857024f6-206d-4b15-9467-6f7368f64a9c.tmb-postful.jpg
+
+[asian-other] canonical emblem-symbol for vivaaerobus
+  KEEP  vivaaerobus-emblem.webp
+
+[asian-other] canonical wordmark-dark for vivaaerobus
+  KEEP  vivaaerobus-wordmark-dark.svg
+
+[asian-other] canonical wordmark-light for vivaaerobus
+  KEEP  vivaaerobus-wordmark-light.svg
+
+[asian-other] canonical wordmark-dark for volaris
+  KEEP  volaris-wordmark-dark.svg
+
+[asian-other] canonical wordmark-light for volaris
+  KEEP  volaris-wordmark-light.svg
+
+[canadian] canonical emblem-symbol for ac-roundel
+  KEEP  ac-roundel.png
+
+[canadian] canonical emblem-symbol for ac-tail
+  KEEP  AC-tail-reversed.svg
+
+[canadian] canonical full for ac-toronto
+  KEEP  AC.TO.svg
+
+[canadian] canonical full for ac-toronto-big
+  KEEP  AC.TO_BIG.svg
+
+[canadian] canonical full for ac-toronto-bigd
+  KEEP  AC.TO_BIG.D.svg
+
+[canadian] canonical full for aeroplan
+  KEEP  aeroplan.svg
+
+[canadian] canonical full for aeroplan-star
+  KEEP  ACAEROPLANStar.png
+
+[canadian] canonical white for aeroplan-star
+  KEEP  ACAEROPLANStar-white.png
+
+[canadian] canonical full for air-canada
+  KEEP  air-canada.svg
+
+[canadian] canonical full for air-canada-aeroplan
+  KEEP  Air-Canada-Aeroplan.png
+
+[canadian] canonical stacked for air-canada-stacked
+  KEEP  Air_Canada_Logo_2017_stacked.svg
+
+[canadian] canonical stacked for air-canada-stacked-variant
+  KEEP  Air_Canada_Logo_2017_stacked_variant.svg
+
+[canadian] canonical white for air-canada-white
+  KEEP  air-canada-white.svg
+
+[canadian] canonical wordmark-dark for air-canada-wordmark
+  KEEP  air-canada-wordmark-dark.svg
+
+[canadian] canonical wordmark-light for air-canada-wordmark
+  KEEP  air-canada-wordmark-light.svg
+
+[canadian] canonical full for flair
+  KEEP  flair.svg
+
+[canadian] canonical wordmark-light for flair-wordmark
+  KEEP  flair-wordmark-light.svg
+
+[canadian] canonical full for mr-porter
+  KEEP  mr-porter-logo.svg
+
+[canadian] canonical full for porter
+  KEEP  porter.svg
+
+[canadian] canonical classic for porter-classic
+  KEEP  porter_classic_logo.svg
+
+[canadian] canonical full for porter-classic-2006
+  KEEP  Porter_Airlines_Logo_2006.svg
+
+[canadian] canonical white for porter-white
+  KEEP  porter-white.svg
+
+[canadian] canonical wordmark-dark for porter-wordmark
+  KEEP  porter-wordmark-dark.svg
+
+[canadian] canonical wordmark-light for porter-wordmark
+  KEEP  porter-wordmark-light.svg
+
+[canadian] canonical full for rouge
+  KEEP  rouge.svg
+
+[canadian] canonical icon for rouge-icon
+  KEEP  rouge-icon.png
+
+[canadian] canonical full for transat
+  KEEP  transat.svg
+
+[canadian] canonical wordmark for transat
+  KEEP  transat_white_wordmark.svg
+
+[canadian] canonical wordmark-dark for transat
+  KEEP  transat-wordmark-dark.svg
+
+[canadian] canonical wordmark-light for transat
+  KEEP  transat-wordmark-light.svg
+
+[canadian] canonical full for viporter
+  KEEP  viporter.svg
+
+[canadian] canonical wordmark-dark for viporter-wordmark
+  KEEP  viporter-wordmark-dark.svg
+
+[canadian] canonical wordmark-light for viporter-wordmark
+  KEEP  viporter-wordmark-light.svg
+
+[canadian] canonical full for westjet
+  KEEP  WestJet_Logo_2018.svg
+
+[canadian] canonical wordmark-dark for westjet
+  KEEP  westjet-wordmark-dark.svg
+
+[canadian] canonical wordmark-light for westjet
+  KEEP  westjet-wordmark-light.svg
+
+[canadian] canonical full for westjet-encore
+  KEEP  encore.png
+
+[canadian] canonical emblem-symbol for westjet-symbol
+  KEEP  WestJet_Logo_2016_symbol.svg
+
+[canadian] canonical wordmark for westjet-wordmark-light
+  KEEP  WestJet_Logo_2018_white_wordmark.svg
+
+[canadian-regional] canonical full for air-inuit
+  KEEP  airinuit.svg
+
+[canadian-regional] canonical full for air-north
+  KEEP  airnorth.svg
+
+[canadian-regional] canonical full for aircanada-express
+  KEEP  aircanada-express.svg
+
+[canadian-regional] canonical full for calm-air
+  KEEP  calmair.svg
+
+[canadian-regional] canonical full for canadian-north
+  KEEP  canadian-north.svg
+
+[canadian-regional] canonical full for first-air
+  KEEP  firstair.svg
+
+[canadian-regional] canonical full for jazz
+  KEEP  jazz.svg
+
+[canadian-regional] canonical wordmark-dark for jazz-wordmark
+  KEEP  jazz-wordmark-dark.svg
+
+[canadian-regional] canonical wordmark-light for jazz-wordmark
+  KEEP  jazz-wordmark-light.svg
+
+[canadian-regional] canonical full for pal-airlines
+  KEEP  PAL-Airlines.svg
+
+[canadian-regional] canonical wordmark-dark for pal-airlines
+  KEEP  pal-airlines-wordmark-dark.svg
+
+[canadian-regional] canonical wordmark-light for pal-airlines
+  KEEP  pal-airlines-wordmark-light.svg
+
+[canadian-regional] canonical square for pal-square
+  KEEP  pal-square.svg
+
+[canadian-regional] canonical emblem-symbol for pal-symbol
+  KEEP  pal-symbol.svg
+
+[canadian-regional] canonical full for pascan
+  KEEP  pascan.svg
+
+[canadian-regional] canonical full for pb
+  KEEP  PB.svg
+
+[canadian-regional] canonical full for perimeter-aviation
+  KEEP  Perimeter_Aviation_Logo.svg
+
+[european] canonical emblem-symbol for air-france
+  KEEP  air-france-emblem.svg
+
+[european] canonical full for air-france
+  KEEP  air-france.svg
+
+[european] canonical wordmark-dark for air-france
+  KEEP  air-france-wordmark-dark.svg
+
+[european] canonical wordmark-light for air-france
+  KEEP  air-france-wordmark-light.svg
+
+[european] canonical square for ba
+  KEEP  BA-square.svg
+
+[european] canonical full for ba-long
+  KEEP  BA-long.svg
+
+[european] canonical full for british-airways
+  KEEP  british-airways.svg
+
+[european] canonical wordmark-dark for british-airways
+  KEEP  british-airways-wordmark-dark.svg
+
+[european] canonical wordmark-light for british-airways
+  KEEP  british-airways-wordmark-light.svg
+
+[european] canonical full for british-airways-speedmarque
+  KEEP  british-airways-speedmarque.svg
+
+[european] canonical emblem-symbol for discover-airlines
+  KEEP  discover-airlines-emblem.svg
+
+[european] canonical full for discover-airlines
+  KEEP  discover-airlines.svg
+
+[european] canonical wordmark-dark for discover-airlines
+  KEEP  discover-airlines-wordmark-dark.svg
+
+[european] canonical wordmark-light for discover-airlines
+  KEEP  discover-airlines-wordmark-light.svg
+
+[european] canonical full for klm
+  KEEP  klm.png
+
+[european] canonical wordmark-dark for klm
+  KEEP  klm-wordmark-dark.svg
+
+[european] canonical wordmark-light for klm
+  KEEP  klm-wordmark-light.svg
+
+[european] canonical full for klm_logo_1971_skyteam
+  KEEP  KLM_Logo_1971_SkyTeam.svg
+
+[european] canonical full for klm_logo_2011
+  KEEP  KLM_Logo_2011.svg
+
+[european] canonical full for klm_logo_2011_skyteam
+  KEEP  KLM_Logo_2011_SkyTeam.svg
+
+[european] canonical full for klm_logo_2024
+  KEEP  KLM_Logo_2024.svg
+
+[european] canonical full for klm_logo_2024 (1)
+  KEEP  KLM_Logo_2024 (1).svg
+
+[european] canonical wordmark-dark for lot
+  KEEP  lot-wordmark-dark.svg
+
+[european] canonical wordmark-light for lot
+  KEEP  lot-wordmark-light.svg
+
+[european] canonical full for lufthansa
+  KEEP  lufthansa.svg
+
+[european] canonical full for lufthansa_logo_2018
+  KEEP  Lufthansa_Logo_2018.svg
+
+[european] canonical wordmark-dark for tap-portugal
+  KEEP  tap-portugal-wordmark-dark.svg
+
+[european] canonical wordmark-light for tap-portugal
+  KEEP  tap-portugal-wordmark-light.svg
+
+[european] canonical full for virgin-atlantic
+  KEEP  virgin-atlantic.svg
+
+[european] canonical wordmark-dark for virgin-atlantic
+  KEEP  virgin-atlantic-wordmark-dark.svg
+
+[european] canonical wordmark-light for virgin-atlantic
+  KEEP  virgin-atlantic-wordmark-light.svg
+
+[other] canonical full for premier-inn
+  KEEP  premier-inn.png
+
+[us-major] canonical full for aaadvantage
+  KEEP  aaadvantage.png
+
+[us-major] canonical white for aaadvantage
+  KEEP  aaadvantage-white.png
+
+[us-major] canonical full for alaska
+  KEEP  alaska-airlines.svg
+
+[us-major] canonical wordmark-dark for alaska
+  KEEP  alaska-airlines-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for alaska
+  KEEP  alaska-airlines-wordmark-light.svg
+
+[us-major] canonical alternative for american-airlines
+  KEEP  American_Airlines_Logo_2013_alternative_variant.svg
+
+[us-major] canonical full for american-airlines
+  KEEP  american-airlines.svg
+
+[us-major] canonical white for american-airlines
+  KEEP  american-airlines-white.svg
+
+[us-major] canonical wordmark-dark for american-airlines
+  KEEP  american-airlines-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for american-airlines
+  KEEP  american-airlines-wordmark-light.svg
+
+[us-major] canonical emblem-symbol for american-flight-symbol
+  KEEP  american-flight-symbol.svg
+
+[us-major] canonical wordmark-dark for american-wordmark-short
+  KEEP  american-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for american-wordmark-short
+  KEEP  american-wordmark-light.svg
+
+[us-major] canonical emblem-symbol for breeze
+  KEEP  breeze-airways-emblem.png
+
+[us-major] canonical full for breeze
+  KEEP  breeze-airways.svg
+
+[us-major] canonical wordmark-dark for breeze
+  KEEP  breeze-airways-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for breeze
+  KEEP  breeze-airways-wordmark-light.svg
+
+[us-major] canonical full for delta
+  KEEP  delta.svg
+
+[us-major] canonical white for delta
+  KEEP  delta-on-black.svg
+
+[us-major] canonical wordmark-dark for delta
+  KEEP  delta-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for delta
+  KEEP  delta-wordmark-light.svg
+
+[us-major] canonical full for delta-hotels
+  KEEP  delta-hotels.svg
+
+[us-major] canonical full for delta-widget
+  KEEP  delta-widget.svg
+
+[us-major] canonical full for frontier
+  KEEP  frontier.svg
+
+[us-major] canonical wordmark-dark for frontier
+  KEEP  frontier-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for frontier
+  KEEP  frontier-wordmark-light.svg
+
+[us-major] canonical emblem-symbol for frontier-emblem
+  KEEP  frontier-emblem.svg
+
+[us-major] canonical full for hawaiian
+  KEEP  Hawaiian.svg
+
+[us-major] canonical wordmark for hawaiian
+  KEEP  hawaiian-wordmark.svg
+
+[us-major] canonical wordmark-dark for hawaiian
+  KEEP  hawaiian-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for hawaiian
+  KEEP  hawaiian-wordmark-light.svg
+
+[us-major] canonical full for hawaiian-pualani-symbol
+  KEEP  hawaiian-pualani.svg
+
+[us-major] canonical full for jetblue
+  KEEP  jetblue.svg
+
+[us-major] canonical wordmark-dark for jetblue
+  KEEP  jetblue-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for jetblue
+  KEEP  jetblue-wordmark-light.svg
+
+[us-major] canonical full for mokulele
+  KEEP  mokulele.svg
+
+[us-major] canonical wordmark for mokulele
+  KEEP  mokulele-wordmark.svg
+
+[us-major] canonical wordmark-dark for mokulele
+  KEEP  mokulele-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for mokulele
+  KEEP  mokulele-wordmark-light.svg
+
+[us-major] canonical emblem-symbol for mokulele-emblem
+  KEEP  mokulele-emblem.svg
+
+[us-major] canonical full for southwest
+  KEEP  southwest.svg
+
+[us-major] canonical wordmark-dark for southwest
+  KEEP  southwest-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for southwest
+  KEEP  southwest-wordmark-light.svg
+
+[us-major] canonical full for spirit
+  KEEP  spirit.svg
+
+[us-major] canonical wordmark-dark for spirit
+  KEEP  spirit-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for spirit
+  KEEP  spirit-wordmark-light.svg
+
+[us-major] canonical full for united-airlines
+  KEEP  united.svg
+
+[us-major] canonical wordmark for united-airlines
+  KEEP  united-wordmark.svg
+
+[us-major] canonical wordmark-dark for united-airlines
+  KEEP  united-wordmark-dark.svg
+
+[us-major] canonical wordmark-light for united-airlines
+  KEEP  united-wordmark-light.svg
+
+[us-major] canonical emblem-symbol for united-globe-symbol
+  KEEP  united-globe-only.svg
+
+[us-regional] canonical full for comair
+  KEEP  comair-logo.jpg
+
+[us-regional] canonical full for endeavor-air
+  KEEP  endeavor-air.svg
+
+[us-regional] canonical full for envoy
+  KEEP  Envoy.png
+
+[us-regional] canonical full for gojet
+  KEEP  gojet.png
+
+[us-regional] canonical full for horizon-air
+  KEEP  horizon-air.svg
+
+[us-regional] canonical full for mesa-airlines
+  KEEP  mesa-airlines.svg
+
+[us-regional] canonical full for piedmont
+  KEEP  piedmont.svg
+
+[us-regional] canonical wordmark-dark for piedmont
+  KEEP  piedmont-wordmark-dark.svg
+
+[us-regional] canonical wordmark-light for piedmont
+  KEEP  piedmont-wordmark-light.svg
+
+[us-regional] canonical full for psa-airlines
+  KEEP  psa-airlines.svg
+
+[us-regional] canonical full for republic
+  KEEP  republic.svg
+
+[us-regional] canonical wordmark-dark for republic
+  KEEP  republic-wordmark-dark.svg
+
+[us-regional] canonical wordmark-light for republic
+  KEEP  republic-wordmark-light.svg
+
+[us-regional] canonical full for skywest
+  KEEP  Skywest-Airlines-01.svg
+
+[us-regional] canonical wordmark-dark for skywest
+  KEEP  skywest-airlines-wordmark-dark.svg
+
+[us-regional] canonical wordmark-light for skywest
+  KEEP  skywest-airlines-wordmark-light.svg

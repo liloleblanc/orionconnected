@@ -1,0 +1,8 @@
+V16 brand layout lock:
+- Re-read the ALL brand book PDF and applied the relevant renderer rules: ALL dark blue field, white typography, gold stars, clear brand hierarchy, no overrun outside the ad panel.
+- This patch only changes the Accor ad presentation layer. It does not touch flight logic, gate logic, weather, maps, aircraft cards, carousel timing, admin controls, or menu actions.
+- Added a final CSS override at the end of css/ads-only-accor-v6.css so earlier experimental rules cannot override it.
+- Locked the Accor panel with overflow:hidden/contain, fixed panel padding, and constrained logo, title, description, rating, amenities, and member footer blocks.
+- Reduced NOVOTEL wordmark scale/letter spacing so it stays on one line inside the panel instead of being sliced by the map column.
+- Restored stars, amenity chips, rating, address, description, and member area with strict max-height limits so long hotel copy cannot collide with the footer or other fields.
+- Added a JS safety net that clamps excessively long strings after each ad render, preventing future database/content changes from spilling off the card.

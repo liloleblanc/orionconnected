@@ -1,0 +1,13 @@
+ADS-ONLY ACCOR V18 LAYOUT ACCESSIBILITY
+
+Real fixes applied to the loaded runtime, not only the unused copy:
+1. Patched js/fids-core.js with a runtime hardener that runs after every carousel render.
+2. Patched duplicate js/fidscore.js as a safety net for alternate entry points.
+3. Added hard CSS overrides to css/ads-only-accor-v6.css.
+4. Accor panel now uses 48/52 photo/content split so brand, title, rating, amenities all have a real content box.
+5. Logo/wordmark max-width and max-height are locked. Novotel has its own cap to prevent NOVOTEL cropping.
+6. Hotel name is allowed to wrap naturally, never hidden/ellipsized.
+7. Description is capped to two lines so it cannot trample rating, amenities, or ALL lockup.
+8. Amenities are restored and constrained.
+9. Runtime label repair associates labels with controls to clear the DevTools label warning where generated admin/menu markup omitted for/id.
+10. This touches only ad layout/render safety and the label accessibility repair. Flight logic, gate logic, weather, maps, aircraft cards, carousel timing, and admin controls are not reworked.

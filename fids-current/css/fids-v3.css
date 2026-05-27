@@ -1,0 +1,3612 @@
+/* ===========================================================================
+   FIDS v2 — clean rebuild
+   Built section-by-section based on the design pass:
+     - Theming via CSS custom properties (per-airport color via JS)
+     - Header banner (chevron pattern, swappable left/right)
+     - Table with airline toggle, title case, NOW prefix, full-red cancelled row
+     - 9-language ready (text comes from data attributes / JS rotation)
+     - Weather column with 25-icon flat sprite
+     - Footer ticker (existing logic preserved)
+   =========================================================================== */
+
+/* ── Design tokens ─────────────────────────────────────────────────────── */
+:root {
+  --fids-bg:           #0a0e1a;
+  --fids-surface:      #0c1e3a;
+  --fids-surface-2:    rgba(255,255,255,0.04);
+  --fids-stripe:       rgba(255,255,255,0.025);
+  --fids-divider:      rgba(255,255,255,0.06);
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.6);
+  --fids-text-faded:   rgba(255,255,255,0.4);
+  --fids-header-tint:  #93c5fd;        /* column-header label color */
+  --fids-amber:        #fbbf24;
+  --fids-red:          #b91c1c;
+  --fids-red-text:     #ffffff;
+
+  --fids-row-h:        58px;
+  --fids-pad-x:        20px;
+  --fids-radius:       8px;
+
+  /* Per-airport theming — set on <body data-airport-color="…"> */
+  --fids-banner-bg:    #0c1e3a;        /* default navy; overridable per airport */
+  --fids-banner-accent:#3a6fa5;
+  --fids-banner-text:  #ffffff;
+  --fids-pill-bg:      #ffffff;
+  --fids-pill-text:    #0c1e3a;
+}
+
+/* Theme presets — see PHASE 5 below for full theme definitions.
+   The old banner-only stub themes (navy/grey/amber/green) were removed
+   in v218.6 because they only restyled the banner and left the board
+   in the default state, which looked broken. Full themes are at
+   body[data-fids-theme="..."] further down in this file. */
+
+/* ── Page chrome ───────────────────────────────────────────────────────── */
+html, body {
+  background: var(--fids-bg);
+  color: var(--fids-text);
+  font-family: var(--font-primary);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.fids-v2-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Header banner ─────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────
+   v2 BANNER — 3-zone layout
+   ─────────────────────────────────────────────────────────────────────
+   Layout (default): airport pill on left, board label on right,
+   time/date in top-right corner. Per-airport theming via CSS vars.
+   The banner replaces the legacy <div class="hdr"> that sat at the top
+   of the FIDS — see fids.html.
+*/
+.fids-banner {
+  position: relative;
+  background: var(--fids-banner-bg);
+  overflow: hidden;
+  /* v218.10: bumped from 130 → 160px so the bigger logo card (130) and
+     plane icon (120) both fit comfortably with breathing room above
+     and below. align-items:center vertically centers everything.
+     v218.12: symmetric 64px padding (was 0 36px 0 96px) so the logo
+     card and the right-side board block have EQUAL margin to their
+     respective viewport edges. The settings cog (position:fixed) floats
+     over the banner and doesn't need flex space reserved for it. */
+  height: 160px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 64px;
+  gap: 32px;
+}
+@media (max-width: 1100px) {
+  .fids-banner { height: 130px; padding: 0 48px; }
+  .fids-airport-pill { height: 100px; }
+  .fids-airport-logo-img { height: 80px; }
+}
+
+/* Chevron pattern background — diagonal stripes in accent color */
+.fids-banner-chevrons {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(135deg, transparent 35%, var(--fids-banner-accent) 35%, var(--fids-banner-accent) 36%, transparent 36%),
+    linear-gradient(135deg, transparent 50%, var(--fids-banner-accent) 50%, var(--fids-banner-accent) 51.5%, transparent 51.5%),
+    linear-gradient(135deg, transparent 65%, var(--fids-banner-accent) 65%, var(--fids-banner-accent) 66.5%, transparent 66.5%);
+  opacity: 0.30;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Time + date — fully centered (horizontal + vertical) inside the banner.
+   The clock + date stack sits at the banner's exact center point regardless
+   of how wide the time string gets or how tall the banner is. */
+.fids-banner-time-block {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  text-align: center;
+  color: var(--fids-banner-text);
+}
+.fids-banner-time {
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: 0.5px;
+}
+.fids-banner-date {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  opacity: 0.75;
+  text-transform: none;
+}
+
+/* Center: airport identity pill — bigger card with prominent logo.
+   v218.10: bumped pill to 130px / logo 110px so the left side visually
+   balances the right side (120px plane icon + 72px "Départs" title). */
+.fids-airport-pill {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 12px 26px;
+  gap: 18px;
+  flex-shrink: 0;
+  z-index: 1;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+  height: 130px;
+  max-width: 440px;
+}
+.fids-airport-logo-img {
+  height: 110px;
+  width: auto;
+  max-width: 400px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+/* IATA + sub-name text inside pill — hidden when a custom logo image
+   is present (which is the new default). */
+.fids-airport-pill.has-logo .fids-airport-text { display: none; }
+.fids-airport-iata {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fids-banner-bg);
+}
+.fids-airport-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: rgba(0,0,0,0.6);
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+/* Right: board label + plane icon (Departures/Arrivals/Départs/Arrivées etc.).
+   Pushed flush to the right edge of the banner. The time block is centered
+   horizontally so it no longer needs space reserved for it on the right.
+   margin-right is 0 because the parent .fids-banner already has padding-right:36px;
+   adding more here would create a double offset and the block wouldn't reach
+   the right edge. */
+.fids-banner-board {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-right: 0;
+  z-index: 1;
+}
+@media (max-width: 1280px) {
+  .fids-banner-board { margin-right: 0; }
+}
+@media (max-width: 1100px) {
+  .fids-banner-board { margin-right: 0; }
+}
+.fids-board-icon {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+.fids-board-icon svg {
+  width: 72px;
+  height: 72px;
+  /* Was var(--fids-banner-bg) — but on the cream theme that's white, which
+     made the icon invisible against its white circle background. Use the
+     banner's body color instead, which is dark on light themes and light
+     on dark themes. */
+  fill: var(--fids-banner-bg);
+}
+@media (max-width: 1600px) {
+  .fids-board-icon { width: 100px; height: 100px; }
+  .fids-board-icon svg { width: 60px; height: 60px; }
+}
+@media (max-width: 1280px) {
+  .fids-board-icon { width: 80px; height: 80px; }
+  .fids-board-icon svg { width: 48px; height: 48px; }
+}
+/* Cream/light themes: the circle is white and so is var(--fids-banner-bg),
+   so icon would be invisible. Fill with a dark navy contrast color.
+   v218.36: extended to all light themes (paper, sky, slate) and to the
+   IATA text inside .fids-airport-pill (which also used --fids-banner-bg
+   as a color and went white-on-white). */
+body[data-fids-theme="cream"] .fids-board-icon svg,
+body[data-fids-theme="light"] .fids-board-icon svg,
+body[data-fids-theme="paper"] .fids-board-icon svg,
+body[data-fids-theme="sky"] .fids-board-icon svg,
+body[data-fids-theme="slate"] .fids-board-icon svg {
+  fill: #0a2236;
+}
+body[data-fids-theme="cream"] .fids-airport-iata,
+body[data-fids-theme="light"] .fids-airport-iata,
+body[data-fids-theme="paper"] .fids-airport-iata,
+body[data-fids-theme="sky"] .fids-airport-iata,
+body[data-fids-theme="slate"] .fids-airport-iata {
+  color: #0a2236 !important;
+}
+/* Toggle the dep/arr icons via display rather than rotating, so the
+   plane orientation is correct (taking off vs landing). */
+.fids-board-icon .fids-icon-dep { display: block; }
+.fids-board-icon .fids-icon-arr { display: none; }
+body[data-fids-mode="arr"] .fids-board-icon .fids-icon-dep { display: none; }
+body[data-fids-mode="arr"] .fids-board-icon .fids-icon-arr { display: block; }
+
+.fids-board-label {
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: var(--fids-banner-text);
+  /* Reserve enough horizontal space for the longest translation so the
+     icon sitting next to this label stays anchored when the displayed
+     language switches between rotations. 'Departures' at 72px renders
+     ~420px wide; the rest fit comfortably.
+     v218.13: text-align changed from left → right so the label's right
+     edge stays flush against the banner's padding edge regardless of
+     which language is rendered. With left-align, shorter words like
+     "Départs" would sit at the LEFT of the reserved 420px box leaving
+     a huge gap to the right of the banner — making the entire right
+     block look like it was floating 150px in from the viewport edge. */
+  min-width: 420px;
+  text-align: right;
+}
+@media (max-width: 1600px) {
+  .fids-board-label { font-size: 60px; min-width: 350px; text-align: right; }
+}
+@media (max-width: 1280px) {
+  .fids-board-label { font-size: 48px; min-width: 280px; text-align: right; }
+}
+@media (max-width: 1100px) {
+  .fids-board-label { font-size: 38px; min-width: 220px; text-align: right; }
+}
+
+/* Layout flip — when board-side="right", airport pill goes right,
+   board label goes left. Toggled via body[data-fids-layout]. */
+body[data-fids-layout="right"] .fids-banner {
+  flex-direction: row-reverse;
+  padding: 0 96px 0 36px;
+}
+body[data-fids-layout="right"] .fids-banner-board {
+  margin-left: 0;
+  margin-right: auto;
+  margin-left: 200px;
+}
+/* When the banner is flipped (layout=right), the time block STAYS centered
+   horizontally — no longer pinned to either edge. Empty rule kept as a
+   placeholder so the cascade order is clear. */
+body[data-fids-layout="right"] .fids-banner-time-block {
+  /* intentionally empty — base rule's left:50%/transform handles centering */
+}
+
+/* ── Content area (table) ──────────────────────────────────────────────── */
+.fids-content {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fids-table {
+  width: 100%;
+  border-collapse: collapse;
+  flex: 1;
+}
+
+/* Column header row */
+.fids-table thead tr {
+  background: rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--fids-divider);
+}
+.fids-table thead th {
+  text-align: left;
+  padding: 16px var(--fids-pad-x);
+  color: var(--fids-header-tint);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: none;        /* title case, NOT all caps */
+  white-space: nowrap;
+}
+
+/* Body rows */
+.fids-table tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  height: var(--fids-row-h);
+}
+.fids-table tbody tr:nth-child(even) { background: var(--fids-stripe); }
+.fids-table tbody td {
+  padding: 14px var(--fids-pad-x);
+  color: var(--fids-text);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Cancelled / Diverted = full red row */
+.fids-table tbody tr.row-cancelled,
+.fids-table tbody tr.row-diverted {
+  background: var(--fids-red) !important;
+  color: var(--fids-red-text);
+}
+.fids-table tbody tr.row-cancelled td,
+.fids-table tbody tr.row-diverted td {
+  color: var(--fids-red-text);
+}
+
+/* Airline cell — logo + name */
+.fids-cell-airline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* (Stale 32px circle rule removed — superseded by the
+   #fidsTable .td-airline .fids-airline-logo rule below which sets the
+   correct 54px square for airline tiles.) */
+
+/* Airline cell layout — DOM is:
+     <td class="td-airline">
+       <div class="fids-cell-airline">
+         <div class="fids-airline-logo">…tile or full-logo…</div>
+         <img class="fids-airline-wordmark" data-code="XX">  // OR <span class="fids-airline-name">
+       </div>
+     </td>
+   The wordmark IS the img, not a wrapper. The bulk of the wordmark sizing
+   lives further down (around line 670) — height/max-width/filter. The rules
+   here just handle the cell flex container and the visibility toggles.
+   Cell uses overflow:hidden + min-width:0 so a too-wide wordmark gets
+   clipped at the column edge instead of bleeding into the flight column. */
+
+/* Hide airline name (and wordmark image) when the user toggle is off. */
+body[data-fids-airline-name="off"] .fids-cell-airline .fids-airline-name,
+body[data-fids-airline-name="off"] .fids-cell-airline .fids-airline-wordmark {
+  display: none !important;
+}
+body[data-fids-airline-name="off"] .fids-cell-airline {
+  gap: 0;
+}
+
+/* Status colors (text-only — no pills) */
+.fids-status-delayed,
+.fids-status-now,
+.fids-status-final {
+  color: var(--fids-amber);
+}
+.fids-status-departed,
+.fids-status-arrived,
+.fids-status-gate-closed {
+  color: rgba(255,255,255,0.55);
+}
+
+/* Inside a cancelled row, status text stays white, not amber */
+.fids-table tbody tr.row-cancelled .fids-status-delayed,
+.fids-table tbody tr.row-cancelled .fids-status-now,
+.fids-table tbody tr.row-cancelled .fids-status-final,
+.fids-table tbody tr.row-cancelled .fids-status-departed,
+.fids-table tbody tr.row-cancelled .fids-status-arrived,
+.fids-table tbody tr.row-cancelled .fids-status-gate-closed {
+  color: var(--fids-red-text);
+}
+
+/* Weather cell — icon + temperature */
+.fids-cell-weather {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fids-wx-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+.fids-wx-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Flight number — monospace tabular */
+.fids-cell-flight {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: 0.5px;
+}
+
+/* Time column tabular */
+.fids-cell-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Footer ticker ─────────────────────────────────────────────────────── */
+.fids-footer {
+  background: rgba(0,0,0,0.4);
+  border-top: 1px solid var(--fids-divider);
+  height: 48px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.fids-ticker {
+  white-space: nowrap;
+  display: inline-block;
+  padding-left: 100%;
+  animation: fids-ticker-scroll 90s linear infinite;
+  color: var(--fids-text-muted);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+@keyframes fids-ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────── */
+.fids-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--fids-text-muted);
+  font-size: 22px;
+  letter-spacing: 0.3px;
+  gap: 14px;
+}
+
+/* ── Legacy header retired ────────────────────────────────────────────
+   The old <div class="hdr"> grey/yellow strip has been replaced by
+   <div class="fids-banner">. If any .hdr DOM remains in the page
+   (defensive), hide it. */
+.hdr { display: none !important; }
+
+/* Kill the legacy ticker's text-transform: capitalize so the strings
+   we wrote in sentence case display naturally instead of becoming
+   "Please Keep Your Baggage With You At All Times". */
+.ticker span {
+  text-transform: none !important;
+  letter-spacing: 1px !important;
+}
+
+/* ── Dark theme — override fids.css's light-theme row colors ──────────
+   The legacy fids.css sets:
+     body { color: #18181b; }
+     tbody tr:nth-child(odd)  { background: #ffffff; }
+     tbody tr:nth-child(even) { background: #ececef; }
+   That's a light theme. v2 is dark-mode, so we override at high
+   specificity. */
+/* ── Dark theme baseline ─────────────────────────────────────────────
+   These rules use CSS variables that setTheme() sets per theme. We do
+   NOT override with !important here — that lets the legacy theme picker
+   (which writes <style id="dynamicTheme"> with !important rules) win
+   and actually change colors when the user picks a different theme.
+   Defaults are dark navy if no theme has been applied yet. */
+body {
+  background: var(--fids-bg);
+  color: var(--fids-text);
+}
+#fidsBoard {
+  background: var(--fids-bg);
+}
+#fidsTable tbody tr td               { color: var(--fids-text); }
+#fidsTable tbody tr.faded            { opacity: 0.55; }
+#fidsTable tbody tr.faded .td-status,
+#fidsTable .td-status.fids-status-departed,
+#fidsTable .td-status.fids-status-arrived,
+#fidsTable .td-status.fids-status-gate-closed {
+  color: rgba(255,255,255,0.55);
+}
+#fidsTable tbody tr td:first-child { border-left: 0 !important; }
+
+/* ── Override old fids.css column widths/styles ────────────────────────
+   The old CSS still loads (we don't want to nuke it because other pages
+   like gids/bids depend on it). These rules win the cascade because
+   fids-v2.css loads AFTER fids.css. */
+
+/* Column widths for v2's new column order. The colgroup itself is rebuilt
+   per mode by fids-core.js render() — these widths apply to whichever
+   set of columns is currently active. */
+#fidsTable col.col-airline { width: 22%; }
+#fidsTable col.col-dest    { width: 14%; }
+#fidsTable col.col-wx      { width: 11%; }
+#fidsTable col.col-flight  { width: 11%; }
+#fidsTable col.col-gate    { width: 8%;  }
+#fidsTable col.col-time    { width: 13%; }
+#fidsTable col.col-status  { width: 19%; }
+/* Arrivals (no weather) — columns auto-redistribute since the table is the
+   same total width but missing the wx column. */
+#fidsTable col.col-airline + col.col-dest { width: 24%; }
+
+/* Cell styles — override the old td-* rules with v2 defaults.
+   Row height is LOCKED to the airline tile height (54px) with zero
+   top/bottom padding, so the tile is flush with the row top and
+   bottom edges. */
+#fidsTable tbody td {
+  height: 54px !important;
+  max-height: 54px !important;
+  min-height: 54px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
+}
+#fidsTable .td-airline,
+#fidsTable .td-dest,
+#fidsTable .td-flight,
+#fidsTable .td-gate,
+#fidsTable .td-time,
+#fidsTable .td-status,
+#fidsTable .td-wx {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--fids-text);
+  text-align: left;
+  padding: 0 18px;
+  background: transparent;
+  white-space: nowrap;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
+  height: 54px !important;
+  max-height: 54px !important;
+  min-height: 54px !important;
+}
+/* Kill the legacy 6px transparent left border that was inflating row height */
+#fidsTable tbody tr td:first-child { border-left: 0 !important; }
+/* Kill the legacy bottom border too — replaced by row stripe contrast */
+#fidsTable tbody td { border-bottom: 0 !important; }
+/* Status cell — right-aligned (was left-aligned). Time format inside
+   uses 12-hour AM/PM via fidsFormatTime12() already. */
+#fidsTable .td-status {
+  text-align: right;
+  padding-right: 24px;
+}
+/* Time cell — tabular-nums so digits align */
+#fidsTable .td-time {
+  font-variant-numeric: tabular-nums;
+}
+/* Flight cell — v218.9: removed monospace font (was var(--font-mono))
+   which made the column visually inconsistent with the rest of the
+   board. Now uses tabular-nums for digit alignment without changing
+   the typeface, so flight numbers sit at the same visual size as
+   city / time / status cells. */
+#fidsTable .td-flight {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: 0.5px;
+}
+/* Gate cell — old CSS made it a colored pill; we want plain text */
+#fidsTable .td-gate { text-align: left; }
+#fidsTable .td-gate span {
+  background: transparent !important;
+  color: var(--fids-text) !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  letter-spacing: inherit !important;
+  min-width: 0 !important;
+}
+
+/* Airline cell — kill the legacy logo styling so our flex-with-logo works */
+#fidsTable .td-airline {
+  padding: 0 18px !important;
+  overflow: visible;
+}
+#fidsTable .td-airline .fids-cell-airline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  overflow: hidden;
+  min-width: 0;
+}
+/* v194: When the emblem slot is empty (no tile, no emblem image, no SVG inside),
+   collapse it to zero width so the wordmark doesn't get pushed 68px to the right
+   by an empty 54px box + 14px gap. Affects Porter, Discover Airlines, and any
+   other carrier with a wordmark but no tile/emblem. */
+#fidsTable .td-airline .fids-cell-airline > .fids-airline-logo:empty {
+  width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: none;
+}
+#fidsTable .td-airline .fids-airline-logo {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  background: transparent;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+#fidsTable .td-airline .fids-airline-logo img,
+#fidsTable .td-airline .fids-airline-logo svg {
+  width: 36px;
+  height: 36px;
+  max-width: 36px;
+  max-height: 36px;
+  object-fit: contain;
+  position: static;
+  display: block;
+}
+/* The legacy mkLogo() helper wraps logos in <div class="full-logo"> — make
+   that wrapper a clean flex container that respects our 36×36 box.
+   Old fids.css sets min-width: 80px / max-width: 200px / height: 54px on
+   .full-logo — the !important's here override those when nested in our cell. */
+#fidsTable .td-airline .fids-airline-logo .full-logo {
+  width: 54px !important;
+  min-width: 0 !important;
+  max-width: 54px !important;
+  height: 54px !important;
+  min-height: 0 !important;
+  max-height: 54px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: static;
+  padding: 0;
+  margin: 0;
+}
+#fidsTable .td-airline .fids-airline-logo .full-logo img,
+#fidsTable .td-airline .fids-airline-logo .full-logo svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  object-fit: contain;
+  object-position: center;
+}
+/* Logo-fallback text — keep it small enough to fit the 44px circle */
+#fidsTable .td-airline .fids-airline-logo .logo-fallback {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--fids-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.05;
+}
+/* Airline name — sized + ellipsified */
+#fidsTable .td-airline .fids-airline-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--fids-text);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Wordmark sizing — every carrier's SVG renders letters at a different
+   actual pixel height for a given CSS height, because the SVGs vary in
+   x-height, stroke weight, and remaining viewBox padding. We empirically
+   measured each carrier's visible letter height at a known CSS height,
+   then derived the CSS height needed to produce ~22px of visual letters.
+   These values are calibrated; do not touch them without re-measuring.
+   
+   max-width 260px keeps even the widest wordmarks (BA, AF, AC) inside the
+   column budget. object-position: left aligns them all at the same x. */
+#fidsTable .td-airline .fids-airline-wordmark {
+  height: 28px;
+  width: auto;
+  max-width: 260px;
+  object-fit: contain;
+  object-position: left center;
+  display: block;
+  min-width: 0;
+  flex-shrink: 1;
+  /* No CSS filter — wordmarkSrc() in fids-core.js loads the correct
+     pre-colored variant (-dark for light themes, -light for dark themes)
+     so the file already has the right ink color baked in. Inverting full
+     color logos like Delta/KLM/Hawaiian mangles their brand colors. */
+}
+
+/* ── Per-carrier height overrides ──────────────────────────────────────
+   Each value picked so the rendered LETTERS land at ~22px regardless of
+   how much padding or x-height variation the source SVG has. Measured
+   with cairosvg + pixel scan, see chat history for derivation. */
+
+/* Air Canada — 11:1 aspect ratio means even a small height pushes a
+   wide rendered image. v218.7: trimmed from 20px → 18px per Nick (slightly
+   smaller, was reading larger than other airlines in the column). */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AC"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="RV"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"] {
+  height: 18px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* jetBlue — v203: rebuilt clean white wordmark (was using a filter-converted
+   blue version that rendered as dark blue on dark navy = invisible).
+   New SVG aspect 3.2:1 — at 50px tall renders ~160px wide. "Tad to the left"
+   per request: no left padding, just sits flush at cell start. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"] {
+  height: 42px;
+  max-width: 160px;
+  padding-left: 6px;
+  margin-left: 0;
+  box-sizing: content-box;
+}
+
+/* NK (Spirit) — ceased operations May 2 2026 — CSS rule removed */
+
+/* Mokulele (9X) — v188: split into two pieces:
+   - The plumeria flower lives in the EMBLEM slot (.fids-airline-logo)
+     via IATA_TO_EMBLEM map, sized larger than default tile (44×44).
+   - The "MOKULELE" wordmark lives separately in the wordmark slot.
+   Both are larger than default for a stronger Mokulele presence on the row. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="9X"] {
+  height: 38px;
+  max-width: 200px;
+}
+/* Mokulele flower emblem sizing — bigger than the standard 36px tile
+   since the flower is the airline's primary visual identity. */
+#fidsTable .td-airline .fids-airline-logo img.airline-emblem[data-code="9X"],
+#fidsTable .td-airline .fids-airline-logo .full-logo.airline-emblem[data-code="9X"],
+#fidsTable .td-airline .fids-airline-logo img[data-logo-set="emblem"][data-code="9X"] {
+  width: 46px !important;
+  height: 46px !important;
+  max-width: 46px !important;
+  max-height: 46px !important;
+}
+
+/* British Airways — v204: 11:1 aspect (273x25 viewBox) is just like Air Canada,
+   so use the same height treatment (~18-20px) to keep it proportional in the row.
+   At 32px it was rendering ~350px wide which fought the column max-width and
+   came out distorted. 20px puts it at ~220px wide, comfortably matching AC.
+   v205: BA replaced with the negative variant (red speedmarque + white text)
+   from Nick's upload. New file aspect 6.47:1 instead of 11:1 — bumped height
+   accordingly. At 32px → ~207px wide, in-line with AC family. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="BA"] {
+  height: 32px;
+  max-width: 240px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* Frontier (F9) — v205: official green wordmark + emblem.
+   Wordmark 7.45:1 aspect — at 26px height renders ~194px wide. Emblem 1.20:1
+   square-ish, sized like other emblems (Mokulele/Discover). */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] {
+  height: 23px;
+  max-width: 200px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+#fidsTable .td-airline .fids-airline-logo img.airline-emblem[data-code="F9"],
+#fidsTable .td-airline .fids-airline-logo .full-logo.airline-emblem[data-code="F9"],
+#fidsTable .td-airline .fids-airline-logo img[data-logo-set="emblem"][data-code="F9"] {
+  width: 46px !important;
+  height: 46px !important;
+  max-width: 46px !important;
+  max-height: 46px !important;
+}
+
+/* United — has globe icon + UNITED wordmark. v187: 25→24px (a tad smaller per
+   request), AND tightened SVG viewBox to remove ~28 units of trailing+wordmark-gap
+   padding to address "tad too padded at beginning" feedback. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"] {
+  height: 24px;
+}
+
+/* Delta — same icon+wordmark issue. Triangle icon was looming too large at 32px.
+   v203: small left padding to shift right per request. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"] {
+  height: 26px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* Hawaiian — pualani face + "Hawaiian Airlines" wordmark. The illustrated
+   face is softer and reads smaller than UA/DL's solid icons. Bump up. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] {
+  height: 40px;
+}
+
+/* Air France — v204: 10.5:1 wide aspect, same as BA/AC. Was rendering ~335px
+   wide at 32px height which fought the column. 20px → ~210px wide, in line. */
+/* Air France (AF) — v214: aspect 10.46:1, max-width was clamping it tiny.
+   Bumped max-width to 270px so the AIRFRANCE wordmark renders at full 26px
+   height. Padding-left removed per request — sits flush left with other rows. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AF"] {
+  height: 26px;
+  max-width: 270px;
+  padding-left: 4px;
+  margin-left: 0;
+  box-sizing: content-box;
+}
+
+/* Porter (PD) — v194: a tad bigger than default, since the wordmark itself
+   is a clean horizontal lockup with the raccoon ribbon. Default 28px reads
+   small; bumping to 32px gives it the right visual weight against AC/WS.
+   v218: slight right nudge per Nick. */
+/* Porter — lowercase "porter" + raccoon ribbon. Default 28px reads small.
+   v218: bumped to 32px. v218.8: trimmed to 28px so it stops dominating
+   the row relative to AC and WS which are smaller. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PD"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] {
+  height: 28px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* Discover Airlines (4Y) — v201: official Discover Airlines wordmark from
+   discover-airlines.com (lowercase "discover." with yellow dot + "airlines"
+   below). Stacked 2-line layout, 2.9:1 aspect (139x48 viewBox). At 44px
+   height renders ~127px wide which fits cleanly alongside the tail emblem. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"] {
+  height: 44px;
+  max-width: 150px;
+}
+/* Discover emblem sizing — bigger than default 36px tile since the emblem
+   is the airline's canonical visual identity. Same treatment as Mokulele. */
+#fidsTable .td-airline .fids-airline-logo img.airline-emblem[data-code="4Y"],
+#fidsTable .td-airline .fids-airline-logo .full-logo.airline-emblem[data-code="4Y"],
+#fidsTable .td-airline .fids-airline-logo img[data-logo-set="emblem"][data-code="4Y"] {
+  width: 50px !important;
+  height: 50px !important;
+  max-width: 50px !important;
+  max-height: 50px !important;
+}
+
+/* Southwest — was rendering too tall; calibrated down. v201: small left
+   shift per request ("smidge to the right") since the wordmark sits flush
+   left against the cell start. 8px of leading padding lets it breathe. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] {
+  height: 30px;
+  padding-left: 8px;
+  box-sizing: content-box;
+}
+
+/* WestJet — slightly bigger than default to match neighbors.
+   v218: slight right nudge + slightly bigger per Nick.
+   v218.7: trimmed from 34px → 30px per Nick (was reading too large
+   compared to other airlines on a populated board). */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] {
+  height: 30px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* PAL Airlines (PB) — slight right nudge per Nick (v218). */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PB"] {
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* v218 Group A sizing/positioning per Nick.
+   Default wordmark height is 28px; tweaks below are relative to that. */
+
+/* Avianca (AV) — bigger */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] {
+  height: 32px;
+}
+
+/* Aeroméxico (AM) — slightly smaller, tad right */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AM"] {
+  height: 26px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* Copa (CM) — tad right */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="CM"] {
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* LATAM (LA) — tad bigger, tad right */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="LA"] {
+  height: 32px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* Volaris (Y4) — tad bigger */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="Y4"] {
+  height: 32px;
+}
+
+/* Virgin Atlantic (VS) — bigger */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="VS"] {
+  height: 32px;
+}
+
+/* VivaAerobus (VB) — slight right + bigger */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="VB"] {
+  height: 32px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* (Older Porter PD 28px rule — REMOVED in v194 cleanup; use the 32px rule
+   above. Likewise older Discover 4Y 26px rule is removed.) */
+
+/* v194: For airlines with no emblem (Porter, Discover, etc.), the wordmark
+   was sitting flush-left against the cell start. Add a small left margin
+   on the wordmark when its sibling emblem is empty/hidden. */
+#fidsTable .td-airline .fids-cell-airline > .fids-airline-logo:empty + .fids-airline-wordmark,
+#fidsTable .td-airline .fids-cell-airline > .fids-airline-logo[style*="display: none"] + .fids-airline-wordmark {
+  margin-left: 6px;
+}
+
+/* (Older HA rule that was overriding the higher one above — removed in v185.) */
+
+/* Piedmont (YV/YX) — major viewBox padding requires a big bump. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="YV"] {
+  height: 42px;
+}
+/* Republic Airways (YX) — v204: 6.67:1 wider than YV, so at the same 42px
+   it rendered ~280px wide. 36px keeps proportional weight, ~240px wide. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="YX"] {
+  height: 36px;
+  max-width: 240px;
+}
+
+/* Alaska Airlines (AS) — v206: a bit bigger + shifted right per request.
+   Wordmark aspect 3.35:1, default 28px was undersized vs neighbors. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] {
+  height: 36px;
+  max-width: 240px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* Virgin Atlantic (VS) — v206: real logo installed (purple "virgin atlantic"
+   wordmark + red Virgin tail icon). Aspect 1.40:1 — at 50px tall renders ~70px
+   wide due to the integrated tail icon making the artwork mostly square. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="VS"] {
+  height: 50px;
+  max-width: 100px;
+}
+
+/* Avianca (AV) — v214: tight-viewBox SVG (cropped to actual content),
+   aspect 3.94:1. At 32px height renders ~126px wide. Padding-left 6px shift
+   right consistent with peers. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] {
+  height: 32px;
+  max-width: 160px;
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* GOL (G3) — v215: slight right shift per request, no logo wired yet so
+   this currently affects the text fallback rendering. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="G3"],
+#fidsTable .td-airline .fids-airline-name[data-code="G3"] {
+  padding-left: 6px;
+  box-sizing: content-box;
+}
+
+/* LOT Polish (LO) — v204: 2.67:1 narrow aspect — at default 28px it renders
+   ~75px wide which is undersized vs neighbors. Bumped to 36px → ~96px. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="LO"] {
+  height: 36px;
+}
+
+/* Breeze Airways (MX) — v205: official "Breeze" wordmark with blue checkmark
+   above the second 'e'. Aspect 3.16:1, navy text on transparent (light variant
+   converts to white). 36px height → ~114px wide, balanced with neighbors. */
+/* Breeze Airways (MX) — v211: slightly bigger + shifted right per request.
+   Aspect 3.16:1, navy text on transparent (light variant converts to white).
+   At 42px height renders ~133px wide. padding-left 6px gives breathing room. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="MX"] {
+  height: 42px;
+  max-width: 160px;
+  padding-left: 10px;
+  box-sizing: content-box;
+}
+/* Breeze emblem (checkmark on navy square 200x200) — bigger than default
+   tile size since it's the brand identity icon, same as Mokulele/Discover. */
+#fidsTable .td-airline .fids-airline-logo img.airline-emblem[data-code="MX"],
+#fidsTable .td-airline .fids-airline-logo .full-logo.airline-emblem[data-code="MX"],
+#fidsTable .td-airline .fids-airline-logo img[data-logo-set="emblem"][data-code="MX"] {
+  width: 46px !important;
+  height: 46px !important;
+  max-width: 46px !important;
+  max-height: 46px !important;
+  border-radius: 6px;
+}
+
+/* WS, PD, PB, AA, UA, DL, AS, OO, KL, QK, 9X all measured close enough
+   to default 24px to need no override. */
+
+/* Cancelled / diverted rows: the row background turns red. The wordmark
+   loaded for the active theme might no longer have enough contrast against
+   that red. We can't reliably invert a full-color logo to fix that, so we
+   accept the visual quirk for cancelled rows — passenger attention should
+   be on the red CANCELLED status text anyway, not the carrier logo. */
+
+/* Weather cell — icon next to temperature.
+   Bumped icon size to 48px to feel proportional with the bigger airline
+   tile. The weather column is also nudged closer to the dest column. */
+/* v218.16: bumped weather column to 150px (was 130px) and increased
+   inner right padding so the temperature unit has clear visual
+   separation from the destination column AND from the right edge of
+   its own cell. Some viewers were perceiving the F as cut off because
+   the temp text sat too close to the city text on its right. */
+#fidsTable .td-wx { padding: 0 20px 0 4px !important; }
+#fidsTable .td-dest { padding-right: 4px; }
+#fidsTable .td-wx .fids-cell-weather {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
+#fidsTable .td-wx .fids-cell-weather svg {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+#fidsTable .td-wx .fids-cell-weather span:not(.fids-wx-cell) {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--fids-text);
+  white-space: nowrap;
+  /* v218.16: explicit min-width so even with 3-digit temps the unit
+     has space; flex-shrink:0 prevents the temp span from being squeezed
+     when the cell is under pressure from neighbors. */
+  min-width: 70px;
+  flex-shrink: 0;
+  padding-right: 4px;
+}
+
+/* Status text colors (text-only — no pill backgrounds from old CSS) */
+#fidsTable .td-status .plain-status,
+#fidsTable .td-status [class^="p-"],
+#fidsTable .td-status [class*=" p-"] {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+}
+#fidsTable .td-status.fids-status-now,
+#fidsTable .td-status.fids-status-delayed,
+#fidsTable .td-status.fids-status-final { color: var(--fids-amber) !important; }
+#fidsTable .td-status.fids-status-departed,
+#fidsTable .td-status.fids-status-arrived,
+#fidsTable .td-status.fids-status-gate-closed { color: rgba(255,255,255,0.55) !important; }
+
+/* Cancelled / diverted — entire row red */
+#fidsTable tbody tr.row-cancelled,
+#fidsTable tbody tr.row-cancelled td,
+#fidsTable tbody tr.row-diverted,
+#fidsTable tbody tr.row-diverted td {
+  background: var(--fids-red) !important;
+  color: var(--fids-red-text) !important;
+}
+#fidsTable tbody tr.row-cancelled .fids-airline-name,
+#fidsTable tbody tr.row-diverted .fids-airline-name { color: var(--fids-red-text) !important; }
+
+/* Header row — make sure the new column labels render correctly */
+#fidsTable thead th {
+  background: rgba(255,255,255,0.06) !important;
+  color: var(--fids-header-tint) !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  text-transform: none !important;
+  text-align: left !important;
+  padding: 14px 18px !important;
+  white-space: nowrap;
+}
+#fidsTable thead th.col-status {
+  text-align: right !important;
+  padding-right: 24px !important;
+}
+
+@media (max-width: 900px) {
+  .fids-banner { height: 110px; }
+  .fids-board-label { font-size: 32px; }
+  .fids-banner-time { font-size: 18px; top: 14px; right: 16px; }
+  .fids-airport-logo { padding: 10px 14px; bottom: 14px; right: 16px; }
+  .fids-airport-logo .fids-iata { font-size: 18px; }
+  .fids-airport-logo .fids-airport-sub { font-size: 10px; }
+}
+
+/* ===========================================================================
+   PHASE 4 — NEW THEMES (Navy Board + Light Cream)
+   Activate via body[data-fids-theme="navy-board"] or [data-fids-theme="cream"]
+   These themes are designed to match the airport-board reference look:
+   bigger text, alternating row stripes, cleaner emblem treatment.
+   =========================================================================== */
+
+/* ── NAVY BOARD theme ────────────────────────────────────────────────────── */
+body[data-fids-theme="navy-board"] {
+  --fids-bg:           #0a3a73;
+  --fids-banner-bg:    #0a3a73;
+  --fids-banner-accent:#ff6e1d;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.7);
+  --fids-stripe:       #1c4d8a;
+  --fids-divider:      transparent;
+  --fids-pill-bg:      #ffffff;
+  --fids-pill-text:    #0a3a73;
+  --fids-header-tint:  #0a3a73;
+  --fids-row-h:        66px;
+}
+body[data-fids-theme="navy-board"] #fidsTable {
+  background: #0a3a73;
+}
+body[data-fids-theme="navy-board"] #fidsTable thead th {
+  background: #ffffff !important;
+  color: #0a3a73 !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  font-size: 16px !important;
+  padding: 18px 22px !important;
+}
+body[data-fids-theme="navy-board"] #fidsTable tbody tr {
+  background: #0e4180;
+  color: #ffffff;
+  font-size: 26px !important;
+  font-weight: 600 !important;
+}
+body[data-fids-theme="navy-board"] #fidsTable tbody tr:nth-child(even) {
+  background: #1c4d8a;
+}
+body[data-fids-theme="navy-board"] #fidsTable tbody tr td {
+  padding: 18px 22px !important;
+  border: none !important;
+  vertical-align: middle;
+}
+body[data-fids-theme="navy-board"] #fidsTable td.td-status,
+body[data-fids-theme="navy-board"] #fidsTable td.td-status * {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 22px !important;
+}
+body[data-fids-theme="navy-board"] .fids-airline-logo {
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+}
+body[data-fids-theme="navy-board"] .fids-cell-flight {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* ── LIGHT CREAM theme ────────────────────────────────────────────────────── */
+body[data-fids-theme="cream"] {
+  --fids-bg:           #f4f1ea;
+  --fids-banner-bg:    #ffffff;
+  --fids-banner-accent:#ff6e1d;
+  --fids-banner-text:  #0a2236;
+  --fids-text:         #0a2236;
+  --fids-text-muted:   #6b7c92;
+  --fids-stripe:       #ebe6da;
+  --fids-divider:      #e3dfd5;
+  --fids-pill-bg:      #0a2236;
+  --fids-pill-text:    #ffffff;
+  --fids-header-tint:  #6b7c92;
+  --fids-row-h:        66px;
+}
+body[data-fids-theme="cream"] {
+  background: #f4f1ea !important;
+}
+body[data-fids-theme="cream"] .fids-banner {
+  background: #ffffff !important;
+  border-bottom: 4px solid #ff6e1d !important;
+}
+body[data-fids-theme="cream"] .fids-board-label,
+body[data-fids-theme="cream"] .fids-banner-time,
+body[data-fids-theme="cream"] .fids-banner-date {
+  color: #0a2236 !important;
+}
+body[data-fids-theme="cream"] #fidsTable {
+  background: #f4f1ea !important;
+}
+body[data-fids-theme="cream"] #fidsTable thead th {
+  background: #ffffff !important;
+  color: #6b7c92 !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  font-size: 16px !important;
+  padding: 18px 22px !important;
+  border-bottom: 1px solid #e3dfd5 !important;
+}
+body[data-fids-theme="cream"] #fidsTable tbody tr {
+  background: #ebe6da;
+  color: #0a2236;
+  font-size: 26px !important;
+  font-weight: 600 !important;
+}
+body[data-fids-theme="cream"] #fidsTable tbody tr:nth-child(even) {
+  background: #ffffff;
+}
+body[data-fids-theme="cream"] #fidsTable tbody tr td {
+  padding: 18px 22px !important;
+  color: #0a2236 !important;
+  border: none !important;
+  vertical-align: middle;
+}
+body[data-fids-theme="cream"] #fidsTable td.td-status,
+body[data-fids-theme="cream"] #fidsTable td.td-status * {
+  color: #0a2236 !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 22px !important;
+}
+body[data-fids-theme="cream"] .fids-airline-logo {
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+  border: 1px solid #e3dfd5;
+}
+
+/* ===========================================================================
+   PHASE 5 — FULL THEMES (v218.6+)
+   Activate via body[data-fids-theme="<name>"]
+   These are complete themes — banner, board bg, rows, text, status, logos —
+   not just banner-tint overrides like the old phase-3 stubs.
+   =========================================================================== */
+
+/* ── TUS TEAL — Tucson International reference ─────────────────────────────
+   Modeled on the TUS departure-board reference. Layered teal-to-navy
+   gradient banner with chevron overlay, alternating teal/blue rows. */
+body[data-fids-theme="tus-teal"] {
+  --fids-bg:           #0d4d8b;        /* deep blue board bg */
+  --fids-banner-bg:    #0e6cb5;        /* mid-blue banner base */
+  --fids-banner-accent:#2cb8d3;        /* teal accent triangle */
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.75);
+  --fids-stripe:       #2da4c4;        /* teal row */
+  --fids-divider:      transparent;
+  --fids-pill-bg:      #ffffff;
+  --fids-pill-text:    #0d4d8b;
+  --fids-header-tint:  #ffffff;
+  --fids-row-odd:      #1e7eb8;
+  --fids-row-h:        66px;
+}
+body[data-fids-theme="tus-teal"] {
+  background: #0d4d8b !important;
+}
+/* Layered banner — chevron geometry overlay using gradients */
+body[data-fids-theme="tus-teal"] .fids-banner {
+  background:
+    linear-gradient(105deg, transparent 55%, rgba(44,184,211,0.55) 55%, rgba(44,184,211,0.55) 72%, transparent 72%),
+    linear-gradient(115deg, transparent 70%, rgba(14,108,181,0.85) 70%),
+    linear-gradient(90deg, #0e6cb5 0%, #1593c8 65%, #2cb8d3 100%) !important;
+  border-bottom: none !important;
+}
+body[data-fids-theme="tus-teal"] #fidsTable {
+  background: #0d4d8b !important;
+}
+body[data-fids-theme="tus-teal"] #fidsTable thead th {
+  background: #0d4d8b !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  font-size: 16px !important;
+  padding: 18px 22px !important;
+  border-bottom: 2px solid rgba(255,255,255,0.12) !important;
+}
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr {
+  background: #1e7eb8;
+  color: #ffffff;
+  font-size: 24px !important;
+  font-weight: 500 !important;
+}
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr:nth-child(even) {
+  background: #2da4c4;
+}
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr td {
+  padding: 16px 22px !important;
+  border: none !important;
+  vertical-align: middle;
+}
+body[data-fids-theme="tus-teal"] #fidsTable td.td-status,
+body[data-fids-theme="tus-teal"] #fidsTable td.td-status * {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 20px !important;
+}
+body[data-fids-theme="tus-teal"] .fids-airline-logo {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* ── TUS TEAL DEEP — actual teal variant (v218.37) ─────────────────────────
+   Same chevron-gradient banner geometry as tus-teal, but the base palette
+   is a real teal instead of mid-blue. Created as a separate theme so the
+   original tus-teal stays untouched. */
+body[data-fids-theme="tus-teal-deep"] {
+  --fids-bg:           #0a5563;        /* deep teal board bg */
+  --fids-banner-bg:    #14857a;        /* teal banner base */
+  --fids-banner-accent:#2cb8d3;        /* bright cyan-teal accent */
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.75);
+  --fids-stripe:       #2da4c4;        /* teal row */
+  --fids-divider:      transparent;
+  --fids-pill-bg:      #ffffff;
+  --fids-pill-text:    #0a5563;
+  --fids-header-tint:  #ffffff;
+  --fids-row-odd:      #117c8a;
+  --fids-row-h:        66px;
+}
+body[data-fids-theme="tus-teal-deep"] {
+  background: #0a5563 !important;
+}
+body[data-fids-theme="tus-teal-deep"] .fids-banner {
+  background:
+    linear-gradient(105deg, transparent 55%, rgba(44,184,211,0.55) 55%, rgba(44,184,211,0.55) 72%, transparent 72%),
+    linear-gradient(115deg, transparent 70%, rgba(20,133,122,0.85) 70%),
+    linear-gradient(90deg, #14857a 0%, #1ba89a 65%, #2cb8d3 100%) !important;
+  border-bottom: none !important;
+}
+body[data-fids-theme="tus-teal-deep"] #fidsTable {
+  background: #0a5563 !important;
+}
+body[data-fids-theme="tus-teal-deep"] #fidsTable thead th {
+  background: #0a5563 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  font-size: 16px !important;
+  padding: 18px 22px !important;
+  border-bottom: 2px solid rgba(255,255,255,0.12) !important;
+}
+body[data-fids-theme="tus-teal-deep"] #fidsTable tbody tr {
+  background: #117c8a;
+  color: #ffffff;
+  font-size: 24px !important;
+  font-weight: 500 !important;
+}
+body[data-fids-theme="tus-teal-deep"] #fidsTable tbody tr:nth-child(even) {
+  background: #2da4c4;
+}
+body[data-fids-theme="tus-teal-deep"] #fidsTable tbody tr td {
+  padding: 16px 22px !important;
+  border: none !important;
+  vertical-align: middle;
+}
+body[data-fids-theme="tus-teal-deep"] #fidsTable td.td-status,
+body[data-fids-theme="tus-teal-deep"] #fidsTable td.td-status * {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 20px !important;
+}
+body[data-fids-theme="tus-teal-deep"] .fids-airline-logo {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* ── CLASSIC NAVY — full theme (was banner-only stub) ──────────────────── */
+body[data-fids-theme="navy"] {
+  --fids-bg:           #0c1e3a;
+  --fids-banner-bg:    #0c1e3a;
+  --fids-banner-accent:#3a6fa5;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.7);
+  --fids-stripe:       #14305e;
+  --fids-divider:      rgba(255,255,255,0.08);
+  --fids-pill-bg:      #ffffff;
+  --fids-pill-text:    #0c1e3a;
+  --fids-header-tint:  #93c5fd;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="navy"] #fidsTable {
+  background: #0c1e3a;
+}
+body[data-fids-theme="navy"] #fidsTable thead th {
+  background: #0c1e3a !important;
+  color: #93c5fd !important;
+  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+}
+body[data-fids-theme="navy"] #fidsTable tbody tr {
+  background: #0e2447;
+}
+body[data-fids-theme="navy"] #fidsTable tbody tr:nth-child(even) {
+  background: #14305e;
+}
+body[data-fids-theme="navy"] #fidsTable tbody tr td {
+  color: #ffffff !important;
+}
+
+/* ── GREY — full theme (was banner-only stub) ──────────────────────────── */
+body[data-fids-theme="grey"] {
+  --fids-bg:           #1a1d23;
+  --fids-banner-bg:    #1f2937;
+  --fids-banner-accent:#9ca3af;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.65);
+  --fids-stripe:       #2a2f3a;
+  --fids-divider:      rgba(255,255,255,0.06);
+  --fids-pill-bg:      #ffffff;
+  --fids-pill-text:    #1f2937;
+  --fids-header-tint:  #d1d5db;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="grey"] #fidsTable {
+  background: #1a1d23;
+}
+body[data-fids-theme="grey"] #fidsTable thead th {
+  background: #1f2937 !important;
+  color: #d1d5db !important;
+  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+}
+body[data-fids-theme="grey"] #fidsTable tbody tr {
+  background: #20242c;
+}
+body[data-fids-theme="grey"] #fidsTable tbody tr:nth-child(even) {
+  background: #2a2f3a;
+}
+body[data-fids-theme="grey"] #fidsTable tbody tr td {
+  color: #ffffff !important;
+}
+
+/* ── AMBER — full theme (was banner-only stub) ─────────────────────────── */
+body[data-fids-theme="amber"] {
+  --fids-bg:           #1a1100;
+  --fids-banner-bg:    #2a1c05;
+  --fids-banner-accent:#f59e0b;
+  --fids-banner-text:  #fef3c7;
+  --fids-text:         #fef3c7;
+  --fids-text-muted:   rgba(254,243,199,0.7);
+  --fids-stripe:       #2d1f08;
+  --fids-divider:      rgba(245,158,11,0.18);
+  --fids-pill-bg:      #fef3c7;
+  --fids-pill-text:    #1a1100;
+  --fids-header-tint:  #fbbf24;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="amber"] #fidsTable {
+  background: #1a1100;
+}
+body[data-fids-theme="amber"] #fidsTable thead th {
+  background: #2a1c05 !important;
+  color: #fbbf24 !important;
+  border-bottom: 1px solid rgba(245,158,11,0.2) !important;
+}
+body[data-fids-theme="amber"] #fidsTable tbody tr {
+  background: #1f1404;
+}
+body[data-fids-theme="amber"] #fidsTable tbody tr:nth-child(even) {
+  background: #2d1f08;
+}
+body[data-fids-theme="amber"] #fidsTable tbody tr td {
+  color: #fef3c7 !important;
+}
+
+/* ── GREEN — full theme (was banner-only stub) ─────────────────────────── */
+body[data-fids-theme="green"] {
+  --fids-bg:           #0a2e1d;
+  --fids-banner-bg:    #14532d;
+  --fids-banner-accent:#22c55e;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.7);
+  --fids-stripe:       #1b4d34;
+  --fids-divider:      rgba(34,197,94,0.18);
+  --fids-pill-bg:      #ffffff;
+  --fids-pill-text:    #14532d;
+  --fids-header-tint:  #86efac;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="green"] #fidsTable {
+  background: #0a2e1d;
+}
+body[data-fids-theme="green"] #fidsTable thead th {
+  background: #14532d !important;
+  color: #86efac !important;
+  border-bottom: 1px solid rgba(34,197,94,0.2) !important;
+}
+body[data-fids-theme="green"] #fidsTable tbody tr {
+  background: #0e3a24;
+}
+body[data-fids-theme="green"] #fidsTable tbody tr:nth-child(even) {
+  background: #1b4d34;
+}
+body[data-fids-theme="green"] #fidsTable tbody tr td {
+  color: #ffffff !important;
+}
+
+/* ── MIDNIGHT — pure black, OLED-friendly ──────────────────────────────── */
+body[data-fids-theme="midnight"] {
+  --fids-bg:           #000000;
+  --fids-banner-bg:    #050505;
+  --fids-banner-accent:#3b82f6;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.6);
+  --fids-stripe:       #0a0a0a;
+  --fids-divider:      rgba(255,255,255,0.05);
+  --fids-pill-bg:      #ffffff;
+  --fids-pill-text:    #000000;
+  --fids-header-tint:  #60a5fa;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="midnight"] #fidsTable { background: #000000; }
+body[data-fids-theme="midnight"] #fidsTable thead th {
+  background: #050505 !important;
+  color: #60a5fa !important;
+}
+body[data-fids-theme="midnight"] #fidsTable tbody tr { background: #050505; }
+body[data-fids-theme="midnight"] #fidsTable tbody tr:nth-child(even) { background: #0a0a0a; }
+body[data-fids-theme="midnight"] #fidsTable tbody tr td { color: #ffffff !important; }
+
+/* ── BURGUNDY — wine red banner, Air Canada classic feel ───────────────── */
+body[data-fids-theme="burgundy"] {
+  --fids-bg:           #2a0a14;
+  --fids-banner-bg:    #4a0e1f;
+  --fids-banner-accent:#dc2626;
+  --fids-banner-text:  #fef2f2;
+  --fids-text:         #fef2f2;
+  --fids-text-muted:   rgba(254,242,242,0.7);
+  --fids-stripe:       #3a0f1a;
+  --fids-divider:      rgba(220,38,38,0.18);
+  --fids-pill-bg:      #fef2f2;
+  --fids-pill-text:    #4a0e1f;
+  --fids-header-tint:  #fca5a5;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="burgundy"] #fidsTable { background: #2a0a14; }
+body[data-fids-theme="burgundy"] #fidsTable thead th {
+  background: #4a0e1f !important;
+  color: #fca5a5 !important;
+}
+body[data-fids-theme="burgundy"] #fidsTable tbody tr { background: #2f0a16; }
+body[data-fids-theme="burgundy"] #fidsTable tbody tr:nth-child(even) { background: #3a0f1a; }
+body[data-fids-theme="burgundy"] #fidsTable tbody tr td { color: #fef2f2 !important; }
+
+/* ── FOREST — deep teal-green, gold accent ─────────────────────────────── */
+body[data-fids-theme="forest"] {
+  --fids-bg:           #0a1f1c;
+  --fids-banner-bg:    #134e4a;
+  --fids-banner-accent:#d4af37;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.7);
+  --fids-stripe:       #0f2e2a;
+  --fids-divider:      rgba(212,175,55,0.18);
+  --fids-pill-bg:      #d4af37;
+  --fids-pill-text:    #0a1f1c;
+  --fids-header-tint:  #d4af37;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="forest"] #fidsTable { background: #0a1f1c; }
+body[data-fids-theme="forest"] #fidsTable thead th {
+  background: #134e4a !important;
+  color: #d4af37 !important;
+}
+body[data-fids-theme="forest"] #fidsTable tbody tr { background: #0c2522; }
+body[data-fids-theme="forest"] #fidsTable tbody tr:nth-child(even) { background: #0f2e2a; }
+body[data-fids-theme="forest"] #fidsTable tbody tr td { color: #ffffff !important; }
+
+/* ── PAPER — off-white, black text, red accent (newspaper) ─────────────── */
+body[data-fids-theme="paper"] {
+  --fids-bg:           #faf7f2;
+  --fids-banner-bg:    #ffffff;
+  --fids-banner-accent:#dc2626;
+  --fids-banner-text:  #18181b;
+  --fids-text:         #18181b;
+  --fids-text-muted:   #6b7280;
+  --fids-stripe:       #f3f0e8;
+  --fids-divider:      #e5e2db;
+  --fids-pill-bg:      #18181b;
+  --fids-pill-text:    #ffffff;
+  --fids-header-tint:  #6b7280;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="paper"] { background: #faf7f2 !important; }
+body[data-fids-theme="paper"] .fids-banner {
+  background: #ffffff !important;
+  border-bottom: 3px solid #dc2626 !important;
+}
+body[data-fids-theme="paper"] .fids-board-label,
+body[data-fids-theme="paper"] .fids-banner-time,
+body[data-fids-theme="paper"] .fids-banner-date {
+  color: #18181b !important;
+}
+body[data-fids-theme="paper"] #fidsTable { background: #faf7f2 !important; }
+body[data-fids-theme="paper"] #fidsTable thead th {
+  background: #ffffff !important;
+  color: #6b7280 !important;
+  border-bottom: 1px solid #e5e2db !important;
+}
+body[data-fids-theme="paper"] #fidsTable tbody tr { background: #ffffff; }
+body[data-fids-theme="paper"] #fidsTable tbody tr:nth-child(even) { background: #f3f0e8; }
+body[data-fids-theme="paper"] #fidsTable tbody tr td { color: #18181b !important; }
+body[data-fids-theme="paper"] .fids-airline-logo {
+  background: #ffffff !important;
+  border: 1px solid #e5e2db;
+  border-radius: 6px !important;
+  padding: 4px !important;
+}
+
+/* ── TERMINAL — retro CRT, phosphor green on black ─────────────────────── */
+body[data-fids-theme="terminal"] {
+  --fids-bg:           #000000;
+  --fids-banner-bg:    #001a00;
+  --fids-banner-accent:#00ff41;
+  --fids-banner-text:  #00ff41;
+  --fids-text:         #00ff41;
+  --fids-text-muted:   rgba(0,255,65,0.6);
+  --fids-stripe:       #001a00;
+  --fids-divider:      rgba(0,255,65,0.15);
+  --fids-pill-bg:      #00ff41;
+  --fids-pill-text:    #000000;
+  --fids-header-tint:  #00ff41;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="terminal"] {
+  background: #000000 !important;
+  font-family: var(--font-mono) !important;
+}
+body[data-fids-theme="terminal"] #fidsTable {
+  background: #000000;
+  font-family: var(--font-mono) !important;
+}
+body[data-fids-theme="terminal"] #fidsTable thead th {
+  background: #001a00 !important;
+  color: #00ff41 !important;
+}
+body[data-fids-theme="terminal"] #fidsTable tbody tr { background: #000000; }
+body[data-fids-theme="terminal"] #fidsTable tbody tr:nth-child(even) { background: #001a00; }
+body[data-fids-theme="terminal"] #fidsTable tbody tr td { color: #00ff41 !important; }
+
+/* ── SKY — light blue gradient, white board (Fairmont-ish) ─────────────── */
+body[data-fids-theme="sky"] {
+  --fids-bg:           #f0f9ff;
+  --fids-banner-bg:    #0284c7;
+  --fids-banner-accent:#fbbf24;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #0c4a6e;
+  --fids-text-muted:   #475569;
+  --fids-stripe:       #e0f2fe;
+  --fids-divider:      #bae6fd;
+  --fids-pill-bg:      #0284c7;
+  --fids-pill-text:    #ffffff;
+  --fids-header-tint:  #0284c7;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="sky"] { background: #f0f9ff !important; }
+body[data-fids-theme="sky"] .fids-banner {
+  background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%) !important;
+  border-bottom: 3px solid #fbbf24 !important;
+}
+body[data-fids-theme="sky"] #fidsTable { background: #f0f9ff !important; }
+body[data-fids-theme="sky"] #fidsTable thead th {
+  background: #ffffff !important;
+  color: #0284c7 !important;
+  border-bottom: 1px solid #bae6fd !important;
+}
+body[data-fids-theme="sky"] #fidsTable tbody tr { background: #ffffff; }
+body[data-fids-theme="sky"] #fidsTable tbody tr:nth-child(even) { background: #e0f2fe; }
+body[data-fids-theme="sky"] #fidsTable tbody tr td { color: #0c4a6e !important; }
+body[data-fids-theme="sky"] .fids-airline-logo {
+  background: #ffffff !important;
+  border: 1px solid #bae6fd;
+  border-radius: 6px !important;
+  padding: 4px !important;
+}
+
+/* ── SUNSET — deep purple banner, warm cream rows ──────────────────────── */
+body[data-fids-theme="sunset"] {
+  --fids-bg:           #1e1b4b;
+  --fids-banner-bg:    #4c1d95;
+  --fids-banner-accent:#fb923c;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-text-muted:   rgba(255,255,255,0.7);
+  --fids-stripe:       #2e1a5e;
+  --fids-divider:      rgba(251,146,60,0.18);
+  --fids-pill-bg:      #fb923c;
+  --fids-pill-text:    #1e1b4b;
+  --fids-header-tint:  #fcd34d;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="sunset"] { background: #1e1b4b !important; }
+body[data-fids-theme="sunset"] .fids-banner {
+  background: linear-gradient(90deg, #4c1d95 0%, #7e22ce 50%, #c026d3 100%) !important;
+  border-bottom: 3px solid #fb923c !important;
+}
+body[data-fids-theme="sunset"] #fidsTable { background: #1e1b4b !important; }
+body[data-fids-theme="sunset"] #fidsTable thead th {
+  background: #4c1d95 !important;
+  color: #fcd34d !important;
+}
+body[data-fids-theme="sunset"] #fidsTable tbody tr { background: #251a52; }
+body[data-fids-theme="sunset"] #fidsTable tbody tr:nth-child(even) { background: #2e1a5e; }
+body[data-fids-theme="sunset"] #fidsTable tbody tr td { color: #ffffff !important; }
+
+/* ── CHARCOAL — dark grey, warm white text, orange accent ──────────────── */
+body[data-fids-theme="charcoal"] {
+  --fids-bg:           #1c1917;
+  --fids-banner-bg:    #292524;
+  --fids-banner-accent:#f97316;
+  --fids-banner-text:  #fafaf9;
+  --fids-text:         #fafaf9;
+  --fids-text-muted:   rgba(250,250,249,0.7);
+  --fids-stripe:       #232120;
+  --fids-divider:      rgba(249,115,22,0.15);
+  --fids-pill-bg:      #fafaf9;
+  --fids-pill-text:    #1c1917;
+  --fids-header-tint:  #fb923c;
+  --fids-row-h:        62px;
+}
+body[data-fids-theme="charcoal"] #fidsTable { background: #1c1917; }
+body[data-fids-theme="charcoal"] #fidsTable thead th {
+  background: #292524 !important;
+  color: #fb923c !important;
+}
+body[data-fids-theme="charcoal"] #fidsTable tbody tr { background: #1f1c1a; }
+body[data-fids-theme="charcoal"] #fidsTable tbody tr:nth-child(even) { background: #232120; }
+body[data-fids-theme="charcoal"] #fidsTable tbody tr td { color: #fafaf9 !important; }
+
+/* ── Toggleable columns (driven by body data-attrs from admin config) ───── */
+/* Hide weather column when admin disables it */
+body[data-fids-hide-wx="1"] #fidsTable .col-wx,
+body[data-fids-hide-wx="1"] #fidsTable .td-wx,
+body[data-fids-hide-wx="1"] #fidsTable thead th.col-wx {
+  display: none !important;
+}
+/* Emblem-only airline mode: hide the airline name text and wordmark
+   image, leaving just the colored tile. Cell gap collapses so no
+   leftover space sits between the tile and the column edge. */
+body[data-fids-airline-style="emblem"] .fids-airline-name,
+body[data-fids-airline-style="emblem"] .fids-airline-wordmark {
+  display: none !important;
+}
+body[data-fids-airline-style="emblem"] .fids-cell-airline {
+  gap: 0 !important;
+}
+
+/* ── Sched/Revised dual-column treatment (Phase 4 — added later) ────────── */
+/* Scheduled time strikes through when there's a revision */
+#fidsTable td.td-time-sched.is-revised {
+  text-decoration: line-through;
+  opacity: 0.55;
+  font-weight: 500;
+}
+/* Revised time stands out in accent color when present */
+#fidsTable td.td-time-rev {
+  font-variant-numeric: tabular-nums;
+}
+#fidsTable td.td-time-rev.has-rev {
+  color: #ff8a3d !important;
+  font-weight: 700;
+}
+/* In navy-board theme, accent revised in amber for high contrast */
+body[data-fids-theme="navy-board"] #fidsTable td.td-time-rev.has-rev {
+  color: #fbbf24 !important;
+}
+/* In cream theme, accent in deep orange */
+body[data-fids-theme="cream"] #fidsTable td.td-time-rev.has-rev {
+  color: #c4571c !important;
+}
+/* When the revised cell is empty, give a subtle dash so the column doesn't
+   look broken on rows without revisions. */
+#fidsTable td.td-time-rev:empty::before {
+  content: '—';
+  color: rgba(255,255,255,0.25);
+}
+body[data-fids-theme="cream"] #fidsTable td.td-time-rev:empty::before {
+  color: rgba(10,34,54,0.2);
+}
+
+/* ── Cancelled rows — entire line goes red ─────────────────────────────── */
+#fidsTable tbody tr.row-cancelled {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+}
+#fidsTable tbody tr.row-cancelled td {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+/* Strikethrough every text cell except the status pill */
+#fidsTable tbody tr.row-cancelled td:not(.td-status):not(.td-airline):not(.td-wx) {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+#fidsTable tbody tr.row-cancelled td.td-status {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+}
+/* The Sched cell already has line-through when revised — undo that here so
+   we don't get double-strike when a flight is cancelled with a revised time. */
+#fidsTable tbody tr.row-cancelled td.td-time-sched {
+  opacity: 1;
+}
+/* Revised time on cancelled row — still red bg, no special accent color */
+#fidsTable tbody tr.row-cancelled td.td-time-rev.has-rev {
+  color: #ffffff !important;
+}
+#fidsTable tbody tr.row-cancelled td.td-time-rev:empty::before {
+  color: rgba(255,255,255,0.35);
+}
+/* Airline logo cell on cancelled row — keep white background so the logo
+   remains visible against the red. */
+#fidsTable tbody tr.row-cancelled .fids-airline-logo {
+  background: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.4) !important;
+}
+
+/* ── Delayed rows — amber wash, revised time emphasized ────────────────── */
+/* Default theme: keep existing background, add amber left edge stripe */
+#fidsTable tbody tr.row-delayed {
+  background: rgba(251,191,36,0.12) !important;
+  border-left: 4px solid #f59e0b !important;
+}
+#fidsTable tbody tr.row-delayed td {
+  border-left: none;
+}
+/* Status cell on delayed rows — amber, bold */
+#fidsTable tbody tr.row-delayed td.td-status,
+#fidsTable tbody tr.row-delayed td.td-status * {
+  color: #d97706 !important;
+  font-weight: 800 !important;
+}
+/* Navy-board theme override — brighter amber against navy bg */
+body[data-fids-theme="navy-board"] #fidsTable tbody tr.row-delayed {
+  background: rgba(251,191,36,0.18) !important;
+}
+body[data-fids-theme="navy-board"] #fidsTable tbody tr.row-delayed td.td-status,
+body[data-fids-theme="navy-board"] #fidsTable tbody tr.row-delayed td.td-status * {
+  color: #fbbf24 !important;
+}
+/* Cream theme override — deeper orange for legibility on cream bg */
+body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed {
+  background: rgba(196,87,28,0.10) !important;
+  border-left-color: #c4571c !important;
+}
+body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed td.td-status,
+body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed td.td-status * {
+  color: #c4571c !important;
+}
+
+/* ── Accented character consistency fix ────────────────────────────────────
+   When a user-selected font lacks accented chars (é, à, ô, etc.), the browser
+   falls back to a system font that often renders at a different size, making
+   accented characters look smaller. We use font-size-adjust to normalize the
+   x-height of fallback fonts so accented characters look consistent with
+   their non-accented siblings. */
+#fidsTable {
+  font-size-adjust: 0.50;
+}
+#fidsTable .td-dest,
+#fidsTable .td-flight,
+#fidsTable .td-airline,
+#fidsTable .td-status {
+  font-size-adjust: 0.50;
+}
+.fids-board-label,
+.fids-airport-name,
+.fids-airport-iata {
+  font-size-adjust: 0.50;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PHASE 4 SIZE PASS — bigger text everywhere, fix column widths
+   These rules go LAST so they win against earlier CSS.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Banner clock + date — bigger so they're readable from across the room.
+   Fully centered (horizontal + vertical) in the banner. */
+.fids-banner-time-block {
+  top: 50% !important;
+  /* v218.12: banner padding is now symmetric (0 64px both sides) so
+     left:50% sits at true viewport horizontal center. */
+  left: 50% !important;
+  right: auto !important;
+  transform: translate(-50%, -50%) !important;
+  text-align: center !important;
+}
+.fids-banner-time {
+  font-size: 64px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  line-height: 1 !important;
+}
+/* v218.9 — date removed from banner per Nick. Hide it entirely. */
+.fids-banner-date {
+  display: none !important;
+}
+
+/* Bigger column header text — v218.9 bumped to 22px per Nick (the
+   entire AIRLINE / FLIGHT # / WEATHER / TO / GATE / TIME / REVISED /
+   STATUS line is now noticeably larger). */
+#fidsTable thead th {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.8px !important;
+  padding: 18px 18px !important;
+}
+
+/* Bigger row text — applies to ALL themes
+   v218.8: Locked to 28px for ALL cells so Status, Flight, City, Time
+   read at the same visual size. Was inconsistent before (status 24-26px,
+   flight 30px, time 28px) which made the row feel uneven. */
+#fidsTable tbody tr td {
+  font-size: 28px !important;
+  font-weight: 600 !important;
+  padding: 18px 18px !important;
+  vertical-align: middle !important;
+}
+
+/* Time cells — keep tabular numbers + match base 28px */
+#fidsTable td.td-time,
+#fidsTable td.td-time-sched,
+#fidsTable td.td-time-rev,
+#fidsTable td.fids-cell-time {
+  font-size: 28px !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* Status cell — same 28px, weight 700 for emphasis, right-aligned */
+#fidsTable td.td-status {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
+  white-space: nowrap !important;
+  text-align: right !important;
+  padding-right: 32px !important;
+}
+
+/* Column widths — see v218.7 percentage-based rules near end of file.
+   The old fixed-pixel widths here were replaced because they caused a big
+   empty gap on the right of the table and truncated the TIME column. */
+
+/* Header text alignment — match column alignment, no truncation */
+#fidsTable thead th.col-time,
+#fidsTable thead th.col-time-rev {
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+#fidsTable thead th.col-status {
+  text-align: right !important;
+  white-space: nowrap !important;
+  padding-right: 32px !important;
+}
+
+/* Stronger accented-character normalization. font-size-adjust may not
+   be supported in all browsers — also enforce explicit font-feature
+   for diacritics. */
+.fids-board-label,
+.fids-airport-name,
+.fids-airport-iata,
+#fidsTable {
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "ccmp" 1, "mark" 1, "mkmk" 1;
+  -webkit-font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "ccmp" 1, "mark" 1, "mkmk" 1;
+}
+
+/* Force a fallback font that has full Latin Extended (é, à, ô, etc.) at
+   the same metric as Inter/Manrope. Manrope has good extended support;
+   pinning it here ensures accented chars render at the right size even
+   if the user picked a custom font without those glyphs. */
+.fids-board-label,
+.fids-airport-name,
+#fidsTable .td-dest,
+#fidsTable .td-airline {
+  font-family: var(--font-primary) !important;
+}
+
+/* Airline logo cell — keep a consistent size regardless of source */
+#fidsTable .fids-airline-logo {
+  width: 64px !important;
+  height: 64px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+#fidsTable .fids-airline-logo img {
+  max-width: 56px !important;
+  max-height: 56px !important;
+  object-fit: contain !important;
+}
+
+/* Banner pill (airport logo card) — v218.10: bumped to match the bigger
+   banner (160px) and balance against the 72px Départs title + 120px
+   plane icon on the right side. */
+.fids-airport-pill {
+  padding: 12px 26px !important;
+}
+.fids-airport-pill .fids-airport-logo-img {
+  max-height: 110px !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PHASE 4 BRIGHTNESS + IATA SUFFIX PASS
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* IATA code suffix on destination — appears as 'City-YYZ' */
+#fidsTable .dest-iata-sep {
+  margin: 0 2px;
+  opacity: 0.55;
+  font-weight: 500;
+}
+#fidsTable .dest-iata {
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.78;
+}
+/* Cream theme — slightly more muted on the light background */
+body[data-fids-theme="cream"] #fidsTable .dest-iata,
+body[data-fids-theme="cream"] #fidsTable .dest-iata-sep {
+  opacity: 0.65;
+}
+
+/* ── BRIGHTER row alternation for navy-board theme ───────────────────── */
+body[data-fids-theme="navy-board"] #fidsTable tbody tr {
+  background: #14528f !important;
+}
+body[data-fids-theme="navy-board"] #fidsTable tbody tr:nth-child(even) {
+  background: #2563a8 !important;
+}
+
+/* ── BRIGHTER revised time accents ───────────────────────────────────── */
+/* Default theme: brighter punchy orange */
+#fidsTable td.td-time-rev.has-rev {
+  color: #ffae42 !important;
+  font-weight: 800 !important;
+}
+/* Navy-board: brighter sunny amber, more saturated */
+body[data-fids-theme="navy-board"] #fidsTable td.td-time-rev.has-rev {
+  color: #ffd54a !important;
+  font-weight: 800 !important;
+}
+/* Cream: brighter warm orange */
+body[data-fids-theme="cream"] #fidsTable td.td-time-rev.has-rev {
+  color: #e85d04 !important;
+  font-weight: 800 !important;
+}
+
+/* ── BRIGHTER scheduled-time strikethrough (less faded so it's still readable) ── */
+#fidsTable td.td-time-sched.is-revised {
+  opacity: 0.75 !important;
+  text-decoration-color: #ffae42;
+  text-decoration-thickness: 2px;
+}
+body[data-fids-theme="navy-board"] #fidsTable td.td-time-sched.is-revised {
+  opacity: 0.7 !important;
+  text-decoration-color: #ffd54a;
+}
+body[data-fids-theme="cream"] #fidsTable td.td-time-sched.is-revised {
+  opacity: 0.7 !important;
+  text-decoration-color: #e85d04;
+}
+
+/* ── BRIGHTER delayed-row treatment ─────────────────────────────────── */
+#fidsTable tbody tr.row-delayed {
+  background: rgba(255,193,7,0.22) !important;
+  border-left: 5px solid #ffc107 !important;
+}
+#fidsTable tbody tr.row-delayed td.td-status,
+#fidsTable tbody tr.row-delayed td.td-status * {
+  color: #ff9800 !important;
+}
+body[data-fids-theme="navy-board"] #fidsTable tbody tr.row-delayed {
+  background: rgba(255,213,74,0.25) !important;
+  border-left-color: #ffd54a !important;
+}
+body[data-fids-theme="navy-board"] #fidsTable tbody tr.row-delayed td.td-status,
+body[data-fids-theme="navy-board"] #fidsTable tbody tr.row-delayed td.td-status * {
+  color: #ffd54a !important;
+}
+body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed {
+  background: rgba(232,93,4,0.14) !important;
+  border-left-color: #e85d04 !important;
+}
+body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed td.td-status,
+body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed td.td-status * {
+  color: #e85d04 !important;
+}
+
+/* ── BRIGHTER cancelled rows — punchier red ─────────────────────────── */
+#fidsTable tbody tr.row-cancelled {
+  background: #d92121 !important;
+}
+#fidsTable tbody tr.row-cancelled td {
+  background: transparent !important;
+}
+
+/* ── Brighter status pill colors per status type ─────────────────────── */
+#fidsTable td.td-status.s-boarding,
+#fidsTable td.td-status.boarding,
+#fidsTable td.td-status .boarding {
+  color: #4ade80 !important;  /* bright green */
+}
+#fidsTable td.td-status.s-final,
+#fidsTable td.td-status .final {
+  color: #ffae42 !important;  /* bright orange */
+}
+#fidsTable td.td-status.s-arrived,
+#fidsTable td.td-status .arrived {
+  color: #4ade80 !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PHASE 4 LAYOUT FIX PASS — tighten rows + fix column widths + status size
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Tighter row height — was too tall */
+#fidsTable tbody tr td {
+  padding: 12px 16px !important;
+  font-size: 26px !important;
+}
+
+/* Flight number column — same 28px as other cells (was 30px which made
+   it read larger than status and time). v218.8 unification. */
+#fidsTable td.td-flight {
+  font-size: 28px !important;
+}
+
+/* Status cell — locked to 28px, weight 700. Same value as the earlier
+   rule, redeclared here to win against any later overrides. */
+#fidsTable td.td-status,
+#fidsTable td.td-status * {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
+  white-space: nowrap !important;
+  text-align: right !important;
+  padding-right: 24px !important;
+}
+
+/* Column widths — give airline column enough room for wordmark */
+#fidsTable colgroup col.col-airline   { width: 240px !important; }
+/* v218.15: weather column widened to 150px (was 90px → 130px → 150px)
+   so the temperature unit (°C / °F) has clear breathing room from the
+   adjacent destination column. The cell contains: 48px icon + 10px gap
+   + temp text (~55px for "100°F") + 20px right padding + 4px left
+   padding = ~137px minimum. 150px gives 13px safety margin. */
+#fidsTable colgroup col.col-wx        { width: 150px !important; min-width: 150px !important; }
+#fidsTable colgroup col.col-flight    { width: 120px !important; }
+#fidsTable colgroup col.col-gate      { width: 110px !important; }
+#fidsTable colgroup col.col-time      { width: 130px !important; }
+#fidsTable colgroup col.col-time-rev  { width: 130px !important; }
+#fidsTable colgroup col.col-status    { width: 180px !important; }
+#fidsTable colgroup col.col-dest      { width: auto !important; }
+
+/* Airline column — never let names truncate */
+#fidsTable td.td-airline,
+#fidsTable td.td-airline * {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+/* Text fallback for carriers without a wordmark SVG (LOT, Royal Air
+   Maroc, Virgin Atlantic, TAP, etc.). Aligned flush with where wordmarks
+   sit so all rows have a consistent left edge after the colored tile.
+   margin-left was 12px previously which created a visible jog when text
+   fallbacks appeared next to wordmark rows. */
+#fidsTable td.td-airline .fids-airline-name {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin-left: 0 !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  max-width: 220px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Smaller airline logo so the name has room */
+#fidsTable .fids-airline-logo {
+  width: 52px !important;
+  height: 52px !important;
+}
+#fidsTable .fids-airline-logo img {
+  max-width: 44px !important;
+  max-height: 44px !important;
+}
+
+/* Header row matches new padding */
+#fidsTable thead th {
+  padding: 14px 16px !important;
+  font-size: 16px !important;
+}
+
+/* Right-edge breathing room — prevent status from running off screen */
+#fidsTable {
+  padding-right: 8px;
+  box-sizing: border-box;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PHASE 4 TOGGLE FIX (verified working in browser console).
+   The fighting rule is `#fidsTable td.td-airline .fids-airline-name`
+   with `display: inline-block !important`. Specificity: ID + tag.class +
+   class. To beat it we need to match that specificity AND chain the
+   body attribute. Verified hides Porter/Air Canada/WestJet correctly.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-name {
+  display: none !important;
+}
+body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wordmark {
+  display: none !important;
+}
+
+/* Re-narrow the airline column when in emblem-only mode so we
+   don't waste 240px of empty space. */
+body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
+  width: 90px !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PHASE 4 LAYOUT v2 — column order: Airline | Flight | Wx | Dest | Gate | Sched | Rev | Status
+   With shorter city names, the dest column doesn't need to be as wide.
+   These rules go LAST to win the cascade.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v218.7 — AUTO-DISTRIBUTING COLUMN WIDTHS
+   Percentage-based widths that scale to whatever the table width is.
+   Replaces the fixed-pixel widths that were leaving a big empty gap on
+   the right and truncating the TIME column to "5:20 A...".
+
+   Total = 100% (departures, with weather):
+     airline 17 + flight 9 + wx 8 + dest 19 + gate 7 + time 11 + rev 10 + status 19
+
+   Arrivals (no weather) — gets the 8% back distributed elsewhere via
+   the explicit selector below.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#fidsTable colgroup col.col-airline   { width: 17% !important; min-width: 220px !important; }
+#fidsTable colgroup col.col-flight    { width:  9% !important; min-width: 110px !important; }
+#fidsTable colgroup col.col-wx        { width:  8% !important; min-width: 150px !important; }
+#fidsTable colgroup col.col-dest      { width: 19% !important; min-width: 200px !important; }
+#fidsTable colgroup col.col-gate      { width:  7% !important; min-width:  80px !important; }
+#fidsTable colgroup col.col-time      { width: 11% !important; min-width: 150px !important; }
+#fidsTable colgroup col.col-time-rev  { width: 10% !important; min-width: 130px !important; }
+#fidsTable colgroup col.col-status    { width: 19% !important; min-width: 170px !important; }
+
+/* Emblem-only mode: shrink airline column further */
+body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
+  width: 80px !important;
+  min-width: 80px !important;
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PHASE 4 — LOCKED ROW SIZING (consistent across themes)
+   --fids-logo-size and --fids-row-h are set by menu.js based on the user's
+   Customize → Logo Size pill (Small=48 / Medium=56 / Large=64).
+   Every row, every theme, locks to that single metric.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root {
+  --fids-logo-size: 56px;
+  --fids-row-h: 64px;
+}
+
+/* Lock row height + nuke any padding inconsistency from earlier theme rules */
+#fidsTable tbody tr,
+body[data-fids-theme="navy-board"] #fidsTable tbody tr,
+body[data-fids-theme="cream"] #fidsTable tbody tr {
+  height: var(--fids-row-h) !important;
+}
+#fidsTable tbody tr td,
+body[data-fids-theme="navy-board"] #fidsTable tbody tr td,
+body[data-fids-theme="cream"] #fidsTable tbody tr td {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  vertical-align: middle !important;
+  border: none !important;
+  height: var(--fids-row-h) !important;
+}
+
+/* Airline logo cell — exact square, no border, no padding */
+#fidsTable td.td-airline {
+  padding: 4px 4px 4px 8px !important;
+}
+#fidsTable .fids-airline-logo {
+  width: var(--fids-logo-size) !important;
+  height: var(--fids-logo-size) !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  box-shadow: none !important;
+}
+#fidsTable .fids-airline-logo img {
+  width: var(--fids-logo-size) !important;
+  height: var(--fids-logo-size) !important;
+  max-width: var(--fids-logo-size) !important;
+  max-height: var(--fids-logo-size) !important;
+  object-fit: contain !important;
+}
+
+/* Airline name (when shown) sits flush with the wordmark x-position so
+   all carriers (text fallback or wordmark) align consistently. */
+#fidsTable .fids-airline-name {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin-left: 0 !important;
+  font-weight: 700 !important;
+}
+/* Emblem-only mode still needs to win */
+body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-name {
+  display: none !important;
+}
+body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wordmark {
+  display: none !important;
+}
+
+/* ━━━ CLICKABLE ROWS ━━━ */
+#fidsTable tr.fids-row-clickable {
+  cursor: pointer;
+  transition: filter .12s ease, transform .12s ease;
+}
+#fidsTable tr.fids-row-clickable:hover {
+  filter: brightness(1.18);
+}
+#fidsTable tr.fids-row-clickable:active {
+  filter: brightness(0.92);
+}
+/* Touch device — slight indent feedback */
+@media (hover: none) {
+  #fidsTable tr.fids-row-clickable:active {
+    transform: translateX(2px);
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=47 — STRONGER row height lock. Previous rules let cream and 
+   navy-board redefine --fids-row-h, breaking consistency. Force
+   the user-picked logo size via body[data-fids-logo-size=...].
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+body[data-fids-logo-size="small"]  { --fids-logo-size: 48px !important; --fids-row-h: 56px !important; }
+body[data-fids-logo-size="medium"] { --fids-logo-size: 56px !important; --fids-row-h: 64px !important; }
+body[data-fids-logo-size="large"]  { --fids-logo-size: 64px !important; --fids-row-h: 72px !important; }
+
+/* Beat ALL theme-specific row height overrides (cream, navy-board, etc.) */
+body[data-fids-logo-size] #fidsTable tbody tr,
+body[data-fids-logo-size] #fidsTable tbody tr td {
+  height: var(--fids-row-h) !important;
+  min-height: var(--fids-row-h) !important;
+  max-height: var(--fids-row-h) !important;
+  line-height: 1 !important;
+}
+body[data-fids-logo-size] #fidsTable tbody tr td {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  vertical-align: middle !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=52 — FULL theme overrides for navy / grey / amber / green
+   Previously these only changed banner-bg and banner-accent. The rest of
+   the board stayed default :root colors (dark navy). Now each theme
+   sets the full set of variables so the WHOLE board changes.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+body[data-fids-theme="navy"] {
+  --fids-bg:           #0a1628;
+  --fids-banner-bg:    #0c1e3a;
+  --fids-banner-accent:#3a6fa5;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #ffffff;
+  --fids-stripe:       rgba(255,255,255,0.04);
+  --fids-divider:      rgba(255,255,255,0.08);
+  background: #0a1628 !important;
+}
+body[data-fids-theme="grey"] {
+  --fids-bg:           #18181b;
+  --fids-banner-bg:    #27272a;
+  --fids-banner-accent:#71717a;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #fafafa;
+  --fids-stripe:       rgba(255,255,255,0.04);
+  --fids-divider:      rgba(255,255,255,0.08);
+  background: #18181b !important;
+}
+body[data-fids-theme="amber"] {
+  --fids-bg:           #1a1408;
+  --fids-banner-bg:    #2a1f0e;
+  --fids-banner-accent:#f59e0b;
+  --fids-banner-text:  #fef3c7;
+  --fids-text:         #fef3c7;
+  --fids-stripe:       rgba(245,158,11,0.06);
+  --fids-divider:      rgba(245,158,11,0.15);
+  background: #1a1408 !important;
+}
+body[data-fids-theme="green"] {
+  --fids-bg:           #0a1f12;
+  --fids-banner-bg:    #14532d;
+  --fids-banner-accent:#22c55e;
+  --fids-banner-text:  #d1fae5;
+  --fids-text:         #d1fae5;
+  --fids-stripe:       rgba(34,197,94,0.06);
+  --fids-divider:      rgba(34,197,94,0.15);
+  background: #0a1f12 !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=53 — rows + table backgrounds for navy/grey/amber/green/cream
+   The body background changed but the table rows kept hardcoded colors,
+   making themes feel broken. These rules paint the rows + table to match.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+body[data-fids-theme="navy"] #fidsTable                    { background: #0a1628 !important; }
+body[data-fids-theme="navy"] #fidsTable tbody tr           { background: #0c1e3a !important; }
+body[data-fids-theme="navy"] #fidsTable tbody tr:nth-child(even) { background: #122943 !important; }
+body[data-fids-theme="navy"] #fidsTable thead th          { background: #0a1628 !important; color: #93c5fd !important; }
+
+body[data-fids-theme="grey"] #fidsTable                    { background: #18181b !important; }
+body[data-fids-theme="grey"] #fidsTable tbody tr           { background: #27272a !important; }
+body[data-fids-theme="grey"] #fidsTable tbody tr:nth-child(even) { background: #3f3f46 !important; }
+body[data-fids-theme="grey"] #fidsTable thead th          { background: #18181b !important; color: #d4d4d8 !important; }
+
+body[data-fids-theme="amber"] #fidsTable                   { background: #1a1408 !important; }
+body[data-fids-theme="amber"] #fidsTable tbody tr          { background: #2a1f0e !important; }
+body[data-fids-theme="amber"] #fidsTable tbody tr:nth-child(even) { background: #3d2d12 !important; }
+body[data-fids-theme="amber"] #fidsTable thead th         { background: #1a1408 !important; color: #fbbf24 !important; }
+
+body[data-fids-theme="green"] #fidsTable                   { background: #0a1f12 !important; }
+body[data-fids-theme="green"] #fidsTable tbody tr          { background: #14532d !important; }
+body[data-fids-theme="green"] #fidsTable tbody tr:nth-child(even) { background: #166534 !important; }
+body[data-fids-theme="green"] #fidsTable thead th         { background: #0a1f12 !important; color: #6ee7b7 !important; }
+
+/* Cream — make sure the table itself is cream too (was relying on var which 
+   may have been overridden by my :root padding from earlier). */
+body[data-fids-theme="cream"] #fidsTable                  { background: #f4f1ea !important; }
+
+/* Fids board container if it exists */
+body[data-fids-theme="navy"]  #fidsBoard { background: #0a1628 !important; }
+body[data-fids-theme="grey"]  #fidsBoard { background: #18181b !important; }
+body[data-fids-theme="amber"] #fidsBoard { background: #1a1408 !important; }
+body[data-fids-theme="green"] #fidsBoard { background: #0a1f12 !important; }
+body[data-fids-theme="cream"] #fidsBoard { background: #f4f1ea !important; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=54 — explicit banner backgrounds per theme.
+   Some themes weren't reaching the banner via the CSS variable (likely
+   because a higher-specificity rule earlier in the cascade was reading
+   the original :root --fids-banner-bg before our rules took effect).
+   Force-paint the banner directly per theme so this can't fail.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+body[data-fids-theme="navy"]  .fids-banner { background: #0c1e3a !important; }
+body[data-fids-theme="grey"]  .fids-banner { background: #27272a !important; }
+body[data-fids-theme="amber"] .fids-banner { background: #2a1f0e !important; }
+body[data-fids-theme="green"] .fids-banner { background: #14532d !important; }
+body[data-fids-theme="cream"] .fids-banner { background: #ffffff !important; }
+
+/* Banner text colors per theme so the airport name/time stay readable */
+body[data-fids-theme="grey"]  .fids-banner-time,
+body[data-fids-theme="grey"]  .fids-banner-date,
+body[data-fids-theme="grey"]  .fids-board-label,
+body[data-fids-theme="grey"]  .fids-airport-name,
+body[data-fids-theme="grey"]  .fids-airport-iata { color: #ffffff !important; }
+
+body[data-fids-theme="amber"] .fids-banner-time,
+body[data-fids-theme="amber"] .fids-banner-date,
+body[data-fids-theme="amber"] .fids-board-label,
+body[data-fids-theme="amber"] .fids-airport-name,
+body[data-fids-theme="amber"] .fids-airport-iata { color: #fef3c7 !important; }
+
+body[data-fids-theme="green"] .fids-banner-time,
+body[data-fids-theme="green"] .fids-banner-date,
+body[data-fids-theme="green"] .fids-board-label,
+body[data-fids-theme="green"] .fids-airport-name,
+body[data-fids-theme="green"] .fids-airport-iata { color: #d1fae5 !important; }
+
+body[data-fids-theme="navy"] .fids-banner-time,
+body[data-fids-theme="navy"] .fids-banner-date,
+body[data-fids-theme="navy"] .fids-board-label,
+body[data-fids-theme="navy"] .fids-airport-name,
+body[data-fids-theme="navy"] .fids-airport-iata { color: #ffffff !important; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=54 — explicit cream block at very end so nothing later beats it.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+body[data-fids-theme="cream"] {
+  background: #f4f1ea !important;
+}
+body[data-fids-theme="cream"] #fidsTable {
+  background: #f4f1ea !important;
+}
+body[data-fids-theme="cream"] #fidsBoard {
+  background: #f4f1ea !important;
+}
+body[data-fids-theme="cream"] #fidsTable tbody tr {
+  background: #ebe6da !important;
+  color: #0a2236 !important;
+}
+body[data-fids-theme="cream"] #fidsTable tbody tr:nth-child(even) {
+  background: #ffffff !important;
+  color: #0a2236 !important;
+}
+body[data-fids-theme="cream"] #fidsTable tbody tr td {
+  color: #0a2236 !important;
+}
+body[data-fids-theme="cream"] #fidsTable thead th {
+  background: #ffffff !important;
+  color: #6b7c92 !important;
+}
+body[data-fids-theme="cream"] .fids-banner-time,
+body[data-fids-theme="cream"] .fids-banner-date,
+body[data-fids-theme="cream"] .fids-board-label,
+body[data-fids-theme="cream"] .fids-airport-name,
+body[data-fids-theme="cream"] .fids-airport-iata { color: #0a2236 !important; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=61 — Arrival icon now uses Material Design flight_land path (proper
+   plane-on-approach posture). No flip needed.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.fids-board-icon .fids-icon-arr {
+  transform: none !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=55 — mobile card click affordance + accent border for has-gate
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.flight-card.has-gate {
+  cursor: pointer;
+}
+.flight-card.has-gate:active {
+  transform: scale(0.985);
+  transition: transform .06s ease;
+}
+/* Subtle hint that gated cards are tappable */
+.flight-card.has-gate .card-gate {
+  font-weight: 700;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=56 — VERY visible mobile gate styling so you can see the difference.
+   Cards with a real gate get an orange left stripe + bold gate text.
+   Cards without a gate show "GATE TBA" greyed out (instead of fake gates).
+   Tap a card with a real gate → navigate to that gate.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Cards with real gates — orange accent stripe so you SEE which ones are tappable */
+.flight-card.has-gate {
+  cursor: pointer !important;
+  position: relative;
+  border-left: 4px solid #ff6e1d !important;
+  padding-left: 12px !important;
+}
+.flight-card.has-gate::after {
+  content: '👆 TAP';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 10px;
+  color: #ff6e1d;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+}
+.flight-card.has-gate:active {
+  transform: scale(0.97);
+  background: rgba(255, 110, 29, 0.08) !important;
+  transition: transform .08s ease, background .08s ease;
+}
+.flight-card.has-gate .card-gate {
+  color: #ff6e1d !important;
+  font-weight: 800 !important;
+}
+
+/* Cards without a gate — show muted "GATE TBA" instead of fake gate */
+.flight-card:not(.has-gate) .card-gate {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=57 — Mobile responsive fixes for GIDS / BIDS (gate / baggage screens)
+   These screens were designed for 1080p displays and overflowed on phones,
+   causing the "distorted" look. This block resizes everything for mobile.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (max-width: 700px) {
+  /* Banner shrinks to fit */
+  .fids-banner {
+    height: 80px !important;
+    padding: 0 12px !important;
+    gap: 12px !important;
+  }
+  .fids-board-label { font-size: 22px !important; }
+  .fids-banner-time { font-size: 14px !important; }
+  .fids-banner-date { font-size: 11px !important; }
+  .fids-airport-pill { height: 50px !important; padding: 0 10px !important; }
+  .fids-airport-logo-img { height: 36px !important; }
+  .fids-airport-name { font-size: 14px !important; }
+  .fids-airport-iata { font-size: 16px !important; }
+  .fids-board-icon svg { width: 32px !important; height: 32px !important; }
+
+  /* GIDS / BIDS gate panel — stack vertically, fit screen */
+  #fidsBoard, #gidsScreen, #bidsScreen {
+    padding: 8px !important;
+  }
+
+  /* The big "GATE C77" / "BELT 3" panel becomes phone-friendly */
+  .gids-gate-num, .bids-belt-num {
+    font-size: 80px !important;
+    line-height: 1 !important;
+  }
+  .gids-gate-label, .bids-belt-label {
+    font-size: 16px !important;
+    letter-spacing: 1px !important;
+  }
+
+  /* The flight info card on the gate screen */
+  .gids-flight-num, .bids-flight-num {
+    font-size: 36px !important;
+  }
+  .gids-flight-dest, .bids-flight-orig {
+    font-size: 22px !important;
+  }
+  .gids-flight-time, .bids-flight-time {
+    font-size: 28px !important;
+  }
+  .gids-status, .bids-status {
+    font-size: 18px !important;
+    padding: 8px 14px !important;
+  }
+
+  /* Airline logo on gate screen */
+  .gids-airline-logo, .bids-airline-logo {
+    max-width: 120px !important;
+    max-height: 60px !important;
+  }
+
+  /* Force any wide layouts to wrap instead of overflowing */
+  .gids-flight-row, .bids-flight-row,
+  .gids-info, .bids-info {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* If the GIDS uses a table, make it shrink */
+  #fidsTable {
+    font-size: 14px !important;
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+  #fidsTable th, #fidsTable td {
+    padding: 6px 8px !important;
+  }
+
+  /* The "back to FIDS" link / nav buttons */
+  .ctrl .btn {
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+}
+
+/* Even tighter for very small phones (iPhone SE, etc.) */
+@media (max-width: 400px) {
+  .gids-gate-num, .bids-belt-num { font-size: 60px !important; }
+  .fids-board-label { font-size: 18px !important; }
+  .fids-airport-pill { height: 44px !important; }
+  .fids-airport-logo-img { height: 30px !important; }
+  .fids-airport-iata { font-size: 14px !important; }
+  .fids-airport-name { font-size: 12px !important; }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=58 — MOBILE responsive for GIDS / BIDS gate screens
+   The gate display is built with inline styles in fids-core.js for 1080p
+   TVs. On phones it overflows. These rules use high specificity + 
+   !important to override the inline styles for narrow viewports.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (max-width: 700px) {
+  /* The whole gate view should scroll vertically, not overflow horizontally */
+  #gateView, #baggageView {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding: 0 !important;
+  }
+  #gateView > div, #baggageView > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    padding: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Stack any horizontal flex layouts vertically */
+  #gateView > div > div,
+  #baggageView > div > div {
+    flex-direction: column !important;
+    flex-wrap: wrap !important;
+    align-items: stretch !important;
+    padding: 8px 12px !important;
+    gap: 12px !important;
+  }
+
+  /* Force any nested grid/flex columns to single column */
+  .gad-info-col, .gad-map-col, .gad-right-col,
+  .gad-panel, .gad-metrics-row {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    flex-basis: auto !important;
+  }
+  .gad-metrics-row {
+    flex-direction: row !important;  /* keep metrics in a row but they wrap */
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+  .gad-metric {
+    flex: 1 1 45% !important;  /* 2 per row */
+    min-width: 0 !important;
+  }
+
+  /* Shrink the giant fonts that don't have clamp() */
+  #gateView [style*="font-size:140px"],
+  #gateView [style*="font-size: 140px"],
+  #gateView [style*="font-size:120px"],
+  #gateView [style*="font-size: 120px"],
+  #gateView [style*="font-size:100px"],
+  #gateView [style*="font-size: 100px"] {
+    font-size: 56px !important;
+    line-height: 1.05 !important;
+  }
+  #gateView [style*="font-size:96px"],
+  #gateView [style*="font-size: 96px"],
+  #gateView [style*="font-size:80px"],
+  #gateView [style*="font-size: 80px"] {
+    font-size: 44px !important;
+    line-height: 1.05 !important;
+  }
+  #gateView [style*="font-size:64px"],
+  #gateView [style*="font-size: 64px"],
+  #gateView [style*="font-size:56px"],
+  #gateView [style*="font-size: 56px"] {
+    font-size: 32px !important;
+    line-height: 1.1 !important;
+  }
+  #gateView [style*="font-size:48px"],
+  #gateView [style*="font-size: 48px"],
+  #gateView [style*="font-size:42px"],
+  #gateView [style*="font-size: 42px"],
+  #gateView [style*="font-size:40px"],
+  #gateView [style*="font-size: 40px"] {
+    font-size: 26px !important;
+  }
+  #gateView [style*="font-size:36px"],
+  #gateView [style*="font-size: 36px"],
+  #gateView [style*="font-size:32px"],
+  #gateView [style*="font-size: 32px"] {
+    font-size: 20px !important;
+  }
+  #gateView [style*="font-size:28px"],
+  #gateView [style*="font-size: 28px"],
+  #gateView [style*="font-size:26px"],
+  #gateView [style*="font-size: 26px"],
+  #gateView [style*="font-size:24px"],
+  #gateView [style*="font-size: 24px"] {
+    font-size: 16px !important;
+  }
+  #gateView [style*="font-size:22px"],
+  #gateView [style*="font-size: 22px"],
+  #gateView [style*="font-size:20px"],
+  #gateView [style*="font-size: 20px"] {
+    font-size: 14px !important;
+  }
+
+  /* Same shrinking for baggage view */
+  #baggageView [style*="font-size:140px"],
+  #baggageView [style*="font-size: 140px"],
+  #baggageView [style*="font-size:120px"],
+  #baggageView [style*="font-size: 120px"],
+  #baggageView [style*="font-size:100px"],
+  #baggageView [style*="font-size: 100px"] { font-size: 56px !important; line-height: 1.05 !important; }
+  #baggageView [style*="font-size:96px"],
+  #baggageView [style*="font-size: 96px"],
+  #baggageView [style*="font-size:80px"],
+  #baggageView [style*="font-size: 80px"] { font-size: 44px !important; line-height: 1.05 !important; }
+  #baggageView [style*="font-size:64px"],
+  #baggageView [style*="font-size: 64px"],
+  #baggageView [style*="font-size:56px"],
+  #baggageView [style*="font-size: 56px"] { font-size: 32px !important; }
+  #baggageView [style*="font-size:48px"],
+  #baggageView [style*="font-size: 48px"],
+  #baggageView [style*="font-size:40px"],
+  #baggageView [style*="font-size: 40px"] { font-size: 26px !important; }
+  #baggageView [style*="font-size:36px"],
+  #baggageView [style*="font-size: 36px"],
+  #baggageView [style*="font-size:32px"],
+  #baggageView [style*="font-size: 32px"] { font-size: 20px !important; }
+  #baggageView [style*="font-size:24px"],
+  #baggageView [style*="font-size: 24px"],
+  #baggageView [style*="font-size:22px"],
+  #baggageView [style*="font-size: 22px"] { font-size: 14px !important; }
+
+  /* Override large paddings */
+  #gateView [style*="padding:28px 48px"],
+  #gateView [style*="padding: 28px 48px"],
+  #gateView [style*="padding:24px 48px"],
+  #gateView [style*="padding: 24px 48px"],
+  #gateView [style*="padding:40px"],
+  #gateView [style*="padding: 40px"],
+  #baggageView [style*="padding:28px 48px"],
+  #baggageView [style*="padding: 28px 48px"],
+  #baggageView [style*="padding:40px"],
+  #baggageView [style*="padding: 40px"] {
+    padding: 12px !important;
+  }
+
+  /* Map should be reasonably sized on phones */
+  #gateMapBox, .gad-map-col {
+    height: 200px !important;
+    max-height: 200px !important;
+    width: 100% !important;
+  }
+
+  /* Aircraft equipment image — cap to reasonable mobile size */
+  .gad-equip-img-large img,
+  .gad-equip-img-large {
+    max-width: 100% !important;
+    max-height: 80px !important;
+    height: auto !important;
+  }
+
+  /* Logo area */
+  #gateView img[src*="logo"], #baggageView img[src*="logo"] {
+    max-width: 120px !important;
+    max-height: 50px !important;
+    object-fit: contain !important;
+  }
+
+  /* Top control bar (the menu/airport buttons) on mobile */
+  .ctrl {
+    flex-wrap: wrap !important;
+    padding: 6px !important;
+    gap: 6px !important;
+  }
+  .ctrl .btn {
+    font-size: 11px !important;
+    padding: 6px 8px !important;
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=59 — REAL mobile fix for GIDS / BIDS
+   The gids.html and bids.html pages contain BOTH a gate view AND a 
+   mobile cards section. Without rules these stack/conflict on phones.
+   Strategy: on phones, hide the desktop gate view's wide-only chrome
+   and let the existing mobile cards section be the primary view, OR
+   force the gate view to fit narrow screens.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (max-width: 700px) {
+  /* Force the body/html to fit narrow viewport */
+  html, body { 
+    overflow-x: hidden !important; 
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  /* Anything inside the gate view that has a fixed pixel width should shrink */
+  #gateView [style*="width:170px"],
+  #gateView [style*="width: 170px"],
+  #gateView [style*="width:180px"],
+  #gateView [style*="width: 180px"],
+  #gateView [style*="width:200px"],
+  #gateView [style*="width: 200px"] {
+    width: auto !important;
+    max-width: 90px !important;
+  }
+  #gateView [style*="width:320px"],
+  #gateView [style*="width: 320px"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  #gateView [style*="width:420px"],
+  #gateView [style*="width: 420px"],
+  #gateView [style*="width:480px"],
+  #gateView [style*="width: 480px"],
+  #gateView [style*="width:600px"],
+  #gateView [style*="width: 600px"],
+  #gateView [style*="width:640px"],
+  #gateView [style*="width: 640px"],
+  #gateView [style*="width:700px"],
+  #gateView [style*="width: 700px"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  #gateView [style*="min-width:420px"],
+  #gateView [style*="min-width: 420px"],
+  #gateView [style*="min-width:480px"],
+  #gateView [style*="min-width: 480px"] {
+    min-width: 0 !important;
+  }
+
+  /* Same for baggage view */
+  #baggageView [style*="width:170px"],
+  #baggageView [style*="width: 170px"],
+  #baggageView [style*="width:180px"],
+  #baggageView [style*="width: 180px"],
+  #baggageView [style*="width:200px"],
+  #baggageView [style*="width: 200px"] {
+    width: auto !important;
+    max-width: 90px !important;
+  }
+  #baggageView [style*="width:320px"],
+  #baggageView [style*="width: 320px"],
+  #baggageView [style*="width:420px"],
+  #baggageView [style*="width: 420px"],
+  #baggageView [style*="width:480px"],
+  #baggageView [style*="width: 480px"],
+  #baggageView [style*="width:600px"],
+  #baggageView [style*="width: 600px"],
+  #baggageView [style*="width:640px"],
+  #baggageView [style*="width: 640px"],
+  #baggageView [style*="width:700px"],
+  #baggageView [style*="width: 700px"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  #baggageView [style*="min-width:420px"],
+  #baggageView [style*="min-width: 420px"],
+  #baggageView [style*="min-width:480px"],
+  #baggageView [style*="min-width: 480px"] {
+    min-width: 0 !important;
+  }
+
+  /* Force percentage-width side-by-side layouts to stack */
+  #gateView [style*="width:35%"],
+  #gateView [style*="width: 35%"],
+  #gateView [style*="width:38%"],
+  #gateView [style*="width: 38%"],
+  #gateView [style*="width:55%"],
+  #gateView [style*="width: 55%"],
+  #gateView [style*="width:62%"],
+  #gateView [style*="width: 62%"],
+  #gateView [style*="width:78%"],
+  #gateView [style*="width: 78%"],
+  #gateView [style*="width:88%"],
+  #gateView [style*="width: 88%"],
+  #baggageView [style*="width:35%"],
+  #baggageView [style*="width: 35%"],
+  #baggageView [style*="width:38%"],
+  #baggageView [style*="width: 38%"],
+  #baggageView [style*="width:55%"],
+  #baggageView [style*="width: 55%"],
+  #baggageView [style*="width:62%"],
+  #baggageView [style*="width: 62%"] {
+    width: 100% !important;
+  }
+
+  /* Force everything in #gateView/#baggageView to behave on mobile */
+  #gateView, #baggageView {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #gateView *, #baggageView * {
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Side-by-side flex rows wrap on mobile */
+  #gateView div[style*="display:flex"][style*="flex-direction:row"],
+  #gateView div[style*="display: flex"],
+  #baggageView div[style*="display:flex"][style*="flex-direction:row"],
+  #baggageView div[style*="display: flex"] {
+    flex-wrap: wrap !important;
+  }
+
+  /* Reduce huge paddings */
+  #gateView [style*="padding:40px"],
+  #gateView [style*="padding: 40px"],
+  #gateView [style*="padding:48px"],
+  #gateView [style*="padding: 48px"],
+  #baggageView [style*="padding:40px"],
+  #baggageView [style*="padding: 40px"],
+  #baggageView [style*="padding:48px"],
+  #baggageView [style*="padding: 48px"] {
+    padding: 16px !important;
+  }
+  #gateView [style*="padding:28px 48px"],
+  #gateView [style*="padding: 28px 48px"],
+  #baggageView [style*="padding:28px 48px"],
+  #baggageView [style*="padding: 28px 48px"] {
+    padding: 12px 16px !important;
+  }
+
+  /* Hide the duplicate mobile cards section ONLY on gids/bids pages —
+     not on fids.html where mobileView IS the actual content */
+  body[data-page="gids"] #mobileView,
+  body[data-page="bids"] #mobileView {
+    display: none !important;
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v=60 — TARGETED mobile fixes for GIDS based on actual screenshot
+   1. Banner header "Montreal YUL" overlapped by ⚙ gear → push it down
+   2. AIR CANADA banner logo cut off → constrain its width
+   3. Big red status panel → reduce vertical real estate
+   4. Aeroplan ad → cap height
+   5. Footer text → smaller font
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (max-width: 700px) {
+  /* The settings gear cog should be smaller and out of the way */
+  .ctrl .btn-menu, .ctrl .btn[onclick*="toggleToolbar"] {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+  }
+  
+  /* Top airport name banner — give it room above so the gear doesn't overlap */
+  #gateView > div > div:first-child,
+  #baggageView > div > div:first-child {
+    padding-top: 56px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-bottom: 12px !important;
+  }
+  
+  /* AIR CANADA airline banner logo: cap width so it doesn't overflow.
+     The image uses style="height:Xpx" so we need to enforce max-width */
+  #gateView img,
+  #baggageView img {
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+  /* But the airline banner specifically should be sized to fit nicely */
+  #gateView [style*="background:linear-gradient"] img,
+  #gateView [style*="background: linear-gradient"] img {
+    max-width: 90vw !important;
+    max-height: 80px !important;
+  }
+  
+  /* The big red status panel — reduce padding & font sizes */
+  #gateView [style*="background:#"][style*="2037"],
+  #gateView [style*="background-color:#"],
+  #gateView .gad-panel {
+    padding: 16px !important;
+  }
+  
+  /* The metric labels (EST. DEPARTURE, EST. ARRIVAL, BOARDING, DURATION) */
+  .gad-lbl {
+    font-size: 10px !important;
+    letter-spacing: 1px !important;
+    margin-bottom: 4px !important;
+  }
+  .gad-metric-val {
+    font-size: 22px !important;
+    font-weight: 800 !important;
+  }
+  .gad-metric-icon svg, .gad-metric-icon img {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  
+  /* Aeroplan / ad area — cap height so it doesn't take half the screen */
+  .gad-equip-img-large,
+  #gateView [style*="aeroplan"],
+  #gateView [style*="STAR ALLIANCE"] {
+    max-height: 200px !important;
+    height: 200px !important;
+    overflow: hidden !important;
+  }
+  .gad-equip-img-large img {
+    max-height: 200px !important;
+    width: auto !important;
+    object-fit: contain !important;
+  }
+  
+  /* Footer text */
+  .gate-footer, .gate-footer-left, .gate-footer-right,
+  .gate-footer-next, .gate-footer-next-lbl, .gate-footer-next-val {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .gate-footer {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+    padding: 10px 12px !important;
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v70 — CREAM THEME WHITE-TEXT DEFENSIVE PATCH
+   Issue: airline-name and weather temp sometimes render white-on-white
+   on cream theme. Root cause varies (cached older CSS, runtime style
+   injection, ad/template clash), so we belt-and-braces it here with
+   high-specificity !important rules scoped to cream.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+body[data-fids-theme="cream"] #fidsTable .td-airline,
+body[data-fids-theme="cream"] #fidsTable .td-airline *,
+body[data-fids-theme="cream"] #fidsTable .fids-airline-name,
+body[data-fids-theme="cream"] #fidsTable .td-wx,
+body[data-fids-theme="cream"] #fidsTable .td-wx *,
+body[data-fids-theme="cream"] #fidsTable .fids-cell-weather,
+body[data-fids-theme="cream"] #fidsTable .fids-cell-weather span:not(.fids-wx-cell),
+body[data-fids-theme="cream"] #fidsTable .wx,
+body[data-fids-theme="cream"] #fidsTable .wx-temp {
+  color: #0a2236 !important;
+}
+/* Cream theme: banner forecast / temp readout — fids.css hardcodes white,
+   which is invisible on the cream banner background. Override with the
+   cream banner text token. */
+body[data-fids-theme="cream"] .hdr-temp,
+body[data-fids-theme="cream"] .hdr-fc-now,
+body[data-fids-theme="cream"] .hdr-fc-day,
+body[data-fids-theme="cream"] .hdr-fc-day .fc-label,
+body[data-fids-theme="cream"] .hdr-fc-day .fc-temp,
+body[data-fids-theme="cream"] .hdr-apname {
+  color: #0a2236 !important;
+}
+/* Forecast SVG icons inherit fill currentColor; ensure they go dark too. */
+body[data-fids-theme="cream"] .hdr-temp svg,
+body[data-fids-theme="cream"] .hdr-temp svg * {
+  color: #0a2236 !important;
+  fill: #0a2236 !important;
+  stroke: #0a2236 !important;
+}
+/* Don't recolor the actual weather glyph in the row (which is its own
+   colored SVG) — only the surrounding text. */
+body[data-fids-theme="cream"] #fidsTable .fids-wx-cell,
+body[data-fids-theme="cream"] #fidsTable .fids-wx-cell * {
+  color: inherit !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v73 — GATE AIRCRAFT PANEL — themed equipment rows
+   The gate "Aircraft / Registration / Operated by" rows used to use
+   inline white-alpha borders that were invisible on light themes (cream
+   board). Switched to a class-based system so themes can override.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.g8eq-row {
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+.g8eq-row.g8eq-row-last {
+  border-bottom: none;
+}
+.g8eq-label {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+.g8eq-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  display: block;
+  line-height: 1.2;
+}
+.g8eq-reg {
+  display: inline-block;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #fff;
+  background: rgba(96,165,250,0.18);
+  border: 1px solid rgba(96,165,250,0.45);
+  padding: 5px 16px;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 22px;
+}
+.g8eq-op-logo {
+  height: 56px;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+  object-position: left center;
+  background: transparent;
+  opacity: 0.9;
+  display: block;
+}
+/* Light/cream theme — flip alpha-white tones to alpha-black so the panel
+   reads correctly on a light background. .g8-wrap-themed-body is set on
+   the gate container when a light theme is active. */
+.g8-wrap-themed-body .g8eq-row {
+  border-bottom-color: rgba(0,0,0,0.12);
+}
+.g8-wrap-themed-body .g8eq-label {
+  color: rgba(0,0,0,0.55);
+}
+.g8-wrap-themed-body .g8eq-value {
+  color: #0a2236;
+}
+.g8-wrap-themed-body .g8eq-reg {
+  color: #0a2236;
+  background: rgba(30,64,175,0.10);
+  border-color: rgba(30,64,175,0.35);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v76 — light-theme divider fix for the gate equipment panel.
+   The inline rgba(255,255,255,0.10) border-bottom is invisible on cream
+   panels. Match it via attribute selector and flip the color when the
+   wrapper is in a light theme.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.g8-wrap-themed-body .gad-equip-panel div[style*="border-bottom:1px solid rgba(255,255,255,0.10)"] {
+  border-bottom-color: rgba(0,0,0,0.15) !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v83 — tighten the unified equipment panel so the aircraft photo at
+   the bottom has room to render. The default .gad-panel padding (14px 18px)
+   plus .gad-info-col padding (14px 18px) was eating ~56px of vertical
+   space before any rows. Override to make the panel run flush to the
+   column padding.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.gad-equip-panel {
+  padding: 4px 14px !important;
+}
+.gad-info-col {
+  padding: 8px 12px !important;
+}
+
+/* v84 — even more aggressive: zero out panel top padding entirely so rows
+   touch the col padding directly. Also drop col gap since equipment is
+   the only panel now. */
+.gad-info-col { padding-top: 6px !important; gap: 0 !important; }
+.gad-equip-panel { padding-top: 0 !important; padding-bottom: 6px !important; }
+.gad-panel.gad-equip-panel { padding: 0 14px !important; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v89b — aircraft photo size fix.
+   Was capped at 170px tall in fids.css and the photo was rendering as a
+   small element below the data rows. Remove the cap so the photo fills
+   the remaining space below the rows.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.gad-equip-panel .gad-equip-img-large {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+/* v91b — aircraft photo container should be transparent.
+   When v89b made the container taller, the dark panel background
+   showed around the image when it didn't fill the full height.
+   Make the container transparent and constrain image natural size. */
+.gad-equip-panel .gad-equip-img-large {
+  background: transparent !important;
+}
+.gad-equip-panel .gad-equip-img-large img {
+  /* Don't force height:100% — let the image stay at its natural aspect ratio,
+     scaling DOWN to fit but not stretching UP. This avoids the "dark surround"
+     effect where the container is taller than the image. */
+  height: auto !important;
+  max-height: 100% !important;
+  width: auto !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  background: transparent !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v218.6 — END-OF-FILE THEME OVERRIDES
+   Defined LAST so they win the cascade over earlier legacy rules.
+   Each theme must paint:
+     - body background
+     - #fidsBoard background
+     - #fidsTable background
+     - .fids-banner background (banner)
+     - banner text colors
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── TUS TEAL ── */
+body[data-fids-theme="tus-teal"]            { background: #0d4d8b !important; }
+body[data-fids-theme="tus-teal"] #fidsBoard { background: #0d4d8b !important; }
+body[data-fids-theme="tus-teal"] #fidsTable { background: #0d4d8b !important; }
+body[data-fids-theme="tus-teal"] .fids-banner {
+  background:
+    linear-gradient(105deg, transparent 55%, rgba(44,184,211,0.55) 55%, rgba(44,184,211,0.55) 72%, transparent 72%),
+    linear-gradient(115deg, transparent 70%, rgba(14,108,181,0.85) 70%),
+    linear-gradient(90deg, #0e6cb5 0%, #1593c8 65%, #2cb8d3 100%) !important;
+  border-bottom: none !important;
+}
+body[data-fids-theme="tus-teal"] .fids-banner-time,
+body[data-fids-theme="tus-teal"] .fids-banner-date,
+body[data-fids-theme="tus-teal"] .fids-board-label,
+body[data-fids-theme="tus-teal"] .fids-airport-name,
+body[data-fids-theme="tus-teal"] .fids-airport-iata,
+body[data-fids-theme="tus-teal"] .hdr-apname { color: #ffffff !important; }
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr { background: #1e7eb8 !important; color: #ffffff !important; }
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr:nth-child(even) { background: #2da4c4 !important; }
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr td { color: #ffffff !important; }
+body[data-fids-theme="tus-teal"] #fidsTable thead th { background: #0d4d8b !important; color: #ffffff !important; }
+
+/* ── MIDNIGHT ── */
+body[data-fids-theme="midnight"]            { background: #000000 !important; }
+body[data-fids-theme="midnight"] #fidsBoard { background: #000000 !important; }
+body[data-fids-theme="midnight"] #fidsTable { background: #000000 !important; }
+body[data-fids-theme="midnight"] .fids-banner { background: #050505 !important; }
+body[data-fids-theme="midnight"] .fids-banner-time,
+body[data-fids-theme="midnight"] .fids-banner-date,
+body[data-fids-theme="midnight"] .fids-board-label,
+body[data-fids-theme="midnight"] .fids-airport-name,
+body[data-fids-theme="midnight"] .fids-airport-iata,
+body[data-fids-theme="midnight"] .hdr-apname { color: #ffffff !important; }
+body[data-fids-theme="midnight"] #fidsTable tbody tr { background: #050505 !important; color: #ffffff !important; }
+body[data-fids-theme="midnight"] #fidsTable tbody tr:nth-child(even) { background: #0a0a0a !important; }
+body[data-fids-theme="midnight"] #fidsTable tbody tr td { color: #ffffff !important; }
+body[data-fids-theme="midnight"] #fidsTable thead th { background: #050505 !important; color: #60a5fa !important; }
+
+/* ── CHARCOAL ── */
+body[data-fids-theme="charcoal"]            { background: #1c1917 !important; }
+body[data-fids-theme="charcoal"] #fidsBoard { background: #1c1917 !important; }
+body[data-fids-theme="charcoal"] #fidsTable { background: #1c1917 !important; }
+body[data-fids-theme="charcoal"] .fids-banner { background: #292524 !important; }
+body[data-fids-theme="charcoal"] .fids-banner-time,
+body[data-fids-theme="charcoal"] .fids-banner-date,
+body[data-fids-theme="charcoal"] .fids-board-label,
+body[data-fids-theme="charcoal"] .fids-airport-name,
+body[data-fids-theme="charcoal"] .fids-airport-iata,
+body[data-fids-theme="charcoal"] .hdr-apname { color: #fafaf9 !important; }
+body[data-fids-theme="charcoal"] #fidsTable tbody tr { background: #1f1c1a !important; color: #fafaf9 !important; }
+body[data-fids-theme="charcoal"] #fidsTable tbody tr:nth-child(even) { background: #232120 !important; }
+body[data-fids-theme="charcoal"] #fidsTable tbody tr td { color: #fafaf9 !important; }
+body[data-fids-theme="charcoal"] #fidsTable thead th { background: #292524 !important; color: #fb923c !important; }
+
+/* ── BURGUNDY ── */
+body[data-fids-theme="burgundy"]            { background: #2a0a14 !important; }
+body[data-fids-theme="burgundy"] #fidsBoard { background: #2a0a14 !important; }
+body[data-fids-theme="burgundy"] #fidsTable { background: #2a0a14 !important; }
+body[data-fids-theme="burgundy"] .fids-banner { background: #4a0e1f !important; }
+body[data-fids-theme="burgundy"] .fids-banner-time,
+body[data-fids-theme="burgundy"] .fids-banner-date,
+body[data-fids-theme="burgundy"] .fids-board-label,
+body[data-fids-theme="burgundy"] .fids-airport-name,
+body[data-fids-theme="burgundy"] .fids-airport-iata,
+body[data-fids-theme="burgundy"] .hdr-apname { color: #fef2f2 !important; }
+body[data-fids-theme="burgundy"] #fidsTable tbody tr { background: #2f0a16 !important; color: #fef2f2 !important; }
+body[data-fids-theme="burgundy"] #fidsTable tbody tr:nth-child(even) { background: #3a0f1a !important; }
+body[data-fids-theme="burgundy"] #fidsTable tbody tr td { color: #fef2f2 !important; }
+body[data-fids-theme="burgundy"] #fidsTable thead th { background: #4a0e1f !important; color: #fca5a5 !important; }
+
+/* ── FOREST ── */
+body[data-fids-theme="forest"]            { background: #0a1f1c !important; }
+body[data-fids-theme="forest"] #fidsBoard { background: #0a1f1c !important; }
+body[data-fids-theme="forest"] #fidsTable { background: #0a1f1c !important; }
+body[data-fids-theme="forest"] .fids-banner { background: #134e4a !important; }
+body[data-fids-theme="forest"] .fids-banner-time,
+body[data-fids-theme="forest"] .fids-banner-date,
+body[data-fids-theme="forest"] .fids-board-label,
+body[data-fids-theme="forest"] .fids-airport-name,
+body[data-fids-theme="forest"] .fids-airport-iata,
+body[data-fids-theme="forest"] .hdr-apname { color: #ffffff !important; }
+body[data-fids-theme="forest"] #fidsTable tbody tr { background: #0c2522 !important; color: #ffffff !important; }
+body[data-fids-theme="forest"] #fidsTable tbody tr:nth-child(even) { background: #0f2e2a !important; }
+body[data-fids-theme="forest"] #fidsTable tbody tr td { color: #ffffff !important; }
+body[data-fids-theme="forest"] #fidsTable thead th { background: #134e4a !important; color: #d4af37 !important; }
+
+/* ── PAPER (LIGHT) ── */
+body[data-fids-theme="paper"]            { background: #faf7f2 !important; }
+body[data-fids-theme="paper"] #fidsBoard { background: #faf7f2 !important; }
+body[data-fids-theme="paper"] #fidsTable { background: #faf7f2 !important; }
+body[data-fids-theme="paper"] .fids-banner {
+  background: #ffffff !important;
+  border-bottom: 3px solid #dc2626 !important;
+}
+body[data-fids-theme="paper"] .fids-banner-time,
+body[data-fids-theme="paper"] .fids-banner-date,
+body[data-fids-theme="paper"] .fids-board-label,
+body[data-fids-theme="paper"] .fids-airport-name,
+body[data-fids-theme="paper"] .fids-airport-iata,
+body[data-fids-theme="paper"] .hdr-apname { color: #18181b !important; }
+body[data-fids-theme="paper"] #fidsTable tbody tr { background: #ffffff !important; color: #18181b !important; }
+body[data-fids-theme="paper"] #fidsTable tbody tr:nth-child(even) { background: #f3f0e8 !important; }
+body[data-fids-theme="paper"] #fidsTable tbody tr td { color: #18181b !important; }
+body[data-fids-theme="paper"] #fidsTable thead th { background: #ffffff !important; color: #6b7280 !important; }
+body[data-fids-theme="paper"] .fids-airline-logo {
+  background: #ffffff !important;
+  border: 1px solid #e5e2db !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+}
+
+/* ── TERMINAL (retro CRT) ── */
+body[data-fids-theme="terminal"]            { background: #000000 !important; }
+body[data-fids-theme="terminal"] #fidsBoard { background: #000000 !important; }
+body[data-fids-theme="terminal"] #fidsTable { background: #000000 !important; font-family: var(--font-mono) !important; }
+body[data-fids-theme="terminal"] .fids-banner { background: #001a00 !important; }
+body[data-fids-theme="terminal"] .fids-banner-time,
+body[data-fids-theme="terminal"] .fids-banner-date,
+body[data-fids-theme="terminal"] .fids-board-label,
+body[data-fids-theme="terminal"] .fids-airport-name,
+body[data-fids-theme="terminal"] .fids-airport-iata,
+body[data-fids-theme="terminal"] .hdr-apname { color: #00ff41 !important; }
+body[data-fids-theme="terminal"] #fidsTable tbody tr { background: #000000 !important; color: #00ff41 !important; }
+body[data-fids-theme="terminal"] #fidsTable tbody tr:nth-child(even) { background: #001a00 !important; }
+body[data-fids-theme="terminal"] #fidsTable tbody tr td { color: #00ff41 !important; }
+body[data-fids-theme="terminal"] #fidsTable thead th { background: #001a00 !important; color: #00ff41 !important; }
+
+/* ── SKY (LIGHT) ── */
+body[data-fids-theme="sky"]            { background: #f0f9ff !important; }
+body[data-fids-theme="sky"] #fidsBoard { background: #f0f9ff !important; }
+body[data-fids-theme="sky"] #fidsTable { background: #f0f9ff !important; }
+body[data-fids-theme="sky"] .fids-banner {
+  background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%) !important;
+  border-bottom: 3px solid #fbbf24 !important;
+}
+body[data-fids-theme="sky"] .fids-banner-time,
+body[data-fids-theme="sky"] .fids-banner-date,
+body[data-fids-theme="sky"] .fids-board-label,
+body[data-fids-theme="sky"] .fids-airport-name,
+body[data-fids-theme="sky"] .fids-airport-iata,
+body[data-fids-theme="sky"] .hdr-apname { color: #ffffff !important; }
+body[data-fids-theme="sky"] #fidsTable tbody tr { background: #ffffff !important; color: #0c4a6e !important; }
+body[data-fids-theme="sky"] #fidsTable tbody tr:nth-child(even) { background: #e0f2fe !important; }
+body[data-fids-theme="sky"] #fidsTable tbody tr td { color: #0c4a6e !important; }
+body[data-fids-theme="sky"] #fidsTable thead th { background: #ffffff !important; color: #0284c7 !important; }
+body[data-fids-theme="sky"] .fids-airline-logo {
+  background: #ffffff !important;
+  border: 1px solid #bae6fd !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+}
+
+/* ── SUNSET ── */
+body[data-fids-theme="sunset"]            { background: #1e1b4b !important; }
+body[data-fids-theme="sunset"] #fidsBoard { background: #1e1b4b !important; }
+body[data-fids-theme="sunset"] #fidsTable { background: #1e1b4b !important; }
+body[data-fids-theme="sunset"] .fids-banner {
+  background: linear-gradient(90deg, #4c1d95 0%, #7e22ce 50%, #c026d3 100%) !important;
+  border-bottom: 3px solid #fb923c !important;
+}
+body[data-fids-theme="sunset"] .fids-banner-time,
+body[data-fids-theme="sunset"] .fids-banner-date,
+body[data-fids-theme="sunset"] .fids-board-label,
+body[data-fids-theme="sunset"] .fids-airport-name,
+body[data-fids-theme="sunset"] .fids-airport-iata,
+body[data-fids-theme="sunset"] .hdr-apname { color: #ffffff !important; }
+body[data-fids-theme="sunset"] #fidsTable tbody tr { background: #251a52 !important; color: #ffffff !important; }
+body[data-fids-theme="sunset"] #fidsTable tbody tr:nth-child(even) { background: #2e1a5e !important; }
+body[data-fids-theme="sunset"] #fidsTable tbody tr td { color: #ffffff !important; }
+body[data-fids-theme="sunset"] #fidsTable thead th { background: #4c1d95 !important; color: #fcd34d !important; }
+
+/* ── NAVY (FULL — replaces stub) ── */
+body[data-fids-theme="navy"]            { background: #0c1e3a !important; }
+body[data-fids-theme="navy"] #fidsBoard { background: #0c1e3a !important; }
+body[data-fids-theme="navy"] #fidsTable { background: #0c1e3a !important; }
+body[data-fids-theme="navy"] .fids-banner { background: #0c1e3a !important; }
+body[data-fids-theme="navy"] #fidsTable tbody tr { background: #0e2447 !important; color: #ffffff !important; }
+body[data-fids-theme="navy"] #fidsTable tbody tr:nth-child(even) { background: #14305e !important; }
+body[data-fids-theme="navy"] #fidsTable tbody tr td { color: #ffffff !important; }
+body[data-fids-theme="navy"] #fidsTable thead th { background: #0c1e3a !important; color: #93c5fd !important; }
+
+/* ── GREY (FULL — replaces stub) ── */
+body[data-fids-theme="grey"]            { background: #1a1d23 !important; }
+body[data-fids-theme="grey"] #fidsBoard { background: #1a1d23 !important; }
+body[data-fids-theme="grey"] #fidsTable { background: #1a1d23 !important; }
+body[data-fids-theme="grey"] .fids-banner { background: #1f2937 !important; }
+body[data-fids-theme="grey"] #fidsTable tbody tr { background: #20242c !important; color: #ffffff !important; }
+body[data-fids-theme="grey"] #fidsTable tbody tr:nth-child(even) { background: #2a2f3a !important; }
+body[data-fids-theme="grey"] #fidsTable tbody tr td { color: #ffffff !important; }
+body[data-fids-theme="grey"] #fidsTable thead th { background: #1f2937 !important; color: #d1d5db !important; }
+
+/* ── AMBER (FULL — replaces stub) ── */
+body[data-fids-theme="amber"]            { background: #1a1100 !important; }
+body[data-fids-theme="amber"] #fidsBoard { background: #1a1100 !important; }
+body[data-fids-theme="amber"] #fidsTable { background: #1a1100 !important; }
+body[data-fids-theme="amber"] .fids-banner { background: #2a1c05 !important; }
+body[data-fids-theme="amber"] #fidsTable tbody tr { background: #1f1404 !important; color: #fef3c7 !important; }
+body[data-fids-theme="amber"] #fidsTable tbody tr:nth-child(even) { background: #2d1f08 !important; }
+body[data-fids-theme="amber"] #fidsTable tbody tr td { color: #fef3c7 !important; }
+body[data-fids-theme="amber"] #fidsTable thead th { background: #2a1c05 !important; color: #fbbf24 !important; }
+
+/* ── GREEN (FULL — replaces stub) ── */
+body[data-fids-theme="green"]            { background: #0a2e1d !important; }
+body[data-fids-theme="green"] #fidsBoard { background: #0a2e1d !important; }
+body[data-fids-theme="green"] #fidsTable { background: #0a2e1d !important; }
+body[data-fids-theme="green"] .fids-banner { background: #14532d !important; }
+body[data-fids-theme="green"] #fidsTable tbody tr { background: #0e3a24 !important; color: #ffffff !important; }
+body[data-fids-theme="green"] #fidsTable tbody tr:nth-child(even) { background: #1b4d34 !important; }
+body[data-fids-theme="green"] #fidsTable tbody tr td { color: #ffffff !important; }
+body[data-fids-theme="green"] #fidsTable thead th { background: #14532d !important; color: #86efac !important; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v218.9 — DEFINITIVE CELL UNIFORMITY (appended last, wins cascade)
+   Locks every body cell to the exact same size + weight so:
+     - FLIGHT # doesn't read bigger than the rest
+     - STATUS doesn't read smaller than the rest
+     - Time, City, Gate, Weather all share the same baseline
+   Status keeps weight 700 (vs 600 elsewhere) for visual emphasis only.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#fidsTable tbody tr td,
+#fidsTable tbody tr td.td-airline,
+#fidsTable tbody tr td.td-dest,
+#fidsTable tbody tr td.td-flight,
+#fidsTable tbody tr td.td-gate,
+#fidsTable tbody tr td.td-time,
+#fidsTable tbody tr td.td-time-sched,
+#fidsTable tbody tr td.td-time-rev,
+#fidsTable tbody tr td.td-wx {
+  font-size: 28px !important;
+  font-weight: 600 !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0.3px !important;
+}
+#fidsTable tbody tr td.td-status,
+#fidsTable tbody tr td.td-status * {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
+}
+/* Theme-specific tbody overrides (navy-board, cream) were setting 26px on
+   tbody — explicitly lock them to 28px too so the unification holds. */
+body[data-fids-theme="navy-board"] #fidsTable tbody tr,
+body[data-fids-theme="navy-board"] #fidsTable tbody tr td,
+body[data-fids-theme="cream"] #fidsTable tbody tr,
+body[data-fids-theme="cream"] #fidsTable tbody tr td,
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr,
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr td {
+  font-size: 28px !important;
+  font-weight: 600 !important;
+}
+body[data-fids-theme="navy-board"] #fidsTable tbody tr td.td-status,
+body[data-fids-theme="navy-board"] #fidsTable tbody tr td.td-status *,
+body[data-fids-theme="cream"] #fidsTable tbody tr td.td-status,
+body[data-fids-theme="cream"] #fidsTable tbody tr td.td-status *,
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr td.td-status,
+body[data-fids-theme="tus-teal"] #fidsTable tbody tr td.td-status * {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+}
+
+/* v218.39: Customize → Airline emblem only. Works across FIDS and BIDS. */
+body[data-fids-airline-style="emblem"] #fidsTable .fids-airline-name,
+body[data-fids-airline-style="emblem"] #fidsTable .fids-airline-wordmark,
+body[data-fids-airline-style="emblem"] .bidsv2-airline-name {
+  display: none !important;
+}
+body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
+  justify-content: center !important;
+}

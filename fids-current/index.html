@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIDS — Airport Display System v8</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/shared.css?v=21899-19">
+  <link rel="stylesheet" href="css/entry.css?v=35">
+  <link rel="stylesheet" href="css/mobile.css?v=1">
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ENTRY SCREEN — Two buttons: DEMO and LOGIN
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="entryScreen" class="entry-screen">
+  <div class="entry-inner">
+    <div class="entry-icon"></div>
+    <div class="entry-brand">FLIGHT INFORMATION DISPLAY SYSTEM</div>
+    <div class="entry-title">FIDS</div>
+    <div class="entry-sub">AIRPORT DISPLAY SYSTEM</div>
+    <div class="entry-sub-fr">SYSTÈME D'AFFICHAGE AÉROPORTUAIRE</div>
+    <div class="entry-divider"></div>
+    <div class="entry-buttons">
+      <button class="entry-btn entry-btn-demo" onclick="enterDemo()">
+        DEMO
+      </button>
+      <button class="entry-btn entry-btn-login" onclick="showLogin()">
+        LOGIN
+      </button>
+    </div>
+    <div class="entry-version">v8 · ORION CONNECTED</div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     LOGIN MODAL
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-card">
+    <div class="login-header">FIDS</div>
+    <div class="login-title">LIVE ACCESS</div>
+    <div class="login-subtitle">ACCÈS EN DIRECT</div>
+    <div class="gold-line" style="margin-bottom: 32px;"></div>
+
+    <div class="login-field">
+      <label>USERNAME · NOM D'UTILISATEUR</label>
+      <input id="loginUser" type="text" autocomplete="username"
+             onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+    </div>
+    <div class="login-field" style="margin-bottom: 24px;">
+      <label>PASSWORD · MOT DE PASSE</label>
+      <input id="loginPass" type="password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')attemptLogin()">
+    </div>
+
+    <div id="loginError" class="login-error"></div>
+
+    <div class="login-actions">
+      <button class="login-btn-submit" onclick="attemptLogin()">LOGIN</button>
+      <button class="login-btn-cancel" onclick="hideLogin()">CANCEL</button>
+    </div>
+
+    <div class="login-hint">LIVE DATA REQUIRES AUTHENTICATED ACCESS</div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     SCRIPTS
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<script src="js/auth.js?v=35"></script>
+<script>
+  // ── Entry Actions ─────────────────────────────────────────────────────
+
+  function enterDemo() {
+    // No auth needed — go straight to picker in demo mode
+    sessionStorage.setItem('fids_mode', 'demo');
+    window.location.href = 'picker.html';
+  }
+
+  function showLogin() {
+    document.getElementById('loginOverlay').classList.add('open');
+    document.getElementById('loginError').classList.remove('show');
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    setTimeout(() => document.getElementById('loginUser').focus(), 200);
+  }
+
+  function hideLogin() {
+    document.getElementById('loginOverlay').classList.remove('open');
+  }
+
+  async function attemptLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+    const errEl = document.getElementById('loginError');
+
+    if (!user || !pass) {
+      errEl.textContent = 'Please enter username and password';
+      errEl.classList.add('show');
+      return;
+    }
+
+    // Show loading state
+    const submitBtn = document.querySelector('.login-btn-submit');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = '...';
+    submitBtn.disabled = true;
+
+    const result = await Auth.login(user, pass);
+
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+
+    if (result.success) {
+      sessionStorage.setItem('fids_mode', 'live');
+      // Fade out and navigate
+      document.getElementById('loginOverlay').classList.remove('open');
+      document.getElementById('entryScreen').classList.add('fade-out');
+      setTimeout(() => {
+        window.location.href = 'picker.html';
+      }, 400);
+    } else {
+      errEl.textContent = result.error || 'Invalid credentials / Identifiants invalides';
+      errEl.classList.add('show');
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginPass').focus();
+    }
+  }
+
+  // ── Keyboard ──────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      const overlay = document.getElementById('loginOverlay');
+      if (overlay.classList.contains('open')) hideLogin();
+    }
+  });
+
+  // ── Check for existing session ────────────────────────────────────────
+  if (Auth.init()) {
+    // Already authenticated — skip to picker
+    window.location.href = 'picker.html';
+  }
+</script>
+</body>
+</html>

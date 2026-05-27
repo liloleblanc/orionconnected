@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="320" height="100">
+  <!-- jetBlue wordmark — light variant (white on transparent) for dark FIDS rows.
+       v203: rebuilt clean from scratch — previous file had filter-converted blue
+       text with a black backdrop that rendered nearly invisible on dark navy bg.
+       Brand style: lowercase "jet" + uppercase "B" + lowercase "lue".
+       Bold rounded sans-serif. -->
+  <text x="0" y="78" 
+        fill="#FFFFFF" 
+        font-family="Helvetica, Arial, sans-serif" 
+        font-size="92" 
+        font-weight="900"
+        letter-spacing="-2">jet<tspan font-weight="900">B</tspan>lue</text>
+</svg>

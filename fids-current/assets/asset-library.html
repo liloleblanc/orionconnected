@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Library</title>
+<style>
+  /* ── This viewer is DUMB by design (see ARCHITECTURE.md). It hardcodes
+     nothing about logos or categories — it renders whatever the manifest
+     contains. Add assets, re-run build-asset-manifest.py, refresh. ── */
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c232d; --line:#283039;
+    --ink:#e6edf3; --muted:#8b98a5; --accent:#4cc2ff; --accent2:#2dd4a7;
+    --chip:#21262d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.5 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+  }
+  header{
+    position:sticky; top:0; z-index:10; background:rgba(14,17,22,.92);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+    padding:18px 22px;
+  }
+  .title{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;}
+  h1{font-size:20px; font-weight:800; letter-spacing:.3px; margin:0;}
+  .sub{color:var(--muted); font-size:13px;}
+  .controls{display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; align-items:center;}
+  #q{
+    flex:1 1 280px; min-width:220px; background:var(--panel2); border:1px solid var(--line);
+    color:var(--ink); padding:10px 14px; border-radius:9px; font-size:15px; outline:none;
+  }
+  #q:focus{border-color:var(--accent);}
+  select{
+    background:var(--panel2); border:1px solid var(--line); color:var(--ink);
+    padding:10px 12px; border-radius:9px; font-size:14px; cursor:pointer;
+  }
+  .cats{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+  .cat{
+    background:var(--chip); border:1px solid var(--line); color:var(--muted);
+    padding:6px 13px; border-radius:999px; font-size:13px; cursor:pointer; user-select:none;
+    font-weight:600;
+  }
+  .cat.active{background:var(--accent); border-color:var(--accent); color:#06121c;}
+  main{padding:20px 22px 60px; max-width:1500px; margin:0 auto;}
+  .groupHdr{
+    margin:26px 0 12px; font-size:13px; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--muted); font-weight:700; border-bottom:1px solid var(--line); padding-bottom:8px;
+  }
+  .grid{
+    display:grid; gap:12px;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  }
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:11px;
+    overflow:hidden; cursor:pointer; transition:border-color .12s, transform .12s;
+  }
+  .card:hover{border-color:var(--accent); transform:translateY(-2px);}
+  .thumb{
+    height:96px; display:flex; align-items:center; justify-content:center;
+    /* checkerboard so white & dark logos are both visible */
+    background-image:
+      linear-gradient(45deg,#222b35 25%,transparent 25%),
+      linear-gradient(-45deg,#222b35 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#222b35 75%),
+      linear-gradient(-45deg,transparent 75%,#222b35 75%);
+    background-size:16px 16px;
+    background-position:0 0,0 8px,8px -8px,-8px 0;
+    background-color:#2b333d; padding:10px;
+  }
+  .thumb img{max-width:100%; max-height:100%; object-fit:contain;}
+  .thumb.vid{color:var(--muted); font-size:12px;}
+  .meta{padding:9px 11px; border-top:1px solid var(--line);}
+  .nm{font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sm{font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;}
+  .empty{color:var(--muted); text-align:center; padding:60px 0;}
+  /* toast */
+  #toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--accent2); color:#04140e; padding:11px 20px; border-radius:9px;
+    font-weight:700; font-size:14px; opacity:0; pointer-events:none; transition:.25s;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .count{color:var(--accent2); font-weight:700;}
+</style>
+</head>
+<body>
+<header>
+  <div class="title">
+    <h1>Asset Library</h1>
+    <span class="sub" id="summary">loading…</span>
+  </div>
+  <div class="controls">
+    <input id="q" type="text" placeholder="Search by name, code, country, file…" autocomplete="off">
+    <select id="sort">
+      <option value="group">Group by category</option>
+      <option value="name">Sort by name</option>
+      <option value="file">Sort by filename</option>
+    </select>
+  </div>
+  <div class="cats" id="cats"></div>
+</header>
+
+<main>
+  <div id="results"></div>
+</main>
+
+<div id="toast">Path copied</div>
+
+<script>
+/* DUMB VIEWER. No hardcoded asset knowledge. Lists TWO sources side by side
+   without moving any files or touching the live system:
+     1. asset-manifest.json  — the sorted logos/liveries/etc (static files)
+     2. the worker media-library — user-uploaded media (lives in R2)
+   Each item keeps its OWN real path/url. Nothing is relocated. To change
+   what shows: re-run the sorter (logos) or upload in-app (media). */
+const MANIFEST_URL = "asset-manifest.json"; // sits beside this file in /assets/
+const MEDIA_API = "https://fids-proxy.n-leblanc1984.workers.dev/api/media-library";
+let ALL = [], activeCat = "all", queryStr = "", sortMode = "group";
+
+const el = (id) => document.getElementById(id);
+
+async function boot(){
+  let logoItems = [], meta = {}, mediaItems = [], mediaErr = null;
+
+  // ── Source 1: the sorted logo manifest (required) ──
+  try{
+    const res = await fetch(MANIFEST_URL, {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data = await res.json();
+    logoItems = data.items || [];
+    meta = data._meta || {};
+  }catch(e){
+    el("results").innerHTML =
+      `<div class="empty">Could not load <b>${MANIFEST_URL}</b>.<br>`+
+      `Make sure build-asset-manifest.py has been run and this page sits in /assets/.<br>`+
+      `<small>${e.message}</small></div>`;
+    return;
+  }
+
+  // ── Source 2: uploaded media from the worker (optional — never blocks) ──
+  // If this fails (offline, CORS, empty), we just show logos. Nothing breaks.
+  try{
+    const r = await fetch(MEDIA_API, {cache:"no-store"});
+    if(r.ok){
+      const md = await r.json();
+      mediaItems = (md.items || []).map(normalizeMedia);
+    }
+  }catch(e){ mediaErr = e.message; }
+
+  ALL = logoItems.concat(mediaItems);
+
+  const logoCount = logoItems.length, mediaCount = mediaItems.length;
+  el("summary").innerHTML =
+    `<span class="count">${ALL.length}</span> assets · `+
+    `${logoCount} logos · ${mediaCount} uploaded`+
+    (mediaErr ? ` <span style="color:#e0a050">(media list unavailable)</span>` : ``);
+
+  buildCats(tally());
+  render();
+}
+
+// Map a worker media-library item into the SAME shape the viewer uses.
+// Uploaded media keeps its own R2 url — we never move it.
+function normalizeMedia(it){
+  const isVid = (it.type === "video") || /mp4|webm|mov/i.test(it.mimeType||"");
+  const ext = (it.mimeType||"").split("/").pop().replace("quicktime","mov") ||
+              (it.url||"").split(".").pop() || (isVid?"mp4":"img");
+  return {
+    path: it.url || "",
+    file: (it.url||"").split("/").pop() || it.id || "",
+    category: "uploaded",
+    subcategory: it.category || it.source || "media",
+    group: "Uploaded media" + (it.category ? " — "+it.category : ""),
+    name: it.label || (it.source==="youtube" ? ("YouTube "+(it.ytId||"")) : "Uploaded item"),
+    iata: "", country: "",
+    ext: String(ext).toLowerCase(),
+    source: it.source || "upload"
+  };
+}
+
+function tally(){
+  const c={}; ALL.forEach(i=>c[i.category]=(c[i.category]||0)+1); return c;
+}
+
+function buildCats(byCat){
+  const total = ALL.length;
+  const cats = Object.keys(byCat).sort();
+  const wrap = el("cats");
+  wrap.innerHTML = "";
+  const mk = (key,label,n)=>{
+    const d=document.createElement("div");
+    d.className="cat"+(key===activeCat?" active":"");
+    d.textContent=`${label} (${n})`;
+    d.onclick=()=>{activeCat=key; [...wrap.children].forEach(c=>c.classList.remove("active")); d.classList.add("active"); render();};
+    return d;
+  };
+  wrap.appendChild(mk("all","All",total));
+  cats.forEach(c=>wrap.appendChild(mk(c, c.charAt(0).toUpperCase()+c.slice(1), byCat[c])));
+}
+
+function matches(it){
+  if(activeCat!=="all" && it.category!==activeCat) return false;
+  if(!queryStr) return true;
+  const hay = (it.name+" "+it.iata+" "+it.country+" "+it.file+" "+it.group+" "+it.subcategory).toLowerCase();
+  return queryStr.split(/\s+/).every(t=>hay.includes(t));
+}
+
+function render(){
+  const items = ALL.filter(matches);
+  const root = el("results");
+  if(!items.length){ root.innerHTML=`<div class="empty">No assets match.</div>`; return; }
+
+  if(sortMode==="group"){
+    const groups={};
+    items.forEach(i=>{(groups[i.group]=groups[i.group]||[]).push(i);});
+    root.innerHTML = Object.keys(groups).sort().map(g=>
+      `<div class="groupHdr">${g} · ${groups[g].length}</div>`+
+      `<div class="grid">${groups[g].map(card).join("")}</div>`
+    ).join("");
+  }else{
+    const sorted=[...items].sort((a,b)=>(a[sortMode]||"").localeCompare(b[sortMode]||""));
+    root.innerHTML = `<div class="grid">${sorted.map(card).join("")}</div>`;
+  }
+}
+
+function card(it){
+  const isVid = ["mp4","webm","mov"].includes(it.ext);
+  const isYT = it.source === "youtube";
+  let thumb;
+  if(isYT){
+    thumb = `<div class="thumb vid">▶ YouTube</div>`;
+  }else if(isVid){
+    thumb = `<div class="thumb vid">▶ ${it.ext.toUpperCase()}</div>`;
+  }else if(!it.path){
+    thumb = `<div class="thumb vid">—</div>`;
+  }else{
+    thumb = `<div class="thumb"><img loading="lazy" src="${it.path}" alt="" onerror="this.parentNode.classList.add('vid');this.outerHTML='⚠ missing'"></div>`;
+  }
+  const sub = it.iata ? `${it.iata}${it.country?" · "+it.country:""}` : (it.file || it.subcategory || "");
+  const copyVal = (it.path || it.file).replace(/'/g,"\\'");
+  return `<div class="card" title="Click to copy:&#10;${it.path||it.file}" onclick="copyPath('${copyVal}')">`+
+    thumb+
+    `<div class="meta"><div class="nm">${it.name||it.file}</div><div class="sm">${sub}</div></div>`+
+  `</div>`;
+}
+
+function copyPath(p){
+  navigator.clipboard?.writeText(p).then(showToast, ()=>showToast());
+}
+let toastT;
+function showToast(){
+  const t=el("toast"); t.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1200);
+}
+
+el("q").addEventListener("input", e=>{queryStr=e.target.value.trim().toLowerCase(); render();});
+el("sort").addEventListener("change", e=>{sortMode=e.target.value; render();});
+
+boot();
+</script>
+</body>
+</html>

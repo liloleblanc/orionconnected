@@ -1,0 +1,1397 @@
+/* v218.40 Layout normalization patch
+   Purpose: keep airline wordmarks, gate logos, ads, and aircraft mockups aligned
+   across FIDS, BIDS, and GIDS without relying on per-logo lucky sizing. */
+
+:root {
+  --fids-brand-slot-h: 54px;
+  --fids-wordmark-h: 30px;
+  --fids-wordmark-w: 245px;
+  --gate-logo-slot-w: clamp(150px, 16vw, 300px);
+  --gate-logo-slot-h: clamp(50px, 6.8vh, 82px);
+}
+
+/* ── FIDS main board: fixed airline logo slot + baseline-aligned wordmarks ── */
+#fidsTable .td-airline { overflow: hidden !important; }
+#fidsTable .td-airline .fids-cell-airline {
+  display: grid !important;
+  grid-template-columns: var(--fids-brand-slot-h) minmax(0, 1fr) !important;
+  align-items: center !important;
+  column-gap: 14px !important;
+  min-width: 0 !important;
+  height: var(--fids-brand-slot-h) !important;
+}
+#fidsTable .td-airline .fids-airline-logo {
+  width: var(--fids-brand-slot-h) !important;
+  height: var(--fids-brand-slot-h) !important;
+  min-width: var(--fids-brand-slot-h) !important;
+  max-width: var(--fids-brand-slot-h) !important;
+  min-height: var(--fids-brand-slot-h) !important;
+  max-height: var(--fids-brand-slot-h) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+#fidsTable .td-airline .fids-airline-logo img,
+#fidsTable .td-airline .fids-airline-logo svg,
+#fidsTable .td-airline .fids-airline-logo .full-logo {
+  max-width: 92% !important;
+  max-height: 92% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+#fidsTable .td-airline .fids-airline-wordmark {
+  height: var(--fids-wordmark-h) !important;
+  max-height: var(--fids-wordmark-h) !important;
+  width: 100% !important;
+  max-width: var(--fids-wordmark-w) !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  display: block !important;
+  align-self: center !important;
+  justify-self: start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+#fidsTable .td-airline .fids-airline-name {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  line-height: 1.05 !important;
+  align-self: center !important;
+}
+body[data-fids-airline-name="off"] #fidsTable .td-airline .fids-cell-airline,
+body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-cell-airline {
+  grid-template-columns: var(--fids-brand-slot-h) !important;
+  justify-content: center !important;
+}
+body[data-fids-airline-name="off"] #fidsTable .td-airline .fids-airline-wordmark,
+body[data-fids-airline-name="off"] #fidsTable .td-airline .fids-airline-name,
+body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-wordmark,
+body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-name {
+  display: none !important;
+}
+
+/* ── BIDS baggage board: same logo tile geometry, no drifting baselines ── */
+.bidsv2-col-flight {
+  display: grid !important;
+  grid-template-columns: 58px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 16px !important;
+  min-width: 0 !important;
+}
+.bidsv2-airline-block {
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  min-height: 58px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.bidsv2-airline-block img,
+.bidsv2-airline-block svg,
+.bidsv2-airline-block .full-logo {
+  max-width: 92% !important;
+  max-height: 92% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+.bidsv2-flight-meta { min-width: 0 !important; justify-content: center !important; }
+.bidsv2-airline-name,
+.bidsv2-flight-num {
+  line-height: 1.05 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* ── Gate header: every airline mark lives in the same visual box ── */
+.g8-r1-left,
+.g8-r1-right { min-width: 0 !important; }
+.g8-r1-airline {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+.g8-r1-logo {
+  width: var(--gate-logo-slot-w) !important;
+  height: var(--gate-logo-slot-h) !important;
+  max-width: var(--gate-logo-slot-w) !important;
+  max-height: var(--gate-logo-slot-h) !important;
+  min-height: 0 !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  display: block !important;
+  margin: 0 !important;
+}
+.g8-r1-logo.full-logo,
+.g8-r1-airline .full-logo,
+.g8-r1-airline img,
+.g8-r1-airline svg {
+  max-width: var(--gate-logo-slot-w) !important;
+  max-height: var(--gate-logo-slot-h) !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+}
+.g8-banner-light .g8-r1-logo { filter: none !important; }
+
+/* ── Gate ad strip: make the left logo well and center ad fill consistently ── */
+#gateAdLogo {
+  flex: 0 0 clamp(170px, 18vw, 260px) !important;
+  width: clamp(170px, 18vw, 260px) !important;
+  min-width: clamp(170px, 18vw, 260px) !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  padding: 10px 14px !important;
+}
+#gateAdLogo img,
+#gateAdLogo svg {
+  max-width: 100% !important;
+  max-height: 76% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
+}
+#gateAdCarousel,
+#gateAdCurrentCarousel {
+  display: block !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: #101827 !important;
+}
+#gateAdCarousel > div,
+#gateAdCurrentCarousel > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+#gateWxStrip { min-width: 220px !important; }
+
+/* ── Aircraft mockup: fixed stage prevents tiny-then-huge jumping while image loads ── */
+.gad-equip-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+.gad-equip-img-large {
+  flex: 1 1 190px !important;
+  min-height: clamp(130px, 22vh, 230px) !important;
+  max-height: clamp(170px, 28vh, 300px) !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  margin-top: 8px !important;
+  contain: layout paint !important;
+}
+.gad-equip-img-large img,
+.gad-equip-img-large .g8-aircraft-img,
+.g8-aircraft-img {
+  width: min(96%, 560px) !important;
+  height: 100% !important;
+  max-width: 96% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+@media (max-width: 900px) {
+  :root { --fids-brand-slot-h: 46px; --fids-wordmark-h: 24px; --fids-wordmark-w: 190px; }
+  .bidsv2-col-flight { grid-template-columns: 48px minmax(0, 1fr) !important; }
+  .bidsv2-airline-block { width: 48px !important; height: 48px !important; min-width: 48px !important; min-height: 48px !important; }
+  #gateAdLogo { flex-basis: 130px !important; width: 130px !important; min-width: 130px !important; }
+  #gateWxStrip { min-width: 160px !important; }
+  .gad-equip-img-large { min-height: 110px !important; max-height: 150px !important; }
+}
+
+@media (max-width: 560px) {
+  #gateAdLogo { flex-basis: 96px !important; width: 96px !important; min-width: 96px !important; padding: 6px !important; }
+  #gateWxStrip { display: none !important; }
+  .g8-r1-logo { width: 130px !important; height: 42px !important; max-width: 130px !important; max-height: 42px !important; }
+}
+
+
+/* v218.43 — main FIDS row logo/wordmark margin normalization */
+:root {
+  --fids-wordmark-slot-w: 210px;
+  --fids-wordmark-slot-pad-x: 10px;
+}
+#fidsTable .td-airline .fids-cell-airline {
+  grid-template-columns: var(--fids-brand-slot-h) minmax(0, var(--fids-wordmark-slot-w)) !important;
+  column-gap: 12px !important;
+}
+#fidsTable .td-airline .fids-airline-logo {
+  padding: 4px !important;
+}
+#fidsTable .td-airline .fids-airline-wordmark-slot {
+  width: var(--fids-wordmark-slot-w) !important;
+  min-width: 0 !important;
+  max-width: var(--fids-wordmark-slot-w) !important;
+  height: var(--fids-brand-slot-h) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 0 var(--fids-wordmark-slot-pad-x) !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+#fidsTable .td-airline .fids-airline-wordmark-slot .fids-airline-wordmark,
+#fidsTable .td-airline .fids-airline-wordmark-slot .fids-airline-name {
+  margin: 0 !important;
+}
+#fidsTable .td-airline .fids-airline-wordmark {
+  width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;
+  max-width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;
+  height: var(--fids-wordmark-h) !important;
+  max-height: var(--fids-wordmark-h) !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+}
+#fidsTable .td-airline .fids-airline-name {
+  width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;
+  max-width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;
+}
+body[data-fids-airline-name="off"] #fidsTable .td-airline .fids-cell-airline,
+body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-cell-airline {
+  grid-template-columns: var(--fids-brand-slot-h) !important;
+}
+body[data-fids-airline-name="off"] #fidsTable .td-airline .fids-airline-wordmark-slot,
+body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-wordmark-slot {
+  display: none !important;
+}
+
+/* v218.44 — carrier-specific wordmark tuning pass
+   Goal: all FIDS row airline marks share the same left edge, visual baseline,
+   and approximate optical size while preserving each carrier's real artwork. */
+:root {
+  --fids-logo-tile-size: 54px;
+  --fids-logo-inner-size: 44px;
+  --fids-wordmark-slot-w: 218px;
+  --fids-wordmark-slot-pad-x: 10px;
+  --fids-wordmark-optical-h: 30px;
+}
+#fidsTable .td-airline .fids-cell-airline {
+  grid-template-columns: var(--fids-logo-tile-size) minmax(0, var(--fids-wordmark-slot-w)) !important;
+  column-gap: 12px !important;
+  align-items: center !important;
+}
+#fidsTable .td-airline .fids-airline-logo {
+  width: var(--fids-logo-tile-size) !important;
+  height: var(--fids-logo-tile-size) !important;
+  min-width: var(--fids-logo-tile-size) !important;
+  max-width: var(--fids-logo-tile-size) !important;
+  min-height: var(--fids-logo-tile-size) !important;
+  max-height: var(--fids-logo-tile-size) !important;
+  padding: 5px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+#fidsTable .td-airline .fids-airline-logo .full-logo,
+#fidsTable .td-airline .fids-airline-logo .full-logo img,
+#fidsTable .td-airline .fids-airline-logo img,
+#fidsTable .td-airline .fids-airline-logo svg {
+  max-width: var(--fids-logo-inner-size) !important;
+  max-height: var(--fids-logo-inner-size) !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  margin: 0 auto !important;
+}
+#fidsTable .td-airline .fids-airline-wordmark-slot {
+  width: var(--fids-wordmark-slot-w) !important;
+  max-width: var(--fids-wordmark-slot-w) !important;
+  height: var(--fids-logo-tile-size) !important;
+  padding: 0 var(--fids-wordmark-slot-pad-x) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+#fidsTable .td-airline .fids-airline-wordmark {
+  --wm-h: var(--fids-wordmark-optical-h);
+  --wm-w: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2));
+  --wm-x: 0px;
+  --wm-y: 0px;
+  width: var(--wm-w) !important;
+  max-width: var(--wm-w) !important;
+  height: var(--wm-h) !important;
+  max-height: var(--wm-h) !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  transform: translate(var(--wm-x), var(--wm-y)) !important;
+  transform-origin: left center !important;
+  display: block !important;
+  margin: 0 !important;
+}
+/* Big blocky all-caps marks need less height; thin script/wide marks need more room. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { --wm-h: 28px; --wm-w: 178px; } /* Southwest */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AC"] { --wm-h: 25px; --wm-w: 188px; } /* Air Canada */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="LA"] { --wm-h: 26px; --wm-w: 170px; } /* LATAM */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AF"] { --wm-h: 23px; --wm-w: 184px; } /* Air France */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { --wm-h: 32px; --wm-w: 205px; --wm-y: -1px; } /* Frontier */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="IB"] { --wm-h: 29px; --wm-w: 118px; } /* Iberia */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="G3"] { --wm-h: 20px; --wm-w: 126px; } /* GOL */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"] { --wm-h: 28px; --wm-w: 138px; } /* jetBlue */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"] { --wm-h: 26px; --wm-w: 170px; --wm-y: 1px; } /* Delta */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AA"] { --wm-h: 28px; --wm-w: 176px; } /* American */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { --wm-h: 30px; --wm-w: 130px; } /* Alaska */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { --wm-h: 29px; --wm-w: 130px; } /* Avianca */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"] { --wm-h: 27px; --wm-w: 160px; } /* United */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="NK"] { --wm-h: 28px; --wm-w: 140px; } /* Spirit */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { --wm-h: 29px; --wm-w: 150px; } /* WestJet */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="BA"] { --wm-h: 27px; --wm-w: 190px; } /* British Airways */
+#fidsTable .td-airline .fids-airline-name {
+  width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;
+  max-width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;
+  line-height: 1.05 !important;
+}
+/* When only emblems are desired, keep the single logo tile centered and remove wordmark slot. */
+body[data-fids-airline-name="off"] #fidsTable .td-airline .fids-cell-airline,
+body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-cell-airline {
+  grid-template-columns: var(--fids-logo-tile-size) !important;
+}
+body[data-fids-airline-name="off"] #fidsTable .td-airline .fids-airline-wordmark-slot,
+body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-wordmark-slot {
+  display: none !important;
+}
+
+
+/* v218.45 — restore original GIDS gate-header sizing and oversized aircraft-panel brand marks */
+.g8-wrap-watermark .gad-info-col::after {
+  right: -35% !important;
+  width: 130% !important;
+  opacity: 0.18 !important;
+}
+.g8-airline-AC.g8-wrap-watermark .gad-info-col::after,
+.g8-airline-QK.g8-wrap-watermark .gad-info-col::after,
+.g8-airline-RV.g8-wrap-watermark .gad-info-col::after {
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.22 !important;
+}
+.g8-airline-PD.g8-wrap-watermark .gad-info-col::after {
+  right: -28% !important;
+  width: 122% !important;
+  opacity: 0.18 !important;
+}
+
+
+/* v218.48 — Porter image wired directly for FIDS/GIDS HTML loading */
+.g8-airline-PD.g8-wrap-watermark .gad-info-col::after {
+  content: '' !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+  aspect-ratio: auto !important;
+  background-image: url('../logos/Backgrounds/PD/porter-pattern-panel.png') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.14 !important;
+  filter: none !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+
+/* v218.49 — AC watermark correction, Porter opacity, stable large aircraft art */
+.g8-airline-AC.g8-wrap-watermark .gad-info-col::after,
+.g8-airline-QK.g8-wrap-watermark .gad-info-col::after,
+.g8-airline-RV.g8-wrap-watermark .gad-info-col::after {
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 82% !important;
+  height: 82% !important;
+  aspect-ratio: 1 / 1 !important;
+  transform: translate(-50%, -50%) !important;
+  background-position: center center !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.10 !important;
+  filter: none !important;
+}
+.g8-airline-AC.g8-wrap-watermark .gad-info-col::before,
+.g8-airline-QK.g8-wrap-watermark .gad-info-col::before,
+.g8-airline-RV.g8-wrap-watermark .gad-info-col::before {
+  display: none !important;
+}
+.g8-airline-PD.g8-wrap-watermark .gad-info-col::after {
+  opacity: 0.22 !important;
+}
+/* Fixed-size aircraft stage: no tiny-then-big jump, and planes fill width consistently. */
+.gad-equip-img-large {
+  flex: 0 0 170px !important;
+  min-height: 170px !important;
+  max-height: 170px !important;
+  height: 170px !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  margin-top: 8px !important;
+  contain: layout paint !important;
+}
+.gad-equip-img-large img,
+.gad-equip-img-large .g8-aircraft-img,
+.g8-aircraft-img {
+  width: 100% !important;
+  height: 170px !important;
+  max-width: 100% !important;
+  max-height: 170px !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+@media (max-width: 900px) {
+  .gad-equip-img-large { flex-basis: 150px !important; min-height: 150px !important; max-height: 150px !important; height: 150px !important; }
+  .gad-equip-img-large img,
+  .gad-equip-img-large .g8-aircraft-img,
+  .g8-aircraft-img { height: 150px !important; max-height: 150px !important; }
+}
+
+/* v218.52 — GIDS city display uses literal parentheses now */
+.g8-r1-dest {
+  white-space: nowrap !important;
+}
+
+
+/* v218.53 — GIDS city code gray + AC aircraft-info watermark restore */
+.g8-r1-dest .g8-city-code,
+.g8-r1-dest .g8-iata {
+  color: rgba(255,255,255,0.48) !important;
+  font-weight: 700 !important;
+}
+.g8-airline-AC.g8-wrap-watermark .gad-info-col,
+.g8-airline-QK.g8-wrap-watermark .gad-info-col,
+.g8-airline-RV.g8-wrap-watermark .gad-info-col {
+  position: relative !important;
+  overflow: hidden !important;
+}
+.g8-airline-AC.g8-wrap-watermark .gad-info-col::after,
+.g8-airline-QK.g8-wrap-watermark .gad-info-col::after,
+.g8-airline-RV.g8-wrap-watermark .gad-info-col::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 118% !important;
+  height: 118% !important;
+  transform: translate(-50%, -50%) !important;
+  background-image: url('../logos/Backgrounds/AC/aircanada-roundel-fade.svg') !important;
+  background-position: center center !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.13 !important;
+  filter: none !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+.g8-airline-AC.g8-wrap-watermark .gad-info-card,
+.g8-airline-QK.g8-wrap-watermark .gad-info-card,
+.g8-airline-RV.g8-wrap-watermark .gad-info-card {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+
+/* v218.54 — city/code contrast and larger top airline/alliance marks */
+
+/* Dark header: city white, airport code gray and slightly smaller. */
+.g8-r1-dest {
+  color: #fff !important;
+}
+.g8-r1-dest .g8-city-code,
+.g8-r1-dest .g8-iata {
+  color: rgba(255,255,255,0.54) !important;
+  font-size: 0.78em !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  vertical-align: baseline !important;
+}
+
+/* Light cards/panels: city/destination dark, code softer gray and slightly smaller. */
+.gad-info-col,
+.gad-info-card,
+.gad-info-row,
+.fids-board,
+#fidsTable {
+  --city-main-color: #111827;
+  --city-code-color: rgba(17,24,39,0.56);
+}
+.gad-info-col .g8-city-code,
+.gad-info-card .g8-city-code,
+.gad-info-row .g8-city-code,
+#fidsTable .g8-city-code,
+#fidsTable .g8-iata,
+.td-to .g8-city-code,
+.td-from .g8-city-code {
+  color: var(--city-code-color) !important;
+  font-size: 0.86em !important;
+  font-weight: 700 !important;
+}
+
+/* Main FIDS rows are usually dark/colored, so keep destination code lighter than city. */
+#fidsTable .td-to,
+#fidsTable .td-from {
+  color: #fff !important;
+}
+#fidsTable .td-to .g8-city-code,
+#fidsTable .td-from .g8-city-code {
+  color: rgba(255,255,255,0.64) !important;
+}
+
+/* Top GIDS airline logo and alliance mark: larger, closer to original gate-board scale. */
+.g8-r1-right {
+  gap: 28px !important;
+  align-items: center !important;
+}
+.g8-r1-logo {
+  max-height: 128px !important;
+  height: auto !important;
+  max-width: 620px !important;
+  object-fit: contain !important;
+}
+.g8-r1-star {
+  width: auto !important;
+  height: 92px !important;
+  max-height: 92px !important;
+  max-width: 116px !important;
+  object-fit: contain !important;
+  opacity: 0.95 !important;
+}
+.g8-r1-gate {
+  margin-left: 8px !important;
+}
+@media (max-width: 1200px) {
+  .g8-r1-logo {
+    max-height: 108px !important;
+    max-width: 480px !important;
+  }
+  .g8-r1-star {
+    height: 76px !important;
+    max-height: 76px !important;
+    max-width: 98px !important;
+  }
+}
+
+
+/* v218.57 — rollback bad gate-layout changes; safe logo and aircraft treatment */
+
+/* Do not alter the GIDS header grid/background. Only allow logos to breathe. */
+.g8-r1-right {
+  overflow: visible !important;
+}
+.g8-r1-logo,
+.g8-r1-right > img:first-child {
+  max-height: 132px !important;
+  max-width: 640px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+.g8-airline-AC .g8-r1-logo,
+.g8-airline-QK .g8-r1-logo,
+.g8-airline-RV .g8-r1-logo,
+.g8-airline-AC .g8-r1-right > img:first-child,
+.g8-airline-QK .g8-r1-right > img:first-child,
+.g8-airline-RV .g8-r1-right > img:first-child {
+  max-height: 150px !important;
+  max-width: 760px !important;
+}
+.g8-r1-star,
+.g8-r1-right img[alt*="Star"],
+.g8-r1-right img[src*="star"],
+.g8-r1-right img[src*="alliance"] {
+  width: auto !important;
+  height: 82px !important;
+  max-height: 82px !important;
+  max-width: 100px !important;
+  object-fit: contain !important;
+  opacity: 1 !important;
+}
+
+/* Aircraft panel: keep text readable, then place aircraft at bottom without overlapping. */
+.gad-info-card {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  overflow: hidden !important;
+}
+.gad-equip-img-large {
+  position: relative !important;
+  inset: auto !important;
+  flex: 1 1 auto !important;
+  min-height: 92px !important;
+  height: auto !important;
+  max-height: 138px !important;
+  width: 100% !important;
+  margin: auto 0 0 0 !important;
+  padding: 4px 12px 2px 12px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  z-index: 2 !important;
+}
+.gad-equip-img-large img,
+.gad-equip-img-large .g8-aircraft-img,
+.g8-aircraft-img {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 132px !important;
+  object-fit: contain !important;
+  object-position: center bottom !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* City/code: city stays dominant, code is secondary. */
+.g8-r1-dest .g8-city-code,
+.g8-r1-dest .g8-iata {
+  color: rgba(255,255,255,0.54) !important;
+  font-size: 0.78em !important;
+  font-weight: 700 !important;
+}
+
+
+/* v218.58 — compress top/bottom bands without shrinking the actual logo artwork */
+
+/* Top GIDS header: return to a tighter band. Logo remains visible, but cannot make the row huge. */
+.g8-r1,
+.g8-top,
+.g8-header,
+.g8-gate-header {
+  min-height: 150px !important;
+  max-height: 160px !important;
+  height: 156px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.g8-r1-dest {
+  line-height: 1.02 !important;
+}
+.g8-r1-right {
+  height: 132px !important;
+  max-height: 132px !important;
+  align-items: center !important;
+  overflow: visible !important;
+}
+.g8-r1-logo,
+.g8-r1-right > img:first-child {
+  max-height: 112px !important;
+  height: auto !important;
+  max-width: 620px !important;
+  object-fit: contain !important;
+}
+.g8-airline-AC .g8-r1-logo,
+.g8-airline-QK .g8-r1-logo,
+.g8-airline-RV .g8-r1-logo,
+.g8-airline-AC .g8-r1-right > img:first-child,
+.g8-airline-QK .g8-r1-right > img:first-child,
+.g8-airline-RV .g8-r1-right > img:first-child {
+  max-height: 122px !important;
+  max-width: 660px !important;
+}
+.g8-r1-star,
+.g8-r1-right img[alt*="Star"],
+.g8-r1-right img[src*="star"],
+.g8-r1-right img[src*="alliance"] {
+  height: 70px !important;
+  max-height: 70px !important;
+  width: auto !important;
+  max-width: 88px !important;
+}
+
+/* Gate number should stay inside the tighter top band. */
+.g8-r1-gate {
+  line-height: 1 !important;
+}
+
+/* Bottom advertising/weather strip: slightly shorter so the main middle area gets breathing room. */
+.g8-ad-row,
+.g8-bottom,
+.g8-bottom-row,
+.gids-ad-row,
+.gids-bottom,
+.gad-bottom,
+.g8-wrap .ad-row {
+  min-height: 150px !important;
+  height: 168px !important;
+  max-height: 178px !important;
+  overflow: hidden !important;
+}
+.g8-ad-row img,
+.g8-bottom img,
+.gids-ad-row img,
+.gids-bottom img,
+.gad-bottom img {
+  max-height: 168px !important;
+  object-fit: cover !important;
+}
+
+/* Aircraft stays bottom of info card, but do not let it consume the text area. */
+.gad-equip-img-large {
+  min-height: 82px !important;
+  max-height: 118px !important;
+  margin-top: 6px !important;
+  padding: 2px 12px 0 12px !important;
+}
+.gad-equip-img-large img,
+.gad-equip-img-large .g8-aircraft-img,
+.g8-aircraft-img {
+  max-height: 112px !important;
+  object-position: center bottom !important;
+}
+
+
+/* v218.59 — airport code gray on every GIDS header theme, including white-top airlines */
+
+/* Default/dark header: city bright, code softer gray. */
+.g8-r1-dest,
+.g8-r1-dest .g8-city-name {
+  color: inherit !important;
+}
+.g8-r1-dest .g8-city-code,
+.g8-r1-dest .g8-iata {
+  color: rgba(255,255,255,0.54) !important;
+  font-size: 0.78em !important;
+  font-weight: 700 !important;
+}
+
+/* White/light top themes: city dark, code gray. */
+.g8-r1[style*="white"] .g8-r1-dest .g8-city-code,
+.g8-r1[style*="#fff"] .g8-r1-dest .g8-city-code,
+.g8-r1[style*="#ffffff"] .g8-r1-dest .g8-city-code,
+.g8-top[style*="white"] .g8-r1-dest .g8-city-code,
+.g8-top[style*="#fff"] .g8-r1-dest .g8-city-code,
+.g8-top[style*="#ffffff"] .g8-r1-dest .g8-city-code,
+.g8-header[style*="white"] .g8-r1-dest .g8-city-code,
+.g8-header[style*="#fff"] .g8-r1-dest .g8-city-code,
+.g8-header[style*="#ffffff"] .g8-r1-dest .g8-city-code,
+.g8-theme-light .g8-r1-dest .g8-city-code,
+.g8-header-light .g8-r1-dest .g8-city-code,
+.g8-white-top .g8-r1-dest .g8-city-code,
+.g8-light-top .g8-r1-dest .g8-city-code,
+.g8-airline-WS .g8-r1-dest .g8-city-code,
+.g8-airline-B6 .g8-r1-dest .g8-city-code,
+.g8-airline-AS .g8-r1-dest .g8-city-code,
+.g8-airline-UA .g8-r1-dest .g8-city-code,
+.g8-airline-AA .g8-r1-dest .g8-city-code,
+.g8-airline-AC .g8-r1-dest .g8-city-code {
+  color: rgba(17,24,39,0.48) !important;
+}
+
+/* Light top themes: keep city/name dark if the carrier theme does not already set it. */
+.g8-theme-light .g8-r1-dest,
+.g8-theme-light .g8-r1-dest .g8-city-name,
+.g8-header-light .g8-r1-dest,
+.g8-header-light .g8-r1-dest .g8-city-name,
+.g8-white-top .g8-r1-dest,
+.g8-white-top .g8-r1-dest .g8-city-name,
+.g8-light-top .g8-r1-dest,
+.g8-light-top .g8-r1-dest .g8-city-name,
+.g8-airline-WS .g8-r1-dest,
+.g8-airline-WS .g8-r1-dest .g8-city-name {
+  color: #111827 !important;
+}
+
+/* White top + misc airport labels get gray codes too. */
+.g8-airline-WS .wx-iata,
+.g8-airline-WS .airport-code,
+.g8-airline-WS [data-iata],
+.g8-airline-WS .g8-iata {
+  color: rgba(17,24,39,0.52) !important;
+}
+
+
+/* v218.60 — reduce top/bottom footprint without shrinking airline logos */
+
+/* Desktop/tablet GIDS: compress the header band itself. Airline logos keep their size rules. */
+.g8-r1,
+.g8-top,
+.g8-header,
+.g8-gate-header {
+  min-height: 118px !important;
+  height: 124px !important;
+  max-height: 132px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+/* Keep destination readable inside the smaller header. */
+.g8-r1-dest {
+  line-height: 0.98 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+.g8-r1-dest .g8-city-code,
+.g8-r1-dest .g8-iata,
+.mobile-gate .g8-city-code,
+.gids-mobile .g8-city-code,
+.mobile-gids .g8-city-code,
+.mobile-gate-dest .g8-city-code,
+.mobile-gids-dest .g8-city-code,
+.gate-mobile-dest .g8-city-code {
+  font-size: 0.78em !important;
+  font-weight: 700 !important;
+}
+
+/* Dark header = white city, gray code. */
+.g8-r1-dest .g8-city-code,
+.g8-r1-dest .g8-iata {
+  color: rgba(255,255,255,0.54) !important;
+}
+
+/* Light/white header = dark city, gray code. This covers WestJet-style tops too. */
+.g8-airline-WS .g8-r1-dest .g8-city-name,
+.g8-airline-WS .g8-r1-dest,
+.g8-theme-light .g8-r1-dest .g8-city-name,
+.g8-theme-light .g8-r1-dest,
+.g8-white-top .g8-r1-dest .g8-city-name,
+.g8-white-top .g8-r1-dest,
+.g8-light-top .g8-r1-dest .g8-city-name,
+.g8-light-top .g8-r1-dest {
+  color: #111827 !important;
+}
+.g8-airline-WS .g8-r1-dest .g8-city-code,
+.g8-theme-light .g8-r1-dest .g8-city-code,
+.g8-white-top .g8-r1-dest .g8-city-code,
+.g8-light-top .g8-r1-dest .g8-city-code {
+  color: rgba(17,24,39,0.48) !important;
+}
+
+/* Reduce the red/colored flight strip footprint a touch without changing typography scale too much. */
+.g8-r2,
+.g8-flight-strip,
+.g8-status-strip,
+.gate-flight-strip {
+  min-height: 96px !important;
+  height: 108px !important;
+  max-height: 116px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  box-sizing: border-box !important;
+}
+
+/* Bottom ad/weather band: reduce height so the center content comes back. */
+.g8-ad-row,
+.g8-bottom,
+.g8-bottom-row,
+.gids-ad-row,
+.gids-bottom,
+.gad-bottom,
+.g8-wrap .ad-row {
+  min-height: 124px !important;
+  height: 142px !important;
+  max-height: 152px !important;
+  overflow: hidden !important;
+}
+.g8-ad-row img,
+.g8-bottom img,
+.gids-ad-row img,
+.gids-bottom img,
+.gad-bottom img {
+  max-height: 142px !important;
+  object-fit: cover !important;
+}
+
+/* Mobile gate screens: same City (CODE) styling and tighter header/bottom. */
+@media (max-width: 700px), (orientation: portrait) {
+  .g8-r1,
+  .g8-top,
+  .g8-header,
+  .g8-gate-header,
+  .mobile-gate-header,
+  .gids-mobile-header,
+  .mobile-gids-header {
+    min-height: 82px !important;
+    height: 90px !important;
+    max-height: 98px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    overflow: visible !important;
+  }
+
+  .mobile-gate-dest,
+  .mobile-gids-dest,
+  .gate-mobile-dest,
+  .gids-mobile .dest,
+  .gids-mobile .destination,
+  .mobile-gate .dest,
+  .mobile-gate .destination {
+    color: inherit !important;
+    line-height: 1 !important;
+  }
+
+  .mobile-gate-dest .g8-city-code,
+  .mobile-gids-dest .g8-city-code,
+  .gate-mobile-dest .g8-city-code,
+  .gids-mobile .g8-city-code,
+  .mobile-gate .g8-city-code {
+    color: rgba(255,255,255,0.54) !important;
+    font-size: 0.78em !important;
+  }
+
+  .g8-airline-WS .mobile-gate-dest .g8-city-code,
+  .g8-airline-WS .mobile-gids-dest .g8-city-code,
+  .g8-airline-WS .gate-mobile-dest .g8-city-code,
+  .g8-airline-WS.gids-mobile .g8-city-code,
+  .g8-airline-WS.mobile-gate .g8-city-code,
+  .g8-theme-light .mobile-gate-dest .g8-city-code,
+  .g8-theme-light .mobile-gids-dest .g8-city-code,
+  .g8-theme-light .gate-mobile-dest .g8-city-code {
+    color: rgba(17,24,39,0.48) !important;
+  }
+
+  .g8-r2,
+  .g8-flight-strip,
+  .g8-status-strip,
+  .gate-flight-strip {
+    min-height: 72px !important;
+    height: 82px !important;
+    max-height: 90px !important;
+  }
+
+  .g8-ad-row,
+  .g8-bottom,
+  .g8-bottom-row,
+  .gids-ad-row,
+  .gids-bottom,
+  .gad-bottom,
+  .g8-wrap .ad-row {
+    min-height: 88px !important;
+    height: 102px !important;
+    max-height: 112px !important;
+  }
+}
+
+
+/* v218.61 — hotel ad logo correction / Pacific Rim property lockup */
+.hotel-logo-panel img,
+.gids-hotel-logo img,
+.ad-logo-panel img {
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+img[src*="fairmont-pacific-rim"] {
+  width: 88% !important;
+  max-width: 88% !important;
+  height: auto !important;
+  max-height: 54% !important;
+  object-fit: contain !important;
+}
+
+
+/* v218.62 — force visible gray airport codes on dark and light headers */
+
+/* Baseline: dark header code is visible gray, not near-black. */
+.g8-r1-dest .g8-city-code,
+.g8-r1-dest .g8-iata,
+body.g8-header-is-dark .g8-r1-dest .g8-city-code,
+body.g8-header-is-dark .g8-r1-dest .g8-iata {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  text-shadow: none !important;
+  font-size: 0.78em !important;
+  font-weight: 700 !important;
+}
+
+/* Keep city/name bright on dark header. */
+body.g8-header-is-dark .g8-r1-dest,
+body.g8-header-is-dark .g8-r1-dest .g8-city-name {
+  color: #FFFFFF !important;
+}
+
+/* Light header code is darker gray, city remains dark. */
+body.g8-header-is-light .g8-r1-dest,
+body.g8-header-is-light .g8-r1-dest .g8-city-name,
+.g8-airline-WS .g8-r1-dest,
+.g8-airline-WS .g8-r1-dest .g8-city-name,
+.g8-theme-light .g8-r1-dest,
+.g8-theme-light .g8-r1-dest .g8-city-name,
+.g8-white-top .g8-r1-dest,
+.g8-white-top .g8-r1-dest .g8-city-name,
+.g8-light-top .g8-r1-dest,
+.g8-light-top .g8-r1-dest .g8-city-name {
+  color: #111827 !important;
+}
+body.g8-header-is-light .g8-r1-dest .g8-city-code,
+body.g8-header-is-light .g8-r1-dest .g8-iata,
+.g8-airline-WS .g8-r1-dest .g8-city-code,
+.g8-airline-WS .g8-r1-dest .g8-iata,
+.g8-theme-light .g8-r1-dest .g8-city-code,
+.g8-white-top .g8-r1-dest .g8-city-code,
+.g8-light-top .g8-r1-dest .g8-city-code {
+  color: #6B7280 !important;
+  opacity: 1 !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  text-shadow: none !important;
+}
+
+/* Mobile gate headers get the same contrast behavior. */
+body.g8-header-is-dark .mobile-gate-dest .g8-city-code,
+body.g8-header-is-dark .mobile-gids-dest .g8-city-code,
+body.g8-header-is-dark .gate-mobile-dest .g8-city-code,
+body.g8-header-is-dark .gids-mobile .g8-city-code,
+body.g8-header-is-dark .mobile-gate .g8-city-code {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
+}
+body.g8-header-is-light .mobile-gate-dest .g8-city-code,
+body.g8-header-is-light .mobile-gids-dest .g8-city-code,
+body.g8-header-is-light .gate-mobile-dest .g8-city-code,
+body.g8-header-is-light .gids-mobile .g8-city-code,
+body.g8-header-is-light .mobile-gate .g8-city-code {
+  color: #6B7280 !important;
+  opacity: 1 !important;
+}
+
+
+/* v218.63 — mobile gate repair: no duplicate codes, restore visible info blocks */
+
+/* Mobile city/code: one code only, gray and slightly smaller. */
+.mobile-gate-dest .g8-city-code,
+.mobile-gids-dest .g8-city-code,
+.gate-mobile-dest .g8-city-code,
+.mgate-dest .g8-city-code,
+.gids-mobile .g8-city-code,
+.mobile-gate .g8-city-code,
+[data-mobile-destination] .g8-city-code {
+  color: #9CA3AF !important;
+  font-size: 0.78em !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+/* Light mobile headers use darker gray for the code. */
+.g8-header-is-light .mobile-gate-dest .g8-city-code,
+.g8-header-is-light .mobile-gids-dest .g8-city-code,
+.g8-header-is-light .gate-mobile-dest .g8-city-code,
+.g8-airline-WS .mobile-gate-dest .g8-city-code,
+.g8-airline-WS .mobile-gids-dest .g8-city-code,
+.g8-airline-WS .gate-mobile-dest .g8-city-code {
+  color: #6B7280 !important;
+}
+
+/* Restore mobile detail panels that were being clipped by desktop band compression. */
+@media (max-width: 700px), (orientation: portrait) {
+  .mobile-gate,
+  .gids-mobile,
+  .mobile-gids,
+  .gate-mobile,
+  .g8-mobile {
+    overflow: auto !important;
+  }
+
+  .mobile-gate-main,
+  .mobile-gids-main,
+  .gate-mobile-main,
+  .gids-mobile-main,
+  .mobile-gate-content,
+  .mobile-gids-content,
+  .gate-mobile-content,
+  .gids-mobile-content,
+  .mobile-flight-info,
+  .mobile-gate-info,
+  .mobile-details,
+  .gids-mobile .details,
+  .mobile-gate .details {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 1px !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .mobile-gate .row,
+  .mobile-gids .row,
+  .gids-mobile .row,
+  .gate-mobile .row,
+  .mobile-gate [class*="row"],
+  .mobile-gids [class*="row"],
+  .gids-mobile [class*="row"],
+  .gate-mobile [class*="row"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Do not let desktop ad/header height patches collapse mobile information. */
+  .mobile-gate-header,
+  .mobile-gids-header,
+  .gids-mobile-header,
+  .gate-mobile-header {
+    overflow: visible !important;
+  }
+
+  .mobile-gate-card,
+  .mobile-gids-card,
+  .gids-mobile-card,
+  .gate-mobile-card,
+  .mobile-info-card {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 120px !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+
+/* v218.64 — bigger mobile words + larger gate alliance logos */
+
+/* Gate alliance logos: larger and clearer without changing airline wordmark sizing. */
+.g8-r1-star,
+.g8-r1-alliance,
+.g8-r1-right img[alt*="Star"],
+.g8-r1-right img[alt*="SkyTeam"],
+.g8-r1-right img[alt*="oneworld"],
+.g8-r1-right img[src*="star"],
+.g8-r1-right img[src*="skyteam"],
+.g8-r1-right img[src*="oneworld"],
+.g8-r1-right img[src*="alliance"],
+.g8-alliance-logo,
+.gate-alliance-logo {
+  width: 104px !important;
+  min-width: 104px !important;
+  height: 104px !important;
+  min-height: 104px !important;
+  max-width: 118px !important;
+  max-height: 118px !important;
+  object-fit: contain !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Keep alliance logos sensible on shorter screens. */
+@media (max-height: 820px) {
+  .g8-r1-star,
+  .g8-r1-alliance,
+  .g8-r1-right img[alt*="Star"],
+  .g8-r1-right img[alt*="SkyTeam"],
+  .g8-r1-right img[alt*="oneworld"],
+  .g8-r1-right img[src*="star"],
+  .g8-r1-right img[src*="skyteam"],
+  .g8-r1-right img[src*="oneworld"],
+  .g8-r1-right img[src*="alliance"],
+  .g8-alliance-logo,
+  .gate-alliance-logo {
+    width: 92px !important;
+    min-width: 92px !important;
+    height: 92px !important;
+    min-height: 92px !important;
+    max-width: 104px !important;
+    max-height: 104px !important;
+  }
+}
+
+/* Mobile gate screens: make words readable. */
+@media (max-width: 700px), (orientation: portrait) {
+  .mobile-gate,
+  .mobile-gids,
+  .gids-mobile,
+  .gate-mobile,
+  .g8-mobile {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+  }
+
+  .mobile-gate-dest,
+  .mobile-gids-dest,
+  .gate-mobile-dest,
+  .mgate-dest,
+  .gids-mobile .dest-title,
+  .gids-mobile .destination-title,
+  .mobile-gate .dest-title,
+  .mobile-gate .destination-title,
+  [data-mobile-destination] {
+    font-size: clamp(34px, 9vw, 58px) !important;
+    line-height: 1.02 !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .mobile-gate-dest .g8-city-code,
+  .mobile-gids-dest .g8-city-code,
+  .gate-mobile-dest .g8-city-code,
+  .mgate-dest .g8-city-code,
+  .gids-mobile .g8-city-code,
+  .mobile-gate .g8-city-code,
+  [data-mobile-destination] .g8-city-code {
+    font-size: 0.76em !important;
+    font-weight: 750 !important;
+  }
+
+  .mobile-flight-number,
+  .mobile-gate-flight,
+  .gids-mobile .flight-number,
+  .mobile-gate .flight-number,
+  .gate-mobile .flight-number,
+  .mobile-gids .flight-number,
+  [data-mobile-flight] {
+    font-size: clamp(42px, 12vw, 72px) !important;
+    line-height: 1 !important;
+    font-weight: 850 !important;
+  }
+
+  .mobile-time,
+  .mobile-gate-time,
+  .mobile-gids-time,
+  .gids-mobile .time,
+  .mobile-gate .time,
+  .gate-mobile .time,
+  [data-mobile-time] {
+    font-size: clamp(30px, 8vw, 52px) !important;
+    line-height: 1.05 !important;
+    font-weight: 800 !important;
+  }
+
+  .mobile-label,
+  .mobile-gate-label,
+  .mobile-gids-label,
+  .gids-mobile .label,
+  .mobile-gate .label,
+  .gate-mobile .label {
+    font-size: clamp(14px, 3.8vw, 22px) !important;
+    line-height: 1.1 !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  .mobile-status,
+  .mobile-gate-status,
+  .mobile-gids-status,
+  .gids-mobile .status,
+  .mobile-gate .status,
+  .gate-mobile .status,
+  [data-mobile-status] {
+    font-size: clamp(24px, 7vw, 44px) !important;
+    line-height: 1.05 !important;
+    font-weight: 850 !important;
+  }
+
+  .mobile-details,
+  .mobile-gate-info,
+  .mobile-flight-info,
+  .gids-mobile .details,
+  .mobile-gate .details,
+  .gate-mobile .details,
+  .mobile-info-card,
+  .mobile-gate-card,
+  .mobile-gids-card,
+  .gids-mobile-card {
+    font-size: clamp(18px, 4.8vw, 28px) !important;
+    line-height: 1.2 !important;
+  }
+
+  .mobile-details strong,
+  .mobile-gate-info strong,
+  .mobile-flight-info strong,
+  .gids-mobile .details strong,
+  .mobile-gate .details strong,
+  .gate-mobile .details strong {
+    font-size: 1.12em !important;
+    font-weight: 850 !important;
+  }
+
+  .mobile-weather,
+  .mobile-gate-weather,
+  .gids-mobile .weather,
+  .mobile-gate .weather,
+  .gate-mobile .weather {
+    font-size: clamp(20px, 5.5vw, 34px) !important;
+    line-height: 1.1 !important;
+  }
+}
+
+
+/* v218.77 — airport code styling only */
+.g8-city-code,
+.g8-r1-dest .g8-city-code,
+.mobile-gate-dest .g8-city-code,
+.mobile-gids-dest .g8-city-code,
+.gate-mobile-dest .g8-city-code,
+.destination-title .g8-city-code,
+.dest-title .g8-city-code,
+.city-title .g8-city-code,
+.mobile-destination .g8-city-code {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
+  font-size: 0.78em !important;
+  font-weight: 750 !important;
+}
+body.g8-header-is-light .g8-city-code,
+.g8-theme-light .g8-city-code,
+.g8-white-top .g8-city-code,
+.g8-light-top .g8-city-code {
+  color: #6B7280 !important;
+}

@@ -1,0 +1,2856 @@
+/* ════════════════════════════════════════════════════════════════════════
+ * GATE LAYOUT V2 — v218.81
+ *
+ * Approach: minimal targeted overrides on top of fids.css/fids-v3.css.
+ * The legacy banner structure (g8-r1/g8-r2) stays — we just upsize the
+ * type for distance reading and add the FLIGHT label that the legacy
+ * markup is missing.
+ *
+ * The three-column gate area uses class-based blocks that the JS
+ * builders construct (gad-aircraft-col / gad-media-col / gad-map-col-v2).
+ *
+ * Toggle: localStorage.setItem('fids_gate_layout_v2', 'off') then reload.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* ── ROW 1 — header (Calgary | WESTJET | gate#) ─────────────────────── */
+.g8-r1 { min-height: 130px !important; padding: 0 48px !important; }
+.g8-r1-dest { font-size: 76px !important; letter-spacing: -0.02em !important; }
+.g8-r1-dest .g8-iata { font-size: 42px !important; margin-left: 22px !important; }
+.g8-r1-airline { font-size: 56px !important; font-weight: 900 !important; }
+.g8-r1-logo { height: 88px !important; max-height: 88px !important; max-width: 380px !important; }
+.g8-r1-gate { font-size: 84px !important; padding: 4px 26px !important; }
+
+/* ── ROW 2 — banner with 5 fields ─────────────────────────────────── */
+/* Each field is a 2-column grid: [icon] [label-over-value].
+   Label sits at the top of the text column, aligned with the value text
+   (not the icon). Icons are pure white, full opacity. */
+
+/* Each field-row: icon left, label/value stack right */
+
+/* FLIGHT special: the SVG is inside .g8-r2-flight which is the only
+   child. Make .g8-r2-flight a contents element so its children flow
+   into the parent grid. */
+/* Inject FLIGHT label as a grid item in the second column, first row */
+/* Flight SVG: column 1, both rows */
+/* Flight number text: column 2, row 2 */
+
+/* Right side: 4 fields */
+
+/* Field label: grid column 2, row 1 */
+/* Field value: spans across — display:contents so its children flow into
+   the parent grid. The SVG goes to column 1, the text goes to column 2 row 2. */
+/* The text node of .g8-r2-field-val after the SVG — can't target text
+   directly, but display:contents lets it inherit text styles from
+   .g8-r2-field-val itself. Set them on the parent for that to work. */
+/* But the text doesn't have a grid placement without a wrapper.
+   Workaround: use ::after on .g8-r2-field-val? No, that has no real content.
+   Better solution: wrap the field text. Since we can't change HTML easily,
+   use the field itself with grid-template-areas. */
+
+/* ALTERNATIVE: make field a flex row, put the SVG separately positioned.
+   Reset above and use this cleaner pattern. */
+
+/* Same for left flight cell */
+
+/* Status pill — bigger, white text on dark bg for contrast on AC red */
+
+/* ── THREE-COLUMN GATE AREA ──────────────────────────────────────────── */
+/* The wrapper from buildV2GateLayout sets display:flex on the row that
+   holds the three columns. The columns themselves use flex-basis from
+   inline styles (25% / 50% / 25%). We don't override that. */
+
+/* ── AIRCRAFT COLUMN (25%) ───────────────────────────────────────────── */
+.gad-aircraft-col {
+  flex: 0 0 var(--col-left, 25%) !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  background: rgba(255,255,255,0.02) !important;
+  border-right: 2px solid rgba(255,255,255,0.08) !important;
+  overflow: hidden !important;
+  box-sizing: border-box;
+}
+
+/* ── Aircraft livery image (between Operated by and Registration) ── */
+.gad-aircraft-col .v2-livery-block {
+  flex-shrink: 0;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.gad-aircraft-col .v2-livery-block img {
+  max-width: 100%;
+  max-height: 200px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+}
+/* Hide the block entirely if the image fails to load */
+.gad-aircraft-col .v2-livery-block:has(img[style*="display: none"]),
+.gad-aircraft-col .v2-livery-block:has(img[style*="display:none"]) {
+  display: none !important;
+}
+
+/* ── Operated By (TOP) ── */
+.gad-aircraft-col .v2-op-block {
+  padding: 32px 28px 28px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.gad-aircraft-col .v2-op-lbl {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+.gad-aircraft-col .v2-op-logo {
+  max-width: 80%;
+  max-height: 90px;
+  height: auto;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+.gad-aircraft-col .v2-op-name {
+  font-size: 34px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.15;
+}
+
+/* ── Optional registration (middle, only if reg known) ── */
+.gad-aircraft-col .v2-reg-block {
+  padding: 20px 28px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.gad-aircraft-col .v2-reg-lbl {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+.gad-aircraft-col .v2-reg-val {
+  font-size: 30px;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  line-height: 1.1;
+}
+
+/* ── Inbound (middle, pushed away from edges) ── */
+.gad-aircraft-col .v2-inbound {
+  padding: 20px 28px;
+  background: rgba(45,212,191,0.10);
+  border-top: 3px solid rgba(45,212,191,0.45);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.gad-aircraft-col .v2-inbound[style*="visibility:hidden"] {
+  display: none !important;
+}
+.gad-aircraft-col .v2-inbound-lbl {
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(45,212,191,0.95);
+  margin-bottom: 8px;
+  line-height: 1;
+}
+.gad-aircraft-col .v2-inbound-flt {
+  font-size: 30px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.15;
+}
+.gad-aircraft-col .v2-inbound-time {
+  font-size: 22px;
+  color: rgba(255,255,255,0.85);
+  margin-top: 6px;
+}
+
+/* ── Equipment Type (BOTTOM) ── */
+.gad-aircraft-col .v2-eq-block {
+  padding: 28px 28px 32px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gad-aircraft-col .v2-eq-lbl {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+.gad-aircraft-col .v2-eq-val {
+  font-size: 34px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.15;
+}
+
+/* ── MEDIA COLUMN (50%) ──────────────────────────────────────────────── */
+.gad-media-col {
+  background: transparent !important;
+  border-right: none !important;
+}
+.gad-media-col .v2-col-hdr {
+  background: rgba(255,255,255,0.05);
+  padding: 18px 28px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  color: rgba(255,255,255,0.78);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.gad-media-col #gateAdCarousel {
+  background: transparent;
+  /* Make ad text + imagery significantly larger via font-size scaling.
+     Most ad slides use em-based or relative units that key off the
+     container font-size. */
+  font-size: 32px !important;
+}
+.gad-media-col #gateAdCarousel * {
+  /* Lift any text content inside ad slides to at least readable scale.
+     Headlines specifically should be enormous. */
+}
+.gad-media-col #gateAdCarousel h1,
+.gad-media-col #gateAdCarousel h2,
+.gad-media-col #gateAdCarousel .gad-headline,
+.gad-media-col #gateAdCarousel .ad-headline {
+  font-size: 64px !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+}
+.gad-media-col #gateAdCarousel h3,
+.gad-media-col #gateAdCarousel .gad-subhead,
+.gad-media-col #gateAdCarousel .ad-subhead {
+  font-size: 36px !important;
+  line-height: 1.2 !important;
+}
+.gad-media-col #gateAdCarousel p,
+.gad-media-col #gateAdCarousel .gad-body,
+.gad-media-col #gateAdCarousel .ad-body {
+  font-size: 28px !important;
+  line-height: 1.35 !important;
+}
+.gad-media-col #gateAdCarousel img.gad-logo,
+.gad-media-col #gateAdCarousel .ad-logo img,
+.gad-media-col #gateAdCarousel .advertiser-logo {
+  max-height: 140px !important;
+  max-width: 70% !important;
+  height: auto !important;
+  width: auto !important;
+}
+.gad-media-col #gateAdLogo:empty { display: none !important; }
+.gad-media-col #gateAdLogo:not(:empty) {
+  padding: 20px 32px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  max-height: 140px !important;
+}
+.gad-media-col #gateAdLogo img {
+  max-height: 100px !important;
+  max-width: 100% !important;
+  height: auto !important;
+  width: auto !important;
+}
+
+/* ── MAP COLUMN (25%) ────────────────────────────────────────────────── */
+.gad-map-col-v2 {
+  background: #0d1b2a !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.gad-map-col-v2 .v2-col-hdr {
+  background: rgba(255,255,255,0.05);
+  padding: 18px 28px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  color: rgba(255,255,255,0.78);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.gad-map-col-v2 .g8-inb-map,
+.gad-map-col-v2 #gateMapBox { border-radius: 0; }
+.gad-map-col-v2 .v2-map-pill {
+  position: absolute !important;
+  top: 20px !important;
+  right: 20px !important;
+  background: rgba(0,0,0,0.78) !important;
+  padding: 14px 22px !important;
+  border-radius: 8px !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 26px !important;
+  line-height: 1.3 !important;
+  color: #fff !important;
+  z-index: 500;
+}
+.gad-map-col-v2 .v2-map-pill-k { color: rgba(255,255,255,0.55); }
+.gad-map-col-v2 .v2-map-pill-v { font-weight: 700; }
+
+/* ── MESSAGE STRIP ───────────────────────────────────────────────────── */
+.g8-r3-v2 {
+  transition: min-height 0.4s ease, padding 0.4s ease;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.g8-r3-v2.is-empty { min-height: 0 !important; padding: 0 !important; border: 0 !important; }
+.g8-r3-v2.is-active {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+  letter-spacing: 0.5px;
+}
+
+/* ── Responsive fallback for narrow displays ─────────────────────────── */
+@media (max-width: 900px) {
+  .gad-aircraft-col,
+  .gad-media-col,
+  .gad-map-col-v2 {
+    flex: 1 1 100% !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+  }
+  .g8-r2 { min-height: auto !important; flex-wrap: wrap !important; }
+  .g8-r2-fields { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ── Debug ───────────────────────────────────────────────────────────── */
+html[data-fids-debug="1"] .gad-aircraft-col { outline: 2px dashed #f59e0b; }
+html[data-fids-debug="1"] .gad-media-col    { outline: 2px dashed #10b981; }
+html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
+
+
+/* v218.87 — surgical recovery patch.
+   Keep the original gate sizing/brightness/media console intact.
+   Only pin the real aircraft PNG to the bottom edge of the aircraft column. */
+.gad-aircraft-col {
+  justify-content: flex-start !important;
+}
+.gad-aircraft-col .v2-op-block.is-marketing-airline .v2-op-lbl {
+  display: none !important;
+}
+.gad-aircraft-col .v2-livery-block {
+  margin-top: auto !important;
+  width: 100% !important;
+  padding: 0 !important;
+  min-height: 170px !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  border-top: 1px solid rgba(255,255,255,0.06) !important;
+  border-bottom: 0 !important;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.02)) !important;
+}
+.gad-aircraft-col .v2-livery-block img,
+.gad-aircraft-col .v2-livery-block .g8-aircraft-img {
+  width: 100% !important;
+  max-width: none !important;
+  max-height: 190px !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center bottom !important;
+  display: block !important;
+  margin: 0 !important;
+}
+@media (max-width: 1200px) {
+  .gad-aircraft-col .v2-livery-block { min-height: 145px !important; }
+  .gad-aircraft-col .v2-livery-block img,
+  .gad-aircraft-col .v2-livery-block .g8-aircraft-img { max-height: 160px !important; }
+}
+
+/* v218.88 — gate triage: bring the display back onto the rails.
+   Smaller readable banner, restored ad/logo rotation rail, lighter aircraft
+   card, real aircraft PNG pinned at the bottom without fake fallbacks. */
+.g8-r1 {
+  min-height: 108px !important;
+  padding: 0 42px !important;
+  gap: 22px !important;
+}
+.g8-r1-dest {
+  font-size: clamp(46px, 4.6vw, 68px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.035em !important;
+}
+.g8-r1-dest .g8-iata {
+  font-size: clamp(26px, 2.8vw, 38px) !important;
+  margin-left: 16px !important;
+}
+.g8-r1-airline {
+  font-size: clamp(28px, 3vw, 48px) !important;
+  line-height: 1 !important;
+  max-width: 420px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.g8-r1-logo {
+  height: 72px !important;
+  max-height: 72px !important;
+  max-width: 340px !important;
+}
+.g8-r1-gate {
+  font-size: clamp(54px, 5vw, 74px) !important;
+  padding: 4px 22px !important;
+  border-radius: 10px !important;
+}
+
+.gad-aircraft-col {
+  background: linear-gradient(180deg, rgba(20,24,34,0.94), rgba(13,17,24,0.96)) !important;
+  justify-content: flex-start !important;
+}
+.gad-aircraft-col .v2-op-block,
+.gad-aircraft-col .v2-reg-block,
+.gad-aircraft-col .v2-inbound,
+.gad-aircraft-col .v2-eq-block {
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+.gad-aircraft-col .v2-op-block {
+  padding-top: 22px !important;
+  padding-bottom: 18px !important;
+  gap: 10px !important;
+  min-height: 96px !important;
+}
+.gad-aircraft-col .v2-op-logo {
+  max-width: 82% !important;
+  max-height: 66px !important;
+}
+.gad-aircraft-col .v2-op-name {
+  font-size: clamp(28px, 3vw, 44px) !important;
+  line-height: 1 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.gad-aircraft-col .v2-op-block.is-marketing-airline .v2-op-lbl { display: none !important; }
+.gad-aircraft-col .v2-op-lbl,
+.gad-aircraft-col .v2-reg-lbl,
+.gad-aircraft-col .v2-inbound-lbl,
+.gad-aircraft-col .v2-eq-lbl { font-size: 20px !important; }
+.gad-aircraft-col .v2-reg-val,
+.gad-aircraft-col .v2-inbound-flt,
+.gad-aircraft-col .v2-eq-val { font-size: 26px !important; }
+.gad-aircraft-col .v2-reg-block,
+.gad-aircraft-col .v2-inbound,
+.gad-aircraft-col .v2-eq-block { padding-top: 16px !important; padding-bottom: 16px !important; }
+.gad-aircraft-col .v2-livery-block {
+  margin-top: auto !important;
+  width: 100% !important;
+  min-height: 142px !important;
+  height: 142px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.045)) !important;
+}
+.gad-aircraft-col .v2-livery-block img,
+.gad-aircraft-col .v2-livery-block .g8-aircraft-img {
+  width: 100% !important;
+  max-width: none !important;
+  max-height: 128px !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center bottom !important;
+  margin: 0 !important;
+}
+
+.gad-media-col {
+  background: transparent !important;
+  border-right: none !important;
+}
+.gad-media-col .gate-ad-logo-rail,
+.gad-media-col #gateAdLogo {
+  background: rgba(8,12,22,0.92) !important;
+  height: 100% !important;
+  max-height: none !important;
+}
+.gad-media-col #gateAdLogo > div { width: 100% !important; height: 100% !important; }
+.gad-media-col #gateAdCarousel { background: transparent !important; }
+.gad-media-col #gateAdCarousel h1,
+.gad-media-col #gateAdCarousel h2,
+.gad-media-col #gateAdCarousel .gad-headline,
+.gad-media-col #gateAdCarousel .ad-headline { font-size: clamp(30px, 3.8vw, 54px) !important; }
+.gad-media-col #gateAdCarousel h3,
+.gad-media-col #gateAdCarousel .gad-subhead,
+.gad-media-col #gateAdCarousel .ad-subhead { font-size: clamp(20px, 2.3vw, 32px) !important; }
+
+
+/* v218.89 — restore missing gate details and calmer sizing */
+.gad-aircraft-col {
+  justify-content: flex-start !important;
+}
+.gad-aircraft-col .v2-livery-block {
+  margin-top: auto !important;
+  padding: 14px 0 10px !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent) !important;
+}
+.gad-aircraft-col .v2-livery-block img,
+.gad-aircraft-col .v2-livery-block .g8-aircraft-img {
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 138px !important;
+  object-fit: contain !important;
+}
+.gad-aircraft-col .v2-eq-block {
+  padding: 14px 28px 20px !important;
+  border-top: 1px solid rgba(255,255,255,0.06) !important;
+}
+.gad-aircraft-col .v2-eq-lbl {
+  font-size: 18px !important;
+  color: rgba(255,255,255,0.74) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.2px !important;
+}
+.gad-aircraft-col .v2-eq-val {
+  font-size: 26px !important;
+  line-height: 1.18 !important;
+}
+.gad-aircraft-col .v2-inbound {
+  padding: 18px 28px !important;
+  background: rgba(45,212,191,0.12) !important;
+}
+.gad-aircraft-col .v2-inbound-lbl {
+  font-size: 18px !important;
+  letter-spacing: 0.2px !important;
+  color: rgba(172, 247, 235, 0.96) !important;
+  text-transform: none !important;
+}
+.gad-aircraft-col .v2-inbound-flt {
+  font-size: 24px !important;
+  line-height: 1.2 !important;
+}
+.gad-aircraft-col .v2-inbound-time {
+  font-size: 18px !important;
+  color: rgba(255,255,255,0.9) !important;
+}
+.gad-media-col #gateAdLogo,
+.gad-media-col .gate-ad-logo-rail {
+  background: linear-gradient(180deg, rgba(13,18,31,0.95), rgba(18,31,52,0.96)) !important;
+}
+/* tone down the giant top banner from v218.88 so rows stop crashing into each other */
+.g8-r1 { min-height: 118px !important; padding: 0 36px !important; }
+.g8-r1-dest { font-size: 62px !important; }
+.g8-r1-dest .g8-iata { font-size: 34px !important; margin-left: 16px !important; }
+.g8-r1-logo { height: 74px !important; max-height: 74px !important; max-width: 320px !important; }
+.g8-r1-gate { font-size: 68px !important; padding: 6px 20px !important; }
+
+/* v218.90 gate rescue: tighten the aircraft card and restore real ad rotations */
+.gad-aircraft-col {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,0.06), transparent 32%),
+    linear-gradient(180deg, rgba(21,27,39,0.98), rgba(9,14,24,0.99)) !important;
+}
+.gad-aircraft-col .v2-op-block {
+  min-height: 72px !important;
+  padding-top: 14px !important;
+  padding-bottom: 12px !important;
+  align-items: flex-start !important;
+}
+.gad-aircraft-col .v2-op-block.is-marketing-airline {
+  background: rgba(255,255,255,0.035) !important;
+}
+.gad-aircraft-col .v2-op-logo {
+  max-width: 76% !important;
+  max-height: 54px !important;
+  object-fit: contain !important;
+  background: transparent !important;
+}
+.gad-aircraft-col .v2-inbound {
+  padding: 14px 24px !important;
+  background: linear-gradient(90deg, rgba(45,212,191,0.16), rgba(45,212,191,0.055)) !important;
+  border-top: 2px solid rgba(45,212,191,0.55) !important;
+}
+.gad-aircraft-col .v2-inbound-lbl {
+  font-size: 17px !important;
+  line-height: 1.08 !important;
+  margin-bottom: 6px !important;
+}
+.gad-aircraft-col .v2-inbound-flt {
+  font-size: 22px !important;
+  line-height: 1.12 !important;
+}
+.gad-aircraft-col .v2-inbound-time {
+  font-size: 16px !important;
+  line-height: 1.15 !important;
+}
+.gad-aircraft-col .v2-livery-block {
+  min-height: 126px !important;
+  height: 126px !important;
+  background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.04) 100%) !important;
+}
+.gad-aircraft-col .v2-livery-block img,
+.gad-aircraft-col .v2-livery-block .g8-aircraft-img {
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 122px !important;
+  object-fit: contain !important;
+  object-position: center bottom !important;
+}
+.gad-aircraft-col .v2-eq-block {
+  padding: 12px 24px 16px !important;
+}
+.gad-aircraft-col .v2-eq-lbl {
+  white-space: nowrap !important;
+  word-spacing: 0.22em !important;
+  letter-spacing: 1.4px !important;
+}
+.gad-media-col {
+  background: transparent !important;
+}
+.gad-media-col .gate-ad-logo-rail {
+  flex-basis: 24% !important;
+  min-width: 128px !important;
+  max-width: 210px !important;
+  background: linear-gradient(180deg, rgba(5,7,12,0.96), rgba(13,18,31,0.96)) !important;
+}
+.gad-media-col #gateAdCarousel {
+  background: transparent !important;
+}
+
+
+/* v218.92 — Gate Rescue Rebuild: structured, symmetrical, readable, alive.
+   This replaces the washed-out light pass. The page is bright where it should
+   be bright, branded where it should be branded, and the three columns obey a
+   clean 25 / 50 / 25 rhythm. */
+:root{
+  --g92-ink:#07111f;
+  --g92-muted:#708095;
+  --g92-line:rgba(10,23,42,.16);
+  --g92-panel:#f7fbff;
+  --g92-navy:#111b2d;
+  --g92-navy2:#182842;
+  --g92-teal:#21b7a4;
+}
+body, body.gids-page, body.gate-page{
+  background:#f4f8fc !important;
+}
+.g8-wrap{
+  background:linear-gradient(180deg,#ffffff 0%,#f4f8fc 100%) !important;
+  color:var(--g92-ink) !important;
+}
+/* Header: keep airline gravitas without swallowing the screen. */
+.g8-r1,
+.g8-r1.g8-r1-bg{
+  min-height:122px !important;
+  padding:0 44px !important;
+  background:linear-gradient(90deg,#080c14 0%,#101827 58%,#17233a 100%) !important;
+  color:#fff !important;
+  border-bottom:1px solid rgba(255,255,255,.10) !important;
+  box-shadow:0 4px 18px rgba(5,12,22,.22) !important;
+}
+.g8-r1-dest{
+  font-size:64px !important;
+  line-height:1 !important;
+  letter-spacing:-.045em !important;
+  color:#fff !important;
+  text-shadow:0 2px 10px rgba(0,0,0,.22) !important;
+}
+.g8-r1-dest .g8-city-code,
+.g8-r1-dest .g8-iata{
+  font-size:40px !important;
+  color:rgba(226,232,240,.72) !important;
+  letter-spacing:-.03em !important;
+}
+.g8-r1-logo{
+  max-height:86px !important;
+  max-width:460px !important;
+  object-fit:contain !important;
+}
+.g8-r1-gate{
+  font-size:72px !important;
+  line-height:1 !important;
+  min-width:94px !important;
+  height:94px !important;
+  padding:0 18px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:#07111f !important;
+  background:#ffffff !important;
+  border-radius:12px !important;
+  border:1px solid rgba(255,255,255,.88) !important;
+  box-shadow:0 8px 22px rgba(0,0,0,.22) !important;
+}
+/* Flight strip: big, but no crushing. */
+/* Main stage: exact rhythm and a single horizon line. */
+.g8-r4,.g8-r4-v2,.g8-v2-main,.g8-main-v2{
+  background:linear-gradient(180deg,#f8fbff 0%,#eef6fb 100%) !important;
+}
+.gad-aircraft-col,.gad-media-col,.gad-map-col-v2{
+  min-height:0 !important;
+  box-sizing:border-box !important;
+  border-right:1px solid var(--g92-line) !important;
+}
+/* Left aircraft card: logo, inbound, real aircraft anchored low, type underneath. */
+.gad-aircraft-col{
+  flex:0 0 var(--col-left, 25%) !important;
+  background:linear-gradient(180deg,#121d31 0%,#0d1625 100%) !important;
+  color:#fff !important;
+  justify-content:flex-start !important;
+  overflow:hidden !important;
+  box-shadow:inset -1px 0 0 rgba(255,255,255,.08) !important;
+}
+.gad-aircraft-col .v2-op-block{
+  min-height:82px !important;
+  padding:16px 28px !important;
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:center !important;
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.035)) !important;
+  border-bottom:1px solid rgba(255,255,255,.12) !important;
+  gap:10px !important;
+}
+.gad-aircraft-col .v2-op-block.is-marketing-airline .v2-op-lbl{display:none !important;}
+.gad-aircraft-col .v2-op-lbl{
+  font-size:18px !important;
+  font-weight:800 !important;
+  letter-spacing:.2px !important;
+  color:rgba(255,255,255,.86) !important;
+}
+.gad-aircraft-col .v2-op-logo{
+  max-width:86% !important;
+  max-height:58px !important;
+  object-fit:contain !important;
+  filter:none !important;
+}
+.gad-aircraft-col .v2-op-name{
+  font-size:28px !important;
+  line-height:1.05 !important;
+  color:#fff !important;
+  font-weight:850 !important;
+}
+.gad-aircraft-col .v2-inbound{
+  padding:20px 30px 22px !important;
+  background:linear-gradient(135deg,rgba(33,183,164,.22) 0%,rgba(42,107,168,.16) 100%) !important;
+  border-top:3px solid rgba(33,183,164,.82) !important;
+  border-bottom:1px solid rgba(255,255,255,.12) !important;
+  color:#fff !important;
+  flex-shrink:0 !important;
+}
+.gad-aircraft-col .v2-inbound[style*="visibility:hidden"]{display:none !important;}
+.gad-aircraft-col .v2-inbound-lbl{
+  font-size:17px !important;
+  line-height:1.1 !important;
+  color:#8ff4e8 !important;
+  font-weight:850 !important;
+  letter-spacing:.1px !important;
+  margin-bottom:8px !important;
+}
+.gad-aircraft-col .v2-inbound-flt{
+  font-size:27px !important;
+  line-height:1.12 !important;
+  color:#fff !important;
+  font-weight:900 !important;
+}
+.gad-aircraft-col .v2-inbound-time{
+  font-size:18px !important;
+  color:rgba(255,255,255,.82) !important;
+  margin-top:8px !important;
+}
+.gad-aircraft-col .v2-reg-block{
+  padding:16px 30px !important;
+  background:rgba(255,255,255,.035) !important;
+  border-bottom:1px solid rgba(255,255,255,.10) !important;
+}
+.gad-aircraft-col .v2-reg-lbl,
+.gad-aircraft-col .v2-eq-lbl{
+  font-size:15px !important;
+  line-height:1.1 !important;
+  text-transform:uppercase !important;
+  letter-spacing:1.6px !important;
+  color:rgba(226,232,240,.72) !important;
+  font-weight:900 !important;
+  white-space:nowrap !important;
+  word-spacing:normal !important;
+}
+.gad-aircraft-col .v2-reg-val{
+  font-size:27px !important;
+  line-height:1.1 !important;
+  color:#fff !important;
+  font-weight:900 !important;
+}
+.gad-aircraft-col .v2-livery-block{
+  margin-top:auto !important;
+  height:190px !important;
+  min-height:190px !important;
+  padding:18px 34px 10px !important;
+  display:flex !important;
+  align-items:flex-end !important;
+  justify-content:center !important;
+  background:radial-gradient(ellipse at 50% 80%,rgba(255,255,255,.18),rgba(255,255,255,0) 64%) !important;
+  border-top:1px solid rgba(255,255,255,.10) !important;
+  border-bottom:1px solid rgba(255,255,255,.10) !important;
+}
+.gad-aircraft-col .v2-livery-block img,
+.gad-aircraft-col .v2-livery-block .g8-aircraft-img{
+  width:100% !important;
+  max-width:100% !important;
+  max-height:168px !important;
+  object-fit:contain !important;
+  object-position:center bottom !important;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.36)) !important;
+}
+.gad-aircraft-col .v2-eq-block{
+  padding:15px 30px 18px !important;
+  background:rgba(255,255,255,.96) !important;
+  color:var(--g92-ink) !important;
+  gap:7px !important;
+  flex-shrink:0 !important;
+}
+.gad-aircraft-col .v2-eq-lbl{color:#68778c !important;}
+.gad-aircraft-col .v2-eq-val{
+  color:var(--g92-ink) !important;
+  font-size:29px !important;
+  line-height:1.08 !important;
+  font-weight:900 !important;
+}
+/* Center console: real billboard, not a washed-out sheet. */
+.gad-media-col{
+  flex:1 1 var(--col-center, 50%) !important;
+  background:linear-gradient(135deg,#0f1a2b 0%,#172640 48%,#1a3455 100%) !important;
+  border-left:1px solid rgba(255,255,255,.18) !important;
+  border-right:1px solid var(--g92-line) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+.gad-media-col .gate-ad-logo-rail,
+.gad-media-col #gateAdLogo{
+  flex:0 0 22% !important;
+  min-width:130px !important;
+  max-width:210px !important;
+  background:linear-gradient(180deg,rgba(6,11,20,.96),rgba(16,27,44,.96)) !important;
+  border-right:1px solid rgba(255,255,255,.12) !important;
+}
+.gad-media-col #gateAdLogo img{max-width:88% !important;max-height:82% !important;object-fit:contain !important;}
+.gad-media-col #gateAdCarousel{
+  background:transparent !important;
+  color:#fff !important;
+  font-size:26px !important;
+}
+.gad-media-col #gateAdCarousel > div{
+  inset:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+.gad-media-col #gateAdCarousel h1,
+.gad-media-col #gateAdCarousel h2,
+.gad-media-col #gateAdCarousel .gad-headline,
+.gad-media-col #gateAdCarousel .ad-headline{
+  font-size:clamp(34px,4.1vw,60px) !important;
+  line-height:1.05 !important;
+}
+/* Map: clean, bright, and aligned with the aircraft card width. */
+.gad-map-col-v2{
+  flex:0 0 var(--col-right, 25%) !important;
+  background:#ffffff !important;
+  border-right:0 !important;
+}
+.gad-map-col-v2 .g8-inb-map,
+.gad-map-col-v2 #gateMapBox{
+  filter:saturate(1.05) contrast(1.02) brightness(1.02) !important;
+}
+.gad-map-col-v2 .v2-map-pill{
+  top:22px !important;
+  right:22px !important;
+  background:rgba(255,255,255,.92) !important;
+  color:var(--g92-ink) !important;
+  border:1px solid rgba(11,23,40,.12) !important;
+  border-radius:10px !important;
+  box-shadow:0 9px 20px rgba(10,31,55,.18) !important;
+}
+.gad-map-col-v2 .v2-map-pill-k{color:#64748b !important;}
+/* Footer: calm airport placard. */
+.g8-r5{
+  background:#ffffff !important;
+  color:var(--g92-ink) !important;
+  border-top:1px solid var(--g92-line) !important;
+}
+.g8-r5-next{font-size:19px !important;font-weight:800 !important;}
+.g8-r5-time{font-size:30px !important;font-weight:900 !important;}
+
+
+/* ═════════ v218.93 — flight label/logo rescue ═════════ */
+/* Make the FLIGHT block explicit and reliable — no pseudo-element dependency. */
+
+/* Less dreary, still premium — richer blues instead of flat near-black. */
+.gad-aircraft-col{
+  background:linear-gradient(180deg,#17304d 0%,#132843 52%,#102238 100%) !important;
+}
+.gad-aircraft-col .v2-op-block{
+  background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05)) !important;
+}
+.gad-aircraft-col .v2-inbound{
+  background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,rgba(128,214,255,.14) 100%) !important;
+  border-top:3px solid rgba(135,219,255,.95) !important;
+}
+.gad-aircraft-col .v2-livery-block{
+  background:radial-gradient(ellipse at 50% 85%,rgba(255,255,255,.26),rgba(255,255,255,0) 62%), linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01)) !important;
+}
+.gad-media-col{
+  background:linear-gradient(135deg,#162a46 0%,#1d3657 52%,#26466d 100%) !important;
+}
+.gad-media-col .gate-ad-logo-rail,
+.gad-media-col #gateAdLogo{
+  background:linear-gradient(180deg,rgba(14,25,42,.96),rgba(28,47,76,.96)) !important;
+}
+.gad-media-col #gateAdCarousel{
+  background:transparent !important;
+}
+
+/* Rouge / special logos need a little more breathing room in the aircraft brand card. */
+.gad-aircraft-col .v2-op-logo[src*="rouge"],
+.g8-r1-logo[src*="rouge"]{
+  max-height:72px !important;
+}
+.g8-r1-logo[src*="rouge"]{
+  max-width:430px !important;
+}
+
+
+/* ═════════ v218.94 — alignment / aircraft type rescue ═════════ */
+/* Top strip: force the flight number to read bright and clean. */
+
+/* Tighten the banner rhythm so labels/values align more cleanly. */
+
+/* Left column: compress the stack so the aircraft type block is always visible. */
+.gad-aircraft-col .v2-op-block{
+  min-height:64px !important;
+  padding:10px 22px !important;
+}
+.gad-aircraft-col .v2-op-logo{
+  max-height:46px !important;
+}
+.gad-aircraft-col .v2-op-name{
+  font-size:24px !important;
+}
+.gad-aircraft-col .v2-reg-block{
+  padding:10px 22px 12px !important;
+}
+.gad-aircraft-col .v2-reg-lbl,
+.gad-aircraft-col .v2-eq-lbl{
+  font-size:13px !important;
+  letter-spacing:1.35px !important;
+}
+.gad-aircraft-col .v2-reg-val{
+  font-size:21px !important;
+}
+.gad-aircraft-col .v2-inbound{
+  padding:14px 22px 16px !important;
+}
+.gad-aircraft-col .v2-inbound-lbl{
+  font-size:15px !important;
+  margin-bottom:6px !important;
+}
+.gad-aircraft-col .v2-inbound-flt{
+  font-size:22px !important;
+  line-height:1.1 !important;
+}
+.gad-aircraft-col .v2-inbound-time{
+  font-size:16px !important;
+  margin-top:6px !important;
+}
+.gad-aircraft-col .v2-livery-block{
+  height:132px !important;
+  min-height:132px !important;
+  padding:10px 22px 6px !important;
+}
+.gad-aircraft-col .v2-livery-block img,
+.gad-aircraft-col .v2-livery-block .g8-aircraft-img{
+  max-height:110px !important;
+  object-position:center bottom !important;
+}
+.gad-aircraft-col .v2-eq-block{
+  padding:10px 22px 12px !important;
+}
+.gad-aircraft-col .v2-eq-val{
+  font-size:22px !important;
+  line-height:1.08 !important;
+}
+
+/* Footer balance: keep the next-flight name and clock on the same visual baseline. */
+.g8-r5{align-items:center !important;}
+.g8-r5-next,
+.g8-r5-time{line-height:1 !important;}
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * v218.95 — Gate screen alignment + presentability consolidation
+ *
+ * Resolves the issues stacked up across v218.85 → v218.94:
+ *
+ *   1. Aircraft column was rendering top-piled (justify-content: flex-start)
+ *      with only the airline brand block, leaving 75% of the column as a
+ *      dead navy slab when equipment/registration/inbound were missing.
+ *
+ *   2. Media column logo rail was being capped to max-height:140px by the
+ *      legacy `#gateAdLogo:not(:empty)` rule from v218.78, leaving a
+ *      stranded floating header above a giant empty rail.
+ *
+ *   3. Status pill (Scheduled / On time) was rendering with no visible
+ *      background on airline-accented row 2 — invisible on AC red, UA blue.
+ *
+ *   4. Gate badge in row 1 was white-on-white when the banner was very dark.
+ *
+ *   5. Row 1 city name + IATA + logo + gate badge were not on a common
+ *      baseline, giving the header a wobbly read.
+ *
+ *   6. Map column was overflowing past the body row when the leaflet
+ *      tile size exceeded the column height.
+ *
+ *   7. Footer was sometimes overlapping the map column's bottom edge.
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── ROW 1: vertical centering + readable gate badge ──────────────────── */
+.g8-r1,
+.g8-r1.g8-r1-bg{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:24px !important;
+}
+.g8-r1-dest{
+  display:flex !important;
+  align-items:baseline !important;
+  gap:14px !important;
+  flex:1 1 auto !important;
+  min-width:0 !important;
+}
+.g8-r1-right{
+  display:flex !important;
+  align-items:center !important;
+  gap:22px !important;
+  flex:0 0 auto !important;
+}
+.g8-r1-logo{
+  display:block !important;
+  margin:0 !important;
+}
+/* Gate badge — always reads as a distinct pill, never white-on-white */
+.g8-r1-gate{
+  background:#ffffff !important;
+  color:#0a1424 !important;
+  border:2px solid rgba(15, 30, 55, 0.18) !important;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  font-weight:900 !important;
+  letter-spacing:-0.02em !important;
+}
+
+/* ── ROW 2: visible status pill on every airline accent ──────────────── */
+
+/* ── AIRCRAFT COLUMN: distribute content, no dead slab ───────────────── */
+.gad-aircraft-col{
+  justify-content:space-between !important;  /* override flex-start piling */
+  display:flex !important;
+  flex-direction:column !important;
+}
+/* Group 1 — top: brand + registration */
+.gad-aircraft-col .v2-op-block{
+  border-bottom:1px solid rgba(255, 255, 255, 0.10) !important;
+}
+.gad-aircraft-col .v2-reg-block{
+  border-bottom:1px solid rgba(255, 255, 255, 0.08) !important;
+}
+/* Group 2 — middle: inbound (when present) gets pushed toward center */
+.gad-aircraft-col .v2-inbound{
+  margin-top:auto !important;
+  margin-bottom:auto !important;
+}
+/* Group 3 — bottom: livery anchored, eq block beneath it */
+.gad-aircraft-col .v2-livery-block{
+  margin-top:0 !important;  /* let v2-inbound's auto-margin do the spacing */
+  flex-shrink:0 !important;
+}
+.gad-aircraft-col .v2-eq-block{
+  flex-shrink:0 !important;
+  margin-top:0 !important;
+}
+
+/* Aircraft column placeholder — shown when no livery image, no eq, no reg.
+   Prevents the column from looking like a broken empty rectangle.
+   The JS appends a class to .gad-aircraft-col when content is bare. */
+.gad-aircraft-col.is-bare::after{
+  content:'AIRCRAFT DETAILS';
+  flex:1 1 auto;
+  margin-top:auto;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:24px 28px 28px;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:2.2px;
+  text-transform:uppercase;
+  color:rgba(226, 232, 240, 0.32);
+  background:
+    radial-gradient(ellipse at 50% 90%, rgba(255,255,255,0.10), rgba(255,255,255,0) 60%),
+    linear-gradient(180deg, transparent 30%, rgba(255,255,255,0.025) 100%);
+  border-top:1px solid rgba(255,255,255,0.08);
+  min-height:180px;
+}
+.gad-aircraft-col.is-bare::before{
+  content:'';
+  display:block;
+  margin:18px 28px 0;
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+  flex-shrink:0;
+}
+
+/* ── MEDIA COLUMN: full-height logo rail (override v218.78 max-height) ── */
+.gad-media-col{
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:stretch !important;
+}
+/* Match the specificity of the legacy rule: .gad-media-col #gateAdLogo:not(:empty) */
+.gad-media-col #gateAdLogo:not(:empty),
+.gad-media-col .gate-ad-logo-rail:not(:empty){
+  height:auto !important;
+  min-height:0 !important;
+  max-height:none !important;
+  align-self:stretch !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:24px 18px !important;
+  border-right:1px solid rgba(255, 255, 255, 0.10) !important;
+  flex:0 0 22% !important;
+  min-width:130px !important;
+  max-width:210px !important;
+}
+/* Even when empty, keep the rail present so the carousel has a clean left edge */
+.gad-media-col #gateAdLogo:empty{
+  display:none !important;
+  flex:0 0 0 !important;
+  width:0 !important;
+  min-width:0 !important;
+  max-width:0 !important;
+}
+.gad-media-col #gateAdLogo:empty::before{
+  content:none !important;
+  display:none !important;
+}
+.gad-media-col #gateAdLogo:not(:empty) img,
+.gad-media-col #gateAdLogo:not(:empty) > div img{
+  max-width:100% !important;
+  max-height:240px !important;
+  width:auto !important;
+  height:auto !important;
+  object-fit:contain !important;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+}
+/* The inner wrapper that the JS injects also needs height:auto so it doesn't
+   constrain the rail */
+.gad-media-col #gateAdLogo:not(:empty) > div{
+  width:100% !important;
+  height:100% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+/* Carousel container: respect the rail's width, no shrinkage to a slim strip */
+.gad-media-col > div:not(.gate-ad-logo-rail):not(#gateAdLogo){
+  flex:1 1 auto !important;
+  display:flex !important;
+  align-items:stretch !important;
+}
+
+/* Carousel slide content — center its content vertically and horizontally */
+.gad-media-col #gateAdCarousel{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:0 !important;
+}
+.gad-media-col #gateAdCarousel > *{
+  width:100% !important;
+  height:100% !important;
+}
+
+/* ── MAP COLUMN: contain leaflet, no overflow ────────────────────────── */
+.gad-map-col-v2{
+  overflow:hidden !important;
+  position:relative !important;
+}
+.gad-map-col-v2 > div{
+  overflow:hidden !important;
+  min-height:0 !important;
+}
+.gad-map-col-v2 .g8-inb-map,
+.gad-map-col-v2 #gateMapBox{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  min-height:0 !important;
+}
+
+/* ── BODY ROW: lock the three columns to a shared height ─────────────── */
+.g8-wrap > div > div{
+  /* The flex row that wraps aircraft / media / map columns */
+}
+.g8-wrap{
+  display:flex !important;
+  flex-direction:column !important;
+  height:100vh !important;
+  max-height:100vh !important;
+  overflow:hidden !important;
+}
+
+/* ── FOOTER: clear separation, no overlap with map column ───────────── */
+.g8-r5,
+.gate-footer{
+  flex-shrink:0 !important;
+  position:relative !important;
+  z-index:3 !important;
+  background:#ffffff !important;
+  border-top:1px solid rgba(10, 23, 42, 0.12) !important;
+  padding:14px 28px !important;
+  min-height:56px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:18px !important;
+}
+
+/* ── Bottom safety: ensure the V2 main row scrolls nothing ──────────── */
+.g8-wrap > div[style*="flex-direction:column"]{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+}
+.g8-wrap > div[style*="flex-direction:column"] > div[style*="display:flex"][style*="flex:1"]{
+  min-height:0 !important;
+  overflow:hidden !important;
+}
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * v218.96 — Theme-driven aircraft column blocks
+ *
+ * New blocks the user can show/hide/reorder from the Gate Theme editor:
+ *   - weather  (.v2-wx-block)      destination weather
+ *   - gateinfo (.v2-gateinfo-block) gate number + terminal
+ *
+ * Plus padding modifiers (.pad-tight / .pad-loose) that the theme can apply
+ * to the whole aircraft column.
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+.gad-aircraft-col .v2-wx-block{
+  padding:14px 22px 16px !important;
+  border-top:1px solid rgba(255,255,255,0.08) !important;
+  border-bottom:1px solid rgba(255,255,255,0.08) !important;
+  background:linear-gradient(135deg, rgba(96, 165, 250, 0.10), rgba(59, 130, 246, 0.04)) !important;
+}
+.gad-aircraft-col .v2-wx-lbl{
+  font-size:13px !important;
+  font-weight:800 !important;
+  letter-spacing:1.4px !important;
+  text-transform:uppercase !important;
+  color:rgba(226, 232, 240, 0.72) !important;
+  margin-bottom:8px !important;
+}
+.gad-aircraft-col .v2-wx-row{
+  display:flex !important;
+  align-items:center !important;
+  gap:14px !important;
+}
+.gad-aircraft-col .v2-wx-row svg,
+.gad-aircraft-col .v2-wx-row img{
+  flex-shrink:0 !important;
+  width:56px !important;
+  height:56px !important;
+}
+.gad-aircraft-col .v2-wx-temp{
+  font-size:32px !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+  color:#ffffff !important;
+}
+.gad-aircraft-col .v2-wx-cond{
+  font-size:14px !important;
+  color:rgba(255, 255, 255, 0.78) !important;
+  margin-top:3px !important;
+}
+
+.gad-aircraft-col .v2-gateinfo-block{
+  padding:12px 22px 14px !important;
+  border-top:1px solid rgba(255,255,255,0.08) !important;
+  background:rgba(255,255,255,0.035) !important;
+}
+.gad-aircraft-col .v2-gateinfo-lbl{
+  font-size:13px !important;
+  font-weight:800 !important;
+  letter-spacing:1.4px !important;
+  text-transform:uppercase !important;
+  color:rgba(226, 232, 240, 0.72) !important;
+}
+.gad-aircraft-col .v2-gateinfo-val{
+  font-size:32px !important;
+  font-weight:900 !important;
+  color:#ffffff !important;
+  line-height:1.1 !important;
+  margin-top:3px !important;
+}
+.gad-aircraft-col .v2-gateinfo-term{
+  font-size:18px !important;
+  font-weight:700 !important;
+  color:rgba(255, 255, 255, 0.65) !important;
+}
+
+/* ── Padding modifiers (theme-driven) ──────────────────────────────────── */
+.gad-aircraft-col.pad-tight .v2-op-block,
+.gad-aircraft-col.pad-tight .v2-reg-block,
+.gad-aircraft-col.pad-tight .v2-inbound,
+.gad-aircraft-col.pad-tight .v2-eq-block,
+.gad-aircraft-col.pad-tight .v2-wx-block,
+.gad-aircraft-col.pad-tight .v2-gateinfo-block{
+  padding-top:8px !important;
+  padding-bottom:8px !important;
+}
+.gad-aircraft-col.pad-loose .v2-op-block,
+.gad-aircraft-col.pad-loose .v2-reg-block,
+.gad-aircraft-col.pad-loose .v2-inbound,
+.gad-aircraft-col.pad-loose .v2-eq-block,
+.gad-aircraft-col.pad-loose .v2-wx-block,
+.gad-aircraft-col.pad-loose .v2-gateinfo-block{
+  padding-top:22px !important;
+  padding-bottom:22px !important;
+}
+
+/* When the theme provides a custom background via inline style, soften the
+   gradient overlay so the brand block doesn't fight it. */
+.gad-aircraft-col[style*="background"] .v2-op-block{
+  background:linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.05)) !important;
+}
+
+/* v218.97: "Operated by X" small note under the marketing-carrier logo.
+   Only renders when the operator differs from the marketing carrier
+   (AC marketed / Jazz operated, etc.). Never replaces the main logo. */
+.gad-aircraft-col .v2-op-block .v2-op-by{
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+  letter-spacing: 0.4px !important;
+  margin-top: 8px !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  width: 100% !important;
+}
+
+/* ── Status pill styles (theme-driven via data-pill-style on g8-wrap) ── */
+
+/* ── Theme-driven column widths (applied via inline style on the row) ── */
+.g8-wrap[data-cols-applied="1"] .gad-aircraft-col,
+.g8-wrap[data-cols-applied="1"] .gad-media-col,
+.g8-wrap[data-cols-applied="1"] .gad-map-col-v2{
+  /* When the body row sets explicit flex bases, the legacy 25/50/25 is
+     overridden via JS. CSS just confirms the row uses flex correctly. */
+  flex-grow:0 !important;
+  flex-shrink:1 !important;
+}
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * v218.97 — Banner row 2 alignment overhaul
+ *
+ * Problem: row 2 had icons sized differently from text, labels positioned
+ * absolutely, padding-top inflated to hold the absolute labels, and inline
+ * `display:contents` rules that broke alignment. Result: flight icon
+ * looked parked on the floor while AC1987 floated near the ceiling, and
+ * each field sat at a different vertical center.
+ *
+ * Approach: scrap all the absolute-positioned label trickery and reset
+ * row 2 to a clean horizontal flex strip where:
+ *   - every child is align-items:center (vertical center on a single line)
+ *   - icons are sized to roughly match cap-height of the value text (using
+ *     em units so they scale together)
+ *   - labels sit on top of values as a tight stack inside each field
+ *   - the row eats its full natural height — no padding-top reserve
+ *   - text grows to consume the available height (clamp-based scaling)
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+/* v218.99.12 — row 2 is dead. The flight info moved to the left column
+   (.v2-flightinfo-block) above the aircraft column. Force-hide so any
+   legacy emission stays invisible. */
+.g8-r2,
+.g8-r1.g8-r1-bg + .g8-r2{
+  display: none !important;
+}
+
+/* The left "FLIGHT" cell and each of the right cells — same layout grammar:
+   icon on the left, label+value stacked on the right. align-items:center
+   keeps the icon at the vertical center of the stack. */
+
+/* The inner flight wrapper that holds the SVG + copy stack */
+/* Kill the old pseudo-element label trick that v218.78 left behind */
+
+/* The value-display wrapper inside each field. Used to be display:contents
+   which broke flex alignment. Now a real flex child. */
+
+/* The label+value stack inside FLIGHT (the only field with the new copy
+   wrapper class from v218.93). The label sits above the value, both
+   in a tight stack. */
+
+/* Labels — small caps style, sit ABOVE values in their own line.
+   No absolute positioning. Same size everywhere. */
+
+/* Each field uses the same column layout for its label+value pair.
+   For the non-FLIGHT fields (which don't have a -copy wrapper), the
+   label and value text both sit directly under .g8-r2-field-val. We
+   wrap the label inside the field as a flex column with the value. */
+/* The label inside a field is positioned as a static element; we layout
+   the field so label-on-top, value-below by making the value a flex
+   container that wraps the label as a sibling. The HTML has label as a
+   sibling div BEFORE the value div, so we re-stack them via order. */
+
+/* Trick: make .g8-r2-field itself a grid so [icon] [label-over-value]
+   stacks correctly. This supersedes the flex-row above because grid
+   layout wins when both are declared. */
+/* The icon SVG inside .g8-r2-field-val spans both rows and sits at column 1
+   (visually to the left of the label/value stack), vertically centered. */
+
+/* The HTML has the SVG as the first child of .g8-r2-field-val. To make it
+   land in column 1 of the parent grid, we need to break out of -val's
+   layout. Easiest: make .g8-r2-field-val display:contents so its children
+   participate in the parent grid directly. */
+/* The status pill (which is what comes after the SVG inside -val for the
+   status field) needs to be placed in the value row, not a separate grid
+   cell. Since -val is display:contents, its remaining children flow into
+   the parent grid using row 2 column 2 explicitly. */
+
+/* Free text inside .g8-r2-field-val (the time strings for dep/arr/board) —
+   wraps in spans automatically? No: the value text is a direct text node.
+   We can't grid-place a text node, but display:contents puts text nodes
+   directly into the parent grid which will then auto-place them via the
+   :first-child SVG rule above. To be safe, anything after the SVG goes
+   into row 2 col 2 via explicit selector. */
+
+/* The value text size — fills the row aggressively */
+
+/* Flight cell: SVG | (label / number) */
+
+/* Status pill — vertical center to match the rest of the row */
+
+/* v218.97 status field — the status field has NO leading SVG icon (the SVG
+   is inside the pill itself). Override the grid so the label sits above
+   the pill cleanly, no orphaned col 1. */
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * v218.99.3 — respect JS-driven airline banner colors.
+ *
+ * The JS in uxgGateHtml sets inline `style="background:... !important"` on
+ * both row 1 and row 2 from BANNER_COLOR_SPEC per airline. WestJet gets
+ * white banner / teal row 2; Air Canada gets black / red; etc. Inline
+ * !important beats external !important, so any hardcoded background here
+ * would LOSE on every airline that has a brand color spec — but the
+ * KNOCK-ON effects (gate badge contrast, row 2 text color, status pill
+ * background) need to adapt.
+ *
+ * Approach: no hardcoded banner backgrounds. Gate badge becomes outlined
+ * (transparent bg with `currentColor` border) so it adapts to both light
+ * and dark banners automatically.
+ *
+ * Sizing on 1080p / 1920px:
+ *   Row 1   ~140px
+ *   Row 2   ~170px
+ *   Body+Footer  ~770px
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── ROW 1: top banner ─────────────────────────────────────────────────── */
+.g8-wrap .g8-r1.g8-r1-bg{
+  min-height: clamp(110px, 13vh, 160px) !important;
+  height: auto !important;
+  padding: clamp(12px, 1.4vh, 22px) clamp(20px, 2vw, 40px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: clamp(20px, 2.2vw, 44px) !important;
+  border-bottom: 2px solid currentColor !important;
+  /* NO background here — the JS sets it inline per airline */
+}
+
+.g8-wrap .g8-r1-bg{
+  /* The border-bottom uses currentColor at low opacity */
+  border-bottom-color: rgba(127,127,127,0.2) !important;
+}
+
+.g8-wrap .g8-r1-dest{
+  font-size: clamp(48px, 7vh, 88px) !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  display: flex !important;
+  align-items: baseline !important;
+  gap: clamp(10px, 1vw, 20px) !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: inherit !important;
+  letter-spacing: 1px !important;
+}
+.g8-wrap .g8-r1-dest .g8-city-name,
+.g8-wrap .g8-r1-dest > span:first-child { color: inherit !important; }
+.g8-wrap .g8-r1-dest .g8-city-code,
+.g8-wrap .g8-r1-dest > span:nth-child(2) {
+  font-size: 0.62em !important;
+  font-weight: 700 !important;
+  color: inherit !important;
+  opacity: 0.5 !important;
+}
+
+.g8-wrap .g8-r1-right{
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(14px, 1.6vw, 28px) !important;
+  flex: 0 0 auto !important;
+}
+
+.g8-wrap .g8-r1-logo,
+.g8-wrap .g8-r1-airline img,
+.g8-wrap .g8-r1-airline svg {
+  max-height: clamp(64px, 8.5vh, 108px) !important;
+  height: clamp(64px, 8.5vh, 108px) !important;
+  width: auto !important;
+  max-width: clamp(200px, 22vw, 380px) !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+.g8-wrap .g8-r1-airline { display: flex !important; align-items: center !important; }
+
+/* Alliance star — only show when actually populated. If the JS emits an
+   empty container for non-aligned airlines (WS, B6, etc.), hide it. */
+.g8-wrap .g8-r1-star{
+  height: clamp(28px, 3.6vh, 44px) !important;
+  width: auto !important;
+  opacity: 0.65 !important;
+}
+.g8-wrap .g8-r1-star:empty,
+.g8-wrap .g8-r1-star:not(:has(*)):not(img):not(svg) {
+  display: none !important;
+}
+
+/* Gate badge — OUTLINED so it works on any banner color.
+   currentColor inherits the banner text color set by JS. */
+.g8-wrap .g8-r1-gate{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  color: inherit !important;
+  border: clamp(3px, 0.35vh, 5px) solid currentColor !important;
+  font-weight: 900 !important;
+  font-size: clamp(46px, 6.4vh, 80px) !important;
+  line-height: 1 !important;
+  padding: 0 clamp(18px, 1.8vw, 32px) !important;
+  height: clamp(64px, 8.5vh, 108px) !important;
+  min-width: clamp(82px, 9vw, 134px) !important;
+  border-radius: 10px !important;
+  letter-spacing: 1px !important;
+  box-shadow: none !important;
+}
+
+/* ── ROW 2: flight info strip ──────────────────────────────────────────── */
+/* No background here either — JS sets it inline per airline.
+   Text always white over the colored accent — even on WestJet teal,
+   white reads cleanly. */
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * v218.99.4 — flight info moved to LEFT COLUMN, row 2 hidden.
+ *
+ * Per Nick's reference: the status / boarding / departure / arrival fields
+ * live in the aircraft column as a vertical stack, above the brand/reg
+ * blocks. The horizontal row 2 strip is killed.
+ *
+ * Markup (generated by _buildV2AircraftCol in fids-core.js):
+ *   .v2-flightinfo-block
+ *     .v2-fi-status-row   (label + status pill)
+ *     .v2-fi-row × 3      (icon + label + value, for boarding/dep/arr)
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+/* Hide the horizontal strip entirely */
+
+/* The new vertical flight info block */
+.gad-aircraft-col .v2-flightinfo-block {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 1.6vh, 22px);
+  padding: clamp(14px, 1.8vh, 24px) clamp(16px, 1.4vw, 22px);
+  margin-bottom: clamp(8px, 1vh, 14px);
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+}
+
+/* Status row — label inline with status pill */
+.gad-aircraft-col .v2-fi-status-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: clamp(10px, 1vw, 16px);
+  flex-wrap: wrap;
+}
+.gad-aircraft-col .v2-fi-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(18px, 2.2vh, 30px);
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: clamp(6px, 0.7vh, 10px) clamp(14px, 1.3vw, 22px);
+  border-radius: 8px;
+  background: #1f2937;
+  color: #fff;
+  white-space: nowrap;
+  line-height: 1;
+}
+.gad-aircraft-col .v2-fi-status.v2-fi-status\ ontime,
+.gad-aircraft-col .v2-fi-status.ontime { background: #0e7c4a; }
+.gad-aircraft-col .v2-fi-status.v2-fi-status\ scheduled,
+.gad-aircraft-col .v2-fi-status.scheduled { background: #1f2937; }
+.gad-aircraft-col .v2-fi-status.v2-fi-status\ boarding,
+.gad-aircraft-col .v2-fi-status.boarding { background: #1d4ed8; }
+.gad-aircraft-col .v2-fi-status.v2-fi-status\ delayed,
+.gad-aircraft-col .v2-fi-status.delayed { background: #b45309; }
+.gad-aircraft-col .v2-fi-status.v2-fi-status\ cancelled,
+.gad-aircraft-col .v2-fi-status.cancelled { background: #991b1b; }
+.gad-aircraft-col .v2-fi-status.v2-fi-status\ final,
+.gad-aircraft-col .v2-fi-status.final { background: #be123c; }
+.gad-aircraft-col .v2-fi-status.v2-fi-status\ gateclosed,
+.gad-aircraft-col .v2-fi-status.gateclosed { background: #4b5563; }
+
+.gad-aircraft-col .v2-fi-svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  opacity: 0.95;
+}
+.gad-aircraft-col .v2-fi-copy {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.3vh, 5px);
+  line-height: 1;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Strike-through and revised time pair inside .v2-fi-value */
+.gad-aircraft-col .v2-fi-value .g8-r2-strike {
+  text-decoration: line-through;
+  opacity: 0.5;
+  margin-right: 0.3em;
+}
+.gad-aircraft-col .v2-fi-value .g8-r2-revised {
+  color: #fbbf24;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * v218.99.5 — left col: FLIGHT # prominent at top, no gray panel, bigger.
+ *             right col: aircraft type + image moves to the map column,
+ *             positioned ABOVE the map for incoming flights, BELOW for
+ *             outgoing flights.
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+/* Remove the gray panel — bare on the column background */
+.gad-aircraft-col .v2-flightinfo-block {
+  background: transparent !important;
+  padding: clamp(8px, 1.2vh, 18px) 0 !important;
+  margin-bottom: clamp(10px, 1.4vh, 20px) !important;
+  gap: clamp(18px, 2.2vh, 32px) !important;
+}
+
+/* FLIGHT row — label small on top, BIG number below */
+.gad-aircraft-col .v2-fi-flight-row {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: clamp(4px, 0.5vh, 8px) !important;
+  margin-bottom: clamp(4px, 0.6vh, 10px) !important;
+}
+.gad-aircraft-col .v2-fi-flight-label {
+  font-size: clamp(16px, 1.9vh, 26px) !important;
+  font-weight: 800 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  opacity: 0.7 !important;
+  line-height: 1 !important;
+}
+.gad-aircraft-col .v2-fi-flight-number {
+  font-size: clamp(56px, 7.2vh, 100px) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1 !important;
+  color: inherit !important;
+}
+
+/* Status row — bigger label and pill */
+.gad-aircraft-col .v2-fi-status-row {
+  gap: clamp(14px, 1.4vw, 22px) !important;
+}
+.gad-aircraft-col .v2-fi-status {
+  font-size: clamp(24px, 2.8vh, 38px) !important;
+  font-weight: 900 !important;
+  letter-spacing: 1.5px !important;
+  padding: clamp(8px, 1vh, 14px) clamp(18px, 1.7vw, 28px) !important;
+  border-radius: 10px !important;
+}
+
+
+/* ── RIGHT (MAP) COLUMN — Aircraft block ───────────────────────────────── */
+.gad-map-col-v2 .v2-map-aircraft {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 0.6vh, 8px);
+  padding: clamp(6px, 0.9vh, 12px) clamp(12px, 1.2vw, 18px);
+  background: rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+}
+.gad-map-col-v2 .v2-map-aircraft-img {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: clamp(90px, 12vh, 150px);
+  overflow: hidden;
+}
+.gad-map-col-v2 .v2-map-aircraft-img img {
+  width: 100%;
+  height: auto;
+  max-height: clamp(90px, 12vh, 150px);
+  object-fit: contain;
+  display: block;
+}
+.gad-map-col-v2 .v2-map-aircraft-type {
+  font-size: clamp(28px, 3.2vh, 42px);
+  font-weight: 900;
+  letter-spacing: -0.005em;
+  text-align: center;
+  line-height: 1.05;
+  color: inherit;
+  width: 100%;
+}
+
+/* The map area itself: takes the remaining vertical space */
+.gad-map-col-v2 .v2-map-area {
+  flex: 1 1 auto;
+  position: relative;
+  overflow: hidden;
+  min-height: 360px;
+}
+.gad-map-col-v2 .v2-map-area .g8-inb-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+}
+
+/* Make the SPD/ALT pill more legible — bigger, higher contrast */
+.gad-map-col-v2 .v2-map-pill {
+  position: absolute;
+  top: clamp(12px, 1.4vh, 20px);
+  right: clamp(12px, 1vw, 18px);
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.96);
+  color: #0a0d14;
+  padding: clamp(8px, 1vh, 14px) clamp(12px, 1.2vw, 18px);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.4vh, 7px);
+  font-weight: 800;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.gad-map-col-v2 .v2-map-pill > div {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(6px, 0.6vw, 10px);
+  font-size: clamp(16px, 1.8vh, 24px);
+  line-height: 1;
+}
+.gad-map-col-v2 .v2-map-pill-k {
+  font-weight: 700;
+  opacity: 0.7;
+}
+.gad-map-col-v2 .v2-map-pill-v {
+  font-weight: 900;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * v218.99.6 — right column reorganized:
+ *   • TOP   : inbound-flight info card
+ *             ("WestJet Flight 812 · Enroute From Calgary (YYC) · SPD/ALT
+ *              · EST. DEPARTURE / EST. ARRIVAL side-by-side")
+ *   • MID   : map (clean, no overlays)
+ *   • BOTTOM: aircraft livery image + "Aircraft Type: Boeing 737-800"
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+/* INBOUND CARD ─────────────────────────────────────────────────────────── */
+.gad-map-col-v2 .v2-rc-inbound {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1vh, 14px);
+  padding: clamp(14px, 1.8vh, 22px) clamp(14px, 1.4vw, 22px);
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.gad-map-col-v2 .v2-rc-title {
+  font-size: clamp(22px, 2.8vh, 38px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.5px;
+}
+.gad-map-col-v2 .v2-rc-sentence {
+  font-size: clamp(15px, 1.8vh, 22px);
+  font-weight: 600;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+.gad-map-col-v2 .v2-rc-status {
+  font-weight: 900;
+  color: #fbbf24;
+}
+.gad-map-col-v2 .v2-rc-origin {
+  font-weight: 900;
+}
+.gad-map-col-v2 .v2-rc-telem {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 0.6vw, 10px);
+  font-size: clamp(14px, 1.7vh, 20px);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: clamp(2px, 0.3vh, 6px);
+}
+.gad-map-col-v2 .v2-rc-telem-k {
+  opacity: 0.65;
+  font-weight: 700;
+}
+.gad-map-col-v2 .v2-rc-telem-v {
+  font-weight: 900;
+}
+.gad-map-col-v2 .v2-rc-telem-sep {
+  opacity: 0.35;
+  margin: 0 clamp(2px, 0.2vw, 6px);
+}
+
+/* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
+.gad-map-col-v2 .v2-rc-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 1vw, 18px);
+  margin-top: clamp(4px, 0.6vh, 10px);
+}
+.gad-map-col-v2 .v2-rc-time-cell {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.3vh, 5px);
+  min-width: 0;
+}
+.gad-map-col-v2 .v2-rc-time-lbl {
+  font-size: clamp(11px, 1.3vh, 16px);
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  opacity: 0.7;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gad-map-col-v2 .v2-rc-time-val {
+  font-size: clamp(24px, 3vh, 40px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* MAP AREA ────────────────────────────────────────────────────────────── */
+.gad-map-col-v2 .v2-map-area {
+  flex: 1 1 auto;
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+}
+.gad-map-col-v2 .v2-map-area .g8-inb-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+}
+
+/* AIRCRAFT BLOCK (BOTTOM) ─────────────────────────────────────────────── */
+.gad-map-col-v2 .v2-rc-aircraft {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 0.8vh, 12px);
+  padding: clamp(12px, 1.6vh, 22px) clamp(12px, 1.2vw, 18px);
+  background: rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+.gad-map-col-v2 .v2-rc-aircraft-img {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: clamp(80px, 12vh, 150px);
+  overflow: hidden;
+}
+.gad-map-col-v2 .v2-rc-aircraft-img img {
+  width: 100%;
+  height: auto;
+  max-height: clamp(80px, 12vh, 150px);
+  object-fit: contain;
+  display: block;
+}
+.gad-map-col-v2 .v2-rc-aircraft-row {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: center;
+  gap: clamp(6px, 0.7vw, 12px);
+  flex-wrap: wrap;
+  text-align: center;
+  width: 100%;
+}
+.gad-map-col-v2 .v2-rc-aircraft-lbl {
+  font-size: clamp(14px, 1.6vh, 20px);
+  font-weight: 700;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  text-transform: none;
+  white-space: nowrap;
+}
+.gad-map-col-v2 .v2-rc-aircraft-val {
+  font-size: clamp(22px, 2.8vh, 38px);
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+ * v218.99.32 — CONSOLIDATED flight info column treatment
+ * Replaces 5 prior conflicting blocks. Single source of truth.
+ * Note: inline styles on each badge guarantee perfect circles regardless
+ * of cascade. This file just handles labels, values, status colors,
+ * and the column background.
+ * ════════════════════════════════════════════════════════════════════ */
+
+.gad-aircraft-col {
+  background: #2a2d35 !important;
+}
+
+
+
+/* Status — colored text, no pill, sentence case, left aligned */
+.gad-aircraft-col .v2-fi-status-val {
+  background: transparent !important;
+  padding: 0 !important;
+  font-size: clamp(44px, 6vh, 88px) !important;
+  font-weight: 900 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  color: #fff !important;
+  text-align: left !important;
+}
+.gad-aircraft-col .v2-fi-status-val.ontime    { color: #2dd47a !important; }
+.gad-aircraft-col .v2-fi-status-val.scheduled { color: #fff !important;    }
+.gad-aircraft-col .v2-fi-status-val.boarding  { color: #60a5fa !important; }
+.gad-aircraft-col .v2-fi-status-val.delayed   { color: #fbbf24 !important; }
+.gad-aircraft-col .v2-fi-status-val.cancelled { color: #f87171 !important; }
+.gad-aircraft-col .v2-fi-status-val.final     { color: #fb7185 !important; }
+.gad-aircraft-col .v2-fi-status-val.gateclosed { color: #9ca3af !important; }
+
+/* v218.99.32 — Top banner city name bigger so it reads from a distance */
+.g8-banner-city,
+.gad-banner .city-name {
+  font-size: clamp(56px, 8vh, 130px) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+
+/* v218.99.33 — Aircraft panel: tight, framed block; livery dominates,
+   info pairs sit below in a clean stacked row */
+.gad-map-col-v2 .v2-rc-aircraft {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(8px, 1vh, 14px) clamp(12px, 1.4vw, 22px) clamp(14px, 1.6vh, 22px);
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+  background: rgba(0, 0, 0, 0.03);
+}
+.gad-map-col-v2 .v2-rc-aircraft-img {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: clamp(8px, 1vh, 14px);
+}
+.gad-map-col-v2 .v2-rc-aircraft-img img {
+  max-width: 95%;
+  max-height: clamp(70px, 9vh, 130px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.gad-map-col-v2 .v2-rc-aircraft-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 1.4vw, 24px);
+  align-items: start;
+  padding-top: clamp(6px, 0.8vh, 12px);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+.gad-map-col-v2 .v2-rc-aircraft-pair {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.3vh, 4px);
+  min-width: 0;
+}
+.gad-map-col-v2 .v2-rc-aircraft-lbl {
+  font-size: clamp(11px, 1.3vh, 17px);
+  font-weight: 600;
+  opacity: 0.65;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+.gad-map-col-v2 .v2-rc-aircraft-val {
+  font-size: clamp(20px, 2.6vh, 38px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+/* v218.99.32 — Inbound info: Speed / Altitude / Arrival From, big & uniform */
+.gad-map-col-v2 .v2-rc-keystats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: clamp(8px, 1vw, 16px);
+  padding: clamp(10px, 1.4vh, 18px) clamp(14px, 1.5vw, 24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: clamp(8px, 1vh, 14px);
+}
+.gad-map-col-v2 .v2-rc-keystat {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.3vh, 5px);
+  min-width: 0;
+}
+.gad-map-col-v2 .v2-rc-keystat-lbl {
+  font-size: clamp(12px, 1.4vh, 18px);
+  font-weight: 600;
+  opacity: 0.7;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+.gad-map-col-v2 .v2-rc-keystat-val {
+  font-size: clamp(18px, 2.4vh, 34px);
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+/* v218.99.38 — KILL the dark vertical strip for good.
+   Six duplicate #gateAdCarousel rules were painting different bgs that
+   leaked through where the ad didn't reach. All neutralized to transparent.
+   Now the carousel explicitly fills its parent and the ad's own bgColor
+   paints the entire media column. */
+.gad-media-col {
+  background: #080C14 !important;
+  background-color: #080C14 !important;
+  background-image: none !important;
+  border-right: none !important;
+  border-left: none !important;
+}
+.gad-media-col > div:not(#gateAdLogo) {
+  width: 100% !important;
+  height: 100% !important;
+}
+#gateAdCarousel {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+#gateAdCarousel > * {
+  width: 100% !important;
+  height: 100% !important;
+}
+.gad-media-col .gate-ad-logo-rail,
+.gad-media-col #gateAdLogo {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+#gateAdLogo {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  flex: 0 0 0 !important;
+}
+
+/* v218.99.46 — fix v218.99.45 specificity miss (existing rules had higher
+   specificity and overrode my bumps). Also kill the opacity that made
+   everything look gray — Nick wants WHITE labels, gray only for (IATA). */
+
+/* 1. BANNER — city name MUCH bigger */
+.g8-wrap .g8-r1-dest {
+  font-size: clamp(96px, 11vh, 140px) !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1 !important;
+}
+.g8-wrap .g8-r1-dest .g8-city-code,
+.g8-wrap .g8-r1-dest > span:nth-child(2) {
+  font-size: 0.75em !important;
+  opacity: 0.55 !important;  /* (YVR) — large but slightly dim */
+}
+
+
+
+/* Status value sits LEFT, same column as the other values */
+.gad-aircraft-col .v2-fi-status,
+.gad-aircraft-col .v2-fi-status-val {
+  text-align: left !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: none !important;
+  border: none !important;
+  display: block !important;
+  width: auto !important;
+}
+
+/* 3. WEATHER widget — all white, no gray */
+.gad-aircraft-col .v2-wx-block {
+  margin-top: 0;
+  padding: 14px 28px;
+  background: rgba(255,255,255,0.04);
+  border-top: 1px solid rgba(255,255,255,0.10);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gad-aircraft-col .v2-wx-lbl {
+  font-size: clamp(20px, 2.4vh, 34px) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: #9aa4b0 !important;
+  opacity: 1 !important;
+  line-height: 1.1 !important;
+}
+/* Today / Tomorrow side-by-side grid */
+.gad-aircraft-col .v2-wx-2col {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14px;
+}
+.gad-aircraft-col .v2-wx-2col .v2-wx-when {
+  font-size: clamp(16px, 1.8vh, 22px);
+  font-weight: 600;
+  color: #9aa4b0;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+.gad-aircraft-col .v2-wx-2col .v2-wx-temp {
+  font-size: clamp(28px, 3.6vh, 50px) !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  line-height: 1 !important;
+}
+.gad-aircraft-col .v2-wx-2col .v2-wx-cond {
+  font-size: clamp(14px, 1.6vh, 20px) !important;
+  font-weight: 500 !important;
+  color: #fff !important;
+  opacity: 0.85 !important;
+  line-height: 1.1 !important;
+}
+.gad-aircraft-col .v2-wx-2col .v2-wx-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gad-aircraft-col .v2-wx-2col .v2-wx-cell img,
+.gad-aircraft-col .v2-wx-2col .v2-wx-cell svg {
+  width: clamp(44px, 5.5vh, 70px) !important;
+  height: clamp(44px, 5.5vh, 70px) !important;
+  flex-shrink: 0 !important;
+}
+.gad-aircraft-col .v2-wx-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.gad-aircraft-col .v2-wx-row img,
+.gad-aircraft-col .v2-wx-row svg {
+  width: clamp(56px, 7vh, 88px) !important;
+  height: clamp(56px, 7vh, 88px) !important;
+  flex-shrink: 0;
+}
+.gad-aircraft-col .v2-wx-temp {
+  font-size: clamp(40px, 5vh, 70px) !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  opacity: 1 !important;
+  line-height: 1 !important;
+}
+.gad-aircraft-col .v2-wx-cond {
+  font-size: clamp(18px, 2vh, 26px) !important;
+  font-weight: 600 !important;
+  color: #fff !important;
+  opacity: 1 !important;
+  margin-top: 4px !important;
+  line-height: 1.1 !important;
+}
+
+/* 4. RIGHT COLUMN — boxed flight info card, aircraft moves up */
+.gad-map-col-v2 .v2-rc-inbound {
+  background: #fff;
+  color: #0a0d14;
+  padding: 22px 24px;
+  margin: 0 0 8px 0;
+  border-radius: 0;
+}
+.gad-map-col-v2 .v2-rc-title {
+  font-size: clamp(20px, 2.4vh, 32px) !important;
+  font-weight: 800 !important;
+  color: #0a0d14 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.1 !important;
+  margin-bottom: 6px !important;
+}
+.gad-map-col-v2 .v2-rc-sentence {
+  font-size: clamp(15px, 1.8vh, 22px) !important;
+  font-weight: 600 !important;
+  color: #0a0d14 !important;
+  line-height: 1.3 !important;
+  margin-bottom: 14px !important;
+}
+.gad-map-col-v2 .v2-rc-status {
+  color: #C89B3C !important;
+  font-weight: 800 !important;
+}
+.gad-map-col-v2 .v2-rc-origin {
+  color: #0a0d14 !important;
+  font-weight: 800 !important;
+}
+.gad-map-col-v2 .v2-rc-times {
+  display: flex !important;
+  gap: 16px !important;
+  margin-top: 4px !important;
+}
+.gad-map-col-v2 .v2-rc-time-cell {
+  flex: 1 1 0 !important;
+  background: rgba(10,13,20,0.05);
+  padding: 10px 12px;
+  border-radius: 0;
+}
+.gad-map-col-v2 .v2-rc-time-lbl {
+  font-size: clamp(11px, 1.3vh, 16px) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: #0a0d14 !important;
+  opacity: 0.55 !important;
+  margin-bottom: 4px !important;
+  line-height: 1 !important;
+}
+.gad-map-col-v2 .v2-rc-time-val {
+  font-size: clamp(22px, 2.8vh, 36px) !important;
+  font-weight: 900 !important;
+  color: #0a0d14 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1 !important;
+}
+
+.gad-map-col-v2 .v2-rc-aircraft {
+  margin-top: 8px !important;
+  padding: 14px 16px 16px !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-img {
+  margin-bottom: 4px !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-lbl {
+  font-size: clamp(12px, 1.4vh, 17px) !important;
+  letter-spacing: 0.14em !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-val {
+  font-size: clamp(18px, 2.2vh, 28px) !important;
+  font-weight: 800 !important;
+}
+
+.gad-map-col-v2 .v2-map-area {
+  flex: 0 1 38vh !important;
+  max-height: 42vh !important;
+}
+
+
+/* v218.99.56 — Aircraft block layout per Nick.
+   Type sits top-left, registration sits bottom-right (right-aligned).
+   The aircraft image lives between them, centered. */
+.gad-map-col-v2 .v2-rc-aircraft {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(10px, 1.2vh, 16px) clamp(14px, 1.6vw, 24px);
+  min-height: clamp(140px, 18vh, 220px);
+}
+.gad-map-col-v2 .v2-rc-aircraft-type-top {
+  align-self: flex-start;
+  font-size: clamp(14px, 1.6vh, 22px) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  color: #0f1419 !important;
+  line-height: 1.1;
+  text-align: left;
+  margin-bottom: clamp(4px, 0.6vh, 10px);
+}
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot {
+  align-self: flex-end;
+  font-size: clamp(14px, 1.6vh, 22px) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  color: #4a5562 !important;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  margin-top: clamp(4px, 0.6vh, 10px);
+}
+.gad-map-col-v2 .v2-rc-aircraft-img {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+}
+/* Hide the old info/pair structure if any remnant references hit */
+.gad-map-col-v2 .v2-rc-aircraft .v2-rc-aircraft-info,
+.gad-map-col-v2 .v2-rc-aircraft .v2-rc-aircraft-pair,
+.gad-map-col-v2 .v2-rc-aircraft .v2-rc-aircraft-lbl,
+.gad-map-col-v2 .v2-rc-aircraft .v2-rc-aircraft-val {
+  display: none !important;
+}
+
+/* v218.99.57 — Nick's icon/spacing/status fixes:
+   1. Icons FILL the red circle (reduce badge padding)
+   2. Less space between rows
+   3. Status value smaller than time values
+   4. Status colors: green/yellow/red */
+
+
+
+
+
+/* v218.99.58 — AC rondelle + alignment per Nick:
+   - Emblem wrap (AC roundel on Flight # row) was getting big padding,
+     making the logo small inside. Fixed to match SVG badges.
+   - Icons are now slightly bigger overall and aligned WITH THE VALUE
+     (bottom of label/value stack), not centered. */
+
+
+.gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap .v2-fi-emblem-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+
+
+/* v218.99.60 — Icon vertical alignment: all rows the SAME min-height,
+   icon centered vertically in each row. Without this, the Status row
+   (shorter value font) had its icon at a different Y than the time rows. */
+
+/* v218.99.61 — Aircraft block bigger, shelf-style separators per Nick.
+   Type and Registration on stacked rows below the aircraft image,
+   matching the shelf style of the left column. */
+.gad-map-col-v2 .v2-rc-aircraft {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  min-height: auto !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-img {
+  width: 100%;
+  padding: 14px 18px 6px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* TYPE row — shelf */
+.gad-map-col-v2 .v2-rc-aircraft-type-top {
+  font-size: clamp(28px, 3.0vh, 42px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.005em !important;
+  color: #0f1419 !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  padding: 12px 22px !important;
+  border-top: 1px solid rgba(15, 20, 25, 0.08) !important;
+  border-bottom: 1px solid rgba(15, 20, 25, 0.08) !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  align-self: stretch !important;
+  margin: 0 !important;
+}
+/* REGISTRATION row — shelf */
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot {
+  font-size: clamp(22px, 2.4vh, 32px) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  color: #4a5562 !important;
+  font-variant-numeric: tabular-nums !important;
+  text-align: right !important;
+  padding: 10px 22px !important;
+  align-self: stretch !important;
+  margin: 0 !important;
+}
+/* Pre-row hint label */
+.gad-map-col-v2 .v2-rc-aircraft-type-top::before {
+  content: "Aircraft" !important;
+  display: block !important;
+  font-size: clamp(11px, 1.1vh, 14px) !important;
+  font-weight: 700 !important;
+  color: #6b7585 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+  margin-bottom: 4px !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot::before {
+  content: "Registration" !important;
+  display: block !important;
+  font-size: clamp(11px, 1.1vh, 14px) !important;
+  font-weight: 700 !important;
+  color: #6b7585 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+  margin-bottom: 4px !important;
+  text-align: right !important;
+}
+
+/* v218.99.64 — Incoming Aircraft shelf at TOP of aircraft block (header).
+   Announces "what's arriving" before showing the aircraft details. */
+.gad-map-col-v2 .v2-rc-aircraft-incoming {
+  padding: 14px 22px 12px 22px !important;
+  border-bottom: 1px solid rgba(15, 20, 25, 0.10) !important;
+  background: rgba(15, 50, 60, 0.06) !important;
+  align-self: stretch !important;
+  order: -1 !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-incoming-lbl {
+  font-size: clamp(11px, 1.1vh, 14px) !important;
+  font-weight: 700 !important;
+  color: #0d8a8a !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  margin-bottom: 4px !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-incoming-main {
+  font-size: clamp(20px, 2.2vh, 28px) !important;
+  font-weight: 800 !important;
+  color: #0f1419 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.005em !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-incoming-eta {
+  font-size: clamp(14px, 1.5vh, 18px) !important;
+  font-weight: 500 !important;
+  color: #4a5562 !important;
+  margin-top: 2px !important;
+}
+
+/* v218.99.65 — Aircraft block FINAL: no uppercase anywhere, proper case
+   labels, tail number format "Tail number: C-FTOD" inline. */
+
+/* Override prior uppercase on incoming label */
+.gad-map-col-v2 .v2-rc-aircraft-incoming-lbl {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: clamp(15px, 1.6vh, 20px) !important;
+  font-weight: 700 !important;
+  color: #0d8a8a !important;
+}
+/* Override prior ::before pseudo-labels (were uppercase "AIRCRAFT"/"REGISTRATION") */
+.gad-map-col-v2 .v2-rc-aircraft-type-top::before,
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot::before {
+  content: none !important;
+}
+/* Type shelf: small label above, big value below */
+.gad-map-col-v2 .v2-rc-aircraft-type-top {
+  padding: 10px 22px !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  border-top: 1px solid rgba(15, 20, 25, 0.08) !important;
+  border-bottom: 1px solid rgba(15, 20, 25, 0.08) !important;
+  align-self: stretch !important;
+  margin: 0 !important;
+  text-align: left !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  letter-spacing: 0 !important;
+  color: inherit !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-shelf-lbl {
+  font-size: clamp(15px, 1.5vh, 19px) !important;
+  font-weight: 600 !important;
+  color: #6b7585 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  line-height: 1.1 !important;
+  margin-bottom: 2px !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-shelf-val {
+  font-size: clamp(26px, 2.8vh, 38px) !important;
+  font-weight: 800 !important;
+  color: #0f1419 !important;
+  letter-spacing: -0.005em !important;
+  line-height: 1.1 !important;
+}
+/* Tail number — "Tail number: C-FTOD" inline format */
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot {
+  padding: 10px 22px !important;
+  align-self: stretch !important;
+  margin: 0 !important;
+  text-align: right !important;
+  font-size: clamp(16px, 1.7vh, 22px) !important;
+  font-weight: 600 !important;
+  color: #6b7585 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot .v2-rc-aircraft-reg-val {
+  font-weight: 800 !important;
+  color: #0f1419 !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: 0.02em !important;
+  margin-left: 4px !important;
+}
+
+/* v218.99.66 — Final readability pass per Nick.
+   NO UPPERCASE anywhere. All labels min 22px. */
+
+/* v218.99.72 — RIGHT COLUMN FINAL TYPE SCALE — TWO SIZES ONLY.
+ * This is the AUTHORITATIVE block, all earlier conflicting rules removed.
+ * VALUES (data): clamp(28px, 3.2vh, 42px) weight 800-900
+ * LABELS (descriptors): clamp(18px, 2.0vh, 24px) weight 600
+ */
+
+/* Aircraft type shelf — label/value */
+.gad-map-col-v2 .v2-rc-aircraft-shelf-lbl {
+  font-size: clamp(18px, 2.0vh, 24px) !important;
+  font-weight: 600 !important;
+  color: #6b7585 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  line-height: 1.1 !important;
+  margin-bottom: 2px !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-shelf-val {
+  font-size: clamp(28px, 3.2vh, 42px) !important;
+  font-weight: 900 !important;
+  color: #0f1419 !important;
+  letter-spacing: -0.005em !important;
+  line-height: 1.05 !important;
+}
+
+/* Tail number shelf — same scale, right-aligned */
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot {
+  padding: 8px 22px !important;
+  align-self: stretch !important;
+  margin: 0 !important;
+  text-align: right !important;
+  font-size: clamp(18px, 2.0vh, 24px) !important;
+  font-weight: 600 !important;
+  color: #6b7585 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  line-height: 1.1 !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot .v2-rc-aircraft-reg-val {
+  font-size: clamp(28px, 3.2vh, 42px) !important;
+  font-weight: 900 !important;
+  color: #0f1419 !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: 0.02em !important;
+  margin-left: 8px !important;
+}
+
+/* Right column header (legacy classes) - no uppercase */
+.gad-map-col-v2 .v2-rc-header,
+.gad-map-col-v2 .v2-rc-status-line {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v218.99.67 — SINGLE SOURCE OF TRUTH for the left flight-info column.
+   ALL prior conflicting blocks have been removed. Edit ONLY this section
+   from now on.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── ROW ────────────────────────────────────────────────────────────── */
+.gad-aircraft-col .v2-fi-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 0;
+  align-items: end;
+  min-height: clamp(64px, 7.0vh, 92px);
+  padding: 6px 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: transparent;
+  box-sizing: border-box;
+}
+.gad-aircraft-col .v2-fi-row:last-of-type {
+  border-bottom: none;
+}
+
+/* Copy stack uses display:contents so label/value promote to grid cells */
+.gad-aircraft-col .v2-fi-row > .v2-fi-copy {
+  display: contents;
+}
+.gad-aircraft-col .v2-fi-row > .v2-fi-copy > .v2-fi-label {
+  grid-row: 1;
+  grid-column: 2;
+}
+.gad-aircraft-col .v2-fi-row > .v2-fi-copy > .v2-fi-value {
+  grid-row: 2;
+  grid-column: 2;
+}
+/* Icon spans value's row only — vertically centered on the value */
+.gad-aircraft-col .v2-fi-row > .v2-fi-icon-wrap,
+.gad-aircraft-col .v2-fi-row > .v2-fi-emblem-wrap,
+.gad-aircraft-col .v2-fi-row > .v2-fi-icon-badge {
+  grid-row: 2;
+  grid-column: 1;
+  align-self: center;
+}
+
+/* ── ICONS / EMBLEM (cyan badge) ────────────────────────────────────── */
+.gad-aircraft-col .v2-fi-row .v2-fi-icon-wrap,
+.gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap,
+.gad-aircraft-col .v2-fi-row .v2-fi-icon-badge {
+  width: clamp(54px, 6.8vh, 92px);
+  height: clamp(54px, 6.8vh, 92px);
+  min-width: clamp(54px, 6.8vh, 92px);
+  min-height: clamp(54px, 6.8vh, 92px);
+  max-width: clamp(54px, 6.8vh, 92px);
+  max-height: clamp(54px, 6.8vh, 92px);
+  flex-shrink: 0;
+}
+.gad-aircraft-col .v2-fi-row .v2-fi-icon-badge {
+  padding: clamp(3px, 0.4vh, 7px);
+}
+.gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  padding: clamp(5px, 0.6vh, 10px);
+}
+.gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap .v2-fi-emblem-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.gad-aircraft-col .v2-fi-row .v2-fi-svg {
+  width: 100%;
+  height: 100%;
+  fill: #fff;
+  opacity: 1;
+}
+
+/* ── LABEL (small, proper case, GRAY per Nick's rule) ───────────────── */
+.gad-aircraft-col .v2-fi-row .v2-fi-label {
+  font-size: clamp(20px, 2.4vh, 34px);
+  font-weight: 600;
+  color: #9aa4b0;
+  opacity: 1;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.1;
+  margin: 0;
+  padding: 0;
+}
+.gad-aircraft-col .v2-fi-row .v2-fi-label::after {
+  content: ":";
+}
+/* No exception for Flight # — Nick wants it to have the colon too */
+.gad-aircraft-col .v2-fi-row .v2-fi-flight-label::after {
+  content: ":";
+}
+
+/* ── VALUE (big number/time) ────────────────────────────────────────── */
+.gad-aircraft-col .v2-fi-row .v2-fi-value {
+  font-size: clamp(54px, 6.8vh, 92px);
+  font-weight: 900;
+  color: #fff;
+  opacity: 1;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+}
+
+/* ── STATUS VALUE (text, smaller than number values) ────────────────── */
+.gad-aircraft-col .v2-fi-row .v2-fi-status-val {
+  font-size: clamp(36px, 4.6vh, 64px);
+  font-weight: 800;
+}
+.gad-aircraft-col .v2-fi-row .v2-fi-status-val.v2-fi-status.ontime,
+.gad-aircraft-col .v2-fi-row .v2-fi-status-val.v2-fi-status.scheduled {
+  color: #22C55E;
+}
+.gad-aircraft-col .v2-fi-row .v2-fi-status-val.v2-fi-status.boarding,
+.gad-aircraft-col .v2-fi-row .v2-fi-status-val.v2-fi-status.delayed {
+  color: #FACC15;
+}
+.gad-aircraft-col .v2-fi-row .v2-fi-status-val.v2-fi-status.cancelled {
+  color: #EF4444;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v218.99.68 — Right column header: COMPACT, READABLE.
+   ONE block. Replaces all prior v2-rc-title / v2-rc-sentence styles.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.gad-map-col-v2 .v2-rc-inbound {
+  padding: 6px 22px !important;
+}
+.gad-map-col-v2 .v2-rc-title,
+.gad-map-col-v2 .v2-rc-sentence {
+  display: none !important;  /* legacy classes no longer rendered */
+}
+
+/* ── RIGHT COLUMN TYPE SCALE — TWO SIZES ONLY ──────────────────────────
+ *   VALUES: clamp(28px, 3.2vh, 42px)  weight 800-900  → flight#, status,
+ *           From line, time values, aircraft type, tail#
+ *   LABELS: clamp(18px, 2.0vh, 24px)  weight 600       → departure,
+ *           arrival, aircraft type label, tail# label, ETA
+ *   No exceptions, no variants.
+ * ──────────────────────────────────────────────────────────────────── */
+
+/* Headline: WS812 · Early */
+.gad-map-col-v2 .v2-rc-headline {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: baseline !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  margin-bottom: 4px !important;
+}
+.gad-map-col-v2 .v2-rc-headline .v2-rc-flt {
+  font-size: clamp(28px, 3.2vh, 42px) !important;
+  font-weight: 900 !important;
+  color: #0f1419 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.05 !important;
+}
+.gad-map-col-v2 .v2-rc-headline .v2-rc-sep {
+  font-size: clamp(28px, 3.2vh, 42px) !important;
+  color: #6b7585 !important;
+  opacity: 0.5 !important;
+  line-height: 1.05 !important;
+}
+.gad-map-col-v2 .v2-rc-headline .v2-rc-status {
+  font-size: clamp(28px, 3.2vh, 42px) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.05 !important;
+}
+.gad-map-col-v2 .v2-rc-headline .v2-rc-status-scheduled,
+.gad-map-col-v2 .v2-rc-headline .v2-rc-status-ontime { color: #16a34a !important; }
+.gad-map-col-v2 .v2-rc-headline .v2-rc-status-delayed { color: #ca8a04 !important; }
+.gad-map-col-v2 .v2-rc-headline .v2-rc-status-cancelled { color: #dc2626 !important; }
+
+/* From line — same VALUE scale */
+.gad-map-col-v2 .v2-rc-from {
+  font-size: clamp(28px, 3.2vh, 42px) !important;
+  font-weight: 800 !important;
+  color: #2a3340 !important;
+  margin-bottom: 6px !important;
+  line-height: 1.1 !important;
+}
+
+/* Times — two cells side by side */
+.gad-map-col-v2 .v2-rc-times {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 10px !important;
+  margin-bottom: 4px !important;
+}
+.gad-map-col-v2 .v2-rc-time-cell {
+  flex: 1 1 0 !important;
+  padding: 6px 12px !important;
+  background: rgba(15, 20, 25, 0.04) !important;
+  border-radius: 8px !important;
+}
+.gad-map-col-v2 .v2-rc-time-lbl {
+  font-size: clamp(18px, 2.0vh, 24px) !important;
+  font-weight: 600 !important;
+  color: #6b7585 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  margin-bottom: 2px !important;
+  line-height: 1.1 !important;
+}
+.gad-map-col-v2 .v2-rc-time-val {
+  font-size: clamp(28px, 3.2vh, 42px) !important;
+  font-weight: 900 !important;
+  color: #0f1419 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.05 !important;
+}
+
+/* ETA line — LABEL scale */
+.gad-map-col-v2 .v2-rc-eta {
+  font-size: clamp(18px, 2.0vh, 24px) !important;
+  font-weight: 600 !important;
+  color: #4a5562 !important;
+  line-height: 1.2 !important;
+}

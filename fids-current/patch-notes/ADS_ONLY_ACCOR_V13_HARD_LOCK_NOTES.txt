@@ -1,0 +1,19 @@
+ADS-ONLY ACCOR V13 HARD LOCK
+
+Built from V12.
+
+Fixes:
+- Removes ellipsis behavior from Accor ad titles.
+- Hard-locks logo-first hierarchy.
+- Novotel/midscale logo is now dominant over property name.
+- Property title is secondary and no longer giant.
+- Keeps property title readable without truncating to "...".
+- Keeps amenities visible with fallback amenities if hotel data is missing.
+- Keeps compact description line without clipping.
+- Keeps Fairmont/Sofitel luxury lockups large.
+- Keeps English/French default and all 9 menu languages.
+- No menu, flight logic, gate logic, weather, maps, aircraft cards, carousel timing,
+  admin controls, or performance changes.
+
+Validation:
+- fids-core.js passed node --check.

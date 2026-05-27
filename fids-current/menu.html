@@ -1,0 +1,655 @@
+<!-- ═══ MENU TRIGGER ═══ -->
+<button id="menuTrigger" class="menu-trigger show" onclick="openOverlayMenu()" title="Settings (ESC)">⚙</button>
+
+<!-- ═══ FIDS CONSOLE — Settings Panel v218.99 ═══ -->
+<div id="overlayMenu" class="settings-sidebar">
+
+  <!-- Header -->
+  <div class="sm-header">
+    <div class="sm-header-left">
+      <div class="sm-header-title">FIDS Console</div>
+      <div id="menuBadge" class="sm-header-badge demo">DEMO</div>
+    </div>
+    <div class="sm-header-right">
+      <button class="sm-close-btn sm-theme-toggle" id="smThemeToggle" onclick="smToggleTheme()" title="Toggle light/dark"><span id="smThemeToggleIcon">☾</span></button>
+      <button class="sm-close-btn" onclick="closeOverlayMenu()">✕ Close</button>
+    </div>
+  </div>
+
+  <!-- Status strip -->
+  <div class="sm-status">
+    <div>
+      <span class="sm-status-dot" id="menuDot" style="background:#fbbf24;"></span>
+      <span id="menuModeLabel" class="sm-status-val">DEMO</span>
+    </div>
+    <div>AP: <span id="menuApLabel" class="sm-status-val">YQM</span></div>
+    <div><span id="menuDisplayLabel" class="sm-status-val">FIDS</span></div>
+  </div>
+
+  <!-- Body: nav rail + content -->
+  <div class="sm-body">
+
+    <!-- Nav rail -->
+    <div class="sm-tabs">
+      <div class="sm-section-label">DISPLAY</div>
+      <button class="sm-tab active" data-tab="display" onclick="smSwitchTab('display')">Display</button>
+      <button class="sm-tab" data-tab="search" onclick="smSwitchTab('search')">Search</button>
+      <button class="sm-tab" data-tab="customize" onclick="smSwitchTab('customize')">Customize</button>
+
+      <div class="sm-section-label">OPERATIONS</div>
+      <button class="sm-tab" data-tab="settings" onclick="smSwitchTab('settings')">Operations</button>
+
+      <div class="sm-section-label sm-section-label-admin" id="smSectionAdmin" style="display:none;">ADMIN</div>
+      <button class="sm-tab sm-tab-admin" data-tab="airport" id="smTabAirport" onclick="smSwitchTab('airport')" style="display:none;">Airport</button>
+      <button class="sm-tab sm-tab-admin" data-tab="media" id="smTabMedia" onclick="smSwitchTab('media')" style="display:none;">Media</button>
+    </div>
+
+    <!-- Content area: all six panels stitched in as-is -->
+    <div id="smTab_display" class="sm-tab-content active">
+
+      <div class="sm-label">Airport</div>
+      <div style="position:relative;margin-bottom:8px;">
+        <input class="sm-input" id="menuApInput" placeholder="Search airport name or code…"
+               autocomplete="off" spellcheck="false"
+               oninput="apAutoSearch(this.value,'menu')"
+               onkeydown="apAutoKey(event,'menu')">
+        <div id="apDropdownMenu" class="sm-dropdown"></div>
+      </div>
+
+      <div class="sm-label">Display Type</div>
+      <div class="sm-pills" style="margin-bottom:10px;">
+        <button class="sm-pill active" id="smDisplay_main" onclick="menuChangeDisplay('main')">FIDS</button>
+        <button class="sm-pill" id="smDisplay_gate" onclick="menuChangeDisplay('gate')">GIDS</button>
+        <button class="sm-pill" id="smDisplay_baggage" onclick="menuChangeDisplay('baggage')">BIDS</button>
+      </div>
+
+      <div id="smSubScreenWrap" style="display:none;">
+        <div class="sm-label">Gate / Carousel</div>
+        <select class="sm-select" id="menuSubScreen" onchange="menuChangeSubScreen(this.value)"></select>
+      </div>
+
+      <div class="sm-label">View Mode</div>
+      <div class="sm-pills">
+        <button class="sm-pill" id="menuMode_dep" onclick="menuSetViewMode('dep')">Departures</button>
+        <button class="sm-pill" id="menuMode_arr" onclick="menuSetViewMode('arr')">Arrivals</button>
+        <button class="sm-pill active" id="menuMode_rotate" onclick="menuSetViewMode('rotate')">Rotate</button>
+      </div>
+
+    </div>
+
+    <div id="smTab_search" class="sm-tab-content">
+
+      <div class="sm-label">Find a Flight</div>
+      <div class="sm-field" style="margin-bottom:8px;">
+        <input class="sm-input" id="menuFlightSearch" placeholder="Try: AC1606 · 1606 · AC · Toronto · YYZ"
+               autocomplete="off" spellcheck="false"
+               oninput="menuSearchFlight()" onkeydown="if(event.key==='Enter')menuSearchPickFirst()">
+      </div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px;line-height:1.4;">
+        Searches today's departures and arrivals. Click a result to jump to its gate or carousel.
+      </div>
+
+      <div id="menuFlightResult" style="margin-top:8px;"></div>
+      <div id="menuFlightEmpty" class="sm-empty">Start typing to find a flight.</div>
+
+    </div>
+
+    <div id="smTab_customize" class="sm-tab-content">
+
+      <!-- ─── 0. ACCESS LEVEL (admin only) ─── -->
+      <div data-sec="admin">
+        <div class="sm-label">Access Level <span style="color:#9ca3af;font-weight:400;font-size:10px;">(this screen, when not logged in)</span></div>
+        <div class="sm-pills" style="margin-bottom:14px;">
+          <button class="sm-pill" id="erLockViewer"   onclick="erSetLock('viewer')">Regular</button>
+          <button class="sm-pill" id="erLockOperator" onclick="erSetLock('operator')">Manager</button>
+          <button class="sm-pill" id="erLockAdmin"    onclick="erSetLock('admin')">Admin</button>
+        </div>
+      </div>
+
+      <!-- ─── 1. THEME ─── -->
+      <div class="sm-label" data-sec="look-basic">Theme</div>
+      <select class="sm-select" id="cuThemeSelect" style="margin-bottom:14px;" onchange="cuThemeChanged()">
+        <option value="">Use airport default</option>
+        <optgroup label="Featured">
+          <option value="tus-teal">TUS Teal (Tucson reference)</option>
+          <option value="tus-teal-deep">TUS Teal Deep (true teal variant)</option>
+          <option value="navy-board">Navy board</option>
+          <option value="cream">Light cream</option>
+        </optgroup>
+        <optgroup label="Dark themes">
+          <option value="navy">Classic navy</option>
+          <option value="midnight">Midnight (OLED black)</option>
+          <option value="charcoal">Charcoal</option>
+          <option value="burgundy">Burgundy</option>
+          <option value="forest">Forest</option>
+          <option value="grey">Grey</option>
+          <option value="amber">Amber</option>
+          <option value="green">Green</option>
+          <option value="sunset">Sunset</option>
+          <option value="terminal">Terminal (retro CRT)</option>
+        </optgroup>
+        <optgroup label="Light themes">
+          <option value="paper">Paper (newspaper)</option>
+          <option value="sky">Sky</option>
+        </optgroup>
+        <optgroup label="Custom">
+          <option value="custom">Custom (edit colors below)</option>
+        </optgroup>
+        <optgroup label="Saved presets" id="cuPresetGroup"></optgroup>
+      </select>
+
+      <!-- ─── 1b. FONT ─── -->
+      <div class="sm-label" data-sec="look-adv">Font</div>
+      <select class="sm-select" id="cuFontSelect" style="margin-bottom:14px;" onchange="cuFontChanged()">
+        <option value="">Default (Geist)</option>
+        <option value="geist">Geist — modern grotesque</option>
+        <option value="inter">Inter — clean UI</option>
+        <option value="manrope">Manrope — friendly</option>
+        <option value="space-grotesk">Space Grotesk — display</option>
+        <option value="airport">Airport — board signage</option>
+        <option value="airport-x">Airport X — rounded</option>
+        <option value="system">System (native OS)</option>
+        <option value="mono">JetBrains Mono — tabular</option>
+        <optgroup label="Custom fonts" id="cuFontCustomGroup">
+          <!-- populated by JS from FIDS_CUSTOM_FONTS -->
+        </optgroup>
+      </select>
+
+      <!-- v218.99.13 — custom font upload -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;align-items:center;">
+        <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuOpenFontUpload()" style="flex:1;">+ Upload custom font…</button>
+        <button class="sm-btn sm-btn-secondary sm-btn-sm" id="cuFontDeleteBtn" onclick="cuDeleteCurrentFont()" style="display:none;" title="Delete the currently selected custom font">Delete</button>
+      </div>
+      <div id="cuFontUploadPanel" style="display:none;background:var(--console-surface);border:1px solid var(--console-border);padding:12px;border-radius:8px;margin-bottom:14px;">
+        <div class="sm-label">Font file</div>
+        <input type="file" id="cuFontFile" accept=".woff,.woff2,.ttf,.otf" style="margin-bottom:10px;font-size:12px;color:var(--console-text-2);">
+        <div class="sm-label">Display name</div>
+        <input type="text" class="sm-input" id="cuFontName" placeholder="e.g. Frutiger LT, Boeing 737" style="margin-bottom:10px;">
+        <div style="display:flex;gap:6px;">
+          <button class="sm-btn sm-btn-primary sm-btn-sm" onclick="cuSubmitFontUpload()" style="flex:1;">Add font</button>
+          <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuOpenFontUpload(false)">Cancel</button>
+        </div>
+        <div id="cuFontUploadFlash" style="font-size:11px;margin-top:8px;min-height:14px;"></div>
+      </div>
+
+      <!-- ─── 1c. DISPLAY MODE (mobile / browser theme override) ─── -->
+      <div class="sm-label" data-sec="look-basic">Display Mode <span style="color:#9ca3af;font-weight:400;font-size:10px;">(mobile + light/dark)</span></div>
+      <div class="sm-pills" style="margin-bottom:14px;">
+        <button class="sm-pill" id="cuModeAuto"  onclick="cuSetDisplayMode('auto')">Auto</button>
+        <button class="sm-pill" id="cuModeLight" onclick="cuSetDisplayMode('light')">Light</button>
+        <button class="sm-pill" id="cuModeDark"  onclick="cuSetDisplayMode('dark')">Dark</button>
+      </div>
+
+      <!-- ─── 2. CUSTOM COLORS (only when Theme = Custom or editing a preset) ─── -->
+      <div id="cuColorsWrap" data-sec="look-adv" style="display:none;border-top:1px solid #374151;padding-top:14px;margin-bottom:14px;">
+        <div class="sm-label" style="display:flex;align-items:center;gap:8px;">
+          Custom Colors
+          <input class="sm-input" id="cuPresetName" placeholder="Preset name (optional)" style="flex:1;font-size:12px;height:28px;">
+        </div>
+        <div class="sm-color-row">
+          <label>Accent</label>
+          <input type="color" class="sm-color-input" id="cuColAccent" value="#eab308" oninput="cuColorChanged('cuColAccent','cuColAccentHex')">
+          <input class="sm-color-hex" id="cuColAccentHex" value="#eab308" oninput="cuColorChanged('cuColAccentHex','cuColAccent')">
+        </div>
+        <div class="sm-color-row">
+          <label>Header BG</label>
+          <input type="color" class="sm-color-input" id="cuColHdr" value="#27272a" oninput="cuColorChanged('cuColHdr','cuColHdrHex')">
+          <input class="sm-color-hex" id="cuColHdrHex" value="#27272a" oninput="cuColorChanged('cuColHdrHex','cuColHdr')">
+        </div>
+        <div class="sm-color-row">
+          <label>Header Text</label>
+          <input type="color" class="sm-color-input" id="cuColHdrText" value="#ffffff" oninput="cuColorChanged('cuColHdrText','cuColHdrTextHex')">
+          <input class="sm-color-hex" id="cuColHdrTextHex" value="#ffffff" oninput="cuColorChanged('cuColHdrTextHex','cuColHdrText')">
+        </div>
+        <div class="sm-color-row">
+          <label>Board BG</label>
+          <input type="color" class="sm-color-input" id="cuColBg" value="#0c0c0e" oninput="cuColorChanged('cuColBg','cuColBgHex')">
+          <input class="sm-color-hex" id="cuColBgHex" value="#0c0c0e" oninput="cuColorChanged('cuColBgHex','cuColBg')">
+        </div>
+        <div class="sm-color-row">
+          <label>Row Odd</label>
+          <input type="color" class="sm-color-input" id="cuColRowOdd" value="#ffffff" oninput="cuColorChanged('cuColRowOdd','cuColRowOddHex')">
+          <input class="sm-color-hex" id="cuColRowOddHex" value="#ffffff" oninput="cuColorChanged('cuColRowOddHex','cuColRowOdd')">
+        </div>
+        <div class="sm-color-row">
+          <label>Row Even</label>
+          <input type="color" class="sm-color-input" id="cuColRowEven" value="#f4f4f5" oninput="cuColorChanged('cuColRowEven','cuColRowEvenHex')">
+          <input class="sm-color-hex" id="cuColRowEvenHex" value="#f4f4f5" oninput="cuColorChanged('cuColRowEvenHex','cuColRowEven')">
+        </div>
+        <div class="sm-color-row">
+          <label>Row Text</label>
+          <input type="color" class="sm-color-input" id="cuColText" value="#18181b" oninput="cuColorChanged('cuColText','cuColTextHex')">
+          <input class="sm-color-hex" id="cuColTextHex" value="#18181b" oninput="cuColorChanged('cuColTextHex','cuColText')">
+        </div>
+        <div class="sm-row" style="gap:6px;margin-top:10px;">
+          <button class="sm-btn sm-btn-primary sm-btn-sm" onclick="cuSavePreset()">Save as preset</button>
+          <button class="sm-btn sm-btn-danger sm-btn-sm" id="cuDeletePresetBtn" onclick="cuDeleteActivePreset()" style="display:none;">Delete preset</button>
+        </div>
+      </div>
+
+      <!-- ─── 3. LAYOUT ─── -->
+      <div class="sm-label" data-sec="look-adv">Logo Position</div>
+      <div class="sm-pills" style="margin-bottom:14px;">
+        <button class="sm-pill" id="cuPosDefault" onclick="cuSetPosition('')">Default</button>
+        <button class="sm-pill" id="cuPosLeft"    onclick="cuSetPosition('left')">Left</button>
+        <button class="sm-pill" id="cuPosCenter"  onclick="cuSetPosition('center')">Center</button>
+        <button class="sm-pill" id="cuPosRight"   onclick="cuSetPosition('right')">Right</button>
+      </div>
+
+      <div class="sm-label">Logo Size <span style="color:#9ca3af;font-weight:400;font-size:10px;">(also sets row height)</span></div>
+      <div class="sm-pills" style="margin-bottom:14px;">
+        <button class="sm-pill" id="cuSizeSmall"  onclick="cuSetSize('small')">Small</button>
+        <button class="sm-pill" id="cuSizeMedium" onclick="cuSetSize('medium')">Medium</button>
+        <button class="sm-pill" id="cuSizeLarge"  onclick="cuSetSize('large')">Large</button>
+      </div>
+
+      <!-- ─── 3b. GIDS GATE BLOCKS ─── -->
+      <div class="sm-label" data-sec="blocks">GIDS Gate Blocks
+        <span style="color:#9ca3af;font-weight:400;font-size:10px;">(gate screen only)</span>
+      </div>
+      <div id="cuGidsBlocks" style="margin-bottom:8px;"></div>
+      <div style="margin-bottom:14px;">
+        <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuResetGidsBlocks()">Reset blocks</button>
+      </div>
+
+      <!-- ─── 3c. TICKER MESSAGE ─── -->
+      <div class="sm-label" data-sec="look-basic">Ticker Message
+        <span style="color:#9ca3af;font-weight:400;font-size:10px;">(scrolling bar, all screens)</span>
+      </div>
+      <textarea id="cuTickerText" rows="3"
+        placeholder="Leave empty to use the default safety/info messages"
+        style="width:100%;box-sizing:border-box;background:var(--console-surface,#1f2430);
+               color:var(--console-text,#e5e7eb);border:1px solid var(--console-border,#374151);
+               border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;
+               resize:vertical;margin-bottom:8px;"></textarea>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="sm-btn sm-btn-sm" onclick="cuSaveTicker()">Save message</button>
+        <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuResetTicker()">Use default</button>
+      </div>
+
+      <!-- ─── 3c1. TEMPLATE DESIGNER (entry point) ─── -->
+      <a href="designer.html" class="dgn-menu-card" data-sec="look-adv">
+        <span class="dgn-menu-card-icon">✎</span>
+        <span class="dgn-menu-card-text">
+          <span class="dgn-menu-card-title">Open Template Designer</span>
+          <span class="dgn-menu-card-sub">Build a custom layout for this screen on a blank canvas. Drag in components, edit text, save, apply.</span>
+        </span>
+        <span class="dgn-menu-card-arrow">→</span>
+      </a>
+      <button type="button" class="dgn-menu-card" data-sec="look-adv" id="dgnCaptureBtn"
+              style="border:0;width:100%;text-align:left;cursor:pointer;background:linear-gradient(135deg,#0f766e,#14b8a6);">
+        <span class="dgn-menu-card-icon">⎘</span>
+        <span class="dgn-menu-card-text">
+          <span class="dgn-menu-card-title">Copy this screen into a template</span>
+          <span class="dgn-menu-card-sub">Snapshots the screen you're viewing now — flight list, headings, clock, logos, map — into an editable template, then opens the Designer.</span>
+        </span>
+        <span class="dgn-menu-card-arrow">→</span>
+      </button>
+
+      <!-- ─── 3c2. LOGOS ─── -->
+      <div class="sm-label" data-sec="look-adv">Logos
+        <span style="color:#9ca3af;font-weight:400;font-size:10px;">(airport <span id="luAp">—</span> · no backend)</span>
+      </div>
+      <div style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:8px;">
+        Paste an image URL (PNG/SVG). Saved on this screen only — replaces
+        the logo instantly, no upload needed.
+      </div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--console-text-3,#9ca3af);text-transform:uppercase;margin-bottom:4px;">Airport logo</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+        <input type="text" id="luAirportLogo" placeholder="https://…/airport-logo.svg"
+          style="flex:1;min-width:160px;box-sizing:border-box;background:var(--console-surface,#1f2430);
+                 color:var(--console-text,#e5e7eb);border:1px solid var(--console-border,#374151);
+                 border-radius:6px;padding:7px 9px;font-size:12px;">
+        <button class="sm-btn sm-btn-sm" onclick="luSaveAirport()">Save</button>
+        <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="luClearAirport()">Clear</button>
+      </div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--console-text-3,#9ca3af);text-transform:uppercase;margin-bottom:4px;">Airline logo override</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="luAlCode" placeholder="AC" maxlength="3" title="Airline code"
+          style="width:56px;background:var(--console-surface,#1f2430);color:var(--console-text,#e5e7eb);
+                 border:1px solid var(--console-border,#374151);border-radius:6px;padding:7px 8px;
+                 font-size:12px;text-transform:uppercase;">
+        <input type="text" id="luAlUrl" placeholder="https://…/air-canada.svg"
+          style="flex:1;min-width:150px;background:var(--console-surface,#1f2430);color:var(--console-text,#e5e7eb);
+                 border:1px solid var(--console-border,#374151);border-radius:6px;padding:7px 9px;font-size:12px;">
+        <button class="sm-btn sm-btn-sm" onclick="luAddAirline()">Add</button>
+      </div>
+      <div id="luFlash" style="font-size:11px;min-height:14px;margin-bottom:6px;"></div>
+      <div id="luList" style="margin-bottom:14px;"></div>
+
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--console-text-3,#9ca3af);text-transform:uppercase;margin-bottom:4px;">Media source (where logos &amp; wordmarks load from)</div>
+      <div style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:6px;">
+        If your logos/wordmarks live on a separate host, put its address here.
+        Fixes missing wordmarks. Leave empty to use this site.
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="mbBase" placeholder="https://media.orionconnected.com"
+          style="flex:1;min-width:170px;background:var(--console-surface,#1f2430);color:var(--console-text,#e5e7eb);
+                 border:1px solid var(--console-border,#374151);border-radius:6px;padding:7px 9px;font-size:12px;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;" title="Tick if every file is in one /logos/ folder (no subfolders)">
+          <input type="checkbox" id="mbFlat" style="width:15px;height:15px;cursor:pointer;">Flat
+        </label>
+        <button class="sm-btn sm-btn-sm" onclick="mbSave()">Save</button>
+        <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="mbClear()">Use this site</button>
+      </div>
+      <div id="mbPreview" style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:14px;word-break:break-all;"></div>
+
+      <!-- ─── 3d. MIDDLE-SCREEN MEDIA (videos / images) ─── -->
+      <div class="sm-label" data-sec="admin">Middle-Screen Media
+        <span style="color:#9ca3af;font-weight:400;font-size:10px;">(GIDS centre — videos &amp; images)</span>
+      </div>
+      <div style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:8px;">
+        Paste a YouTube link or a direct video/image URL. Plays in the gate
+        centre column. No upload/backend needed.
+      </div>
+      <input type="text" id="lmUrl" placeholder="https://youtube.com/watch?v=…  or  https://…/clip.mp4"
+        style="width:100%;box-sizing:border-box;background:var(--console-surface,#1f2430);
+               color:var(--console-text,#e5e7eb);border:1px solid var(--console-border,#374151);
+               border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:6px;">
+      <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="lmLabel" placeholder="Label (optional)"
+          style="flex:1;min-width:120px;background:var(--console-surface,#1f2430);
+                 color:var(--console-text,#e5e7eb);border:1px solid var(--console-border,#374151);
+                 border-radius:6px;padding:6px 8px;font-size:12px;">
+        <input type="text" id="lmAirline" value="ALL" title="Airline code, or ALL"
+          style="width:64px;background:var(--console-surface,#1f2430);
+                 color:var(--console-text,#e5e7eb);border:1px solid var(--console-border,#374151);
+                 border-radius:6px;padding:6px 8px;font-size:12px;text-transform:uppercase;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;">
+          <input type="checkbox" id="lmLoop" style="width:15px;height:15px;cursor:pointer;">Loop
+        </label>
+        <button class="sm-btn sm-btn-sm" onclick="lmAdd()">Add</button>
+      </div>
+      <div id="lmFlash" style="font-size:11px;min-height:14px;margin-bottom:6px;"></div>
+      <div id="lmList" style="margin-bottom:14px;"></div>
+
+      <!-- ─── 4. DISPLAY OPTIONS ─── -->
+      <div class="sm-label" data-sec="display-opts">Display Options</div>
+      <div class="sm-field" style="margin-bottom:14px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="cuHidePrefix" style="width:16px;height:16px;cursor:pointer;" onchange="cuApplyAndSave()">
+          <span style="font-size:13px;">Hide airline code in flight # ("1606" not "AC1606")</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:8px;">
+          <input type="checkbox" id="cuHideWeather" style="width:16px;height:16px;cursor:pointer;" onchange="cuApplyAndSave()">
+          <span style="font-size:13px;">Hide weather column</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:8px;">
+          <input type="checkbox" id="cuAirlineEmblem" style="width:16px;height:16px;cursor:pointer;" onchange="cuApplyAndSave()">
+          <span style="font-size:13px;">Airline column: emblem only (no name)</span>
+        </label>
+      </div>
+
+      <!-- ─── 5. BACKGROUND ─── -->
+      <div class="sm-label" data-sec="display-opts">Background</div>
+      <div class="sm-pills" style="margin-bottom:8px;">
+        <button class="sm-pill active" id="smBg_photo" onclick="menuSetBg('photo')">Photo</button>
+        <button class="sm-pill" id="smBg_airline" onclick="menuSetBg('airline')">Airline</button>
+        <button class="sm-pill" id="smBg_custom" onclick="menuSetBg('custom')">Custom</button>
+        <button class="sm-pill" onclick="manageCustomBgUrls()" style="padding:4px 10px;">⚙ Manage URLs</button>
+      </div>
+      <div id="smAirlineBgPickWrap" style="display:none;margin-bottom:14px;">
+        <select class="sm-select" id="smAirlineBgPick"
+                onchange="if(typeof setAirlineBgPick==='function')setAirlineBgPick(this.value);">
+          <option value="auto">Auto (rotate every 10s)</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px;"></div>
+
+      <!-- (Legacy "Manage Video Collections" widget removed in v113 — videos are now managed in the Media tab Library/Assignments) -->
+
+      <!-- ─── 7. RESET ─── -->
+      <div data-sec="admin" style="border-top:1px solid #374151;padding-top:14px;">
+        <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuResetAll()">Reset all to airport default</button>
+      </div>
+
+    </div>
+
+    <div id="smTab_airport" class="sm-tab-content">
+
+      <div class="sm-label">Current Airport</div>
+      <div class="sm-field" style="margin-bottom:14px;">
+        <div class="sm-row" style="align-items:center;gap:8px;">
+          <span id="acAirportCode" style="font-size:18px;font-weight:600;letter-spacing:1px;color:#fff;">—</span>
+          <span id="acAirportStatus" style="font-size:11px;padding:3px 8px;border-radius:10px;background:#374151;color:#9ca3af;">no config</span>
+        </div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Switch airport from the Display tab to configure a different one.</div>
+      </div>
+
+      <div class="sm-label">Display Names</div>
+      <div class="sm-grid-2" style="margin-bottom:14px;">
+        <div class="sm-field">
+          <label>Short name</label>
+          <input class="sm-input" id="acDisplayName" placeholder="Greater Moncton" maxlength="60">
+        </div>
+        <div class="sm-field">
+          <label>Long name</label>
+          <input class="sm-input" id="acLongName" placeholder="Greater Moncton Roméo-LeBlanc Intl" maxlength="120">
+        </div>
+      </div>
+
+      <div class="sm-label">Airport Logo</div>
+      <div class="sm-field" style="margin-bottom:14px;">
+        <div id="acLogoPreviewCard" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--console-surface);border:1px solid var(--console-border);border-radius:8px;">
+          <div id="acLogoPreviewBox" style="flex:0 0 96px;height:64px;display:flex;align-items:center;justify-content:center;background:var(--console-surface-lo);border-radius:6px;overflow:hidden;">
+            <img id="acLogoPreview" src="" alt="" style="display:none;max-height:60px;max-width:92px;object-fit:contain;">
+            <span id="acLogoEmpty" style="font-size:11px;color:var(--console-text-muted);">no logo</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div id="acLogoLabel" style="font-size:13px;font-weight:600;color:var(--console-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">No logo set</div>
+            <div id="acLogoMsg" style="font-size:11px;color:var(--console-text-3);margin-top:2px;">Pick from the Media Library or upload a new one.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button class="sm-btn sm-btn-primary sm-btn-sm" onclick="acPickLogoFromLibrary()">Pick from Library…</button>
+            <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="acRemoveLogo()">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:14px;line-height:1.4;padding:10px;background:#1f2937;border-radius:4px;">
+        💡 Theme, colors, logo position, hide-options and emblem-only mode all live in the
+        <strong>Customize</strong> tab. This tab is for airport-wide identity (name, logo, airline overrides) saved to the cloud.
+      </div>
+
+      <div class="sm-row" style="margin-bottom:18px;gap:6px;">
+        <button class="sm-btn sm-btn-primary sm-btn-sm" onclick="acSaveAirportConfig()">Save airport config</button>
+        <button class="sm-btn sm-btn-danger sm-btn-sm"  onclick="acDeleteAirportConfig()">Delete config</button>
+      </div>
+
+      <div style="border-top:1px solid #374151;padding-top:14px;"></div>
+
+      <div class="sm-label">Airline Logo Overrides</div>
+      <div style="font-size:11px;color:var(--console-text-3);margin-bottom:8px;">
+        Override an airline's logo only at this airport. Useful for sponsors, regional brands, or special events.
+        Falls through to the global logo otherwise.
+      </div>
+      <div class="sm-row" style="margin-bottom:8px;gap:6px;">
+        <input class="sm-input" id="acAirlineCode" placeholder="Airline IATA (AC, WS, PD…)" maxlength="3" style="width:140px;text-transform:uppercase;">
+        <button class="sm-btn sm-btn-primary sm-btn-sm" onclick="acPickAirlineOverrideFromLibrary()">Pick from Library…</button>
+      </div>
+
+      <div id="acOverrideList" style="margin-top:8px;"></div>
+
+      <div id="acFlash" style="display:none;margin-top:12px;padding:8px 10px;border-radius:4px;font-size:12px;"></div>
+    </div>
+
+    <div id="smTab_media" class="sm-tab-content">
+
+      <!-- Sub-tab strip -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid #374151;padding-bottom:8px;">
+        <button id="mlSubLibBtn" onclick="mediaSubSwitch('library')" style="background:#3b82f6;color:#fff;border:none;padding:6px 14px;border-radius:4px;font-size:12px;cursor:pointer;">Library</button>
+        <button id="mlSubAssignBtn" onclick="mediaSubSwitch('assign')" style="background:#27272a;color:#9ca3af;border:none;padding:6px 14px;border-radius:4px;font-size:12px;cursor:pointer;">Airlines</button>
+      </div>
+
+      <!-- LIBRARY sub-panel: browse + add items -->
+      <div id="mlSubLib">
+
+        <div class="sm-label">Media Library</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:10px;">
+          All available videos and images. Add items here, then assign them to airlines under the Airlines tab.
+        </div>
+
+        <!-- Filter row -->
+        <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap;">
+          <button id="mlFilterAll" onclick="mediaLibFilter('all')" style="background:#3b82f6;color:#fff;border:none;padding:5px 11px;border-radius:4px;font-size:11px;cursor:pointer;">All</button>
+          <button id="mlFilterVideo" onclick="mediaLibFilter('video')" style="background:#27272a;color:#9ca3af;border:none;padding:5px 11px;border-radius:4px;font-size:11px;cursor:pointer;">Videos</button>
+          <button id="mlFilterImage" onclick="mediaLibFilter('image')" style="background:#27272a;color:#9ca3af;border:none;padding:5px 11px;border-radius:4px;font-size:11px;cursor:pointer;">Images</button>
+          <button id="mlBulkRecatBtn" onclick="mediaLibBulkToggle()" style="background:#27272a;color:#9ca3af;border:1px solid #374151;padding:5px 11px;border-radius:4px;font-size:11px;cursor:pointer;">Bulk recategorize</button>
+          <span style="margin-left:auto;font-size:11px;color:#6b7280;" id="mlItemCount">0 items</span>
+        </div>
+
+        <!-- v218.99.17 — Bulk recategorize panel -->
+        <div id="mlBulkPanel" style="display:none;background:#1f2937;border:1px solid #374151;border-radius:6px;padding:10px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:#9ca3af;font-weight:600;">Selected:</span>
+            <span id="mlBulkCount" style="font-size:11px;color:#e5e7eb;font-weight:700;">0</span>
+            <button onclick="mediaLibBulkSelectAll(true)" style="background:transparent;color:#3b82f6;border:none;padding:3px 8px;font-size:11px;cursor:pointer;">Select all visible</button>
+            <button onclick="mediaLibBulkSelectAll(false)" style="background:transparent;color:#9ca3af;border:none;padding:3px 8px;font-size:11px;cursor:pointer;">Clear</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:11px;color:#9ca3af;">Move to:</span>
+            <select id="mlBulkCategory" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 8px;border-radius:4px;font-size:12px;">
+              <option value="ads">Ads &amp; Slides</option>
+              <option value="airport-logo">Airport Logo</option>
+              <option value="airline-logo">Airline Logo</option>
+              <option value="background">Background</option>
+            </select>
+            <button onclick="mediaLibBulkApply()" class="sm-btn sm-btn-primary sm-btn-sm">Apply</button>
+            <button onclick="mediaLibBulkToggle()" class="sm-btn sm-btn-secondary sm-btn-sm">Cancel</button>
+            <span id="mlBulkFlash" style="font-size:11px;color:#9ca3af;margin-left:auto;"></span>
+          </div>
+        </div>
+
+        <!-- Library list -->
+        <div id="mlLibraryList" style="margin-bottom:14px;max-height:340px;overflow-y:auto;background:#0f1419;padding:6px;border-radius:6px;border:1px solid #1f2937;">
+          <div style="font-size:12px;color:#6b7280;font-style:italic;padding:14px;text-align:center;">Loading…</div>
+        </div>
+
+        <!-- Add new item — collapsed by default -->
+        <details style="background:#1f2937;padding:10px;border-radius:6px;margin-bottom:8px;">
+          <summary style="cursor:pointer;font-size:12px;font-weight:600;color:#e5e7eb;">+ Add YouTube Video or Playlist</summary>
+          <div style="margin-top:10px;">
+            <select id="mlYTType" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 8px;border-radius:4px;font-size:12px;width:100%;margin-bottom:6px;">
+              <option value="video">Single video</option>
+              <option value="playlist">Playlist (multiple videos)</option>
+            </select>
+            <input id="mlYTUrl" type="text" placeholder="YouTube URL or ID (e.g. https://youtube.com/playlist?list=…)" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 8px;border-radius:4px;font-size:12px;width:100%;margin-bottom:6px;">
+            <input id="mlYTLabel" type="text" placeholder="Label (e.g. 'Explore Hawaii')" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 8px;border-radius:4px;font-size:12px;width:100%;margin-bottom:6px;">
+            <button onclick="mediaLibAddYouTube()" class="sm-btn sm-btn-primary sm-btn-sm" style="width:100%;">Add to Library</button>
+          </div>
+        </details>
+
+        <details style="background:#1f2937;padding:10px;border-radius:6px;">
+          <summary style="cursor:pointer;font-size:12px;font-weight:600;color:#e5e7eb;">+ Upload Video or Image File</summary>
+          <div style="margin-top:10px;">
+            <input id="mlUploadFile" type="file" accept="video/mp4,video/webm,image/png,image/jpeg,image/webp,image/gif" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 8px;border-radius:4px;font-size:11px;width:100%;margin-bottom:6px;">
+            <input id="mlUploadLabel" type="text" placeholder="Label (e.g. 'Aeroplan Promo')" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 8px;border-radius:4px;font-size:12px;width:100%;margin-bottom:6px;">
+            <div style="font-size:10px;color:#6b7280;margin-bottom:6px;">Max 100MB for videos, 25MB for images. MP4/WebM/PNG/JPG/WebP supported.</div>
+            <button onclick="mediaLibUpload()" class="sm-btn sm-btn-primary sm-btn-sm" style="width:100%;">Upload</button>
+            <div id="mlUploadProgress" style="display:none;margin-top:6px;font-size:11px;color:#93c5fd;"></div>
+          </div>
+        </details>
+
+        <div id="mlLibFlash" style="display:none;margin-top:10px;padding:8px 10px;border-radius:4px;font-size:12px;"></div>
+      </div>
+
+      <!-- ASSIGNMENTS sub-panel: per-airline configuration -->
+      <div id="mlSubAssign" style="display:none;">
+
+        <div class="sm-label">Airline Assignments</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:10px;">
+          Pick which library items play for each airline, and choose rotation mode.
+        </div>
+
+        <!-- Airline picker -->
+        <div class="sm-field" style="margin-bottom:14px;">
+          <select id="mlAssignAirline" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:6px 10px;border-radius:4px;font-size:13px;width:100%;">
+            <option value="">— Select an airline —</option>
+            <option value="AC">AC — Air Canada</option>
+            <option value="WS">WS — WestJet</option>
+            <option value="PD">PD — Porter</option>
+            <option value="TS">TS — Air Transat</option>
+            <option value="F8">F8 — Flair</option>
+            <option value="PB">PB — PAL Airlines</option>
+            <option value="AA">AA — American Airlines</option>
+            <option value="UA">UA — United Airlines</option>
+            <option value="DL">DL — Delta</option>
+            <option value="AS">AS — Alaska Airlines</option>
+            <option value="HA">HA — Hawaiian Airlines</option>
+            <option value="B6">B6 — JetBlue</option>
+            <option value="WN">WN — Southwest</option>
+            <option value="LH">LH — Lufthansa</option>
+            <option value="BA">BA — British Airways</option>
+            <option value="AF">AF — Air France</option>
+            <option value="KL">KL — KLM</option>
+            <option value="CUSTOM">+ Custom airline code…</option>
+          </select>
+          <div id="mlAssignCustomWrap" style="display:none;margin-top:8px;">
+            <input id="mlAssignCustom" type="text" maxlength="3" placeholder="e.g. NK" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:6px 10px;border-radius:4px;font-size:13px;width:100%;text-transform:uppercase;">
+          </div>
+        </div>
+
+        <div id="mlAssignEditor" style="display:none;">
+
+          <!-- VIDEOS for this airline -->
+          <div class="sm-label" style="margin-top:6px;">Videos for this airline</div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:11px;color:#9ca3af;">Mode:</span>
+            <button id="mlVidModeRotate" onclick="mediaAssignSetMode('videos','rotate')" style="background:#3b82f6;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;">Rotate</button>
+            <button id="mlVidModeSingle" onclick="mediaAssignSetMode('videos','single')" style="background:#27272a;color:#9ca3af;border:none;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;">Single</button>
+            <span id="mlVidModeHint" style="font-size:10px;color:#6b7280;"></span>
+          </div>
+          <div id="mlAssignVideoList" style="margin-bottom:8px;background:#0f1419;border:1px solid #1f2937;border-radius:6px;padding:6px;min-height:60px;"></div>
+          <button onclick="mediaAssignPickItem('videos')" class="sm-btn sm-btn-secondary sm-btn-sm" style="width:100%;">+ Pick from Library</button>
+
+          <!-- IMAGES for this airline -->
+          <div class="sm-label" style="margin-top:18px;">Images for this airline</div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:11px;color:#9ca3af;">Mode:</span>
+            <button id="mlImgModeRotate" onclick="mediaAssignSetMode('images','rotate')" style="background:#3b82f6;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;">Rotate</button>
+            <button id="mlImgModeSingle" onclick="mediaAssignSetMode('images','single')" style="background:#27272a;color:#9ca3af;border:none;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;">Single</button>
+            <span id="mlImgModeHint" style="font-size:10px;color:#6b7280;"></span>
+          </div>
+          <div id="mlAssignImageList" style="margin-bottom:8px;background:#0f1419;border:1px solid #1f2937;border-radius:6px;padding:6px;min-height:60px;"></div>
+          <button onclick="mediaAssignPickItem('images')" class="sm-btn sm-btn-secondary sm-btn-sm" style="width:100%;">+ Pick from Library</button>
+
+          <!-- Save -->
+          <div style="margin-top:18px;padding-top:12px;border-top:1px solid #374151;">
+            <button onclick="mediaAssignSave()" class="sm-btn sm-btn-primary" style="width:100%;">Save Assignments</button>
+            <div id="mlAssignFlash" style="display:none;margin-top:10px;padding:8px 10px;border-radius:4px;font-size:12px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Library item picker modal — shown when user clicks "Pick from Library" -->
+      <div id="mlPickerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:#18181b;border:1px solid #374151;border-radius:8px;padding:16px;max-width:520px;width:92%;max-height:80vh;overflow-y:auto;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-weight:600;font-size:14px;color:#fff;" id="mlPickerTitle">Pick items</div>
+            <button onclick="mediaPickerClose()" style="background:transparent;color:#9ca3af;border:none;font-size:18px;cursor:pointer;line-height:1;">×</button>
+          </div>
+          <div id="mlPickerList"></div>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button onclick="mediaPickerConfirm()" class="sm-btn sm-btn-primary sm-btn-sm" style="flex:1;">Add Selected</button>
+            <button onclick="mediaPickerClose()" class="sm-btn sm-btn-secondary sm-btn-sm">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="sm-footer">
+    <div class="sm-footer-left">
+      <button class="sm-back-btn" onclick="closeOverlayMenu()">← Back to Display</button>
+      <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="menuGoToPicker()">Picker</button>
+      <button class="sm-btn sm-btn-danger sm-btn-sm" onclick="menuLogout()">Logout</button>
+    </div>
+    <div class="sm-footer-right">
+      <span class="sm-footer-info">FIDS v218.99</span>
+    </div>
+  </div>
+
+</div>

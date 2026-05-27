@@ -1,0 +1,177 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   GIDS MOBILE  —  gids-mobile.css
+   Single-screen, fit-to-phone gate display. Mobile only (<=640px).
+   Targets STABLE structural classes (g8-*, gad-*) — NOT inline-style
+   selectors. Desktop/big-display layout is untouched.
+   Day/night driven by [data-theme] on the gate root (same as console).
+   Load AFTER gids-v218.78.css so these win on phones.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ---- theme tokens (mirror the FIDS console light/dark) ---------------- */
+  .g8-wrap{
+    --m-bg0:#070b12; --m-panel:#0f1419; --m-line:rgba(255,255,255,.08);
+    --m-muted:#6b7585; --m-muted2:#9aa4b0; --m-ink:#ffffff; --m-amber:#fbbf24;
+    --m-banner:linear-gradient(90deg,#080c14 0%,#101827 58%,#17233a 100%);
+    --m-gate-bg:#ffffff; --m-gate-ink:#0a0d14;
+  }
+  [data-theme="light"] .g8-wrap, .g8-wrap[data-theme="light"]{
+    --m-bg0:#eef3f8; --m-panel:#ffffff; --m-line:rgba(16,32,55,.10);
+    --m-muted:#6b7585; --m-muted2:#475569; --m-ink:#0d1626; --m-amber:#b9821a;
+    --m-banner:linear-gradient(90deg,#f8fbff 0%,#eef6fb 58%,#e3eef7 100%);
+    --m-gate-bg:#0d1626; --m-gate-ink:#ffffff;
+  }
+
+  /* ---- OUTER: stack everything, fit width, allow scroll ---------------- */
+  html, body{ height:auto !important; overflow-y:auto !important; }
+  body[data-page="gids"]{ overflow-x:hidden !important; }
+  .g8-wrap{
+    display:flex !important; flex-direction:column !important;
+    width:100% !important; max-width:100% !important;
+    min-height:100vh !important; height:auto !important;
+    overflow:visible !important;
+    background:linear-gradient(180deg,var(--m-bg0),#0b1320 60%) !important;
+  }
+  /* kill any child grid/flex that forces wide side-by-side columns */
+  .g8-wrap > div{ width:100% !important; max-width:100% !important; }
+
+  /* ---- BANNER (row 1): gate + airline + destination ------------------- */
+  .g8-r1, .g8-r1-bg{
+    background:var(--m-banner) !important;
+    display:flex !important; align-items:center !important;
+    gap:12px !important; padding:14px 14px !important;
+    min-height:0 !important; flex-wrap:nowrap !important;
+  }
+  .g8-r1-dest{
+    order:2 !important; flex:1 1 auto !important; min-width:0 !important;
+    font-size:clamp(26px,7.5vw,40px) !important; line-height:1.02 !important;
+    color:var(--m-ink) !important; letter-spacing:-.5px !important;
+    white-space:normal !important; text-align:left !important;
+  }
+  .g8-r1-dest .g8-city-code, .g8-r1-dest .g8-iata{
+    font-size:.5em !important; color:var(--m-muted2) !important; margin-left:6px !important;
+  }
+  .g8-r1-right{
+    order:1 !important; flex:0 0 auto !important;
+    display:flex !important; align-items:center !important; gap:10px !important;
+  }
+  /* gate number badge */
+  .g8-r1-gate{
+    font-size:34px !important; font-weight:900 !important;
+    padding:4px 12px !important; border-radius:11px !important;
+    background:var(--m-gate-bg) !important; color:var(--m-gate-ink) !important;
+    line-height:1 !important;
+  }
+  /* airline logo in banner: keep it small + visible */
+  .g8-r1-right .full-logo, .g8-r1-right img{
+    max-height:30px !important; max-width:120px !important; width:auto !important;
+  }
+
+  /* ---- ROW 2: flight + fields + status -------------------------------- */
+  .g8-r2{
+    display:flex !important; flex-direction:column !important;
+    gap:10px !important; padding:12px 14px !important;
+    min-height:0 !important; background:var(--m-panel) !important;
+  }
+  .g8-r2-flight span{ font-size:22px !important; font-weight:900 !important; }
+  .g8-r2-flight-label{ font-size:10px !important; letter-spacing:2px !important; }
+  .g8-r2-fields{
+    display:grid !important; grid-template-columns:1fr 1fr !important;
+    gap:10px !important; width:100% !important;
+  }
+  .g8-r2-field-label{ font-size:10px !important; letter-spacing:1.5px !important; color:var(--m-muted) !important; }
+  .g8-r2-field-val{ font-size:18px !important; font-weight:800 !important; color:var(--m-ink) !important; white-space:nowrap !important; }
+  .g8-r2-status{
+    width:100% !important; text-align:center !important;
+    padding:11px !important; border-radius:11px !important;
+    font-size:15px !important; font-weight:800 !important; letter-spacing:2px !important;
+  }
+
+  /* ---- AIRCRAFT + INFO + MAP: stack vertically, full width ------------ */
+  .gad-aircraft-col, .gad-info-col, .gad-map-col, .gad-map-col-v2{
+    width:100% !important; max-width:100% !important;
+    flex:0 0 auto !important; border:none !important;
+    padding:10px 14px !important; min-height:0 !important;
+  }
+  /* aircraft image: give it real space, never tiny */
+  .gad-equip-img-large, .gad-equip-img-mobile{ display:block !important; text-align:center !important; }
+  .gad-equip-img-large img, .gad-equip-img-mobile img{
+    max-height:150px !important; width:auto !important; max-width:94% !important;
+    margin:0 auto !important; display:block !important;
+  }
+  .gad-equip-row, .gad-equip-text{
+    font-size:13px !important; white-space:normal !important;
+    overflow:visible !important; text-overflow:clip !important;
+    color:var(--m-muted2) !important;
+  }
+  /* map: keep readable height */
+  .gad-map-col .g8-inb-map, .gad-map-col-v2 #gateMapBox, #gateMapBox{
+    height:200px !important; min-height:200px !important; width:100% !important;
+  }
+
+  /* ---- INBOUND strip --------------------------------------------------- */
+  .g8-inb{ flex-direction:column !important; padding:12px 14px !important; }
+  .g8-inb-label{ font-size:10px !important; letter-spacing:2px !important; color:var(--m-muted) !important; }
+  .g8-inb-city{ font-size:clamp(18px,5vw,26px) !important; }
+  .g8-inb-flight{ font-size:13px !important; color:var(--m-muted2) !important; }
+  .g8-inb-times{ gap:8px !important; }
+  .g8-inb-time-row{ font-size:13px !important; }
+
+  /* ---- FOOTER: airport (shortened) left, brand right ------------------ */
+  .gate-footer, .g8-footer{
+    display:flex !important; justify-content:space-between !important;
+    align-items:center !important; gap:10px !important;
+    padding:11px 14px !important; font-size:11px !important;
+    letter-spacing:1px !important;
+  }
+  .gate-footer-left, .gate-footer-right{
+    max-width:60% !important; white-space:nowrap !important;
+    overflow:hidden !important; text-overflow:ellipsis !important;
+  }
+
+  /* ---- AIRPORT NAME anywhere it appears: never overflow --------------- */
+  .g8-welcome-city, .gate-footer-left{
+    white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important;
+    max-width:100% !important;
+  }
+
+  /* ═══ BOTTOM NAV SHEET (Back / Search) — injected by gids-mobile-nav ═══ */
+  #gidsMobileNav{
+    position:sticky; bottom:0; z-index:50;
+    background:linear-gradient(180deg,#0c1320,#080c14);
+    border-top:1px solid var(--m-line);
+  }
+  [data-theme="light"] #gidsMobileNav{ background:linear-gradient(180deg,#eef3f8,#e3edf6); }
+  #gidsMobileNav .gmn-tab{
+    width:100%; border:none; background:transparent; cursor:pointer;
+    padding:9px 0 11px; color:var(--m-muted2);
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    font-family:inherit; letter-spacing:2px; font-size:11px; font-weight:800;
+  }
+  #gidsMobileNav .gmn-grip{ width:38px; height:4px; border-radius:3px; background:rgba(127,140,160,.5); }
+  #gidsMobileNav .gmn-options{
+    max-height:0; overflow:hidden; opacity:0;
+    transition:max-height .28s ease, opacity .2s ease, padding .28s ease;
+    padding:0 14px;
+  }
+  #gidsMobileNav.open .gmn-options{ max-height:170px; opacity:1; padding:14px 14px 4px; }
+  #gidsMobileNav .gmn-back{
+    width:100%; text-align:left; border:1px solid var(--m-line);
+    background:rgba(127,140,160,.10); color:var(--m-ink); border-radius:11px;
+    padding:13px 14px; font-size:16px; font-weight:700; cursor:pointer;
+    font-family:inherit; display:flex; align-items:center; gap:10px; margin-bottom:10px;
+  }
+  #gidsMobileNav .gmn-search{ display:flex; gap:8px; }
+  #gidsMobileNav .gmn-search input{
+    flex:1; min-width:0; border:1px solid var(--m-line);
+    background:rgba(127,140,160,.10); color:var(--m-ink); border-radius:11px;
+    padding:13px 14px; font-size:15px; font-family:inherit;
+  }
+  #gidsMobileNav .gmn-go{
+    flex:0 0 auto; border:none; background:#0d8a8a; color:#fff;
+    border-radius:11px; padding:0 20px; font-size:15px; font-weight:800;
+    cursor:pointer; font-family:inherit; letter-spacing:1px;
+  }
+
+} /* end @media */

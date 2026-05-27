@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gate Banner Preview — v218.98</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
+
+<!-- Full CSS stack — same files in the same order as the real gids.html -->
+<link rel="stylesheet" href="css/font.css?v=21898">
+<link rel="stylesheet" href="css/airport-fonts.css?v=21898">
+<link rel="stylesheet" href="css/leaflet-embed.css?v=21898">
+<link rel="stylesheet" href="css/shared.css?v=21899-19">
+<link rel="stylesheet" href="css/menu.css?v=21899-22">
+<link rel="stylesheet" href="css/fids.css?v=21898">
+<link rel="stylesheet" href="css/fids-v3.css?v=21898">
+<link rel="stylesheet" href="css/mobile.css?v=21898">
+<link rel="stylesheet" href="css/mobile-v216.css?v=21898">
+<link rel="stylesheet" href="css/fids-layout-fixes.css?v=21898">
+<link rel="stylesheet" href="css/gids-v218.78.css?v=21899-72">
+
+<style>
+  /* Preview-only — does NOT redefine any .g8-* class. */
+  html, body {
+    margin: 0; padding: 0;
+    background: #0a0f1e;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+  .preview-stage {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .body-stub {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 25% 50% 25%;
+    border-top: 2px solid rgba(255,255,255,0.08);
+    background: linear-gradient(180deg, #0a0f1e 0%, #152038 100%);
+    min-height: 0;
+  }
+  .body-col {
+    padding: 24px;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.5);
+    font-size: 18px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .body-col:last-child { border-right: none; }
+
+  /* Banner backgrounds the real page sets at runtime per airline.
+     Pin Air Canada theme so the static preview has the right context. */
+  .g8-wrap .g8-r1.g8-r1-bg {
+    background: linear-gradient(180deg, #0a0f1e 0%, #1a2540 100%) !important;
+  }
+  .g8-wrap .g8-r2 {
+    background: #c8102e !important;
+  }
+
+  .preview-label {
+    position: fixed;
+    bottom: 8px;
+    right: 12px;
+    font-size: 11px;
+    opacity: 0.4;
+    letter-spacing: 1px;
+    z-index: 9999;
+  }
+</style>
+</head>
+<body data-page="gids">
+<div class="preview-stage">
+  <div class="g8-wrap g8-airline-AC">
+
+    <!-- ROW 1 -->
+    <div class="g8-r1 g8-r1-bg">
+      <div class="g8-r1-dest">
+        <span class="g8-city-name">Toronto</span>
+        <span class="g8-city-code">(YYZ)</span>
+      </div>
+      <div class="g8-r1-right">
+        <svg class="g8-r1-logo" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <circle cx="40" cy="40" r="28" fill="#c8102e"/>
+          <path d="M40 18 L48 40 L32 40 Z" fill="#fff"/>
+          <text x="82" y="52" fill="#fff" font-family="DM Sans, sans-serif" font-weight="900" font-size="28" letter-spacing="2">AIR CANADA</text>
+        </svg>
+        <div class="g8-r1-gate">12A</div>
+      </div>
+    </div>
+
+    <!-- ROW 2 -->
+    <div class="g8-r2">
+      <div class="g8-r2-left">
+        <div class="g8-r2-flight" style="--flight-accent:#fff;">
+          <svg class="g8-r2-flight-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M2 19h20v2H2zM21.38 8.62c-.28-.83-1.18-1.28-2.01-.99L14.2 9.35 8.12 4l-1.57.54 3.47 6.15-4.12 1.42-1.8-1.44-1.13.39 2.08 3.66.24.42 1.13-.39 14.97-5.14c.83-.28 1.27-1.18.99-1.99z"/>
+          </svg>
+          <div class="g8-r2-flight-copy">
+            <div class="g8-r2-flight-label">FLIGHT</div>
+            <span>AC8660</span>
+          </div>
+        </div>
+      </div>
+      <div class="g8-r2-fields">
+
+        <div class="g8-r2-field">
+          <div class="g8-r2-field-label">EST. DEPARTURE</div>
+          <div class="g8-r2-field-val">
+            <svg viewBox="0 0 24 24"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>
+            8:45 PM
+          </div>
+        </div>
+
+        <div class="g8-r2-field">
+          <div class="g8-r2-field-label">EST. ARRIVAL</div>
+          <div class="g8-r2-field-val">
+            <svg viewBox="0 0 24 24"><path d="M2.5 19h19v2h-19zM19.34 15.85c.8.21 1.62-.26 1.84-1.06.21-.8-.26-1.62-1.06-1.84l-5.31-1.42-2.76-9.02L10.12 2v8.28L5.15 8.95l-.93-2.32-1.45-.39v5.17l16.57 4.44z"/></svg>
+            10:18 PM
+          </div>
+        </div>
+
+        <div class="g8-r2-field">
+          <div class="g8-r2-field-label">BOARDING</div>
+          <div class="g8-r2-field-val">
+            <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+            8:10 PM
+          </div>
+        </div>
+
+        <div class="g8-r2-field">
+          <div class="g8-r2-field-label">STATUS</div>
+          <div class="g8-r2-status ontime">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            ON TIME
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Body stub: shows the banner takes proportional space.
+         The real page builds aircraft/media/map columns via JS. -->
+    <div class="body-stub">
+      <div class="body-col">Aircraft<br>column</div>
+      <div class="body-col">Media / ads<br>column</div>
+      <div class="body-col">Map<br>column</div>
+    </div>
+
+  </div>
+</div>
+<div class="preview-label">v218.98 banner preview · sample data only · resize to test clamp() scaling</div>
+</body>
+</html>

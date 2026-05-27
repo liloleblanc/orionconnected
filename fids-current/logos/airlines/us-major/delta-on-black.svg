@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Delta on dark/black banner — red widget triangle (from delta-widget.svg)
+     plus white DELTA wordmark for use on the gate-screen black banner.
+     Built from delta-widget.svg's path data (translated/scaled to fit) and
+     a clean white sans-serif wordmark. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 154" xml:space="preserve">
+  <!-- Triangle widget — same shapes as delta-widget.svg, scaled to viewBox 0-207 -->
+  <g>
+    <path fill="#98002E" d="M185.7,137.6l-89.3-43V0L185.7,137.6z M192.8,154l-96.4-40.7V154H192.8z"/>
+    <polyline fill="#E31837" points="7.1,137.6 96.4,0 96.4,94.6 7.1,137.6"/>
+    <polyline fill="#E31837" points="0,154 96.4,154 96.4,113.3 0,154"/>
+  </g>
+  <!-- Wordmark — white "DELTA" in a clean sans-serif, sized to match widget height -->
+  <text x="240" y="115" font-family="Helvetica Neue, Arial, sans-serif"
+        font-size="120" font-weight="700" fill="#FFFFFF" letter-spacing="2">DELTA</text>
+</svg>

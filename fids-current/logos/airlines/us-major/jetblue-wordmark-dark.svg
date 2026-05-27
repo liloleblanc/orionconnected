@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="320" height="100">
+  <!-- jetBlue wordmark — dark variant (navy on transparent) for light backgrounds.
+       v203: rebuilt to match the clean white -light variant.
+       Brand color #00205B (JetBlue navy). -->
+  <text x="0" y="78" 
+        fill="#00205B" 
+        font-family="Helvetica, Arial, sans-serif" 
+        font-size="92" 
+        font-weight="900"
+        letter-spacing="-2">jet<tspan font-weight="900">B</tspan>lue</text>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Porter stacked wordmark gate background">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#003a5d"/>
+      <stop offset="100%" stop-color="#002f4c"/>
+    </linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.36"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="640" fill="url(#bg)"/>
+  <rect x="112" y="52" width="8" height="540" rx="4" fill="#6fa7c2" opacity="0.48"/>
+  <g font-family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif"
+     font-size="104"
+     font-weight="300"
+     letter-spacing="-4"
+     fill="url(#fade)">
+    <text x="132" y="126">porter</text>
+    <text x="132" y="234">porter</text>
+    <text x="132" y="342">porter</text>
+    <text x="132" y="450">porter</text>
+    <text x="132" y="558">porter</text>
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+ADS-ONLY ACCOR V6
+
+This is ads-only and starts from the original working project.
+
+What changed:
+- Adds buildAccorAdOnlyV6(ad).
+- Only Accor hotel ad HTML is swapped.
+- No menu, flight logic, gate logic, weather, maps, aircraft cards, carousel timing, admin controls, or performance/caching changes.
+- More visibly different layout: 58/42 photo/editorial split.
+- Larger property/brand logo hierarchy.
+- Fairmont property lockups suppress duplicated hotel name.
+- Description copy, stars, rating, amenities restored.
+- QR copy-left / QR-right.
+- Luxury/premium use light grey bubble; midscale uses dark blue bubble.
+- ALL endorsement anchored at footer.
+- Sofitel forced to luxury and uploaded logos included.
+
+Validation:
+- fids-core.js passed node --check.

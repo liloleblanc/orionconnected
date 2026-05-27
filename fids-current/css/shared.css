@@ -1,0 +1,270 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FIDS v8 — Shared Styles
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── CSS Variables ──────────────────────────────────────────────────────── */
+:root {
+  /* Core palette */
+  --bg-primary: #0c0c0e;
+  --bg-secondary: #141416;
+  --bg-card: #1a1a1f;
+  --bg-input: #27272a;
+  --bg-hover: #2a2a2d;
+
+  --border-subtle: #1e1e21;
+  --border-default: #2a2a2d;
+  --border-medium: #3f3f46;
+  --border-strong: #52525b;
+
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255,255,255,0.8);
+  --text-muted: rgba(255,255,255,0.45);
+  --text-dim: rgba(255,255,255,0.25);
+  --text-ghost: rgba(255,255,255,0.12);
+
+  --accent: #eab308;
+  --accent-hover: #facc15;
+  --accent-bg: rgba(234,179,8,0.08);
+  --accent-border: rgba(234,179,8,0.3);
+
+  --success: #10b981;
+  --danger: #dc2626;
+  --info: #60a5fa;
+
+  /* Typography — default to Geist (free Roc Grotesk twin).
+     Switchable at runtime by overriding --font-primary on body.
+     See css/font.css for the full set of named font stacks. */
+  --font-primary: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Transitions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-primary);
+  font-family: var(--font-primary);
+  font-weight: 400;
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Font Face ──────────────────────────────────────────────────────────── */
+/* Font families are loaded via Google Fonts CDN in font.css.
+   Active font selected via --font-primary (see :root above). */
+
+/* ── Common Components ──────────────────────────────────────────────────── */
+
+/* Inputs & Selects */
+
+
+/* Gold line divider */
+.gold-line {
+  width: 60px;
+  height: 2px;
+  background: var(--accent);
+  margin: 0 auto;
+  opacity: 0.6;
+}
+
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  animation: livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* Utility */
+.hidden { display: none !important; }
+.fade-out { opacity: 0; pointer-events: none; }
+
+/* ──────────────────────────────────────────────────────────────────────
+   Transition Loader — covers the board while data loads and views swap.
+   Shown by default (opacity:1), hidden when JS calls hideFidsLoader().
+   ────────────────────────────────────────────────────────────────────── */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * BOOT LOADER (v218.99.19) — Airport Operations Console aesthetic
+ * Light theme by default. Add data-theme="dark" to flip.
+ * Self-contained — does not depend on menu.css load order.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#fidsLoader {
+  --ld-bg-1: #fbfcfe;
+  --ld-bg-2: #eef2f8;
+  --ld-bg-radial-1: rgba(217, 119, 6, 0.06);
+  --ld-bg-radial-2: rgba(8, 145, 178, 0.05);
+  --ld-text:        #0f172a;
+  --ld-text-2:      #475569;
+  --ld-text-muted:  #94a3b8;
+  --ld-accent:      #d97706;
+  --ld-accent-soft: rgba(217, 119, 6, 0.18);
+  --ld-border:      rgba(15, 23, 42, 0.08);
+  --ld-grain-dot:   rgba(15, 23, 42, 0.022);
+
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--ld-text);
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(ellipse at 80% 20%, var(--ld-bg-radial-1) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, var(--ld-bg-radial-2) 0%, transparent 50%),
+    linear-gradient(155deg, var(--ld-bg-1) 0%, var(--ld-bg-2) 100%);
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.5s ease 0.1s;
+}
+#fidsLoader[data-theme="dark"] {
+  --ld-bg-1: #070b14;
+  --ld-bg-2: #0f1424;
+  --ld-bg-radial-1: rgba(251, 191, 36, 0.06);
+  --ld-bg-radial-2: rgba(34, 211, 238, 0.05);
+  --ld-text:        #f1f5f9;
+  --ld-text-2:      #cbd5e1;
+  --ld-text-muted:  #64748b;
+  --ld-accent:      #fbbf24;
+  --ld-accent-soft: rgba(251, 191, 36, 0.22);
+  --ld-border:      rgba(255, 255, 255, 0.08);
+  --ld-grain-dot:   rgba(255, 255, 255, 0.018);
+}
+#fidsLoader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, var(--ld-grain-dot) 1px, transparent 0);
+  background-size: 32px 32px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+#fidsLoader.is-hidden { opacity: 0; pointer-events: none; }
+#fidsLoader.is-gone   { display: none; }
+
+.fids-loader-brand {
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: var(--ld-text-muted);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.fids-loader-title {
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ld-text);
+  margin: 0 0 4px;
+  line-height: 1;
+}
+.fids-loader-sub {
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--ld-text-muted);
+  margin-bottom: 48px;
+  text-transform: uppercase;
+}
+.fids-loader-bar {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  background: transparent;
+  border-radius: 50%;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fids-loader-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--ld-border);
+  border-radius: 50%;
+}
+.fids-loader-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid transparent;
+  border-top-color: var(--ld-accent);
+  border-right-color: var(--ld-accent-soft);
+  border-radius: 50%;
+  animation: fids-loader-spin 1.4s linear infinite;
+  background: transparent;
+}
+.fids-loader-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ld-accent);
+  box-shadow: 0 0 14px var(--ld-accent-soft);
+  animation: fids-loader-pulse 2s ease-in-out infinite;
+}
+@keyframes fids-loader-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes fids-loader-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.82); }
+}
+@keyframes fidsLoaderSlide {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(370%); }
+}
+.fids-loader-status {
+  margin-top: 32px;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--ld-text-2);
+  min-height: 14px;
+  text-transform: uppercase;
+}

@@ -1,0 +1,1672 @@
+{
+  "_meta": {
+    "description": "Catalog of ICAO-keyed airline tail icons",
+    "source": "AirlineIcons-main",
+    "count": 283,
+    "commercial_count": 238,
+    "military_count": 45,
+    "usage": "Deep-fallback library; resolved via ICAO->IATA at runtime",
+    "naming": "{ICAO}.svg for civilian, ZMIL_{code}.svg for military",
+    "updated": "2026-05-03",
+    "role": "ARCHIVE — backup copy of airline-tiles/. Code reads from airline-tiles/, not here. To update a tile-set logo, edit it in airline-tiles/ (and optionally mirror here for archival).",
+    "active_folder": "/logos/airline-tiles/"
+  },
+  "commercial": {
+    "AAH": {
+      "iata": "XK",
+      "name": "Aloha Air Cargo",
+      "country": "United States",
+      "file": "AAH.svg"
+    },
+    "AAL": {
+      "iata": "AA",
+      "name": "American Airlines",
+      "country": "United States",
+      "file": "AAL.svg"
+    },
+    "AAR": {
+      "iata": "OZ",
+      "name": "Asiana Airlines",
+      "country": "South Korea",
+      "file": "AAR.svg"
+    },
+    "AAW": {
+      "iata": "MR",
+      "name": "Afriqiyah Airways",
+      "country": "Libya",
+      "file": "AAW.svg"
+    },
+    "AAY": {
+      "iata": "NQ",
+      "name": "Allegiant Air",
+      "country": "United States",
+      "file": "AAY.svg"
+    },
+    "ABL": {
+      "iata": "GB",
+      "name": "ABX Air",
+      "country": "United States",
+      "file": "ABL.svg"
+    },
+    "ABN": {
+      "iata": "OY",
+      "name": "Andes Líneas Aéreas",
+      "country": "Argentina",
+      "file": "ABN.svg"
+    },
+    "ABX": {
+      "iata": "GB",
+      "name": "ABX Air",
+      "country": "United States",
+      "file": "ABX.svg"
+    },
+    "ABY": {
+      "iata": "G9",
+      "name": "Air Arabia",
+      "country": "United Arab Emirates",
+      "file": "ABY.svg"
+    },
+    "ACA": {
+      "iata": "AC",
+      "name": "Air Canada",
+      "country": "Canada",
+      "file": "ACA.svg"
+    },
+    "ACI": {
+      "iata": "XK",
+      "name": "Air Caraïbes",
+      "country": "France",
+      "file": "ACI.svg"
+    },
+    "AEA": {
+      "iata": "UX",
+      "name": "Air Europa",
+      "country": "Spain",
+      "file": "AEA.svg"
+    },
+    "AEE": {
+      "iata": "A3",
+      "name": "Aegean Airlines",
+      "country": "Greece",
+      "file": "AEE.svg"
+    },
+    "AEZ": {
+      "iata": "E4",
+      "name": "Aero Mongolia",
+      "country": "Mongolia",
+      "file": "AEZ.svg"
+    },
+    "AFG": {
+      "iata": "FG",
+      "name": "Ariana Afghan Airlines",
+      "country": "Afghanistan",
+      "file": "AFG.svg"
+    },
+    "AFL": {
+      "iata": "SU",
+      "name": "Aeroflot",
+      "country": "Russia",
+      "file": "AFL.svg"
+    },
+    "AFR": {
+      "iata": "AF",
+      "name": "Air France",
+      "country": "France",
+      "file": "AFR.svg"
+    },
+    "AHY": {
+      "iata": "J2",
+      "name": "Azerbaijan Airlines",
+      "country": "Azerbaijan",
+      "file": "AHY.svg"
+    },
+    "AIB": {
+      "iata": "TX",
+      "name": "Air Caraïbes",
+      "country": "France",
+      "file": "AIB.svg"
+    },
+    "AIC": {
+      "iata": "AI",
+      "name": "Air India",
+      "country": "India",
+      "file": "AIC.svg"
+    },
+    "AKJ": {
+      "iata": "VV",
+      "name": "Aeroitalia",
+      "country": "Italy",
+      "file": "AKJ.svg"
+    },
+    "AKL": {
+      "iata": "NS",
+      "name": "Hainan Airlines (legacy)",
+      "country": "China",
+      "file": "AKL.svg"
+    },
+    "ALK": {
+      "iata": "UL",
+      "name": "SriLankan Airlines",
+      "country": "Sri Lanka",
+      "file": "ALK.svg"
+    },
+    "AMU": {
+      "iata": "NX",
+      "name": "Air Macau",
+      "country": "Macau",
+      "file": "AMU.svg"
+    },
+    "AMX": {
+      "iata": "AM",
+      "name": "Aeroméxico",
+      "country": "Mexico",
+      "file": "AMX.svg"
+    },
+    "ANA": {
+      "iata": "NH",
+      "name": "All Nippon Airways",
+      "country": "Japan",
+      "file": "ANA.svg"
+    },
+    "ANG": {
+      "iata": "PX",
+      "name": "Air Niugini",
+      "country": "Papua New Guinea",
+      "file": "ANG.svg"
+    },
+    "ANO": {
+      "iata": "VL",
+      "name": "Air Nostrum",
+      "country": "Spain",
+      "file": "ANO.svg"
+    },
+    "ANZ": {
+      "iata": "NZ",
+      "name": "Air New Zealand",
+      "country": "New Zealand",
+      "file": "ANZ.svg"
+    },
+    "APJ": {
+      "iata": "MM",
+      "name": "Peach Aviation",
+      "country": "Japan",
+      "file": "APJ.svg"
+    },
+    "ARG": {
+      "iata": "AR",
+      "name": "Aerolíneas Argentinas",
+      "country": "Argentina",
+      "file": "ARG.svg"
+    },
+    "ARU": {
+      "iata": "XL",
+      "name": "Aerolane / LATAM Ecuador",
+      "country": "Ecuador",
+      "file": "ARU.svg"
+    },
+    "ASA": {
+      "iata": "AS",
+      "name": "Alaska Airlines",
+      "country": "United States",
+      "file": "ASA.svg"
+    },
+    "ASL": {
+      "iata": "5O",
+      "name": "ASL Airlines France",
+      "country": "France",
+      "file": "ASL.svg"
+    },
+    "ASV": {
+      "iata": "CG",
+      "name": "Airlines PNG",
+      "country": "Papua New Guinea",
+      "file": "ASV.svg"
+    },
+    "ATC": {
+      "iata": "TC",
+      "name": "Air Tanzania",
+      "country": "Tanzania",
+      "file": "ATC.svg"
+    },
+    "AUA": {
+      "iata": "OS",
+      "name": "Austrian Airlines",
+      "country": "Austria",
+      "file": "AUA.svg"
+    },
+    "AUI": {
+      "iata": "PS",
+      "name": "Ukraine International Airlines",
+      "country": "Ukraine",
+      "file": "AUI.svg"
+    },
+    "AUR": {
+      "iata": "UU",
+      "name": "Air Austral",
+      "country": "France (Réunion)",
+      "file": "AUR.svg"
+    },
+    "AVA": {
+      "iata": "AV",
+      "name": "Avianca",
+      "country": "Colombia",
+      "file": "AVA.svg"
+    },
+    "AWC": {
+      "iata": "OF",
+      "name": "Overland Airways",
+      "country": "Nigeria",
+      "file": "AWC.svg"
+    },
+    "AXM": {
+      "iata": "AK",
+      "name": "AirAsia",
+      "country": "Malaysia",
+      "file": "AXM.svg"
+    },
+    "AZU": {
+      "iata": "AD",
+      "name": "Azul Brazilian Airlines",
+      "country": "Brazil",
+      "file": "AZU.svg"
+    },
+    "AZW": {
+      "iata": "A2",
+      "name": "Astra Airlines",
+      "country": "Greece",
+      "file": "AZW.svg"
+    },
+    "BAV": {
+      "iata": "QH",
+      "name": "Bamboo Airways",
+      "country": "Vietnam",
+      "file": "BAV.svg"
+    },
+    "BAW": {
+      "iata": "BA",
+      "name": "British Airways",
+      "country": "United Kingdom",
+      "file": "BAW.svg"
+    },
+    "BBC": {
+      "iata": "BG",
+      "name": "Biman Bangladesh Airlines",
+      "country": "Bangladesh",
+      "file": "BBC.svg"
+    },
+    "BEL": {
+      "iata": "SN",
+      "name": "Brussels Airlines",
+      "country": "Belgium",
+      "file": "BEL.svg"
+    },
+    "BHS": {
+      "iata": "UP",
+      "name": "Bahamasair",
+      "country": "Bahamas",
+      "file": "BHS.svg"
+    },
+    "BIX": {
+      "iata": "BV",
+      "name": "Blue Panorama Airlines",
+      "country": "Italy",
+      "file": "BIX.svg"
+    },
+    "BKP": {
+      "iata": "PG",
+      "name": "Bangkok Airways",
+      "country": "Thailand",
+      "file": "BKP.svg"
+    },
+    "BOE": {
+      "iata": "--",
+      "name": "Boeing Test Flights",
+      "country": "United States",
+      "file": "BOE.svg"
+    },
+    "BOT": {
+      "iata": "BP",
+      "name": "Air Botswana",
+      "country": "Botswana",
+      "file": "BOT.svg"
+    },
+    "BOV": {
+      "iata": "OB",
+      "name": "Boliviana de Aviación",
+      "country": "Bolivia",
+      "file": "BOV.svg"
+    },
+    "BOX": {
+      "iata": "--",
+      "name": "AeroLogic",
+      "country": "Germany",
+      "file": "BOX.svg"
+    },
+    "BRU": {
+      "iata": "FB",
+      "name": "Bulgaria Air",
+      "country": "Bulgaria",
+      "file": "BRU.svg"
+    },
+    "BTI": {
+      "iata": "BT",
+      "name": "airBaltic",
+      "country": "Latvia",
+      "file": "BTI.svg"
+    },
+    "CAI": {
+      "iata": "--",
+      "name": "Corendon Airlines",
+      "country": "Turkey",
+      "file": "CAI.svg"
+    },
+    "CAL": {
+      "iata": "CI",
+      "name": "China Airlines",
+      "country": "Taiwan",
+      "file": "CAL.svg"
+    },
+    "CAY": {
+      "iata": "KX",
+      "name": "Cayman Airways",
+      "country": "Cayman Islands",
+      "file": "CAY.svg"
+    },
+    "CBJ": {
+      "iata": "CJ",
+      "name": "BA CityFlyer",
+      "country": "United Kingdom",
+      "file": "CBJ.svg"
+    },
+    "CCA": {
+      "iata": "CA",
+      "name": "Air China",
+      "country": "China",
+      "file": "CCA.svg"
+    },
+    "CCM": {
+      "iata": "XK",
+      "name": "Air Corsica",
+      "country": "France",
+      "file": "CCM.svg"
+    },
+    "CEB": {
+      "iata": "5J",
+      "name": "Cebu Pacific",
+      "country": "Philippines",
+      "file": "CEB.svg"
+    },
+    "CEL": {
+      "iata": "5L",
+      "name": "Aerosur",
+      "country": "Bolivia",
+      "file": "CEL.svg"
+    },
+    "CES": {
+      "iata": "MU",
+      "name": "China Eastern Airlines",
+      "country": "China",
+      "file": "CES.svg"
+    },
+    "CFG": {
+      "iata": "DE",
+      "name": "Condor",
+      "country": "Germany",
+      "file": "CFG.svg"
+    },
+    "CHH": {
+      "iata": "HU",
+      "name": "Hainan Airlines",
+      "country": "China",
+      "file": "CHH.svg"
+    },
+    "CKS": {
+      "iata": "K4",
+      "name": "Kalitta Air",
+      "country": "United States",
+      "file": "CKS.svg"
+    },
+    "CLX": {
+      "iata": "CV",
+      "name": "Cargolux",
+      "country": "Luxembourg",
+      "file": "CLX.svg"
+    },
+    "CMP": {
+      "iata": "CM",
+      "name": "Copa Airlines",
+      "country": "Panama",
+      "file": "CMP.svg"
+    },
+    "CNF": {
+      "iata": "CW",
+      "name": "City Airways",
+      "country": "Thailand",
+      "file": "CNF.svg"
+    },
+    "CPA": {
+      "iata": "CX",
+      "name": "Cathay Pacific",
+      "country": "Hong Kong",
+      "file": "CPA.svg"
+    },
+    "CRK": {
+      "iata": "KA",
+      "name": "Cathay Dragon",
+      "country": "Hong Kong",
+      "file": "CRK.svg"
+    },
+    "CSN": {
+      "iata": "CZ",
+      "name": "China Southern Airlines",
+      "country": "China",
+      "file": "CSN.svg"
+    },
+    "CSW": {
+      "iata": "5Z",
+      "name": "CemAir",
+      "country": "South Africa",
+      "file": "CSW.svg"
+    },
+    "CSZ": {
+      "iata": "GS",
+      "name": "Tianjin Airlines",
+      "country": "China",
+      "file": "CSZ.svg"
+    },
+    "CTN": {
+      "iata": "OU",
+      "name": "Croatia Airlines",
+      "country": "Croatia",
+      "file": "CTN.svg"
+    },
+    "CUB": {
+      "iata": "CU",
+      "name": "Cubana de Aviación",
+      "country": "Cuba",
+      "file": "CUB.svg"
+    },
+    "CXA": {
+      "iata": "MF",
+      "name": "Xiamen Airlines",
+      "country": "China",
+      "file": "CXA.svg"
+    },
+    "CYP": {
+      "iata": "CY",
+      "name": "Cyprus Airways",
+      "country": "Cyprus",
+      "file": "CYP.svg"
+    },
+    "DAH": {
+      "iata": "AH",
+      "name": "Air Algérie",
+      "country": "Algeria",
+      "file": "DAH.svg"
+    },
+    "DAL": {
+      "iata": "DL",
+      "name": "Delta Air Lines",
+      "country": "United States",
+      "file": "DAL.svg"
+    },
+    "DHL": {
+      "iata": "--",
+      "name": "DHL Aviation",
+      "country": "Multiple",
+      "file": "DHL.svg"
+    },
+    "DJU": {
+      "iata": "--",
+      "name": "Air Djibouti",
+      "country": "Djibouti",
+      "file": "DJU.svg"
+    },
+    "DLA": {
+      "iata": "--",
+      "name": "Air Dolomiti",
+      "country": "Italy",
+      "file": "DLA.svg"
+    },
+    "DLH": {
+      "iata": "LH",
+      "name": "Lufthansa",
+      "country": "Germany",
+      "file": "DLH.svg"
+    },
+    "DRK": {
+      "iata": "--",
+      "name": "Druk Air",
+      "country": "Bhutan",
+      "file": "DRK.svg"
+    },
+    "DTA": {
+      "iata": "DT",
+      "name": "TAAG Angola Airlines",
+      "country": "Angola",
+      "file": "DTA.svg"
+    },
+    "DTR": {
+      "iata": "--",
+      "name": "Danish Air Transport",
+      "country": "Denmark",
+      "file": "DTR.svg"
+    },
+    "EDW": {
+      "iata": "WK",
+      "name": "Edelweiss Air",
+      "country": "Switzerland",
+      "file": "EDW.svg"
+    },
+    "EIN": {
+      "iata": "EI",
+      "name": "Aer Lingus",
+      "country": "Ireland",
+      "file": "EIN.svg"
+    },
+    "ELY": {
+      "iata": "LY",
+      "name": "El Al",
+      "country": "Israel",
+      "file": "ELY.svg"
+    },
+    "ENT": {
+      "iata": "E2",
+      "name": "Enter Air",
+      "country": "Poland",
+      "file": "ENT.svg"
+    },
+    "ESR": {
+      "iata": "--",
+      "name": "Estafeta Carga Aérea",
+      "country": "Mexico",
+      "file": "ESR.svg"
+    },
+    "ETD": {
+      "iata": "EY",
+      "name": "Etihad Airways",
+      "country": "United Arab Emirates",
+      "file": "ETD.svg"
+    },
+    "ETH": {
+      "iata": "ET",
+      "name": "Ethiopian Airlines",
+      "country": "Ethiopia",
+      "file": "ETH.svg"
+    },
+    "EVA": {
+      "iata": "BR",
+      "name": "EVA Air",
+      "country": "Taiwan",
+      "file": "EVA.svg"
+    },
+    "EWG": {
+      "iata": "EW",
+      "name": "Eurowings",
+      "country": "Germany",
+      "file": "EWG.svg"
+    },
+    "EXS": {
+      "iata": "LS",
+      "name": "Jet2.com",
+      "country": "United Kingdom",
+      "file": "EXS.svg"
+    },
+    "EZE": {
+      "iata": "--",
+      "name": "Eastern Airways",
+      "country": "United Kingdom",
+      "file": "EZE.svg"
+    },
+    "EZY": {
+      "iata": "U2",
+      "name": "easyJet",
+      "country": "United Kingdom",
+      "file": "EZY.svg"
+    },
+    "FBU": {
+      "iata": "DY",
+      "name": "Norwegian Air Shuttle",
+      "country": "Norway",
+      "file": "FBU.svg"
+    },
+    "FDX": {
+      "iata": "FX",
+      "name": "FedEx Express",
+      "country": "United States",
+      "file": "FDX.svg"
+    },
+    "FFM": {
+      "iata": "--",
+      "name": "Ferries Aéreas de Mallorca",
+      "country": "Spain",
+      "file": "FFM.svg"
+    },
+    "FFT": {
+      "iata": "F9",
+      "name": "Frontier Airlines",
+      "country": "United States",
+      "file": "FFT.svg"
+    },
+    "FHY": {
+      "iata": "--",
+      "name": "Freebird Airlines",
+      "country": "Turkey",
+      "file": "FHY.svg"
+    },
+    "FIA": {
+      "iata": "--",
+      "name": "Finistair",
+      "country": "France",
+      "file": "FIA.svg"
+    },
+    "FIN": {
+      "iata": "AY",
+      "name": "Finnair",
+      "country": "Finland",
+      "file": "FIN.svg"
+    },
+    "FJI": {
+      "iata": "FJ",
+      "name": "Fiji Airways",
+      "country": "Fiji",
+      "file": "FJI.svg"
+    },
+    "FLE": {
+      "iata": "F8",
+      "name": "Flair Airlines",
+      "country": "Canada",
+      "file": "FLE.svg"
+    },
+    "FLI": {
+      "iata": "AP",
+      "name": "Atlantic Airways",
+      "country": "Faroe Islands",
+      "file": "FLI.svg"
+    },
+    "GCR": {
+      "iata": "GS",
+      "name": "Tianjin Airlines",
+      "country": "China",
+      "file": "GCR.svg"
+    },
+    "GFA": {
+      "iata": "GF",
+      "name": "Gulf Air",
+      "country": "Bahrain",
+      "file": "GFA.svg"
+    },
+    "GIA": {
+      "iata": "GA",
+      "name": "Garuda Indonesia",
+      "country": "Indonesia",
+      "file": "GIA.svg"
+    },
+    "GLO": {
+      "iata": "G3",
+      "name": "GOL Linhas Aéreas",
+      "country": "Brazil",
+      "file": "GLO.svg"
+    },
+    "GRL": {
+      "iata": "GL",
+      "name": "Air Greenland",
+      "country": "Greenland",
+      "file": "GRL.svg"
+    },
+    "GTI": {
+      "iata": "5Y",
+      "name": "Atlas Air",
+      "country": "United States",
+      "file": "GTI.svg"
+    },
+    "HAL": {
+      "iata": "HA",
+      "name": "Hawaiian Airlines",
+      "country": "United States",
+      "file": "HAL.svg"
+    },
+    "HKE": {
+      "iata": "UO",
+      "name": "HK Express",
+      "country": "Hong Kong",
+      "file": "HKE.svg"
+    },
+    "HVN": {
+      "iata": "VN",
+      "name": "Vietnam Airlines",
+      "country": "Vietnam",
+      "file": "HVN.svg"
+    },
+    "IAW": {
+      "iata": "IA",
+      "name": "Iraqi Airways",
+      "country": "Iraq",
+      "file": "IAW.svg"
+    },
+    "IBB": {
+      "iata": "IB",
+      "name": "Iberia Express",
+      "country": "Spain",
+      "file": "IBB.svg"
+    },
+    "IBE": {
+      "iata": "IB",
+      "name": "Iberia",
+      "country": "Spain",
+      "file": "IBE.svg"
+    },
+    "ICE": {
+      "iata": "FI",
+      "name": "Icelandair",
+      "country": "Iceland",
+      "file": "ICE.svg"
+    },
+    "IGO": {
+      "iata": "6E",
+      "name": "IndiGo",
+      "country": "India",
+      "file": "IGO.svg"
+    },
+    "IOS": {
+      "iata": "--",
+      "name": "Isles of Scilly Skybus",
+      "country": "United Kingdom",
+      "file": "IOS.svg"
+    },
+    "ITY": {
+      "iata": "AZ",
+      "name": "ITA Airways",
+      "country": "Italy",
+      "file": "ITY.svg"
+    },
+    "IYE": {
+      "iata": "IY",
+      "name": "Yemenia",
+      "country": "Yemen",
+      "file": "IYE.svg"
+    },
+    "JAL": {
+      "iata": "JL",
+      "name": "Japan Airlines",
+      "country": "Japan",
+      "file": "JAL.svg"
+    },
+    "JBU": {
+      "iata": "B6",
+      "name": "JetBlue Airways",
+      "country": "United States",
+      "file": "JBU.svg"
+    },
+    "JJA": {
+      "iata": "LJ",
+      "name": "Jin Air",
+      "country": "South Korea",
+      "file": "JJA.svg"
+    },
+    "JST": {
+      "iata": "JQ",
+      "name": "Jetstar",
+      "country": "Australia",
+      "file": "JST.svg"
+    },
+    "JSX": {
+      "iata": "XE",
+      "name": "JSX",
+      "country": "United States",
+      "file": "JSX.svg"
+    },
+    "JTD": {
+      "iata": "--",
+      "name": "Jettime",
+      "country": "Denmark",
+      "file": "JTD.svg"
+    },
+    "KAC": {
+      "iata": "KU",
+      "name": "Kuwait Airways",
+      "country": "Kuwait",
+      "file": "KAC.svg"
+    },
+    "KAL": {
+      "iata": "KE",
+      "name": "Korean Air",
+      "country": "South Korea",
+      "file": "KAL.svg"
+    },
+    "KHV": {
+      "iata": "--",
+      "name": "Khabarovsk Airlines",
+      "country": "Russia",
+      "file": "KHV.svg"
+    },
+    "KLM": {
+      "iata": "KL",
+      "name": "KLM Royal Dutch Airlines",
+      "country": "Netherlands",
+      "file": "KLM.svg"
+    },
+    "KMM": {
+      "iata": "--",
+      "name": "Kam Air",
+      "country": "Afghanistan",
+      "file": "KMM.svg"
+    },
+    "KNE": {
+      "iata": "XY",
+      "name": "flynas",
+      "country": "Saudi Arabia",
+      "file": "KNE.svg"
+    },
+    "KOR": {
+      "iata": "JS",
+      "name": "Air Koryo",
+      "country": "North Korea",
+      "file": "KOR.svg"
+    },
+    "KQA": {
+      "iata": "KQ",
+      "name": "Kenya Airways",
+      "country": "Kenya",
+      "file": "KQA.svg"
+    },
+    "KZR": {
+      "iata": "KC",
+      "name": "Air Astana",
+      "country": "Kazakhstan",
+      "file": "KZR.svg"
+    },
+    "LAM": {
+      "iata": "TM",
+      "name": "LAM Mozambique Airlines",
+      "country": "Mozambique",
+      "file": "LAM.svg"
+    },
+    "LAN": {
+      "iata": "LA",
+      "name": "LATAM Airlines",
+      "country": "Chile",
+      "file": "LAN.svg"
+    },
+    "LAO": {
+      "iata": "QV",
+      "name": "Lao Airlines",
+      "country": "Laos",
+      "file": "LAO.svg"
+    },
+    "LBT": {
+      "iata": "LB",
+      "name": "Lloyd Aéreo Boliviano",
+      "country": "Bolivia",
+      "file": "LBT.svg"
+    },
+    "LGL": {
+      "iata": "LG",
+      "name": "Luxair",
+      "country": "Luxembourg",
+      "file": "LGL.svg"
+    },
+    "LOG": {
+      "iata": "LM",
+      "name": "Loganair",
+      "country": "United Kingdom",
+      "file": "LOG.svg"
+    },
+    "LOT": {
+      "iata": "LO",
+      "name": "LOT Polish Airlines",
+      "country": "Poland",
+      "file": "LOT.svg"
+    },
+    "LXJ": {
+      "iata": "--",
+      "name": "Flexjet",
+      "country": "United States",
+      "file": "LXJ.svg"
+    },
+    "LZB": {
+      "iata": "FB",
+      "name": "Bulgaria Air",
+      "country": "Bulgaria",
+      "file": "LZB.svg"
+    },
+    "MAS": {
+      "iata": "MH",
+      "name": "Malaysia Airlines",
+      "country": "Malaysia",
+      "file": "MAS.svg"
+    },
+    "MAU": {
+      "iata": "MK",
+      "name": "Air Mauritius",
+      "country": "Mauritius",
+      "file": "MAU.svg"
+    },
+    "MEA": {
+      "iata": "ME",
+      "name": "Middle East Airlines",
+      "country": "Lebanon",
+      "file": "MEA.svg"
+    },
+    "MGL": {
+      "iata": "OM",
+      "name": "MIAT Mongolian Airlines",
+      "country": "Mongolia",
+      "file": "MGL.svg"
+    },
+    "MSR": {
+      "iata": "MS",
+      "name": "EgyptAir",
+      "country": "Egypt",
+      "file": "MSR.svg"
+    },
+    "MXY": {
+      "iata": "--",
+      "name": "Breeze Airways",
+      "country": "United States",
+      "file": "MXY.svg"
+    },
+    "NBT": {
+      "iata": "--",
+      "name": "Nordic Aviation",
+      "country": "Sweden",
+      "file": "NBT.svg"
+    },
+    "NJE": {
+      "iata": "1I",
+      "name": "NetJets Europe",
+      "country": "Portugal",
+      "file": "NJE.svg"
+    },
+    "NKS": {
+      "iata": "NK",
+      "name": "Spirit Airlines",
+      "country": "United States",
+      "file": "NKS.svg"
+    },
+    "NOK": {
+      "iata": "DD",
+      "name": "Nok Air",
+      "country": "Thailand",
+      "file": "NOK.svg"
+    },
+    "NOS": {
+      "iata": "NO",
+      "name": "Neos",
+      "country": "Italy",
+      "file": "NOS.svg"
+    },
+    "NOZ": {
+      "iata": "DY",
+      "name": "Norwegian Air Shuttle",
+      "country": "Norway",
+      "file": "NOZ.svg"
+    },
+    "NPT": {
+      "iata": "--",
+      "name": "East Midlands Airways",
+      "country": "United Kingdom",
+      "file": "NPT.svg"
+    },
+    "OMA": {
+      "iata": "WY",
+      "name": "Oman Air",
+      "country": "Oman",
+      "file": "OMA.svg"
+    },
+    "PAL": {
+      "iata": "PR",
+      "name": "Philippine Airlines",
+      "country": "Philippines",
+      "file": "PAL.svg"
+    },
+    "PAO": {
+      "iata": "XR",
+      "name": "Polish Air Force / Polskie Airways",
+      "country": "Poland",
+      "file": "PAO.svg"
+    },
+    "PGT": {
+      "iata": "PC",
+      "name": "Pegasus Airlines",
+      "country": "Turkey",
+      "file": "PGT.svg"
+    },
+    "PIA": {
+      "iata": "PK",
+      "name": "Pakistan International Airlines",
+      "country": "Pakistan",
+      "file": "PIA.svg"
+    },
+    "PTR": {
+      "iata": "PD",
+      "name": "Porter Airlines",
+      "country": "Canada",
+      "file": "PTR.svg"
+    },
+    "QFA": {
+      "iata": "QF",
+      "name": "Qantas",
+      "country": "Australia",
+      "file": "QFA.svg"
+    },
+    "QTR": {
+      "iata": "QR",
+      "name": "Qatar Airways",
+      "country": "Qatar",
+      "file": "QTR.svg"
+    },
+    "RAM": {
+      "iata": "AT",
+      "name": "Royal Air Maroc",
+      "country": "Morocco",
+      "file": "RAM.svg"
+    },
+    "RBA": {
+      "iata": "BI",
+      "name": "Royal Brunei Airlines",
+      "country": "Brunei",
+      "file": "RBA.svg"
+    },
+    "REU": {
+      "iata": "UU",
+      "name": "Air Austral",
+      "country": "France (Réunion)",
+      "file": "REU.svg"
+    },
+    "RJA": {
+      "iata": "RJ",
+      "name": "Royal Jordanian",
+      "country": "Jordan",
+      "file": "RJA.svg"
+    },
+    "RNA": {
+      "iata": "RA",
+      "name": "Nepal Airlines",
+      "country": "Nepal",
+      "file": "RNA.svg"
+    },
+    "ROT": {
+      "iata": "RO",
+      "name": "TAROM",
+      "country": "Romania",
+      "file": "ROT.svg"
+    },
+    "RWD": {
+      "iata": "WB",
+      "name": "RwandAir",
+      "country": "Rwanda",
+      "file": "RWD.svg"
+    },
+    "RXA": {
+      "iata": "ZL",
+      "name": "Regional Express (Rex)",
+      "country": "Australia",
+      "file": "RXA.svg"
+    },
+    "RYR": {
+      "iata": "FR",
+      "name": "Ryanair",
+      "country": "Ireland",
+      "file": "RYR.svg"
+    },
+    "RZO": {
+      "iata": "S4",
+      "name": "SATA Azores Airlines",
+      "country": "Portugal",
+      "file": "RZO.svg"
+    },
+    "SAA": {
+      "iata": "SA",
+      "name": "South African Airways",
+      "country": "South Africa",
+      "file": "SAA.svg"
+    },
+    "SAS": {
+      "iata": "SK",
+      "name": "SAS Scandinavian Airlines",
+      "country": "Sweden",
+      "file": "SAS.svg"
+    },
+    "SBI": {
+      "iata": "S7",
+      "name": "S7 Airlines",
+      "country": "Russia",
+      "file": "SBI.svg"
+    },
+    "SEY": {
+      "iata": "HM",
+      "name": "Air Seychelles",
+      "country": "Seychelles",
+      "file": "SEY.svg"
+    },
+    "SIA": {
+      "iata": "SQ",
+      "name": "Singapore Airlines",
+      "country": "Singapore",
+      "file": "SIA.svg"
+    },
+    "SJX": {
+      "iata": "--",
+      "name": "Star Flyer",
+      "country": "Japan",
+      "file": "SJX.svg"
+    },
+    "SKU": {
+      "iata": "--",
+      "name": "Sky Airline",
+      "country": "Chile",
+      "file": "SKU.svg"
+    },
+    "SKW": {
+      "iata": "OO",
+      "name": "SkyWest Airlines",
+      "country": "United States",
+      "file": "SKW.svg"
+    },
+    "SKY": {
+      "iata": "BC",
+      "name": "Skymark Airlines",
+      "country": "Japan",
+      "file": "SKY.svg"
+    },
+    "SLM": {
+      "iata": "PY",
+      "name": "Surinam Airways",
+      "country": "Suriname",
+      "file": "SLM.svg"
+    },
+    "SOL": {
+      "iata": "8R",
+      "name": "Sol Líneas Aéreas",
+      "country": "Argentina",
+      "file": "SOL.svg"
+    },
+    "SRQ": {
+      "iata": "--",
+      "name": "South African Express",
+      "country": "South Africa",
+      "file": "SRQ.svg"
+    },
+    "STP": {
+      "iata": "--",
+      "name": "STP Airways",
+      "country": "São Tomé",
+      "file": "STP.svg"
+    },
+    "SUD": {
+      "iata": "--",
+      "name": "Sudan Airways",
+      "country": "Sudan",
+      "file": "SUD.svg"
+    },
+    "SVA": {
+      "iata": "SV",
+      "name": "Saudia",
+      "country": "Saudi Arabia",
+      "file": "SVA.svg"
+    },
+    "SWA": {
+      "iata": "WN",
+      "name": "Southwest Airlines",
+      "country": "United States",
+      "file": "SWA.svg"
+    },
+    "SWR": {
+      "iata": "LX",
+      "name": "SWISS",
+      "country": "Switzerland",
+      "file": "SWR.svg"
+    },
+    "SXS": {
+      "iata": "XQ",
+      "name": "SunExpress",
+      "country": "Turkey",
+      "file": "SXS.svg"
+    },
+    "SYR": {
+      "iata": "RB",
+      "name": "Syrianair",
+      "country": "Syria",
+      "file": "SYR.svg"
+    },
+    "SZN": {
+      "iata": "--",
+      "name": "Suzhou Airlines",
+      "country": "China",
+      "file": "SZN.svg"
+    },
+    "TAP": {
+      "iata": "TP",
+      "name": "TAP Air Portugal",
+      "country": "Portugal",
+      "file": "TAP.svg"
+    },
+    "TAR": {
+      "iata": "TU",
+      "name": "Tunisair",
+      "country": "Tunisia",
+      "file": "TAR.svg"
+    },
+    "TCV": {
+      "iata": "VR",
+      "name": "TACV / Cabo Verde Airlines",
+      "country": "Cape Verde",
+      "file": "TCV.svg"
+    },
+    "TGW": {
+      "iata": "TR",
+      "name": "Scoot",
+      "country": "Singapore",
+      "file": "TGW.svg"
+    },
+    "TGZ": {
+      "iata": "TN",
+      "name": "Air Tahiti Nui",
+      "country": "French Polynesia",
+      "file": "TGZ.svg"
+    },
+    "THA": {
+      "iata": "TG",
+      "name": "Thai Airways",
+      "country": "Thailand",
+      "file": "THA.svg"
+    },
+    "THT": {
+      "iata": "VT",
+      "name": "Air Tahiti",
+      "country": "French Polynesia",
+      "file": "THT.svg"
+    },
+    "THY": {
+      "iata": "TK",
+      "name": "Turkish Airlines",
+      "country": "Turkey",
+      "file": "THY.svg"
+    },
+    "TKJ": {
+      "iata": "--",
+      "name": "Tropic Air",
+      "country": "Belize",
+      "file": "TKJ.svg"
+    },
+    "TOM": {
+      "iata": "BY",
+      "name": "TUI Airways",
+      "country": "United Kingdom",
+      "file": "TOM.svg"
+    },
+    "TRA": {
+      "iata": "HV",
+      "name": "Transavia",
+      "country": "Netherlands",
+      "file": "TRA.svg"
+    },
+    "TSC": {
+      "iata": "TS",
+      "name": "Air Transat",
+      "country": "Canada",
+      "file": "TSC.svg"
+    },
+    "TUA": {
+      "iata": "--",
+      "name": "Turkmenistan Airlines",
+      "country": "Turkmenistan",
+      "file": "TUA.svg"
+    },
+    "TVS": {
+      "iata": "QS",
+      "name": "Smartwings",
+      "country": "Czech Republic",
+      "file": "TVS.svg"
+    },
+    "TWI": {
+      "iata": "--",
+      "name": "Tailwind Airlines",
+      "country": "Turkey",
+      "file": "TWI.svg"
+    },
+    "UAE": {
+      "iata": "EK",
+      "name": "Emirates",
+      "country": "United Arab Emirates",
+      "file": "UAE.svg"
+    },
+    "UAL": {
+      "iata": "UA",
+      "name": "United Airlines",
+      "country": "United States",
+      "file": "UAL.svg"
+    },
+    "UBA": {
+      "iata": "--",
+      "name": "Myanmar Airways International",
+      "country": "Myanmar",
+      "file": "UBA.svg"
+    },
+    "UGD": {
+      "iata": "--",
+      "name": "Uganda Airlines",
+      "country": "Uganda",
+      "file": "UGD.svg"
+    },
+    "UPS": {
+      "iata": "5X",
+      "name": "UPS Airlines",
+      "country": "United States",
+      "file": "UPS.svg"
+    },
+    "UTY": {
+      "iata": "--",
+      "name": "Ultimate Air Shuttle",
+      "country": "United States",
+      "file": "UTY.svg"
+    },
+    "UZB": {
+      "iata": "HY",
+      "name": "Uzbekistan Airways",
+      "country": "Uzbekistan",
+      "file": "UZB.svg"
+    },
+    "VBW": {
+      "iata": "--",
+      "name": "VIP-Avia",
+      "country": "Georgia",
+      "file": "VBW.svg"
+    },
+    "VCV": {
+      "iata": "--",
+      "name": "Conviasa",
+      "country": "Venezuela",
+      "file": "VCV.svg"
+    },
+    "VIR": {
+      "iata": "VS",
+      "name": "Virgin Atlantic",
+      "country": "United Kingdom",
+      "file": "VIR.svg"
+    },
+    "VKG": {
+      "iata": "DK",
+      "name": "Sunclass Airlines",
+      "country": "Denmark",
+      "file": "VKG.svg"
+    },
+    "VLG": {
+      "iata": "VY",
+      "name": "Vueling",
+      "country": "Spain",
+      "file": "VLG.svg"
+    },
+    "VOE": {
+      "iata": "V7",
+      "name": "Volotea",
+      "country": "Spain",
+      "file": "VOE.svg"
+    },
+    "VOI": {
+      "iata": "Y4",
+      "name": "Volaris",
+      "country": "Mexico",
+      "file": "VOI.svg"
+    },
+    "VOZ": {
+      "iata": "VA",
+      "name": "Virgin Australia",
+      "country": "Australia",
+      "file": "VOZ.svg"
+    },
+    "VTE": {
+      "iata": "--",
+      "name": "Vietravel Airlines",
+      "country": "Vietnam",
+      "file": "VTE.svg"
+    },
+    "WIF": {
+      "iata": "WF",
+      "name": "Widerøe",
+      "country": "Norway",
+      "file": "WIF.svg"
+    },
+    "WJA": {
+      "iata": "WS",
+      "name": "WestJet",
+      "country": "Canada",
+      "file": "WJA.svg"
+    },
+    "WZZ": {
+      "iata": "W6",
+      "name": "Wizz Air",
+      "country": "Hungary",
+      "file": "WZZ.svg"
+    }
+  },
+  "military": {
+    "ZMIL_AFP": {
+      "name": "Air Force of the Philippines",
+      "sub_code": "AFP",
+      "file": "ZMIL_AFP.svg"
+    },
+    "ZMIL_AIO": {
+      "name": "Algerian Air Force",
+      "sub_code": "AIO",
+      "file": "ZMIL_AIO.svg"
+    },
+    "ZMIL_AME": {
+      "name": "Argentinian Air Force",
+      "sub_code": "AME",
+      "file": "ZMIL_AME.svg"
+    },
+    "ZMIL_ASF": {
+      "name": "Austrian Air Force",
+      "sub_code": "ASF",
+      "file": "ZMIL_ASF.svg"
+    },
+    "ZMIL_ASY": {
+      "name": "Atlas Air Service",
+      "sub_code": "ASY",
+      "file": "ZMIL_ASY.svg"
+    },
+    "ZMIL_BAF": {
+      "name": "Belgian Air Force",
+      "sub_code": "BAF",
+      "file": "ZMIL_BAF.svg"
+    },
+    "ZMIL_BFW": {
+      "name": "Bulgarian Air Force",
+      "sub_code": "BFW",
+      "file": "ZMIL_BFW.svg"
+    },
+    "ZMIL_BRS": {
+      "name": "Brazilian Air Force",
+      "sub_code": "BRS",
+      "file": "ZMIL_BRS.svg"
+    },
+    "ZMIL_CEF": {
+      "name": "Czech Air Force",
+      "sub_code": "CEF",
+      "file": "ZMIL_CEF.svg"
+    },
+    "ZMIL_CFC": {
+      "name": "Canadian Forces",
+      "sub_code": "CFC",
+      "file": "ZMIL_CFC.svg"
+    },
+    "ZMIL_DAF": {
+      "name": "Danish Air Force",
+      "sub_code": "DAF",
+      "file": "ZMIL_DAF.svg"
+    },
+    "ZMIL_EEF": {
+      "name": "Estonian Air Force",
+      "sub_code": "EEF",
+      "file": "ZMIL_EEF.svg"
+    },
+    "ZMIL_EGY": {
+      "name": "Egyptian Air Force",
+      "sub_code": "EGY",
+      "file": "ZMIL_EGY.svg"
+    },
+    "ZMIL_FAF": {
+      "name": "French Air Force",
+      "sub_code": "FAF",
+      "file": "ZMIL_FAF.svg"
+    },
+    "ZMIL_FAG": {
+      "name": "Guatemalan Air Force",
+      "sub_code": "FAG",
+      "file": "ZMIL_FAG.svg"
+    },
+    "ZMIL_FNF": {
+      "name": "Finnish Air Force",
+      "sub_code": "FNF",
+      "file": "ZMIL_FNF.svg"
+    },
+    "ZMIL_FPR": {
+      "name": "Peruvian Air Force",
+      "sub_code": "FPR",
+      "file": "ZMIL_FPR.svg"
+    },
+    "ZMIL_GAF": {
+      "name": "German Air Force (Luftwaffe)",
+      "sub_code": "GAF",
+      "file": "ZMIL_GAF.svg"
+    },
+    "ZMIL_HAF": {
+      "name": "Hellenic (Greek) Air Force",
+      "sub_code": "HAF",
+      "file": "ZMIL_HAF.svg"
+    },
+    "ZMIL_HRZ": {
+      "name": "Croatian Air Force",
+      "sub_code": "HRZ",
+      "file": "ZMIL_HRZ.svg"
+    },
+    "ZMIL_HUF": {
+      "name": "Hungarian Air Force",
+      "sub_code": "HUF",
+      "file": "ZMIL_HUF.svg"
+    },
+    "ZMIL_HVK": {
+      "name": "Slovak Air Force",
+      "sub_code": "HVK",
+      "file": "ZMIL_HVK.svg"
+    },
+    "ZMIL_IAF": {
+      "name": "Indian Air Force",
+      "sub_code": "IAF",
+      "file": "ZMIL_IAF.svg"
+    },
+    "ZMIL_IAM": {
+      "name": "Italian Air Force",
+      "sub_code": "IAM",
+      "file": "ZMIL_IAM.svg"
+    },
+    "ZMIL_IFC": {
+      "name": "Iranian Air Force",
+      "sub_code": "IFC",
+      "file": "ZMIL_IFC.svg"
+    },
+    "ZMIL_KIW": {
+      "name": "Royal New Zealand Air Force",
+      "sub_code": "KIW",
+      "file": "ZMIL_KIW.svg"
+    },
+    "ZMIL_LAF": {
+      "name": "Lithuanian Air Force",
+      "sub_code": "LAF",
+      "file": "ZMIL_LAF.svg"
+    },
+    "ZMIL_LMG": {
+      "name": "Latvian Air Force",
+      "sub_code": "LMG",
+      "file": "ZMIL_LMG.svg"
+    },
+    "ZMIL_LYF": {
+      "name": "Libyan Air Force",
+      "sub_code": "LYF",
+      "file": "ZMIL_LYF.svg"
+    },
+    "ZMIL_NAF": {
+      "name": "Nigerian Air Force",
+      "sub_code": "NAF",
+      "file": "ZMIL_NAF.svg"
+    },
+    "ZMIL_NGR": {
+      "name": "Norwegian Air Force",
+      "sub_code": "NGR",
+      "file": "ZMIL_NGR.svg"
+    },
+    "ZMIL_NOW": {
+      "name": "Norwegian Air Force",
+      "sub_code": "NOW",
+      "file": "ZMIL_NOW.svg"
+    },
+    "ZMIL_PLF": {
+      "name": "Polish Air Force",
+      "sub_code": "PLF",
+      "file": "ZMIL_PLF.svg"
+    },
+    "ZMIL_RFF": {
+      "name": "Russian Air Force",
+      "sub_code": "RFF",
+      "file": "ZMIL_RFF.svg"
+    },
+    "ZMIL_RFR": {
+      "name": "French Air Force (Armée de l'Air)",
+      "sub_code": "RFR",
+      "file": "ZMIL_RFR.svg"
+    },
+    "ZMIL_RJZ": {
+      "name": "Royal Jordanian Air Force",
+      "sub_code": "RJZ",
+      "file": "ZMIL_RJZ.svg"
+    },
+    "ZMIL_RMF": {
+      "name": "Romanian Air Force",
+      "sub_code": "RMF",
+      "file": "ZMIL_RMF.svg"
+    },
+    "ZMIL_ROF": {
+      "name": "Royal Air Force (UK)",
+      "sub_code": "ROF",
+      "file": "ZMIL_ROF.svg"
+    },
+    "ZMIL_RSF": {
+      "name": "Republic of Singapore Air Force",
+      "sub_code": "RSF",
+      "file": "ZMIL_RSF.svg"
+    },
+    "ZMIL_SAF": {
+      "name": "South African Air Force",
+      "sub_code": "SAF",
+      "file": "ZMIL_SAF.svg"
+    },
+    "ZMIL_SIV": {
+      "name": "Slovenian Air Force",
+      "sub_code": "SIV",
+      "file": "ZMIL_SIV.svg"
+    },
+    "ZMIL_SQF": {
+      "name": "Spanish Air Force",
+      "sub_code": "SQF",
+      "file": "ZMIL_SQF.svg"
+    },
+    "ZMIL_SUI": {
+      "name": "Swiss Air Force",
+      "sub_code": "SUI",
+      "file": "ZMIL_SUI.svg"
+    },
+    "ZMIL_SVF": {
+      "name": "Swedish Air Force",
+      "sub_code": "SVF",
+      "file": "ZMIL_SVF.svg"
+    },
+    "ZMIL_UAF": {
+      "name": "United States Air Force / Ukrainian Air Force",
+      "sub_code": "UAF",
+      "file": "ZMIL_UAF.svg"
+    }
+  },
+  "unmapped": []
+}

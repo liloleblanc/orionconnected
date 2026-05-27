@@ -1,0 +1,652 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FIDS Mobile v216 — Hero card + compact cards + tap-to-expand
+   Loaded AFTER mobile.css. Matches the @media bound used elsewhere.
+   Adaptive light/dark via prefers-color-scheme.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@media (max-width: 640px) {
+  /* CSS variables — light defaults */
+  body {
+    --m-bg-page: #f6f6f3;
+    --m-bg-card: #ffffff;
+    --m-bg-tag: #f5f5f6;
+    --m-bg-chip: #f5f5f6;
+    --m-bg-chip-active: #e8e8e8;
+    --m-text: #0a0a0a;
+    --m-text-muted: #6b6b6b;
+    --m-text-faint: #9b9b9b;
+    --m-border: rgba(0,0,0,0.08);
+    --m-divider: rgba(0,0,0,0.06);
+    --m-gate-bg: #1e6f50;
+    --m-gate-text: #ffffff;
+    --m-status-boarding: #14532d;
+    --m-status-delayed: #d97706;
+    --m-status-cancelled: #dc2626;
+    --m-status-final: #dc2626;
+    --m-time-arrow: #d97706;
+  }
+
+  /* Override stale hardcoded gray bg — kill it dead */
+  body,
+  .mobile-cards-scroll,
+  #mobileCards {
+    background: var(--m-bg-page) !important;
+  }
+  #mobileCards { padding: 12px 12px 60px; }
+
+  /* Kill old .flight-card visuals so they don't bleed through */
+  #mobileCards .flight-card {
+    display: none !important;
+  }
+
+  /* ─── HERO CARD ───────────────────────────────────────────────────── */
+  .mobile-hero {
+    background: var(--m-bg-card);
+    border-radius: 16px;
+    padding: 14px 14px 12px;
+    margin-bottom: 12px;
+    border: 0.5px solid var(--m-border);
+    position: relative;
+    overflow: hidden;
+    color: var(--m-text);
+  }
+  .mobile-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--m-text-faint);
+  }
+  .mobile-hero.status-boarding::before,
+  .mobile-hero.status-ontime::before { background: var(--m-status-boarding); }
+  .mobile-hero.status-delayed::before { background: var(--m-status-delayed); }
+  .mobile-hero.status-cancelled::before { background: var(--m-status-cancelled); }
+  .mobile-hero.status-final::before { background: var(--m-status-final); }
+
+  .hero-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .hero-airline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+  .hero-airline .card-logo,
+  .hero-airline .card-wordmark,
+  .hero-airline img {
+    height: 24px !important;
+    max-width: 130px !important;
+    width: auto !important;
+    object-fit: contain;
+  }
+  .hero-status {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .hero-time {
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -1.5px;
+    color: var(--m-text);
+    margin-bottom: 4px;
+  }
+  .hero-time-stack {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .hero-time-orig {
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--m-text-muted);
+    text-decoration: line-through;
+    line-height: 1;
+  }
+  .hero-time-arrow {
+    color: var(--m-time-arrow);
+    font-size: 16px;
+  }
+  .hero-time-new {
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--m-time-arrow);
+    line-height: 1;
+    letter-spacing: -1.5px;
+  }
+  .hero-countdown {
+    font-size: 11px;
+    color: var(--m-status-boarding);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .hero-city {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--m-text);
+    line-height: 1.1;
+    margin-bottom: 12px;
+    letter-spacing: -0.3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hero-tags {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .hero-tag {
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: var(--m-bg-tag);
+  }
+  .hero-tag-gate {
+    background: var(--m-gate-bg);
+  }
+  .hero-tag-gate .hero-tag-label { color: rgba(255,255,255,0.7); }
+  .hero-tag-gate .hero-tag-val { color: var(--m-gate-text); }
+  .hero-tag-label {
+    font-size: 8px;
+    color: var(--m-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .hero-tag-val {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--m-text);
+    line-height: 1.2;
+  }
+  .hero-tag-empty .hero-tag-val { color: var(--m-text-faint); }
+
+  .hero-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .hero-chip {
+    background: var(--m-bg-chip);
+    border: 0.5px solid var(--m-border);
+    padding: 8px 12px;
+    border-radius: 18px;
+    font-size: 11px;
+    color: var(--m-text);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+    min-height: 32px;
+  }
+  .hero-chip:hover { background: var(--m-bg-chip-active); }
+  .hero-chip.active {
+    background: var(--m-bg-chip-active);
+    border-color: var(--m-text);
+  }
+  .hero-chip .ti { font-size: 13px; }
+  .hero-chip-arrow {
+    opacity: 0.5;
+    font-size: 10px;
+    transition: transform 0.15s;
+  }
+  .hero-chip.active .hero-chip-arrow {
+    transform: rotate(90deg);
+    opacity: 0.9;
+  }
+
+  .hero-section:empty { display: none; }
+  .hero-detail {
+    background: var(--m-bg-tag);
+    border-radius: 12px;
+    padding: 12px 12px 14px;
+    margin-top: 10px;
+  }
+  .hero-detail-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--m-text);
+    margin-bottom: 10px;
+  }
+  .hero-detail-head .ti { font-size: 15px; }
+  .hero-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hero-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 13px;
+  }
+  .hero-meta-k {
+    color: var(--m-text-muted);
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .hero-meta-v {
+    color: var(--m-text);
+    font-weight: 500;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Aircraft photo only — no SVG fallback */
+  .hero-plane-art {
+    background: var(--m-bg-card);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 12px;
+    display: grid;
+    place-items: center;
+    border: 0.5px solid var(--m-border);
+  }
+  .hero-plane-art img {
+    max-width: 100%;
+    max-height: 110px;
+    object-fit: contain;
+  }
+  .hero-plane-art:empty,
+  .hero-plane-art-empty { display: none; }
+
+  /* Hotels carousel */
+  .hero-hotel-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -12px;
+    padding: 0 12px 4px;
+    scrollbar-width: none;
+  }
+  .hero-hotel-scroll::-webkit-scrollbar { display: none; }
+  .hero-hotel-card {
+    flex: 0 0 140px;
+    background: var(--m-bg-card);
+    border: 0.5px solid var(--m-border);
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: transform 0.15s;
+    color: var(--m-text);
+  }
+  .hero-hotel-card:active { transform: scale(0.98); }
+  .hero-hotel-brand {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--m-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    height: 14px;
+  }
+  .hero-hotel-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--m-text);
+    line-height: 1.3;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .hero-hotel-meta {
+    font-size: 9px;
+    color: var(--m-text-muted);
+  }
+
+  .hero-map-box {
+    height: 200px;
+    border-radius: 10px;
+    background: var(--m-bg-tag);
+    overflow: hidden;
+  }
+  .hero-map-pin span {
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .hero-map-pin-orig span { background: #14532d; }
+  .hero-map-pin-dest span { background: #2563eb; }
+
+  .hero-section-empty,
+  .hero-section-loading {
+    padding: 16px;
+    text-align: center;
+    color: var(--m-text-muted);
+    font-size: 12px;
+    background: var(--m-bg-tag);
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+
+  /* ─── COMPACT CARDS ───────────────────────────────────────────────── */
+  .mobile-compact {
+    background: var(--m-bg-card);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border: 0.5px solid var(--m-border);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: var(--m-text);
+  }
+  .mobile-compact:hover { background: var(--m-bg-tag); }
+  .mobile-compact.faded { opacity: 0.55; }
+  .mobile-compact.status-delayed { border-left: 3px solid var(--m-status-delayed); }
+  .mobile-compact.status-cancelled { border-left: 3px solid var(--m-status-cancelled); }
+  .mobile-compact.status-final { border-left: 3px solid var(--m-status-final); }
+
+  .cc-time { min-width: 56px; max-width: 96px; flex-shrink: 0; }
+  .cc-time-main {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.5px;
+    color: var(--m-text);
+    white-space: nowrap;
+  }
+  .cc-time-arrow {
+    font-size: 10px;
+    color: var(--m-time-arrow);
+    font-weight: 500;
+    margin-top: 2px;
+    display: block;
+  }
+
+  .cc-mid { min-width: 0; }
+  .cc-logo-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    height: 18px;
+  }
+  .cc-logo-row .card-logo,
+  .cc-logo-row .card-wordmark,
+  .cc-logo-row img {
+    height: 14px !important;
+    max-width: 100px !important;
+    width: auto !important;
+    object-fit: contain;
+  }
+  .cc-city {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--m-text);
+    line-height: 1.1;
+    letter-spacing: -0.2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cc-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .cc-meta-flight {
+    font-size: 11px;
+    color: var(--m-text-muted);
+    font-weight: 500;
+  }
+  .cc-meta-gate,
+  .cc-meta-wx {
+    font-size: 11px;
+    color: var(--m-text-muted);
+  }
+  .cc-meta-sep {
+    color: var(--m-text-faint);
+  }
+
+  .cc-status {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 4px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Status pills — light mode */
+  .cc-status.p-ontime,
+  .cc-status.p-boarding   { background: #bbf7d0; color: #14532d; }
+  .cc-status.p-delayed    { background: #fef3c7; color: #92400e; }
+  .cc-status.p-cancelled  { background: #fee2e2; color: #991b1b; }
+  .cc-status.p-departed,
+  .cc-status.p-arrived    { background: #f4f4f5; color: #52525b; }
+  .cc-status.p-scheduled  { background: #f1f5f9; color: #374151; }
+  .cc-status.p-final      { background: #fee2e2; color: #991b1b; }
+  .cc-status.p-gateclosed { background: #ede9fe; color: #5b21b6; }
+  .cc-status.p-landed     { background: #d1fae5; color: #065f46; }
+  .cc-status.p-diverted   { background: #ffedd5; color: #9a3412; }
+  .cc-status.p-early      { background: #dbeafe; color: #1e40af; }
+
+  .hero-status.p-ontime,
+  .hero-status.p-boarding  { background: #bbf7d0; color: #14532d; }
+  .hero-status.p-delayed   { background: #fef3c7; color: #92400e; }
+  .hero-status.p-cancelled { background: #fee2e2; color: #991b1b; }
+  .hero-status.p-departed,
+  .hero-status.p-arrived   { background: #f4f4f5; color: #52525b; }
+  .hero-status.p-scheduled { background: #f1f5f9; color: #374151; }
+  .hero-status.p-final     { background: #fee2e2; color: #991b1b; }
+  .hero-status.p-landed    { background: #d1fae5; color: #065f46; }
+}
+
+/* ─── DARK MODE — same breakpoint ─────────────────────────────────── */
+@media (max-width: 640px) and (prefers-color-scheme: dark) {
+  body {
+    --m-bg-page: #0a0a0a;
+    --m-bg-card: #1a1a1a;
+    --m-bg-tag: rgba(255,255,255,0.06);
+    --m-bg-chip: rgba(255,255,255,0.06);
+    --m-bg-chip-active: rgba(255,255,255,0.12);
+    --m-text: #f5f5f5;
+    --m-text-muted: #b4b4b4;
+    --m-text-faint: #6b6b6b;
+    --m-border: rgba(255,255,255,0.1);
+    --m-divider: rgba(255,255,255,0.08);
+    --m-gate-bg: #1e6f50;
+    --m-gate-text: #ffffff;
+    --m-status-boarding: #4ade80;
+    --m-status-delayed: #fbbf24;
+    --m-status-cancelled: #fca5a5;
+    --m-status-final: #fca5a5;
+    --m-time-arrow: #fbbf24;
+  }
+
+  .cc-status.p-ontime,
+  .cc-status.p-boarding,
+  .hero-status.p-ontime,
+  .hero-status.p-boarding   { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .cc-status.p-delayed,
+  .hero-status.p-delayed    { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .cc-status.p-cancelled,
+  .hero-status.p-cancelled  { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .cc-status.p-departed,
+  .cc-status.p-arrived,
+  .hero-status.p-departed,
+  .hero-status.p-arrived,
+  .cc-status.p-scheduled,
+  .hero-status.p-scheduled  { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+  .cc-status.p-final,
+  .hero-status.p-final      { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .cc-status.p-landed,
+  .hero-status.p-landed     { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .cc-status.p-early        { background: rgba(96,165,250,0.15); color: #60a5fa; }
+}
+
+/* ─── EXPLICIT DARK MODE — overrides prefers-color-scheme (v218.6+) ───
+   When user picks "Dark" in Customize, set body[data-fids-mode="dark"].
+   Same token values as prefers-color-scheme: dark, but applied
+   regardless of the OS / browser setting. */
+@media (max-width: 640px) {
+  body[data-fids-mode="dark"] {
+    --m-bg-page: #0a0a0a;
+    --m-bg-card: #1a1a1a;
+    --m-bg-tag: rgba(255,255,255,0.06);
+    --m-bg-chip: rgba(255,255,255,0.06);
+    --m-bg-chip-active: rgba(255,255,255,0.12);
+    --m-text: #f5f5f5;
+    --m-text-muted: #b4b4b4;
+    --m-text-faint: #6b6b6b;
+    --m-border: rgba(255,255,255,0.1);
+    --m-divider: rgba(255,255,255,0.08);
+    --m-gate-bg: #1e6f50;
+    --m-gate-text: #ffffff;
+    --m-status-boarding: #4ade80;
+    --m-status-delayed: #fbbf24;
+    --m-status-cancelled: #fca5a5;
+    --m-status-final: #fca5a5;
+    --m-time-arrow: #fbbf24;
+  }
+  body[data-fids-mode="dark"] .cc-status.p-ontime,
+  body[data-fids-mode="dark"] .cc-status.p-boarding,
+  body[data-fids-mode="dark"] .hero-status.p-ontime,
+  body[data-fids-mode="dark"] .hero-status.p-boarding   { background: rgba(74,222,128,0.15); color: #4ade80; }
+  body[data-fids-mode="dark"] .cc-status.p-delayed,
+  body[data-fids-mode="dark"] .hero-status.p-delayed    { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  body[data-fids-mode="dark"] .cc-status.p-cancelled,
+  body[data-fids-mode="dark"] .hero-status.p-cancelled  { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  body[data-fids-mode="dark"] .cc-status.p-departed,
+  body[data-fids-mode="dark"] .cc-status.p-arrived,
+  body[data-fids-mode="dark"] .hero-status.p-departed,
+  body[data-fids-mode="dark"] .hero-status.p-arrived,
+  body[data-fids-mode="dark"] .cc-status.p-scheduled,
+  body[data-fids-mode="dark"] .hero-status.p-scheduled  { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+  body[data-fids-mode="dark"] .cc-status.p-final,
+  body[data-fids-mode="dark"] .hero-status.p-final      { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  body[data-fids-mode="dark"] .cc-status.p-landed,
+  body[data-fids-mode="dark"] .hero-status.p-landed     { background: rgba(74,222,128,0.15); color: #4ade80; }
+  body[data-fids-mode="dark"] .cc-status.p-early        { background: rgba(96,165,250,0.15); color: #60a5fa; }
+
+  /* Explicit LIGHT mode — overrides prefers-color-scheme: dark
+     when user picks "Light" in Customize. */
+  body[data-fids-mode="light"] {
+    --m-bg-page: #f6f6f3;
+    --m-bg-card: #ffffff;
+    --m-bg-tag: #f5f5f6;
+    --m-bg-chip: #f5f5f6;
+    --m-bg-chip-active: #e8e8e8;
+    --m-text: #0a0a0a;
+    --m-text-muted: #6b6b6b;
+    --m-text-faint: #9b9b9b;
+    --m-border: rgba(0,0,0,0.08);
+    --m-divider: rgba(0,0,0,0.06);
+    --m-gate-bg: #1e6f50;
+    --m-gate-text: #ffffff;
+    --m-status-boarding: #14532d;
+    --m-status-delayed: #d97706;
+    --m-status-cancelled: #dc2626;
+    --m-status-final: #dc2626;
+    --m-time-arrow: #d97706;
+  }
+}
+
+/* ─── UNIFIED INLINE EXPAND PANEL ─────────────────────────────────────
+   Light/dark adaptive expand panel that appears below any tapped card.
+   Reveals: gate, terminal, time, status, aircraft, route, weather. */
+@media (max-width: 640px) {
+  .mobile-hero,
+  .mobile-compact { -webkit-tap-highlight-color: transparent; }
+  .mobile-hero.expanded,
+  .mobile-compact.expanded {
+    /* Visual feedback that this card is open */
+    box-shadow: 0 0 0 2px rgba(96,165,250,0.18) inset;
+  }
+  .card-expand-panel {
+    grid-column: 1 / -1;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 0.5px solid var(--m-divider);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    animation: cep-fade-in 0.18s ease-out;
+  }
+  .cep-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 12px;
+    align-items: baseline;
+    padding: 4px 0;
+  }
+  .cep-label {
+    color: var(--m-text-muted);
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .cep-value {
+    color: var(--m-text);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+  @keyframes cep-fade-in {
+    from { opacity: 0; transform: translateY(-3px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* Action button at the bottom of the expand panel — links to /gids or /bids */
+@media (max-width: 640px) {
+  .cep-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: var(--m-text);
+    color: var(--m-bg-card);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    letter-spacing: 0.2px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cep-action:active { opacity: 0.85; }
+  .cep-action .ti { font-size: 14px; }
+}

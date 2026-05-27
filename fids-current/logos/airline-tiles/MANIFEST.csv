@@ -1,0 +1,285 @@
+icao,iata,name,country,file
+AAH,XK,Aloha Air Cargo,United States,AAH.svg
+AAL,AA,American Airlines,United States,AAL.svg
+AAR,OZ,Asiana Airlines,South Korea,AAR.svg
+AAW,MR,Afriqiyah Airways,Libya,AAW.svg
+AAY,NQ,Allegiant Air,United States,AAY.svg
+ABL,GB,ABX Air,United States,ABL.svg
+ABN,OY,Andes Líneas Aéreas,Argentina,ABN.svg
+ABX,GB,ABX Air,United States,ABX.svg
+ABY,G9,Air Arabia,United Arab Emirates,ABY.svg
+ACA,AC,Air Canada,Canada,ACA.svg
+ACI,XK,Air Caraïbes,France,ACI.svg
+AEA,UX,Air Europa,Spain,AEA.svg
+AEE,A3,Aegean Airlines,Greece,AEE.svg
+AEZ,E4,Aero Mongolia,Mongolia,AEZ.svg
+AFG,FG,Ariana Afghan Airlines,Afghanistan,AFG.svg
+AFL,SU,Aeroflot,Russia,AFL.svg
+AFR,AF,Air France,France,AFR.svg
+AHY,J2,Azerbaijan Airlines,Azerbaijan,AHY.svg
+AIB,TX,Air Caraïbes,France,AIB.svg
+AIC,AI,Air India,India,AIC.svg
+AKJ,VV,Aeroitalia,Italy,AKJ.svg
+AKL,NS,Hainan Airlines (legacy),China,AKL.svg
+ALK,UL,SriLankan Airlines,Sri Lanka,ALK.svg
+AMU,NX,Air Macau,Macau,AMU.svg
+AMX,AM,Aeroméxico,Mexico,AMX.svg
+ANA,NH,All Nippon Airways,Japan,ANA.svg
+ANG,PX,Air Niugini,Papua New Guinea,ANG.svg
+ANO,VL,Air Nostrum,Spain,ANO.svg
+ANZ,NZ,Air New Zealand,New Zealand,ANZ.svg
+APJ,MM,Peach Aviation,Japan,APJ.svg
+ARG,AR,Aerolíneas Argentinas,Argentina,ARG.svg
+ARU,XL,Aerolane / LATAM Ecuador,Ecuador,ARU.svg
+ASA,AS,Alaska Airlines,United States,ASA.svg
+ASL,5O,ASL Airlines France,France,ASL.svg
+ASV,CG,Airlines PNG,Papua New Guinea,ASV.svg
+ATC,TC,Air Tanzania,Tanzania,ATC.svg
+AUA,OS,Austrian Airlines,Austria,AUA.svg
+AUI,PS,Ukraine International Airlines,Ukraine,AUI.svg
+AUR,UU,Air Austral,France (Réunion),AUR.svg
+AVA,AV,Avianca,Colombia,AVA.svg
+AWC,OF,Overland Airways,Nigeria,AWC.svg
+AXM,AK,AirAsia,Malaysia,AXM.svg
+AZU,AD,Azul Brazilian Airlines,Brazil,AZU.svg
+AZW,A2,Astra Airlines,Greece,AZW.svg
+BAV,QH,Bamboo Airways,Vietnam,BAV.svg
+BAW,BA,British Airways,United Kingdom,BAW.svg
+BBC,BG,Biman Bangladesh Airlines,Bangladesh,BBC.svg
+BEL,SN,Brussels Airlines,Belgium,BEL.svg
+BHS,UP,Bahamasair,Bahamas,BHS.svg
+BIX,BV,Blue Panorama Airlines,Italy,BIX.svg
+BKP,PG,Bangkok Airways,Thailand,BKP.svg
+BOE,--,Boeing Test Flights,United States,BOE.svg
+BOT,BP,Air Botswana,Botswana,BOT.svg
+BOV,OB,Boliviana de Aviación,Bolivia,BOV.svg
+BOX,--,AeroLogic,Germany,BOX.svg
+BRU,FB,Bulgaria Air,Bulgaria,BRU.svg
+BTI,BT,airBaltic,Latvia,BTI.svg
+CAI,--,Corendon Airlines,Turkey,CAI.svg
+CAL,CI,China Airlines,Taiwan,CAL.svg
+CAY,KX,Cayman Airways,Cayman Islands,CAY.svg
+CBJ,CJ,BA CityFlyer,United Kingdom,CBJ.svg
+CCA,CA,Air China,China,CCA.svg
+CCM,XK,Air Corsica,France,CCM.svg
+CEB,5J,Cebu Pacific,Philippines,CEB.svg
+CEL,5L,Aerosur,Bolivia,CEL.svg
+CES,MU,China Eastern Airlines,China,CES.svg
+CFG,DE,Condor,Germany,CFG.svg
+CHH,HU,Hainan Airlines,China,CHH.svg
+CKS,K4,Kalitta Air,United States,CKS.svg
+CLX,CV,Cargolux,Luxembourg,CLX.svg
+CMP,CM,Copa Airlines,Panama,CMP.svg
+CNF,CW,City Airways,Thailand,CNF.svg
+CPA,CX,Cathay Pacific,Hong Kong,CPA.svg
+CRK,KA,Cathay Dragon,Hong Kong,CRK.svg
+CSN,CZ,China Southern Airlines,China,CSN.svg
+CSW,5Z,CemAir,South Africa,CSW.svg
+CSZ,GS,Tianjin Airlines,China,CSZ.svg
+CTN,OU,Croatia Airlines,Croatia,CTN.svg
+CUB,CU,Cubana de Aviación,Cuba,CUB.svg
+CXA,MF,Xiamen Airlines,China,CXA.svg
+CYP,CY,Cyprus Airways,Cyprus,CYP.svg
+DAH,AH,Air Algérie,Algeria,DAH.svg
+DAL,DL,Delta Air Lines,United States,DAL.svg
+DHL,--,DHL Aviation,Multiple,DHL.svg
+DJU,--,Air Djibouti,Djibouti,DJU.svg
+DLA,--,Air Dolomiti,Italy,DLA.svg
+DLH,LH,Lufthansa,Germany,DLH.svg
+DRK,--,Druk Air,Bhutan,DRK.svg
+DTA,DT,TAAG Angola Airlines,Angola,DTA.svg
+DTR,--,Danish Air Transport,Denmark,DTR.svg
+EDW,WK,Edelweiss Air,Switzerland,EDW.svg
+EIN,EI,Aer Lingus,Ireland,EIN.svg
+ELY,LY,El Al,Israel,ELY.svg
+ENT,E2,Enter Air,Poland,ENT.svg
+ESR,--,Estafeta Carga Aérea,Mexico,ESR.svg
+ETD,EY,Etihad Airways,United Arab Emirates,ETD.svg
+ETH,ET,Ethiopian Airlines,Ethiopia,ETH.svg
+EVA,BR,EVA Air,Taiwan,EVA.svg
+EWG,EW,Eurowings,Germany,EWG.svg
+EXS,LS,Jet2.com,United Kingdom,EXS.svg
+EZE,--,Eastern Airways,United Kingdom,EZE.svg
+EZY,U2,easyJet,United Kingdom,EZY.svg
+FBU,DY,Norwegian Air Shuttle,Norway,FBU.svg
+FDX,FX,FedEx Express,United States,FDX.svg
+FFM,--,Ferries Aéreas de Mallorca,Spain,FFM.svg
+FFT,F9,Frontier Airlines,United States,FFT.svg
+FHY,--,Freebird Airlines,Turkey,FHY.svg
+FIA,--,Finistair,France,FIA.svg
+FIN,AY,Finnair,Finland,FIN.svg
+FJI,FJ,Fiji Airways,Fiji,FJI.svg
+FLE,F8,Flair Airlines,Canada,FLE.svg
+FLI,AP,Atlantic Airways,Faroe Islands,FLI.svg
+GCR,GS,Tianjin Airlines,China,GCR.svg
+GFA,GF,Gulf Air,Bahrain,GFA.svg
+GIA,GA,Garuda Indonesia,Indonesia,GIA.svg
+GLO,G3,GOL Linhas Aéreas,Brazil,GLO.svg
+GRL,GL,Air Greenland,Greenland,GRL.svg
+GTI,5Y,Atlas Air,United States,GTI.svg
+HAL,HA,Hawaiian Airlines,United States,HAL.svg
+HKE,UO,HK Express,Hong Kong,HKE.svg
+HVN,VN,Vietnam Airlines,Vietnam,HVN.svg
+IAW,IA,Iraqi Airways,Iraq,IAW.svg
+IBB,IB,Iberia Express,Spain,IBB.svg
+IBE,IB,Iberia,Spain,IBE.svg
+ICE,FI,Icelandair,Iceland,ICE.svg
+IGO,6E,IndiGo,India,IGO.svg
+IOS,--,Isles of Scilly Skybus,United Kingdom,IOS.svg
+ITY,AZ,ITA Airways,Italy,ITY.svg
+IYE,IY,Yemenia,Yemen,IYE.svg
+JAL,JL,Japan Airlines,Japan,JAL.svg
+JBU,B6,JetBlue Airways,United States,JBU.svg
+JJA,LJ,Jin Air,South Korea,JJA.svg
+JST,JQ,Jetstar,Australia,JST.svg
+JSX,XE,JSX,United States,JSX.svg
+JTD,--,Jettime,Denmark,JTD.svg
+KAC,KU,Kuwait Airways,Kuwait,KAC.svg
+KAL,KE,Korean Air,South Korea,KAL.svg
+KHV,--,Khabarovsk Airlines,Russia,KHV.svg
+KLM,KL,KLM Royal Dutch Airlines,Netherlands,KLM.svg
+KMM,--,Kam Air,Afghanistan,KMM.svg
+KNE,XY,flynas,Saudi Arabia,KNE.svg
+KOR,JS,Air Koryo,North Korea,KOR.svg
+KQA,KQ,Kenya Airways,Kenya,KQA.svg
+KZR,KC,Air Astana,Kazakhstan,KZR.svg
+LAM,TM,LAM Mozambique Airlines,Mozambique,LAM.svg
+LAN,LA,LATAM Airlines,Chile,LAN.svg
+LAO,QV,Lao Airlines,Laos,LAO.svg
+LBT,LB,Lloyd Aéreo Boliviano,Bolivia,LBT.svg
+LGL,LG,Luxair,Luxembourg,LGL.svg
+LOG,LM,Loganair,United Kingdom,LOG.svg
+LOT,LO,LOT Polish Airlines,Poland,LOT.svg
+LXJ,--,Flexjet,United States,LXJ.svg
+LZB,FB,Bulgaria Air,Bulgaria,LZB.svg
+MAS,MH,Malaysia Airlines,Malaysia,MAS.svg
+MAU,MK,Air Mauritius,Mauritius,MAU.svg
+MEA,ME,Middle East Airlines,Lebanon,MEA.svg
+MGL,OM,MIAT Mongolian Airlines,Mongolia,MGL.svg
+MSR,MS,EgyptAir,Egypt,MSR.svg
+MXY,--,Breeze Airways,United States,MXY.svg
+NBT,--,Nordic Aviation,Sweden,NBT.svg
+NJE,1I,NetJets Europe,Portugal,NJE.svg
+NKS,NK,Spirit Airlines,United States,NKS.svg
+NOK,DD,Nok Air,Thailand,NOK.svg
+NOS,NO,Neos,Italy,NOS.svg
+NOZ,DY,Norwegian Air Shuttle,Norway,NOZ.svg
+NPT,--,East Midlands Airways,United Kingdom,NPT.svg
+OMA,WY,Oman Air,Oman,OMA.svg
+PAL,PR,Philippine Airlines,Philippines,PAL.svg
+PAO,XR,Polish Air Force / Polskie Airways,Poland,PAO.svg
+PB,PB,PAL Airlines (Provincial Airlines),Canada,PB.svg
+PGT,PC,Pegasus Airlines,Turkey,PGT.svg
+PIA,PK,Pakistan International Airlines,Pakistan,PIA.svg
+PTR,PD,Porter Airlines,Canada,PTR.svg
+QFA,QF,Qantas,Australia,QFA.svg
+QTR,QR,Qatar Airways,Qatar,QTR.svg
+RAM,AT,Royal Air Maroc,Morocco,RAM.svg
+RBA,BI,Royal Brunei Airlines,Brunei,RBA.svg
+REU,UU,Air Austral,France (Réunion),REU.svg
+RJA,RJ,Royal Jordanian,Jordan,RJA.svg
+RNA,RA,Nepal Airlines,Nepal,RNA.svg
+ROT,RO,TAROM,Romania,ROT.svg
+RWD,WB,RwandAir,Rwanda,RWD.svg
+RXA,ZL,Regional Express (Rex),Australia,RXA.svg
+RYR,FR,Ryanair,Ireland,RYR.svg
+RZO,S4,SATA Azores Airlines,Portugal,RZO.svg
+SAA,SA,South African Airways,South Africa,SAA.svg
+SAS,SK,SAS Scandinavian Airlines,Sweden,SAS.svg
+SBI,S7,S7 Airlines,Russia,SBI.svg
+SEY,HM,Air Seychelles,Seychelles,SEY.svg
+SIA,SQ,Singapore Airlines,Singapore,SIA.svg
+SJX,--,Star Flyer,Japan,SJX.svg
+SKU,--,Sky Airline,Chile,SKU.svg
+SKW,OO,SkyWest Airlines,United States,SKW.svg
+SKY,BC,Skymark Airlines,Japan,SKY.svg
+SLM,PY,Surinam Airways,Suriname,SLM.svg
+SOL,8R,Sol Líneas Aéreas,Argentina,SOL.svg
+SRQ,--,South African Express,South Africa,SRQ.svg
+STP,--,STP Airways,São Tomé,STP.svg
+SUD,--,Sudan Airways,Sudan,SUD.svg
+SVA,SV,Saudia,Saudi Arabia,SVA.svg
+SWA,WN,Southwest Airlines,United States,SWA.svg
+SWR,LX,SWISS,Switzerland,SWR.svg
+SXS,XQ,SunExpress,Turkey,SXS.svg
+SYR,RB,Syrianair,Syria,SYR.svg
+SZN,--,Suzhou Airlines,China,SZN.svg
+TAP,TP,TAP Air Portugal,Portugal,TAP.svg
+TAR,TU,Tunisair,Tunisia,TAR.svg
+TCV,VR,TACV / Cabo Verde Airlines,Cape Verde,TCV.svg
+TGW,TR,Scoot,Singapore,TGW.svg
+TGZ,TN,Air Tahiti Nui,French Polynesia,TGZ.svg
+THA,TG,Thai Airways,Thailand,THA.svg
+THT,VT,Air Tahiti,French Polynesia,THT.svg
+THY,TK,Turkish Airlines,Turkey,THY.svg
+TKJ,--,Tropic Air,Belize,TKJ.svg
+TOM,BY,TUI Airways,United Kingdom,TOM.svg
+TRA,HV,Transavia,Netherlands,TRA.svg
+TSC,TS,Air Transat,Canada,TSC.svg
+TUA,--,Turkmenistan Airlines,Turkmenistan,TUA.svg
+TVS,QS,Smartwings,Czech Republic,TVS.svg
+TWI,--,Tailwind Airlines,Turkey,TWI.svg
+UAE,EK,Emirates,United Arab Emirates,UAE.svg
+UAL,UA,United Airlines,United States,UAL.svg
+UBA,--,Myanmar Airways International,Myanmar,UBA.svg
+UGD,--,Uganda Airlines,Uganda,UGD.svg
+UPS,5X,UPS Airlines,United States,UPS.svg
+UTY,--,Ultimate Air Shuttle,United States,UTY.svg
+UZB,HY,Uzbekistan Airways,Uzbekistan,UZB.svg
+VBW,--,VIP-Avia,Georgia,VBW.svg
+VCV,--,Conviasa,Venezuela,VCV.svg
+VIR,VS,Virgin Atlantic,United Kingdom,VIR.svg
+VKG,DK,Sunclass Airlines,Denmark,VKG.svg
+VLG,VY,Vueling,Spain,VLG.svg
+VOE,V7,Volotea,Spain,VOE.svg
+VOI,Y4,Volaris,Mexico,VOI.svg
+VOZ,VA,Virgin Australia,Australia,VOZ.svg
+VTE,--,Vietravel Airlines,Vietnam,VTE.svg
+WIF,WF,Widerøe,Norway,WIF.svg
+WJA,WS,WestJet,Canada,WJA.svg
+WZZ,W6,Wizz Air,Hungary,WZZ.svg
+ZMIL_AFP,--,Air Force of the Philippines,Military,ZMIL_AFP.svg
+ZMIL_AIO,--,Algerian Air Force,Military,ZMIL_AIO.svg
+ZMIL_AME,--,Argentinian Air Force,Military,ZMIL_AME.svg
+ZMIL_ASF,--,Austrian Air Force,Military,ZMIL_ASF.svg
+ZMIL_ASY,--,Atlas Air Service,Military,ZMIL_ASY.svg
+ZMIL_BAF,--,Belgian Air Force,Military,ZMIL_BAF.svg
+ZMIL_BFW,--,Bulgarian Air Force,Military,ZMIL_BFW.svg
+ZMIL_BRS,--,Brazilian Air Force,Military,ZMIL_BRS.svg
+ZMIL_CEF,--,Czech Air Force,Military,ZMIL_CEF.svg
+ZMIL_CFC,--,Canadian Forces,Military,ZMIL_CFC.svg
+ZMIL_DAF,--,Danish Air Force,Military,ZMIL_DAF.svg
+ZMIL_EEF,--,Estonian Air Force,Military,ZMIL_EEF.svg
+ZMIL_EGY,--,Egyptian Air Force,Military,ZMIL_EGY.svg
+ZMIL_FAF,--,French Air Force,Military,ZMIL_FAF.svg
+ZMIL_FAG,--,Guatemalan Air Force,Military,ZMIL_FAG.svg
+ZMIL_FNF,--,Finnish Air Force,Military,ZMIL_FNF.svg
+ZMIL_FPR,--,Peruvian Air Force,Military,ZMIL_FPR.svg
+ZMIL_GAF,--,German Air Force (Luftwaffe),Military,ZMIL_GAF.svg
+ZMIL_HAF,--,Hellenic (Greek) Air Force,Military,ZMIL_HAF.svg
+ZMIL_HRZ,--,Croatian Air Force,Military,ZMIL_HRZ.svg
+ZMIL_HUF,--,Hungarian Air Force,Military,ZMIL_HUF.svg
+ZMIL_HVK,--,Slovak Air Force,Military,ZMIL_HVK.svg
+ZMIL_IAF,--,Indian Air Force,Military,ZMIL_IAF.svg
+ZMIL_IAM,--,Italian Air Force,Military,ZMIL_IAM.svg
+ZMIL_IFC,--,Iranian Air Force,Military,ZMIL_IFC.svg
+ZMIL_KIW,--,Royal New Zealand Air Force,Military,ZMIL_KIW.svg
+ZMIL_LAF,--,Lithuanian Air Force,Military,ZMIL_LAF.svg
+ZMIL_LMG,--,Latvian Air Force,Military,ZMIL_LMG.svg
+ZMIL_LYF,--,Libyan Air Force,Military,ZMIL_LYF.svg
+ZMIL_NAF,--,Nigerian Air Force,Military,ZMIL_NAF.svg
+ZMIL_NGR,--,Norwegian Air Force,Military,ZMIL_NGR.svg
+ZMIL_NOW,--,Norwegian Air Force,Military,ZMIL_NOW.svg
+ZMIL_PLF,--,Polish Air Force,Military,ZMIL_PLF.svg
+ZMIL_RFF,--,Russian Air Force,Military,ZMIL_RFF.svg
+ZMIL_RFR,--,French Air Force (Armée de l'Air),Military,ZMIL_RFR.svg
+ZMIL_RJZ,--,Royal Jordanian Air Force,Military,ZMIL_RJZ.svg
+ZMIL_RMF,--,Romanian Air Force,Military,ZMIL_RMF.svg
+ZMIL_ROF,--,Royal Air Force (UK),Military,ZMIL_ROF.svg
+ZMIL_RSF,--,Republic of Singapore Air Force,Military,ZMIL_RSF.svg
+ZMIL_SAF,--,South African Air Force,Military,ZMIL_SAF.svg
+ZMIL_SIV,--,Slovenian Air Force,Military,ZMIL_SIV.svg
+ZMIL_SQF,--,Spanish Air Force,Military,ZMIL_SQF.svg
+ZMIL_SUI,--,Swiss Air Force,Military,ZMIL_SUI.svg
+ZMIL_SVF,--,Swedish Air Force,Military,ZMIL_SVF.svg
+ZMIL_UAF,--,United States Air Force / Ukrainian Air Force,Military,ZMIL_UAF.svg

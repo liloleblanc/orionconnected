@@ -1,0 +1,19 @@
+ADS-ONLY ACCOR V9 NO-CLIP FIX
+
+Built from V8.
+
+Immediate fixes:
+- Removes long description copy from the constrained ad panel to stop text cut-off.
+- Keeps property logo, address, stars, rating, amenities, QR, and ALL footer visible.
+- Shrinks and rebalances the ad panel spacing so content fits.
+- Forces amenities visible instead of being pushed under the footer.
+- Adds a visual-only bilingual label repair for obvious gate-detail labels:
+  Scheduled Departure, Estimated Arrival, Estimated Boarding, Weather at destination,
+  Today, Tomorrow, Aircraft type, Tail number.
+- Default live rotation remains English/French for Canada.
+- All 9 languages remain available in the menu.
+- No menu, flight logic, gate logic, weather, maps, aircraft cards, carousel timing,
+  admin controls, or performance changes.
+
+Validation:
+- fids-core.js passed node --check.

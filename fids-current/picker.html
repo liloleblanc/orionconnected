@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIDS — Select Display</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
+  <link rel="stylesheet" href="css/shared.css?v=21899-19">
+  <link rel="stylesheet" href="css/entry.css?v=35">
+  <link rel="stylesheet" href="css/mobile.css?v=1">
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     SCREEN PICKER
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="pickerScreen" class="picker-screen show">
+  <div class="picker-inner">
+    <div class="picker-label">SELECT DISPLAY · CHOISIR L'AFFICHAGE</div>
+    <div id="pickerBadge" class="picker-mode-badge demo">DEMO</div>
+
+    <div class="picker-cards">
+
+      <!-- FIDS -->
+      <div class="picker-card" onclick="pickScreen('fids')">
+        <div class="picker-card-icon" style="font-size:16px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,0.5);">F</div>
+        <div class="picker-card-title">FIDS</div>
+        <div class="picker-card-desc">FLIGHT INFORMATION<br>DISPLAY SYSTEM</div>
+        <div style="margin-top:12px;font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:1px;line-height:1.5;">Departures · Arrivals · Full board<br>Multi-language · Themed display</div>
+        <div class="picker-card-desc-fr">SYSTEME D'INFORMATION DES VOLS</div>
+      </div>
+
+      <!-- GIDS -->
+      <div class="picker-card" onclick="pickScreen('gids')">
+        <div class="picker-card-icon" style="font-size:16px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,0.5);">G</div>
+        <div class="picker-card-title">GIDS</div>
+        <div class="picker-card-desc">GATE INFORMATION<br>DISPLAY SYSTEM</div>
+        <div style="margin-top:12px;font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:1px;line-height:1.5;">Per-gate departure info<br>Boarding zones · Weather · Map</div>
+        <div class="picker-card-desc-fr">SYSTEME D'INFORMATION DES PORTES</div>
+      </div>
+
+      <!-- BIDS -->
+      <div class="picker-card" onclick="pickScreen('bids')">
+        <div class="picker-card-icon" style="font-size:16px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,0.5);">B</div>
+        <div class="picker-card-title">BIDS</div>
+        <div class="picker-card-desc">BAGGAGE INFORMATION<br>DISPLAY SYSTEM</div>
+        <div style="margin-top:12px;font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:1px;line-height:1.5;">Carousel assignments<br>Arrival status · Flight tracking</div>
+        <div class="picker-card-desc-fr">SYSTEME D'INFORMATION DES BAGAGES</div>
+      </div>
+
+    </div>
+
+    <button class="picker-back" onclick="goBack()">← BACK</button>
+
+    <!-- User info (visible in live mode) -->
+    <div id="pickerUserInfo" style="margin-top:24px; font-size:10px; letter-spacing:2px; color:rgba(255,255,255,0.2); display:none;">
+      SIGNED IN AS <span id="pickerUser" style="color:rgba(255,255,255,0.5);"></span>
+      · <a href="#" onclick="doLogout();return false;" style="color:rgba(234,179,8,0.5);text-decoration:none;letter-spacing:2px;">LOGOUT</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js?v=35"></script>
+<script>
+  // ── Mode Detection ────────────────────────────────────────────────────
+  const mode = sessionStorage.getItem('fids_mode') || 'demo';
+  const isLive = mode === 'live' && Auth.init();
+
+  // Update badge
+  const badge = document.getElementById('pickerBadge');
+  if (isLive) {
+    badge.className = 'picker-mode-badge live';
+    badge.textContent = 'LIVE';
+    // Show user info
+    const userInfo = document.getElementById('pickerUserInfo');
+    const userSpan = document.getElementById('pickerUser');
+    if (Auth.user && userInfo) {
+      userInfo.style.display = 'block';
+      userSpan.textContent = (Auth.user.displayName || Auth.user.username).toUpperCase();
+    }
+  } else {
+    badge.className = 'picker-mode-badge demo';
+    badge.textContent = 'DEMO';
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────
+  function pickScreen(screen) {
+    // Store the selection
+    sessionStorage.setItem('fids_screen', screen);
+
+    // Fade out picker
+    const picker = document.getElementById('pickerScreen');
+    picker.classList.add('fade-out');
+
+    // Map screen to file
+    const fileMap = {
+      fids: 'fids.html',
+      gids: 'gids.html',
+      bids: 'bids.html'
+    };
+
+    setTimeout(() => {
+      window.location.href = fileMap[screen] || 'fids.html';
+    }, 400);
+  }
+
+  function goBack() {
+    Auth.logout();
+    sessionStorage.removeItem('fids_mode');
+    window.location.href = 'index.html';
+  }
+
+  function doLogout() {
+    Auth.logout();
+    sessionStorage.removeItem('fids_mode');
+    window.location.href = 'index.html';
+  }
+
+  // ── Keyboard ──────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') goBack();
+  });
+
+  // ── Guard: if no mode set, redirect to entry ──────────────────────────
+  if (!sessionStorage.getItem('fids_mode')) {
+    // Allow demo mode by default if navigated directly
+    sessionStorage.setItem('fids_mode', 'demo');
+  }
+</script>
+</body>
+</html>

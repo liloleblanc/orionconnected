@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Republic Airways wordmark — navy brand color for light backgrounds.
+     Republic Airways operates as a regional carrier under the American
+     Eagle, Delta Connection, and United Express brands. Brand navy:
+     #04243C (per Republic's 2019 visual identity refresh). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 60" font-family="Helvetica Neue, Arial, sans-serif">
+  <text x="0" y="44" font-size="38" font-weight="700" fill="#04243C" letter-spacing="-0.3">REPUBLIC</text>
+  <text x="222" y="44" font-size="38" font-weight="400" fill="#04243C" letter-spacing="-0.3">AIRWAYS</text>
+</svg>

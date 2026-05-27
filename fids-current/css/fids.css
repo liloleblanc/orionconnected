@@ -1,0 +1,1976 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+
+body {
+  background: #18181b;
+  font-family: var(--font-primary);
+  font-weight: 400;
+  color: #18181b;
+  min-height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── BOARD CONTAINER ────────────────────────────────────────────── */
+#fidsBoard {
+  width: 100vw; height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+/* ─── CONTROL BAR (legacy top toolbar) ─────────────────────────────
+   Hidden in v11p. The sidebar menu (see menu.html) is the primary UI.
+   DOM is kept because fids-core.js reads from #apSel, #modeBadge,
+   #searchInput, etc. — hiding visually is safer than removing. */
+.ctrl, .ap-panel { display: none !important; }
+
+/* ─── CONTROL BAR (Dark Graphite) ─────────────────────────────────── */
+.ctrl {
+  background: rgba(24,24,27,0.97);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px 16px;
+  border-bottom: 2px solid #52525b;
+  color: #ffffff;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+  min-height: 44px;
+}
+.ctrl.show { transform: translateY(0); opacity: 1; }
+.ctrl.hide { transform: translateY(-100%); opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease; }
+.ctrl-info {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.55);
+}
+.btn-toggle {
+  background: #27272a;
+  color: rgba(255,255,255,0.9);
+  border: 1px solid #71717a;
+  padding: 6px 14px;
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.btn-toggle:hover { background: #3f3f46; color: #fff; }
+.btn-menu {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.8);
+  border: 1px solid #52525b;
+  padding: 8px 16px;
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.2s;
+}
+.btn-menu:hover { background: #eab308; color: #18181b; border-color: #eab308; }
+.ap-panel {
+  background: rgba(24,24,27,0.98);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: fixed;
+  top: 46px; left: 0; right: 0;
+  z-index: 101;
+  border-bottom: 2px solid #eab308;
+  backdrop-filter: blur(12px);
+}
+.ap-panel.hidden { display: none; }
+.ctrl label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.6);
+}
+.ctrl select,
+.ctrl input,
+.ap-panel select {
+  background: #18181b;
+  color: #fff;
+  border: 2px solid #a1a1aa;
+  padding: 6px 14px;
+  font-family: var(--font-primary);
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 6px;
+  outline: none;
+  min-height: 34px;
+  cursor: pointer;
+}
+.ctrl select, .ap-panel select { cursor: pointer; }
+.ctrl select option, .ap-panel select option { background: #18181b; color: #fff; padding: 8px; font-size: 14px; }
+.ctrl input::placeholder { color: #71717a; }
+.ctrl select:focus, .ap-panel select:focus,
+.ctrl input:focus { border-color: #eab308; }
+.btn {
+  background: #3f3f46;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: capitalize;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.btn:hover { background: #52525b; }
+.btn-demo { background: #001800; color: #10b981; border: 1px solid #10b981; }
+.btn-demo:hover { background: #002800; }
+.ctrl-spacer { flex: 1; min-width: 8px; }
+.ctrl-bg-group {
+  display: flex; align-items: center; gap: 5px; margin-left: 8px;
+  padding: 2px 8px; border-left: 1px solid #3f3f46;
+}
+.ctrl-bg-btn {
+  background: transparent; border: 2px solid transparent; padding: 2px;
+  border-radius: 5px; cursor: pointer; display: flex; align-items: center;
+  transition: all 0.2s;
+}
+.ctrl-bg-btn:hover { border-color: #eab308; transform: scale(1.15); }
+.ctrl-bg-btn.active { border-color: #eab308; box-shadow: 0 0 0 1px #eab308; }
+.live-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #10b981; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: blink 1.5s infinite; }
+@keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0.1 } }
+
+/* ─── HEADER (Zinc 800) ──────────────────────────────────────────── */
+.hdr {
+  background: #27272a;
+  border-bottom: 4px solid #eab308; 
+  padding: 10px 28px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  min-height: 90px;
+}
+.hdr-left { text-align: left; display: flex; flex-direction: row; align-items: center; gap: 10px; min-width: 200px; }
+.hdr-board {
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #eab308;
+  line-height: 1;
+  min-width: 220px;
+}
+.hdr-center { text-align: center; min-width: 0; overflow: hidden; }
+.hdr-apname {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #ffffff;
+  text-transform: none;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.hdr-temp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px; 
+  margin-top: 10px;
+}
+.hdr-temp svg, .hdr-temp img {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+}
+.hdr-fc-day {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,0.7);
+  min-width: 0;
+}
+.hdr-fc-day .fc-label {
+  font-size: 13px; 
+  font-weight: 700;
+  letter-spacing: 1px;
+  min-width: 120px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.hdr-fc-day .fc-temp {
+  font-size: 18px; 
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  min-width: 90px;
+}
+.hdr-fc-now {
+  font-size: 28px; 
+  font-weight: 700;
+  color: #ffffff;
+  min-width: 60px;
+}
+.hdr-right { text-align: right; min-width: 200px; }
+.hdr-clock {
+  font-size: 38px;
+  font-weight: 700;
+  color: #eab308;
+  letter-spacing: 2px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.hdr-date {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 8px;
+  white-space: nowrap;
+}
+
+/* ─── BOARD SUBTITLE BAR (Zinc 700) ──────────────────────────────── */
+.subbar {
+  background: #3f3f46;
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #a1a1aa;
+  flex-shrink: 0;
+  min-height: 40px;
+}
+.subbar-other {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.8);
+  text-transform: capitalize;
+}
+.dots { display: flex; gap: 8px; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.dot.on { background: #eab308; }
+
+/* ─── TABLE (LIGHT SILVER TRAY) ─────────────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.col-date   { width: 7%; }
+.col-time   { width: 12%; }
+.col-wx     { width: 8%; }
+.col-dest   { width: 20%; }
+.col-logo   { width: 14%; }
+.col-flight { width: 10%; }
+.col-term   { width: 5%; }
+.col-gate   { width: 6%; }
+.col-status { width: 18%; }
+
+thead tr {
+  background: #d4d4d8; 
+  border-bottom: 2px solid #71717a;
+}
+thead th {
+  padding: 10px 6px;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #27272a;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+thead th.col-logo { text-align: center; padding: 10px 4px; }
+thead th.col-gate { text-align: center; }
+thead th#hTerm { text-align: center; }
+thead th#hStatus { text-align: right; padding-right: 8px; }
+thead th#hFlight { text-align: left; }
+
+/* Alternating Silver Rows — more contrast */
+tbody tr:nth-child(odd)  { background: #ffffff; } 
+tbody tr:nth-child(even) { background: #ececef; } 
+tbody tr:hover           { background: #dddde0; } 
+tbody tr.faded           { opacity: 0.45; }
+
+/* Accent stripes */
+tbody tr.ac-green  td:first-child { border-left: 6px solid #10b981; }
+tbody tr.ac-yellow td:first-child { border-left: 6px solid #d97706; }
+tbody tr.ac-red    td:first-child { border-left: 6px solid #dc2626; }
+tbody tr.ac-orange td:first-child { border-left: 6px solid #ea580c; }
+tbody tr.ac-blue   td:first-child { border-left: 6px solid #2563eb; }
+tbody tr td:first-child           { border-left: 6px solid transparent; }
+
+tbody td {
+  padding: 6px 6px;
+  height: 74px; 
+  vertical-align: middle;
+  border-bottom: 1px solid #d4d4d8; 
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 0; 
+}
+/* Prevent layout shift on language/page transitions */
+tbody { min-height: 600px; }
+thead th { height: 50px; }
+
+/* DATE & TIME & DEST - Tall, sleek, bold */
+.td-date, .td-time { font-size: 30px; font-weight: 700; color: #18181b; letter-spacing: 0px; padding-left: 8px; }
+.td-time { white-space: nowrap; }
+.td-dest { font-size: 30px; font-weight: 800; color: #18181b; letter-spacing: 0px; padding-right: 2px; }
+
+/* WEATHER */
+.td-wx { white-space: nowrap; padding: 2px 4px; }
+.wx { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; vertical-align: middle; }
+.wx svg, .wx img { display: inline-block; vertical-align: middle; flex-shrink: 0; min-width: 52px; min-height: 52px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15)); }
+.wx-temp { font-size: 24px; font-weight: 700; color: #3f3f46; vertical-align: middle; }
+
+/* ─── REAL AIRLINE LOGOS (NATIVE COLORS) ───────────────────────── */
+.td-logo {
+  text-align: center;
+  padding: 0 4px;
+  vertical-align: middle;
+  width: 230px;
+  min-width: 230px;
+  max-width: 230px;
+  height: 68px;
+}
+.full-logo {
+  height: 54px;
+  min-height: 54px;
+  max-height: 54px;
+  min-width: 80px;
+  max-width: 200px;
+  width: auto;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  margin: 0 auto;
+}
+.logo-fallback {
+  font-size: 20px;
+  font-weight: 700;
+  color: #18181b; 
+  letter-spacing: 0px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  line-height: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+
+/* FLIGHT & GATE */
+.td-flight { font-size: 30px; font-weight: 700; color: #18181b; letter-spacing: 0px; text-align: left; }
+.td-aircraft { font-size: 17px; font-weight: 600; color: #71717a; letter-spacing: 0px; display: block; margin-top: 2px; }
+.td-term { text-align: center; vertical-align: middle; }
+.td-term span { display: inline-block; background: #3b5998; color: #fff; font-size: 22px; font-weight: 800; letter-spacing: 1px; padding: 5px 12px; border-radius: 6px; min-width: 40px; }
+.td-gate { text-align: center; vertical-align: middle; }
+.td-gate span { display: inline-block; background: #1e6f50; color: #fff; font-size: 24px; font-weight: 800; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 6px; min-width: 40px; }
+
+/* STATUS */
+.td-status { text-align: right; padding-right: 8px; }
+.plain-status {
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: right;
+  display: block;
+}
+
+/* Status colors — muted, no blinking */
+.p-ontime    { color: #0f7b5f; } 
+.p-boarding  { color: #15803d; }
+.p-delayed   { color: #b45309; } 
+.p-cancelled { color: #be123c; text-transform: uppercase; letter-spacing: 0.05em; } 
+.p-departed  { color: #6b7280; } 
+.p-arrived   { color: #6b7280; }
+.p-scheduled { color: #374151; } 
+.p-final     { color: #c2410c; text-transform: uppercase; letter-spacing: 0.05em; }
+.p-gateclosed { color: #7c3aed; text-transform: uppercase; letter-spacing: 0.05em; }
+.p-landed    { color: #0f7b5f; }
+.p-diverted  { color: #c2410c; text-transform: uppercase; letter-spacing: 0.05em; }
+.p-early     { color: #0369a1; }
+
+/* ─── TICKER (Dark Graphite) ───────────────────────────────────────────────── */
+.ticker {
+  overflow: hidden;
+  white-space: nowrap;
+  background: #27272a;
+  border-top: 3px solid #eab308;
+  padding: 16px 0;
+  flex-shrink: 0;
+}
+.ticker span {
+  display: inline-block;
+  font-size: 18px; 
+  font-weight: 500;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.9);
+  text-transform: capitalize;
+  animation: scroll 240s linear infinite; 
+}
+@keyframes scroll { from { transform: translateX(100vw) } to { transform: translateX(-100%) } }
+
+/* ─── FOOTER (Deep Graphite) ───────────────────────────────────────────────── */
+/* footer removed - info moved to ctrl bar */
+.content-area {
+  flex: 1;
+  overflow: hidden;
+  contain: layout style;
+}
+#fidsTable tbody { transition: none; }
+#fidsTable { will-change: contents; }
+
+/* ─── STATUS MESSAGES ─────────────────────────────────────────────── */
+.status-msg {
+  padding: 60px 24px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #52525b;
+  text-transform: capitalize;
+}
+.status-msg .sub {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: #71717a;
+  margin-top: 10px;
+}
+.spinner {
+  width: 30px; height: 30px;
+  border: 4px solid #d4d4d8;
+  border-top-color: #27272a;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* ─── SEARCH BAR ───────────────────────────────────────────────────────── */
+.search-wrap {
+  display: flex; align-items: center; gap: 6px;
+  background: #27272a; border: 1px solid #52525b;
+  border-radius: 4px; padding: 4px 10px;
+  transition: border-color 0.2s;
+}
+.search-wrap:focus-within { border-color: #eab308; }
+.search-wrap input {
+  background: transparent; border: none; outline: none;
+  color: #fff; font-family: var(--font-primary);
+  font-size: 13px; font-weight: 500; width: 200px;
+}
+.search-wrap input::placeholder { color: #71717a; }
+.search-clear {
+  background: none; border: none; color: #71717a;
+  cursor: pointer; font-size: 14px; padding: 0; line-height: 1;
+  display: none;
+}
+.search-clear.visible { display: block; }
+.search-icon { color: #71717a; font-size: 13px; }
+
+/* ─── MODE BADGE ──────────────────────────────────────────────────────── */
+.mode-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  padding: 3px 8px; border-radius: 3px;
+ 
+}
+.mode-badge.demo { background: #001800; color: #10b981; border: 1px solid #10b981; }
+.mode-badge.live { background: transparent; color: #10b981; }
+
+/* ─── CHANGES FEED ────────────────────────────────────────────────────── */
+.changes-feed {
+  background: #1e1e21; border-bottom: 2px solid #3f3f46;
+  padding: 0; overflow: hidden; max-height: 0;
+  transition: max-height 0.3s ease;
+}
+.changes-feed.has-items { max-height: 200px; }
+.changes-header {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  color: rgba(255,255,255,0.35); padding: 6px 14px 4px;
+ 
+}
+.change-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 14px; font-size: 13px; font-weight: 600;
+  border-bottom: 1px solid #2a2a2e;
+}
+.change-time { color: rgba(255,255,255,0.4); font-size: 11px; min-width: 40px; }
+.change-flight { color: rgba(255,255,255,0.8); min-width: 70px; }
+.change-dest { color: rgba(255,255,255,0.5); font-size: 12px; flex: 1; }
+.change-arrow { color: rgba(255,255,255,0.3); }
+.change-new { font-weight: 900; }
+
+/* ─── MOBILE CARD LAYOUT ──────────────────────────────────────────────── */
+/* mobileView cards area — hidden on desktop, shown on mobile */
+#mobileView { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+
+/* view-selector and filter-drawer: ALWAYS VISIBLE on both desktop and mobile */
+.view-selector { flex-shrink: 0; }
+.filter-drawer { flex-shrink: 0; }
+.changes-feed  { flex-shrink: 0; }
+
+@media (max-width: 800px) {
+  /* Hide desktop table */
+  .content-area { display: none !important; }
+  /* Show mobile cards */
+  #mobileView { display: flex !important; }
+  /* Shrink header */
+  .hdr { padding: 10px 16px; }
+  .hdr-board { font-size: 30px; letter-spacing: 2px; }
+  .hdr-apname { font-size: 20px; }
+  .hdr-clock { font-size: 30px; letter-spacing: 1px; }
+  .hdr-date { font-size: 11px; margin-top: 4px; }
+  .hdr-temp { gap: 10px; margin-top: 6px; }
+  .hdr-fc-day .fc-label { font-size: 11px; }
+  .hdr-fc-day .fc-temp { font-size: 14px; }
+  .hdr-fc-now { font-size: 18px; }
+  .search-wrap input { width: 120px; }
+  .filter-inner { flex-wrap: wrap; gap: 8px; }
+  .filter-input { width: 110px !important; }
+
+  /* ═══ GATE SCREEN — MOBILE ═══ */
+  /* Banner: stack into compact header */
+
+  /* Overlay: stack columns vertically */
+
+  /* Left column: scale down text */
+  .g5-countdown { font-size: 16px; letter-spacing: 1px; }
+
+  /* Right column on mobile: weather + emblem side by side */
+  .g5-wx-title { font-size: 10px; letter-spacing: 2px; padding: 8px 8px; }
+  .g5-wx-body { padding: 8px 4px; }
+  .g5-wx-dn { font-size: 12px; margin-bottom: 4px; min-height: 18px; }
+  .g5-wx-icon { width: 50px; height: 50px; }
+  .g5-wx-icon svg, .g5-wx-icon img { width: 50px; height: 50px; }
+  .g5-wx-temp { font-size: 22px; }
+
+  /* Footer compact */
+  .g5-footer { padding: 8px 16px; }
+  .g5-footer-airport { font-size: 11px; letter-spacing: 3px; }
+  .g5-footer-next { font-size: 10px; }
+  .g5-footer-next span { font-size: 14px; }
+
+  /* Lobby controls: tighter on mobile */
+  .lobby-controls { padding: 12px 10px; gap: 8px; }
+  .lobby-select { font-size: 12px; padding: 8px 10px; }
+  .lobby-mode-btn { font-size: 10px; padding: 6px 10px; }
+
+  /* ═══ GATE SCREEN (g8) — MOBILE ═══ */
+  .g8-wrap { height: 100dvh; }
+
+  /* Row 1 — destination + gate */
+  .g8-r1 { padding: 0 14px; min-height: 70px; gap: 10px; }
+  .g8-r1-dest { font-size: clamp(22px, 6vw, 36px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g8-r1-dest .g8-iata { font-size: 13px; margin-left: 8px; }
+  .g8-r1-logo { height: 36px; max-height: 36px; max-width: 120px; }
+  .g8-r1-star { width: 22px; height: 22px; }
+  .g8-r1-divider { height: 28px; margin: 0 6px; }
+  .g8-r1-gate { font-size: clamp(42px, 4.4vw, 72px); padding: 2px 12px; }
+
+  /* Row 2 — flight number + fields */
+  .g8-r2 { flex-wrap: wrap; padding: 8px 14px; min-height: auto; gap: 8px; }
+  .g8-r2-left { flex-shrink: 0; }
+  .g8-r2-flight span { font-size: 32px; }
+  .g8-r2-flight svg { width: 24px; height: 24px; }
+  .g8-r2-fields { flex-wrap: wrap; justify-content: flex-start; gap: 0; width: 100%; }
+  .g8-r2-field { padding: 4px 10px; flex: 1 1 auto; min-width: 80px; }
+  .g8-r2-field-label { font-size: 13px; letter-spacing:0.2px; }
+  .g8-r2-field-val { font-size: clamp(28px, 2.6vw, 36px); }
+  .g8-r2-field-val svg { width: 14px; height: 14px; }
+  .g8-r2-status { font-size: 13px; padding: 5px 14px; }
+
+  /* Weather strip */
+  .g8-wx-strip { flex-direction: row; }
+  .g8-wx-panel { padding: 8px 10px; gap: 6px; width:160px; flex: 0 0 auto; }
+  .g8-wx-label { font-size: 10px; letter-spacing: 0.5px; }
+  .g8-wx-temp { font-size: 22px; }
+  .g8-wx-detail { font-size: 12px; }
+  .g8-wx-extra { font-size: 11px; }
+
+  /* Map — reduce height */
+  #g8Map, .g8-map { height: 160px !important; min-height: 160px !important; max-height: 160px !important; }
+
+  /* Ad carousel */
+  #gateAdCarousel { height: 60px !important; }
+  #gateAdCarousel div { font-size: 14px !important; padding: 0 16px !important; }
+
+  /* Footer / ticker */
+  .g8-footer, .g8-ticker { font-size: 11px !important; padding: 6px 14px !important; }
+  .g8-footer-next { font-size: 11px !important; line-height: 1.3; white-space: normal !important; }
+}
+
+/* Tablet: gate screen tweaks */
+@media (min-width: 801px) and (max-width: 1200px) {
+  .g5-wx-temp { font-size: 34px; }
+}
+
+/* Mode tabs for mobile */
+.mobile-tabs {
+  display: flex; background: #2a2a2e; border-bottom: 1px solid #3f3f46;
+  flex-shrink: 0;
+}
+.mobile-tab {
+  flex: 1; padding: 10px 0; text-align: center;
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
+  color: rgba(255,255,255,0.4); cursor: pointer;
+  border-bottom: 3px solid transparent; transition: all 0.2s;
+  background: none; border-top: none; border-left: none; border-right: none;
+  font-family: var(--font-primary);
+}
+.mobile-tab.active { color: #fff; border-bottom-color: #eab308; }
+
+/* Mobile flight cards */
+.mobile-cards-scroll { flex: 1; overflow-y: auto; background: #ececef; }
+.flight-card {
+  background: #ffffff; border-bottom: 1px solid #d4d4d8;
+  border-left: 6px solid transparent; padding: 10px 14px;
+  cursor: pointer; transition: background 0.15s;
+}
+.flight-card:hover, .flight-card.expanded { background: #f5f5f6; }
+.flight-card.ac-green  { border-left-color: #10b981; }
+.flight-card.ac-yellow { border-left-color: #d97706; }
+.flight-card.ac-red    { border-left-color: #dc2626; }
+.flight-card.ac-orange { border-left-color: #ea580c; }
+.flight-card.ac-blue   { border-left-color: #2563eb; }
+.flight-card.faded     { opacity: 0.45; }
+.card-row1 { display: flex; align-items: center; gap: 12px; }
+.card-time {
+  font-size: 28px; font-weight: 700; color: #18181b;
+  letter-spacing: -0.5px; min-width: 74px; line-height: 1; flex-shrink: 0;
+}
+.card-city {
+  flex: 1; font-size: 28px; font-weight: 700; color: #18181b;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  letter-spacing: -0.5px; line-height: 1;
+}
+.card-status {
+  font-size: 11px; font-weight: 900; letter-spacing: 0.5px;
+  text-align: center; white-space: nowrap;
+  padding: 4px 8px; border-radius: 5px; min-width: 80px;
+}
+/* Status pill backgrounds on cards */
+.card-status.p-ontime    { background: #d1fae5; color: #065f46; }
+.card-status.p-boarding  { background: #bbf7d0; color: #14532d; }
+.card-status.p-delayed   { background: #fef3c7; color: #92400e; }
+.card-status.p-cancelled { background: #fee2e2; color: #991b1b; }
+.card-status.p-departed  { background: #f4f4f5; color: #52525b; }
+.card-status.p-arrived   { background: #f4f4f5; color: #52525b; }
+.card-status.p-scheduled { background: #f1f5f9; color: #374151; }
+.card-status.p-final     { background: #ffedd5; color: #9a3412; }
+.card-status.p-gateclosed{ background: #ede9fe; color: #5b21b6; }
+.card-status.p-landed    { background: #d1fae5; color: #065f46; }
+.card-status.p-diverted  { background: #ffedd5; color: #9a3412; }
+.card-status.p-early     { background: #dbeafe; color: #1e40af; }
+
+.card-row2 { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.card-logo { height: 22px; max-width: 90px; width: auto; object-fit: contain; object-position: left; }
+
+/* Card wordmark — local SVG. Fixed height so every carrier renders at
+   the same visual weight; width auto-scales but caps at 110px for
+   very wide wordmarks. */
+.card-logo.card-wordmark {
+  height: 18px;
+  width: auto;
+  max-width: 110px;
+  object-fit: contain;
+  object-position: left center;
+  flex-shrink: 0;
+}
+
+/* Per-carrier height overrides for mobile cards — calibrated so each
+   wordmark renders at roughly the same visual letter weight. Mirrors
+   the desktop-table treatment in fids-v3.css but scaled for the mobile
+   card height budget. AC's 11:1 aspect needs the smallest height to
+   avoid being clipped at the 110px max-width. */
+.card-logo.card-wordmark[data-code="AC"],
+.card-logo.card-wordmark[data-code="RV"],
+.card-logo.card-wordmark[data-code="3H"] { height: 12px; }
+.card-logo.card-wordmark[data-code="B6"] { height: 22px; }
+/* NK (Spirit) — ceased operations May 2 2026 */
+.card-logo.card-wordmark[data-code="UA"],
+.card-logo.card-wordmark[data-code="DL"],
+.card-logo.card-wordmark[data-code="BA"],
+.card-logo.card-wordmark[data-code="AF"] { height: 20px; }
+.card-logo.card-wordmark[data-code="WN"],
+.card-logo.card-wordmark[data-code="HA"] { height: 19px; }
+.card-logo.card-wordmark[data-code="YV"],
+.card-logo.card-wordmark[data-code="YX"] { height: 26px; }
+/* Mokulele — flower icon + wide wordmark needs more height to read clearly */
+.card-logo.card-wordmark[data-code="9X"] { height: 28px; }
+
+.card-logo-fb { font-size: 13px; font-weight: 700; color: #3f3f46; }
+.card-flight { font-size: 15px; font-weight: 700; color: #52525b; letter-spacing: 0.5px; }
+.card-gate {
+  display: inline-block; background: #1e6f50; color: #fff;
+  font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.5px;
+}
+.card-term {
+  display: inline-block; background: #1d4ed8; color: #fff;
+  font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.5px;
+}
+.card-wx { font-size: 13px; font-weight: 700; color: #52525b; display:flex; align-items:center; gap:3px; }
+.card-upd { font-size: 12px; font-weight: 700; color: #b45309; background:#fef3c7; padding: 1px 6px; border-radius:3px; }
+.card-expanded-row {
+  display: none; margin-top: 8px; padding-top: 8px;
+  border-top: 1px dashed #d4d4d8; font-size: 12px; color: #52525b;
+  letter-spacing: 0.5px;
+}
+.flight-card.expanded .card-expanded-row { display: flex; gap: 16px; }
+.card-date-tag { font-size: 11px; color: #71717a; font-weight: 600; margin-top: 2px; }
+
+/* Mobile pagination */
+.mobile-pager {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; padding: 8px; background: #27272a;
+  flex-shrink: 0;
+}
+.mobile-pager-info {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.4);
+}
+.mobile-pager-btn {
+  background: #3f3f46; border: none; color: #fff;
+  font-size: 16px; width: 30px; height: 30px; border-radius: 4px;
+  cursor: pointer; font-family: var(--font-primary);
+}
+.mobile-pager-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* ─── FINAL CALL FLASH — high-contrast amber pulse (0.5 Hz safe) ── */
+@keyframes finalFlashOdd {
+  0%, 100% { background-color: #ffffff; }
+  50%      { background-color: #fef08a; }
+}
+@keyframes finalFlashEven {
+  0%, 100% { background-color: #ececef; }
+  50%      { background-color: #fef08a; }
+}
+@keyframes finalFlashCard {
+  0%, 100% { background-color: #ffffff; border-left-color: #d97706; }
+  50%      { background-color: #fef08a; border-left-color: #dc2626; }
+}
+@keyframes textPulse {
+  0%, 100% { color: #dc2626; }
+  50%      { color: #991b1b; }
+}
+
+tbody tr.final-flash:nth-child(odd)  { animation: finalFlashOdd 2s ease-in-out infinite; }
+tbody tr.final-flash:nth-child(even) { animation: finalFlashEven 2s ease-in-out infinite; }
+.flight-card.final-flash { animation: finalFlashCard 2s ease-in-out infinite; }
+.p-final                 { animation: textPulse 2s ease-in-out infinite; font-weight: 900; }
+
+.mobile-empty {
+  text-align: center; padding: 50px 20px;
+  font-size: 14px; font-weight: 700; letter-spacing: 2px;
+  color: #71717a;
+}
+
+/* ─── DEP/ARR/ROTATE SELECTOR ─────────────────────────────────────────── */
+.view-selector {
+  display: flex; background: #1c1c1f; border-bottom: 1px solid #3f3f46;
+  flex-shrink: 0; padding: 0 10px; gap: 4px; align-items: center;
+}
+.view-tab {
+  padding: 8px 16px; font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  color: rgba(255,255,255,0.4); cursor: pointer; background: none;
+  border: none; border-bottom: 3px solid transparent;
+  font-family: var(--font-primary); transition: all 0.2s;
+ 
+}
+.view-tab.active { color: #eab308; border-bottom-color: #eab308; }
+.view-tab:hover:not(.active) { color: rgba(255,255,255,0.7); }
+.view-sel-spacer { flex: 1; }
+.filter-toggle-btn {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.5); background: none; border: 1px solid #3f3f46;
+  padding: 4px 12px; border-radius: 4px; cursor: pointer;
+  font-family: var(--font-primary); transition: all 0.2s;
+}
+.filter-toggle-btn.active, .filter-toggle-btn:hover { color: #eab308; border-color: #eab308; }
+.filter-count {
+  display: inline-block; background: #eab308; color: #18181b;
+  font-size: 9px; font-weight: 900; padding: 1px 5px; border-radius: 10px;
+  margin-left: 4px; vertical-align: middle;
+}
+
+/* ─── FILTER DRAWER ─────────────────────────────────────────────────────── */
+.filter-drawer {
+  background: #1e1e21; border-bottom: 2px solid #3f3f46;
+  overflow: hidden; max-height: 0; transition: max-height 0.3s ease;
+  flex-shrink: 0;
+}
+.filter-drawer.open { max-height: 160px; }
+.filter-inner {
+  padding: 10px 16px 12px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
+}
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  color: rgba(255,255,255,0.3);
+}
+.filter-select, .filter-input {
+  background: #27272a; color: #fff; border: 1px solid #52525b;
+  padding: 5px 10px; font-family: var(--font-primary);
+  font-size: 12px; border-radius: 4px; outline: none; cursor: pointer;
+}
+.filter-select:focus, .filter-input:focus { border-color: #eab308; }
+.filter-select option { background: #27272a; }
+.filter-input { width: 130px; }
+.filter-input::placeholder { color: #52525b; }
+.filter-clear-btn {
+  background: #3f3f46; color: rgba(255,255,255,0.6); border: none;
+  padding: 5px 14px; font-family: var(--font-primary);
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  border-radius: 4px; cursor: pointer; align-self: flex-end;
+}
+.filter-clear-btn:hover { background: #dc2626; color: #fff; }
+
+/* ─── DEDICATED SCREEN VIEWS (Tampa Gate Style) ─────────────────── */
+
+
+/* ── USER GATE LAYOUT OVERRIDE — v7 3-Column Aligned Design ────────── */
+.uxg-screen, .uxg-screen * { box-sizing: border-box; font-family: var(--font-primary) !important; -webkit-font-smoothing: antialiased; }
+.uxg-screen { position: relative; min-height: calc(100vh - 64px); color: #fff; overflow: hidden; }
+.uxg-bg { position:absolute; inset:0; background-size:cover; background-position:center center; background-repeat:no-repeat; }
+.uxg-bg::before { content:""; position:absolute; inset:0; background: linear-gradient(180deg, rgba(7,18,33,0.18) 0%, rgba(7,18,33,0.28) 100%); }
+.uxg-bg[data-bgmode="light"]::before { background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(13,31,52,0.16) 100%); }
+.uxg-overlay { position:relative; z-index:1; min-height:inherit; display:flex; flex-direction:column; }
+body.uxg-gate-mode { font-family: var(--font-primary) !important; }
+body.uxg-gate-mode.uxg-controls-collapsed .ctrl { transform:none; opacity:1; pointer-events:auto; }
+
+/* ── NEW GATE SCREEN v8 — United-inspired clean layout ─────── */
+:root { --airline-accent: #0033A1; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   GATE SCREEN v9 — Clean, bright, United-inspired, readable at 20ft
+   ═══════════════════════════════════════════════════════════════════ */
+.g8-wrap { display:flex; flex-direction:column; width:100%; height:100vh; overflow:hidden; color:#fff; background:#111; position:relative; }
+
+/* ROW 1 — Accent Banner: Destination left, Logo+Star+Gate right */
+.g8-r1 { display:flex; align-items:center; padding:0 40px; min-height:110px; flex-shrink:0; gap:24px; position:relative; z-index:2; }
+.g8-r1-bg { background: var(--airline-accent); }
+.g8-r1-dest { flex:1; min-width:0; font-size:clamp(48px, 5.2vw, 80px); font-weight:800; line-height:1.05; letter-spacing:-1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 2px 8px rgba(0,0,0,0.25); }
+.g8-r1-dest .g8-iata { font-size:clamp(30px, 3.2vw, 48px); font-weight:500; color:rgba(255,255,255,0.55); margin-left:18px; vertical-align:middle; letter-spacing:1.5px; }
+.g8-r1-right { display:flex; align-items:center; gap:20px; flex-shrink:0; position:relative; }
+.g8-r1-airline { font-size:clamp(24px, 2.5vw, 36px); font-weight:700; text-align:right; white-space:nowrap; letter-spacing:0.03em; }
+.g8-r1-logo { height:70px; min-height:70px; width:auto; max-width:320px; max-height:70px; object-fit:contain; object-position:right center; filter:brightness(0) invert(1); }
+.g8-r1-star { width:auto; height:110px; min-width:0; max-width:260px; opacity:0; transition:opacity 0.3s ease; object-fit:contain; }
+.g8-r1-star.loaded { opacity:1; }
+.g8-r1-gate { font-size:clamp(52px, 5.5vw, 86px); font-weight:900; line-height:1; letter-spacing:-1px; background:rgba(0,0,0,0.2); padding:4px 22px; border-radius:10px; }
+
+/* ROW 2 — Black Flight Info Bar (v9) */
+.g8-r2 { display:flex; align-items:center; padding:0 36px; min-height:115px; flex-shrink:0; background:linear-gradient(135deg,#1a1f2e 0%,#0f1420 100%); gap:24px; position:relative; z-index:2; }
+.g8-r2-left { display:flex; flex-direction:column; justify-content:center; flex-shrink:0; }
+.g8-r2-flight { display:flex; align-items:center; gap:12px; flex-shrink:0;  font-size: clamp(28px, 2.8vw, 46px);}
+.g8-r2-flight svg { width:48px; height:48px; fill:#fff; opacity:0.55; }
+.g8-r2-flight span { font-size:clamp(50px, 6vw, 76px); font-weight:900; letter-spacing:-0.5px; }
+.g8-r2-fields { display:flex; align-items:stretch; flex:1; min-width:0; justify-content:flex-end; gap:0; }
+.g8-r2-field { padding:12px 28px; flex:0 1 auto; min-width:0; display:flex; flex-direction:column; justify-content:center; }
+.g8-r2-field + .g8-r2-field { margin-left:8px; }
+.g8-r2-field-label { font-size:19px; font-weight:700; color:rgba(255,255,255,0.85); margin-bottom:6px; white-space:nowrap; letter-spacing:0.3px; text-transform:uppercase; }
+.g8-r2-field-val { font-size:clamp(44px,4.2vw,60px); font-weight:800; line-height:1.1; display:flex; align-items:center; gap:8px; white-space:nowrap; color:#fff; }
+.g8-r2-field-val svg { width:26px; height:26px; fill:#fff; opacity:0.6; flex-shrink:0; }
+/* Gate weather panels */
+.g8-wx-strip { display:flex; flex-direction:row; gap:0; align-items:center; flex-shrink:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(8px); }
+.g8-wx-panel { flex:0 0 auto; width:220px; padding:14px 18px; display:flex; align-items:center; gap:12px; justify-content:center; border:none; border-radius:0; }
+.g8-wx-panel + .g8-wx-panel { border-left:1px solid rgba(255,255,255,0.08); }
+.g8-wx-label { font-size:14px; font-weight:700; letter-spacing:0.3px; color:rgba(255,255,255,0.75); white-space:nowrap; }
+.g8-wx-detail { font-size:17px; font-weight:600; color:rgba(255,255,255,0.8); white-space:nowrap; }
+.g8-wx-info { display:flex; flex-direction:column; gap:2px; }
+.g8-r2-status { font-size:clamp(22px,2.1vw,32px); font-weight:800; padding:11px 22px; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; letter-spacing:0.3px; }
+.g8-r2-status svg { width:22px; height:22px; fill:currentColor; flex-shrink:0; }
+.g8-r2-status.ontime { background:#16a34a; color:#fff; }
+.g8-r2-status.delayed { background:#d97706; color:#fff; }
+.g8-r2-status.boarding { background:#15803d; color:#fff; animation:boardPulse9 2s ease-in-out infinite; }
+.g8-r2-status.cancelled { background:#be123c; color:#fff; }
+.g8-r2-status.scheduled { background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.9); }
+@keyframes boardPulse9 { 0%,100%{opacity:1;} 50%{opacity:0.7;} }
+.g8-r2-strike { display:none; }
+.g8-r2-revised { color:#fbbf24; }
+
+/* ROW 3 — Message strip (v9: bigger text, no borders, brighter) */
+.g8-r3 {
+  background:rgba(0,0,0,0.45);
+  color:#fff;
+  display:flex; align-items:center;
+  padding:14px 40px;
+  position:relative; z-index:2;
+  gap:28px;
+  min-height:52px;
+  font-size: clamp(17px, 1.8vw, 26px);
+  font-weight:600;
+  letter-spacing:0.3px;
+}
+
+/* ROW 4 — Bottom panels */
+.g8-r4 { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+
+/* Countdown (v9: brighter) */
+.g8-countdown {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  flex:1; text-align:center; padding:20px;
+  background:linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.3) 100%);
+}
+.g8-cd-label { font-size:26px; font-weight:600; color:rgba(255,255,255,0.7); letter-spacing:0.04em; }
+.g8-cd-value { font-size:clamp(80px,10vw,160px); font-weight:900; color:#fbbf24; letter-spacing:-0.03em; line-height:1; }
+.g8-cd-unit { font-size:32px; font-weight:600; color:rgba(255,255,255,0.6); letter-spacing:0.04em; }
+.g8-cd-sub { font-size:20px; font-weight:500; color:rgba(255,255,255,0.5); margin-top:10px; }
+
+/* Inbound panel (v9: brighter labels, readable city) */
+.g8-inb { display:flex; flex:1; overflow:hidden; }
+.g8-inb-left { flex:1; display:flex; flex-direction:column; justify-content:center; padding:32px 40px; background:rgba(0,0,0,0.12); overflow:hidden; min-width:0; }
+.g8-inb-label { font-size:clamp(18px,2vw,26px); font-weight:700; letter-spacing:0.3px; color:rgba(255,255,255,0.9); margin-bottom:14px; }
+.g8-inb-city { font-size:clamp(28px,3.2vw,44px); font-weight:700; line-height:1.15; margin-bottom:6px; color:rgba(255,255,255,0.9); }
+.g8-inb-flight { font-size:22px; font-weight:700; color:rgba(255,255,255,0.65); margin-bottom:14px; }
+.g8-inb-times { display:flex; flex-direction:column; gap:12px; }
+.g8-inb-time-row { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:600; color:#fff; white-space:nowrap; }
+.g8-inb-time-row svg { width:28px; height:28px; fill:#fff; opacity:.5; flex-shrink:0; }
+.g8-inb-time-row .g8-time-val { font-size:clamp(28px,3vw,42px); font-weight:800; color:#fff; font-variant-numeric:tabular-nums; }
+.g8-inb-status { font-size:18px; font-weight:800; background:#16a34a; color:#fff; padding:6px 18px; border-radius:999px; display:inline-block; margin-bottom:14px; align-self:flex-start; white-space:nowrap; }
+.g8-inb-status.enroute { background:#3b82f6; }
+.g8-inb-status.delayed { background:#d97706; }
+.g8-inb-status.scheduled { background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.9); }
+.g8-inb-strike { text-decoration:line-through; text-decoration-thickness:2px; opacity:.3; margin-right:6px; font-size:0.75em; }
+.g8-inb-revised-time { color:#fbbf24; }
+
+/* Boarding (v9: bigger text) */
+.g8-board { display:none; flex:1; flex-direction:column; overflow:hidden; }
+.g8-board.active { display:flex; }
+.g8-board-hdr { display:flex; height:56px; flex-shrink:0; }
+.g8-board-hdr-now, .g8-board-hdr-next { flex:1; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; letter-spacing:0.3px; }
+.g8-board-hdr-now { background:var(--airline-accent); }
+.g8-board-hdr-next { background:#16a34a; }
+.g8-board-body { display:flex; flex:1; }
+.g8-board-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
+.g8-board-col.now { background:var(--airline-accent); }
+.g8-board-col.next { background:#16a34a; }
+.g8-board-grp-label { font-size:28px; font-weight:600; opacity:.7; }
+.g8-board-grp-num { font-size:clamp(120px,18vw,220px); font-weight:900; line-height:.88; }
+.g8-board-lane { font-size:24px; font-weight:500; opacity:.6; margin-top:6px; }
+
+/* Final call (v9) */
+.g8-final { display:none; flex:1; flex-direction:column; overflow:hidden; }
+.g8-final.active { display:flex; }
+.g8-final-hdr { height:70px; display:flex; align-items:center; justify-content:center; background:var(--airline-accent); font-size:34px; font-weight:800; letter-spacing:1px; flex-shrink:0; }
+.g8-final-body { flex:1; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); padding:0 40px; text-align:center; }
+.g8-final-text { display:flex; flex-direction:column; align-items:center; }
+.g8-final-allgrp { font-size:clamp(48px,7vw,80px); font-weight:900; line-height:1.1; }
+.g8-final-sub { font-size:clamp(28px,4vw,48px); font-weight:600; opacity:.75; margin-top:12px; }
+
+/* ROW 5 — Footer (v9: bigger text) */
+.g8-r5 { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:stretch; padding:0; background:#111827; border-top:2px solid rgba(255,255,255,0.12); flex-shrink:0; min-height:80px; font-size: 13px; position:relative; z-index:2; }
+.g8-r5-airport { opacity:.9; font-weight:700; font-size:22px; letter-spacing:0.5px; display:flex; align-items:center; gap:14px; padding:6px 18px 6px 16px; }
+.g8-r5-next { color:#ffd54f; font-weight:700; font-size:18px; }
+.g8-r5 .g8-r5-clock { font-weight:700; font-size:26px; font-variant-numeric:tabular-nums; display:flex; align-items:center; justify-content:flex-end; padding:0 28px 0 28px; }
+
+/* ── GATE OVERRIDE PANEL ──────────────────────────────────── */
+.gate-override-panel {
+  position:fixed; top:46px; left:0; right:0; z-index:200;
+  background:rgba(20,20,24,0.98); backdrop-filter:blur(16px);
+  border-bottom:none;
+  max-height:0; overflow:hidden; transition:max-height 0.35s ease;
+}
+.gate-override-panel.open { max-height:500px; overflow-y:auto; border-bottom:2px solid #eab308; }
+.gov-inner { padding:16px 24px 20px; }
+.gov-title { font-size:11px; font-weight:800; letter-spacing:3px; color:#eab308; margin-bottom:14px; }
+.gov-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px 16px; }
+.gov-field { display:flex; flex-direction:column; gap:3px; }
+.gov-field.full { grid-column:1/-1; }
+.gov-label { font-size:9px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,0.35); }
+.gov-input {
+  background:#1a1a1e; color:#fff; border:1.5px solid #3f3f46; padding:7px 12px;
+  font-family:var(--font-primary);
+  font-size:13px; font-weight:600; border-radius:5px; outline:none; transition:border-color 0.2s;
+}
+.gov-input:focus { border-color:#eab308; }
+.gov-input::placeholder { color:#52525b; font-weight:400; }
+.gov-input.has-override { border-color:#22c55e; background:#0a1f0a; }
+.gov-actions { display:flex; gap:8px; margin-top:14px; align-items:center; }
+.gov-btn {
+  padding:8px 18px; font-family:var(--font-primary);
+  font-size:12px; font-weight:800; letter-spacing:1.5px; cursor:pointer; border-radius:5px; transition:all 0.15s;
+}
+.gov-save { background:#eab308; color:#18181b; border:none; }
+.gov-save:hover { background:#fbbf24; }
+.gov-clear { background:transparent; color:#ef4444; border:1px solid #ef4444; }
+.gov-clear:hover { background:#ef4444; color:#fff; }
+.gov-status { font-size:11px; font-weight:600; color:#22c55e; margin-left:12px; opacity:0; transition:opacity 0.3s; }
+.gov-status.show { opacity:1; }
+.gov-hint { font-size:9px; color:rgba(255,255,255,0.2); letter-spacing:1px; margin-top:10px; }
+.gov-active-badge { display:inline-block; background:#0a1f0a; color:#22c55e; border:1px solid #22c55e; font-size:9px; font-weight:800; letter-spacing:1.5px; padding:2px 8px; border-radius:3px; margin-left:8px; }
+
+/* ── MOBILE RESPONSIVENESS ─────────────────────────────── */
+@media (max-width: 768px) {
+  .g8-r1 { min-height: 72px !important; padding: 0 16px !important; }
+  .g8-r1-dest { font-size: clamp(26px, 6vw, 42px) !important; }
+  .g8-r1-gate { font-size: clamp(38px, 9vw, 64px) !important; padding: 2px 12px !important; }
+  .g8-r1-logo { height: 36px !important; max-width: 120px !important; max-height: 36px !important; }
+  .g8-r1-star { width: 22px !important; height: 22px !important; }
+  .g8-r1-right { gap: 10px !important; }
+  .g8-r2 { min-height: 66px !important; padding: 8px 16px !important; flex-wrap: wrap; }
+  .g8-r2-flight span { font-size: 32px !important; }
+  .g8-r2-flight svg { width: 28px !important; height: 28px !important; }
+  .g8-r2-fields { flex-wrap: wrap; }
+  .g8-r2-field { padding: 4px 8px !important; }
+  .g8-r2-field-val { font-size: 20px !important; }
+  .g8-r2-status { font-size: 16px !important; padding: 5px 14px !important; }
+  .g8-r3 { padding: 8px 16px !important; min-height: 40px !important; font-size: 16px !important; }
+  .g8-inb-left { padding: 16px !important; }
+  .g8-inb-label { font-size: 16px !important; }
+  .g8-inb-city { font-size: clamp(24px, 5vw, 36px) !important; }
+  .g8-time-val { font-size: 26px !important; }
+  .g8-r5 { padding: 6px 16px !important; font-size: 13px !important; }
+  .g8-board-grp-num { font-size: clamp(60px, 16vw, 120px) !important; }
+  .g8-board-grp-label { font-size: clamp(20px, 4vw, 32px) !important; }
+  .g8-cd-value { font-size: clamp(52px, 12vw, 100px) !important; }
+  /* AIRCRAFT INFO AREA — stack panels vertically on mobile, smaller fonts */
+  /* OUTER BODY LAYOUT — welcome panel | aircraft-info column siblings
+     need to stack vertically so the right column's content fits the
+     full viewport width (otherwise content is crammed into 50% width
+     and "Operated by", aircraft photo, registration get clipped). */
+  .g8-wrap > div > div[style*="display:flex"][style*="flex:1"][style*="overflow:hidden"] {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .g8-wrap > div > div[style*="display:flex"][style*="flex:1"] > div[style*="background:#0a0a0f"] {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 200px !important;
+    max-height: 280px !important;
+  }
+  .g8-welcome-city {
+    font-size: clamp(34px, 7vw, 56px) !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+  .gad-right-col { width: 100% !important; flex-direction: column !important; padding: 0 !important; gap: 10px !important; }
+  .gad-info-col { flex: 1 1 auto !important; padding: 12px !important; border: none !important; min-height: 0 !important; }
+  .gad-incoming { padding: 12px !important; }
+  .gad-incoming > div { font-size: 22px !important; }
+  .gad-equip-panel { padding: 12px !important; gap: 8px !important; }
+  /* Reduce aircraft type/reg/operator line on small screens */
+  .gad-equip-panel > div:first-child { font-size: 16px !important; line-height: 1.3 !important; }
+  .gad-equip-img-large { max-height: 140px !important; margin-top: 8px !important; }
+  .gad-equip-img-large img { max-height: 140px !important; }
+  /* Map column stacks below aircraft info */
+  .g8-inb-map, #gateMapBox { min-height: 200px !important; }
+
+  /* BOTTOM BAR — three-panel side-by-side strip (hotel logo | ads | weather)
+     totaling ~840px wide of fixed-width content. On a tablet/phone viewport
+     this overflows badly. Stack vertically so each panel takes full width.
+     Selector targets the inline-style emitted at fids-core.js ~line 5012. */
+  .g8-wrap > div[style*="height:170px"],
+  .g8-wrap > div[style*="height: 170px"] {
+    height: auto !important;
+    min-height: 0 !important;
+    flex-direction: column !important;
+  }
+  #gateAdLogo {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 60px !important;
+    max-height: 80px !important;
+    padding: 8px !important;
+  }
+  #gateAdLogo img { max-height: 60px !important; width: auto !important; }
+  #gateAdCarousel {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 140px !important;
+    height: 140px !important;
+  }
+  #gateWxStrip {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 110px !important;
+  }
+  #gateWxStrip > div {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    padding: 12px 16px !important;
+  }
+}
+@media (max-width: 480px) {
+  .g8-r1-dest { font-size: clamp(18px, 5vw, 28px) !important; }
+  .g8-r1-gate { font-size: clamp(28px, 8vw, 48px) !important; }
+  .g8-r1-logo { height: 28px !important; max-width: 90px !important; }
+  .g8-r2-flight span { font-size: 26px !important; }
+  .g8-r2-field-val { font-size: 18px !important; }
+  .g8-r2-status { font-size: 14px !important; padding: 4px 10px !important; }
+  /* Tighter aircraft card on phones */
+  .gad-incoming > div { font-size: 18px !important; }
+  .gad-equip-panel > div:first-child { font-size: 14px !important; }
+  .gad-equip-img-large, .gad-equip-img-large img { max-height: 110px !important; }
+  /* Smaller scheduled/estimated grid */
+  .gad-incoming [style*="grid-template-columns"] > div > div:last-child { font-size: 18px !important; }
+}
+
+/* Map satellite tiles with dark overlay */
+.gate-map-label { background:rgba(0,0,0,0.65) !important; border:1px solid rgba(255,255,255,0.25) !important; box-shadow:0 2px 8px rgba(0,0,0,0.5) !important; color:#fff !important; font-size:12px !important; font-weight:700 !important; letter-spacing:1px; padding:3px 8px !important; border-radius:4px !important; }
+.gate-map-label::before { border-bottom-color:rgba(0,0,0,0.65) !important; }
+.leaflet-tooltip-top .gate-map-label::before, .leaflet-tooltip-top::before { border-top-color:rgba(0,0,0,0.65) !important; }
+.leaflet-tooltip-bottom::before { border-bottom-color:rgba(0,0,0,0.65) !important; }
+.g8-inb-map, #gateMapBox { position:relative; }
+.g8-inb-map::after, #gateMapBox::after { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.10); pointer-events:none; z-index:9999; }
+.gate-plane-marker { font-size:18px; color:#ffd54f; text-shadow:0 0 6px rgba(0,0,0,.8); transform:rotate(-45deg); }
+
+/* Aircraft livery image baseline */
+.g8-aircraft-img { display:block; user-select:none; -webkit-user-drag:none; pointer-events:none; }
+
+/* ── RIGHT COLUMN: Aircraft Arrival Data panels + Flight Path map ───── */
+.gad-right-col { width:50%; flex-shrink:0; display:flex; flex-direction:row; gap:18px; overflow:hidden; background:#111; min-width:0; min-height:0; padding:0 18px; }
+.gad-info-col { flex:1 1 50%; display:flex; flex-direction:column; overflow:hidden; padding: 14px 18px; gap: 10px; min-width:0; min-height:0; justify-content:flex-start; background:linear-gradient(135deg,#1a1f2e 0%,#0f1420 100%); border:2px solid rgba(255,255,255,0.06); border-right:none; }
+.gad-map-col   { flex:1 1 50%; display:flex; flex-direction:column; overflow:hidden; min-width:0; background:rgba(38,42,52,0.95); border:2px solid #111; border-left:none; padding:0; }
+
+.gad-title     { font-size:16px; font-weight:800; color:#fff; letter-spacing:0.3px; flex-shrink:0; }
+
+.gad-panel     { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px 18px; overflow:hidden; min-width:0; flex-shrink:0; }
+.gad-panel-hdr { font-size:13px; font-weight:800; color:rgba(255,255,255,0.95); letter-spacing:0.3px; margin-bottom:10px; }
+.gad-panel-sub { font-size:11px; font-weight:600; color:rgba(255,255,255,0.5); letter-spacing:0.4px; text-transform:none; margin-left:4px; }
+
+.gad-grid4     { display:grid; grid-template-columns:1.4fr 1.1fr 1.1fr 0.8fr; gap:10px 12px; align-items:start; }
+.gad-lbl       { font-size:12px; font-weight:700; color:rgba(255,255,255,0.6); letter-spacing:0.3px; margin-bottom:4px; white-space:nowrap; }
+.gad-val       { font-size:17px; font-weight:700; color:#fff; letter-spacing:0.2px; white-space:nowrap; overflow:visible; }
+
+/* ──────────────────────────────────────────────────────────────────────
+   AIRLINE-THEMED BODY (e.g. United: black banner + United Blue accent +
+   Runway Gray body, mirroring the actual livery design philosophy).
+   Activated when the wrapper has class g8-wrap-themed-body. Reads
+   --body-bg and --body-text CSS vars set inline by the JS.
+   ────────────────────────────────────────────────────────────────────── */
+.g8-wrap-themed-body .gad-info-col {
+  background: var(--body-bg) !important;
+  color: var(--body-text) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+.g8-wrap-themed-body .gad-right-col { background: var(--body-bg) !important; }
+.g8-wrap-themed-body .gad-map-col {
+  background: var(--body-bg) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+/* Bottom row 5 — weather + ad strip */
+.g8-wrap-themed-body .g8-r5 {
+  background: var(--body-bg) !important;
+  border-top: 1px solid rgba(0,0,0,0.10) !important;
+  color: var(--body-text) !important;
+}
+.g8-wrap-themed-body .g8-r5 * { color: inherit; }
+/* Light-theme text colors for typical white-on-dark elements */
+.g8-wrap-themed-body .gad-info-col,
+.g8-wrap-themed-body .gad-info-col .gad-panel-hdr,
+.g8-wrap-themed-body .gad-info-col .gad-val,
+.g8-wrap-themed-body .gad-info-col .gad-equip-text { color: var(--body-text) !important; }
+.g8-wrap-themed-body .gad-info-col .gad-lbl,
+.g8-wrap-themed-body .gad-info-col .gad-panel-sub { color: rgba(15,23,42,0.55) !important; }
+/* Inline-styled white text in the aircraft card needs a softer override */
+.g8-wrap-themed-body .gad-info-col [style*="color:#fff"],
+.g8-wrap-themed-body .gad-info-col [style*="color: #fff"],
+.g8-wrap-themed-body .gad-info-col [style*="color:rgba(255,255,255"] {
+  color: var(--body-text) !important;
+}
+.g8-wrap-themed-body .gad-info-col svg { color: var(--body-text); fill: var(--body-text); }
+/* The accent-blue reg badge stays accent */
+.g8-wrap-themed-body .gad-info-col [style*="#60a5fa"] { color: #1414D2 !important; }
+/* Status pills/badges keep their semantic colors regardless */
+
+/* ──────────────────────────────────────────────────────────────────────
+   LIGHT BANNER SUPPORT (HA, WS, etc.) — when row 1 is white, flip the
+   banner text + gate badge to dark, kill heavy shadows that don't work
+   on a white background.
+   ────────────────────────────────────────────────────────────────────── */
+.g8-banner-light .g8-r1-dest,
+.g8-banner-light .g8-r1-airline,
+.g8-banner-light .g8-r1-gate { color: inherit !important; text-shadow: none !important; }
+.g8-banner-light .g8-r1-dest .g8-iata { color: inherit !important; opacity: 0.55; }
+.g8-banner-light .g8-r1-gate {
+  background: rgba(0,0,0,0.05) !important;
+  border: 1px solid rgba(0,0,0,0.10) !important;
+}
+/* Star Alliance / oneworld icon needs to be dark on white banners */
+.g8-banner-light .g8-star-alliance,
+.g8-banner-light .g8-r1-right svg,
+.g8-banner-light .g8-r1-right img.alliance-icon { filter: brightness(0) !important; }
+
+/* ──────────────────────────────────────────────────────────────────────
+   HOTEL LOGO STRIP — replaces the destination weather panel on the right
+   side of the bottom band. Rotates through unique Accor brands available
+   at the destination (one logo per brand, fade transition every 6s).
+   Same 280px footprint as the weather strip it replaces.
+   ────────────────────────────────────────────────────────────────────── */
+.g8-hotel-strip {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(135deg, rgba(20,24,38,0.95) 0%, rgba(12,16,28,0.95) 100%);
+  overflow: hidden;
+}
+.g8-hotel-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 22px;
+  box-sizing: border-box;
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 700ms ease, transform 700ms ease;
+  pointer-events: none;
+}
+.g8-hotel-slide.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+   AIRLINE WATERMARK — BIG. Takes ~130% of the panel so a portion of the
+   symbol bleeds off the screen edge, only a corner/section visible.
+   Reads as a giant feature texture: half-globe, half-rondelle, half-widget
+   emerging from one side. Subliminal but undeniable — "this gate is United"
+   or "this gate is Air Canada" without ever spelling it out.
+   ────────────────────────────────────────────────────────────────────── */
+.g8-wrap-watermark .gad-info-col { position: relative; overflow: hidden; }
+.g8-wrap-watermark .gad-info-col::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  /* Push 35% of the symbol off the right edge so only ~65% is visible */
+  right: -35%;
+  transform: translateY(-50%);
+  /* Gigantic — 130% of panel width = symbol is bigger than the panel itself */
+  width: 130%;
+  aspect-ratio: 1 / 1;
+  background-image: var(--wm-symbol);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.18;
+  /* Keep brand colors intact — the low opacity is what makes it read as a
+     watermark. No grayscale, no desaturation: WestJet stays teal, Air
+     Canada stays red, AA stays blue, etc. */
+  pointer-events: none;
+  z-index: 0;
+}
+/* Make sure all panel content sits above the watermark */
+.g8-wrap-watermark .gad-info-col > * { position: relative; z-index: 1; }
+
+/* ----------------------------------------------------------------
+   AIR CANADA / JAZZ / ROUGE - tail-livery swoop watermark.
+   The SVG is a stylized version of the painted tail-livery design:
+   a curved red swoop coming in from the upper-right corner with the
+   maple-leaf rondelle riding the curve. The artwork already contains
+   the swoop and rondelle as a single full-color asset, so we render
+   it at panel-spanning size, anchored to the right edge with overflow
+   clipping naturally trimming the bleed.
+   ---------------------------------------------------------------- */
+.g8-airline-AC.g8-wrap-watermark .gad-info-col::after,
+.g8-airline-QK.g8-wrap-watermark .gad-info-col::after,
+.g8-airline-RV.g8-wrap-watermark .gad-info-col::after {
+  /* Fill the entire info panel as a brand background.
+     Cover the whole square edge-to-edge. */
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  filter: none !important;
+  opacity: 0.22 !important;
+}
+.g8-airline-AC.g8-wrap-watermark .gad-info-col::before,
+.g8-airline-QK.g8-wrap-watermark .gad-info-col::before,
+.g8-airline-RV.g8-wrap-watermark .gad-info-col::before {
+  display: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   HAWAIIAN AIRLINES — Pualani watermark.
+   The Pualani is a face profile (purple body, red hibiscus). Native
+   colors preserved — desaturating loses the brand. Sized smaller than
+   AC since the Pualani has more visual weight and detail than a rondelle.
+   Anchored bottom-right with right-edge bleed so only the head/flower
+   side is visible. Low opacity keeps text legible on the cream body.
+   ─────────────────────────────────────────────────────────────────────── */
+.g8-airline-HA.g8-wrap-watermark .gad-info-col::after {
+  top: auto !important;
+  bottom: -10% !important;
+  right: -20% !important;
+  transform: none !important;
+  width: 90% !important;
+  /* Native colors — the Pualani IS the brand */
+  filter: none !important;
+  /* Lower opacity — the figurehead has more visual weight than a flat rondelle */
+  opacity: 0.22 !important;
+}
+.gad-equip-panel { display:flex; flex-direction:column; flex:1 1 0; min-height:0; align-items:stretch; justify-content:flex-start; gap:12px; }
+.gad-equip-text { flex:0 0 auto; min-width:0; display:flex; flex-direction:column; gap:6px; overflow:hidden; }
+.gad-equip-row  { font-size:18px; color:#fff; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gad-lbl-inline { font-weight:600; color:rgba(255,255,255,0.5); font-size:14px; letter-spacing:0.4px; }
+.gad-val-inline { font-weight:800; color:#fff; font-size:19px; }
+.gad-equip-img-large { flex:1 1 auto; min-height:0; max-height:170px; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:0; width:100%; }
+.gad-equip-img-large img { max-width:100%; max-height:100%; width:auto; height:auto; display:block; margin:0 auto; object-fit:contain; filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5)); }
+
+.gad-metrics-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:center; }
+.gad-metric      { display:flex; align-items:center; gap:12px; min-width:0; }
+.gad-metric-icon { width:30px; height:30px; fill:rgba(255,255,255,0.55); flex-shrink:0; }
+.gad-metric-text { min-width:0; }
+.gad-metric-val  { font-size:26px; font-weight:800; color:#fff; letter-spacing:-0.2px; line-height:1.1; }
+
+.gad-metrics-unavail { font-size:14px; color:rgba(255,255,255,0.5); font-style:italic; padding:6px 0; letter-spacing:0.3px; }
+
+.gad-map-hdr    { font-size:11px; font-weight:800; color:#fff; letter-spacing:0.3px; padding:12px 12px 6px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gad-map-wrap   { flex:1; position:relative; overflow:hidden; min-height:200px; border-radius:0 0 8px 8px; }
+.gad-map-wrap #gateMapBox, .gad-map-wrap .g8-inb-map { position:absolute; inset:0; width:100%; height:100%; min-height:200px; }
+
+/* Make sure inline-style children inside the gate frame inherit the chosen
+   font-family instead of falling back to the browser default. */
+body.uxg-gate-mode .g8-wrap,
+body.uxg-gate-mode .g8-wrap * { font-family: inherit; }
+/* ── END NEW GATE SCREEN v8 ─────────────────────────────────── */
+
+/* ── BANNER ─────────────────────────────────────────────────────── */
+.uxg-topbar {
+  display:grid; grid-template-columns: 180px 1fr 240px; align-items:stretch;
+  min-height: 110px; background: rgba(8,18,32,0.96); border-bottom: 2px solid rgba(255,255,255,0.06); flex-shrink:0;
+}
+.uxg-gatebox { display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 8px 16px; background: rgba(4,10,22,0.9); border-right: 1px solid rgba(255,255,255,0.08); }
+.uxg-timebox { display:flex; flex-direction:column; align-items:flex-end; justify-content:center; padding: 8px 22px; border-left: 1px solid rgba(255,255,255,0.08); background: rgba(4,10,22,0.9); }
+.uxg-toplabel { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: rgba(255,255,255,0.6); }
+.uxg-gateval { margin-top: 2px; font-size: 68px; line-height: 0.68; font-weight: 900; letter-spacing: -0.02em; }
+.uxg-logobar { display:flex; align-items:center; justify-content:center; padding: 2px 2px; background: rgba(255,255,255,0.97); }
+.uxg-logobar .full-logo, .uxg-logobar img { max-width: min(1000px, 100%); max-height: 125px; width:fit-content; height:fit-content; object-fit:fill; }
+.uxg-logobar .logo-fallback { color:#10213b; font-size:36px; font-weight:800; letter-spacing:0.04em; }
+.uxg-clock { font-size: 50px; font-weight: 800; line-height:1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.uxg-date { margin-top: 4px; font-size: 13px; font-weight: 600; letter-spacing: 0.16em; color: rgba(255,255,255,0.6); }
+
+/* ── 3-COLUMN BODY — aligned rows via grid ─────────────────────── */
+.uxg-body {
+  flex:1; display:grid; grid-template-columns: 1fr 1fr 0.72fr;
+  grid-template-rows: auto 1fr auto; gap: 0; min-height:0;
+}
+.uxg-cell { padding: 20px 28px; background: rgba(12,28,52,0.78); backdrop-filter: blur(4px); border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.04); }
+.uxg-cell:nth-child(3n) { border-right:none; }
+/* Right column darker */
+.uxg-cell.uxg-right { background: rgba(8,20,40,0.88); }
+
+/* ── ROW 1: Flight Number | Destination | Live Data header ──── */
+.uxg-col-label { font-size: clamp(13px, 1.3vw, 18px); font-weight: 700; letter-spacing: 0.22em; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+.uxg-flight-huge { font-size: clamp(58px, 5.5vw, 96px); font-weight: 900; line-height: 0.92; letter-spacing:-0.03em; color:#fff; }
+.uxg-dest-huge { font-size: var(--uxg-dest-size, clamp(44px, 4.2vw, 76px)); font-weight: 900; line-height: 0.92; letter-spacing:-0.02em; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; display:block; }
+
+/* ── ROW 2: Dep Time+Weather | Arr Time+Weather | Aircraft Info ─ */
+.uxg-time-huge { font-size: clamp(58px, 5.5vw, 96px); font-weight: 900; line-height: 0.92; letter-spacing:-0.01em; color:#fff; font-variant-numeric: tabular-nums; }
+.uxg-time-crossed { text-decoration: line-through; text-decoration-thickness: 3px; color: #f97316; }
+.uxg-delayed-label { font-size: clamp(18px, 1.5vw, 26px); font-weight: 700; color: #f97316; letter-spacing: 0.06em; margin-top: 4px; }
+.uxg-revised-time { font-size: clamp(58px, 5.5vw, 96px); font-weight: 900; line-height: 0.92; color: #fff; font-variant-numeric: tabular-nums; }
+.uxg-revised-label { font-size: clamp(14px, 1.1vw, 20px); font-weight: 700; color: rgba(255,255,255,0.6); letter-spacing: 0.12em; }
+.uxg-ontime { font-size: clamp(24px, 2vw, 36px); font-weight: 800; color: #22c55e; letter-spacing: 0.06em; margin-top: 4px; }
+
+/* Weather inline — same size as the time */
+.uxg-wx-row { display:flex; align-items:center; gap: 10px; margin-top: 10px; }
+.uxg-wx-row .wx-icon { width:44px; height:44px; flex-shrink:0; }
+.uxg-wx-row .wx-icon img, .uxg-wx-row .wx-icon svg { width:44px; height:44px; object-fit:contain; }
+.uxg-wx-row .wx-temp { font-size: 26px; font-weight: 800; color: rgba(255,255,255,0.9); }
+.uxg-wx-row .wx-desc { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.55); text-transform: capitalize; }
+
+/* ── ROW 3: (empty) | Duration text | Boarding zones ────────── */
+.uxg-duration { font-size: clamp(16px, 1.3vw, 22px); font-weight: 600; color: rgba(255,255,255,0.7); line-height: 1.25; }
+
+/* ── RIGHT COLUMN sections ─────────────────────────────────────── */
+.uxg-right-section { margin-bottom: 14px; }
+.uxg-right-title { font-size: clamp(12px, 1.2vw, 16px); font-weight: 800; letter-spacing: 0.22em; color: rgba(255,255,255,0.4); margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.uxg-right-value { font-size: 20px; font-weight: 700; color: #fff; line-height: 1.2; }
+.uxg-right-value.uxg-right-countdown { font-size: 30px; font-weight: 900; color: #fbbf24; letter-spacing: 0.02em; }
+.uxg-right-sub { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+
+/* ── BOARDING ZONES ────────────────────────────────────────────── */
+.uxg-zone-stack { display:grid; gap:8px; margin-top: 6px; }
+.uxg-zone { border-radius:5px; padding: 10px 12px; font-size: 18px; font-weight: 800; letter-spacing: 0.02em; text-align:center; }
+.uxg-zone.active { background: #22c55e; color:#052e16; }
+.uxg-zone.wait { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.65); }
+.uxg-zone.done { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.35); text-decoration: line-through; }
+
+/* ── ROTATOR ───────────────────────────────────────────────────── */
+.uxg-rotator-item { display:none; font-size: 22px; font-weight: 700; line-height: 1.15; color:rgba(255,255,255,0.8); }
+.uxg-rotator-item.active { display:block; animation: uxgFade 0.45s ease; }
+@keyframes uxgFade { from { opacity:0; transform: translateY(6px);} to { opacity:1; transform:translateY(0);} }
+
+/* ── FOOTER ────────────────────────────────────────────────────── */
+.uxg-footer { display:flex; justify-content:space-between; align-items:center; gap:16px; padding: 8px 24px; font-size:14px; font-weight:700; letter-spacing:0.12em; color:rgba(255,255,255,0.7); background: rgba(6,14,28,0.92); border-top: 1px solid rgba(255,255,255,0.06); flex-shrink:0; }
+.uxg-footer-right { color: rgba(255,255,255,0.5); }
+.uxg-footer-right span { color: #fbbf24; font-weight: 800; }
+
+@media (max-width: 1180px) {
+  .uxg-body { grid-template-columns: 1fr; grid-template-rows: auto; }
+  .uxg-topbar { grid-template-columns: 140px 1fr 180px; min-height: 96px; }
+  .uxg-clock { font-size: 34px; }
+  .uxg-gateval { font-size: 50px; }
+}
+
+#gateView, #baggageView {
+  display: none; width: 100%; height: 100vh;
+  flex-direction: column; overflow: hidden;
+  font-family: var(--font-primary);
+}
+
+/* ─── GATE SCREEN ───────────────────────────────────────────────── */
+.gate-screen {
+  flex: 1; position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* City background photo */
+.gate-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: cover; background-position: center 40%;
+  background-repeat: no-repeat;
+}
+/* Subtle top gradient */
+.gate-bg::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 30%; z-index: 1;
+  background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 100%);
+}
+/* Overall tint so text is readable — v9: light overlay, BRIGHT */
+.gate-bg::after {
+  content: ''; position: absolute; inset: 0; z-index: 2;
+  background: linear-gradient(180deg,
+    rgba(10,22,40,0.30) 0%,
+    rgba(20,40,70,0.15) 30%,
+    rgba(20,40,70,0.10) 50%,
+    rgba(10,20,40,0.25) 100%
+  );
+}
+/* Fallback when no photo */
+.gate-bg.no-photo {
+  background: linear-gradient(180deg, #0a1628 0%, #1a3a5c 20%, #2d6a9f 45%, #5b9bd5 65%, #a3c9e8 80%, #d4e6f1 95%);
+}
+.gate-bg.no-photo::before { display: none; }
+.gate-bg.no-photo::after {
+  background: linear-gradient(180deg,
+    rgba(10,22,40,0.20) 0%,
+    rgba(10,22,40,0.08) 40%,
+    transparent 60%,
+    rgba(10,22,40,0.15) 100%
+  );
+}
+
+.gate-overlay {
+  position: relative; z-index: 3; flex: 1;
+  display: flex; flex-direction: column; padding: 18px 32px;
+}
+
+/* ── TOP ROW: gate number left, city+flight right ─────────────── */
+.gate-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.gate-number {
+  font-size: 160px; font-weight: 900; color: rgba(255,255,255,0.97);
+  line-height: 0.85; letter-spacing: -3px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.3), 4px 4px 0 rgba(0,0,0,0.15),
+    0 0 40px rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.25);
+  padding: 16px 28px 12px;
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+}
+.gate-city-block { text-align: right; padding-top: 20px; }
+.gate-city {
+  font-size: 56px; font-weight: 900; color: #ffffff;
+  line-height: 1; letter-spacing: 2px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.25), 0 0 30px rgba(0,0,0,0.5);
+}
+.gate-flight-label {
+  font-size: 34px; font-weight: 700; color: rgba(255,255,255,0.95);
+  letter-spacing: 3px; margin-top: 6px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+/* Red line — full width across screen, between top info and bottom info */
+.gate-separator {
+  display:none; height:0;
+}
+.gate-redline-top {
+  display:none; height:0;
+}
+.gate-redline-bottom {
+  display:none; height:0;
+}
+
+/* ── BOTTOM AREA: weather left, info+logo right ───────────────── */
+.gate-bottom {
+  flex: 1; display: flex; align-items: stretch;
+  justify-content: space-between; gap: 24px;
+  padding-top: 16px;
+}
+
+/* ── WEATHER panel (left) — compact, doesn't hog space ────── */
+.gate-wx-panel {
+  color: #ffffff; display: flex; flex-direction: column;
+}
+/* When weather is inside gate-top, make it horizontal and fill center */
+.gate-top > .gate-wx-panel {
+  flex: 1; flex-direction: row; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+  border-radius: 12px; margin: 0 20px; padding: 8px 20px;
+}
+.gate-top > .gate-wx-panel .gate-wx-title {
+  font-size: 13px; padding: 0 14px 0 0; background: none;
+  border-radius: 0; white-space: nowrap; letter-spacing: 1.5px;
+}
+.gate-top > .gate-wx-panel .gate-wx-box {
+  background: none; backdrop-filter: none; padding: 0;
+  border-radius: 0;
+}
+.gate-top > .gate-wx-panel .gate-wx-days { gap: 18px; }
+.gate-top > .gate-wx-panel .gate-wx-day { flex-direction: row; gap: 5px; }
+.gate-top > .gate-wx-panel .gate-wx-day-name { font-size: 15px; }
+.gate-top > .gate-wx-panel .gate-wx-day-icon svg, .gate-top > .gate-wx-panel .gate-wx-day-icon img { width: 32px; height: 32px; }
+.gate-top > .gate-wx-panel .gate-wx-day-temp { font-size: 20px; }
+.gate-top > .gate-wx-panel .gate-wx-day-range { font-size: 13px; }
+.gate-wx-title {
+  font-size: 16px; font-weight: 800; letter-spacing: 0.3px;
+  color: #ffffff; padding: 10px 12px;
+  background: rgba(0,0,0,0.6); text-align: center;
+  border-radius: 12px 12px 0 0;
+}
+.gate-wx-box {
+  background: rgba(0,0,0,0.35); backdrop-filter: blur(12px);
+  padding: 16px 24px;
+  border-radius: 0 0 12px 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.gate-wx-days { display: flex; gap: 28px; justify-content: center; }
+.gate-wx-day {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  flex: 1;
+}
+.gate-wx-day-name {
+  font-size: 28px; font-weight: 700; letter-spacing: 1px;
+  color: rgba(255,255,255,0.85);
+}
+.gate-wx-day-icon { display: flex; align-items: center; justify-content: center; }
+.gate-wx-day-icon svg, .gate-wx-day-icon img { width: 100px; height: 100px; }
+.gate-wx-day-temp {
+  font-size: 48px; font-weight: 900; color: #ffffff;
+}
+.gate-wx-day-range {
+  font-size: 26px; font-weight: 600; color: rgba(255,255,255,0.55);
+}
+
+/* ── RIGHT SIDE: time/status boxes + logo ─────────────────────── */
+.gate-right-stack {
+  display: flex; flex-direction: column; gap: 0; align-items: stretch;
+  flex: 1;
+}
+
+/* Labels ABOVE the boxes */
+.gate-labels-row {
+  display: flex; gap: 0; align-self: stretch;
+  overflow: hidden;
+}
+.gate-label-dep, .gate-label-status {
+  font-size: 20px; font-weight: 900; letter-spacing: 4px;
+  color: #ffffff;
+  padding: 12px 8px;
+  background: rgba(0,0,0,0.6);
+  text-align: center;
+}
+.gate-label-dep    { flex: 1; }
+.gate-label-status { flex: 1; }
+
+/* Time + Status boxes — BIG but natural height */
+.gate-boxes-row {
+  display: flex; gap: 0; box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+.gate-time-box {
+  background: #ffffff; padding: 32px 28px;
+  display: flex; align-items: center; justify-content: center;
+  flex: 1;
+}
+.gate-time-val {
+  font-size: 100px; font-weight: 900; color: #18181b;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.gate-time-upd {
+  font-size: 30px; font-weight: 900; color: #dc2626; margin-top: 10px;
+  text-align: center; letter-spacing: 1px;
+}
+.gate-status-box {
+  padding: 32px 20px; display: flex; align-items: center;
+  justify-content: center; flex: 1;
+}
+.gate-status-val {
+  font-size: 52px; font-weight: 900; line-height: 1; color: #ffffff;
+  letter-spacing: 2px; text-align: center;
+}
+
+/* Arrival line — attached directly below boxes */
+.gate-arr-line {
+  font-size: 30px; font-weight: 800; color: #18181b;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(8px);
+  padding: 16px 20px; text-align: center;
+  letter-spacing: 1px; border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+
+/* Boarding countdown — bright gold */
+.gate-countdown-big {
+  background: rgba(255,230,100,0.95); 
+  padding: 16px 20px; text-align: center;
+  border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+.gate-countdown-big .gate-countdown-val {
+  font-size: 38px; font-weight: 900; color: #92400e; letter-spacing: 3px;
+}
+
+/* Status box backgrounds - bright solid colors */
+.gsb-ontime    { background: #16a34a; }
+.gsb-scheduled { background: #2563eb; }
+.gsb-boarding  { background: #15803d; }
+.gsb-final     { background: #dc2626; }
+.gsb-delayed   { background: #d97706; }
+.gsb-cancelled { background: #be123c; }
+.gsb-early     { background: #2563eb; }
+.gsb-gateclosed{ background: #7c3aed; }
+.gsb-departed  { background: #475569; }
+.gsb-landed    { background: #16a34a; }
+
+/* Status text - always white */
+.gst-ontime    { color: #ffffff; }
+.gst-boarding  { color: #ffffff; }
+.gst-final     { color: #ffffff; }
+.gst-delayed   { color: #ffffff; }
+.gst-cancelled { color: #ffffff; }
+.gst-scheduled { color: #ffffff; }
+.gst-early     { color: #ffffff; }
+.gst-gateclosed{ color: #ffffff; }
+.gst-departed  { color: #ffffff; }
+.gst-landed    { color: #ffffff; }
+
+/* no blinking on gate screen — solid colors only */
+
+/* Airline logo card — fills right column */
+.gate-logo-card {
+  background: rgba(255,255,255,0.96); padding: 20px 36px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+  min-height: 140px; flex: 1;
+  align-self: stretch;
+}
+.gate-logo-card img {
+  height: 140px !important; max-width: 540px !important;
+  width: auto !important; object-fit: contain;
+}
+.gate-logo-card div {
+  height: 140px !important; max-width: 540px !important;
+  display: flex !important; align-items: center;
+}
+.gate-logo-card .full-logo {
+  height: 120px !important; max-width: 500px !important;
+}
+.gate-logo-card .logo-fallback {
+  font-size: 64px !important; color: #18181b !important;
+}
+
+/* ── FOOTER ───────────────────────────────────────────────────── */
+.gate-footer {
+  background: #18181b; color: #ffffff; padding: 12px 32px;
+  font-size: 22px; font-weight: 700; display: flex;
+  justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.gate-footer-left {
+  display: flex; align-items: center; gap: 12px;
+  color: rgba(255,255,255,0.6); letter-spacing: 1px;
+}
+.gate-footer-right {
+  font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.8);
+  letter-spacing: 1px; font-size: 32px;
+}
+.gate-footer-next {
+  background: #111111; color: #ffffff; padding: 10px 32px;
+  font-size: 22px; font-weight: 700; display: flex;
+  justify-content: space-between; align-items: center;
+  flex-shrink: 0; border-top: 1px solid #3f3f46;
+}
+.gate-footer-next-lbl { color: rgba(255,255,255,0.4); letter-spacing: 2px; font-size: 22px; }
+.gate-footer-next-val { color: #eab308; letter-spacing: 1px; font-size: 28px; }
+.gate-footer-next-delayed { color: #dc2626; margin-left: 12px; }
+
+/* No-flight placeholder */
+.gate-empty-msg {
+  font-size: 36px; color: rgba(255,255,255,0.35);
+  text-align: center;
+}
+
+/* ─── BAGGAGE CLAIM SCREEN ──────────────────────────────────────── */
+.bag-hero {
+  position: relative; height: 200px; flex-shrink: 0; overflow: hidden;
+}
+.bag-hero-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+}
+.bag-hero-bg.no-photo {
+  /* Inherit from FIDS theme variables — falls back to default blue if no
+     theme set. This makes BIDS automatically match whatever FIDS theme
+     is active, since every theme defines --fids-bg + --fids-banner-bg. */
+  background: linear-gradient(135deg,
+    var(--fids-bg, #1e3a5f) 0%,
+    var(--fids-banner-bg, #2d6a9f) 50%,
+    var(--fids-banner-accent, #5b9bd5) 100%);
+}
+.bag-hero-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%);
+}
+.bag-hero-overlay {
+  position: relative; z-index: 2; height: 100%;
+  display: flex; align-items: center; padding: 0 40px; gap: 30px;
+}
+.bag-hero-number {
+  font-size: 120px; font-weight: 900; color: #ffffff; line-height: 1;
+  text-shadow: 0 4px 30px rgba(0,0,0,0.5);
+}
+.bag-hero-info { display: flex; flex-direction: column; gap: 6px; }
+.bag-hero-label {
+  font-size: 42px; font-weight: 900; color: #ffffff; letter-spacing: 3px;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+}
+.bag-hero-airport {
+  font-size: 24px; font-weight: 600; color: rgba(255,255,255,0.8);
+  letter-spacing: 1px;
+}
+.ac-bag-list { flex: 1; padding: 0; background: #f8fafc; overflow-y: auto; }
+.ac-bag-hdr {
+  display: grid; grid-template-columns: 2fr 2fr 1.5fr 1.5fr 2fr;
+  padding: 14px 30px; font-size: 18px; font-weight: 900; color: #52525b;
+  letter-spacing: 3px; border-bottom: 2px solid #e4e4e7;
+  background: #f1f5f9; gap: 20px;
+}
+.ac-bag-row {
+  display: grid; grid-template-columns: 2fr 2fr 1.5fr 1.5fr 2fr;
+  padding: 16px 30px; border-bottom: 1px solid #e4e4e7;
+  font-size: 28px; font-weight: 700; color: #18181b; align-items: center; gap: 20px;
+}
+.ac-bag-row:nth-child(odd)  { background: #ffffff; }
+.ac-bag-row:nth-child(even) { background: #f8fafc; }
+.bag-origin-city { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bag-logo-cell { display: flex; align-items: center; }
+.bag-logo-cell .full-logo { height: 34px; width: auto; max-width: 160px; object-fit: contain; object-position: left center; margin: 0; background: none; padding: 0; border-radius: 0; display: block; }
+.bag-logo-cell .logo-fallback { font-size: 18px; font-weight: 700; white-space: nowrap; }
+.bag-flight-num { font-size: 26px; font-weight: 700; white-space: nowrap; }
+.bag-time { font-variant-numeric: tabular-nums; font-size: 28px; font-weight: 700; color: #b45309; }
+.bag-status-arrived { color: #16a34a; font-weight: 900; font-size: 24px; }
+.bag-status-other   { color: #52525b; font-size: 24px; }
+
+/* ══════════════════════════════════════════════════════════════
+.g5-sky-dawn { background: linear-gradient(180deg, #0c1445 0%, #2d1b69 20%, #8b3a6b 45%, #d4725c 70%, #f0a358 90%, #f7c97e 100%) !important; }
+.g5-sky-day { background: linear-gradient(180deg, #0a4a8c 0%, #1e78c8 25%, #3498db 50%, #5dade2 75%, #87ceeb 100%) !important; }
+.g5-sky-golden { background: linear-gradient(180deg, #1a2a6c 0%, #b21f1f 40%, #fdbb2d 100%) !important; }
+.g5-sky-dusk { background: linear-gradient(180deg, #2d1560 0%, #5e3d9e 25%, #8b5cbf 45%, #c47ab0 65%, #e8967a 85%, #f0b060 100%) !important; }
+.g5-sky-night { background: linear-gradient(180deg, #0f1b4d 0%, #1e3a7a 25%, #2a4f8f 50%, #1e3a7a 75%, #162d66 100%) !important; }
+.g5-sky-overcast { background: linear-gradient(180deg, #4a5568 0%, #718096 40%, #a0aec0 80%, #cbd5e0 100%) !important; }
+.g5-sky-storm { background: linear-gradient(180deg, #2c3e50 0%, #4a6572 30%, #7f9cad 60%, #b0c4ce 100%) !important; }
+.g5-sky-arctic { background: linear-gradient(180deg, #e0f7fa 0%, #b2ebf2 25%, #80deea 50%, #4dd0e1 75%, #26c6da 100%) !important; }
+.g5-bg-light { background: linear-gradient(180deg, #e8eef5 0%, #dce3ec 50%, #d0d8e3 100%) !important; }
+.g5-bg-dark { background: linear-gradient(180deg, #162340 0%, #1e3355 50%, #162340 100%) !important; }
+/* Warm sunset — amber → magenta → deep purple */
+.g5-bg-sunset { background: linear-gradient(180deg, #2d1245 0%, #5b1a5a 20%, #b24e6a 45%, #e87c5c 70%, #f2a950 90%, #f7c97e 100%) !important; }
+/* Storm — cool slate greys with blue undertones */
+.g5-bg-storm { background: linear-gradient(180deg, #1a1f2e 0%, #2c3e50 30%, #4a5a6f 60%, #6b7a8a 100%) !important; }
+/* Deep space — black with hint of purple, star-dust feel */
+.g5-bg-space { background: radial-gradient(ellipse at 30% 20%, #2a1e4a 0%, #1a1038 35%, #0a0518 70%, #000000 100%) !important; }
+/* Aurora borealis — teal → green → purple */
+.g5-bg-aurora { background: linear-gradient(180deg, #0a1530 0%, #1a3a55 20%, #2d6a7d 40%, #3fa88c 60%, #5a8fb5 75%, #7a4a9a 90%, #4a1f5a 100%) !important; }
+
+@keyframes boardingPulse {
+  0%, 100% { background: #eab308; box-shadow: 0 0 0 0 rgba(234,179,8,0); }
+  50% { background: #fbbf24; box-shadow: 0 0 20px 4px rgba(234,179,8,0.3); }
+}
+.g5-countdown { font-size: 32px; font-weight: 800; color: #fbbf24; padding: 10px 0; letter-spacing: 3px; text-shadow: 0 0 16px rgba(251,191,36,0.5); }
+.g5-wx-title {
+  font-size: 15px; font-weight: 700; letter-spacing: 3px;
+  color: rgba(255,255,255,0.6);
+  padding: 14px 16px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.g5-wx-body { padding: 20px 10px; display: flex; justify-content: space-around; gap: 0; }
+.g5-wx-day { text-align: center; flex: 1; min-width: 0; }
+.g5-wx-dn { font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 12px; min-height: 30px; display: flex; align-items: center; justify-content: center; text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+.g5-wx-icon { display: flex; justify-content: center; align-items: center; margin-bottom: 8px; width: 110px; height: 110px; margin-left: auto; margin-right: auto; }
+.g5-wx-icon svg, .g5-wx-icon img { width: 110px; height: 110px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3)); }
+.g5-wx-temp { font-size: 46px; font-weight: 700; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.g5-footer {
+  background: #000000; padding: 14px 32px;
+  display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+}
+
+.g5-footer-airport {
+  font-size: 16px; font-weight: 400; letter-spacing: 5px;
+  color: rgba(255,255,255,0.35);
+}
+.g5-footer-next-inline { display: flex; align-items: center; gap: 12px; }
+.g5-footer-next-inline .g5-next-lbl {
+  font-size: 13px; font-weight: 700; letter-spacing: 3px;
+  color: rgba(255,255,255,0.3);
+}
+.g5-footer-next-inline .g5-next-val {
+  font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.65); letter-spacing: 1px;
+}
+.g5-next-delayed { color: #dc2626; margin-left: 10px; }
+
+
+/* === Gate final grid fix === */
+
+/* ── MOBILE: Gate idle layout stacks vertically ──────────────────── */
+@media (max-width: 800px) {
+  /* Gate idle: stack welcome+map and ad+weather vertically */
+  .g8-wrap > div:last-of-type > div:first-child > div {
+    flex-direction: column !important;
+  }
+  /* Map column: full width on mobile */
+  .g8-wrap [style*="width:40%"] {
+    width: 100% !important;
+    max-height: 200px;
+  }
+  /* Ad carousel: reduce height */
+  .g8-wrap [style*="height:230px"] {
+    height: auto !important;
+    min-height: 120px;
+    flex-direction: column !important;
+  }
+  /* Weather strip: horizontal scroll */
+  .g8-wx-strip {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding: 6px 10px !important;
+  }
+  /* Gate footer: smaller text */
+  .g8-r5 {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .g8-r5-airport {
+    font-size: 11px !important;
+    letter-spacing: 2px !important;
+  }
+  /* Empty gate: weather panel compact */
+  .gate-wx-panel {
+    max-width: 100% !important;
+  }
+  .gate-wx-days {
+    gap: 8px !important;
+  }
+  .gate-wx-day-temp {
+    font-size: 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even smaller screens */
+  .g8-r1 {
+    flex-wrap: wrap !important;
+    min-height: auto !important;
+    padding: 8px 12px !important;
+  }
+  .g8-r2 {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .g8-r2-fields {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+  .g8-r5-clock {
+    font-size: 16px !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+   WIFI PULSE AD — animated Wi-Fi signal rings for gate ad carousel
+   Three rings stagger-animate outward with a fading glow, mimicking
+   a broadcasting signal. Used by the 'wifi-pulse' ad layout.
+   ────────────────────────────────────────────────────────────────────── */
+@keyframes wifiPulseRing {
+  0%   { transform: scale(0.35); opacity: 0.95; }
+  70%  { opacity: 0.15; }
+  100% { transform: scale(1.6);  opacity: 0; }
+}
+@keyframes wifiPulseDot {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%      { transform: scale(1.15); opacity: 0.85; }
+}
+@keyframes wifiPulseGlow {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.6;  }
+}
+.wifi-pulse-wrap {
+  position: relative;
+  width: 140px; height: 140px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.wifi-pulse-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 2.5px solid currentColor;
+  transform-origin: center;
+  animation: wifiPulseRing 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+  will-change: transform, opacity;
+}
+.wifi-pulse-ring.r2 { animation-delay: 0.6s;  }
+.wifi-pulse-ring.r3 { animation-delay: 1.2s;  }
+.wifi-pulse-dot {
+  position: relative;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 24px 4px currentColor;
+  animation: wifiPulseDot 2.4s ease-in-out infinite;
+  z-index: 1;
+}
+.wifi-pulse-glow {
+  position: absolute; inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, currentColor 0%, transparent 60%);
+  opacity: 0.45;
+  filter: blur(12px);
+  animation: wifiPulseGlow 2.4s ease-in-out infinite;
+  z-index: 0;
+}
+
+
+/* Gate-change footer banner pulse — subtle attention without being aggressive.
+   Used by the footer slot when getInboundGateRedirect returns an active change. */
+@keyframes fids-banner-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(249,115,22,0); }
+}

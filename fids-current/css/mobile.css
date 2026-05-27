@@ -1,0 +1,518 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FIDS — Mobile Responsive Overrides
+   Single source of truth for phone-sized layouts. Loaded LAST so it
+   wins the cascade over fids.css / fids-v2.css / menu.css / entry.css.
+   Only active at <= 640px. Desktop look is preserved above that.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Always — prevent any sideways scroll on the page itself.
+   The scrolling behaviour belongs to inner containers (mobile cards, ticker). */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 640px) {
+
+  /* ═══ ENTRY (index.html) ════════════════════════════════════════════════ */
+  /* The entry-title is `font-size:72px; letter-spacing:14px` — already
+     reduced to 48px/8px at 720px, but on a 380px viewport that's still
+     tight. Pull it tighter. */
+  .entry-inner { padding: 0 16px; max-width: 100%; }
+  .entry-title { font-size: 38px !important; letter-spacing: 6px !important; }
+  .entry-brand { font-size: 10px; letter-spacing: 4px; padding: 0 8px; }
+  .entry-sub { font-size: 11px; letter-spacing: 3px; padding: 0 8px; }
+  .entry-sub-fr { font-size: 9px; letter-spacing: 2px; padding: 0 8px; margin-bottom: 28px; }
+  .entry-buttons { padding: 0 12px; }
+  .entry-btn { min-width: 0 !important; width: 100%; }
+
+  /* ═══ PICKER (picker.html) ══════════════════════════════════════════════ */
+  /* Cards are 260px wide x ~360px tall stacked vertically — three of those
+     plus the back button is way more than one screen. Compact them. */
+  .picker-inner { padding: 24px 16px; max-width: 100%; }
+  .picker-cards { gap: 10px !important; }
+  .picker-card {
+    width: 100% !important;
+    max-width: 360px;
+    padding: 18px 16px 16px !important;
+  }
+  .picker-card-icon {
+    width: 36px !important; height: 36px !important;
+    margin: 0 auto 8px !important;
+    font-size: 16px !important;
+  }
+  .picker-card-title { font-size: 18px !important; letter-spacing: 3px !important; margin-bottom: 4px !important; }
+  .picker-card-desc { font-size: 9px !important; line-height: 1.4 !important; }
+  .picker-card-desc-fr { font-size: 8px !important; }
+  /* Trim the inline secondary description spans Nick added per card */
+  .picker-card > div[style*="margin-top:12px"] {
+    margin-top: 6px !important;
+    font-size: 8px !important;
+    line-height: 1.3 !important;
+  }
+  .picker-back { margin-top: 20px !important; }
+
+  /* ═══ LOGIN MODAL ══════════════════════════════════════════════════════ */
+  .login-card { padding: 24px 18px !important; width: calc(100% - 24px) !important; }
+  .login-title { font-size: 18px; letter-spacing: 2px; }
+  .login-field input { font-size: 16px; /* prevents iOS zoom-on-focus */ }
+
+  /* ═══ MAIN BOARD (fids.html — fids-v2 layout) ══════════════════════════ */
+  /* The v2 banner is the worst offender: 130px tall with a 360px airport
+     pill on the left, a 200px+200px gap on the right, and a board label.
+     Restructure it as a compact column at this width. */
+  .fids-banner {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  body[data-fids-layout="right"] .fids-banner {
+    padding: 10px 12px !important;
+    flex-direction: row !important;
+  }
+  /* Airport pill — small, fixed height, logo scales to fit */
+  .fids-airport-pill {
+    height: auto !important;
+    min-height: 44px !important;
+    padding: 6px 10px !important;
+    max-width: 60% !important;
+    gap: 8px !important;
+    border-radius: 6px !important;
+    align-items: center !important;
+  }
+  .fids-airport-logo-img {
+    height: 32px !important;
+    max-width: 160px !important;
+  }
+  .fids-airport-iata { font-size: 18px !important; }
+  .fids-airport-name {
+    font-size: 10px !important;
+    white-space: normal !important;     /* allow long airport names to wrap instead of being chopped */
+    line-height: 1.2 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+  }
+
+  /* Board side — DEPARTURES/ARRIVALS label + plane icon. Drop the
+     ridiculous 200px right margin that was clearing the time block. */
+  .fids-banner-board,
+  body[data-fids-layout="right"] .fids-banner-board {
+    margin: 0 !important;
+    gap: 8px !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+  }
+  .fids-board-label { font-size: 18px !important; letter-spacing: 0 !important; }
+  .fids-board-icon { width: 32px !important; height: 32px !important; }
+  .fids-board-icon svg { width: 18px !important; height: 18px !important; }
+
+  /* Time + date block — pull it in-flow on a second row instead of
+     absolute-positioned in the corner where it overlaps the board label.
+     fids-v3.css uses absolute positioning + transform to centre the
+     time-block on desktop; on mobile we reset all of those to in-flow. */
+  .fids-banner-time-block,
+  body[data-fids-layout="right"] .fids-banner-time-block {
+    position: static !important;
+    transform: none !important;
+    text-align: right !important;
+    flex: 1 1 100% !important;
+    order: 99 !important;
+    margin-top: 4px !important;
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+  }
+  .fids-banner-time { font-size: 18px !important; font-weight: 600 !important; letter-spacing: 0 !important; }
+  .fids-banner-date { font-size: 11px !important; margin-top: 0 !important; font-weight: 500 !important; opacity: 0.85 !important; }
+
+  /* Hide the chevron pattern entirely on mobile — at this size the diagonal
+     stripes read as visual glitches, not premium decoration. */
+  .fids-banner-chevrons { display: none !important; }
+
+  /* ── v2 TABLE ──────────────────────────────────────────────────────────
+     The table is stuffed: 7 columns at 24px font with `nowrap` and
+     row-height locked to 54px. On a 380px screen the columns spill off
+     the right. Force the table to be horizontally scrollable instead of
+     letting it visually clip content (we can't safely re-shape the table
+     without breaking the desktop look). */
+  .fids-content { overflow-x: auto !important; }
+  .fids-table { font-size: 13px !important; min-width: 540px; }
+  #fidsTable tbody td,
+  #fidsTable .td-airline,
+  #fidsTable .td-dest,
+  #fidsTable .td-flight,
+  #fidsTable .td-gate,
+  #fidsTable .td-time,
+  #fidsTable .td-status,
+  #fidsTable .td-wx {
+    font-size: 13px !important;
+    padding: 0 8px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+  }
+  #fidsTable thead th {
+    font-size: 11px !important;
+    padding: 8px !important;
+  }
+  #fidsTable .td-airline .fids-airline-logo,
+  #fidsTable .td-airline .fids-airline-logo .full-logo {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+  }
+  #fidsTable .td-airline .fids-airline-logo img,
+  #fidsTable .td-airline .fids-airline-logo svg {
+    width: 26px !important;
+    height: 26px !important;
+    max-width: 26px !important;
+    max-height: 26px !important;
+  }
+  #fidsTable .td-airline .fids-airline-logo:has(img[data-logo-set="wordmark"]) {
+    max-width: 110px !important;
+    height: 36px !important;
+  }
+  #fidsTable .td-airline .fids-airline-logo img[data-logo-set="wordmark"] {
+    max-width: 110px !important;
+    height: 30px !important;
+  }
+  #fidsTable .td-airline .fids-airline-wordmark { height: 36px !important; }
+  #fidsTable .td-airline .fids-airline-wordmark img.fids-wordmark-img {
+    height: 26px !important;
+    max-width: 110px !important;
+  }
+  #fidsTable .td-airline .fids-cell-airline { gap: 6px !important; }
+  #fidsTable .td-status { padding-right: 12px !important; }
+  #fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
+  #fidsTable .td-wx .fids-cell-weather svg { width: 26px !important; height: 26px !important; }
+  #fidsTable .td-wx .fids-cell-weather span:not(.fids-wx-cell) { font-size: 13px !important; }
+
+  /* Mobile cards path (legacy fids.html `<= 800px` rule already shows
+     the cards). Re-apply minor fixes so they fit a 360px screen. */
+  #mobileView { padding: 0 8px; }
+  .mobile-cards-scroll { padding: 0 !important; }
+  .flight-card { padding: 10px 12px !important; }
+  .card-row1, .card-row2 { gap: 8px !important; flex-wrap: wrap !important; }
+  .card-time { font-size: 22px !important; }
+  .card-city { font-size: 18px !important; }
+  .card-flight, .card-gate, .card-wx { font-size: 12px !important; }
+
+  /* ═══ HEADER (legacy fids.css .hdr — used on bids/some flows) ═════════ */
+  /* The grid template `1fr auto 1fr` plus min-widths of 200/220px forces
+     a 600px-min header. Collapse to a single column. */
+  .hdr {
+    grid-template-columns: 1fr !important;
+    padding: 8px 12px !important;
+    gap: 4px !important;
+    min-height: 0 !important;
+    text-align: center !important;
+  }
+  .hdr-left,
+  .hdr-right,
+  .hdr-center {
+    min-width: 0 !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+  .hdr-board { font-size: 22px !important; min-width: 0 !important; letter-spacing: 1px !important; }
+  .hdr-apname {
+    font-size: 14px !important;
+    white-space: normal !important;     /* allow the airport name to wrap instead of being chopped */
+    overflow: visible !important;
+    text-overflow: clip !important;
+    line-height: 1.2 !important;
+  }
+  .hdr-clock { font-size: 22px !important; letter-spacing: 0 !important; }
+  .hdr-date { font-size: 10px !important; }
+
+  /* ═══ BAGGAGE (bids.html) ═════════════════════════════════════════════ */
+  /* Hero number was 120px, label 42px, all on a 200px-tall hero. Shrink. */
+  .bag-hero {
+    height: auto !important;
+    min-height: 110px !important;
+    padding: 12px 0 !important;
+  }
+  .bag-hero-overlay {
+    padding: 0 16px !important;
+    gap: 12px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+  .bag-hero-number { font-size: 56px !important; }
+  .bag-hero-info { gap: 2px !important; min-width: 0; flex: 1; }
+  .bag-hero-label { font-size: 22px !important; letter-spacing: 1px !important; line-height: 1.1 !important; }
+  .bag-hero-airport {
+    font-size: 11px !important;
+    letter-spacing: 0.5px !important;
+    white-space: normal !important;
+    line-height: 1.3 !important;
+  }
+
+  /* The 5-col grid (origin / airline / flight / time / status) at 28px font
+     with 30px padding cannot fit on a phone. Switch to a 2-row layout
+     per row: airline+flight on top, origin+time+status below. */
+  .ac-bag-hdr { display: none !important; }
+  .ac-bag-row {
+    display: grid !important;
+    grid-template-columns: 44px 1fr auto !important;
+    grid-template-rows: auto auto !important;
+    grid-template-areas:
+      "logo  flight  time"
+      "logo  origin  status";
+    padding: 10px 14px !important;
+    gap: 4px 10px !important;
+    font-size: 14px !important;
+    align-items: center !important;
+  }
+  .ac-bag-row .bag-logo-cell { grid-area: logo; }
+  .ac-bag-row .bag-logo-cell .full-logo { height: 28px !important; max-width: 44px !important; }
+  .ac-bag-row .bag-flight-num { grid-area: flight; font-size: 15px !important; }
+  .ac-bag-row .bag-time { grid-area: time; font-size: 16px !important; text-align: right; }
+  .ac-bag-row .bag-origin-city { grid-area: origin; font-size: 13px !important; font-weight: 600 !important; }
+  .ac-bag-row .bag-status-arrived,
+  .ac-bag-row .bag-status-other { grid-area: status; font-size: 12px !important; text-align: right; }
+
+  /* ═══ GATE SCREEN (gids — g8 layout) ══════════════════════════════════
+     The desktop gate screen has three side-by-side bottom panels (hotel
+     logo | ad carousel | weather) at 280px+1fr+280px. On a 380px phone,
+     that overflows by ~180px and clips. Plus stacking the aircraft + map
+     stacks fine but the cells get squeezed.
+     
+     Goals on mobile:
+       (a) Show ALL the same data the desktop version shows. No removal.
+       (b) Stack panels vertically, full-width per row.
+       (c) Trim wasted padding, keep fonts readable (≥14px body, ≥12px
+           labels), keep iconography visible.
+       (d) Bottom bar: hotel logo + ad carousel + weather rotate vertically.
+     ═════════════════════════════════════════════════════════════════════ */
+  .g8-r1-gate {
+    font-size: clamp(28px, 7vw, 48px) !important;
+    padding: 0 8px !important;
+  }
+  .g8-r1 { padding: 6px 10px !important; }
+  .g8-r1-dest { font-size: clamp(18px, 5.5vw, 28px) !important; }
+  .g8-r2 { padding: 6px 10px !important; }
+  .g8-r2-flight span { font-size: 22px !important; }
+  .g8-r2-field-val { font-size: 16px !important; }
+  .g8-r2-field-label { font-size: 10px !important; }
+
+  /* AIRCRAFT INFO + MAP STACK
+     The right column (aircraft type / registration / operator + map)
+     stacks vertically at <= 768px via fids.css. Reinforce that stack on
+     phones, give each a sensible min height so neither collapses to 0. */
+
+  /* OUTER BODY LAYOUT — the gate-screen IDLE mode renders the welcome
+     panel + aircraft-info column as siblings inside an inline-styled
+     flex parent (`display:flex;flex:1;overflow:hidden;gap:0`). On mobile
+     these need to stack vertically — otherwise the right column's
+     content is visually crammed into 50% of a 380px viewport (190px,
+     no room for "Operated by", aircraft photo, registration, or map).
+     This is the structural fix for "half the info is missing on mobile". */
+  .g8-wrap > div > div[style*="display:flex"][style*="flex:1"][style*="overflow:hidden"] {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  /* Welcome panel — full width, capped height so it doesn't push the
+     aircraft info off the bottom of the screen */
+  .g8-wrap > div > div[style*="display:flex"][style*="flex:1"] > div[style*="background:#0a0a0f"] {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 180px !important;
+    max-height: 240px !important;
+  }
+  /* Welcome city text scales to fit narrow viewport */
+  .g8-welcome-city {
+    font-size: clamp(28px, 7vw, 48px) !important;
+    white-space: normal !important;     /* allow wrap on long city names */
+    text-align: center !important;
+  }
+
+  .gad-right-col {
+    width: 100% !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    gap: 8px !important;
+  }
+  .gad-info-col {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    padding: 12px 14px !important;
+    border: none !important;
+    min-height: 0 !important;
+    background: linear-gradient(135deg, #1a1f2e 0%, #0f1420 100%) !important;
+  }
+  .gad-map-col {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 220px !important;     /* keep map readable */
+    border: none !important;
+  }
+  .g8-inb-map, #gateMapBox {
+    min-height: 220px !important;
+    height: 220px !important;
+  }
+
+  /* Aircraft type + registration line — keep visible, don't truncate */
+  .gad-equip-panel {
+    padding: 10px 12px !important;
+    gap: 6px !important;
+  }
+  .gad-equip-row,
+  .gad-equip-panel > div:first-child {
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+    white-space: normal !important;     /* allow wrap, don't ellipsis-clip */
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+  .gad-val-inline { font-size: 16px !important; }
+  .gad-lbl-inline { font-size: 12px !important; }
+  /* Aircraft photo — reserve real space for it, don't squish it to 60px */
+  .gad-equip-img-large { max-height: 130px !important; margin-top: 6px !important; }
+  .gad-equip-img-large img { max-height: 130px !important; }
+
+  /* "Operated by" line stays prominent — this is the line Nick called out */
+  .gad-operator-row,
+  .gad-equip-panel [data-op-row] {
+    font-size: 14px !important;
+    margin-top: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+  .gad-equip-panel img[alt*="Operated"],
+  .gad-equip-panel img[src*="jazz"],
+  .gad-equip-panel img[src*="rouge"],
+  .gad-equip-panel img[src*="american-eagle"],
+  .gad-equip-panel img[src*="delta-connection"],
+  .gad-equip-panel img[src*="united-express"] {
+    height: 24px !important;
+    max-width: 140px !important;
+    width: auto !important;
+  }
+
+  /* Inbound section — keep label, city, scheduled+actual times all visible */
+  .g8-inb { flex-direction: column !important; }
+  .g8-inb-left { padding: 14px 16px !important; }
+  .g8-inb-label { font-size: 14px !important; margin-bottom: 8px !important; }
+  .g8-inb-city { font-size: clamp(22px, 5.5vw, 32px) !important; margin-bottom: 4px !important; }
+  .g8-inb-flight { font-size: 16px !important; margin-bottom: 10px !important; }
+  .g8-inb-times { gap: 8px !important; }
+  .g8-inb-time-row { font-size: 13px !important; }
+  .g8-inb-time-row .g8-time-val { font-size: clamp(20px, 4.5vw, 28px) !important; }
+
+  /* BOTTOM BAR — was 170px tall with three side-by-side panels at fixed
+     280px widths (hotel logo | ads | weather). On mobile, stack them
+     vertically so each takes full width and nothing overflows. */
+  .g8-wrap > div[style*="height:170px"],
+  .g8-wrap > div[style*="height: 170px"] {
+    height: auto !important;
+    min-height: 0 !important;
+    flex-direction: column !important;
+  }
+  /* Hotel logo strip — full width, shorter on mobile */
+  #gateAdLogo {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 60px !important;
+    max-height: 80px !important;
+    padding: 8px !important;
+  }
+  #gateAdLogo img {
+    max-height: 60px !important;
+    width: auto !important;
+  }
+  /* Ad carousel — full width, ~140px tall (plenty for hotel ad photos) */
+  #gateAdCarousel {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 140px !important;
+    height: 140px !important;
+  }
+  /* Weather panel — full width, but the inner uses flex 0 0 280px hardcoded
+     in JS, so override it here to span full row */
+  #gateWxStrip {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 110px !important;
+  }
+  #gateWxStrip > div {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    padding: 12px 16px !important;
+  }
+
+  /* Group/lane boarding panels (the big "Group 1 / Use Lane 1" boxes) */
+  .gsb-group, .g8-now, .g8-next { font-size: 11px !important; }
+
+  /* Footer */
+  .g8-footer, .g5-footer, .gate-footer {
+    flex-wrap: wrap !important;
+    padding: 8px 12px !important;
+    gap: 6px !important;
+    font-size: 12px !important;
+  }
+  .g5-footer-airport, .gate-footer-airport, .gate-footer-left {
+    font-size: 10px !important;
+    letter-spacing: 1px !important;
+    flex: 1 1 100% !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+  .gate-footer-right {
+    font-size: 14px !important;
+    letter-spacing: 0.5px !important;
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+  }
+  .g5-footer-next-inline, .gate-footer-next {
+    flex: 1 1 100% !important;
+    justify-content: space-between !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+  .gate-footer-next-lbl { font-size: 10px !important; letter-spacing: 1px !important; }
+  .gate-footer-next-val { font-size: 13px !important; letter-spacing: 0.5px !important; }
+
+  /* ═══ TICKER (all boards) ════════════════════════════════════════════ */
+  .ticker { padding: 8px 0 !important; }
+  .ticker span { font-size: 12px !important; letter-spacing: 1.5px !important; }
+
+  /* ═══ TRANSITION LOADER ══════════════════════════════════════════════ */
+  .fids-loader-title { font-size: 32px; letter-spacing: 4px; }
+  .fids-loader-bar { width: 160px; }
+
+  /* ═══ MENU TRIGGER COG — keep tappable size on mobile ═════════════════ */
+  .menu-trigger { width: 44px !important; height: 44px !important; }
+
+  /* ═══ TEST FLIGHT MODAL & OVERRIDE PANEL — squeeze for narrow viewports
+     (these have inline styles `width:420px/480px` with `max-width:94vw`
+     so they already shrink, but let's tighten padding) */
+  .ctrl-bg-group, .ctrl select, .ap-panel select { font-size: 12px !important; }
+}
+
+/* Very narrow phones — extra trim */
+@media (max-width: 360px) {
+  .entry-title { font-size: 32px !important; letter-spacing: 4px !important; }
+  .fids-board-label { font-size: 15px !important; }
+  .fids-banner-time { font-size: 16px !important; }
+  .bag-hero-number { font-size: 44px !important; }
+  .bag-hero-label { font-size: 18px !important; }
+}
