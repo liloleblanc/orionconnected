@@ -1,0 +1,21 @@
+ACCOR GIDS REBUILD — drop-in files
+==================================
+Replace these in your project (same paths), then deploy + hard-refresh:
+
+  js/fids-core.js   -> js/fids-core.js        (new Accor slide + 3:1 rotation + lockup helper)
+  css/accor-slide.css -> css/accor-slide.css  (NEW — 89 lines, replaces ads-only-accor-v6.css)
+  gids.html         -> gids.html              (CSS link swapped to accor-slide.css)
+  logos/hotels/accor-corporate/endorsement/*.png  -> same path (official "Members of ALL" signature)
+
+WHAT CHANGED
+- Accor hotel slide rebuilt: photo-led, logo > name(75%) > info, glass bullets,
+  ALL speech bubble + QR, official "Members of ALL" endorsement (EN) / localized
+  ALL lockup (FR/AR/ZH). Brand Book 2022 compliant.
+- Ad rotation: 3 non-Accor (your uploaded media + airline ads) : 1 Accor.
+  Your uploaded videos/images now PLAY in the carousel (they never did before).
+  Accor is no longer permanently on screen.
+- Old ads-only-accor-v6.css (2645 lines, 23 stacked versions) is no longer
+  referenced. You can delete it once you confirm the new slide looks right.
+
+NOTE: The old css/ads-only-accor-v6.css file is left in place but unused.
+Delete it after you verify the deploy.

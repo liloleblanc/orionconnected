@@ -18910,163 +18910,95 @@ function buildGateAdHtml(ad) {
    Scope: ad HTML only. No menu/flight/gate/weather/map/aircraft/carousel/admin changes.
 */
 function buildAccorAdOnlyV6(ad) {
-  function esc(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function first() { for (var i=0;i<arguments.length;i++) if (arguments[i]!==undefined && arguments[i]!==null && String(arguments[i]).trim()!=='') return arguments[i]; return ''; }
-  function lower(v) { return String(v == null ? '' : v).toLowerCase(); }
-  function safeTL(k,f){ try { return (typeof TL==='function' && TL(k)) || f; } catch(e){ return f; } }
-  function accorLang(){ return (typeof lang !== 'undefined' && lang) ? lang : 'en'; }
-  function localized(obj, base) {
-    var l = accorLang();
-    return first(
-      obj[base + '_' + l],
-      obj[base + l.toUpperCase()],
-      obj[base + '-' + l],
-      obj[base],
-      ''
-    );
-  }
-  var ACCOR_GENERIC_COPY = {
-    en:'A refined stay close to your destination.',
-    fr:'Un séjour raffiné près de votre destination.',
-    es:'Una estancia refinada cerca de su destino.',
-    de:'Ein eleganter Aufenthalt nahe Ihrem Ziel.',
-    it:'Un soggiorno raffinato vicino alla destinazione.',
-    pt:'Uma estadia refinada perto do seu destino.',
-    ja:'目的地に近い上質な滞在。',
-    zh:'毗邻目的地的精致住宿体验。',
-    ar:'إقامة راقية بالقرب من وجهتكم.'
-  };
+  function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function first(){ for(var i=0;i<arguments.length;i++){ var a=arguments[i]; if(a!==undefined&&a!==null&&String(a).trim()!=='') return a; } return ''; }
+  function lower(v){ return String(v==null?'':v).toLowerCase(); }
+  function safeTL(k,f){ try{ return (typeof TL==='function'&&TL(k))||f; }catch(e){ return f; } }
+  function accorLang(){ return (typeof lang!=='undefined'&&lang)?lang:'en'; }
+  function localized(obj,base){ var l=accorLang(); return first(obj[base+'_'+l],obj[base+l.toUpperCase()],obj[base+'-'+l],obj[base],''); }
   function bgUrl(bg){ var m=String(bg||'').match(/url\((['"]?)(.*?)\1\)/i); return (m&&m[2])?m[2]:''; }
 
-  var brandRaw = first(ad.brandLabel, ad.brandName, ad.hotelBrand, ad.chain, ad.brand, ad.logoBrand, '');
-  var hotelName = first(ad.headline, ad.name, ad.hotelName, ad.propertyName, 'Accor Hotel');
+  var brandRaw   = first(ad.brandLabel, ad.brandName, ad.hotelBrand, ad.chain, ad.brand, ad.logoBrand, '');
+  var hotelName  = first(ad.headline, ad.name, ad.hotelName, ad.propertyName, 'Accor Hotel');
   var brandLower = lower(brandRaw + ' ' + hotelName);
-
-  // V13 hard-lock: property title is secondary, never an ellipsis hero.
-  function compactPropertyName(name) {
-    var s = String(name || '').replace(/\s+/g, ' ').trim();
-    // Keep common short names intact. Remove repeated brand words only.
-    s = s.replace(/\b(Novotel|Fairmont|Sofitel|Pullman|Mercure|ibis)\b/ig, '').replace(/\s+/g, ' ').trim();
-    return s || name;
-  }
-  var address = first(localized(ad,'fullAddress'), localized(ad,'address'), localized(ad,'city'), localized(ad,'location'), localized(ad,'destinationName'), '');
+  var address    = first(localized(ad,'address'), localized(ad,'city'), localized(ad,'location'), localized(ad,'destinationName'), '');
   var factsheetUrl = first(ad.factsheetUrl, ad.url, ad.bookingUrl, ad.link, '#');
-  var rating = String(first(ad.rating, ad.guestRating, ad.score, '')).replace(/\/5\s*$/,'');
-  var reviewCount = first(ad.reviewCount, '');
-  var stars = parseInt(first(ad.stars, ad.starRating, ad.starClass, 0), 10) || 0;
-  if (!stars) { var sm = String(first(ad.starClassification, ad.classification, ad.hotelClass, '')).match(/[1-5]/); if (sm) stars=parseInt(sm[0],10); }
-  if (!stars && /fairmont|sofitel|novotel|pullman|swissotel|movenpick|mgallery/i.test(brandLower)) stars = 4;
+  var rating     = String(first(ad.rating, ad.guestRating, ad.score, '')).replace(/\/5\s*$/,'');
+  var reviewCount= first(ad.reviewCount, '');
+  var stars      = parseInt(first(ad.stars, ad.starRating, ad.starClass, 0),10) || 0;
+  if(!stars){ var sm=String(first(ad.starClassification,ad.classification,ad.hotelClass,'')).match(/[1-5]/); if(sm) stars=parseInt(sm[0],10); }
+  if(!stars && /fairmont|sofitel|novotel|pullman|swissotel|movenpick|mgallery/i.test(brandLower)) stars=4;
 
   var tier = lower(first(ad.segment, ad.category, ad.tier, ''));
-  var luxury = ['sofitel','sofitel legend','raffles','fairmont','orient express','banyan tree','emblems','delano'];
-  var premium = ['pullman','swissotel','movenpick','mövenpick','mgallery','grand mercure','the sebel','peppers','art series'];
-  for (var li=0;li<luxury.length;li++) if (brandLower.indexOf(luxury[li])!==-1) tier='luxury';
-  if (!tier || tier==='unknown' || tier==='hotel') {
-    tier='midscale';
-    for (var pi=0;pi<premium.length;pi++) if (brandLower.indexOf(premium[pi])!==-1) tier='premium';
-  }
+  var luxury=['sofitel','sofitel legend','raffles','fairmont','orient express','banyan tree','emblems','delano'];
+  var premium=['pullman','swissotel','movenpick','mövenpick','mgallery','grand mercure','the sebel','peppers','art series'];
+  for(var li=0;li<luxury.length;li++) if(brandLower.indexOf(luxury[li])!==-1) tier='luxury';
+  if(!tier||tier==='unknown'||tier==='hotel'){ tier='midscale'; for(var pi=0;pi<premium.length;pi++) if(brandLower.indexOf(premium[pi])!==-1) tier='premium'; }
 
-  var photo = first(ad.photo, ad.image, ad.imageUrl, ad.photoUrl, ad.heroImage, ad.hero, ad.mainPhoto, (ad.photos&&ad.photos[0]), (ad.images&&ad.images[0]), bgUrl(ad.bg), '');
+  var photo = first(ad.photo,ad.image,ad.imageUrl,ad.photoUrl,ad.heroImage,ad.hero,ad.mainPhoto,(ad.photos&&ad.photos[0]),(ad.images&&ad.images[0]),bgUrl(ad.bg),'');
+
   var logo = first(ad._propertyLockup, ad.logo, ad.logoPath, ad.brandLogo, ad.hotelLogo, ad._customLogo, '');
-
-  // V10: brand/logo normalization. Prefer property lockups when provided,
-  // otherwise use known local brand marks before falling back to text.
-  if (!logo) {
-    if (brandLower.indexOf('fairmont') !== -1) logo = '/logos/hotels/fairmont/fairmont-white.svg';
-    else if (brandLower.indexOf('novotel') !== -1) logo = '/logos/hotels/novotel/novotel-white.svg';
-    else if (brandLower.indexOf('sofitel') !== -1) logo = '/logos/hotels/sofitel/sofitel-monochrome-white.svg';
-  }
-  if (brandLower.indexOf('sofitel') !== -1) { tier='luxury'; logo='/logos/hotels/sofitel/sofitel-monochrome-white.svg'; }
-
-  var logoLower = lower(logo);
-  var propertyLockup = !!ad._propertyLockup || /fairmont|queen|chateau|royal-york|royal_york|golden|laurier|montebello|tremblant|richelieu/i.test(logoLower);
-  var hideName = (tier === 'luxury' && propertyLockup);
-  var _activeLang = accorLang();
-  var _rawEnglishInfo = first(ad.description, ad.destinationDescription, ad.sub, ad.brandTagline, '');
-  var _localizedInfo = first(localized(ad,'description'), localized(ad,'destinationDescription'), localized(ad,'sub'), localized(ad,'brandTagline'), '');
-  var infoCopy = _localizedInfo;
-  if (!_localizedInfo || (_activeLang !== 'en' && _localizedInfo === _rawEnglishInfo)) {
-    infoCopy = ACCOR_GENERIC_COPY[_activeLang] || ACCOR_GENERIC_COPY.en;
-  }
-  var brandFallback = first(brandRaw, 'ACCOR');
-  if (brandLower.indexOf('novotel') !== -1 && /^the\s+novotel/i.test(String(infoCopy || ''))) {
-    infoCopy = (typeof ACCOR_GENERIC_COPY !== 'undefined' && ACCOR_GENERIC_COPY[(typeof lang !== 'undefined' ? lang : 'en')]) || 'A refined stay close to your destination.';
+  if(!logo){
+    if(brandLower.indexOf('fairmont')!==-1) logo='/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
+    else if(brandLower.indexOf('novotel')!==-1) logo='/logos/hotels/accor-midscale/novotel-monochrome-white.svg';
+    else if(brandLower.indexOf('sofitel')!==-1) logo='/logos/hotels/sofitel/sofitel-monochrome-white.svg';
+    else if(brandLower.indexOf('pullman')!==-1) logo='/logos/hotels/accor-premium/pullman-monochrome-white.svg';
+    else if(brandLower.indexOf('mercure')!==-1) logo='/logos/hotels/accor-midscale/mercure-monochrome-white.svg';
   }
 
-  // V19: renderer-side text fuse. The ad slot is physically narrow, so never
-  // hand a full hotel paragraph to the layout. Keep one clean sentence and let
-  // CSS clamp the final line. This prevents the Vaughan-style paragraph pileup.
-  function accorShortCopy(text, maxChars) {
-    var t = String(text || '').replace(/\s+/g, ' ').trim();
-    if (!t) return '';
-    var m = t.match(/^(.{20,}?[.!?])\s/);
-    if (m) t = m[1];
-    if (t.length > maxChars) t = t.slice(0, maxChars - 1).replace(/\s+\S*$/, '') + '…';
-    return t;
-  }
-  infoCopy = accorShortCopy(infoCopy, 92);
+  var BRAND_WORDS=['Novotel','Fairmont','Sofitel','Pullman','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis','Mama Shelter','Mondrian'];
+  var brandWord='';
+  for(var bw=0; bw<BRAND_WORDS.length; bw++){ if(brandLower.indexOf(BRAND_WORDS[bw].toLowerCase())!==-1){ brandWord=BRAND_WORDS[bw]; break; } }
+  var BRAND_TINT={ 'novotel':'#0a3a5c','fairmont':'#1a2a4a','sofitel':'#0a0a0a','pullman':'#1a1a2e','mercure':'#2a1a3a','swissotel':'#1a2a3a','movenpick':'#3a2a1a','mgallery':'#2a2a2a','raffles':'#1a2a2a' };
+  var tint=BRAND_TINT[lower(brandWord)]||'#0a1a3a';
 
-  var logoHtml = '';
-  if (brandLower.indexOf('novotel') !== -1) {
-    logoHtml = '<div class="accor6-wordmark accor6-wordmark-novotel">NOVOTEL</div>';
-  } else if (brandLower.indexOf('fairmont') !== -1 && !logo) {
-    logoHtml = '<div class="accor6-wordmark accor6-wordmark-fairmont">Fairmont</div>';
-  } else {
-    logoHtml = logo
-      ? '<img class="accor6-logo" src="'+esc(logo)+'" alt="'+esc(brandFallback)+'">'
-      : '<div class="accor6-logo-text">'+esc(brandFallback)+'</div>';
-  }
+  var haveLogo=!!logo;
+  function stripBrand(name){ var s=String(name||'').replace(/\s+/g,' ').trim(); if(brandWord){ var re=new RegExp('\\b'+brandWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig'); s=s.replace(re,'').replace(/\s+/g,' ').trim(); } return s; }
+  var displayName=haveLogo?stripBrand(hotelName):String(hotelName).trim();
+  var showName=!!displayName;
 
-  var amenities = [];
-  if (Array.isArray(ad.badges)) amenities=ad.badges;
-  else if (Array.isArray(ad.amenities)) amenities=ad.amenities;
-  else if (Array.isArray(ad.features)) amenities=ad.features;
-  else if (Array.isArray(ad.advantages)) amenities=ad.advantages;
-  amenities = amenities.map(function(x){ if(typeof x==='string') return x; return first(x&&x.label,x&&x.name,x&&x.title,x&&x.code,''); }).filter(Boolean).slice(0,4);
-  if (!amenities.length) {
-    var lAmen = (typeof lang !== 'undefined' ? lang : 'en');
-    var fallbackAmenities = {
-      en:['Restaurant','Wi‑Fi','Comfort rooms'],
-      fr:['Restaurant','Wi‑Fi','Chambres confortables'],
-      es:['Restaurante','Wi‑Fi','Habitaciones confortables'],
-      de:['Restaurant','WLAN','Komfortzimmer'],
-      it:['Ristorante','Wi‑Fi','Camere confortevoli'],
-      pt:['Restaurante','Wi‑Fi','Quartos confortáveis'],
-      ja:['レストラン','Wi‑Fi','快適な客室'],
-      zh:['餐厅','Wi‑Fi','舒适客房'],
-      ar:['مطعم','واي فاي','غرف مريحة']
-    };
-    amenities = fallbackAmenities[lAmen] || fallbackAmenities.en;
-  }
+  var amenities=[];
+  if(Array.isArray(ad.badges)) amenities=ad.badges;
+  else if(Array.isArray(ad.amenities)) amenities=ad.amenities;
+  else if(Array.isArray(ad.features)) amenities=ad.features;
+  else if(Array.isArray(ad.advantages)) amenities=ad.advantages;
+  amenities=amenities.map(function(x){ if(typeof x==='string') return x; return first(x&&x.label,x&&x.name,x&&x.title,x&&x.code,''); }).filter(Boolean).slice(0,4);
+  if(!amenities.length){ var lAmen=accorLang(); var fb={ en:['Restaurant','Wi‑Fi','Comfort rooms'],fr:['Restaurant','Wi‑Fi','Chambres confortables'],es:['Restaurante','Wi‑Fi','Habitaciones confortables'],de:['Restaurant','WLAN','Komfortzimmer'],it:['Ristorante','Wi‑Fi','Camere confortevoli'],pt:['Restaurante','Wi‑Fi','Quartos confortáveis'],ja:['レストラン','Wi‑Fi','快適な客室'],zh:['餐厅','Wi‑Fi','舒适客房'],ar:['مطعم','واي فاي','غرف مريحة'] }; amenities=fb[lAmen]||fb.en; }
 
-  var starCount = Math.max(1, Math.min(5, Math.round(stars || 0)));
-  var _starsLabel = ({en:'stars',fr:'étoiles',es:'estrellas',de:'Sterne',it:'stelle',pt:'estrelas',ja:'星',zh:'星级',ar:'نجوم'}[accorLang()] || 'stars');
-  var starHtml = stars>0 ? '<div class="accor6-stars"><span class="accor6-star-icons">'+Array(starCount+1).join('★')+'</span><span class="accor6-star-label">'+starCount+' '+_starsLabel+'</span></div>' : '';
-  var _reviewsLabel = ({en:'reviews',fr:'avis',es:'reseñas',de:'Bewertungen',it:'recensioni',pt:'avaliações',ja:'件のレビュー',zh:'条评论',ar:'تقييمات'}[accorLang()] || 'reviews');
-  var ratingHtml = rating ? '<div class="accor6-rating"><strong>'+esc(rating)+'/5</strong>'+(reviewCount?'<span>'+esc(reviewCount)+' '+_reviewsLabel+'</span>':'')+'</div>' : '';
-  var amenitiesHtml = amenities.length ? '<div class="accor6-amenities"><div class="accor6-label">'+esc(safeTL('amenities','Amenities'))+'</div><div class="accor6-amenity-list">'+amenities.map(function(a){return '<span>'+esc(a)+'</span>';}).join('')+'</div></div>' : '';
+  var starCount=Math.max(0,Math.min(5,Math.round(stars||0)));
+  var starsHtml=starCount>0?'<span class="axr-stars">'+Array(starCount+1).join('★')+'</span>':'';
+  var reviewsLabel=({en:'reviews',fr:'avis',es:'reseñas',de:'Bewertungen',it:'recensioni',pt:'avaliações',ja:'件のレビュー',zh:'条评论',ar:'تقييمات'}[accorLang()]||'reviews');
+  var ratingHtml=rating?'<span class="axr-score">'+esc(rating)+'<small>/5'+(reviewCount?' · '+esc(reviewCount)+' '+reviewsLabel:'')+'</small></span>':'';
 
-  var bubbleClass = (tier==='premium'||tier==='luxury') ? 'light' : 'blue';
-  var qrHtml = factsheetUrl && factsheetUrl !== '#'
-    ? '<div class="accor6-qr-wrap"><div class="accor6-bubble '+bubbleClass+'"><div class="accor6-copy">'+safeTL('scanToUnlockAll','Scan to unlock<br>limitless experiences<br>with ALL.')+'</div><div class="hotel-ad-qr accor6-qr" data-qr-url="'+esc(factsheetUrl)+'"><div>QR</div></div></div></div>'
-    : '';
+  var logoHtml=haveLogo?'<div class="axr-logo"><img src="'+esc(logo)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>':'<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
-  var photoStyle = photo ? ' style="background-image:url('+"'"+esc(photo)+"'"+')"': '';
-  var allLogo = '/logos/hotels/accor-corporate/all.svg';
+  var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+safeTL('scanToUnlockAll','Scan to unlock limitless experiences with ALL.')+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
+  var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
+  // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
+  // Other languages → localized ALL lockup with a 'Member of' lead-in.
+  var _endorseOfficial = (_ll==='en');
+  var _officialEndorse = '/logos/hotels/accor-corporate/endorsement/members-of-all-stacked-white.png';
+  var allLockup='/logos/hotels/accor-corporate/all-lockup-'+_ll+'.svg';
+  var _allCrop={'fr':'-21.2 -21.2 1125.9 396.3','ar':'-23.8 -23.7 762.9 443.4','zh':'-22.9 -22.9 501.4 426.7'}[_ll]||'';
 
-  return '<article class="accor6 accor6-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'">'+
-    '<section class="accor6-photo"'+photoStyle+'>'+qrHtml+'</section>'+
-    '<aside class="accor6-panel">'+
-      '<header class="accor6-head">'+logoHtml+'</header>'+
-      '<main class="accor6-body">'+
-        (hideName?'':'<h1 class="accor6-name">'+esc(compactPropertyName(hotelName))+'</h1>')+
-        (address?'<div class="accor6-address">'+esc(address)+'</div>':'')+
-        (infoCopy?'<p class="accor6-info">'+esc(infoCopy)+'</p>':'')+
-        '<div class="accor6-meta">'+starHtml+ratingHtml+'</div>'+
-        amenitiesHtml+
-      '</main>'+
-      '<footer class="accor6-footer"><div class="accor6-member"><span>'+esc(safeTL('memberOf','Member of'))+'</span><img src="'+allLogo+'" alt="ALL"></div><div class="accor6-programme">'+esc(safeTL('limitlessLoyaltyProgramme','The Limitless Loyalty Programme'))+'</div></footer>'+
-    '</aside></article>';
+  var subHtml=(address||starsHtml||ratingHtml)?'<div class="axr-sub">'+(address?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
+  var amenHtml=amenities.length?'<div class="axr-amen">'+amenities.map(function(a){return '<span>'+esc(a)+'</span>';}).join('')+'</div>':'';
+
+  return ''
+    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" style="--axr-tint:'+tint+'">'
+    +   '<section class="axr-hero">'
+    +     (photo?'<div class="axr-hero-img" style="background-image:url(\''+esc(photo)+'\')"></div>':'<div class="axr-hero-img axr-hero-noimg"></div>')
+    +     '<div class="axr-hero-grad"></div>'
+    +     bubbleHtml
+    +     '<div class="axr-hotel">'+logoHtml+(showName?'<h1 class="axr-name">'+esc(displayName)+'</h1>':'')+subHtml+amenHtml+'</div>'
+    +   '</section>'
+    +   '<footer class="axr-all">'
+    +     (_endorseOfficial
+        ? '<span class="axr-all-official"><img src="'+esc(_officialEndorse)+'" alt="Members of ALL — Accor Live Limitless"></span>'
+        : ('<span class="axr-all-lbl">'+esc(safeTL('memberOf','Member of'))+'</span>'
+           + '<span class="axr-all-mark"><img class="axr-all-svg" src="'+esc(allLockup)+'" data-crop="'+esc(_allCrop)+'" alt="ALL"></span>'))
+    +   '</footer>'
+    + '</article>';
 }
 
 function renderGateAd(index) {
@@ -19497,12 +19429,68 @@ function _getGateAdDwellMs(slide) {
 // from theme.centerColumn.slides via Media Library) are no longer wired.
 // A fresh editor (TBD) can re-add them later. For now, built-in airline
 // ads are the only source.
+// ════════════════════════════════════════════════════════════════════════
+// GATE AD ROTATION — clean rebuild of _buildGateAdSlideList()
+// Deck = uploaded media + airline ads (the "3") interleaved with the Accor
+// hotel slide (the "1"), at 3 non-Accor : 1 Accor. Airline-media-if-set-else
+// -global. Never goes all-Accor; degrades gracefully when a source is empty.
+// ════════════════════════════════════════════════════════════════════════
 function _buildGateAdSlideList() {
+  var code = (window._gateCurrentAirline || '').toUpperCase();
+
+  // ── 1. Uploaded MEDIA (R2 library + pasted LocalMedia), airline-if-set-else-global
+  //    FIDS_MEDIA resolvers are already wrapped by local-media.js to include both.
+  var mediaSlides = [];
+  try {
+    var M = window.FIDS_MEDIA;
+    if (M) {
+      var vids = (typeof M.getAssignedVideosForAirline === 'function' ? M.getAssignedVideosForAirline(code) : []) || [];
+      var imgs = (typeof M.getAssignedImagesForAirline === 'function' ? M.getAssignedImagesForAirline(code) : []) || [];
+      [].concat(vids, imgs).forEach(function (entry) {
+        var it = entry && entry.item ? entry.item : entry;
+        if (it && (it.url || it.ytId)) {
+          mediaSlides.push({ type: 'custom', item: it, fit: (entry && entry.fit) || 'cover' });
+        }
+      });
+    }
+  } catch (e) {}
+
+  // ── 2. AD slides from getGateAds(): split airline ads (the "3" pool) from
+  //    Accor hotel ads (the "1"). Accor objects carry isAccorHotel:true.
   var ads = (typeof getGateAds === 'function') ? (getGateAds() || []) : [];
-  var slides = [];
-  for (var a = 0; a < ads.length; a++) slides.push({ type: 'ad', data: ads[a] });
-  if (!slides.length) slides.push({ type:'ad', data:{ bg:'linear-gradient(135deg,#14213d 0%,#0b1020 100%)', headline:'Welcome aboard', sub:'Gate information display' } });
-  return slides;
+  var airlineAdSlides = [];
+  var accorSlides = [];
+  ads.forEach(function (a) {
+    if (a && a.isAccorHotel) accorSlides.push({ type: 'ad', data: a });
+    else airlineAdSlides.push({ type: 'ad', data: a });
+  });
+
+  // ── 3. The "3" pool = media first (operator content leads), then airline ads.
+  var nonAccor = mediaSlides.concat(airlineAdSlides);
+
+  // ── 4. Interleave 3 non-Accor : 1 Accor. Cycle Accor if fewer than needed.
+  var deck = [];
+  var ai = 0;
+  for (var i = 0; i < nonAccor.length; i++) {
+    deck.push(nonAccor[i]);
+    if ((i + 1) % 3 === 0 && accorSlides.length) {
+      deck.push(accorSlides[ai % accorSlides.length]);
+      ai++;
+    }
+  }
+  // 1–2 non-Accor items: still show ONE Accor so it appears, never dominates.
+  if (nonAccor.length > 0 && nonAccor.length < 3 && accorSlides.length) {
+    deck.push(accorSlides[0]);
+  }
+
+  // ── 5. Graceful fallback — never all-Accor, never blank.
+  if (!deck.length) {
+    if (accorSlides.length) deck = [accorSlides[0]];          // at most ONE Accor
+    else if (airlineAdSlides.length) deck = airlineAdSlides;  // airline ads
+    else deck = [{ type: 'ad', data: { bg: 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)', headline: 'Welcome aboard', sub: 'Gate information display' } }];
+  }
+
+  return deck;
 }
 
 function _getGateAdTotalSlots() {
@@ -20132,6 +20120,37 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   setTimeout(_scanAndUpgrade, 1500);
   // Continuous: every 2s catches re-rendered slides
   setInterval(_scanAndUpgrade, 2000);
+})();
+
+
+// ════════════════════════════════════════════════════════════════════════
+// ALL LOCKUP CROP — inlines the localized ALL lockup SVG (FR/AR/ZH) and
+// overrides its viewBox to the ink bounds so it renders at proper size in
+// the Accor endorsement band. (EN uses the official PNG and is skipped.)
+// Same continuous-scan pattern as the QR upgrader above.
+// ════════════════════════════════════════════════════════════════════════
+(function() {
+  function _cropLockup(img) {
+    if (!img || img.dataset.lockupInlined === '1') return;
+    var crop = img.getAttribute('data-crop');
+    var src = img.getAttribute('src');
+    if (!src) return;
+    img.dataset.lockupInlined = '1'; // guard against duplicate fetches
+    fetch(src).then(function(r){ return r.text(); }).then(function(svg){
+      svg = svg.replace(/<\?xml[^>]*\?>/, '').trim();
+      if (crop) svg = svg.replace(/viewBox="[^"]+"/, 'viewBox="' + crop + '"');
+      svg = svg.replace(/<svg /, '<svg preserveAspectRatio="xMinYMid meet" ');
+      var span = img.parentNode;
+      if (span) { span.innerHTML = svg; var s = span.querySelector('svg'); if (s) { s.style.height = '100%'; s.style.width = 'auto'; } }
+    }).catch(function(){ /* leave the <img> as-is on failure */ });
+  }
+  function _scanLockups() {
+    var nodes = document.querySelectorAll('img.axr-all-svg[data-crop]');
+    for (var i = 0; i < nodes.length; i++) _cropLockup(nodes[i]);
+  }
+  setTimeout(_scanLockups, 150);
+  setTimeout(_scanLockups, 600);
+  setInterval(_scanLockups, 2000);
 })();
 
 
