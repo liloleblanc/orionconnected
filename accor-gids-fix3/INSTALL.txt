@@ -1,0 +1,16 @@
+GIDS FIXES — round 3 (endorsement band)
+=======================================
+Replace these two in your repo (fids-current/), then: npx wrangler deploy
+
+  js/fids-core.js     -> fids-current/js/fids-core.js   (includes round-2 globe + shrink fixes too)
+  css/accor-slide.css -> fids-current/css/accor-slide.css
+
+THIS ROUND:
+- "MEMBRE DE" + ALL lockup no longer split to opposite ends — grouped together left.
+- "MEMBRE DE" enlarged (was tiny 10px -> 18-26px, white, bold) to match the lockup.
+
+ALSO INCLUDED (round 2, in case not yet deployed):
+- AC globe airline ad overflow fixed (no more giant maple leaf bleeding out).
+- Accor slide shrunk ~25% overall.
+
+Deploy: npx wrangler deploy  ->  watch for "Uploaded fids"  ->  hard-refresh.

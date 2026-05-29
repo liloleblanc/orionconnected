@@ -18049,7 +18049,7 @@ function buildGateAdHtml(ad) {
       + '</style>'
       + '<div style="width:100%;height:100%;background:' + _gBg + ';position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;">'
       // Globe image: positioned slightly left of center, slowly rotating, scaled to fill height
-      +   '<div class="ac-globe-bg" style="position:absolute;left:-12%;top:50%;transform-origin:center;width:130%;height:200%;margin-top:-100%;background-image:url(\'/logos/Backgrounds/AC/ac-globe.svg\');background-size:contain;background-repeat:no-repeat;background-position:center;opacity:0.92;"></div>'
+      +   '<div class="ac-globe-bg" style="position:absolute;left:-6%;top:50%;transform:translateY(-50%);transform-origin:center;width:auto;height:118%;aspect-ratio:1;background-image:url(\'/logos/Backgrounds/AC/ac-globe.svg\');background-size:contain;background-repeat:no-repeat;background-position:center;opacity:0.92;"></div>'
       // Subtle vignette / dark gradient on the right so the city text stays legible
       +   '<div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 38%,rgba(0,0,0,0.5) 75%,rgba(0,0,0,0.85) 100%);pointer-events:none;"></div>'
       // Right-side text block
