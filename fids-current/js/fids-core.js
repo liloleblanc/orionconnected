@@ -18970,7 +18970,18 @@ function buildAccorAdOnlyV6(ad) {
   var reviewsLabel=({en:'reviews',fr:'avis',es:'reseñas',de:'Bewertungen',it:'recensioni',pt:'avaliações',ja:'件のレビュー',zh:'条评论',ar:'تقييمات'}[accorLang()]||'reviews');
   var ratingHtml=rating?'<span class="axr-score">'+esc(rating)+'<small>/5'+(reviewCount?' · '+esc(reviewCount)+' '+reviewsLabel:'')+'</small></span>':'';
 
-  var logoHtml=haveLogo?'<div class="axr-logo"><img src="'+esc(logo)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>':'<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
+  // Per-brand logo crops — many hotel SVGs float their wordmark in a big
+  // square viewBox (e.g. Novotel uses only ~25% of a 500x500 box), so without
+  // cropping the visible mark renders tiny. The runtime crop helper inlines
+  // the SVG and overrides its viewBox to these ink bounds so the logo fills
+  // its container (and is therefore the biggest element, per spec).
+  var _LOGO_CROP = {
+    'novotel': '15 152 470 146'
+  };
+  var _logoCrop = _LOGO_CROP[lower(brandWord)] || '';
+  var logoHtml=haveLogo
+    ? '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>'
+    : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+safeTL('scanToUnlockAll','Scan to unlock limitless experiences with ALL.')+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
@@ -20135,17 +20146,27 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     var crop = img.getAttribute('data-crop');
     var src = img.getAttribute('src');
     if (!src) return;
+    var isHotelLogo = img.classList.contains('axr-hotel-svg');
     img.dataset.lockupInlined = '1'; // guard against duplicate fetches
     fetch(src).then(function(r){ return r.text(); }).then(function(svg){
       svg = svg.replace(/<\?xml[^>]*\?>/, '').trim();
       if (crop) svg = svg.replace(/viewBox="[^"]+"/, 'viewBox="' + crop + '"');
       svg = svg.replace(/<svg /, '<svg preserveAspectRatio="xMinYMid meet" ');
       var span = img.parentNode;
-      if (span) { span.innerHTML = svg; var s = span.querySelector('svg'); if (s) { s.style.height = '100%'; s.style.width = 'auto'; } }
+      if (span) {
+        span.innerHTML = svg;
+        var s = span.querySelector('svg');
+        if (s) { s.style.height = '100%'; s.style.width = 'auto'; s.style.maxWidth = '100%'; }
+        // hotel logos must read white on the photo
+        if (isHotelLogo && s) {
+          var shapes = s.querySelectorAll('path,polygon,rect,circle,ellipse');
+          for (var k = 0; k < shapes.length; k++) shapes[k].style.fill = '#fff';
+        }
+      }
     }).catch(function(){ /* leave the <img> as-is on failure */ });
   }
   function _scanLockups() {
-    var nodes = document.querySelectorAll('img.axr-all-svg[data-crop]');
+    var nodes = document.querySelectorAll('img.axr-all-svg[data-crop], img.axr-hotel-svg');
     for (var i = 0; i < nodes.length; i++) _cropLockup(nodes[i]);
   }
   setTimeout(_scanLockups, 150);
