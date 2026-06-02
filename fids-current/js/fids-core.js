@@ -4775,7 +4775,7 @@ function _buildV2AircraftCol(ctx, vars) {
       var _wxRowHtml = ''
         + '<div class="v2-wx-cell">' + _todayIcon
         +   '<div class="v2-wx-text">'
-        +     '<div class="v2-wx-when">' + TL('today') + '</div>'
+        +     '<div class="v2-wx-when">' + (TL('currentWx') || 'Current') + '</div>'
         +     '<div class="v2-wx-temp">' + _todayTemp + '</div>'
         +     '<div class="v2-wx-cond">' + _todayLabel + '</div>'
         +   '</div>'
@@ -4784,7 +4784,7 @@ function _buildV2AircraftCol(ctx, vars) {
       if (_tomorrowTemp) {
         _wxRowHtml += '<div class="v2-wx-cell">' + _tomorrowIcon
           +   '<div class="v2-wx-text">'
-          +     '<div class="v2-wx-when">' + TL('tomorrow') + '</div>'
+          +     '<div class="v2-wx-when">' + (TL('tomorrow') || 'Tomorrow') + '</div>'
           +     '<div class="v2-wx-temp">' + _tomorrowTemp + '</div>'
           +     '<div class="v2-wx-cond">' + _tomorrowLabel + '</div>'
           +   '</div>'
@@ -4793,7 +4793,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       _wxBlock =
           '<div class="v2-wx-block">'
-        +   '<div class="v2-wx-lbl">' + TL('weatherAtDest') + '</div>'
+        +   '<div class="v2-wx-lbl">' + (locIata ? locIata + ' ' : '') + (TL('weatherShort') || 'Weather') + '</div>'
         +   '<div class="v2-wx-2col">' + _wxRowHtml + '</div>'
         + '</div>';
     }
@@ -4916,7 +4916,7 @@ function _buildV2AircraftCol(ctx, vars) {
             ? '<div class="v2-fi-row">'
               +   _emblemHtml
               + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label v2-fi-flight-label">Flight #</div>'
+              + '<div class="v2-fi-label v2-fi-flight-label">' + (TL('flightNo') || 'Flight #') + '</div>'
               + '<div class="v2-fi-value v2-fi-flight-number">' + _fnNumber + '</div>'
               + '</div></div>'
             : '')
@@ -4924,7 +4924,7 @@ function _buildV2AircraftCol(ctx, vars) {
             ? '<div class="v2-fi-row">'
               + _badge(_svgStatus)
               + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">Status</div>'
+              + '<div class="v2-fi-label">' + (TL('status') || 'Status') + '</div>'
               + '<div class="v2-fi-value v2-fi-status-val v2-fi-status' + _fiStCls + '">' + _fiStLbl + '</div>'
               + '</div></div>'
             : '')
@@ -4932,7 +4932,7 @@ function _buildV2AircraftCol(ctx, vars) {
             ? '<div class="v2-fi-row">'
               + _badge(_svgDepart)
               + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">' + _depLabel + '</div>'
+              + '<div class="v2-fi-label">' + (TL('departureTime') || 'Departure Time') + '</div>'
               + '<div class="v2-fi-value v2-fi-time">' + _depShow + '</div>'
               + '</div></div>'
             : '')
@@ -4940,7 +4940,7 @@ function _buildV2AircraftCol(ctx, vars) {
             ? '<div class="v2-fi-row">'
               + _badge(_svgArrive)
               + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">' + _arrLabel + '</div>'
+              + '<div class="v2-fi-label">' + (locIata ? locIata + ' ' : '') + (TL('arrivalTime') || 'Arrival Time') + '</div>'
               + '<div class="v2-fi-value v2-fi-time">' + _arrShow + '</div>'
               + '</div></div>'
             : '')
@@ -4948,7 +4948,7 @@ function _buildV2AircraftCol(ctx, vars) {
             ? '<div class="v2-fi-row">'
               + _badge(_svgClock)
               + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">Estimated Boarding</div>'
+              + '<div class="v2-fi-label">' + (TL('boardingTime') || 'Boarding Time') + '</div>'
               + '<div class="v2-fi-value v2-fi-time">' + _fiBrd + '</div>'
               + '</div></div>'
             : '')
@@ -10939,7 +10939,13 @@ const LS = {
   facilities:       { en:'Facilities',        fr:'Installations',    es:'Instalaciones',    de:'Einrichtungen',         it:'Strutture',          pt:'Instalações',      ja:'施設',     zh:'设施',     ar:'مرافق' },
   today:            { en:'Today',              fr:"Aujourd'hui",      es:'Hoy',              de:'Heute',                 it:'Oggi',               pt:'Hoje',             ja:'今日',     zh:'今天',     ar:'اليوم' },
   tomorrow:         { en:'Tomorrow',           fr:'Demain',           es:'Mañana',           de:'Morgen',                it:'Domani',             pt:'Amanhã',           ja:'明日',     zh:'明天',     ar:'غدًا' },
+  currentWx:        { en:'Current',            fr:'Actuel',           es:'Actual',           de:'Aktuell',               it:'Attuale',            pt:'Atual',            ja:'現在',     zh:'当前',     ar:'الحالي' },
+  departureTime:    { en:'Departure Time',     fr:"Heure de départ",  es:'Hora de salida',   de:'Abflugzeit',            it:'Orario di partenza', pt:'Hora de partida',  ja:'出発時刻', zh:'出发时间', ar:'وقت المغادرة' },
+  arrivalTime:      { en:'Arrival Time',       fr:"Heure d'arrivée",  es:'Hora de llegada',  de:'Ankunftszeit',          it:'Orario di arrivo',   pt:'Hora de chegada',  ja:'到着時刻', zh:'到达时间', ar:'وقت الوصول' },
+  boardingTime:     { en:'Boarding Time',      fr:"Heure d'embarquement", es:'Hora de embarque', de:'Boardingzeit',      it:'Orario di imbarco',  pt:'Hora de embarque', ja:'搭乗時刻', zh:'登机时间', ar:'وقت الصعود' },
+  flightNo:         { en:'Flight #',           fr:'Vol nº',           es:'Vuelo nº',         de:'Flug-Nr.',              it:'Volo nº',            pt:'Voo nº',           ja:'便名',     zh:'航班号',   ar:'رقم الرحلة' },
   weatherAtDest:    { en:'Weather at destination', fr:'Météo à destination', es:'Clima en destino', de:'Wetter am Ziel',    it:'Meteo a destinazione', pt:'Clima no destino', ja:'目的地の天気', zh:'目的地天气', ar:'الطقس في الوجهة' },
+  weatherShort:     { en:'Weather',            fr:'Météo',            es:'Clima',            de:'Wetter',                it:'Meteo',              pt:'Clima',            ja:'天気',     zh:'天气',     ar:'الطقس' },
   inbDelayed:{ en:'The incoming aircraft has been delayed. Updated boarding time to follow.',fr:"L'appareil en approche est retardé. Heure d'embarquement mise à jour à suivre.",es:'La aeronave entrante ha sido retrasada. Hora de embarque actualizada a continuación.',de:'Das ankommende Flugzeug hat Verspätung. Aktualisierte Boarding-Zeit folgt.',it:"L'aereo in arrivo è in ritardo. Orario d'imbarco aggiornato a seguire.",pt:'A aeronave está atrasada. Horário de embarque atualizado a seguir.',ja:'到着機が遅延しています。搭乗時刻は更新されます。',zh:'来港飞机已延误，登机时间将另行通知。',ar:'تأخرت الطائرة القادمة. سيتم تحديث وقت الصعود.' },
   depDelayed:{ en:'This flight has been delayed. Please check the updated departure time.',fr:'Ce vol est retardé. Veuillez vérifier l\'heure de départ mise à jour.',es:'Este vuelo ha sido retrasado. Por favor verifique la hora de salida actualizada.',de:'Dieser Flug hat Verspätung. Bitte prüfen Sie die aktualisierte Abflugzeit.',it:'Questo volo è in ritardo. Si prega di verificare l\'orario di partenza aggiornato.',pt:'Este voo está atrasado. Por favor verifique o horário de partida atualizado.',ja:'この便は遅延しています。出発時刻をご確認ください。',zh:'此航班已延误，请查看更新后的出发时间。',ar:'تأخرت هذه الرحلة. يرجى التحقق من وقت المغادرة المحدث.' },
   nowBoardMsg:{ en:'Now boarding. Please proceed to gate',fr:'Embarquement en cours. Veuillez vous diriger vers la porte',es:'Embarcando ahora. Diríjase a la puerta',de:'Jetzt Boarding. Bitte begeben Sie sich zum Gate',it:'Imbarco in corso. Procedere al gate',pt:'Embarque em curso. Dirija-se ao portão',ja:'搭乗中です。ゲートにお進みください',zh:'正在登机，请前往登机口',ar:'الصعود الآن. يرجى التوجه إلى البوابة' },
@@ -19028,7 +19034,14 @@ function renderGateAd(index) {
   // ── Custom theme slide (image or video uploaded via Media Library) ──
   if (slide && slide.type === 'custom' && slide.item) {
     var item = slide.item;
-    var fit = slide.fit === 'contain' ? 'contain' : 'cover';
+    // Per-item display controls (set in the Media Library preview/adjust panel).
+    // fit: 'contain' (show whole, default) | 'cover' (fill+crop)
+    // zoom: 1 = natural; posX/posY: 0-100 framing when zoomed/cover.
+    var fit = (item.fit === 'cover') ? 'cover' : 'contain';
+    var zoom = (typeof item.zoom === 'number' && item.zoom > 0) ? item.zoom : 1;
+    var posX = (typeof item.posX === 'number') ? item.posX : 50;
+    var posY = (typeof item.posY === 'number') ? item.posY : 50;
+    var posStr = posX + '% ' + posY + '%';
     var customHtml = '';
     if (item.type === 'video' && item.source === 'youtube') {
       // YouTube embed — looped, muted, no controls. Single-video only;
@@ -19043,12 +19056,14 @@ function renderGateAd(index) {
       }
     } else if (item.type === 'video' && item.url) {
       customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
-        + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + fit + ';background:#000;"></video>';
+        + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + fit + ';object-position:' + posStr + ';transform:scale(' + zoom + ');background:#000;"></video>';
     } else if (item.type === 'image' && item.url) {
       customHtml = '<div style="position:absolute;inset:0;background:#000;background-image:url(\'' + item.url
-        + '\');background-size:' + fit + ';background-position:center;background-repeat:no-repeat;"></div>';
+        + '\');background-size:' + (fit === 'cover' ? 'cover' : 'contain') + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + zoom + ');"></div>';
     }
-    var customKey = 'custom|' + slot + '|' + (item.id || '');
+    // include framing controls in the dedupe key so adjustments re-render live
+    var _frameKey = fit + zoom + posX + posY;
+    var customKey = 'custom|' + slot + '|' + (item.id || '') + '|' + _frameKey;
     if (el._lastKey !== customKey) {
       el._lastKey = customKey;
       el.style.background = '#000';
@@ -19405,7 +19420,9 @@ function _getGateAdDwellMs(slide) {
   // configured duration. Clamp to a sensible 2s–60s range so a typo can't
   // freeze the carousel on a single slide for the rest of the day.
   if (slide.type === 'custom') {
-    var d = parseInt(slide.durationMs, 10);
+    // Per-item dwell (set in the Media Library Adjust panel) takes priority,
+    // then any theme-editor durationMs, then a sensible default.
+    var d = parseInt((slide.item && slide.item.dwellMs) || slide.durationMs, 10);
     if (!isFinite(d) || d <= 0) return 12000;
     return Math.max(2000, Math.min(60000, d));
   }
@@ -19465,6 +19482,12 @@ function _buildGateAdSlideList() {
       });
     }
   } catch (e) {}
+  // Play media in the operator-defined order (1,2,3,4…); unset orders sort last.
+  mediaSlides.sort(function (a, b) {
+    var oa = (a.item && typeof a.item.order === 'number') ? a.item.order : 999;
+    var ob = (b.item && typeof b.item.order === 'number') ? b.item.order : 999;
+    return oa - ob;
+  });
 
   // ── 2. AD slides from getGateAds(): split airline ads (the "3" pool) from
   //    Accor hotel ads (the "1"). Accor objects carry isAccorHotel:true.

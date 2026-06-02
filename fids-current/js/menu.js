@@ -2184,9 +2184,15 @@ function cuDeleteActivePreset() {
         'background:var(--console-surface,#1f2430);border:1px solid var(--console-border,#374151);border-radius:6px;">' +
         '<div style="flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
         name + ' <span style="color:#9ca3af;font-size:10px;">· ' + tag + ' · ' + (r.airline || 'ALL') + (r.loop ? ' · loop' : '') + '</span></div>' +
+        '<button class="sm-pill" style="padding:2px 8px;" onclick="lmAdjust(\'' + r.id + '\')">Adjust</button>' +
         '<button class="sm-pill" style="padding:2px 8px;" onclick="lmRemove(\'' + r.id + '\')">Remove</button>' +
         '</div>';
     }).join('');
+  };
+
+  window.lmAdjust = function (id) {
+    if (window.MediaAdjust && window.MediaAdjust.open) window.MediaAdjust.open(id);
+    else alert('Adjust panel not loaded.');
   };
 
   window.lmAdd = function () {

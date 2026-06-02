@@ -60,6 +60,12 @@
     base.id = rec.id;
     base.label = rec.label || '';
     base.playback = { loop: !!rec.loop };
+    base.fit = rec.fit === 'cover' ? 'cover' : 'contain';
+    base.zoom = (typeof rec.zoom === 'number' && rec.zoom > 0) ? rec.zoom : 1;
+    base.posX = (typeof rec.posX === 'number') ? rec.posX : 50;
+    base.posY = (typeof rec.posY === 'number') ? rec.posY : 50;
+    base.dwellMs = (typeof rec.dwellMs === 'number' && rec.dwellMs > 0) ? rec.dwellMs : 12000;
+    base.order = (typeof rec.order === 'number') ? rec.order : 999;
     return base;
   }
 
@@ -79,8 +85,34 @@
       url: String(url).trim(),
       label: opts.label || '',
       loop: !!opts.loop,
-      airline: (opts.airline || 'ALL').toUpperCase()
+      airline: (opts.airline || 'ALL').toUpperCase(),
+      fit: opts.fit === 'cover' ? 'cover' : 'contain',
+      zoom: (typeof opts.zoom === 'number' && opts.zoom > 0) ? opts.zoom : 1,
+      posX: (typeof opts.posX === 'number') ? opts.posX : 50,
+      posY: (typeof opts.posY === 'number') ? opts.posY : 50,
+      dwellMs: (typeof opts.dwellMs === 'number' && opts.dwellMs > 0) ? opts.dwellMs : 12000,
+      order: (typeof opts.order === 'number') ? opts.order : 999
     });
+    write(l);
+    return { ok: true };
+  }
+  // Update display/framing controls on an existing item.
+  function update(id, patch) {
+    patch = patch || {};
+    var l = read();
+    for (var i = 0; i < l.length; i++) {
+      if (l[i].id === id) {
+        if (patch.fit !== undefined) l[i].fit = patch.fit === 'cover' ? 'cover' : 'contain';
+        if (typeof patch.zoom === 'number') l[i].zoom = patch.zoom;
+        if (typeof patch.posX === 'number') l[i].posX = patch.posX;
+        if (typeof patch.posY === 'number') l[i].posY = patch.posY;
+        if (typeof patch.dwellMs === 'number') l[i].dwellMs = patch.dwellMs;
+        if (typeof patch.order === 'number') l[i].order = patch.order;
+        if (patch.label !== undefined) l[i].label = patch.label;
+        if (patch.airline !== undefined) l[i].airline = String(patch.airline).toUpperCase();
+        break;
+      }
+    }
     write(l);
     return { ok: true };
   }
@@ -131,5 +163,5 @@
     }, 50);
   }
 
-  window.LocalMedia = { list: list, add: add, remove: remove, clear: clear, parseUrl: parseUrl };
+  window.LocalMedia = { list: list, add: add, update: update, remove: remove, clear: clear, parseUrl: parseUrl };
 })();

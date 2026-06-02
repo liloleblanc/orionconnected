@@ -1685,9 +1685,13 @@ body, body.gids-page, body.gate-page{
 /* Remove the gray panel — bare on the column background */
 .gad-aircraft-col .v2-flightinfo-block {
   background: transparent !important;
-  padding: clamp(8px, 1.2vh, 18px) 0 !important;
-  margin-bottom: clamp(10px, 1.4vh, 20px) !important;
-  gap: clamp(18px, 2.2vh, 32px) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
 }
 
 /* FLIGHT row — label small on top, BIG number below */
@@ -1698,12 +1702,13 @@ body, body.gids-page, body.gate-page{
   margin-bottom: clamp(4px, 0.6vh, 10px) !important;
 }
 .gad-aircraft-col .v2-fi-flight-label {
-  font-size: clamp(16px, 1.9vh, 26px) !important;
-  font-weight: 800 !important;
-  letter-spacing: 2px !important;
-  text-transform: uppercase !important;
-  opacity: 0.7 !important;
-  line-height: 1 !important;
+  font-size: clamp(19px, 2.2vh, 30px) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  opacity: 1 !important;
+  line-height: 1.05 !important;
+  color: #9aa4b0 !important;
 }
 .gad-aircraft-col .v2-fi-flight-number {
   font-size: clamp(56px, 7.2vh, 100px) !important;
@@ -2641,11 +2646,12 @@ body, body.gids-page, body.gate-page{
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-rows: auto auto;
-  column-gap: 14px;
+  column-gap: 16px;
   row-gap: 0;
-  align-items: end;
+  align-items: center;
   min-height: clamp(64px, 7.0vh, 92px);
-  padding: 6px 28px;
+  flex: 1 1 0;
+  padding: 2px 22px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.10);
   background: transparent;
   box-sizing: border-box;
@@ -2656,21 +2662,25 @@ body, body.gids-page, body.gate-page{
 
 /* Copy stack uses display:contents so label/value promote to grid cells */
 .gad-aircraft-col .v2-fi-row > .v2-fi-copy {
-  display: contents;
+  grid-row: 1 / 3;
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  min-width: 0;
 }
 .gad-aircraft-col .v2-fi-row > .v2-fi-copy > .v2-fi-label {
-  grid-row: 1;
-  grid-column: 2;
+  margin: 0 0 -2px 0;
 }
 .gad-aircraft-col .v2-fi-row > .v2-fi-copy > .v2-fi-value {
-  grid-row: 2;
-  grid-column: 2;
+  margin: 0;
 }
-/* Icon spans value's row only — vertically centered on the value */
+/* Icon centers to the whole label+value stack so it lines up with the time. */
 .gad-aircraft-col .v2-fi-row > .v2-fi-icon-wrap,
 .gad-aircraft-col .v2-fi-row > .v2-fi-emblem-wrap,
 .gad-aircraft-col .v2-fi-row > .v2-fi-icon-badge {
-  grid-row: 2;
+  grid-row: 1 / 3;
   grid-column: 1;
   align-self: center;
 }
@@ -2707,15 +2717,18 @@ body, body.gids-page, body.gate-page{
 
 /* ── LABEL (small, proper case, GRAY per Nick's rule) ───────────────── */
 .gad-aircraft-col .v2-fi-row .v2-fi-label {
-  font-size: clamp(20px, 2.4vh, 34px);
+  font-size: clamp(19px, 2.2vh, 30px);
   font-weight: 600;
   color: #9aa4b0;
   opacity: 1;
   text-transform: none;
   letter-spacing: 0;
-  line-height: 1.1;
-  margin: 0;
+  line-height: 1.05;
+  margin: 0 0 2px 0;
   padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .gad-aircraft-col .v2-fi-row .v2-fi-label::after {
   content: ":";
@@ -2725,9 +2738,11 @@ body, body.gids-page, body.gate-page{
   content: ":";
 }
 
-/* ── VALUE (big number/time) ────────────────────────────────────────── */
+/* ── VALUE (big number/time) — glyph height matched to the icon badge ───
+   Font px must exceed the icon px because glyph height is ~70% of font-size;
+   bumped so the digits visually equal the icon circle. */
 .gad-aircraft-col .v2-fi-row .v2-fi-value {
-  font-size: clamp(54px, 6.8vh, 92px);
+  font-size: clamp(70px, 9vh, 120px);
   font-weight: 900;
   color: #fff;
   opacity: 1;
@@ -2735,11 +2750,34 @@ body, body.gids-page, body.gate-page{
   line-height: 1;
   padding: 0;
   margin: 0;
+  white-space: nowrap;
+}
+/* Force: time + flight number values are AS BIG AS THE ICON (equal height).
+   To keep "X:XX PM" on screen at that size, the value spans the full row
+   width and scales to fit horizontally instead of being shrunk. */
+.gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-time,
+.gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-flight-number {
+  /* Tall as the icon, but the size is bounded by BOTH screen height (6.8vh)
+     and the actual column width. 3.0vw is conservative so even an 8-char time
+     ("12:54 PM") on a narrow 1680-wide column cannot reach the edge. The
+     value box is clipped and the text never wraps. */
+  font-size: min(6.8vh, 3.8vw) !important;
+  line-height: 1 !important;
+  grid-column: 2 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: clip !important;
+  box-sizing: border-box !important;
+  padding-right: 8px !important;
+  transform-origin: left center !important;
 }
 
 /* ── STATUS VALUE (text, smaller than number values) ────────────────── */
 .gad-aircraft-col .v2-fi-row .v2-fi-status-val {
-  font-size: clamp(36px, 4.6vh, 64px);
+  font-size: clamp(42px, 5.4vh, 74px);
   font-weight: 800;
 }
 .gad-aircraft-col .v2-fi-row .v2-fi-status-val.v2-fi-status.ontime,
@@ -2853,4 +2891,31 @@ body, body.gids-page, body.gate-page{
   font-weight: 600 !important;
   color: #4a5562 !important;
   line-height: 1.2 !important;
+}
+
+/* ── COLUMN WIDTHS: modest widen of the center ad box.
+   The left flight-info column keeps enough room that its large time values
+   do NOT wrap or clip (20% was too tight). Right map col trimmed slightly.
+   Left 24% / center 54% / right 22%. */
+.g8-wrap {
+  --col-left: 24%;
+  --col-center: 54%;
+}
+.gad-map-col-v2 {
+  flex: 0 0 22% !important;
+}
+
+/* ── LEFT INFO COLUMN — anti-clip safety net ─────────────────────────────
+   The large time values must shrink to fit the (slightly narrower) left
+   column instead of wrapping to two lines and clipping at the bottom.
+   Allow wrapping off and let oversized values scale down. */
+.gad-aircraft-col,
+.gad-info-col {
+  overflow: hidden !important;
+}
+.gad-aircraft-col [class*="-val"],
+.gad-aircraft-col [class*="time"] {
+  white-space: nowrap !important;
+  font-size: clamp(20px, 2.4vw, 34px) !important;
+  line-height: 1.1 !important;
 }

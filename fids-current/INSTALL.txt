@@ -1,21 +1,29 @@
-ACCOR GIDS REBUILD — drop-in files
-==================================
-Replace these in your project (same paths), then deploy + hard-refresh:
+GIDS — FIT + TIMING + ORDER + WIDER AD BOX
+==========================================
+Replace in repo (fids-current/), then: npx wrangler deploy
+(includes ALL prior fixes: Accor slide, endorsement, logo crop, globe, etc.)
 
-  js/fids-core.js   -> js/fids-core.js        (new Accor slide + 3:1 rotation + lockup helper)
-  css/accor-slide.css -> css/accor-slide.css  (NEW — 89 lines, replaces ads-only-accor-v6.css)
-  gids.html         -> gids.html              (CSS link swapped to accor-slide.css)
-  logos/hotels/accor-corporate/endorsement/*.png  -> same path (official "Members of ALL" signature)
+FILES
+  js/fids-core.js        renderer: per-item fit/zoom/position + per-item dwell + media sorted by order
+  js/local-media.js      stores fit/zoom/posX/posY/dwellMs/order; update() method
+  js/menu.js             "Adjust" button on each media item
+  js/media-adjust.js     preview/adjust panel (fit, zoom, position, DURATION, ORDER)
+  css/gids-v218.78.css   columns now 20% / 60% / 20% (shrunk both sides, wider ad box)
+  css/accor-slide.css    (Accor slide styles, unchanged this round)
+  gids/fids/bids.html    load media-adjust.js + cache bumps
 
-WHAT CHANGED
-- Accor hotel slide rebuilt: photo-led, logo > name(75%) > info, glass bullets,
-  ALL speech bubble + QR, official "Members of ALL" endorsement (EN) / localized
-  ALL lockup (FR/AR/ZH). Brand Book 2022 compliant.
-- Ad rotation: 3 non-Accor (your uploaded media + airline ads) : 1 Accor.
-  Your uploaded videos/images now PLAY in the carousel (they never did before).
-  Accor is no longer permanently on screen.
-- Old ads-only-accor-v6.css (2645 lines, 23 stacked versions) is no longer
-  referenced. You can delete it once you confirm the new slide looks right.
+WHAT'S NEW THIS ROUND
+- FIT: uploaded ads default to "contain" (no crop); adjustable per item.
+- TIMING: each media item has its own Duration (seconds) — set in Adjust panel.
+- ORDER: each item has a Play order number; media plays 1,2,3,4… and the
+  3:1 Accor interleave still applies on top.
+- WIDER AD BOX: left + right gate columns shrunk equally (25%->20%); center
+  ad column widened (50%->60%) so ads have more room and a better shape.
 
-NOTE: The old css/ads-only-accor-v6.css file is left in place but unused.
-Delete it after you verify the deploy.
+USE: Console -> Media Library -> Adjust on any item -> set fit/zoom/position/
+duration/order -> Save.
+
+NOTE: built-in AIRLINE ads (AC globe, AA, route maps) still a separate pending
+item — not changed here.
+
+Deploy: npx wrangler deploy -> "Uploaded fids" -> hard-refresh.
