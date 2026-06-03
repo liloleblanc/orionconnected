@@ -1,0 +1,68 @@
+﻿number,region,city,source_hotel_name_from_image,logo_subline_used,filename_base,font_size,letter_spacing,estimated_subline_width
+1,Canada,Banff,The Fairmont Banff Springs,BANFF SPRINGS,001_The_Fairmont_Banff_Springs,17.0,4.5,182.5
+2,Canada,Calgary,The Fairmont Palliser,PALLISER,002_The_Fairmont_Palliser,17.0,4.5,105.1
+3,Canada,Charlevoix,Fairmont Le Manoir Richelieu,LE MANOIR RICHELIEU,003_Fairmont_Le_Manoir_Richelieu,17.0,3.1,237.7
+4,Canada,Edmonton,The Fairmont Hotel Macdonald,HOTEL MACDONALD,004_The_Fairmont_Hotel_Macdonald,17.0,4.5,233.9
+5,Canada,Jasper,The Fairmont Jasper Park Lodge,JASPER PARK LODGE,005_The_Fairmont_Jasper_Park_Lodge,17.0,4.3,237.2
+6,Canada,Lake Louise,The Fairmont Chateau Lake Louise,CHATEAU LAKE LOUISE,006_The_Fairmont_Chateau_Lake_Louise,17.0,2.75,237.9
+7,Canada,Mont Tremblant,Fairmont Tremblant,TREMBLANT,007_Fairmont_Tremblant,17.0,4.5,136.5
+8,Canada,Montebello,Fairmont Kenauk,KENAUK,008_Fairmont_Kenauk,17.0,4.5,91.8
+9,Canada,Montebello,Fairmont Le Château Montebello,LE CHÂTEAU MONTEBELLO,009_Fairmont_Le_Chateau_Montebello,17.0,0.8,237.1
+10,Canada,Montreal,Fairmont The Queen Elizabeth,THE QUEEN ELIZABETH,010_Fairmont_The_Queen_Elizabeth,17.0,2.7,237.7
+11,Canada,Ottawa,Fairmont Château Laurier,CHÂTEAU LAURIER,011_Fairmont_Chateau_Laurier,17.0,4.5,215.7
+12,Canada,Québec City,Fairmont Le Château Frontenac,LE CHÂTEAU FRONTENAC,012_Fairmont_Le_Chateau_Frontenac,17.0,1.45,237.1
+13,Canada,Toronto,The Fairmont Royal York,ROYAL YORK,013_The_Fairmont_Royal_York,17.0,4.5,146.1
+14,Canada,Vancouver,The Fairmont Waterfront,WATERFRONT,014_The_Fairmont_Waterfront,17.0,4.5,157.0
+15,Canada,Vancouver,The Fairmont Vancouver Airport,VANCOUVER AIRPORT,015_The_Fairmont_Vancouver_Airport,17.0,3.5,237.2
+16,Canada,Vancouver,The Fairmont Hotel Vancouver,HOTEL VANCOUVER,016_The_Fairmont_Hotel_Vancouver,17.0,4.5,228.0
+17,Canada,Vancouver,Fairmont Pacific Rim,PACIFIC RIM,017_Fairmont_Pacific_Rim,17.0,4.5,144.1
+18,Canada,Victoria,The Fairmont Empress,EMPRESS,018_The_Fairmont_Empress,17.0,4.5,101.7
+19,Canada,Whistler,Fairmont Chateau Whistler,CHATEAU WHISTLER,019_Fairmont_Chateau_Whistler,17.0,4.5,235.4
+20,Canada,Winnipeg,The Fairmont Winnipeg,WINNIPEG,020_The_Fairmont_Winnipeg,17.0,4.5,117.0
+21,"Mexico, Caribbean and Bermuda",Acapulco,The Fairmont Pierre Marques,PIERRE MARQUES,021_The_Fairmont_Pierre_Marques,17.0,4.5,201.9
+22,"Mexico, Caribbean and Bermuda",Acapulco,The Fairmont Acapulco Princess,ACAPULCO PRINCESS,022_The_Fairmont_Acapulco_Princess,17.0,4.0,237.3
+23,"Mexico, Caribbean and Bermuda",Barbados,The Fairmont Royal Pavilion,ROYAL PAVILION,023_The_Fairmont_Royal_Pavilion,17.0,4.5,196.0
+24,"Mexico, Caribbean and Bermuda",Hamilton,The Fairmont Hamilton Princess,HAMILTON PRINCESS,024_The_Fairmont_Hamilton_Princess,17.0,4.05,237.8
+25,"Mexico, Caribbean and Bermuda",Riviera Maya,Fairmont Mayakoba,MAYAKOBA,025_Fairmont_Mayakoba,17.0,4.5,128.3
+26,"Mexico, Caribbean and Bermuda",Southampton,The Fairmont Southampton,SOUTHAMPTON,026_The_Fairmont_Southampton,17.0,4.5,177.5
+27,United States,Boston,Fairmont Battery Wharf,BATTERY WHARF,027_Fairmont_Battery_Wharf,17.0,4.5,194.4
+28,United States,Boston,"The Fairmont Copley Plaza, Boston","COPLEY PLAZA, BOSTON",028_The_Fairmont_Copley_Plaza_Boston,17.0,2.0,237.5
+29,United States,Chicago,"Fairmont Chicago, Millennium Park","CHICAGO, MILLENNIUM PARK",029_Fairmont_Chicago_Millennium_Park,16.75,0.0,237.5
+30,United States,Dallas,The Fairmont Dallas,DALLAS,030_The_Fairmont_Dallas,17.0,4.5,85.1
+31,United States,Hawaii,The Fairmont Orchid,ORCHID,031_The_Fairmont_Orchid,17.0,4.5,88.8
+32,United States,Maui,The Fairmont Kea Lani,KEA LANI,032_The_Fairmont_Kea_Lani,17.0,4.5,106.4
+33,United States,New York,"The Plaza, A Fairmont Managed Hotel",THE PLAZA,033_The_Plaza_A_Fairmont_Managed_Hotel,17.0,4.5,125.4
+34,United States,Newport Beach,Fairmont Newport Beach,NEWPORT BEACH,034_Fairmont_Newport_Beach,17.0,4.5,199.9
+35,United States,Pittsburgh,Fairmont Pittsburgh,PITTSBURGH,035_Fairmont_Pittsburgh,17.0,4.5,144.3
+36,United States,San Francisco,The Fairmont San Francisco,SAN FRANCISCO,036_The_Fairmont_San_Francisco,17.0,4.5,187.1
+37,United States,San Francisco,"Fairmont Heritage Place, Ghirardelli Square","HERITAGE PLACE, GHIRARDELLI SQUARE",037_Fairmont_Heritage_Place_Ghirardelli_Square,12.25,0.05,236.4
+38,United States,San Jose,The Fairmont San Jose,SAN JOSE,038_The_Fairmont_San_Jose,17.0,4.5,109.4
+39,United States,Santa Fe,"Fairmont Heritage Place, El Corazon de Santa Fe","HERITAGE PLACE, EL CORAZON DE SANTA FE",039_Fairmont_Heritage_Place_El_Corazon_de_Santa_Fe,11.0,0.05,237.1
+40,United States,Santa Monica,Fairmont Miramar Hotel & Bungalows,MIRAMAR HOTEL & BUNGALOWS,040_Fairmont_Miramar_Hotel_and_Bungalows,14.75,0.1,237.1
+41,United States,Scottsdale,Fairmont Scottsdale Princess,SCOTTSDALE PRINCESS,041_Fairmont_Scottsdale_Princess,17.0,2.7,237.6
+42,United States,Seattle,The Fairmont Olympic Hotel,OLYMPIC HOTEL,042_The_Fairmont_Olympic_Hotel,17.0,4.5,188.6
+43,United States,Sonoma,The Fairmont Sonoma Mission Inn & Spa,SONOMA MISSION INN & SPA,043_The_Fairmont_Sonoma_Mission_Inn_and_Spa,16.75,0.1,237.0
+44,United States,Telluride,"Fairmont Heritage Place, Franz Klammer Lodge","HERITAGE PLACE, FRANZ KLAMMER LODGE",044_Fairmont_Heritage_Place_Franz_Klammer_Lodge,11.5,0.0,237.4
+45,United States,Washington,"Fairmont Washington, D.C., Georgetown","WASHINGTON, D.C., GEORGETOWN",045_Fairmont_Washington_D_C_Georgetown,13.75,0.1,237.1
+46,Asia,Beijing,Fairmont Beijing,BEIJING,046_Fairmont_Beijing,17.0,4.5,89.9
+47,Asia,Jaipur,Fairmont Jaipur,JAIPUR,047_Fairmont_Jaipur,17.0,4.5,79.3
+48,Asia,Kunshan,Fairmont Yangcheng Lake,YANGCHENG LAKE,048_Fairmont_Yangcheng_Lake,17.0,4.5,211.2
+49,Asia,Shanghai,Fairmont Peace Hotel,PEACE HOTEL,049_Fairmont_Peace_Hotel,17.0,4.5,157.2
+50,Asia,Singapore,Fairmont Singapore,SINGAPORE,050_Fairmont_Singapore,17.0,4.5,131.2
+51,Europe,Hamburg,Fairmont Hotel Vier Jahreszeiten,HOTEL VIER JAHRESZEITEN,051_Fairmont_Hotel_Vier_Jahreszeiten,17.0,0.8,237.2
+52,Europe,Kyiv,Fairmont Grand Hotel Kyiv,GRAND HOTEL KYIV,052_Fairmont_Grand_Hotel_Kyiv,17.0,4.5,230.0
+53,Europe,London,"The Savoy, A Fairmont Managed Hotel",THE SAVOY,053_The_Savoy_A_Fairmont_Managed_Hotel,17.0,4.5,129.6
+54,Europe,Monte Carlo,Fairmont Monte Carlo,MONTE CARLO,054_Fairmont_Monte_Carlo,17.0,4.5,167.4
+55,Europe,Montreux,Fairmont Le Montreux Palace,LE MONTREUX PALACE,055_Fairmont_Le_Montreux_Palace,17.0,3.0,237.8
+56,Europe,St Andrews,"Fairmont St Andrews, Scotland","ST ANDREWS, SCOTLAND",056_Fairmont_St_Andrews_Scotland,17.0,1.6,237.3
+57,Middle East and Africa,Abu Dhabi,Fairmont Bab Al Bahr,BAB AL BAHR,057_Fairmont_Bab_Al_Bahr,17.0,4.5,153.6
+58,Middle East and Africa,Cairo,"Fairmont Towers, Heliopolis","TOWERS, HELIOPOLIS",058_Fairmont_Towers_Heliopolis,17.0,3.65,237.6
+59,Middle East and Africa,Cairo,Fairmont Nile City,NILE CITY,059_Fairmont_Nile_City,17.0,4.5,113.4
+60,Middle East and Africa,Cairo,Fairmont Heliopolis,HELIOPOLIS,060_Fairmont_Heliopolis,17.0,4.5,136.9
+61,Middle East and Africa,Dubai,Fairmont Dubai,DUBAI,061_Fairmont_Dubai,17.0,4.5,70.7
+62,Middle East and Africa,Makkah,"Makkah Clock Royal Tower, A Fairmont Hotel",MAKKAH CLOCK ROYAL TOWER,062_Makkah_Clock_Royal_Tower_A_Fairmont_Hotel,15.5,0.0,237.5
+63,Middle East and Africa,Masai Mara,Fairmont Mara Safari Club,MARA SAFARI CLUB,063_Fairmont_Mara_Safari_Club,17.0,4.5,226.5
+64,Middle East and Africa,Mount Kenya,Fairmont Mount Kenya Safari Club,MOUNT KENYA SAFARI CLUB,064_Fairmont_Mount_Kenya_Safari_Club,17.0,0.1,237.2
+65,Middle East and Africa,Nairobi,Fairmont The Norfolk,THE NORFOLK,065_Fairmont_The_Norfolk,17.0,4.5,162.6
+66,Middle East and Africa,Zimbali,Fairmont Zimbali Resort,ZIMBALI RESORT,066_Fairmont_Zimbali_Resort,17.0,4.5,193.6
+67,Middle East and Africa,Zimbali,Fairmont Zimbali Lodge,ZIMBALI LODGE,067_Fairmont_Zimbali_Lodge,17.0,4.5,182.6
