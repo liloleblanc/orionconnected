@@ -2432,7 +2432,7 @@ var ACCOR_BRAND_LOGOS = {
   // signature horizontal underline rule below the wordmark; the property
   // name is rendered beneath in the brand's spaced-caps style.
   'FAI': '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg',
-  'SOF': '/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg',
+  'SOF': '/logos/hotels/sofitel/sofitel-wordmark-white.svg',           // Sofitel (NOT Sofitel Legend — see SLE)
   'SWI': '/logos/hotels/accor-premium/swissotel-monochrome-white.svg',
   'RAF': '/logos/hotels/accor-luxury/raffles-monochrome-white.svg',
   'RAH': '/logos/hotels/accor-luxury/raffles-monochrome-white.svg',
@@ -2620,7 +2620,8 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
     [/mantis/,                               '/logos/hotels/accor-luxury/mantis-monochrome-white.svg'],
     [/banyan\s*tree/,                       '/logos/hotels/accor-luxury/banyan-monochrome-white.svg'],
     [/raffles/,                              '/logos/hotels/accor-luxury/raffles-monochrome-white.svg'],
-    [/sofitel/,                              '/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg'],
+    [/sofitel\s*legend/,                     '/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg'],
+    [/sofitel/,                              '/logos/hotels/sofitel/sofitel-wordmark-white.svg'],
     [/fairmont/,                             '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg'],
     [/emblems/,                              '/logos/hotels/accor-luxury/emblems-monochrome-white.svg']
   ];
@@ -11184,6 +11185,7 @@ const LS = {
   familyFriendly:   { en:'Family-friendly',   fr:'Idéal en famille', es:'Apto para familias',de:'Familienfreundlich',    it:'Adatto alle famiglie',pt:'Para famílias',   ja:'ファミリー向け', zh:'适合家庭', ar:'مناسب للعائلات' },
   ecoCertified:     { en:'Ecocertified',      fr:'Écocertifié',      es:'Ecocertificado',   de:'Öko-zertifiziert',      it:'Ecocertificato',     pt:'Ecocertificado',   ja:'環境認証',      zh:'生态认证', ar:'معتمد بيئيًا' },
   scanToUnlockAll:  { en:'Scan to unlock<br>limitless experiences<br>with ALL.', fr:'Scannez pour débloquer<br>des expériences illimitées<br>avec ALL.', es:'Escanea para desbloquear<br>experiencias ilimitadas<br>con ALL.', de:'Scannen Sie für grenzenlose<br>Erlebnisse mit ALL.', it:'Scansiona per esperienze<br>illimitate con ALL.', pt:'Digitalize para experiências<br>ilimitadas com ALL.', ja:'スキャンしてALLで無限の<br>体験を解き放とう。', zh:'扫码解锁ALL无限体验', ar:'امسح لاستكشاف<br>تجارب لا محدودة مع ALL.' },
+  scanToDiscover:   { en:'Scan to discover', fr:'Scannez pour découvrir', es:'Escanea para descubrir', de:'Zum Entdecken scannen', it:'Scansiona per scoprire', pt:'Digitalize para descobrir', ja:'スキャンして発見', zh:'扫码探索', ar:'امسح للاكتشاف' },
   memberOf:         { en:'Member of',         fr:'Membre de',        es:'Miembro de',       de:'Mitglied von',          it:'Membro di',          pt:'Membro de',        ja:'会員：',         zh:'会员：', ar:'عضو في' },
   limitlessLoyaltyProgramme: { en:'The Limitless Loyalty Programme', fr:'Le programme de fidélité illimité', es:'El programa de fidelidad ilimitado', de:'Das grenzenlose Treueprogramm', it:'Il programma fedeltà illimitato', pt:'O programa de fidelidade ilimitado', ja:'リミットレス・ロイヤルティ・プログラム', zh:'无限忠诚计划', ar:'برنامج الولاء اللامحدود' },
   accorTagline:     { en:'ACCOR · LIVE LIMITLESS', fr:'ACCOR · VIVRE SANS LIMITES', es:'ACCOR · LIVE LIMITLESS', de:'ACCOR · LIVE LIMITLESS', it:'ACCOR · LIVE LIMITLESS', pt:'ACCOR · LIVE LIMITLESS', ja:'ACCOR · LIVE LIMITLESS', zh:'ACCOR · LIVE LIMITLESS', ar:'ACCOR · LIVE LIMITLESS' },
@@ -19166,6 +19168,59 @@ function buildGateAdHtml(ad) {
 /* ADS-ONLY ACCOR V6
    Scope: ad HTML only. No menu/flight/gate/weather/map/aircraft/carousel/admin changes.
 */
+// AUTO: tight crop (ink bounds + small margin) per brand logo file, so the
+// wordmark fills its slot instead of floating in an oversized viewBox.
+// Measured via getBBox; consumed by _cropLockup. Keyed by logo basename.
+var ACCOR_LOGO_CROP = {
+  "21cmuseum-monochrome-white.svg": "21.2 5.6 28.6 28.8",
+  "25th-monochrome-white.svg": "6.4 9.2 57.2 22",
+  "BreakFree-monochrome-white.svg": "9.6 15.2 50.6 9.2",
+  "Homm-monochrome-white.svg": "6.4 14 57.2 12",
+  "SLS-monochrome-white.svg": "-2 -3 91.7 36",
+  "SO-monochrome-white.svg": "11.7 6.8 47.6 26.4",
+  "adagioaccess-monochrome-white.svg": "11.7 8.1 46.6 22.8",
+  "adagiooriginal-monochrome-white.svg": "11.7 8.1 46.6 23.1",
+  "adagiopremium-monochrome-white.svg": "11.7 8.1 46.6 23",
+  "angsana-monochrome-white.svg": "6.4 15.2 57.2 8.6",
+  "artseries-monochrome-white.svg": "6.4 13.9 57.2 12.9",
+  "banyan-monochrome-white.svg": "6.4 16.2 57.2 7.6",
+  "delano-monochrome-white.svg": "-10.2 3.3 360.4 31.9",
+  "emblems-monochrome-white.svg": "6.6 11.3 56.7 17.4",
+  "faena-monochrome-white.svg": "6.4 14 57.2 12.3",
+  "fairmont-monochrome-white.svg": "6.4 10.3 57.3 20",
+  "grandmercure-monochrome-white.svg": "6.4 15.2 57.2 9.9",
+  "greet-monochrome-white.svg": "15.9 12.8 38.2 14.7",
+  "handwritten-monochrome-white.svg": "6.4 11.6 57.2 16.8",
+  "hotelF1-monochrome-white.svg": "6.4 15.2 57.2 9.5",
+  "hyde-monochrome-white.svg": "-2.6 -3 125.6 36",
+  "ibis-monochrome-white.svg": "23.2 12.8 23.5 14.4",
+  "ibisbudget-monochrome-white.svg": "22.2 9.2 25.6 21.6",
+  "ibisstyles-monochrome-white.svg": "21.2 9.2 27.7 21.6",
+  "jo&joe-monochrome-white.svg": "10.6 15.1 48.8 10.6",
+  "mamashelter-monochrome-white.svg": "17 11.6 36.6 16.8",
+  "mantis-monochrome-white.svg": "10.6 14 48.7 12",
+  "mantra-monochrome-white.svg": "10.6 12.9 48.8 13.6",
+  "mercure-monochrome-white.svg": "11.5 185.6 477 63",
+  "mgallery-monochrome-white.svg": "26.2 5.6 18.2 28.8",
+  "mondrian-monochrome-white.svg": "6.4 16.2 57.2 6.9",
+  "morgansoriginals-monochrome-white.svg": "-7.1 -5.7 249.3 68.9",
+  "movenpick-monochrome-white.svg": "6.4 10.5 57.2 18.1",
+  "novotel-monochrome-white.svg": "11.5 149.5 477 151.5",
+  "onefinestay-monochrome-white.svg": "6.4 14 57.2 12.3",
+  "orientexpress-monochrome-white.svg": "6.4 5.7 57.2 27.6",
+  "parissociety-monochrome-white.svg": "6.4 14 57.2 12",
+  "peppers-monochrome-white.svg": "6.4 15.2 57.2 9.6",
+  "pullman-monochrome-white.svg": "-20.7 -17.8 729.9 214",
+  "raffles-monochrome-white.svg": "-19.1 -21.7 675.1 260.1",
+  "rixos-monochrome-white.svg": "6.4 12.9 57.2 13.2",
+  "sofitel-monochrome-white.svg": "-5.7 -2.9 201.4 34.7",
+  "sofitellegend-monochrome-white.svg": "10.6 11.6 49.5 16.8",
+  "swissotel-monochrome-white.svg": "9.6 12.8 51 14.4",
+  "thehoxton-monochrome-white.svg": "6.4 14.1 57.2 10.7",
+  "thesebel-monochrome-white.svg": "18 12.8 34.1 14.4",
+  "tribe-monochrome-white.svg": "17 8 35.3 24",
+};
+
 function buildAccorAdOnlyV6(ad) {
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function first(){ for(var i=0;i<arguments.length;i++){ var a=arguments[i]; if(a!==undefined&&a!==null&&String(a).trim()!=='') return a; } return ''; }
@@ -19198,7 +19253,7 @@ function buildAccorAdOnlyV6(ad) {
   if(!logo){
     if(brandLower.indexOf('fairmont')!==-1) logo='/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
     else if(brandLower.indexOf('novotel')!==-1) logo='/logos/hotels/accor-midscale/novotel-monochrome-white.svg';
-    else if(brandLower.indexOf('sofitel')!==-1) logo='/logos/hotels/sofitel/sofitel-monochrome-white.svg';
+    else if(brandLower.indexOf('sofitel')!==-1) logo='/logos/hotels/sofitel/sofitel-wordmark-white.svg';
     else if(brandLower.indexOf('pullman')!==-1) logo='/logos/hotels/accor-premium/pullman-monochrome-white.svg';
     else if(brandLower.indexOf('mercure')!==-1) logo='/logos/hotels/accor-midscale/mercure-monochrome-white.svg';
   }
@@ -19212,7 +19267,12 @@ function buildAccorAdOnlyV6(ad) {
   var haveLogo=!!logo;
   function stripBrand(name){ var s=String(name||'').replace(/\s+/g,' ').trim(); if(brandWord){ var re=new RegExp('\\b'+brandWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig'); s=s.replace(re,'').replace(/\s+/g,' ').trim(); } return s; }
   var displayName=haveLogo?stripBrand(hotelName):String(hotelName).trim();
-  var showName=!!displayName;
+  // Property lockups (Fairmont/Emblems per-property art, runtime-generated or
+  // brand-team file) already bake the property name INTO the logo artwork, so
+  // printing the name again below it is a duplicate. Suppress the text name
+  // whenever a property lockup is in use.
+  var lockupHasName=!!ad._propertyLockup;
+  var showName=!!displayName && !lockupHasName;
 
   var amenities=[];
   if(Array.isArray(ad.badges)) amenities=ad.badges;
@@ -19235,12 +19295,20 @@ function buildAccorAdOnlyV6(ad) {
   var _LOGO_CROP = {
     'novotel': '15 152 470 146'
   };
-  var _logoCrop = _LOGO_CROP[lower(brandWord)] || '';
+  var _logoBase = String(logo||'').split('?')[0].split('#')[0];
+  _logoBase = _logoBase.substring(_logoBase.lastIndexOf('/')+1);
+  var _logoCrop = (typeof ACCOR_LOGO_CROP!=='undefined' && ACCOR_LOGO_CROP[_logoBase]) || _LOGO_CROP[lower(brandWord)] || '';
   var logoHtml=haveLogo
     ? '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>'
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
-  var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+safeTL('scanToUnlockAll','Scan to unlock limitless experiences with ALL.')+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
+  // QR caption — per-brand voice (branding is by brand, not the ALL umbrella).
+  // Luxury brands invite discovery of the property by name; others keep the
+  // default ALL loyalty CTA.
+  var _qrCaption = safeTL('scanToUnlockAll','Scan to unlock limitless experiences with ALL.');
+  var _luxuryBrands = {FAI:1,SOF:1,SLE:1,RAF:1,RAH:1,EMB:1,BAN:1,ORI:1,OE:1,FAE:1,RIX:1,MAN:1,MGH:1,MGA:1,MOV:1,DEL:1};
+  if (_luxuryBrands[String(ad.brand||'').toUpperCase()]) _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(hotelName);
+  var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
   // Other languages → localized ALL lockup with a 'Member of' lead-in.
@@ -19253,7 +19321,7 @@ function buildAccorAdOnlyV6(ad) {
   var amenHtml=amenities.length?'<div class="axr-amen">'+amenities.map(function(a){return '<span>'+esc(a)+'</span>';}).join('')+'</div>':'';
 
   return ''
-    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" style="--axr-tint:'+tint+'">'
+    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" style="--axr-tint:'+tint+'">'
     +   '<section class="axr-hero">'
     +     (photo?'<div class="axr-hero-img" style="background-image:url(\''+esc(photo)+'\')"></div>':'<div class="axr-hero-img axr-hero-noimg"></div>')
     +     '<div class="axr-hero-grad"></div>'
