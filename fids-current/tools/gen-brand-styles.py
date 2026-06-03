@@ -55,8 +55,8 @@ TABLE = [
  ("SO","SO/","modern","#121016","#E6007E","#FFFFFF"),
  ("SEQ","SO/","modern","#121016","#E6007E","#FFFFFF"),
  ("ART","Art Series","modern","#1A1A1A","#C9A227","#F0ECE3"),
- ("SEB","The Sebel","modern","#1A2230","#B59A5E","#F0ECDF"),
- ("TSB","The Sebel","modern","#1A2230","#B59A5E","#F0ECDF"),
+ ("SEB","The Sebel","elegant","#1A2230","#B59A5E","#F0ECDF"),
+ ("TSB","The Sebel","elegant","#1A2230","#B59A5E","#F0ECDF"),
  ("ADA","Adagio","modern","#14233F","#E08A2E","#F0ECDF"),
  ("ADG","Adagio","modern","#14233F","#E08A2E","#F0ECDF"),
  # economy — modern, bright accents
@@ -100,9 +100,9 @@ def modern(code,bg,accent,ink):
     return f"""{s}{{ --all-blue:{bg}; --axr-tint:{bg}; --all-gold:{accent}; }}
 {s} .axr-logo{{ height:clamp(70px,13vh,120px); }}
 {s} .axr-logo img{{ max-width:min(80%,460px); }}
-{s} .axr-name{{ color:{ink}; font-size:calc(var(--axr-logo)*0.55); }}
+{s} .axr-name{{ color:{ink}; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }}
 {s} .axr-sub{{ font-size:calc(var(--axr-info)*0.86); }}
-{s} .axr-addr{{ color:{ink}; font-weight:600; letter-spacing:.02em; }}
+{s} .axr-addr{{ color:{ink}; font-weight:500; letter-spacing:.02em; }}
 {s} .axr-stars{{ color:{accent}; }}
 {s} .axr-amen{{ gap:0; }}
 {s} .axr-amen span{{ background:none; border:none; padding:0; color:{ink}; font-weight:500; font-size:calc(var(--axr-info)*0.80); }}
