@@ -78,7 +78,7 @@ def rgba(hex6, a):
 def elegant(code,bg,accent,ink):
     s=f'.axr[data-brand-code="{code}"]'
     return f"""{s}{{ --all-blue:{bg}; --axr-tint:{bg}; --all-gold:{accent}; --all-light:#EFE9DE; }}
-{s} .axr-logo{{ height:clamp(104px,20vh,188px); }}
+{s} .axr-logo{{ height:clamp(124px,23vh,224px); }}
 {s} .axr-logo img{{ max-width:min(94%,600px); max-height:100%; }}
 {s} .axr-name{{ font-family:{SERIF}; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }}
 {s} .axr-sub{{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }}
@@ -98,7 +98,7 @@ def elegant(code,bg,accent,ink):
 def modern(code,bg,accent,ink):
     s=f'.axr[data-brand-code="{code}"]'
     return f"""{s}{{ --all-blue:{bg}; --axr-tint:{bg}; --all-gold:{accent}; }}
-{s} .axr-logo{{ height:clamp(100px,19vh,180px); }}
+{s} .axr-logo{{ height:clamp(120px,22vh,216px); }}
 {s} .axr-logo img{{ max-width:min(92%,580px); max-height:100%; }}
 {s} .axr-name{{ color:{ink}; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }}
 {s} .axr-sub{{ font-size:calc(var(--axr-info)*0.86); }}
