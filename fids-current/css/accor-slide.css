@@ -89,3 +89,40 @@
   filter:drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
 /* When official signature is used, it sits left; right side stays empty/clean */
 .axr-all:has(.axr-all-official){ justify-content:flex-start; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   PER-BRAND IDENTITY — same slide structure, brand-specific styling.
+   Branding is by brand (not the Accor/ALL umbrella): each brand carries its
+   own palette, type and emphasis. Keyed off the article's data-brand-code.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── FAIRMONT (FAI) — midnight + cream + gold, refined serif, brand dominant ── */
+.axr[data-brand-code="FAI"]{
+  --all-blue:#14161C; --axr-tint:#14161C; --all-gold:#B88D5B; --all-light:#EFE9DE;
+}
+/* brand lockup dominates; city is secondary */
+.axr[data-brand-code="FAI"] .axr-logo{ height:clamp(74px,14vh,128px); }
+.axr[data-brand-code="FAI"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="FAI"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="FAI"] .axr-addr{
+  font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400;
+  letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EFE6D6;
+}
+.axr[data-brand-code="FAI"] .axr-stars{ color:#B88D5B; letter-spacing:.12em; }
+.axr[data-brand-code="FAI"] .axr-score{ font-family:'Didot',Georgia,serif; color:#fff; }
+.axr[data-brand-code="FAI"] .axr-score small{ color:#CBB996; }
+/* amenities → quiet italic serif with gold dots (no ALL pills) */
+.axr[data-brand-code="FAI"] .axr-amen{ gap:0; }
+.axr[data-brand-code="FAI"] .axr-amen span{
+  background:none; border:none; padding:0;
+  font-family:'Didot',Georgia,serif; font-style:italic; color:#E7DCC6;
+  font-size:calc(var(--axr-info)*0.82);
+}
+.axr[data-brand-code="FAI"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B88D5B; font-style:normal; }
+/* QR bubble → Fairmont cream card, gold edge, serif copy */
+.axr[data-brand-code="FAI"] .axr-bubble{ background:#EFE9DE; color:#14161C; border:1px solid #C9B486; border-radius:2px 2px 2px 0; }
+.axr[data-brand-code="FAI"] .axr-bubble::after{ border-top-color:#EFE9DE; }
+.axr[data-brand-code="FAI"] .axr-bubble-copy{ font-family:'Didot',Georgia,serif; letter-spacing:.02em; }
+/* footer → drop the heavy ALL band; slim gold hairline + small endorsement */
+.axr[data-brand-code="FAI"] .axr-all{ background:transparent; border-top:1px solid rgba(184,141,91,.6); padding:14px 0 8px; }
+.axr[data-brand-code="FAI"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }

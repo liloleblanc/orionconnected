@@ -19212,7 +19212,12 @@ function buildAccorAdOnlyV6(ad) {
   var haveLogo=!!logo;
   function stripBrand(name){ var s=String(name||'').replace(/\s+/g,' ').trim(); if(brandWord){ var re=new RegExp('\\b'+brandWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig'); s=s.replace(re,'').replace(/\s+/g,' ').trim(); } return s; }
   var displayName=haveLogo?stripBrand(hotelName):String(hotelName).trim();
-  var showName=!!displayName;
+  // Property lockups (Fairmont/Emblems per-property art, runtime-generated or
+  // brand-team file) already bake the property name INTO the logo artwork, so
+  // printing the name again below it is a duplicate. Suppress the text name
+  // whenever a property lockup is in use.
+  var lockupHasName=!!ad._propertyLockup;
+  var showName=!!displayName && !lockupHasName;
 
   var amenities=[];
   if(Array.isArray(ad.badges)) amenities=ad.badges;
@@ -19240,7 +19245,12 @@ function buildAccorAdOnlyV6(ad) {
     ? '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>'
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
-  var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+safeTL('scanToUnlockAll','Scan to unlock limitless experiences with ALL.')+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
+  // QR caption — per-brand voice (branding is by brand, not the ALL umbrella).
+  // Luxury brands invite discovery of the property by name; others keep the
+  // default ALL loyalty CTA.
+  var _qrCaption = safeTL('scanToUnlockAll','Scan to unlock limitless experiences with ALL.');
+  if (ad.brand === 'FAI') _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(hotelName);
+  var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
   // Other languages → localized ALL lockup with a 'Member of' lead-in.
@@ -19253,7 +19263,7 @@ function buildAccorAdOnlyV6(ad) {
   var amenHtml=amenities.length?'<div class="axr-amen">'+amenities.map(function(a){return '<span>'+esc(a)+'</span>';}).join('')+'</div>':'';
 
   return ''
-    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" style="--axr-tint:'+tint+'">'
+    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" style="--axr-tint:'+tint+'">'
     +   '<section class="axr-hero">'
     +     (photo?'<div class="axr-hero-img" style="background-image:url(\''+esc(photo)+'\')"></div>':'<div class="axr-hero-img axr-hero-noimg"></div>')
     +     '<div class="axr-hero-grad"></div>'
