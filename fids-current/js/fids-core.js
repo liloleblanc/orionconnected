@@ -15744,6 +15744,7 @@ const AP_LIST = [
   {c:'DEL',n:'Delhi'},{c:'BOM',n:'Mumbai'},{c:'CGK',n:'Jakarta'},
   {c:'MNL',n:'Manila'},{c:'AKL',n:'Auckland'},{c:'GRU',n:'São Paulo'},
   {c:'EZE',n:'Buenos Aires'},{c:'BOG',n:'Bogotá'},{c:'LIM',n:'Lima'},
+  {c:'LPB',n:'La Paz'},
 ];
 
 let _apAutoActive = -1;
