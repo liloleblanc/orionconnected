@@ -19167,6 +19167,59 @@ function buildGateAdHtml(ad) {
 /* ADS-ONLY ACCOR V6
    Scope: ad HTML only. No menu/flight/gate/weather/map/aircraft/carousel/admin changes.
 */
+// AUTO: tight crop (ink bounds + small margin) per brand logo file, so the
+// wordmark fills its slot instead of floating in an oversized viewBox.
+// Measured via getBBox; consumed by _cropLockup. Keyed by logo basename.
+var ACCOR_LOGO_CROP = {
+  "21cmuseum-monochrome-white.svg": "21.2 5.6 28.6 28.8",
+  "25th-monochrome-white.svg": "6.4 9.2 57.2 22",
+  "BreakFree-monochrome-white.svg": "9.6 15.2 50.6 9.2",
+  "Homm-monochrome-white.svg": "6.4 14 57.2 12",
+  "SLS-monochrome-white.svg": "-2 -3 91.7 36",
+  "SO-monochrome-white.svg": "11.7 6.8 47.6 26.4",
+  "adagioaccess-monochrome-white.svg": "11.7 8.1 46.6 22.8",
+  "adagiooriginal-monochrome-white.svg": "11.7 8.1 46.6 23.1",
+  "adagiopremium-monochrome-white.svg": "11.7 8.1 46.6 23",
+  "angsana-monochrome-white.svg": "6.4 15.2 57.2 8.6",
+  "artseries-monochrome-white.svg": "6.4 13.9 57.2 12.9",
+  "banyan-monochrome-white.svg": "6.4 16.2 57.2 7.6",
+  "delano-monochrome-white.svg": "-10.2 3.3 360.4 31.9",
+  "emblems-monochrome-white.svg": "6.6 11.3 56.7 17.4",
+  "faena-monochrome-white.svg": "6.4 14 57.2 12.3",
+  "fairmont-monochrome-white.svg": "6.4 10.3 57.3 20",
+  "grandmercure-monochrome-white.svg": "6.4 15.2 57.2 9.9",
+  "greet-monochrome-white.svg": "15.9 12.8 38.2 14.7",
+  "handwritten-monochrome-white.svg": "6.4 11.6 57.2 16.8",
+  "hotelF1-monochrome-white.svg": "6.4 15.2 57.2 9.5",
+  "hyde-monochrome-white.svg": "-2.6 -3 125.6 36",
+  "ibis-monochrome-white.svg": "23.2 12.8 23.5 14.4",
+  "ibisbudget-monochrome-white.svg": "22.2 9.2 25.6 21.6",
+  "ibisstyles-monochrome-white.svg": "21.2 9.2 27.7 21.6",
+  "jo&joe-monochrome-white.svg": "10.6 15.1 48.8 10.6",
+  "mamashelter-monochrome-white.svg": "17 11.6 36.6 16.8",
+  "mantis-monochrome-white.svg": "10.6 14 48.7 12",
+  "mantra-monochrome-white.svg": "10.6 12.9 48.8 13.6",
+  "mercure-monochrome-white.svg": "11.5 185.6 477 63",
+  "mgallery-monochrome-white.svg": "26.2 5.6 18.2 28.8",
+  "mondrian-monochrome-white.svg": "6.4 16.2 57.2 6.9",
+  "morgansoriginals-monochrome-white.svg": "-7.1 -5.7 249.3 68.9",
+  "movenpick-monochrome-white.svg": "6.4 10.5 57.2 18.1",
+  "novotel-monochrome-white.svg": "11.5 149.5 477 151.5",
+  "onefinestay-monochrome-white.svg": "6.4 14 57.2 12.3",
+  "orientexpress-monochrome-white.svg": "6.4 5.7 57.2 27.6",
+  "parissociety-monochrome-white.svg": "6.4 14 57.2 12",
+  "peppers-monochrome-white.svg": "6.4 15.2 57.2 9.6",
+  "pullman-monochrome-white.svg": "-20.7 -17.8 729.9 214",
+  "raffles-monochrome-white.svg": "-19.1 -21.7 675.1 260.1",
+  "rixos-monochrome-white.svg": "6.4 12.9 57.2 13.2",
+  "sofitel-monochrome-white.svg": "-5.7 -2.9 201.4 34.7",
+  "sofitellegend-monochrome-white.svg": "10.6 11.6 49.5 16.8",
+  "swissotel-monochrome-white.svg": "9.6 12.8 51 14.4",
+  "thehoxton-monochrome-white.svg": "6.4 14.1 57.2 10.7",
+  "thesebel-monochrome-white.svg": "18 12.8 34.1 14.4",
+  "tribe-monochrome-white.svg": "17 8 35.3 24",
+};
+
 function buildAccorAdOnlyV6(ad) {
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function first(){ for(var i=0;i<arguments.length;i++){ var a=arguments[i]; if(a!==undefined&&a!==null&&String(a).trim()!=='') return a; } return ''; }
@@ -19241,7 +19294,9 @@ function buildAccorAdOnlyV6(ad) {
   var _LOGO_CROP = {
     'novotel': '15 152 470 146'
   };
-  var _logoCrop = _LOGO_CROP[lower(brandWord)] || '';
+  var _logoBase = String(logo||'').split('?')[0].split('#')[0];
+  _logoBase = _logoBase.substring(_logoBase.lastIndexOf('/')+1);
+  var _logoCrop = (typeof ACCOR_LOGO_CROP!=='undefined' && ACCOR_LOGO_CROP[_logoBase]) || _LOGO_CROP[lower(brandWord)] || '';
   var logoHtml=haveLogo
     ? '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>'
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';

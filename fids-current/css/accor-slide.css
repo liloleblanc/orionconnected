@@ -99,8 +99,8 @@
 
 /* FAI — Fairmont (elegant) */
 .axr[data-brand-code="FAI"]{ --all-blue:#14161C; --axr-tint:#14161C; --all-gold:#B88D5B; --all-light:#EFE9DE; }
-.axr[data-brand-code="FAI"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="FAI"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="FAI"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="FAI"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="FAI"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="FAI"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="FAI"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EFE6D6; }
@@ -118,8 +118,8 @@
 
 /* SOF — Sofitel (elegant) */
 .axr[data-brand-code="SOF"]{ --all-blue:#0B0B0D; --axr-tint:#0B0B0D; --all-gold:#B6912E; --all-light:#EFE9DE; }
-.axr[data-brand-code="SOF"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="SOF"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="SOF"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="SOF"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="SOF"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="SOF"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="SOF"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#ECE6DA; }
@@ -137,8 +137,8 @@
 
 /* SLE — Sofitel Legend (elegant) */
 .axr[data-brand-code="SLE"]{ --all-blue:#0B0B0D; --axr-tint:#0B0B0D; --all-gold:#B6912E; --all-light:#EFE9DE; }
-.axr[data-brand-code="SLE"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="SLE"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="SLE"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="SLE"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="SLE"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="SLE"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="SLE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#ECE6DA; }
@@ -156,8 +156,8 @@
 
 /* RAF — Raffles (elegant) */
 .axr[data-brand-code="RAF"]{ --all-blue:#15241F; --axr-tint:#15241F; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="RAF"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="RAF"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="RAF"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="RAF"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="RAF"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="RAF"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="RAF"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EFE9DD; }
@@ -175,8 +175,8 @@
 
 /* RAH — Raffles (elegant) */
 .axr[data-brand-code="RAH"]{ --all-blue:#15241F; --axr-tint:#15241F; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="RAH"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="RAH"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="RAH"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="RAH"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="RAH"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="RAH"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="RAH"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EFE9DD; }
@@ -194,8 +194,8 @@
 
 /* EMB — Emblems (elegant) */
 .axr[data-brand-code="EMB"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#B89B6E; --all-light:#EFE9DE; }
-.axr[data-brand-code="EMB"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="EMB"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="EMB"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="EMB"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="EMB"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="EMB"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="EMB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#ECE6DA; }
@@ -213,8 +213,8 @@
 
 /* BAN — Banyan Tree (elegant) */
 .axr[data-brand-code="BAN"]{ --all-blue:#163A33; --axr-tint:#163A33; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="BAN"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="BAN"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="BAN"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="BAN"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="BAN"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="BAN"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="BAN"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EDE7D7; }
@@ -232,8 +232,8 @@
 
 /* ORI — Orient Express (elegant) */
 .axr[data-brand-code="ORI"]{ --all-blue:#0E1B2A; --axr-tint:#0E1B2A; --all-gold:#B99653; --all-light:#EFE9DE; }
-.axr[data-brand-code="ORI"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="ORI"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="ORI"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="ORI"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="ORI"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="ORI"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="ORI"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EDE6D6; }
@@ -251,8 +251,8 @@
 
 /* OE — Orient Express (elegant) */
 .axr[data-brand-code="OE"]{ --all-blue:#0E1B2A; --axr-tint:#0E1B2A; --all-gold:#B99653; --all-light:#EFE9DE; }
-.axr[data-brand-code="OE"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="OE"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="OE"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="OE"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="OE"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="OE"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="OE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EDE6D6; }
@@ -270,8 +270,8 @@
 
 /* FAE — Faena (elegant) */
 .axr[data-brand-code="FAE"]{ --all-blue:#5E1417; --axr-tint:#5E1417; --all-gold:#C8A24A; --all-light:#EFE9DE; }
-.axr[data-brand-code="FAE"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="FAE"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="FAE"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="FAE"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="FAE"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="FAE"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="FAE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F2E7D6; }
@@ -289,8 +289,8 @@
 
 /* RIX — Rixos (elegant) */
 .axr[data-brand-code="RIX"]{ --all-blue:#1A1712; --axr-tint:#1A1712; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="RIX"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="RIX"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="RIX"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="RIX"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="RIX"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="RIX"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="RIX"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EFE7D6; }
@@ -308,8 +308,8 @@
 
 /* MAN — Mantis (elegant) */
 .axr[data-brand-code="MAN"]{ --all-blue:#1C2A1E; --axr-tint:#1C2A1E; --all-gold:#B89B6E; --all-light:#EFE9DE; }
-.axr[data-brand-code="MAN"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="MAN"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="MAN"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="MAN"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="MAN"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="MAN"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="MAN"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EDE7D7; }
@@ -327,8 +327,8 @@
 
 /* MGH — MGallery (elegant) */
 .axr[data-brand-code="MGH"]{ --all-blue:#3A1420; --axr-tint:#3A1420; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="MGH"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="MGH"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="MGH"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="MGH"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="MGH"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="MGH"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="MGH"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0E7DB; }
@@ -346,8 +346,8 @@
 
 /* MGA — MGallery (elegant) */
 .axr[data-brand-code="MGA"]{ --all-blue:#3A1420; --axr-tint:#3A1420; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="MGA"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="MGA"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="MGA"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="MGA"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="MGA"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="MGA"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="MGA"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0E7DB; }
@@ -365,8 +365,8 @@
 
 /* MOV — Movenpick (elegant) */
 .axr[data-brand-code="MOV"]{ --all-blue:#2A1418; --axr-tint:#2A1418; --all-gold:#C8A24A; --all-light:#EFE9DE; }
-.axr[data-brand-code="MOV"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="MOV"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="MOV"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="MOV"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="MOV"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="MOV"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="MOV"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F1E8DC; }
@@ -384,8 +384,8 @@
 
 /* DEL — Delano (elegant) */
 .axr[data-brand-code="DEL"]{ --all-blue:#111214; --axr-tint:#111214; --all-gold:#C9A227; --all-light:#EFE9DE; }
-.axr[data-brand-code="DEL"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="DEL"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="DEL"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="DEL"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="DEL"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="DEL"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="DEL"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0ECE3; }
@@ -403,8 +403,8 @@
 
 /* PUL — Pullman (modern) */
 .axr[data-brand-code="PUL"]{ --all-blue:#0C0C0E; --axr-tint:#0C0C0E; --all-gold:#D2A24B; }
-.axr[data-brand-code="PUL"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="PUL"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="PUL"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="PUL"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="PUL"] .axr-name{ color:#F0EFEC; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="PUL"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="PUL"] .axr-addr{ color:#F0EFEC; font-weight:500; letter-spacing:.02em; }
@@ -416,8 +416,8 @@
 
 /* SWI — Swissotel (modern) */
 .axr[data-brand-code="SWI"]{ --all-blue:#16181C; --axr-tint:#16181C; --all-gold:#E2001A; }
-.axr[data-brand-code="SWI"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="SWI"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="SWI"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="SWI"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="SWI"] .axr-name{ color:#F2F2F2; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="SWI"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="SWI"] .axr-addr{ color:#F2F2F2; font-weight:500; letter-spacing:.02em; }
@@ -429,8 +429,8 @@
 
 /* NOV — Novotel (modern) */
 .axr[data-brand-code="NOV"]{ --all-blue:#123A52; --axr-tint:#123A52; --all-gold:#8BC34A; }
-.axr[data-brand-code="NOV"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="NOV"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="NOV"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="NOV"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="NOV"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="NOV"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="NOV"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -442,8 +442,8 @@
 
 /* MER — Mercure (modern) */
 .axr[data-brand-code="MER"]{ --all-blue:#14233F; --axr-tint:#14233F; --all-gold:#B59A5E; }
-.axr[data-brand-code="MER"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="MER"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="MER"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="MER"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="MER"] .axr-name{ color:#F0ECDF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="MER"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="MER"] .axr-addr{ color:#F0ECDF; font-weight:500; letter-spacing:.02em; }
@@ -455,8 +455,8 @@
 
 /* GRA — Grand Mercure (modern) */
 .axr[data-brand-code="GRA"]{ --all-blue:#16233C; --axr-tint:#16233C; --all-gold:#C2A35C; }
-.axr[data-brand-code="GRA"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="GRA"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="GRA"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="GRA"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="GRA"] .axr-name{ color:#F0ECDF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="GRA"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="GRA"] .axr-addr{ color:#F0ECDF; font-weight:500; letter-spacing:.02em; }
@@ -468,8 +468,8 @@
 
 /* HOF — Handwritten (modern) */
 .axr[data-brand-code="HOF"]{ --all-blue:#1C1C22; --axr-tint:#1C1C22; --all-gold:#D8A24B; }
-.axr[data-brand-code="HOF"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="HOF"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="HOF"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="HOF"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="HOF"] .axr-name{ color:#F0ECE3; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="HOF"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="HOF"] .axr-addr{ color:#F0ECE3; font-weight:500; letter-spacing:.02em; }
@@ -481,8 +481,8 @@
 
 /* TRB — Tribe (modern) */
 .axr[data-brand-code="TRB"]{ --all-blue:#111114; --axr-tint:#111114; --all-gold:#C8A24A; }
-.axr[data-brand-code="TRB"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="TRB"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="TRB"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="TRB"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="TRB"] .axr-name{ color:#F0EFEC; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="TRB"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="TRB"] .axr-addr{ color:#F0EFEC; font-weight:500; letter-spacing:.02em; }
@@ -494,8 +494,8 @@
 
 /* TRI — Tribe (modern) */
 .axr[data-brand-code="TRI"]{ --all-blue:#111114; --axr-tint:#111114; --all-gold:#C8A24A; }
-.axr[data-brand-code="TRI"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="TRI"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="TRI"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="TRI"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="TRI"] .axr-name{ color:#F0EFEC; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="TRI"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="TRI"] .axr-addr{ color:#F0EFEC; font-weight:500; letter-spacing:.02em; }
@@ -507,8 +507,8 @@
 
 /* HB — The Hoxton (modern) */
 .axr[data-brand-code="HB"]{ --all-blue:#1E1A16; --axr-tint:#1E1A16; --all-gold:#D98E4B; }
-.axr[data-brand-code="HB"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="HB"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="HB"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="HB"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="HB"] .axr-name{ color:#F0E7DB; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="HB"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="HB"] .axr-addr{ color:#F0E7DB; font-weight:500; letter-spacing:.02em; }
@@ -520,8 +520,8 @@
 
 /* MAS — Mama Shelter (modern) */
 .axr[data-brand-code="MAS"]{ --all-blue:#141414; --axr-tint:#141414; --all-gold:#F4C20D; }
-.axr[data-brand-code="MAS"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="MAS"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="MAS"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="MAS"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="MAS"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="MAS"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="MAS"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -533,8 +533,8 @@
 
 /* MSH — Mama Shelter (modern) */
 .axr[data-brand-code="MSH"]{ --all-blue:#141414; --axr-tint:#141414; --all-gold:#F4C20D; }
-.axr[data-brand-code="MSH"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="MSH"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="MSH"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="MSH"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="MSH"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="MSH"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="MSH"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -546,8 +546,8 @@
 
 /* N25 — 25hours (modern) */
 .axr[data-brand-code="N25"]{ --all-blue:#121212; --axr-tint:#121212; --all-gold:#F25C05; }
-.axr[data-brand-code="N25"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="N25"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="N25"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="N25"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="N25"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="N25"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="N25"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -559,8 +559,8 @@
 
 /* 25H — 25hours (modern) */
 .axr[data-brand-code="25H"]{ --all-blue:#121212; --axr-tint:#121212; --all-gold:#F25C05; }
-.axr[data-brand-code="25H"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="25H"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="25H"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="25H"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="25H"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="25H"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="25H"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -572,8 +572,8 @@
 
 /* MON — Mondrian (modern) */
 .axr[data-brand-code="MON"]{ --all-blue:#101018; --axr-tint:#101018; --all-gold:#C77DFF; }
-.axr[data-brand-code="MON"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="MON"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="MON"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="MON"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="MON"] .axr-name{ color:#F0EFF5; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="MON"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="MON"] .axr-addr{ color:#F0EFF5; font-weight:500; letter-spacing:.02em; }
@@ -585,8 +585,8 @@
 
 /* HYD — Hyde (modern) */
 .axr[data-brand-code="HYD"]{ --all-blue:#14141A; --axr-tint:#14141A; --all-gold:#C9A227; }
-.axr[data-brand-code="HYD"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="HYD"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="HYD"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="HYD"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="HYD"] .axr-name{ color:#F0ECE3; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="HYD"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="HYD"] .axr-addr{ color:#F0ECE3; font-weight:500; letter-spacing:.02em; }
@@ -598,8 +598,8 @@
 
 /* SLS — SLS (modern) */
 .axr[data-brand-code="SLS"]{ --all-blue:#0E0E12; --axr-tint:#0E0E12; --all-gold:#C9A227; }
-.axr[data-brand-code="SLS"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="SLS"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="SLS"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="SLS"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="SLS"] .axr-name{ color:#F0ECE3; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="SLS"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="SLS"] .axr-addr{ color:#F0ECE3; font-weight:500; letter-spacing:.02em; }
@@ -611,8 +611,8 @@
 
 /* SO — SO/ (modern) */
 .axr[data-brand-code="SO"]{ --all-blue:#121016; --axr-tint:#121016; --all-gold:#E6007E; }
-.axr[data-brand-code="SO"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="SO"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="SO"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="SO"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="SO"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="SO"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="SO"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -624,8 +624,8 @@
 
 /* SEQ — SO/ (modern) */
 .axr[data-brand-code="SEQ"]{ --all-blue:#121016; --axr-tint:#121016; --all-gold:#E6007E; }
-.axr[data-brand-code="SEQ"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="SEQ"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="SEQ"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="SEQ"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="SEQ"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="SEQ"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="SEQ"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -637,8 +637,8 @@
 
 /* ART — Art Series (modern) */
 .axr[data-brand-code="ART"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#C9A227; }
-.axr[data-brand-code="ART"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="ART"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="ART"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="ART"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="ART"] .axr-name{ color:#F0ECE3; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="ART"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="ART"] .axr-addr{ color:#F0ECE3; font-weight:500; letter-spacing:.02em; }
@@ -650,8 +650,8 @@
 
 /* SEB — The Sebel (elegant) */
 .axr[data-brand-code="SEB"]{ --all-blue:#1A2230; --axr-tint:#1A2230; --all-gold:#B59A5E; --all-light:#EFE9DE; }
-.axr[data-brand-code="SEB"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="SEB"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="SEB"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="SEB"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="SEB"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="SEB"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="SEB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0ECDF; }
@@ -669,8 +669,8 @@
 
 /* TSB — The Sebel (elegant) */
 .axr[data-brand-code="TSB"]{ --all-blue:#1A2230; --axr-tint:#1A2230; --all-gold:#B59A5E; --all-light:#EFE9DE; }
-.axr[data-brand-code="TSB"] .axr-logo{ height:clamp(74px,14vh,128px); }
-.axr[data-brand-code="TSB"] .axr-logo img{ max-width:min(84%,480px); }
+.axr[data-brand-code="TSB"] .axr-logo{ height:clamp(104px,20vh,188px); }
+.axr[data-brand-code="TSB"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="TSB"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="TSB"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="TSB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0ECDF; }
@@ -688,8 +688,8 @@
 
 /* ADA — Adagio (modern) */
 .axr[data-brand-code="ADA"]{ --all-blue:#14233F; --axr-tint:#14233F; --all-gold:#E08A2E; }
-.axr[data-brand-code="ADA"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="ADA"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="ADA"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="ADA"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="ADA"] .axr-name{ color:#F0ECDF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="ADA"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="ADA"] .axr-addr{ color:#F0ECDF; font-weight:500; letter-spacing:.02em; }
@@ -701,8 +701,8 @@
 
 /* ADG — Adagio (modern) */
 .axr[data-brand-code="ADG"]{ --all-blue:#14233F; --axr-tint:#14233F; --all-gold:#E08A2E; }
-.axr[data-brand-code="ADG"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="ADG"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="ADG"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="ADG"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="ADG"] .axr-name{ color:#F0ECDF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="ADG"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="ADG"] .axr-addr{ color:#F0ECDF; font-weight:500; letter-spacing:.02em; }
@@ -714,8 +714,8 @@
 
 /* IBS — ibis (modern) */
 .axr[data-brand-code="IBS"]{ --all-blue:#0E0A0F; --axr-tint:#0E0A0F; --all-gold:#E2231A; }
-.axr[data-brand-code="IBS"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="IBS"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="IBS"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="IBS"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="IBS"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="IBS"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="IBS"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -727,8 +727,8 @@
 
 /* IBH — ibis (modern) */
 .axr[data-brand-code="IBH"]{ --all-blue:#0E0A0F; --axr-tint:#0E0A0F; --all-gold:#E2231A; }
-.axr[data-brand-code="IBH"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="IBH"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="IBH"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="IBH"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="IBH"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="IBH"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="IBH"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -740,8 +740,8 @@
 
 /* IBI — ibis Styles (modern) */
 .axr[data-brand-code="IBI"]{ --all-blue:#0E0A0F; --axr-tint:#0E0A0F; --all-gold:#E40046; }
-.axr[data-brand-code="IBI"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="IBI"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="IBI"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="IBI"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="IBI"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="IBI"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="IBI"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -753,8 +753,8 @@
 
 /* IBB — ibis budget (modern) */
 .axr[data-brand-code="IBB"]{ --all-blue:#0A1A3A; --axr-tint:#0A1A3A; --all-gold:#F39200; }
-.axr[data-brand-code="IBB"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="IBB"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="IBB"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="IBB"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="IBB"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="IBB"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="IBB"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -766,8 +766,8 @@
 
 /* JO — JO&JOE (modern) */
 .axr[data-brand-code="JO"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#FFD400; }
-.axr[data-brand-code="JO"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="JO"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="JO"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="JO"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="JO"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="JO"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="JO"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -779,8 +779,8 @@
 
 /* JOJ — JO&JOE (modern) */
 .axr[data-brand-code="JOJ"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#FFD400; }
-.axr[data-brand-code="JOJ"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="JOJ"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="JOJ"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="JOJ"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="JOJ"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="JOJ"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="JOJ"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -792,8 +792,8 @@
 
 /* GRT — greet (modern) */
 .axr[data-brand-code="GRT"]{ --all-blue:#12241A; --axr-tint:#12241A; --all-gold:#7AB648; }
-.axr[data-brand-code="GRT"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="GRT"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="GRT"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="GRT"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="GRT"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="GRT"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="GRT"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -805,8 +805,8 @@
 
 /* BRK — BreakFree (modern) */
 .axr[data-brand-code="BRK"]{ --all-blue:#102A3A; --axr-tint:#102A3A; --all-gold:#27AAE1; }
-.axr[data-brand-code="BRK"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="BRK"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="BRK"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="BRK"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="BRK"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="BRK"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="BRK"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
@@ -818,8 +818,8 @@
 
 /* BKF — BreakFree (modern) */
 .axr[data-brand-code="BKF"]{ --all-blue:#102A3A; --axr-tint:#102A3A; --all-gold:#27AAE1; }
-.axr[data-brand-code="BKF"] .axr-logo{ height:clamp(70px,13vh,120px); }
-.axr[data-brand-code="BKF"] .axr-logo img{ max-width:min(80%,460px); }
+.axr[data-brand-code="BKF"] .axr-logo{ height:clamp(100px,19vh,180px); }
+.axr[data-brand-code="BKF"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
 .axr[data-brand-code="BKF"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
 .axr[data-brand-code="BKF"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="BKF"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
