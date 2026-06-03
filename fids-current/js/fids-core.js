@@ -19249,7 +19249,8 @@ function buildAccorAdOnlyV6(ad) {
   // Luxury brands invite discovery of the property by name; others keep the
   // default ALL loyalty CTA.
   var _qrCaption = safeTL('scanToUnlockAll','Scan to unlock limitless experiences with ALL.');
-  if (ad.brand === 'FAI') _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(hotelName);
+  var _luxuryBrands = {FAI:1,SOF:1,SLE:1,RAF:1,RAH:1,EMB:1,BAN:1,ORI:1,OE:1,FAE:1,RIX:1,MAN:1,MGH:1,MGA:1,MOV:1,DEL:1};
+  if (_luxuryBrands[String(ad.brand||'').toUpperCase()]) _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(hotelName);
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
