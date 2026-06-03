@@ -2432,7 +2432,7 @@ var ACCOR_BRAND_LOGOS = {
   // signature horizontal underline rule below the wordmark; the property
   // name is rendered beneath in the brand's spaced-caps style.
   'FAI': '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg',
-  'SOF': '/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg',
+  'SOF': '/logos/hotels/sofitel/sofitel-monochrome-white.svg',           // Sofitel (NOT Sofitel Legend — see SLE)
   'SWI': '/logos/hotels/accor-premium/swissotel-monochrome-white.svg',
   'RAF': '/logos/hotels/accor-luxury/raffles-monochrome-white.svg',
   'RAH': '/logos/hotels/accor-luxury/raffles-monochrome-white.svg',
@@ -2620,7 +2620,8 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
     [/mantis/,                               '/logos/hotels/accor-luxury/mantis-monochrome-white.svg'],
     [/banyan\s*tree/,                       '/logos/hotels/accor-luxury/banyan-monochrome-white.svg'],
     [/raffles/,                              '/logos/hotels/accor-luxury/raffles-monochrome-white.svg'],
-    [/sofitel/,                              '/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg'],
+    [/sofitel\s*legend/,                     '/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg'],
+    [/sofitel/,                              '/logos/hotels/sofitel/sofitel-monochrome-white.svg'],
     [/fairmont/,                             '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg'],
     [/emblems/,                              '/logos/hotels/accor-luxury/emblems-monochrome-white.svg']
   ];

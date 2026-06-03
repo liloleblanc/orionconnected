@@ -80,7 +80,7 @@ def elegant(code,bg,accent,ink):
     return f"""{s}{{ --all-blue:{bg}; --axr-tint:{bg}; --all-gold:{accent}; --all-light:#EFE9DE; }}
 {s} .axr-logo{{ height:clamp(74px,14vh,128px); }}
 {s} .axr-logo img{{ max-width:min(84%,480px); }}
-{s} .axr-name{{ font-family:{SERIF}; font-weight:400; letter-spacing:.01em; }}
+{s} .axr-name{{ font-family:{SERIF}; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }}
 {s} .axr-sub{{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }}
 {s} .axr-addr{{ font-family:{SERIF}; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:{ink}; }}
 {s} .axr-stars{{ color:{accent}; letter-spacing:.12em; }}
@@ -100,7 +100,7 @@ def modern(code,bg,accent,ink):
     return f"""{s}{{ --all-blue:{bg}; --axr-tint:{bg}; --all-gold:{accent}; }}
 {s} .axr-logo{{ height:clamp(70px,13vh,120px); }}
 {s} .axr-logo img{{ max-width:min(80%,460px); }}
-{s} .axr-name{{ color:{ink}; }}
+{s} .axr-name{{ color:{ink}; font-size:calc(var(--axr-logo)*0.55); }}
 {s} .axr-sub{{ font-size:calc(var(--axr-info)*0.86); }}
 {s} .axr-addr{{ color:{ink}; font-weight:600; letter-spacing:.02em; }}
 {s} .axr-stars{{ color:{accent}; }}
