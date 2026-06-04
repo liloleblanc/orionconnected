@@ -5192,7 +5192,7 @@ function _buildV2AircraftCol(ctx, vars) {
             ? '<div class="v2-fi-row">'
               + _badge(_svgArrive)
               + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">' + (locIata ? locIata + ' ' : '') + (TL('arrivalTime') || 'Arrival Time') + '</div>'
+              + '<div class="v2-fi-label">' + (TL('arrivalTime') || 'Arrival Time') + '</div>'
               + '<div class="v2-fi-value v2-fi-time">' + _arrShow + '</div>'
               + '</div></div>'
             : '')
@@ -5247,8 +5247,11 @@ function _buildV2MapCol(ctx, vars) {
     var _wp = window._gateInboundLivePos;
     if (_wp && typeof _wp === 'object') {
       if (!_wp._airport || _wp._airport === vars.iata) {
-        _liveSpd = (typeof _wp.spd === 'number') ? Math.round(_wp.spd) : null;
-        _liveAlt = (typeof _wp.alt === 'number') ? Math.round(_wp.alt) : null;
+        // window._gateInboundLivePos is stored with keys {speed, altitude}
+        // (see writers ~7188 / ~7579). Reading .spd/.alt here always yielded
+        // null, so Speed/Altitude never appeared on the flight screen.
+        _liveSpd = (typeof _wp.speed === 'number') ? Math.round(_wp.speed) : null;
+        _liveAlt = (typeof _wp.altitude === 'number') ? Math.round(_wp.altitude) : null;
       }
     }
   } catch(e) {}
@@ -5386,6 +5389,7 @@ function _buildV2MapCol(ctx, vars) {
 
       _inboundCard =
           '<div class="v2-rc-inbound">'
+        +   '<div class="v2-rc-kicker">' + (TL('inboundAircraft') || 'Inbound aircraft') + '</div>'
         +   '<div class="v2-rc-headline">'
         +     '<span class="v2-rc-flt">' + _ibFltCompact + '</span>'
         +     '<span class="v2-rc-sep">·</span>'
@@ -5483,26 +5487,26 @@ function _buildV2MapCol(ctx, vars) {
         if (_candidates.length > 0) {
           _opBadgeInline =
               '<div class="v2-rc-aircraft-op-inline" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">'
-            +   '<div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + '</div>'
+            +   '<div style="font-size:15px;font-weight:600;color:#6b7585;text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + ':</div>'
             +   '<img id="' + _imgId + '" src="' + _candidates[0] + '" alt="' + _shortEsc + '" '
             +     'data-fallbacks="' + _candidatesJson.replace(/"/g, '&quot;') + '" '
             +     'data-fb-idx="0" '
             +     'data-fb-text="' + _shortEsc + '" '
-            +     'style="height:32px;max-width:140px;width:auto;object-fit:contain;display:block;background:#fff;padding:5px 9px;border-radius:5px;" '
+            +     'style="height:54px;max-width:210px;width:auto;object-fit:contain;display:block;background:#fff;border:1px solid #e4e7ec;padding:8px 13px;border-radius:6px;" '
             +     'onerror="(function(im){'
             +       'try{var fbs=JSON.parse(im.getAttribute(\'data-fallbacks\'));'
             +       'var i=parseInt(im.getAttribute(\'data-fb-idx\'),10)+1;'
             +       'if(i<fbs.length){im.setAttribute(\'data-fb-idx\',i);im.src=fbs[i];return;}'
             +       'console.warn(\'[OP-LOGO-FAIL] all candidates failed:\',fbs);'
             +       'var txt=im.getAttribute(\'data-fb-text\')||\'\';'
-            +       'im.outerHTML=\'<span style=&quot;font-size:18px;font-weight:800;color:#fff;line-height:1;letter-spacing:0.2px;&quot;>\'+txt+\'</span>\';'
+            +       'im.outerHTML=\'<span style=&quot;font-size:20px;font-weight:800;color:#0f1419;line-height:1;letter-spacing:0.2px;&quot;>\'+txt+\'</span>\';'
             +     '}catch(e){console.error(\'[OP-LOGO-FAIL]\',e);}})(this)">'
             + '</div>';
         } else {
           _opBadgeInline =
               '<div class="v2-rc-aircraft-op-inline" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">'
-            +   '<div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + '</div>'
-            +   '<span style="font-size:18px;font-weight:800;color:#fff;line-height:1;letter-spacing:0.2px;">' + _opShortName + '</span>'
+            +   '<div style="font-size:15px;font-weight:600;color:#6b7585;text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + ':</div>'
+            +   '<span style="font-size:20px;font-weight:800;color:#0f1419;line-height:1;letter-spacing:0.2px;">' + _opShortName + '</span>'
             + '</div>';
         }
       }

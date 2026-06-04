@@ -2800,6 +2800,16 @@ body, body.gids-page, body.gate-page{
 .gad-map-col-v2 .v2-rc-inbound {
   padding: 6px 22px !important;
 }
+/* Kicker — small uppercase label so the right column reads as the inbound aircraft */
+.gad-map-col-v2 .v2-rc-kicker {
+  font-size: clamp(15px, 1.6vh, 19px) !important;
+  font-weight: 700 !important;
+  color: #6b7585 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.4px !important;
+  line-height: 1.1 !important;
+  margin-bottom: 5px !important;
+}
 .gad-map-col-v2 .v2-rc-title,
 .gad-map-col-v2 .v2-rc-sentence {
   display: none !important;  /* legacy classes no longer rendered */
@@ -2919,3 +2929,21 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(20px, 2.4vw, 34px) !important;
   line-height: 1.1 !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   RIGHT-COLUMN UNIFORMITY PASS — consistent padding, dividers between the
+   three stacked blocks (inbound / map / aircraft), and rounded time/tail
+   cards so the flight screen reads as clean uniform sections.
+   ════════════════════════════════════════════════════════════════════════ */
+.gad-map-col-v2 .v2-rc-inbound { padding: 16px 22px 18px !important; }
+/* hairline dividers frame the map between the two info blocks */
+.gad-map-col-v2 .v2-map-area { border-top: 1px solid #e7eaef !important; border-bottom: 1px solid #e7eaef !important; }
+.gad-map-col-v2 .v2-rc-aircraft { padding: 16px 22px 14px !important; }
+.gad-map-col-v2 .v2-rc-aircraft-type-top { padding: 0 !important; }
+.gad-map-col-v2 .v2-rc-aircraft-img { padding: 12px 0 8px !important; }
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot { padding: 12px 0 0 !important; border-top: 1px solid #eef0f3 !important; margin-top: 4px !important; }
+/* time cells → soft rounded cards (match the operated-by chip radius) */
+.gad-map-col-v2 .v2-rc-time-cell { background: #f1f3f6 !important; border-radius: 8px !important; padding: 11px 14px !important; }
+/* keep the headline tidy when a long status wraps (no orphaned separator) */
+.gad-map-col-v2 .v2-rc-headline .v2-rc-sep { display: none !important; }
+.gad-map-col-v2 .v2-rc-headline { gap: 6px 14px !important; }
