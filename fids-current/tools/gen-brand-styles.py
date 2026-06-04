@@ -38,7 +38,7 @@ TABLE = [
  # premium / midscale / lifestyle — modern
  ("PUL","Pullman","modern","#0C0C0E","#D2A24B","#F0EFEC"),
  ("SWI","Swissotel","modern","#16181C","#E2001A","#F2F2F2"),
- ("NOV","Novotel","modern","#123A52","#8BC34A","#FFFFFF"),
+ ("NOV","Novotel","modern","#14163C","#3D63FF","#FFFFFF"),
  ("MER","Mercure","modern","#14233F","#B59A5E","#F0ECDF"),
  ("GRA","Grand Mercure","modern","#16233C","#C2A35C","#F0ECDF"),
  ("HOF","Handwritten","modern","#1C1C22","#D8A24B","#F0ECE3"),
