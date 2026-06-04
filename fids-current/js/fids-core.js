@@ -5192,7 +5192,7 @@ function _buildV2AircraftCol(ctx, vars) {
             ? '<div class="v2-fi-row">'
               + _badge(_svgArrive)
               + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">' + (locIata ? locIata + ' ' : '') + (TL('arrivalTime') || 'Arrival Time') + '</div>'
+              + '<div class="v2-fi-label">' + (TL('arrivalTime') || 'Arrival Time') + '</div>'
               + '<div class="v2-fi-value v2-fi-time">' + _arrShow + '</div>'
               + '</div></div>'
             : '')
@@ -5389,6 +5389,7 @@ function _buildV2MapCol(ctx, vars) {
 
       _inboundCard =
           '<div class="v2-rc-inbound">'
+        +   '<div class="v2-rc-kicker">' + (TL('inboundAircraft') || 'Inbound aircraft') + '</div>'
         +   '<div class="v2-rc-headline">'
         +     '<span class="v2-rc-flt">' + _ibFltCompact + '</span>'
         +     '<span class="v2-rc-sep">·</span>'
