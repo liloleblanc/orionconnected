@@ -94,6 +94,7 @@
 /* ── ALL x <Brand> co-brand loyalty lockup in the footer ── */
 .axr-all.axr-all-cobrand{ background:transparent !important; border-top:none !important; padding:10px 0 12px !important; }
 .axr-all-cobrand-mark{ display:flex; align-items:center; justify-content:center; width:100%; }
+.axr-logo svg{ filter:drop-shadow(0 2px 10px rgba(0,0,0,.7)); }  /* logo contrast on light photos */
 .axr-all-cobrand-mark img{ height:clamp(38px,5.6vh,58px) !important; max-height:none !important; width:auto; max-width:84%; object-fit:contain; filter:none; opacity:1; }
 
 

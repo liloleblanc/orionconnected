@@ -19289,9 +19289,10 @@ function buildAccorAdOnlyV6(ad) {
   // cropping the visible mark renders tiny. The runtime crop helper inlines
   // the SVG and overrides its viewBox to these ink bounds so the logo fills
   // its container (and is therefore the biggest element, per spec).
-  var _LOGO_CROP = {
-    'novotel': '15 152 470 146'
-  };
+  // Legacy per-brandWord crop (superseded by ACCOR_LOGO_CROP and self-trimmed
+  // logo files). Novotel's entry was for the old 500x500 art — the current
+  // novotel-monochrome-white.svg is self-trimmed, so no entry is needed.
+  var _LOGO_CROP = {};
   var _logoBase = String(logo||'').split('?')[0].split('#')[0];
   _logoBase = _logoBase.substring(_logoBase.lastIndexOf('/')+1);
   var _logoCrop = (typeof ACCOR_LOGO_CROP!=='undefined' && ACCOR_LOGO_CROP[_logoBase]) || _LOGO_CROP[lower(brandWord)] || '';
@@ -19315,7 +19316,7 @@ function buildAccorAdOnlyV6(ad) {
   var _allCrop={'fr':'-21.2 -21.2 1125.9 396.3','ar':'-23.8 -23.7 762.9 443.4','zh':'-22.9 -22.9 501.4 426.7'}[_ll]||'';
   // Per-brand "ALL x <Brand>" co-brand loyalty lockup for the footer — replaces
   // the generic Members-of-ALL signature where the brand ships its own lockup.
-  var _ALL_X_BRAND={'MGH':'/logos/hotels/accor-corporate/all-x-mgallery.svg','MGA':'/logos/hotels/accor-corporate/all-x-mgallery.svg'};
+  var _ALL_X_BRAND={'MGH':'/logos/hotels/accor-corporate/all-x-mgallery.svg','MGA':'/logos/hotels/accor-corporate/all-x-mgallery.svg','NOV':'/logos/hotels/accor-corporate/all-mark-white.svg'};
   var _allxBrand=_ALL_X_BRAND[String(ad.brand||'').toUpperCase()]||'';
 
   var subHtml=(address||starsHtml||ratingHtml)?'<div class="axr-sub">'+(address?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
