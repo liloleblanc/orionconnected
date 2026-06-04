@@ -19200,7 +19200,6 @@ var ACCOR_LOGO_CROP = {
   "mamashelter-monochrome-white.svg": "17 11.6 36.6 16.8",
   "mantis-monochrome-white.svg": "10.6 14 48.7 12",
   "mantra-monochrome-white.svg": "10.6 12.9 48.8 13.6",
-  "mgallery-monochrome-white.svg": "26.2 5.6 18.2 28.8",
   "mondrian-monochrome-white.svg": "6.4 16.2 57.2 6.9",
   "morgansoriginals-monochrome-white.svg": "-7.1 -5.7 249.3 68.9",
   "movenpick-monochrome-white.svg": "6.4 10.5 57.2 18.1",
@@ -19314,6 +19313,10 @@ function buildAccorAdOnlyV6(ad) {
   var _officialEndorse = '/logos/hotels/accor-corporate/endorsement/members-of-all-stacked-white.png';
   var allLockup='/logos/hotels/accor-corporate/all-lockup-'+_ll+'.svg';
   var _allCrop={'fr':'-21.2 -21.2 1125.9 396.3','ar':'-23.8 -23.7 762.9 443.4','zh':'-22.9 -22.9 501.4 426.7'}[_ll]||'';
+  // Per-brand "ALL x <Brand>" co-brand loyalty lockup for the footer — replaces
+  // the generic Members-of-ALL signature where the brand ships its own lockup.
+  var _ALL_X_BRAND={'MGH':'/logos/hotels/accor-corporate/all-x-mgallery.svg','MGA':'/logos/hotels/accor-corporate/all-x-mgallery.svg'};
+  var _allxBrand=_ALL_X_BRAND[String(ad.brand||'').toUpperCase()]||'';
 
   var subHtml=(address||starsHtml||ratingHtml)?'<div class="axr-sub">'+(address?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
   var amenHtml=amenities.length?'<div class="axr-amen">'+amenities.map(function(a){return '<span>'+esc(a)+'</span>';}).join('')+'</div>':'';
@@ -19326,11 +19329,13 @@ function buildAccorAdOnlyV6(ad) {
     +     bubbleHtml
     +     '<div class="axr-hotel">'+logoHtml+(showName?'<h1 class="axr-name">'+esc(displayName)+'</h1>':'')+subHtml+amenHtml+'</div>'
     +   '</section>'
-    +   '<footer class="axr-all">'
-    +     (_endorseOfficial
+    +   '<footer class="axr-all'+(_allxBrand?' axr-all-cobrand':'')+'">'
+    +     (_allxBrand
+        ? '<span class="axr-all-cobrand-mark"><img src="'+esc(_allxBrand)+'" alt="ALL x '+esc(brandWord||brandRaw||'')+'"></span>'
+        : (_endorseOfficial
         ? '<span class="axr-all-official"><img src="'+esc(_officialEndorse)+'" alt="Members of ALL — Accor Live Limitless"></span>'
         : ('<span class="axr-all-lbl">'+esc(safeTL('memberOf','Member of'))+'</span>'
-           + '<span class="axr-all-mark"><img class="axr-all-svg" src="'+esc(allLockup)+'" data-crop="'+esc(_allCrop)+'" alt="ALL"></span>'))
+           + '<span class="axr-all-mark"><img class="axr-all-svg" src="'+esc(allLockup)+'" data-crop="'+esc(_allCrop)+'" alt="ALL"></span>')))
     +   '</footer>'
     + '</article>';
 }

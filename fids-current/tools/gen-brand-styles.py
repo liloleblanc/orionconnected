@@ -31,8 +31,8 @@ TABLE = [
  ("FAE","Faena","elegant","#5E1417","#C8A24A","#F2E7D6"),
  ("RIX","Rixos","elegant","#1A1712","#C2A35C","#EFE7D6"),
  ("MAN","Mantis","elegant","#1C2A1E","#B89B6E","#EDE7D7"),
- ("MGH","MGallery","elegant","#3A1420","#C2A35C","#F0E7DB"),
- ("MGA","MGallery","elegant","#3A1420","#C2A35C","#F0E7DB"),
+ ("MGH","MGallery","elegant","#12120D","#C2A35C","#F0E7DB"),
+ ("MGA","MGallery","elegant","#12120D","#C2A35C","#F0E7DB"),
  ("MOV","Movenpick","elegant","#2A1418","#C8A24A","#F1E8DC"),
  ("DEL","Delano","elegant","#111214","#C9A227","#F0ECE3"),
  # premium / midscale / lifestyle — modern
