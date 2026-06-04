@@ -5247,8 +5247,11 @@ function _buildV2MapCol(ctx, vars) {
     var _wp = window._gateInboundLivePos;
     if (_wp && typeof _wp === 'object') {
       if (!_wp._airport || _wp._airport === vars.iata) {
-        _liveSpd = (typeof _wp.spd === 'number') ? Math.round(_wp.spd) : null;
-        _liveAlt = (typeof _wp.alt === 'number') ? Math.round(_wp.alt) : null;
+        // window._gateInboundLivePos is stored with keys {speed, altitude}
+        // (see writers ~7188 / ~7579). Reading .spd/.alt here always yielded
+        // null, so Speed/Altitude never appeared on the flight screen.
+        _liveSpd = (typeof _wp.speed === 'number') ? Math.round(_wp.speed) : null;
+        _liveAlt = (typeof _wp.altitude === 'number') ? Math.round(_wp.altitude) : null;
       }
     }
   } catch(e) {}
@@ -5483,12 +5486,12 @@ function _buildV2MapCol(ctx, vars) {
         if (_candidates.length > 0) {
           _opBadgeInline =
               '<div class="v2-rc-aircraft-op-inline" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">'
-            +   '<div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + '</div>'
+            +   '<div style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + ':</div>'
             +   '<img id="' + _imgId + '" src="' + _candidates[0] + '" alt="' + _shortEsc + '" '
             +     'data-fallbacks="' + _candidatesJson.replace(/"/g, '&quot;') + '" '
             +     'data-fb-idx="0" '
             +     'data-fb-text="' + _shortEsc + '" '
-            +     'style="height:32px;max-width:140px;width:auto;object-fit:contain;display:block;background:#fff;padding:5px 9px;border-radius:5px;" '
+            +     'style="height:54px;max-width:210px;width:auto;object-fit:contain;display:block;background:#fff;padding:8px 13px;border-radius:6px;" '
             +     'onerror="(function(im){'
             +       'try{var fbs=JSON.parse(im.getAttribute(\'data-fallbacks\'));'
             +       'var i=parseInt(im.getAttribute(\'data-fb-idx\'),10)+1;'
@@ -5501,7 +5504,7 @@ function _buildV2MapCol(ctx, vars) {
         } else {
           _opBadgeInline =
               '<div class="v2-rc-aircraft-op-inline" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">'
-            +   '<div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + '</div>'
+            +   '<div style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + ':</div>'
             +   '<span style="font-size:18px;font-weight:800;color:#fff;line-height:1;letter-spacing:0.2px;">' + _opShortName + '</span>'
             + '</div>';
         }
