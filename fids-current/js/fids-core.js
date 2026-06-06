@@ -6339,6 +6339,20 @@ function uxgGateHtml(ctx) {
   var _wmKey = (_opCode && _opCode !== airlineCode && WATERMARK_SYMBOL[_opCode]) ? _opCode : airlineCode;
   var _wmSymbol = WATERMARK_SYMBOL[_wmKey];
 
+  // Airline emblem for the FLIGHT block's leading icon (the "first/top" icon),
+  // replacing the generic plane. Reuse the clean symbol-only emblems from
+  // WATERMARK_SYMBOL; skip the non-emblem pattern panels (e.g. Porter). The
+  // mark is shown on a small light tile so the brand-colored emblem reads on
+  // the colored row-2 strip. Airlines without a clean emblem keep the plane.
+  var _fltEmblemSrc = WATERMARK_SYMBOL[_wmKey] || '';
+  if (/pattern|panel|fade/i.test(_fltEmblemSrc)) {
+    // roundel-fade / pattern panels are tuned for the faint body watermark,
+    // not a crisp small icon — fall back to the full-strength emblem if one
+    // exists, else drop to the plane.
+    var _FLT_EMBLEM_FULL = { 'AC':'/logos/airlines/canadian/ac-roundel.png' };
+    _fltEmblemSrc = _FLT_EMBLEM_FULL[_wmKey] || '';
+  }
+
   return '<div class="g8-wrap'
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
        + (_bannerSpec && _bannerSpec.r1 === '#FFFFFF' ? ' g8-banner-light' : '')
@@ -6374,7 +6388,9 @@ function uxgGateHtml(ctx) {
       ) + '>'
     +   '<div class="g8-r2-left">'
     +     '<div class="g8-r2-flight" style="--flight-accent:' + (typeof getAirlineAccent === 'function' ? getAirlineAccent(airlineCode) : '#fff') + ';">'
-    +       '<svg class="g8-r2-flight-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19h20v2H2zM21.38 8.62c-.28-.83-1.18-1.28-2.01-.99L14.2 9.35 8.12 4l-1.57.54 3.47 6.15-4.12 1.42-1.8-1.44-1.13.39 2.08 3.66.24.42 1.13-.39 14.97-5.14c.83-.28 1.27-1.18.99-1.99z"/></svg>'
+    +       (_fltEmblemSrc
+            ? '<span class="g8-r2-flight-emblem"><img src="' + _fltEmblemSrc + '" alt="" onerror="this.parentNode.style.display=\'none\'"></span>'
+            : '<svg class="g8-r2-flight-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19h20v2H2zM21.38 8.62c-.28-.83-1.18-1.28-2.01-.99L14.2 9.35 8.12 4l-1.57.54 3.47 6.15-4.12 1.42-1.8-1.44-1.13.39 2.08 3.66.24.42 1.13-.39 14.97-5.14c.83-.28 1.27-1.18.99-1.99z"/></svg>')
     +       '<div class="g8-r2-flight-copy"><div class="g8-r2-flight-label">' + (TL('flight') || 'FLIGHT') + '</div><span>' + currentFlight.flight + '</span></div>'
     +     '</div>'
     +   '</div>'
@@ -16323,6 +16339,8 @@ var _ninjasCache = {};
 
 // ── GATE SCREEN AD CAROUSEL + AMENITIES ─────────────────────────────────────
 var _gateAdTimer = null;
+var _gateAdFadeTimer = null; // the in-flight 700ms fade callback (must be cancellable)
+var _gateAdGen = 0;          // generation token — invalidates orphaned timer chains
 var _gateAdIndex = 0;
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -19877,7 +19895,17 @@ function _restartGateAdsTimer() {
   // a self-rescheduling chain so hotel/photo ads get longer time and
   // text-only ads cycle faster. The dwell of the CURRENT slide
   // (i.e. the one just shown) determines when we tick next.
+  //
+  // Generation token: every restart bumps _gateAdGen, and each scheduled
+  // callback captures the gen it was born under. A callback that wakes up
+  // with a stale gen (because stopGateAds / a later restart moved on) does
+  // nothing. This guarantees exactly ONE live chain — previously the inner
+  // 700ms fade callback was untracked, so a stop()+start() during the fade
+  // left an orphaned chain running in parallel, making slides flash past in
+  // a split second and rotate unevenly.
+  var gen = ++_gateAdGen;
   var _tick = function() {
+    if (gen !== _gateAdGen) return; // superseded — abandon this chain
     var el2 = document.getElementById('gateAdCarousel');
     if (!el2) {
       // Element may briefly be missing during a re-render; try again soon
@@ -19886,7 +19914,8 @@ function _restartGateAdsTimer() {
     }
     el2.style.transition = 'opacity 0.6s ease';
     el2.style.opacity = '0';
-    setTimeout(function() {
+    _gateAdFadeTimer = setTimeout(function() {
+      if (gen !== _gateAdGen) return; // superseded mid-fade — abandon
       var el3 = document.getElementById('gateAdCurrentCarousel') || document.getElementById('gateAdCarousel');
       if (!el3) {
         _gateAdTimer = setTimeout(_tick, 1000);
@@ -19946,6 +19975,9 @@ try {
 } catch(e) {}
 
 function stopGateAds() {
+  // Invalidate any in-flight chain (including the untracked-until-v74 inner
+  // 700ms fade callback) so a following startGateAds can't run in parallel.
+  _gateAdGen++;
   if (_gateAdTimer) {
     // The timer was switched from setInterval to setTimeout in v73.
     // Call BOTH clear functions so we cleanly cancel either kind in
@@ -19953,6 +19985,10 @@ function stopGateAds() {
     try { clearTimeout(_gateAdTimer); } catch(e) {}
     try { clearInterval(_gateAdTimer); } catch(e) {}
     _gateAdTimer = null;
+  }
+  if (_gateAdFadeTimer) {
+    try { clearTimeout(_gateAdFadeTimer); } catch(e) {}
+    _gateAdFadeTimer = null;
   }
   try { if (typeof stopDestinationVideoScheduler === 'function') stopDestinationVideoScheduler(); } catch(e) {}
 }
