@@ -4227,7 +4227,7 @@ function aircraftCodeToIata(raw) {
   if (/A[\s-]*319/i.test(s)) return '319';
   if (/A[\s-]*320[\s-]*NEO|A20N|A320N/i.test(s)) return '32N';
   if (/A[\s-]*320/i.test(s)) return '320';
-  if (/A[\s-]*321[\s-]*(NEO|XLR|LR)|A21N|A321N/i.test(s)) return '32R';
+  if (/A[\s-]*321[\s-]*(NEO|XLR|LR)|A21N|A321N/i.test(s)) return '32Q';  // A321neo livery files are stored as 32Q (no 32R image exists)
   if (/A[\s-]*321/i.test(s)) return '321';
 
   // ── 777 ──
@@ -19323,7 +19323,11 @@ function buildAccorAdOnlyV6(ad) {
   var _ALL_X_BRAND={'MGH':'/logos/hotels/accor-corporate/all-x-mgallery.svg','MGA':'/logos/hotels/accor-corporate/all-x-mgallery.svg','NOV':'/logos/hotels/accor-corporate/all-mark-white.svg'};
   var _allxBrand=_ALL_X_BRAND[String(ad.brand||'').toUpperCase()]||'';
 
-  var subHtml=(address||starsHtml||ratingHtml)?'<div class="axr-sub">'+(address?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
+  var _fullAddr = first(ad.fullAddress, '');
+  var _addrLineHtml = _fullAddr ? '<div class="axr-addr-line">' + esc(_fullAddr) + '</div>' : '';
+  // city is shown standalone only when we don't have the full street address
+  var _showCity = address && !_fullAddr;
+  var subHtml=(_showCity||starsHtml||ratingHtml)?'<div class="axr-sub">'+(_showCity?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
   var amenHtml=amenities.length?'<div class="axr-amen">'+amenities.map(function(a){return '<span>'+esc(a)+'</span>';}).join('')+'</div>':'';
 
   return ''
@@ -19332,7 +19336,7 @@ function buildAccorAdOnlyV6(ad) {
     +     (photo?'<div class="axr-hero-img" style="background-image:url(\''+esc(photo)+'\')"></div>':'<div class="axr-hero-img axr-hero-noimg"></div>')
     +     '<div class="axr-hero-grad"></div>'
     +     bubbleHtml
-    +     '<div class="axr-hotel">'+logoHtml+(showName?'<h1 class="axr-name">'+esc(displayName)+'</h1>':'')+subHtml+amenHtml+'</div>'
+    +     '<div class="axr-hotel">'+logoHtml+(showName?'<h1 class="axr-name">'+esc(displayName)+'</h1>':'')+_addrLineHtml+subHtml+amenHtml+'</div>'
     +   '</section>'
     +   '<footer class="axr-all'+(_allxBrand?' axr-all-cobrand':'')+'">'
     +     (_allxBrand
@@ -20502,7 +20506,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     fetch(src).then(function(r){ return r.text(); }).then(function(svg){
       svg = svg.replace(/<\?xml[^>]*\?>/, '').trim();
       if (crop) svg = svg.replace(/viewBox="[^"]+"/, 'viewBox="' + crop + '"');
-      svg = svg.replace(/<svg /, '<svg preserveAspectRatio="xMinYMid meet" ');
+      svg = svg.replace(/<svg /, '<svg preserveAspectRatio="' + (isHotelLogo ? 'xMinYMax meet' : 'xMinYMid meet') + '" ');
       var span = img.parentNode;
       if (span) {
         span.innerHTML = svg;
