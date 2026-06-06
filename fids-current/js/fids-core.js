@@ -3554,6 +3554,19 @@ function getAirlineAccent(code) {
   return AIRLINE_ACCENT[code] || AIRLINE_ACCENT[(code||'').substring(0,2)] || '#0033A1';
 }
 
+// Is a hex color light enough that it needs DARK text on top? Used to pick the
+// banner row-2 ink so a bright airline color (e.g. Southwest yellow) doesn't
+// get unreadable white text. Uses sRGB relative luminance.
+function _g8IsLightHex(hex) {
+  if (!hex) return false;
+  var m = String(hex).trim().replace(/^#/, '');
+  if (m.length === 3) m = m[0]+m[0]+m[1]+m[1]+m[2]+m[2];
+  if (m.length < 6) return false;
+  var r = parseInt(m.slice(0,2),16), g = parseInt(m.slice(2,4),16), b = parseInt(m.slice(4,6),16);
+  if (isNaN(r)||isNaN(g)||isNaN(b)) return false;
+  return (0.2126*r + 0.7152*g + 0.0722*b) / 255 > 0.6;
+}
+
 // Hawaii airports — used only as a fallback signal when equipment is unknown.
 // Comprehensive list per FAA/Wikipedia (commercial primary + nonprimary + GA + military).
 // Updated v186 to include all Mokulele-served small-island airports (HNM, MUE, LUP)
@@ -6307,6 +6320,15 @@ function uxgGateHtml(ctx) {
   // the only source for banner colors.
   window._gateStatusPillStyle = 'opaque';
 
+  // Row-2 strip = THE airline's official color, for EVERY airline (not just
+  // the curated few). Listed airlines keep their hand-tuned r2; everyone else
+  // falls back to the airline-accent table (and finally a neutral blue). The
+  // ink (text/icon color) flips to dark on light strips so a bright brand
+  // color (e.g. Southwest yellow) stays readable.
+  var _r2Bg = (_bannerSpec && _bannerSpec.r2)
+            || (typeof getAirlineAccent === 'function' ? getAirlineAccent(airlineCode) : '');
+  var _r2Ink = (_r2Bg && _g8IsLightHex(_r2Bg)) ? '#0F172A' : '#FFFFFF';
+
   // Per-airline body watermark — symbol-only emblem from the brand kit.
   // RULE: emblem watermarks must be CLEAN ICONS in brand color — no wordmarks,
   // no alliance marks, no text. The body bg is light so color reads cleanly.
@@ -6382,8 +6404,8 @@ function uxgGateHtml(ctx) {
     + '</div>'
     // ROW 2 - flight number + fields (full width)
     + '<div class="g8-r2"' + (
-        _bannerSpec
-          ? ' style="background:' + _bannerSpec.r2 + ' !important;"'
+        _r2Bg
+          ? ' style="background:' + _r2Bg + ' !important;--g8-r2-ink:' + _r2Ink + ';"'
           : ''
       ) + '>'
     +   '<div class="g8-r2-left">'
