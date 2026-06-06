@@ -20496,37 +20496,66 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 // Same continuous-scan pattern as the QR upgrader above.
 // ════════════════════════════════════════════════════════════════════════
 (function() {
+  // v219 — cache the processed SVG per (src,crop,kind) so re-renders (e.g. the
+  // language rotation) apply it SYNCHRONOUSLY instead of re-fetching/re-sizing.
+  // Combined with a MutationObserver (inline the moment a logo appears) and the
+  // CSS that hides the raw <img> until inlined, this removes the pop-in /
+  // resize-3x flicker that showed on every slide re-render.
+  var _lockupCache = {};
+  function _applyLockup(img, svg, isHotelLogo) {
+    var span = img.parentNode; if (!span) return;
+    span.innerHTML = svg;
+    var s = span.querySelector('svg');
+    if (s) { s.style.height = '100%'; s.style.width = 'auto'; s.style.maxWidth = '100%'; }
+    if (isHotelLogo && s) {
+      var shapes = s.querySelectorAll('path,polygon,rect,circle,ellipse');
+      for (var k = 0; k < shapes.length; k++) shapes[k].style.fill = '#fff';
+    }
+  }
   function _cropLockup(img) {
     if (!img || img.dataset.lockupInlined === '1') return;
     var crop = img.getAttribute('data-crop');
     var src = img.getAttribute('src');
     if (!src) return;
     var isHotelLogo = img.classList.contains('axr-hotel-svg');
-    img.dataset.lockupInlined = '1'; // guard against duplicate fetches
+    var key = src + '|' + (crop || '') + '|' + (isHotelLogo ? 'h' : 'a');
+    img.dataset.lockupInlined = '1';
+    if (_lockupCache[key]) { _applyLockup(img, _lockupCache[key], isHotelLogo); return; } // synchronous — no flash
     fetch(src).then(function(r){ return r.text(); }).then(function(svg){
       svg = svg.replace(/<\?xml[^>]*\?>/, '').trim();
       if (crop) svg = svg.replace(/viewBox="[^"]+"/, 'viewBox="' + crop + '"');
       svg = svg.replace(/<svg /, '<svg preserveAspectRatio="' + (isHotelLogo ? 'xMinYMax meet' : 'xMinYMid meet') + '" ');
-      var span = img.parentNode;
-      if (span) {
-        span.innerHTML = svg;
-        var s = span.querySelector('svg');
-        if (s) { s.style.height = '100%'; s.style.width = 'auto'; s.style.maxWidth = '100%'; }
-        // hotel logos must read white on the photo
-        if (isHotelLogo && s) {
-          var shapes = s.querySelectorAll('path,polygon,rect,circle,ellipse');
-          for (var k = 0; k < shapes.length; k++) shapes[k].style.fill = '#fff';
-        }
-      }
+      _lockupCache[key] = svg;
+      _applyLockup(img, svg, isHotelLogo);
     }).catch(function(){ /* leave the <img> as-is on failure */ });
   }
   function _scanLockups() {
     var nodes = document.querySelectorAll('img.axr-all-svg[data-crop], img.axr-hotel-svg');
     for (var i = 0; i < nodes.length; i++) _cropLockup(nodes[i]);
   }
-  setTimeout(_scanLockups, 150);
-  setTimeout(_scanLockups, 600);
-  setInterval(_scanLockups, 2000);
+  // Inline the instant a logo enters the DOM (re-render / language switch) so it
+  // never lingers as the raw <img>.
+  try {
+    var _lockupMO = new MutationObserver(function(muts){
+      for (var i = 0; i < muts.length; i++) {
+        var a = muts[i].addedNodes;
+        for (var j = 0; j < a.length; j++) {
+          var n = a[j];
+          if (!n || n.nodeType !== 1) continue;
+          if (n.matches && n.matches('img.axr-hotel-svg, img.axr-all-svg[data-crop]')) _cropLockup(n);
+          if (n.querySelectorAll) {
+            var inner = n.querySelectorAll('img.axr-hotel-svg, img.axr-all-svg[data-crop]');
+            for (var k = 0; k < inner.length; k++) _cropLockup(inner[k]);
+          }
+        }
+      }
+    });
+    _lockupMO.observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
+  _scanLockups();
+  setTimeout(_scanLockups, 60);
+  setTimeout(_scanLockups, 300);
+  setInterval(_scanLockups, 3000); // slow backstop only
 })();
 
 

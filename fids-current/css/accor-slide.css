@@ -844,3 +844,13 @@
   letter-spacing:.01em; line-height:1.2;
   margin-top:calc(var(--axr-info) * 0.1);
 }
+
+/* ── Logo flicker fix ──────────────────────────────────────────────────
+   Hide the raw hotel-logo <img> until the helper swaps in the correct
+   (cropped, white) inlined SVG, so the slide never flashes the black /
+   wrong-size pre-inline state — even on language-switch re-renders. The
+   inlined <svg> (which replaces the <img>) is unaffected and shows normally.
+   ──────────────────────────────────────────────────────────────────── */
+.axr .axr-logo img.axr-hotel-svg { visibility: hidden; }
+.axr .axr-logo svg { visibility: visible; }
+.axr .axr-logo img { max-width: min(92%, 660px) !important; }
