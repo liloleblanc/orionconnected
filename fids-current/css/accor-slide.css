@@ -844,6 +844,14 @@
   letter-spacing:.01em; line-height:1.2;
   margin-top:calc(var(--axr-info) * 0.1);
 }
+.axr .axr-loc-line{
+  display:flex; align-items:center; gap:.4em;
+  font-size:calc(var(--axr-info) * 0.86);
+  color:rgba(255,255,255,0.74);
+  letter-spacing:.01em; line-height:1.2;
+  margin-top:calc(var(--axr-info) * 0.12);
+}
+.axr .axr-loc-pin{ font-size:.78em; opacity:.85; line-height:1; }
 
 /* ── Logo flicker fix ──────────────────────────────────────────────────
    Hide the raw hotel-logo <img> until the helper swaps in the correct
