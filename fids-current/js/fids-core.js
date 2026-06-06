@@ -3554,19 +3554,6 @@ function getAirlineAccent(code) {
   return AIRLINE_ACCENT[code] || AIRLINE_ACCENT[(code||'').substring(0,2)] || '#0033A1';
 }
 
-// Is a hex color light enough that it needs DARK text on top? Used to pick the
-// banner row-2 ink so a bright airline color (e.g. Southwest yellow) doesn't
-// get unreadable white text. Uses sRGB relative luminance.
-function _g8IsLightHex(hex) {
-  if (!hex) return false;
-  var m = String(hex).trim().replace(/^#/, '');
-  if (m.length === 3) m = m[0]+m[0]+m[1]+m[1]+m[2]+m[2];
-  if (m.length < 6) return false;
-  var r = parseInt(m.slice(0,2),16), g = parseInt(m.slice(2,4),16), b = parseInt(m.slice(4,6),16);
-  if (isNaN(r)||isNaN(g)||isNaN(b)) return false;
-  return (0.2126*r + 0.7152*g + 0.0722*b) / 255 > 0.6;
-}
-
 // Hawaii airports — used only as a fallback signal when equipment is unknown.
 // Comprehensive list per FAA/Wikipedia (commercial primary + nonprimary + GA + military).
 // Updated v186 to include all Mokulele-served small-island airports (HNM, MUE, LUP)
@@ -5101,6 +5088,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // shape gets a white filter applied and sits on the red CSS circle,
       // same treatment as the other icon badges. No more PNG-with-own-bg.
       var AIRLINE_EMBLEM_FILES = {
+        // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
@@ -5108,7 +5096,19 @@ function _buildV2AircraftCol(ctx, vars) {
         'WS':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
         'WR':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
         'PD':  '/logos/airlines/canadian/Porter_Airlines_Logo_2006.svg',
-        'PB':  '/logos/airline-tiles/PB.svg'
+        'PB':  '/logos/airline-tiles/PB.svg',
+        // US majors — symbol-only emblems (rendered white on the accent badge)
+        'UA':  '/logos/airlines/us-major/united-globe-only.svg',
+        'DL':  '/logos/airlines/us-major/delta-widget.svg',
+        'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
+        'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
+        'F9':  '/logos/airlines/us-major/frontier-emblem.svg',
+        '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
+        'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
+        // International
+        'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
+        'AF':  '/logos/airlines/european/air-france-emblem.svg',
+        '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg'
       };
       function _emblemImg(code) {
         var path = AIRLINE_EMBLEM_FILES[code];
@@ -5118,7 +5118,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
         var NATIVE_COLOR_EMBLEMS = { 'PB': true };
         var native = !!NATIVE_COLOR_EMBLEMS[code];
-        var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(54px,6.8vh,92px);height:clamp(54px,6.8vh,92px);min-width:clamp(54px,6.8vh,92px);min-height:clamp(54px,6.8vh,92px);max-width:clamp(54px,6.8vh,92px);max-height:clamp(54px,6.8vh,92px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
+        var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
           ? BADGE_BASE + 'background:transparent;padding:0;'
           : BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(2px,0.3vh,4px);';
@@ -5170,7 +5170,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       // v218.99.32 — Inline-style every badge so the cascade can't lie.
       // Single source of truth for what a flight-info badge looks like.
-      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(54px,6.8vh,92px);height:clamp(54px,6.8vh,92px);min-width:clamp(54px,6.8vh,92px);min-height:clamp(54px,6.8vh,92px);max-width:clamp(54px,6.8vh,92px);max-height:clamp(54px,6.8vh,92px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,#D82F2E);color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,#D82F2E);color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       function _badge(svg) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
       }
@@ -6320,15 +6320,6 @@ function uxgGateHtml(ctx) {
   // the only source for banner colors.
   window._gateStatusPillStyle = 'opaque';
 
-  // Row-2 strip = THE airline's official color, for EVERY airline (not just
-  // the curated few). Listed airlines keep their hand-tuned r2; everyone else
-  // falls back to the airline-accent table (and finally a neutral blue). The
-  // ink (text/icon color) flips to dark on light strips so a bright brand
-  // color (e.g. Southwest yellow) stays readable.
-  var _r2Bg = (_bannerSpec && _bannerSpec.r2)
-            || (typeof getAirlineAccent === 'function' ? getAirlineAccent(airlineCode) : '');
-  var _r2Ink = (_r2Bg && _g8IsLightHex(_r2Bg)) ? '#0F172A' : '#FFFFFF';
-
   // Per-airline body watermark — symbol-only emblem from the brand kit.
   // RULE: emblem watermarks must be CLEAN ICONS in brand color — no wordmarks,
   // no alliance marks, no text. The body bg is light so color reads cleanly.
@@ -6361,20 +6352,6 @@ function uxgGateHtml(ctx) {
   var _wmKey = (_opCode && _opCode !== airlineCode && WATERMARK_SYMBOL[_opCode]) ? _opCode : airlineCode;
   var _wmSymbol = WATERMARK_SYMBOL[_wmKey];
 
-  // Airline emblem for the FLIGHT block's leading icon (the "first/top" icon),
-  // replacing the generic plane. Reuse the clean symbol-only emblems from
-  // WATERMARK_SYMBOL; skip the non-emblem pattern panels (e.g. Porter). The
-  // mark is shown on a small light tile so the brand-colored emblem reads on
-  // the colored row-2 strip. Airlines without a clean emblem keep the plane.
-  var _fltEmblemSrc = WATERMARK_SYMBOL[_wmKey] || '';
-  if (/pattern|panel|fade/i.test(_fltEmblemSrc)) {
-    // roundel-fade / pattern panels are tuned for the faint body watermark,
-    // not a crisp small icon — fall back to the full-strength emblem if one
-    // exists, else drop to the plane.
-    var _FLT_EMBLEM_FULL = { 'AC':'/logos/airlines/canadian/ac-roundel.png' };
-    _fltEmblemSrc = _FLT_EMBLEM_FULL[_wmKey] || '';
-  }
-
   return '<div class="g8-wrap'
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
        + (_bannerSpec && _bannerSpec.r1 === '#FFFFFF' ? ' g8-banner-light' : '')
@@ -6404,15 +6381,13 @@ function uxgGateHtml(ctx) {
     + '</div>'
     // ROW 2 - flight number + fields (full width)
     + '<div class="g8-r2"' + (
-        _r2Bg
-          ? ' style="background:' + _r2Bg + ' !important;--g8-r2-ink:' + _r2Ink + ';"'
+        _bannerSpec
+          ? ' style="background:' + _bannerSpec.r2 + ' !important;"'
           : ''
       ) + '>'
     +   '<div class="g8-r2-left">'
     +     '<div class="g8-r2-flight" style="--flight-accent:' + (typeof getAirlineAccent === 'function' ? getAirlineAccent(airlineCode) : '#fff') + ';">'
-    +       (_fltEmblemSrc
-            ? '<span class="g8-r2-flight-emblem"><img src="' + _fltEmblemSrc + '" alt="" onerror="this.parentNode.style.display=\'none\'"></span>'
-            : '<svg class="g8-r2-flight-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19h20v2H2zM21.38 8.62c-.28-.83-1.18-1.28-2.01-.99L14.2 9.35 8.12 4l-1.57.54 3.47 6.15-4.12 1.42-1.8-1.44-1.13.39 2.08 3.66.24.42 1.13-.39 14.97-5.14c.83-.28 1.27-1.18.99-1.99z"/></svg>')
+    +       '<svg class="g8-r2-flight-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19h20v2H2zM21.38 8.62c-.28-.83-1.18-1.28-2.01-.99L14.2 9.35 8.12 4l-1.57.54 3.47 6.15-4.12 1.42-1.8-1.44-1.13.39 2.08 3.66.24.42 1.13-.39 14.97-5.14c.83-.28 1.27-1.18.99-1.99z"/></svg>'
     +       '<div class="g8-r2-flight-copy"><div class="g8-r2-flight-label">' + (TL('flight') || 'FLIGHT') + '</div><span>' + currentFlight.flight + '</span></div>'
     +     '</div>'
     +   '</div>'
