@@ -3008,3 +3008,18 @@ body, body.gids-page, body.gate-page{
 .gad-map-col-v2 .v2-rc-aircraft-op-inline > div:first-child { color: rgba(255,255,255,0.6) !important; }
 /* Operated-by logo → white knockout so any logo reads on the dark panel */
 .gad-map-col-v2 .v2-rc-aircraft-op-inline img { filter: brightness(0) invert(1) !important; opacity: 0.95 !important; }
+
+/* ── Symmetry + contrast fixes (per Nick) ───────────────────────────────
+   Both columns share ONE brand-tinted dark so the screen feels unified, and
+   the inbound flight number reads white on dark (was #0f1419 from a higher-
+   specificity light-theme rule). ── */
+.gad-aircraft-col,
+.gad-map-col-v2 {
+  background: color-mix(in srgb, var(--airline-accent, #1b2a4a) 14%, #0b1019) !important;
+}
+.gad-map-col-v2 .v2-rc-headline .v2-rc-flt { color: #ffffff !important; }
+.gad-map-col-v2 .v2-rc-headline .v2-rc-sep { color: rgba(255,255,255,0.4) !important; }
+.gad-map-col-v2 .v2-rc-headline .v2-rc-status-scheduled,
+.gad-map-col-v2 .v2-rc-headline .v2-rc-status-ontime { color: #2ee27a !important; }
+.gad-map-col-v2 .v2-rc-headline .v2-rc-status-delayed { color: #fbbf24 !important; }
+.gad-map-col-v2 .v2-rc-headline .v2-rc-status-cancelled { color: #f87171 !important; }

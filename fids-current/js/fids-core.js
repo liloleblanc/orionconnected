@@ -19443,18 +19443,13 @@ function buildAccorAdOnlyV6(ad) {
   var _blurb = first(ad.description, ad.destinationDescription, '');
   if (_blurb) {
     _blurb = String(_blurb).replace(/\s+/g, ' ').trim();
-    var _blMax = 185;
+    // Keep it short so it fits the card cleanly and the CSS line-clamp never
+    // has to add a second (mid-word) ellipsis. Cut on a whole-word boundary.
+    var _blMax = 140;
     if (_blurb.length > _blMax) {
       var _cut = _blurb.slice(0, _blMax);
-      // Prefer ending on a full sentence; else fall back to a whole-word cut so
-      // we never slice mid-word (e.g. "...of Pr…").
-      var _dot = Math.max(_cut.lastIndexOf('. '), _cut.lastIndexOf('! '), _cut.lastIndexOf('? '));
-      if (_dot >= _blMax * 0.6) {
-        _blurb = _cut.slice(0, _dot + 1).trim();
-      } else {
-        var _sp = _cut.lastIndexOf(' ');
-        _blurb = (_sp > 0 ? _cut.slice(0, _sp) : _cut).replace(/[\s,;:.!?-]+$/, '').trim() + '…';
-      }
+      var _sp = _cut.lastIndexOf(' ');
+      _blurb = (_sp > 0 ? _cut.slice(0, _sp) : _cut).replace(/[\s,;:.!?-]+$/, '').trim() + '…';
     }
   }
 
