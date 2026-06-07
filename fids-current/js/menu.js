@@ -755,6 +755,118 @@ function _loadAirportLogoForCode(code) {
   };
 })();
 
+/* ━━━ USERS ADMIN TAB ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Admin-only staff-login management: list / create / delete users via the
+   Worker /auth/users endpoints. Uses _acFetch (bearer token from the admin
+   session). Mirrors setupAirportAdminTab's admin gating. The Worker enforces
+   admin-only server-side; this UI just exposes it. */
+function _usEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c];
+  });
+}
+var _US_ROLE_LABEL = { admin: 'Admin', operator: 'Manager', viewer: 'Regular', demo: 'Demo' };
+
+function usFlash(msg, isError) {
+  var el = document.getElementById('usFlash');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+  el.style.background = isError ? '#7f1d1d' : '#064e3b';
+  el.style.color = '#fff';
+  if (msg) setTimeout(function(){ if (el.textContent === msg) { el.style.display = 'none'; el.textContent = ''; } }, 4500);
+}
+
+async function usRefresh() {
+  var list = document.getElementById('usList');
+  if (!list) return;
+  list.innerHTML = '<div style="font-size:12px;color:#6b7280;font-style:italic;padding:14px;text-align:center;">Loading…</div>';
+  try {
+    var res = await _acFetch(_AC_WORKER_URL + '/auth/users', { cache: 'no-cache' });
+    if (res.status === 401 || res.status === 403) {
+      list.innerHTML = '<div style="font-size:12px;color:#fbbf24;padding:14px;text-align:center;">Log in as an admin to manage users.</div>';
+      return;
+    }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var users = (data && data.users) || [];
+    if (!users.length) { list.innerHTML = '<div style="font-size:12px;color:#6b7280;padding:14px;text-align:center;">No users yet.</div>'; return; }
+    users.sort(function(a, b){ return String(a.username||'').localeCompare(String(b.username||'')); });
+    list.innerHTML = users.map(function(u){
+      var role = _US_ROLE_LABEL[u.role] || u.role || '';
+      var nm = _usEsc(u.username);
+      var disp = (u.displayName && u.displayName !== u.username) ? ' · ' + _usEsc(u.displayName) : '';
+      var del = (u.role === 'admin')
+        ? '<span style="font-size:10px;color:#6b7280;">protected</span>'
+        : '<button onclick="usDelete(&quot;' + nm + '&quot;)" class="sm-btn sm-btn-danger sm-btn-sm">Delete</button>';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-bottom:1px solid #1f2937;">'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-size:13px;color:#e5e7eb;font-weight:600;">' + nm + '<span style="color:#9ca3af;font-weight:400;">' + disp + '</span></div>'
+        +   '<div style="font-size:11px;color:#9ca3af;">' + role + '</div>'
+        + '</div>' + del + '</div>';
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="font-size:12px;color:#f87171;padding:14px;text-align:center;">Failed to load users.</div>';
+  }
+}
+
+async function usCreate() {
+  var name = ((document.getElementById('usNewName')||{}).value || '').trim();
+  var disp = ((document.getElementById('usNewDisplay')||{}).value || '').trim();
+  var pass = ((document.getElementById('usNewPass')||{}).value || '').trim();
+  var role = (document.getElementById('usNewRole')||{}).value || 'operator';
+  if (!name || !pass) { usFlash('Username and password are required.', true); return; }
+  try {
+    var res = await _acFetch(_AC_WORKER_URL + '/auth/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: name, password: pass, role: role, displayName: disp || name })
+    });
+    var data = {}; try { data = await res.json(); } catch (e) {}
+    if (res.status === 401 || res.status === 403) { usFlash('Admin access required — log in as an admin.', true); return; }
+    if (!res.ok) { usFlash(data.error || ('Failed (HTTP ' + res.status + ')'), true); return; }
+    usFlash('Created ' + name + ' (' + (_US_ROLE_LABEL[role] || role) + ').', false);
+    document.getElementById('usNewName').value = '';
+    document.getElementById('usNewDisplay').value = '';
+    document.getElementById('usNewPass').value = '';
+    usRefresh();
+  } catch (e) { usFlash('Network error creating user.', true); }
+}
+
+async function usDelete(username) {
+  if (!username) return;
+  if (!confirm('Delete user "' + username + '"? This cannot be undone.')) return;
+  try {
+    var res = await _acFetch(_AC_WORKER_URL + '/auth/users/' + encodeURIComponent(username), { method: 'DELETE' });
+    var data = {}; try { data = await res.json(); } catch (e) {}
+    if (res.status === 401 || res.status === 403) { usFlash('Admin access required.', true); return; }
+    if (!res.ok) { usFlash(data.error || ('Failed (HTTP ' + res.status + ')'), true); return; }
+    usFlash('Deleted ' + username + '.', false);
+    usRefresh();
+  } catch (e) { usFlash('Network error deleting user.', true); }
+}
+
+// Show the Users tab for admins; refresh it whenever it's opened.
+(function setupUsersAdminTab() {
+  function _usIsAdmin() {
+    try { if (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin()) return true; } catch (e) {}
+    try { var u = JSON.parse(sessionStorage.getItem('fids_user') || 'null'); if (u && u.role === 'admin') return true; } catch (e) {}
+    return false;
+  }
+  function _sync() {
+    var tab = document.getElementById('smTabUsers');
+    if (tab) tab.style.display = _usIsAdmin() ? '' : 'none';
+  }
+  var iv = setInterval(_sync, 1000);
+  setTimeout(function(){ clearInterval(iv); _sync(); }, 8000);
+  _sync();
+  var _orig = window.smSwitchTab;
+  window.smSwitchTab = function(tabId) {
+    if (typeof _orig === 'function') _orig(tabId);
+    if (tabId === 'users') { try { usRefresh(); } catch (e) {} }
+  };
+})();
+
 // ── Helper: get the airport code currently selected on the board ─────
 function _acCurrentCode() {
   try {
