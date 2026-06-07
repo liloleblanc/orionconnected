@@ -9,13 +9,32 @@
   --axr-tint:#0a1a3a;
   --axr-body:"Accor Montserrat","Montserrat","Avenir Next","Helvetica Neue",Arial,sans-serif;
   /* responsive logo reference — scales with the ad well height */
-  --axr-logo: clamp(40px, 8vh, 72px);      /* LOGO = 100% (shrunk from 54-96) */
-  --axr-name: calc(var(--axr-logo) * 0.75);/* NAME = 75% of logo */
+  --axr-logo: clamp(24px, 3.6vh, 38px);    /* LOGO = 100% (sized down per Nick) */
+  --axr-name: calc(var(--axr-logo) * 0.78);/* NAME = 78% of logo */
   --axr-info: calc(var(--axr-name) * 0.62);/* INFO = 62% of name */
   position:relative; width:100%; height:100%; overflow:hidden;
   display:grid; grid-template-rows:1fr auto;
   background:var(--all-blue); color:#fff; font-family:var(--axr-body);
 }
+
+/* ── 3-page slideshow: each .axr-page is a full-bleed layer, crossfaded ── */
+.axr-pages{ position:relative; }
+.axr-page{ position:absolute; inset:0; opacity:0; transition:opacity .8s ease; pointer-events:none; }
+.axr-page.axr-page-on{ opacity:1; }
+/* Page kicker (gold eyebrow) + small context hotel name on pages 2–3 */
+.axr-page-kicker{ font-size:calc(var(--axr-info) * 0.95); letter-spacing:.18em; text-transform:uppercase;
+  color:var(--all-gold); font-weight:700; margin-bottom:calc(var(--axr-info) * 0.25); }
+.axr-page-ctx{ font-size:var(--axr-name); font-weight:800; line-height:1.05; letter-spacing:-.01em;
+  margin-bottom:calc(var(--axr-info) * 0.45); max-width:92%;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.axr-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:calc(var(--axr-info) * 0.34); }
+.axr-list li{ position:relative; padding-left:1.3em; font-size:calc(var(--axr-info) * 0.95); font-weight:500;
+  line-height:1.25; max-width:92%; }
+.axr-list li::before{ content:"›"; position:absolute; left:0; color:var(--all-gold); font-weight:700; }
+.axr-blurb{ margin:calc(var(--axr-info) * 0.5) 0 0; font-size:calc(var(--axr-info) * 0.9); font-weight:400;
+  line-height:1.4; opacity:.92; max-width:88%;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.axr-sub-rating{ margin-top:calc(var(--axr-info) * 0.3); }
 
 /* ── HERO: the hotel's photo + branding ───────────────────────────────── */
 .axr-hero{ position:relative; min-height:0; overflow:hidden; background:#1a1a2a; }
@@ -50,7 +69,7 @@
 .axr-logo{ height:var(--axr-logo); display:flex; align-items:flex-end; }
 .axr-logo img, .axr-logo svg{ height:100%; width:auto; max-width:min(60%,400px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
-.axr-logo svg{ max-width:min(92%,660px) !important; }
+.axr-logo svg{ max-width:min(54%,360px) !important; }
 .axr-logo img{ height:100%; width:auto; max-width:min(58%,360px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
 .axr-logo-text{ font-weight:800; font-size:var(--axr-logo); line-height:1;

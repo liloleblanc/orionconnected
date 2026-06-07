@@ -19313,14 +19313,31 @@ function buildAccorAdOnlyV6(ad) {
     else if(brandLower.indexOf('mercure')!==-1) logo='/logos/hotels/accor-midscale/mercure-monochrome-white.svg';
   }
 
+  // Accent-fold so brand names with diacritics (Swissôtel, Mövenpick) are
+  // detected and stripped the same as their plain spellings.
+  function _foldAcc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
   var BRAND_WORDS=['Novotel','Fairmont','Sofitel','Pullman','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis','Mama Shelter','Mondrian'];
   var brandWord='';
-  for(var bw=0; bw<BRAND_WORDS.length; bw++){ if(brandLower.indexOf(BRAND_WORDS[bw].toLowerCase())!==-1){ brandWord=BRAND_WORDS[bw]; break; } }
+  var _brandLowerFold=_foldAcc(brandLower);
+  for(var bw=0; bw<BRAND_WORDS.length; bw++){ if(_brandLowerFold.indexOf(_foldAcc(BRAND_WORDS[bw]))!==-1){ brandWord=BRAND_WORDS[bw]; break; } }
   var BRAND_TINT={ 'novotel':'#0a3a5c','fairmont':'#1a2a4a','sofitel':'#0a0a0a','pullman':'#1a1a2e','mercure':'#2a1a3a','swissotel':'#1a2a3a','movenpick':'#3a2a1a','mgallery':'#2a2a2a','raffles':'#1a2a2a' };
   var tint=BRAND_TINT[lower(brandWord)]||'#0a1a3a';
 
   var haveLogo=!!logo;
-  function stripBrand(name){ var s=String(name||'').replace(/\s+/g,' ').trim(); if(brandWord){ var re=new RegExp('\\b'+brandWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig'); s=s.replace(re,'').replace(/\s+/g,' ').trim(); } return s; }
+  function stripBrand(name){
+    var s=String(name||'').replace(/\s+/g,' ').trim();
+    if(!brandWord) return s;
+    // 1) exact case-insensitive removal (handles multi-word brands, exact spellings)
+    var re=new RegExp('\\b'+brandWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig');
+    s=s.replace(re,'').replace(/\s+/g,' ').trim();
+    // 2) accent-insensitive whole-word removal — strips "Swissôtel" when the
+    //    brand word is "Swissotel" (and likewise Mövenpick/Movenpick).
+    if(brandWord.indexOf(' ')===-1){
+      var _bwKey=_foldAcc(brandWord).replace(/[^a-z0-9]/g,'');
+      s=s.split(' ').filter(function(w){ return _foldAcc(w).replace(/[^a-z0-9]/g,'') !== _bwKey; }).join(' ').replace(/\s+/g,' ').trim();
+    }
+    return s;
+  }
   var displayName=haveLogo?stripBrand(hotelName):String(hotelName).trim();
   // Property lockups (Fairmont/Emblems per-property art, runtime-generated or
   // brand-team file) already bake the property name INTO the logo artwork, so
@@ -19358,12 +19375,9 @@ function buildAccorAdOnlyV6(ad) {
     ? '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>'
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
-  // QR caption — per-brand voice (branding is by brand, not the ALL umbrella).
-  // Luxury brands invite discovery of the property by name; others keep the
-  // default ALL loyalty CTA.
-  var _qrCaption = safeTL('scanToUnlockAll','Scan to unlock limitless experiences with ALL.');
-  var _luxuryBrands = {FAI:1,SOF:1,SLE:1,RAF:1,RAH:1,EMB:1,BAN:1,ORI:1,OE:1,FAE:1,RIX:1,MAN:1,MGH:1,MGA:1,MOV:1,DEL:1};
-  if (_luxuryBrands[String(ad.brand||'').toUpperCase()]) _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(hotelName);
+  // QR caption — always invite discovery of the property by its FULL name
+  // (brand + location, e.g. "Novotel Toronto Centre"), for every brand.
+  var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(hotelName);
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
@@ -19399,24 +19413,70 @@ function buildAccorAdOnlyV6(ad) {
   // city is shown standalone only when we don't have the full street address
   var _showCity = address && !_fullAddr;
   var subHtml=(_showCity||starsHtml||ratingHtml)?'<div class="axr-sub">'+(_showCity?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
-  var amenHtml=amenities.length?'<div class="axr-amen">'+amenities.map(function(a){return '<span>'+esc(a)+'</span>';}).join('')+'</div>':'';
+  // ── 3-PAGE SLIDESHOW (location → the hotel → dining & reviews) ─────────
+  // Each page is its own photo + a focused content tier; a rotator crossfades
+  // them ~10s apart. Detail-cache fields (topAmenities/facilities/restaurants/
+  // description) fill pages 2–3 once the per-hotel detail endpoint loads; until
+  // then they fall back to list-level data so no page is ever empty.
+  var _detail = (typeof _hpDetail !== 'undefined' && _hpDetail) ? _hpDetail : null;
+  function _dedupe(arr){ var seen={}, out=[]; (arr||[]).forEach(function(x){ var k=String(x||'').toLowerCase().trim(); if (x && !seen[k]) { seen[k]=1; out.push(x); } }); return out; }
+  var _amenList = _dedupe([].concat(
+      (_detail && _detail.topAmenities && _detail.topAmenities.length) ? _detail.topAmenities : amenities,
+      (_detail && _detail.facilities) ? _detail.facilities : []
+  )).slice(0, 6);
+  var _restList = _dedupe((_detail && _detail.restaurants) ? _detail.restaurants : []).slice(0, 5);
+  var _blurb = first(ad.description, ad.destinationDescription, '');
+  if (_blurb && _blurb.length > 180) _blurb = _blurb.slice(0, 177).trim() + '…';
 
-  return ''
-    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" style="--axr-tint:'+tint+'">'
-    +   '<section class="axr-hero">'
-    +     (photo?'<div class="axr-hero-img"'+_photosAttr+' style="background-image:url(\''+esc(photo)+'\')"></div>':'<div class="axr-hero-img axr-hero-noimg"></div>')
-    +     '<div class="axr-hero-grad"></div>'
-    +     bubbleHtml
-    +     '<div class="axr-hotel">'+logoHtml+(showName?'<h1 class="axr-name">'+esc(displayName)+'</h1>':'')+_addrLineHtml+_locLineHtml+subHtml+amenHtml+'</div>'
-    +   '</section>'
-    +   '<footer class="axr-all'+(_allxBrand?' axr-all-cobrand':'')+'">'
-    +     (_allxBrand
+  var _acL = accorLang();
+  var _kHotel  = ({en:'The hotel',fr:"L'hôtel",es:'El hotel',de:'Das Hotel',it:"L'hotel",pt:'O hotel',ja:'ホテル',zh:'酒店',ar:'الفندق'})[_acL] || 'The hotel';
+  var _kDining = ({en:'Dining & reviews',fr:'Restauration & avis',es:'Gastronomía y reseñas',de:'Gastronomie & Bewertungen',it:'Ristorazione e recensioni',pt:'Restauração e avaliações',ja:'ダイニング＆レビュー',zh:'餐饮与评价',ar:'المطاعم والتقييمات'})[_acL] || 'Dining & reviews';
+
+  function _heroImg(u){ return u ? '<div class="axr-hero-img" style="background-image:url(\''+esc(u)+'\')"></div>' : '<div class="axr-hero-img axr-hero-noimg"></div>'; }
+  function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul>' : ''; }
+  var _ph0 = _photoSet[0]||photo||'', _ph1 = _photoSet[1]||_ph0, _ph2 = _photoSet[2]||_ph1;
+  var _ctxName   = showName ? '<div class="axr-page-ctx">'+esc(hotelName)+'</div>' : '';
+  var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
+  var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
+
+  // Page 1 — LOCATION: logo, name, address, distance, stars
+  var _page1 = '<div class="axr-page axr-page-on">'
+    + _heroImg(_ph0) + '<div class="axr-hero-grad"></div>'
+    + '<div class="axr-hotel">' + logoHtml
+    +   (showName ? '<h1 class="axr-name">'+esc(displayName)+'</h1>' : '')
+    +   _addrLineHtml + _locLineHtml + _starsRow
+    + '</div></div>';
+  // Page 2 — THE HOTEL: amenities + facilities + short blurb
+  var _page2 = '<div class="axr-page">'
+    + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
+    + '<div class="axr-hotel">'
+    +   '<div class="axr-page-kicker">'+esc(_kHotel)+'</div>' + _ctxName
+    +   _list(_amenList) + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
+    + '</div></div>';
+  // Page 3 — DINING & REVIEWS: restaurants + guest rating + QR
+  var _page3 = '<div class="axr-page">'
+    + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'
+    + bubbleHtml
+    + '<div class="axr-hotel">'
+    +   '<div class="axr-page-kicker">'+esc(_kDining)+'</div>' + _ctxName
+    +   _list(_restList) + _ratingRow
+    + '</div></div>';
+
+  var _footerHtml = '<footer class="axr-all'+(_allxBrand?' axr-all-cobrand':'')+'">'
+    + (_allxBrand
         ? '<span class="axr-all-cobrand-mark"><img src="'+esc(_allxBrand)+'" alt="ALL x '+esc(brandWord||brandRaw||'')+'"></span>'
         : (_endorseOfficial
         ? '<span class="axr-all-official"><img src="'+esc(_officialEndorse)+'" alt="Members of ALL — Accor Live Limitless"></span>'
         : ('<span class="axr-all-lbl">'+esc(safeTL('memberOf','Member of'))+'</span>'
            + '<span class="axr-all-mark"><img class="axr-all-svg" src="'+esc(allLockup)+'" data-crop="'+esc(_allCrop)+'" alt="ALL"></span>')))
-    +   '</footer>'
+    + '</footer>';
+
+  return ''
+    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" style="--axr-tint:'+tint+'">'
+    +   '<section class="axr-hero axr-pages">'
+    +     _page1 + _page2 + _page3
+    +   '</section>'
+    +   _footerHtml
     + '</article>';
 }
 
@@ -19832,7 +19892,7 @@ function _getGateAdDwellMs(slide) {
   if (slide.type === 'ad') {
     var ad = slide.data || {};
     // Accor hotel ads (real photo, brand lockup) — longest dwell
-    if (ad.isAccorHotel) return 20000;
+    if (ad.isAccorHotel) return 31000; // 3-page slideshow: ~10s/page × 3 + buffer
     // Generic hotel ads (Hilton, etc. — large logo + city sub)
     if (ad.logo && /hilton|marriott|hyatt|ihg/i.test(ad.logo)) return 18000;
     // Video-bg ads run on their own video timeline; let them sit longer
@@ -20648,45 +20708,25 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 })();
 
 
-/* Accor hero photo rotation — cycles the current slide's hero through the
-   hotel's full media set with a soft crossfade. One global interval (no
-   per-element timers) so re-renders never leak timers. */
+/* Accor hotel slide — 3-page rotation. Crossfades the current slide's pages
+   (location → the hotel → dining & reviews) ~10s apart. One global interval
+   (no per-element timers) so re-renders never leak timers; CSS handles the
+   opacity crossfade between .axr-page panels. */
 (function(){
-  var EVERY = 7000;     // ms between photos
-  var FADE  = 1200;     // ms crossfade
-  var _preloaded = {};
-  function preload(list){
-    for (var i=0;i<list.length;i++){
-      if (_preloaded[list[i]]) continue;
-      _preloaded[list[i]] = true;
-      var im = new Image(); im.src = list[i];
-    }
-  }
+  var EVERY = 10000;   // ms per page (matches the ~30s Accor carousel dwell)
   function tick(){
-    var el = document.querySelector('.axr-hero-img[data-photos]');
-    if (!el) return;
-    var photos;
-    try { photos = JSON.parse(el.getAttribute('data-photos')||'[]'); } catch(e){ return; }
-    if (!photos || photos.length < 2) return;
-    preload(photos);
-    var idx = parseInt(el.getAttribute('data-photo-idx')||'0',10);
-    if (isNaN(idx)) idx = 0;
-    idx = (idx + 1) % photos.length;
-    el.setAttribute('data-photo-idx', String(idx));
-    var next = photos[idx];
-    // Crossfade via a temporary overlay layer, then commit to the base.
-    var ov = document.createElement('div');
-    ov.style.cssText = 'position:absolute;inset:0;background-size:cover;background-position:center;'
-                     + 'opacity:0;transition:opacity '+FADE+'ms ease;'
-                     + "background-image:url('"+next.replace(/'/g,"%27")+"')";
-    el.appendChild(ov);
-    // force reflow so the transition runs
-    void ov.offsetWidth;
-    ov.style.opacity = '1';
-    setTimeout(function(){
-      el.style.backgroundImage = "url('"+next.replace(/'/g,"%27")+"')";
-      if (ov.parentNode) ov.parentNode.removeChild(ov);
-    }, FADE + 80);
+    var wrap = document.querySelector('.axr-pages');
+    if (!wrap) return;
+    var pages = wrap.querySelectorAll('.axr-page');
+    if (!pages || pages.length < 2) return;
+    var cur = -1;
+    for (var i = 0; i < pages.length; i++) {
+      if (pages[i].classList.contains('axr-page-on')) { cur = i; break; }
+    }
+    if (cur < 0) cur = 0;
+    var nxt = (cur + 1) % pages.length;
+    pages[cur].classList.remove('axr-page-on');
+    pages[nxt].classList.add('axr-page-on');
   }
   setInterval(tick, EVERY);
 })();
