@@ -22,7 +22,7 @@
 .axr-page{ position:absolute; inset:0; opacity:0; transition:opacity .8s ease; pointer-events:none; }
 .axr-page.axr-page-on{ opacity:1; }
 /* Page kicker (gold eyebrow) + small context hotel name on pages 2–3 */
-.axr-page-kicker{ font-size:calc(var(--axr-info) * 0.95); letter-spacing:.18em; text-transform:uppercase;
+.axr-page-kicker{ font-size:calc(var(--axr-info) * 0.95); letter-spacing:.18em; text-transform: none;
   color:var(--all-gold); font-weight:700; margin-bottom:calc(var(--axr-info) * 0.25); }
 .axr-page-ctx{ font-size:var(--axr-name); font-weight:800; line-height:1.05; letter-spacing:-.01em;
   margin-bottom:calc(var(--axr-info) * 0.45); max-width:92%;
@@ -77,7 +77,7 @@
 .axr-logo img{ height:100%; width:auto; max-width:min(58%,360px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
 .axr-logo-text{ font-weight:800; font-size:var(--axr-logo); line-height:1;
-  letter-spacing:.04em; text-transform:uppercase; }
+  letter-spacing:.04em; text-transform: none; }
 /* NAME (75% of logo) */
 .axr-name{ margin:0; font-weight:800; font-size:var(--axr-name); line-height:1.0;
   letter-spacing:-.02em; max-width:90%;
@@ -98,13 +98,13 @@
 .axr-all{ background:var(--all-blue); display:flex; align-items:center; justify-content:flex-start;
   gap:clamp(14px,1.8vw,22px); padding:clamp(18px,2.6vh,26px) clamp(28px,3vw,44px); border-top:2px solid rgba(255,255,255,.1); }
 .axr-all-left{ display:flex; align-items:center; gap:clamp(14px,1.8vw,22px); min-width:0; }
-.axr-all-lbl{ font-size:clamp(12px,1.5vh,17px); letter-spacing:.18em; text-transform:uppercase;
+.axr-all-lbl{ font-size:clamp(12px,1.5vh,17px); letter-spacing:.18em; text-transform: none;
   color:rgba(255,255,255,.85); white-space:nowrap; font-weight:600; }
 /* ALL lockup — min size per Brand Book p.113, white, slight shadow */
 .axr-all-mark{ height:clamp(48px,6.5vh,66px); display:flex; align-items:center;
   filter:drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
 .axr-all-mark img, .axr-all-mark svg{ height:100%; width:auto; min-height:48px; display:block; }
-.axr-all-prog{ font-size:clamp(9px,.95vw,11px); letter-spacing:.16em; text-transform:uppercase;
+.axr-all-prog{ font-size:clamp(9px,.95vw,11px); letter-spacing:.16em; text-transform: none;
   color:rgba(255,255,255,.62); white-space:nowrap; }
 
 /* Official "Members of ALL" stacked signature (EN) — Brand Book p.123 */
@@ -133,7 +133,7 @@
 .axr[data-brand-code="FAI"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="FAI"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="FAI"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="FAI"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EFE6D6; }
+.axr[data-brand-code="FAI"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EFE6D6; }
 .axr[data-brand-code="FAI"] .axr-stars{ color:#B88D5B; letter-spacing:.12em; }
 .axr[data-brand-code="FAI"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="FAI"] .axr-score small{ color:#B88D5B; }
@@ -152,7 +152,7 @@
 .axr[data-brand-code="SOF"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="SOF"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="SOF"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="SOF"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#ECE6DA; }
+.axr[data-brand-code="SOF"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#ECE6DA; }
 .axr[data-brand-code="SOF"] .axr-stars{ color:#B6912E; letter-spacing:.12em; }
 .axr[data-brand-code="SOF"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="SOF"] .axr-score small{ color:#B6912E; }
@@ -171,7 +171,7 @@
 .axr[data-brand-code="SLE"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="SLE"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="SLE"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="SLE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#ECE6DA; }
+.axr[data-brand-code="SLE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#ECE6DA; }
 .axr[data-brand-code="SLE"] .axr-stars{ color:#B6912E; letter-spacing:.12em; }
 .axr[data-brand-code="SLE"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="SLE"] .axr-score small{ color:#B6912E; }
@@ -190,7 +190,7 @@
 .axr[data-brand-code="RAF"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="RAF"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="RAF"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="RAF"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EFE9DD; }
+.axr[data-brand-code="RAF"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EFE9DD; }
 .axr[data-brand-code="RAF"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
 .axr[data-brand-code="RAF"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="RAF"] .axr-score small{ color:#C2A35C; }
@@ -209,7 +209,7 @@
 .axr[data-brand-code="RAH"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="RAH"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="RAH"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="RAH"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EFE9DD; }
+.axr[data-brand-code="RAH"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EFE9DD; }
 .axr[data-brand-code="RAH"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
 .axr[data-brand-code="RAH"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="RAH"] .axr-score small{ color:#C2A35C; }
@@ -228,7 +228,7 @@
 .axr[data-brand-code="EMB"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="EMB"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="EMB"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="EMB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#ECE6DA; }
+.axr[data-brand-code="EMB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#ECE6DA; }
 .axr[data-brand-code="EMB"] .axr-stars{ color:#B89B6E; letter-spacing:.12em; }
 .axr[data-brand-code="EMB"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="EMB"] .axr-score small{ color:#B89B6E; }
@@ -247,7 +247,7 @@
 .axr[data-brand-code="BAN"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="BAN"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="BAN"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="BAN"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EDE7D7; }
+.axr[data-brand-code="BAN"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EDE7D7; }
 .axr[data-brand-code="BAN"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
 .axr[data-brand-code="BAN"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="BAN"] .axr-score small{ color:#C2A35C; }
@@ -266,7 +266,7 @@
 .axr[data-brand-code="ORI"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="ORI"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="ORI"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="ORI"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EDE6D6; }
+.axr[data-brand-code="ORI"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EDE6D6; }
 .axr[data-brand-code="ORI"] .axr-stars{ color:#B99653; letter-spacing:.12em; }
 .axr[data-brand-code="ORI"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="ORI"] .axr-score small{ color:#B99653; }
@@ -285,7 +285,7 @@
 .axr[data-brand-code="OE"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="OE"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="OE"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="OE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EDE6D6; }
+.axr[data-brand-code="OE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EDE6D6; }
 .axr[data-brand-code="OE"] .axr-stars{ color:#B99653; letter-spacing:.12em; }
 .axr[data-brand-code="OE"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="OE"] .axr-score small{ color:#B99653; }
@@ -304,7 +304,7 @@
 .axr[data-brand-code="FAE"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="FAE"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="FAE"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="FAE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F2E7D6; }
+.axr[data-brand-code="FAE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F2E7D6; }
 .axr[data-brand-code="FAE"] .axr-stars{ color:#C8A24A; letter-spacing:.12em; }
 .axr[data-brand-code="FAE"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="FAE"] .axr-score small{ color:#C8A24A; }
@@ -323,7 +323,7 @@
 .axr[data-brand-code="RIX"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="RIX"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="RIX"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="RIX"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EFE7D6; }
+.axr[data-brand-code="RIX"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EFE7D6; }
 .axr[data-brand-code="RIX"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
 .axr[data-brand-code="RIX"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="RIX"] .axr-score small{ color:#C2A35C; }
@@ -342,7 +342,7 @@
 .axr[data-brand-code="MAN"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="MAN"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="MAN"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="MAN"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#EDE7D7; }
+.axr[data-brand-code="MAN"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EDE7D7; }
 .axr[data-brand-code="MAN"] .axr-stars{ color:#B89B6E; letter-spacing:.12em; }
 .axr[data-brand-code="MAN"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="MAN"] .axr-score small{ color:#B89B6E; }
@@ -361,7 +361,7 @@
 .axr[data-brand-code="MGH"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="MGH"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="MGH"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="MGH"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0E7DB; }
+.axr[data-brand-code="MGH"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0E7DB; }
 .axr[data-brand-code="MGH"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
 .axr[data-brand-code="MGH"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="MGH"] .axr-score small{ color:#C2A35C; }
@@ -380,7 +380,7 @@
 .axr[data-brand-code="MGA"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="MGA"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="MGA"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="MGA"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0E7DB; }
+.axr[data-brand-code="MGA"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0E7DB; }
 .axr[data-brand-code="MGA"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
 .axr[data-brand-code="MGA"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="MGA"] .axr-score small{ color:#C2A35C; }
@@ -399,7 +399,7 @@
 .axr[data-brand-code="MOV"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="MOV"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="MOV"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="MOV"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F1E8DC; }
+.axr[data-brand-code="MOV"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F1E8DC; }
 .axr[data-brand-code="MOV"] .axr-stars{ color:#C8A24A; letter-spacing:.12em; }
 .axr[data-brand-code="MOV"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="MOV"] .axr-score small{ color:#C8A24A; }
@@ -418,7 +418,7 @@
 .axr[data-brand-code="DEL"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="DEL"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="DEL"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="DEL"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0ECE3; }
+.axr[data-brand-code="DEL"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0ECE3; }
 .axr[data-brand-code="DEL"] .axr-stars{ color:#C9A227; letter-spacing:.12em; }
 .axr[data-brand-code="DEL"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="DEL"] .axr-score small{ color:#C9A227; }
@@ -684,7 +684,7 @@
 .axr[data-brand-code="SEB"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="SEB"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="SEB"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="SEB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0ECDF; }
+.axr[data-brand-code="SEB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0ECDF; }
 .axr[data-brand-code="SEB"] .axr-stars{ color:#B59A5E; letter-spacing:.12em; }
 .axr[data-brand-code="SEB"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="SEB"] .axr-score small{ color:#B59A5E; }
@@ -703,7 +703,7 @@
 .axr[data-brand-code="TSB"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
 .axr[data-brand-code="TSB"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
 .axr[data-brand-code="TSB"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="TSB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform:uppercase; font-size:.8em; color:#F0ECDF; }
+.axr[data-brand-code="TSB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0ECDF; }
 .axr[data-brand-code="TSB"] .axr-stars{ color:#B59A5E; letter-spacing:.12em; }
 .axr[data-brand-code="TSB"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
 .axr[data-brand-code="TSB"] .axr-score small{ color:#B59A5E; }

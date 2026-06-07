@@ -526,7 +526,7 @@ html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
 .gad-aircraft-col .v2-eq-lbl {
   font-size: 18px !important;
   color: rgba(255,255,255,0.74) !important;
-  text-transform: uppercase !important;
+  text-transform: none !important;
   letter-spacing: 1.2px !important;
 }
 .gad-aircraft-col .v2-eq-val {
@@ -784,7 +784,7 @@ body, body.gids-page, body.gate-page{
 .gad-aircraft-col .v2-eq-lbl{
   font-size:15px !important;
   line-height:1.1 !important;
-  text-transform:uppercase !important;
+  text-transform: none !important;
   letter-spacing:1.6px !important;
   color:rgba(226,232,240,.72) !important;
   font-weight:900 !important;
@@ -1108,7 +1108,7 @@ body, body.gids-page, body.gate-page{
   font-size:13px;
   font-weight:800;
   letter-spacing:2.2px;
-  text-transform:uppercase;
+  text-transform: none;
   color:rgba(226, 232, 240, 0.32);
   background:
     radial-gradient(ellipse at 50% 90%, rgba(255,255,255,0.10), rgba(255,255,255,0) 60%),
@@ -1276,7 +1276,7 @@ body, body.gids-page, body.gate-page{
   font-size:13px !important;
   font-weight:800 !important;
   letter-spacing:1.4px !important;
-  text-transform:uppercase !important;
+  text-transform: none !important;
   color:rgba(226, 232, 240, 0.72) !important;
   margin-bottom:8px !important;
 }
@@ -1312,7 +1312,7 @@ body, body.gids-page, body.gate-page{
   font-size:13px !important;
   font-weight:800 !important;
   letter-spacing:1.4px !important;
-  text-transform:uppercase !important;
+  text-transform: none !important;
   color:rgba(226, 232, 240, 0.72) !important;
 }
 .gad-aircraft-col .v2-gateinfo-val{
@@ -1627,7 +1627,7 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(18px, 2.2vh, 30px);
   font-weight: 900;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: none;
   padding: clamp(6px, 0.7vh, 10px) clamp(14px, 1.3vw, 22px);
   border-radius: 8px;
   background: #1f2937;
@@ -1889,7 +1889,7 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(11px, 1.3vh, 16px);
   font-weight: 800;
   letter-spacing: 1.2px;
-  text-transform: uppercase;
+  text-transform: none;
   opacity: 0.7;
   line-height: 1;
   white-space: nowrap;
@@ -2055,7 +2055,7 @@ body, body.gids-page, body.gate-page{
   font-weight: 600;
   opacity: 0.65;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
   line-height: 1.2;
 }
 .gad-map-col-v2 .v2-rc-aircraft-val {
@@ -2305,7 +2305,7 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(11px, 1.3vh, 16px) !important;
   font-weight: 700 !important;
   letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
+  text-transform: none !important;
   color: #0a0d14 !important;
   opacity: 0.55 !important;
   margin-bottom: 4px !important;
@@ -2466,7 +2466,7 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(11px, 1.1vh, 14px) !important;
   font-weight: 700 !important;
   color: #6b7585 !important;
-  text-transform: uppercase !important;
+  text-transform: none !important;
   letter-spacing: 0.12em !important;
   margin-bottom: 4px !important;
 }
@@ -2476,7 +2476,7 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(11px, 1.1vh, 14px) !important;
   font-weight: 700 !important;
   color: #6b7585 !important;
-  text-transform: uppercase !important;
+  text-transform: none !important;
   letter-spacing: 0.12em !important;
   margin-bottom: 4px !important;
   text-align: right !important;
@@ -2495,7 +2495,7 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(11px, 1.1vh, 14px) !important;
   font-weight: 700 !important;
   color: #0d8a8a !important;
-  text-transform: uppercase !important;
+  text-transform: none !important;
   letter-spacing: 0.14em !important;
   margin-bottom: 4px !important;
 }
