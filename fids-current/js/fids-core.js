@@ -6359,6 +6359,10 @@ function uxgGateHtml(ctx) {
        + (airlineCode ? ' g8-airline-' + airlineCode : '')
        + '" data-pill-style="' + (window._gateStatusPillStyle || 'opaque') + '"'
        + ' style="--airline-accent:' + accent
+       // Official dark banner colour for the side panels (AC #080C14, etc.).
+       // Airlines whose official banner is WHITE (WestJet/Hawaiian/Porter) get
+       // a clean neutral dark instead — never a white side panel.
+       + ';--banner-bg:' + ((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF') ? _bannerSpec.r1 : '#0c1119')
        + (_bannerSpec && _bannerSpec.body ? ';--body-bg:' + _bannerSpec.body + ';--body-text:' + (_bannerSpec.bodyText || '#0F172A') : '')
        + (_wmSymbol ? ';--wm-symbol:url(' + _wmSymbol + ')' : '')
        + '">'
