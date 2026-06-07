@@ -4385,7 +4385,7 @@ function renderMobileBaggageHtml(ctx) {
              +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
              +     '<div style="height:34px;display:flex;align-items:center;">' + _logoHtml + '</div>'
              // status as plain coloured text — no pill
-             +     '<div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:' + stColorFor(f.status) + ';">' + stTxt + '</div>'
+             +     '<div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform: none;color:' + stColorFor(f.status) + ';">' + stTxt + '</div>'
              +   '</div>'
              +   '<div style="font-size:11px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;margin-bottom:2px;">' + (TL('destArr')||'FROM').toUpperCase() + '</div>'
              +   '<div style="font-size:19px;color:' + T.ink + ';font-weight:800;margin-bottom:10px;">' + cityDisplay + '</div>'
@@ -4468,7 +4468,7 @@ function renderMobileGateHtml(ctx) {
     let nLoc = tc(nextFlight.dest || nextFlight._locCity || '—');
     // v218.99.55 — Force IATA codes in parens to uppercase
     nLoc = nLoc.replace(/\(([a-z]{3})\)/gi, (m, code) => '(' + code.toUpperCase() + ')');
-    nextHtml = '<div class="mg-next-lbl" style="font-size:14px;letter-spacing:2px;font-weight:700;text-transform:uppercase;margin-bottom:5px;">' + TL('nextDep') + '</div>'
+    nextHtml = '<div class="mg-next-lbl" style="font-size:14px;letter-spacing:2px;font-weight:700;text-transform: none;margin-bottom:5px;">' + TL('nextDep') + '</div>'
              + '<div class="mg-next-val" style="font-size:clamp(24px,6vw,28px);font-weight:800;">'
              +   (nextFlight.flight || '—') + ' · ' + nLoc + ' · ' + (nextFlight.time || '—')
              + '</div>';
@@ -4514,7 +4514,7 @@ function renderMobileGateHtml(ctx) {
     const _opLogoUrl = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
     const _opName = currentFlight._opName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) || _opCode;
     _opBadgeHtml = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;">'
-      + '<span style="font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:1.5px;font-weight:700;text-transform:uppercase;">Operated by</span>';
+      + '<span style="font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:1.5px;font-weight:700;text-transform: none;">Operated by</span>';
     if (_opLogoUrl) {
       _opBadgeHtml += '<img src="' + _opLogoUrl + '" alt="' + _opName + '" '
         + 'style="height:24px;max-width:120px;width:auto;object-fit:contain;background:#fff;padding:3px 6px;border-radius:4px;" '
@@ -4591,7 +4591,7 @@ function renderMobileGateHtml(ctx) {
     title:  'font-size:clamp(30px,8vw,40px);font-weight:900;letter-spacing:-0.5px;line-height:1.04;',
     value:  'font-size:clamp(24px,6vw,28px);font-weight:800;line-height:1.1;',
     body:   'font-size:clamp(24px,6vw,28px);font-weight:800;line-height:1.1;',
-    label:  'font-size:14px;letter-spacing:2px;font-weight:700;text-transform:uppercase;'
+    label:  'font-size:14px;letter-spacing:2px;font-weight:700;text-transform: none;'
   };
 
   // ── INBOUND AIRCRAFT: "coming from X · lands in N min" (mirrors desktop) ──
@@ -5500,7 +5500,7 @@ function _buildV2MapCol(ctx, vars) {
         if (_candidates.length > 0) {
           _opBadgeInline =
               '<div class="v2-rc-aircraft-op-inline" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">'
-            +   '<div style="font-size:15px;font-weight:600;color:#6b7585;text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + ':</div>'
+            +   '<div style="font-size:15px;font-weight:600;color:#6b7585;text-transform: none;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + ':</div>'
             +   '<img id="' + _imgId + '" src="' + _candidates[0] + '" alt="' + _shortEsc + '" '
             +     'data-fallbacks="' + _candidatesJson.replace(/"/g, '&quot;') + '" '
             +     'data-fb-idx="0" '
@@ -5518,7 +5518,7 @@ function _buildV2MapCol(ctx, vars) {
         } else {
           _opBadgeInline =
               '<div class="v2-rc-aircraft-op-inline" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">'
-            +   '<div style="font-size:15px;font-weight:600;color:#6b7585;text-transform:uppercase;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + ':</div>'
+            +   '<div style="font-size:15px;font-weight:600;color:#6b7585;text-transform: none;letter-spacing:1.2px;line-height:1;">' + TL('operatedBy') + ':</div>'
             +   '<span style="font-size:20px;font-weight:800;color:#0f1419;line-height:1;letter-spacing:0.2px;">' + _opShortName + '</span>'
             + '</div>';
         }
@@ -6884,7 +6884,7 @@ function uxgGateHtml(ctx) {
             if (_redir && _redir.flight && _redir.toGate) {
               var _bannerTxt = TLF('gateChangeMoved', { FLIGHT: _redir.flight, GATE: _redir.toGate });
               return '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:18px;color:#fff;background:rgba(249,115,22,0.95);padding:0 28px;font-weight:700;font-size:20px;letter-spacing:0.3px;align-self:stretch;">'
-                + '<span style="font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;opacity:0.9;background:rgba(0,0,0,0.18);padding:6px 12px;border-radius:4px;">' + TL('gateChangeTitle') + '</span>'
+                + '<span style="font-size:13px;font-weight:800;letter-spacing:2px;text-transform: none;opacity:0.9;background:rgba(0,0,0,0.18);padding:6px 12px;border-radius:4px;">' + TL('gateChangeTitle') + '</span>'
                 + '<span>' + _bannerTxt + '</span>'
                 + '</div>';
             }
@@ -18712,7 +18712,7 @@ function buildGateAdHtml(ad) {
         _bullets += '<div data-topic-panel="' + idx + '" style="'
           + (idx === 0 ? 'opacity:1;' : 'opacity:0;position:absolute;top:0;left:0;right:0;')
           + 'transition:opacity 0.5s ease-in-out;">'
-          + '<div style="font-size:clamp(14px,1.3vw,18px);font-weight:700;line-height:1;color:#B88D5B;letter-spacing:0.08em;margin-bottom:14px;text-transform:uppercase;">'
+          + '<div style="font-size:clamp(14px,1.3vw,18px);font-weight:700;line-height:1;color:#B88D5B;letter-spacing:0.08em;margin-bottom:14px;text-transform: none;">'
           + _esc(t.title)
           + '</div>'
           + '<div style="display:flex;flex-direction:column;gap:9px;">';
@@ -18909,7 +18909,7 @@ function buildGateAdHtml(ad) {
     for (var _sci = 0; _sci < _starsClassNum; _sci++) _starsTxt += '★';
     _panelStarClass = '<div style="display:flex;align-items:center;gap:10px;margin:0 0 14px 0;font-family:var(--font-accor-body);">'
       + '<span style="color:' + _gold2 + ';font-size:18px;line-height:1;letter-spacing:2px;">' + _starsTxt + '</span>'
-      + '<span style="font-size:12px;font-weight:600;color:#fff;letter-spacing:0.18em;text-transform:uppercase;line-height:1;">' + _starsClassNum + ' ' + (_starsClassNum === 1 ? 'Star' : 'Stars') + '</span>'
+      + '<span style="font-size:12px;font-weight:600;color:#fff;letter-spacing:0.18em;text-transform: none;line-height:1;">' + _starsClassNum + ' ' + (_starsClassNum === 1 ? 'Star' : 'Stars') + '</span>'
       + '</div>';
 
     // Star rating — UI/UX best practice: filled vs hollow stars, single gold,
@@ -18950,7 +18950,7 @@ function buildGateAdHtml(ad) {
             + '</span>';
         }
         _panelRating = '<div style="margin-top:4px;font-family:var(--font-accor-body);">'
-          + '<div style="font-size:12px;font-weight:600;color:#fff;letter-spacing:0.16em;text-transform:uppercase;line-height:1.2;margin-bottom:10px;">'
+          + '<div style="font-size:12px;font-weight:600;color:#fff;letter-spacing:0.16em;text-transform: none;line-height:1.2;margin-bottom:10px;">'
           +   (TL('customerReviewRating') || 'Customer review rating')
           +   ' <span style="text-transform:none;font-weight:400;letter-spacing:0.02em;opacity:0.85;">(ALL Rating)</span>'
           + '</div>'
@@ -19127,7 +19127,7 @@ function buildGateAdHtml(ad) {
             // Line 1 — "MEMBER OF" + localized ALL lockup (small endorsement)
       +   '<div style="display:flex;align-items:center;gap:clamp(8px,0.9vw,14px);line-height:1;">'
       +     '<span style="font-size:clamp(10px,1.1vh,13px);font-weight:500;color:rgba(255,255,255,0.85);'
-      +       'letter-spacing:0.18em;text-transform:uppercase;line-height:1;'
+      +       'letter-spacing:0.18em;text-transform: none;line-height:1;'
       +       'font-family:var(--font-accor-body);">'
       +       (TL('memberOf') || 'Member of')
       +     '</span>'
@@ -19138,7 +19138,7 @@ function buildGateAdHtml(ad) {
       +   '</div>'
             // Line 2 — "THE LIMITLESS LOYALTY PROGRAMME" (localized, smaller)
       +   '<div style="font-size:clamp(9px,0.95vh,11px);font-weight:500;color:rgba(255,255,255,0.7);'
-      +     'letter-spacing:0.18em;text-transform:uppercase;line-height:1.15;'
+      +     'letter-spacing:0.18em;text-transform: none;line-height:1.15;'
       +     'font-family:var(--font-accor-body);text-align:' + (_logoAlign === 'center' ? 'center' : 'left') + ';">'
       +     (TL('limitlessLoyaltyProgramme') || 'The Limitless Loyalty Programme')
       +   '</div>'
@@ -19853,7 +19853,7 @@ function buildAdLogoPanelHtml(ad) {
       + '<img src="' + logoPath + '" alt="" '
       +   'style="' + _logoSizing + 'object-fit:contain;' + _hotelFilter + '">'
       + '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;max-width:100%;">'
-      +   '<div style="' + nameStyle + 'line-height:1.15;color:rgba(255,255,255,0.92);text-transform:uppercase;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+      +   '<div style="' + nameStyle + 'line-height:1.15;color:rgba(255,255,255,0.92);text-transform: none;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
       +     (ad.headline || '')
       +   '</div>'
       +   (ad.sub
@@ -20170,7 +20170,7 @@ function buildDestInfoSlide(info, type, cityName) {
     html = '<div style="' + _wrap + '"><div style="' + _text + '">' + fact + '</div></div>';
   } else if (type === 'quickinfo') {
     var q = info.quickInfo || {};
-    var _qiLabelStyle = 'font-size:11px;color:rgba(255,255,255,0.55);font-weight:700;letter-spacing:0.4px;text-transform:uppercase;';
+    var _qiLabelStyle = 'font-size:11px;color:rgba(255,255,255,0.55);font-weight:700;letter-spacing:0.4px;text-transform: none;';
     var _qiValueStyle = 'font-size:20px;color:#fff;font-weight:700;line-height:1.2;';
     var _qiCellStyle  = 'text-align:center;flex:0 1 auto;padding:0 4px;';
     html = '<div style="display:flex;align-items:center;justify-content:space-around;gap:18px;padding:18px 24px;height:100%;box-sizing:border-box;flex-wrap:wrap;overflow:hidden;">'
