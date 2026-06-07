@@ -17963,6 +17963,7 @@ function _processAccorData(data, destIata) {
       bgPos: photoUrl ? 'center' : 'auto',
       photos: photos,   // full set for hero rotation
       headline: hotelName,
+      nameFull: ensureBrandInName(_rawName, brand),  // full name incl. brand (for QR bubble / page context)
       sub: subtitle,
       brandLabel: brandName,
       brandKicker: brandKicker,
@@ -19386,7 +19387,10 @@ function buildAccorAdOnlyV6(ad) {
 
   // QR caption — always invite discovery of the property by its FULL name
   // (brand + location, e.g. "Novotel Toronto Centre"), for every brand.
-  var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(hotelName);
+  // Full hotel name incl. brand — the slide's `headline` is brand-stripped
+  // (so the logo isn't duplicated), so use ad.nameFull for the bubble/context.
+  var _fullName = first(ad.nameFull, hotelName);
+  var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(_fullName);
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
@@ -19461,7 +19465,7 @@ function buildAccorAdOnlyV6(ad) {
   function _heroImg(u){ return u ? '<div class="axr-hero-img" style="background-image:url(\''+esc(u)+'\')"></div>' : '<div class="axr-hero-img axr-hero-noimg"></div>'; }
   function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul>' : ''; }
   var _ph0 = _photoSet[0]||photo||'', _ph1 = _photoSet[1]||_ph0, _ph2 = _photoSet[2]||_ph1;
-  var _ctxName   = showName ? '<div class="axr-page-ctx">'+esc(hotelName)+'</div>' : '';
+  var _ctxName   = '<div class="axr-page-ctx">'+esc(_fullName)+'</div>';
   var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
   var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
 
