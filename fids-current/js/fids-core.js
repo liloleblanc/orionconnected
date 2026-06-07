@@ -19313,14 +19313,31 @@ function buildAccorAdOnlyV6(ad) {
     else if(brandLower.indexOf('mercure')!==-1) logo='/logos/hotels/accor-midscale/mercure-monochrome-white.svg';
   }
 
+  // Accent-fold so brand names with diacritics (Swissôtel, Mövenpick) are
+  // detected and stripped the same as their plain spellings.
+  function _foldAcc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
   var BRAND_WORDS=['Novotel','Fairmont','Sofitel','Pullman','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis','Mama Shelter','Mondrian'];
   var brandWord='';
-  for(var bw=0; bw<BRAND_WORDS.length; bw++){ if(brandLower.indexOf(BRAND_WORDS[bw].toLowerCase())!==-1){ brandWord=BRAND_WORDS[bw]; break; } }
+  var _brandLowerFold=_foldAcc(brandLower);
+  for(var bw=0; bw<BRAND_WORDS.length; bw++){ if(_brandLowerFold.indexOf(_foldAcc(BRAND_WORDS[bw]))!==-1){ brandWord=BRAND_WORDS[bw]; break; } }
   var BRAND_TINT={ 'novotel':'#0a3a5c','fairmont':'#1a2a4a','sofitel':'#0a0a0a','pullman':'#1a1a2e','mercure':'#2a1a3a','swissotel':'#1a2a3a','movenpick':'#3a2a1a','mgallery':'#2a2a2a','raffles':'#1a2a2a' };
   var tint=BRAND_TINT[lower(brandWord)]||'#0a1a3a';
 
   var haveLogo=!!logo;
-  function stripBrand(name){ var s=String(name||'').replace(/\s+/g,' ').trim(); if(brandWord){ var re=new RegExp('\\b'+brandWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig'); s=s.replace(re,'').replace(/\s+/g,' ').trim(); } return s; }
+  function stripBrand(name){
+    var s=String(name||'').replace(/\s+/g,' ').trim();
+    if(!brandWord) return s;
+    // 1) exact case-insensitive removal (handles multi-word brands, exact spellings)
+    var re=new RegExp('\\b'+brandWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig');
+    s=s.replace(re,'').replace(/\s+/g,' ').trim();
+    // 2) accent-insensitive whole-word removal — strips "Swissôtel" when the
+    //    brand word is "Swissotel" (and likewise Mövenpick/Movenpick).
+    if(brandWord.indexOf(' ')===-1){
+      var _bwKey=_foldAcc(brandWord).replace(/[^a-z0-9]/g,'');
+      s=s.split(' ').filter(function(w){ return _foldAcc(w).replace(/[^a-z0-9]/g,'') !== _bwKey; }).join(' ').replace(/\s+/g,' ').trim();
+    }
+    return s;
+  }
   var displayName=haveLogo?stripBrand(hotelName):String(hotelName).trim();
   // Property lockups (Fairmont/Emblems per-property art, runtime-generated or
   // brand-team file) already bake the property name INTO the logo artwork, so
