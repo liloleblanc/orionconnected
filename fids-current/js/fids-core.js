@@ -7199,8 +7199,12 @@ const gView = document.getElementById('gateView');
                 var _stillSameOutbound = (window._gateInbound && window._gateInboundOutboundFlight === _capturedOutbound);
                 // Persist outbound link for the next render's verification
                 window._gateInboundOutboundFlight = _capturedOutbound;
-                var liveSpd = (inbData.livePosition && typeof inbData.livePosition.speed === 'number') ? Math.round(inbData.livePosition.speed) : null;
-                var liveAlt = (inbData.livePosition && typeof inbData.livePosition.altitude === 'number') ? Math.round(inbData.livePosition.altitude) : null;
+                var _lp = inbData.livePosition || {};
+                // loadFlight stores { lat, lng, alt, speed } — read both key spellings.
+                var _spdRaw = (typeof _lp.speed === 'number') ? _lp.speed : null;
+                var _altRaw = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
+                var liveSpd = (_spdRaw !== null) ? Math.round(_spdRaw) : null;
+                var liveAlt = (_altRaw !== null) ? Math.round(_altRaw) : null;
                 if (liveSpd !== null || liveAlt !== null) {
                   window._gateInboundLivePos = { speed: liveSpd, altitude: liveAlt, _airport: _capturedIata, _inboundFlight: _capturedInbound };
                   console.log('[FIDS] Inbound live position for', _capturedInbound, '@', _capturedIata, '→ spd:', liveSpd, 'alt:', liveAlt);
@@ -11188,6 +11192,7 @@ const LS = {
   // v218.99.65 — Aircraft block + hotel labels
   incomingAircraft: { en:'Incoming aircraft', fr:'Appareil entrant', es:'Aeronave entrante', de:'Eintreffendes Flugzeug', it:'Aeromobile in arrivo', pt:'Aeronave a chegar', ja:'到着機', zh:'到达航班', ar:'الطائرة القادمة' },
   aircraftType:     { en:'Aircraft type',     fr:"Type d'appareil",  es:'Tipo de aeronave', de:'Flugzeugtyp',           it:'Tipo di aeromobile', pt:'Tipo de aeronave', ja:'機種',     zh:'机型',     ar:'نوع الطائرة' },
+  inboundAircraft:  { en:'Inbound aircraft',  fr:"Avion à l'arrivée",es:'Avión entrante',   de:'Ankommendes Flugzeug',  it:'Aereo in arrivo',    pt:'Avião a chegar',   ja:'到着機',   zh:'抵达航班',  ar:'الطائرة القادمة' },
   tailNumber:       { en:'Tail number',       fr:'Immatriculation',  es:'Matrícula',        de:'Kennzeichen',           it:'Immatricolazione',   pt:'Matrícula',        ja:'機体番号', zh:'机尾号',   ar:'رقم الذيل' },
   arrivesIn:        { en:'Arrives in',        fr:'Arrive dans',      es:'Llega en',         de:'Ankunft in',            it:'Arriva tra',         pt:'Chega em',         ja:'到着まで', zh:'到达',     ar:'يصل خلال' },
   departsLbl:       { en:'Departs',           fr:'Départ',           es:'Sale',             de:'Abflug',                it:'Partenza',           pt:'Parte',            ja:'出発',     zh:'出发',     ar:'يغادر' },
