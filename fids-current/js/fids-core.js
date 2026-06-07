@@ -17610,33 +17610,41 @@ function _haversineKm(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function _accorHotelDowntownDistance(h, destIata) {
-  // Returns { km: number, kmStr: 'X.X km', cityName: 'Toronto' } or null
-  if (!h || !destIata || !DOWNTOWN_COORDS[destIata]) return null;
-  // Try every Accor catalog field shape we've seen — they keep changing it
-  var lat = null, lng = null;
+// Pull the hotel's lat/lng out of whatever field shape the Accor catalog used.
+function _accorHotelLatLng(h) {
+  if (!h) return null;
   var tryShapes = [
     h.localization && h.localization.coordinates,
-    h.coordinates,
-    h.gps,
-    h.location,
-    h.geoLocation,
-    h.geo,
-    h.position
+    h.coordinates, h.gps, h.location, h.geoLocation, h.geo, h.position
   ];
   for (var i = 0; i < tryShapes.length; i++) {
     var c = tryShapes[i];
     if (!c) continue;
     var tLat = parseFloat(c.latitude || c.lat || c.Latitude);
     var tLng = parseFloat(c.longitude || c.lng || c.lon || c.long || c.Longitude);
-    if (!isNaN(tLat) && !isNaN(tLng) && tLat !== 0 && tLng !== 0) {
-      lat = tLat; lng = tLng; break;
-    }
+    if (!isNaN(tLat) && !isNaN(tLng) && tLat !== 0 && tLng !== 0) return { lat: tLat, lng: tLng };
   }
-  if (lat === null || lng === null) return null;
+  return null;
+}
+
+function _accorHotelDowntownDistance(h, destIata) {
+  // Returns { km: number, kmStr: 'X.X km', cityName: 'Toronto' } or null
+  if (!h || !destIata || !DOWNTOWN_COORDS[destIata]) return null;
+  var ll = _accorHotelLatLng(h);
+  if (!ll) return null;
   var dc = DOWNTOWN_COORDS[destIata];
-  var km = _haversineKm(lat, lng, dc.lat, dc.lng);
+  var km = _haversineKm(ll.lat, ll.lng, dc.lat, dc.lng);
   return { km: km, kmStr: (Math.round(km * 10) / 10) + ' km', cityName: dc.name };
+}
+
+function _accorHotelAirportDistance(h, destIata) {
+  // Distance from the destination AIRPORT (COORDS table). Returns {km,kmStr} or null.
+  if (!h || !destIata || typeof COORDS === 'undefined' || !COORDS[destIata]) return null;
+  var ll = _accorHotelLatLng(h);
+  if (!ll) return null;
+  var ac = COORDS[destIata]; // [lat, lng]
+  var km = _haversineKm(ll.lat, ll.lng, ac[0], ac[1]);
+  return { km: km, kmStr: (Math.round(km * 10) / 10) + ' km' };
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -18001,6 +18009,7 @@ function _processAccorData(data, destIata) {
       })(),
       distance: dist || '',
       distanceCity: _accorHotelDowntownDistance(h, destIata),
+      distanceAirport: _accorHotelAirportDistance(h, destIata),
       _destIata: destIata,
       // Rating — trustyou score + review count
       rating: trustScore > 0 ? trustScore + '/5' : '',
@@ -19393,23 +19402,25 @@ function buildAccorAdOnlyV6(ad) {
 
   var _fullAddr = first(ad.fullAddress, '');
   var _addrLineHtml = _fullAddr ? '<div class="axr-addr-line">' + esc(_fullAddr) + '</div>' : '';
-  // Location distance line — "X km from <city> centre", localized. Uses the
-  // pre-computed downtown distance ({km,kmStr,cityName}); falls back to the
-  // raw search-radius distance string when downtown coords aren't known.
+  // Location distance lines — distance from the destination AIRPORT and from
+  // DOWNTOWN, localized. Each shown only when we have the figure.
+  var _lgD = accorLang();
+  var _airTpl = ({
+    en:'%k from airport', fr:'à %k de l’aéroport', es:'a %k del aeropuerto',
+    de:'%k vom Flughafen', it:'a %k dall’aeroporto', pt:'a %k do aeroporto',
+    ja:'空港から%k', zh:'距机场%k', ar:'%k من المطار'
+  })[_lgD] || '%k from airport';
+  var _dtTpl = ({
+    en:'%k from %c centre', fr:'à %k du centre de %c', es:'a %k del centro de %c',
+    de:'%k vom Zentrum %c', it:'a %k dal centro di %c', pt:'a %k do centro de %c',
+    ja:'%c中心部から%k', zh:'距%c市中心%k', ar:'%k من وسط %c'
+  })[_lgD] || '%k from %c centre';
+  function _locRow(txt){ return '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span>' + esc(txt) + '</div>'; }
   var _locLineHtml = '';
-  var _dc = ad.distanceCity;
-  if (_dc && _dc.kmStr && _dc.cityName) {
-    var _lg = accorLang();
-    var _tpl = ({
-      en:'%k from %c centre', fr:'à %k du centre de %c', es:'a %k del centro de %c',
-      de:'%k vom Zentrum %c', it:'a %k dal centro di %c', pt:'a %k do centro de %c',
-      ja:'%c中心部から%k', zh:'距%c市中心%k', ar:'%k من وسط %c'
-    })[_lg] || '%k from %c centre';
-    var _locTxt = _tpl.replace('%k', _dc.kmStr).replace('%c', _dc.cityName);
-    _locLineHtml = '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span>' + esc(_locTxt) + '</div>';
-  } else if (ad.distance) {
-    _locLineHtml = '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span>' + esc(ad.distance) + '</div>';
-  }
+  var _da = ad.distanceAirport, _dc = ad.distanceCity;
+  if (_da && _da.kmStr) _locLineHtml += _locRow(_airTpl.replace('%k', _da.kmStr));
+  if (_dc && _dc.kmStr && _dc.cityName) _locLineHtml += _locRow(_dtTpl.replace('%k', _dc.kmStr).replace('%c', _dc.cityName));
+  if (!_locLineHtml && ad.distance) _locLineHtml = _locRow(ad.distance);
   // city is shown standalone only when we don't have the full street address
   var _showCity = address && !_fullAddr;
   var subHtml=(_showCity||starsHtml||ratingHtml)?'<div class="axr-sub">'+(_showCity?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
@@ -19426,7 +19437,22 @@ function buildAccorAdOnlyV6(ad) {
   )).slice(0, 6);
   var _restList = _dedupe((_detail && _detail.restaurants) ? _detail.restaurants : []).slice(0, 5);
   var _blurb = first(ad.description, ad.destinationDescription, '');
-  if (_blurb && _blurb.length > 180) _blurb = _blurb.slice(0, 177).trim() + '…';
+  if (_blurb) {
+    _blurb = String(_blurb).replace(/\s+/g, ' ').trim();
+    var _blMax = 185;
+    if (_blurb.length > _blMax) {
+      var _cut = _blurb.slice(0, _blMax);
+      // Prefer ending on a full sentence; else fall back to a whole-word cut so
+      // we never slice mid-word (e.g. "...of Pr…").
+      var _dot = Math.max(_cut.lastIndexOf('. '), _cut.lastIndexOf('! '), _cut.lastIndexOf('? '));
+      if (_dot >= _blMax * 0.6) {
+        _blurb = _cut.slice(0, _dot + 1).trim();
+      } else {
+        var _sp = _cut.lastIndexOf(' ');
+        _blurb = (_sp > 0 ? _cut.slice(0, _sp) : _cut).replace(/[\s,;:.!?-]+$/, '').trim() + '…';
+      }
+    }
+  }
 
   var _acL = accorLang();
   var _kHotel  = ({en:'The hotel',fr:"L'hôtel",es:'El hotel',de:'Das Hotel',it:"L'hotel",pt:'O hotel',ja:'ホテル',zh:'酒店',ar:'الفندق'})[_acL] || 'The hotel';
@@ -20714,11 +20740,20 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
    opacity crossfade between .axr-page panels. */
 (function(){
   var EVERY = 10000;   // ms per page (matches the ~30s Accor carousel dwell)
-  function tick(){
+  var _seen = null;    // the .axr-pages element we're currently timing
+  var _next = 0;       // timestamp of the next page advance
+  function check(){
     var wrap = document.querySelector('.axr-pages');
-    if (!wrap) return;
+    if (!wrap) { _seen = null; return; }
     var pages = wrap.querySelectorAll('.axr-page');
     if (!pages || pages.length < 2) return;
+    var now = Date.now();
+    // A new slide just appeared — start its clock fresh so PAGE 1 gets a full
+    // EVERY before advancing (previously a free-running timer gave it whatever
+    // was left of the cycle, sometimes only a couple seconds).
+    if (wrap !== _seen) { _seen = wrap; _next = now + EVERY; return; }
+    if (now < _next) return;
+    _next = now + EVERY;
     var cur = -1;
     for (var i = 0; i < pages.length; i++) {
       if (pages[i].classList.contains('axr-page-on')) { cur = i; break; }
@@ -20728,7 +20763,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     pages[cur].classList.remove('axr-page-on');
     pages[nxt].classList.add('axr-page-on');
   }
-  setInterval(tick, EVERY);
+  setInterval(check, 250);
 })();
 
 
