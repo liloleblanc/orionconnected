@@ -2950,3 +2950,61 @@ body, body.gids-page, body.gate-page{
 /* keep the headline tidy when a long status wraps (no orphaned separator) */
 .gad-map-col-v2 .v2-rc-headline .v2-rc-sep { display: none !important; }
 .gad-map-col-v2 .v2-rc-headline { gap: 6px 14px !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   RIGHT (INBOUND AIRCRAFT) PANEL — DARK, BRAND-ACCENTED  (per Nick)
+   Authoritative override: flips the earlier white "light redesign" cards to a
+   dark, airline-tinted scheme so the right column matches the black header +
+   dark left column. The airline's colour comes through as ACCENTS (kicker,
+   flight number, dividers) via --airline-accent, not a heavy wash.
+   ════════════════════════════════════════════════════════════════════════ */
+.gad-map-col-v2 {
+  background: color-mix(in srgb, var(--airline-accent, #1b2a4a) 16%, #0a0f1a) !important;
+}
+/* Cards become transparent so the tinted column shows through */
+.gad-map-col-v2 .v2-rc-inbound,
+.gad-map-col-v2 .v2-rc-aircraft {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+.gad-map-col-v2 .v2-rc-inbound {
+  padding: clamp(14px,1.7vh,20px) clamp(16px,1.4vw,22px) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+}
+/* Kicker = brand accent, normal case */
+.gad-map-col-v2 .v2-rc-kicker {
+  color: var(--airline-accent, #9aa7b8) !important;
+  text-transform: none !important;
+  letter-spacing: 0.2px !important;
+  opacity: 0.95 !important;
+}
+/* Headline: flight number white-bold, separator + secondary text light */
+.gad-map-col-v2 .v2-rc-flt { color: #ffffff !important; }
+.gad-map-col-v2 .v2-rc-from,
+.gad-map-col-v2 .v2-rc-eta { color: rgba(255,255,255,0.72) !important; }
+/* Time cells — subtle light fill on dark, white values */
+.gad-map-col-v2 .v2-rc-time-cell { background: rgba(255,255,255,0.07) !important; }
+.gad-map-col-v2 .v2-rc-time-lbl  { color: rgba(255,255,255,0.55) !important; }
+.gad-map-col-v2 .v2-rc-time-val  { color: #ffffff !important; }
+/* Aircraft block — type / tail / incoming shelves on dark */
+.gad-map-col-v2 .v2-rc-aircraft-type-top,
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot {
+  background: rgba(255,255,255,0.05) !important;
+  border-top: 1px solid rgba(255,255,255,0.08) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  padding-top: 8px !important; padding-bottom: 8px !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-shelf-lbl,
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot { color: rgba(255,255,255,0.6) !important; }
+.gad-map-col-v2 .v2-rc-aircraft-shelf-val,
+.gad-map-col-v2 .v2-rc-aircraft-reg-bot .v2-rc-aircraft-reg-val { color: #ffffff !important; }
+.gad-map-col-v2 .v2-rc-aircraft-incoming {
+  background: rgba(255,255,255,0.05) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+}
+.gad-map-col-v2 .v2-rc-aircraft-incoming-main { color: #ffffff !important; }
+.gad-map-col-v2 .v2-rc-aircraft-incoming-eta  { color: rgba(255,255,255,0.7) !important; }
+/* Operated-by label readable on dark */
+.gad-map-col-v2 .v2-rc-aircraft-op-inline > div:first-child { color: rgba(255,255,255,0.6) !important; }
+/* Operated-by logo → white knockout so any logo reads on the dark panel */
+.gad-map-col-v2 .v2-rc-aircraft-op-inline img { filter: brightness(0) invert(1) !important; opacity: 0.95 !important; }
