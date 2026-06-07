@@ -3023,3 +3023,28 @@ body, body.gids-page, body.gate-page{
 .gad-map-col-v2 .v2-rc-headline .v2-rc-status-ontime { color: #2ee27a !important; }
 .gad-map-col-v2 .v2-rc-headline .v2-rc-status-delayed { color: #fbbf24 !important; }
 .gad-map-col-v2 .v2-rc-headline .v2-rc-status-cancelled { color: #f87171 !important; }
+
+/* ── Inbound panel: lighter base + faint airline emblem watermark (per Nick:
+   "I find it dark... a faint tail/emblem background in the upper half"). Both
+   columns share the lighter base for symmetry; the watermark uses the
+   per-airline emblem already exposed as --wm-symbol. ── */
+.gad-aircraft-col,
+.gad-map-col-v2 {
+  background: color-mix(in srgb, var(--airline-accent, #1b2a4a) 20%, #161f2b) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.gad-aircraft-col::before,
+.gad-map-col-v2::before {
+  content: "";
+  position: absolute; left: 0; right: 0; top: 0; height: 60%;
+  background-image: var(--wm-symbol, none);
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 150% auto;
+  opacity: 0.10;
+  pointer-events: none;
+  z-index: 0;
+}
+.gad-aircraft-col > *,
+.gad-map-col-v2 > * { position: relative; z-index: 1; }
