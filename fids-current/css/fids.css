@@ -978,9 +978,9 @@ body.uxg-gate-mode.uxg-controls-collapsed .ctrl { transform:none; opacity:1; poi
 .g8-final-sub { font-size:clamp(28px,4vw,48px); font-weight:600; opacity:.75; margin-top:12px; }
 
 /* ROW 5 — Footer (v9: bigger text) */
-.g8-r5 { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:stretch; padding:0; background:#111827; border-top:2px solid rgba(255,255,255,0.12); flex-shrink:0; min-height:80px; font-size: 13px; position:relative; z-index:2; }
+.g8-r5 { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:stretch; padding:0; background:#111827; border-top:2px solid rgba(255,255,255,0.12); flex-shrink:0; min-height:96px; font-size: 13px; position:relative; z-index:2; }
 .g8-r5-airport { opacity:.9; font-weight:700; font-size:22px; letter-spacing:0.5px; display:flex; align-items:center; gap:14px; padding:6px 18px 6px 16px; }
-.g8-r5-next { color:#ffd54f; font-weight:800; font-size:clamp(22px,1.5vw,28px); letter-spacing:0.2px; }
+.g8-r5-next { color:#ffd54f; font-weight:800; font-size:clamp(28px,2vw,38px); letter-spacing:0.2px; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 12px; }
 .g8-r5 .g8-r5-clock { font-weight:700; font-size:26px; font-variant-numeric:tabular-nums; display:flex; align-items:center; justify-content:flex-end; padding:0 28px 0 28px; }
 
 /* ── GATE OVERRIDE PANEL ──────────────────────────────────── */

@@ -33,7 +33,7 @@
 .axr-list li::before{ content:"›"; position:absolute; left:0; color:var(--all-gold); font-weight:700; }
 .axr-blurb{ margin:calc(var(--axr-info) * 0.5) 0 0; font-size:calc(var(--axr-info) * 0.9); font-weight:400;
   line-height:1.4; opacity:.92; max-width:92%;
-  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 .axr-sub-rating{ margin-top:calc(var(--axr-info) * 0.3); }
 /* Footer — ALL mark only, centered */
 .axr-all.axr-all-simple{ justify-content:center !important; background:var(--all-blue) !important; border-top:2px solid rgba(255,255,255,.1) !important; }
