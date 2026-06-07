@@ -19358,12 +19358,9 @@ function buildAccorAdOnlyV6(ad) {
     ? '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>'
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
-  // QR caption — per-brand voice (branding is by brand, not the ALL umbrella).
-  // Luxury brands invite discovery of the property by name; others keep the
-  // default ALL loyalty CTA.
-  var _qrCaption = safeTL('scanToUnlockAll','Scan to unlock limitless experiences with ALL.');
-  var _luxuryBrands = {FAI:1,SOF:1,SLE:1,RAF:1,RAH:1,EMB:1,BAN:1,ORI:1,OE:1,FAE:1,RIX:1,MAN:1,MGH:1,MGA:1,MOV:1,DEL:1};
-  if (_luxuryBrands[String(ad.brand||'').toUpperCase()]) _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(hotelName);
+  // QR caption — always invite discovery of the property by its FULL name
+  // (brand + location, e.g. "Novotel Toronto Centre"), for every brand.
+  var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(hotelName);
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
