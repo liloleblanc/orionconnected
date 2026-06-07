@@ -35,6 +35,10 @@
   line-height:1.4; opacity:.92; max-width:92%;
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 .axr-sub-rating{ margin-top:calc(var(--axr-info) * 0.3); }
+/* Footer — ALL mark only, centered */
+.axr-all.axr-all-simple{ justify-content:center !important; background:var(--all-blue) !important; border-top:2px solid rgba(255,255,255,.1) !important; }
+.axr-all.axr-all-simple .axr-all-mark{ height:clamp(40px,5.4vh,58px); }
+.axr-all.axr-all-simple .axr-all-mark img{ height:100%; width:auto; display:block; filter:drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
 
 /* ── HERO: the hotel's photo + branding ───────────────────────────────── */
 .axr-hero{ position:relative; min-height:0; overflow:hidden; background:#1a1a2a; }
