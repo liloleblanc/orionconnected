@@ -9,8 +9,8 @@
   --axr-tint:#0a1a3a;
   --axr-body:"Accor Montserrat","Montserrat","Avenir Next","Helvetica Neue",Arial,sans-serif;
   /* responsive logo reference — scales with the ad well height */
-  --axr-logo: clamp(30px, 5vh, 50px);      /* LOGO = 100% (sized down per Nick) */
-  --axr-name: calc(var(--axr-logo) * 0.72);/* NAME = 72% of logo */
+  --axr-logo: clamp(24px, 3.6vh, 38px);    /* LOGO = 100% (sized down per Nick) */
+  --axr-name: calc(var(--axr-logo) * 0.78);/* NAME = 78% of logo */
   --axr-info: calc(var(--axr-name) * 0.62);/* INFO = 62% of name */
   position:relative; width:100%; height:100%; overflow:hidden;
   display:grid; grid-template-rows:1fr auto;
@@ -69,7 +69,7 @@
 .axr-logo{ height:var(--axr-logo); display:flex; align-items:flex-end; }
 .axr-logo img, .axr-logo svg{ height:100%; width:auto; max-width:min(60%,400px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
-.axr-logo svg{ max-width:min(92%,660px) !important; }
+.axr-logo svg{ max-width:min(54%,360px) !important; }
 .axr-logo img{ height:100%; width:auto; max-width:min(58%,360px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
 .axr-logo-text{ font-weight:800; font-size:var(--axr-logo); line-height:1;
