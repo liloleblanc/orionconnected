@@ -5302,18 +5302,32 @@ function _buildV2MapCol(ctx, vars) {
       var _ibFlightNum = String(_ib.flight || '').replace(/^[A-Z]{2,3}\s*/i, '');
       var _ibTitle = (_ibAirlineName + ' Flight ' + _ibFlightNum).trim();
 
-      // Status sentence: "This flight is X From Y (IATA)"
+      // Status sentence — localized to the current display language so it
+      // matches the rest of the panel (was hardcoded English → "Avion à
+      // l'arrivée" kicker over "Awaiting Departure" status, etc.).
       var _rawSt = String(_ib.status || '').toLowerCase().trim();
-      var _stWord = '';
-      if (_rawSt === 'active' || _rawSt === 'en-route' || _rawSt === 'enroute' || _rawSt === 'departed') _stWord = 'Enroute';
-      else if (_rawSt === 'scheduled') _stWord = 'Awaiting Departure';
-      else if (_rawSt === 'boarding') _stWord = 'Boarding';
-      else if (_rawSt === 'delayed') _stWord = 'Delayed';
-      else if (_rawSt === 'cancelled') _stWord = 'Cancelled';
-      else if (_rawSt === 'landed' || _rawSt === 'arrived') _stWord = 'Arrived';
-      else if (_rawSt === 'ontime' || _rawSt === 'on-time') _stWord = 'On Time';
-      else if (_rawSt) _stWord = _rawSt.charAt(0).toUpperCase() + _rawSt.slice(1);
-      else _stWord = 'Scheduled';
+      var _ibLang = (typeof lang !== 'undefined' && lang) ? lang : 'en';
+      var _ST_I18N = {
+        enroute:   { en:'Enroute', fr:'En vol', es:'En vuelo', de:'Im Flug', it:'In volo', pt:'Em voo', ja:'飛行中', zh:'飞行中', ar:'في الجو' },
+        scheduled: { en:'Awaiting departure', fr:'En attente de départ', es:'En espera de salida', de:'Wartet auf Abflug', it:'In attesa di partenza', pt:'A aguardar partida', ja:'出発待ち', zh:'等待起飞', ar:'في انتظار المغادرة' },
+        boarding:  { en:'Boarding', fr:'Embarquement', es:'Embarcando', de:'Boarding', it:'Imbarco', pt:'Embarque', ja:'搭乗中', zh:'登机中', ar:'الصعود' },
+        delayed:   { en:'Delayed', fr:'Retardé', es:'Retrasado', de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误', ar:'متأخر' },
+        early:     { en:'Early', fr:'En avance', es:'Adelantado', de:'Früher', it:'In anticipo', pt:'Adiantado', ja:'早着', zh:'提前', ar:'مبكر' },
+        cancelled: { en:'Cancelled', fr:'Annulé', es:'Cancelado', de:'Annulliert', it:'Cancellato', pt:'Cancelado', ja:'欠航', zh:'取消', ar:'ملغى' },
+        arrived:   { en:'Arrived', fr:'Arrivé', es:'Aterrizado', de:'Angekommen', it:'Arrivato', pt:'Chegou', ja:'到着', zh:'已到达', ar:'وصل' },
+        ontime:    { en:'On time', fr:"À l'heure", es:'A tiempo', de:'Pünktlich', it:'In orario', pt:'No horário', ja:'定刻', zh:'准点', ar:'في الموعد' }
+      };
+      var _stKey = '';
+      if (_rawSt === 'active' || _rawSt === 'en-route' || _rawSt === 'enroute' || _rawSt === 'departed') _stKey = 'enroute';
+      else if (_rawSt === 'scheduled') _stKey = 'scheduled';
+      else if (_rawSt === 'boarding') _stKey = 'boarding';
+      else if (_rawSt === 'delayed') _stKey = 'delayed';
+      else if (_rawSt === 'early') _stKey = 'early';
+      else if (_rawSt === 'cancelled') _stKey = 'cancelled';
+      else if (_rawSt === 'landed' || _rawSt === 'arrived') _stKey = 'arrived';
+      else if (_rawSt === 'ontime' || _rawSt === 'on-time') _stKey = 'ontime';
+      else _stKey = 'scheduled';
+      var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
 
       // Origin display: "Calgary (YYC)"
       var _origCity = '';
@@ -5408,7 +5422,7 @@ function _buildV2MapCol(ctx, vars) {
         +     '<span class="v2-rc-sep">·</span>'
         +     '<span class="v2-rc-status v2-rc-status-' + _stCls + '">' + _stWord + '</span>'
         +   '</div>'
-        +   (_origDisplay ? '<div class="v2-rc-from">From ' + _origDisplay + '</div>' : '')
+        +   (_origDisplay ? '<div class="v2-rc-from">' + (({en:'From',fr:'De',es:'Desde',de:'Von',it:'Da',pt:'De',ja:'出発地',zh:'来自',ar:'من'})[_ibLang] || 'From') + ' ' + _origDisplay + '</div>' : '')
         +   _keystatsHtml
         +   '<div class="v2-rc-times">'
         +     '<div class="v2-rc-time-cell">'
@@ -19454,7 +19468,7 @@ function buildAccorAdOnlyV6(ad) {
     _blurb = String(_blurb).replace(/\s+/g, ' ').trim();
     // Keep it short so it fits the card cleanly and the CSS line-clamp never
     // has to add a second (mid-word) ellipsis. Cut on a whole-word boundary.
-    var _blMax = 140;
+    var _blMax = 110;
     if (_blurb.length > _blMax) {
       var _cut = _blurb.slice(0, _blMax);
       var _sp = _cut.lastIndexOf(' ');
