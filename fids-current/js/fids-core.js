@@ -7982,6 +7982,7 @@ const AP = {
   GRU:{ name:'São Paulo Guarulhos International Airport',            tz:'America/Sao_Paulo'  },
   BOG:{ name:'El Dorado International Airport — Bogotá',            tz:'America/Bogota'     },
   LIM:{ name:'Jorge Chávez International Airport — Lima',           tz:'America/Lima'       },
+  LPB:{ name:'El Alto International Airport — La Paz',              tz:'America/La_Paz'     },
   EZE:{ name:'Ministro Pistarini International Airport — Buenos Aires', tz:'America/Argentina/Buenos_Aires'},
   YFC:{ name:'Fredericton International Airport',                    tz:'America/Moncton'    },
   YQY:{ name:'J.A. Douglas McCurdy Sydney Airport',                  tz:'America/Halifax'    },
@@ -8062,7 +8063,7 @@ const CITY = {
   MEX:'MEXICO CITY',    GDL:'GUADALAJARA',    SJD:'LOS CABOS',    PVR:'PUERTO VALLARTA',
   ZIH:'IXTAPA',         HUX:'HUATULCO',       MZT:'MAZATLAN',     MID:'MERIDA',
   GRU:'SAO PAULO',      GIG:'RIO DE JANEIRO', EZE:'BUENOS AIRES', SCL:'SANTIAGO',
-  BOG:'BOGOTA',         LIM:'LIMA',           UIO:'QUITO',        CCS:'CARACAS',
+  BOG:'BOGOTA',         LIM:'LIMA',           LPB:'LA PAZ',       UIO:'QUITO',        CCS:'CARACAS',
   MVD:'MONTEVIDEO',     ASU:'ASUNCION',       GYE:'GUAYAQUIL',    CTG:'CARTAGENA',
   MDE:'MEDELLIN',
   LHR:'LONDON',         LGW:'LONDON', STN:'LONDON', LTN:'LONDON',
@@ -8853,6 +8854,7 @@ const CITY_FR = {
   // ── AMÉRIQUE DU SUD ────────────────────────────────────────────────────
   GRU:'SAO PAULO',         GIG:'RIO DE JANEIRO',     EZE:'BUENOS AIRES',
   SCL:'SANTIAGO',          BOG:'BOGOTA',             LIM:'LIMA',
+  LPB:'LA PAZ',
   UIO:'QUITO',             MVD:'MONTEVIDEO',         CTG:'CARTHAGÈNE',
   MDE:'MEDELLIN',          GYE:'GUAYAQUIL',
   // ── EUROPE ─────────────────────────────────────────────────────────────
@@ -9641,7 +9643,7 @@ const COORDS = {
   SIN:[1.35,103.99], BKK:[13.69,100.75], SYD:[-33.95,151.18], MEL:[-37.67,144.84],
   DEL:[28.56,77.10], BOM:[19.09,72.87],
   GRU:[-23.43,-46.47], GIG:[-22.81,-43.25], EZE:[-34.82,-58.54], SCL:[-33.39,-70.79],
-  BOG:[4.70,-74.15], LIM:[-12.02,-77.11],
+  BOG:[4.70,-74.15], LIM:[-12.02,-77.11], LPB:[-16.51,-68.19],
   SJO:[9.99,-84.21], TLS:[43.63,1.37], RDU:[35.88,-78.79],
   YQT:[48.37,-89.32], YAM:[46.49,-84.51], YSB:[46.63,-80.80],
   YYB:[46.36,-79.42], YPQ:[44.23,-78.36], YGP:[48.78,-64.48],
@@ -15744,6 +15746,7 @@ const AP_LIST = [
   {c:'DEL',n:'Delhi'},{c:'BOM',n:'Mumbai'},{c:'CGK',n:'Jakarta'},
   {c:'MNL',n:'Manila'},{c:'AKL',n:'Auckland'},{c:'GRU',n:'São Paulo'},
   {c:'EZE',n:'Buenos Aires'},{c:'BOG',n:'Bogotá'},{c:'LIM',n:'Lima'},
+  {c:'LPB',n:'La Paz'},
 ];
 
 let _apAutoActive = -1;
@@ -17554,6 +17557,7 @@ var DOWNTOWN_COORDS = {
   'YWG': { lat: 49.8951, lng: -97.1384, name: 'Winnipeg' },
   'YYJ': { lat: 48.4284, lng: -123.3656, name: 'Victoria' },
   'YQM': { lat: 46.0878, lng: -64.7782, name: 'Moncton' },
+  'LPB': { lat: -16.4897, lng: -68.1193, name: 'La Paz' },
   'YSJ': { lat: 45.2733, lng: -66.0633, name: 'Saint John' },
   'YHM': { lat: 43.2557, lng: -79.8711, name: 'Hamilton' },
   'YKF': { lat: 43.4516, lng: -80.4925, name: 'Kitchener' },
