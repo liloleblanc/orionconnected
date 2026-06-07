@@ -5088,6 +5088,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // shape gets a white filter applied and sits on the red CSS circle,
       // same treatment as the other icon badges. No more PNG-with-own-bg.
       var AIRLINE_EMBLEM_FILES = {
+        // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
@@ -5095,7 +5096,19 @@ function _buildV2AircraftCol(ctx, vars) {
         'WS':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
         'WR':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
         'PD':  '/logos/airlines/canadian/Porter_Airlines_Logo_2006.svg',
-        'PB':  '/logos/airline-tiles/PB.svg'
+        'PB':  '/logos/airline-tiles/PB.svg',
+        // US majors — symbol-only emblems (rendered white on the accent badge)
+        'UA':  '/logos/airlines/us-major/united-globe-only.svg',
+        'DL':  '/logos/airlines/us-major/delta-widget.svg',
+        'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
+        'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
+        'F9':  '/logos/airlines/us-major/frontier-emblem.svg',
+        '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
+        'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
+        // International
+        'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
+        'AF':  '/logos/airlines/european/air-france-emblem.svg',
+        '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg'
       };
       function _emblemImg(code) {
         var path = AIRLINE_EMBLEM_FILES[code];
@@ -5105,7 +5118,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
         var NATIVE_COLOR_EMBLEMS = { 'PB': true };
         var native = !!NATIVE_COLOR_EMBLEMS[code];
-        var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(54px,6.8vh,92px);height:clamp(54px,6.8vh,92px);min-width:clamp(54px,6.8vh,92px);min-height:clamp(54px,6.8vh,92px);max-width:clamp(54px,6.8vh,92px);max-height:clamp(54px,6.8vh,92px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
+        var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
           ? BADGE_BASE + 'background:transparent;padding:0;'
           : BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(2px,0.3vh,4px);';
@@ -5157,7 +5170,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       // v218.99.32 — Inline-style every badge so the cascade can't lie.
       // Single source of truth for what a flight-info badge looks like.
-      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(54px,6.8vh,92px);height:clamp(54px,6.8vh,92px);min-width:clamp(54px,6.8vh,92px);min-height:clamp(54px,6.8vh,92px);max-width:clamp(54px,6.8vh,92px);max-height:clamp(54px,6.8vh,92px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,#D82F2E);color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,#D82F2E);color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       function _badge(svg) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
       }
@@ -16323,6 +16336,8 @@ var _ninjasCache = {};
 
 // ── GATE SCREEN AD CAROUSEL + AMENITIES ─────────────────────────────────────
 var _gateAdTimer = null;
+var _gateAdFadeTimer = null; // the in-flight 700ms fade callback (must be cancellable)
+var _gateAdGen = 0;          // generation token — invalidates orphaned timer chains
 var _gateAdIndex = 0;
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -19929,7 +19944,17 @@ function _restartGateAdsTimer() {
   // a self-rescheduling chain so hotel/photo ads get longer time and
   // text-only ads cycle faster. The dwell of the CURRENT slide
   // (i.e. the one just shown) determines when we tick next.
+  //
+  // Generation token: every restart bumps _gateAdGen, and each scheduled
+  // callback captures the gen it was born under. A callback that wakes up
+  // with a stale gen (because stopGateAds / a later restart moved on) does
+  // nothing. This guarantees exactly ONE live chain — previously the inner
+  // 700ms fade callback was untracked, so a stop()+start() during the fade
+  // left an orphaned chain running in parallel, making slides flash past in
+  // a split second and rotate unevenly.
+  var gen = ++_gateAdGen;
   var _tick = function() {
+    if (gen !== _gateAdGen) return; // superseded — abandon this chain
     var el2 = document.getElementById('gateAdCarousel');
     if (!el2) {
       // Element may briefly be missing during a re-render; try again soon
@@ -19938,7 +19963,8 @@ function _restartGateAdsTimer() {
     }
     el2.style.transition = 'opacity 0.6s ease';
     el2.style.opacity = '0';
-    setTimeout(function() {
+    _gateAdFadeTimer = setTimeout(function() {
+      if (gen !== _gateAdGen) return; // superseded mid-fade — abandon
       var el3 = document.getElementById('gateAdCurrentCarousel') || document.getElementById('gateAdCarousel');
       if (!el3) {
         _gateAdTimer = setTimeout(_tick, 1000);
@@ -19998,6 +20024,9 @@ try {
 } catch(e) {}
 
 function stopGateAds() {
+  // Invalidate any in-flight chain (including the untracked-until-v74 inner
+  // 700ms fade callback) so a following startGateAds can't run in parallel.
+  _gateAdGen++;
   if (_gateAdTimer) {
     // The timer was switched from setInterval to setTimeout in v73.
     // Call BOTH clear functions so we cleanly cancel either kind in
@@ -20005,6 +20034,10 @@ function stopGateAds() {
     try { clearTimeout(_gateAdTimer); } catch(e) {}
     try { clearInterval(_gateAdTimer); } catch(e) {}
     _gateAdTimer = null;
+  }
+  if (_gateAdFadeTimer) {
+    try { clearTimeout(_gateAdFadeTimer); } catch(e) {}
+    _gateAdFadeTimer = null;
   }
   try { if (typeof stopDestinationVideoScheduler === 'function') stopDestinationVideoScheduler(); } catch(e) {}
 }

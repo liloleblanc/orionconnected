@@ -2689,12 +2689,12 @@ body, body.gids-page, body.gate-page{
 .gad-aircraft-col .v2-fi-row .v2-fi-icon-wrap,
 .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap,
 .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge {
-  width: clamp(54px, 6.8vh, 92px);
-  height: clamp(54px, 6.8vh, 92px);
-  min-width: clamp(54px, 6.8vh, 92px);
-  min-height: clamp(54px, 6.8vh, 92px);
-  max-width: clamp(54px, 6.8vh, 92px);
-  max-height: clamp(54px, 6.8vh, 92px);
+  width: clamp(46px, 5.6vh, 76px);
+  height: clamp(46px, 5.6vh, 76px);
+  min-width: clamp(46px, 5.6vh, 76px);
+  min-height: clamp(46px, 5.6vh, 76px);
+  max-width: clamp(46px, 5.6vh, 76px);
+  max-height: clamp(46px, 5.6vh, 76px);
   flex-shrink: 0;
 }
 .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge {
@@ -2775,10 +2775,13 @@ body, body.gids-page, body.gate-page{
   transform-origin: left center !important;
 }
 
-/* ── STATUS VALUE (text, smaller than number values) ────────────────── */
+/* ── STATUS VALUE — sized up to read as prominently as the times ─────── */
 .gad-aircraft-col .v2-fi-row .v2-fi-status-val {
-  font-size: clamp(42px, 5.4vh, 74px);
-  font-weight: 800;
+  font-size: clamp(50px, 6.4vh, 88px);
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
 }
 .gad-aircraft-col .v2-fi-row .v2-fi-status-val.v2-fi-status.ontime,
 .gad-aircraft-col .v2-fi-row .v2-fi-status-val.v2-fi-status.scheduled {
