@@ -17825,6 +17825,18 @@ function _processAccorData(data, destIata) {
         photoUrl = 'https://' + photoUrl;
       }
     }
+    // Full photo set for hero rotation — all medias, best resolution each.
+    var photos = [];
+    if (h.media && Array.isArray(h.media.medias)) {
+      h.media.medias.forEach(function(m){
+        var u = m['2048x1536']||m['1920x1080']||m['1024x768']||m['953x385']||m['740x555']||m['480x360']||m['346x260']||m.url||'';
+        if (u && u.indexOf('//')===0) u = 'https:'+u;
+        else if (u && !/^https?:/i.test(u) && u.indexOf('/')!==0) u = 'https://'+u;
+        if (u && photos.indexOf(u)===-1) photos.push(u);
+      });
+    }
+    photos = photos.slice(0, 6);
+
     // DEBUG: log first hotel's photo resolution
     if (h.name && !window._accorPhotoLogged) {
       console.log('[ACCOR-PHOTO]', h.name, '→ photoUrl:', photoUrl, '| media obj:', h.media);
@@ -17922,6 +17934,7 @@ function _processAccorData(data, destIata) {
         : 'linear-gradient(135deg,' + bgColor + ' 0%,' + bgColor + 'dd 100%)',
       bgSize: photoUrl ? 'cover' : 'auto',
       bgPos: photoUrl ? 'center' : 'auto',
+      photos: photos,   // full set for hero rotation
       headline: hotelName,
       sub: subtitle,
       brandLabel: brandName,
@@ -19249,6 +19262,28 @@ function buildAccorAdOnlyV6(ad) {
   if(!tier||tier==='unknown'||tier==='hotel'){ tier='midscale'; for(var pi=0;pi<premium.length;pi++) if(brandLower.indexOf(premium[pi])!==-1) tier='premium'; }
 
   var photo = first(ad.photo,ad.image,ad.imageUrl,ad.photoUrl,ad.heroImage,ad.hero,ad.mainPhoto,(ad.photos&&ad.photos[0]),(ad.images&&ad.images[0]),bgUrl(ad.bg),'');
+  var _photoSet = (Array.isArray(ad.photos) && ad.photos.length) ? ad.photos.slice() : (photo ? [photo] : []);
+  // Prefer the full room gallery from the hotel-detail cache — the LIST
+  // endpoint only returns one photo; the DETAIL endpoint returns the gallery.
+  if (ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
+    var _hpLang = 'en';
+    try {
+      if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _hpLang = langs[langIdx || 0];
+      else if (typeof lang !== 'undefined' && lang) _hpLang = lang;
+    } catch (e) {}
+    var _hpDetail = ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId + '|' + _hpLang]
+                 || ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId] || null;
+    if (_hpDetail && Array.isArray(_hpDetail.photos) && _hpDetail.photos.length) {
+      var _merged = [];
+      if (photo) _merged.push(photo);
+      _hpDetail.photos.forEach(function(u){ if (u && _merged.indexOf(u) === -1) _merged.push(u); });
+      _photoSet = _merged;
+    } else if (typeof fetchAccorHotelDetail === 'function') {
+      try { fetchAccorHotelDetail(ad.hotelId); } catch (e) {}
+    }
+  }
+  _photoSet = _photoSet.slice(0, 6);
+  var _photosAttr = (_photoSet.length > 1) ? " data-photos='" + esc(JSON.stringify(_photoSet)) + "'" : '';
 
   var logo = first(ad._propertyLockup, ad.logo, ad.logoPath, ad.brandLogo, ad.hotelLogo, ad._customLogo, '');
   if(!logo){
@@ -19325,6 +19360,23 @@ function buildAccorAdOnlyV6(ad) {
 
   var _fullAddr = first(ad.fullAddress, '');
   var _addrLineHtml = _fullAddr ? '<div class="axr-addr-line">' + esc(_fullAddr) + '</div>' : '';
+  // Location distance line — "X km from <city> centre", localized. Uses the
+  // pre-computed downtown distance ({km,kmStr,cityName}); falls back to the
+  // raw search-radius distance string when downtown coords aren't known.
+  var _locLineHtml = '';
+  var _dc = ad.distanceCity;
+  if (_dc && _dc.kmStr && _dc.cityName) {
+    var _lg = accorLang();
+    var _tpl = ({
+      en:'%k from %c centre', fr:'à %k du centre de %c', es:'a %k del centro de %c',
+      de:'%k vom Zentrum %c', it:'a %k dal centro di %c', pt:'a %k do centro de %c',
+      ja:'%c中心部から%k', zh:'距%c市中心%k', ar:'%k من وسط %c'
+    })[_lg] || '%k from %c centre';
+    var _locTxt = _tpl.replace('%k', _dc.kmStr).replace('%c', _dc.cityName);
+    _locLineHtml = '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span>' + esc(_locTxt) + '</div>';
+  } else if (ad.distance) {
+    _locLineHtml = '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span>' + esc(ad.distance) + '</div>';
+  }
   // city is shown standalone only when we don't have the full street address
   var _showCity = address && !_fullAddr;
   var subHtml=(_showCity||starsHtml||ratingHtml)?'<div class="axr-sub">'+(_showCity?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
@@ -19333,10 +19385,10 @@ function buildAccorAdOnlyV6(ad) {
   return ''
     + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" style="--axr-tint:'+tint+'">'
     +   '<section class="axr-hero">'
-    +     (photo?'<div class="axr-hero-img" style="background-image:url(\''+esc(photo)+'\')"></div>':'<div class="axr-hero-img axr-hero-noimg"></div>')
+    +     (photo?'<div class="axr-hero-img"'+_photosAttr+' style="background-image:url(\''+esc(photo)+'\')"></div>':'<div class="axr-hero-img axr-hero-noimg"></div>')
     +     '<div class="axr-hero-grad"></div>'
     +     bubbleHtml
-    +     '<div class="axr-hotel">'+logoHtml+(showName?'<h1 class="axr-name">'+esc(displayName)+'</h1>':'')+_addrLineHtml+subHtml+amenHtml+'</div>'
+    +     '<div class="axr-hotel">'+logoHtml+(showName?'<h1 class="axr-name">'+esc(displayName)+'</h1>':'')+_addrLineHtml+_locLineHtml+subHtml+amenHtml+'</div>'
     +   '</section>'
     +   '<footer class="axr-all'+(_allxBrand?' axr-all-cobrand':'')+'">'
     +     (_allxBrand
@@ -20556,6 +20608,50 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   setTimeout(_scanLockups, 60);
   setTimeout(_scanLockups, 300);
   setInterval(_scanLockups, 3000); // slow backstop only
+})();
+
+
+/* Accor hero photo rotation — cycles the current slide's hero through the
+   hotel's full media set with a soft crossfade. One global interval (no
+   per-element timers) so re-renders never leak timers. */
+(function(){
+  var EVERY = 7000;     // ms between photos
+  var FADE  = 1200;     // ms crossfade
+  var _preloaded = {};
+  function preload(list){
+    for (var i=0;i<list.length;i++){
+      if (_preloaded[list[i]]) continue;
+      _preloaded[list[i]] = true;
+      var im = new Image(); im.src = list[i];
+    }
+  }
+  function tick(){
+    var el = document.querySelector('.axr-hero-img[data-photos]');
+    if (!el) return;
+    var photos;
+    try { photos = JSON.parse(el.getAttribute('data-photos')||'[]'); } catch(e){ return; }
+    if (!photos || photos.length < 2) return;
+    preload(photos);
+    var idx = parseInt(el.getAttribute('data-photo-idx')||'0',10);
+    if (isNaN(idx)) idx = 0;
+    idx = (idx + 1) % photos.length;
+    el.setAttribute('data-photo-idx', String(idx));
+    var next = photos[idx];
+    // Crossfade via a temporary overlay layer, then commit to the base.
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:absolute;inset:0;background-size:cover;background-position:center;'
+                     + 'opacity:0;transition:opacity '+FADE+'ms ease;'
+                     + "background-image:url('"+next.replace(/'/g,"%27")+"')";
+    el.appendChild(ov);
+    // force reflow so the transition runs
+    void ov.offsetWidth;
+    ov.style.opacity = '1';
+    setTimeout(function(){
+      el.style.backgroundImage = "url('"+next.replace(/'/g,"%27")+"')";
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+    }, FADE + 80);
+  }
+  setInterval(tick, EVERY);
 })();
 
 
