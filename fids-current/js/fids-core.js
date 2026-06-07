@@ -5402,7 +5402,7 @@ function _buildV2MapCol(ctx, vars) {
 
       _inboundCard =
           '<div class="v2-rc-inbound">'
-        +   '<div class="v2-rc-kicker">' + (TL('inboundAircraft') || 'Inbound aircraft') + '</div>'
+        +   '<div class="v2-rc-kicker">' + (TL('inboundAircraft') || 'Inbound Aircraft') + '</div>'
         +   '<div class="v2-rc-headline">'
         +     '<span class="v2-rc-flt">' + _ibFltCompact + '</span>'
         +     '<span class="v2-rc-sep">·</span>'
@@ -5505,7 +5505,7 @@ function _buildV2MapCol(ctx, vars) {
             +     'data-fallbacks="' + _candidatesJson.replace(/"/g, '&quot;') + '" '
             +     'data-fb-idx="0" '
             +     'data-fb-text="' + _shortEsc + '" '
-            +     'style="height:54px;max-width:210px;width:auto;object-fit:contain;display:block;background:#fff;border:1px solid #e4e7ec;padding:8px 13px;border-radius:6px;" '
+            +     'style="height:48px;max-width:200px;width:auto;object-fit:contain;display:block;" '
             +     'onerror="(function(im){'
             +       'try{var fbs=JSON.parse(im.getAttribute(\'data-fallbacks\'));'
             +       'var i=parseInt(im.getAttribute(\'data-fb-idx\'),10)+1;'
@@ -11184,7 +11184,7 @@ const LS = {
   allGroups: { en:'All groups',fr:'Tous les groupes',es:'Todos los grupos',de:'Alle Gruppen',it:'Tutti i gruppi',pt:'Todos os grupos',ja:'全グループ',zh:'所有组',ar:'جميع المجموعات' },
   proceedGate:{ en:'Please proceed to gate immediately',fr:'Veuillez vous diriger immédiatement vers la porte',es:'Diríjase a la puerta inmediatamente',de:'Bitte begeben Sie sich sofort zum Gate',it:'Procedere immediatamente al gate',pt:'Dirija-se ao portão imediatamente',ja:'直ちにゲートへお進みください',zh:'请立即前往登机口',ar:'يرجى التوجه إلى البوابة فوراً' },
   gateNowClosed:{ en:'This gate is now closed',fr:'Cette porte est maintenant fermée',es:'Esta puerta está cerrada',de:'Dieses Gate ist geschlossen',it:'Questo gate è chiuso',pt:'Este portão está fechado',ja:'このゲートは閉まりました',zh:'本登机口已关闭',ar:'هذه البوابة مغلقة الآن' },
-  nextDep:   { en:'Next',fr:'Prochain',es:'Siguiente',de:'Nächster',it:'Prossimo',pt:'Próximo',ja:'次便',zh:'下一班',ar:'التالي' },
+  nextDep:   { en:'Next departure',fr:'Prochain départ',es:'Próxima salida',de:'Nächster Abflug',it:'Prossima partenza',pt:'Próxima partida',ja:'次の出発',zh:'下一航班',ar:'المغادرة التالية' },
   // v218.99.65 — Aircraft block + hotel labels
   incomingAircraft: { en:'Incoming aircraft', fr:'Appareil entrant', es:'Aeronave entrante', de:'Eintreffendes Flugzeug', it:'Aeromobile in arrivo', pt:'Aeronave a chegar', ja:'到着機', zh:'到达航班', ar:'الطائرة القادمة' },
   aircraftType:     { en:'Aircraft type',     fr:"Type d'appareil",  es:'Tipo de aeronave', de:'Flugzeugtyp',           it:'Tipo di aeromobile', pt:'Tipo de aeronave', ja:'機種',     zh:'机型',     ar:'نوع الطائرة' },
@@ -19492,13 +19492,9 @@ function buildAccorAdOnlyV6(ad) {
     +   _list(_restList) + _ratingRow
     + '</div></div>';
 
-  var _footerHtml = '<footer class="axr-all'+(_allxBrand?' axr-all-cobrand':'')+'">'
-    + (_allxBrand
-        ? '<span class="axr-all-cobrand-mark"><img src="'+esc(_allxBrand)+'" alt="ALL x '+esc(brandWord||brandRaw||'')+'"></span>'
-        : (_endorseOfficial
-        ? '<span class="axr-all-official"><img src="'+esc(_officialEndorse)+'" alt="Members of ALL — Accor Live Limitless"></span>'
-        : ('<span class="axr-all-lbl">'+esc(safeTL('memberOf','Member of'))+'</span>'
-           + '<span class="axr-all-mark"><img class="axr-all-svg" src="'+esc(allLockup)+'" data-crop="'+esc(_allCrop)+'" alt="ALL"></span>')))
+  // Footer — just the ALL mark, centered (per Nick: "ALL only, centered").
+  var _footerHtml = '<footer class="axr-all axr-all-simple">'
+    + '<span class="axr-all-mark"><img src="/logos/hotels/accor-corporate/all-mark-white.svg" alt="ALL"></span>'
     + '</footer>';
 
   return ''

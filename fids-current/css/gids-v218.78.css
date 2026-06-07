@@ -2808,8 +2808,8 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(15px, 1.6vh, 19px) !important;
   font-weight: 700 !important;
   color: #6b7585 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 1.4px !important;
+  text-transform: none !important;
+  letter-spacing: 0.2px !important;
   line-height: 1.1 !important;
   margin-bottom: 5px !important;
 }
