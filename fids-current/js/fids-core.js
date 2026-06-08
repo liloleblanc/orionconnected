@@ -6282,27 +6282,42 @@ function uxgGateHtml(ctx) {
   // an ugly full-company-name wordmark that also collides with long
   // destination names. The tile is colored + compact (brand symbol, not the
   // full name), which reads far better and leaves room for the city headline.
+  var _bannerUsedTile = false;
+  var _bannerUsedWordmark = false;
+  // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
+  // Render the LOCAL dark-ink wordmark on a clean white plate: real brand type,
+  // never force-whitened, never clipped, and works on a locked-down network.
+  var _bannerWordmarkBase = (typeof IATA_TO_WORDMARK !== 'undefined')
+    ? (IATA_TO_WORDMARK[_bannerBrandCode] || IATA_TO_WORDMARK[airlineCode]) : null;
+  if (!_useOverrideFile && _bannerWordmarkBase && typeof logoPath === 'function') {
+    r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-dark.svg');
+    _useOverrideFile = true;          // no white filter — wordmark as-is
+    _sz = { h: 70, w: 340 };          // wide wordmark, fits the slim header
+    _bannerUsedWordmark = true;
+  }
+  // Fallback for carriers with a square tile but no wordmark (e.g. BoA→BOV):
+  // colored brand badge instead of an ugly force-whitened external lockup.
   var _bannerTileIcao = (typeof IATA_TO_TILE_ICAO !== 'undefined')
     ? (IATA_TO_TILE_ICAO[_bannerBrandCode] || IATA_TO_TILE_ICAO[airlineCode]) : null;
-  var _bannerUsedTile = false;
   if (!_useOverrideFile && _bannerTileIcao) {
     r1LogoSrc = 'logos/airline-tiles/' + _bannerTileIcao + '.svg';
     _useOverrideFile = true;          // keep brand colors — skip the white filter
-    _sz = { h: 96, w: 96 };           // square brand badge, not a wide wordmark
+    _sz = { h: 96, w: 96 };           // square brand badge
     _bannerUsedTile = true;
   }
+  var _onPlate = _bannerUsedTile || _bannerUsedWordmark;
   var _logoStyle = 'height:' + _sz.h + 'px !important;max-height:' + _sz.h + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
                  + (_useOverrideFile ? 'filter:none !important;' : '')
-                 // Colored tile sits on a clean white rounded plate so it pops
-                 // on the dark header and is never clipped by the banner band.
-                 + (_bannerUsedTile ? 'background:#fff !important;border-radius:16px !important;padding:8px !important;box-sizing:border-box !important;' : '');
+                 // Logo sits on a clean white rounded plate so it reads on the
+                 // dark header and is never clipped by the banner band.
+                 + (_onPlate ? 'background:#fff !important;border-radius:14px !important;padding:' + (_bannerUsedWordmark ? '8px 16px' : '8px') + ' !important;box-sizing:border-box !important;' : '');
   var r1LogoHtml = '';
   if (_g8LogoCache[airlineCode] === 'text') {
     // Already know images fail - show text immediately, no flicker
     r1LogoHtml = '<span class="g8-r1-airline">' + airlineName + '</span>';
   } else {
-    r1LogoHtml = '<img class="g8-r1-logo' + (_bannerUsedTile ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
+    r1LogoHtml = '<img class="g8-r1-logo' + (_onPlate ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
   }
 
   // Per-airline color spec. Each airline has:
