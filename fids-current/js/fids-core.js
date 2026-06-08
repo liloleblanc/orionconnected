@@ -5370,28 +5370,24 @@ function _buildV2MapCol(ctx, vars) {
         if (_telemBits.length) _telem = '<div class="v2-rc-telem">' + _telemBits.join('<span class="v2-rc-telem-sep">·</span>') + '</div>';
       }
 
-      // v218.99.33 — Key stats (Speed / Altitude / Arrival From) only
-      // appear when the plane is airborne. On-ground flights see just the
-      // title + sentence + time cells. No "—" placeholders.
+      // Speed + Altitude — ALWAYS shown for the inbound airframe (per Nick).
+      // Live values from AeroDataBox when the plane is airborne; an em-dash
+      // while it's still on the ground (so the panel is consistent and the
+      // numbers light up the moment it's in the air).
       var _isAirborne = (_liveSpd !== null || _liveAlt !== null);
-      var _keystatsHtml = '';
-      if (_isAirborne) {
-        _keystatsHtml =
+      var _spdLbl = ({en:'Speed',fr:'Vitesse',es:'Velocidad',de:'Geschw.',it:'Velocità',pt:'Velocidade',ja:'速度',zh:'速度',ar:'السرعة'})[_ibLang] || 'Speed';
+      var _altLbl = ({en:'Altitude',fr:'Altitude',es:'Altitud',de:'Höhe',it:'Altitudine',pt:'Altitude',ja:'高度',zh:'高度',ar:'الارتفاع'})[_ibLang] || 'Altitude';
+      var _keystatsHtml =
             '<div class="v2-rc-keystats">'
           +   '<div class="v2-rc-keystat">'
-          +     '<div class="v2-rc-keystat-lbl">Speed</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_liveSpd !== null ? (_liveSpd + ' kt') : '—') + '</div>'
+          +     '<div class="v2-rc-keystat-lbl">' + _spdLbl + '</div>'
+          +     '<div class="v2-rc-keystat-val">' + (_liveSpd !== null ? (_liveSpd.toLocaleString() + ' kt') : '—') + '</div>'
           +   '</div>'
           +   '<div class="v2-rc-keystat">'
-          +     '<div class="v2-rc-keystat-lbl">Altitude</div>'
+          +     '<div class="v2-rc-keystat-lbl">' + _altLbl + '</div>'
           +     '<div class="v2-rc-keystat-val">' + (_liveAlt !== null ? (_liveAlt.toLocaleString() + ' ft') : '—') + '</div>'
           +   '</div>'
-          +   '<div class="v2-rc-keystat">'
-          +     '<div class="v2-rc-keystat-lbl">Arrival From</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_origDisplay || '—') + '</div>'
-          +   '</div>'
           + '</div>';
-      }
 
       // v218.99.68 — Compact, readable right-column header per Nick.
       // ONE block instead of duplicated info top + bottom. No truncated labels.
@@ -13679,8 +13675,10 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
 
   var promise = (async function() {
     try {
-      // Step 1: Look up the departing flight by flight number
-      var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + dateStr;
+      // Step 1: Look up the departing flight by flight number.
+      // withLocation=true → AeroDataBox returns live position (speed/altitude)
+      // for airborne legs; without it the gate's SPD/ALT were always empty.
+      var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + dateStr + '?withLocation=true';
       var r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev' + path);
       if (!r.ok) { console.warn('[loadFlight] Flight lookup failed:', r.status, flightNumber); return null; }
       var flights = await r.json();
@@ -13872,7 +13870,9 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
 async function _loadInboundByReg(reg, airportIata, primaryLeg, dateStr) {
   try {
     var cleanReg = reg.replace(/[-\s]/g, '');
-    var path = '/flights/reg/' + encodeURIComponent(cleanReg) + '/' + dateStr;
+    // withLocation=true → include the airframe's live position (speed/altitude)
+    // so the inbound panel can show SPD/ALT when it's in the air.
+    var path = '/flights/reg/' + encodeURIComponent(cleanReg) + '/' + dateStr + '?withLocation=true';
     var r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev' + path);
     if (!r.ok) return null;
     // ADB sometimes returns 200 with empty body when a reg has no flights
@@ -16251,7 +16251,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
     } catch(e) { /* fallback to setView above */ }
   }
-  try{var arc=null; if(_gateMapShowOverlay('route')){ arc=L.Polyline.Arc(o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap);} }catch(e){if(_gateMapShowOverlay('route')){var arc=L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);}}L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap)gateMap.invalidateSize();},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  try{var arc=null; if(_gateMapShowOverlay('route')){ arc=L.Polyline.Arc(o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap);} }catch(e){if(_gateMapShowOverlay('route')){var arc=L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);}}L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -16266,7 +16266,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       if (p >= 0.12 && p <= 0.88) {
         gateMap.setView(planePos, zoom);
       }
-  }setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);}
+  }setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},500);}
 
 function initGateMapLive(org,dst,planeLat,planeLng){
   if(typeof L==='undefined'||typeof L.map!=='function')return;
@@ -19597,13 +19597,20 @@ function buildAccorAdOnlyV6(ad) {
   var _blurb = first(ad.description, ad.destinationDescription, '');
   if (_blurb) {
     _blurb = String(_blurb).replace(/\s+/g, ' ').trim();
-    // Keep it short so it fits the card cleanly and the CSS line-clamp never
-    // has to add a second (mid-word) ellipsis. Cut on a whole-word boundary.
-    var _blMax = 110;
+    // End on a COMPLETE SENTENCE so the card never shows a mid-thought cut
+    // like "...is ideal for business trips. With…". Prefer the last full
+    // sentence within the limit; only fall back to a word-cut + ellipsis if
+    // there's no sentence break to land on.
+    var _blMax = 170;
     if (_blurb.length > _blMax) {
       var _cut = _blurb.slice(0, _blMax);
-      var _sp = _cut.lastIndexOf(' ');
-      _blurb = (_sp > 0 ? _cut.slice(0, _sp) : _cut).replace(/[\s,;:.!?-]+$/, '').trim() + '…';
+      var _sentEnd = Math.max(_cut.lastIndexOf('. '), _cut.lastIndexOf('! '), _cut.lastIndexOf('? '));
+      if (_sentEnd > _blMax * 0.45) {
+        _blurb = _cut.slice(0, _sentEnd + 1).trim();
+      } else {
+        var _sp = _cut.lastIndexOf(' ');
+        _blurb = (_sp > 0 ? _cut.slice(0, _sp) : _cut).replace(/[\s,;:.!?-]+$/, '').trim() + '…';
+      }
     }
   }
 
