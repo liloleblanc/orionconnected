@@ -6284,6 +6284,17 @@ function uxgGateHtml(ctx) {
   // full name), which reads far better and leaves room for the city headline.
   var _bannerUsedTile = false;
   var _bannerUsedWordmark = false;
+  // Carriers whose own COLOUR logo reads directly on the dark header — no white
+  // plate needed, the brand colour pops on the near-black banner.
+  var BANNER_DARK_LOGO = {
+    'AV': '/logos/airlines/asian-other/avianca.svg'   // red avianca — pops on black
+  };
+  var _darkLogo = BANNER_DARK_LOGO[_bannerBrandCode] || BANNER_DARK_LOGO[airlineCode];
+  if (!_useOverrideFile && _darkLogo) {
+    r1LogoSrc = _darkLogo;
+    _useOverrideFile = true;          // real colours — no white filter, no plate
+    _sz = { h: 64, w: 300 };
+  }
   // Per-carrier brand logo pinned for the gate header — the airline's own mark
   // on file, shown on a clean white plate (full colour, CDN-independent).
   var BANNER_PLATE_LOGO = {
