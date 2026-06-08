@@ -1,0 +1,83 @@
+/**
+ * FIDS static-site Worker entry.
+ *
+ * Cloudflare serves matching static assets (everything under fids-current/)
+ * FIRST, without invoking this Worker — so existing pages, JS and CSS are
+ * served exactly as before. This script only runs for paths that do NOT match
+ * a static asset, where it adds two same-origin passthroughs so the gate route
+ * map works on display networks that block public CDNs:
+ *
+ *   /mapcdn/<file>      → the Leaflet map engine (cdnjs / unpkg)
+ *   /maptiles/<z>/<x>/<y>[@2x].png → CARTO Voyager map tiles
+ *
+ * Both are fetched server-side by the Worker and returned from THIS domain,
+ * so the displays only ever talk to your own site.
+ */
+
+const MAP_ENGINE = {
+  'leaflet.js':     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
+  'leaflet.css':    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
+  'leaflet-arc.js': 'https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js',
+};
+
+const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
+
+const DAY = 86400;
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // ── Map engine passthrough ──────────────────────────────────────────
+    if (path.startsWith('/mapcdn/')) {
+      const file = path.slice('/mapcdn/'.length);
+      const upstream = MAP_ENGINE[file];
+      if (!upstream) return new Response('Not found', { status: 404 });
+      try {
+        const r = await fetch(upstream, { cf: { cacheEverything: true, cacheTtl: DAY } });
+        const ct = file.endsWith('.css') ? 'text/css'
+                 : file.endsWith('.js')  ? 'application/javascript'
+                 : (r.headers.get('Content-Type') || 'application/octet-stream');
+        return new Response(r.body, {
+          status: r.status,
+          headers: {
+            'Content-Type': ct,
+            'Cache-Control': 'public, max-age=' + DAY,
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        return new Response('Map engine fetch failed', { status: 502 });
+      }
+    }
+
+    // ── Map tiles passthrough ───────────────────────────────────────────
+    // /maptiles/7/40/72.png  or  /maptiles/7/40/72@2x.png
+    if (path.startsWith('/maptiles/')) {
+      const rest = path.slice('/maptiles/'.length);
+      if (!/^\d+\/\d+\/\d+(@2x)?\.png$/.test(rest)) {
+        return new Response('Bad tile path', { status: 400 });
+      }
+      try {
+        const r = await fetch(TILE_BASE + rest, { cf: { cacheEverything: true, cacheTtl: DAY } });
+        return new Response(r.body, {
+          status: r.status,
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=' + DAY,
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        return new Response('Tile fetch failed', { status: 502 });
+      }
+    }
+
+    // ── Everything else → static assets (unchanged behaviour) ───────────
+    if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
+      return env.ASSETS.fetch(request);
+    }
+    return new Response('Not found', { status: 404 });
+  },
+};

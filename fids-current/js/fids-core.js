@@ -15626,7 +15626,7 @@ function initHeroMap(f, flightKey) {
   }
   try {
     const m = L.map(mb, { zoomControl: false, attributionControl: false, dragging: true, scrollWheelZoom: false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 10, subdomains: 'abcd' }).addTo(m);
+    L.tileLayer('/maptiles/{z}/{x}/{y}{r}.png', { maxZoom: 10, subdomains: 'abcd' }).addTo(m);
     const isDep = mobileMode === 'dep';
     const orig = isDep ? COORDS[apIata] : COORDS[f._locIata];
     const dest = isDep ? COORDS[f._locIata] : COORDS[apIata];
@@ -16134,7 +16134,7 @@ function _fetchAirportCoords(iata) {
 // All free for fair use; no API key needed.
 function _gateMapTileLayer() {
   // v218.99.9 — was theme-driven; theme system removed. Default to light Voyager.
-  return L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  return L.tileLayer('/maptiles/{z}/{x}/{y}{r}.png', {
     maxZoom: 19, subdomains: 'abcd', attribution: ''
   });
 }
