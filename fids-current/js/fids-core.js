@@ -11358,6 +11358,22 @@ const ACCCLS = {
 let langs = ['en','fr']; // default Canada bilingual live rotation
 let langIdx = 0; // current rotation index
 let lang = 'en';
+
+// ── Per-airport board language + units ──────────────────────────────────
+// Spanish-speaking airports rotate English + Spanish (and use Celsius)
+// instead of the Canada default of English + French. Add IATA codes here
+// to switch a station's displays to ES. (Bolivia network for now.)
+const ES_BOARD_AIRPORTS = new Set([
+  'LPB','VVI','CBB','SRZ','UYU','TJA','SRE','POI','TDD','CIJ','RIB','GYA','BVL'
+]);
+function boardLangsFor(iata) {
+  return ES_BOARD_AIRPORTS.has(String(iata || '').toUpperCase()) ? ['en','es'] : ['en','fr'];
+}
+// Metric (Celsius) for Spanish-language stations; Canada keeps the C/F flip.
+function boardMetricFor(iata) {
+  return ES_BOARD_AIRPORTS.has(String(iata || '').toUpperCase());
+}
+
 let langRotateTimer = null;
 let mode = 'dep';
 let currentPage = 0;
@@ -14464,6 +14480,16 @@ function applyAirportConfigToBoard(iata) {
     return undefined;
   }
 
+  // Board language rotation per airport. An explicit user/admin `langs` config
+  // wins; otherwise fall back to the airport's regional default (English +
+  // Spanish for Bolivia/LATAM, English + French elsewhere).
+  try {
+    var _cfgLangs = _pref('langs');
+    langs = (Array.isArray(_cfgLangs) && _cfgLangs.length) ? _cfgLangs.slice() : boardLangsFor(iata);
+    if (langIdx >= langs.length) langIdx = 0;
+    lang = langs[langIdx] || langs[0] || 'en';
+  } catch (e) {}
+
   // Display name (pill sub-label)
   const _aName = document.getElementById('hdrApName');
   if (_aName) {
@@ -14779,7 +14805,7 @@ function tick() {
 // ── AUTO PAGING CAROUSEL ─────────────────────────────────────────────────
 const LANG_DWELL_MS = 12000;
 let pageTimer = null;
-let langPhase = 'en'; 
+let langPhase = 'primary';
 
 function getPageCount(modeKey) {
   const nowTs = Date.now();
@@ -14826,24 +14852,28 @@ function advancePage() {
 
 function tick_carousel() {
   if (screenType !== 'main') return;
-  if (langPhase === 'en') {
-    lang = 'en';
+  var _ap = (document.getElementById('apSel') || {}).value || '';
+  var _primary = (langs && langs[0]) || 'en';
+  var _second  = (langs && langs[1]) || _primary;
+  var _metric  = boardMetricFor(_ap);
+  if (langPhase === 'primary') {
+    lang = _primary;
     tempUnit = 'C';
     render();
-    langPhase = 'fr';
+    langPhase = 'second';
   } else {
-    lang = 'fr';
-    tempUnit = 'F';
+    lang = _second;
+    tempUnit = _metric ? 'C' : 'F';
     render();
-    langPhase = 'en';
+    langPhase = 'primary';
     advancePage();
   }
 }
 
 function startPaging() {
   if (pageTimer) clearInterval(pageTimer);
-  langPhase = 'en';
-  lang = 'en';
+  langPhase = 'primary';
+  lang = (langs && langs[0]) || 'en';
   pageTimer = setInterval(tick_carousel, LANG_DWELL_MS);
 }
 
