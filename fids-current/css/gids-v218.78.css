@@ -327,7 +327,7 @@
 /* v219 — smaller destination headline in the top bar (per Nick) so the bar
    reads cleaner and leaves room for the airline wordmark beside it. */
 .g8-r1 .g8-r1-dest {
-  font-size: clamp(34px, 3.4vw, 58px) !important;
+  font-size: clamp(26px, 2.4vw, 44px) !important;
 }
 
 /* v219 — Right-column proportions. The three stacked blocks now have explicit
@@ -338,10 +338,10 @@
 .gad-map-col-v2 > .v2-rc-aircraft { flex: 0 0 auto !important; }
 .gad-map-col-v2 > .v2-map-area {
   /* Grow into the leftover space between the inbound card (top) and the
-     aircraft panel (bottom), but a modest floor so it can never force the
-     column to overflow and push the aircraft panel off-screen. */
+     aircraft panel (bottom). Low floor so the map yields space first and never
+     pushes the aircraft image off the bottom of the column. */
   flex: 1 1 0 !important;
-  min-height: 150px !important;
+  min-height: 84px !important;
   position: relative !important;
   overflow: hidden !important;
   display: block !important;
@@ -2075,8 +2075,8 @@ body, body.gids-page, body.gate-page{
   margin-bottom: clamp(8px, 1vh, 14px);
 }
 .gad-map-col-v2 .v2-rc-aircraft-img img {
-  max-width: 95%;
-  max-height: clamp(70px, 9vh, 130px);
+  max-width: 92%;
+  max-height: clamp(58px, 6.5vh, 96px);
   width: auto;
   height: auto;
   object-fit: contain;
