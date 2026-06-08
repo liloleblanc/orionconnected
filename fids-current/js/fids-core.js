@@ -6281,20 +6281,25 @@ function uxgGateHtml(ctx) {
   // full name), which reads far better and leaves room for the city headline.
   var _bannerTileIcao = (typeof IATA_TO_TILE_ICAO !== 'undefined')
     ? (IATA_TO_TILE_ICAO[_bannerBrandCode] || IATA_TO_TILE_ICAO[airlineCode]) : null;
+  var _bannerUsedTile = false;
   if (!_useOverrideFile && _bannerTileIcao) {
     r1LogoSrc = 'logos/airline-tiles/' + _bannerTileIcao + '.svg';
     _useOverrideFile = true;          // keep brand colors — skip the white filter
-    _sz = { h: 120, w: 120 };         // square brand badge, not a wide wordmark
+    _sz = { h: 96, w: 96 };           // square brand badge, not a wide wordmark
+    _bannerUsedTile = true;
   }
   var _logoStyle = 'height:' + _sz.h + 'px !important;max-height:' + _sz.h + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
-                 + (_useOverrideFile ? 'filter:none !important;' : '');
+                 + (_useOverrideFile ? 'filter:none !important;' : '')
+                 // Colored tile sits on a clean white rounded plate so it pops
+                 // on the dark header and is never clipped by the banner band.
+                 + (_bannerUsedTile ? 'background:#fff !important;border-radius:16px !important;padding:8px !important;box-sizing:border-box !important;' : '');
   var r1LogoHtml = '';
   if (_g8LogoCache[airlineCode] === 'text') {
     // Already know images fail - show text immediately, no flicker
     r1LogoHtml = '<span class="g8-r1-airline">' + airlineName + '</span>';
   } else {
-    r1LogoHtml = '<img class="g8-r1-logo" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
+    r1LogoHtml = '<img class="g8-r1-logo' + (_bannerUsedTile ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
   }
 
   // Per-airline color spec. Each airline has:
