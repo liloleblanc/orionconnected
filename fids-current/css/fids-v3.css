@@ -2287,7 +2287,12 @@ body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
    the right and truncating the TIME column to "5:20 A...".
 
    Total = 100% (departures, with weather):
-     airline 17 + flight 9 + wx 8 + dest 19 + gate 7 + time 11 + rev 10 + status 19
+     airline 17 + flight 9 + wx 8 + dest 23 + gate 7 + time 11 + rev 9 + status 16
+
+   v219 — destination widened 19%→23% (status 19%→16%, rev 10%→9%) so long
+   city names like "Santa Cruz De La Sierra (VVI)" show in full instead of
+   truncating to "Santa Cruz De La Sie…". Status labels (PRÉVU, PARTI, etc.)
+   are short and still fit comfortably in 16%.
 
    Arrivals (no weather) — gets the 8% back distributed elsewhere via
    the explicit selector below.
@@ -2295,11 +2300,11 @@ body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
 #fidsTable colgroup col.col-airline   { width: 17% !important; min-width: 220px !important; }
 #fidsTable colgroup col.col-flight    { width:  9% !important; min-width: 110px !important; }
 #fidsTable colgroup col.col-wx        { width:  8% !important; min-width: 150px !important; }
-#fidsTable colgroup col.col-dest      { width: 19% !important; min-width: 200px !important; }
+#fidsTable colgroup col.col-dest      { width: 23% !important; min-width: 200px !important; }
 #fidsTable colgroup col.col-gate      { width:  7% !important; min-width:  80px !important; }
 #fidsTable colgroup col.col-time      { width: 11% !important; min-width: 150px !important; }
-#fidsTable colgroup col.col-time-rev  { width: 10% !important; min-width: 130px !important; }
-#fidsTable colgroup col.col-status    { width: 19% !important; min-width: 170px !important; }
+#fidsTable colgroup col.col-time-rev  { width:  9% !important; min-width: 130px !important; }
+#fidsTable colgroup col.col-status    { width: 16% !important; min-width: 170px !important; }
 
 /* Emblem-only mode: shrink airline column further */
 body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
@@ -3579,6 +3584,13 @@ body[data-fids-theme="green"] #fidsTable thead th { background: #14532d !importa
   font-size: 28px !important;
   font-weight: 700 !important;
   letter-spacing: 0.8px !important;
+}
+/* v219 — long destination names (e.g. "Santa Cruz De La Sierra") drop to a
+   smaller size so the full name shows instead of truncating with an ellipsis.
+   Set by fids-core.js, which adds .td-dest-long when the city name is long. */
+#fidsTable tbody tr td.td-dest.td-dest-long {
+  font-size: 22px !important;
+  letter-spacing: 0 !important;
 }
 /* Theme-specific tbody overrides (navy-board, cream) were setting 26px on
    tbody — explicitly lock them to 28px too so the unification holds. */

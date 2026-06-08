@@ -6273,15 +6273,33 @@ function uxgGateHtml(ctx) {
   // filter force the logo to white (so at minimum the text reads cleanly
   // against the dark banner).
   var _useOverrideFile = !!BANNER_LOGO_OVERRIDE[_bannerBrandCode] || !!BANNER_LOGO_OVERRIDE[airlineCode];
+  // v219 — Colored brand tile for carriers that have a square airline tile but
+  // no curated banner lockup (Boliviana de Aviación, Avianca, etc.). Without
+  // this the banner pulls the external wway.io logo and force-whitens it into
+  // an ugly full-company-name wordmark that also collides with long
+  // destination names. The tile is colored + compact (brand symbol, not the
+  // full name), which reads far better and leaves room for the city headline.
+  var _bannerTileIcao = (typeof IATA_TO_TILE_ICAO !== 'undefined')
+    ? (IATA_TO_TILE_ICAO[_bannerBrandCode] || IATA_TO_TILE_ICAO[airlineCode]) : null;
+  var _bannerUsedTile = false;
+  if (!_useOverrideFile && _bannerTileIcao) {
+    r1LogoSrc = 'logos/airline-tiles/' + _bannerTileIcao + '.svg';
+    _useOverrideFile = true;          // keep brand colors — skip the white filter
+    _sz = { h: 96, w: 96 };           // square brand badge, not a wide wordmark
+    _bannerUsedTile = true;
+  }
   var _logoStyle = 'height:' + _sz.h + 'px !important;max-height:' + _sz.h + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
-                 + (_useOverrideFile ? 'filter:none !important;' : '');
+                 + (_useOverrideFile ? 'filter:none !important;' : '')
+                 // Colored tile sits on a clean white rounded plate so it pops
+                 // on the dark header and is never clipped by the banner band.
+                 + (_bannerUsedTile ? 'background:#fff !important;border-radius:16px !important;padding:8px !important;box-sizing:border-box !important;' : '');
   var r1LogoHtml = '';
   if (_g8LogoCache[airlineCode] === 'text') {
     // Already know images fail - show text immediately, no flicker
     r1LogoHtml = '<span class="g8-r1-airline">' + airlineName + '</span>';
   } else {
-    r1LogoHtml = '<img class="g8-r1-logo" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
+    r1LogoHtml = '<img class="g8-r1-logo' + (_bannerUsedTile ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
   }
 
   // Per-airline color spec. Each airline has:
@@ -8101,6 +8119,11 @@ const CITY = {
   BOG:'BOGOTA',         LIM:'LIMA',           LPB:'LA PAZ',       UIO:'QUITO',        CCS:'CARACAS',
   MVD:'MONTEVIDEO',     ASU:'ASUNCION',       GYE:'GUAYAQUIL',    CTG:'CARTAGENA',
   MDE:'MEDELLIN',
+  // Bolivia — so gate/board screens show the real city name instead of a
+  // title-cased IATA fallback (e.g. "Cbb" → "Cochabamba").
+  VVI:'SANTA CRUZ DE LA SIERRA', CBB:'COCHABAMBA',  SRZ:'SANTA CRUZ',
+  UYU:'UYUNI',          TJA:'TARIJA',         SRE:'SUCRE',        POI:'POTOSI',
+  TDD:'TRINIDAD',       CIJ:'COBIJA',         RIB:'RIBERALTA',    GYA:'GUAYARAMERIN',
   LHR:'LONDON',         LGW:'LONDON', STN:'LONDON', LTN:'LONDON',
   CDG:'PARIS',          ORY:'PARIS',     FRA:'FRANKFURT',    MUC:'MUNICH',
   AMS:'AMSTERDAM',      DUB:'DUBLIN',         MAD:'MADRID',       BCN:'BARCELONA',
@@ -9679,6 +9702,12 @@ const COORDS = {
   DEL:[28.56,77.10], BOM:[19.09,72.87],
   GRU:[-23.43,-46.47], GIG:[-22.81,-43.25], EZE:[-34.82,-58.54], SCL:[-33.39,-70.79],
   BOG:[4.70,-74.15], LIM:[-12.02,-77.11], LPB:[-16.51,-68.19],
+  // Bolivia — domestic + regional (so Tomorrow.io weather populates the board
+  // instead of showing "—" for Santa Cruz, Cochabamba, etc.)
+  VVI:[-17.64,-63.14], CBB:[-17.42,-66.18], SRZ:[-17.81,-63.17],
+  UYU:[-20.45,-66.85], TJA:[-21.56,-64.70], SRE:[-19.24,-65.15],
+  POI:[-19.54,-65.72], TDD:[-14.82,-64.92], CIJ:[-11.04,-68.78],
+  RIB:[-10.96,-66.10], GYA:[-10.82,-65.35], BVL:[-13.95,-65.46],
   SJO:[9.99,-84.21], TLS:[43.63,1.37], RDU:[35.88,-78.79],
   YQT:[48.37,-89.32], YAM:[46.49,-84.51], YSB:[46.63,-80.80],
   YYB:[46.36,-79.42], YPQ:[44.23,-78.36], YGP:[48.78,-64.48],
@@ -10380,6 +10409,14 @@ const TIO_LABEL_FR = {
 };
 
 function tioIcon(weatherCode, size) {
+  // Prefer the inline SVG-sprite icon used by the FIDS board (fidsWxIcon).
+  // The legacy meteoconImg path points at an external PNG CDN that 404s on
+  // the gate screens, leaving broken-image placeholders. fidsWxIcon accepts
+  // the same numeric Tomorrow.io/WMO code and renders the same icon set the
+  // board uses, so gate weather now matches the board exactly.
+  if (typeof window !== 'undefined' && typeof window.fidsWxIcon === 'function') {
+    return window.fidsWxIcon(weatherCode, size || 48);
+  }
   const name = TIO_ICON[weatherCode] || 'clear-day';
   return meteoconImg(name, size || 48);
 }
@@ -10858,7 +10895,10 @@ const IATA_TO_TILE_ICAO = {
   'JQ':'JST',  'VA':'VOZ',
   // Latin America
   'JJ':'TAM',  'AD':'AZU',  'LA':'LAN',  'AR':'ARG',  'CM':'CMP',
-  'AV':'AVA',  'AM':'AMX',  'Y4':'VOI',  'G3':'GLO',  'UP':'BHS'
+  'AV':'AVA',  'AM':'AMX',  'Y4':'VOI',  'G3':'GLO',  'UP':'BHS',
+  // Bolivia — Boliviana de Aviación. IATA OB → ICAO BOV (BOV.svg).
+  // NOTE: LZB.svg is Bulgaria Air, NOT BoA — do not map OB to LZB.
+  'OB':'BOV'
   // Q6 (Volaris CR) → Y4 and 4C (LATAM Colombia) → LA aliased via PARENT map.
   // VB (VivaAerobus) → VIV.svg tile not in pack yet, falls through to wordmark.
 };
@@ -12157,7 +12197,11 @@ function render() {
         // City name only (no IATA to add, or IATA already inline)
         _label = cityDisp;
       }
-      return '<td class="td-dest">' + _label + '</td>';
+      // Long city names (e.g. "Santa Cruz De La Sierra") get a smaller font so
+      // they render in full instead of truncating to "Santa Cruz De La Sie…".
+      const _cityPlain = _parensMatch ? _parensMatch[1] : String(cityDisp).replace(/\s+\([A-Z]{2,4}\)\s*$/, '');
+      const _destLongCls = (String(_cityPlain).trim().length >= 18) ? ' td-dest-long' : '';
+      return '<td class="td-dest' + _destLongCls + '">' + _label + '</td>';
     })();
     // Phase 4: strip airline code prefix from flight number if toggle set
     let _flightDisplay = (f.flight || '—');
