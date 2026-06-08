@@ -16084,29 +16084,40 @@ function _fetchAirportCoords(iata) {
   var cache = _loadAirportCache();
   if (cache[code]) { GATE_AP[code] = cache[code]; return Promise.resolve(cache[code]); }
   if (_airportFetchInFlight[code]) return _airportFetchInFlight[code];
-  // Public airport database — covers every commercial IATA in the world.
-  // jsonp/CORS-friendly free endpoint via raw GitHub data (mwgg/Airports).
-  _airportFetchInFlight[code] = fetch('https://raw.githubusercontent.com/mwgg/Airports/master/airports.json', { cache: 'force-cache' })
-    .then(function(r) { return r.json(); })
-    .then(function(all) {
-      var found = null;
-      // Index is keyed by ICAO. Search by IATA field.
-      for (var k in all) {
-        if (all[k] && all[k].iata === code) {
-          found = [all[k].lat, all[k].lon];
-          break;
-        }
-      }
-      if (found) {
-        GATE_AP[code] = found;
-        cache[code] = found;
-        _saveAirportCache();
-        console.log('[AIRPORT] cached', code, '@', found);
-      } else {
-        console.warn('[AIRPORT] not found:', code);
-      }
-      delete _airportFetchInFlight[code];
-      return found;
+
+  function _store(found) {
+    if (found && isFinite(found[0]) && isFinite(found[1])) {
+      GATE_AP[code] = found;
+      cache[code] = found;
+      _saveAirportCache();
+      console.log('[AIRPORT] cached', code, '@', found);
+    } else {
+      console.warn('[AIRPORT] not found:', code);
+    }
+    delete _airportFetchInFlight[code];
+    return (found && isFinite(found[0]) && isFinite(found[1])) ? found : null;
+  }
+
+  // PRIMARY: AeroDataBox airport endpoint via our OWN proxy — same domain the
+  // app already uses for live flight data, so it works even when the display
+  // network blocks public CDNs / GitHub. Returns { location: { lat, lon } }.
+  _airportFetchInFlight[code] = fetch(FIDS_API_BASE + '/api/adb/airports/iata/' + encodeURIComponent(code))
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) {
+      var loc = d ? (d.location || d) : null;
+      var lat = loc ? (loc.lat != null ? loc.lat : loc.latitude) : null;
+      var lon = loc ? (loc.lon != null ? loc.lon : loc.longitude) : null;
+      if (lat != null && lon != null) return _store([Number(lat), Number(lon)]);
+      // FALLBACK: public GitHub airport DB (only reachable on open networks).
+      return fetch('https://raw.githubusercontent.com/mwgg/Airports/master/airports.json', { cache: 'force-cache' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(all) {
+          if (!all) return _store(null);
+          for (var k in all) {
+            if (all[k] && all[k].iata === code) return _store([all[k].lat, all[k].lon]);
+          }
+          return _store(null);
+        });
     })
     .catch(function(e) {
       console.warn('[AIRPORT] lookup failed for', code, e);
