@@ -14,8 +14,8 @@
 
 /* ── ROW 1 — header (Calgary | WESTJET | gate#) ─────────────────────── */
 .g8-r1 { min-height: 130px !important; padding: 0 48px !important; }
-.g8-r1-dest { font-size: 76px !important; letter-spacing: -0.02em !important; }
-.g8-r1-dest .g8-iata { font-size: 42px !important; margin-left: 22px !important; }
+.g8-r1-dest { font-size: 46px !important; letter-spacing: -0.02em !important; }
+.g8-r1-dest .g8-iata { font-size: 28px !important; margin-left: 18px !important; }
 .g8-r1-airline { font-size: 56px !important; font-weight: 900 !important; }
 .g8-r1-logo { height: 88px !important; max-height: 88px !important; max-width: 380px !important; }
 .g8-r1-gate { font-size: 84px !important; padding: 4px 26px !important; }
@@ -602,8 +602,8 @@ html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
 }
 /* tone down the giant top banner from v218.88 so rows stop crashing into each other */
 .g8-r1 { min-height: 118px !important; padding: 0 36px !important; }
-.g8-r1-dest { font-size: 62px !important; }
-.g8-r1-dest .g8-iata { font-size: 34px !important; margin-left: 16px !important; }
+.g8-r1-dest { font-size: 44px !important; }
+.g8-r1-dest .g8-iata { font-size: 26px !important; margin-left: 14px !important; }
 .g8-r1-logo { height: 74px !important; max-height: 74px !important; max-width: 320px !important; }
 .g8-r1-gate { font-size: 68px !important; padding: 6px 20px !important; }
 
