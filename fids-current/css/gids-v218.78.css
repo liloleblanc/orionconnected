@@ -1552,7 +1552,7 @@ body, body.gids-page, body.gate-page{
 }
 
 .g8-wrap .g8-r1-dest{
-  font-size: clamp(48px, 7vh, 88px) !important;
+  font-size: clamp(30px, 3.4vh, 48px) !important;
   line-height: 1 !important;
   font-weight: 900 !important;
   display: flex !important;
@@ -2195,9 +2195,10 @@ body, body.gids-page, body.gate-page{
    specificity and overrode my bumps). Also kill the opacity that made
    everything look gray — Nick wants WHITE labels, gray only for (IATA). */
 
-/* 1. BANNER — city name MUCH bigger */
+/* 1. BANNER — city name (v219: sized to fit the slim header; long Bolivian
+   names like "Santa Cruz De La Sierra" were overflowing at the old 96–140px) */
 .g8-wrap .g8-r1-dest {
-  font-size: clamp(96px, 11vh, 140px) !important;
+  font-size: clamp(30px, 3.4vh, 48px) !important;
   letter-spacing: -0.02em !important;
   line-height: 1 !important;
 }
