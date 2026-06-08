@@ -5413,16 +5413,29 @@ function _buildV2MapCol(ctx, vars) {
       else if (_rs === 'cancelled' || _rs === 'gate-closed' || _rs === 'gateclosed') _stCls = 'cancelled';
       else _stCls = 'ontime';
 
+      // v220 — compact telemetry (kt→kph) + inline brand icons for the redesigned card
+      var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpd * 1.852) : null;
+      var _altUnit = ({en:'ft',fr:'pieds',es:'pies',de:'ft',it:'piedi',pt:'pés',ja:'ft',zh:'英尺',ar:'قدم'})[_ibLang] || 'ft';
+      var _spdUnit = ({en:'kph',fr:'kph',es:'km/h',de:'kph',it:'kph',pt:'kph',ja:'kph',zh:'kph',ar:'kph'})[_ibLang] || 'kph';
+      var _ICO_SPD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4.5-5.5"/></svg>';
+      var _ICO_ALT = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 19l6-9 3.5 4.5L15 11l6 8z"/></svg>';
+      var _ICO_PLANE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M21 16v-1.7l-7.5-4.6V4.6a1.6 1.6 0 0 0-3.2 0v5.1L2.8 14.3V16l7.5-2.3v4.7l-2 1.4V21l3.6-1 3.6 1v-1.2l-2-1.4v-4.7z"/></svg>';
+
       _inboundCard =
           '<div class="v2-rc-inbound">'
-        +   '<div class="v2-rc-kicker">' + (TL('inboundAircraft') || 'Inbound Aircraft') + '</div>'
+        +   '<div class="v2-rc-status-pill v2-rc-status-' + _stCls + '">' + _stWord + '</div>'
+        +   '<div class="v2-rc-fltnum">' + (_ib.flight || _ibFltCompact) + '</div>'
+        +   '<div class="v2-rc-route">'
+        +     '<span class="v2-rc-route-pt">' + (_origIata || '') + '</span>'
+        +     '<span class="v2-rc-route-ico">' + _ICO_PLANE + '</span>'
+        +     '<span class="v2-rc-route-pt">' + (_destIata || '') + '</span>'
+        +   '</div>'
         +   '<div class="v2-rc-headline">'
         +     '<span class="v2-rc-flt">' + _ibFltCompact + '</span>'
         +     '<span class="v2-rc-sep">·</span>'
         +     '<span class="v2-rc-status v2-rc-status-' + _stCls + '">' + _stWord + '</span>'
         +   '</div>'
         +   (_origDisplay ? '<div class="v2-rc-from">' + (({en:'From',fr:'De',es:'Desde',de:'Von',it:'Da',pt:'De',ja:'出発地',zh:'来自',ar:'من'})[_ibLang] || 'From') + ' ' + _origDisplay + '</div>' : '')
-        +   _keystatsHtml
         +   '<div class="v2-rc-times">'
         +     '<div class="v2-rc-time-cell">'
         +       '<div class="v2-rc-time-lbl">' + TL('depTime') + '</div>'
@@ -5431,6 +5444,18 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-rc-time-cell">'
         +       '<div class="v2-rc-time-lbl">' + TL('arrTime') + '</div>'
         +       '<div class="v2-rc-time-val">' + (_ibArrStr || '\u2014') + '</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="v2-rc-statbar">'
+        +     '<div class="v2-rc-stat">'
+        +       '<span class="v2-rc-stat-ico">' + _ICO_SPD + '</span>'
+        +       '<span class="v2-rc-stat-txt"><span class="v2-rc-stat-lbl">' + _spdLbl + '</span>'
+        +         '<span class="v2-rc-stat-val">' + (_spdKph !== null ? _spdKph.toLocaleString() : '—') + ' <span class="v2-rc-stat-unit">' + _spdUnit + '</span></span></span>'
+        +     '</div>'
+        +     '<div class="v2-rc-stat">'
+        +       '<span class="v2-rc-stat-ico">' + _ICO_ALT + '</span>'
+        +       '<span class="v2-rc-stat-txt"><span class="v2-rc-stat-lbl">' + _altLbl + '</span>'
+        +         '<span class="v2-rc-stat-val">' + (_liveAlt !== null ? _liveAlt.toLocaleString() : '—') + ' <span class="v2-rc-stat-unit">' + _altUnit + '</span></span></span>'
         +     '</div>'
         +   '</div>'
         +   (_ibEtaStr ? '<div class="v2-rc-eta">' + TL('arrivesIn') + ' ' + _ibEtaStr + '</div>' : '')

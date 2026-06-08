@@ -1917,6 +1917,92 @@ body, body.gids-page, body.gate-page{
   margin: 0 clamp(2px, 0.2vw, 6px);
 }
 
+/* ── v220 — branded inbound card (matches the reference) ───────────────── */
+.gad-map-col-v2 .v2-rc-kicker,
+.gad-map-col-v2 .v2-rc-headline,
+.gad-map-col-v2 .v2-rc-from { display: none !important; }
+
+.gad-map-col-v2 .v2-rc-inbound {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: clamp(8px, 1.1vh, 16px) !important;
+  padding: clamp(14px, 1.8vh, 24px) clamp(16px, 1.4vw, 26px) !important;
+  color: #0f2238 !important;
+}
+.gad-map-col-v2 .v2-rc-status-pill {
+  display: inline-block;
+  padding: 5px 16px;
+  border-radius: 999px;
+  font-size: clamp(13px, 1.5vh, 18px);
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #fff;
+  background: #d81e3f;            /* default red — "En route" */
+  text-transform: capitalize;
+}
+.gad-map-col-v2 .v2-rc-status-pill.v2-rc-status-scheduled { background: #475569; }
+.gad-map-col-v2 .v2-rc-status-pill.v2-rc-status-delayed   { background: #d97706; }
+.gad-map-col-v2 .v2-rc-status-pill.v2-rc-status-cancelled { background: #991b1b; }
+.gad-map-col-v2 .v2-rc-fltnum {
+  font-size: clamp(30px, 4vh, 52px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: #0f2238;
+}
+.gad-map-col-v2 .v2-rc-route {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1vw, 18px);
+  font-size: clamp(22px, 2.8vh, 38px);
+  font-weight: 800;
+  color: #1e3a5f;
+}
+.gad-map-col-v2 .v2-rc-route-ico { color: #d81e3f; display: inline-flex; }
+.gad-map-col-v2 .v2-rc-route-ico svg { width: 1em; height: 1em; }
+
+.gad-map-col-v2 .v2-rc-statbar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(8px, 0.8vw, 16px);
+  width: 100%;
+  background: #eef2f8;
+  border-radius: 14px;
+  padding: clamp(10px, 1.2vh, 16px) clamp(12px, 1vw, 18px);
+}
+.gad-map-col-v2 .v2-rc-stat {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 0.7vw, 12px);
+  min-width: 0;
+}
+.gad-map-col-v2 .v2-rc-stat + .v2-rc-stat {
+  border-left: 1px solid rgba(15, 34, 56, 0.12);
+  padding-left: clamp(10px, 1vw, 16px);
+}
+.gad-map-col-v2 .v2-rc-stat-ico { color: #2563eb; display: inline-flex; flex-shrink: 0; }
+.gad-map-col-v2 .v2-rc-stat-txt { display: flex; flex-direction: column; min-width: 0; }
+.gad-map-col-v2 .v2-rc-stat-lbl {
+  font-size: clamp(11px, 1.25vh, 15px);
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.15;
+}
+.gad-map-col-v2 .v2-rc-stat-val {
+  font-size: clamp(18px, 2.2vh, 28px);
+  font-weight: 900;
+  color: #0f2238;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.gad-map-col-v2 .v2-rc-stat-unit { font-size: 0.6em; font-weight: 700; color: #94a3b8; }
+.gad-map-col-v2 .v2-rc-eta {
+  font-size: clamp(13px, 1.5vh, 19px);
+  font-weight: 700;
+  color: #475569;
+}
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;
