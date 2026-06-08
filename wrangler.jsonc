@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "fids",
+  "main": "worker-entry.js",
   "compatibility_date": "2026-05-27",
   "compatibility_flags": [
     "nodejs_compat"
@@ -9,6 +10,7 @@
     "enabled": true
   },
   "assets": {
-    "directory": "fids-current"
+    "directory": "fids-current",
+    "binding": "ASSETS"
   }
 }

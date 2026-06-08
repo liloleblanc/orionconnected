@@ -14,8 +14,8 @@
 
 /* ── ROW 1 — header (Calgary | WESTJET | gate#) ─────────────────────── */
 .g8-r1 { min-height: 130px !important; padding: 0 48px !important; }
-.g8-r1-dest { font-size: 76px !important; letter-spacing: -0.02em !important; }
-.g8-r1-dest .g8-iata { font-size: 42px !important; margin-left: 22px !important; }
+.g8-r1-dest { font-size: 46px !important; letter-spacing: -0.02em !important; }
+.g8-r1-dest .g8-iata { font-size: 28px !important; margin-left: 18px !important; }
 .g8-r1-airline { font-size: 56px !important; font-weight: 900 !important; }
 .g8-r1-logo { height: 88px !important; max-height: 88px !important; max-width: 380px !important; }
 .g8-r1-gate { font-size: 84px !important; padding: 4px 26px !important; }
@@ -310,6 +310,51 @@
 .gad-map-col-v2 .v2-map-pill-k { color: rgba(255,255,255,0.55); }
 .gad-map-col-v2 .v2-map-pill-v { font-weight: 700; }
 
+/* v219 — Slimmer top header bar + bottom footer bar so the main content area
+   (left rail / centre ad / inbound+map+aircraft) gets more vertical room.
+   These were too thick. */
+.g8-r1 {
+  height: 116px !important;
+  min-height: 116px !important;
+  max-height: 116px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+.g8-r5 {
+  min-height: 62px !important;
+  height: 62px !important;
+}
+/* v219 — smaller destination headline in the top bar (per Nick) so the bar
+   reads cleaner and leaves room for the airline wordmark beside it. */
+.g8-r1 .g8-r1-dest {
+  font-size: clamp(26px, 2.4vw, 44px) !important;
+}
+
+/* v219 — Right-column proportions. The three stacked blocks now have explicit
+   roles so they stop fighting for space: the inbound card and the aircraft
+   panel size to their content (top + bottom), and the ROUTE MAP fills all the
+   space between them as the focal element — instead of collapsing to a sliver. */
+.gad-map-col-v2 > .v2-rc-inbound,
+.gad-map-col-v2 > .v2-rc-aircraft { flex: 0 0 auto !important; }
+.gad-map-col-v2 > .v2-map-area {
+  /* Grow into the leftover space between the inbound card (top) and the
+     aircraft panel (bottom). Low floor so the map yields space first and never
+     pushes the aircraft image off the bottom of the column. */
+  flex: 1 1 0 !important;
+  min-height: 84px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: block !important;
+}
+.gad-map-col-v2 > .v2-map-area .g8-inb-map,
+.gad-map-col-v2 > .v2-map-area #gateMapBox {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
 /* ── MESSAGE STRIP ───────────────────────────────────────────────────── */
 .g8-r3-v2 {
   transition: min-height 0.4s ease, padding 0.4s ease;
@@ -557,8 +602,8 @@ html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
 }
 /* tone down the giant top banner from v218.88 so rows stop crashing into each other */
 .g8-r1 { min-height: 118px !important; padding: 0 36px !important; }
-.g8-r1-dest { font-size: 62px !important; }
-.g8-r1-dest .g8-iata { font-size: 34px !important; margin-left: 16px !important; }
+.g8-r1-dest { font-size: 44px !important; }
+.g8-r1-dest .g8-iata { font-size: 26px !important; margin-left: 14px !important; }
 .g8-r1-logo { height: 74px !important; max-height: 74px !important; max-width: 320px !important; }
 .g8-r1-gate { font-size: 68px !important; padding: 6px 20px !important; }
 
@@ -1507,7 +1552,7 @@ body, body.gids-page, body.gate-page{
 }
 
 .g8-wrap .g8-r1-dest{
-  font-size: clamp(48px, 7vh, 88px) !important;
+  font-size: clamp(40px, 3.4vw, 62px) !important;
   line-height: 1 !important;
   font-weight: 900 !important;
   display: flex !important;
@@ -2030,8 +2075,8 @@ body, body.gids-page, body.gate-page{
   margin-bottom: clamp(8px, 1vh, 14px);
 }
 .gad-map-col-v2 .v2-rc-aircraft-img img {
-  max-width: 95%;
-  max-height: clamp(70px, 9vh, 130px);
+  max-width: 92%;
+  max-height: clamp(58px, 6.5vh, 96px);
   width: auto;
   height: auto;
   object-fit: contain;
@@ -2150,11 +2195,21 @@ body, body.gids-page, body.gate-page{
    specificity and overrode my bumps). Also kill the opacity that made
    everything look gray — Nick wants WHITE labels, gray only for (IATA). */
 
-/* 1. BANNER — city name MUCH bigger */
+/* 1. BANNER — city name (v219: sized to fit the slim header; long Bolivian
+   names like "Santa Cruz De La Sierra" were overflowing at the old 96–140px) */
 .g8-wrap .g8-r1-dest {
-  font-size: clamp(96px, 11vh, 140px) !important;
+  font-size: clamp(40px, 3.4vw, 62px) !important;
   letter-spacing: -0.02em !important;
   line-height: 1 !important;
+}
+/* v219 — definitive slim header bar height. A .g8-wrap .g8-r1 rule (higher
+   specificity than the plain .g8-r1 rules) so it actually wins the cascade. */
+.g8-wrap .g8-r1 {
+  height: 104px !important;
+  min-height: 104px !important;
+  max-height: 104px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 .g8-wrap .g8-r1-dest .g8-city-code,
 .g8-wrap .g8-r1-dest > span:nth-child(2) {
