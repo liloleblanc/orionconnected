@@ -1918,9 +1918,11 @@ body, body.gids-page, body.gate-page{
 }
 
 /* ── v220 — branded inbound card (matches the reference) ───────────────── */
-.gad-map-col-v2 .v2-rc-kicker,
-.gad-map-col-v2 .v2-rc-headline,
-.gad-map-col-v2 .v2-rc-from { display: none !important; }
+/* Higher specificity (.v2-rc-inbound descendant) so this beats the later
+   .gad-map-col-v2 .v2-rc-headline rule that was re-showing the duplicate row. */
+.gad-map-col-v2 .v2-rc-inbound .v2-rc-kicker,
+.gad-map-col-v2 .v2-rc-inbound .v2-rc-headline,
+.gad-map-col-v2 .v2-rc-inbound .v2-rc-from { display: none !important; }
 
 .gad-map-col-v2 .v2-rc-inbound {
   display: flex !important;
