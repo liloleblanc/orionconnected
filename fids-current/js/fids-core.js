@@ -6284,6 +6284,18 @@ function uxgGateHtml(ctx) {
   // full name), which reads far better and leaves room for the city headline.
   var _bannerUsedTile = false;
   var _bannerUsedWordmark = false;
+  // Per-carrier brand logo pinned for the gate header — the airline's own mark
+  // on file, shown on a clean white plate (full colour, CDN-independent).
+  var BANNER_PLATE_LOGO = {
+    'OB': '/logos/airlines/asian-other/boliviana.svg'   // BoA — letters + corn-husk mark
+  };
+  var _plateLogo = BANNER_PLATE_LOGO[_bannerBrandCode] || BANNER_PLATE_LOGO[airlineCode];
+  if (!_useOverrideFile && _plateLogo) {
+    r1LogoSrc = _plateLogo;
+    _useOverrideFile = true;          // real colours — no white filter
+    _sz = { h: 84, w: 220 };          // compact brand mark on the white plate
+    _bannerUsedWordmark = true;       // reuse the white-plate styling
+  }
   // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
   // Render the LOCAL dark-ink wordmark on a clean white plate: real brand type,
   // never force-whitened, never clipped, and works on a locked-down network.
