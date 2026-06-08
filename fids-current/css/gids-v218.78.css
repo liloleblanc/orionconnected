@@ -310,6 +310,21 @@
 .gad-map-col-v2 .v2-map-pill-k { color: rgba(255,255,255,0.55); }
 .gad-map-col-v2 .v2-map-pill-v { font-weight: 700; }
 
+/* v219 — Slimmer top header bar + bottom footer bar so the main content area
+   (left rail / centre ad / inbound+map+aircraft) gets more vertical room.
+   These were too thick. */
+.g8-r1 {
+  height: 116px !important;
+  min-height: 116px !important;
+  max-height: 116px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+.g8-r5 {
+  min-height: 62px !important;
+  height: 62px !important;
+}
+
 /* v219 — Right-column proportions. The three stacked blocks now have explicit
    roles so they stop fighting for space: the inbound card and the aircraft
    panel size to their content (top + bottom), and the ROUTE MAP fills all the
