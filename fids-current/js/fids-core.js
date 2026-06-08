@@ -1972,7 +1972,10 @@ const WX_ICON_MAP = {
 function meteoconImg(name, size) {
   size = size || 80;
   const i8name = WX_ICON_MAP[name] || WX_ICON_MAP['clear-day'];
-  return '<img src="' + WX_ICON_CDN + '/' + size + '/' + i8name + '.png" width="' + size + '" height="' + size + '" alt="" style="display:inline-block;vertical-align:middle;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));">';
+  // onerror hides the element if the external PNG 404s, so a broken-image
+  // placeholder can never appear (the fidsWxIcon sprite path is preferred and
+  // this is only a last-resort fallback).
+  return '<img src="' + WX_ICON_CDN + '/' + size + '/' + i8name + '.png" width="' + size + '" height="' + size + '" alt="" onerror="this.style.display=\'none\'" style="display:inline-block;vertical-align:middle;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));">';
 }
 
 function gateWeatherHtml(locIata, loc, dayNames) {
@@ -10687,6 +10690,7 @@ function callsignToIata(callsign) {
 // all-caps (legacy) so we convert at render time. Brand-specific quirks
 // (WestJet, JetBlue, easyJet) are handled by an exceptions map.
 const _AIRLINE_NAME_OVERRIDE = {
+  'OB':'BoA',   // Boliviana de Aviación — official short brand (proper casing, not "Boa")
   'AC':'Air Canada','WS':'WestJet','PD':'Porter','F8':'Flair',
   'TS':'Air Transat','PB':'PAL Airlines','MO':'Calm Air',
   'YP':'Perimeter','3H':'Air Inuit','BQ':'Pascan','7F':'First Air',
@@ -12201,8 +12205,15 @@ function render() {
       const _iataUp = String(_iata).toUpperCase().trim();
       // Match " (XXX)" at end where XXX is 2-4 uppercase letters
       const _parensMatch = cityDisp.match(/^(.*?)\s+\(([A-Z]{2,4})\)\s*$/);
+      const _cityPlain = _parensMatch ? _parensMatch[1] : String(cityDisp).replace(/\s+\([A-Z]{2,4}\)\s*$/, '');
+      const _isLongDest = String(_cityPlain).trim().length >= 18;
       let _label;
-      if (_parensMatch) {
+      if (_isLongDest) {
+        // Long names (e.g. "Santa Cruz De La Sierra") drop the parenthetical
+        // IATA code — it added little and was the part getting cut to "(V…".
+        // The full city name now shows clean, with a slightly smaller font.
+        _label = _cityPlain;
+      } else if (_parensMatch) {
         // cityDisp already has the parens format — split and style the IATA
         _label = _parensMatch[1] + ' <span class="dest-iata">(' + _parensMatch[2] + ')</span>';
       } else if (_iataUp && _iataUp.length >= 2 && _iataUp.length <= 4
@@ -12213,10 +12224,7 @@ function render() {
         // City name only (no IATA to add, or IATA already inline)
         _label = cityDisp;
       }
-      // Long city names (e.g. "Santa Cruz De La Sierra") get a smaller font so
-      // they render in full instead of truncating to "Santa Cruz De La Sie…".
-      const _cityPlain = _parensMatch ? _parensMatch[1] : String(cityDisp).replace(/\s+\([A-Z]{2,4}\)\s*$/, '');
-      const _destLongCls = (String(_cityPlain).trim().length >= 18) ? ' td-dest-long' : '';
+      const _destLongCls = _isLongDest ? ' td-dest-long' : '';
       return '<td class="td-dest' + _destLongCls + '">' + _label + '</td>';
     })();
     // Phase 4: strip airline code prefix from flight number if toggle set
