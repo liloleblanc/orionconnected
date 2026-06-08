@@ -8101,6 +8101,11 @@ const CITY = {
   BOG:'BOGOTA',         LIM:'LIMA',           LPB:'LA PAZ',       UIO:'QUITO',        CCS:'CARACAS',
   MVD:'MONTEVIDEO',     ASU:'ASUNCION',       GYE:'GUAYAQUIL',    CTG:'CARTAGENA',
   MDE:'MEDELLIN',
+  // Bolivia — so gate/board screens show the real city name instead of a
+  // title-cased IATA fallback (e.g. "Cbb" → "Cochabamba").
+  VVI:'SANTA CRUZ DE LA SIERRA', CBB:'COCHABAMBA',  SRZ:'SANTA CRUZ',
+  UYU:'UYUNI',          TJA:'TARIJA',         SRE:'SUCRE',        POI:'POTOSI',
+  TDD:'TRINIDAD',       CIJ:'COBIJA',         RIB:'RIBERALTA',    GYA:'GUAYARAMERIN',
   LHR:'LONDON',         LGW:'LONDON', STN:'LONDON', LTN:'LONDON',
   CDG:'PARIS',          ORY:'PARIS',     FRA:'FRANKFURT',    MUC:'MUNICH',
   AMS:'AMSTERDAM',      DUB:'DUBLIN',         MAD:'MADRID',       BCN:'BARCELONA',
@@ -9679,6 +9684,12 @@ const COORDS = {
   DEL:[28.56,77.10], BOM:[19.09,72.87],
   GRU:[-23.43,-46.47], GIG:[-22.81,-43.25], EZE:[-34.82,-58.54], SCL:[-33.39,-70.79],
   BOG:[4.70,-74.15], LIM:[-12.02,-77.11], LPB:[-16.51,-68.19],
+  // Bolivia — domestic + regional (so Tomorrow.io weather populates the board
+  // instead of showing "—" for Santa Cruz, Cochabamba, etc.)
+  VVI:[-17.64,-63.14], CBB:[-17.42,-66.18], SRZ:[-17.81,-63.17],
+  UYU:[-20.45,-66.85], TJA:[-21.56,-64.70], SRE:[-19.24,-65.15],
+  POI:[-19.54,-65.72], TDD:[-14.82,-64.92], CIJ:[-11.04,-68.78],
+  RIB:[-10.96,-66.10], GYA:[-10.82,-65.35], BVL:[-13.95,-65.46],
   SJO:[9.99,-84.21], TLS:[43.63,1.37], RDU:[35.88,-78.79],
   YQT:[48.37,-89.32], YAM:[46.49,-84.51], YSB:[46.63,-80.80],
   YYB:[46.36,-79.42], YPQ:[44.23,-78.36], YGP:[48.78,-64.48],
@@ -10858,7 +10869,10 @@ const IATA_TO_TILE_ICAO = {
   'JQ':'JST',  'VA':'VOZ',
   // Latin America
   'JJ':'TAM',  'AD':'AZU',  'LA':'LAN',  'AR':'ARG',  'CM':'CMP',
-  'AV':'AVA',  'AM':'AMX',  'Y4':'VOI',  'G3':'GLO',  'UP':'BHS'
+  'AV':'AVA',  'AM':'AMX',  'Y4':'VOI',  'G3':'GLO',  'UP':'BHS',
+  // Bolivia — Boliviana de Aviación. IATA OB → ICAO BOV (BOV.svg).
+  // NOTE: LZB.svg is Bulgaria Air, NOT BoA — do not map OB to LZB.
+  'OB':'BOV'
   // Q6 (Volaris CR) → Y4 and 4C (LATAM Colombia) → LA aliased via PARENT map.
   // VB (VivaAerobus) → VIV.svg tile not in pack yet, falls through to wordmark.
 };
