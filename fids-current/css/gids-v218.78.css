@@ -317,8 +317,11 @@
 .gad-map-col-v2 > .v2-rc-inbound,
 .gad-map-col-v2 > .v2-rc-aircraft { flex: 0 0 auto !important; }
 .gad-map-col-v2 > .v2-map-area {
-  flex: 1 1 auto !important;
-  min-height: 300px !important;
+  /* Grow into the leftover space between the inbound card (top) and the
+     aircraft panel (bottom), but a modest floor so it can never force the
+     column to overflow and push the aircraft panel off-screen. */
+  flex: 1 1 0 !important;
+  min-height: 150px !important;
   position: relative !important;
   overflow: hidden !important;
   display: block !important;
