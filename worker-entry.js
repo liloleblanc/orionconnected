@@ -74,9 +74,22 @@ export default {
       }
     }
 
-    // ── Everything else → static assets (unchanged behaviour) ───────────
+    // ── Everything else → static assets ────────────────────────────────
     if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
-      return env.ASSETS.fetch(request);
+      const res = await env.ASSETS.fetch(request);
+      // Never let the HTML documents cache — kiosks/browsers were holding a
+      // stale page that pinned old ?v= CSS/JS references, so pushed changes
+      // never appeared. The versioned assets (css/js) can still cache.
+      const isHtml = path === '/' || path.endsWith('/') || path.endsWith('.html')
+                  || (res.headers.get('Content-Type') || '').indexOf('text/html') !== -1;
+      if (isHtml) {
+        const h = new Headers(res.headers);
+        h.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        h.set('Pragma', 'no-cache');
+        h.set('Expires', '0');
+        return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+      }
+      return res;
     }
     return new Response('Not found', { status: 404 });
   },
