@@ -310,6 +310,28 @@
 .gad-map-col-v2 .v2-map-pill-k { color: rgba(255,255,255,0.55); }
 .gad-map-col-v2 .v2-map-pill-v { font-weight: 700; }
 
+/* v219 — Right-column proportions. The three stacked blocks now have explicit
+   roles so they stop fighting for space: the inbound card and the aircraft
+   panel size to their content (top + bottom), and the ROUTE MAP fills all the
+   space between them as the focal element — instead of collapsing to a sliver. */
+.gad-map-col-v2 > .v2-rc-inbound,
+.gad-map-col-v2 > .v2-rc-aircraft { flex: 0 0 auto !important; }
+.gad-map-col-v2 > .v2-map-area {
+  flex: 1 1 auto !important;
+  min-height: 300px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: block !important;
+}
+.gad-map-col-v2 > .v2-map-area .g8-inb-map,
+.gad-map-col-v2 > .v2-map-area #gateMapBox {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
 /* ── MESSAGE STRIP ───────────────────────────────────────────────────── */
 .g8-r3-v2 {
   transition: min-height 0.4s ease, padding 0.4s ease;
