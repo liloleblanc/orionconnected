@@ -6273,6 +6273,19 @@ function uxgGateHtml(ctx) {
   // filter force the logo to white (so at minimum the text reads cleanly
   // against the dark banner).
   var _useOverrideFile = !!BANNER_LOGO_OVERRIDE[_bannerBrandCode] || !!BANNER_LOGO_OVERRIDE[airlineCode];
+  // v219 — Colored brand tile for carriers that have a square airline tile but
+  // no curated banner lockup (Boliviana de Aviación, Avianca, etc.). Without
+  // this the banner pulls the external wway.io logo and force-whitens it into
+  // an ugly full-company-name wordmark that also collides with long
+  // destination names. The tile is colored + compact (brand symbol, not the
+  // full name), which reads far better and leaves room for the city headline.
+  var _bannerTileIcao = (typeof IATA_TO_TILE_ICAO !== 'undefined')
+    ? (IATA_TO_TILE_ICAO[_bannerBrandCode] || IATA_TO_TILE_ICAO[airlineCode]) : null;
+  if (!_useOverrideFile && _bannerTileIcao) {
+    r1LogoSrc = 'logos/airline-tiles/' + _bannerTileIcao + '.svg';
+    _useOverrideFile = true;          // keep brand colors — skip the white filter
+    _sz = { h: 120, w: 120 };         // square brand badge, not a wide wordmark
+  }
   var _logoStyle = 'height:' + _sz.h + 'px !important;max-height:' + _sz.h + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
                  + (_useOverrideFile ? 'filter:none !important;' : '');
@@ -10391,6 +10404,14 @@ const TIO_LABEL_FR = {
 };
 
 function tioIcon(weatherCode, size) {
+  // Prefer the inline SVG-sprite icon used by the FIDS board (fidsWxIcon).
+  // The legacy meteoconImg path points at an external PNG CDN that 404s on
+  // the gate screens, leaving broken-image placeholders. fidsWxIcon accepts
+  // the same numeric Tomorrow.io/WMO code and renders the same icon set the
+  // board uses, so gate weather now matches the board exactly.
+  if (typeof window !== 'undefined' && typeof window.fidsWxIcon === 'function') {
+    return window.fidsWxIcon(weatherCode, size || 48);
+  }
   const name = TIO_ICON[weatherCode] || 'clear-day';
   return meteoconImg(name, size || 48);
 }
@@ -12171,7 +12192,11 @@ function render() {
         // City name only (no IATA to add, or IATA already inline)
         _label = cityDisp;
       }
-      return '<td class="td-dest">' + _label + '</td>';
+      // Long city names (e.g. "Santa Cruz De La Sierra") get a smaller font so
+      // they render in full instead of truncating to "Santa Cruz De La Sie…".
+      const _cityPlain = _parensMatch ? _parensMatch[1] : String(cityDisp).replace(/\s+\([A-Z]{2,4}\)\s*$/, '');
+      const _destLongCls = (String(_cityPlain).trim().length >= 18) ? ' td-dest-long' : '';
+      return '<td class="td-dest' + _destLongCls + '">' + _label + '</td>';
     })();
     // Phase 4: strip airline code prefix from flight number if toggle set
     let _flightDisplay = (f.flight || '—');

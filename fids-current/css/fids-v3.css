@@ -3585,6 +3585,13 @@ body[data-fids-theme="green"] #fidsTable thead th { background: #14532d !importa
   font-weight: 700 !important;
   letter-spacing: 0.8px !important;
 }
+/* v219 — long destination names (e.g. "Santa Cruz De La Sierra") drop to a
+   smaller size so the full name shows instead of truncating with an ellipsis.
+   Set by fids-core.js, which adds .td-dest-long when the city name is long. */
+#fidsTable tbody tr td.td-dest.td-dest-long {
+  font-size: 22px !important;
+  letter-spacing: 0 !important;
+}
 /* Theme-specific tbody overrides (navy-board, cream) were setting 26px on
    tbody — explicitly lock them to 28px too so the unification holds. */
 body[data-fids-theme="navy-board"] #fidsTable tbody tr,
