@@ -6461,7 +6461,14 @@ function uxgGateHtml(ctx) {
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
     'AV': '/logos/airlines/asian-other/avianca.svg',  // red avianca — pops on black
-    'F8': '/logos/airlines/canadian/flair-wordmark-light.svg' // white flair wordmark — only light variant exists, reads on the near-black banner
+    'F8': '/logos/airlines/canadian/flair-wordmark-light.svg', // white flair wordmark — only light variant exists, reads on the near-black banner
+    // Regional carriers — white monochrome marks on file, straight onto the dark banner
+    '5T': '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg',
+    '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
+    'MO': '/logos/airlines/canadian-regional/calmair-monochrome-white.svg',
+    'YP': '/logos/airlines/canadian-regional/perimeter-aviation-logo-monochrome-white.svg',
+    'BQ': '/logos/airlines/canadian-regional/pascan-monochrome-white.svg',
+    '3H': '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg'
   };
   var _darkLogo = BANNER_DARK_LOGO[_bannerBrandCode] || BANNER_DARK_LOGO[airlineCode];
   if (!_useOverrideFile && _darkLogo) {
