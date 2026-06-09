@@ -7108,17 +7108,19 @@ function gateAutofit(root) {
     els.forEach(function(el) {
       var parent = el.parentElement;
       if (!parent) return;
-      // Reset any previously applied shrink
-      if (el.dataset._origSize) el.style.fontSize = el.dataset._origSize;
+      // Reset any previously applied shrink. NOTE: the CSS font-size uses
+      // !important, so an inline value is ignored unless we ALSO mark it
+      // !important — otherwise the shrink does nothing (text just clips).
+      if (el.dataset._origSize) el.style.setProperty('font-size', el.dataset._origSize, 'important');
       var cs = window.getComputedStyle(el);
       var size = parseFloat(cs.fontSize) || 0;
       if (!size) return;
       el.dataset._origSize = size + 'px';
       var guard = 0;
-      // Reduce font-size in 2px steps until the text fits, min 22px
-      while (el.scrollWidth > el.clientWidth && size > 15 && guard < 40) {
-        size -= 2;
-        el.style.fontSize = size + 'px';
+      // Reduce font-size in 1px steps until the text fits its box, min 14px
+      while (el.scrollWidth > el.clientWidth && size > 14 && guard < 80) {
+        size -= 1;
+        el.style.setProperty('font-size', size + 'px', 'important');
         guard++;
       }
     });
