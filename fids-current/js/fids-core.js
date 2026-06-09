@@ -7106,8 +7106,7 @@ function uxgActivateRotator() {
 function gateAutofit(root) {
   if (!root) return;
   var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-dest', '.v2-fi-status-val',
-              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val',
-              '.v2-rc-i3lbl', '.v2-rc-r2lbl'];
+              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
     els.forEach(function(el) {
