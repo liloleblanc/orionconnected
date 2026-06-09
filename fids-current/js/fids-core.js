@@ -5279,6 +5279,12 @@ function _buildV2MapCol(ctx, vars) {
   try {
     var _ib = vars.inboundFlight;
     if (_ib) {
+      // Option 1 — use the live position the airport board already carried for
+      // this inbound (the board is fetched with withLocation=true). The separate
+      // by-number fetch (window._gateInboundLivePos) often misses what the board
+      // already had, so fall back to the board-captured speed/altitude here.
+      if (_liveSpd === null && typeof _ib._liveSpd === 'number') _liveSpd = Math.round(_ib._liveSpd);
+      if (_liveAlt === null && typeof _ib._liveAlt === 'number') _liveAlt = Math.round(_ib._liveAlt);
       var _tz = vars.tz || 'UTC';
       var _destIata = (vars.iata || '').toString().toUpperCase();
       var _origIata = (_ib._locIata || '').toString().toUpperCase();
