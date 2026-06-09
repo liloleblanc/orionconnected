@@ -3559,3 +3559,20 @@ body, body.gids-page, body.gate-page{
   font-weight: 900 !important;
   line-height: 1 !important;
 }
+
+/* Gate block v2 — give the block its OWN rounded top-right corner so the
+   curve reads against the dark banner even when the frame behind the screen
+   is the same accent colour, and add a white leading edge along the slant
+   so the shape pops on low-contrast palettes (e.g. Porter blue on navy). */
+.g8-wrap .g8-r1-right {
+  position: relative !important;
+  border-radius: 0 24px 0 0 !important;
+}
+.g8-wrap .g8-r1-right::before {
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: 0;
+  width: calc(clamp(36px, 3.2vw, 64px) + 10px);
+  background: rgba(255,255,255,0.92);
+  clip-path: polygon(clamp(36px, 3.2vw, 64px) 0, calc(clamp(36px, 3.2vw, 64px) + 10px) 0, 10px 100%, 0 100%);
+  pointer-events: none;
+}
