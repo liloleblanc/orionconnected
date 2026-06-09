@@ -5279,6 +5279,7 @@ function _buildV2MapCol(ctx, vars) {
   // SPD/ALT shown inline when telemetry is live (suppressed otherwise —
   // no "—" placeholders).
   var _inboundCard = '';
+  var _telemBar = '';
   try {
     var _ib = vars.inboundFlight;
     if (_ib) {
@@ -5425,45 +5426,63 @@ function _buildV2MapCol(ctx, vars) {
       var _ICO_ALT = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 19l6-9 3.5 4.5L15 11l6 8z"/></svg>';
       var _ICO_PLANE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M21 16v-1.7l-7.5-4.6V4.6a1.6 1.6 0 0 0-3.2 0v5.1L2.8 14.3V16l7.5-2.3v4.7l-2 1.4V21l3.6-1 3.6 1v-1.2l-2-1.4v-4.7z"/></svg>';
 
+      // 2nd language: French everywhere, Spanish for La Paz (per-airport).
+      var _lang2 = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
+      function _t2(o){ return o[_lang2] || o.fr || o.en || ''; }
+      var _L = {
+        status:   {en:'Status',      fr:'Statut',       es:'Estado'},
+        flight:   {en:'Flight',      fr:'Vol',          es:'Vuelo'},
+        arriving: {en:'Arriving in', fr:'Arrive dans',  es:'Llega en'},
+        departure:{en:'Departure',   fr:'Départ',       es:'Salida'},
+        departed: {en:'Departed',    fr:'Parti',        es:'Salió'},
+        arrival:  {en:'Arrival',     fr:'Arrivée',      es:'Llegada'},
+        arrived:  {en:'Arrived',     fr:'Arrivé',       es:'Aterrizó'},
+        delayed:  {en:'Delayed',     fr:'Retardé',      es:'Retrasado'},
+        title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre appareil entrant', es:'Información de su aeronave entrante'}
+      };
+      // Status-adaptive Departure / Arrival labels
+      var _departed = (_stKey === 'enroute' || _stKey === 'arrived');
+      var _depObj = _departed ? _L.departed : _L.departure;
+      var _arrObj = (_stKey === 'arrived') ? _L.arrived : (_stKey === 'delayed' ? _L.delayed : _L.arrival);
+      function _i3(en, val, l2, cls){
+        return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
+             + '<div class="v2-rc-i3val ' + (cls||'') + '">' + val + '</div>'
+             + '<div class="v2-rc-i3lbl2">' + l2 + '</div></div>';
+      }
+      function _r2(iata, obj, val){
+        return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + iata + ' · ' + obj.en + '</div>'
+             + '<div class="v2-rc-r2val">' + (val || '—') + '</div>'
+             + '<div class="v2-rc-r2lbl2">' + iata + ' · ' + _t2(obj) + '</div></div>';
+      }
+
       _inboundCard =
-          '<div class="v2-rc-inbound">'
-        +   '<div class="v2-rc-status-pill v2-rc-status-' + _stCls + '">' + _stWord + '</div>'
-        +   '<div class="v2-rc-fltnum">' + (_ib.flight || _ibFltCompact) + '</div>'
-        +   '<div class="v2-rc-route">'
-        +     '<span class="v2-rc-route-pt">' + (_origIata || '') + '</span>'
-        +     '<span class="v2-rc-route-ico">' + _ICO_PLANE + '</span>'
-        +     '<span class="v2-rc-route-pt">' + (_destIata || '') + '</span>'
+          '<div class="v2-rc-sec v2-rc-incoming">'
+        +   '<div class="v2-rc-sec-title">' + _L.title.en + '</div>'
+        +   '<div class="v2-rc-i3">'
+        +     _i3('Status', _stWord, _t2(_L.status), 'v2-rc-status-' + _stCls)
+        +     _i3('Flight', _ibFltCompact, _t2(_L.flight), '')
+        +     _i3('Arriving in', (_ibEtaStr || '—'), _t2(_L.arriving), '')
         +   '</div>'
-        +   '<div class="v2-rc-headline">'
-        +     '<span class="v2-rc-flt">' + _ibFltCompact + '</span>'
-        +     '<span class="v2-rc-sep">·</span>'
-        +     '<span class="v2-rc-status v2-rc-status-' + _stCls + '">' + _stWord + '</span>'
+        +   '<div class="v2-rc-r2">'
+        +     _r2(_origIata, _depObj, _ibDepStr)
+        +     _r2(_destIata, _arrObj, _ibArrStr)
         +   '</div>'
-        +   (_origDisplay ? '<div class="v2-rc-from">' + (({en:'From',fr:'De',es:'Desde',de:'Von',it:'Da',pt:'De',ja:'出発地',zh:'来自',ar:'من'})[_ibLang] || 'From') + ' ' + _origDisplay + '</div>' : '')
-        +   '<div class="v2-rc-times">'
-        +     '<div class="v2-rc-time-cell">'
-        +       '<div class="v2-rc-time-lbl">' + TL('depTime') + '</div>'
-        +       '<div class="v2-rc-time-val">' + (_ibDepStr || '\u2014') + '</div>'
-        +     '</div>'
-        +     '<div class="v2-rc-time-cell">'
-        +       '<div class="v2-rc-time-lbl">' + TL('arrTime') + '</div>'
-        +       '<div class="v2-rc-time-val">' + (_ibArrStr || '\u2014') + '</div>'
-        +     '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-statbar">'
-        +     '<div class="v2-rc-stat">'
-        +       '<span class="v2-rc-stat-ico">' + _ICO_SPD + '</span>'
-        +       '<span class="v2-rc-stat-txt"><span class="v2-rc-stat-lbl">' + _spdLbl + '</span>'
-        +         '<span class="v2-rc-stat-val">' + (_spdKph !== null ? _spdKph.toLocaleString() : '—') + ' <span class="v2-rc-stat-unit">' + _spdUnit + '</span></span></span>'
-        +     '</div>'
-        +     '<div class="v2-rc-stat">'
-        +       '<span class="v2-rc-stat-ico">' + _ICO_ALT + '</span>'
-        +       '<span class="v2-rc-stat-txt"><span class="v2-rc-stat-lbl">' + _altLbl + '</span>'
-        +         '<span class="v2-rc-stat-val">' + (_liveAlt !== null ? _liveAlt.toLocaleString() : '—') + ' <span class="v2-rc-stat-unit">' + _altUnit + '</span></span></span>'
-        +     '</div>'
-        +   '</div>'
-        +   (_ibEtaStr ? '<div class="v2-rc-eta">' + TL('arrivesIn') + ' ' + _ibEtaStr + '</div>' : '')
         + '</div>';
+
+      // Speed/Altitude render at the bottom of the MAP section, ONLY while the
+      // aircraft is in flight (real telemetry present); otherwise it disappears.
+      if (_liveSpd !== null || _liveAlt !== null) {
+        _telemBar =
+            '<div class="v2-rc-mapstats">'
+          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div>'
+          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? _spdKph.toLocaleString() : '—') + ' <span class="v2-rc-ms-unit">' + _spdUnit + '</span></div>'
+          +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Vitesse',es:'Velocidad'}[_lang2] || 'Vitesse') + '</div></div>'
+          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div>'
+          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? _liveAlt.toLocaleString() : '—') + ' <span class="v2-rc-ms-unit">' + _altUnit + '</span></div>'
+          +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Altitude',es:'Altitud'}[_lang2] || 'Altitude') + '</div></div>'
+          + '</div>';
+      }
+
     }
   } catch (e) {}
 
@@ -5596,9 +5615,9 @@ function _buildV2MapCol(ctx, vars) {
       }
 
       _aircraftBlock =
-          '<div class="v2-rc-aircraft">'
-        +   _typeShelf
+          '<div class="v2-rc-sec v2-rc-aircraft">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
+        +   _typeShelf
         +   _regShelf
         + '</div>';
     }
@@ -5606,8 +5625,11 @@ function _buildV2MapCol(ctx, vars) {
 
   // Map area itself — clean now (no overlay pill, that data went up top)
   var _mapBox =
-      '<div class="v2-map-area">'
-    +   '<div class="g8-inb-map" id="gateMapBox"></div>'
+      '<div class="v2-rc-sec v2-rc-mapsec">'
+    +   '<div class="v2-map-area">'
+    +     '<div class="g8-inb-map" id="gateMapBox"></div>'
+    +   '</div>'
+    +   _telemBar
     + '</div>';
 
   // v218.99.7 — assemble right column. Theme system removed in v218.99.9,
