@@ -3458,55 +3458,61 @@ body, body.gids-page, body.gate-page{
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   RIGHT PANEL — 3 equal sections: ① Incoming info · ② Map · ③ Aircraft.
-   Each section flexes to fill ⅓ of the column; accent line divides them.
+   RIGHT PANEL — flat SHELVES (like the left rail): full-width title, then
+   Status/Flight/Arriving · ETD/ETA · Map(×2) · Illustration · Aircraft type.
+   Each shelf fills equally; accent "lines" divide them. First column is
+   left-aligned, last column right-aligned. Speed/Altitude overlaid IN the map.
    ════════════════════════════════════════════════════════════════════════ */
-.g8-wrap .gad-map-col-v2 { padding: 0 !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-sec {
-  flex: 1 1 0 !important; min-height: 0 !important;
-  display: flex !important; flex-direction: column !important;
-  justify-content: center !important; overflow: hidden !important;
-  padding: clamp(6px,0.9vh,14px) clamp(8px,0.8vw,16px) !important;
-  box-sizing: border-box !important;
-}
-.g8-wrap .gad-map-col-v2 > .v2-rc-sec:not(:last-child) {
+.g8-wrap .gad-map-col-v2 { padding: 0 !important; display: flex !important; flex-direction: column !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle {
+  flex: 0 0 auto !important; text-align: center !important;
+  font-size: clamp(16px,1.9vh,26px) !important; font-weight: 800 !important; color: #0f2238 !important;
+  line-height: 1.12 !important; padding: clamp(6px,1vh,14px) clamp(8px,0.8vw,16px) !important;
   border-bottom: 3px solid var(--airline-accent, #D82F2E) !important;
 }
-/* ① title */
-.g8-wrap .gad-map-col-v2 .v2-rc-sec-title {
-  font-size: clamp(15px,1.7vh,23px) !important; font-weight: 800 !important;
-  color: #0f2238 !important; text-align: center !important; line-height: 1.1 !important;
-  margin-bottom: clamp(4px,0.8vh,10px) !important;
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
+  flex: 1 1 0 !important; min-height: 0 !important;
+  display: flex !important; flex-direction: column !important; justify-content: center !important;
+  overflow: hidden !important; box-sizing: border-box !important;
+  padding: clamp(5px,0.8vh,12px) clamp(8px,0.8vw,16px) !important;
+  border-bottom: 3px solid var(--airline-accent, #D82F2E) !important;
 }
-/* ① rows: 3-col (status/flight/arriving) + 2-col (departure/arrival) */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf:last-child { border-bottom: 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { flex: 2 1 0 !important; padding: 0 !important; position: relative !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3,
-.g8-wrap .gad-map-col-v2 .v2-rc-r2 { display: flex !important; align-items: flex-start !important; gap: clamp(4px,0.6vw,12px) !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-r2 { margin-top: clamp(6px,1.1vh,14px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-r2 { display: flex !important; align-items: flex-start !important; gap: clamp(4px,0.6vw,12px) !important; width: 100% !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3cell,
 .g8-wrap .gad-map-col-v2 .v2-rc-r2cell {
   flex: 1 1 0 !important; min-width: 0 !important;
-  display: flex !important; flex-direction: column !important; align-items: center !important; text-align: center !important; gap: 2px !important;
+  display: flex !important; flex-direction: column !important; gap: 3px !important;
+  align-items: center !important; text-align: center !important;
 }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3cell:first-child,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2cell:first-child { align-items: flex-start !important; text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3cell:last-child,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2cell:last-child { align-items: flex-end !important; text-align: right !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3lbl,
-.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl { font-size: clamp(12px,1.35vh,18px) !important; font-weight: 700 !important; color: #4a5568 !important; line-height: 1.08 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl { font-size: clamp(13px,1.5vh,21px) !important; font-weight: 700 !important; color: #4a5568 !important; line-height: 1.08 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3lbl2,
-.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl2 { font-size: clamp(11px,1.2vh,15px) !important; font-weight: 600 !important; color: #6b7280 !important; line-height: 1.08 !important; }
-/* status value wraps if long (no overflow into next column); times stay 1 line */
-.g8-wrap .gad-map-col-v2 .v2-rc-i3val { font-size: clamp(16px,2.1vh,30px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.04 !important; white-space: normal !important; overflow-wrap: anywhere !important; max-width: 100% !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-r2val { font-size: clamp(20px,2.7vh,38px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; white-space: nowrap !important; }
-/* status colours on the Status value */
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl2 { font-size: clamp(12px,1.3vh,17px) !important; font-weight: 600 !important; color: #6b7280 !important; line-height: 1.08 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val { font-size: clamp(18px,2.3vh,34px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.04 !important; white-space: normal !important; overflow-wrap: anywhere !important; max-width: 100% !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-r2val { font-size: clamp(20px,2.7vh,40px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; white-space: nowrap !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-scheduled,
 .g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-ontime    { color: #0e7c4a !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-delayed   { color: #d97706 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-cancelled { color: #b91c1c !important; }
-/* ② map fills, speed/altitude pinned to the bottom of the map */
-.g8-wrap .gad-map-col-v2 .v2-rc-mapsec { padding: 0 !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-mapsec .v2-map-area { flex: 1 1 0 !important; min-height: 0 !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-mapstats { display: flex !important; gap: clamp(6px,0.8vw,14px) !important; padding: clamp(4px,0.7vh,10px) clamp(8px,0.8vw,16px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-map .v2-map-area { position: absolute !important; inset: 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  position: absolute !important; left: 0 !important; right: 0 !important; bottom: 0 !important; z-index: 5 !important;
+  display: flex !important; gap: clamp(6px,0.8vw,14px) !important;
+  padding: clamp(4px,0.7vh,10px) clamp(8px,0.8vw,16px) !important; background: rgba(15,34,56,0.78) !important;
+}
 .g8-wrap .gad-map-col-v2 .v2-rc-mstat { flex: 1 1 0 !important; text-align: center !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl  { font-size: clamp(12px,1.4vh,19px) !important; font-weight: 700 !important; color: #4a5568 !important; line-height: 1.05 !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl2 { font-size: clamp(11px,1.25vh,16px) !important; font-weight: 600 !important; color: #6b7280 !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-ms-val  { font-size: clamp(18px,2.3vh,34px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-ms-unit { font-size: 0.6em !important; font-weight: 700 !important; color: #6b7280 !important; }
-/* ③ aircraft section centred */
-.g8-wrap .gad-map-col-v2 .v2-rc-aircraft { justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-mstat:first-child { text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-mstat:last-child { text-align: right !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl  { font-size: clamp(12px,1.4vh,18px) !important; font-weight: 700 !important; color: #fff !important; line-height: 1.05 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl2 { font-size: clamp(11px,1.2vh,15px) !important; font-weight: 600 !important; color: rgba(255,255,255,0.8) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-val  { font-size: clamp(16px,2.1vh,30px) !important; font-weight: 900 !important; color: #fff !important; line-height: 1.0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-unit { font-size: 0.6em !important; font-weight: 700 !important; color: rgba(255,255,255,0.8) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-type { justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { align-items: center !important; }

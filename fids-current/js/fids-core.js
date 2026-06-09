@@ -5340,6 +5340,13 @@ function _buildV2MapCol(ctx, vars) {
       else if (_rawSt === 'ontime' || _rawSt === 'on-time') _stKey = 'ontime';
       else _stKey = 'scheduled';
       var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
+      var _ST_SHORT = {
+        enroute:{en:'Enroute',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
+        boarding:{en:'Boarding',fr:'Embarquement',es:'Embarcando'}, delayed:{en:'Delayed',fr:'Retardé',es:'Retrasado'},
+        early:{en:'Early',fr:'En avance',es:'Adelantado'}, cancelled:{en:'Cancelled',fr:'Annulé',es:'Cancelado'},
+        arrived:{en:'Arrived',fr:'Arrivé',es:'Aterrizado'}, ontime:{en:'On time',fr:"À l'heure",es:'A tiempo'}
+      };
+      var _stShort = (_ST_SHORT[_stKey] && (_ST_SHORT[_stKey][_ibLang] || _ST_SHORT[_stKey].en)) || _stWord;
 
       // Origin display: "Calgary (YYC)"
       var _origCity = '';
@@ -5448,33 +5455,34 @@ function _buildV2MapCol(ctx, vars) {
         title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre appareil entrant', es:'Información de su aeronave entrante'}
       };
       // Status-adaptive Departure / Arrival labels
+      // ETD/ETA → ATD/ATA once actually departed / arrived (status-adaptive)
       var _departed = (_stKey === 'enroute' || _stKey === 'arrived');
-      var _depObj = _departed ? _L.departed : _L.departure;
-      var _arrObj = (_stKey === 'arrived') ? _L.arrived : (_stKey === 'delayed' ? _L.delayed : _L.arrival);
+      var _arrived  = (_stKey === 'arrived');
+      var _depAbbr = _departed ? 'ATD' : 'ETD';
+      var _arrAbbr = _arrived  ? 'ATA' : 'ETA';
       function _i3(en, val, l2, cls){
         return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
              + '<div class="v2-rc-i3val ' + (cls||'') + '">' + val + '</div>'
              + '<div class="v2-rc-i3lbl2">' + l2 + '</div></div>';
       }
-      function _r2(iata, obj, val){
-        return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + iata + ' · ' + obj.en + '</div>'
-             + '<div class="v2-rc-r2val">' + (val || '—') + '</div>'
-             + '<div class="v2-rc-r2lbl2">' + iata + ' · ' + _t2(obj) + '</div></div>';
+      // r2 cell: ABBR on top · "IATA  time" value · 2nd-lang word under
+      function _r2(abbr, iata, val, wordObj){
+        return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + abbr + '</div>'
+             + '<div class="v2-rc-r2val">' + iata + ' ' + (val || '—') + '</div>'
+             + '<div class="v2-rc-r2lbl2">' + _t2(wordObj) + '</div></div>';
       }
 
       _inboundCard =
-          '<div class="v2-rc-sec v2-rc-incoming">'
-        +   '<div class="v2-rc-sec-title">' + _L.title.en + '</div>'
-        +   '<div class="v2-rc-i3">'
-        +     _i3('Status', _stWord, _t2(_L.status), 'v2-rc-status-' + _stCls)
+          '<div class="v2-rc-rtitle">' + _L.title.en + '</div>'
+        + '<div class="v2-rc-shelf v2-rc-shelf-i3"><div class="v2-rc-i3">'
+        +     _i3('Status', _stShort, _t2(_L.status), 'v2-rc-status-' + _stCls)
         +     _i3('Flight', _ibFltCompact, _t2(_L.flight), '')
         +     _i3('Arriving in', (_ibEtaStr || '—'), _t2(_L.arriving), '')
-        +   '</div>'
-        +   '<div class="v2-rc-r2">'
-        +     _r2(_origIata, _depObj, _ibDepStr)
-        +     _r2(_destIata, _arrObj, _ibArrStr)
-        +   '</div>'
-        + '</div>';
+        +   '</div></div>'
+        + '<div class="v2-rc-shelf v2-rc-shelf-r2"><div class="v2-rc-r2">'
+        +     _r2(_depAbbr, _origIata, _ibDepStr, {fr:'Départ',es:'Salida'})
+        +     _r2(_arrAbbr, _destIata, _ibArrStr, {fr:'Arrivée',es:'Llegada'})
+        +   '</div></div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.
@@ -5622,8 +5630,10 @@ function _buildV2MapCol(ctx, vars) {
       }
 
       _aircraftBlock =
-          '<div class="v2-rc-sec v2-rc-aircraft">'
+          '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
+        + '</div>'
+        + '<div class="v2-rc-shelf v2-rc-shelf-type v2-rc-aircraft">'
         +   _typeShelf
         +   _regShelf
         + '</div>';
@@ -5632,11 +5642,11 @@ function _buildV2MapCol(ctx, vars) {
 
   // Map area itself — clean now (no overlay pill, that data went up top)
   var _mapBox =
-      '<div class="v2-rc-sec v2-rc-mapsec">'
+      '<div class="v2-rc-shelf v2-rc-shelf-map">'
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
+    +     _telemBar
     +   '</div>'
-    +   _telemBar
     + '</div>';
 
   // v218.99.7 — assemble right column. Theme system removed in v218.99.9,
