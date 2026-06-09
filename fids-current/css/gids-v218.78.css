@@ -2250,7 +2250,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col {
   background: #ffffff !important;                                   /* fallback */
   background: #ddd9d3 !important; /* light airline-tinted rail */
-  border: 6px solid var(--airline-accent, #D82F2E) !important;
+  border: 10px solid var(--banner-bg, #3A3F49) !important; /* thick border = top/bar colour */
   border-radius: 24px !important;
   margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.8vw,14px) !important;
@@ -2312,7 +2312,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 {
   background: #ffffff !important;                                   /* fallback */
   background: #ddd9d3 !important; /* light airline tint */
-  border: 6px solid var(--airline-accent, #00ABC2) !important;
+  border: 10px solid var(--banner-bg, #3A3F49) !important; /* thick border = top/bar colour */
   border-radius: 24px !important;
   margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
   overflow: hidden !important;
