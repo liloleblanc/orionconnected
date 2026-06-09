@@ -2254,8 +2254,8 @@ body, body.gids-page, body.gate-page{
   background: #E9E9EC !important; /* light airline-tinted rail */
   border: 3px solid var(--airline-accent, #D82F2E) !important; /* accent line (same size as inner) */
   border-radius: 24px !important;
-  margin: clamp(5px,0.7vh,9px) !important;   /* thin outer strip (dark frame shows) */
-  padding: clamp(4px,0.6vh,10px) clamp(8px,0.8vw,14px) !important;
+  margin: 0 !important;   /* flush to screen edge */
+  padding: 0 !important;   /* shelves touch the edges */
   overflow: hidden !important;
   box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
   display: flex !important; flex-direction: column !important; justify-content: center !important;
@@ -2308,7 +2308,7 @@ body, body.gids-page, body.gate-page{
   background: color-mix(in srgb, var(--banner-bg, #3A3F49) 78%, #000) !important;
   box-shadow: none !important; border: 0 !important; border-radius: 0 !important;
   padding: clamp(8px,1vh,15px) clamp(10px,0.9vw,16px) !important;
-  margin: clamp(4px,0.5vh,8px) calc(-1 * clamp(8px,0.8vw,14px)) calc(-1 * clamp(4px,0.6vh,10px)) !important;
+  margin: clamp(4px,0.5vh,8px) 0 0 !important;
 }
 .g8-wrap .gad-aircraft-col .v2-wx-lbl  { color: #ffffff !important; font-size: clamp(15px,1.7vh,22px) !important; font-weight: 800 !important; }
 .g8-wrap .gad-aircraft-col .v2-wx-when { color: rgba(255,255,255,0.82) !important; font-size: clamp(13px,1.5vh,19px) !important; font-weight: 700 !important; }
@@ -2323,7 +2323,7 @@ body, body.gids-page, body.gate-page{
   background: #E9E9EC !important; /* light airline tint */
   border: 3px solid var(--airline-accent, #D82F2E) !important; /* accent line (same size as inner) */
   border-radius: 24px !important;
-  margin: clamp(5px,0.7vh,9px) !important;   /* thin outer strip (dark frame shows) */
+  margin: 0 !important;   /* flush to screen edge */
   overflow: hidden !important;
   box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
 }
