@@ -6461,6 +6461,9 @@ function uxgGateHtml(ctx) {
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
     'AV': '/logos/airlines/asian-other/avianca.svg',  // red avianca — pops on black
+    // Flair — the REAL "flair airlines" lockup is black ink, so filter it to
+    // white for the dark banner (no plate, per Nick).
+    'F8': { src: '/logos/airlines/canadian/flair.svg', whiten: true },
     // Regional carriers — white monochrome marks on file, straight onto the dark banner
     '5T': '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg',
     '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
@@ -6470,16 +6473,17 @@ function uxgGateHtml(ctx) {
     '3H': '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg'
   };
   var _darkLogo = BANNER_DARK_LOGO[_bannerBrandCode] || BANNER_DARK_LOGO[airlineCode];
+  var _darkLogoWhiten = false;
   if (!_useOverrideFile && _darkLogo) {
-    r1LogoSrc = _darkLogo;
-    _useOverrideFile = true;          // real colours — no white filter, no plate
+    r1LogoSrc = (typeof _darkLogo === 'object') ? _darkLogo.src : _darkLogo;
+    _darkLogoWhiten = (typeof _darkLogo === 'object') && !!_darkLogo.whiten;
+    _useOverrideFile = true;          // real colours — no plate
     _sz = { h: 64, w: 300 };
   }
   // Per-carrier brand logo pinned for the gate header — the airline's own mark
   // on file, shown on a clean white plate (full colour, CDN-independent).
   var BANNER_PLATE_LOGO = {
-    'OB': '/logos/airlines/asian-other/boliviana.svg',  // BoA — letters + corn-husk mark
-    'F8': '/logos/airlines/canadian/flair.svg'          // Flair — REAL "flair airlines" lockup (black ink → white plate); the old wordmark-light file was a homemade placeholder
+    'OB': '/logos/airlines/asian-other/boliviana.svg'   // BoA — letters + corn-husk mark
   };
   var _plateLogo = BANNER_PLATE_LOGO[_bannerBrandCode] || BANNER_PLATE_LOGO[airlineCode];
   if (!_useOverrideFile && _plateLogo) {
@@ -6512,7 +6516,9 @@ function uxgGateHtml(ctx) {
   var _onPlate = _bannerUsedTile || _bannerUsedWordmark;
   var _logoStyle = 'height:' + _sz.h + 'px !important;max-height:' + _sz.h + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
-                 + (_useOverrideFile ? 'filter:none !important;' : '')
+                 + (_useOverrideFile
+                     ? (_darkLogoWhiten ? 'filter:brightness(0) invert(1) !important;' : 'filter:none !important;')
+                     : '')
                  // Logo sits on a clean white rounded plate so it reads on the
                  // dark header and is never clipped by the banner band.
                  + (_onPlate ? 'background:#fff !important;border-radius:14px !important;padding:' + (_bannerUsedWordmark ? '8px 16px' : '8px') + ' !important;box-sizing:border-box !important;' : '');

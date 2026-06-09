@@ -3580,4 +3580,4 @@ body, body.gids-page, body.gate-page{
 /* Gate block stops just short of the screen edge: a small gap exposes the
    dark banner behind it, so the banner's own rounded corner stays the true
    screen corner and the block's rounded corner floats just inside it. */
-.g8-wrap .g8-r1-right { margin-right: clamp(10px, 1vw, 18px) !important; }
+.g8-wrap .g8-r1-right { margin-right: clamp(18px, 1.8vw, 32px) !important; }
