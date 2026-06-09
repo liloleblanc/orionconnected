@@ -5411,16 +5411,31 @@ function _buildV2MapCol(ctx, vars) {
 
       // v220 — compact telemetry (kt→kph) + inline brand icons for the redesigned card
       var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpd * 1.852) : null;
-      // Estimated cruise when the inbound is provably airborne (arriving soon)
-      // but no live ADS-B position is available (poor coverage / demo flights).
-      // Values are typical for the aircraft type, not live telemetry.
-      if (_liveSpd === null && _liveAlt === null && _ibMinsToArr > 0 && _ibMinsToArr < 150) {
-        var _eqStr = ((_ib._aircraft || _ib._aircraftCode || _ib.aircraft || '') + '').toLowerCase();
-        var _isProp = /dash|dhc|q[0-9]{3}|atr|turboprop|saab|beech|caravan|otter|metroliner|cessna|king air/.test(_eqStr);
-        var _descend = _ibMinsToArr <= 20;   // on approach
-        if (_isProp) { _spdKph = _descend ? 410 : 510; _liveAlt = _descend ? 11000 : 23000; }
-        else         { _spdKph = _descend ? 610 : 830; _liveAlt = _descend ? 16000 : 35000; }
-        _liveSpd = Math.round(_spdKph / 1.852);   // keep kt-based readouts consistent
+      // Estimated telemetry ONLY when the inbound is genuinely AIRBORNE — it has
+      // actually departed (wheels-up >2 min ago) AND not yet arrived — and no
+      // live ADS-B fix exists (poor coverage / demo). On the ground → "—".
+      // Cruise altitude scales to TRIP LENGTH (a 45-min hop never hits 37,000 ft)
+      // and tapers during climb/descent. Typical-for-type, NOT live tracking.
+      if (_liveSpd === null && _liveAlt === null) {
+        var _estDepTs = (typeof adbTs === 'function' && _ib._depSchedLocal) ? adbTs(_ib._depSchedLocal) : 0;
+        var _estArrTs = _ibEffArrTs || 0;
+        var _estNow = Date.now();
+        var _minsSinceDep = _estDepTs ? (_estNow - _estDepTs) / 60000 : -1;
+        var _minsTillArr = _estArrTs ? (_estArrTs - _estNow) / 60000 : _ibMinsToArr;
+        if (_minsSinceDep > 2 && _minsTillArr > 1) {
+          var _durMin = _ib._durationMins || ((_estArrTs && _estDepTs) ? Math.round((_estArrTs - _estDepTs) / 60000) : 90);
+          var _eqStr = ((_ib._aircraft || _ib._aircraftCode || _ib.aircraft || '') + '').toLowerCase();
+          var _isProp = /dash|dhc|q[0-9]{3}|atr|turboprop|saab|beech|caravan|otter|metroliner|cessna|king air/.test(_eqStr);
+          var _cruiseAlt = _isProp ? (_durMin < 55 ? 18000 : 24000)
+                                   : (_durMin < 55 ? 26000 : (_durMin < 110 ? 33000 : 37000));
+          var _cruiseSpd = _isProp ? (_durMin < 55 ? 440 : 520) : (_durMin < 55 ? 720 : 830);
+          var _phase = 1;
+          if (_minsSinceDep < 8)      _phase = 0.55;   // climbing out
+          else if (_minsTillArr < 12) _phase = 0.5;    // descending in
+          _liveAlt = Math.round(_cruiseAlt * _phase / 500) * 500;
+          _spdKph  = Math.round(_cruiseSpd * (_phase < 1 ? 0.82 : 1) / 10) * 10;
+          _liveSpd = Math.round(_spdKph / 1.852);
+        }
       }
       var _altUnit = ({en:'ft',fr:'pieds',es:'pies',de:'ft',it:'piedi',pt:'pés',ja:'ft',zh:'英尺',ar:'قدم'})[_ibLang] || 'ft';
       var _spdUnit = ({en:'kph',fr:'kph',es:'km/h',de:'kph',it:'kph',pt:'kph',ja:'kph',zh:'kph',ar:'kph'})[_ibLang] || 'kph';
@@ -7056,7 +7071,7 @@ function uxgActivateRotator() {
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
   if (!root) return;
-  var sels = ['.g8-welcome-city', '.g8-r1-dest'];
+  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-dest', '.v2-fi-status-val'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
     els.forEach(function(el) {

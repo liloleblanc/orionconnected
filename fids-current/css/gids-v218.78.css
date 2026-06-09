@@ -2287,8 +2287,8 @@ body, body.gids-page, body.gate-page{
   font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important;
 }
 /* Destination + Status values — bigger */
-.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest        { font-size: clamp(40px, 5.4vh, 74px) !important; white-space: normal !important; overflow-wrap: anywhere !important; line-height: 0.98 !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val  { font-size: clamp(40px, 5.4vh, 74px) !important; white-space: normal !important; overflow-wrap: anywhere !important; line-height: 0.98 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest        { font-size: clamp(40px, 5.4vh, 74px) !important; white-space: nowrap !important; line-height: 0.98 !important; max-width: 100% !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val  { font-size: clamp(40px, 5.4vh, 74px) !important; white-space: nowrap !important; line-height: 0.98 !important; max-width: 100% !important; }
 /* WEATHER — same shelf, just a DARKER background + readable (light) font */
 .g8-wrap .gad-aircraft-col .v2-wx-block {
   background: #2f3946 !important;                                           /* fallback */
