@@ -3495,8 +3495,8 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-r2lbl { font-size: clamp(16px,1.9vh,28px) !important; font-weight: 700 !important; color: #4a5568 !important; line-height: 1.08 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3lbl2,
 .g8-wrap .gad-map-col-v2 .v2-rc-r2lbl2 { font-size: clamp(14px,1.6vh,22px) !important; font-weight: 600 !important; color: #6b7280 !important; line-height: 1.08 !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-i3val { font-size: clamp(28px,3.7vh,58px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.02 !important; white-space: normal !important; overflow-wrap: anywhere !important; max-width: 100% !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-r2val { font-size: clamp(24px,3.3vh,50px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.04 !important; white-space: normal !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val { font-size: clamp(22px,3.1vh,48px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; white-space: nowrap !important; max-width: 100% !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-r2val { font-size: clamp(22px,3.1vh,48px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; white-space: nowrap !important; max-width: 100% !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-scheduled,
 .g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-ontime    { color: #0e7c4a !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-delayed   { color: #d97706 !important; }
@@ -3516,4 +3516,4 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-ms-unit { font-size: 0.6em !important; font-weight: 700 !important; color: rgba(255,255,255,0.8) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-type { justify-content: center !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { align-items: center !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-actype-val { font-size: clamp(22px,2.9vh,44px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.06 !important; white-space: normal !important; overflow-wrap: anywhere !important; max-width: 100% !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-actype-val { font-size: clamp(22px,3.1vh,48px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; white-space: nowrap !important; max-width: 100% !important; }

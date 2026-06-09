@@ -5629,23 +5629,22 @@ function _buildV2MapCol(ctx, vars) {
           + '</div>';
       }
 
-      // Shelf 6 — clean 2-col like the others: Aircraft type (+reg) | Operated by
+      // Shelf 6 — Aircraft type (+reg). Long manufacturer names shortened so it
+      // fits one line (auto-fit shrinks the rest).
       var _lang2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
-      var _acTypeVal = (_equipNm || _equipCd || '') + (_acReg ? '  |  ' + _acReg : '');
-      var _opVal = (typeof _opShortName === 'string' && _opShortName) ? _opShortName : '';
+      var _acModel = String(_equipNm || _equipCd || '')
+        .replace(/^De Havilland(\s+Canada)?\s+/i, '')   // "De Havilland Dash 8-400" → "Dash 8-400"
+        .replace(/^Bombardier\s+/i, '');
+      var _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg : '');
       var _typeL2 = (_lang2b === 'es') ? 'Tipo de aeronave' : "Type d'appareil";
-      var _opL2   = (_lang2b === 'es') ? 'Operado por'      : 'Exploité par';
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-r2">'
-        +   '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Aircraft type</div>'
+        +   '<div class="v2-rc-r2cell" style="flex:1 1 100%;align-items:center;text-align:center;"><div class="v2-rc-r2lbl">Aircraft type</div>'
         +     '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
         +     '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div></div>'
-        +   (_opVal ? ('<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Operated by</div>'
-        +     '<div class="v2-rc-actype-val">' + _opVal + '</div>'
-        +     '<div class="v2-rc-r2lbl2">' + _opL2 + '</div></div>') : '')
         + '</div></div>';
     }
   } catch (e) {}
@@ -7102,7 +7101,8 @@ function uxgActivateRotator() {
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
   if (!root) return;
-  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-dest', '.v2-fi-status-val'];
+  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-dest', '.v2-fi-status-val',
+              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
     els.forEach(function(el) {
@@ -7116,7 +7116,7 @@ function gateAutofit(root) {
       el.dataset._origSize = size + 'px';
       var guard = 0;
       // Reduce font-size in 2px steps until the text fits, min 22px
-      while (el.scrollWidth > el.clientWidth && size > 22 && guard < 40) {
+      while (el.scrollWidth > el.clientWidth && size > 15 && guard < 40) {
         size -= 2;
         el.style.fontSize = size + 'px';
         guard++;
