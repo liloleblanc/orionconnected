@@ -696,11 +696,11 @@ html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
 }
 body, body.gids-page, body.gate-page{
   background:#eef2f6 !important;                                            /* fallback */
-  background:#D9DDE2 !important; /* light-gray canvas (frame) */
+  background:#C2C2C2 !important; /* light-gray canvas (frame) */
 }
 .g8-wrap{
   background:#eef2f6 !important;                                            /* fallback */
-  background:#D9DDE2 !important; /* light-gray canvas (frame) */
+  background:#C2C2C2 !important; /* light-gray canvas (frame) */
   color:var(--g92-ink) !important;
 }
 /* Header: keep airline gravitas without swallowing the screen. */
@@ -750,7 +750,7 @@ body, body.gids-page, body.gate-page{
 /* Main stage: airline-tinted canvas (the background outside the data cards). */
 .g8-r4,.g8-r4-v2,.g8-v2-main,.g8-main-v2{
   background:#eef2f6 !important;                                            /* fallback */
-  background:#D9DDE2 !important;                                            /* light-gray canvas (frame) */
+  background:#C2C2C2 !important;                                            /* light-gray canvas (frame) */
 }
 .gad-aircraft-col,.gad-media-col,.gad-map-col-v2{
   min-height:0 !important;
