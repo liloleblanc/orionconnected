@@ -2177,6 +2177,28 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .g8-r1-right .g8-bilbl-sep { display: none !important; }
 .g8-wrap .g8-r1-gate { font-size: clamp(42px, 4.5vw, 66px) !important; }
 
+/* ── v221c — Flight block mirrors the Gate block: label STACKED (Flight over
+   Vol) beside the big number, and everything bigger across both blocks. ── */
+.g8-wrap .g8-r1 { height: 112px !important; min-height: 112px !important; max-height: 112px !important; }
+.g8-wrap .g8-r1-flight {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: clamp(10px, 1vw, 20px) !important;
+}
+.g8-wrap .g8-r1-flight .g8-bilbl,
+.g8-wrap .g8-r1-right .g8-bilbl {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  line-height: 1.04 !important;
+  font-size: clamp(17px, 1.7vw, 27px) !important;
+}
+.g8-wrap .g8-r1-right .g8-bilbl { align-items: flex-end !important; }
+.g8-wrap .g8-r1-flight .g8-bilbl-sep,
+.g8-wrap .g8-r1-right .g8-bilbl-sep { display: none !important; }
+.g8-wrap .g8-r1-flightnum,
+.g8-wrap .g8-r1-gate { font-size: clamp(46px, 5vw, 74px) !important; line-height: 0.95 !important; }
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;
