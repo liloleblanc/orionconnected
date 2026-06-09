@@ -2140,7 +2140,7 @@ const AIRLINE_BRAND = {
   'UA': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#1414D2', name:'United' },
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
-  'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#ff6900', name:'Flair' },
+  'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#A8FB96', name:'Flair' },
   'LH': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#2a2a3e', accent:'#05164d', name:'Lufthansa' },
   'BA': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#1e2444', accent:'#075aaa', name:'British Airways' },
   'AF': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#1e2444', accent:'#002157', name:'Air France' },
@@ -2363,7 +2363,7 @@ var WATERMARK_OVERRIDE = {
   // Canadian regionals
   'PD': '/logos/airlines/canadian/porter-white.svg',
   'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',
-  'F8': '/logos/airlines/canadian/flair-wordmark-light.svg',           // may or may not exist; falls back if missing
+  'F8': '/logos/tails-modern/F8.svg',           // real tail roundel (black + brand lime) — the old wordmark-light was a homemade placeholder
   'PB': '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg',
   // European
   'BA': '/logos/airlines/european/british-airways-wordmark-light.svg',
@@ -3482,7 +3482,7 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
-  'AC':'#D82F2E','WS':'#00B2A9','PD':'#1A3A6B','PB':'#1F3876','F8':'#FF6600',
+  'AC':'#D82F2E','WS':'#00B2A9','PD':'#1A3A6B','PB':'#1F3876','F8':'#A8FB96',
   'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
@@ -17868,7 +17868,8 @@ var GATE_ADS_BY_AIRLINE = {
     { bg:'linear-gradient(135deg,#002868 0%,#004090 100%)', headline:'Air Transat', sub:'Your vacation starts the moment you board', logo:'/logos/airlines/canadian/transat.svg' },
   ],
   'F8': [
-    { bg:'linear-gradient(135deg,#FF6600 0%,#cc5200 100%)', headline:'Flair Airlines', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
+    // Brand-true: black lockup + black copy on Flair lime (their billboard look)
+    { bg:'linear-gradient(135deg,#A8FB96 0%,#8FE981 100%)', fg:'#1C1C1C', subFg:'rgba(28,28,28,0.85)', headline:'Flair Airlines', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
   ],
   // NK (Spirit) ad block removed — ceased operations May 2 2026
   'HA': [
@@ -19669,13 +19670,17 @@ function buildGateAdHtml(ad) {
       + 'onerror="this.style.display=\'none\';">'
       + '</div>'
     : '';
+  // Optional per-ad text colors — light-background brand slides (Flair lime)
+  // need dark copy; default stays white-on-dark.
+  var _stdFg = ad.fg || '#fff';
+  var _stdSubFg = ad.subFg || 'rgba(255,255,255,0.88)';
   return _adWrap(
     '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 36px;gap:6px;background:' + bgStyle + ';box-sizing:border-box;">'
     + (iconHtml ? '<div style="flex-shrink:0;opacity:0.9;margin-bottom:6px;">' + iconHtml + '</div>' : '')
     + _stdLogoHtml
     + '<div style="flex-shrink:0;text-align:center;max-width:100%;overflow:hidden;">'
-    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.1;max-width:100%;">' + (ad.headline || '') + '</div>'
-    + '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:rgba(255,255,255,0.88);margin-top:14px;line-height:1.3;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
+    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:' + _stdFg + ';line-height:1.1;max-width:100%;">' + (ad.headline || '') + '</div>'
+    + '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:' + _stdSubFg + ';margin-top:14px;line-height:1.3;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
     + '</div></div>'
   );
 }
