@@ -20,8 +20,8 @@ window.AIRLINE_BRAND_COLORS = {
   'PD': { r1:'#FFFFFF', r1Text:'#002244', r2:'#1A3A6B', body:'#EEF2F6', bodyText:'#002244' }, // Porter (LIGHT bar — dark logo)
   'TS': { r1:'#0F4C81', r1Text:'#FFFFFF', r2:'#00A0DF', body:'#EAF1F7', bodyText:'#0F4C81' }, // Air Transat
   'F8': { r1:'#101820', r1Text:'#FFFFFF', r2:'#39B54A', body:'#EFF2EF', bodyText:'#0F172A' }, // Flair
-  'PB': { r1:'#FCA404', r1Text:'#16243E', r2:'#C77F00', body:'#FCF3E0', bodyText:'#16243E' }, // PAL Airlines (all gold)
-  'SP': { r1:'#FCA404', r1Text:'#16243E', r2:'#C77F00', body:'#FCF3E0', bodyText:'#16243E' }, // PAL Airlines (alt code, all gold)
+  'PB': { r1:'#FCA404', r1Text:'#16243E', r2:'#FCA404', body:'#FCF3E0', bodyText:'#16243E' }, // PAL Airlines (gold icons/accent)
+  'SP': { r1:'#FCA404', r1Text:'#16243E', r2:'#FCA404', body:'#FCF3E0', bodyText:'#16243E' }, // PAL Airlines (alt code, gold)
   'BQ': { r1:'#1B2A4A', r1Text:'#FFFFFF', r2:'#E1241B', body:'#EDEFF4', bodyText:'#1B2A4A' }, // Pascan
   '3H': { r1:'#1A1A1A', r1Text:'#FFFFFF', r2:'#E4002B', body:'#F2EEEC', bodyText:'#0F172A' }, // Air Inuit
   'MO': { r1:'#10243F', r1Text:'#FFFFFF', r2:'#C8102E', body:'#EAEFF5', bodyText:'#10243F' }, // Calm Air
