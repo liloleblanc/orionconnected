@@ -5458,8 +5458,12 @@ function _buildV2MapCol(ctx, vars) {
       // ETD/ETA → ATD/ATA once actually departed / arrived (status-adaptive)
       var _departed = (_stKey === 'enroute' || _stKey === 'arrived');
       var _arrived  = (_stKey === 'arrived');
-      var _depAbbr = _departed ? 'ATD' : 'ETD';
-      var _arrAbbr = _arrived  ? 'ATA' : 'ETA';
+      var _delayedSt = (_stKey === 'delayed');
+      // Departure / Arrival labels adapt to status (Departed / Arrived / Delayed)
+      var _depAbbr = _departed ? 'Departed' : 'Departure';
+      var _arrAbbr = _arrived ? 'Arrived' : (_delayedSt ? 'Delayed' : 'Arrival');
+      var _depWordObj = _departed ? {fr:'Parti',es:'Salió'} : {fr:'Départ',es:'Salida'};
+      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizó'} : (_delayedSt ? {fr:'Retardé',es:'Retrasado'} : {fr:'Arrivée',es:'Llegada'});
       function _i3(en, val, l2, cls){
         return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
              + '<div class="v2-rc-i3val ' + (cls||'') + '">' + val + '</div>'
@@ -5480,8 +5484,8 @@ function _buildV2MapCol(ctx, vars) {
         +     _i3('Arriving in', (_ibEtaStr || '—'), _t2(_L.arriving), '')
         +   '</div></div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-r2"><div class="v2-rc-r2">'
-        +     _r2(_depAbbr, (_ibDepStr || '—') + ' - ' + _origIata, {fr:'Départ',es:'Salida'})
-        +     _r2(_arrAbbr, _destIata + ' - ' + (_ibArrStr || '—'), {fr:'Arrivée',es:'Llegada'})
+        +     _r2(_depAbbr, (_ibDepStr || '—') + ' - ' + _origIata, _depWordObj)
+        +     _r2(_arrAbbr, _destIata + ' - ' + (_ibArrStr || '—'), _arrWordObj)
         +   '</div></div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
