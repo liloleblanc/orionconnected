@@ -5099,7 +5099,9 @@ function _buildV2AircraftCol(ctx, vars) {
         'WS':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
         'WR':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
         'PD':  '/logos/airlines/canadian/Porter_Airlines_Logo_2006.svg',
-        'PB':  '/logos/airline-tiles/PB.svg',
+        // PB (PAL) intentionally omitted — its file is a full gold tile; without
+        // a path the Destination icon falls back to a white glyph on the blue
+        // accent badge, matching the other four icons.
         // US majors — symbol-only emblems (rendered white on the accent badge)
         'UA':  '/logos/airlines/us-major/united-globe-only.svg',
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
