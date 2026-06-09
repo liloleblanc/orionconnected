@@ -2289,6 +2289,19 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col .v2-wx-temp { color: #ffffff !important; }
 .g8-wrap .gad-aircraft-col .v2-wx-cond { color: rgba(255,255,255,0.82) !important; }
 
+/* ── v222 — RIGHT PANEL: accent the white column to match the left rail.
+   Subtle airline tint + accent border + rounded floating card (mirrors the
+   left rail's container treatment), so both sides frame the dark centre. ── */
+.g8-wrap .gad-map-col-v2 {
+  background: #ffffff !important;                                   /* fallback */
+  background: color-mix(in srgb, var(--banner-bg,#3A3F49) 8%, #ffffff) !important; /* light airline tint */
+  border: 6px solid var(--airline-accent, #00ABC2) !important;
+  border-radius: 24px !important;
+  margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
+}
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;
