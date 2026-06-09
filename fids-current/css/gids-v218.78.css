@@ -2058,6 +2058,32 @@ body, body.gids-page, body.gate-page{
   box-shadow: 0 6px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.25) !important;
 }
 
+/* ── v220 — PRESENTABLE pass: cohesive LIGHT body + readable footer + unclipped name.
+   The dark left rail next to the light right panel read as "half-finished"; make
+   the left flight-info rail light cards too, so the whole screen is consistent. */
+.g8-wrap .g8-r1-dest { padding-left: clamp(46px, 3.6vw, 70px) !important; }
+
+.g8-wrap .gad-aircraft-col { background: #eef1f6 !important; color: #0f2238 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-row {
+  background: #ffffff !important;
+  border-radius: 14px !important;
+  box-shadow: 0 1px 5px rgba(15, 34, 56, 0.07) !important;
+  border: 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-label { color: #64748b !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-value { color: #0f2238 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.scheduled { color: #475569 !important; }
+.g8-wrap .gad-aircraft-col .v2-wx-temp { color: #0f2238 !important; }
+.g8-wrap .gad-aircraft-col .v2-wx-when,
+.g8-wrap .gad-aircraft-col .v2-wx-cond { color: #64748b !important; }
+
+/* Footer text readable on the dark bar */
+.g8-wrap .g8-r5 .g8-r5-next,
+.g8-wrap .g8-r5 .g8-r5-airport,
+.g8-wrap .g8-r5 .gate-footer-next,
+.g8-wrap .g8-r5 .gate-footer-next-lbl,
+.g8-wrap .g8-r5 .gate-footer-next-val { color: #e8edf5 !important; }
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;
