@@ -336,6 +336,12 @@
    space between them as the focal element — instead of collapsing to a sliver. */
 .gad-map-col-v2 > .v2-rc-inbound,
 .gad-map-col-v2 > .v2-rc-aircraft { flex: 0 0 auto !important; }
+/* Shelf dividers — make the right panel read like the left rail's linked
+   shelves (flight info / map / aircraft info), without restructuring content. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-inbound,
+.g8-wrap .gad-map-col-v2 > .v2-map-area {
+  border-bottom: 1px solid color-mix(in srgb, var(--banner-bg,#3A3F49) 16%, transparent) !important;
+}
 .gad-map-col-v2 > .v2-map-area {
   /* Grow into the leftover space between the inbound card (top) and the
      aircraft panel (bottom). Low floor so the map yields space first and never
@@ -1720,7 +1726,7 @@ body, body.gids-page, body.gate-page{
   margin-right: 0.3em;
 }
 .gad-aircraft-col .v2-fi-value .g8-r2-revised {
-  color: #fbbf24;
+  color: #d97706;   /* coordinated orange (matches Delayed status), not clashing bright yellow */
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
