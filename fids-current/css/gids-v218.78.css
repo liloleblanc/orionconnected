@@ -3384,11 +3384,11 @@ body, body.gids-page, body.gate-page{
    do NOT wrap or clip (20% was too tight). Right map col trimmed slightly.
    Left 24% / center 54% / right 22%. */
 .g8-wrap {
-  --col-left: 28%;
-  --col-center: 44%;
+  --col-left: 24%;
+  --col-center: 54%;
 }
 .gad-map-col-v2 {
-  flex: 0 0 28% !important;
+  flex: 0 0 22% !important;
 }
 
 /* ── LEFT INFO COLUMN — anti-clip safety net ─────────────────────────────

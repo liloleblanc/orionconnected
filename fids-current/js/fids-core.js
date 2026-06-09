@@ -7328,12 +7328,12 @@ const gView = document.getElementById('gateView');
                 // Real-data fallback: AeroDataBox had no fix → try the free,
                 // keyless adsb.lol feed by callsign / registration. Real position
                 // or nothing — never fabricated.
-                if (liveSpd === null && liveAlt === null) {
+                if (liveSpd === null || liveAlt === null) {
                   try {
                     var _adsb = await gateAdsbLolPos(inbData.callsign || _capturedInbound, inbData.reg);
                     if (_adsb) {
-                      if (_adsb.speed !== null) liveSpd = _adsb.speed;
-                      if (_adsb.altitude !== null) liveAlt = _adsb.altitude;
+                      if (liveSpd === null && _adsb.speed !== null) liveSpd = _adsb.speed;       // only fill what's missing
+                      if (liveAlt === null && _adsb.altitude !== null) liveAlt = _adsb.altitude; // (ADB often gives speed but not altitude)
                       if (liveSpd !== null || liveAlt !== null) console.log('[FIDS] adsb.lol position for', _capturedInbound, '→ spd(kt):', liveSpd, 'alt(ft):', liveAlt);
                     }
                   } catch (e) { /* keep "—" */ }
