@@ -3178,6 +3178,13 @@ body, body.gids-page, body.gate-page{
 .gad-aircraft-col .v2-fi-row .v2-fi-label::after {
   content: ":";
 }
+/* ── PAL (PB/SP): GOLD icon badges while the rest of the theme stays blue.
+   The inline badge background (var(--airline-accent)) is non-!important, so
+   this scoped rule overrides it for PAL only — icons gold, bar/borders blue. ── */
+.g8-airline-PB .gad-aircraft-col .v2-fi-icon-badge,
+.g8-airline-PB .gad-aircraft-col .v2-fi-emblem-wrap,
+.g8-airline-SP .gad-aircraft-col .v2-fi-icon-badge,
+.g8-airline-SP .gad-aircraft-col .v2-fi-emblem-wrap { background: #FCA404 !important; }
 /* No exception for Flight # — Nick wants it to have the colon too */
 .gad-aircraft-col .v2-fi-row .v2-fi-flight-label::after {
   content: ":";
