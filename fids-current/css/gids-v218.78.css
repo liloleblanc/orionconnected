@@ -696,11 +696,11 @@ html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
 }
 body, body.gids-page, body.gate-page{
   background:#eef2f6 !important;                                            /* fallback */
-  background:var(--airline-accent,#D82F2E) !important; /* airline-tinted canvas */
+  background:#D9DDE2 !important; /* light-gray canvas (frame) */
 }
 .g8-wrap{
   background:#eef2f6 !important;                                            /* fallback */
-  background:var(--airline-accent,#D82F2E) !important; /* airline-tinted canvas behind the cards */
+  background:#D9DDE2 !important; /* light-gray canvas (frame) */
   color:var(--g92-ink) !important;
 }
 /* Header: keep airline gravitas without swallowing the screen. */
@@ -750,25 +750,8 @@ body, body.gids-page, body.gate-page{
 /* Main stage: airline-tinted canvas (the background outside the data cards). */
 .g8-r4,.g8-r4-v2,.g8-v2-main,.g8-main-v2{
   background:#eef2f6 !important;                                            /* fallback */
-  background:var(--airline-accent,#D82F2E) !important;
+  background:#D9DDE2 !important;                                            /* light-gray canvas (frame) */
 }
-/* PAL: toned-down look — soft GRAY frame around the cards (not bright orange),
-   with a lighter-blue thick border. Bar stays navy, icons stay gold. */
-.g8-wrap.g8-airline-PB,
-.g8-airline-PB .g8-r4,
-.g8-airline-PB .g8-r4-v2,
-.g8-airline-PB .g8-v2-main,
-.g8-airline-PB .g8-main-v2,
-.g8-wrap.g8-airline-SP,
-.g8-airline-SP .g8-r4,
-.g8-airline-SP .g8-r4-v2,
-.g8-airline-SP .g8-v2-main,
-.g8-airline-SP .g8-main-v2 { background: #939598 !important; }
-/* PAL: thick border = official PAL blue */
-.g8-wrap.g8-airline-PB .gad-aircraft-col,
-.g8-wrap.g8-airline-PB .gad-map-col-v2,
-.g8-wrap.g8-airline-SP .gad-aircraft-col,
-.g8-wrap.g8-airline-SP .gad-map-col-v2 { border-color: #2E6BB8 !important; }
 .gad-aircraft-col,.gad-media-col,.gad-map-col-v2{
   min-height:0 !important;
   box-sizing:border-box !important;
@@ -2094,14 +2077,15 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap .gad-aircraft-col .v2-fi-label { color: #64748b !important; }
 .g8-wrap .gad-aircraft-col .v2-fi-value { color: #0f2238 !important; }
-/* Status value — coloured by status (readable on the light card) */
-.g8-wrap .gad-aircraft-col .v2-fi-status-val.scheduled  { color: #1d4ed8 !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-status-val.ontime     { color: #0e7c4a !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-status-val.boarding   { color: #0e7c4a !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-status-val.delayed    { color: #b45309 !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled  { color: #b91c1c !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-status-val.final      { color: #be123c !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-status-val.gateclosed { color: #4b5563 !important; }
+/* Status value — coloured by status (universal convention, readable on light card) */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.scheduled  { color: #0e7c4a !important; } /* green */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.ontime     { color: #0e7c4a !important; } /* green */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.boarding   { color: #1d4ed8 !important; } /* blue */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.delayed    { color: #d97706 !important; } /* orange */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.diverted   { color: #d97706 !important; } /* orange */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled  { color: #b91c1c !important; } /* red */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.final      { color: #be123c !important; } /* red */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.gateclosed { color: #4b5563 !important; } /* gray */
 .g8-wrap .gad-aircraft-col .v2-wx-temp { color: #0f2238 !important; }
 .g8-wrap .gad-aircraft-col .v2-wx-when,
 .g8-wrap .gad-aircraft-col .v2-wx-cond { color: #64748b !important; }
@@ -2262,7 +2246,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col {
   background: #ffffff !important;                                   /* fallback */
   background: #ddd9d3 !important; /* light airline-tinted rail */
-  border: 10px solid var(--banner-bg, #3A3F49) !important; /* thick border = top/bar colour */
+  border: 10px solid var(--airline-accent, #D82F2E) !important; /* thick border = airline accent */
   border-radius: 24px !important;
   margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.8vw,14px) !important;
@@ -2324,7 +2308,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 {
   background: #ffffff !important;                                   /* fallback */
   background: #ddd9d3 !important; /* light airline tint */
-  border: 10px solid var(--banner-bg, #3A3F49) !important; /* thick border = top/bar colour */
+  border: 10px solid var(--airline-accent, #D82F2E) !important; /* thick border = airline accent */
   border-radius: 24px !important;
   margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
   overflow: hidden !important;

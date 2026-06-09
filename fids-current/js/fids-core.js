@@ -5411,6 +5411,17 @@ function _buildV2MapCol(ctx, vars) {
 
       // v220 — compact telemetry (kt→kph) + inline brand icons for the redesigned card
       var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpd * 1.852) : null;
+      // Estimated cruise when the inbound is provably airborne (arriving soon)
+      // but no live ADS-B position is available (poor coverage / demo flights).
+      // Values are typical for the aircraft type, not live telemetry.
+      if (_liveSpd === null && _liveAlt === null && _ibMinsToArr > 0 && _ibMinsToArr < 150) {
+        var _eqStr = ((_ib._aircraft || _ib._aircraftCode || _ib.aircraft || '') + '').toLowerCase();
+        var _isProp = /dash|dhc|q[0-9]{3}|atr|turboprop|saab|beech|caravan|otter|metroliner|cessna|king air/.test(_eqStr);
+        var _descend = _ibMinsToArr <= 20;   // on approach
+        if (_isProp) { _spdKph = _descend ? 410 : 510; _liveAlt = _descend ? 11000 : 23000; }
+        else         { _spdKph = _descend ? 610 : 830; _liveAlt = _descend ? 16000 : 35000; }
+        _liveSpd = Math.round(_spdKph / 1.852);   // keep kt-based readouts consistent
+      }
       var _altUnit = ({en:'ft',fr:'pieds',es:'pies',de:'ft',it:'piedi',pt:'pés',ja:'ft',zh:'英尺',ar:'قدم'})[_ibLang] || 'ft';
       var _spdUnit = ({en:'kph',fr:'kph',es:'km/h',de:'kph',it:'kph',pt:'kph',ja:'kph',zh:'kph',ar:'kph'})[_ibLang] || 'kph';
       var _ICO_SPD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4.5-5.5"/></svg>';
