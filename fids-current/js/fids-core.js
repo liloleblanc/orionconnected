@@ -6382,9 +6382,9 @@ function uxgGateHtml(ctx) {
   // shade that subliminally connects the screen to the actual aircraft.
   var BANNER_COLOR_SPEC = {
     // Air Canada family — black banner / red accent / white body (white fuselage livery)
-    'AC': { r1: '#080C14', r1Text: '#FFFFFF', r2: '#D82F2E', body: '#F7FAFD', bodyText: '#0F172A' },
-    'QK': { r1: '#080C14', r1Text: '#FFFFFF', r2: '#D82F2E', body: '#F7FAFD', bodyText: '#0F172A' },
-    'RV': { r1: '#080C14', r1Text: '#FFFFFF', r2: '#D82F2E', body: '#F7FAFD', bodyText: '#0F172A' },
+    'AC': { r1: '#3A3F49', r1Text: '#FFFFFF', r2: '#D82F2E', body: '#F7FAFD', bodyText: '#0F172A' },
+    'QK': { r1: '#3A3F49', r1Text: '#FFFFFF', r2: '#D82F2E', body: '#F7FAFD', bodyText: '#0F172A' },
+    'RV': { r1: '#3A3F49', r1Text: '#FFFFFF', r2: '#D82F2E', body: '#F7FAFD', bodyText: '#0F172A' },
     // American — black / AA blue / Silver Eagle gray (mica polished aluminum livery)
     'AA': { r1: '#000000', r1Text: '#FFFFFF', r2: '#0078AE', body: '#D5DCE0', bodyText: '#0F172A' },
     // Delta — black / Special Red / Euro white (white fuselage with red widget tail)
