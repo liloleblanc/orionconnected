@@ -2254,7 +2254,7 @@ body, body.gids-page, body.gate-page{
   background: #ddd9d3 !important; /* light airline-tinted rail */
   border: 10px solid var(--airline-accent, #D82F2E) !important; /* thick border = airline accent */
   border-radius: 24px !important;
-  margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
+  margin: 0 !important;   /* flush to all edges — use every available space */
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.8vw,14px) !important;
   overflow: hidden !important;
   box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
@@ -2323,7 +2323,7 @@ body, body.gids-page, body.gate-page{
   background: #ddd9d3 !important; /* light airline tint */
   border: 10px solid var(--airline-accent, #D82F2E) !important; /* thick border = airline accent */
   border-radius: 24px !important;
-  margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
+  margin: 0 !important;   /* flush to all edges — use every available space */
   overflow: hidden !important;
   box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
 }
@@ -3384,11 +3384,11 @@ body, body.gids-page, body.gate-page{
    do NOT wrap or clip (20% was too tight). Right map col trimmed slightly.
    Left 24% / center 54% / right 22%. */
 .g8-wrap {
-  --col-left: 24%;
+  --col-left: 23%;
   --col-center: 54%;
 }
 .gad-map-col-v2 {
-  flex: 0 0 22% !important;
+  flex: 0 0 23% !important;
 }
 
 /* ── LEFT INFO COLUMN — anti-clip safety net ─────────────────────────────
