@@ -696,11 +696,11 @@ html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
 }
 body, body.gids-page, body.gate-page{
   background:#eef2f6 !important;                                            /* fallback */
-  background:#c8c4be !important; /* airline-tinted canvas */
+  background:var(--airline-accent,#D82F2E) !important; /* airline-tinted canvas */
 }
 .g8-wrap{
   background:#eef2f6 !important;                                            /* fallback */
-  background:#c8c4be !important; /* airline-tinted canvas behind the cards */
+  background:var(--airline-accent,#D82F2E) !important; /* airline-tinted canvas behind the cards */
   color:var(--g92-ink) !important;
 }
 /* Header: keep airline gravitas without swallowing the screen. */
@@ -750,8 +750,20 @@ body, body.gids-page, body.gate-page{
 /* Main stage: airline-tinted canvas (the background outside the data cards). */
 .g8-r4,.g8-r4-v2,.g8-v2-main,.g8-main-v2{
   background:#eef2f6 !important;                                            /* fallback */
-  background:#c8c4be !important;
+  background:var(--airline-accent,#D82F2E) !important;
 }
+/* PAL: the frame around the cards is brand ORANGE, even though PAL's border
+   accent is blue. (Border stays blue; only the surround turns orange.) */
+.g8-wrap.g8-airline-PB,
+.g8-airline-PB .g8-r4,
+.g8-airline-PB .g8-r4-v2,
+.g8-airline-PB .g8-v2-main,
+.g8-airline-PB .g8-main-v2,
+.g8-wrap.g8-airline-SP,
+.g8-airline-SP .g8-r4,
+.g8-airline-SP .g8-r4-v2,
+.g8-airline-SP .g8-v2-main,
+.g8-airline-SP .g8-main-v2 { background: #FCA404 !important; }
 .gad-aircraft-col,.gad-media-col,.gad-map-col-v2{
   min-height:0 !important;
   box-sizing:border-box !important;
