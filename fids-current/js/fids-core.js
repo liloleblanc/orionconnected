@@ -5421,7 +5421,12 @@ function _buildV2MapCol(ctx, vars) {
 
       // v218.99.68 — Compact, readable right-column header per Nick.
       // ONE block instead of duplicated info top + bottom. No truncated labels.
-      var _ibFltCompact = (_ibAirlineCode || '') + _ibFlightNum;  // e.g. "WS812"
+      // e.g. "WS812". Don't prepend the code if the number already carries it —
+      // alphanumeric codes (F8, B6) slip past the letter-only prefix strip,
+      // which used to render doubles like "F8F8670".
+      var _ibFltCompact = (_ibAirlineCode && String(_ibFlightNum).toUpperCase().indexOf(_ibAirlineCode) === 0)
+        ? String(_ibFlightNum)
+        : (_ibAirlineCode || '') + _ibFlightNum;
 
       // ETA from arrival ts (moved up from the aircraft block below)
       var _ibArrTs = _ib._sortTs || 0;
@@ -6455,7 +6460,8 @@ function uxgGateHtml(ctx) {
   // Carriers whose own COLOUR logo reads directly on the dark header — no white
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
-    'AV': '/logos/airlines/asian-other/avianca.svg'   // red avianca — pops on black
+    'AV': '/logos/airlines/asian-other/avianca.svg',  // red avianca — pops on black
+    'F8': '/logos/airlines/canadian/flair-wordmark-light.svg' // white flair wordmark — only light variant exists, reads on the near-black banner
   };
   var _darkLogo = BANNER_DARK_LOGO[_bannerBrandCode] || BANNER_DARK_LOGO[airlineCode];
   if (!_useOverrideFile && _darkLogo) {
