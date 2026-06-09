@@ -3543,3 +3543,19 @@ body, body.gids-page, body.gate-page{
   gap: clamp(10px, 1vw, 18px) !important;
 }
 .g8-wrap .g8-r1-right .g8-bilbl { color: #fff !important; }
+
+/* Inside the accent gate block, the gate number is plain BIG white type —
+   no white pill/box (that pill floated oddly over the red shape). */
+.g8-wrap .g8-r1-right .g8-r1-gate {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: #fff !important;
+  height: auto !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  font-size: clamp(64px, 8.2vh, 104px) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
