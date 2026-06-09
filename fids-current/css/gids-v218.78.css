@@ -752,8 +752,8 @@ body, body.gids-page, body.gate-page{
   background:#eef2f6 !important;                                            /* fallback */
   background:var(--airline-accent,#D82F2E) !important;
 }
-/* PAL: the frame around the cards is brand ORANGE, even though PAL's border
-   accent is blue. (Border stays blue; only the surround turns orange.) */
+/* PAL: toned-down look — soft GRAY frame around the cards (not bright orange),
+   with a lighter-blue thick border. Bar stays navy, icons stay gold. */
 .g8-wrap.g8-airline-PB,
 .g8-airline-PB .g8-r4,
 .g8-airline-PB .g8-r4-v2,
@@ -763,7 +763,12 @@ body, body.gids-page, body.gate-page{
 .g8-airline-SP .g8-r4,
 .g8-airline-SP .g8-r4-v2,
 .g8-airline-SP .g8-v2-main,
-.g8-airline-SP .g8-main-v2 { background: #FCA404 !important; }
+.g8-airline-SP .g8-main-v2 { background: #AAB0B8 !important; }
+/* PAL: thick border = lighter PAL blue */
+.g8-wrap.g8-airline-PB .gad-aircraft-col,
+.g8-wrap.g8-airline-PB .gad-map-col-v2,
+.g8-wrap.g8-airline-SP .gad-aircraft-col,
+.g8-wrap.g8-airline-SP .gad-map-col-v2 { border-color: #5B86C9 !important; }
 .gad-aircraft-col,.gad-media-col,.gad-map-col-v2{
   min-height:0 !important;
   box-sizing:border-box !important;
