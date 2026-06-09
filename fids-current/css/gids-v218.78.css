@@ -2253,7 +2253,7 @@ body, body.gids-page, body.gate-page{
   background: #ffffff !important;                                   /* fallback */
   background: #E9E9EC !important; /* light airline-tinted rail */
   border: 3px solid var(--airline-accent, #D82F2E) !important; /* accent line (same size as inner) */
-  border-radius: 24px !important;
+  border-radius: 24px 24px 0 0 !important; /* rounded top, square bottom */
   margin: 0 !important;   /* flush to screen edge */
   padding: 0 !important;   /* shelves touch the edges */
   overflow: hidden !important;
@@ -2322,7 +2322,7 @@ body, body.gids-page, body.gate-page{
   background: #ffffff !important;                                   /* fallback */
   background: #E9E9EC !important; /* light airline tint */
   border: 3px solid var(--airline-accent, #D82F2E) !important; /* accent line (same size as inner) */
-  border-radius: 24px !important;
+  border-radius: 24px 24px 0 0 !important; /* rounded top, square bottom */
   margin: 0 !important;   /* flush to screen edge */
   overflow: hidden !important;
   box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
@@ -3517,3 +3517,10 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-type { justify-content: center !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { align-items: center !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-actype-val { font-size: clamp(22px,3.1vh,48px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; white-space: nowrap !important; max-width: 100% !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   CORNERS — top banner (airline + gate) rounded at its TOP-left/right;
+   side panels keep rounded tops but square bottoms (set on their rules).
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .g8-r1,
+.g8-wrap .g8-r1.g8-r1-bg { border-radius: 24px 24px 0 0 !important; }
