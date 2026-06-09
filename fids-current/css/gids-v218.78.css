@@ -2233,7 +2233,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col {
   background: #eef1f6 !important;                                   /* fallback */
   background: color-mix(in srgb, var(--banner-bg, #3A3F49) 8%, #ffffff) !important;
-  border: 1px solid color-mix(in srgb, var(--banner-bg, #3A3F49) 12%, transparent) !important;
+  border: 2.5px solid var(--airline-accent, #D82F2E) !important;
   border-radius: 22px !important;
   margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.8vw,14px) !important;
@@ -2263,8 +2263,8 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap .gad-aircraft-col .v2-fi-lbl-en,
 .g8-wrap .gad-aircraft-col .v2-fi-lbl-2 {
-  font-size: clamp(13px, 1.45vh, 19px) !important;
-  font-weight: 700 !important; color: #6b7585 !important; line-height: 1.12 !important; letter-spacing: 0.2px;
+  font-size: clamp(18px, 2.1vh, 29px) !important;
+  font-weight: 700 !important; color: #4a5568 !important; line-height: 1.14 !important; letter-spacing: 0.2px;
 }
 .g8-wrap .gad-aircraft-col .v2-fi-value {
   font-size: clamp(28px, 3.5vh, 50px) !important;
