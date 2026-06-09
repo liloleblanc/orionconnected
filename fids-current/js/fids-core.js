@@ -5287,9 +5287,25 @@ function _buildV2MapCol(ctx, vars) {
   // no "—" placeholders).
   var _inboundCard = '';
   var _telemBar = '';
+  // Once the incoming aircraft has actually arrived AND ~5 minutes have passed,
+  // the "incoming aircraft" panel is no longer relevant — the plane is at the
+  // gate. Switch the right panel to the DEPARTURE (outbound) flight info. (On a
+  // tight turnaround the boarding screen takes over first; this only matters
+  // when there's a gap between arrival and boarding.)
+  var _arrivedSwitch = false;
+  try {
+    var _ibSw = vars.inboundFlight;
+    if (_ibSw) {
+      var _swArrTs = (_ibSw._revTs && _ibSw._revTs > _ibSw._sortTs) ? _ibSw._revTs : (_ibSw._sortTs || 0);
+      var _swArrived = (_ibSw.status === 'arrived' || _ibSw.status === 'landed');
+      // Only switch once we can confirm 5 min elapsed since the arrival time.
+      if (_swArrTs && (Date.now() - _swArrTs) >= 5 * 60000) _arrivedSwitch = true;
+      else if (_swArrived && _swArrTs && (Date.now() - _swArrTs) >= 5 * 60000) _arrivedSwitch = true;
+    }
+  } catch (e) {}
   try {
     var _ib = vars.inboundFlight;
-    if (_ib) {
+    if (_ib && !_arrivedSwitch) {
       // Option 1 — use the live position the airport board already carried for
       // this inbound (the board is fetched with withLocation=true). The separate
       // by-number fetch (window._gateInboundLivePos) often misses what the board
@@ -5504,6 +5520,66 @@ function _buildV2MapCol(ctx, vars) {
 
     }
   } catch (e) {}
+
+  // ─── DEPARTURE CARD ───────────────────────────────────────────────────
+  // Shown in place of the incoming-aircraft card once the inbound has been on
+  // the ground ~5 min. Same shelf layout, but for the OUTBOUND flight: this
+  // airport → destination, with a "Departing in" countdown.
+  if (_arrivedSwitch) {
+    try {
+      var _dcf = vars.currentFlight || {};
+      var _dTz = vars.tz || 'UTC';
+      var _dOrig = (vars.iata || '').toString().toUpperCase();      // departing FROM here
+      var _dDest = (vars.locIata || _dcf.dest || '').toString().toUpperCase();
+      var _dLang2 = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
+      function _dt2(o){ return o[_dLang2] || o.fr || o.en || ''; }
+      function _dFmtT(ts){ try { return new Date(ts).toLocaleTimeString('en-US', {timeZone:_dTz, hour:'2-digit', minute:'2-digit', hour12:true}); } catch(e){ return ''; } }
+
+      // Flight number (compact, e.g. "AC1984")
+      var _dFltCompact = String(_dcf.flight || '').replace(/\s+/g, '').toUpperCase();
+
+      // Status — reuse the outbound label/class computed for the left column.
+      var _dStLabel = String(vars.stLabel || _dcf.status || '').trim();
+      var _dStCls = String(vars.stClass || 'ontime').replace(/^v2-fi-status/, '').replace(/^[-\s]+/, '') || 'ontime';
+      if (['scheduled','ontime','delayed','cancelled'].indexOf(_dStCls) === -1) _dStCls = 'ontime';
+
+      // Departure time (effective = revised if present) and arrival time.
+      var _dDepTs = ctx.effectiveDepTs || null;
+      var _dDepStr = _dDepTs ? _dFmtT(_dDepTs) : '';
+      var _dArrStr = (ctx.arrTimeStr || '').toString();
+
+      // "Departing in" countdown
+      var _dMins = _dDepTs ? Math.round((_dDepTs - Date.now()) / 60000) : 0;
+      var _dEtaStr = '';
+      if (_dMins > 0 && _dMins < 1440) {
+        _dEtaStr = _dMins >= 60 ? (Math.floor(_dMins/60) + 'h ' + (_dMins % 60) + 'm') : (_dMins + ' min');
+      }
+
+      function _di3(en, val, l2, cls){
+        return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
+             + '<div class="v2-rc-i3val ' + (cls||'') + '">' + (val || '—') + '</div>'
+             + '<div class="v2-rc-i3lbl2">' + l2 + '</div></div>';
+      }
+      function _dr2(abbr, valStr, wordObj){
+        return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + abbr + '</div>'
+             + '<div class="v2-rc-r2val">' + valStr + '</div>'
+             + '<div class="v2-rc-r2lbl2">' + _dt2(wordObj) + '</div></div>';
+      }
+
+      var _dTitle = {en:'Your Departure Flight Information', fr:'Information sur votre vol de départ', es:'Información de su vuelo de salida'};
+      _inboundCard =
+          '<div class="v2-rc-rtitle">' + _dTitle.en + '</div>'
+        + '<div class="v2-rc-shelf v2-rc-shelf-i3"><div class="v2-rc-i3">'
+        +     _di3('Status', (_dStLabel || '—'), _dt2({fr:'Statut',es:'Estado'}), 'v2-rc-status-' + _dStCls)
+        +     _di3('Flight', _dFltCompact, _dt2({fr:'Vol',es:'Vuelo'}), '')
+        +     _di3('Departing in', (_dEtaStr || '—'), _dt2({fr:'Départ dans',es:'Sale en'}), '')
+        +   '</div></div>'
+        + '<div class="v2-rc-shelf v2-rc-shelf-r2"><div class="v2-rc-r2">'
+        +     _dr2('Departure Time', (_dDepStr || '—') + ' - ' + _dOrig, {fr:'Heure de départ',es:'Hora de salida'})
+        +     _dr2('Arrival Time', _dDest + ' - ' + (_dArrStr || '—'), {fr:"Heure d'arrivée",es:'Hora de llegada'})
+        +   '</div></div>';
+    } catch (e) {}
+  }
 
   // ─── AIRCRAFT BLOCK (bottom of right column, always) ──────────────────
   // "Aircraft Type:" label + value, with livery image above. This represents
