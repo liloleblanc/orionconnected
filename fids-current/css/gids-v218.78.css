@@ -340,7 +340,7 @@
    shelves (flight info / map / aircraft info), without restructuring content. */
 .g8-wrap .gad-map-col-v2 > .v2-rc-inbound,
 .g8-wrap .gad-map-col-v2 > .v2-map-area {
-  border-bottom: 1px solid #475569 !important; /* dark-gray inner line */
+  border-bottom: 1px solid var(--airline-accent, #D82F2E) !important; /* accent inner line */
 }
 .gad-map-col-v2 > .v2-map-area {
   /* Grow into the leftover space between the inbound card (top) and the
@@ -2267,7 +2267,7 @@ body, body.gids-page, body.gate-page{
   box-shadow: none !important;
   border: 0 !important;
   border-radius: 0 !important;
-  border-bottom: 1px solid #475569 !important; /* dark-gray inner line */
+  border-bottom: 1px solid var(--airline-accent, #D82F2E) !important; /* accent inner line */
   display: flex !important;
   align-items: center !important;
   gap: clamp(10px,1vw,18px) !important;
@@ -3384,11 +3384,11 @@ body, body.gids-page, body.gate-page{
    do NOT wrap or clip (20% was too tight). Right map col trimmed slightly.
    Left 24% / center 54% / right 22%. */
 .g8-wrap {
-  --col-left: 23%;
-  --col-center: 54%;
+  --col-left: 28%;
+  --col-center: 44%;
 }
 .gad-map-col-v2 {
-  flex: 0 0 23% !important;
+  flex: 0 0 28% !important;
 }
 
 /* ── LEFT INFO COLUMN — anti-clip safety net ─────────────────────────────
