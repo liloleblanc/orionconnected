@@ -6388,11 +6388,12 @@ function uxgGateHtml(ctx) {
     // American — black / AA blue / Silver Eagle gray (mica polished aluminum livery)
     'AA': { r1: '#000000', r1Text: '#FFFFFF', r2: '#0078AE', body: '#D5DCE0', bodyText: '#0F172A' },
     // Delta — black / Special Red / Euro white (white fuselage with red widget tail)
-    'DL': { r1: '#000000', r1Text: '#FFFFFF', r2: '#E3132C', body: '#FAFAFA', bodyText: '#003268' },
+    'DL': { r1: '#003366', r1Text: '#FFFFFF', r2: '#C01933', body: '#F4F6F9', bodyText: '#003366' },
+    'AS': { r1: '#01426A', r1Text: '#FFFFFF', r2: '#2774AE', body: '#EDF2F6', bodyText: '#01426A' },
     // Hawaiian — WHITE banner / plumeria purple / cream body (white fuselage with silver lei)
     'HA': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#582C83', body: '#FBF7F2', bodyText: '#523090' },
     // United — black / United Blue / Runway Gray (matching the actual livery)
-    'UA': { r1: '#000000', r1Text: '#FFFFFF', r2: '#1414D2', body: '#E5E7EB', bodyText: '#0F172A' },
+    'UA': { r1: '#002244', r1Text: '#FFFFFF', r2: '#003399', body: '#EAEDF2', bodyText: '#002244' },
     // WestJet — WHITE banner / teal swoosh / white body (matches their white fuselage)
     'WS': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
