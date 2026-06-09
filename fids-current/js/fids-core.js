@@ -5629,14 +5629,24 @@ function _buildV2MapCol(ctx, vars) {
           + '</div>';
       }
 
+      // Shelf 6 — clean 2-col like the others: Aircraft type (+reg) | Operated by
+      var _lang2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
+      var _acTypeVal = (_equipNm || _equipCd || '') + (_acReg ? '  |  ' + _acReg : '');
+      var _opVal = (typeof _opShortName === 'string' && _opShortName) ? _opShortName : '';
+      var _typeL2 = (_lang2b === 'es') ? 'Tipo de aeronave' : "Type d'appareil";
+      var _opL2   = (_lang2b === 'es') ? 'Operado por'      : 'Exploité par';
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
         + '</div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-type v2-rc-aircraft">'
-        +   _typeShelf
-        +   _regShelf
-        + '</div>';
+        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-r2">'
+        +   '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Aircraft type</div>'
+        +     '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
+        +     '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div></div>'
+        +   (_opVal ? ('<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Operated by</div>'
+        +     '<div class="v2-rc-actype-val">' + _opVal + '</div>'
+        +     '<div class="v2-rc-r2lbl2">' + _opL2 + '</div></div>') : '')
+        + '</div></div>';
     }
   } catch (e) {}
 
