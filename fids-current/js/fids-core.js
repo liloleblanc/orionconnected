@@ -5184,11 +5184,13 @@ function _buildV2AircraftCol(ctx, vars) {
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
       function _shelf(icon, en, second, val, valCls) {
+        // Skip the 2nd-language label when it's identical to English (e.g. Destination).
+        var _sec = (second && second !== en) ? '<div class="v2-fi-lbl-2">' + second + '</div>' : '';
         return '<div class="v2-fi-row">' + icon
           + '<div class="v2-fi-copy">'
           +   '<div class="v2-fi-lbl-en">' + en + '</div>'
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
-          +   '<div class="v2-fi-lbl-2">' + second + '</div>'
+          +   _sec
           + '</div></div>';
       }
       // Destination city (was in the header; now the first shelf).
