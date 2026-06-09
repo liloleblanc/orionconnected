@@ -3576,3 +3576,8 @@ body, body.gids-page, body.gate-page{
   clip-path: polygon(clamp(36px, 3.2vw, 64px) 0, calc(clamp(36px, 3.2vw, 64px) + 10px) 0, 10px 100%, 0 100%);
   pointer-events: none;
 }
+
+/* Gate block stops just short of the screen edge: a small gap exposes the
+   dark banner behind it, so the banner's own rounded corner stays the true
+   screen corner and the block's rounded corner floats just inside it. */
+.g8-wrap .g8-r1-right { margin-right: clamp(10px, 1vw, 18px) !important; }
