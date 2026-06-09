@@ -5119,7 +5119,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        var NATIVE_COLOR_EMBLEMS = { 'PB': true };
+        var NATIVE_COLOR_EMBLEMS = {};
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
