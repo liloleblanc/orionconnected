@@ -6399,6 +6399,9 @@ function uxgGateHtml(ctx) {
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
     'PD': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#1A3A6B', body: '#FFFFFF', bodyText: '#002244' }
   };
+  // Airline colour DATABASE (data/airline-colors.js) is the source of truth —
+  // merge it over the built-in defaults so edits there win.
+  try { if (typeof window !== 'undefined' && window.AIRLINE_BRAND_COLORS) Object.assign(BANNER_COLOR_SPEC, window.AIRLINE_BRAND_COLORS); } catch (e) {}
   var _bannerSpec = BANNER_COLOR_SPEC[airlineCode];
   // v218.99.20 — overlay layered customizations on top of the hardcoded
   // brand defaults. Resolution: global ← airport[X] ← airline[Y].
