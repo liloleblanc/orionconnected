@@ -5124,10 +5124,10 @@ function _buildV2AircraftCol(ctx, vars) {
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
           ? BADGE_BASE + 'background:transparent;padding:0;'
-          : BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(2px,0.3vh,4px);';
+          : BADGE_BASE + 'background:var(--body-text,#003A5D);padding:clamp(2px,0.3vh,4px);';
         if (!path) {
           var GENERIC_PLANE = '<svg viewBox="0 0 24 24" style="width:100%;height:100%;fill:#fff;"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
-          return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(5px,0.7vh,10px);">'
+          return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + BADGE_BASE + 'background:var(--body-text,#003A5D);padding:clamp(5px,0.7vh,10px);">'
             + GENERIC_PLANE
             + '</div>';
         }
@@ -5173,7 +5173,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       // v218.99.32 — Inline-style every badge so the cascade can't lie.
       // Single source of truth for what a flight-info badge looks like.
-      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,#D82F2E);color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--body-text,#003A5D);color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       function _badge(svg) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
       }
@@ -6247,8 +6247,9 @@ function uxgGateHtml(ctx) {
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
     'UA': '/logos/airlines/us-major/united.svg',                                 // globe + white "UNITED"
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
+    // WestJet — navy banner with the white wordmark (uploaded by Nick)
+    'WS': '/logos/airlines/canadian/westjet-white-wordmark.svg',                 // white "WestJet" wordmark for the navy bar
     // WHITE BANNERS — use native-color logos so they show against light background
-    'WS': '/logos/airlines/canadian/WestJet_Logo_2018.svg',                      // navy wordmark + teal swoosh (native colors)
     'HA': '/logos/airlines/us-major/Hawaiian.svg',                               // Pualani + native-color "Hawaiian Airlines"
     'PD': '/logos/airlines/canadian/porter.svg',                                 // navy Porter wordmark (native colors on white)
     'PB': '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg',            // PAL Airlines — light wordmark for dark banners

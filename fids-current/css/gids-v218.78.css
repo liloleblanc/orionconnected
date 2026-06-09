@@ -2070,9 +2070,9 @@ body, body.gids-page, body.gate-page{
   box-shadow: 0 1px 5px rgba(15, 34, 56, 0.07) !important;
   border: 0 !important;
 }
-.g8-wrap .gad-aircraft-col .v2-fi-label { color: rgba(255,255,255,0.74) !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-value { color: #ffffff !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-status-val.scheduled { color: #ffffff !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-label { color: #64748b !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-value { color: #0f2238 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.scheduled { color: #475569 !important; }
 .g8-wrap .gad-aircraft-col .v2-wx-temp { color: #0f2238 !important; }
 .g8-wrap .gad-aircraft-col .v2-wx-when,
 .g8-wrap .gad-aircraft-col .v2-wx-cond { color: #64748b !important; }
@@ -2231,8 +2231,8 @@ body, body.gids-page, body.gate-page{
    "shelves". Each shelf = centred icon + (EN label / big value / 2nd-lang
    label). Tint coordinates with the airline (lighter version of its bar). ── */
 .g8-wrap .gad-aircraft-col {
-  background: #14233a !important;                                   /* fallback */
-  background: var(--body-text, #14233a) !important;                 /* airline brand navy/dark rail */
+  background: #ffffff !important;                                   /* fallback */
+  background: color-mix(in srgb, var(--banner-bg,#3A3F49) 8%, #ffffff) !important; /* light airline-tinted rail */
   border: 6px solid var(--airline-accent, #D82F2E) !important;
   border-radius: 24px !important;
   margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
@@ -2248,7 +2248,7 @@ body, body.gids-page, body.gate-page{
   box-shadow: none !important;
   border: 0 !important;
   border-radius: 0 !important;
-  border-bottom: 1px solid rgba(255,255,255,0.16) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--banner-bg,#3A3F49) 13%, transparent) !important;
   display: flex !important;
   align-items: center !important;
   gap: clamp(10px,1vw,18px) !important;
@@ -2266,12 +2266,12 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col .v2-fi-lbl-en,
 .g8-wrap .gad-aircraft-col .v2-fi-lbl-2 {
   font-size: clamp(14px, 1.55vh, 21px) !important;
-  font-weight: 700 !important; color: rgba(255,255,255,0.74) !important; line-height: 1.08 !important; letter-spacing: 0.2px;
+  font-weight: 700 !important; color: #4a5568 !important; line-height: 1.08 !important; letter-spacing: 0.2px;
 }
-/* time values — unchanged tier (white on navy) */
+/* time values — unchanged tier */
 .g8-wrap .gad-aircraft-col .v2-fi-value {
   font-size: clamp(26px, 3.3vh, 46px) !important;
-  font-weight: 900 !important; color: #ffffff !important; line-height: 1.0 !important;
+  font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important;
 }
 /* Destination + Status values — bigger */
 .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest        { font-size: clamp(42px, 5vh, 66px) !important; }
