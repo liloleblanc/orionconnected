@@ -6267,9 +6267,9 @@ function uxgGateHtml(ctx) {
   };
   // Per-airline size overrides for banner logo
   var BANNER_SIZE_OVERRIDE = {
-    'AC': { h: 130, w: 620 },
-    'QK': { h: 130, w: 620 },
-    'RV': { h: 130, w: 580 },
+    'AC': { h: 156, w: 740 },
+    'QK': { h: 156, w: 740 },
+    'RV': { h: 150, w: 700 },
     'AA': { h: 120, w: 520 },
     'DL': { h: 120, w: 520 },
     'UA': { h: 120, w: 520 },

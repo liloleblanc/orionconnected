@@ -2224,6 +2224,8 @@ body, body.gids-page, body.gate-page{
   height: clamp(90px, 9.8vh, 134px) !important;
   max-height: clamp(90px, 9.8vh, 134px) !important;
 }
+/* flight block fills the middle and centres within it */
+.g8-wrap .g8-r1-flight { flex: 1 1 0 !important; justify-content: center !important; }
 
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
