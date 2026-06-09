@@ -2284,8 +2284,15 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap .gad-aircraft-col .v2-fi-lbl-en,
 .g8-wrap .gad-aircraft-col .v2-fi-lbl-2 {
-  font-size: clamp(14px, 1.55vh, 21px) !important;
-  font-weight: 700 !important; color: #4a5568 !important; line-height: 1.08 !important; letter-spacing: 0.2px;
+  font-size: clamp(16px, 1.95vh, 26px) !important;
+  font-weight: 700 !important; color: #4a5568 !important; line-height: 1.1 !important; letter-spacing: 0.2px;
+}
+/* "Revised" badge shown next to a delayed/revised time's label */
+.g8-wrap .gad-aircraft-col .v2-fi-revtag {
+  display: inline-block; margin-left: 8px; padding: 1px 8px;
+  border-radius: 6px; background: #d97706; color: #fff;
+  font-size: 0.66em; font-weight: 800; letter-spacing: 0.5px;
+  text-transform: uppercase; vertical-align: middle; line-height: 1.5;
 }
 /* time values — unchanged tier */
 .g8-wrap .gad-aircraft-col .v2-fi-value {
@@ -3377,11 +3384,11 @@ body, body.gids-page, body.gate-page{
    do NOT wrap or clip (20% was too tight). Right map col trimmed slightly.
    Left 24% / center 54% / right 22%. */
 .g8-wrap {
-  --col-left: 24%;
-  --col-center: 54%;
+  --col-left: 28%;
+  --col-center: 44%;
 }
 .gad-map-col-v2 {
-  flex: 0 0 22% !important;
+  flex: 0 0 28% !important;
 }
 
 /* ── LEFT INFO COLUMN — anti-clip safety net ─────────────────────────────

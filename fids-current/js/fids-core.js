@@ -5203,13 +5203,18 @@ function _buildV2AircraftCol(ctx, vars) {
         if (typeof normalizeDisplayCity === 'function') _destCityName = normalizeDisplayCity(_destCityName, _dIata);
       } catch (e) {}
 
+      var _depRev = !!(_fiDep && String(_fiDep).indexOf('g8-r2-revised') !== -1);
+      var _arrRev = !!(_fiArr && String(_fiArr).indexOf('g8-r2-revised') !== -1);
+      var _brdRev = !!(_fiBrd && String(_fiBrd).indexOf('g8-r2-revised') !== -1);
+      var _revTag = '<span class="v2-fi-revtag">' + ((typeof TL === 'function') ? TL('revised') : 'Revised') + '</span>';
+
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + (_destCityName ? _shelf(_emblemHtml || _badge(_svgStatus), 'Destination', _L2('Destination','Destino'), _destCityName, 'v2-fi-dest') : '')
         + (_fiStLbl ? _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _fiStLbl, 'v2-fi-status-val v2-fi-status' + _fiStCls) : '')
-        + (_depShow ? _shelf(_badge(_svgDepart), 'Departure Time', _L2('Heure de départ','Hora de salida'), _depShow, 'v2-fi-time') : '')
-        + (_arrShow ? _shelf(_badge(_svgArrive), 'Arrival Time', _L2('Heure d’arrivée','Hora de llegada'), _arrShow, 'v2-fi-time') : '')
-        + (_fiBrd ? _shelf(_badge(_svgClock), 'Boarding Time', _L2('Heure d’embarquement','Hora de embarque'), _fiBrd, 'v2-fi-time') : '')
+        + (_depShow ? _shelf(_badge(_svgDepart), 'Departure Time' + (_depRev ? _revTag : ''), _L2('Heure de départ','Hora de salida'), _depShow, 'v2-fi-time') : '')
+        + (_arrShow ? _shelf(_badge(_svgArrive), 'Arrival Time' + (_arrRev ? _revTag : ''), _L2('Heure d’arrivée','Hora de llegada'), _arrShow, 'v2-fi-time') : '')
+        + (_fiBrd ? _shelf(_badge(_svgClock), 'Boarding Time' + (_brdRev ? _revTag : ''), _L2('Heure d’embarquement','Hora de embarque'), _fiBrd, 'v2-fi-time') : '')
         + '</div>';
     }
   } catch (e) {}
