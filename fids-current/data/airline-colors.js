@@ -51,7 +51,7 @@ window.AIRLINE_BRAND_COLORS = {
 
   /* ── Latin America ─────────────────────────────────────────────────── */
   'AV': { r1:'#202020', r1Text:'#FFFFFF', r2:'#D6001C', body:'#F2F2F2', bodyText:'#0F172A' }, // Avianca
-  'OB': { r1:'#0D2B60', r1Text:'#FFFFFF', r2:'#D6430D', body:'#EAF0F8', bodyText:'#0D2B60' }, // Boliviana de Aviación (BoA)
+  'OB': { r1:'#0D2B60', r1Text:'#FFFFFF', r2:'#1E6FD0', body:'#EAF0F8', bodyText:'#0D2B60' }, // Boliviana de Aviación (BoA — clean royal blue accent)
   'LA': { r1:'#1B0088', r1Text:'#FFFFFF', r2:'#ED1650', body:'#EEEDF7', bodyText:'#1B0088' }, // LATAM
   'CM': { r1:'#0033A0', r1Text:'#FFFFFF', r2:'#0EA5E9', body:'#EAEDF7', bodyText:'#0033A0' }, // Copa
   'AM': { r1:'#0B2343', r1Text:'#FFFFFF', r2:'#007DC5', body:'#EAEDF2', bodyText:'#0B2343' }  // Aeroméxico
