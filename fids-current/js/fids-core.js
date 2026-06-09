@@ -5548,7 +5548,13 @@ function _buildV2MapCol(ctx, vars) {
       // never disagree. Strip any markup down to plain text. Fall back to the
       // effective-departure timestamp only if the left column had nothing.
       var _dDepTs = ctx.effectiveDepTs || null;
-      function _dStrip(h){ return String(h || '').replace(/<[^>]+>/g, '').trim(); }
+      // Strip markup to plain text. Loop until stable (a single pass can leave
+      // a reassembled tag, per CodeQL), then drop any stray angle brackets.
+      function _dStrip(h){
+        var s = String(h || ''), prev;
+        do { prev = s; s = s.replace(/<[^>]*>/g, ''); } while (s !== prev);
+        return s.replace(/[<>]/g, '').trim();
+      }
       var _dDepStr = _dStrip(vars.depTimeHtml) || (_dDepTs ? _dFmtT(_dDepTs) : '');
       var _dArrStr = _dStrip(vars.arrHtml);
 
