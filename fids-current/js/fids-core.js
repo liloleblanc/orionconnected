@@ -5297,10 +5297,8 @@ function _buildV2MapCol(ctx, vars) {
     var _ibSw = vars.inboundFlight;
     if (_ibSw) {
       var _swArrTs = (_ibSw._revTs && _ibSw._revTs > _ibSw._sortTs) ? _ibSw._revTs : (_ibSw._sortTs || 0);
-      var _swArrived = (_ibSw.status === 'arrived' || _ibSw.status === 'landed');
-      // Only switch once we can confirm 5 min elapsed since the arrival time.
+      // Switch once 5 min have elapsed past the (revised) arrival time.
       if (_swArrTs && (Date.now() - _swArrTs) >= 5 * 60000) _arrivedSwitch = true;
-      else if (_swArrived && _swArrTs && (Date.now() - _swArrTs) >= 5 * 60000) _arrivedSwitch = true;
     }
   } catch (e) {}
   try {
@@ -7834,16 +7832,60 @@ const gView = document.getElementById('gateView');
           if (!data || !currentFlight) return;
           var changed = false;
 
+          // ── EQUIPMENT LOCK ───────────────────────────────────────────────
+          // currentFlight is rebuilt from the board feed on every refresh, so
+          // this callback re-runs and used to overwrite the aircraft/operator
+          // with whatever THIS round-trip returned. API answers vary call to
+          // call (rate limits → history fallback, thin scheduled data, multi-
+          // leg matches), which made the displayed aircraft oscillate
+          // (A321 ↔ A319 Rouge ↔ Jazz). Rank each answer's strength and keep
+          // the strongest one for this flight+date — never downgrade.
+          //   3 = today's data WITH registration (real telemetry)
+          //   2 = registration from history (majority of recent days)
+          //   1 = type only, no registration (often a generic guess)
+          var _eqKey = (String(currentFlight.flight) + '|' + _todayStr + '|' + _enrichIata).toUpperCase();
+          var _eqIncoming = {
+            key: _eqKey,
+            reg: data.reg || '',
+            aircraft: data.aircraft || '',
+            aircraftCode: data.aircraftCode || aircraftCodeToIata(data.aircraftModel) || '',
+            opCode: '', opName: ''
+          };
+          if (data.operator && data.operator.iata &&
+              data.operator.iata !== data.marketing.iata &&
+              data.operator._source !== 'same-as-marketing') {
+            _eqIncoming.opCode = data.operator.iata;
+            // v194: prefer our curated AIRLINE_NAME over API's name field
+            // (same reasoning as line 10202 — API can be stale on rebrands).
+            _eqIncoming.opName = AIRLINE_NAME[data.operator.iata] || data.operator.name || data.operator.iata;
+            _eqIncoming.opSource = data.operator._source;
+          }
+          function _eqStrength(o) {
+            if (!o) return -1;
+            if (o.reg && o.regSource !== 'history') return 3;
+            if (o.reg) return 2;
+            if (o.aircraft || o.aircraftCode) return 1;
+            return 0;
+          }
+          _eqIncoming.regSource = data._regSource || (data.reg ? 'today' : '');
+          var _eqPrev = (window._gateEquipLock && window._gateEquipLock.key === _eqKey) ? window._gateEquipLock : null;
+          var _eqAccepted = _eqStrength(_eqIncoming) >= _eqStrength(_eqPrev);
+          if (_eqAccepted) window._gateEquipLock = _eqIncoming;
+          else console.log('[FIDS] Equip lock kept for', currentFlight.flight, '— weaker data ignored',
+                           '(locked:', (_eqPrev && _eqPrev.aircraft) || '?', (_eqPrev && _eqPrev.reg) || 'no-reg',
+                           '· offered:', _eqIncoming.aircraft || '?', _eqIncoming.reg || 'no-reg', ')');
+          var _eq = window._gateEquipLock;
+
           // Registration
-          if (data.reg && !currentFlight._reg) {
-            currentFlight._reg = data.reg;
+          if (_eq.reg && !currentFlight._reg) {
+            currentFlight._reg = _eq.reg;
             changed = true;
           }
 
           // Aircraft type
-          if (data.aircraft) {
-            currentFlight._aircraft = data.aircraft;
-            currentFlight._aircraftCode = data.aircraftCode || aircraftCodeToIata(data.aircraftModel) || currentFlight._aircraftCode;
+          if (_eq.aircraft || _eq.aircraftCode) {
+            currentFlight._aircraft = _eq.aircraft || currentFlight._aircraft;
+            currentFlight._aircraftCode = _eq.aircraftCode || currentFlight._aircraftCode;
             changed = true;
           }
 
@@ -7856,20 +7898,22 @@ const gView = document.getElementById('gateView');
           // Operating carrier — from ADB's departure.airline or callsign prefix.
           // Only apply if different from the marketing carrier (otherwise it's
           // just the airline operating its own flight, no "operated by" tag needed).
-          if (data.operator && data.operator.iata &&
-              data.operator.iata !== data.marketing.iata &&
-              data.operator._source !== 'same-as-marketing') {
-            currentFlight._opCode = data.operator.iata;
-            // v194: prefer our curated AIRLINE_NAME over API's name field
-            // (same reasoning as line 10202 — API can be stale on rebrands).
-            currentFlight._opName = AIRLINE_NAME[data.operator.iata] || data.operator.name || data.operator.iata;
+          if (_eq.opCode) {
+            currentFlight._opCode = _eq.opCode;
+            currentFlight._opName = _eq.opName;
             changed = true;
             console.log('[FIDS] Operator resolved:', currentFlight.flight, '→',
-                        data.operator.iata, '(' + data.operator._source + ')');
+                        _eq.opCode, '(' + (_eq.opSource || 'locked') + ')');
           }
 
-          // Inbound — publish to window so the panel and map can read it
-          if (data.inbound) {
+          // Inbound — publish to window so the panel and map can read it.
+          // Only when this round-trip's data was accepted by the equip lock,
+          // or it's the same airframe (fresh telemetry for the locked reg) —
+          // a weaker answer with a DIFFERENT reg would swap in the wrong
+          // airframe's route (the "coming from Calgary?!" flicker).
+          var _inbOk = data.inbound && (_eqAccepted || !window._gateInbound ||
+                       (data.reg && _eq.reg && data.reg === _eq.reg));
+          if (_inbOk) {
             window._gateInbound = data.inbound;
             window._gateInboundLivePos = (data.inbound._liveSpd !== null || data.inbound._liveAlt !== null) ? {
               speed: data.inbound._liveSpd,
@@ -7900,8 +7944,10 @@ const gView = document.getElementById('gateView');
           // 5-minute refresh. Empty response = "no new info", not "clear it."
           if (!data.reg) {
             // Only mark pending if we DON'T already have a previously-cached
-            // reg from an earlier successful call.
-            if (!currentFlight.reg && !currentFlight._lastGoodReg) {
+            // reg from an earlier successful call (including the equip lock —
+            // currentFlight is rebuilt every refresh, so _lastGoodReg alone
+            // doesn't survive; the lock does).
+            if (!currentFlight.reg && !currentFlight._lastGoodReg && !_eq.reg) {
               currentFlight._aircraftPending = true;
               scheduleAircraftPendingRetry(currentFlight.flight, _enrichIata);
               changed = true;
@@ -13915,17 +13961,36 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
       var flights = await r.json();
       if (!Array.isArray(flights) || !flights.length) return null;
 
-      // Pick the best matching leg. If the caller passed airportIata, prefer
-      // legs departing from or arriving to that airport (handles cases where
-      // the same flight number operates multiple legs on the same day).
+      // Pick the best matching leg. Gate screens are DEPARTURE gates, so a
+      // leg DEPARTING from airportIata must win over a leg merely arriving
+      // there — the old first-match-wins loop let an inbound leg hijack the
+      // lookup when the same flight number flies multiple legs in a day,
+      // which swapped in the wrong aircraft/operator/route on refresh.
+      function _legDepTs(f) {
+        var st = (f && f.departure && f.departure.scheduledTime) || {};
+        return new Date(st.utc || st.local || '').getTime() || 0;
+      }
       var primaryLeg = flights[0];
       if (airportIata) {
         var ap = airportIata.toUpperCase();
+        var depMatches = [], arrMatches = [];
         for (var i = 0; i < flights.length; i++) {
           var f = flights[i];
           var depIata = (f.departure && f.departure.airport && f.departure.airport.iata) ? f.departure.airport.iata.toUpperCase() : '';
           var arrIata = (f.arrival && f.arrival.airport && f.arrival.airport.iata) ? f.arrival.airport.iata.toUpperCase() : '';
-          if (depIata === ap || arrIata === ap) { primaryLeg = f; break; }
+          if (depIata === ap) depMatches.push(f);
+          else if (arrIata === ap) arrMatches.push(f);
+        }
+        if (depMatches.length) {
+          // Multiple same-number departures from this airport in one day:
+          // take the next upcoming one (or the most recent if all are past).
+          depMatches.sort(function(a, b) { return _legDepTs(a) - _legDepTs(b); });
+          primaryLeg = depMatches[depMatches.length - 1];
+          for (var j = 0; j < depMatches.length; j++) {
+            if (_legDepTs(depMatches[j]) >= Date.now() - 30 * 60000) { primaryLeg = depMatches[j]; break; }
+          }
+        } else if (arrMatches.length) {
+          primaryLeg = arrMatches[0];
         }
       }
 
@@ -14015,7 +14080,7 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
       // number), not real telemetry. In that case, prefer history's
       // high-confidence majority winner if it conflicts. With a registration,
       // trust today's ADB completely (real telemetry).
-      var _needHistory = !result.reg || !result.operator || result.operator._source === 'same-as-marketing' || !result.aircraftCode || !result.reg;
+      var _needHistory = !result.reg || !result.operator || result.operator._source === 'same-as-marketing' || !result.aircraftCode;
       if (_needHistory) {
         try {
           var hist = await loadFlightHistory(flightNumber);
