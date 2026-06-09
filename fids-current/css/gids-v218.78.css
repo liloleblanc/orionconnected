@@ -2141,6 +2141,42 @@ body, body.gids-page, body.gate-page{
   border-radius: clamp(10px, 0.9vw, 16px) !important;
 }
 
+/* ── v221b — header refinements (per Nick) ──
+   flight: "Flight / Vol" (one colour) ON TOP of a big number (wordmark-sized),
+   grouped close to the logo; gate: "Gate / Porte" STACKED, bigger, big number. */
+.g8-wrap .g8-r1 {
+  justify-content: flex-start !important;
+  height: 106px !important; min-height: 106px !important; max-height: 106px !important;
+}
+.g8-wrap .g8-r1-right { margin-left: auto !important; }
+
+/* flight block: label on top, big number below, near the logo */
+.g8-wrap .g8-r1-flight {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  margin-left: clamp(8px, 1vw, 22px) !important;
+}
+.g8-wrap .g8-r1-flight .g8-bilbl { font-size: clamp(15px, 1.5vw, 23px) !important; }
+.g8-wrap .g8-r1-flightnum {
+  font-size: clamp(40px, 4.4vw, 62px) !important;
+  line-height: 0.95 !important;
+}
+/* both languages SAME colour */
+.g8-wrap .g8-bilbl-2 { opacity: 1 !important; font-weight: 700 !important; }
+.g8-wrap .g8-bilbl-sep { opacity: 0.5 !important; }
+
+/* gate block: Gate / Porte STACKED, same colour, bigger; gate number much bigger */
+.g8-wrap .g8-r1-right .g8-bilbl {
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 0 !important;
+  line-height: 1.05 !important;
+  font-size: clamp(15px, 1.55vw, 24px) !important;
+}
+.g8-wrap .g8-r1-right .g8-bilbl-sep { display: none !important; }
+.g8-wrap .g8-r1-gate { font-size: clamp(42px, 4.5vw, 66px) !important; }
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;
