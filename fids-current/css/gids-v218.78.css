@@ -2005,6 +2005,44 @@ body, body.gids-page, body.gate-page{
   color: #475569;
 }
 
+/* ── v220 — branded TOP + BOTTOM bars to match the reference ──────────────
+   Red (airline-accent) ANGLED gate tab flush to the top-right, and a footer
+   on the same dark airline banner colour with a matching red angled clock tab
+   flush to the bottom-right. AC → black bar + red tabs automatically. */
+.g8-wrap .g8-r1 { padding-right: 0 !important; overflow: hidden !important; }
+.g8-wrap .g8-r1-right { align-self: stretch !important; align-items: center !important; }
+.g8-wrap .g8-r1-gate {
+  background: var(--airline-accent, #D82F2E) !important;
+  color: #fff !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-left: clamp(14px, 1.4vw, 26px) !important;
+  padding: 0 clamp(22px, 1.8vw, 34px) 0 clamp(30px, 2.4vw, 48px) !important;
+  clip-path: polygon(clamp(18px, 1.5vw, 30px) 0, 100% 0, 100% 100%, 0 100%) !important;
+  line-height: 1 !important;
+}
+.g8-wrap .g8-r5 {
+  background: var(--banner-bg, #0c1119) !important;
+  padding-right: 0 !important;
+  overflow: hidden !important;
+}
+.g8-wrap .g8-r5 .g8-r5-clock {
+  background: var(--airline-accent, #D82F2E) !important;
+  color: #fff !important;
+  align-self: stretch !important;
+  justify-self: end !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 clamp(22px, 1.8vw, 34px) 0 clamp(30px, 2.4vw, 48px) !important;
+  clip-path: polygon(clamp(18px, 1.5vw, 30px) 0, 100% 0, 100% 100%, 0 100%) !important;
+}
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;
