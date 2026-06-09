@@ -6258,7 +6258,7 @@ function uxgGateHtml(ctx) {
     // WHITE BANNERS — use native-color logos so they show against light background
     'HA': '/logos/airlines/us-major/Hawaiian.svg',                               // Pualani + native-color "Hawaiian Airlines"
     'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
-    'PB': '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg',            // PAL Airlines — light wordmark for dark banners
+    'PB': '/logos/airlines/canadian-regional/pal-airlines-swoosh-white.svg',     // PAL — gold swoosh + white wordmark for the navy bar
     'BA': '/logos/airlines/european/BA-square.svg',                              // British Airways
     '4Y': '/logos/airlines/european/discover-airlines-emblem.svg'               // Discover Airlines (Lufthansa Group, ICAO OCN)
   };
@@ -6273,7 +6273,7 @@ function uxgGateHtml(ctx) {
     'WS': { h: 150, w: 700 },
     'HA': { h: 118, w: 500 },
     'PD': { h: 80, w: 320 },
-    'PB': { h: 116, w: 500 },
+    'PB': { h: 128, w: 470 },
     'TS': { h: 118, w: 520 },
     'NZ': { h: 120, w: 540 },
     'BA': { h: 120, w: 540 },
