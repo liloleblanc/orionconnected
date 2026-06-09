@@ -702,11 +702,11 @@ html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
 }
 body, body.gids-page, body.gate-page{
   background:#eef2f6 !important;                                            /* fallback */
-  background:#C2C2C2 !important; /* light-gray canvas (frame) */
+  background:var(--banner-bg, #14181E) !important; /* light-gray canvas (frame) */
 }
 .g8-wrap{
   background:#eef2f6 !important;                                            /* fallback */
-  background:#C2C2C2 !important; /* light-gray canvas (frame) */
+  background:var(--banner-bg, #14181E) !important; /* light-gray canvas (frame) */
   color:var(--g92-ink) !important;
 }
 /* Header: keep airline gravitas without swallowing the screen. */
@@ -756,7 +756,7 @@ body, body.gids-page, body.gate-page{
 /* Main stage: airline-tinted canvas (the background outside the data cards). */
 .g8-r4,.g8-r4-v2,.g8-v2-main,.g8-main-v2{
   background:#eef2f6 !important;                                            /* fallback */
-  background:#C2C2C2 !important;                                            /* light-gray canvas (frame) */
+  background:var(--banner-bg, #14181E) !important;                                            /* light-gray canvas (frame) */
 }
 .gad-aircraft-col,.gad-media-col,.gad-map-col-v2{
   min-height:0 !important;
@@ -2254,7 +2254,7 @@ body, body.gids-page, body.gate-page{
   background: #E9E9EC !important; /* light airline-tinted rail */
   border: 4px solid var(--airline-accent, #D82F2E) !important; /* small accent stripe */
   border-radius: 24px !important;
-  margin: 0 !important;   /* flush to all edges — use every available space */
+  margin: clamp(5px,0.7vh,9px) !important;   /* thin outer strip (dark frame shows) */
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.8vw,14px) !important;
   overflow: hidden !important;
   box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
@@ -2323,7 +2323,7 @@ body, body.gids-page, body.gate-page{
   background: #E9E9EC !important; /* light airline tint */
   border: 4px solid var(--airline-accent, #D82F2E) !important; /* small accent stripe */
   border-radius: 24px !important;
-  margin: 0 !important;   /* flush to all edges — use every available space */
+  margin: clamp(5px,0.7vh,9px) !important;   /* thin outer strip (dark frame shows) */
   overflow: hidden !important;
   box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
 }
