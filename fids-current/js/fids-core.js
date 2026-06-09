@@ -5543,10 +5543,14 @@ function _buildV2MapCol(ctx, vars) {
       var _dStCls = String(vars.stClass || 'ontime').replace(/^v2-fi-status/, '').replace(/^[-\s]+/, '') || 'ontime';
       if (['scheduled','ontime','delayed','cancelled'].indexOf(_dStCls) === -1) _dStCls = 'ontime';
 
-      // Departure time (effective = revised if present) and arrival time.
+      // Departure / arrival times — reuse the EXACT strings the left column
+      // already shows (revised, 12-hour, delay-adjusted) so the two panels can
+      // never disagree. Strip any markup down to plain text. Fall back to the
+      // effective-departure timestamp only if the left column had nothing.
       var _dDepTs = ctx.effectiveDepTs || null;
-      var _dDepStr = _dDepTs ? _dFmtT(_dDepTs) : '';
-      var _dArrStr = (ctx.arrTimeStr || '').toString();
+      function _dStrip(h){ return String(h || '').replace(/<[^>]+>/g, '').trim(); }
+      var _dDepStr = _dStrip(vars.depTimeHtml) || (_dDepTs ? _dFmtT(_dDepTs) : '');
+      var _dArrStr = _dStrip(vars.arrHtml);
 
       // "Departing in" countdown
       var _dMins = _dDepTs ? Math.round((_dDepTs - Date.now()) / 60000) : 0;
