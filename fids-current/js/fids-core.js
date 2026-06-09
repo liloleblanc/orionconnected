@@ -6461,7 +6461,6 @@ function uxgGateHtml(ctx) {
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
     'AV': '/logos/airlines/asian-other/avianca.svg',  // red avianca — pops on black
-    'F8': '/logos/airlines/canadian/flair-wordmark-light.svg', // white flair wordmark — only light variant exists, reads on the near-black banner
     // Regional carriers — white monochrome marks on file, straight onto the dark banner
     '5T': '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg',
     '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
@@ -6479,7 +6478,8 @@ function uxgGateHtml(ctx) {
   // Per-carrier brand logo pinned for the gate header — the airline's own mark
   // on file, shown on a clean white plate (full colour, CDN-independent).
   var BANNER_PLATE_LOGO = {
-    'OB': '/logos/airlines/asian-other/boliviana.svg'   // BoA — letters + corn-husk mark
+    'OB': '/logos/airlines/asian-other/boliviana.svg',  // BoA — letters + corn-husk mark
+    'F8': '/logos/airlines/canadian/flair.svg'          // Flair — REAL "flair airlines" lockup (black ink → white plate); the old wordmark-light file was a homemade placeholder
   };
   var _plateLogo = BANNER_PLATE_LOGO[_bannerBrandCode] || BANNER_PLATE_LOGO[airlineCode];
   if (!_useOverrideFile && _plateLogo) {
