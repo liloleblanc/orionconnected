@@ -706,7 +706,7 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap{
   background:#eef2f6 !important;                                            /* fallback */
-  background:var(--banner-bg, #14181E) !important; /* light-gray canvas (frame) */
+  background:var(--airline-accent, #14181E) !important; /* accent canvas (frame) — AC red etc. */
   color:var(--g92-ink) !important;
 }
 /* Header: keep airline gravitas without swallowing the screen. */
@@ -756,7 +756,7 @@ body, body.gids-page, body.gate-page{
 /* Main stage: airline-tinted canvas (the background outside the data cards). */
 .g8-r4,.g8-r4-v2,.g8-v2-main,.g8-main-v2{
   background:#eef2f6 !important;                                            /* fallback */
-  background:var(--banner-bg, #14181E) !important;                                            /* light-gray canvas (frame) */
+  background:var(--airline-accent, #14181E) !important;                                            /* accent canvas (frame) — AC red etc. */
 }
 .gad-aircraft-col,.gad-media-col,.gad-map-col-v2{
   min-height:0 !important;
