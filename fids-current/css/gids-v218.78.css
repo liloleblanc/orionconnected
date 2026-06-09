@@ -3524,3 +3524,22 @@ body, body.gids-page, body.gate-page{
    ════════════════════════════════════════════════════════════════════════ */
 .g8-wrap .g8-r1,
 .g8-wrap .g8-r1.g8-r1-bg { border-radius: 24px 24px 0 0 !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   GATE BLOCK — accent-coloured shape at the right end of the banner. Its
+   left edge is slanted ("ramps in" from the left); it runs flush to the
+   banner's right edge, sharing the banner's rounded top-right corner
+   (the banner's overflow:hidden + radius does the rounding).
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .g8-r1 { padding-right: 0 !important; }
+.g8-wrap .g8-r1-right {
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: center !important;
+  background: var(--airline-accent, #D82F2E) !important;
+  margin-left: clamp(14px, 1.6vw, 30px) !important;
+  padding: 0 clamp(26px, 2.2vw, 42px) 0 clamp(58px, 5vw, 96px) !important;
+  clip-path: polygon(clamp(36px, 3.2vw, 64px) 0, 100% 0, 100% 100%, 0 100%) !important;
+  gap: clamp(10px, 1vw, 18px) !important;
+}
+.g8-wrap .g8-r1-right .g8-bilbl { color: #fff !important; }
