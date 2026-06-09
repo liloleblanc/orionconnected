@@ -2006,41 +2006,56 @@ body, body.gids-page, body.gate-page{
 }
 
 /* ── v220 — branded TOP + BOTTOM bars to match the reference ──────────────
-   Red (airline-accent) ANGLED gate tab flush to the top-right, and a footer
-   on the same dark airline banner colour with a matching red angled clock tab
-   flush to the bottom-right. AC → black bar + red tabs automatically. */
-.g8-wrap .g8-r1 { padding-right: 0 !important; overflow: hidden !important; }
-.g8-wrap .g8-r1-right { align-self: stretch !important; align-items: center !important; }
-.g8-wrap .g8-r1-gate {
-  background: var(--airline-accent, #D82F2E) !important;
-  color: #fff !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  align-self: stretch !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  margin-left: clamp(14px, 1.4vw, 26px) !important;
-  padding: 0 clamp(22px, 1.8vw, 34px) 0 clamp(30px, 2.4vw, 48px) !important;
-  clip-path: polygon(clamp(18px, 1.5vw, 30px) 0, 100% 0, 100% 100%, 0 100%) !important;
-  line-height: 1 !important;
-}
+   ROUNDED red (airline-accent) gate + clock tabs with a glossy gradient sheen,
+   plus a soft light sweep across the dark bars. AC → black bars + red tabs. */
+.g8-wrap .g8-r1 { position: relative; overflow: hidden !important; }
 .g8-wrap .g8-r5 {
   background: var(--banner-bg, #0c1119) !important;
-  padding-right: 0 !important;
+  position: relative;
   overflow: hidden !important;
 }
-.g8-wrap .g8-r5 .g8-r5-clock {
-  background: var(--airline-accent, #D82F2E) !important;
+/* subtle light-sweep "design" on the dark bars (over the inline bg, via ::after) */
+.g8-wrap .g8-r1::after,
+.g8-wrap .g8-r5::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(140% 200% at 86% -60%, rgba(255,255,255,0.10), rgba(255,255,255,0) 55%),
+    linear-gradient(100deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 38%);
+}
+.g8-wrap .g8-r1 > *, .g8-wrap .g8-r5 > * { position: relative; z-index: 1; }
+
+/* ROUNDED glossy gate tab (top-right) */
+.g8-wrap .g8-r1-right { align-self: center !important; align-items: center !important; }
+.g8-wrap .g8-r1-gate {
+  background-color: var(--airline-accent, #D82F2E) !important;
+  background-image: linear-gradient(155deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 46%, rgba(0,0,0,0.22) 100%) !important;
   color: #fff !important;
-  align-self: stretch !important;
-  justify-self: end !important;
-  height: 100% !important;
+  border: 0 !important;
+  clip-path: none !important;
+  border-radius: clamp(14px, 1.1vw, 22px) !important;
+  align-self: center !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0 clamp(22px, 1.8vw, 34px) 0 clamp(30px, 2.4vw, 48px) !important;
-  clip-path: polygon(clamp(18px, 1.5vw, 30px) 0, 100% 0, 100% 100%, 0 100%) !important;
+  margin: 0 clamp(16px, 1.4vw, 28px) !important;
+  padding: clamp(4px, 0.5vh, 10px) clamp(20px, 1.7vw, 32px) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.25) !important;
+  line-height: 1 !important;
+}
+/* ROUNDED glossy clock tab (bottom-right) */
+.g8-wrap .g8-r5 .g8-r5-clock {
+  background-color: var(--airline-accent, #D82F2E) !important;
+  background-image: linear-gradient(155deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 46%, rgba(0,0,0,0.22) 100%) !important;
+  color: #fff !important;
+  align-self: center !important;
+  justify-self: end !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: clamp(14px, 1.1vw, 22px) !important;
+  margin: 0 clamp(16px, 1.4vw, 28px) !important;
+  padding: clamp(6px, 0.7vh, 12px) clamp(20px, 1.7vw, 32px) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.25) !important;
 }
 
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
