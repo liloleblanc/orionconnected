@@ -7303,7 +7303,7 @@ const gView = document.getElementById('gateView');
             try {
               var _inbToday = new Date().toISOString().slice(0,10);
               var _inbAirport = inboundFlight._locIata || _capturedIata;
-              loadFlight(_capturedInbound, _inbToday, _inbAirport).then(function(inbData){
+              loadFlight(_capturedInbound, _inbToday, _inbAirport).then(async function(inbData){
                 if (!inbData) return;
                 // Verify we still belong to the same view that requested this.
                 // If user switched airports or the gate now shows a different
@@ -7320,6 +7320,19 @@ const gView = document.getElementById('gateView');
                 var _altRaw = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
                 var liveSpd = (_spdRaw !== null) ? Math.round(_spdRaw) : null;
                 var liveAlt = (_altRaw !== null) ? Math.round(_altRaw) : null;
+                // Real-data fallback: AeroDataBox had no fix → try the free,
+                // keyless adsb.lol feed by callsign / registration. Real position
+                // or nothing — never fabricated.
+                if (liveSpd === null && liveAlt === null) {
+                  try {
+                    var _adsb = await gateAdsbLolPos(inbData.callsign || _capturedInbound, inbData.reg);
+                    if (_adsb) {
+                      if (_adsb.speed !== null) liveSpd = _adsb.speed;
+                      if (_adsb.altitude !== null) liveAlt = _adsb.altitude;
+                      if (liveSpd !== null || liveAlt !== null) console.log('[FIDS] adsb.lol position for', _capturedInbound, '→ spd(kt):', liveSpd, 'alt(ft):', liveAlt);
+                    }
+                  } catch (e) { /* keep "—" */ }
+                }
                 if (liveSpd !== null || liveAlt !== null) {
                   window._gateInboundLivePos = { speed: liveSpd, altitude: liveAlt, _airport: _capturedIata, _inboundFlight: _capturedInbound };
                   console.log('[FIDS] Inbound live position for', _capturedInbound, '@', _capturedIata, '→ spd:', liveSpd, 'alt:', liveAlt);
@@ -13698,6 +13711,36 @@ async function fetchFlightPosition(flightNumber, dateStr) {
 // ═══════════════════════════════════════════════════════════════════════════
 var _loadFlightCache = {};
 var _loadFlightFetching = {};
+
+// ── adsb.lol — free, keyless, community ADS-B feed. Used ONLY as a real
+// secondary source for the inbound's live position when AeroDataBox has no
+// fix. Returns { speed:<knots>, altitude:<feet> } when the aircraft is
+// genuinely airborne, otherwise null. Never invents data.
+async function gateAdsbLolPos(callsign, reg) {
+  var urls = [];
+  var cs = callsign ? String(callsign).replace(/\s+/g, '').toUpperCase() : '';
+  var rg = reg ? String(reg).replace(/\s+/g, '').toUpperCase() : '';
+  if (cs) urls.push('https://api.adsb.lol/v2/callsign/' + encodeURIComponent(cs));
+  if (rg) urls.push('https://api.adsb.lol/v2/registration/' + encodeURIComponent(rg));
+  for (var i = 0; i < urls.length; i++) {
+    try {
+      var r = await fetch(urls[i]);
+      if (!r.ok) continue;
+      var j = await r.json();
+      var ac = (j && Array.isArray(j.ac) && j.ac.length) ? j.ac[0] : null;
+      if (!ac) continue;
+      var alt = (typeof ac.alt_baro === 'number') ? ac.alt_baro
+              : ((typeof ac.alt_geom === 'number') ? ac.alt_geom : null);   // feet
+      var gsKt = (typeof ac.gs === 'number') ? ac.gs : null;                // knots
+      // Only trust a fix that actually looks airborne (skip parked/taxiing).
+      var airborne = (alt !== null && alt > 1000) || (gsKt !== null && gsKt > 60);
+      if (!airborne) continue;
+      return { speed: (gsKt !== null ? Math.round(gsKt) : null),
+               altitude: (alt !== null ? Math.round(alt) : null) };
+    } catch (e) { /* try next / give up → null */ }
+  }
+  return null;
+}
 
 async function loadFlight(flightNumber, dateStr, airportIata) {
   if (!flightNumber) return null;
