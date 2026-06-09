@@ -2212,6 +2212,19 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .g8-r1-flightnum,
 .g8-wrap .g8-r1-gate { font-size: clamp(56px, 6vw, 94px) !important; }
 
+/* ── v221e — flight block back to CENTER + even bigger logo (per Nick) ── */
+.g8-wrap .g8-r1 {
+  justify-content: space-between !important;
+  height: 148px !important; min-height: 148px !important; max-height: 148px !important;
+}
+.g8-wrap .g8-r1-flight { margin-left: 0 !important; }
+.g8-wrap .g8-r1-right { margin-left: 0 !important; }
+.g8-wrap .g8-r1-logoslot .g8-r1-logo,
+.g8-wrap .g8-r1-logoslot img.g8-r1-logo {
+  height: clamp(90px, 9.8vh, 134px) !important;
+  max-height: clamp(90px, 9.8vh, 134px) !important;
+}
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;
