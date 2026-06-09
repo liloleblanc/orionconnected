@@ -17,7 +17,7 @@ window.AIRLINE_BRAND_COLORS = {
   'QK': { r1:'#3A3F49', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Jazz / AC Express
   'RV': { r1:'#3A3F49', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // AC Rouge
   'WS': { r1:'#003A5D', r1Text:'#FFFFFF', r2:'#00ABC2', body:'#EAF3F5', bodyText:'#003A5D' }, // WestJet (NAVY bar — white wordmark)
-  'PD': { r1:'#FFFFFF', r1Text:'#002244', r2:'#1A3A6B', body:'#EEF2F6', bodyText:'#002244' }, // Porter (LIGHT bar — dark logo)
+  'PD': { r1:'#14254A', r1Text:'#FFFFFF', r2:'#2E6DB4', body:'#EEF2F6', bodyText:'#14254A' }, // Porter (NAVY bar — white wordmark)
   'TS': { r1:'#0F4C81', r1Text:'#FFFFFF', r2:'#00A0DF', body:'#EAF1F7', bodyText:'#0F4C81' }, // Air Transat
   'F8': { r1:'#101820', r1Text:'#FFFFFF', r2:'#39B54A', body:'#EFF2EF', bodyText:'#0F172A' }, // Flair
   'PB': { r1:'#16243E', r1Text:'#FFFFFF', r2:'#2563EB', body:'#EAF0F8', bodyText:'#16243E' }, // PAL Airlines (BLUE: navy bar, blue icons)
