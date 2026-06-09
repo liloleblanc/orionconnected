@@ -2199,6 +2199,18 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .g8-r1-flightnum,
 .g8-wrap .g8-r1-gate { font-size: clamp(46px, 5vw, 74px) !important; line-height: 0.95 !important; }
 
+/* ── v221d — bigger header (per Nick) ── */
+.g8-wrap .g8-r1 { height: 134px !important; min-height: 134px !important; max-height: 134px !important; }
+.g8-wrap .g8-r1-logoslot .g8-r1-logo,
+.g8-wrap .g8-r1-logoslot img.g8-r1-logo {
+  height: clamp(58px, 6.4vh, 88px) !important;
+  max-height: clamp(58px, 6.4vh, 88px) !important;
+}
+.g8-wrap .g8-r1-flight .g8-bilbl,
+.g8-wrap .g8-r1-right .g8-bilbl { font-size: clamp(20px, 2vw, 34px) !important; }
+.g8-wrap .g8-r1-flightnum,
+.g8-wrap .g8-r1-gate { font-size: clamp(56px, 6vw, 94px) !important; }
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;
