@@ -16,8 +16,8 @@ window.AIRLINE_BRAND_COLORS = {
   'AC': { r1:'#3A3F49', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Air Canada (gray bar per Nick)
   'QK': { r1:'#3A3F49', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Jazz / AC Express
   'RV': { r1:'#3A3F49', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // AC Rouge
-  'WS': { r1:'#003A5D', r1Text:'#FFFFFF', r2:'#00ABC2', body:'#EAF3F5', bodyText:'#003A5D' }, // WestJet
-  'PD': { r1:'#003150', r1Text:'#FFFFFF', r2:'#1A3A6B', body:'#EEF2F6', bodyText:'#002244' }, // Porter
+  'WS': { r1:'#FFFFFF', r1Text:'#003A5D', r2:'#00ABC2', body:'#EAF3F5', bodyText:'#003A5D' }, // WestJet (LIGHT bar — dark logo)
+  'PD': { r1:'#FFFFFF', r1Text:'#002244', r2:'#1A3A6B', body:'#EEF2F6', bodyText:'#002244' }, // Porter (LIGHT bar — dark logo)
   'TS': { r1:'#0F4C81', r1Text:'#FFFFFF', r2:'#00A0DF', body:'#EAF1F7', bodyText:'#0F4C81' }, // Air Transat
   'F8': { r1:'#101820', r1Text:'#FFFFFF', r2:'#39B54A', body:'#EFF2EF', bodyText:'#0F172A' }, // Flair
   'PB': { r1:'#13294B', r1Text:'#FFFFFF', r2:'#FCA404', body:'#EAEFF6', bodyText:'#13294B' }, // PAL Airlines (navy + gold #FCA404)

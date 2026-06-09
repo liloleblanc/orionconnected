@@ -2227,6 +2227,57 @@ body, body.gids-page, body.gate-page{
 /* flight block fills the middle and centres within it */
 .g8-wrap .g8-r1-flight { flex: 1 1 0 !important; justify-content: center !important; }
 
+/* ── v221 — LEFT RAIL: one rounded, airline-tinted container with linked
+   "shelves". Each shelf = centred icon + (EN label / big value / 2nd-lang
+   label). Tint coordinates with the airline (lighter version of its bar). ── */
+.g8-wrap .gad-aircraft-col {
+  background: #eef1f6 !important;                                   /* fallback */
+  background: color-mix(in srgb, var(--banner-bg, #3A3F49) 8%, #ffffff) !important;
+  border: 1px solid color-mix(in srgb, var(--banner-bg, #3A3F49) 12%, transparent) !important;
+  border-radius: 22px !important;
+  margin: clamp(10px,1.4vh,18px) clamp(8px,0.8vw,14px) !important;
+  padding: clamp(4px,0.6vh,10px) clamp(8px,0.8vw,14px) !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
+  display: flex !important; flex-direction: column !important; justify-content: center !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block { display: flex !important; flex-direction: column !important; flex: 1 1 auto; justify-content: center; }
+/* shelves: transparent, linked by thin dividers (not separate cards) */
+.g8-wrap .gad-aircraft-col .v2-fi-row {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--banner-bg,#3A3F49) 13%, transparent) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(12px,1.1vw,22px) !important;
+  padding: clamp(8px,1.1vh,18px) clamp(6px,0.6vw,12px) !important;
+  margin: 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
+/* shelf copy: EN label / big value / 2nd-lang label */
+.g8-wrap .gad-aircraft-col .v2-fi-copy {
+  display: flex !important; flex-direction: column !important; align-items: flex-start !important;
+  min-width: 0 !important; line-height: 1.04 !important; gap: 1px !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-lbl-2 {
+  font-size: clamp(13px, 1.45vh, 19px) !important;
+  font-weight: 700 !important; color: #6b7585 !important; line-height: 1.12 !important; letter-spacing: 0.2px;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-value {
+  font-size: clamp(28px, 3.5vh, 50px) !important;
+  font-weight: 900 !important; color: #0f2238 !important; line-height: 1.02 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest { font-size: clamp(30px, 4vh, 56px) !important; }
+/* weather shelf sits in the same container, transparent */
+.g8-wrap .gad-aircraft-col .v2-wx-block {
+  background: transparent !important; box-shadow: none !important; border: 0 !important;
+  border-top: 1px solid color-mix(in srgb, var(--banner-bg,#3A3F49) 13%, transparent) !important;
+  padding: clamp(8px,1vh,16px) clamp(6px,0.6vw,12px) !important; margin: 0 !important; border-radius: 0 !important;
+}
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;

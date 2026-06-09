@@ -5178,48 +5178,36 @@ function _buildV2AircraftCol(ctx, vars) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
       }
 
+      // v221 — bilingual SHELF rows: icon (centred) + EN label / VALUE / 2nd-lang label.
+      // Second language is per-airport (French default, Spanish for La Paz).
+      var _li2 = 'fr';
+      try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
+      function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
+      function _shelf(icon, en, second, val, valCls) {
+        return '<div class="v2-fi-row">' + icon
+          + '<div class="v2-fi-copy">'
+          +   '<div class="v2-fi-lbl-en">' + en + '</div>'
+          +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
+          +   '<div class="v2-fi-lbl-2">' + second + '</div>'
+          + '</div></div>';
+      }
+      // Destination city (was in the header; now the first shelf).
+      var _destCityName = '';
+      try {
+        var _dIata = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
+        if (typeof CITY !== 'undefined' && CITY[_dIata]) _destCityName = CITY[_dIata];
+        else if (typeof AP !== 'undefined' && AP[_dIata] && AP[_dIata].city) _destCityName = AP[_dIata].city;
+        else _destCityName = _dIata;
+        if (typeof normalizeDisplayCity === 'function') _destCityName = normalizeDisplayCity(_destCityName, _dIata);
+      } catch (e) {}
+
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + (_fiFlightNo
-            ? '<div class="v2-fi-row">'
-              +   _emblemHtml
-              + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label v2-fi-flight-label">' + (TL('flightNo') || 'Flight #') + '</div>'
-              + '<div class="v2-fi-value v2-fi-flight-number">' + _fnNumber + '</div>'
-              + '</div></div>'
-            : '')
-        + (_fiStLbl
-            ? '<div class="v2-fi-row">'
-              + _badge(_svgStatus)
-              + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">' + (TL('status') || 'Status') + '</div>'
-              + '<div class="v2-fi-value v2-fi-status-val v2-fi-status' + _fiStCls + '">' + _fiStLbl + '</div>'
-              + '</div></div>'
-            : '')
-        + (_depShow
-            ? '<div class="v2-fi-row">'
-              + _badge(_svgDepart)
-              + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">' + (TL('departureTime') || 'Departure Time') + '</div>'
-              + '<div class="v2-fi-value v2-fi-time">' + _depShow + '</div>'
-              + '</div></div>'
-            : '')
-        + (_arrShow
-            ? '<div class="v2-fi-row">'
-              + _badge(_svgArrive)
-              + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">' + (TL('arrivalTime') || 'Arrival Time') + '</div>'
-              + '<div class="v2-fi-value v2-fi-time">' + _arrShow + '</div>'
-              + '</div></div>'
-            : '')
-        + (_fiBrd
-            ? '<div class="v2-fi-row">'
-              + _badge(_svgClock)
-              + '<div class="v2-fi-copy">'
-              + '<div class="v2-fi-label">' + (TL('boardingTime') || 'Boarding Time') + '</div>'
-              + '<div class="v2-fi-value v2-fi-time">' + _fiBrd + '</div>'
-              + '</div></div>'
-            : '')
+        + (_destCityName ? _shelf(_emblemHtml || _badge(_svgStatus), 'Destination', _L2('Destination','Destino'), _destCityName, 'v2-fi-dest') : '')
+        + (_fiStLbl ? _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _fiStLbl, 'v2-fi-status-val v2-fi-status' + _fiStCls) : '')
+        + (_depShow ? _shelf(_badge(_svgDepart), 'Departure Time', _L2('Heure de départ','Hora de salida'), _depShow, 'v2-fi-time') : '')
+        + (_arrShow ? _shelf(_badge(_svgArrive), 'Arrival Time', _L2('Heure d’arrivée','Hora de llegada'), _arrShow, 'v2-fi-time') : '')
+        + (_fiBrd ? _shelf(_badge(_svgClock), 'Boarding Time', _L2('Heure d’embarquement','Hora de embarque'), _fiBrd, 'v2-fi-time') : '')
         + '</div>';
     }
   } catch (e) {}
