@@ -5460,10 +5460,10 @@ function _buildV2MapCol(ctx, vars) {
       var _arrived  = (_stKey === 'arrived');
       var _delayedSt = (_stKey === 'delayed');
       // Departure / Arrival labels adapt to status (Departed / Arrived / Delayed)
-      var _depAbbr = _departed ? 'Departed' : 'Departure';
-      var _arrAbbr = _arrived ? 'Arrived' : (_delayedSt ? 'Delayed' : 'Arrival');
-      var _depWordObj = _departed ? {fr:'Parti',es:'Salió'} : {fr:'Départ',es:'Salida'};
-      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizó'} : (_delayedSt ? {fr:'Retardé',es:'Retrasado'} : {fr:'Arrivée',es:'Llegada'});
+      var _depAbbr = _departed ? 'Departed At' : 'Departure Time';
+      var _arrAbbr = _arrived ? 'Arrived' : (_delayedSt ? 'Delayed' : 'Arrival Time');
+      var _depWordObj = _departed ? {fr:'Parti à',es:'Salió a'} : {fr:'Heure de départ',es:'Hora de salida'};
+      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizado'} : (_delayedSt ? {fr:'Retardé',es:'Retrasado'} : {fr:"Heure d'arrivée",es:'Hora de llegada'});
       function _i3(en, val, l2, cls){
         return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
              + '<div class="v2-rc-i3val ' + (cls||'') + '">' + val + '</div>'
@@ -7106,7 +7106,8 @@ function uxgActivateRotator() {
 function gateAutofit(root) {
   if (!root) return;
   var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-dest', '.v2-fi-status-val',
-              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
+              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val',
+              '.v2-rc-i3lbl', '.v2-rc-r2lbl'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
     els.forEach(function(el) {
