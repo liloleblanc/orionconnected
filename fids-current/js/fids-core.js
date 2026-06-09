@@ -5466,9 +5466,9 @@ function _buildV2MapCol(ctx, vars) {
              + '<div class="v2-rc-i3lbl2">' + l2 + '</div></div>';
       }
       // r2 cell: ABBR on top · "IATA  time" value · 2nd-lang word under
-      function _r2(abbr, iata, val, wordObj){
+      function _r2(abbr, valStr, wordObj){
         return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + abbr + '</div>'
-             + '<div class="v2-rc-r2val">' + iata + ' ' + (val || '—') + '</div>'
+             + '<div class="v2-rc-r2val">' + valStr + '</div>'
              + '<div class="v2-rc-r2lbl2">' + _t2(wordObj) + '</div></div>';
       }
 
@@ -5480,8 +5480,8 @@ function _buildV2MapCol(ctx, vars) {
         +     _i3('Arriving in', (_ibEtaStr || '—'), _t2(_L.arriving), '')
         +   '</div></div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-r2"><div class="v2-rc-r2">'
-        +     _r2(_depAbbr, _origIata, _ibDepStr, {fr:'Départ',es:'Salida'})
-        +     _r2(_arrAbbr, _destIata, _ibArrStr, {fr:'Arrivée',es:'Llegada'})
+        +     _r2(_depAbbr, (_ibDepStr || '—') + ' - ' + _origIata, {fr:'Départ',es:'Salida'})
+        +     _r2(_arrAbbr, _destIata + ' - ' + (_ibArrStr || '—'), {fr:'Arrivée',es:'Llegada'})
         +   '</div></div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
