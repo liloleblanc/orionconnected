@@ -695,10 +695,12 @@ html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
   --g92-teal:#21b7a4;
 }
 body, body.gids-page, body.gate-page{
-  background:#f4f8fc !important;
+  background:#eef2f6 !important;                                            /* fallback */
+  background:color-mix(in srgb, var(--airline-accent,#3A3F49) 12%, #ffffff) !important; /* airline-tinted canvas */
 }
 .g8-wrap{
-  background:linear-gradient(180deg,#ffffff 0%,#f4f8fc 100%) !important;
+  background:#eef2f6 !important;                                            /* fallback */
+  background:color-mix(in srgb, var(--airline-accent,#3A3F49) 12%, #ffffff) !important; /* airline-tinted canvas behind the cards */
   color:var(--g92-ink) !important;
 }
 /* Header: keep airline gravitas without swallowing the screen. */
@@ -745,9 +747,10 @@ body, body.gids-page, body.gate-page{
   box-shadow:0 8px 22px rgba(0,0,0,.22) !important;
 }
 /* Flight strip: big, but no crushing. */
-/* Main stage: exact rhythm and a single horizon line. */
+/* Main stage: airline-tinted canvas (the background outside the data cards). */
 .g8-r4,.g8-r4-v2,.g8-v2-main,.g8-main-v2{
-  background:linear-gradient(180deg,#f8fbff 0%,#eef6fb 100%) !important;
+  background:#eef2f6 !important;                                            /* fallback */
+  background:color-mix(in srgb, var(--airline-accent,#3A3F49) 12%, #ffffff) !important;
 }
 .gad-aircraft-col,.gad-media-col,.gad-map-col-v2{
   min-height:0 !important;
@@ -2010,7 +2013,9 @@ body, body.gids-page, body.gate-page{
    plus a soft light sweep across the dark bars. AC → black bars + red tabs. */
 .g8-wrap .g8-r1 { position: relative; overflow: hidden !important; }
 .g8-wrap .g8-r5 {
-  background: var(--banner-bg, #0c1119) !important;
+  background: #eef2f6 !important;                                            /* fallback */
+  background: color-mix(in srgb, var(--airline-accent,#3A3F49) 12%, #ffffff) !important; /* lighter footer */
+  border-top: 1px solid rgba(15,34,56,0.12) !important;
   position: relative;
   overflow: hidden !important;
 }
@@ -2082,7 +2087,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .g8-r5 .g8-r5-airport,
 .g8-wrap .g8-r5 .gate-footer-next,
 .g8-wrap .g8-r5 .gate-footer-next-lbl,
-.g8-wrap .g8-r5 .gate-footer-next-val { color: #e8edf5 !important; }
+.g8-wrap .g8-r5 .gate-footer-next-val { color: #1f2937 !important; }
 
 /* ── v221 — gate header: logo LEFT · Flight/Vol CENTER · Gate/Porte RIGHT,
    smaller bar, SIDE-BY-SIDE bilingual labels (English / second language). ── */
