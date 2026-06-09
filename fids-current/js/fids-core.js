@@ -6478,7 +6478,10 @@ function uxgGateHtml(ctx) {
     r1LogoSrc = (typeof _darkLogo === 'object') ? _darkLogo.src : _darkLogo;
     _darkLogoWhiten = (typeof _darkLogo === 'object') && !!_darkLogo.whiten;
     _useOverrideFile = true;          // real colours — no plate
-    _sz = { h: 64, w: 300 };
+    // Largest that fits the 90px banner band (6px padding top+bottom) —
+    // wordmark fills the bar without spilling; width capped so it never
+    // crowds the centred Flight/Vol block.
+    _sz = { h: 76, w: 560 };
   }
   // Per-carrier brand logo pinned for the gate header — the airline's own mark
   // on file, shown on a clean white plate (full colour, CDN-independent).

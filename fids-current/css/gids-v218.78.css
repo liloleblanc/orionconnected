@@ -3589,3 +3589,8 @@ body, body.gids-page, body.gate-page{
 .g8-airline-F8 .gad-aircraft-col .v2-fi-row .v2-fi-svg { fill: #1C1C1C !important; }
 .g8-airline-F8 .gad-aircraft-col .v2-fi-icon-wrap { color: #1C1C1C !important; }
 .g8-airline-F8 .v2-fi-emblem-img { filter: brightness(0) !important; }
+
+/* Banner: tighten the left edge so the wordmark gets the room (right edge is
+   already owned by the gate block); logoslot clips anything oversized. */
+.g8-wrap .g8-r1 { padding-left: clamp(12px, 1.2vw, 22px) !important; }
+.g8-wrap .g8-r1-logoslot { overflow: hidden !important; max-height: 100% !important; }
