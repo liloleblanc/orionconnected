@@ -2084,6 +2084,63 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .g8-r5 .gate-footer-next-lbl,
 .g8-wrap .g8-r5 .gate-footer-next-val { color: #e8edf5 !important; }
 
+/* ── v221 — gate header: logo LEFT · Flight/Vol CENTER · Gate/Porte RIGHT,
+   smaller bar, SIDE-BY-SIDE bilingual labels (English / second language). ── */
+.g8-wrap .g8-r1 {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: clamp(14px, 1.8vw, 36px) !important;
+  height: 90px !important;
+  min-height: 90px !important;
+  max-height: 90px !important;
+  padding: 6px clamp(18px, 1.8vw, 36px) !important;
+}
+.g8-wrap .g8-r1-logoslot { flex: 0 0 auto; display: flex; align-items: center; }
+.g8-wrap .g8-r1-logoslot .g8-r1-logo,
+.g8-wrap .g8-r1-logoslot img.g8-r1-logo {
+  height: clamp(44px, 4.8vh, 64px) !important;
+  max-height: clamp(44px, 4.8vh, 64px) !important;
+  width: auto !important;
+  max-width: 400px !important;
+}
+.g8-wrap .g8-r1-flight,
+.g8-wrap .g8-r1-right {
+  flex: 0 0 auto;
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(10px, 1vw, 18px) !important;
+}
+/* bilingual side-by-side label: English / second language */
+.g8-wrap .g8-bilbl {
+  display: inline-flex !important;
+  align-items: baseline;
+  gap: 6px;
+  font-size: clamp(14px, 1.35vw, 21px) !important;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-transform: none;
+}
+.g8-wrap .g8-bilbl-sep { opacity: 0.4; font-weight: 400; }
+.g8-wrap .g8-bilbl-2 { opacity: 0.82; font-weight: 600; }
+/* plain flight number (centre) */
+.g8-wrap .g8-r1-flightnum {
+  font-size: clamp(26px, 2.8vw, 46px) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.01em;
+}
+/* gate number → compact red rounded tab (keeps the v220 glossy red bg) */
+.g8-wrap .g8-r1-gate {
+  font-size: clamp(28px, 2.8vw, 46px) !important;
+  margin: 0 !important;
+  padding: clamp(3px, 0.4vh, 8px) clamp(14px, 1.2vw, 22px) !important;
+  border-radius: clamp(10px, 0.9vw, 16px) !important;
+}
+
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
 .gad-map-col-v2 .v2-rc-times {
   display: grid;

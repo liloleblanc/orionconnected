@@ -5643,6 +5643,12 @@ function _buildV2MapCol(ctx, vars) {
 function uxgGateHtml(ctx) {
   const { currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs } = ctx;
   const gateVal = currentFlight.gate && currentFlight.gate !== '\u2014' ? currentFlight.gate : randomGate(currentFlight.terminal, currentFlight.flight);
+  // v221 \u2014 bilingual SIDE-BY-SIDE header labels (English / second language).
+  // Second language is per-airport: French everywhere, Spanish for La Paz.
+  const _hdr2nd = (typeof boardLangsFor === 'function' ? (boardLangsFor(iata)[1] || 'fr') : 'fr');
+  const _flightLbl2 = ({fr:'Vol', es:'Vuelo', en:'Flight', de:'Flug', it:'Volo', pt:'Voo'})[_hdr2nd] || 'Vol';
+  const _gateLbl2 = ({fr:'Porte', es:'Puerta', en:'Gate', de:'Gate', it:'Uscita', pt:'Porta'})[_hdr2nd] || 'Porte';
+  const _flightNumDisp = (String(currentFlight.flight || '').replace(/^[A-Za-z]+\s*/, '').trim()) || String(currentFlight.flight || '');
   const locale = uxgLocaleCode();
   // Short display names for the top banner — long names (NEW YORK KENNEDY) get
   // truncated with ellipsis. Use a compact form; the IATA code next to the name
@@ -6474,8 +6480,15 @@ function uxgGateHtml(ctx) {
           ? ' style="background:' + _bannerSpec.r1 + ' !important;color:' + (_bannerSpec.r1Text || '#FFFFFF') + ' !important;"'
           : ''
       ) + '>'
-    +   '<div class="g8-r1-dest"><span class="g8-city-name">' + normalizeDisplayCity(displayLoc, iataCode) + '</span>' + ((String(normalizeDisplayCity(displayLoc, iataCode) || '').toUpperCase().indexOf('(' + String(iataCode || '').toUpperCase() + ')') === -1 && iataCode) ? ' <span class="g8-city-code">(' + String(iataCode || '').toUpperCase() + ')</span>' : '') + '</div>'
-    +   '<div class="g8-r1-right">' + r1LogoHtml + starHtml + '<div class="g8-r1-gate">' + gateVal + '</div></div>'
+    +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
+    +   '<div class="g8-r1-flight">'
+    +     '<span class="g8-bilbl"><span class="g8-bilbl-en">Flight</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _flightLbl2 + '</span></span>'
+    +     '<span class="g8-r1-flightnum">' + _flightNumDisp + '</span>'
+    +   '</div>'
+    +   '<div class="g8-r1-right">'
+    +     '<span class="g8-bilbl"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
+    +     '<span class="g8-r1-gate">' + gateVal + '</span>'
+    +   '</div>'
     + '</div>'
     // ROW 2 - flight number + fields (full width)
     + '<div class="g8-r2"' + (
