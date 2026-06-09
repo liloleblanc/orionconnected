@@ -5206,15 +5206,22 @@ function _buildV2AircraftCol(ctx, vars) {
       var _depRev = !!(_fiDep && String(_fiDep).indexOf('g8-r2-revised') !== -1);
       var _arrRev = !!(_fiArr && String(_fiArr).indexOf('g8-r2-revised') !== -1);
       var _brdRev = !!(_fiBrd && String(_fiBrd).indexOf('g8-r2-revised') !== -1);
-      var _revTag = '<span class="v2-fi-revtag">' + ((typeof TL === 'function') ? TL('revised') : 'Revised') + '</span>';
+      // When a time is revised, the LABEL itself becomes "Revised - <X>"
+      // (no separate pill/badge). Second language gets its own prefix.
+      var _depEnL = _depRev ? 'Revised - Departure' : 'Departure Time';
+      var _arrEnL = _arrRev ? 'Revised - Arrival'   : 'Arrival Time';
+      var _brdEnL = _brdRev ? 'Revised - Boarding'  : 'Boarding Time';
+      var _depL2L = _depRev ? _L2('Révisé - Départ','Revisado - Salida')       : _L2('Heure de départ','Hora de salida');
+      var _arrL2L = _arrRev ? _L2('Révisé - Arrivée','Revisado - Llegada')      : _L2('Heure d’arrivée','Hora de llegada');
+      var _brdL2L = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Heure d’embarquement','Hora de embarque');
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + (_destCityName ? _shelf(_emblemHtml || _badge(_svgStatus), 'Destination', _L2('Destination','Destino'), _destCityName, 'v2-fi-dest') : '')
         + (_fiStLbl ? _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _fiStLbl, 'v2-fi-status-val v2-fi-status' + _fiStCls) : '')
-        + (_depShow ? _shelf(_badge(_svgDepart), 'Departure Time' + (_depRev ? _revTag : ''), _L2('Heure de départ','Hora de salida'), _depShow, 'v2-fi-time') : '')
-        + (_arrShow ? _shelf(_badge(_svgArrive), 'Arrival Time' + (_arrRev ? _revTag : ''), _L2('Heure d’arrivée','Hora de llegada'), _arrShow, 'v2-fi-time') : '')
-        + (_fiBrd ? _shelf(_badge(_svgClock), 'Boarding Time' + (_brdRev ? _revTag : ''), _L2('Heure d’embarquement','Hora de embarque'), _fiBrd, 'v2-fi-time') : '')
+        + (_depShow ? _shelf(_badge(_svgDepart), _depEnL, _depL2L, _depShow, 'v2-fi-time') : '')
+        + (_arrShow ? _shelf(_badge(_svgArrive), _arrEnL, _arrL2L, _arrShow, 'v2-fi-time') : '')
+        + (_fiBrd ? _shelf(_badge(_svgClock), _brdEnL, _brdL2L, _fiBrd, 'v2-fi-time') : '')
         + '</div>';
     }
   } catch (e) {}
