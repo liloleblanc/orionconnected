@@ -5792,33 +5792,42 @@ function _buildV2MapCol(ctx, vars) {
         .replace(/^De Havilland(\s+Canada)?\s+/i, '')   // "De Havilland Dash 8-400" → "Dash 8-400"
         .replace(/^Bombardier\s+/i, '');
       var _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg : '');
-      var _typeL2 = (_lang2b === 'es') ? 'Tipo de aeronave' : "Type d'appareil";
-      // Operated by — shown when the operating carrier differs from the
-      // marketing carrier. Label + the operator's LOGO (per Nick), with a
-      // plain-text fallback if the logo file is missing.
-      var _opByLine = '';
+      // Shorter label per Nick: "Aircraft / Appareil" (was "Aircraft type").
+      var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
+      // Operated by — when the operating carrier differs from the marketing
+      // carrier, the bottom shelf splits into two cells (Nick's layout):
+      //   Operated By            |  Aircraft
+      //   [operator LOGO/name]   |  Airbus A319 | C-FTOD
+      //   Exploité par           |  Appareil
+      var _opByVal = '';
       var _mktCode6 = String(vars.airlineCode || '').trim().toUpperCase();
       if (_opCode && _opCode !== _mktCode6) {
         var _opNm6 = _cf._opName
           || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
-        _opNm6 = String(_opNm6).replace(/^Air Canada\s+/i, '').replace(/[<>"']/g, '');
+        _opNm6 = String(_opNm6).replace(/[<>"']/g, '');
         var _opLogo6 = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
-        _opByLine = '<span class="v2-rc-opby-lbl">Operated by:</span>'
-          + (_opLogo6
-              ? '<img class="v2-rc-opby-logo" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
-                + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
-              : '<b>' + _opNm6 + '</b>');
+        _opByVal = _opLogo6
+          ? '<img class="v2-rc-opby-logo" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
+            + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
+          : '<b>' + _opNm6 + '</b>';
       }
+      var _opByL2 = (_lang2b === 'es') ? 'Operado por' : 'Exploité par';
+      var _typeCellHtml = _opByVal
+        ? '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Operated By</div>'
+          +   '<div class="v2-rc-opby-val">' + _opByVal + '</div>'
+          +   '<div class="v2-rc-r2lbl2">' + _opByL2 + '</div></div>'
+          + '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Aircraft</div>'
+          +   '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
+          +   '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div></div>'
+        : '<div class="v2-rc-r2cell" style="flex:1 1 100%;align-items:center;text-align:center;"><div class="v2-rc-r2lbl">Aircraft</div>'
+          +   '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
+          +   '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div></div>';
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-r2">'
-        +   '<div class="v2-rc-r2cell" style="flex:1 1 100%;align-items:center;text-align:center;"><div class="v2-rc-r2lbl">Aircraft type</div>'
-        +     '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
-        +     '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div>'
-        +     (_opByLine ? '<div class="v2-rc-opby">' + _opByLine + '</div>' : '')
-        +   '</div>'
+        +   _typeCellHtml
         + '</div></div>';
     }
   } catch (e) {}

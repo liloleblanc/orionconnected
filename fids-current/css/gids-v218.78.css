@@ -3686,3 +3686,10 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-opby { display: flex !important; align-items: center !important; justify-content: center !important; gap: clamp(6px,0.7vw,12px) !important; white-space: nowrap !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-lbl { font-size: clamp(14px,1.8vh,24px) !important; font-weight: 600 !important; color: #5b6573 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-logo { height: clamp(22px,2.8vh,38px) !important; width: auto !important; max-width: 180px !important; object-fit: contain !important; display: block !important; }
+
+/* Operated By cell — the operator logo sits as the cell's VALUE, sized to
+   match the data values beside it. (Old centred one-liner replaced by the
+   two-cell layout: Operated By | Aircraft.) */
+.g8-wrap .gad-map-col-v2 .v2-rc-opby-val { display: flex !important; align-items: center !important; min-height: clamp(26px,4vh,56px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-opby-val .v2-rc-opby-logo { height: clamp(26px,3.6vh,50px) !important; width: auto !important; max-width: 240px !important; object-fit: contain !important; display: block !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-opby-val b { font-size: clamp(26px,4vh,56px) !important; font-weight: 900 !important; color: #0f2238 !important; }
