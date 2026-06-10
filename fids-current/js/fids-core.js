@@ -861,6 +861,17 @@ function changeFont(f) {
   let s = document.getElementById('fids-font-override');
   if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
   s.textContent = `*, *::before, *::after { font-family: ${fam} !important; }`;
+  // Persist the choice — page load used to hard-reset to Geist, wiping
+  // whatever the user picked ("every time I add a new font it goes away").
+  try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
+  try { var _fs = document.getElementById('fontSel'); if (_fs && _fs.value !== f) _fs.value = f; } catch (e) {}
+}
+
+// Re-apply the saved font on page load (falls back to Geist).
+function restoreFontChoice() {
+  var f = 'Geist';
+  try { f = localStorage.getItem('fids_font_choice') || 'Geist'; } catch (e) {}
+  changeFont(f);
 }
 
 // Start / stop the airline background rotation timer. Runs only when
