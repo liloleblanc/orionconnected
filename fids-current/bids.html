@@ -451,7 +451,8 @@
 <script src="/mapcdn/leaflet-arc.js"></script>
 <script src="js/gids-layout.js?v=1"></script>
 <script src="js/fids-v2.js?v=311"></script>
-<script src="js/fids-core.js?v=21899-94"></script>
+<script src="data/airline-colors.js?v=3"></script>
+<script src="js/fids-core.js?v=21899-150"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=2"></script>
@@ -459,12 +460,12 @@
 <script src="js/airport-coords.js?v=1"></script>
 <script src="js/template-renderer.js?v=1"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=21899-34"></script>
+<script src="js/menu.js?v=21899-35"></script>
 <script src="js/editor-roles.js?v=1"></script>
 <script>
 window.addEventListener("DOMContentLoaded", async function() {
 
-    try { changeFont('Geist'); } catch(e) {}
+    try { if (typeof restoreFontChoice === 'function') restoreFontChoice(); else changeFont('Geist'); } catch(e) {}
     if (typeof initApInputs === 'function') initApInputs();
 
     // Loader helpers (defined early so we can update status text as we go)

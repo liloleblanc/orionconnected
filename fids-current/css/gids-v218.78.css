@@ -336,6 +336,12 @@
    space between them as the focal element — instead of collapsing to a sliver. */
 .gad-map-col-v2 > .v2-rc-inbound,
 .gad-map-col-v2 > .v2-rc-aircraft { flex: 0 0 auto !important; }
+/* Shelf dividers — make the right panel read like the left rail's linked
+   shelves (flight info / map / aircraft info), without restructuring content. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-inbound,
+.g8-wrap .gad-map-col-v2 > .v2-map-area {
+  border-bottom: 3px solid var(--airline-accent, #D82F2E) !important; /* accent line (same size as outer) */
+}
 .gad-map-col-v2 > .v2-map-area {
   /* Grow into the leftover space between the inbound card (top) and the
      aircraft panel (bottom). Low floor so the map yields space first and never
@@ -695,10 +701,12 @@ html[data-fids-debug="1"] .gad-map-col-v2   { outline: 2px dashed #3b82f6; }
   --g92-teal:#21b7a4;
 }
 body, body.gids-page, body.gate-page{
-  background:#f4f8fc !important;
+  background:#eef2f6 !important;                                            /* fallback */
+  background:var(--banner-bg, #14181E) !important; /* light-gray canvas (frame) */
 }
 .g8-wrap{
-  background:linear-gradient(180deg,#ffffff 0%,#f4f8fc 100%) !important;
+  background:#eef2f6 !important;                                            /* fallback */
+  background:var(--airline-accent, #14181E) !important; /* accent canvas (frame) — AC red etc. */
   color:var(--g92-ink) !important;
 }
 /* Header: keep airline gravitas without swallowing the screen. */
@@ -745,9 +753,10 @@ body, body.gids-page, body.gate-page{
   box-shadow:0 8px 22px rgba(0,0,0,.22) !important;
 }
 /* Flight strip: big, but no crushing. */
-/* Main stage: exact rhythm and a single horizon line. */
+/* Main stage: airline-tinted canvas (the background outside the data cards). */
 .g8-r4,.g8-r4-v2,.g8-v2-main,.g8-main-v2{
-  background:linear-gradient(180deg,#f8fbff 0%,#eef6fb 100%) !important;
+  background:#eef2f6 !important;                                            /* fallback */
+  background:var(--airline-accent, #14181E) !important;                                            /* accent canvas (frame) — AC red etc. */
 }
 .gad-aircraft-col,.gad-media-col,.gad-map-col-v2{
   min-height:0 !important;
@@ -1717,7 +1726,7 @@ body, body.gids-page, body.gate-page{
   margin-right: 0.3em;
 }
 .gad-aircraft-col .v2-fi-value .g8-r2-revised {
-  color: #fbbf24;
+  color: #d97706;   /* coordinated orange (matches Delayed status), not clashing bright yellow */
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
@@ -1915,6 +1924,408 @@ body, body.gids-page, body.gate-page{
 .gad-map-col-v2 .v2-rc-telem-sep {
   opacity: 0.35;
   margin: 0 clamp(2px, 0.2vw, 6px);
+}
+
+/* ── v220 — branded inbound card (matches the reference) ───────────────── */
+/* Higher specificity (.v2-rc-inbound descendant) so this beats the later
+   .gad-map-col-v2 .v2-rc-headline rule that was re-showing the duplicate row. */
+.gad-map-col-v2 .v2-rc-inbound .v2-rc-kicker,
+.gad-map-col-v2 .v2-rc-inbound .v2-rc-headline,
+.gad-map-col-v2 .v2-rc-inbound .v2-rc-from { display: none !important; }
+
+.gad-map-col-v2 .v2-rc-inbound {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: clamp(8px, 1.1vh, 16px) !important;
+  padding: clamp(14px, 1.8vh, 24px) clamp(16px, 1.4vw, 26px) !important;
+  color: #0f2238 !important;
+}
+.gad-map-col-v2 .v2-rc-status-pill {
+  display: inline-block;
+  padding: 5px 16px;
+  border-radius: 999px;
+  font-size: clamp(13px, 1.5vh, 18px);
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #fff;
+  background: #d81e3f;            /* default red — "En route" */
+  text-transform: capitalize;
+}
+.gad-map-col-v2 .v2-rc-status-pill.v2-rc-status-scheduled { background: #475569; }
+.gad-map-col-v2 .v2-rc-status-pill.v2-rc-status-delayed   { background: #d97706; }
+.gad-map-col-v2 .v2-rc-status-pill.v2-rc-status-cancelled { background: #991b1b; }
+.gad-map-col-v2 .v2-rc-fltnum {
+  font-size: clamp(30px, 4vh, 52px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: #0f2238;
+}
+.gad-map-col-v2 .v2-rc-route {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1vw, 18px);
+  font-size: clamp(22px, 2.8vh, 38px);
+  font-weight: 800;
+  color: #1e3a5f;
+}
+.gad-map-col-v2 .v2-rc-route-ico { color: #d81e3f; display: inline-flex; }
+.gad-map-col-v2 .v2-rc-route-ico svg { width: 1em; height: 1em; }
+
+.gad-map-col-v2 .v2-rc-statbar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(8px, 0.8vw, 16px);
+  width: 100%;
+  background: #eef2f8;
+  border-radius: 14px;
+  padding: clamp(10px, 1.2vh, 16px) clamp(12px, 1vw, 18px);
+}
+.gad-map-col-v2 .v2-rc-stat {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 0.7vw, 12px);
+  min-width: 0;
+}
+.gad-map-col-v2 .v2-rc-stat + .v2-rc-stat {
+  border-left: 1px solid rgba(15, 34, 56, 0.12);
+  padding-left: clamp(10px, 1vw, 16px);
+}
+.gad-map-col-v2 .v2-rc-stat-ico { color: #2563eb; display: inline-flex; flex-shrink: 0; }
+.gad-map-col-v2 .v2-rc-stat-txt { display: flex; flex-direction: column; min-width: 0; }
+.gad-map-col-v2 .v2-rc-stat-lbl {
+  font-size: clamp(11px, 1.25vh, 15px);
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.15;
+}
+.gad-map-col-v2 .v2-rc-stat-val {
+  font-size: clamp(18px, 2.2vh, 28px);
+  font-weight: 900;
+  color: #0f2238;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.gad-map-col-v2 .v2-rc-stat-unit { font-size: 0.6em; font-weight: 700; color: #94a3b8; }
+.gad-map-col-v2 .v2-rc-eta {
+  font-size: clamp(13px, 1.5vh, 19px);
+  font-weight: 700;
+  color: #475569;
+}
+
+/* ── v220 — branded TOP + BOTTOM bars to match the reference ──────────────
+   ROUNDED red (airline-accent) gate + clock tabs with a glossy gradient sheen,
+   plus a soft light sweep across the dark bars. AC → black bars + red tabs. */
+.g8-wrap .g8-r1 { position: relative; overflow: hidden !important; }
+.g8-wrap .g8-r5 {
+  background: #eef2f6 !important;                                            /* fallback */
+  background: #c8c4be !important; /* lighter footer */
+  border-top: 1px solid rgba(15,34,56,0.12) !important;
+  position: relative;
+  overflow: hidden !important;
+}
+/* subtle light-sweep "design" on the dark bars (over the inline bg, via ::after) */
+.g8-wrap .g8-r1::after,
+.g8-wrap .g8-r5::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(140% 200% at 86% -60%, rgba(255,255,255,0.10), rgba(255,255,255,0) 55%),
+    linear-gradient(100deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 38%);
+}
+.g8-wrap .g8-r1 > *, .g8-wrap .g8-r5 > * { position: relative; z-index: 1; }
+
+/* ROUNDED glossy gate tab (top-right) */
+.g8-wrap .g8-r1-right { align-self: center !important; align-items: center !important; }
+.g8-wrap .g8-r1-gate {
+  background-color: var(--airline-accent, #D82F2E) !important;
+  background-image: linear-gradient(155deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 46%, rgba(0,0,0,0.22) 100%) !important;
+  color: #fff !important;
+  border: 0 !important;
+  clip-path: none !important;
+  border-radius: clamp(14px, 1.1vw, 22px) !important;
+  align-self: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 clamp(16px, 1.4vw, 28px) !important;
+  padding: clamp(4px, 0.5vh, 10px) clamp(20px, 1.7vw, 32px) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.25) !important;
+  line-height: 1 !important;
+}
+/* ROUNDED glossy clock tab (bottom-right) */
+.g8-wrap .g8-r5 .g8-r5-clock {
+  background-color: var(--airline-accent, #D82F2E) !important;
+  background-image: linear-gradient(155deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 46%, rgba(0,0,0,0.22) 100%) !important;
+  color: #fff !important;
+  align-self: center !important;
+  justify-self: end !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: clamp(14px, 1.1vw, 22px) !important;
+  margin: 0 clamp(16px, 1.4vw, 28px) !important;
+  padding: clamp(6px, 0.7vh, 12px) clamp(20px, 1.7vw, 32px) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.25) !important;
+}
+
+/* ── v220 — PRESENTABLE pass: cohesive LIGHT body + readable footer + unclipped name.
+   The dark left rail next to the light right panel read as "half-finished"; make
+   the left flight-info rail light cards too, so the whole screen is consistent. */
+.g8-wrap .g8-r1-dest { padding-left: clamp(46px, 3.6vw, 70px) !important; }
+
+.g8-wrap .gad-aircraft-col { background: #eef1f6 !important; color: #0f2238 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-row {
+  background: #ffffff !important;
+  border-radius: 14px !important;
+  box-shadow: 0 1px 5px rgba(15, 34, 56, 0.07) !important;
+  border: 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-label { color: #64748b !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-value { color: #0f2238 !important; }
+/* Status value — coloured by status (universal convention, readable on light card) */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.scheduled  { color: #0e7c4a !important; } /* green */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.ontime     { color: #0e7c4a !important; } /* green */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.boarding   { color: #1d4ed8 !important; } /* blue */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.delayed    { color: #d97706 !important; } /* orange */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.diverted   { color: #d97706 !important; } /* orange */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled  { color: #b91c1c !important; } /* red */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.final      { color: #be123c !important; } /* red */
+.g8-wrap .gad-aircraft-col .v2-fi-status-val.gateclosed { color: #4b5563 !important; } /* gray */
+.g8-wrap .gad-aircraft-col .v2-wx-temp { color: #0f2238 !important; }
+.g8-wrap .gad-aircraft-col .v2-wx-when,
+.g8-wrap .gad-aircraft-col .v2-wx-cond { color: #64748b !important; }
+
+/* Footer text readable on the dark bar */
+.g8-wrap .g8-r5 .g8-r5-next,
+.g8-wrap .g8-r5 .g8-r5-airport,
+.g8-wrap .g8-r5 .gate-footer-next,
+.g8-wrap .g8-r5 .gate-footer-next-lbl,
+.g8-wrap .g8-r5 .gate-footer-next-val { color: #1f2937 !important; }
+
+/* ── v221 — gate header: logo LEFT · Flight/Vol CENTER · Gate/Porte RIGHT,
+   smaller bar, SIDE-BY-SIDE bilingual labels (English / second language). ── */
+.g8-wrap .g8-r1 {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: clamp(14px, 1.8vw, 36px) !important;
+  height: 90px !important;
+  min-height: 90px !important;
+  max-height: 90px !important;
+  padding: 6px clamp(18px, 1.8vw, 36px) !important;
+}
+.g8-wrap .g8-r1-logoslot { flex: 0 0 auto; display: flex; align-items: center; }
+.g8-wrap .g8-r1-logoslot .g8-r1-logo,
+.g8-wrap .g8-r1-logoslot img.g8-r1-logo {
+  height: clamp(44px, 4.8vh, 64px) !important;
+  max-height: clamp(44px, 4.8vh, 64px) !important;
+  width: auto !important;
+  max-width: 400px !important;
+}
+.g8-wrap .g8-r1-flight,
+.g8-wrap .g8-r1-right {
+  flex: 0 0 auto;
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(10px, 1vw, 18px) !important;
+}
+/* bilingual side-by-side label: English / second language */
+.g8-wrap .g8-bilbl {
+  display: inline-flex !important;
+  align-items: baseline;
+  gap: 6px;
+  font-size: clamp(14px, 1.35vw, 21px) !important;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-transform: none;
+}
+.g8-wrap .g8-bilbl-sep { opacity: 0.4; font-weight: 400; }
+.g8-wrap .g8-bilbl-2 { opacity: 0.82; font-weight: 600; }
+/* plain flight number (centre) */
+.g8-wrap .g8-r1-flightnum {
+  font-size: clamp(26px, 2.8vw, 46px) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.01em;
+}
+/* gate number → compact red rounded tab (keeps the v220 glossy red bg) */
+.g8-wrap .g8-r1-gate {
+  font-size: clamp(28px, 2.8vw, 46px) !important;
+  margin: 0 !important;
+  padding: clamp(3px, 0.4vh, 8px) clamp(14px, 1.2vw, 22px) !important;
+  border-radius: clamp(10px, 0.9vw, 16px) !important;
+}
+
+/* ── v221b — header refinements (per Nick) ──
+   flight: "Flight / Vol" (one colour) ON TOP of a big number (wordmark-sized),
+   grouped close to the logo; gate: "Gate / Porte" STACKED, bigger, big number. */
+.g8-wrap .g8-r1 {
+  justify-content: flex-start !important;
+  height: 106px !important; min-height: 106px !important; max-height: 106px !important;
+}
+.g8-wrap .g8-r1-right { margin-left: auto !important; }
+
+/* flight block: label on top, big number below, near the logo */
+.g8-wrap .g8-r1-flight {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  margin-left: clamp(8px, 1vw, 22px) !important;
+}
+.g8-wrap .g8-r1-flight .g8-bilbl { font-size: clamp(15px, 1.5vw, 23px) !important; }
+.g8-wrap .g8-r1-flightnum {
+  font-size: clamp(40px, 4.4vw, 62px) !important;
+  line-height: 0.95 !important;
+}
+/* both languages SAME colour */
+.g8-wrap .g8-bilbl-2 { opacity: 1 !important; font-weight: 700 !important; }
+.g8-wrap .g8-bilbl-sep { opacity: 0.5 !important; }
+
+/* gate block: Gate / Porte STACKED, same colour, bigger; gate number much bigger */
+.g8-wrap .g8-r1-right .g8-bilbl {
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 0 !important;
+  line-height: 1.05 !important;
+  font-size: clamp(15px, 1.55vw, 24px) !important;
+}
+.g8-wrap .g8-r1-right .g8-bilbl-sep { display: none !important; }
+.g8-wrap .g8-r1-gate { font-size: clamp(42px, 4.5vw, 66px) !important; }
+
+/* ── v221c — Flight block mirrors the Gate block: label STACKED (Flight over
+   Vol) beside the big number, and everything bigger across both blocks. ── */
+.g8-wrap .g8-r1 { height: 112px !important; min-height: 112px !important; max-height: 112px !important; }
+.g8-wrap .g8-r1-flight {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: clamp(10px, 1vw, 20px) !important;
+}
+.g8-wrap .g8-r1-flight .g8-bilbl,
+.g8-wrap .g8-r1-right .g8-bilbl {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  line-height: 1.04 !important;
+  font-size: clamp(17px, 1.7vw, 27px) !important;
+}
+.g8-wrap .g8-r1-right .g8-bilbl { align-items: flex-end !important; }
+.g8-wrap .g8-r1-flight .g8-bilbl-sep,
+.g8-wrap .g8-r1-right .g8-bilbl-sep { display: none !important; }
+.g8-wrap .g8-r1-flightnum,
+.g8-wrap .g8-r1-gate { font-size: clamp(46px, 5vw, 74px) !important; line-height: 0.95 !important; }
+
+/* ── v221d — bigger header (per Nick) ── */
+.g8-wrap .g8-r1 { height: 134px !important; min-height: 134px !important; max-height: 134px !important; }
+.g8-wrap .g8-r1-logoslot .g8-r1-logo,
+.g8-wrap .g8-r1-logoslot img.g8-r1-logo {
+  height: clamp(74px, 8.2vh, 116px) !important;
+  max-height: clamp(74px, 8.2vh, 116px) !important;
+  max-width: 520px !important;
+}
+.g8-wrap .g8-r1-flight .g8-bilbl,
+.g8-wrap .g8-r1-right .g8-bilbl { font-size: clamp(20px, 2vw, 34px) !important; }
+.g8-wrap .g8-r1-flightnum,
+.g8-wrap .g8-r1-gate { font-size: clamp(56px, 6vw, 94px) !important; }
+
+/* ── v221e — flight block back to CENTER + even bigger logo (per Nick) ── */
+.g8-wrap .g8-r1 {
+  justify-content: space-between !important;
+  height: 148px !important; min-height: 148px !important; max-height: 148px !important;
+}
+.g8-wrap .g8-r1-flight { margin-left: 0 !important; }
+.g8-wrap .g8-r1-right { margin-left: 0 !important; }
+.g8-wrap .g8-r1-logoslot .g8-r1-logo,
+.g8-wrap .g8-r1-logoslot img.g8-r1-logo {
+  height: clamp(90px, 9.8vh, 134px) !important;
+  max-height: clamp(90px, 9.8vh, 134px) !important;
+}
+/* flight block fills the middle and centres within it */
+.g8-wrap .g8-r1-flight { flex: 1 1 0 !important; justify-content: center !important; }
+
+/* ── v221 — LEFT RAIL: one rounded, airline-tinted container with linked
+   "shelves". Each shelf = centred icon + (EN label / big value / 2nd-lang
+   label). Tint coordinates with the airline (lighter version of its bar). ── */
+.g8-wrap .gad-aircraft-col {
+  background: #ffffff !important;                                   /* fallback */
+  background: #E9E9EC !important; /* light airline-tinted rail */
+  border: 3px solid var(--airline-accent, #D82F2E) !important; /* accent line (same size as inner) */
+  border-radius: 24px 24px 0 0 !important; /* rounded top, square bottom */
+  margin: 0 !important;   /* flush to screen edge */
+  padding: 0 !important;   /* shelves touch the edges */
+  overflow: hidden !important;
+  box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
+  display: flex !important; flex-direction: column !important; justify-content: center !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block { display: flex !important; flex-direction: column !important; flex: 1 1 auto; justify-content: center; }
+/* shelves: transparent, linked by thin dividers (not separate cards) */
+.g8-wrap .gad-aircraft-col .v2-fi-row {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  border-bottom: 3px solid var(--airline-accent, #D82F2E) !important; /* accent line (same size as outer) */
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(10px,1vw,18px) !important;
+  padding: clamp(4px,0.65vh,11px) clamp(6px,0.6vw,12px) !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
+/* shelf copy: EN label / big value / 2nd-lang label */
+.g8-wrap .gad-aircraft-col .v2-fi-copy {
+  display: flex !important; flex-direction: column !important; align-items: flex-start !important;
+  min-width: 0 !important; line-height: 1.04 !important; gap: 1px !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-lbl-2 {
+  font-size: clamp(16px, 1.95vh, 26px) !important;
+  font-weight: 700 !important; color: #4a5568 !important; line-height: 1.1 !important; letter-spacing: 0.2px;
+}
+/* "Revised" badge shown next to a delayed/revised time's label */
+.g8-wrap .gad-aircraft-col .v2-fi-revtag {
+  display: inline-block; margin-left: 8px; padding: 1px 8px;
+  border-radius: 6px; background: #d97706; color: #fff;
+  font-size: 0.66em; font-weight: 800; letter-spacing: 0.5px;
+  text-transform: uppercase; vertical-align: middle; line-height: 1.5;
+}
+/* time values — unchanged tier */
+.g8-wrap .gad-aircraft-col .v2-fi-value {
+  font-size: clamp(26px, 3.3vh, 46px) !important;
+  font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important;
+}
+/* Destination + Status values — bigger */
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest        { font-size: clamp(40px, 5.4vh, 74px) !important; white-space: nowrap !important; line-height: 0.98 !important; max-width: 100% !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val  { font-size: clamp(40px, 5.4vh, 74px) !important; white-space: nowrap !important; line-height: 0.98 !important; max-width: 100% !important; }
+/* WEATHER — same shelf, just a DARKER background + readable (light) font */
+.g8-wrap .gad-aircraft-col .v2-wx-block {
+  background: #2f3946 !important;                                           /* fallback */
+  background: color-mix(in srgb, var(--banner-bg, #3A3F49) 78%, #000) !important;
+  box-shadow: none !important; border: 0 !important; border-radius: 0 !important;
+  padding: clamp(8px,1vh,15px) clamp(10px,0.9vw,16px) !important;
+  margin: clamp(4px,0.5vh,8px) 0 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-wx-lbl  { color: #ffffff !important; font-size: clamp(15px,1.7vh,22px) !important; font-weight: 800 !important; }
+.g8-wrap .gad-aircraft-col .v2-wx-when { color: rgba(255,255,255,0.82) !important; font-size: clamp(13px,1.5vh,19px) !important; font-weight: 700 !important; }
+.g8-wrap .gad-aircraft-col .v2-wx-temp { color: #ffffff !important; }
+.g8-wrap .gad-aircraft-col .v2-wx-cond { color: rgba(255,255,255,0.82) !important; }
+
+/* ── v222 — RIGHT PANEL: accent the white column to match the left rail.
+   Subtle airline tint + accent border + rounded floating card (mirrors the
+   left rail's container treatment), so both sides frame the dark centre. ── */
+.g8-wrap .gad-map-col-v2 {
+  background: #ffffff !important;                                   /* fallback */
+  background: #E9E9EC !important; /* light airline tint */
+  border: 3px solid var(--airline-accent, #D82F2E) !important; /* accent line (same size as inner) */
+  border-radius: 24px 24px 0 0 !important; /* rounded top, square bottom */
+  margin: 0 !important;   /* flush to screen edge */
+  overflow: hidden !important;
+  box-shadow: 0 2px 12px rgba(15,34,56,0.06) !important;
 }
 
 /* Side-by-side EST. DEPARTURE / EST. ARRIVAL */
@@ -2788,6 +3199,13 @@ body, body.gids-page, body.gate-page{
 .gad-aircraft-col .v2-fi-row .v2-fi-label::after {
   content: ":";
 }
+/* ── PAL (PB/SP): GOLD icon badges while the rest of the theme stays blue.
+   The inline badge background (var(--airline-accent)) is non-!important, so
+   this scoped rule overrides it for PAL only — icons gold, bar/borders blue. ── */
+.g8-airline-PB .gad-aircraft-col .v2-fi-icon-badge,
+.g8-airline-PB .gad-aircraft-col .v2-fi-emblem-wrap,
+.g8-airline-SP .gad-aircraft-col .v2-fi-icon-badge,
+.g8-airline-SP .gad-aircraft-col .v2-fi-emblem-wrap { background: #FCA404 !important; }
 /* No exception for Flight # — Nick wants it to have the colon too */
 .gad-aircraft-col .v2-fi-row .v2-fi-flight-label::after {
   content: ":";
@@ -2966,11 +3384,11 @@ body, body.gids-page, body.gate-page{
    do NOT wrap or clip (20% was too tight). Right map col trimmed slightly.
    Left 24% / center 54% / right 22%. */
 .g8-wrap {
-  --col-left: 24%;
+  --col-left: 23%;
   --col-center: 54%;
 }
 .gad-map-col-v2 {
-  flex: 0 0 22% !important;
+  flex: 0 0 23% !important;
 }
 
 /* ── LEFT INFO COLUMN — anti-clip safety net ─────────────────────────────
@@ -3038,3 +3456,240 @@ body, body.gids-page, body.gate-page{
   text-transform: none !important;
   letter-spacing: 0.2px !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   RIGHT PANEL — flat SHELVES (like the left rail): full-width title, then
+   Status/Flight/Arriving · ETD/ETA · Map(×2) · Illustration · Aircraft type.
+   Each shelf fills equally; accent "lines" divide them. First column is
+   left-aligned, last column right-aligned. Speed/Altitude overlaid IN the map.
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .gad-map-col-v2 { padding: 0 !important; display: flex !important; flex-direction: column !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle {
+  flex: 0 0 auto !important; text-align: center !important;
+  font-size: clamp(18px,2.3vh,32px) !important; font-weight: 800 !important; color: #0f2238 !important;
+  line-height: 1.12 !important; padding: clamp(6px,1vh,14px) clamp(8px,0.8vw,16px) !important;
+  border-bottom: 3px solid var(--airline-accent, #D82F2E) !important;
+}
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
+  flex: 1 1 0 !important; min-height: 0 !important;
+  display: flex !important; flex-direction: column !important; justify-content: center !important;
+  overflow: hidden !important; box-sizing: border-box !important;
+  padding: clamp(5px,0.8vh,12px) clamp(8px,0.8vw,16px) !important;
+  border-bottom: 3px solid var(--airline-accent, #D82F2E) !important;
+}
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf:last-child { border-bottom: 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { flex: 2 1 0 !important; padding: 0 !important; position: relative !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2 { display: flex !important; align-items: flex-start !important; gap: clamp(4px,0.6vw,12px) !important; width: 100% !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3cell,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2cell {
+  flex: 1 1 0 !important; min-width: 0 !important;
+  display: flex !important; flex-direction: column !important; gap: 3px !important;
+  align-items: center !important; text-align: center !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-i3cell:first-child,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2cell:first-child { align-items: flex-start !important; text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3cell:last-child,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2cell:last-child { align-items: flex-end !important; text-align: right !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3lbl,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl { font-size: clamp(16px,2.1vh,32px) !important; font-weight: 800 !important; color: #303a47 !important; line-height: 1.06 !important; white-space: nowrap !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3lbl2,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl2 { font-size: clamp(14px,1.6vh,22px) !important; font-weight: 600 !important; color: #6b7280 !important; line-height: 1.08 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val { font-size: clamp(22px,3.1vh,48px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; white-space: nowrap !important; max-width: 100% !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-r2val { font-size: clamp(22px,3.1vh,48px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; white-space: nowrap !important; max-width: 100% !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-scheduled,
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-ontime    { color: #0e7c4a !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-delayed   { color: #d97706 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-cancelled { color: #b91c1c !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-map .v2-map-area { position: absolute !important; inset: 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  position: absolute !important; left: 0 !important; right: 0 !important; bottom: 0 !important; z-index: 5 !important;
+  display: flex !important; gap: clamp(6px,0.8vw,14px) !important;
+  padding: clamp(4px,0.7vh,10px) clamp(8px,0.8vw,16px) !important; background: rgba(15,34,56,0.78) !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-mstat { flex: 1 1 0 !important; text-align: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-mstat:first-child { text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-mstat:last-child { text-align: right !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl  { font-size: clamp(14px,1.7vh,24px) !important; font-weight: 700 !important; color: #fff !important; line-height: 1.05 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl2 { font-size: clamp(11px,1.2vh,15px) !important; font-weight: 600 !important; color: rgba(255,255,255,0.8) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-val  { font-size: clamp(22px,2.9vh,44px) !important; font-weight: 900 !important; color: #fff !important; line-height: 1.0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-unit { font-size: 0.6em !important; font-weight: 700 !important; color: rgba(255,255,255,0.8) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-type { justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { align-items: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-actype-val { font-size: clamp(22px,3.1vh,48px) !important; font-weight: 900 !important; color: #0f2238 !important; line-height: 1.0 !important; white-space: nowrap !important; max-width: 100% !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   CORNERS — top banner (airline + gate) rounded at its TOP-left/right;
+   side panels keep rounded tops but square bottoms (set on their rules).
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .g8-r1,
+.g8-wrap .g8-r1.g8-r1-bg { border-radius: 24px 24px 0 0 !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   GATE BLOCK — accent-coloured shape at the right end of the banner. Its
+   left edge is slanted ("ramps in" from the left); it runs flush to the
+   banner's right edge, sharing the banner's rounded top-right corner
+   (the banner's overflow:hidden + radius does the rounding).
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .g8-r1 { padding-right: 0 !important; }
+.g8-wrap .g8-r1-right {
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: center !important;
+  background: var(--airline-accent, #D82F2E) !important;
+  margin-left: clamp(14px, 1.6vw, 30px) !important;
+  padding: 0 clamp(26px, 2.2vw, 42px) 0 clamp(58px, 5vw, 96px) !important;
+  clip-path: polygon(clamp(36px, 3.2vw, 64px) 0, 100% 0, 100% 100%, 0 100%) !important;
+  gap: clamp(10px, 1vw, 18px) !important;
+}
+.g8-wrap .g8-r1-right .g8-bilbl { color: #fff !important; }
+
+/* Inside the accent gate block, the gate number is plain BIG white type —
+   no white pill/box (that pill floated oddly over the red shape). */
+.g8-wrap .g8-r1-right .g8-r1-gate {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: #fff !important;
+  height: auto !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  font-size: clamp(64px, 8.2vh, 104px) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+/* Gate block v2 — give the block its OWN rounded top-right corner so the
+   curve reads against the dark banner even when the frame behind the screen
+   is the same accent colour, and add a white leading edge along the slant
+   so the shape pops on low-contrast palettes (e.g. Porter blue on navy). */
+.g8-wrap .g8-r1-right {
+  position: relative !important;
+  border-radius: 0 24px 0 0 !important;
+}
+.g8-wrap .g8-r1-right::before {
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: 0;
+  width: calc(clamp(36px, 3.2vw, 64px) + 10px);
+  background: rgba(255,255,255,0.92);
+  clip-path: polygon(clamp(36px, 3.2vw, 64px) 0, calc(clamp(36px, 3.2vw, 64px) + 10px) 0, 10px 100%, 0 100%);
+  pointer-events: none;
+}
+
+/* Gate block FLUSH to the screen: touches the top and right edges, so its
+   rounded corner IS the screen corner (per Nick — no inset gap). */
+.g8-wrap .g8-r1-right { margin-right: 0 !important; }
+
+/* ── Flair (F8): the brand lime accent is LIGHT, so accent-backed elements
+   flip their contents to brand black (white would wash out on lime). ── */
+.g8-airline-F8 .g8-r1-right .g8-bilbl,
+.g8-airline-F8 .g8-r1-right .g8-r1-gate { color: #1C1C1C !important; }
+.g8-airline-F8 .gad-aircraft-col .v2-fi-row .v2-fi-svg { fill: #1C1C1C !important; }
+.g8-airline-F8 .gad-aircraft-col .v2-fi-icon-wrap { color: #1C1C1C !important; }
+.g8-airline-F8 .v2-fi-emblem-img { filter: brightness(0) !important; }
+
+/* Banner: tighten the left edge so the wordmark gets the room (right edge is
+   already owned by the gate block); logoslot clips anything oversized. */
+.g8-wrap .g8-r1 { padding-left: clamp(12px, 1.2vw, 22px) !important; }
+.g8-wrap .g8-r1-logoslot { overflow: hidden !important; max-height: 100% !important; }
+
+/* Let the gate block run the FULL banner height (the 6px vertical padding
+   was holding it off the top edge); other banner children stay centered. */
+.g8-wrap .g8-r1 { padding-top: 0 !important; padding-bottom: 0 !important; }
+
+/* Gate block — ABSOLUTELY pinned to the banner's top/right/bottom so NOTHING
+   (flex paddings, margins, gaps) can hold it off the edges. The banner is
+   already position:relative + overflow:hidden with the 24px top-right radius,
+   so the block's corner IS the screen corner. */
+.g8-wrap .g8-r1 { position: relative !important; }
+.g8-wrap .g8-r1-right {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  margin: 0 !important;
+  height: auto !important;
+}
+
+/* ════════ v221f — Nick's tightening pass ════════ */
+/* 1. Flight NUMBER (centre) a tiny bit smaller — labels unchanged */
+.g8-wrap .g8-r1-flightnum { font-size: clamp(48px, 5.2vw, 82px) !important; }
+/* 2. Screen corner BLACK outside the gate tab's rounded corner: the banner
+   keeps its dark square corner there; only the tab itself is rounded. */
+.g8-wrap .g8-r1,
+.g8-wrap .g8-r1.g8-r1-bg { border-radius: 24px 0 0 0 !important; }
+/* 3. Right panel: tighter shelf chrome → bigger type and a BIGGER MAP */
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle { padding: clamp(4px,0.6vh,9px) clamp(8px,0.8vw,16px) !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf { padding-top: clamp(2px,0.4vh,6px) !important; padding-bottom: clamp(2px,0.4vh,6px) !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { flex: 2.6 1 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2val,
+.g8-wrap .gad-map-col-v2 .v2-rc-actype-val { font-size: clamp(24px,3.4vh,52px) !important; }
+/* 4. Right-panel title is BILINGUAL — second language under the English */
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle2 {
+  display: block !important; font-size: 0.58em !important; font-weight: 600 !important;
+  color: #5b6573 !important; line-height: 1.12 !important;
+}
+/* 6. Side panels: SAME tone both sides, a step darker than before */
+.g8-wrap .gad-aircraft-col,
+.g8-wrap .gad-map-col-v2 { background: #D9DEE5 !important; }
+
+/* Both languages get EQUAL treatment in the right panel (the left rail
+   already does this) — same size, weight and ink for EN and the 2nd lang. */
+.g8-wrap .gad-map-col-v2 .v2-rc-i3lbl2,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl2 { font-size: clamp(16px,2.1vh,32px) !important; font-weight: 800 !important; color: #303a47 !important; line-height: 1.06 !important; white-space: nowrap !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle2 { font-size: 0.8em !important; font-weight: 700 !important; color: #303a47 !important; }
+/* Aircraft illustration: contained with breathing room — not wedged
+   edge-to-edge against the shelf dividers. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { padding: clamp(4px,0.8vh,12px) clamp(10px,1.2vw,20px) !important; }
+.gad-map-col-v2 .v2-rc-aircraft-img img { max-width: 100% !important; max-height: 100% !important; object-fit: contain !important; }
+
+/* Operated-by line under the aircraft type (Jazz / Rouge / Encore…) */
+.g8-wrap .gad-map-col-v2 .v2-rc-opby {
+  font-size: clamp(13px,1.6vh,22px) !important; font-weight: 600 !important;
+  color: #5b6573 !important; line-height: 1.15 !important; white-space: nowrap !important;
+  margin-top: clamp(2px,0.3vh,5px) !important;
+}
+/* Aircraft illustration BIG again — spans ~94% of the column width (the
+   contain-fix shrank it); still contained, never touching the dividers. */
+.gad-map-col-v2 .v2-rc-aircraft-img { display: flex !important; align-items: center !important; justify-content: center !important; height: 100% !important; width: 100% !important; }
+.gad-map-col-v2 .v2-rc-aircraft-img img { width: 94% !important; max-width: 94% !important; height: auto !important; max-height: 100% !important; object-fit: contain !important; }
+
+/* Aircraft illustration shelf gets more height — the plane scales to shelf
+   HEIGHT (wide image), so a taller shelf is what actually makes it bigger. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 1.5 1 0 !important; padding: clamp(2px,0.4vh,8px) clamp(8px,1vw,16px) !important; }
+
+/* ════════ Right panel type-up pass 2 — vh terms were the binding constraint
+   on real displays, so raise those (not just the max caps). ════════ */
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle { font-size: clamp(20px,2.7vh,36px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3lbl,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl,
+.g8-wrap .gad-map-col-v2 .v2-rc-i3lbl2,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl2 { font-size: clamp(17px,2.5vh,36px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2val,
+.g8-wrap .gad-map-col-v2 .v2-rc-actype-val { font-size: clamp(26px,4vh,56px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl  { font-size: clamp(15px,2vh,28px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-val  { font-size: clamp(24px,3.3vh,48px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-opby    { font-size: clamp(14px,1.8vh,24px) !important; }
+
+/* ════════ Aircraft illustration — REAL size at last. Legacy rules capped the
+   image at clamp(58px,6.5vh,96px) (~58px on the demo display) which made the
+   plane a thumbnail no matter what the shelf allowed. Kill every legacy cap;
+   the type shelf sizes to content so the plane gets all remaining height. ════════ */
+.gad-map-col-v2 .v2-rc-aircraft-img { max-height: none !important; height: 100% !important; margin-bottom: 0 !important; }
+.gad-map-col-v2 .v2-rc-aircraft-img img { max-height: 100% !important; width: 94% !important; max-width: 94% !important; height: auto !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type { flex: 0 0 auto !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 2 1 0 !important; }
+/* Operated by: label + operator LOGO on one centred line */
+.g8-wrap .gad-map-col-v2 .v2-rc-opby { display: flex !important; align-items: center !important; justify-content: center !important; gap: clamp(6px,0.7vw,12px) !important; white-space: nowrap !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-opby-lbl { font-size: clamp(14px,1.8vh,24px) !important; font-weight: 600 !important; color: #5b6573 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-opby-logo { height: clamp(22px,2.8vh,38px) !important; width: auto !important; max-width: 180px !important; object-fit: contain !important; display: block !important; }
+
+/* Operated By cell — the operator logo sits as the cell's VALUE, sized to
+   match the data values beside it. (Old centred one-liner replaced by the
+   two-cell layout: Operated By | Aircraft.) */
+.g8-wrap .gad-map-col-v2 .v2-rc-opby-val { display: flex !important; align-items: center !important; min-height: clamp(26px,4vh,56px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-opby-val .v2-rc-opby-logo { height: clamp(26px,3.6vh,50px) !important; width: auto !important; max-width: 240px !important; object-fit: contain !important; display: block !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-opby-val b { font-size: clamp(26px,4vh,56px) !important; font-weight: 900 !important; color: #0f2238 !important; }
