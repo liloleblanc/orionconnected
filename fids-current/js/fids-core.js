@@ -867,11 +867,12 @@ function changeFont(f) {
   try { var _fs = document.getElementById('fontSel'); if (_fs && _fs.value !== f) _fs.value = f; } catch (e) {}
 }
 
-// Re-apply the saved font on page load (falls back to Geist).
-function restoreFontChoice() {
-  var f = 'Geist';
-  try { f = localStorage.getItem('fids_font_choice') || 'Geist'; } catch (e) {}
-  changeFont(f);
+// Re-apply the saved font on page load. The user's saved pick ALWAYS wins;
+// defaultFont only applies when nothing has been chosen yet.
+function restoreFontChoice(defaultFont) {
+  var f = '';
+  try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
+  changeFont(f || defaultFont || 'Geist');
 }
 
 // Start / stop the airline background rotation timer. Runs only when
@@ -5742,6 +5743,17 @@ function _buildV2MapCol(ctx, vars) {
         .replace(/^Bombardier\s+/i, '');
       var _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg : '');
       var _typeL2 = (_lang2b === 'es') ? 'Tipo de aeronave' : "Type d'appareil";
+      // Operated by — shown when the operating carrier differs from the
+      // marketing carrier (Jazz, Rouge, Encore…). Bilingual one-liner.
+      var _opByLine = '';
+      var _mktCode6 = String(vars.airlineCode || '').trim().toUpperCase();
+      if (_opCode && _opCode !== _mktCode6) {
+        var _opNm6 = _cf._opName
+          || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
+        _opNm6 = String(_opNm6).replace(/^Air Canada\s+/i, '');
+        var _opByL2 = (_lang2b === 'es') ? 'Operado por' : 'Exploité par';
+        _opByLine = 'Operated by ' + _opNm6 + '  ·  ' + _opByL2 + ' ' + _opNm6;
+      }
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
@@ -5749,7 +5761,9 @@ function _buildV2MapCol(ctx, vars) {
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-r2">'
         +   '<div class="v2-rc-r2cell" style="flex:1 1 100%;align-items:center;text-align:center;"><div class="v2-rc-r2lbl">Aircraft type</div>'
         +     '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
-        +     '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div></div>'
+        +     '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div>'
+        +     (_opByLine ? '<div class="v2-rc-opby">' + _opByLine + '</div>' : '')
+        +   '</div>'
         + '</div></div>';
     }
   } catch (e) {}
@@ -6474,8 +6488,9 @@ function uxgGateHtml(ctx) {
   var BANNER_DARK_LOGO = {
     'AV': '/logos/airlines/asian-other/avianca.svg',  // red avianca — pops on black
     // Flair — the REAL "flair airlines" lockup is black ink, so filter it to
-    // white for the dark banner (no plate, per Nick).
-    'F8': { src: '/logos/airlines/canadian/flair.svg', whiten: true },
+    // white for the dark banner (no plate, per Nick). Two-row lockup: cap the
+    // height lower than single-line wordmarks or it clips in the band.
+    'F8': { src: '/logos/airlines/canadian/flair.svg', whiten: true, h: 92, w: 420 },
     // Regional carriers — white monochrome marks on file, straight onto the dark banner
     '5T': '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg',
     '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
@@ -16393,7 +16408,9 @@ if (document.readyState === 'loading') {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  try { changeFont('RocGrotesk-Medium'); } catch (e) {}
+  // RocGrotesk is only the DEFAULT — a font the user picked (and which
+  // changeFont persisted) must never be stomped on reload.
+  try { restoreFontChoice('RocGrotesk-Medium'); } catch (e) {}
   const bgCtrls = document.getElementById('ctrlBgGroup');
   if (bgCtrls && screenType === 'gate') bgCtrls.style.display = 'flex';
   // If airline mode was restored from localStorage, kick off rotation.
