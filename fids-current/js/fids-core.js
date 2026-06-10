@@ -5111,6 +5111,7 @@ function _buildV2AircraftCol(ctx, vars) {
         'WR':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
         'PD':  '/logos/airlines/canadian/Porter_Airlines_Logo_2006.svg',
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
+        'F8':  '/logos/airlines/canadian/flair-dot.svg',   // Flair — the black DOT from the lockup IS the emblem
         // US majors — symbol-only emblems (rendered white on the accent badge)
         'UA':  '/logos/airlines/us-major/united-globe-only.svg',
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
@@ -5130,7 +5131,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        var NATIVE_COLOR_EMBLEMS = { 'PB': true };
+        var NATIVE_COLOR_EMBLEMS = { 'PB': true, 'F8': true };  // F8: the dot stays brand black, no accent circle/filter
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
@@ -21286,6 +21287,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       ];
       document.querySelectorAll('body *').forEach(function(el){
         if (!el || el.children.length) return;
+        // The v2 right panel is bilingual BY LAYOUT (English label on top,
+        // second language underneath) — rewriting its English labels to the
+        // rotating language produced "Type d'appareil" twice (no English).
+        if (el.closest && el.closest('.gad-map-col-v2')) return;
         var s = (el.textContent || '').trim();
         for (var i=0;i<pairs.length;i++){
           if (pairs[i][0].test(s)) { el.textContent = t(pairs[i][1]); break; }
