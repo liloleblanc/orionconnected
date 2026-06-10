@@ -3655,3 +3655,7 @@ body, body.gids-page, body.gate-page{
    contain-fix shrank it); still contained, never touching the dividers. */
 .gad-map-col-v2 .v2-rc-aircraft-img { display: flex !important; align-items: center !important; justify-content: center !important; height: 100% !important; width: 100% !important; }
 .gad-map-col-v2 .v2-rc-aircraft-img img { width: 94% !important; max-width: 94% !important; height: auto !important; max-height: 100% !important; object-fit: contain !important; }
+
+/* Aircraft illustration shelf gets more height — the plane scales to shelf
+   HEIGHT (wide image), so a taller shelf is what actually makes it bigger. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 1.5 1 0 !important; padding: clamp(2px,0.4vh,8px) clamp(8px,1vw,16px) !important; }

@@ -867,9 +867,41 @@ function changeFont(f) {
   try { var _fs = document.getElementById('fontSel'); if (_fs && _fs.value !== f) _fs.value = f; } catch (e) {}
 }
 
-// Re-apply the saved font on page load. The user's saved pick ALWAYS wins;
-// defaultFont only applies when nothing has been chosen yet.
+// Font stacks shared by the control-bar dropdown AND the FIDS Console
+// Customize panel (same keys the Customize <select> saves).
+var FIDS_FONT_STACKS = {
+  'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
+  'inter':         "'Inter', system-ui, -apple-system, sans-serif",
+  'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
+  'space-grotesk': "'Space Grotesk', system-ui, -apple-system, sans-serif",
+  'airport':       "'Airport', system-ui, -apple-system, sans-serif",
+  'airport-x':     "'Airport X', system-ui, -apple-system, sans-serif",
+  'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
+};
+// Re-apply the saved font on page load. Priority:
+//   1. FIDS Console → Customize panel pick (per-airport pref) — the UI users
+//      actually use. The GATE screen never applied this on load (only the
+//      board render did), so the font vanished on refresh until the panel
+//      was reopened. Apply it here for every screen type.
+//   2. Control-bar FONT dropdown pick (fids_font_choice).
+//   3. defaultFont (page default), then Geist.
 function restoreFontChoice(defaultFont) {
+  try {
+    var _iata = String((window._gateIata || (document.getElementById('apSel') || {}).value || '')).toUpperCase();
+    if (_iata) {
+      var _cfgRaw = localStorage.getItem('fids_customize_' + _iata);
+      var _cfg = _cfgRaw ? JSON.parse(_cfgRaw) : null;
+      if (_cfg && _cfg.font && FIDS_FONT_STACKS[_cfg.font]) {
+        var _stack = FIDS_FONT_STACKS[_cfg.font];
+        document.body.style.setProperty('--font-primary', _stack, 'important');
+        var s = document.getElementById('fids-font-override');
+        if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
+        s.textContent = '*, *::before, *::after { font-family: ' + _stack + ' !important; }';
+        return;
+      }
+    }
+  } catch (e) {}
   var f = '';
   try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
   changeFont(f || defaultFont || 'Geist');
@@ -6505,10 +6537,12 @@ function uxgGateHtml(ctx) {
     r1LogoSrc = (typeof _darkLogo === 'object') ? _darkLogo.src : _darkLogo;
     _darkLogoWhiten = (typeof _darkLogo === 'object') && !!_darkLogo.whiten;
     _useOverrideFile = true;          // real colours — no plate
-    // Largest that fits the 90px banner band (6px padding top+bottom) —
-    // wordmark fills the bar without spilling; width capped so it never
-    // crowds the centred Flight/Vol block.
-    _sz = { h: 108, w: 620 };
+    // Per-entry h/w wins (two-row lockups like Flair clip at the single-line
+    // height); default fills the band for single-line wordmarks.
+    _sz = {
+      h: (typeof _darkLogo === 'object' && _darkLogo.h) ? _darkLogo.h : 108,
+      w: (typeof _darkLogo === 'object' && _darkLogo.w) ? _darkLogo.w : 620
+    };
   }
   // Per-carrier brand logo pinned for the gate header — the airline's own mark
   // on file, shown on a clean white plate (full colour, CDN-independent).
