@@ -898,3 +898,6 @@
 /* Blurb: room for the full sentence-bounded text (JS guarantees it ends on
    a complete sentence; the clamp is only a hard safety net now). */
 .axr-blurb{ -webkit-line-clamp:5; }
+/* Hotel info scale up (Nick: addresses + info too small) — raise the ratio
+   chain so name/address/amenities/blurb all grow together. */
+.axr{ --axr-name: calc(var(--axr-logo) * 0.85); --axr-info: calc(var(--axr-name) * 0.80); }

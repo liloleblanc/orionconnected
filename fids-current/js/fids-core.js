@@ -6493,7 +6493,7 @@ function uxgGateHtml(ctx) {
     // Largest that fits the 90px banner band (6px padding top+bottom) —
     // wordmark fills the bar without spilling; width capped so it never
     // crowds the centred Flight/Vol block.
-    _sz = { h: 76, w: 560 };
+    _sz = { h: 108, w: 620 };
   }
   // Per-carrier brand logo pinned for the gate header — the airline's own mark
   // on file, shown on a clean white plate (full colour, CDN-independent).
@@ -6504,7 +6504,7 @@ function uxgGateHtml(ctx) {
   if (!_useOverrideFile && _plateLogo) {
     r1LogoSrc = _plateLogo;
     _useOverrideFile = true;          // real colours — no white filter
-    _sz = { h: 84, w: 220 };          // compact brand mark on the white plate
+    _sz = { h: 106, w: 300 };         // compact brand mark on the white plate
     _bannerUsedWordmark = true;       // reuse the white-plate styling
   }
   // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
@@ -6515,7 +6515,7 @@ function uxgGateHtml(ctx) {
   if (!_useOverrideFile && _bannerWordmarkBase && typeof logoPath === 'function') {
     r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-dark.svg');
     _useOverrideFile = true;          // no white filter — wordmark as-is
-    _sz = { h: 70, w: 340 };          // wide wordmark, fits the slim header
+    _sz = { h: 102, w: 480 };         // wide wordmark — fills the 148px band
     _bannerUsedWordmark = true;
   }
   // Fallback for carriers with a square tile but no wordmark (e.g. BoA→BOV):
@@ -6525,7 +6525,7 @@ function uxgGateHtml(ctx) {
   if (!_useOverrideFile && _bannerTileIcao) {
     r1LogoSrc = 'logos/airline-tiles/' + _bannerTileIcao + '.svg';
     _useOverrideFile = true;          // keep brand colors — skip the white filter
-    _sz = { h: 96, w: 96 };           // square brand badge
+    _sz = { h: 112, w: 112 };         // square brand badge
     _bannerUsedTile = true;
   }
   var _onPlate = _bannerUsedTile || _bannerUsedWordmark;
