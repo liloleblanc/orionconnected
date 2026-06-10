@@ -3577,10 +3577,9 @@ body, body.gids-page, body.gate-page{
   pointer-events: none;
 }
 
-/* Gate block stops just short of the screen edge: a small gap exposes the
-   dark banner behind it, so the banner's own rounded corner stays the true
-   screen corner and the block's rounded corner floats just inside it. */
-.g8-wrap .g8-r1-right { margin-right: clamp(18px, 1.8vw, 32px) !important; }
+/* Gate block FLUSH to the screen: touches the top and right edges, so its
+   rounded corner IS the screen corner (per Nick — no inset gap). */
+.g8-wrap .g8-r1-right { margin-right: 0 !important; }
 
 /* ── Flair (F8): the brand lime accent is LIGHT, so accent-backed elements
    flip their contents to brand black (white would wash out on lime). ── */
@@ -3594,3 +3593,7 @@ body, body.gids-page, body.gate-page{
    already owned by the gate block); logoslot clips anything oversized. */
 .g8-wrap .g8-r1 { padding-left: clamp(12px, 1.2vw, 22px) !important; }
 .g8-wrap .g8-r1-logoslot { overflow: hidden !important; max-height: 100% !important; }
+
+/* Let the gate block run the FULL banner height (the 6px vertical padding
+   was holding it off the top edge); other banner children stay centered. */
+.g8-wrap .g8-r1 { padding-top: 0 !important; padding-bottom: 0 !important; }
