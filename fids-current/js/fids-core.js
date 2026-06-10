@@ -14916,10 +14916,19 @@ function applyAirportConfigToBoard(iata) {
       _ovr.textContent = '*, *::before, *::after { font-family: ' + _stack + ' !important; }';
     }
   } else {
-    document.body.style.removeProperty('--font-primary');
-    delete document.body.dataset.fidsFont;
-    var _existingOvr = document.getElementById('fids-font-override');
-    if (_existingOvr) _existingOvr.remove();
+    // No board-pref font — but NEVER nuke a font the user picked via the
+    // FONT dropdown (fids_font_choice). This remove ran right after page
+    // load and was wiping the restored font until the user re-picked one.
+    var _manualFont = null;
+    try { _manualFont = localStorage.getItem('fids_font_choice'); } catch (e) {}
+    if (_manualFont) {
+      if (typeof restoreFontChoice === 'function' && !document.getElementById('fids-font-override')) restoreFontChoice();
+    } else {
+      document.body.style.removeProperty('--font-primary');
+      delete document.body.dataset.fidsFont;
+      var _existingOvr = document.getElementById('fids-font-override');
+      if (_existingOvr) _existingOvr.remove();
+    }
   }
 
   // ── DISPLAY MODE OVERRIDE (v218.6+) ──

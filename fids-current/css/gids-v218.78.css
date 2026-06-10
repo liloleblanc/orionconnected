@@ -3597,3 +3597,17 @@ body, body.gids-page, body.gate-page{
 /* Let the gate block run the FULL banner height (the 6px vertical padding
    was holding it off the top edge); other banner children stay centered. */
 .g8-wrap .g8-r1 { padding-top: 0 !important; padding-bottom: 0 !important; }
+
+/* Gate block — ABSOLUTELY pinned to the banner's top/right/bottom so NOTHING
+   (flex paddings, margins, gaps) can hold it off the edges. The banner is
+   already position:relative + overflow:hidden with the 24px top-right radius,
+   so the block's corner IS the screen corner. */
+.g8-wrap .g8-r1 { position: relative !important; }
+.g8-wrap .g8-r1-right {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  margin: 0 !important;
+  height: auto !important;
+}
