@@ -892,8 +892,18 @@ function restoreFontChoice(defaultFont) {
     if (_iata) {
       var _cfgRaw = localStorage.getItem('fids_customize_' + _iata);
       var _cfg = _cfgRaw ? JSON.parse(_cfgRaw) : null;
-      if (_cfg && _cfg.font && FIDS_FONT_STACKS[_cfg.font]) {
-        var _stack = FIDS_FONT_STACKS[_cfg.font];
+      var _stack = null;
+      if (_cfg && _cfg.font) {
+        if (FIDS_FONT_STACKS[_cfg.font]) {
+          _stack = FIDS_FONT_STACKS[_cfg.font];
+        } else if (String(_cfg.font).indexOf('custom:') === 0) {
+          // User-uploaded font ("custom:Name") — menu.js re-injects its
+          // @font-face from fids_custom_fonts on every load; we just point at it.
+          var _cfName = String(_cfg.font).slice(7).replace(/'/g, '');
+          if (_cfName) _stack = "'" + _cfName + "', system-ui, -apple-system, sans-serif";
+        }
+      }
+      if (_stack) {
         document.body.style.setProperty('--font-primary', _stack, 'important');
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
@@ -5185,13 +5195,21 @@ function _buildV2AircraftCol(ctx, vars) {
           + '</div>';
       }
 
-      // Parse "AC1987" → airline code "AC" + flight number "1987"
+      // Parse "AC1987" → airline code "AC" + flight number "1987".
+      // Prefer the flight's own airline code — regex-only parsing missed
+      // alphanumeric codes (F8, B6 …), so e.g. Flair never got its emblem.
       var _fnCarrier = '';
       var _fnNumber = _fiFlightNo;
-      var _fnMatch = _fiFlightNo.match(/^([A-Z]{2,3})\s*(\d+)$/i);
-      if (_fnMatch) {
-        _fnCarrier = _fnMatch[1].toUpperCase();
-        _fnNumber  = _fnMatch[2];
+      var _alCodeEmb = String((currentFlight && currentFlight.airline) || '').trim().toUpperCase();
+      if (_alCodeEmb && _fiFlightNo.toUpperCase().indexOf(_alCodeEmb) === 0) {
+        _fnCarrier = _alCodeEmb;
+        _fnNumber  = _fiFlightNo.slice(_alCodeEmb.length).replace(/^\s+/, '');
+      } else {
+        var _fnMatch = _fiFlightNo.match(/^([A-Z][A-Z0-9]|[A-Z]{2,3})\s*(\d+)$/i);
+        if (_fnMatch) {
+          _fnCarrier = _fnMatch[1].toUpperCase();
+          _fnNumber  = _fnMatch[2];
+        }
       }
       var _emblemHtml = _fnCarrier ? _emblemImg(_fnCarrier) : '';
 
@@ -6522,7 +6540,7 @@ function uxgGateHtml(ctx) {
     // Flair — the REAL "flair airlines" lockup is black ink, so filter it to
     // white for the dark banner (no plate, per Nick). Two-row lockup: cap the
     // height lower than single-line wordmarks or it clips in the band.
-    'F8': { src: '/logos/airlines/canadian/flair.svg', whiten: true, h: 92, w: 420 },
+    'F8': { src: '/logos/airlines/canadian/flair.svg', whiten: true, h: 118, w: 520 },
     // Regional carriers — white monochrome marks on file, straight onto the dark banner
     '5T': '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg',
     '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
@@ -19171,13 +19189,16 @@ function buildGateAdHtml(ad) {
     // ONE compact info line: City · X km · ★ 4.6
     // When property logo has the name, SKIP this line entirely (kills duplicate)
     var _miniLine = [];
+    // Distance needs CONTEXT — "0.9 km" from what? It's from downtown.
+    var _kmCtx = ({ en:' from downtown', fr:' du centre-ville', es:' del centro' })[
+      (typeof accorLang === 'function' ? accorLang() : 'en')] || ' from downtown';
     if (!_logoHasName) {
       var _miniCity = (ad.distanceCity && ad.distanceCity.cityName) ? ad.distanceCity.cityName : (ad.address || '');
       if (_miniCity) _miniLine.push(_esc(_miniCity));
-      if (ad.distanceCity && ad.distanceCity.kmStr) _miniLine.push(_esc(ad.distanceCity.kmStr));
+      if (ad.distanceCity && ad.distanceCity.kmStr) _miniLine.push(_esc(ad.distanceCity.kmStr) + _kmCtx);
     } else if (ad.distanceCity && ad.distanceCity.kmStr) {
       // Logo has the name → just show distance, no city duplicate
-      _miniLine.push(_esc(ad.distanceCity.kmStr));
+      _miniLine.push(_esc(ad.distanceCity.kmStr) + _kmCtx);
     }
     if (ad.rating) {
       var _ratingNum = parseFloat(String(ad.rating).split('/')[0]);
@@ -19974,7 +19995,13 @@ function buildAccorAdOnlyV6(ad) {
   var _da = ad.distanceAirport, _dc = ad.distanceCity;
   if (_da && _da.kmStr) _locLineHtml += _locRow(_airTpl.replace('%k', _da.kmStr));
   if (_dc && _dc.kmStr && _dc.cityName) _locLineHtml += _locRow(_dtTpl.replace('%k', _dc.kmStr).replace('%c', _dc.cityName));
-  if (!_locLineHtml && ad.distance) _locLineHtml = _locRow(ad.distance);
+  // Fallback distance had NO context ("0.9 km" … to what?) — say what it's from.
+  var _dtShort = ({
+    en:'%k from downtown', fr:'à %k du centre-ville', es:'a %k del centro',
+    de:'%k vom Stadtzentrum', it:'a %k dal centro', pt:'a %k do centro',
+    ja:'中心部から%k', zh:'距市中心%k', ar:'%k من وسط المدينة'
+  })[_lgD] || '%k from downtown';
+  if (!_locLineHtml && ad.distance) _locLineHtml = _locRow(_dtShort.replace('%k', ad.distance));
   // city is shown standalone only when we don't have the full street address
   var _showCity = address && !_fullAddr;
   var subHtml=(_showCity||starsHtml||ratingHtml)?'<div class="axr-sub">'+(_showCity?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';

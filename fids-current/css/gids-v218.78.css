@@ -3659,3 +3659,17 @@ body, body.gids-page, body.gate-page{
 /* Aircraft illustration shelf gets more height — the plane scales to shelf
    HEIGHT (wide image), so a taller shelf is what actually makes it bigger. */
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 1.5 1 0 !important; padding: clamp(2px,0.4vh,8px) clamp(8px,1vw,16px) !important; }
+
+/* ════════ Right panel type-up pass 2 — vh terms were the binding constraint
+   on real displays, so raise those (not just the max caps). ════════ */
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle { font-size: clamp(20px,2.7vh,36px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3lbl,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl,
+.g8-wrap .gad-map-col-v2 .v2-rc-i3lbl2,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl2 { font-size: clamp(17px,2.5vh,36px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2val,
+.g8-wrap .gad-map-col-v2 .v2-rc-actype-val { font-size: clamp(26px,4vh,56px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl  { font-size: clamp(15px,2vh,28px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-ms-val  { font-size: clamp(24px,3.3vh,48px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-opby    { font-size: clamp(14px,1.8vh,24px) !important; }

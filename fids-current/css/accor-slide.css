@@ -901,3 +901,6 @@
 /* Hotel info scale up (Nick: addresses + info too small) — raise the ratio
    chain so name/address/amenities/blurb all grow together. */
 .axr{ --axr-name: calc(var(--axr-logo) * 0.85); --axr-info: calc(var(--axr-name) * 0.80); }
+/* Hotel brand logo a touch smaller (per Nick) — name/info sizes unchanged
+   since they derive from the VAR, not the rendered logo. */
+.axr-logo{ height: calc(var(--axr-logo) * 0.85); }
