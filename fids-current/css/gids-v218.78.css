@@ -3611,3 +3611,26 @@ body, body.gids-page, body.gate-page{
   margin: 0 !important;
   height: auto !important;
 }
+
+/* ════════ v221f — Nick's tightening pass ════════ */
+/* 1. Flight NUMBER (centre) a tiny bit smaller — labels unchanged */
+.g8-wrap .g8-r1-flightnum { font-size: clamp(48px, 5.2vw, 82px) !important; }
+/* 2. Screen corner BLACK outside the gate tab's rounded corner: the banner
+   keeps its dark square corner there; only the tab itself is rounded. */
+.g8-wrap .g8-r1,
+.g8-wrap .g8-r1.g8-r1-bg { border-radius: 24px 0 0 0 !important; }
+/* 3. Right panel: tighter shelf chrome → bigger type and a BIGGER MAP */
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle { padding: clamp(4px,0.6vh,9px) clamp(8px,0.8vw,16px) !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf { padding-top: clamp(2px,0.4vh,6px) !important; padding-bottom: clamp(2px,0.4vh,6px) !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { flex: 2.6 1 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-i3val,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2val,
+.g8-wrap .gad-map-col-v2 .v2-rc-actype-val { font-size: clamp(24px,3.4vh,52px) !important; }
+/* 4. Right-panel title is BILINGUAL — second language under the English */
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle2 {
+  display: block !important; font-size: 0.58em !important; font-weight: 600 !important;
+  color: #5b6573 !important; line-height: 1.12 !important;
+}
+/* 6. Side panels: SAME tone both sides, a step darker than before */
+.g8-wrap .gad-aircraft-col,
+.g8-wrap .gad-map-col-v2 { background: #D9DEE5 !important; }

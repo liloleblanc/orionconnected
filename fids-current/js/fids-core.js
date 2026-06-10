@@ -5507,7 +5507,7 @@ function _buildV2MapCol(ctx, vars) {
       }
 
       _inboundCard =
-          '<div class="v2-rc-rtitle">' + _L.title.en + '</div>'
+          '<div class="v2-rc-rtitle">' + _L.title.en + '<span class="v2-rc-rtitle2">' + _t2(_L.title) + '</span></div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-i3"><div class="v2-rc-i3">'
         +     _i3('Status', _stShort, _t2(_L.status), 'v2-rc-status-' + _stCls)
         +     _i3('Flight', _ibFltCompact, _t2(_L.flight), '')
@@ -5592,7 +5592,7 @@ function _buildV2MapCol(ctx, vars) {
 
       var _dTitle = {en:'Your Departure Flight Information', fr:'Information sur votre vol de départ', es:'Información de su vuelo de salida'};
       _inboundCard =
-          '<div class="v2-rc-rtitle">' + _dTitle.en + '</div>'
+          '<div class="v2-rc-rtitle">' + _dTitle.en + '<span class="v2-rc-rtitle2">' + _dt2(_dTitle) + '</span></div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-i3"><div class="v2-rc-i3">'
         +     _di3('Status', (_dStLabel || '—'), _dt2({fr:'Statut',es:'Estado'}), 'v2-rc-status-' + _dStCls)
         +     _di3('Flight', _dFltCompact, _dt2({fr:'Vol',es:'Vuelo'}), '')
@@ -6424,9 +6424,9 @@ function uxgGateHtml(ctx) {
   };
   // Per-airline size overrides for banner logo
   var BANNER_SIZE_OVERRIDE = {
-    'AC': { h: 156, w: 740 },
-    'QK': { h: 156, w: 740 },
-    'RV': { h: 150, w: 700 },
+    'AC': { h: 128, w: 640 },   // was 156 — a bit too big per Nick
+    'QK': { h: 128, w: 640 },
+    'RV': { h: 128, w: 640 },
     'AA': { h: 120, w: 520 },
     'DL': { h: 120, w: 520 },
     'UA': { h: 120, w: 520 },
