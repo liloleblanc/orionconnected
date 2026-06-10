@@ -20077,7 +20077,7 @@ function buildAccorAdOnlyV6(ad) {
     + '</footer>';
 
   return ''
-    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" style="--axr-tint:'+tint+'">'
+    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" data-hotel-id="'+esc(String(ad.hotelId||_fullName||''))+'" style="--axr-tint:'+tint+'">'
     +   '<section class="axr-hero axr-pages">'
     +     _page1 + _page2 + _page3
     +   '</section>'
@@ -20671,8 +20671,13 @@ function startGateAds() {
   // index 0 before resetting to 1, which made the carousel appear blank or
   // stuck on amenities until the timer eventually advanced.
   if (!_gateAdIndex) _gateAdIndex = 1;
-  renderGateAd(_gateAdIndex);
-  el.style.opacity = '1';
+  // Only paint when the carousel is EMPTY (fresh element after a board
+  // rebuild). Unconditional repaints on every refresh cut ads off mid-dwell
+  // and restarted the Accor 3-page slideshow / videos ("ads clash").
+  if (!el.firstChild) {
+    renderGateAd(_gateAdIndex);
+    el.style.opacity = '1';
+  }
   if (_gateAdTimer) return;
   _restartGateAdsTimer();
   // Kick off the destination-video scheduler (5-minute interval, AC-only).
@@ -21319,28 +21324,39 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
    opacity crossfade between .axr-page panels. */
 (function(){
   var EVERY = 10000;   // ms per page (matches the ~30s Accor carousel dwell)
-  var _seen = null;    // the .axr-pages element we're currently timing
-  var _next = 0;       // timestamp of the next page advance
+  // Page state survives DOM rebuilds: the board re-renders every time its
+  // render key ticks (countdowns change it every minute), which replaces the
+  // .axr-pages element. Keying the state by hotel id means a re-render of the
+  // SAME hotel resumes on the page it was showing — previously every rebuild
+  // restarted at page 1, so pages 2–3 kept getting cut off ("ads clash").
+  var _st = { id: null, idx: 0, next: 0, seen: null };
+  function _showPage(pages, idx){
+    for (var i = 0; i < pages.length; i++) pages[i].classList.toggle('axr-page-on', i === idx);
+  }
   function check(){
     var wrap = document.querySelector('.axr-pages');
-    if (!wrap) { _seen = null; return; }
+    if (!wrap) { _st.seen = null; return; }
     var pages = wrap.querySelectorAll('.axr-page');
     if (!pages || pages.length < 2) return;
     var now = Date.now();
-    // A new slide just appeared — start its clock fresh so PAGE 1 gets a full
-    // EVERY before advancing (previously a free-running timer gave it whatever
-    // was left of the cycle, sometimes only a couple seconds).
-    if (wrap !== _seen) { _seen = wrap; _next = now + EVERY; return; }
-    if (now < _next) return;
-    _next = now + EVERY;
-    var cur = -1;
-    for (var i = 0; i < pages.length; i++) {
-      if (pages[i].classList.contains('axr-page-on')) { cur = i; break; }
+    if (wrap !== _st.seen) {
+      _st.seen = wrap;
+      var art = wrap.closest ? wrap.closest('.axr') : null;
+      var id = (art && art.getAttribute('data-hotel-id')) || '';
+      if (id && id === _st.id) {
+        // Same hotel re-rendered mid-slide — resume where we were.
+        _showPage(pages, _st.idx % pages.length);
+        if (!_st.next || _st.next <= now) _st.next = now + EVERY;
+      } else {
+        // Genuinely new slide — page 1 gets its full dwell.
+        _st.id = id; _st.idx = 0; _st.next = now + EVERY;
+      }
+      return;
     }
-    if (cur < 0) cur = 0;
-    var nxt = (cur + 1) % pages.length;
-    pages[cur].classList.remove('axr-page-on');
-    pages[nxt].classList.add('axr-page-on');
+    if (now < _st.next) return;
+    _st.next = now + EVERY;
+    _st.idx = (_st.idx + 1) % pages.length;
+    _showPage(pages, _st.idx);
   }
   setInterval(check, 250);
 })();
