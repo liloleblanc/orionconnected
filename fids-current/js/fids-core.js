@@ -5794,15 +5794,20 @@ function _buildV2MapCol(ctx, vars) {
       var _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg : '');
       var _typeL2 = (_lang2b === 'es') ? 'Tipo de aeronave' : "Type d'appareil";
       // Operated by — shown when the operating carrier differs from the
-      // marketing carrier (Jazz, Rouge, Encore…). Bilingual one-liner.
+      // marketing carrier. Label + the operator's LOGO (per Nick), with a
+      // plain-text fallback if the logo file is missing.
       var _opByLine = '';
       var _mktCode6 = String(vars.airlineCode || '').trim().toUpperCase();
       if (_opCode && _opCode !== _mktCode6) {
         var _opNm6 = _cf._opName
           || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
-        _opNm6 = String(_opNm6).replace(/^Air Canada\s+/i, '');
-        var _opByL2 = (_lang2b === 'es') ? 'Operado por' : 'Exploité par';
-        _opByLine = 'Operated by ' + _opNm6 + '  ·  ' + _opByL2 + ' ' + _opNm6;
+        _opNm6 = String(_opNm6).replace(/^Air Canada\s+/i, '').replace(/[<>"']/g, '');
+        var _opLogo6 = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
+        _opByLine = '<span class="v2-rc-opby-lbl">Operated by:</span>'
+          + (_opLogo6
+              ? '<img class="v2-rc-opby-logo" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
+                + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
+              : '<b>' + _opNm6 + '</b>');
       }
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
