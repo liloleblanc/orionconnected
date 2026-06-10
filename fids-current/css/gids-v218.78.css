@@ -3634,3 +3634,13 @@ body, body.gids-page, body.gate-page{
 /* 6. Side panels: SAME tone both sides, a step darker than before */
 .g8-wrap .gad-aircraft-col,
 .g8-wrap .gad-map-col-v2 { background: #D9DEE5 !important; }
+
+/* Both languages get EQUAL treatment in the right panel (the left rail
+   already does this) — same size, weight and ink for EN and the 2nd lang. */
+.g8-wrap .gad-map-col-v2 .v2-rc-i3lbl2,
+.g8-wrap .gad-map-col-v2 .v2-rc-r2lbl2 { font-size: clamp(16px,2.1vh,32px) !important; font-weight: 800 !important; color: #303a47 !important; line-height: 1.06 !important; white-space: nowrap !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-rtitle2 { font-size: 0.8em !important; font-weight: 700 !important; color: #303a47 !important; }
+/* Aircraft illustration: contained with breathing room — not wedged
+   edge-to-edge against the shelf dividers. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { padding: clamp(4px,0.8vh,12px) clamp(10px,1.2vw,20px) !important; }
+.gad-map-col-v2 .v2-rc-aircraft-img img { max-width: 100% !important; max-height: 100% !important; object-fit: contain !important; }

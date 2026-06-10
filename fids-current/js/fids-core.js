@@ -17892,8 +17892,9 @@ var GATE_ADS_BY_AIRLINE = {
     { bg:'linear-gradient(135deg,#002868 0%,#004090 100%)', headline:'Air Transat', sub:'Your vacation starts the moment you board', logo:'/logos/airlines/canadian/transat.svg' },
   ],
   'F8': [
-    // Brand-true: black lockup + black copy on Flair lime (their billboard look)
-    { bg:'linear-gradient(135deg,#A8FB96 0%,#8FE981 100%)', fg:'#1C1C1C', subFg:'rgba(28,28,28,0.85)', headline:'Flair Airlines', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
+    // Brand-true: black lockup on Flair lime. NO text headline — the lockup
+    // already carries the company name; repeating it in type violates brand policy.
+    { bg:'linear-gradient(135deg,#A8FB96 0%,#8FE981 100%)', fg:'#1C1C1C', subFg:'rgba(28,28,28,0.85)', headline:'', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
   ],
   // NK (Spirit) ad block removed — ceased operations May 2 2026
   'HA': [
@@ -19947,14 +19948,14 @@ function buildAccorAdOnlyV6(ad) {
     // there's no sentence break to land on.
     var _blMax = 170;
     if (_blurb.length > _blMax) {
-      var _cut = _blurb.slice(0, _blMax);
+      // ALWAYS end on a complete sentence — never a "…" fragment (Nick: paying
+      // advertisers can't have their copy chopped mid-sentence). Look a bit
+      // past the cap for the sentence end; if the text has no sentence break
+      // at all, drop the blurb rather than show a fragment.
+      var _cut = _blurb.slice(0, Math.min(_blurb.length, _blMax + 60));
       var _sentEnd = Math.max(_cut.lastIndexOf('. '), _cut.lastIndexOf('! '), _cut.lastIndexOf('? '));
-      if (_sentEnd > _blMax * 0.45) {
-        _blurb = _cut.slice(0, _sentEnd + 1).trim();
-      } else {
-        var _sp = _cut.lastIndexOf(' ');
-        _blurb = (_sp > 0 ? _cut.slice(0, _sp) : _cut).replace(/[\s,;:.!?-]+$/, '').trim() + '…';
-      }
+      if (/[.!?]$/.test(_cut)) _sentEnd = Math.max(_sentEnd, _cut.length - 1);
+      _blurb = (_sentEnd > 0) ? _cut.slice(0, _sentEnd + 1).trim() : '';
     }
   }
 
