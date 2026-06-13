@@ -5256,11 +5256,13 @@ function _buildV2AircraftCol(ctx, vars) {
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
       function _shelf(icon, en, second, val, valCls) {
-        // v222b — title on top, thin divider, then the BIG value (with icon)
-        // filling the lower ~3/4 of the panel, bottom-aligned (Nick's spec).
-        var _sec = (second && second !== en) ? '<span class="v2-fi-lbl-2">' + second + '</span>' : '';
+        // v222f — centered title (EN | FR:) with a teal underline, then the
+        // icon + big value below (Nick's mockup).
+        var _sec = (second && second !== en)
+          ? '<span class="v2-fi-sep">|</span><span class="v2-fi-lbl-2">' + second + '</span>'
+          : '';
         return '<div class="v2-fi-row">'
-          + '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '</div>'
+          + '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '<span class="v2-fi-colon">:</span></div>'
           + '<div class="v2-fi-body">' + icon
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
           + '</div>'

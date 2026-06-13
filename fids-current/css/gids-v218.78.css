@@ -3840,3 +3840,38 @@ body, body.gids-page, body.gate-page{
   border-bottom: 2.5px solid var(--airline-accent, #D82F2E) !important;
   justify-content: flex-end !important;
 }
+
+/* ════════ v222f — left panels matched to Nick's mockup ════════
+   • title CENTERED at top, teal underline centred (consistent on all panels)
+   • between-panel dividers = NAVY bar colour, thick like the outer frame
+   • subtle light gradient panel background
+   • icon (teal circle) left · big navy value beside it */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  border-bottom: 3px solid var(--banner-bg, #003A5D) !important;   /* navy, like outer */
+  background: linear-gradient(180deg, #eef1f5 0%, #f6f8fa 46%, #dfe4ea 100%) !important;
+  padding: clamp(4px,0.6vh,10px) clamp(8px,0.9vw,16px) !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
+/* TITLE — centered, with a centered teal underline (same width every panel) */
+.g8-wrap .gad-aircraft-col .v2-fi-title {
+  width: 92% !important; max-width: 92% !important; margin: 0 auto !important;
+  display: flex !important; justify-content: center !important; align-items: baseline !important;
+  gap: clamp(5px,0.5vw,10px) !important;
+  border-bottom: 2.5px solid var(--airline-accent, #D82F2E) !important;   /* teal accent */
+  padding: 0 0 clamp(2px,0.4vh,6px) 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-colon {
+  font-size: clamp(15px,1.95vh,25px) !important; font-weight: 800 !important;
+  color: #1f3553 !important; line-height: 1.05 !important; letter-spacing: 0.2px !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep { opacity: 0.55 !important; font-weight: 600 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-colon { margin-left: -2px !important; }
+/* BODY — icon left + big value, vertically centered */
+.g8-wrap .gad-aircraft-col .v2-fi-body {
+  align-items: center !important; justify-content: flex-start !important;
+  gap: clamp(12px,1.2vw,22px) !important; padding-top: clamp(2px,0.4vh,7px) !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-value { color: #16335c !important; }
