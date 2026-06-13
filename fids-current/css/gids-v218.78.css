@@ -3870,10 +3870,12 @@ body, body.gids-page, body.gate-page{
 }
 /* the line: FIXED width (~2/3), extends past the padding to TOUCH the right
    border, IDENTICAL on every panel. */
+/* line: FULL width (border to border), thinner, identical on every panel */
 .g8-wrap .gad-aircraft-col .v2-fi-title::after {
   content: "" !important; display: block !important; position: absolute !important;
+  left: calc(-1 * clamp(8px,0.9vw,16px)) !important;
   right: calc(-1 * clamp(8px,0.9vw,16px)) !important; bottom: 0 !important;
-  width: calc(66.66% + clamp(8px,0.9vw,16px)) !important; height: clamp(4px,0.6vh,7px) !important;
+  width: auto !important; height: clamp(2px,0.3vh,4px) !important;
   background: var(--airline-accent3, #FAC120) !important; border-radius: 2px !important;
 }
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
@@ -3886,14 +3888,23 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep { opacity: 0.55 !important; font-weight: 600 !important; }
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-colon { margin-left: -2px !important; }
-/* BODY — bottom-LEFT, icon + BIG value */
+/* BODY — value fills the space; icon stays compact so the value gets the room */
 .g8-wrap .gad-aircraft-col .v2-fi-body {
-  display: flex !important; align-items: flex-end !important; justify-content: flex-start !important;
-  gap: clamp(10px,1.1vw,20px) !important; padding-top: clamp(2px,0.4vh,7px) !important;
+  display: flex !important; align-items: center !important; justify-content: flex-start !important;
+  gap: clamp(8px,0.9vw,16px) !important; padding-top: clamp(2px,0.4vh,7px) !important;
+  min-width: 0 !important;
 }
 .g8-wrap .gad-aircraft-col .v2-fi-value {
   color: var(--banner-bg, #14181E) !important;   /* airline's own dark colour */
-  font-size: clamp(32px,5.2vh,64px) !important; line-height: 0.92 !important;
+  font-size: clamp(40px,8vh,104px) !important; line-height: 0.9 !important;
+  flex: 1 1 auto !important; min-width: 0 !important;
+}
+/* keep the icon compact so it doesn't eat the value's space */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(44px,5.6vh,76px) !important; height: clamp(44px,5.6vh,76px) !important;
+  min-width: clamp(44px,5.6vh,76px) !important; min-height: clamp(44px,5.6vh,76px) !important;
+  max-width: clamp(44px,5.6vh,76px) !important; max-height: clamp(44px,5.6vh,76px) !important;
 }
 /* icon bigger, sits at the bottom with the value */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
