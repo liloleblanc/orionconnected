@@ -3538,7 +3538,7 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
-  'AC':'#D82F2E','WS':'#00B2A9','PD':'#1A3A6B','PB':'#1F3876','F8':'#A8FB96',
+  'AC':'#D82F2E','WS':'#00B2A9','PD':'#254D87','PB':'#1F3876','F8':'#A8FB96',
   'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
