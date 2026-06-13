@@ -5301,14 +5301,16 @@ function _buildV2AircraftCol(ctx, vars) {
       var _depShortEn = _depRev ? 'Revised - Departure' : 'Departure';
       var _depShortL2 = _depRev ? _L2('Révisé - Départ','Revisado - Salida') : _L2('Départ','Salida');
       var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
+      // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
+      function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgGlobe), 'Destination', _L2('Destination','Destino'), (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), (_fiStLbl || '—'), 'v2-fi-status-val v2-fi-status' + _fiStCls)
-        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_fiBrd || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_depShow || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_fiBrd) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgRoute), 'Total Flight Time', _L2('Temps de vol','Tiempo de vuelo'), _durValue, 'v2-fi-time')
         + '</div>';
     }
