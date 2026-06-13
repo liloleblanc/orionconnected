@@ -5157,8 +5157,8 @@ function _buildV2AircraftCol(ctx, vars) {
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
         'RV':  '/logos/airlines/canadian/AC.TO.svg',
-        'WS':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
-        'WR':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
+        'WS':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol-monochrome-white.svg',
+        'WR':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol-monochrome-white.svg',
         'PD':  '/logos/airlines/canadian/Porter_Airlines_Logo_2006.svg',
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
         'F8':  '/logos/airlines/canadian/flair-dot.svg',   // Flair — the black DOT from the lockup IS the emblem
