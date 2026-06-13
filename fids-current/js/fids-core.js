@@ -5157,8 +5157,8 @@ function _buildV2AircraftCol(ctx, vars) {
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
         'RV':  '/logos/airlines/canadian/AC.TO.svg',
-        'WS':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol-monochrome-white.svg',
-        'WR':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol-monochrome-white.svg',
+        'WS':  '/logos/airlines/canadian/westjet-leaf-monochrome-white.svg',   // matches the banner wordmark's leaf
+        'WR':  '/logos/airlines/canadian/westjet-leaf-monochrome-white.svg',
         'PD':  '/logos/airlines/canadian/Porter_Airlines_Logo_2006.svg',
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
         'F8':  '/logos/airlines/canadian/flair-dot.svg',   // Flair — the black DOT from the lockup IS the emblem
@@ -5291,7 +5291,8 @@ function _buildV2AircraftCol(ctx, vars) {
       //   | Departure·Départ | Flight Time·Temps Vol
       // Short bilingual labels (revised-aware for the time panels).
       var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
-      var _destValue = _destCityName + (_destIataDisp ? ' (' + _destIataDisp + ')' : '');
+      // Airport code dropped for now (doesn't fit) — city name only.
+      var _destValue = _destCityName || _destIataDisp;
       var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
       var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
       var _depShortEn = _depRev ? 'Revised - Departure' : 'Departure';

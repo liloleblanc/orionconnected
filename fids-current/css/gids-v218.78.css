@@ -3765,3 +3765,42 @@ body, body.gids-page, body.gate-page{
   align-self: flex-end !important;
   line-height: 0.92 !important;
 }
+
+/* ════════ v222c — Left panels per Nick's markup notes ════════
+   • between-panel divider = AIRLINE ACCENT, thick (like the outer frame)
+   • title sits TOP-RIGHT; underline hugs the right, only under the words,
+     HALF the thickness of the between-panel divider
+   • icon + value fill the BOTTOM-LEFT, value big (~3/4), icon matches number
+   • tighter spacing — no wasted gaps */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  border-bottom: 3px solid var(--airline-accent, #D82F2E) !important;   /* thick accent, like outer */
+  padding: clamp(3px,0.5vh,9px) clamp(10px,1vw,18px) !important;
+  gap: 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
+/* TITLE — top, RIGHT-aligned, underline only under the text (half thickness) */
+.g8-wrap .gad-aircraft-col .v2-fi-title {
+  width: -moz-fit-content !important; width: fit-content !important;
+  max-width: 100% !important; margin-left: auto !important;
+  border-bottom: 1.5px solid var(--airline-accent, #D82F2E) !important;  /* half of the 3px divider */
+  padding: 0 0 clamp(2px,0.35vh,5px) 0 !important;
+  justify-content: flex-end !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en { color: #2b3442 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 { color: #7a8494 !important; }
+/* BODY — bottom-aligned, LEFT, icon + BIG value, tight */
+.g8-wrap .gad-aircraft-col .v2-fi-body {
+  align-items: flex-end !important; justify-content: flex-start !important;
+  gap: clamp(10px,1vw,22px) !important; padding-top: clamp(1px,0.3vh,5px) !important;
+}
+/* values big enough to fill the lower ~3/4 of the panel */
+.g8-wrap .gad-aircraft-col .v2-fi-value { font-size: clamp(46px,9vh,116px) !important; line-height: 0.9 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest,
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val { font-size: clamp(46px,9vh,116px) !important; }
+/* icon badge matched to the number height */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(64px,9vh,116px) !important; height: clamp(64px,9vh,116px) !important;
+  min-width: clamp(64px,9vh,116px) !important; min-height: clamp(64px,9vh,116px) !important;
+  max-width: clamp(64px,9vh,116px) !important; max-height: clamp(64px,9vh,116px) !important;
+}
