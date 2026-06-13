@@ -7331,7 +7331,7 @@ function gateAutofit(root) {
   // autofit shrinks each element independently, which makes them DIFFERENT
   // sizes. Nick wants one uniform size per category, so they use a fixed
   // clamp in CSS instead.
-  var sels = ['.g8-welcome-city', '.g8-r1-dest',
+  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value',
               '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
