@@ -3856,15 +3856,15 @@ body, body.gids-page, body.gate-page{
    panel's line is the same length + spot, no matter the title length). */
 .g8-wrap .gad-aircraft-col .v2-fi-title {
   position: relative !important;
-  width: 100% !important; max-width: 100% !important; margin: 0 auto !important;
-  display: flex !important; justify-content: center !important; align-items: baseline !important;
+  width: 100% !important; max-width: 100% !important; margin: 0 !important;
+  display: flex !important; justify-content: flex-end !important; align-items: baseline !important;
   gap: clamp(5px,0.5vw,10px) !important;
   border-bottom: 0 !important;
   padding: 0 0 clamp(6px,1vh,12px) 0 !important;
 }
+/* accent bar hugs the RIGHT, consistent length on every panel */
 .g8-wrap .gad-aircraft-col .v2-fi-title::after {
-  content: "" !important; position: absolute !important; left: 50% !important; bottom: 0 !important;
-  transform: translateX(-50%) !important;
+  content: "" !important; position: absolute !important; right: 0 !important; bottom: 0 !important;
   width: clamp(110px,52%,240px) !important; height: clamp(3px,0.45vh,5px) !important;
   background: var(--airline-accent, #D82F2E) !important; border-radius: 2px !important;
 }
