@@ -5145,8 +5145,10 @@ function _buildV2AircraftCol(ctx, vars) {
       // v222 — new left-rail panel icons (Nick's 6-panel spec).
       var _svgPlane = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
       var _svgGlobe = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a7.82 7.82 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a7.99 7.99 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a7.82 7.82 0 0 1 0 4h-3.38z"/></svg>';
-      var _svgBoarding = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1 0-4zm-9 7h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>';
-      var _svgRoute = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M21 16v-1.7l-7-4.3V4.5c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3v5.5L4 14.3V16l7.4-2.2V18l-1.7 1.2v1l3-.85 3 .85v-1L13 18v-4.2z"/><path d="M3 20.5c4.5-6 13.5-6 18 0" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="1.5 2.4"/></svg>';
+      // Boarding — "enter the gate" (doorway on the right + arrow in).
+      var _svgBoarding = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4v-2h4V6h-4V4z"/><path d="M10.4 7.4 9 8.8l2.3 2.2H4v2h7.3L9 15.2l1.4 1.4 4.6-4.6z"/></svg>';
+      // Total Flight Time — clean stopwatch.
+      var _svgRoute = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M15 1H9v2h6V1zm-3 7a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0V9a1 1 0 0 0-1-1zm7.03-.61 1.42-1.42a10 10 0 0 0-1.41-1.41l-1.42 1.42A8 8 0 1 0 12 22a8 8 0 0 0 7.03-14.61zM12 20a6 6 0 1 1 0-12 6 6 0 0 1 0 12z"/></svg>';
 
       // v218.99.33 — Airline emblem using REAL symbol-only SVGs. The leaf
       // shape gets a white filter applied and sits on the red CSS circle,
@@ -5157,8 +5159,8 @@ function _buildV2AircraftCol(ctx, vars) {
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
         'RV':  '/logos/airlines/canadian/AC.TO.svg',
-        'WS':  '/logos/airlines/canadian/westjet-leaf-monochrome-white.svg',   // matches the banner wordmark's leaf
-        'WR':  '/logos/airlines/canadian/westjet-leaf-monochrome-white.svg',
+        'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
+        'WR':  '/logos/symbols/airlines-mono/WS.svg',
         'PD':  '/logos/airlines/canadian/Porter_Airlines_Logo_2006.svg',
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
         'F8':  '/logos/airlines/canadian/flair-dot.svg',   // Flair — the black DOT from the lockup IS the emblem
@@ -7327,7 +7329,11 @@ function uxgActivateRotator() {
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
   if (!root) return;
-  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-dest', '.v2-fi-status-val',
+  // NOTE: left-column values (.v2-fi-dest/.v2-fi-status-val) are NOT autofit —
+  // autofit shrinks each element independently, which makes them DIFFERENT
+  // sizes. Nick wants one uniform size per category, so they use a fixed
+  // clamp in CSS instead.
+  var sels = ['.g8-welcome-city', '.g8-r1-dest',
               '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);

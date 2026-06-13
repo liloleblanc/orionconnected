@@ -3804,3 +3804,28 @@ body, body.gids-page, body.gate-page{
   min-width: clamp(64px,9vh,116px) !important; min-height: clamp(64px,9vh,116px) !important;
   max-width: clamp(64px,9vh,116px) !important; max-height: clamp(64px,9vh,116px) !important;
 }
+
+/* ════════ v222d — consistency pass (Nick): ════════
+   • titles: ONE colour, ONE size (no more 3 colours)
+   • values: ONE uniform size across every panel, sized to FIT the longest
+   • icons: never taller than the value, vertically CENTRED with the font */
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 {
+  font-size: clamp(15px,1.9vh,24px) !important;
+  font-weight: 700 !important;
+  color: #54606f !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-value,
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest,
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val {
+  font-size: clamp(26px,4vh,46px) !important;
+  line-height: 1 !important; white-space: nowrap !important;
+}
+/* icon/badge: ~0.8× the value, vertically centred with the number */
+.g8-wrap .gad-aircraft-col .v2-fi-body { align-items: center !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(24px,3.3vh,40px) !important; height: clamp(24px,3.3vh,40px) !important;
+  min-width: clamp(24px,3.3vh,40px) !important; min-height: clamp(24px,3.3vh,40px) !important;
+  max-width: clamp(24px,3.3vh,40px) !important; max-height: clamp(24px,3.3vh,40px) !important;
+}
