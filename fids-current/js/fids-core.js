@@ -871,6 +871,7 @@ function changeFont(f) {
 // Customize panel (same keys the Customize <select> saves).
 var FIDS_FONT_STACKS = {
   'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+    'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
   'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
   'inter':         "'Inter', system-ui, -apple-system, sans-serif",
   'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -14976,6 +14977,7 @@ function applyAirportConfigToBoard(iata) {
   if (_font) {
     var _fontStacks = {
       'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+    'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
       'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
