@@ -870,6 +870,7 @@ function changeFont(f) {
 // Font stacks shared by the control-bar dropdown AND the FIDS Console
 // Customize panel (same keys the Customize <select> saves).
 var FIDS_FONT_STACKS = {
+  'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
   'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
   'inter':         "'Inter', system-ui, -apple-system, sans-serif",
   'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -914,7 +915,7 @@ function restoreFontChoice(defaultFont) {
   } catch (e) {}
   var f = '';
   try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
-  changeFont(f || defaultFont || 'Geist');
+  changeFont(f || defaultFont || 'Possibility');  // Possibility = brand default
 }
 
 // Start / stop the airline background rotation timer. Runs only when
@@ -14974,6 +14975,7 @@ function applyAirportConfigToBoard(iata) {
   const _font = _pref('font');
   if (_font) {
     var _fontStacks = {
+      'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
       'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -16476,7 +16478,7 @@ if (document.readyState === 'loading') {
 window.addEventListener('DOMContentLoaded', () => {
   // RocGrotesk is only the DEFAULT — a font the user picked (and which
   // changeFont persisted) must never be stomped on reload.
-  try { restoreFontChoice('RocGrotesk-Medium'); } catch (e) {}
+  try { restoreFontChoice('Possibility'); } catch (e) {}
   const bgCtrls = document.getElementById('ctrlBgGroup');
   if (bgCtrls && screenType === 'gate') bgCtrls.style.display = 'flex';
   // If airline mode was restored from localStorage, kick off rotation.

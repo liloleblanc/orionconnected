@@ -1398,6 +1398,7 @@ function cuFontChanged() {
 function _cuApplyFont(fontKey) {
   // Map keys to CSS font stacks. Keep in sync with css/font.css :root vars.
   var stacks = {
+    'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
     'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
     'inter':         "'Inter', system-ui, -apple-system, sans-serif",
     'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
