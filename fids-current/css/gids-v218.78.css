@@ -3852,23 +3852,18 @@ body, body.gids-page, body.gate-page{
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.9vw,16px) !important;
 }
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
-/* TITLE — centered; a SHORT consistent teal bar under it (fixed width so every
-   panel's line is the same length + spot, no matter the title length). */
+/* TITLE — CENTERED (matches Nick's picture); the accent line sits directly
+   under the title text, centered, the width of the title. */
 .g8-wrap .gad-aircraft-col .v2-fi-title {
   position: relative !important;
-  width: 100% !important; max-width: 100% !important; margin: 0 !important;
-  display: flex !important; justify-content: flex-end !important; align-items: baseline !important;
+  width: -moz-fit-content !important; width: fit-content !important;
+  max-width: 96% !important; margin: 0 auto !important;
+  display: flex !important; justify-content: center !important; align-items: baseline !important;
   gap: clamp(5px,0.5vw,10px) !important;
-  border-bottom: 0 !important;
-  padding: 0 0 clamp(6px,1vh,12px) 0 !important;
+  border-bottom: clamp(3px,0.5vh,6px) solid var(--airline-accent, #D82F2E) !important;
+  padding: 0 0 clamp(4px,0.7vh,9px) 0 !important;
 }
-/* accent bar hugs the RIGHT, runs the right HALF of the panel (middle → right
-   edge), consistent on every panel — longer than before per Nick. */
-.g8-wrap .gad-aircraft-col .v2-fi-title::after {
-  content: "" !important; position: absolute !important; right: 0 !important; bottom: 0 !important;
-  width: 50% !important; height: clamp(3px,0.5vh,6px) !important;
-  background: var(--airline-accent, #D82F2E) !important; border-radius: 2px !important;
-}
+.g8-wrap .gad-aircraft-col .v2-fi-title::after { display: none !important; }
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep,
@@ -3879,16 +3874,16 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep { opacity: 0.55 !important; font-weight: 600 !important; }
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-colon { margin-left: -2px !important; }
-/* BODY — icon sits in the left third; the VALUE starts at the 1/3 mark, so
-   every value lines up at the same x regardless of icon (Nick). */
+/* BODY — icon + value together on the LEFT (not squeezed); icon big enough
+   to read, value fits (no clipping). */
 .g8-wrap .gad-aircraft-col .v2-fi-body {
-  display: grid !important;
-  grid-template-columns: 33.333% 1fr !important;
-  align-items: center !important;
-  gap: 0 !important; padding-top: clamp(2px,0.4vh,7px) !important;
+  display: flex !important; align-items: center !important; justify-content: flex-start !important;
+  gap: clamp(10px,1.1vw,20px) !important; padding-top: clamp(2px,0.4vh,7px) !important;
 }
-.g8-wrap .gad-aircraft-col .v2-fi-body > .v2-fi-icon-wrap,
-.g8-wrap .gad-aircraft-col .v2-fi-body > .v2-fi-icon-badge,
-.g8-wrap .gad-aircraft-col .v2-fi-body > .v2-fi-emblem-wrap { justify-self: start !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-body > .v2-fi-value { justify-self: start !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(42px,5.4vh,72px) !important; height: clamp(42px,5.4vh,72px) !important;
+  min-width: clamp(42px,5.4vh,72px) !important; min-height: clamp(42px,5.4vh,72px) !important;
+  max-width: clamp(42px,5.4vh,72px) !important; max-height: clamp(42px,5.4vh,72px) !important;
+}
 .g8-wrap .gad-aircraft-col .v2-fi-value { color: var(--banner-bg, #14181E) !important; }   /* airline's own dark colour */
