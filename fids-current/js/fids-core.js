@@ -5256,13 +5256,12 @@ function _buildV2AircraftCol(ctx, vars) {
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
       function _shelf(icon, en, second, val, valCls) {
-        // v222f — centered title (EN | FR:) with a teal underline, then the
-        // icon + big value below (Nick's mockup).
+        // Title: "EN | FR:" — pipe spaced, colon ATTACHED to the last word.
         var _sec = (second && second !== en)
-          ? '<span class="v2-fi-sep">|</span><span class="v2-fi-lbl-2">' + second + '</span>'
+          ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + second + '</span>'
           : '';
         return '<div class="v2-fi-row">'
-          + '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '<span class="v2-fi-colon">:</span></div>'
+          + '<div class="v2-fi-title">' + '<span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '<span class="v2-fi-colon">:</span></div>'
           + '<div class="v2-fi-body">' + icon
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
           + '</div>'
@@ -6746,6 +6745,9 @@ function uxgGateHtml(ctx) {
        + (airlineCode ? ' g8-airline-' + airlineCode : '')
        + '" data-pill-style="' + (window._gateStatusPillStyle || 'opaque') + '"'
        + ' style="--airline-accent:' + accent
+       // 3rd brand colour (airline-colors.js r3) — distinct accent for the
+       // secondary line etc. Falls back to the main accent when not defined.
+       + ';--airline-accent3:' + ((_bannerSpec && _bannerSpec.r3) ? _bannerSpec.r3 : accent)
        // Official dark banner colour for the side panels (AC #080C14, etc.).
        // Airlines whose official banner is WHITE (WestJet/Hawaiian/Porter) get
        // a clean neutral dark instead — never a white side panel.
