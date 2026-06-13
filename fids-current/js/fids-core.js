@@ -5254,14 +5254,15 @@ function _buildV2AircraftCol(ctx, vars) {
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
       function _shelf(icon, en, second, val, valCls) {
-        // Skip the 2nd-language label when it's identical to English (e.g. Destination).
-        var _sec = (second && second !== en) ? '<div class="v2-fi-lbl-2">' + second + '</div>' : '';
-        return '<div class="v2-fi-row">' + icon
-          + '<div class="v2-fi-copy">'
-          +   '<div class="v2-fi-lbl-en">' + en + '</div>'
+        // v222b — title on top, thin divider, then the BIG value (with icon)
+        // filling the lower ~3/4 of the panel, bottom-aligned (Nick's spec).
+        var _sec = (second && second !== en) ? '<span class="v2-fi-lbl-2">' + second + '</span>' : '';
+        return '<div class="v2-fi-row">'
+          + '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '</div>'
+          + '<div class="v2-fi-body">' + icon
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
-          +   _sec
-          + '</div></div>';
+          + '</div>'
+          + '</div>';
       }
       // Destination city (was in the header; now the first shelf).
       var _destCityName = '';
@@ -5304,7 +5305,7 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), (_fiStLbl || '—'), 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_fiBrd || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_depShow || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgRoute), 'Flight Time', _L2('Temps Vol','Tiempo de vuelo'), _durValue, 'v2-fi-time')
+        + _shelf(_badge(_svgRoute), 'Total Flight Time', _L2('Temps Du Vol','Tiempo de vuelo'), _durValue, 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}

@@ -3727,3 +3727,41 @@ body, body.gids-page, body.gate-page{
   min-width: clamp(56px,7vh,104px) !important; min-height: clamp(56px,7vh,104px) !important;
   max-width: clamp(56px,7vh,104px) !important; max-height: clamp(56px,7vh,104px) !important;
 }
+
+/* ════════ v222b — Left panels: title-top · thin divider · BIG bottom value
+   (Nick: number ~3/4, touches bottom, line under the title; between-panel
+   dividers thinner + different colour). ════════ */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-end !important;
+  gap: 0 !important;
+  /* between-panel divider — thinner + softer colour (was 3px accent) */
+  border-bottom: 2px solid rgba(15,34,56,0.16) !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
+/* TITLE row — sits at the top, label(s) inline, thin accent-tinted underline */
+.g8-wrap .gad-aircraft-col .v2-fi-title {
+  flex: 0 0 auto !important;
+  display: flex !important; align-items: baseline !important; gap: clamp(8px,0.8vw,16px) !important;
+  padding: clamp(2px,0.5vh,8px) 0 clamp(4px,0.7vh,10px) 0 !important;
+  border-bottom: 1.5px solid var(--airline-accent, #D82F2E) !important;  /* the "shelve" under the title — different colour, thinner */
+  opacity: 1 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 {
+  font-size: clamp(17px,2.2vh,30px) !important; font-weight: 700 !important;
+  color: #4a5568 !important; line-height: 1.05 !important; letter-spacing: 0.2px !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 { color: #8a93a3 !important; }
+/* BODY row — icon + big value, value grows from the BOTTOM */
+.g8-wrap .gad-aircraft-col .v2-fi-body {
+  flex: 1 1 auto !important; min-height: 0 !important;
+  display: flex !important; align-items: flex-end !important;
+  gap: clamp(12px,1.2vw,24px) !important;
+  padding-top: clamp(2px,0.5vh,8px) !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-body .v2-fi-value {
+  align-self: flex-end !important;
+  line-height: 0.92 !important;
+}
