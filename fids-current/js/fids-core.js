@@ -2220,7 +2220,7 @@ var LOCAL_LOGOS = {
   'WR': '/logos/airlines/canadian/encore.png',                    // Encore
   'PD': '/logos/airlines/canadian/porter.svg',                    // Porter (correct — NOT viporter)
   'QK': '/logos/airlines/canadian-regional/jazz.svg',             // Jazz
-  'RV': '/logos/airlines/canadian/rouge.png',                     // Rouge
+  'RV': '/logos/airlines/canadian/rouge.svg',                     // Rouge (color — rouge.png was missing)
   'TS': '/logos/airlines/canadian/transat.svg',                   // Air Transat
   'F8': '/logos/airlines/canadian/flair.svg',                     // Flair
   'PB': '/logos/airlines/canadian-regional/PAL-Airlines.svg',              // PAL Airlines
@@ -2253,9 +2253,9 @@ var LOCAL_LOGOS = {
 // where the operator brand differs visually from the marketing brand.
 var OPERATOR_LOGOS = {
   // Air Canada family
-  'RV':  '/logos/airlines/canadian/rouge.png',                                 // Air Canada Rouge
+  'RV':  '/logos/airlines/canadian/rouge.svg',                                 // Air Canada Rouge (rouge.png didn't exist → text fallback)
   'QK':  '/logos/airlines/canadian-regional/jazz.svg',                         // Jazz Aviation
-  'ROU': '/logos/airlines/canadian/rouge.png',                                 // Rouge ICAO
+  'ROU': '/logos/airlines/canadian/rouge.svg',                                 // Rouge ICAO
   'JZA': '/logos/airlines/canadian-regional/jazz.svg',                         // Jazz ICAO
   // Northern / smaller Canadian regional carriers
   'MO':  '/logos/airlines/canadian-regional/calmair.svg',                      // Calm Air
@@ -6487,7 +6487,7 @@ function uxgGateHtml(ctx) {
     // BLACK BANNERS — use white-wordmark variants so logo text reads clean
     'AC': '/logos/airlines/canadian/air-canada-white.svg',                       // red rondelle + white "AIR CANADA"
     'QK': '/logos/airlines/canadian/air-canada-white.svg',                       // Jazz under AC
-    'RV': '/logos/airlines/canadian/rouge.png',                                   // Rouge branded gate banner
+    'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
     'UA': '/logos/airlines/us-major/united.svg',                                 // globe + white "UNITED"
