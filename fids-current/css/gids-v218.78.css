@@ -3858,25 +3858,18 @@ body, body.gids-page, body.gate-page{
   flex-direction: column !important; justify-content: space-between !important; align-items: stretch !important;
   overflow: visible !important;   /* so the line can reach the border without clipping the title text */
 }
-/* TITLE — right-aligned words kept INSIDE the panel (no clipping); only the
-   line extends to the right border. */
+/* TITLE — right-aligned words; the line sits UNDER THE WORDS (= their width),
+   right-anchored, accent colour (matches the icon), like the picture. */
 .g8-wrap .gad-aircraft-col .v2-fi-title {
   position: relative !important;
   display: block !important; text-align: right !important; white-space: nowrap !important;
-  width: 100% !important; max-width: 100% !important;
-  margin: 0 !important;
-  border-bottom: 0 !important;
-  padding: 0 0 clamp(8px,1.2vh,16px) 0 !important;
+  width: -moz-fit-content !important; width: fit-content !important; max-width: 100% !important;
+  margin: 0 0 0 auto !important;
+  border-bottom: clamp(3px,0.4vh,5px) solid var(--airline-accent3, #FAC120) !important;
+  padding: 0 0 clamp(4px,0.7vh,9px) 0 !important;
 }
-/* the line: FIXED width (~2/3), extends past the padding to TOUCH the right
-   border, IDENTICAL on every panel. */
-/* line: FULL width (border to border), thinner, identical on every panel */
 .g8-wrap .gad-aircraft-col .v2-fi-title::after {
-  content: "" !important; display: block !important; position: absolute !important;
-  left: calc(-1 * clamp(8px,0.9vw,16px)) !important;
-  right: calc(-1 * clamp(8px,0.9vw,16px)) !important; bottom: 0 !important;
-  width: auto !important; height: clamp(2px,0.3vh,4px) !important;
-  background: var(--airline-accent3, #FAC120) !important; border-radius: 2px !important;
+  content: "" !important; display: none !important;
 }
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
