@@ -5309,7 +5309,7 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), (_fiStLbl || '—'), 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_fiBrd || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_depShow || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgRoute), 'Total Flight Time', _L2('Temps Du Vol','Tiempo de vuelo'), _durValue, 'v2-fi-time')
+        + _shelf(_badge(_svgRoute), 'Total Flight Time', _L2('Temps de vol','Tiempo de vuelo'), _durValue, 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}

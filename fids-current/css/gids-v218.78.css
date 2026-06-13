@@ -3860,14 +3860,22 @@ body, body.gids-page, body.gate-page{
 /* TITLE — right-aligned words; the secondary line sits UNDER the words and
    runs to TOUCH the right border, in the airline's 3rd (distinct) colour. */
 .g8-wrap .gad-aircraft-col .v2-fi-title {
+  position: relative !important;
   display: block !important; text-align: right !important; white-space: nowrap !important;
-  width: -moz-fit-content !important; width: fit-content !important; max-width: none !important;
-  margin: 0 0 0 auto !important;
-  margin-right: calc(-1 * clamp(8px,0.9vw,16px)) !important;   /* reach past the row padding to the right border */
-  border-bottom: clamp(4px,0.6vh,7px) solid var(--airline-accent3, #FAC120) !important;
-  padding: 0 0 clamp(5px,0.85vh,11px) 0 !important;
+  width: auto !important; max-width: none !important;
+  margin: 0 !important;
+  margin-right: calc(-1 * clamp(8px,0.9vw,16px)) !important;   /* text + line reach the right border */
+  border-bottom: 0 !important;
+  padding: 0 0 clamp(8px,1.2vh,16px) 0 !important;
 }
-.g8-wrap .gad-aircraft-col .v2-fi-title::after { display: none !important; }
+/* the line: FIXED 2/3 width, touching the right border, IDENTICAL on every
+   panel (not following the title text — that's what made it 'all over'). */
+.g8-wrap .gad-aircraft-col .v2-fi-title::after {
+  content: "" !important; display: block !important; position: absolute !important;
+  right: 0 !important; bottom: 0 !important;
+  width: 66.66% !important; height: clamp(4px,0.6vh,7px) !important;
+  background: var(--airline-accent3, #FAC120) !important; border-radius: 2px !important;
+}
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep,
