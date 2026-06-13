@@ -3856,24 +3856,24 @@ body, body.gids-page, body.gate-page{
    touching the right edge; big value + icon in the BOTTOM-LEFT. */
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   flex-direction: column !important; justify-content: space-between !important; align-items: stretch !important;
+  overflow: visible !important;   /* so the line can reach the border without clipping the title text */
 }
-/* TITLE — right-aligned words; the secondary line sits UNDER the words and
-   runs to TOUCH the right border, in the airline's 3rd (distinct) colour. */
+/* TITLE — right-aligned words kept INSIDE the panel (no clipping); only the
+   line extends to the right border. */
 .g8-wrap .gad-aircraft-col .v2-fi-title {
   position: relative !important;
   display: block !important; text-align: right !important; white-space: nowrap !important;
-  width: auto !important; max-width: none !important;
+  width: 100% !important; max-width: 100% !important;
   margin: 0 !important;
-  margin-right: calc(-1 * clamp(8px,0.9vw,16px)) !important;   /* text + line reach the right border */
   border-bottom: 0 !important;
   padding: 0 0 clamp(8px,1.2vh,16px) 0 !important;
 }
-/* the line: FIXED 2/3 width, touching the right border, IDENTICAL on every
-   panel (not following the title text — that's what made it 'all over'). */
+/* the line: FIXED width (~2/3), extends past the padding to TOUCH the right
+   border, IDENTICAL on every panel. */
 .g8-wrap .gad-aircraft-col .v2-fi-title::after {
   content: "" !important; display: block !important; position: absolute !important;
-  right: 0 !important; bottom: 0 !important;
-  width: 66.66% !important; height: clamp(4px,0.6vh,7px) !important;
+  right: calc(-1 * clamp(8px,0.9vw,16px)) !important; bottom: 0 !important;
+  width: calc(66.66% + clamp(8px,0.9vw,16px)) !important; height: clamp(4px,0.6vh,7px) !important;
   background: var(--airline-accent3, #FAC120) !important; border-radius: 2px !important;
 }
 .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
