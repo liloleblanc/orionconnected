@@ -3693,3 +3693,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-val { display: flex !important; align-items: center !important; min-height: clamp(26px,4vh,56px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-val .v2-rc-opby-logo { height: clamp(26px,3.6vh,50px) !important; width: auto !important; max-width: 240px !important; object-fit: contain !important; display: block !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-val b { font-size: clamp(26px,4vh,56px) !important; font-weight: 900 !important; color: #0f2238 !important; }
+
+/* ════════ Bottom banner removed (per Nick) — the main content row (g8-r4)
+   is flex:1, so the three columns automatically reclaim the freed height. ════════ */
+.g8-wrap .g8-r5 { display: none !important; }
