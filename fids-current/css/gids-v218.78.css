@@ -3829,3 +3829,14 @@ body, body.gids-page, body.gate-page{
   min-width: clamp(24px,3.3vh,40px) !important; min-height: clamp(24px,3.3vh,40px) !important;
   max-width: clamp(24px,3.3vh,40px) !important; max-height: clamp(24px,3.3vh,40px) !important;
 }
+
+/* ════════ v222e — title underline: BLUE, ~2.5px (just under the outer),
+   and IDENTICAL on every panel (full width, same spot) — no per-title
+   variation. Title text stays top-right above it. ════════ */
+.g8-wrap .gad-aircraft-col .v2-fi-title {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  border-bottom: 2.5px solid var(--airline-accent, #D82F2E) !important;
+  justify-content: flex-end !important;
+}
