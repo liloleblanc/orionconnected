@@ -5142,6 +5142,11 @@ function _buildV2AircraftCol(ctx, vars) {
       var _svgClock = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
       var _svgDepart = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>';
       var _svgArrive = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM19.34 15.85c.8.21 1.62-.26 1.84-1.06.21-.8-.26-1.62-1.06-1.84l-5.31-1.42-2.76-9.02L10.12 2v8.28L5.15 8.95l-.93-2.32-1.45-.39v5.17l16.57 4.44z"/></svg>';
+      // v222 — new left-rail panel icons (Nick's 6-panel spec).
+      var _svgPlane = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+      var _svgGlobe = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a7.82 7.82 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a7.99 7.99 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a7.82 7.82 0 0 1 0 4h-3.38z"/></svg>';
+      var _svgBoarding = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1 0-4zm-9 7h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>';
+      var _svgRoute = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M21 16v-1.7l-7-4.3V4.5c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3v5.5L4 14.3V16l7.4-2.2V18l-1.7 1.2v1l3-.85 3 .85v-1L13 18v-4.2z"/><path d="M3 20.5c4.5-6 13.5-6 18 0" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="1.5 2.4"/></svg>';
 
       // v218.99.33 — Airline emblem using REAL symbol-only SVGs. The leaf
       // shape gets a white filter applied and sits on the red CSS circle,
@@ -5280,13 +5285,26 @@ function _buildV2AircraftCol(ctx, vars) {
       var _arrL2L = _arrRev ? _L2('Révisé - Arrivée','Revisado - Llegada')      : _L2('Heure d’arrivée','Hora de llegada');
       var _brdL2L = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Heure d’embarquement','Hora de embarque');
 
+      // v222 — Nick's 6 equal panels (top→bottom):
+      //   Flight·Vol | Destination | Status·Statut | Boarding·Embarquement
+      //   | Departure·Départ | Flight Time·Temps Vol
+      // Short bilingual labels (revised-aware for the time panels).
+      var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
+      var _destValue = _destCityName + (_destIataDisp ? ' (' + _destIataDisp + ')' : '');
+      var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
+      var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
+      var _depShortEn = _depRev ? 'Revised - Departure' : 'Departure';
+      var _depShortL2 = _depRev ? _L2('Révisé - Départ','Revisado - Salida') : _L2('Départ','Salida');
+      var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
+
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + (_destCityName ? _shelf(_emblemHtml || _badge(_svgStatus), 'Destination', _L2('Destination','Destino'), _destCityName, 'v2-fi-dest') : '')
-        + (_fiStLbl ? _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _fiStLbl, 'v2-fi-status-val v2-fi-status' + _fiStCls) : '')
-        + (_depShow ? _shelf(_badge(_svgDepart), _depEnL, _depL2L, _depShow, 'v2-fi-time') : '')
-        + (_arrShow ? _shelf(_badge(_svgArrive), _arrEnL, _arrL2L, _arrShow, 'v2-fi-time') : '')
-        + (_fiBrd ? _shelf(_badge(_svgClock), _brdEnL, _brdL2L, _fiBrd, 'v2-fi-time') : '')
+        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || '—'), 'v2-fi-dest')
+        + _shelf(_badge(_svgGlobe), 'Destination', _L2('Destination','Destino'), (_destValue || '—'), 'v2-fi-dest')
+        + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), (_fiStLbl || '—'), 'v2-fi-status-val v2-fi-status' + _fiStCls)
+        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_fiBrd || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_depShow || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgRoute), 'Flight Time', _L2('Temps Vol','Tiempo de vuelo'), _durValue, 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}
@@ -5301,8 +5319,9 @@ function _buildV2AircraftCol(ctx, vars) {
     weather:  _wxBlock,
     gateinfo: _gateInfoBlock
   };
-  // v218.99.45 — Weather widget added to bottom of left column (Nick's spec)
-  var _defaultOrder = ['flightinfo', 'weather'];
+  // v222 — Left column is now the 6 equal flight panels ONLY. Weather moved
+  // to the new center-bottom rotating panel (built separately).
+  var _defaultOrder = ['flightinfo'];
 
   // v218.99.21 — apply customized layout order if set. Resolver returns
   // the merged order array for this airport+airline. Defaults if unset.

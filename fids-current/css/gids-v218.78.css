@@ -3697,3 +3697,33 @@ body, body.gids-page, body.gate-page{
 /* ════════ Bottom banner removed (per Nick) — the main content row (g8-r4)
    is flex:1, so the three columns automatically reclaim the freed height. ════════ */
 .g8-wrap .g8-r5 { display: none !important; }
+
+/* ════════ v222 — Left column: 6 EQUAL panels filling the full height, bigger
+   type (Nick: same sizes, all bigger, fill the space). ════════ */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block {
+  flex: 1 1 auto !important;
+  justify-content: stretch !important;
+  height: 100% !important;
+}
+/* Each panel takes an equal 1/6 share of the column height. */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  padding: clamp(6px,1vh,18px) clamp(10px,1vw,18px) !important;
+  gap: clamp(12px,1.2vw,24px) !important;
+}
+/* Labels bigger */
+.g8-wrap .gad-aircraft-col .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-lbl-2 { font-size: clamp(18px,2.3vh,32px) !important; }
+/* Time/value tier bigger */
+.g8-wrap .gad-aircraft-col .v2-fi-value { font-size: clamp(30px,4vh,58px) !important; }
+/* Flight number, destination, status — the headline tier, bigger still */
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest,
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val { font-size: clamp(42px,5.8vh,82px) !important; }
+/* Icon badges scale up with the taller panels */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(56px,7vh,104px) !important; height: clamp(56px,7vh,104px) !important;
+  min-width: clamp(56px,7vh,104px) !important; min-height: clamp(56px,7vh,104px) !important;
+  max-width: clamp(56px,7vh,104px) !important; max-height: clamp(56px,7vh,104px) !important;
+}
