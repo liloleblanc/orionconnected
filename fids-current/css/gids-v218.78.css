@@ -4237,3 +4237,35 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val { justify-content: flex-start !important; }
 /* keep all flight-info values left-aligned and starting at the same edge */
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-cell, .g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl, .g8-wrap .gad-map-col-v2 .v2-rc-fi-val { text-align: left !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   v224g — bottom panel flipped (model+reg on top, Operated By centered
+   below); Status row centered; Destination code accent; LEFT status colour.
+   ════════════════════════════════════════════════════════════════════════ */
+/* Bottom aircraft panel: model+reg across the top, Operated By centered below */
+.g8-wrap .gad-map-col-v2 .v2-rc-acb { flex-direction: column !important; justify-content: center !important; align-items: stretch !important; gap: clamp(3px,0.8vh,11px) !important; text-align: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  font-size: clamp(18px,3.1vh,36px) !important; font-weight: 900 !important; color: var(--banner-bg,#14181E) !important;
+  text-align: center !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: clip !important; line-height: 1.02 !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby { display: flex !important; align-items: center !important; justify-content: center !important; gap: clamp(8px,1vw,16px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl { font-size: clamp(13px,1.9vh,21px) !important; font-weight: 700 !important; color: var(--banner-bg,#14181E) !important; white-space: nowrap !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl .v2-rc-fi-sep { opacity: 0.5 !important; font-weight: 500 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-logo img,
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-logo .v2-rc-opby-logo { height: clamp(28px,5vh,58px) !important; width: auto !important; max-width: 100% !important; object-fit: contain !important; }
+/* Status row centered (right flight-info) — that row only. */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single { justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-cell { flex: 0 1 auto !important; text-align: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-lbl,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-val { text-align: center !important; }
+/* Destination/From code accent (matches the left's "Destination | YYZ"). */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-code { color: var(--airline-accent,#D82F2E) !important; font-weight: 800 !important; }
+/* LEFT panel: re-assert the STATUS colour (was being overridden to navy). */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.scheduled,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.ontime { color: #0e7c4a !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.boarding { color: #1d4ed8 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.delayed,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.diverted { color: #d97706 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.cancelled,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.final,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.gateclosed { color: #b91c1c !important; }

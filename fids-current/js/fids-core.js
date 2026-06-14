@@ -5615,7 +5615,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-rc-fi-row">'
         +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Flight <span class="v2-rc-fi-sep">|</span> Vol</div>'
         +       '<div class="v2-rc-fi-val">' + (_ibFltCompact || '—') + '</div></div>'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">From <span class="v2-rc-fi-sep">|</span> De</div>'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">From <span class="v2-rc-fi-sep">|</span> <span class="v2-rc-fi-code">' + (_origIata || 'De') + '</span></div>'
         +       '<div class="v2-rc-fi-val">' + (_origCity || _origIata || '—') + '</div></div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
@@ -5718,7 +5718,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-rc-fi-row">'
         +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Flight <span class="v2-rc-fi-sep">|</span> Vol</div>'
         +       '<div class="v2-rc-fi-val">' + (_dFltCompact || '—') + '</div></div>'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">To <span class="v2-rc-fi-sep">|</span> À</div>'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Destination <span class="v2-rc-fi-sep">|</span> <span class="v2-rc-fi-code">' + (_dDest || 'À') + '</span></div>'
         +       '<div class="v2-rc-fi-val">' + (_dDestCity || _dDest || '—') + '</div></div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
@@ -5886,13 +5886,13 @@ function _buildV2MapCol(ctx, vars) {
       var _opByL2 = (_lang2b === 'es') ? 'Operado por' : 'Exploité par';
       // Bottom shelf: STACKED bilingual label (EN over FR) beside the value —
       //   Operated By: / Exploté Par:  [LOGO]    Aircraft: / Appareil:  A319 | reg
-      var _opLabel = '<div class="v2-rc-acb-lbl"><span>Operated By:</span><span>' + _opByL2 + ':</span></div>';
-      var _acLabel = '<div class="v2-rc-acb-lbl"><span>Aircraft:</span><span>' + _typeL2 + ':</span></div>';
-      // Each is its OWN full-width line (Operated By line, Aircraft line).
-      var _typeCellHtml = (_opByVal
-        ? '<div class="v2-rc-acb-row">' + _opLabel + '<div class="v2-rc-acb-val v2-rc-opby-val">' + _opByVal + '</div></div>'
-        : '')
-        + '<div class="v2-rc-acb-row">' + _acLabel + '<div class="v2-rc-acb-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>';
+      // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
+      // BOTTOM (only if operated by another carrier): Operated By + logo, centered.
+      var _typeCellHtml =
+          '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
+        + (_opByVal
+            ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">Operated By <span class="v2-rc-fi-sep">|</span> ' + _opByL2 + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
+            : '');
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
