@@ -4210,11 +4210,12 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val { display: flex !important; align-items: center !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val img,
 .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val .v2-rc-opby-logo { height: clamp(24px,4.2vh,50px) !important; width: auto !important; max-width: 100% !important; object-fit: contain !important; }
-/* MAX the plane — scale it up so it actually fills the panel. */
-.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { overflow: hidden !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img { overflow: hidden !important; }
+/* Plane: show the WHOLE aircraft (no crop). object-fit:contain fits it to the
+   panel width; NO scale/overflow-crop so nose & tail are never cut off. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { overflow: visible !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img { overflow: visible !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img img,
-.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img .g8-aircraft-img { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: scale(1.12) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img .g8-aircraft-img { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: none !important; }
 
 /* v224e — panels back to 6 equal rows; stop the aircraft value wrapping. */
 .g8-wrap .gad-map-col-v2 .v2-rc-acb-cell.v2-rc-acb-ac { flex: 1.4 1 0 !important; }
