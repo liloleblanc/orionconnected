@@ -140,10 +140,17 @@
     later(function(){
       map.easeTo({ center:m, zoom: r===ROUTES[1]?2.9:3.9, pitch:58, bearing:brg, duration:5200, easing:function(t){return t*(2-t);} });
     }, 500);
-    // Phase 3 — ease DOWN to a flat, top-down 2D view of the route.
+    // Phase 3 — ease DOWN to a flat, top-down 2D view of the route. Compute the
+    // camera from the bounds, then easeTo with pitch:0 so the flatten is
+    // guaranteed even on builds where fitBounds ignores pitch.
     later(function(){
       ph.textContent='Flat 2D';
-      map.fitBounds(bounds(r), { pitch:0, bearing:0, padding:{top:120,bottom:90,left:90,right:90}, duration:3600, maxZoom:6.5 });
+      var cam=null;
+      try { cam=map.cameraForBounds(bounds(r),{ padding:{top:120,bottom:90,left:90,right:90}, maxZoom:6.5 }); } catch(e){}
+      var to={ pitch:0, bearing:0, duration:3600 };
+      if(cam){ to.center=cam.center; to.zoom=Math.min(cam.zoom||5,6.5); }
+      else { to.center=m; to.zoom=5; }
+      map.easeTo(to);
     }, 6200);
     // Phase 4 — hold the flat view, then next route.
     later(function(){ idx++; runRoute(); }, 11200);
