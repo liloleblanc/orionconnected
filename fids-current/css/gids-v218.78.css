@@ -4291,3 +4291,18 @@ body, body.gids-page, body.gate-page{
 .g8-wrap.g8-airline-F8 .gad-map-col-v2 .v2-rc-maptitle2 {
   color: rgba(255,255,255,0.80) !important;
 }
+
+/* ── v218.99 — NEVER clip glyph descenders (g, y, j, p). The tight line-heights
+   on the big left-panel values (0.9–0.95) made the line box shorter than the
+   glyph, so overflow:hidden (kept for the horizontal ellipsis safety) was
+   slicing the bottoms off words like "Calgary". Give the line box enough room
+   to contain the full glyph; horizontal fit is handled by gateAutofit. ── */
+.g8-wrap .gad-aircraft-col .v2-fi-value,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-dest,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-val,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val {
+  line-height: 1.16 !important;
+  overflow-y: visible !important;
+  padding-bottom: 0.06em !important;
+}
