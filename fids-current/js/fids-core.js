@@ -16190,10 +16190,10 @@ function renderHeroHotelsAsync(f, target) {
     target.innerHTML = '<div class="hero-section-empty">Hotels unavailable</div>';
     return;
   }
-  // fetchAccorHotels populates ACCOR_HOTEL_CACHE[iata] = {hotels, ts}
-  const cached = (typeof ACCOR_HOTEL_CACHE !== 'undefined') && ACCOR_HOTEL_CACHE[f._locIata];
+  // Prefer the current board language; fall back to any loaded language.
+  const cached = (typeof _accorCacheFor === 'function') && _accorCacheFor(f._locIata);
   const renderFromCache = () => {
-    const cacheEntry = (typeof ACCOR_HOTEL_CACHE !== 'undefined') ? ACCOR_HOTEL_CACHE[f._locIata] : null;
+    const cacheEntry = (typeof _accorCacheFor === 'function') ? _accorCacheFor(f._locIata) : null;
     const list = (cacheEntry && cacheEntry.hotels) || [];
     if (!list.length) {
       target.innerHTML = '<div class="hero-section-empty">No stays found for ' + f._locIata + '</div>';
@@ -18159,8 +18159,32 @@ var GATE_ADS_BY_AIRLINE = {
 var _gIco = 'https://maps.gstatic.com/mapfiles/place_api/icons/v2/';
 // ── ACCOR HOTEL ADS ──────────────────────────────────────────────────────
 // Accor API key removed — handled by proxy
-var ACCOR_HOTEL_CACHE = {}; // keyed by dest IATA, {hotels:[], ts:}
+// Keyed by "IATA|lang" so the FRENCH board frame gets FRENCH hotel copy and the
+// ENGLISH frame gets English — Canada requires both languages equally, and the
+// list (which carries the description body) was previously cached IATA-only, so
+// a French frame showed an English body. Each language now fetches & caches
+// independently; readers prefer the current language and fall back to whatever
+// is loaded so the ad is never empty while the other language loads.
+var ACCOR_HOTEL_CACHE = {}; // keyed by "IATA|lang", {hotels:[], ts:}
 var ACCOR_CACHE_TTL = 24 * 3600000; // 24 hours
+// Current board display language (the EN/FR rotation), defaulting to English.
+function _accorLangNow() {
+  try {
+    if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) return langs[langIdx || 0];
+    if (typeof lang !== 'undefined' && lang) return lang;
+  } catch (e) {}
+  return 'en';
+}
+// Read the hotel list for an airport: prefer the current language, then fall
+// back to any language already loaded so the ad never blanks mid-rotation.
+function _accorCacheFor(iata) {
+  if (!iata) return null;
+  var L = _accorLangNow();
+  return ACCOR_HOTEL_CACHE[iata + '|' + L]
+      || ACCOR_HOTEL_CACHE[iata + '|en']
+      || ACCOR_HOTEL_CACHE[iata + '|fr']
+      || null;
+}
 
 // Accor brand colors
 var ACCOR_BRAND_COLORS = {
@@ -18236,9 +18260,12 @@ function ensureBrandInName(name, brandCode) {
 
 function fetchAccorHotels(destIata) {
   if (!destIata) return;
-  var cached = ACCOR_HOTEL_CACHE[destIata];
+  // Language for THIS fetch (the current board rotation language).
+  var _listLang = _accorLangNow();
+  var _ck = destIata + '|' + _listLang;
+  var cached = ACCOR_HOTEL_CACHE[_ck];
   if (cached && (Date.now() - cached.ts < ACCOR_CACHE_TTL)) return;
-  if (window._accorFetching) return;
+  if (window['_accorFetching_' + _ck]) return;
 
   // If COORDS missing, geocode first then fetch
   if (!COORDS[destIata]) {
@@ -18256,7 +18283,7 @@ function fetchAccorHotels(destIata) {
     return;
   }
 
-  window._accorFetching = true;
+  window['_accorFetching_' + _ck] = true;
 
   // v218.99.54 — Use DOWNTOWN coordinates (not airport) so results are
   // centered on the city, not the airport. Hotels are then filtered in
@@ -18268,15 +18295,8 @@ function fetchAccorHotels(destIata) {
   } else {
     coords = COORDS[destIata];
   }
-  // Per Accor catalog spec the LIST endpoint also honors Accept-Language
-  // (and language= as a fallback). Detail/photos and amenities both come
-  // through this call, so language matters here just as much as on the
-  // /products/accommodations detail call.
-  var _listLang = 'en';
-  try {
-    if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _listLang = langs[langIdx || 0];
-    else if (typeof lang !== 'undefined' && lang) _listLang = lang;
-  } catch (e) {}
+  // _listLang computed at the top of the function (the LIST endpoint honors
+  // Accept-Language; detail/photos/amenities all come through this call).
   var proxyUrl = 'https://fids-proxy.n-leblanc1984.workers.dev/accor/catalog/v1/hotels?latLng=' + coords[0] + ',' + coords[1]
     + '&radius=110&range=0-15&sort=distance'
     + '&language=' + encodeURIComponent(_listLang);
@@ -18287,11 +18307,11 @@ function fetchAccorHotels(destIata) {
       if (!r.ok) throw new Error('Proxy HTTP ' + r.status);
       return r.json();
     })
-    .then(function(data) { _processAccorData(data, destIata); window._accorFetching = false; })
+    .then(function(data) { _processAccorData(data, destIata, _listLang); window['_accorFetching_' + _ck] = false; })
     .catch(function(e) {
       console.warn('[ACCOR] Fetch failed:', e.message, '- will retry in 5min');
-      ACCOR_HOTEL_CACHE[destIata] = { hotels: [], ts: Date.now() - ACCOR_CACHE_TTL + 300000 };
-      window._accorFetching = false;
+      ACCOR_HOTEL_CACHE[_ck] = { hotels: [], ts: Date.now() - ACCOR_CACHE_TTL + 300000 };
+      window['_accorFetching_' + _ck] = false;
     });
 }
 
@@ -18552,7 +18572,8 @@ function fetchAccorHotelDetail(hotelId) {
     });
 }
 
-function _processAccorData(data, destIata) {
+function _processAccorData(data, destIata, langKey) {
+  var _ckLang = langKey || _accorLangNow();
   if (!data || !data.results) return;
   // Fetch brand details for any brands we haven't seen yet
   var seenBrands = {};
@@ -18802,8 +18823,8 @@ function _processAccorData(data, destIata) {
       '| location=', _h0.location);
   }
   console.log('[ACCOR]', destIata, ': filtered', beforeFilter, '→', hotels.length, 'hotels (≤' + DOWNTOWN_THRESHOLD_KM + 'km from downtown, unknowns kept)');
-  ACCOR_HOTEL_CACHE[destIata] = { hotels: hotels, ts: Date.now() };
-  console.log('[ACCOR] Loaded', hotels.length, 'hotels near', destIata);
+  ACCOR_HOTEL_CACHE[destIata + '|' + _ckLang] = { hotels: hotels, ts: Date.now() };
+  console.log('[ACCOR] Loaded', hotels.length, 'hotels near', destIata, '(' + _ckLang + ')');
   // Kick off background detail fetches for restaurants / facilities / photo
   // gallery. These populate ACCOR_HOTEL_DETAIL_CACHE which the carousel
   // reads on each render — first render shows list-only data, subsequent
@@ -18997,9 +19018,9 @@ function getGateAds() {
   // Trigger Accor hotel fetch for this destination (non-blocking, cached)
   if (destIata) fetchAccorHotels(destIata);
 
-  // Get cached Accor hotels as ads
+  // Get cached Accor hotels as ads (current language preferred, any as fallback)
   var accorAds = [];
-  var accorCache = ACCOR_HOTEL_CACHE[destIata];
+  var accorCache = _accorCacheFor(destIata);
   if (accorCache && accorCache.hotels) {
     accorAds = accorCache.hotels;
   }
