@@ -56,6 +56,7 @@
   </div>
 <script src="/mapcdn/maplibre-gl.js"></script>
 <script src="/mapcdn/three.min.js"></script>
+<script src="/mapcdn/gltf-loader.js"></script>
 <script>
 (function(){
   'use strict';
@@ -72,9 +73,11 @@
   var S={ line:'solid', flown:null /*null = auto/airline*/, plane:'3d' };
   var HAS_THREE = (typeof THREE!=='undefined');
   // Orientation tweak knobs (adjustable after a visual check, blind build):
-  var HEADING_OFFSET = -Math.PI/2;   // maps compass bearing → model yaw
+  var HEADING_OFFSET = Math.PI/2;    // maps compass bearing → model yaw (flipped: was flying backwards)
   var HEADING_SIGN   = -1;
   var PLANE_SIZE     = 1;            // model is built in metres; scale 1:1
+  var TARGET_METERS  = 9000;         // real glTF auto-scaled to this size
+  var MODEL_FACING   = Math.PI/2;    // base yaw so the glTF nose points +X (like the built model)
 
   function greatCircle(a,b,n){
     var lon1=a[0]*TO_R, lat1=a[1]*TO_R, lon2=b[0]*TO_R, lat2=b[1]*TO_R;
@@ -144,23 +147,46 @@
 
   // ── 3D plane model (three.js, MapLibre custom layer) ──
   var planeState={ pos:[0,0], alt:3000, yaw:0, show:HAS_THREE };
-  var planeGroup=null, planeBody=null, planeAccent=[];
-  function buildPlane3D(){
-    var g=new THREE.Group();
+  var planeGroup=null, planeAccent=null, planeProcedural=null, planeModel=null;
+  function buildProcedural(){
+    var body=new THREE.Group();
     var white=new THREE.MeshStandardMaterial({color:0xeef2f8,metalness:0.45,roughness:0.45});
     var accent=new THREE.MeshStandardMaterial({color:0xD82F2E,metalness:0.35,roughness:0.5});
     var dark=new THREE.MeshStandardMaterial({color:0x222a36,metalness:0.4,roughness:0.6});
-    // metres (exaggerated so it reads at altitude). Nose along +X, up +Y.
-    var fus=new THREE.Mesh(new THREE.CylinderGeometry(700,700,7000,18),white); fus.rotation.z=Math.PI/2; g.add(fus);
-    var nose=new THREE.Mesh(new THREE.ConeGeometry(700,1700,18),white); nose.rotation.z=-Math.PI/2; nose.position.x=4350; g.add(nose);
-    var tail=new THREE.Mesh(new THREE.ConeGeometry(620,1500,18),white); tail.rotation.z=Math.PI/2; tail.position.x=-4000; g.add(tail);
-    var wing=new THREE.Mesh(new THREE.BoxGeometry(1900,180,12500),accent); wing.position.x=-200; g.add(wing);
-    var tp=new THREE.Mesh(new THREE.BoxGeometry(1200,150,4800),accent); tp.position.x=-3500; g.add(tp);
-    var fin=new THREE.Mesh(new THREE.BoxGeometry(1400,2100,160),accent); fin.position.set(-3500,950,0); g.add(fin);
-    var win=new THREE.Mesh(new THREE.BoxGeometry(5200,260,260),dark); win.position.set(300,360,0); g.add(win);
-    planeBody=white; planeAccent=[accent,wing,tp,fin]; planeGroup=g; return g;
+    var fus=new THREE.Mesh(new THREE.CylinderGeometry(700,700,7000,18),white); fus.rotation.z=Math.PI/2; body.add(fus);
+    var nose=new THREE.Mesh(new THREE.ConeGeometry(700,1700,18),white); nose.rotation.z=-Math.PI/2; nose.position.x=4350; body.add(nose);
+    var tail=new THREE.Mesh(new THREE.ConeGeometry(620,1500,18),white); tail.rotation.z=Math.PI/2; tail.position.x=-4000; body.add(tail);
+    var wing=new THREE.Mesh(new THREE.BoxGeometry(1900,180,12500),accent); wing.position.x=-200; body.add(wing);
+    var tp=new THREE.Mesh(new THREE.BoxGeometry(1200,150,4800),accent); tp.position.x=-3500; body.add(tp);
+    var fin=new THREE.Mesh(new THREE.BoxGeometry(1400,2100,160),accent); fin.position.set(-3500,950,0); body.add(fin);
+    var win=new THREE.Mesh(new THREE.BoxGeometry(5200,260,260),dark); win.position.set(300,360,0); body.add(win);
+    planeAccent=accent; return body;
   }
-  function setPlaneColor(hex){ try{ if(planeAccent[0]) planeAccent[0].color.set(hex); }catch(e){} }
+  function buildPlane3D(){
+    var pivot=new THREE.Group();
+    planeProcedural=buildProcedural();
+    pivot.add(planeProcedural);
+    planeGroup=pivot;
+    loadRealModel(pivot);
+    return pivot;
+  }
+  function loadRealModel(pivot){
+    if(!HAS_THREE || typeof THREE.GLTFLoader!=='function') return;
+    try{
+      new THREE.GLTFLoader().load('/mapcdn/plane.glb', function(gltf){
+        var model=gltf.scene;
+        var box=new THREE.Box3().setFromObject(model), size=new THREE.Vector3(); box.getSize(size);
+        var maxDim=Math.max(size.x,size.y,size.z)||1, sc=TARGET_METERS/maxDim;
+        model.scale.setScalar(sc);
+        var c=new THREE.Vector3(); box.getCenter(c);
+        model.position.set(-c.x*sc,-c.y*sc,-c.z*sc);
+        model.rotation.y=MODEL_FACING;
+        if(planeProcedural){ pivot.remove(planeProcedural); planeProcedural=null; }
+        pivot.add(model); planeModel=model;
+      }, undefined, function(){ /* keep the built model on failure */ });
+    }catch(e){}
+  }
+  function setPlaneColor(hex){ try{ if(planeAccent) planeAccent.color.set(hex); }catch(e){} }
 
   var customLayer3d = HAS_THREE ? {
     id:'plane3d', type:'custom', renderingMode:'3d',

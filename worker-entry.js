@@ -26,6 +26,9 @@ const MAP_ENGINE = {
   // three.js r128 (UMD global THREE) — renders the 3D plane model in a
   // MapLibre custom layer.
   'three.min.js':    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+  // glTF loader (UMD, attaches THREE.GLTFLoader) + a real airliner model.
+  'gltf-loader.js':  'https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js',
+  'plane.glb':       'https://raw.githubusercontent.com/CesiumGS/cesium/main/Apps/SampleData/models/CesiumAir/Cesium_Air.glb',
 };
 
 const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
