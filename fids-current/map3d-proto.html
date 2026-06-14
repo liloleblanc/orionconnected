@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>3D Route Map — Prototype (terrain)</title>
+<title>3D Route Map — Prototype (terrain + plane)</title>
 <link rel="stylesheet" href="/mapcdn/maplibre-gl.css">
 <style>
   html,body{margin:0;height:100%;background:#05080f;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
@@ -34,7 +34,6 @@
   'use strict';
   var TO_R = Math.PI/180, TO_D = 180/Math.PI;
 
-  // Mountainous routes so the 3D relief is obvious (Coast Mtns / Rockies).
   var ROUTES = [
     { o:[-123.184,49.197], d:[-114.020,51.131], oc:'YVR', dc:'YYC', oCity:'Vancouver', dCity:'Calgary',  tag:'Over the Rockies' },
     { o:[-114.020,51.131], d:[-119.378,49.956], oc:'YYC', dc:'YLW', oCity:'Calgary',   dCity:'Kelowna',  tag:'Rockies → Okanagan' },
@@ -44,7 +43,7 @@
   function greatCircle(a,b,n){
     var lon1=a[0]*TO_R, lat1=a[1]*TO_R, lon2=b[0]*TO_R, lat2=b[1]*TO_R;
     var dd = 2*Math.asin(Math.sqrt(Math.pow(Math.sin((lat2-lat1)/2),2)+Math.cos(lat1)*Math.cos(lat2)*Math.pow(Math.sin((lon2-lon1)/2),2)));
-    if(dd===0) return [a,b];
+    if(dd===0) return [a.slice(),b.slice()];
     var pts=[];
     for(var i=0;i<=n;i++){
       var f=i/n, A=Math.sin((1-f)*dd)/Math.sin(dd), B=Math.sin(f*dd)/Math.sin(dd);
@@ -58,13 +57,32 @@
   function bearing(a,b){
     var y=Math.sin((b[0]-a[0])*TO_R)*Math.cos(b[1]*TO_R);
     var x=Math.cos(a[1]*TO_R)*Math.sin(b[1]*TO_R)-Math.sin(a[1]*TO_R)*Math.cos(b[1]*TO_R)*Math.cos((b[0]-a[0])*TO_R);
-    return Math.atan2(y,x)*TO_D;
+    return (Math.atan2(y,x)*TO_D+360)%360;
+  }
+
+  // Top-down airliner silhouette drawn to a canvas → MapLibre icon image.
+  function planeIcon(){
+    var s=96, c=document.createElement('canvas'); c.width=c.height=s;
+    var x=c.getContext('2d'); x.translate(s/2,s/2); x.fillStyle='#ffffff';
+    x.strokeStyle='rgba(20,30,55,.55)'; x.lineWidth=2; x.lineJoin='round';
+    function plane(){
+      x.beginPath();
+      x.moveTo(0,-40);                 // nose
+      x.lineTo(5,-16); x.lineTo(5,-6);
+      x.lineTo(42,10);  x.lineTo(42,18); x.lineTo(5,12);  // right wing
+      x.lineTo(5,30);
+      x.lineTo(16,38); x.lineTo(16,44); x.lineTo(0,40);   // right tail
+      x.lineTo(-16,44); x.lineTo(-16,38); x.lineTo(-5,30); // left tail
+      x.lineTo(-5,12); x.lineTo(-42,18); x.lineTo(-42,10); x.lineTo(-5,-6); // left wing
+      x.lineTo(-5,-16); x.closePath();
+      x.fill(); x.stroke();
+    }
+    plane();
+    return x.getImageData(0,0,s,s);
   }
 
   var map = new maplibregl.Map({
-    container:'map',
-    maxZoom:13,
-    attributionControl:false,
+    container:'map', maxZoom:13, attributionControl:false,
     style:{
       version:8,
       sources:{
@@ -91,29 +109,50 @@
     endMarkers.push(new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(coord).addTo(map));
   }
 
+  // Plane animation state
+  var line=[], planeStart=0, planeDur=8200, planeRunning=false;
+  function lerp(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]; }
+  function planeAt(t){ // t 0..1 along `line`
+    if(line.length<2) return { pos:line[0]||[0,0], brg:0 };
+    var f=Math.max(0,Math.min(1,t))*(line.length-1);
+    var i=Math.min(Math.floor(f), line.length-2);
+    var pos=lerp(line[i],line[i+1],f-i);
+    return { pos:pos, brg:bearing(line[i],line[i+1]) };
+  }
+  function tickPlane(){
+    if(map.getSource('plane')){
+      var t = planeRunning ? (Date.now()-planeStart)/planeDur : 0;
+      if(t>1) t=1;
+      var p=planeAt(t);
+      map.getSource('plane').setData({ type:'Feature', properties:{ bearing:p.brg }, geometry:{ type:'Point', coordinates:p.pos } });
+    }
+    requestAnimationFrame(tickPlane);
+  }
+
   function setRouteData(r){
-    var gj={ type:'Feature', geometry:{ type:'LineString', coordinates:greatCircle(r.o,r.d,128) } };
-    if(map.getSource('route')){ map.getSource('route').setData(gj); }
+    line=greatCircle(r.o,r.d,160);
+    var gj={ type:'Feature', geometry:{ type:'LineString', coordinates:line } };
+    if(map.getSource('route')) map.getSource('route').setData(gj);
     else{
       map.addSource('route',{ type:'geojson', data:gj });
-      map.addLayer({ id:'route-glow', type:'line', source:'route',
-        layout:{ 'line-cap':'round','line-join':'round' },
+      map.addLayer({ id:'route-glow', type:'line', source:'route', layout:{ 'line-cap':'round','line-join':'round' },
         paint:{ 'line-color':'#7fb2ff','line-width':10,'line-opacity':.25,'line-blur':6 } });
-      map.addLayer({ id:'route-line', type:'line', source:'route',
-        layout:{ 'line-cap':'round','line-join':'round' },
+      map.addLayer({ id:'route-line', type:'line', source:'route', layout:{ 'line-cap':'round','line-join':'round' },
         paint:{ 'line-color':'#eaf2ff','line-width':3,'line-dasharray':[2,1.6] } });
     }
-    clearMarkers();
-    addEnd(r.o,r.oc,r.oCity,false);
-    addEnd(r.d,r.dc,r.dCity,true);
+    if(!map.getSource('plane')){
+      map.addSource('plane',{ type:'geojson', data:{ type:'Feature', properties:{bearing:0}, geometry:{type:'Point',coordinates:r.o} } });
+      map.addLayer({ id:'plane', type:'symbol', source:'plane',
+        layout:{ 'icon-image':'plane', 'icon-rotate':['get','bearing'],
+          'icon-rotation-alignment':'map', 'icon-pitch-alignment':'map',
+          'icon-allow-overlap':true, 'icon-ignore-placement':true,
+          'icon-size':['interpolate',['linear'],['zoom'],5,0.45,8,0.8,11,1.3] } });
+    }
+    clearMarkers(); addEnd(r.o,r.oc,r.oCity,false); addEnd(r.d,r.dc,r.dCity,true);
     document.getElementById('rtCode').textContent=r.oc+'  →  '+r.dc;
     document.getElementById('rtCity').textContent=r.oCity+' to '+r.dCity+' · '+r.tag;
   }
-  function routeBounds(r){
-    var b=new maplibregl.LngLatBounds();
-    greatCircle(r.o,r.d,32).forEach(function(p){ b.extend(p); });
-    return b;
-  }
+  function routeBounds(r){ var b=new maplibregl.LngLatBounds(); greatCircle(r.o,r.d,32).forEach(function(p){ b.extend(p); }); return b; }
 
   var ph=document.getElementById('phase');
   var idx=0, timers=[];
@@ -125,34 +164,36 @@
     setRouteData(r);
     var brg=bearing(r.o,r.d);
 
-    // Phase 1 — sit low and TILTED at the origin, looking down the route so the
-    // mountains stand up in 3D.
+    // Phase 1 — low + tilted at the origin, looking down the route.
     ph.textContent='3D Terrain';
-    map.jumpTo({ center:r.o, zoom:7.6, pitch:74, bearing:brg });
-    // Phase 2 — fly the camera along the route, over the 3D landscape.
+    map.jumpTo({ center:r.o, zoom:7.7, pitch:76, bearing:brg });
+    planeRunning=false;
+    // Phase 2 — the plane departs and the camera flies WITH it over the terrain.
     later(function(){
-      map.easeTo({ center:r.d, zoom:7.6, pitch:74, bearing:brg, duration:7000, easing:function(t){return t<.5?2*t*t:-1+(4-2*t)*t;} });
-    }, 600);
-    // Phase 3 — pull up and FLATTEN to a top-down 2D view of the whole route.
+      planeStart=Date.now(); planeRunning=true;
+      map.easeTo({ center:r.d, zoom:7.7, pitch:76, bearing:brg, duration:planeDur, easing:function(t){return t<.5?2*t*t:-1+(4-2*t)*t;} });
+    }, 700);
+    // Phase 3 — gently flatten, pulling out only a LITTLE and SLOWLY.
     later(function(){
       ph.textContent='Flat 2D';
       var cam=null;
-      try { cam=map.cameraForBounds(routeBounds(r),{ padding:{top:120,bottom:90,left:90,right:90}, maxZoom:9 }); } catch(e){}
-      var to={ pitch:0, bearing:0, duration:3800 };
-      if(cam){ to.center=cam.center; to.zoom=Math.min(cam.zoom||7,9); } else { to.center=r.d; to.zoom=7; }
+      try { cam=map.cameraForBounds(routeBounds(r),{ padding:{top:110,bottom:90,left:90,right:90}, maxZoom:9 }); } catch(e){}
+      var to={ pitch:0, bearing:0, duration:6000 };
+      // keep it close: never pull out more than ~1 zoom level below the flyover.
+      var minZ=6.6;
+      to.zoom = cam ? Math.max(minZ, Math.min(cam.zoom||7.4, 8)) : 7.2;
+      to.center = cam ? cam.center : r.d;
       map.easeTo(to);
-    }, 8000);
-    // Phase 4 — hold, then next route.
-    later(function(){ idx++; runRoute(); }, 13000);
+    }, 9400);
+    // Phase 4 — hold longer, then next route.
+    later(function(){ idx++; runRoute(); }, 16500);
   }
 
   map.on('load', function(){
+    try { map.addImage('plane', planeIcon(), { pixelRatio:2 }); } catch(e){}
     try { map.setTerrain({ source:'dem', exaggeration:1.6 }); } catch(e){}
-    try { map.setSky({
-      'sky-color':'#0a1736','sky-horizon-blend':0.55,
-      'horizon-color':'#1a3b6e','horizon-fog-blend':0.5,
-      'fog-color':'#070b14','fog-ground-blend':0.55
-    }); } catch(e){}
+    try { map.setSky({ 'sky-color':'#0a1736','sky-horizon-blend':0.55,'horizon-color':'#1a3b6e','horizon-fog-blend':0.5,'fog-color':'#070b14','fog-ground-blend':0.55 }); } catch(e){}
+    requestAnimationFrame(tickPlane);
     clearTimers(); idx=0; runRoute();
   });
 })();
