@@ -142,7 +142,7 @@
     endMarkers.push(new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(coord).addTo(map));
   }
 
-  var line=[],planeStart=0,planeDur=8200,planeRunning=false,curRoute=null;
+  var line=[],planeStart=0,planeDur=17000,planeRunning=false,curRoute=null;
   function flownColor(){ return S.flown || (curRoute?curRoute.col:'#5fa8ff'); }
 
   // ── 3D plane model (three.js, MapLibre custom layer) ──
@@ -291,10 +291,10 @@
     },700);
     later(function(){ ph.textContent='Flat 2D';
       var cam=null; try{cam=map.cameraForBounds(routeBounds(r),{padding:{top:110,bottom:90,left:90,right:90},maxZoom:9});}catch(e){}
-      var to={pitch:0,bearing:0,duration:6000}; to.zoom=cam?Math.max(6.6,Math.min(cam.zoom||7.4,8)):7.2; to.center=cam?cam.center:r.d;
+      var to={pitch:0,bearing:0,duration:7000}; to.zoom=cam?Math.max(6.6,Math.min(cam.zoom||7.4,8)):7.2; to.center=cam?cam.center:r.d;
       map.easeTo(to);
-    },9400);
-    later(function(){ idx++; run(); },16500);
+    },18200);
+    later(function(){ idx++; run(); },27500);
   }
 
   function buildSwatches(){
