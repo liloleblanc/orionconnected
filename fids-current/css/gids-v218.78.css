@@ -3853,15 +3853,26 @@ body, body.gids-page, body.gate-page{
      2–3 tones. */
   background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%) !important;
   background-image:
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0, rgba(255,255,255,0.15) 1px, rgba(0,0,0,0.08) 2px),
-    linear-gradient(178deg, transparent 40%, rgba(255,255,255,0.6) 49.5%, rgba(255,255,255,0.6) 51%, transparent 60%),
+    /* 1 — broad SOFT specular sweep: the wide band of light brushed metal catches */
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.34) 47%,
+      rgba(255,255,255,0.10) 55%,
+      rgba(255,255,255,0) 82%),
+    /* 2 — fine brushed grain: tight horizontal hairlines (the brushing direction) */
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px,     rgba(0,0,0,0.055) 2px),
+    /* 3 — coarse irregular grain so it isn't a perfect screen-door pattern */
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px,      rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    /* 4 — gentle top-light → airline-tinted mid → bottom-shade (cylindrical falloff) */
     linear-gradient(180deg,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 56%, #ffffff 44%) 0%,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 56%, #ffffff 44%) 24%,      /* TONE 1 — light */
-      color-mix(in srgb, var(--body-bg,#e3e8ee) 74%, var(--airline-accent,#8a8f96) 26%) 36%,
-      color-mix(in srgb, var(--body-bg,#e3e8ee) 74%, var(--airline-accent,#8a8f96) 26%) 60%,  /* TONE 2 — airline-tinted mid */
-      color-mix(in srgb, var(--body-bg,#dfe4ea) 70%, #000000 16%) 74%,
-      color-mix(in srgb, var(--body-bg,#dfe4ea) 64%, #000000 22%) 100%) !important;  /* TONE 3 — dark */
+      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%) !important;
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.9vw,16px) !important;
 }
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
@@ -3947,15 +3958,26 @@ body, body.gids-page, body.gate-page{
      2–3 tones. */
   background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%) !important;
   background-image:
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0, rgba(255,255,255,0.15) 1px, rgba(0,0,0,0.08) 2px),
-    linear-gradient(178deg, transparent 40%, rgba(255,255,255,0.6) 49.5%, rgba(255,255,255,0.6) 51%, transparent 60%),
+    /* 1 — broad SOFT specular sweep: the wide band of light brushed metal catches */
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.34) 47%,
+      rgba(255,255,255,0.10) 55%,
+      rgba(255,255,255,0) 82%),
+    /* 2 — fine brushed grain: tight horizontal hairlines (the brushing direction) */
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px,     rgba(0,0,0,0.055) 2px),
+    /* 3 — coarse irregular grain so it isn't a perfect screen-door pattern */
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px,      rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    /* 4 — gentle top-light → airline-tinted mid → bottom-shade (cylindrical falloff) */
     linear-gradient(180deg,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 56%, #ffffff 44%) 0%,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 56%, #ffffff 44%) 24%,      /* TONE 1 — light */
-      color-mix(in srgb, var(--body-bg,#e3e8ee) 74%, var(--airline-accent,#8a8f96) 26%) 36%,
-      color-mix(in srgb, var(--body-bg,#e3e8ee) 74%, var(--airline-accent,#8a8f96) 26%) 60%,  /* TONE 2 — airline-tinted mid */
-      color-mix(in srgb, var(--body-bg,#dfe4ea) 70%, #000000 16%) 74%,
-      color-mix(in srgb, var(--body-bg,#dfe4ea) 64%, #000000 22%) 100%) !important;  /* TONE 3 — dark */
+      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%) !important;
   overflow: hidden !important;
 }
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
