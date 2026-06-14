@@ -4112,13 +4112,17 @@ body, body.gids-page, body.gate-page{
   overflow: hidden !important;
 }
 /* TITLE overlaid at the TOP of the map. */
+/* "Your Aircraft" title — a SOLID header bar that matches the Speed/Altitude
+   bar pinned to the bottom of the map (same dark slate fill + padding), so the
+   map is bookended by two matching bars instead of a soft gradient fade. */
 .g8-wrap .gad-map-col-v2 .v2-rc-maptitle {
   position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 6 !important;
   text-align: center !important; font-weight: 800 !important; white-space: nowrap !important;
   font-size: clamp(15px,2.3vh,27px) !important; letter-spacing: 0.3px !important;
-  color: #ffffff !important; padding: clamp(5px,1vh,12px) 10px clamp(10px,1.6vh,20px) !important;
-  background: linear-gradient(180deg, rgba(8,18,40,0.85) 0%, rgba(8,18,40,0.5) 55%, rgba(8,18,40,0) 100%) !important;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.6) !important;
+  color: #ffffff !important;
+  padding: clamp(4px,0.7vh,10px) clamp(8px,0.8vw,16px) !important;
+  background: rgba(15,34,56,0.78) !important;
+  text-shadow: none !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-maptitle2 { color: var(--airline-accent3, #FAC120) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-maptitle-sep { opacity: 0.55 !important; font-weight: 500 !important; }
