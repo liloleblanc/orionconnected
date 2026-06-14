@@ -4163,3 +4163,27 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-actype-val {
   font-size: clamp(13px,2.2vh,26px) !important; white-space: nowrap !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   v224c — READABILITY. The flight-info was starved (3 rows in a tiny band)
+   and the photo wasn't filling. Give the info real height, size the text up
+   so it reads across a gate, and MAX the aircraft photo. (Last → wins.)
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { flex: 2.4 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { flex: 1.7 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 1 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { flex: 1.15 1 0 !important; }
+/* Flight-info: fill the band, big readable text. */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi { justify-content: space-evenly !important; gap: clamp(2px,0.6vh,9px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl { font-size: clamp(13px,2.1vh,23px) !important; padding-bottom: clamp(2px,0.4vh,5px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val { font-size: clamp(24px,4.6vh,52px) !important; line-height: 1.0 !important; margin-top: clamp(2px,0.4vh,5px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-actype-val { font-size: clamp(17px,3vh,36px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val img,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val .v2-rc-opby-logo { height: clamp(26px,4.4vh,52px) !important; }
+/* MAX the aircraft photo — fill the whole panel. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { padding: clamp(1px,0.2vh,5px) clamp(3px,0.4vw,8px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img { width: 100% !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img img,
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img .g8-aircraft-img {
+  width: 100% !important; max-width: 100% !important; height: 100% !important; max-height: 100% !important; object-fit: contain !important;
+}
