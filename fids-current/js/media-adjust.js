@@ -104,17 +104,26 @@
 
     function renderPreview() {
       var posStr = st.posX + '% ' + st.posY + '%';
-      var inner;
+      // Build the preview with DOM nodes and set the media URL via the .src /
+      // backgroundImage PROPERTIES — never string-interpolated into innerHTML —
+      // so an operator-supplied URL can't be reinterpreted as markup.
+      while (box.firstChild) box.removeChild(box.firstChild);
+      var node;
       if (isVideo) {
-        inner = '<video src="' + rec.url + '" autoplay muted loop playsinline'
-          + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + st.fit
-          + ';object-position:' + posStr + ';transform:scale(' + st.zoom + ');background:#000;"></video>';
+        node = document.createElement('video');
+        node.autoplay = true; node.muted = true; node.loop = true;
+        node.setAttribute('playsinline', '');
+        node.src = rec.url;
+        node.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:' + st.fit
+          + ';object-position:' + posStr + ';transform:scale(' + st.zoom + ');background:#000;';
       } else {
-        inner = '<div style="position:absolute;inset:0;background:#000;background-image:url(\'' + rec.url
-          + '\');background-size:' + (st.fit === 'cover' ? 'cover' : 'contain')
-          + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + st.zoom + ');"></div>';
+        node = document.createElement('div');
+        node.style.cssText = 'position:absolute;inset:0;background:#000;background-size:'
+          + (st.fit === 'cover' ? 'cover' : 'contain')
+          + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + st.zoom + ');';
+        node.style.backgroundImage = 'url("' + rec.url + '")';
       }
-      box.innerHTML = inner;
+      box.appendChild(node);
       zoomVal.textContent = '×' + st.zoom.toFixed(2);
       fitBtns.forEach(function (b) {
         var on = b.getAttribute('data-fit') === st.fit;
