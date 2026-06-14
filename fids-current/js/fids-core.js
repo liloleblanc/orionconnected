@@ -5888,10 +5888,11 @@ function _buildV2MapCol(ctx, vars) {
       //   Operated By: / Exploté Par:  [LOGO]    Aircraft: / Appareil:  A319 | reg
       var _opLabel = '<div class="v2-rc-acb-lbl"><span>Operated By:</span><span>' + _opByL2 + ':</span></div>';
       var _acLabel = '<div class="v2-rc-acb-lbl"><span>Aircraft:</span><span>' + _typeL2 + ':</span></div>';
-      var _typeCellHtml = _opByVal
-        ? '<div class="v2-rc-acb-cell">' + _opLabel + '<div class="v2-rc-acb-val v2-rc-opby-val">' + _opByVal + '</div></div>'
-          + '<div class="v2-rc-acb-cell v2-rc-acb-ac">' + _acLabel + '<div class="v2-rc-acb-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>'
-        : '<div class="v2-rc-acb-cell v2-rc-acb-ac" style="flex:1 1 100%;">' + _acLabel + '<div class="v2-rc-acb-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>';
+      // Each is its OWN full-width line (Operated By line, Aircraft line).
+      var _typeCellHtml = (_opByVal
+        ? '<div class="v2-rc-acb-row">' + _opLabel + '<div class="v2-rc-acb-val v2-rc-opby-val">' + _opByVal + '</div></div>'
+        : '')
+        + '<div class="v2-rc-acb-row">' + _acLabel + '<div class="v2-rc-acb-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>';
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')

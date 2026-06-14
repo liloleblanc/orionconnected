@@ -4222,3 +4222,17 @@ body, body.gids-page, body.gate-page{
   white-space: nowrap !important; overflow: hidden !important; text-overflow: clip !important;
   font-size: clamp(15px,2.6vh,30px) !important; line-height: 1.05 !important;
 }
+
+/* v224f — bottom shelf = two FULL-WIDTH lines (Operated By line, Aircraft
+   line all the way across). Left-aligned. */
+.g8-wrap .gad-map-col-v2 .v2-rc-acb { flex-direction: column !important; justify-content: center !important; gap: clamp(4px,0.9vh,12px) !important; align-items: stretch !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-row { display: flex !important; align-items: center !important; width: 100% !important; gap: clamp(8px,1vw,16px) !important; min-width: 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-lbl { flex: 0 0 auto !important; text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val { flex: 1 1 auto !important; text-align: left !important; min-width: 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-actype-val {
+  white-space: nowrap !important; overflow: hidden !important; text-overflow: clip !important;
+  font-size: clamp(18px,3vh,36px) !important; line-height: 1.04 !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val { justify-content: flex-start !important; }
+/* keep all flight-info values left-aligned and starting at the same edge */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-cell, .g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl, .g8-wrap .gad-map-col-v2 .v2-rc-fi-val { text-align: left !important; }
