@@ -53,6 +53,9 @@
     <div class="grp"><span class="lbl">Plane</span>
       <button data-plane="3d" class="on">3D Model</button><button data-plane="flat">Flat icon</button><button data-plane="none">None</button>
     </div>
+    <div class="grp"><span class="lbl">Model</span>
+      <button data-model="0" class="on">A320neo</button><button data-model="1">737-200</button>
+    </div>
   </div>
 <script src="/mapcdn/maplibre-gl.js"></script>
 <script src="/mapcdn/three.min.js"></script>
@@ -69,6 +72,7 @@
     { o:[-123.184,49.197], d:[-119.378,49.956], oc:'YVR', dc:'YLW', oCity:'Vancouver', dCity:'Kelowna', air:'Porter',     col:'#3F6FB5', tag:'Coast Mountains' }
   ];
   var COLORS=[ {n:'Auto',c:null}, {n:'Sky',c:'#5fa8ff'}, {n:'White',c:'#ffffff'}, {n:'Gold',c:'#FAC120'}, {n:'Red',c:'#ef4444'}, {n:'Green',c:'#34d399'}, {n:'Violet',c:'#a78bfa'} ];
+  var MODELS=[ {n:'A320neo',url:'/models/a320neo.glb'}, {n:'737-200',url:'/models/boeing_737200_white.glb'} ];
 
   var S={ line:'solid', flown:null /*null = auto/airline*/, plane:'3d' };
   var HAS_THREE = (typeof THREE!=='undefined');
@@ -167,13 +171,13 @@
     planeProcedural=buildProcedural();
     pivot.add(planeProcedural);
     planeGroup=pivot;
-    loadRealModel(pivot);
+    loadRealModel(MODELS[0].url);
     return pivot;
   }
-  function loadRealModel(pivot){
-    if(!HAS_THREE || typeof THREE.GLTFLoader!=='function') return;
+  function loadRealModel(url){
+    if(!HAS_THREE || typeof THREE.GLTFLoader!=='function' || !planeGroup) return;
     try{
-      new THREE.GLTFLoader().load('/models/a320neo.glb', function(gltf){
+      new THREE.GLTFLoader().load(url, function(gltf){
         var model=gltf.scene;
         var box=new THREE.Box3().setFromObject(model), size=new THREE.Vector3(); box.getSize(size);
         var maxDim=Math.max(size.x,size.y,size.z)||1, sc=TARGET_METERS/maxDim;
@@ -181,9 +185,10 @@
         var c=new THREE.Vector3(); box.getCenter(c);
         model.position.set(-c.x*sc,-c.y*sc,-c.z*sc);
         model.rotation.y=MODEL_FACING;
-        if(planeProcedural){ pivot.remove(planeProcedural); planeProcedural=null; }
-        pivot.add(model); planeModel=model;
-      }, undefined, function(){ /* keep the built model on failure */ });
+        if(planeProcedural){ planeGroup.remove(planeProcedural); planeProcedural=null; }
+        if(planeModel){ planeGroup.remove(planeModel); planeModel=null; }
+        planeGroup.add(model); planeModel=model;
+      }, undefined, function(){ /* keep current on failure */ });
     }catch(e){}
   }
   function setPlaneColor(hex){ try{ if(planeAccent) planeAccent.color.set(hex); }catch(e){} }
@@ -327,6 +332,7 @@
     wireGroup('data-base',function(v){ try{ var p=(v==='hybrid')?'satellite':v; map.getSource('sat').setTiles(['/tiles/'+p+'/{z}/{x}/{y}.png']); if(map.getLayer('labels')) map.setLayoutProperty('labels','visibility',v==='hybrid'?'visible':'none'); }catch(e){} });
     wireGroup('data-line',function(v){S.line=v;applyStyle();});
     wireGroup('data-plane',function(v){S.plane=v;applyStyle();});
+    wireGroup('data-model',function(v){ loadRealModel(MODELS[+v].url); });
     requestAnimationFrame(tick);
     clearTimers(); idx=0; run();
   });
