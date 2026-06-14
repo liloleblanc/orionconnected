@@ -3748,7 +3748,8 @@ var AIRLINE_BACKGROUNDS = {
   ],
   'UA': [
     '/logos/Backgrounds/UA/united-background.jpg',
-    '/logos/Backgrounds/UA/united-background2.png'
+    '/logos/Backgrounds/UA/united-background2.png',
+    '/logos/Backgrounds/UA/unitedbackground3.png'
   ]
 };
 
