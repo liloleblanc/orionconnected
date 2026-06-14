@@ -5766,7 +5766,13 @@ function _buildV2MapCol(ctx, vars) {
     var _opCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opCodeRaw]) ? CALLSIGN_TO_IATA[_opCodeRaw] : _opCodeRaw;
     var _liveryEq = _equipCd;
     if (_opCode === 'RV' && _liveryEq && /^[A-Z0-9]{3}$/i.test(_liveryEq)) _liveryEq = _liveryEq + 'r';
-    var _liveryAirline = _opCode;
+    // The aircraft wears the MARKETING carrier's livery, not the operator's:
+    // United Express (Republic/SkyWest/Mesa...) jets are painted United, American
+    // Eagle jets are painted American, etc. Using the operator code (YX/OO/...)
+    // missed the livery folder and fell back to a blank white plane.
+    var _mktCodeLiv = String(vars.airlineCode || '').trim().toUpperCase();
+    var _liveryAirline = _mktCodeLiv || _opCode;
+    // Rouge has its OWN paint (321r.png) but the files live in the AC folder.
     if (_opCode === 'RV' || _opCode === 'QK') _liveryAirline = 'AC';
 
     var _acImg = '';
