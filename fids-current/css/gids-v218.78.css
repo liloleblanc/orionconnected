@@ -3848,17 +3848,16 @@ body, body.gids-page, body.gate-page{
    • icon (teal circle) left · big navy value beside it */
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   border-bottom: clamp(5px,0.7vh,9px) solid var(--banner-bg, #003A5D) !important;   /* THICK navy, like outer */
-  background:
-    /* fine brushed-metal grain */
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(0,0,0,0.03) 1px, rgba(255,255,255,0.05) 2.5px),
-    /* metallic sheen — tinted by the airline (body tint + a touch of accent) */
+  /* BRUSHED METAL — tinted base + fine vertical grain + a bright reflection
+     band. Reads as brushed aluminium/steel, tints per airline. */
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 84%, var(--airline-accent,#8a8f96) 16%) !important;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.07) 0, rgba(255,255,255,0.13) 1px, rgba(0,0,0,0.07) 2px),
+    linear-gradient(177deg, transparent 38%, rgba(255,255,255,0.55) 50%, transparent 62%),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 66%, #ffffff 34%) 0%,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 85%, #ffffff 15%) 24%,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 88%, var(--airline-accent,#8a8f96) 12%) 46%,
-      color-mix(in srgb, var(--body-bg,#dfe4ea) 80%, #000000 9%) 55%,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 82%, #ffffff 18%) 77%,
-      color-mix(in srgb, var(--body-bg,#dfe4ea) 82%, #000000 11%) 100%) !important;
+      rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.04) 13%,
+      rgba(0,0,0,0.06) 40%, rgba(255,255,255,0.30) 53%,
+      rgba(0,0,0,0.05) 74%, rgba(0,0,0,0.14) 100%) !important;
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.9vw,16px) !important;
 }
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
@@ -3939,17 +3938,16 @@ body, body.gids-page, body.gate-page{
   align-items: stretch !important;
   gap: 0 !important; margin: 0 !important; padding: 0 !important;
   border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;   /* 5px navy divider */
-  background:
-    /* fine brushed-metal grain */
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(0,0,0,0.03) 1px, rgba(255,255,255,0.05) 2.5px),
-    /* metallic sheen — tinted by the airline (body tint + a touch of accent) */
+  /* BRUSHED METAL — tinted base + fine vertical grain + a bright reflection
+     band. Reads as brushed aluminium/steel, tints per airline. */
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 84%, var(--airline-accent,#8a8f96) 16%) !important;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.07) 0, rgba(255,255,255,0.13) 1px, rgba(0,0,0,0.07) 2px),
+    linear-gradient(177deg, transparent 38%, rgba(255,255,255,0.55) 50%, transparent 62%),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 66%, #ffffff 34%) 0%,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 85%, #ffffff 15%) 24%,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 88%, var(--airline-accent,#8a8f96) 12%) 46%,
-      color-mix(in srgb, var(--body-bg,#dfe4ea) 80%, #000000 9%) 55%,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 82%, #ffffff 18%) 77%,
-      color-mix(in srgb, var(--body-bg,#dfe4ea) 82%, #000000 11%) 100%) !important;
+      rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.04) 13%,
+      rgba(0,0,0,0.06) 40%, rgba(255,255,255,0.30) 53%,
+      rgba(0,0,0,0.05) 74%, rgba(0,0,0,0.14) 100%) !important;
   overflow: hidden !important;
 }
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
@@ -3972,7 +3970,9 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title {
   display: block !important; position: static !important; text-align: left !important; white-space: nowrap !important;
   width: 100% !important; max-width: 100% !important; margin: 0 !important;
-  overflow: hidden !important; text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  font-size: clamp(15px,2.3vh,26px) !important; font-weight: 700 !important;   /* size lives HERE so auto-fit can shrink long labels */
+  color: var(--banner-bg, #14181E) !important; letter-spacing: 0.2px !important;
   border-bottom: clamp(3px,0.4vh,5px) solid var(--airline-accent3, #FAC120) !important;   /* gold line, full width, left-anchored */
   padding: 0 0 clamp(4px,0.7vh,8px) 0 !important;
 }
@@ -3980,7 +3980,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-lbl-en,
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-lbl-2,
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-sep {
-  font-size: clamp(15px,2.15vh,25px) !important; font-weight: 700 !important;   /* cap lowered so "Boarding | Embarquement" fits */
+  font-size: 1em !important; font-weight: 700 !important;   /* inherit from title so auto-fit works */
   color: var(--banner-bg, #14181E) !important; letter-spacing: 0.2px !important;
 }
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-sep { opacity: 0.5 !important; font-weight: 500 !important; }
@@ -4000,8 +4000,9 @@ body, body.gids-page, body.gate-page{
 /* v223b — Destination CODE on the label line (a touch bigger); squeeze more
    size into the values (fill more of each row). */
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-code {
-  font-size: 1em !important; font-weight: 800 !important;          /* same size as the label, not bigger */
-  color: var(--airline-accent, #D82F2E) !important;               /* accent-coloured YYZ */
+  font-size: 1.45em !important; font-weight: 800 !important;       /* YYZ bigger (per Nick) */
+  color: var(--airline-accent, #D82F2E) !important;               /* accent-coloured */
+  vertical-align: -0.06em !important;
 }
 .g8-wrap .gad-aircraft-col .v2-fi-textcol { padding: 0 14px 0 10px !important; }
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value {
