@@ -4277,3 +4277,16 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-cell { flex: 1 1 auto !important; text-align: left !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-lbl { text-align: left !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-val { text-align: center !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   FLAIR (F8) brand rule — "never use green for text". Green stays on the
+   shapes (icon badges, gate tab, the logo dot); accent-coloured TEXT goes
+   dark on the light shelves and light on the dark map.
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap.g8-airline-F8 .gad-aircraft-col .v2-fi-textcol .v2-fi-code,
+.g8-wrap.g8-airline-F8 .gad-map-col-v2 .v2-rc-fi-code {
+  color: var(--banner-bg, #1C1C1C) !important;
+}
+.g8-wrap.g8-airline-F8 .gad-map-col-v2 .v2-rc-maptitle2 {
+  color: rgba(255,255,255,0.80) !important;
+}
