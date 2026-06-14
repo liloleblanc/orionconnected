@@ -141,20 +141,31 @@
     var durHint = ov.querySelector('#maDurHint');
     function _fmt(sec){ var m=Math.floor(sec/60), s2=Math.round(sec%60); return (m?m+'m ':'')+s2+'s'; }
     if (isVideo && durHint) {
-      durHint.innerHTML = 'Set how long this video plays. Up to 600s.';
+      // Build the hint with DOM nodes / textContent only — never innerHTML —
+      // so detected media metadata can't be reinterpreted as markup.
+      durHint.textContent = 'Set how long this video plays. Up to 600s.';
       var _probe = document.createElement('video');
       _probe.preload = 'metadata'; _probe.muted = true; _probe.src = rec.url;
       _probe.addEventListener('loadedmetadata', function () {
-        var dur = _probe.duration;
+        var dur = Number(_probe.duration);
         if (isFinite(dur) && dur > 0) {
           var full = Math.ceil(dur);
-          durHint.innerHTML = 'Full length: <b style="color:#cdd7e6;">' + _fmt(dur) + '</b> '
-            + '<button id="maUseFull" type="button" style="margin-left:6px;appearance:none;background:#1c2536;color:#7fd0ff;border:1px solid #2a3344;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;">Use full length</button>';
-          var ufBtn = ov.querySelector('#maUseFull');
-          if (ufBtn) ufBtn.addEventListener('click', function () {
+          durHint.textContent = '';
+          durHint.appendChild(document.createTextNode('Full length: '));
+          var b = document.createElement('b');
+          b.style.color = '#cdd7e6';
+          b.textContent = _fmt(dur);
+          durHint.appendChild(b);
+          durHint.appendChild(document.createTextNode(' '));
+          var ufBtn = document.createElement('button');
+          ufBtn.type = 'button';
+          ufBtn.textContent = 'Use full length';
+          ufBtn.style.cssText = 'margin-left:6px;appearance:none;background:#1c2536;color:#7fd0ff;border:1px solid #2a3344;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;';
+          ufBtn.addEventListener('click', function () {
             st.dwellMs = Math.max(2000, Math.min(600000, full * 1000));
             dwellEl.value = full;
           });
+          durHint.appendChild(ufBtn);
         }
       });
     }
