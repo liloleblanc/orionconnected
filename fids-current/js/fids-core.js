@@ -2196,7 +2196,7 @@ const AIRLINE_BRAND = {
   'UA': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#1414D2', name:'United' },
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
-  'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#A8FB96', name:'Flair' },
+  'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#7AFF94', name:'Flair' },
   'LH': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#2a2a3e', accent:'#05164d', name:'Lufthansa' },
   'BA': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#1e2444', accent:'#075aaa', name:'British Airways' },
   'AF': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#1e2444', accent:'#002157', name:'Air France' },
@@ -3538,7 +3538,7 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
-  'AC':'#D82F2E','WS':'#00B2A9','PD':'#254D87','PB':'#1F3876','F8':'#A8FB96',
+  'AC':'#D82F2E','WS':'#00B2A9','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
@@ -6627,10 +6627,10 @@ function uxgGateHtml(ctx) {
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
     'AV': '/logos/airlines/asian-other/avianca.svg',  // red avianca — pops on black
-    // Flair — the REAL "flair airlines" lockup is black ink, so filter it to
-    // white for the dark banner (no plate, per Nick). Two-row lockup: cap the
-    // height lower than single-line wordmarks or it clips in the band.
-    'F8': { src: '/logos/airlines/canadian/flair.svg', whiten: true, h: 118, w: 520 },
+    // Flair — per brand guide, the GATE uses the simple "flair ●" mark (white
+    // wordmark + green dot), NOT the full "flair airlines" lockup (that's
+    // reserved for advertisements). The mark is already white, so no whiten.
+    'F8': { src: '/logos/airlines/canadian/flair-mark-white.png', whiten: false, h: 100, w: 480 },
     // Regional carriers — white monochrome marks on file, straight onto the dark banner
     '5T': '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg',
     '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
@@ -18091,7 +18091,7 @@ var GATE_ADS_BY_AIRLINE = {
   'F8': [
     // Brand-true: black lockup on Flair lime. NO text headline — the lockup
     // already carries the company name; repeating it in type violates brand policy.
-    { bg:'linear-gradient(135deg,#A8FB96 0%,#8FE981 100%)', fg:'#1C1C1C', subFg:'rgba(28,28,28,0.85)', headline:'', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
+    { bg:'linear-gradient(135deg,#7AFF94 0%,#8FE981 100%)', fg:'#1C1C1C', subFg:'rgba(28,28,28,0.85)', headline:'', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
   ],
   // NK (Spirit) ad block removed — ceased operations May 2 2026
   'HA': [
