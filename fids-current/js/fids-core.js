@@ -5604,8 +5604,7 @@ function _buildV2MapCol(ctx, vars) {
       }
 
       _inboundCard =
-          '<div class="v2-rc-rtitle">' + _L.title.en + '<span class="v2-rc-rtitle2">' + _t2(_L.title) + '</span></div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-i3"><div class="v2-rc-i3">'
+          '<div class="v2-rc-shelf v2-rc-shelf-i3"><div class="v2-rc-i3">'
         +     _i3('Status', _stShort, _t2(_L.status), 'v2-rc-status-' + _stCls)
         +     _i3('Flight', _ibFltCompact, _t2(_L.flight), '')
         +     _i3('Arriving in', (_ibEtaStr || '—'), _t2(_L.arriving), '')
@@ -5877,11 +5876,14 @@ function _buildV2MapCol(ctx, vars) {
     }
   } catch (e) {}
 
-  // Map area itself — clean now (no overlay pill, that data went up top)
+  // Map area — now the TOP half of the right column, with the "Your Aircraft"
+  // title overlaid at the top and the speed/altitude telemetry at the bottom
+  // (both INSIDE the map, per Nick — not separate shelves).
   var _mapBox =
       '<div class="v2-rc-shelf v2-rc-shelf-map">'
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
+    +     '<div class="v2-rc-maptitle">Your Aircraft <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">Votre Avion</span></div>'
     +     _telemBar
     +   '</div>'
     + '</div>';
@@ -5898,7 +5900,7 @@ function _buildV2MapCol(ctx, vars) {
     map:         _mapBox,
     aircraft:    _aircraftBlock
   };
-  var _rcDefaultOrder = ['inboundCard', 'map', 'aircraft'];
+  var _rcDefaultOrder = ['map', 'inboundCard', 'aircraft'];
 
   // v218.99.21 — apply customized layout order if set
   var _rcOrderToUse = _rcDefaultOrder;
