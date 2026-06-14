@@ -3,31 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>3D Route Map — Prototype (styles)</title>
+<title>3D Route Map — Prototype (progress + airline colors)</title>
 <link rel="stylesheet" href="/mapcdn/maplibre-gl.css">
 <style>
   html,body{margin:0;height:100%;background:#05080f;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
   #map{position:absolute;inset:0;}
   #frame{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 3px rgba(120,160,250,.25);}
-  #phase{position:absolute;left:18px;top:16px;z-index:5;color:#cfe0ff;
-    font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
+  #phase{position:absolute;left:18px;top:16px;z-index:5;color:#cfe0ff;font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
     background:rgba(8,14,30,.55);backdrop-filter:blur(6px);padding:8px 14px;border:1px solid rgba(120,160,250,.3);border-radius:8px;}
   #route{position:absolute;right:18px;top:16px;z-index:5;color:#fff;text-align:right;
     background:rgba(8,14,30,.55);backdrop-filter:blur(6px);padding:8px 14px;border:1px solid rgba(120,160,250,.3);border-radius:8px;}
-  #route .big{font-size:22px;font-weight:800;letter-spacing:.02em;}
+  #route .big{font-size:22px;font-weight:800;}
   #route .sub{font-size:12px;color:#9fb6e0;font-weight:600;}
+  #route .air{font-size:12px;font-weight:800;letter-spacing:.04em;margin-top:2px;}
   .maplibregl-ctrl-attrib{display:none !important;}
   .end-label{color:#fff;font-size:12px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.9);white-space:nowrap;
     background:rgba(8,14,30,.6);padding:2px 7px;border-radius:6px;border:1px solid rgba(255,255,255,.18);transform:translateY(-22px);}
   .end-dot{width:14px;height:14px;border-radius:50%;background:#60a5fa;box-shadow:0 0 0 4px rgba(96,165,250,.35),0 0 14px rgba(96,165,250,.9);}
   .end-dot.dest{background:#f87171;box-shadow:0 0 0 4px rgba(248,113,113,.35),0 0 14px rgba(248,113,113,.9);}
-  /* control panel */
   #ctl{position:absolute;left:18px;bottom:18px;z-index:6;background:rgba(8,14,30,.66);backdrop-filter:blur(8px);
-    border:1px solid rgba(120,160,250,.3);border-radius:12px;padding:12px 14px;color:#cdd7e6;max-width:min(92vw,520px);}
+    border:1px solid rgba(120,160,250,.3);border-radius:12px;padding:12px 14px;color:#cdd7e6;max-width:min(94vw,560px);}
   #ctl .grp{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:5px 0;}
-  #ctl .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7e8ca3;width:54px;flex:0 0 54px;font-weight:700;}
-  #ctl button{appearance:none;background:#1c2536;color:#cdd7e6;border:1px solid #2a3344;border-radius:7px;
-    padding:6px 11px;cursor:pointer;font-size:12px;font-weight:600;}
+  #ctl .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7e8ca3;width:62px;flex:0 0 62px;font-weight:700;}
+  #ctl button{appearance:none;background:#1c2536;color:#cdd7e6;border:1px solid #2a3344;border-radius:7px;padding:6px 11px;cursor:pointer;font-size:12px;font-weight:600;}
   #ctl button.on{background:#2f6df6;border-color:#2f6df6;color:#fff;}
   #ctl .sw{width:24px;height:24px;border-radius:6px;padding:0;border:2px solid rgba(255,255,255,.25);}
   #ctl .sw.on{border-color:#fff;box-shadow:0 0 0 2px #2f6df6;}
@@ -37,7 +35,7 @@
   <div id="map"></div>
   <div id="frame"></div>
   <div id="phase">3D Terrain</div>
-  <div id="route"><div class="big" id="rtCode">—</div><div class="sub" id="rtCity">—</div></div>
+  <div id="route"><div class="big" id="rtCode">—</div><div class="sub" id="rtCity">—</div><div class="air" id="rtAir">—</div></div>
   <div id="ctl">
     <div class="grp"><span class="lbl">Base</span>
       <button data-base="hybrid" class="on">Sat + Labels</button>
@@ -45,20 +43,15 @@
       <button data-base="voyager">Streets</button>
       <button data-base="topo">Topo</button>
       <button data-base="dark">Dark</button>
-      <button data-base="positron">Light</button>
     </div>
-    <div class="grp"><span class="lbl">Line</span>
-      <button data-line="solid" class="on">Solid</button>
-      <button data-line="dashed">Dashed</button>
+    <div class="grp"><span class="lbl">To-go line</span>
+      <button data-line="dashed" class="on">Dashed</button>
       <button data-line="dotted">Dotted</button>
-      <button data-line="glow">Glow only</button>
+      <button data-line="solid">Solid</button>
     </div>
-    <div class="grp"><span class="lbl">Color</span><span id="swatches"></span></div>
+    <div class="grp"><span class="lbl">Flown</span><span id="swatches"></span></div>
     <div class="grp"><span class="lbl">Plane</span>
-      <button data-plane="0" class="on">Airliner</button>
-      <button data-plane="1">Jet</button>
-      <button data-plane="2">Dart</button>
-      <button data-plane="3">None</button>
+      <button data-plane="0" class="on">Airliner</button><button data-plane="1">Jet</button><button data-plane="2">Dart</button><button data-plane="3">None</button>
     </div>
   </div>
 <script src="/mapcdn/maplibre-gl.js"></script>
@@ -67,18 +60,15 @@
   'use strict';
   var TO_R=Math.PI/180, TO_D=180/Math.PI;
 
+  // Each route carries its airline + brand colour (from airline-colors.js values).
   var ROUTES=[
-    { o:[-123.184,49.197], d:[-114.020,51.131], oc:'YVR', dc:'YYC', oCity:'Vancouver', dCity:'Calgary',  tag:'Over the Rockies' },
-    { o:[-114.020,51.131], d:[-119.378,49.956], oc:'YYC', dc:'YLW', oCity:'Calgary',   dCity:'Kelowna',  tag:'Rockies → Okanagan' },
-    { o:[-123.184,49.197], d:[-119.378,49.956], oc:'YVR', dc:'YLW', oCity:'Vancouver', dCity:'Kelowna',  tag:'Coast Mountains' }
+    { o:[-123.184,49.197], d:[-114.020,51.131], oc:'YVR', dc:'YYC', oCity:'Vancouver', dCity:'Calgary', air:'Air Canada', col:'#D82F2E', tag:'Over the Rockies' },
+    { o:[-114.020,51.131], d:[-119.378,49.956], oc:'YYC', dc:'YLW', oCity:'Calgary',   dCity:'Kelowna', air:'WestJet',    col:'#00ABC2', tag:'Rockies → Okanagan' },
+    { o:[-123.184,49.197], d:[-119.378,49.956], oc:'YVR', dc:'YLW', oCity:'Vancouver', dCity:'Kelowna', air:'Porter',     col:'#3F6FB5', tag:'Coast Mountains' }
   ];
-  var COLORS=[
-    {n:'Sky',  c:'#5fa8ff'}, {n:'White', c:'#ffffff'}, {n:'Gold', c:'#FAC120'},
-    {n:'Red',  c:'#ef4444'}, {n:'Green', c:'#34d399'}, {n:'Violet', c:'#a78bfa'}, {n:'Cyan', c:'#22d3ee'}
-  ];
+  var COLORS=[ {n:'Auto',c:null}, {n:'Sky',c:'#5fa8ff'}, {n:'White',c:'#ffffff'}, {n:'Gold',c:'#FAC120'}, {n:'Red',c:'#ef4444'}, {n:'Green',c:'#34d399'}, {n:'Violet',c:'#a78bfa'} ];
 
-  // ── style state ──
-  var S={ line:'solid', color:'#5fa8ff', plane:0 };
+  var S={ line:'dashed', flown:null /*null = auto/airline*/, plane:0 };
 
   function greatCircle(a,b,n){
     var lon1=a[0]*TO_R, lat1=a[1]*TO_R, lon2=b[0]*TO_R, lat2=b[1]*TO_R;
@@ -99,29 +89,21 @@
     var x=Math.cos(a[1]*TO_R)*Math.sin(b[1]*TO_R)-Math.sin(a[1]*TO_R)*Math.cos(b[1]*TO_R)*Math.cos((b[0]-a[0])*TO_R);
     return (Math.atan2(y,x)*TO_D+360)%360;
   }
+  function lerp(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];}
+  function splitAt(L,t){
+    if(L.length<2) return {flown:L.slice(),remain:L.slice(),pos:L[0]||[0,0],brg:0};
+    var f=Math.max(0,Math.min(1,t))*(L.length-1), k=Math.min(Math.floor(f),L.length-2), frac=f-k;
+    var pt=lerp(L[k],L[k+1],frac);
+    return { flown:L.slice(0,k+1).concat([pt]), remain:[pt].concat(L.slice(k+1)), pos:pt, brg:bearing(L[k],L[k+1]) };
+  }
 
-  // ── plane icons (3 styles) drawn to canvases ──
   function icon(style){
     var s=96,c=document.createElement('canvas');c.width=c.height=s;
-    var x=c.getContext('2d');x.translate(s/2,s/2);x.fillStyle='#ffffff';
-    x.strokeStyle='rgba(20,30,55,.55)';x.lineWidth=2;x.lineJoin='round';
-    if(style===0){ // airliner
-      x.beginPath();
-      x.moveTo(0,-40);x.lineTo(5,-16);x.lineTo(5,-6);x.lineTo(42,10);x.lineTo(42,18);x.lineTo(5,12);
-      x.lineTo(5,30);x.lineTo(16,38);x.lineTo(16,44);x.lineTo(0,40);x.lineTo(-16,44);x.lineTo(-16,38);
-      x.lineTo(-5,30);x.lineTo(-5,12);x.lineTo(-42,18);x.lineTo(-42,10);x.lineTo(-5,-6);x.lineTo(-5,-16);
-      x.closePath();
-    } else if(style===1){ // jet — sharp swept delta
-      x.beginPath();
-      x.moveTo(0,-44);x.lineTo(4,-8);x.lineTo(38,28);x.lineTo(38,36);x.lineTo(4,20);
-      x.lineTo(10,40);x.lineTo(0,36);x.lineTo(-10,40);x.lineTo(-4,20);
-      x.lineTo(-38,36);x.lineTo(-38,28);x.lineTo(-4,-8);x.closePath();
-    } else { // dart — minimal chevron
-      x.beginPath();
-      x.moveTo(0,-42);x.lineTo(30,36);x.lineTo(0,20);x.lineTo(-30,36);x.closePath();
-    }
-    x.fill();x.stroke();
-    return x.getImageData(0,0,s,s);
+    var x=c.getContext('2d');x.translate(s/2,s/2);x.fillStyle='#ffffff';x.strokeStyle='rgba(20,30,55,.55)';x.lineWidth=2;x.lineJoin='round';
+    if(style===0){x.beginPath();x.moveTo(0,-40);x.lineTo(5,-16);x.lineTo(5,-6);x.lineTo(42,10);x.lineTo(42,18);x.lineTo(5,12);x.lineTo(5,30);x.lineTo(16,38);x.lineTo(16,44);x.lineTo(0,40);x.lineTo(-16,44);x.lineTo(-16,38);x.lineTo(-5,30);x.lineTo(-5,12);x.lineTo(-42,18);x.lineTo(-42,10);x.lineTo(-5,-6);x.lineTo(-5,-16);x.closePath();}
+    else if(style===1){x.beginPath();x.moveTo(0,-44);x.lineTo(4,-8);x.lineTo(38,28);x.lineTo(38,36);x.lineTo(4,20);x.lineTo(10,40);x.lineTo(0,36);x.lineTo(-10,40);x.lineTo(-4,20);x.lineTo(-38,36);x.lineTo(-38,28);x.lineTo(-4,-8);x.closePath();}
+    else {x.beginPath();x.moveTo(0,-42);x.lineTo(30,36);x.lineTo(0,20);x.lineTo(-30,36);x.closePath();}
+    x.fill();x.stroke();return x.getImageData(0,0,s,s);
   }
 
   var map=new maplibregl.Map({
@@ -151,72 +133,64 @@
     endMarkers.push(new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(coord).addTo(map));
   }
 
-  // ── plane animation ──
-  var line=[],planeStart=0,planeDur=8200,planeRunning=false;
-  function lerp(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];}
-  function planeAt(t){
-    if(line.length<2) return {pos:line[0]||[0,0],brg:0};
-    var f=Math.max(0,Math.min(1,t))*(line.length-1),i=Math.min(Math.floor(f),line.length-2);
-    return {pos:lerp(line[i],line[i+1],f-i),brg:bearing(line[i],line[i+1])};
-  }
-  function tickPlane(){
-    if(map.getSource('plane')){
+  var line=[],planeStart=0,planeDur=8200,planeRunning=false,curRoute=null;
+  function flownColor(){ return S.flown || (curRoute?curRoute.col:'#5fa8ff'); }
+  function tick(){
+    if(map.getSource('flown')){
       var t=planeRunning?(Date.now()-planeStart)/planeDur:0; if(t>1)t=1;
-      var p=planeAt(t);
-      map.getSource('plane').setData({type:'Feature',properties:{bearing:p.brg},geometry:{type:'Point',coordinates:p.pos}});
+      var sp=splitAt(line,t);
+      map.getSource('flown').setData({type:'Feature',geometry:{type:'LineString',coordinates:sp.flown}});
+      map.getSource('remain').setData({type:'Feature',geometry:{type:'LineString',coordinates:sp.remain}});
+      map.getSource('plane').setData({type:'Feature',properties:{bearing:sp.brg},geometry:{type:'Point',coordinates:sp.pos}});
     }
-    requestAnimationFrame(tickPlane);
+    requestAnimationFrame(tick);
   }
 
-  function applyLineStyle(){
-    if(!map.getLayer('route-line')) return;
-    var dash={solid:null,dashed:[2,1.6],dotted:[0.25,2],glow:null}[S.line];
-    map.setPaintProperty('route-line','line-dasharray',dash);
-    map.setPaintProperty('route-line','line-opacity', S.line==='glow'?0:1);
-    map.setPaintProperty('route-line','line-width', S.line==='dotted'?4:(S.line==='solid'?4:3));
-    map.setPaintProperty('route-line','line-color',S.color);
-    map.setPaintProperty('route-glow','line-color',S.color);
-    map.setPaintProperty('route-glow','line-opacity', S.line==='glow'?0.55:0.28);
-    map.setPaintProperty('route-glow','line-width', S.line==='glow'?16:10);
-  }
-  function applyPlane(){
-    if(!map.getLayer('plane')) return;
-    map.setLayoutProperty('plane','visibility', S.plane===3?'none':'visible');
-    if(S.plane!==3) map.setLayoutProperty('plane','icon-image','plane'+S.plane);
+  function applyStyle(){
+    if(!map.getLayer('remain')) return;
+    var dash={dashed:[2,1.6],dotted:[0.25,2],solid:null}[S.line];
+    map.setPaintProperty('remain','line-dasharray',dash);
+    map.setPaintProperty('remain','line-width',S.line==='dotted'?4:3);
+    var fc=flownColor();
+    map.setPaintProperty('flown','line-color',fc);
+    map.setPaintProperty('flown-glow','line-color',fc);
+    if(map.getLayer('plane')){
+      map.setLayoutProperty('plane','visibility',S.plane===3?'none':'visible');
+      if(S.plane!==3) map.setLayoutProperty('plane','icon-image','plane'+S.plane);
+    }
   }
 
-  function setRouteData(r){
-    line=greatCircle(r.o,r.d,160);
-    var gj={type:'Feature',geometry:{type:'LineString',coordinates:line}};
-    if(map.getSource('route')) map.getSource('route').setData(gj);
-    else{
-      map.addSource('route',{type:'geojson',data:gj});
-      map.addLayer({id:'route-glow',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},
-        paint:{'line-color':S.color,'line-width':10,'line-opacity':.28,'line-blur':6}});
-      map.addLayer({id:'route-line',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},
-        paint:{'line-color':S.color,'line-width':4}});
-    }
-    if(!map.getSource('plane')){
+  function setRoute(r){
+    curRoute=r; line=greatCircle(r.o,r.d,160);
+    if(!map.getSource('remain')){
+      map.addSource('remain',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:line}}});
+      map.addSource('flown',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:[r.o]}}});
+      // remaining path — faded white, dashed (the "to-go")
+      map.addLayer({id:'remain',type:'line',source:'remain',layout:{'line-cap':'round','line-join':'round'},
+        paint:{'line-color':'#ffffff','line-opacity':0.55,'line-width':3,'line-dasharray':[2,1.6]}});
+      // flown path — brand colour, glow + solid (the "done")
+      map.addLayer({id:'flown-glow',type:'line',source:'flown',layout:{'line-cap':'round','line-join':'round'},
+        paint:{'line-color':r.col,'line-width':11,'line-opacity':0.3,'line-blur':6}});
+      map.addLayer({id:'flown',type:'line',source:'flown',layout:{'line-cap':'round','line-join':'round'},
+        paint:{'line-color':r.col,'line-width':5}});
       map.addSource('plane',{type:'geojson',data:{type:'Feature',properties:{bearing:0},geometry:{type:'Point',coordinates:r.o}}});
       map.addLayer({id:'plane',type:'symbol',source:'plane',
         layout:{'icon-image':'plane0','icon-rotate':['get','bearing'],'icon-rotation-alignment':'map','icon-pitch-alignment':'map',
-          'icon-allow-overlap':true,'icon-ignore-placement':true,
-          'icon-size':['interpolate',['linear'],['zoom'],5,0.45,8,0.8,11,1.3]}});
+          'icon-allow-overlap':true,'icon-ignore-placement':true,'icon-size':['interpolate',['linear'],['zoom'],5,0.45,8,0.8,11,1.3]}});
     }
-    applyLineStyle(); applyPlane();
+    applyStyle();
     clearMarkers(); addEnd(r.o,r.oc,r.oCity,false); addEnd(r.d,r.dc,r.dCity,true);
     document.getElementById('rtCode').textContent=r.oc+'  →  '+r.dc;
     document.getElementById('rtCity').textContent=r.oCity+' to '+r.dCity+' · '+r.tag;
+    var ae=document.getElementById('rtAir'); ae.textContent=r.air; ae.style.color=r.col;
   }
   function routeBounds(r){var b=new maplibregl.LngLatBounds();greatCircle(r.o,r.d,32).forEach(function(p){b.extend(p);});return b;}
 
-  var ph=document.getElementById('phase');
-  var idx=0,timers=[];
+  var ph=document.getElementById('phase'); var idx=0,timers=[];
   function later(fn,ms){timers.push(setTimeout(fn,ms));}
   function clearTimers(){timers.forEach(clearTimeout);timers=[];}
-
-  function runRoute(){
-    var r=ROUTES[idx%ROUTES.length]; setRouteData(r);
+  function run(){
+    var r=ROUTES[idx%ROUTES.length]; setRoute(r);
     var brg=bearing(r.o,r.d);
     ph.textContent='3D Terrain';
     map.jumpTo({center:r.o,zoom:7.7,pitch:76,bearing:brg}); planeRunning=false;
@@ -225,21 +199,21 @@
     },700);
     later(function(){ ph.textContent='Flat 2D';
       var cam=null; try{cam=map.cameraForBounds(routeBounds(r),{padding:{top:110,bottom:90,left:90,right:90},maxZoom:9});}catch(e){}
-      var to={pitch:0,bearing:0,duration:6000};
-      to.zoom=cam?Math.max(6.6,Math.min(cam.zoom||7.4,8)):7.2; to.center=cam?cam.center:r.d;
+      var to={pitch:0,bearing:0,duration:6000}; to.zoom=cam?Math.max(6.6,Math.min(cam.zoom||7.4,8)):7.2; to.center=cam?cam.center:r.d;
       map.easeTo(to);
     },9400);
-    later(function(){ idx++; runRoute(); },16500);
+    later(function(){ idx++; run(); },16500);
   }
 
-  // ── controls ──
   function buildSwatches(){
     var wrap=document.getElementById('swatches');
     COLORS.forEach(function(co,i){
-      var b=document.createElement('button'); b.className='sw'+(i===0?' on':''); b.style.background=co.c; b.title=co.n;
+      var b=document.createElement('button');
+      if(co.c===null){ b.textContent='Auto'; b.style.padding='6px 10px'; b.className=(i===0?'on':''); }
+      else { b.className='sw'; b.style.background=co.c; b.title=co.n; }
       b.addEventListener('click',function(){
-        S.color=co.c; applyLineStyle();
-        wrap.querySelectorAll('.sw').forEach(function(e){e.classList.remove('on');}); b.classList.add('on');
+        S.flown=co.c; applyStyle();
+        wrap.querySelectorAll('button').forEach(function(e){e.classList.remove('on');}); b.classList.add('on');
       });
       wrap.appendChild(b);
     });
@@ -258,17 +232,11 @@
     try{ map.setTerrain({source:'dem',exaggeration:1.6}); }catch(e){}
     try{ map.setSky({'sky-color':'#0a1736','sky-horizon-blend':0.55,'horizon-color':'#1a3b6e','horizon-fog-blend':0.5,'fog-color':'#070b14','fog-ground-blend':0.55}); }catch(e){}
     buildSwatches();
-    wireGroup('data-base',function(v){
-      try{
-        var prov=(v==='hybrid')?'satellite':v;
-        map.getSource('sat').setTiles(['/tiles/'+prov+'/{z}/{x}/{y}.png']);
-        if(map.getLayer('labels')) map.setLayoutProperty('labels','visibility', v==='hybrid'?'visible':'none');
-      }catch(e){}
-    });
-    wireGroup('data-line',function(v){S.line=v;applyLineStyle();});
-    wireGroup('data-plane',function(v){S.plane=parseInt(v,10);applyPlane();});
-    requestAnimationFrame(tickPlane);
-    clearTimers(); idx=0; runRoute();
+    wireGroup('data-base',function(v){ try{ var p=(v==='hybrid')?'satellite':v; map.getSource('sat').setTiles(['/tiles/'+p+'/{z}/{x}/{y}.png']); if(map.getLayer('labels')) map.setLayoutProperty('labels','visibility',v==='hybrid'?'visible':'none'); }catch(e){} });
+    wireGroup('data-line',function(v){S.line=v;applyStyle();});
+    wireGroup('data-plane',function(v){S.plane=parseInt(v,10);applyStyle();});
+    requestAnimationFrame(tick);
+    clearTimers(); idx=0; run();
   });
 })();
 </script>
