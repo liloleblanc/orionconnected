@@ -7399,9 +7399,19 @@ function gateAutofit(root) {
       var size = parseFloat(cs.fontSize) || 0;
       if (!size) return;
       el.dataset._origSize = size + 'px';
+      // Available width = the parent cell's CONTENT box (minus its padding).
+      // Comparing against this — not just the element's own box — also catches
+      // the case where the value's cell stretched to fit the text and the text
+      // then spilled past the panel (e.g. long flight numbers / city names).
+      var ps = window.getComputedStyle(parent);
+      var pad = (parseFloat(ps.paddingLeft) || 0) + (parseFloat(ps.paddingRight) || 0);
+      function overflowing() {
+        var avail = parent.clientWidth - pad;
+        return (el.scrollWidth > el.clientWidth + 0.5) || (avail > 0 && el.scrollWidth > avail + 0.5);
+      }
       var guard = 0;
-      // Reduce font-size in 1px steps until the text fits its box, min 14px
-      while (el.scrollWidth > el.clientWidth && size > 14 && guard < 80) {
+      // Reduce in 1px steps until it fits the available width, floor 12px.
+      while (overflowing() && size > 12 && guard < 110) {
         size -= 1;
         el.style.setProperty('font-size', size + 'px', 'important');
         guard++;
