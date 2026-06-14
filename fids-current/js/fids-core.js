@@ -5302,8 +5302,9 @@ function _buildV2AircraftCol(ctx, vars) {
       var _destValue = _destCityName || _destIataDisp;
       var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
       var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
-      var _depShortEn = _depRev ? 'Revised - Departure' : 'Departure';
-      var _depShortL2 = _depRev ? _L2('Révisé - Départ','Revisado - Salida') : _L2('Départ','Salida');
+      // Label stays "Departure | Départ" even when the time is revised (per Nick).
+      var _depShortEn = 'Departure';
+      var _depShortL2 = _L2('Départ','Salida');
       var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
       // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
       function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
@@ -5551,8 +5552,8 @@ function _buildV2MapCol(ctx, vars) {
       // Status class for color (matches left column status colors)
       var _stCls = '';
       var _rs = _rawSt;
-      if (_rs === 'scheduled' || _rs === 'on-time' || _rs === 'ontime') _stCls = 'scheduled';
-      else if (_rs === 'boarding' || _rs === 'delayed' || _rs === 'early' || _rs === 'final-call' || _rs === 'finalcall') _stCls = 'delayed';
+      if (_rs === 'scheduled' || _rs === 'on-time' || _rs === 'ontime' || _rs === 'early') _stCls = 'scheduled';
+      else if (_rs === 'boarding' || _rs === 'delayed' || _rs === 'final-call' || _rs === 'finalcall') _stCls = 'delayed';
       else if (_rs === 'cancelled' || _rs === 'gate-closed' || _rs === 'gateclosed') _stCls = 'cancelled';
       else _stCls = 'ontime';
 
@@ -6091,7 +6092,8 @@ function uxgGateHtml(ctx) {
 
   // Status badge class
   var stClass = '';
-  if (stKey === 'delayed' || stKey === 'early') stClass = ' delayed';
+  if (stKey === 'delayed') stClass = ' delayed';
+  else if (stKey === 'early') stClass = ' ontime';   // early is GOOD → green, not orange
   else if (stKey === 'boarding') stClass = ' boarding';
   else if (stKey === 'cancelled') stClass = ' cancelled';
   else if (stKey === 'landed' || stKey === 'arrived' || stKey === 'active' || stKey === 'en-route') stClass = ' ontime';
@@ -7382,7 +7384,8 @@ function gateAutofit(root) {
   // sizes. Nick wants one uniform size per category, so they use a fixed
   // clamp in CSS instead.
   var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value', '.v2-fi-textcol .v2-fi-title',
-              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
+              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val',
+              '.v2-rc-fi-val', '.v2-rc-acb-actype'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
     els.forEach(function(el) {
