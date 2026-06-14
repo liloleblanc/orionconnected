@@ -21430,7 +21430,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       var art = wrap.closest ? wrap.closest('.axr') : null;
       var id = (art && art.getAttribute('data-hotel-id')) || '';
       if (id && id === _st.id) {
-        // Same hotel re-rendered mid-slide — resume where we were.
+        // Same hotel re-rendered mid-slide — resume where we were. But if the
+        // deck already ran to its last page, this is the hotel RE-APPEARING in
+        // a later carousel slot, so restart its story from page 1.
+        if (_st.idx >= pages.length - 1) { _st.idx = 0; _st.next = now + EVERY; }
         _showPage(pages, _st.idx % pages.length);
         if (!_st.next || _st.next <= now) _st.next = now + EVERY;
       } else {
@@ -21441,7 +21444,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     }
     if (now < _st.next) return;
     _st.next = now + EVERY;
-    _st.idx = (_st.idx + 1) % pages.length;
+    // HOLD on the last page instead of wrapping back to page 1. The outer
+    // carousel keeps Accor up slightly longer than pages×EVERY, so wrapping
+    // flashed page 1 for ~1s ("Accor repeated for a split second then
+    // changed") right before the carousel advanced. Clamping lets the final
+    // page sit until the carousel moves on.
+    _st.idx = Math.min(_st.idx + 1, pages.length - 1);
     _showPage(pages, _st.idx);
   }
   setInterval(check, 250);
