@@ -5884,23 +5884,22 @@ function _buildV2MapCol(ctx, vars) {
           : '<b>' + _opNm6 + '</b>';
       }
       var _opByL2 = (_lang2b === 'es') ? 'Operado por' : 'Exploité par';
+      // Bottom shelf uses the SAME label-over-value (gold accent line) layout
+      // as the flight-info shelf, so the whole right column is consistent.
       var _typeCellHtml = _opByVal
-        ? '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Operated By</div>'
-          +   '<div class="v2-rc-opby-val">' + _opByVal + '</div>'
-          +   '<div class="v2-rc-r2lbl2">' + _opByL2 + '</div></div>'
-          + '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Aircraft</div>'
-          +   '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
-          +   '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div></div>'
-        : '<div class="v2-rc-r2cell" style="flex:1 1 100%;align-items:center;text-align:center;"><div class="v2-rc-r2lbl">Aircraft</div>'
-          +   '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
-          +   '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div></div>';
+        ? '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Operated By <span class="v2-rc-fi-sep">|</span> ' + _opByL2 + '</div>'
+          +   '<div class="v2-rc-fi-val v2-rc-opby-val">' + _opByVal + '</div></div>'
+          + '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Aircraft <span class="v2-rc-fi-sep">|</span> ' + _typeL2 + '</div>'
+          +   '<div class="v2-rc-fi-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>'
+        : '<div class="v2-rc-fi-cell" style="flex:1 1 100%;"><div class="v2-rc-fi-lbl">Aircraft <span class="v2-rc-fi-sep">|</span> ' + _typeL2 + '</div>'
+          +   '<div class="v2-rc-fi-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>';
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
         + '</div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-r2">'
+        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-fi"><div class="v2-rc-fi-row">'
         +   _typeCellHtml
-        + '</div></div>';
+        + '</div></div></div>';
     }
   } catch (e) {}
 

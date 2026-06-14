@@ -4150,3 +4150,16 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { padding: clamp(2px,0.4vh,8px) clamp(6px,0.8vw,14px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img { width: 100% !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img img { width: 100% !important; max-width: 100% !important; height: auto !important; max-height: 100% !important; object-fit: contain !important; }
+
+/* v224b — bottom aircraft/operated shelf adopts the flight-info value style. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-type .v2-rc-fi { justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val {
+  display: flex !important; align-items: center !important; overflow: visible !important; white-space: normal !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val img,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val .v2-rc-opby-logo {
+  height: clamp(20px,3.4vh,40px) !important; width: auto !important; max-width: 100% !important; object-fit: contain !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-actype-val {
+  font-size: clamp(13px,2.2vh,26px) !important; white-space: nowrap !important;
+}
