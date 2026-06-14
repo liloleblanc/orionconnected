@@ -5325,6 +5325,9 @@ function _buildV2AircraftCol(ctx, vars) {
         var _stk = String((currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
         if (_stk === 'ontime') _stk = 'ontime';
         if (_delayedByRev && (_stk === 'scheduled' || _stk === 'ontime' || _stk === '')) _stk = 'delayed';
+        // A plain "scheduled" flight with no delay reads as ON TIME (per Nick) —
+        // "Scheduled" looked wrong on a flight that's tracking on schedule.
+        else if (_stk === 'scheduled' || _stk === '') _stk = 'ontime';
         var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
         if (_ss) {
           var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
@@ -6578,7 +6581,7 @@ function uxgGateHtml(ctx) {
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
-    'UA': '/logos/airlines/us-major/united.svg',                                 // globe + white "UNITED"
+    'UA': '/logos/airlines/us-major/united-monochrome-white.svg',                // WHITE "UNITED" + globe (united.svg was blue = invisible on the navy banner)
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
     // WestJet — navy banner: white "WestJet" lettering + colored (teal/navy) maple-leaf swoosh
     'WS': '/logos/airlines/canadian/WestJet_Logo_2018-monochrome-white-colored-leaf.svg?v=5', // white wordmark + colored leaf for the navy bar
@@ -7421,10 +7424,24 @@ function gateAutofit(root) {
       // the case where the value's cell stretched to fit the text and the text
       // then spilled past the panel (e.g. long flight numbers / city names).
       var ps = window.getComputedStyle(parent);
-      var pad = (parseFloat(ps.paddingLeft) || 0) + (parseFloat(ps.paddingRight) || 0);
+      var padL = parseFloat(ps.paddingLeft) || 0;
+      var padR = parseFloat(ps.paddingRight) || 0;
+      var pad = padL + padR;
       function overflowing() {
+        // Available content width of the cell.
         var avail = parent.clientWidth - pad;
-        return (el.scrollWidth > el.clientWidth + 0.5) || (avail > 0 && el.scrollWidth > avail + 0.5);
+        if (avail <= 0) return false;
+        // 1) Content wider than the cell's content box (scrollWidth catches the
+        //    full un-clipped text even under overflow:hidden/ellipsis).
+        if (el.scrollWidth > avail + 0.5) return true;
+        // 2) The element's actual painted right edge spills past the cell's
+        //    content-box right edge — catches the case where the value box grew
+        //    wider than the visible column (scrollWidth==clientWidth but still
+        //    clipped by an ancestor). Bounding rects measure the real layout.
+        var er = el.getBoundingClientRect();
+        var pr = parent.getBoundingClientRect();
+        if (er.right > (pr.right - padR) + 0.5 || er.left < (pr.left + padL) - 0.5) return true;
+        return false;
       }
       var guard = 0;
       // Reduce in 1px steps until it fits the available width, floor 12px.
