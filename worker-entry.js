@@ -29,6 +29,17 @@ const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
 // AWS open elevation tiles (terrarium encoding) — free, no API key.
 const DEM_BASE = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/';
 
+// Selectable base-map providers for the 3D route map (all free, no key).
+// Requested as /tiles/<provider>/{z}/{x}/{y}.png; the Worker reorders the
+// axes per provider (Esri uses z/y/x) and proxies from this origin.
+const TILE_PROVIDERS = {
+  voyager:   'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+  dark:      'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+  positron:  'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+  satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  topo:      'https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
+};
+
 const DAY = 86400;
 
 export default {
@@ -102,6 +113,29 @@ export default {
         });
       } catch (e) {
         return new Response('DEM fetch failed', { status: 502 });
+      }
+    }
+
+    // ── Selectable base-map tiles passthrough ──────────────────────────
+    // /tiles/satellite/7/40/72.png → provider tile (axes reordered per provider).
+    if (path.startsWith('/tiles/')) {
+      const m = path.slice('/tiles/'.length).match(/^([a-z]+)\/(\d+)\/(\d+)\/(\d+)\.png$/);
+      if (!m) return new Response('Bad tile path', { status: 400 });
+      const tpl = TILE_PROVIDERS[m[1]];
+      if (!tpl) return new Response('Unknown provider', { status: 404 });
+      const upstream = tpl.replace('{z}', m[2]).replace('{x}', m[3]).replace('{y}', m[4]);
+      try {
+        const r = await fetch(upstream, { cf: { cacheEverything: true, cacheTtl: DAY } });
+        return new Response(r.body, {
+          status: r.status,
+          headers: {
+            'Content-Type': r.headers.get('Content-Type') || 'image/png',
+            'Cache-Control': 'public, max-age=' + DAY,
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        return new Response('Tile fetch failed', { status: 502 });
       }
     }
 

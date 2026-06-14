@@ -39,6 +39,13 @@
   <div id="phase">3D Terrain</div>
   <div id="route"><div class="big" id="rtCode">—</div><div class="sub" id="rtCity">—</div></div>
   <div id="ctl">
+    <div class="grp"><span class="lbl">Base</span>
+      <button data-base="satellite" class="on">Satellite</button>
+      <button data-base="voyager">Streets</button>
+      <button data-base="topo">Topo</button>
+      <button data-base="dark">Dark</button>
+      <button data-base="positron">Light</button>
+    </div>
     <div class="grp"><span class="lbl">Line</span>
       <button data-line="solid" class="on">Solid</button>
       <button data-line="dashed">Dashed</button>
@@ -120,7 +127,7 @@
     container:'map',maxZoom:13,attributionControl:false,
     style:{version:8,
       sources:{
-        sat:{type:'raster',tiles:['/maptiles/{z}/{x}/{y}.png'],tileSize:256,attribution:''},
+        sat:{type:'raster',tiles:['/tiles/satellite/{z}/{x}/{y}.png'],tileSize:256,attribution:''},
         dem:{type:'raster-dem',tiles:['/demtiles/{z}/{x}/{y}.png'],tileSize:256,encoding:'terrarium',maxzoom:13}
       },
       layers:[
@@ -248,6 +255,7 @@
     try{ map.setTerrain({source:'dem',exaggeration:1.6}); }catch(e){}
     try{ map.setSky({'sky-color':'#0a1736','sky-horizon-blend':0.55,'horizon-color':'#1a3b6e','horizon-fog-blend':0.5,'fog-color':'#070b14','fog-ground-blend':0.55}); }catch(e){}
     buildSwatches();
+    wireGroup('data-base',function(v){ try{ map.getSource('sat').setTiles(['/tiles/'+v+'/{z}/{x}/{y}.png']); }catch(e){} });
     wireGroup('data-line',function(v){S.line=v;applyLineStyle();});
     wireGroup('data-plane',function(v){S.plane=parseInt(v,10);applyPlane();});
     requestAnimationFrame(tickPlane);
