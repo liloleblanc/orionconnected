@@ -3848,7 +3848,17 @@ body, body.gids-page, body.gate-page{
    • icon (teal circle) left · big navy value beside it */
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   border-bottom: clamp(5px,0.7vh,9px) solid var(--banner-bg, #003A5D) !important;   /* THICK navy, like outer */
-  background: linear-gradient(180deg, #eef1f5 0%, #f6f8fa 46%, #dfe4ea 100%) !important;
+  background:
+    /* fine brushed-metal grain */
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(0,0,0,0.03) 1px, rgba(255,255,255,0.05) 2.5px),
+    /* metallic sheen — tinted by the airline (body tint + a touch of accent) */
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 66%, #ffffff 34%) 0%,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 85%, #ffffff 15%) 24%,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 88%, var(--airline-accent,#8a8f96) 12%) 46%,
+      color-mix(in srgb, var(--body-bg,#dfe4ea) 80%, #000000 9%) 55%,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 82%, #ffffff 18%) 77%,
+      color-mix(in srgb, var(--body-bg,#dfe4ea) 82%, #000000 11%) 100%) !important;
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.9vw,16px) !important;
 }
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
@@ -3929,7 +3939,17 @@ body, body.gids-page, body.gate-page{
   align-items: stretch !important;
   gap: 0 !important; margin: 0 !important; padding: 0 !important;
   border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;   /* 5px navy divider */
-  background: linear-gradient(180deg, #eef1f5 0%, #f6f8fa 46%, #dfe4ea 100%) !important;
+  background:
+    /* fine brushed-metal grain */
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(0,0,0,0.03) 1px, rgba(255,255,255,0.05) 2.5px),
+    /* metallic sheen — tinted by the airline (body tint + a touch of accent) */
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 66%, #ffffff 34%) 0%,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 85%, #ffffff 15%) 24%,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 88%, var(--airline-accent,#8a8f96) 12%) 46%,
+      color-mix(in srgb, var(--body-bg,#dfe4ea) 80%, #000000 9%) 55%,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 82%, #ffffff 18%) 77%,
+      color-mix(in srgb, var(--body-bg,#dfe4ea) 82%, #000000 11%) 100%) !important;
   overflow: hidden !important;
 }
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
