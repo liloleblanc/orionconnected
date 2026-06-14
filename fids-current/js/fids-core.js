@@ -18167,6 +18167,16 @@ var _gIco = 'https://maps.gstatic.com/mapfiles/place_api/icons/v2/';
 // is loaded so the ad is never empty while the other language loads.
 var ACCOR_HOTEL_CACHE = {}; // keyed by "IATA|lang", {hotels:[], ts:}
 var ACCOR_CACHE_TTL = 24 * 3600000; // 24 hours
+// Build a proper Accept-Language value Accor's REFERENTIAL API will honor.
+// Their docs: they pick a language from the Accept-Language header; an empty or
+// unsupported value falls back to English. Sending a bare "fr" sometimes isn't
+// matched, so send a region-qualified, weighted list (Canada-bilingual style).
+function _accorAcceptLang(L) {
+  L = String(L || 'en').toLowerCase();
+  if (L === 'fr') return 'fr-CA,fr;q=0.9,en;q=0.3';
+  if (L === 'en') return 'en-CA,en;q=0.9';
+  return L + ',en;q=0.3';
+}
 // Current board display language (the EN/FR rotation), defaulting to English.
 function _accorLangNow() {
   try {
@@ -18301,8 +18311,8 @@ function fetchAccorHotels(destIata) {
     + '&radius=110&range=0-15&sort=distance'
     + '&language=' + encodeURIComponent(_listLang);
 
-  console.log('[ACCOR] Fetching hotels near', destIata, '(' + _listLang + ')');
-  fetch(proxyUrl, { headers: { 'Accept-Language': _listLang } })
+  console.log('[ACCOR] Fetching hotels near', destIata, '(' + _listLang + ', Accept-Language: ' + _accorAcceptLang(_listLang) + ')');
+  fetch(proxyUrl, { headers: { 'Accept-Language': _accorAcceptLang(_listLang) } })
     .then(function(r) {
       if (!r.ok) throw new Error('Proxy HTTP ' + r.status);
       return r.json();
@@ -18440,7 +18450,7 @@ function fetchAccorHotelDetail(hotelId) {
           + encodeURIComponent(hotelId) + '/products/accommodations'
           + '?language=' + encodeURIComponent(curLang);
   fetch(url, {
-    headers: { 'Accept-Language': curLang }
+    headers: { 'Accept-Language': _accorAcceptLang(curLang) }
   })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(detail) {
