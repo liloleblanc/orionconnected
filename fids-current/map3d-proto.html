@@ -3,14 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>3D Route Map — Prototype</title>
+<title>3D Route Map — Prototype (terrain)</title>
 <link rel="stylesheet" href="/mapcdn/maplibre-gl.css">
 <style>
   html,body{margin:0;height:100%;background:#05080f;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
-  #wrap{position:fixed;inset:0;}
   #map{position:absolute;inset:0;}
-  /* dark frame to mimic the gate right-column panel */
-  #frame{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 3px rgba(120,160,250,.25);border-radius:0;}
+  #frame{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 3px rgba(120,160,250,.25);}
   #phase{position:absolute;left:18px;top:16px;z-index:5;color:#cfe0ff;
     font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
     background:rgba(8,14,30,.55);backdrop-filter:blur(6px);padding:8px 14px;border:1px solid rgba(120,160,250,.3);border-radius:8px;}
@@ -26,37 +24,34 @@
 </style>
 </head>
 <body>
-<div id="wrap">
   <div id="map"></div>
   <div id="frame"></div>
-  <div id="phase">3D Globe</div>
+  <div id="phase">3D Terrain</div>
   <div id="route"><div class="big" id="rtCode">—</div><div class="sub" id="rtCity">—</div></div>
-</div>
 <script src="/mapcdn/maplibre-gl.js"></script>
 <script>
 (function(){
   'use strict';
   var TO_R = Math.PI/180, TO_D = 180/Math.PI;
 
-  // Routes to cycle through: [lng,lat] origin/dest + labels.
+  // Mountainous routes so the 3D relief is obvious (Coast Mtns / Rockies).
   var ROUTES = [
-    { o:[-79.6248,43.6777], d:[-64.6786,46.1107], oc:'YYZ', dc:'YQM', oCity:'Toronto', dCity:'Moncton', tag:'Domestic hop' },
-    { o:[-79.6248,43.6777], d:[2.5479,49.0097],   oc:'YYZ', dc:'CDG', oCity:'Toronto', dCity:'Paris',   tag:'Long-haul' },
-    { o:[-123.1840,49.1967],d:[-79.6248,43.6777], oc:'YVR', dc:'YYZ', oCity:'Vancouver',dCity:'Toronto', tag:'Transcon' }
+    { o:[-123.184,49.197], d:[-114.020,51.131], oc:'YVR', dc:'YYC', oCity:'Vancouver', dCity:'Calgary',  tag:'Over the Rockies' },
+    { o:[-114.020,51.131], d:[-119.378,49.956], oc:'YYC', dc:'YLW', oCity:'Calgary',   dCity:'Kelowna',  tag:'Rockies → Okanagan' },
+    { o:[-123.184,49.197], d:[-119.378,49.956], oc:'YVR', dc:'YLW', oCity:'Vancouver', dCity:'Kelowna',  tag:'Coast Mountains' }
   ];
 
   function greatCircle(a,b,n){
     var lon1=a[0]*TO_R, lat1=a[1]*TO_R, lon2=b[0]*TO_R, lat2=b[1]*TO_R;
     var dd = 2*Math.asin(Math.sqrt(Math.pow(Math.sin((lat2-lat1)/2),2)+Math.cos(lat1)*Math.cos(lat2)*Math.pow(Math.sin((lon2-lon1)/2),2)));
-    var pts=[]; if(dd===0){ return [a,b]; }
+    if(dd===0) return [a,b];
+    var pts=[];
     for(var i=0;i<=n;i++){
-      var f=i/n;
-      var A=Math.sin((1-f)*dd)/Math.sin(dd), B=Math.sin(f*dd)/Math.sin(dd);
+      var f=i/n, A=Math.sin((1-f)*dd)/Math.sin(dd), B=Math.sin(f*dd)/Math.sin(dd);
       var x=A*Math.cos(lat1)*Math.cos(lon1)+B*Math.cos(lat2)*Math.cos(lon2);
       var y=A*Math.cos(lat1)*Math.sin(lon1)+B*Math.cos(lat2)*Math.sin(lon2);
       var z=A*Math.sin(lat1)+B*Math.sin(lat2);
-      var lat=Math.atan2(z,Math.sqrt(x*x+y*y))*TO_D, lon=Math.atan2(y,x)*TO_D;
-      pts.push([lon,lat]);
+      pts.push([Math.atan2(y,x)*TO_D, Math.atan2(z,Math.sqrt(x*x+y*y))*TO_D]);
     }
     return pts;
   }
@@ -65,41 +60,39 @@
     var x=Math.cos(a[1]*TO_R)*Math.sin(b[1]*TO_R)-Math.sin(a[1]*TO_R)*Math.cos(b[1]*TO_R)*Math.cos((b[0]-a[0])*TO_R);
     return Math.atan2(y,x)*TO_D;
   }
-  function mid(a,b){ return [(a[0]+b[0])/2,(a[1]+b[1])/2]; }
 
   var map = new maplibregl.Map({
     container:'map',
-    projection:'globe',
-    minZoom:1, maxZoom:9,
+    maxZoom:13,
     attributionControl:false,
     style:{
       version:8,
-      projection:{ type:'globe' },
       sources:{
-        sat:{ type:'raster', tiles:['/maptiles/{z}/{x}/{y}.png'], tileSize:256, attribution:'' }
+        sat:{ type:'raster', tiles:['/maptiles/{z}/{x}/{y}.png'], tileSize:256, attribution:'' },
+        dem:{ type:'raster-dem', tiles:['/demtiles/{z}/{x}/{y}.png'], tileSize:256, encoding:'terrarium', maxzoom:13 }
       },
       layers:[
         { id:'bg', type:'background', paint:{ 'background-color':'#05080f' } },
-        { id:'sat', type:'raster', source:'sat', paint:{ 'raster-fade-duration':300 } }
+        { id:'sat', type:'raster', source:'sat', paint:{ 'raster-fade-duration':300 } },
+        { id:'hills', type:'hillshade', source:'dem',
+          paint:{ 'hillshade-exaggeration':0.55, 'hillshade-shadow-color':'#0b1426', 'hillshade-highlight-color':'#ffffff' } }
       ]
     },
-    center:[-72,45], zoom:2.4, pitch:40, bearing:0
+    center:[-119,50], zoom:6, pitch:0, bearing:0
   });
 
   var endMarkers=[];
   function clearMarkers(){ endMarkers.forEach(function(m){ m.remove(); }); endMarkers=[]; }
   function addEnd(coord, code, city, isDest){
     var el=document.createElement('div');
-    var dot=document.createElement('div'); dot.className='end-dot'+(isDest?' dest':'');
     var lab=document.createElement('div'); lab.className='end-label'; lab.textContent=code+' · '+city;
+    var dot=document.createElement('div'); dot.className='end-dot'+(isDest?' dest':'');
     el.appendChild(lab); el.appendChild(dot);
-    var mk=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(coord).addTo(map);
-    endMarkers.push(mk);
+    endMarkers.push(new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(coord).addTo(map));
   }
 
   function setRouteData(r){
-    var line=greatCircle(r.o,r.d,128);
-    var gj={ type:'Feature', geometry:{ type:'LineString', coordinates:line } };
+    var gj={ type:'Feature', geometry:{ type:'LineString', coordinates:greatCircle(r.o,r.d,128) } };
     if(map.getSource('route')){ map.getSource('route').setData(gj); }
     else{
       map.addSource('route',{ type:'geojson', data:gj });
@@ -108,7 +101,7 @@
         paint:{ 'line-color':'#7fb2ff','line-width':10,'line-opacity':.25,'line-blur':6 } });
       map.addLayer({ id:'route-line', type:'line', source:'route',
         layout:{ 'line-cap':'round','line-join':'round' },
-        paint:{ 'line-color':'#cfe2ff','line-width':3,'line-dasharray':[2,1.6] } });
+        paint:{ 'line-color':'#eaf2ff','line-width':3,'line-dasharray':[2,1.6] } });
     }
     clearMarkers();
     addEnd(r.o,r.oc,r.oCity,false);
@@ -116,8 +109,7 @@
     document.getElementById('rtCode').textContent=r.oc+'  →  '+r.dc;
     document.getElementById('rtCity').textContent=r.oCity+' to '+r.dCity+' · '+r.tag;
   }
-
-  function bounds(r){
+  function routeBounds(r){
     var b=new maplibregl.LngLatBounds();
     greatCircle(r.o,r.d,32).forEach(function(p){ b.extend(p); });
     return b;
@@ -125,43 +117,41 @@
 
   var ph=document.getElementById('phase');
   var idx=0, timers=[];
-  function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
   function later(fn,ms){ timers.push(setTimeout(fn,ms)); }
+  function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
 
   function runRoute(){
     var r=ROUTES[idx % ROUTES.length];
     setRouteData(r);
-    var m=mid(r.o,r.d), brg=bearing(r.o,r.d);
+    var brg=bearing(r.o,r.d);
 
-    // Phase 1 — drop onto the globe, tilted, looking down the route.
-    ph.textContent='3D Globe';
-    map.jumpTo({ center:r.o, zoom:2.7, pitch:45, bearing:brg });
-    // Phase 2 — glide along the arc over the curved Earth.
+    // Phase 1 — sit low and TILTED at the origin, looking down the route so the
+    // mountains stand up in 3D.
+    ph.textContent='3D Terrain';
+    map.jumpTo({ center:r.o, zoom:7.6, pitch:74, bearing:brg });
+    // Phase 2 — fly the camera along the route, over the 3D landscape.
     later(function(){
-      map.easeTo({ center:m, zoom: r===ROUTES[1]?2.9:3.9, pitch:58, bearing:brg, duration:5200, easing:function(t){return t*(2-t);} });
-    }, 500);
-    // Phase 3 — ease DOWN to a flat, top-down 2D view of the route. Compute the
-    // camera from the bounds, then easeTo with pitch:0 so the flatten is
-    // guaranteed even on builds where fitBounds ignores pitch.
+      map.easeTo({ center:r.d, zoom:7.6, pitch:74, bearing:brg, duration:7000, easing:function(t){return t<.5?2*t*t:-1+(4-2*t)*t;} });
+    }, 600);
+    // Phase 3 — pull up and FLATTEN to a top-down 2D view of the whole route.
     later(function(){
       ph.textContent='Flat 2D';
       var cam=null;
-      try { cam=map.cameraForBounds(bounds(r),{ padding:{top:120,bottom:90,left:90,right:90}, maxZoom:6.5 }); } catch(e){}
-      var to={ pitch:0, bearing:0, duration:3600 };
-      if(cam){ to.center=cam.center; to.zoom=Math.min(cam.zoom||5,6.5); }
-      else { to.center=m; to.zoom=5; }
+      try { cam=map.cameraForBounds(routeBounds(r),{ padding:{top:120,bottom:90,left:90,right:90}, maxZoom:9 }); } catch(e){}
+      var to={ pitch:0, bearing:0, duration:3800 };
+      if(cam){ to.center=cam.center; to.zoom=Math.min(cam.zoom||7,9); } else { to.center=r.d; to.zoom=7; }
       map.easeTo(to);
-    }, 6200);
-    // Phase 4 — hold the flat view, then next route.
-    later(function(){ idx++; runRoute(); }, 11200);
+    }, 8000);
+    // Phase 4 — hold, then next route.
+    later(function(){ idx++; runRoute(); }, 13000);
   }
 
   map.on('load', function(){
+    try { map.setTerrain({ source:'dem', exaggeration:1.6 }); } catch(e){}
     try { map.setSky({
-      'sky-color':'#0a1736','sky-horizon-blend':0.6,
-      'horizon-color':'#16335f','horizon-fog-blend':0.5,
-      'fog-color':'#070b14','fog-ground-blend':0.4,
-      'atmosphere-blend':['interpolate',['linear'],['zoom'],0,1,7,0]
+      'sky-color':'#0a1736','sky-horizon-blend':0.55,
+      'horizon-color':'#1a3b6e','horizon-fog-blend':0.5,
+      'fog-color':'#070b14','fog-ground-blend':0.55
     }); } catch(e){}
     clearTimers(); idx=0; runRoute();
   });

@@ -26,6 +26,8 @@ const MAP_ENGINE = {
 };
 
 const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
+// AWS open elevation tiles (terrarium encoding) — free, no API key.
+const DEM_BASE = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/';
 
 const DAY = 86400;
 
@@ -76,6 +78,30 @@ export default {
         });
       } catch (e) {
         return new Response('Tile fetch failed', { status: 502 });
+      }
+    }
+
+    // ── Terrain elevation tiles passthrough ────────────────────────────
+    // /demtiles/9/40/72.png → AWS open "terrarium" DEM (RGB-encoded heights).
+    // Free, no key. MapLibre reads these as a raster-dem source to extrude
+    // real 3D terrain. Same-origin so locked-down display networks work.
+    if (path.startsWith('/demtiles/')) {
+      const rest = path.slice('/demtiles/'.length);
+      if (!/^\d+\/\d+\/\d+\.png$/.test(rest)) {
+        return new Response('Bad DEM path', { status: 400 });
+      }
+      try {
+        const r = await fetch(DEM_BASE + rest, { cf: { cacheEverything: true, cacheTtl: DAY } });
+        return new Response(r.body, {
+          status: r.status,
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=' + DAY,
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        return new Response('DEM fetch failed', { status: 502 });
       }
     }
 
