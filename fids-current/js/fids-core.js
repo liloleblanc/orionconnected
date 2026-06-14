@@ -5296,9 +5296,9 @@ function _buildV2AircraftCol(ctx, vars) {
       //   | Departure·Départ | Flight Time·Temps Vol
       // Short bilingual labels (revised-aware for the time panels).
       var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
-      // Per Nick: the CODE goes on the LABEL line ("Destination  YYZ", code a
-      // touch bigger); the value is the city alone, big.
-      var _destLabel = 'Destination' + (_destIataDisp ? ' <span class="v2-fi-code">' + _destIataDisp + '</span>' : '');
+      // Per Nick: "Destination | YYZ" — code on the label line, accent-coloured
+      // (same size, not bigger); the value is the city alone.
+      var _destLabel = 'Destination' + (_destIataDisp ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destIataDisp + '</span>' : '');
       var _destValue = _destCityName || _destIataDisp;
       var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
       var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
@@ -7351,7 +7351,7 @@ function gateAutofit(root) {
   // autofit shrinks each element independently, which makes them DIFFERENT
   // sizes. Nick wants one uniform size per category, so they use a fixed
   // clamp in CSS instead.
-  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value',
+  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value', '.v2-fi-textcol .v2-fi-title',
               '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
