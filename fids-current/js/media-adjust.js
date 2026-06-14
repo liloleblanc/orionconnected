@@ -74,7 +74,8 @@
       +       '<div style="display:flex;gap:14px;">'
       +         '<div style="flex:1;">'
       +           '<div style="color:#cdd7e6;font-size:13px;font-weight:600;margin-bottom:6px;">Duration (seconds)</div>'
-      +           '<input id="maDwell" type="number" min="2" max="60" step="1" style="width:100%;box-sizing:border-box;background:#0c1018;color:#fff;border:1px solid #2a3344;border-radius:8px;padding:9px;font-size:13px;">'
+      +           '<input id="maDwell" type="number" min="2" max="600" step="1" style="width:100%;box-sizing:border-box;background:#0c1018;color:#fff;border:1px solid #2a3344;border-radius:8px;padding:9px;font-size:13px;">'
+      +           '<div id="maDurHint" style="color:#6b7890;font-size:11px;margin-top:6px;line-height:1.5;"></div>'
       +         '</div>'
       +         '<div style="flex:1;">'
       +           '<div style="color:#cdd7e6;font-size:13px;font-weight:600;margin-bottom:6px;">Play order</div>'
@@ -103,17 +104,26 @@
 
     function renderPreview() {
       var posStr = st.posX + '% ' + st.posY + '%';
-      var inner;
+      // Build the preview with DOM nodes and set the media URL via the .src /
+      // backgroundImage PROPERTIES — never string-interpolated into innerHTML —
+      // so an operator-supplied URL can't be reinterpreted as markup.
+      while (box.firstChild) box.removeChild(box.firstChild);
+      var node;
       if (isVideo) {
-        inner = '<video src="' + rec.url + '" autoplay muted loop playsinline'
-          + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + st.fit
-          + ';object-position:' + posStr + ';transform:scale(' + st.zoom + ');background:#000;"></video>';
+        node = document.createElement('video');
+        node.autoplay = true; node.muted = true; node.loop = true;
+        node.setAttribute('playsinline', '');
+        node.src = rec.url;
+        node.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:' + st.fit
+          + ';object-position:' + posStr + ';transform:scale(' + st.zoom + ');background:#000;';
       } else {
-        inner = '<div style="position:absolute;inset:0;background:#000;background-image:url(\'' + rec.url
-          + '\');background-size:' + (st.fit === 'cover' ? 'cover' : 'contain')
-          + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + st.zoom + ');"></div>';
+        node = document.createElement('div');
+        node.style.cssText = 'position:absolute;inset:0;background:#000;background-size:'
+          + (st.fit === 'cover' ? 'cover' : 'contain')
+          + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + st.zoom + ');';
+        node.style.backgroundImage = 'url("' + rec.url + '")';
       }
-      box.innerHTML = inner;
+      box.appendChild(node);
       zoomVal.textContent = '×' + st.zoom.toFixed(2);
       fitBtns.forEach(function (b) {
         var on = b.getAttribute('data-fit') === st.fit;
@@ -130,8 +140,44 @@
     orderEl.value = (st.order === 999 ? '' : st.order);
     dwellEl.addEventListener('input', function () {
       var s = parseInt(dwellEl.value, 10);
-      if (isFinite(s) && s > 0) st.dwellMs = Math.max(2000, Math.min(60000, s * 1000));
+      if (isFinite(s) && s > 0) st.dwellMs = Math.max(2000, Math.min(600000, s * 1000));
     });
+    // For videos, detect the clip's real length so the operator can set the
+    // duration to play it in full (the carousel advances after this many
+    // seconds — too short and the video gets cut off). Direct file uploads
+    // expose duration via the <video> element; YouTube/Vimeo embeds don't, so
+    // the operator just types the length they want.
+    var durHint = ov.querySelector('#maDurHint');
+    function _fmt(sec){ var m=Math.floor(sec/60), s2=Math.round(sec%60); return (m?m+'m ':'')+s2+'s'; }
+    if (isVideo && durHint) {
+      // Build the hint with DOM nodes / textContent only — never innerHTML —
+      // so detected media metadata can't be reinterpreted as markup.
+      durHint.textContent = 'Set how long this video plays. Up to 600s.';
+      var _probe = document.createElement('video');
+      _probe.preload = 'metadata'; _probe.muted = true; _probe.src = rec.url;
+      _probe.addEventListener('loadedmetadata', function () {
+        var dur = Number(_probe.duration);
+        if (isFinite(dur) && dur > 0) {
+          var full = Math.ceil(dur);
+          durHint.textContent = '';
+          durHint.appendChild(document.createTextNode('Full length: '));
+          var b = document.createElement('b');
+          b.style.color = '#cdd7e6';
+          b.textContent = _fmt(dur);
+          durHint.appendChild(b);
+          durHint.appendChild(document.createTextNode(' '));
+          var ufBtn = document.createElement('button');
+          ufBtn.type = 'button';
+          ufBtn.textContent = 'Use full length';
+          ufBtn.style.cssText = 'margin-left:6px;appearance:none;background:#1c2536;color:#7fd0ff;border:1px solid #2a3344;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;';
+          ufBtn.addEventListener('click', function () {
+            st.dwellMs = Math.max(2000, Math.min(600000, full * 1000));
+            dwellEl.value = full;
+          });
+          durHint.appendChild(ufBtn);
+        }
+      });
+    }
     orderEl.addEventListener('input', function () {
       var o = parseInt(orderEl.value, 10);
       st.order = isFinite(o) ? o : 999;

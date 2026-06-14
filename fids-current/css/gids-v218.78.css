@@ -3693,3 +3693,587 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-val { display: flex !important; align-items: center !important; min-height: clamp(26px,4vh,56px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-val .v2-rc-opby-logo { height: clamp(26px,3.6vh,50px) !important; width: auto !important; max-width: 240px !important; object-fit: contain !important; display: block !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-val b { font-size: clamp(26px,4vh,56px) !important; font-weight: 900 !important; color: #0f2238 !important; }
+
+/* ════════ Bottom banner removed (per Nick) — the main content row (g8-r4)
+   is flex:1, so the three columns automatically reclaim the freed height. ════════ */
+.g8-wrap .g8-r5 { display: none !important; }
+
+/* ════════ v222 — Left column: 6 EQUAL panels filling the full height, bigger
+   type (Nick: same sizes, all bigger, fill the space). ════════ */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block {
+  flex: 1 1 auto !important;
+  justify-content: stretch !important;
+  height: 100% !important;
+}
+/* Each panel takes an equal 1/6 share of the column height. */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  padding: clamp(6px,1vh,18px) clamp(10px,1vw,18px) !important;
+  gap: clamp(12px,1.2vw,24px) !important;
+}
+/* Labels bigger */
+.g8-wrap .gad-aircraft-col .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-lbl-2 { font-size: clamp(18px,2.3vh,32px) !important; }
+/* Time/value tier bigger */
+.g8-wrap .gad-aircraft-col .v2-fi-value { font-size: clamp(30px,4vh,58px) !important; }
+/* Flight number, destination, status — the headline tier, bigger still */
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest,
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val { font-size: clamp(42px,5.8vh,82px) !important; }
+/* Icon badges scale up with the taller panels */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(56px,7vh,104px) !important; height: clamp(56px,7vh,104px) !important;
+  min-width: clamp(56px,7vh,104px) !important; min-height: clamp(56px,7vh,104px) !important;
+  max-width: clamp(56px,7vh,104px) !important; max-height: clamp(56px,7vh,104px) !important;
+}
+
+/* ════════ v222b — Left panels: title-top · thin divider · BIG bottom value
+   (Nick: number ~3/4, touches bottom, line under the title; between-panel
+   dividers thinner + different colour). ════════ */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-end !important;
+  gap: 0 !important;
+  /* between-panel divider — thinner + softer colour (was 3px accent) */
+  border-bottom: 2px solid rgba(15,34,56,0.16) !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
+/* TITLE row — sits at the top, label(s) inline, thin accent-tinted underline */
+.g8-wrap .gad-aircraft-col .v2-fi-title {
+  flex: 0 0 auto !important;
+  display: flex !important; align-items: baseline !important; gap: clamp(8px,0.8vw,16px) !important;
+  padding: clamp(2px,0.5vh,8px) 0 clamp(4px,0.7vh,10px) 0 !important;
+  border-bottom: 1.5px solid var(--airline-accent, #D82F2E) !important;  /* the "shelve" under the title — different colour, thinner */
+  opacity: 1 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 {
+  font-size: clamp(17px,2.2vh,30px) !important; font-weight: 700 !important;
+  color: #4a5568 !important; line-height: 1.05 !important; letter-spacing: 0.2px !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 { color: #8a93a3 !important; }
+/* BODY row — icon + big value, value grows from the BOTTOM */
+.g8-wrap .gad-aircraft-col .v2-fi-body {
+  flex: 1 1 auto !important; min-height: 0 !important;
+  display: flex !important; align-items: flex-end !important;
+  gap: clamp(12px,1.2vw,24px) !important;
+  padding-top: clamp(2px,0.5vh,8px) !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-body .v2-fi-value {
+  align-self: flex-end !important;
+  line-height: 0.92 !important;
+}
+
+/* ════════ v222c — Left panels per Nick's markup notes ════════
+   • between-panel divider = AIRLINE ACCENT, thick (like the outer frame)
+   • title sits TOP-RIGHT; underline hugs the right, only under the words,
+     HALF the thickness of the between-panel divider
+   • icon + value fill the BOTTOM-LEFT, value big (~3/4), icon matches number
+   • tighter spacing — no wasted gaps */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  border-bottom: 3px solid var(--airline-accent, #D82F2E) !important;   /* thick accent, like outer */
+  padding: clamp(3px,0.5vh,9px) clamp(10px,1vw,18px) !important;
+  gap: 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
+/* TITLE — top, RIGHT-aligned, underline only under the text (half thickness) */
+.g8-wrap .gad-aircraft-col .v2-fi-title {
+  width: -moz-fit-content !important; width: fit-content !important;
+  max-width: 100% !important; margin-left: auto !important;
+  border-bottom: 1.5px solid var(--airline-accent, #D82F2E) !important;  /* half of the 3px divider */
+  padding: 0 0 clamp(2px,0.35vh,5px) 0 !important;
+  justify-content: flex-end !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en { color: #2b3442 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 { color: #7a8494 !important; }
+/* BODY — bottom-aligned, LEFT, icon + BIG value, tight */
+.g8-wrap .gad-aircraft-col .v2-fi-body {
+  align-items: flex-end !important; justify-content: flex-start !important;
+  gap: clamp(10px,1vw,22px) !important; padding-top: clamp(1px,0.3vh,5px) !important;
+}
+/* values big enough to fill the lower ~3/4 of the panel */
+.g8-wrap .gad-aircraft-col .v2-fi-value { font-size: clamp(46px,9vh,116px) !important; line-height: 0.9 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest,
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val { font-size: clamp(46px,9vh,116px) !important; }
+/* icon badge matched to the number height */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(64px,9vh,116px) !important; height: clamp(64px,9vh,116px) !important;
+  min-width: clamp(64px,9vh,116px) !important; min-height: clamp(64px,9vh,116px) !important;
+  max-width: clamp(64px,9vh,116px) !important; max-height: clamp(64px,9vh,116px) !important;
+}
+
+/* ════════ v222d — consistency pass (Nick): ════════
+   • titles: ONE colour, ONE size (no more 3 colours)
+   • values: ONE uniform size across every panel, sized to FIT the longest
+   • icons: never taller than the value, vertically CENTRED with the font */
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 {
+  font-size: clamp(15px,1.9vh,24px) !important;
+  font-weight: 700 !important;
+  color: #54606f !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-value,
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest,
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val {
+  font-size: clamp(26px,4vh,46px) !important;
+  line-height: 1 !important; white-space: nowrap !important;
+}
+/* icon/badge: ~0.8× the value, vertically centred with the number */
+.g8-wrap .gad-aircraft-col .v2-fi-body { align-items: center !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(24px,3.3vh,40px) !important; height: clamp(24px,3.3vh,40px) !important;
+  min-width: clamp(24px,3.3vh,40px) !important; min-height: clamp(24px,3.3vh,40px) !important;
+  max-width: clamp(24px,3.3vh,40px) !important; max-height: clamp(24px,3.3vh,40px) !important;
+}
+
+/* ════════ v222e — title underline: BLUE, ~2.5px (just under the outer),
+   and IDENTICAL on every panel (full width, same spot) — no per-title
+   variation. Title text stays top-right above it. ════════ */
+.g8-wrap .gad-aircraft-col .v2-fi-title {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  border-bottom: 2.5px solid var(--airline-accent, #D82F2E) !important;
+  justify-content: flex-end !important;
+}
+
+/* ════════ v222f — left panels matched to Nick's mockup ════════
+   • title CENTERED at top, teal underline centred (consistent on all panels)
+   • between-panel dividers = NAVY bar colour, thick like the outer frame
+   • subtle light gradient panel background
+   • icon (teal circle) left · big navy value beside it */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  border-bottom: clamp(5px,0.7vh,9px) solid var(--banner-bg, #003A5D) !important;   /* THICK navy, like outer */
+  /* BRUSHED METAL — fine grain + a bright reflection sweep + THREE distinct
+     tonal bands (light · airline-tinted mid · dark), so each airline shows
+     2–3 tones. */
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%) !important;
+  background-image:
+    /* 1 — broad SOFT specular sweep: the wide band of light brushed metal catches */
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.34) 47%,
+      rgba(255,255,255,0.10) 55%,
+      rgba(255,255,255,0) 82%),
+    /* 2 — fine brushed grain: tight horizontal hairlines (the brushing direction) */
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px,     rgba(0,0,0,0.055) 2px),
+    /* 3 — coarse irregular grain so it isn't a perfect screen-door pattern */
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px,      rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    /* 4 — gentle top-light → airline-tinted mid → bottom-shade (cylindrical falloff) */
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%) !important;
+  padding: clamp(4px,0.6vh,10px) clamp(8px,0.9vw,16px) !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
+/* DIAGONAL LAYOUT (Nick's picture): title TOP-RIGHT with the accent line
+   touching the right edge; big value + icon in the BOTTOM-LEFT. */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  flex-direction: column !important; justify-content: space-between !important; align-items: stretch !important;
+  overflow: visible !important;   /* so the line can reach the border without clipping the title text */
+}
+/* TITLE — right-aligned; words start at the 1/3 mark. */
+.g8-wrap .gad-aircraft-col .v2-fi-title {
+  position: relative !important;
+  display: block !important; text-align: right !important; white-space: nowrap !important;
+  width: 100% !important; max-width: 100% !important;
+  margin: 0 !important;
+  border-bottom: 0 !important;
+  padding: 0 0 clamp(8px,1.2vh,16px) 0 !important;
+}
+/* LINE — FIXED 2/3: starts at the 1/3 mark (where the text starts), finishes
+   at the right border. IDENTICAL on every panel. Thin. */
+.g8-wrap .gad-aircraft-col .v2-fi-title::after {
+  content: "" !important; display: block !important; position: absolute !important;
+  right: calc(-1 * clamp(8px,0.9vw,16px)) !important; bottom: 0 !important;
+  width: calc(66.66% + clamp(8px,0.9vw,16px)) !important;
+  height: clamp(2px,0.35vh,4px) !important;
+  background: var(--airline-accent3, #FAC120) !important; border-radius: 2px !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep,
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-colon {
+  font-size: clamp(15px,1.95vh,25px) !important; font-weight: 800 !important;
+  color: var(--banner-bg, #14181E) !important;   /* airline's own dark colour */
+  line-height: 1.05 !important; letter-spacing: 0.2px !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep { opacity: 0.55 !important; font-weight: 600 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-colon { margin-left: -2px !important; }
+/* BODY — value fills the space; icon stays compact so the value gets the room */
+.g8-wrap .gad-aircraft-col .v2-fi-body {
+  display: flex !important; align-items: center !important; justify-content: flex-start !important;
+  gap: clamp(8px,0.9vw,16px) !important; padding-top: clamp(2px,0.4vh,7px) !important;
+  min-width: 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-value {
+  color: var(--banner-bg, #14181E) !important;   /* airline's own dark colour */
+  font-size: clamp(34px,5.6vh,62px) !important; line-height: 0.9 !important;   /* ONE consistent size, fits the longest */
+  flex: 0 1 auto !important; min-width: 0 !important;
+  overflow: hidden !important; text-overflow: ellipsis !important;
+}
+/* keep the icon compact so it doesn't eat the value's space */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(44px,5.6vh,76px) !important; height: clamp(44px,5.6vh,76px) !important;
+  min-width: clamp(44px,5.6vh,76px) !important; min-height: clamp(44px,5.6vh,76px) !important;
+  max-width: clamp(44px,5.6vh,76px) !important; max-height: clamp(44px,5.6vh,76px) !important;
+}
+/* icon bigger, sits at the bottom with the value */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(48px,6.4vh,86px) !important; height: clamp(48px,6.4vh,86px) !important;
+  min-width: clamp(48px,6.4vh,86px) !important; min-height: clamp(48px,6.4vh,86px) !important;
+  max-width: clamp(48px,6.4vh,86px) !important; max-height: clamp(48px,6.4vh,86px) !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   v223 — LEFT PANEL to Nick's EXACT spec (512×1024, 6 equal rows, 2 columns)
+   Icon column 30% (icon centred) · Text column 70% (label, full-width gold
+   line, big value) — ALL text left-aligned from the same X. Overrides all
+   earlier v222* layout rules (this block is last → wins).
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block {
+  display: flex !important; flex-direction: column !important; height: 100% !important; flex: 1 1 auto !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  flex: 1 1 0 !important;
+  display: grid !important;
+  grid-template-columns: 30% 70% !important;
+  align-items: stretch !important;
+  gap: 0 !important; margin: 0 !important; padding: 0 !important;
+  border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;   /* 5px navy divider */
+  /* BRUSHED METAL — fine grain + a bright reflection sweep + THREE distinct
+     tonal bands (light · airline-tinted mid · dark), so each airline shows
+     2–3 tones. */
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%) !important;
+  background-image:
+    /* 1 — broad SOFT specular sweep: the wide band of light brushed metal catches */
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.34) 47%,
+      rgba(255,255,255,0.10) 55%,
+      rgba(255,255,255,0) 82%),
+    /* 2 — fine brushed grain: tight horizontal hairlines (the brushing direction) */
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px,     rgba(0,0,0,0.055) 2px),
+    /* 3 — coarse irregular grain so it isn't a perfect screen-door pattern */
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px,      rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    /* 4 — gentle top-light → airline-tinted mid → bottom-shade (cylindrical falloff) */
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%) !important;
+  overflow: hidden !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
+/* ICON COLUMN — icon centred, ~90px */
+.g8-wrap .gad-aircraft-col .v2-fi-iconcol {
+  display: flex !important; align-items: center !important; justify-content: center !important; min-width: 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-iconcol .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-iconcol .v2-fi-emblem-wrap {
+  width: clamp(56px,8.8vh,108px) !important; height: clamp(56px,8.8vh,108px) !important;
+  min-width: clamp(56px,8.8vh,108px) !important; min-height: clamp(56px,8.8vh,108px) !important;
+  max-width: clamp(56px,8.8vh,108px) !important; max-height: clamp(56px,8.8vh,108px) !important;
+}
+/* TEXT COLUMN — left-aligned, all text from the same X */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol {
+  display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: stretch !important;
+  padding: 0 24px 0 12px !important; min-width: 0 !important;
+}
+/* LABEL — top, left, with the GOLD LINE under it spanning the FULL text column */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title {
+  display: block !important; position: static !important; text-align: left !important; white-space: nowrap !important;
+  width: 100% !important; max-width: 100% !important; margin: 0 !important;
+  overflow: hidden !important;
+  font-size: clamp(15px,2.3vh,26px) !important; font-weight: 700 !important;   /* size lives HERE so auto-fit can shrink long labels */
+  color: var(--banner-bg, #14181E) !important; letter-spacing: 0.2px !important;
+  border-bottom: clamp(3px,0.4vh,5px) solid var(--airline-accent3, #FAC120) !important;   /* gold line, full width, left-anchored */
+  padding: 0 0 clamp(4px,0.7vh,8px) 0 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title::after { display: none !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-lbl-en,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-lbl-2,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-sep {
+  font-size: 1em !important; font-weight: 700 !important;   /* inherit from title so auto-fit works */
+  color: var(--banner-bg, #14181E) !important; letter-spacing: 0.2px !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-sep { opacity: 0.5 !important; font-weight: 500 !important; }
+/* VALUE — big, left, fills the column width (auto-fit shrinks the long ones) */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value {
+  display: block !important; text-align: left !important; white-space: nowrap !important;
+  font-size: clamp(40px,8vh,90px) !important; line-height: 0.95 !important; font-weight: 900 !important;
+  color: var(--banner-bg, #14181E) !important;
+  margin: clamp(4px,0.8vh,10px) 0 0 0 !important; max-width: 100% !important;
+}
+/* status keeps a semantic colour (green when on time / scheduled) */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-scheduled,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-ontime { color: #1a8a3a !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-delayed { color: #d97706 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-cancelled { color: #b91c1c !important; }
+
+/* v223b — Destination CODE on the label line (a touch bigger); squeeze more
+   size into the values (fill more of each row). */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-code {
+  font-size: 1.45em !important; font-weight: 800 !important;       /* YYZ bigger (per Nick) */
+  color: var(--airline-accent, #D82F2E) !important;               /* accent-coloured */
+  vertical-align: -0.06em !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-textcol { padding: 0 14px 0 10px !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value {
+  font-size: clamp(44px,9.4vh,104px) !important; margin-top: clamp(1px,0.4vh,6px) !important;
+}
+/* the bilingual status separator inside the value, sized down a touch */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value .v2-fi-sep {
+  font-weight: 400 !important; opacity: 0.45 !important;
+}
+
+/* v223c — STATUS stacked (EN over FR), green/orange/red by state. */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-val {
+  white-space: normal !important;
+  font-size: clamp(26px,4.8vh,58px) !important; line-height: 0.98 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value .v2-fi-st2 { display: block !important; }
+/* GREEN — on time / scheduled / boarding / early / en route */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-scheduled,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-ontime,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-boarding,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-early,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-active,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-arrived,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-landed { color: #1a8a3a !important; }
+/* ORANGE — delayed / final call / gate closed */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-delayed,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-final,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-gateclosed { color: #e07b00 !important; }
+/* RED — cancelled / diverted */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-cancelled,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-diverted { color: #c01622 !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   v224 — RIGHT COLUMN to Nick's spec. Mirrors the left's 6-shelf rhythm:
+   • MAP = top half, with the "Your Aircraft | Votre Avion" title overlaid at
+     the TOP and Speed/Altitude at the BOTTOM (both inside the map).
+   • Bottom half = flight info → aircraft photo (maxed) → aircraft/operated,
+     in the SAME brushed-metal shelves with navy dividers as the left.
+   (Last block → wins.)
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .gad-map-col-v2 { gap: 0 !important; }
+/* SIX EQUAL ROWS, mirroring the left: map = top 3, then flight-info, photo,
+   aircraft/operated — 1 row each. Dividers land on the same lines as the left. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { flex: 3 1 0 !important; padding: 0 !important; position: relative !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { flex: 1 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 1 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { flex: 1 1 0 !important; }
+/* Navy dividers between every shelf, like the left column. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
+  border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg,#042354) !important;
+  margin: 0 !important;
+  min-height: 0 !important;   /* let the flex grid own the heights (6-row grid) */
+}
+/* The whole right column fills the same height as the left so rows align. */
+.g8-wrap .gad-map-col-v2 { height: 100% !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf:last-child { border-bottom: 0 !important; }
+/* Brushed-metal on the INFO shelves (the map keeps its imagery). */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: color-mix(in srgb, var(--body-bg,#e6eaef) 82%, var(--airline-accent,#8a8f96) 18%) !important;
+  background-image:
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.34) 47%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0) 82%),
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px,     rgba(0,0,0,0.055) 2px),
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px,      rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%) !important;
+  overflow: hidden !important;
+}
+/* TITLE overlaid at the TOP of the map. */
+.g8-wrap .gad-map-col-v2 .v2-rc-maptitle {
+  position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 6 !important;
+  text-align: center !important; font-weight: 800 !important; white-space: nowrap !important;
+  font-size: clamp(15px,2.3vh,27px) !important; letter-spacing: 0.3px !important;
+  color: #ffffff !important; padding: clamp(5px,1vh,12px) 10px clamp(10px,1.6vh,20px) !important;
+  background: linear-gradient(180deg, rgba(8,18,40,0.85) 0%, rgba(8,18,40,0.5) 55%, rgba(8,18,40,0) 100%) !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6) !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-maptitle2 { color: var(--airline-accent3, #FAC120) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-maptitle-sep { opacity: 0.55 !important; font-weight: 500 !important; }
+/* FLIGHT-INFO shelf — label-over-value with the gold accent line, like the
+   left. Row 1 = Flight | From (two cells); rows 2-3 = Status, Arrives ETA. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi { display: flex !important; align-items: stretch !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi {
+  display: flex !important; flex-direction: column !important; justify-content: center !important;
+  width: 100% !important; height: 100% !important; gap: clamp(1px,0.4vh,5px) !important; min-height: 0 !important;
+  padding: clamp(2px,0.4vh,7px) clamp(10px,1.2vw,18px) !important; box-sizing: border-box !important; overflow: hidden !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row { display: flex !important; gap: clamp(8px,1vw,18px) !important; min-height: 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-cell { flex: 1 1 0 !important; min-width: 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl {
+  font-size: clamp(9px,1.25vh,15px) !important; font-weight: 700 !important;
+  color: var(--banner-bg,#14181E) !important; letter-spacing: 0.2px !important;
+  border-bottom: clamp(2px,0.3vh,4px) solid var(--airline-accent3,#FAC120) !important;
+  padding-bottom: clamp(1px,0.25vh,3px) !important; white-space: nowrap !important; overflow: hidden !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val {
+  font-size: clamp(15px,2.5vh,30px) !important; font-weight: 900 !important; line-height: 1.02 !important;
+  color: var(--banner-bg,#14181E) !important; white-space: nowrap !important; overflow: hidden !important;
+  text-overflow: ellipsis !important; margin-top: clamp(0px,0.2vh,3px) !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-sep { opacity: 0.5 !important; font-weight: 500 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-status-scheduled { color: #1a8a3a !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-status-delayed   { color: #d97706 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-status-cancelled { color: #c01622 !important; }
+/* Aircraft photo — max it out to fill the panel. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { padding: clamp(2px,0.4vh,8px) clamp(6px,0.8vw,14px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img { width: 100% !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img img { width: 100% !important; max-width: 100% !important; height: auto !important; max-height: 100% !important; object-fit: contain !important; }
+
+/* v224b — bottom aircraft/operated shelf adopts the flight-info value style. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-type .v2-rc-fi { justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val {
+  display: flex !important; align-items: center !important; overflow: visible !important; white-space: normal !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val img,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val .v2-rc-opby-logo {
+  height: clamp(20px,3.4vh,40px) !important; width: auto !important; max-width: 100% !important; object-fit: contain !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-actype-val {
+  font-size: clamp(13px,2.2vh,26px) !important; white-space: nowrap !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   v224c — READABILITY. The flight-info was starved (3 rows in a tiny band)
+   and the photo wasn't filling. Give the info real height, size the text up
+   so it reads across a gate, and MAX the aircraft photo. (Last → wins.)
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { flex: 2.4 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { flex: 1.7 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 1 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { flex: 1.15 1 0 !important; }
+/* Flight-info: fill the band, big readable text. */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi { justify-content: space-evenly !important; gap: clamp(2px,0.6vh,9px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl { font-size: clamp(13px,2.1vh,23px) !important; padding-bottom: clamp(2px,0.4vh,5px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val { font-size: clamp(24px,4.6vh,52px) !important; line-height: 1.0 !important; margin-top: clamp(2px,0.4vh,5px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-actype-val { font-size: clamp(17px,3vh,36px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val img,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val .v2-rc-opby-logo { height: clamp(26px,4.4vh,52px) !important; }
+/* MAX the aircraft photo — fill the whole panel. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { padding: clamp(1px,0.2vh,5px) clamp(3px,0.4vw,8px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img { width: 100% !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img img,
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img .g8-aircraft-img {
+  width: 100% !important; max-width: 100% !important; height: 100% !important; max-height: 100% !important; object-fit: contain !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   v224d — flight-info now 2 rows (no ETA): size to FIT (no truncation).
+   Bottom shelf = stacked bilingual label beside value/logo. Plane scaled up
+   to fill (eats the PNG's transparent margins). (Last → wins.)
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { flex: 3 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { flex: 1 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 1 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { flex: 1 1 0 !important; }
+/* Flight-info values: fit the cell (no cut-off). */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val { font-size: clamp(20px,3.5vh,40px) !important; text-overflow: clip !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-val { font-size: clamp(20px,3.2vh,38px) !important; }
+/* Bottom aircraft/operated shelf — stacked label (EN/FR) beside value/logo. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-type { padding: clamp(2px,0.5vh,8px) clamp(8px,1vw,16px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb { display: flex !important; width: 100% !important; height: 100% !important; align-items: center !important; gap: clamp(8px,1.1vw,20px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-cell { flex: 1 1 0 !important; min-width: 0 !important; display: flex !important; align-items: center !important; gap: clamp(6px,0.8vw,14px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-lbl { display: flex !important; flex-direction: column !important; flex: 0 0 auto !important; font-size: clamp(10px,1.5vh,16px) !important; font-weight: 700 !important; line-height: 1.14 !important; color: var(--banner-bg,#14181E) !important; white-space: nowrap !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val { min-width: 0 !important; font-weight: 900 !important; color: var(--banner-bg,#14181E) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-actype-val { font-size: clamp(16px,2.8vh,32px) !important; white-space: normal !important; line-height: 1.05 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val { display: flex !important; align-items: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val img,
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val .v2-rc-opby-logo { height: clamp(24px,4.2vh,50px) !important; width: auto !important; max-width: 100% !important; object-fit: contain !important; }
+/* Plane: show the WHOLE aircraft (no crop). object-fit:contain fits it to the
+   panel width; NO scale/overflow-crop so nose & tail are never cut off. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { overflow: visible !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img { overflow: visible !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img img,
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img .g8-aircraft-img { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: none !important; }
+
+/* v224e — panels back to 6 equal rows; stop the aircraft value wrapping. */
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-cell.v2-rc-acb-ac { flex: 1.4 1 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-actype-val {
+  white-space: nowrap !important; overflow: hidden !important; text-overflow: clip !important;
+  font-size: clamp(15px,2.6vh,30px) !important; line-height: 1.05 !important;
+}
+
+/* v224f — bottom shelf = two FULL-WIDTH lines (Operated By line, Aircraft
+   line all the way across). Left-aligned. */
+.g8-wrap .gad-map-col-v2 .v2-rc-acb { flex-direction: column !important; justify-content: center !important; gap: clamp(4px,0.9vh,12px) !important; align-items: stretch !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-row { display: flex !important; align-items: center !important; width: 100% !important; gap: clamp(8px,1vw,16px) !important; min-width: 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-lbl { flex: 0 0 auto !important; text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val { flex: 1 1 auto !important; text-align: left !important; min-width: 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-actype-val {
+  white-space: nowrap !important; overflow: hidden !important; text-overflow: clip !important;
+  font-size: clamp(18px,3vh,36px) !important; line-height: 1.04 !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val { justify-content: flex-start !important; }
+/* keep all flight-info values left-aligned and starting at the same edge */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-cell, .g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl, .g8-wrap .gad-map-col-v2 .v2-rc-fi-val { text-align: left !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   v224g — bottom panel flipped (model+reg on top, Operated By centered
+   below); Status row centered; Destination code accent; LEFT status colour.
+   ════════════════════════════════════════════════════════════════════════ */
+/* Bottom aircraft panel: model+reg across the top, Operated By centered below */
+.g8-wrap .gad-map-col-v2 .v2-rc-acb { flex-direction: column !important; justify-content: center !important; align-items: stretch !important; gap: clamp(3px,0.8vh,11px) !important; text-align: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  font-size: clamp(18px,3.1vh,36px) !important; font-weight: 900 !important; color: var(--banner-bg,#14181E) !important;
+  text-align: center !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: clip !important; line-height: 1.02 !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby { display: flex !important; align-items: center !important; justify-content: center !important; gap: clamp(8px,1vw,16px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl { font-size: clamp(13px,1.9vh,21px) !important; font-weight: 700 !important; color: var(--banner-bg,#14181E) !important; white-space: nowrap !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl .v2-rc-fi-sep { opacity: 0.5 !important; font-weight: 500 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-logo img,
+.g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-logo .v2-rc-opby-logo { height: clamp(28px,5vh,58px) !important; width: auto !important; max-width: 100% !important; object-fit: contain !important; }
+/* Status row centered (right flight-info) — that row only. */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single { justify-content: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-cell { flex: 0 1 auto !important; text-align: center !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-lbl,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-val { text-align: center !important; }
+/* Destination/From code accent (matches the left's "Destination | YYZ"). */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-code { color: var(--airline-accent,#D82F2E) !important; font-weight: 800 !important; }
+/* LEFT panel: re-assert the STATUS colour (was being overridden to navy). */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.scheduled,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.ontime { color: #0e7c4a !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.boarding { color: #1d4ed8 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.delayed,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.diverted { color: #d97706 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.cancelled,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.final,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.gateclosed { color: #b91c1c !important; }
+
+/* v224h — fit the "Destination | YYZ" label (code was clipping); status LABEL
+   left-aligned while the status VALUE stays centered. */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl { font-size: clamp(10px,1.7vh,18px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single { justify-content: stretch !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-cell { flex: 1 1 auto !important; text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-lbl { text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-val { text-align: center !important; }

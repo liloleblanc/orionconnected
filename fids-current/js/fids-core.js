@@ -870,6 +870,8 @@ function changeFont(f) {
 // Font stacks shared by the control-bar dropdown AND the FIDS Console
 // Customize panel (same keys the Customize <select> saves).
 var FIDS_FONT_STACKS = {
+  'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+    'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
   'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
   'inter':         "'Inter', system-ui, -apple-system, sans-serif",
   'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -914,7 +916,7 @@ function restoreFontChoice(defaultFont) {
   } catch (e) {}
   var f = '';
   try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
-  changeFont(f || defaultFont || 'Geist');
+  changeFont(f || defaultFont || 'Possibility');  // Possibility = brand default
 }
 
 // Start / stop the airline background rotation timer. Runs only when
@@ -2220,7 +2222,7 @@ var LOCAL_LOGOS = {
   'WR': '/logos/airlines/canadian/encore.png',                    // Encore
   'PD': '/logos/airlines/canadian/porter.svg',                    // Porter (correct — NOT viporter)
   'QK': '/logos/airlines/canadian-regional/jazz.svg',             // Jazz
-  'RV': '/logos/airlines/canadian/rouge.png',                     // Rouge
+  'RV': '/logos/airlines/canadian/rouge.svg',                     // Rouge (color — rouge.png was missing)
   'TS': '/logos/airlines/canadian/transat.svg',                   // Air Transat
   'F8': '/logos/airlines/canadian/flair.svg',                     // Flair
   'PB': '/logos/airlines/canadian-regional/PAL-Airlines.svg',              // PAL Airlines
@@ -2253,9 +2255,9 @@ var LOCAL_LOGOS = {
 // where the operator brand differs visually from the marketing brand.
 var OPERATOR_LOGOS = {
   // Air Canada family
-  'RV':  '/logos/airlines/canadian/rouge.png',                                 // Air Canada Rouge
+  'RV':  '/logos/airlines/canadian/rouge.svg',                                 // Air Canada Rouge (rouge.png didn't exist → text fallback)
   'QK':  '/logos/airlines/canadian-regional/jazz.svg',                         // Jazz Aviation
-  'ROU': '/logos/airlines/canadian/rouge.png',                                 // Rouge ICAO
+  'ROU': '/logos/airlines/canadian/rouge.svg',                                 // Rouge ICAO
   'JZA': '/logos/airlines/canadian-regional/jazz.svg',                         // Jazz ICAO
   // Northern / smaller Canadian regional carriers
   'MO':  '/logos/airlines/canadian-regional/calmair.svg',                      // Calm Air
@@ -3536,7 +3538,7 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
-  'AC':'#D82F2E','WS':'#00B2A9','PD':'#1A3A6B','PB':'#1F3876','F8':'#A8FB96',
+  'AC':'#D82F2E','WS':'#00B2A9','PD':'#254D87','PB':'#1F3876','F8':'#A8FB96',
   'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
@@ -5140,6 +5142,13 @@ function _buildV2AircraftCol(ctx, vars) {
       var _svgClock = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
       var _svgDepart = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>';
       var _svgArrive = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM19.34 15.85c.8.21 1.62-.26 1.84-1.06.21-.8-.26-1.62-1.06-1.84l-5.31-1.42-2.76-9.02L10.12 2v8.28L5.15 8.95l-.93-2.32-1.45-.39v5.17l16.57 4.44z"/></svg>';
+      // v222 — new left-rail panel icons (Nick's 6-panel spec).
+      var _svgPlane = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+      var _svgGlobe = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a7.82 7.82 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a7.99 7.99 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a7.82 7.82 0 0 1 0 4h-3.38z"/></svg>';
+      // Boarding — "enter the gate" (doorway on the right + arrow in).
+      var _svgBoarding = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4v-2h4V6h-4V4z"/><path d="M10.4 7.4 9 8.8l2.3 2.2H4v2h7.3L9 15.2l1.4 1.4 4.6-4.6z"/></svg>';
+      // Total Flight Time — clean stopwatch.
+      var _svgRoute = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M15 1H9v2h6V1zm-3 7a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0V9a1 1 0 0 0-1-1zm7.03-.61 1.42-1.42a10 10 0 0 0-1.41-1.41l-1.42 1.42A8 8 0 1 0 12 22a8 8 0 0 0 7.03-14.61zM12 20a6 6 0 1 1 0-12 6 6 0 0 1 0 12z"/></svg>';
 
       // v218.99.33 — Airline emblem using REAL symbol-only SVGs. The leaf
       // shape gets a white filter applied and sits on the red CSS circle,
@@ -5150,9 +5159,9 @@ function _buildV2AircraftCol(ctx, vars) {
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
         'RV':  '/logos/airlines/canadian/AC.TO.svg',
-        'WS':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
-        'WR':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
-        'PD':  '/logos/airlines/canadian/Porter_Airlines_Logo_2006.svg',
+        'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
+        'WR':  '/logos/symbols/airlines-mono/WS.svg',
+        'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
         'F8':  '/logos/airlines/canadian/flair-dot.svg',   // Flair — the black DOT from the lockup IS the emblem
         // US majors — symbol-only emblems (rendered white on the accent badge)
@@ -5174,7 +5183,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        var NATIVE_COLOR_EMBLEMS = { 'PB': true, 'F8': true };  // F8: the dot stays brand black, no accent circle/filter
+        var NATIVE_COLOR_EMBLEMS = { 'PB': true, 'F8': true };  // (PD now uses a white "p" on the accent circle, not native)
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
@@ -5247,14 +5256,18 @@ function _buildV2AircraftCol(ctx, vars) {
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
       function _shelf(icon, en, second, val, valCls) {
-        // Skip the 2nd-language label when it's identical to English (e.g. Destination).
-        var _sec = (second && second !== en) ? '<div class="v2-fi-lbl-2">' + second + '</div>' : '';
-        return '<div class="v2-fi-row">' + icon
-          + '<div class="v2-fi-copy">'
-          +   '<div class="v2-fi-lbl-en">' + en + '</div>'
+        // v223 — Nick's exact spec: two columns. Icon column (left) + text
+        // column (left-aligned label, full-width gold line, big value).
+        var _sec = (second && second !== en)
+          ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + second + '</span>'
+          : '';
+        return '<div class="v2-fi-row">'
+          + '<div class="v2-fi-iconcol">' + icon + '</div>'
+          + '<div class="v2-fi-textcol">'
+          +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '</div>'
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
-          +   _sec
-          + '</div></div>';
+          + '</div>'
+          + '</div>';
       }
       // Destination city (was in the header; now the first shelf).
       var _destCityName = '';
@@ -5278,13 +5291,44 @@ function _buildV2AircraftCol(ctx, vars) {
       var _arrL2L = _arrRev ? _L2('Révisé - Arrivée','Revisado - Llegada')      : _L2('Heure d’arrivée','Hora de llegada');
       var _brdL2L = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Heure d’embarquement','Hora de embarque');
 
+      // v222 — Nick's 6 equal panels (top→bottom):
+      //   Flight·Vol | Destination | Status·Statut | Boarding·Embarquement
+      //   | Departure·Départ | Flight Time·Temps Vol
+      // Short bilingual labels (revised-aware for the time panels).
+      var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
+      // Per Nick: "Destination | YYZ" — code on the label line, accent-coloured
+      // (same size, not bigger); the value is the city alone.
+      var _destLabel = 'Destination' + (_destIataDisp ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destIataDisp + '</span>' : '');
+      var _destValue = _destCityName || _destIataDisp;
+      var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
+      var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
+      var _depShortEn = _depRev ? 'Revised - Departure' : 'Departure';
+      var _depShortL2 = _depRev ? _L2('Révisé - Départ','Revisado - Salida') : _L2('Départ','Salida');
+      var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
+      // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
+      function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
+      // STATUS — show BOTH languages, never switch ("On Time | À l'heure").
+      var _stBiling = '';
+      try {
+        var _stk = String((currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
+        if (_stk === 'ontime') _stk = 'ontime';
+        var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
+        if (_ss) {
+          var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
+          // Status STACKED — EN over FR (per Nick).
+          _stBiling = '<span class="v2-fi-st2">' + _enTC + '</span><span class="v2-fi-st2">' + _ss.fr + '</span>';
+        }
+      } catch (e) {}
+      if (!_stBiling) _stBiling = _fiStLbl || '—';
+
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + (_destCityName ? _shelf(_emblemHtml || _badge(_svgStatus), 'Destination', _L2('Destination','Destino'), _destCityName, 'v2-fi-dest') : '')
-        + (_fiStLbl ? _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _fiStLbl, 'v2-fi-status-val v2-fi-status' + _fiStCls) : '')
-        + (_depShow ? _shelf(_badge(_svgDepart), _depEnL, _depL2L, _depShow, 'v2-fi-time') : '')
-        + (_arrShow ? _shelf(_badge(_svgArrive), _arrEnL, _arrL2L, _arrShow, 'v2-fi-time') : '')
-        + (_fiBrd ? _shelf(_badge(_svgClock), _brdEnL, _brdL2L, _fiBrd, 'v2-fi-time') : '')
+        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || '—'), 'v2-fi-dest')
+        + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
+        + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
+        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_fiBrd) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgArrive), 'Flight Time', _L2('Durée','Duración'), _durValue, 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}
@@ -5299,8 +5343,9 @@ function _buildV2AircraftCol(ctx, vars) {
     weather:  _wxBlock,
     gateinfo: _gateInfoBlock
   };
-  // v218.99.45 — Weather widget added to bottom of left column (Nick's spec)
-  var _defaultOrder = ['flightinfo', 'weather'];
+  // v222 — Left column is now the 6 equal flight panels ONLY. Weather moved
+  // to the new center-bottom rotating panel (built separately).
+  var _defaultOrder = ['flightinfo'];
 
   // v218.99.21 — apply customized layout order if set. Resolver returns
   // the merged order array for this airport+airline. Defaults if unset.
@@ -5558,17 +5603,26 @@ function _buildV2MapCol(ctx, vars) {
              + '<div class="v2-rc-r2lbl2">' + _t2(wordObj) + '</div></div>';
       }
 
+      // Status — bilingual inline (EN | FR), never switches (matches the left).
+      var _stEn = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey] && _ST_SHORT[_stKey].en) || _stShort;
+      var _stFr = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey] && _ST_SHORT[_stKey].fr) || _stEn;
+      var _stShow = (_stFr && _stFr !== _stEn)
+        ? (_stEn + ' <span class="v2-rc-fi-sep">|</span> ' + _stFr) : _stEn;
+      // ONE flight-info shelf: Flight·From + Status (bilingual). No ETA row —
+      // that lives on the left/departure side.
       _inboundCard =
-          '<div class="v2-rc-rtitle">' + _L.title.en + '<span class="v2-rc-rtitle2">' + _t2(_L.title) + '</span></div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-i3"><div class="v2-rc-i3">'
-        +     _i3('Status', _stShort, _t2(_L.status), 'v2-rc-status-' + _stCls)
-        +     _i3('Flight', _ibFltCompact, _t2(_L.flight), '')
-        +     _i3('Arriving in', (_ibEtaStr || '—'), _t2(_L.arriving), '')
-        +   '</div></div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-r2"><div class="v2-rc-r2">'
-        +     _r2(_depAbbr, (_ibDepStr || '—') + ' - ' + _origIata, _depWordObj)
-        +     _r2(_arrAbbr, _destIata + ' - ' + (_ibArrStr || '—'), _arrWordObj)
-        +   '</div></div>';
+          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi">'
+        +   '<div class="v2-rc-fi-row">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Flight <span class="v2-rc-fi-sep">|</span> Vol</div>'
+        +       '<div class="v2-rc-fi-val">' + (_ibFltCompact || '—') + '</div></div>'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">From <span class="v2-rc-fi-sep">|</span> <span class="v2-rc-fi-code">' + (_origIata || 'De') + '</span></div>'
+        +       '<div class="v2-rc-fi-val">' + (_origCity || _origIata || '—') + '</div></div>'
+        +   '</div>'
+        +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Status <span class="v2-rc-fi-sep">|</span> Statut</div>'
+        +       '<div class="v2-rc-fi-val v2-rc-status-' + _stCls + '">' + _stShow + '</div></div>'
+        +   '</div>'
+        + '</div></div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.
@@ -5642,18 +5696,36 @@ function _buildV2MapCol(ctx, vars) {
              + '<div class="v2-rc-r2lbl2">' + _dt2(wordObj) + '</div></div>';
       }
 
-      var _dTitle = {en:'Your Departure Flight Information', fr:'Information sur votre vol de départ', es:'Información de su vuelo de salida'};
+      // Destination city for "To | À".
+      var _dDestCity = '';
+      try {
+        if (_dDest && typeof CITY !== 'undefined' && CITY[_dDest]) _dDestCity = CITY[_dDest];
+        else if (_dDest && typeof AP !== 'undefined' && AP[_dDest] && AP[_dDest].city) _dDestCity = AP[_dDest].city;
+        if (typeof tc === 'function' && _dDestCity) _dDestCity = tc(_dDestCity);
+      } catch (e) {}
+      // Bilingual status for the departure card (Scheduled | Prévu).
+      var _dStEn = '', _dStFr = '';
+      try {
+        var _dk = String((_dcf && _dcf.status) || '').toLowerCase().replace(/[\s_-]/g, '');
+        var _dss = (typeof SS !== 'undefined' && SS[_dk]) ? SS[_dk] : null;
+        if (_dss) { _dStEn = _dss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); _dStFr = _dss.fr; }
+      } catch (e) {}
+      var _dStShow = (_dStFr && _dStFr !== _dStEn)
+        ? (_dStEn + ' <span class="v2-rc-fi-sep">|</span> ' + _dStFr) : (_dStEn || _dStLabel || '—');
+      // Flight·To + Status only (no departing-in row — it's on the left).
       _inboundCard =
-          '<div class="v2-rc-rtitle">' + _dTitle.en + '<span class="v2-rc-rtitle2">' + _dt2(_dTitle) + '</span></div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-i3"><div class="v2-rc-i3">'
-        +     _di3('Status', (_dStLabel || '—'), _dt2({fr:'Statut',es:'Estado'}), 'v2-rc-status-' + _dStCls)
-        +     _di3('Flight', _dFltCompact, _dt2({fr:'Vol',es:'Vuelo'}), '')
-        +     _di3('Departing in', (_dEtaStr || '—'), _dt2({fr:'Départ dans',es:'Sale en'}), '')
-        +   '</div></div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-r2"><div class="v2-rc-r2">'
-        +     _dr2('Departure Time', (_dDepStr || '—') + ' - ' + _dOrig, {fr:'Heure de départ',es:'Hora de salida'})
-        +     _dr2('Arrival Time', _dDest + ' - ' + (_dArrStr || '—'), {fr:"Heure d'arrivée",es:'Hora de llegada'})
-        +   '</div></div>';
+          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi">'
+        +   '<div class="v2-rc-fi-row">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Flight <span class="v2-rc-fi-sep">|</span> Vol</div>'
+        +       '<div class="v2-rc-fi-val">' + (_dFltCompact || '—') + '</div></div>'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Destination <span class="v2-rc-fi-sep">|</span> <span class="v2-rc-fi-code">' + (_dDest || 'À') + '</span></div>'
+        +       '<div class="v2-rc-fi-val">' + (_dDestCity || _dDest || '—') + '</div></div>'
+        +   '</div>'
+        +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Status <span class="v2-rc-fi-sep">|</span> Statut</div>'
+        +       '<div class="v2-rc-fi-val v2-rc-status-' + _dStCls + '">' + _dStShow + '</div></div>'
+        +   '</div>'
+        + '</div></div>';
     } catch (e) {}
   }
 
@@ -5812,31 +5884,33 @@ function _buildV2MapCol(ctx, vars) {
           : '<b>' + _opNm6 + '</b>';
       }
       var _opByL2 = (_lang2b === 'es') ? 'Operado por' : 'Exploité par';
-      var _typeCellHtml = _opByVal
-        ? '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Operated By</div>'
-          +   '<div class="v2-rc-opby-val">' + _opByVal + '</div>'
-          +   '<div class="v2-rc-r2lbl2">' + _opByL2 + '</div></div>'
-          + '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">Aircraft</div>'
-          +   '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
-          +   '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div></div>'
-        : '<div class="v2-rc-r2cell" style="flex:1 1 100%;align-items:center;text-align:center;"><div class="v2-rc-r2lbl">Aircraft</div>'
-          +   '<div class="v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
-          +   '<div class="v2-rc-r2lbl2">' + _typeL2 + '</div></div>';
+      // Bottom shelf: STACKED bilingual label (EN over FR) beside the value —
+      //   Operated By: / Exploté Par:  [LOGO]    Aircraft: / Appareil:  A319 | reg
+      // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
+      // BOTTOM (only if operated by another carrier): Operated By + logo, centered.
+      var _typeCellHtml =
+          '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
+        + (_opByVal
+            ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">Operated By <span class="v2-rc-fi-sep">|</span> ' + _opByL2 + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
+            : '');
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
         + '</div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-r2">'
+        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
         +   _typeCellHtml
         + '</div></div>';
     }
   } catch (e) {}
 
-  // Map area itself — clean now (no overlay pill, that data went up top)
+  // Map area — now the TOP half of the right column, with the "Your Aircraft"
+  // title overlaid at the top and the speed/altitude telemetry at the bottom
+  // (both INSIDE the map, per Nick — not separate shelves).
   var _mapBox =
       '<div class="v2-rc-shelf v2-rc-shelf-map">'
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
+    +     '<div class="v2-rc-maptitle">Your Aircraft <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">Votre Avion</span></div>'
     +     _telemBar
     +   '</div>'
     + '</div>';
@@ -5853,7 +5927,7 @@ function _buildV2MapCol(ctx, vars) {
     map:         _mapBox,
     aircraft:    _aircraftBlock
   };
-  var _rcDefaultOrder = ['inboundCard', 'map', 'aircraft'];
+  var _rcDefaultOrder = ['map', 'inboundCard', 'aircraft'];
 
   // v218.99.21 — apply customized layout order if set
   var _rcOrderToUse = _rcDefaultOrder;
@@ -6487,7 +6561,7 @@ function uxgGateHtml(ctx) {
     // BLACK BANNERS — use white-wordmark variants so logo text reads clean
     'AC': '/logos/airlines/canadian/air-canada-white.svg',                       // red rondelle + white "AIR CANADA"
     'QK': '/logos/airlines/canadian/air-canada-white.svg',                       // Jazz under AC
-    'RV': '/logos/airlines/canadian/rouge.png',                                   // Rouge branded gate banner
+    'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
     'UA': '/logos/airlines/us-major/united.svg',                                 // globe + white "UNITED"
@@ -6719,6 +6793,9 @@ function uxgGateHtml(ctx) {
        + (airlineCode ? ' g8-airline-' + airlineCode : '')
        + '" data-pill-style="' + (window._gateStatusPillStyle || 'opaque') + '"'
        + ' style="--airline-accent:' + accent
+       // 3rd brand colour (airline-colors.js r3) — distinct accent for the
+       // secondary line etc. Falls back to the main accent when not defined.
+       + ';--airline-accent3:' + ((_bannerSpec && _bannerSpec.r3) ? _bannerSpec.r3 : accent)
        // Official dark banner colour for the side panels (AC #080C14, etc.).
        // Airlines whose official banner is WHITE (WestJet/Hawaiian/Porter) get
        // a clean neutral dark instead — never a white side panel.
@@ -6741,10 +6818,6 @@ function uxgGateHtml(ctx) {
           : ''
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
-    +   '<div class="g8-r1-flight">'
-    +     '<span class="g8-bilbl"><span class="g8-bilbl-en">Flight</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _flightLbl2 + '</span></span>'
-    +     '<span class="g8-r1-flightnum">' + _flightNumDisp + '</span>'
-    +   '</div>'
     +   '<div class="g8-r1-right">'
     +     '<span class="g8-bilbl"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
     +     '<span class="g8-r1-gate">' + gateVal + '</span>'
@@ -7304,7 +7377,11 @@ function uxgActivateRotator() {
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
   if (!root) return;
-  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-dest', '.v2-fi-status-val',
+  // NOTE: left-column values (.v2-fi-dest/.v2-fi-status-val) are NOT autofit —
+  // autofit shrinks each element independently, which makes them DIFFERENT
+  // sizes. Nick wants one uniform size per category, so they use a fixed
+  // clamp in CSS instead.
+  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value', '.v2-fi-textcol .v2-fi-title',
               '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
@@ -7726,6 +7803,17 @@ const gView = document.getElementById('gateView');
         var _savedMap = document.getElementById('gateMapBox');
         var _savedMapParent = _savedMap ? _savedMap.parentElement : null;
         if (_savedMap && gateMap) { _savedMap.remove(); }
+        // Preserve the LIVE ad carousel across rebuilds: detach the node
+        // (with its playing video/ad and in-flight crossfade intact) before
+        // innerHTML wipes it, then re-attach into the fresh placeholder.
+        // Without this, every _gateKey change (status / upd / inbound poll)
+        // destroyed and recreated the carousel, so playing videos restarted
+        // ("start-stop-start"), the slide jumped back to the first, and the
+        // crossfade flashed. Mirrors the map preservation above.
+        var _savedAd = document.getElementById('gateAdCarousel');
+        var _savedAdLogo = document.getElementById('gateAdLogo');
+        if (_savedAd && _savedAd.firstChild) { _savedAd.remove(); } else { _savedAd = null; }
+        if (_savedAdLogo) { _savedAdLogo.remove(); }
         // Smooth transition: fade out, rebuild, fade in
         gView.style.transition = 'opacity 0.15s ease';
         gView.style.opacity = '0.7';
@@ -7737,7 +7825,18 @@ const gView = document.getElementById('gateView');
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
           gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs });
         }
-    try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
+        // Re-attach the preserved ad carousel BEFORE autofit/paint so the
+        // playing video is never interrupted and the slot is never empty.
+        var _newAd = document.getElementById('gateAdCarousel');
+        if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
+        var _newAdLogo = document.getElementById('gateAdLogo');
+        if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
+        // Run autofit synchronously first so the un-shrunk (large) text never
+        // paints — that was the "words bump up to twice the size then snap
+        // back" flash on every rebuild. The rAF pass stays as a correction
+        // once web fonts have fully settled.
+        try { if (typeof gateAutofit === "function") gateAutofit(gView); } catch(e){}
+        try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
         if (_savedMap && gateMap && _newMapSlot) {
@@ -14974,6 +15073,8 @@ function applyAirportConfigToBoard(iata) {
   const _font = _pref('font');
   if (_font) {
     var _fontStacks = {
+      'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+    'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
       'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -16476,7 +16577,7 @@ if (document.readyState === 'loading') {
 window.addEventListener('DOMContentLoaded', () => {
   // RocGrotesk is only the DEFAULT — a font the user picked (and which
   // changeFont persisted) must never be stomped on reload.
-  try { restoreFontChoice('RocGrotesk-Medium'); } catch (e) {}
+  try { restoreFontChoice('Possibility'); } catch (e) {}
   const bgCtrls = document.getElementById('ctrlBgGroup');
   if (bgCtrls && screenType === 'gate') bgCtrls.style.display = 'flex';
   // If airline mode was restored from localStorage, kick off rotation.
@@ -20499,14 +20600,15 @@ function buildAdLogoPanelHtml(ad) {
 function _getGateAdDwellMs(slide) {
   if (!slide) return 15000;
   // v218.96: custom slides from the Gate Theme editor carry their own
-  // configured duration. Clamp to a sensible 2s–60s range so a typo can't
-  // freeze the carousel on a single slide for the rest of the day.
+  // configured duration. Clamp to a sensible 2s–600s range so a typo can't
+  // freeze the carousel on a single slide for the rest of the day, while
+  // still allowing a long (full-length) video to play without being cut off.
   if (slide.type === 'custom') {
     // Per-item dwell (set in the Media Library Adjust panel) takes priority,
     // then any theme-editor durationMs, then a sensible default.
     var d = parseInt((slide.item && slide.item.dwellMs) || slide.durationMs, 10);
     if (!isFinite(d) || d <= 0) return 12000;
-    return Math.max(2000, Math.min(60000, d));
+    return Math.max(2000, Math.min(600000, d));
   }
   if (slide.type === 'ad') {
     var ad = slide.data || {};
@@ -21358,7 +21460,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       var art = wrap.closest ? wrap.closest('.axr') : null;
       var id = (art && art.getAttribute('data-hotel-id')) || '';
       if (id && id === _st.id) {
-        // Same hotel re-rendered mid-slide — resume where we were.
+        // Same hotel re-rendered mid-slide — resume where we were. But if the
+        // deck already ran to its last page, this is the hotel RE-APPEARING in
+        // a later carousel slot, so restart its story from page 1.
+        if (_st.idx >= pages.length - 1) { _st.idx = 0; _st.next = now + EVERY; }
         _showPage(pages, _st.idx % pages.length);
         if (!_st.next || _st.next <= now) _st.next = now + EVERY;
       } else {
@@ -21369,7 +21474,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     }
     if (now < _st.next) return;
     _st.next = now + EVERY;
-    _st.idx = (_st.idx + 1) % pages.length;
+    // HOLD on the last page instead of wrapping back to page 1. The outer
+    // carousel keeps Accor up slightly longer than pages×EVERY, so wrapping
+    // flashed page 1 for ~1s ("Accor repeated for a split second then
+    // changed") right before the carousel advanced. Clamping lets the final
+    // page sit until the carousel moves on.
+    _st.idx = Math.min(_st.idx + 1, pages.length - 1);
     _showPage(pages, _st.idx);
   }
   setInterval(check, 250);
