@@ -5296,8 +5296,10 @@ function _buildV2AircraftCol(ctx, vars) {
       //   | Departure·Départ | Flight Time·Temps Vol
       // Short bilingual labels (revised-aware for the time panels).
       var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
-      // City + IATA per Nick's spec: "Toronto (YTZ)".
-      var _destValue = _destCityName + (_destIataDisp ? ' (' + _destIataDisp + ')' : '');
+      // Per Nick: the CODE goes on the LABEL line ("Destination  YYZ", code a
+      // touch bigger); the value is the city alone, big.
+      var _destLabel = 'Destination' + (_destIataDisp ? ' <span class="v2-fi-code">' + _destIataDisp + '</span>' : '');
+      var _destValue = _destCityName || _destIataDisp;
       var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
       var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
       var _depShortEn = _depRev ? 'Revised - Departure' : 'Departure';
@@ -5305,13 +5307,25 @@ function _buildV2AircraftCol(ctx, vars) {
       var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
       // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
       function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
+      // STATUS — show BOTH languages, never switch ("On Time | À l'heure").
+      var _stBiling = '';
+      try {
+        var _stk = String((currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
+        if (_stk === 'ontime') _stk = 'ontime';
+        var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
+        if (_ss) {
+          var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
+          _stBiling = _enTC + ' <span class="v2-fi-sep">|</span> ' + _ss.fr;
+        }
+      } catch (e) {}
+      if (!_stBiling) _stBiling = _fiStLbl || '—';
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || '—'), 'v2-fi-dest')
-        + _shelf(_badge(_svgGlobe), 'Destination', _L2('Destination','Destino'), (_destValue || '—'), 'v2-fi-dest')
-        + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), (_fiStLbl || '—'), 'v2-fi-status-val v2-fi-status' + _fiStCls)
-        + _shelf(_badge(_svgBoarding), (_brdRev ? 'Revised - Boarding' : 'Boarding'), '', (_amPm(_fiBrd) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
+        + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
+        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_fiBrd) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgRoute), 'Flight Time', _L2('Durée','Duración'), _durValue, 'v2-fi-time')
         + '</div>';

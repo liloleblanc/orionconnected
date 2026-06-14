@@ -3976,3 +3976,18 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-ontime { color: #1a8a3a !important; }
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-delayed { color: #d97706 !important; }
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-cancelled { color: #b91c1c !important; }
+
+/* v223b — Destination CODE on the label line (a touch bigger); squeeze more
+   size into the values (fill more of each row). */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-code {
+  font-size: 1.4em !important; font-weight: 800 !important;
+  color: var(--banner-bg, #14181E) !important; margin-left: 0.25em !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-textcol { padding: 0 14px 0 10px !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value {
+  font-size: clamp(44px,9.4vh,104px) !important; margin-top: clamp(1px,0.4vh,6px) !important;
+}
+/* the bilingual status separator inside the value, sized down a touch */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value .v2-fi-sep {
+  font-weight: 400 !important; opacity: 0.45 !important;
+}
