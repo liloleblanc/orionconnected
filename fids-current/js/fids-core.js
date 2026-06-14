@@ -18557,6 +18557,14 @@ function fetchAccorHotelDetail(hotelId) {
                   restaurants.length, 'food&bev,',
                   facilities.length, 'bath+tech,',
                   photos.length, 'photos');
+      // ── LANGUAGE PROOF (for Accor) — the amenity/restaurant WORDS Accor sent
+      // for this language. Ask for fr and see English words here = Accor's gap.
+      try {
+        console.log('%c[ACCOR-LANG PROOF] detail requested=' + curLang + ' for hotel ' + hotelId
+          + '\n  amenities returned: ' + (topAmenities.slice(0, 6).join(' · ') || '(none)')
+          + '\n  restaurants returned: ' + (restaurants.slice(0, 4).join(' · ') || '(none)'),
+          'color:#0a7; font-weight:bold');
+      } catch (e) {}
       if (accs.length === 0 || photos.length === 0) {
         window._accorEmptyLogCount = (window._accorEmptyLogCount || 0) + 1;
         if (window._accorEmptyLogCount <= 3) {
@@ -18825,6 +18833,18 @@ function _processAccorData(data, destIata, langKey) {
   console.log('[ACCOR]', destIata, ': filtered', beforeFilter, '→', hotels.length, 'hotels (≤' + DOWNTOWN_THRESHOLD_KM + 'km from downtown, unknowns kept)');
   ACCOR_HOTEL_CACHE[destIata + '|' + _ckLang] = { hotels: hotels, ts: Date.now() };
   console.log('[ACCOR] Loaded', hotels.length, 'hotels near', destIata, '(' + _ckLang + ')');
+  // ── LANGUAGE PROOF (for Accor) ──────────────────────────────────────────
+  // Shows EXACTLY what language Accor returned for what we requested. If we
+  // ask for French (requested=fr) and the description below comes back in
+  // English, that is Accor's feed missing French — not a bug on our side.
+  try {
+    var _ph = hotels[0] || {};
+    var _pdesc = String(_ph.description || _ph.destinationDescription || _ph.shortDescription || '(no description field)');
+    console.log('%c[ACCOR-LANG PROOF] requested=' + _ckLang + ' for ' + destIata
+      + ' | hotel=' + (_ph.name || _ph.hotelName || _ph.propertyName || '?')
+      + '\n  description returned (first 200 chars): ' + _pdesc.slice(0, 200),
+      'color:#0a7; font-weight:bold');
+  } catch (e) {}
   // Kick off background detail fetches for restaurants / facilities / photo
   // gallery. These populate ACCOR_HOTEL_DETAIL_CACHE which the carousel
   // reads on each render — first render shows list-only data, subsequent
