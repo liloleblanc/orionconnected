@@ -5608,8 +5608,8 @@ function _buildV2MapCol(ctx, vars) {
       var _stFr = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey] && _ST_SHORT[_stKey].fr) || _stEn;
       var _stShow = (_stFr && _stFr !== _stEn)
         ? (_stEn + ' <span class="v2-rc-fi-sep">|</span> ' + _stFr) : _stEn;
-      // ONE flight-info shelf = 1 of the 6 equal rows (Flight·From / Status /
-      // Arrives ETA), so the right column mirrors the left's 6-row grid.
+      // ONE flight-info shelf: Flight·From + Status (bilingual). No ETA row —
+      // that lives on the left/departure side.
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi">'
         +   '<div class="v2-rc-fi-row">'
@@ -5621,10 +5621,6 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
         +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Status <span class="v2-rc-fi-sep">|</span> Statut</div>'
         +       '<div class="v2-rc-fi-val v2-rc-status-' + _stCls + '">' + _stShow + '</div></div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Arrives ' + _destIata + ' ETA</div>'
-        +       '<div class="v2-rc-fi-val">' + (_ibEtaStr || '—') + '</div></div>'
         +   '</div>'
         + '</div></div>';
 
@@ -5707,8 +5703,16 @@ function _buildV2MapCol(ctx, vars) {
         else if (_dDest && typeof AP !== 'undefined' && AP[_dDest] && AP[_dDest].city) _dDestCity = AP[_dDest].city;
         if (typeof tc === 'function' && _dDestCity) _dDestCity = tc(_dDestCity);
       } catch (e) {}
-      // ONE flight-info shelf (same as the inbound) so the departure variant
-      // keeps the 6-row grid — no separate title block (the map carries it).
+      // Bilingual status for the departure card (Scheduled | Prévu).
+      var _dStEn = '', _dStFr = '';
+      try {
+        var _dk = String((_dcf && _dcf.status) || '').toLowerCase().replace(/[\s_-]/g, '');
+        var _dss = (typeof SS !== 'undefined' && SS[_dk]) ? SS[_dk] : null;
+        if (_dss) { _dStEn = _dss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); _dStFr = _dss.fr; }
+      } catch (e) {}
+      var _dStShow = (_dStFr && _dStFr !== _dStEn)
+        ? (_dStEn + ' <span class="v2-rc-fi-sep">|</span> ' + _dStFr) : (_dStEn || _dStLabel || '—');
+      // Flight·To + Status only (no departing-in row — it's on the left).
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi">'
         +   '<div class="v2-rc-fi-row">'
@@ -5719,11 +5723,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '</div>'
         +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
         +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Status <span class="v2-rc-fi-sep">|</span> Statut</div>'
-        +       '<div class="v2-rc-fi-val v2-rc-status-' + _dStCls + '">' + (_dStLabel || '—') + '</div></div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Departing in <span class="v2-rc-fi-sep">|</span> Départ dans</div>'
-        +       '<div class="v2-rc-fi-val">' + (_dEtaStr || '—') + '</div></div>'
+        +       '<div class="v2-rc-fi-val v2-rc-status-' + _dStCls + '">' + _dStShow + '</div></div>'
         +   '</div>'
         + '</div></div>';
     } catch (e) {}
@@ -5884,22 +5884,21 @@ function _buildV2MapCol(ctx, vars) {
           : '<b>' + _opNm6 + '</b>';
       }
       var _opByL2 = (_lang2b === 'es') ? 'Operado por' : 'Exploité par';
-      // Bottom shelf uses the SAME label-over-value (gold accent line) layout
-      // as the flight-info shelf, so the whole right column is consistent.
+      // Bottom shelf: STACKED bilingual label (EN over FR) beside the value —
+      //   Operated By: / Exploté Par:  [LOGO]    Aircraft: / Appareil:  A319 | reg
+      var _opLabel = '<div class="v2-rc-acb-lbl"><span>Operated By:</span><span>' + _opByL2 + ':</span></div>';
+      var _acLabel = '<div class="v2-rc-acb-lbl"><span>Aircraft:</span><span>' + _typeL2 + ':</span></div>';
       var _typeCellHtml = _opByVal
-        ? '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Operated By <span class="v2-rc-fi-sep">|</span> ' + _opByL2 + '</div>'
-          +   '<div class="v2-rc-fi-val v2-rc-opby-val">' + _opByVal + '</div></div>'
-          + '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Aircraft <span class="v2-rc-fi-sep">|</span> ' + _typeL2 + '</div>'
-          +   '<div class="v2-rc-fi-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>'
-        : '<div class="v2-rc-fi-cell" style="flex:1 1 100%;"><div class="v2-rc-fi-lbl">Aircraft <span class="v2-rc-fi-sep">|</span> ' + _typeL2 + '</div>'
-          +   '<div class="v2-rc-fi-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>';
+        ? '<div class="v2-rc-acb-cell">' + _opLabel + '<div class="v2-rc-acb-val v2-rc-opby-val">' + _opByVal + '</div></div>'
+          + '<div class="v2-rc-acb-cell v2-rc-acb-ac">' + _acLabel + '<div class="v2-rc-acb-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>'
+        : '<div class="v2-rc-acb-cell v2-rc-acb-ac" style="flex:1 1 100%;">' + _acLabel + '<div class="v2-rc-acb-val v2-rc-actype-val">' + (_acTypeVal || '—') + '</div></div>';
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
         + '</div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-fi"><div class="v2-rc-fi-row">'
+        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
         +   _typeCellHtml
-        + '</div></div></div>';
+        + '</div></div>';
     }
   } catch (e) {}
 
