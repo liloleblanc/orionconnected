@@ -3478,7 +3478,7 @@ body, body.gids-page, body.gate-page{
   border-bottom: 3px solid var(--airline-accent, #D82F2E) !important;
 }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:last-child { border-bottom: 0 !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { flex: 2 1 0 !important; padding: 0 !important; position: relative !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { flex: 1 1 0 !important; padding: 0 !important; position: relative !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3,
 .g8-wrap .gad-map-col-v2 .v2-rc-r2 { display: flex !important; align-items: flex-start !important; gap: clamp(4px,0.6vw,12px) !important; width: 100% !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3cell,
