@@ -74,7 +74,8 @@
       +       '<div style="display:flex;gap:14px;">'
       +         '<div style="flex:1;">'
       +           '<div style="color:#cdd7e6;font-size:13px;font-weight:600;margin-bottom:6px;">Duration (seconds)</div>'
-      +           '<input id="maDwell" type="number" min="2" max="60" step="1" style="width:100%;box-sizing:border-box;background:#0c1018;color:#fff;border:1px solid #2a3344;border-radius:8px;padding:9px;font-size:13px;">'
+      +           '<input id="maDwell" type="number" min="2" max="600" step="1" style="width:100%;box-sizing:border-box;background:#0c1018;color:#fff;border:1px solid #2a3344;border-radius:8px;padding:9px;font-size:13px;">'
+      +           '<div id="maDurHint" style="color:#6b7890;font-size:11px;margin-top:6px;line-height:1.5;"></div>'
       +         '</div>'
       +         '<div style="flex:1;">'
       +           '<div style="color:#cdd7e6;font-size:13px;font-weight:600;margin-bottom:6px;">Play order</div>'
@@ -130,8 +131,33 @@
     orderEl.value = (st.order === 999 ? '' : st.order);
     dwellEl.addEventListener('input', function () {
       var s = parseInt(dwellEl.value, 10);
-      if (isFinite(s) && s > 0) st.dwellMs = Math.max(2000, Math.min(60000, s * 1000));
+      if (isFinite(s) && s > 0) st.dwellMs = Math.max(2000, Math.min(600000, s * 1000));
     });
+    // For videos, detect the clip's real length so the operator can set the
+    // duration to play it in full (the carousel advances after this many
+    // seconds — too short and the video gets cut off). Direct file uploads
+    // expose duration via the <video> element; YouTube/Vimeo embeds don't, so
+    // the operator just types the length they want.
+    var durHint = ov.querySelector('#maDurHint');
+    function _fmt(sec){ var m=Math.floor(sec/60), s2=Math.round(sec%60); return (m?m+'m ':'')+s2+'s'; }
+    if (isVideo && durHint) {
+      durHint.innerHTML = 'Set how long this video plays. Up to 600s.';
+      var _probe = document.createElement('video');
+      _probe.preload = 'metadata'; _probe.muted = true; _probe.src = rec.url;
+      _probe.addEventListener('loadedmetadata', function () {
+        var dur = _probe.duration;
+        if (isFinite(dur) && dur > 0) {
+          var full = Math.ceil(dur);
+          durHint.innerHTML = 'Full length: <b style="color:#cdd7e6;">' + _fmt(dur) + '</b> '
+            + '<button id="maUseFull" type="button" style="margin-left:6px;appearance:none;background:#1c2536;color:#7fd0ff;border:1px solid #2a3344;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;">Use full length</button>';
+          var ufBtn = ov.querySelector('#maUseFull');
+          if (ufBtn) ufBtn.addEventListener('click', function () {
+            st.dwellMs = Math.max(2000, Math.min(600000, full * 1000));
+            dwellEl.value = full;
+          });
+        }
+      });
+    }
     orderEl.addEventListener('input', function () {
       var o = parseInt(orderEl.value, 10);
       st.order = isFinite(o) ? o : 999;

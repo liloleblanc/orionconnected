@@ -20571,14 +20571,15 @@ function buildAdLogoPanelHtml(ad) {
 function _getGateAdDwellMs(slide) {
   if (!slide) return 15000;
   // v218.96: custom slides from the Gate Theme editor carry their own
-  // configured duration. Clamp to a sensible 2s–60s range so a typo can't
-  // freeze the carousel on a single slide for the rest of the day.
+  // configured duration. Clamp to a sensible 2s–600s range so a typo can't
+  // freeze the carousel on a single slide for the rest of the day, while
+  // still allowing a long (full-length) video to play without being cut off.
   if (slide.type === 'custom') {
     // Per-item dwell (set in the Media Library Adjust panel) takes priority,
     // then any theme-editor durationMs, then a sensible default.
     var d = parseInt((slide.item && slide.item.dwellMs) || slide.durationMs, 10);
     if (!isFinite(d) || d <= 0) return 12000;
-    return Math.max(2000, Math.min(60000, d));
+    return Math.max(2000, Math.min(600000, d));
   }
   if (slide.type === 'ad') {
     var ad = slide.data || {};
