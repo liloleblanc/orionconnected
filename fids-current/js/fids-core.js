@@ -2419,7 +2419,7 @@ var WATERMARK_OVERRIDE = {
   // Canadian regionals
   'PD': '/logos/airlines/canadian/porter-white.svg',
   'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',
-  'F8': '/logos/tails-modern/F8.svg',           // real tail roundel (black + brand lime) — the old wordmark-light was a homemade placeholder
+  'F8': '/logos/airlines/canadian/flair-mark-white.png',   // brand "flair ●" mark — white wordmark + green dot (matches the gate banner; reads on the dark sky)
   'PB': '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg',
   // European
   'BA': '/logos/airlines/european/british-airways-wordmark-light.svg',
