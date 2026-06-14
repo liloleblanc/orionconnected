@@ -5256,13 +5256,15 @@ function _buildV2AircraftCol(ctx, vars) {
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
       function _shelf(icon, en, second, val, valCls) {
-        // Title: "EN | FR:" — pipe spaced, colon ATTACHED to the last word.
+        // v223 — Nick's exact spec: two columns. Icon column (left) + text
+        // column (left-aligned label, full-width gold line, big value).
         var _sec = (second && second !== en)
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + second + '</span>'
           : '';
         return '<div class="v2-fi-row">'
-          + '<div class="v2-fi-title">' + '<span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '<span class="v2-fi-colon">:</span></div>'
-          + '<div class="v2-fi-body">' + icon
+          + '<div class="v2-fi-iconcol">' + icon + '</div>'
+          + '<div class="v2-fi-textcol">'
+          +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '</div>'
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
           + '</div>'
           + '</div>';
@@ -5294,8 +5296,8 @@ function _buildV2AircraftCol(ctx, vars) {
       //   | Departure·Départ | Flight Time·Temps Vol
       // Short bilingual labels (revised-aware for the time panels).
       var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
-      // Airport code dropped for now (doesn't fit) — city name only.
-      var _destValue = _destCityName || _destIataDisp;
+      // City + IATA per Nick's spec: "Toronto (YTZ)".
+      var _destValue = _destCityName + (_destIataDisp ? ' (' + _destIataDisp + ')' : '');
       var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
       var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
       var _depShortEn = _depRev ? 'Revised - Departure' : 'Departure';
@@ -5309,9 +5311,9 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgGlobe), 'Destination', _L2('Destination','Destino'), (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), (_fiStLbl || '—'), 'v2-fi-status-val v2-fi-status' + _fiStCls)
-        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_fiBrd) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgBoarding), (_brdRev ? 'Revised - Boarding' : 'Boarding'), '', (_amPm(_fiBrd) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgRoute), 'Total Flight Time', _L2('Temps de vol','Tiempo de vuelo'), _durValue, 'v2-fi-time')
+        + _shelf(_badge(_svgRoute), 'Flight Time', _L2('Durée','Duración'), _durValue, 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}
@@ -7335,7 +7337,7 @@ function gateAutofit(root) {
   // autofit shrinks each element independently, which makes them DIFFERENT
   // sizes. Nick wants one uniform size per category, so they use a fixed
   // clamp in CSS instead.
-  var sels = ['.g8-welcome-city', '.g8-r1-dest',
+  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value',
               '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
