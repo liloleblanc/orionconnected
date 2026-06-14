@@ -5165,7 +5165,7 @@ function _buildV2AircraftCol(ctx, vars) {
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-only.svg',
+        'UA':  '/logos/airlines/us-major/united-globe-clean.svg',   // United globe (white path only, padded to sit inside the round badge)
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
