@@ -23,6 +23,9 @@ const MAP_ENGINE = {
   // display networks (which block public CDNs) can still load it.
   'maplibre-gl.js':  'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js',
   'maplibre-gl.css': 'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css',
+  // three.js r128 (UMD global THREE) — renders the 3D plane model in a
+  // MapLibre custom layer.
+  'three.min.js':    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
 };
 
 const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
