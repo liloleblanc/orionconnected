@@ -132,7 +132,7 @@
         node = document.createElement('video');
         node.autoplay = true; node.muted = true; node.loop = true;
         node.setAttribute('playsinline', '');
-        node.src = mediaUrl;
+        node.src = mediaUrl ? encodeURI(mediaUrl) : '';
         node.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:' + st.fit
           + ';object-position:' + posStr + ';transform:scale(' + st.zoom + ');background:#000;';
       } else {
@@ -173,7 +173,7 @@
       // so detected media metadata can't be reinterpreted as markup.
       durHint.textContent = 'Set how long this video plays. Up to 600s.';
       var _probe = document.createElement('video');
-      _probe.preload = 'metadata'; _probe.muted = true; _probe.src = mediaUrl;
+      _probe.preload = 'metadata'; _probe.muted = true; _probe.src = mediaUrl ? encodeURI(mediaUrl) : '';
       _probe.addEventListener('loadedmetadata', function () {
         var dur = Number(_probe.duration);
         if (isFinite(dur) && dur > 0) {
