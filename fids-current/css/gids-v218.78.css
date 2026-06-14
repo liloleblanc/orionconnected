@@ -4214,7 +4214,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { overflow: hidden !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img { overflow: hidden !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img img,
-.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img .g8-aircraft-img { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: scale(1.3) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img .g8-aircraft-img { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: scale(1.12) !important; }
 
 /* v224e — panels back to 6 equal rows; stop the aircraft value wrapping. */
 .g8-wrap .gad-map-col-v2 .v2-rc-acb-cell.v2-rc-acb-ac { flex: 1.4 1 0 !important; }
