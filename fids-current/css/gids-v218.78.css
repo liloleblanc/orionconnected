@@ -4084,7 +4084,10 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
   border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg,#042354) !important;
   margin: 0 !important;
+  min-height: 0 !important;   /* let the flex grid own the heights (6-row grid) */
 }
+/* The whole right column fills the same height as the left so rows align. */
+.g8-wrap .gad-map-col-v2 { height: 100% !important; }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:last-child { border-bottom: 0 !important; }
 /* Brushed-metal on the INFO shelves (the map keeps its imagery). */
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
@@ -4123,20 +4126,21 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi { display: flex !important; align-items: stretch !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi {
   display: flex !important; flex-direction: column !important; justify-content: center !important;
-  width: 100% !important; gap: clamp(2px,0.5vh,7px) !important;
-  padding: clamp(3px,0.6vh,9px) clamp(10px,1.2vw,18px) !important;
+  width: 100% !important; height: 100% !important; gap: clamp(1px,0.4vh,5px) !important; min-height: 0 !important;
+  padding: clamp(2px,0.4vh,7px) clamp(10px,1.2vw,18px) !important; box-sizing: border-box !important; overflow: hidden !important;
 }
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-row { display: flex !important; gap: clamp(8px,1vw,18px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row { display: flex !important; gap: clamp(8px,1vw,18px) !important; min-height: 0 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-cell { flex: 1 1 0 !important; min-width: 0 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl {
-  font-size: clamp(10px,1.4vh,16px) !important; font-weight: 700 !important;
+  font-size: clamp(9px,1.25vh,15px) !important; font-weight: 700 !important;
   color: var(--banner-bg,#14181E) !important; letter-spacing: 0.2px !important;
   border-bottom: clamp(2px,0.3vh,4px) solid var(--airline-accent3,#FAC120) !important;
-  padding-bottom: clamp(1px,0.3vh,4px) !important; white-space: nowrap !important; overflow: hidden !important;
+  padding-bottom: clamp(1px,0.25vh,3px) !important; white-space: nowrap !important; overflow: hidden !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val {
-  font-size: clamp(18px,3.2vh,38px) !important; font-weight: 900 !important; line-height: 1.04 !important;
-  color: var(--banner-bg,#14181E) !important; white-space: nowrap !important; margin-top: clamp(1px,0.3vh,4px) !important;
+  font-size: clamp(15px,2.5vh,30px) !important; font-weight: 900 !important; line-height: 1.02 !important;
+  color: var(--banner-bg,#14181E) !important; white-space: nowrap !important; overflow: hidden !important;
+  text-overflow: ellipsis !important; margin-top: clamp(0px,0.2vh,3px) !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-sep { opacity: 0.5 !important; font-weight: 500 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-status-scheduled { color: #1a8a3a !important; }
