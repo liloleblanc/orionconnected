@@ -4020,3 +4020,25 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value .v2-fi-sep {
   font-weight: 400 !important; opacity: 0.45 !important;
 }
+
+/* v223c — STATUS stacked (EN over FR), green/orange/red by state. */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-val {
+  white-space: normal !important;
+  font-size: clamp(26px,4.8vh,58px) !important; line-height: 0.98 !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value .v2-fi-st2 { display: block !important; }
+/* GREEN — on time / scheduled / boarding / early / en route */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-scheduled,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-ontime,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-boarding,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-early,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-active,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-arrived,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-landed { color: #1a8a3a !important; }
+/* ORANGE — delayed / final call / gate closed */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-delayed,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-final,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-gateclosed { color: #e07b00 !important; }
+/* RED — cancelled / diverted */
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-cancelled,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-diverted { color: #c01622 !important; }

@@ -5315,7 +5315,8 @@ function _buildV2AircraftCol(ctx, vars) {
         var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
         if (_ss) {
           var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
-          _stBiling = _enTC + ' <span class="v2-fi-sep">|</span> ' + _ss.fr;
+          // Status STACKED — EN over FR (per Nick).
+          _stBiling = '<span class="v2-fi-st2">' + _enTC + '</span><span class="v2-fi-st2">' + _ss.fr + '</span>';
         }
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
