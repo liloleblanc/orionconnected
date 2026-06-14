@@ -5308,11 +5308,23 @@ function _buildV2AircraftCol(ctx, vars) {
       var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
       // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
       function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
+      // A REVISED (later) departure means the flight is delayed — reflect that
+      // in the status label AND colour even if the raw feed still says
+      // "scheduled" (that's why the departure time already shows orange).
+      var _delayedByRev = _depRev;
+      if (_delayedByRev) {
+        var _rawCls = String(_fiStCls || '').toLowerCase();
+        if (_rawCls.indexOf('cancel') === -1 && _rawCls.indexOf('divert') === -1
+            && _rawCls.indexOf('board') === -1 && _rawCls.indexOf('depart') === -1) {
+          _fiStCls = ' delayed';
+        }
+      }
       // STATUS — show BOTH languages, never switch ("On Time | À l'heure").
       var _stBiling = '';
       try {
         var _stk = String((currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
         if (_stk === 'ontime') _stk = 'ontime';
+        if (_delayedByRev && (_stk === 'scheduled' || _stk === 'ontime' || _stk === '')) _stk = 'delayed';
         var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
         if (_ss) {
           var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
@@ -5446,7 +5458,7 @@ function _buildV2MapCol(ctx, vars) {
         enroute:   { en:'Enroute', fr:'En vol', es:'En vuelo', de:'Im Flug', it:'In volo', pt:'Em voo', ja:'飛行中', zh:'飞行中', ar:'في الجو' },
         scheduled: { en:'Awaiting departure', fr:'En attente de départ', es:'En espera de salida', de:'Wartet auf Abflug', it:'In attesa di partenza', pt:'A aguardar partida', ja:'出発待ち', zh:'等待起飞', ar:'في انتظار المغادرة' },
         boarding:  { en:'Boarding', fr:'Embarquement', es:'Embarcando', de:'Boarding', it:'Imbarco', pt:'Embarque', ja:'搭乗中', zh:'登机中', ar:'الصعود' },
-        delayed:   { en:'Delayed', fr:'Retardé', es:'Retrasado', de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误', ar:'متأخر' },
+        delayed:   { en:'Delayed', fr:'En retard', es:'Retrasado', de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误', ar:'متأخر' },
         early:     { en:'Early', fr:'En avance', es:'Adelantado', de:'Früher', it:'In anticipo', pt:'Adiantado', ja:'早着', zh:'提前', ar:'مبكر' },
         cancelled: { en:'Cancelled', fr:'Annulé', es:'Cancelado', de:'Annulliert', it:'Cancellato', pt:'Cancelado', ja:'欠航', zh:'取消', ar:'ملغى' },
         arrived:   { en:'Arrived', fr:'Arrivé', es:'Aterrizado', de:'Angekommen', it:'Arrivato', pt:'Chegou', ja:'到着', zh:'已到达', ar:'وصل' },
@@ -5465,7 +5477,7 @@ function _buildV2MapCol(ctx, vars) {
       var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
       var _ST_SHORT = {
         enroute:{en:'Enroute',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
-        boarding:{en:'Boarding',fr:'Embarquement',es:'Embarcando'}, delayed:{en:'Delayed',fr:'Retardé',es:'Retrasado'},
+        boarding:{en:'Boarding',fr:'Embarquement',es:'Embarcando'}, delayed:{en:'Delayed',fr:'En retard',es:'Retrasado'},
         early:{en:'Early',fr:'En avance',es:'Adelantado'}, cancelled:{en:'Cancelled',fr:'Annulé',es:'Cancelado'},
         arrived:{en:'Arrived',fr:'Arrivé',es:'Aterrizado'}, ontime:{en:'On time',fr:"À l'heure",es:'A tiempo'}
       };
@@ -5579,7 +5591,7 @@ function _buildV2MapCol(ctx, vars) {
         departed: {en:'Departed',    fr:'Parti',        es:'Salió'},
         arrival:  {en:'Arrival',     fr:'Arrivée',      es:'Llegada'},
         arrived:  {en:'Arrived',     fr:'Arrivé',       es:'Aterrizó'},
-        delayed:  {en:'Delayed',     fr:'Retardé',      es:'Retrasado'},
+        delayed:  {en:'Delayed',     fr:'En retard',      es:'Retrasado'},
         title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre appareil entrant', es:'Información de su aeronave entrante'}
       };
       // Status-adaptive Departure / Arrival labels
@@ -5591,7 +5603,7 @@ function _buildV2MapCol(ctx, vars) {
       var _depAbbr = _departed ? 'Departed At' : 'Departure Time';
       var _arrAbbr = _arrived ? 'Arrived' : (_delayedSt ? 'Delayed' : 'Arrival Time');
       var _depWordObj = _departed ? {fr:'Parti à',es:'Salió a'} : {fr:'Heure de départ',es:'Hora de salida'};
-      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizado'} : (_delayedSt ? {fr:'Retardé',es:'Retrasado'} : {fr:"Heure d'arrivée",es:'Hora de llegada'});
+      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizado'} : (_delayedSt ? {fr:'En retard',es:'Retrasado'} : {fr:"Heure d'arrivée",es:'Hora de llegada'});
       function _i3(en, val, l2, cls){
         return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
              + '<div class="v2-rc-i3val ' + (cls||'') + '">' + val + '</div>'
@@ -6568,8 +6580,8 @@ function uxgGateHtml(ctx) {
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
     'UA': '/logos/airlines/us-major/united.svg',                                 // globe + white "UNITED"
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
-    // WestJet — navy banner with the white wordmark (uploaded by Nick)
-    'WS': '/logos/airlines/canadian/westjet-white-wordmark.svg',                 // white "WestJet" wordmark for the navy bar
+    // WestJet — navy banner: white "WestJet" lettering + colored (teal/navy) maple-leaf swoosh
+    'WS': '/logos/airlines/canadian/WestJet_Logo_2018-monochrome-white-colored-leaf.svg', // white wordmark + colored leaf for the navy bar
     // WHITE BANNERS — use native-color logos so they show against light background
     'HA': '/logos/airlines/us-major/Hawaiian.svg',                               // Pualani + native-color "Hawaiian Airlines"
     'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
@@ -6686,7 +6698,12 @@ function uxgGateHtml(ctx) {
     _bannerUsedTile = true;
   }
   var _onPlate = _bannerUsedTile || _bannerUsedWordmark;
-  var _logoStyle = 'height:' + _sz.h + 'px !important;max-height:' + _sz.h + 'px !important;'
+  // HARD CAP the logo height so it can NEVER exceed the banner band (which is
+  // overflow:hidden and a fixed height) — that's what was clipping tall logos
+  // (WestJet 150px, etc.). object-fit:contain keeps the aspect; max-width caps
+  // the width. 86px fits the band with margin.
+  var _logoH = Math.min(_sz.h || 86, 86);
+  var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
                  + (_useOverrideFile
                      ? (_darkLogoWhiten ? 'filter:brightness(0) invert(1) !important;' : 'filter:none !important;')
@@ -11793,8 +11810,8 @@ const LS = {
   flightNo:         { en:'Flight #',           fr:'Vol nº',           es:'Vuelo nº',         de:'Flug-Nr.',              it:'Volo nº',            pt:'Voo nº',           ja:'便名',     zh:'航班号',   ar:'رقم الرحلة' },
   weatherAtDest:    { en:'Weather at destination', fr:'Météo à destination', es:'Clima en destino', de:'Wetter am Ziel',    it:'Meteo a destinazione', pt:'Clima no destino', ja:'目的地の天気', zh:'目的地天气', ar:'الطقس في الوجهة' },
   weatherShort:     { en:'Weather',            fr:'Météo',            es:'Clima',            de:'Wetter',                it:'Meteo',              pt:'Clima',            ja:'天気',     zh:'天气',     ar:'الطقس' },
-  inbDelayed:{ en:'The incoming aircraft has been delayed. Updated boarding time to follow.',fr:"L'appareil en approche est retardé. Heure d'embarquement mise à jour à suivre.",es:'La aeronave entrante ha sido retrasada. Hora de embarque actualizada a continuación.',de:'Das ankommende Flugzeug hat Verspätung. Aktualisierte Boarding-Zeit folgt.',it:"L'aereo in arrivo è in ritardo. Orario d'imbarco aggiornato a seguire.",pt:'A aeronave está atrasada. Horário de embarque atualizado a seguir.',ja:'到着機が遅延しています。搭乗時刻は更新されます。',zh:'来港飞机已延误，登机时间将另行通知。',ar:'تأخرت الطائرة القادمة. سيتم تحديث وقت الصعود.' },
-  depDelayed:{ en:'This flight has been delayed. Please check the updated departure time.',fr:'Ce vol est retardé. Veuillez vérifier l\'heure de départ mise à jour.',es:'Este vuelo ha sido retrasado. Por favor verifique la hora de salida actualizada.',de:'Dieser Flug hat Verspätung. Bitte prüfen Sie die aktualisierte Abflugzeit.',it:'Questo volo è in ritardo. Si prega di verificare l\'orario di partenza aggiornato.',pt:'Este voo está atrasado. Por favor verifique o horário de partida atualizado.',ja:'この便は遅延しています。出発時刻をご確認ください。',zh:'此航班已延误，请查看更新后的出发时间。',ar:'تأخرت هذه الرحلة. يرجى التحقق من وقت المغادرة المحدث.' },
+  inbDelayed:{ en:'The incoming aircraft has been delayed. Updated boarding time to follow.',fr:"L'appareil en approche est en retard. Heure d'embarquement mise à jour à suivre.",es:'La aeronave entrante ha sido retrasada. Hora de embarque actualizada a continuación.',de:'Das ankommende Flugzeug hat Verspätung. Aktualisierte Boarding-Zeit folgt.',it:"L'aereo in arrivo è in ritardo. Orario d'imbarco aggiornato a seguire.",pt:'A aeronave está atrasada. Horário de embarque atualizado a seguir.',ja:'到着機が遅延しています。搭乗時刻は更新されます。',zh:'来港飞机已延误，登机时间将另行通知。',ar:'تأخرت الطائرة القادمة. سيتم تحديث وقت الصعود.' },
+  depDelayed:{ en:'This flight has been delayed. Please check the updated departure time.',fr:'Ce vol est en retard. Veuillez vérifier l\'heure de départ mise à jour.',es:'Este vuelo ha sido retrasado. Por favor verifique la hora de salida actualizada.',de:'Dieser Flug hat Verspätung. Bitte prüfen Sie die aktualisierte Abflugzeit.',it:'Questo volo è in ritardo. Si prega di verificare l\'orario di partenza aggiornato.',pt:'Este voo está atrasado. Por favor verifique o horário de partida atualizado.',ja:'この便は遅延しています。出発時刻をご確認ください。',zh:'此航班已延误，请查看更新后的出发时间。',ar:'تأخرت هذه الرحلة. يرجى التحقق من وقت المغادرة المحدث.' },
   nowBoardMsg:{ en:'Now boarding. Please proceed to gate',fr:'Embarquement en cours. Veuillez vous diriger vers la porte',es:'Embarcando ahora. Diríjase a la puerta',de:'Jetzt Boarding. Bitte begeben Sie sich zum Gate',it:'Imbarco in corso. Procedere al gate',pt:'Embarque em curso. Dirija-se ao portão',ja:'搭乗中です。ゲートにお進みください',zh:'正在登机，请前往登机口',ar:'الصعود الآن. يرجى التوجه إلى البوابة' },
   boardApprox:{ en:'Your flight will board in approximately',fr:"L'embarquement de votre vol commencera dans environ",es:'Su vuelo embarcará en aproximadamente',de:'Das Boarding Ihres Fluges beginnt in ca.',it:"L'imbarco del vostro volo inizierà tra circa",pt:'O embarque do seu voo começará em aproximadamente',ja:'搭乗は約',zh:'您的航班将在约',ar:'سيبدأ صعود رحلتك خلال حوالي' },
   finalCall: { en:'FINAL BOARDING CALL',fr:'DERNIER APPEL',es:'ÚLTIMA LLAMADA',de:'LETZTER AUFRUF',it:'ULTIMA CHIAMATA',pt:'ÚLTIMA CHAMADA',ja:'最終搭乗案内',zh:'最后登机广播',ar:'النداء الأخير للصعود' },

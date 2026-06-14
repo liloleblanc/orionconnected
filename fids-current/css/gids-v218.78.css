@@ -3591,7 +3591,7 @@ body, body.gids-page, body.gate-page{
 
 /* Banner: tighten the left edge so the wordmark gets the room (right edge is
    already owned by the gate block); logoslot clips anything oversized. */
-.g8-wrap .g8-r1 { padding-left: clamp(12px, 1.2vw, 22px) !important; }
+.g8-wrap .g8-r1 { padding-left: clamp(24px, 2.5vw, 48px) !important; }
 .g8-wrap .g8-r1-logoslot { overflow: hidden !important; max-height: 100% !important; }
 
 /* Let the gate block run the FULL banner height (the 6px vertical padding
