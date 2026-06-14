@@ -40,7 +40,8 @@
   <div id="route"><div class="big" id="rtCode">—</div><div class="sub" id="rtCity">—</div></div>
   <div id="ctl">
     <div class="grp"><span class="lbl">Base</span>
-      <button data-base="satellite" class="on">Satellite</button>
+      <button data-base="hybrid" class="on">Sat + Labels</button>
+      <button data-base="satellite">Satellite</button>
       <button data-base="voyager">Streets</button>
       <button data-base="topo">Topo</button>
       <button data-base="dark">Dark</button>
@@ -128,12 +129,14 @@
     style:{version:8,
       sources:{
         sat:{type:'raster',tiles:['/tiles/satellite/{z}/{x}/{y}.png'],tileSize:256,attribution:''},
+        labels:{type:'raster',tiles:['/tiles/labels/{z}/{x}/{y}.png'],tileSize:256,attribution:''},
         dem:{type:'raster-dem',tiles:['/demtiles/{z}/{x}/{y}.png'],tileSize:256,encoding:'terrarium',maxzoom:13}
       },
       layers:[
         {id:'bg',type:'background',paint:{'background-color':'#05080f'}},
         {id:'sat',type:'raster',source:'sat',paint:{'raster-fade-duration':300}},
-        {id:'hills',type:'hillshade',source:'dem',paint:{'hillshade-exaggeration':0.55,'hillshade-shadow-color':'#0b1426','hillshade-highlight-color':'#ffffff'}}
+        {id:'hills',type:'hillshade',source:'dem',paint:{'hillshade-exaggeration':0.55,'hillshade-shadow-color':'#0b1426','hillshade-highlight-color':'#ffffff'}},
+        {id:'labels',type:'raster',source:'labels',layout:{visibility:'visible'},paint:{'raster-fade-duration':200}}
       ]},
     center:[-119,50],zoom:6,pitch:0,bearing:0
   });
@@ -255,7 +258,13 @@
     try{ map.setTerrain({source:'dem',exaggeration:1.6}); }catch(e){}
     try{ map.setSky({'sky-color':'#0a1736','sky-horizon-blend':0.55,'horizon-color':'#1a3b6e','horizon-fog-blend':0.5,'fog-color':'#070b14','fog-ground-blend':0.55}); }catch(e){}
     buildSwatches();
-    wireGroup('data-base',function(v){ try{ map.getSource('sat').setTiles(['/tiles/'+v+'/{z}/{x}/{y}.png']); }catch(e){} });
+    wireGroup('data-base',function(v){
+      try{
+        var prov=(v==='hybrid')?'satellite':v;
+        map.getSource('sat').setTiles(['/tiles/'+prov+'/{z}/{x}/{y}.png']);
+        if(map.getLayer('labels')) map.setLayoutProperty('labels','visibility', v==='hybrid'?'visible':'none');
+      }catch(e){}
+    });
     wireGroup('data-line',function(v){S.line=v;applyLineStyle();});
     wireGroup('data-plane',function(v){S.plane=parseInt(v,10);applyPlane();});
     requestAnimationFrame(tickPlane);
