@@ -4124,7 +4124,10 @@ body, body.gids-page, body.gate-page{
   background: rgba(15,34,56,0.78) !important;
   text-shadow: none !important;
 }
-.g8-wrap .gad-map-col-v2 .v2-rc-maptitle2 { color: var(--airline-accent3, #FAC120) !important; }
+/* "Votre Avion" sits on the dark header bar now, so it must be a LIGHT tint
+   (the airline accent3 can be dark navy = invisible on the bar). Matches the
+   Speed/Altitude bar's secondary labels. */
+.g8-wrap .gad-map-col-v2 .v2-rc-maptitle2 { color: rgba(255,255,255,0.82) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-maptitle-sep { opacity: 0.55 !important; font-weight: 500 !important; }
 /* FLIGHT-INFO shelf — label-over-value with the gold accent line, like the
    left. Row 1 = Flight | From (two cells); rows 2-3 = Status, Arrives ETA. */
