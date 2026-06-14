@@ -5161,7 +5161,7 @@ function _buildV2AircraftCol(ctx, vars) {
         'RV':  '/logos/airlines/canadian/AC.TO.svg',
         'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
         'WR':  '/logos/symbols/airlines-mono/WS.svg',
-        'PD':  '/logos/airlines/canadian/mr-porter-logo.svg',   // Mr. Porter raccoon roundel (fills the circle)
+        'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
         'F8':  '/logos/airlines/canadian/flair-dot.svg',   // Flair — the black DOT from the lockup IS the emblem
         // US majors — symbol-only emblems (rendered white on the accent badge)
@@ -5183,7 +5183,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        var NATIVE_COLOR_EMBLEMS = { 'PB': true, 'F8': true, 'PD': true };  // PD: Mr. Porter roundel keeps its own colours/circle
+        var NATIVE_COLOR_EMBLEMS = { 'PB': true, 'F8': true };  // (PD now uses a white "p" on the accent circle, not native)
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
@@ -5327,7 +5327,7 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_fiBrd) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgRoute), 'Flight Time', _L2('Durée','Duración'), _durValue, 'v2-fi-time')
+        + _shelf(_badge(_svgArrive), 'Flight Time', _L2('Durée','Duración'), _durValue, 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}

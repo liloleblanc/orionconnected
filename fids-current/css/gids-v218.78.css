@@ -3848,16 +3848,20 @@ body, body.gids-page, body.gate-page{
    • icon (teal circle) left · big navy value beside it */
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   border-bottom: clamp(5px,0.7vh,9px) solid var(--banner-bg, #003A5D) !important;   /* THICK navy, like outer */
-  /* BRUSHED METAL — tinted base + fine vertical grain + a bright reflection
-     band. Reads as brushed aluminium/steel, tints per airline. */
-  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 84%, var(--airline-accent,#8a8f96) 16%) !important;
+  /* BRUSHED METAL — fine grain + a bright reflection sweep + THREE distinct
+     tonal bands (light · airline-tinted mid · dark), so each airline shows
+     2–3 tones. */
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%) !important;
   background-image:
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.07) 0, rgba(255,255,255,0.13) 1px, rgba(0,0,0,0.07) 2px),
-    linear-gradient(177deg, transparent 38%, rgba(255,255,255,0.55) 50%, transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0, rgba(255,255,255,0.15) 1px, rgba(0,0,0,0.08) 2px),
+    linear-gradient(178deg, transparent 40%, rgba(255,255,255,0.6) 49.5%, rgba(255,255,255,0.6) 51%, transparent 60%),
     linear-gradient(180deg,
-      rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.04) 13%,
-      rgba(0,0,0,0.06) 40%, rgba(255,255,255,0.30) 53%,
-      rgba(0,0,0,0.05) 74%, rgba(0,0,0,0.14) 100%) !important;
+      color-mix(in srgb, var(--body-bg,#eef2f6) 56%, #ffffff 44%) 0%,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 56%, #ffffff 44%) 24%,      /* TONE 1 — light */
+      color-mix(in srgb, var(--body-bg,#e3e8ee) 74%, var(--airline-accent,#8a8f96) 26%) 36%,
+      color-mix(in srgb, var(--body-bg,#e3e8ee) 74%, var(--airline-accent,#8a8f96) 26%) 60%,  /* TONE 2 — airline-tinted mid */
+      color-mix(in srgb, var(--body-bg,#dfe4ea) 70%, #000000 16%) 74%,
+      color-mix(in srgb, var(--body-bg,#dfe4ea) 64%, #000000 22%) 100%) !important;  /* TONE 3 — dark */
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.9vw,16px) !important;
 }
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
@@ -3938,16 +3942,20 @@ body, body.gids-page, body.gate-page{
   align-items: stretch !important;
   gap: 0 !important; margin: 0 !important; padding: 0 !important;
   border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;   /* 5px navy divider */
-  /* BRUSHED METAL — tinted base + fine vertical grain + a bright reflection
-     band. Reads as brushed aluminium/steel, tints per airline. */
-  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 84%, var(--airline-accent,#8a8f96) 16%) !important;
+  /* BRUSHED METAL — fine grain + a bright reflection sweep + THREE distinct
+     tonal bands (light · airline-tinted mid · dark), so each airline shows
+     2–3 tones. */
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%) !important;
   background-image:
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.07) 0, rgba(255,255,255,0.13) 1px, rgba(0,0,0,0.07) 2px),
-    linear-gradient(177deg, transparent 38%, rgba(255,255,255,0.55) 50%, transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0, rgba(255,255,255,0.15) 1px, rgba(0,0,0,0.08) 2px),
+    linear-gradient(178deg, transparent 40%, rgba(255,255,255,0.6) 49.5%, rgba(255,255,255,0.6) 51%, transparent 60%),
     linear-gradient(180deg,
-      rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.04) 13%,
-      rgba(0,0,0,0.06) 40%, rgba(255,255,255,0.30) 53%,
-      rgba(0,0,0,0.05) 74%, rgba(0,0,0,0.14) 100%) !important;
+      color-mix(in srgb, var(--body-bg,#eef2f6) 56%, #ffffff 44%) 0%,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 56%, #ffffff 44%) 24%,      /* TONE 1 — light */
+      color-mix(in srgb, var(--body-bg,#e3e8ee) 74%, var(--airline-accent,#8a8f96) 26%) 36%,
+      color-mix(in srgb, var(--body-bg,#e3e8ee) 74%, var(--airline-accent,#8a8f96) 26%) 60%,  /* TONE 2 — airline-tinted mid */
+      color-mix(in srgb, var(--body-bg,#dfe4ea) 70%, #000000 16%) 74%,
+      color-mix(in srgb, var(--body-bg,#dfe4ea) 64%, #000000 22%) 100%) !important;  /* TONE 3 — dark */
   overflow: hidden !important;
 }
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
