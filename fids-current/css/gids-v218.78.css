@@ -4310,3 +4310,13 @@ body, body.gids-page, body.gate-page{
   overflow-y: visible !important;
   padding-bottom: 0.06em !important;
 }
+
+/* ── v218.99 — reduce the left-panel icon badges by ~15% (Nick). Was
+   clamp(48px,6.4vh,86px); ×0.85 → clamp(41px,5.44vh,73px). Covers both the
+   teal icon circles and the flight-number emblem so they shrink together. ── */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(41px,5.44vh,73px) !important; height: clamp(41px,5.44vh,73px) !important;
+  min-width: clamp(41px,5.44vh,73px) !important; min-height: clamp(41px,5.44vh,73px) !important;
+  max-width: clamp(41px,5.44vh,73px) !important; max-height: clamp(41px,5.44vh,73px) !important;
+}
