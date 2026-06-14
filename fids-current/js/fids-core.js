@@ -7774,6 +7774,17 @@ const gView = document.getElementById('gateView');
         var _savedMap = document.getElementById('gateMapBox');
         var _savedMapParent = _savedMap ? _savedMap.parentElement : null;
         if (_savedMap && gateMap) { _savedMap.remove(); }
+        // Preserve the LIVE ad carousel across rebuilds: detach the node
+        // (with its playing video/ad and in-flight crossfade intact) before
+        // innerHTML wipes it, then re-attach into the fresh placeholder.
+        // Without this, every _gateKey change (status / upd / inbound poll)
+        // destroyed and recreated the carousel, so playing videos restarted
+        // ("start-stop-start"), the slide jumped back to the first, and the
+        // crossfade flashed. Mirrors the map preservation above.
+        var _savedAd = document.getElementById('gateAdCarousel');
+        var _savedAdLogo = document.getElementById('gateAdLogo');
+        if (_savedAd && _savedAd.firstChild) { _savedAd.remove(); } else { _savedAd = null; }
+        if (_savedAdLogo) { _savedAdLogo.remove(); }
         // Smooth transition: fade out, rebuild, fade in
         gView.style.transition = 'opacity 0.15s ease';
         gView.style.opacity = '0.7';
@@ -7785,7 +7796,18 @@ const gView = document.getElementById('gateView');
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
           gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs });
         }
-    try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
+        // Re-attach the preserved ad carousel BEFORE autofit/paint so the
+        // playing video is never interrupted and the slot is never empty.
+        var _newAd = document.getElementById('gateAdCarousel');
+        if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
+        var _newAdLogo = document.getElementById('gateAdLogo');
+        if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
+        // Run autofit synchronously first so the un-shrunk (large) text never
+        // paints — that was the "words bump up to twice the size then snap
+        // back" flash on every rebuild. The rAF pass stays as a correction
+        // once web fonts have fully settled.
+        try { if (typeof gateAutofit === "function") gateAutofit(gView); } catch(e){}
+        try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
         if (_savedMap && gateMap && _newMapSlot) {
