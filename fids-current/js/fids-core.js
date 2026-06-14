@@ -6581,7 +6581,7 @@ function uxgGateHtml(ctx) {
     'UA': '/logos/airlines/us-major/united.svg',                                 // globe + white "UNITED"
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
     // WestJet — navy banner: white "WestJet" lettering + colored (teal/navy) maple-leaf swoosh
-    'WS': '/logos/airlines/canadian/WestJet_Logo_2018-monochrome-white-colored-leaf.svg?v=2', // white wordmark + colored leaf for the navy bar
+    'WS': '/logos/airlines/canadian/WestJet_Logo_2018-monochrome-white-colored-leaf.svg?v=3', // white wordmark + colored leaf for the navy bar
     // WHITE BANNERS — use native-color logos so they show against light background
     'HA': '/logos/airlines/us-major/Hawaiian.svg',                               // Pualani + native-color "Hawaiian Airlines"
     'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
@@ -7867,6 +7867,13 @@ const gView = document.getElementById('gateView');
         // once web fonts have fully settled.
         try { if (typeof gateAutofit === "function") gateAutofit(gView); } catch(e){}
         try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
+        // Re-fit once web fonts have actually loaded — DM Sans is WIDER than the
+        // fallback, so an early fit can leave long city names (e.g. "Regina")
+        // overflowing and clipping to "Regi…". And re-fit on short delays to
+        // catch values populated late by the live data feed.
+        try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); } catch(e){}
+        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 450); } catch(e){}
+        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 1300); } catch(e){}
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
         if (_savedMap && gateMap && _newMapSlot) {
