@@ -4269,3 +4269,11 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.cancelled,
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.final,
 .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.gateclosed { color: #b91c1c !important; }
+
+/* v224h — fit the "Destination | YYZ" label (code was clipping); status LABEL
+   left-aligned while the status VALUE stays centered. */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl { font-size: clamp(10px,1.7vh,18px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single { justify-content: stretch !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-cell { flex: 1 1 auto !important; text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-lbl { text-align: left !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-val { text-align: center !important; }
