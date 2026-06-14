@@ -5603,16 +5603,30 @@ function _buildV2MapCol(ctx, vars) {
              + '<div class="v2-rc-r2lbl2">' + _t2(wordObj) + '</div></div>';
       }
 
+      // Status — bilingual inline (EN | FR), never switches (matches the left).
+      var _stEn = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey] && _ST_SHORT[_stKey].en) || _stShort;
+      var _stFr = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey] && _ST_SHORT[_stKey].fr) || _stEn;
+      var _stShow = (_stFr && _stFr !== _stEn)
+        ? (_stEn + ' <span class="v2-rc-fi-sep">|</span> ' + _stFr) : _stEn;
+      // ONE flight-info shelf = 1 of the 6 equal rows (Flight·From / Status /
+      // Arrives ETA), so the right column mirrors the left's 6-row grid.
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-i3"><div class="v2-rc-i3">'
-        +     _i3('Status', _stShort, _t2(_L.status), 'v2-rc-status-' + _stCls)
-        +     _i3('Flight', _ibFltCompact, _t2(_L.flight), '')
-        +     _i3('Arriving in', (_ibEtaStr || '—'), _t2(_L.arriving), '')
-        +   '</div></div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-r2"><div class="v2-rc-r2">'
-        +     _r2(_depAbbr, (_ibDepStr || '—') + ' - ' + _origIata, _depWordObj)
-        +     _r2(_arrAbbr, _destIata + ' - ' + (_ibArrStr || '—'), _arrWordObj)
-        +   '</div></div>';
+          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi">'
+        +   '<div class="v2-rc-fi-row">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Flight <span class="v2-rc-fi-sep">|</span> Vol</div>'
+        +       '<div class="v2-rc-fi-val">' + (_ibFltCompact || '—') + '</div></div>'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">From <span class="v2-rc-fi-sep">|</span> De</div>'
+        +       '<div class="v2-rc-fi-val">' + (_origCity || _origIata || '—') + '</div></div>'
+        +   '</div>'
+        +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Status <span class="v2-rc-fi-sep">|</span> Statut</div>'
+        +       '<div class="v2-rc-fi-val v2-rc-status-' + _stCls + '">' + _stShow + '</div></div>'
+        +   '</div>'
+        +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Arrives ' + _destIata + ' ETA</div>'
+        +       '<div class="v2-rc-fi-val">' + (_ibEtaStr || '—') + '</div></div>'
+        +   '</div>'
+        + '</div></div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.

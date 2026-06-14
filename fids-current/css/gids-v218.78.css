@@ -4074,12 +4074,12 @@ body, body.gids-page, body.gate-page{
    (Last block → wins.)
    ════════════════════════════════════════════════════════════════════════ */
 .g8-wrap .gad-map-col-v2 { gap: 0 !important; }
-/* Shelf rhythm — map ~ top half; bottom half split into the info shelves. */
+/* SIX EQUAL ROWS, mirroring the left: map = top 3, then flight-info, photo,
+   aircraft/operated — 1 row each. Dividers land on the same lines as the left. */
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { flex: 3 1 0 !important; padding: 0 !important; position: relative !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-i3    { flex: 1.15 1 0 !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-r2    { flex: 0.9 1 0 !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 1.7 1 0 !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { flex: 0 0 auto !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { flex: 1 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 1 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { flex: 1 1 0 !important; }
 /* Navy dividers between every shelf, like the left column. */
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
   border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg,#042354) !important;
@@ -4087,8 +4087,7 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:last-child { border-bottom: 0 !important; }
 /* Brushed-metal on the INFO shelves (the map keeps its imagery). */
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-i3,
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-r2,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   background-color: color-mix(in srgb, var(--body-bg,#e6eaef) 82%, var(--airline-accent,#8a8f96) 18%) !important;
@@ -4119,6 +4118,30 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-maptitle2 { color: var(--airline-accent3, #FAC120) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-maptitle-sep { opacity: 0.55 !important; font-weight: 500 !important; }
+/* FLIGHT-INFO shelf — label-over-value with the gold accent line, like the
+   left. Row 1 = Flight | From (two cells); rows 2-3 = Status, Arrives ETA. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi { display: flex !important; align-items: stretch !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi {
+  display: flex !important; flex-direction: column !important; justify-content: center !important;
+  width: 100% !important; gap: clamp(2px,0.5vh,7px) !important;
+  padding: clamp(3px,0.6vh,9px) clamp(10px,1.2vw,18px) !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-row { display: flex !important; gap: clamp(8px,1vw,18px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-cell { flex: 1 1 0 !important; min-width: 0 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl {
+  font-size: clamp(10px,1.4vh,16px) !important; font-weight: 700 !important;
+  color: var(--banner-bg,#14181E) !important; letter-spacing: 0.2px !important;
+  border-bottom: clamp(2px,0.3vh,4px) solid var(--airline-accent3,#FAC120) !important;
+  padding-bottom: clamp(1px,0.3vh,4px) !important; white-space: nowrap !important; overflow: hidden !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val {
+  font-size: clamp(18px,3.2vh,38px) !important; font-weight: 900 !important; line-height: 1.04 !important;
+  color: var(--banner-bg,#14181E) !important; white-space: nowrap !important; margin-top: clamp(1px,0.3vh,4px) !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-sep { opacity: 0.5 !important; font-weight: 500 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-status-scheduled { color: #1a8a3a !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-status-delayed   { color: #d97706 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-status-cancelled { color: #c01622 !important; }
 /* Aircraft photo — max it out to fill the panel. */
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { padding: clamp(2px,0.4vh,8px) clamp(6px,0.8vw,14px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img { width: 100% !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; }
