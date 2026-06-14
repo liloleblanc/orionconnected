@@ -18,6 +18,11 @@ const MAP_ENGINE = {
   'leaflet.js':     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
   'leaflet.css':    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
   'leaflet-arc.js': 'https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js',
+  // MapLibre GL JS v5 — WebGL engine with globe projection + 3D tilt, used by
+  // the 3D route-map prototype. Same-origin passthrough so locked-down gate
+  // display networks (which block public CDNs) can still load it.
+  'maplibre-gl.js':  'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js',
+  'maplibre-gl.css': 'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css',
 };
 
 const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
