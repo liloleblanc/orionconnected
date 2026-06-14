@@ -173,7 +173,7 @@
   function loadRealModel(pivot){
     if(!HAS_THREE || typeof THREE.GLTFLoader!=='function') return;
     try{
-      new THREE.GLTFLoader().load('/mapcdn/plane.glb', function(gltf){
+      new THREE.GLTFLoader().load('/models/a320_air_canada.glb', function(gltf){
         var model=gltf.scene;
         var box=new THREE.Box3().setFromObject(model), size=new THREE.Vector3(); box.getSize(size);
         var maxDim=Math.max(size.x,size.y,size.z)||1, sc=TARGET_METERS/maxDim;
