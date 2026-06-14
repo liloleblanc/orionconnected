@@ -13,15 +13,15 @@
  * ========================================================================== */
 window.AIRLINE_BRAND_COLORS = {
   /* ── Canada ─────────────────────────────────────────────────────────── */
-  'AC': { r1:'#3A3F49', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Air Canada (gray bar per Nick)
-  'QK': { r1:'#3A3F49', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Jazz / AC Express
-  'RV': { r1:'#3A3F49', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // AC Rouge
-  'WS': { r1:'#FFFFFF', r1Text:'#003A5D', r2:'#00ABC2', body:'#EAF3F5', bodyText:'#003A5D' }, // WestJet (LIGHT bar — dark logo)
-  'PD': { r1:'#FFFFFF', r1Text:'#002244', r2:'#1A3A6B', body:'#EEF2F6', bodyText:'#002244' }, // Porter (LIGHT bar — dark logo)
+  'AC': { r1:'#0A0A0A', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Air Canada (gray bar per Nick)
+  'QK': { r1:'#0A0A0A', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Jazz / AC Express
+  'RV': { r1:'#0A0A0A', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // AC Rouge
+  'WS': { r1:'#003A5D', r1Text:'#FFFFFF', r2:'#00ABC2', body:'#EAF3F5', bodyText:'#003A5D' }, // WestJet (NAVY bar — white wordmark)
+  'PD': { r1:'#112855', r1Text:'#FFFFFF', r2:'#254D87', r3:'#4A535F', body:'#EAEDF3', bodyText:'#112855' }, // Porter — Blue Zodiac #112855, Bay of Many #254D87; line = dark slate gray #4A535F (baby blue washed out)
   'TS': { r1:'#0F4C81', r1Text:'#FFFFFF', r2:'#00A0DF', body:'#EAF1F7', bodyText:'#0F4C81' }, // Air Transat
-  'F8': { r1:'#101820', r1Text:'#FFFFFF', r2:'#39B54A', body:'#EFF2EF', bodyText:'#0F172A' }, // Flair
-  'PB': { r1:'#FCA404', r1Text:'#16243E', r2:'#C77F00', body:'#FCF3E0', bodyText:'#16243E' }, // PAL Airlines (all gold)
-  'SP': { r1:'#FCA404', r1Text:'#16243E', r2:'#C77F00', body:'#FCF3E0', bodyText:'#16243E' }, // PAL Airlines (alt code, all gold)
+  'F8': { r1:'#1C1C1C', r1Text:'#FFFFFF', r2:'#A8FB96', body:'#F0F4EE', bodyText:'#0F172A' }, // Flair — brand black + lime (sampled from their own livery file; old #39B54A was pre-rebrand)
+  'PB': { r1:'#183677', r1Text:'#FFFFFF', r2:'#3E57BE', body:'#EAF0F8', bodyText:'#183677' }, // PAL Airlines (official navy bar + PAL blue, gold icons)
+  'SP': { r1:'#183677', r1Text:'#FFFFFF', r2:'#3E57BE', body:'#EAF0F8', bodyText:'#183677' }, // PAL Airlines (alt code)
   'BQ': { r1:'#1B2A4A', r1Text:'#FFFFFF', r2:'#E1241B', body:'#EDEFF4', bodyText:'#1B2A4A' }, // Pascan
   '3H': { r1:'#1A1A1A', r1Text:'#FFFFFF', r2:'#E4002B', body:'#F2EEEC', bodyText:'#0F172A' }, // Air Inuit
   'MO': { r1:'#10243F', r1Text:'#FFFFFF', r2:'#C8102E', body:'#EAEFF5', bodyText:'#10243F' }, // Calm Air
@@ -51,7 +51,7 @@ window.AIRLINE_BRAND_COLORS = {
 
   /* ── Latin America ─────────────────────────────────────────────────── */
   'AV': { r1:'#202020', r1Text:'#FFFFFF', r2:'#D6001C', body:'#F2F2F2', bodyText:'#0F172A' }, // Avianca
-  'OB': { r1:'#0D2B60', r1Text:'#FFFFFF', r2:'#D6430D', body:'#EAF0F8', bodyText:'#0D2B60' }, // Boliviana de Aviación (BoA)
+  'OB': { r1:'#0D2B60', r1Text:'#FFFFFF', r2:'#1E6FD0', body:'#EAF0F8', bodyText:'#0D2B60' }, // Boliviana de Aviación (BoA — clean royal blue accent)
   'LA': { r1:'#1B0088', r1Text:'#FFFFFF', r2:'#ED1650', body:'#EEEDF7', bodyText:'#1B0088' }, // LATAM
   'CM': { r1:'#0033A0', r1Text:'#FFFFFF', r2:'#0EA5E9', body:'#EAEDF7', bodyText:'#0033A0' }, // Copa
   'AM': { r1:'#0B2343', r1Text:'#FFFFFF', r2:'#007DC5', body:'#EAEDF2', bodyText:'#0B2343' }  // Aeroméxico

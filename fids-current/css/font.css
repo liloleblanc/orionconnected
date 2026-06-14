@@ -30,9 +30,19 @@
 /* JetBrains Mono — monospace for tabular figures, timestamps, codes. */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
+/* Possibility (Bold) — Nick's brand font, bundled locally (no CDN). Single
+   weight mapped across the range so it always resolves regardless of the
+   weight the UI requests. */
+@font-face { font-family:'Possibility'; font-weight:100 900; font-style:normal; font-display:swap; src:url('../fonts/Possibility-Bold.otf') format('opentype'); }
+
+/* TR Tahoma (Bold) — alternate brand candidate, bundled locally. */
+@font-face { font-family:'TR Tahoma'; font-weight:100 900; font-style:normal; font-display:swap; src:url('../fonts/TR-Tahoma-Bold.ttf') format('truetype'); }
+
 /* ── Font stacks exposed as variables ────────────────────────────────────── */
 :root {
   /* Named font stacks — referenced by --font-primary when user picks one */
+  --font-possibility:   'Possibility', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-tr-tahoma:     'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif;
   --font-geist:         'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-inter:         'Inter', system-ui, -apple-system, sans-serif;
   --font-manrope:       'Manrope', system-ui, -apple-system, sans-serif;

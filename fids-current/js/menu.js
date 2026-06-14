@@ -576,8 +576,19 @@ function smDeletePresetById(id) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 (function() {
   try {
+    // LEGACY font restore — only when no modern pick exists. This ran 200ms
+    // after load and STOMPED the font applied by restoreFontChoice() (the
+    // Customize-panel / FONT-dropdown systems), which is why fonts never
+    // survived a refresh.
     var savedFont = localStorage.getItem('fids_font');
-    if (savedFont) {
+    var _modernFont = false;
+    try {
+      if (localStorage.getItem('fids_font_choice')) _modernFont = true;
+      var _ck = 'fids_customize_' + ((typeof _acCurrentCode === 'function') ? _acCurrentCode() : '');
+      var _cc = JSON.parse(localStorage.getItem(_ck) || '{}');
+      if (_cc && _cc.font) _modernFont = true;
+    } catch (e2) {}
+    if (savedFont && !_modernFont) {
       setTimeout(function() {
         var sel = document.getElementById('menuFontSelect');
         if (sel) sel.value = savedFont;
@@ -1387,6 +1398,8 @@ function cuFontChanged() {
 function _cuApplyFont(fontKey) {
   // Map keys to CSS font stacks. Keep in sync with css/font.css :root vars.
   var stacks = {
+    'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+    'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
     'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
     'inter':         "'Inter', system-ui, -apple-system, sans-serif",
     'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",

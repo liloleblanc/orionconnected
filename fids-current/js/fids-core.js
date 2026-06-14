@@ -861,6 +861,62 @@ function changeFont(f) {
   let s = document.getElementById('fids-font-override');
   if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
   s.textContent = `*, *::before, *::after { font-family: ${fam} !important; }`;
+  // Persist the choice — page load used to hard-reset to Geist, wiping
+  // whatever the user picked ("every time I add a new font it goes away").
+  try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
+  try { var _fs = document.getElementById('fontSel'); if (_fs && _fs.value !== f) _fs.value = f; } catch (e) {}
+}
+
+// Font stacks shared by the control-bar dropdown AND the FIDS Console
+// Customize panel (same keys the Customize <select> saves).
+var FIDS_FONT_STACKS = {
+  'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+    'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
+  'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
+  'inter':         "'Inter', system-ui, -apple-system, sans-serif",
+  'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
+  'space-grotesk': "'Space Grotesk', system-ui, -apple-system, sans-serif",
+  'airport':       "'Airport', system-ui, -apple-system, sans-serif",
+  'airport-x':     "'Airport X', system-ui, -apple-system, sans-serif",
+  'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
+};
+// Re-apply the saved font on page load. Priority:
+//   1. FIDS Console → Customize panel pick (per-airport pref) — the UI users
+//      actually use. The GATE screen never applied this on load (only the
+//      board render did), so the font vanished on refresh until the panel
+//      was reopened. Apply it here for every screen type.
+//   2. Control-bar FONT dropdown pick (fids_font_choice).
+//   3. defaultFont (page default), then Geist.
+function restoreFontChoice(defaultFont) {
+  try {
+    var _iata = String((window._gateIata || (document.getElementById('apSel') || {}).value || '')).toUpperCase();
+    if (_iata) {
+      var _cfgRaw = localStorage.getItem('fids_customize_' + _iata);
+      var _cfg = _cfgRaw ? JSON.parse(_cfgRaw) : null;
+      var _stack = null;
+      if (_cfg && _cfg.font) {
+        if (FIDS_FONT_STACKS[_cfg.font]) {
+          _stack = FIDS_FONT_STACKS[_cfg.font];
+        } else if (String(_cfg.font).indexOf('custom:') === 0) {
+          // User-uploaded font ("custom:Name") — menu.js re-injects its
+          // @font-face from fids_custom_fonts on every load; we just point at it.
+          var _cfName = String(_cfg.font).slice(7).replace(/'/g, '');
+          if (_cfName) _stack = "'" + _cfName + "', system-ui, -apple-system, sans-serif";
+        }
+      }
+      if (_stack) {
+        document.body.style.setProperty('--font-primary', _stack, 'important');
+        var s = document.getElementById('fids-font-override');
+        if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
+        s.textContent = '*, *::before, *::after { font-family: ' + _stack + ' !important; }';
+        return;
+      }
+    }
+  } catch (e) {}
+  var f = '';
+  try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
+  changeFont(f || defaultFont || 'Possibility');  // Possibility = brand default
 }
 
 // Start / stop the airline background rotation timer. Runs only when
@@ -2140,7 +2196,7 @@ const AIRLINE_BRAND = {
   'UA': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#1414D2', name:'United' },
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
-  'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#ff6900', name:'Flair' },
+  'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#A8FB96', name:'Flair' },
   'LH': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#2a2a3e', accent:'#05164d', name:'Lufthansa' },
   'BA': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#1e2444', accent:'#075aaa', name:'British Airways' },
   'AF': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#1e2444', accent:'#002157', name:'Air France' },
@@ -2166,7 +2222,7 @@ var LOCAL_LOGOS = {
   'WR': '/logos/airlines/canadian/encore.png',                    // Encore
   'PD': '/logos/airlines/canadian/porter.svg',                    // Porter (correct — NOT viporter)
   'QK': '/logos/airlines/canadian-regional/jazz.svg',             // Jazz
-  'RV': '/logos/airlines/canadian/rouge.png',                     // Rouge
+  'RV': '/logos/airlines/canadian/rouge.svg',                     // Rouge (color — rouge.png was missing)
   'TS': '/logos/airlines/canadian/transat.svg',                   // Air Transat
   'F8': '/logos/airlines/canadian/flair.svg',                     // Flair
   'PB': '/logos/airlines/canadian-regional/PAL-Airlines.svg',              // PAL Airlines
@@ -2199,9 +2255,9 @@ var LOCAL_LOGOS = {
 // where the operator brand differs visually from the marketing brand.
 var OPERATOR_LOGOS = {
   // Air Canada family
-  'RV':  '/logos/airlines/canadian/rouge.png',                                 // Air Canada Rouge
+  'RV':  '/logos/airlines/canadian/rouge.svg',                                 // Air Canada Rouge (rouge.png didn't exist → text fallback)
   'QK':  '/logos/airlines/canadian-regional/jazz.svg',                         // Jazz Aviation
-  'ROU': '/logos/airlines/canadian/rouge.png',                                 // Rouge ICAO
+  'ROU': '/logos/airlines/canadian/rouge.svg',                                 // Rouge ICAO
   'JZA': '/logos/airlines/canadian-regional/jazz.svg',                         // Jazz ICAO
   // Northern / smaller Canadian regional carriers
   'MO':  '/logos/airlines/canadian-regional/calmair.svg',                      // Calm Air
@@ -2363,7 +2419,7 @@ var WATERMARK_OVERRIDE = {
   // Canadian regionals
   'PD': '/logos/airlines/canadian/porter-white.svg',
   'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',
-  'F8': '/logos/airlines/canadian/flair-wordmark-light.svg',           // may or may not exist; falls back if missing
+  'F8': '/logos/tails-modern/F8.svg',           // real tail roundel (black + brand lime) — the old wordmark-light was a homemade placeholder
   'PB': '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg',
   // European
   'BA': '/logos/airlines/european/british-airways-wordmark-light.svg',
@@ -3482,7 +3538,7 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
-  'AC':'#D82F2E','WS':'#00B2A9','PD':'#1A3A6B','PB':'#1F3876','F8':'#FF6600',
+  'AC':'#D82F2E','WS':'#00B2A9','PD':'#254D87','PB':'#1F3876','F8':'#A8FB96',
   'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
@@ -5086,6 +5142,13 @@ function _buildV2AircraftCol(ctx, vars) {
       var _svgClock = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
       var _svgDepart = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>';
       var _svgArrive = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM19.34 15.85c.8.21 1.62-.26 1.84-1.06.21-.8-.26-1.62-1.06-1.84l-5.31-1.42-2.76-9.02L10.12 2v8.28L5.15 8.95l-.93-2.32-1.45-.39v5.17l16.57 4.44z"/></svg>';
+      // v222 — new left-rail panel icons (Nick's 6-panel spec).
+      var _svgPlane = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+      var _svgGlobe = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a7.82 7.82 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a7.99 7.99 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a7.82 7.82 0 0 1 0 4h-3.38z"/></svg>';
+      // Boarding — "enter the gate" (doorway on the right + arrow in).
+      var _svgBoarding = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4v-2h4V6h-4V4z"/><path d="M10.4 7.4 9 8.8l2.3 2.2H4v2h7.3L9 15.2l1.4 1.4 4.6-4.6z"/></svg>';
+      // Total Flight Time — clean stopwatch.
+      var _svgRoute = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M15 1H9v2h6V1zm-3 7a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0V9a1 1 0 0 0-1-1zm7.03-.61 1.42-1.42a10 10 0 0 0-1.41-1.41l-1.42 1.42A8 8 0 1 0 12 22a8 8 0 0 0 7.03-14.61zM12 20a6 6 0 1 1 0-12 6 6 0 0 1 0 12z"/></svg>';
 
       // v218.99.33 — Airline emblem using REAL symbol-only SVGs. The leaf
       // shape gets a white filter applied and sits on the red CSS circle,
@@ -5096,10 +5159,11 @@ function _buildV2AircraftCol(ctx, vars) {
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
         'RV':  '/logos/airlines/canadian/AC.TO.svg',
-        'WS':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
-        'WR':  '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
-        'PD':  '/logos/airlines/canadian/Porter_Airlines_Logo_2006.svg',
-        'PB':  '/logos/airline-tiles/PB.svg',
+        'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
+        'WR':  '/logos/symbols/airlines-mono/WS.svg',
+        'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
+        'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
+        'F8':  '/logos/airlines/canadian/flair-dot.svg',   // Flair — the black DOT from the lockup IS the emblem
         // US majors — symbol-only emblems (rendered white on the accent badge)
         'UA':  '/logos/airlines/us-major/united-globe-only.svg',
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
@@ -5119,7 +5183,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        var NATIVE_COLOR_EMBLEMS = { 'PB': true };
+        var NATIVE_COLOR_EMBLEMS = { 'PB': true, 'F8': true };  // (PD now uses a white "p" on the accent circle, not native)
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
@@ -5140,13 +5204,21 @@ function _buildV2AircraftCol(ctx, vars) {
           + '</div>';
       }
 
-      // Parse "AC1987" → airline code "AC" + flight number "1987"
+      // Parse "AC1987" → airline code "AC" + flight number "1987".
+      // Prefer the flight's own airline code — regex-only parsing missed
+      // alphanumeric codes (F8, B6 …), so e.g. Flair never got its emblem.
       var _fnCarrier = '';
       var _fnNumber = _fiFlightNo;
-      var _fnMatch = _fiFlightNo.match(/^([A-Z]{2,3})\s*(\d+)$/i);
-      if (_fnMatch) {
-        _fnCarrier = _fnMatch[1].toUpperCase();
-        _fnNumber  = _fnMatch[2];
+      var _alCodeEmb = String((currentFlight && currentFlight.airline) || '').trim().toUpperCase();
+      if (_alCodeEmb && _fiFlightNo.toUpperCase().indexOf(_alCodeEmb) === 0) {
+        _fnCarrier = _alCodeEmb;
+        _fnNumber  = _fiFlightNo.slice(_alCodeEmb.length).replace(/^\s+/, '');
+      } else {
+        var _fnMatch = _fiFlightNo.match(/^([A-Z][A-Z0-9]|[A-Z]{2,3})\s*(\d+)$/i);
+        if (_fnMatch) {
+          _fnCarrier = _fnMatch[1].toUpperCase();
+          _fnNumber  = _fnMatch[2];
+        }
       }
       var _emblemHtml = _fnCarrier ? _emblemImg(_fnCarrier) : '';
 
@@ -5184,14 +5256,18 @@ function _buildV2AircraftCol(ctx, vars) {
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
       function _shelf(icon, en, second, val, valCls) {
-        // Skip the 2nd-language label when it's identical to English (e.g. Destination).
-        var _sec = (second && second !== en) ? '<div class="v2-fi-lbl-2">' + second + '</div>' : '';
-        return '<div class="v2-fi-row">' + icon
-          + '<div class="v2-fi-copy">'
-          +   '<div class="v2-fi-lbl-en">' + en + '</div>'
+        // v223 — Nick's exact spec: two columns. Icon column (left) + text
+        // column (left-aligned label, full-width gold line, big value).
+        var _sec = (second && second !== en)
+          ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + second + '</span>'
+          : '';
+        return '<div class="v2-fi-row">'
+          + '<div class="v2-fi-iconcol">' + icon + '</div>'
+          + '<div class="v2-fi-textcol">'
+          +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '</div>'
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
-          +   _sec
-          + '</div></div>';
+          + '</div>'
+          + '</div>';
       }
       // Destination city (was in the header; now the first shelf).
       var _destCityName = '';
@@ -5203,13 +5279,57 @@ function _buildV2AircraftCol(ctx, vars) {
         if (typeof normalizeDisplayCity === 'function') _destCityName = normalizeDisplayCity(_destCityName, _dIata);
       } catch (e) {}
 
+      var _depRev = !!(_fiDep && String(_fiDep).indexOf('g8-r2-revised') !== -1);
+      var _arrRev = !!(_fiArr && String(_fiArr).indexOf('g8-r2-revised') !== -1);
+      var _brdRev = !!(_fiBrd && String(_fiBrd).indexOf('g8-r2-revised') !== -1);
+      // When a time is revised, the LABEL itself becomes "Revised - <X>"
+      // (no separate pill/badge). Second language gets its own prefix.
+      var _depEnL = _depRev ? 'Revised - Departure' : 'Departure Time';
+      var _arrEnL = _arrRev ? 'Revised - Arrival'   : 'Arrival Time';
+      var _brdEnL = _brdRev ? 'Revised - Boarding'  : 'Boarding Time';
+      var _depL2L = _depRev ? _L2('Révisé - Départ','Revisado - Salida')       : _L2('Heure de départ','Hora de salida');
+      var _arrL2L = _arrRev ? _L2('Révisé - Arrivée','Revisado - Llegada')      : _L2('Heure d’arrivée','Hora de llegada');
+      var _brdL2L = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Heure d’embarquement','Hora de embarque');
+
+      // v222 — Nick's 6 equal panels (top→bottom):
+      //   Flight·Vol | Destination | Status·Statut | Boarding·Embarquement
+      //   | Departure·Départ | Flight Time·Temps Vol
+      // Short bilingual labels (revised-aware for the time panels).
+      var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
+      // Per Nick: "Destination | YYZ" — code on the label line, accent-coloured
+      // (same size, not bigger); the value is the city alone.
+      var _destLabel = 'Destination' + (_destIataDisp ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destIataDisp + '</span>' : '');
+      var _destValue = _destCityName || _destIataDisp;
+      var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
+      var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
+      // Label stays "Departure | Départ" even when the time is revised (per Nick).
+      var _depShortEn = 'Departure';
+      var _depShortL2 = _L2('Départ','Salida');
+      var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
+      // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
+      function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
+      // STATUS — show BOTH languages, never switch ("On Time | À l'heure").
+      var _stBiling = '';
+      try {
+        var _stk = String((currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
+        if (_stk === 'ontime') _stk = 'ontime';
+        var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
+        if (_ss) {
+          var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
+          // Status STACKED — EN over FR (per Nick).
+          _stBiling = '<span class="v2-fi-st2">' + _enTC + '</span><span class="v2-fi-st2">' + _ss.fr + '</span>';
+        }
+      } catch (e) {}
+      if (!_stBiling) _stBiling = _fiStLbl || '—';
+
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + (_destCityName ? _shelf(_emblemHtml || _badge(_svgStatus), 'Destination', _L2('Destination','Destino'), _destCityName, 'v2-fi-dest') : '')
-        + (_fiStLbl ? _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _fiStLbl, 'v2-fi-status-val v2-fi-status' + _fiStCls) : '')
-        + (_depShow ? _shelf(_badge(_svgDepart), 'Departure Time', _L2('Heure de départ','Hora de salida'), _depShow, 'v2-fi-time') : '')
-        + (_arrShow ? _shelf(_badge(_svgArrive), 'Arrival Time', _L2('Heure d’arrivée','Hora de llegada'), _arrShow, 'v2-fi-time') : '')
-        + (_fiBrd ? _shelf(_badge(_svgClock), 'Boarding Time', _L2('Heure d’embarquement','Hora de embarque'), _fiBrd, 'v2-fi-time') : '')
+        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || '—'), 'v2-fi-dest')
+        + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
+        + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
+        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_fiBrd) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgArrive), 'Flight Time', _L2('Durée','Duración'), _durValue, 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}
@@ -5224,8 +5344,9 @@ function _buildV2AircraftCol(ctx, vars) {
     weather:  _wxBlock,
     gateinfo: _gateInfoBlock
   };
-  // v218.99.45 — Weather widget added to bottom of left column (Nick's spec)
-  var _defaultOrder = ['flightinfo', 'weather'];
+  // v222 — Left column is now the 6 equal flight panels ONLY. Weather moved
+  // to the new center-bottom rotating panel (built separately).
+  var _defaultOrder = ['flightinfo'];
 
   // v218.99.21 — apply customized layout order if set. Resolver returns
   // the merged order array for this airport+airline. Defaults if unset.
@@ -5274,9 +5395,30 @@ function _buildV2MapCol(ctx, vars) {
   // SPD/ALT shown inline when telemetry is live (suppressed otherwise —
   // no "—" placeholders).
   var _inboundCard = '';
+  var _telemBar = '';
+  // Once the incoming aircraft has actually arrived AND ~5 minutes have passed,
+  // the "incoming aircraft" panel is no longer relevant — the plane is at the
+  // gate. Switch the right panel to the DEPARTURE (outbound) flight info. (On a
+  // tight turnaround the boarding screen takes over first; this only matters
+  // when there's a gap between arrival and boarding.)
+  var _arrivedSwitch = false;
+  try {
+    var _ibSw = vars.inboundFlight;
+    if (_ibSw) {
+      var _swArrTs = (_ibSw._revTs && _ibSw._revTs > _ibSw._sortTs) ? _ibSw._revTs : (_ibSw._sortTs || 0);
+      // Switch once 5 min have elapsed past the (revised) arrival time.
+      if (_swArrTs && (Date.now() - _swArrTs) >= 5 * 60000) _arrivedSwitch = true;
+    }
+  } catch (e) {}
   try {
     var _ib = vars.inboundFlight;
-    if (_ib) {
+    if (_ib && !_arrivedSwitch) {
+      // Option 1 — use the live position the airport board already carried for
+      // this inbound (the board is fetched with withLocation=true). The separate
+      // by-number fetch (window._gateInboundLivePos) often misses what the board
+      // already had, so fall back to the board-captured speed/altitude here.
+      if (_liveSpd === null && typeof _ib._liveSpd === 'number') _liveSpd = Math.round(_ib._liveSpd);
+      if (_liveAlt === null && typeof _ib._liveAlt === 'number') _liveAlt = Math.round(_ib._liveAlt);
       var _tz = vars.tz || 'UTC';
       var _destIata = (vars.iata || '').toString().toUpperCase();
       var _origIata = (_ib._locIata || '').toString().toUpperCase();
@@ -5321,6 +5463,13 @@ function _buildV2MapCol(ctx, vars) {
       else if (_rawSt === 'ontime' || _rawSt === 'on-time') _stKey = 'ontime';
       else _stKey = 'scheduled';
       var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
+      var _ST_SHORT = {
+        enroute:{en:'Enroute',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
+        boarding:{en:'Boarding',fr:'Embarquement',es:'Embarcando'}, delayed:{en:'Delayed',fr:'Retardé',es:'Retrasado'},
+        early:{en:'Early',fr:'En avance',es:'Adelantado'}, cancelled:{en:'Cancelled',fr:'Annulé',es:'Cancelado'},
+        arrived:{en:'Arrived',fr:'Arrivé',es:'Aterrizado'}, ontime:{en:'On time',fr:"À l'heure",es:'A tiempo'}
+      };
+      var _stShort = (_ST_SHORT[_stKey] && (_ST_SHORT[_stKey][_ibLang] || _ST_SHORT[_stKey].en)) || _stWord;
 
       // Origin display: "Calgary (YYC)"
       var _origCity = '';
@@ -5381,7 +5530,12 @@ function _buildV2MapCol(ctx, vars) {
 
       // v218.99.68 — Compact, readable right-column header per Nick.
       // ONE block instead of duplicated info top + bottom. No truncated labels.
-      var _ibFltCompact = (_ibAirlineCode || '') + _ibFlightNum;  // e.g. "WS812"
+      // e.g. "WS812". Don't prepend the code if the number already carries it —
+      // alphanumeric codes (F8, B6) slip past the letter-only prefix strip,
+      // which used to render doubles like "F8F8670".
+      var _ibFltCompact = (_ibAirlineCode && String(_ibFlightNum).toUpperCase().indexOf(_ibAirlineCode) === 0)
+        ? String(_ibFlightNum)
+        : (_ibAirlineCode || '') + _ibFlightNum;
 
       // ETA from arrival ts (moved up from the aircraft block below)
       var _ibArrTs = _ib._sortTs || 0;
@@ -5398,12 +5552,15 @@ function _buildV2MapCol(ctx, vars) {
       // Status class for color (matches left column status colors)
       var _stCls = '';
       var _rs = _rawSt;
-      if (_rs === 'scheduled' || _rs === 'on-time' || _rs === 'ontime') _stCls = 'scheduled';
-      else if (_rs === 'boarding' || _rs === 'delayed' || _rs === 'early' || _rs === 'final-call' || _rs === 'finalcall') _stCls = 'delayed';
+      if (_rs === 'scheduled' || _rs === 'on-time' || _rs === 'ontime' || _rs === 'early') _stCls = 'scheduled';
+      else if (_rs === 'boarding' || _rs === 'delayed' || _rs === 'final-call' || _rs === 'finalcall') _stCls = 'delayed';
       else if (_rs === 'cancelled' || _rs === 'gate-closed' || _rs === 'gateclosed') _stCls = 'cancelled';
       else _stCls = 'ontime';
 
       // v220 — compact telemetry (kt→kph) + inline brand icons for the redesigned card
+      // REAL telemetry only. Speed/altitude come from live ADS-B (via the board
+      // feed or the by-number fetch). When there is no live fix, we show "—" —
+      // we do NOT fabricate a value. No estimates.
       var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpd * 1.852) : null;
       var _altUnit = ({en:'ft',fr:'pieds',es:'pies',de:'ft',it:'piedi',pt:'pés',ja:'ft',zh:'英尺',ar:'قدم'})[_ibLang] || 'ft';
       var _spdUnit = ({en:'kph',fr:'kph',es:'km/h',de:'kph',it:'kph',pt:'kph',ja:'kph',zh:'kph',ar:'kph'})[_ibLang] || 'kph';
@@ -5411,47 +5568,167 @@ function _buildV2MapCol(ctx, vars) {
       var _ICO_ALT = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 19l6-9 3.5 4.5L15 11l6 8z"/></svg>';
       var _ICO_PLANE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M21 16v-1.7l-7.5-4.6V4.6a1.6 1.6 0 0 0-3.2 0v5.1L2.8 14.3V16l7.5-2.3v4.7l-2 1.4V21l3.6-1 3.6 1v-1.2l-2-1.4v-4.7z"/></svg>';
 
+      // 2nd language: French everywhere, Spanish for La Paz (per-airport).
+      var _lang2 = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
+      function _t2(o){ return o[_lang2] || o.fr || o.en || ''; }
+      var _L = {
+        status:   {en:'Status',      fr:'Statut',       es:'Estado'},
+        flight:   {en:'Flight',      fr:'Vol',          es:'Vuelo'},
+        arriving: {en:'Arriving in', fr:'Arrive dans',  es:'Llega en'},
+        departure:{en:'Departure',   fr:'Départ',       es:'Salida'},
+        departed: {en:'Departed',    fr:'Parti',        es:'Salió'},
+        arrival:  {en:'Arrival',     fr:'Arrivée',      es:'Llegada'},
+        arrived:  {en:'Arrived',     fr:'Arrivé',       es:'Aterrizó'},
+        delayed:  {en:'Delayed',     fr:'Retardé',      es:'Retrasado'},
+        title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre appareil entrant', es:'Información de su aeronave entrante'}
+      };
+      // Status-adaptive Departure / Arrival labels
+      // ETD/ETA → ATD/ATA once actually departed / arrived (status-adaptive)
+      var _departed = (_stKey === 'enroute' || _stKey === 'arrived');
+      var _arrived  = (_stKey === 'arrived');
+      var _delayedSt = (_stKey === 'delayed');
+      // Departure / Arrival labels adapt to status (Departed / Arrived / Delayed)
+      var _depAbbr = _departed ? 'Departed At' : 'Departure Time';
+      var _arrAbbr = _arrived ? 'Arrived' : (_delayedSt ? 'Delayed' : 'Arrival Time');
+      var _depWordObj = _departed ? {fr:'Parti à',es:'Salió a'} : {fr:'Heure de départ',es:'Hora de salida'};
+      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizado'} : (_delayedSt ? {fr:'Retardé',es:'Retrasado'} : {fr:"Heure d'arrivée",es:'Hora de llegada'});
+      function _i3(en, val, l2, cls){
+        return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
+             + '<div class="v2-rc-i3val ' + (cls||'') + '">' + val + '</div>'
+             + '<div class="v2-rc-i3lbl2">' + l2 + '</div></div>';
+      }
+      // r2 cell: ABBR on top · "IATA  time" value · 2nd-lang word under
+      function _r2(abbr, valStr, wordObj){
+        return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + abbr + '</div>'
+             + '<div class="v2-rc-r2val">' + valStr + '</div>'
+             + '<div class="v2-rc-r2lbl2">' + _t2(wordObj) + '</div></div>';
+      }
+
+      // Status — bilingual inline (EN | FR), never switches (matches the left).
+      var _stEn = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey] && _ST_SHORT[_stKey].en) || _stShort;
+      var _stFr = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey] && _ST_SHORT[_stKey].fr) || _stEn;
+      var _stShow = (_stFr && _stFr !== _stEn)
+        ? (_stEn + ' <span class="v2-rc-fi-sep">|</span> ' + _stFr) : _stEn;
+      // ONE flight-info shelf: Flight·From + Status (bilingual). No ETA row —
+      // that lives on the left/departure side.
       _inboundCard =
-          '<div class="v2-rc-inbound">'
-        +   '<div class="v2-rc-status-pill v2-rc-status-' + _stCls + '">' + _stWord + '</div>'
-        +   '<div class="v2-rc-fltnum">' + (_ib.flight || _ibFltCompact) + '</div>'
-        +   '<div class="v2-rc-route">'
-        +     '<span class="v2-rc-route-pt">' + (_origIata || '') + '</span>'
-        +     '<span class="v2-rc-route-ico">' + _ICO_PLANE + '</span>'
-        +     '<span class="v2-rc-route-pt">' + (_destIata || '') + '</span>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi">'
+        +   '<div class="v2-rc-fi-row">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Flight <span class="v2-rc-fi-sep">|</span> Vol</div>'
+        +       '<div class="v2-rc-fi-val">' + (_ibFltCompact || '—') + '</div></div>'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">From <span class="v2-rc-fi-sep">|</span> <span class="v2-rc-fi-code">' + (_origIata || 'De') + '</span></div>'
+        +       '<div class="v2-rc-fi-val">' + (_origCity || _origIata || '—') + '</div></div>'
         +   '</div>'
-        +   '<div class="v2-rc-headline">'
-        +     '<span class="v2-rc-flt">' + _ibFltCompact + '</span>'
-        +     '<span class="v2-rc-sep">·</span>'
-        +     '<span class="v2-rc-status v2-rc-status-' + _stCls + '">' + _stWord + '</span>'
+        +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Status <span class="v2-rc-fi-sep">|</span> Statut</div>'
+        +       '<div class="v2-rc-fi-val v2-rc-status-' + _stCls + '">' + _stShow + '</div></div>'
         +   '</div>'
-        +   (_origDisplay ? '<div class="v2-rc-from">' + (({en:'From',fr:'De',es:'Desde',de:'Von',it:'Da',pt:'De',ja:'出発地',zh:'来自',ar:'من'})[_ibLang] || 'From') + ' ' + _origDisplay + '</div>' : '')
-        +   '<div class="v2-rc-times">'
-        +     '<div class="v2-rc-time-cell">'
-        +       '<div class="v2-rc-time-lbl">' + TL('depTime') + '</div>'
-        +       '<div class="v2-rc-time-val">' + (_ibDepStr || '\u2014') + '</div>'
-        +     '</div>'
-        +     '<div class="v2-rc-time-cell">'
-        +       '<div class="v2-rc-time-lbl">' + TL('arrTime') + '</div>'
-        +       '<div class="v2-rc-time-val">' + (_ibArrStr || '\u2014') + '</div>'
-        +     '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-statbar">'
-        +     '<div class="v2-rc-stat">'
-        +       '<span class="v2-rc-stat-ico">' + _ICO_SPD + '</span>'
-        +       '<span class="v2-rc-stat-txt"><span class="v2-rc-stat-lbl">' + _spdLbl + '</span>'
-        +         '<span class="v2-rc-stat-val">' + (_spdKph !== null ? _spdKph.toLocaleString() : '—') + ' <span class="v2-rc-stat-unit">' + _spdUnit + '</span></span></span>'
-        +     '</div>'
-        +     '<div class="v2-rc-stat">'
-        +       '<span class="v2-rc-stat-ico">' + _ICO_ALT + '</span>'
-        +       '<span class="v2-rc-stat-txt"><span class="v2-rc-stat-lbl">' + _altLbl + '</span>'
-        +         '<span class="v2-rc-stat-val">' + (_liveAlt !== null ? _liveAlt.toLocaleString() : '—') + ' <span class="v2-rc-stat-unit">' + _altUnit + '</span></span></span>'
-        +     '</div>'
-        +   '</div>'
-        +   (_ibEtaStr ? '<div class="v2-rc-eta">' + TL('arrivesIn') + ' ' + _ibEtaStr + '</div>' : '')
-        + '</div>';
+        + '</div></div>';
+
+      // Speed/Altitude render at the bottom of the MAP section, ONLY while the
+      // aircraft is in flight (real telemetry present); otherwise it disappears.
+      if (_liveSpd !== null || _liveAlt !== null) {
+        _telemBar =
+            '<div class="v2-rc-mapstats">'
+          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div>'
+          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? _spdKph.toLocaleString() : '—') + ' <span class="v2-rc-ms-unit">' + _spdUnit + '</span></div>'
+          +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Vitesse',es:'Velocidad'}[_lang2] || 'Vitesse') + '</div></div>'
+          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div>'
+          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? _liveAlt.toLocaleString() : '—') + ' <span class="v2-rc-ms-unit">' + _altUnit + '</span></div>'
+          +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Altitude',es:'Altitud'}[_lang2] || 'Altitude') + '</div></div>'
+          + '</div>';
+      }
+
     }
   } catch (e) {}
+
+  // ─── DEPARTURE CARD ───────────────────────────────────────────────────
+  // Shown in place of the incoming-aircraft card once the inbound has been on
+  // the ground ~5 min. Same shelf layout, but for the OUTBOUND flight: this
+  // airport → destination, with a "Departing in" countdown.
+  if (_arrivedSwitch) {
+    try {
+      var _dcf = vars.currentFlight || {};
+      var _dTz = vars.tz || 'UTC';
+      var _dOrig = (vars.iata || '').toString().toUpperCase();      // departing FROM here
+      var _dDest = (vars.locIata || _dcf.dest || '').toString().toUpperCase();
+      var _dLang2 = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
+      function _dt2(o){ return o[_dLang2] || o.fr || o.en || ''; }
+      function _dFmtT(ts){ try { return new Date(ts).toLocaleTimeString('en-US', {timeZone:_dTz, hour:'2-digit', minute:'2-digit', hour12:true}); } catch(e){ return ''; } }
+
+      // Flight number (compact, e.g. "AC1984")
+      var _dFltCompact = String(_dcf.flight || '').replace(/\s+/g, '').toUpperCase();
+
+      // Status — reuse the outbound label/class computed for the left column.
+      var _dStLabel = String(vars.stLabel || _dcf.status || '').trim();
+      var _dStCls = String(vars.stClass || 'ontime').replace(/^v2-fi-status/, '').replace(/^[-\s]+/, '') || 'ontime';
+      if (['scheduled','ontime','delayed','cancelled'].indexOf(_dStCls) === -1) _dStCls = 'ontime';
+
+      // Departure / arrival times — reuse the EXACT strings the left column
+      // already shows (revised, 12-hour, delay-adjusted) so the two panels can
+      // never disagree. Strip any markup down to plain text. Fall back to the
+      // effective-departure timestamp only if the left column had nothing.
+      var _dDepTs = ctx.effectiveDepTs || null;
+      // Strip markup to plain text. Loop until stable (a single pass can leave
+      // a reassembled tag, per CodeQL), then drop any stray angle brackets.
+      function _dStrip(h){
+        var s = String(h || ''), prev;
+        do { prev = s; s = s.replace(/<[^>]*>/g, ''); } while (s !== prev);
+        return s.replace(/[<>]/g, '').trim();
+      }
+      var _dDepStr = _dStrip(vars.depTimeHtml) || (_dDepTs ? _dFmtT(_dDepTs) : '');
+      var _dArrStr = _dStrip(vars.arrHtml);
+
+      // "Departing in" countdown
+      var _dMins = _dDepTs ? Math.round((_dDepTs - Date.now()) / 60000) : 0;
+      var _dEtaStr = '';
+      if (_dMins > 0 && _dMins < 1440) {
+        _dEtaStr = _dMins >= 60 ? (Math.floor(_dMins/60) + 'h ' + (_dMins % 60) + 'm') : (_dMins + ' min');
+      }
+
+      function _di3(en, val, l2, cls){
+        return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
+             + '<div class="v2-rc-i3val ' + (cls||'') + '">' + (val || '—') + '</div>'
+             + '<div class="v2-rc-i3lbl2">' + l2 + '</div></div>';
+      }
+      function _dr2(abbr, valStr, wordObj){
+        return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + abbr + '</div>'
+             + '<div class="v2-rc-r2val">' + valStr + '</div>'
+             + '<div class="v2-rc-r2lbl2">' + _dt2(wordObj) + '</div></div>';
+      }
+
+      // Destination city for "To | À".
+      var _dDestCity = '';
+      try {
+        if (_dDest && typeof CITY !== 'undefined' && CITY[_dDest]) _dDestCity = CITY[_dDest];
+        else if (_dDest && typeof AP !== 'undefined' && AP[_dDest] && AP[_dDest].city) _dDestCity = AP[_dDest].city;
+        if (typeof tc === 'function' && _dDestCity) _dDestCity = tc(_dDestCity);
+      } catch (e) {}
+      // Bilingual status for the departure card (Scheduled | Prévu).
+      var _dStEn = '', _dStFr = '';
+      try {
+        var _dk = String((_dcf && _dcf.status) || '').toLowerCase().replace(/[\s_-]/g, '');
+        var _dss = (typeof SS !== 'undefined' && SS[_dk]) ? SS[_dk] : null;
+        if (_dss) { _dStEn = _dss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); _dStFr = _dss.fr; }
+      } catch (e) {}
+      var _dStShow = (_dStFr && _dStFr !== _dStEn)
+        ? (_dStEn + ' <span class="v2-rc-fi-sep">|</span> ' + _dStFr) : (_dStEn || _dStLabel || '—');
+      // Flight·To + Status only (no departing-in row — it's on the left).
+      _inboundCard =
+          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi">'
+        +   '<div class="v2-rc-fi-row">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Flight <span class="v2-rc-fi-sep">|</span> Vol</div>'
+        +       '<div class="v2-rc-fi-val">' + (_dFltCompact || '—') + '</div></div>'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Destination <span class="v2-rc-fi-sep">|</span> <span class="v2-rc-fi-code">' + (_dDest || 'À') + '</span></div>'
+        +       '<div class="v2-rc-fi-val">' + (_dDestCity || _dDest || '—') + '</div></div>'
+        +   '</div>'
+        +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
+        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Status <span class="v2-rc-fi-sep">|</span> Statut</div>'
+        +       '<div class="v2-rc-fi-val v2-rc-status-' + _dStCls + '">' + _dStShow + '</div></div>'
+        +   '</div>'
+        + '</div></div>';
+    } catch (e) {}
+  }
 
   // ─── AIRCRAFT BLOCK (bottom of right column, always) ──────────────────
   // "Aircraft Type:" label + value, with livery image above. This represents
@@ -5581,19 +5858,62 @@ function _buildV2MapCol(ctx, vars) {
           + '</div>';
       }
 
+      // Shelf 6 — Aircraft type (+reg). Long manufacturer names shortened so it
+      // fits one line (auto-fit shrinks the rest).
+      var _lang2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
+      var _acModel = String(_equipNm || _equipCd || '')
+        .replace(/^De Havilland(\s+Canada)?\s+/i, '')   // "De Havilland Dash 8-400" → "Dash 8-400"
+        .replace(/^Bombardier\s+/i, '');
+      var _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg : '');
+      // Shorter label per Nick: "Aircraft / Appareil" (was "Aircraft type").
+      var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
+      // Operated by — when the operating carrier differs from the marketing
+      // carrier, the bottom shelf splits into two cells (Nick's layout):
+      //   Operated By            |  Aircraft
+      //   [operator LOGO/name]   |  Airbus A319 | C-FTOD
+      //   Exploité par           |  Appareil
+      var _opByVal = '';
+      var _mktCode6 = String(vars.airlineCode || '').trim().toUpperCase();
+      if (_opCode && _opCode !== _mktCode6) {
+        var _opNm6 = _cf._opName
+          || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
+        _opNm6 = String(_opNm6).replace(/[<>"']/g, '');
+        var _opLogo6 = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
+        _opByVal = _opLogo6
+          ? '<img class="v2-rc-opby-logo" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
+            + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
+          : '<b>' + _opNm6 + '</b>';
+      }
+      var _opByL2 = (_lang2b === 'es') ? 'Operado por' : 'Exploité par';
+      // Bottom shelf: STACKED bilingual label (EN over FR) beside the value —
+      //   Operated By: / Exploté Par:  [LOGO]    Aircraft: / Appareil:  A319 | reg
+      // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
+      // BOTTOM (only if operated by another carrier): Operated By + logo, centered.
+      var _typeCellHtml =
+          '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
+        + (_opByVal
+            ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">Operated By <span class="v2-rc-fi-sep">|</span> ' + _opByL2 + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
+            : '');
       _aircraftBlock =
-          '<div class="v2-rc-aircraft">'
-        +   _typeShelf
+          '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
-        +   _regShelf
-        + '</div>';
+        + '</div>'
+        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
+        +   _typeCellHtml
+        + '</div></div>';
     }
   } catch (e) {}
 
-  // Map area itself — clean now (no overlay pill, that data went up top)
+  // Map area — now the TOP half of the right column, with the "Your Aircraft"
+  // title overlaid at the top and the speed/altitude telemetry at the bottom
+  // (both INSIDE the map, per Nick — not separate shelves).
   var _mapBox =
-      '<div class="v2-map-area">'
-    +   '<div class="g8-inb-map" id="gateMapBox"></div>'
+      '<div class="v2-rc-shelf v2-rc-shelf-map">'
+    +   '<div class="v2-map-area">'
+    +     '<div class="g8-inb-map" id="gateMapBox"></div>'
+    +     '<div class="v2-rc-maptitle">Your Aircraft <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">Votre Avion</span></div>'
+    +     _telemBar
+    +   '</div>'
     + '</div>';
 
   // v218.99.7 — assemble right column. Theme system removed in v218.99.9,
@@ -5608,7 +5928,7 @@ function _buildV2MapCol(ctx, vars) {
     map:         _mapBox,
     aircraft:    _aircraftBlock
   };
-  var _rcDefaultOrder = ['inboundCard', 'map', 'aircraft'];
+  var _rcDefaultOrder = ['map', 'inboundCard', 'aircraft'];
 
   // v218.99.21 — apply customized layout order if set
   var _rcOrderToUse = _rcDefaultOrder;
@@ -5772,7 +6092,8 @@ function uxgGateHtml(ctx) {
 
   // Status badge class
   var stClass = '';
-  if (stKey === 'delayed' || stKey === 'early') stClass = ' delayed';
+  if (stKey === 'delayed') stClass = ' delayed';
+  else if (stKey === 'early') stClass = ' ontime';   // early is GOOD → green, not orange
   else if (stKey === 'boarding') stClass = ' boarding';
   else if (stKey === 'cancelled') stClass = ' cancelled';
   else if (stKey === 'landed' || stKey === 'arrived' || stKey === 'active' || stKey === 'en-route') stClass = ' ontime';
@@ -6242,31 +6563,32 @@ function uxgGateHtml(ctx) {
     // BLACK BANNERS — use white-wordmark variants so logo text reads clean
     'AC': '/logos/airlines/canadian/air-canada-white.svg',                       // red rondelle + white "AIR CANADA"
     'QK': '/logos/airlines/canadian/air-canada-white.svg',                       // Jazz under AC
-    'RV': '/logos/airlines/canadian/rouge.png',                                   // Rouge branded gate banner
+    'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
     'UA': '/logos/airlines/us-major/united.svg',                                 // globe + white "UNITED"
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
+    // WestJet — navy banner with the white wordmark (uploaded by Nick)
+    'WS': '/logos/airlines/canadian/westjet-white-wordmark.svg',                 // white "WestJet" wordmark for the navy bar
     // WHITE BANNERS — use native-color logos so they show against light background
-    'WS': '/logos/airlines/canadian/WestJet_Logo_2018.svg',                      // navy wordmark + teal swoosh (native colors)
     'HA': '/logos/airlines/us-major/Hawaiian.svg',                               // Pualani + native-color "Hawaiian Airlines"
-    'PD': '/logos/airlines/canadian/porter.svg',                                 // navy Porter wordmark (native colors on white)
-    'PB': '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg',            // PAL Airlines — light wordmark for dark banners
+    'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
+    'PB': '/logos/airlines/canadian-regional/pal-airlines-swoosh-white.svg',     // PAL — gold swoosh + white wordmark for the navy bar
     'BA': '/logos/airlines/european/BA-square.svg',                              // British Airways
     '4Y': '/logos/airlines/european/discover-airlines-emblem.svg'               // Discover Airlines (Lufthansa Group, ICAO OCN)
   };
   // Per-airline size overrides for banner logo
   var BANNER_SIZE_OVERRIDE = {
-    'AC': { h: 156, w: 740 },
-    'QK': { h: 156, w: 740 },
-    'RV': { h: 150, w: 700 },
+    'AC': { h: 128, w: 640 },   // was 156 — a bit too big per Nick
+    'QK': { h: 128, w: 640 },
+    'RV': { h: 128, w: 640 },
     'AA': { h: 120, w: 520 },
     'DL': { h: 120, w: 520 },
     'UA': { h: 120, w: 520 },
-    'WS': { h: 118, w: 520 },
+    'WS': { h: 150, w: 700 },
     'HA': { h: 118, w: 500 },
-    'PD': { h: 116, w: 500 },
-    'PB': { h: 116, w: 500 },
+    'PD': { h: 80, w: 320 },
+    'PB': { h: 128, w: 470 },
     'TS': { h: 118, w: 520 },
     'NZ': { h: 120, w: 540 },
     'BA': { h: 120, w: 540 },
@@ -6304,13 +6626,31 @@ function uxgGateHtml(ctx) {
   // Carriers whose own COLOUR logo reads directly on the dark header — no white
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
-    'AV': '/logos/airlines/asian-other/avianca.svg'   // red avianca — pops on black
+    'AV': '/logos/airlines/asian-other/avianca.svg',  // red avianca — pops on black
+    // Flair — the REAL "flair airlines" lockup is black ink, so filter it to
+    // white for the dark banner (no plate, per Nick). Two-row lockup: cap the
+    // height lower than single-line wordmarks or it clips in the band.
+    'F8': { src: '/logos/airlines/canadian/flair.svg', whiten: true, h: 118, w: 520 },
+    // Regional carriers — white monochrome marks on file, straight onto the dark banner
+    '5T': '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg',
+    '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
+    'MO': '/logos/airlines/canadian-regional/calmair-monochrome-white.svg',
+    'YP': '/logos/airlines/canadian-regional/perimeter-aviation-logo-monochrome-white.svg',
+    'BQ': '/logos/airlines/canadian-regional/pascan-monochrome-white.svg',
+    '3H': '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg'
   };
   var _darkLogo = BANNER_DARK_LOGO[_bannerBrandCode] || BANNER_DARK_LOGO[airlineCode];
+  var _darkLogoWhiten = false;
   if (!_useOverrideFile && _darkLogo) {
-    r1LogoSrc = _darkLogo;
-    _useOverrideFile = true;          // real colours — no white filter, no plate
-    _sz = { h: 64, w: 300 };
+    r1LogoSrc = (typeof _darkLogo === 'object') ? _darkLogo.src : _darkLogo;
+    _darkLogoWhiten = (typeof _darkLogo === 'object') && !!_darkLogo.whiten;
+    _useOverrideFile = true;          // real colours — no plate
+    // Per-entry h/w wins (two-row lockups like Flair clip at the single-line
+    // height); default fills the band for single-line wordmarks.
+    _sz = {
+      h: (typeof _darkLogo === 'object' && _darkLogo.h) ? _darkLogo.h : 108,
+      w: (typeof _darkLogo === 'object' && _darkLogo.w) ? _darkLogo.w : 620
+    };
   }
   // Per-carrier brand logo pinned for the gate header — the airline's own mark
   // on file, shown on a clean white plate (full colour, CDN-independent).
@@ -6321,7 +6661,7 @@ function uxgGateHtml(ctx) {
   if (!_useOverrideFile && _plateLogo) {
     r1LogoSrc = _plateLogo;
     _useOverrideFile = true;          // real colours — no white filter
-    _sz = { h: 84, w: 220 };          // compact brand mark on the white plate
+    _sz = { h: 106, w: 300 };         // compact brand mark on the white plate
     _bannerUsedWordmark = true;       // reuse the white-plate styling
   }
   // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
@@ -6332,7 +6672,7 @@ function uxgGateHtml(ctx) {
   if (!_useOverrideFile && _bannerWordmarkBase && typeof logoPath === 'function') {
     r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-dark.svg');
     _useOverrideFile = true;          // no white filter — wordmark as-is
-    _sz = { h: 70, w: 340 };          // wide wordmark, fits the slim header
+    _sz = { h: 102, w: 480 };         // wide wordmark — fills the 148px band
     _bannerUsedWordmark = true;
   }
   // Fallback for carriers with a square tile but no wordmark (e.g. BoA→BOV):
@@ -6342,13 +6682,15 @@ function uxgGateHtml(ctx) {
   if (!_useOverrideFile && _bannerTileIcao) {
     r1LogoSrc = 'logos/airline-tiles/' + _bannerTileIcao + '.svg';
     _useOverrideFile = true;          // keep brand colors — skip the white filter
-    _sz = { h: 96, w: 96 };           // square brand badge
+    _sz = { h: 112, w: 112 };         // square brand badge
     _bannerUsedTile = true;
   }
   var _onPlate = _bannerUsedTile || _bannerUsedWordmark;
   var _logoStyle = 'height:' + _sz.h + 'px !important;max-height:' + _sz.h + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
-                 + (_useOverrideFile ? 'filter:none !important;' : '')
+                 + (_useOverrideFile
+                     ? (_darkLogoWhiten ? 'filter:brightness(0) invert(1) !important;' : 'filter:none !important;')
+                     : '')
                  // Logo sits on a clean white rounded plate so it reads on the
                  // dark header and is never clipped by the banner band.
                  + (_onPlate ? 'background:#fff !important;border-radius:14px !important;padding:' + (_bannerUsedWordmark ? '8px 16px' : '8px') + ' !important;box-sizing:border-box !important;' : '');
@@ -6453,6 +6795,9 @@ function uxgGateHtml(ctx) {
        + (airlineCode ? ' g8-airline-' + airlineCode : '')
        + '" data-pill-style="' + (window._gateStatusPillStyle || 'opaque') + '"'
        + ' style="--airline-accent:' + accent
+       // 3rd brand colour (airline-colors.js r3) — distinct accent for the
+       // secondary line etc. Falls back to the main accent when not defined.
+       + ';--airline-accent3:' + ((_bannerSpec && _bannerSpec.r3) ? _bannerSpec.r3 : accent)
        // Official dark banner colour for the side panels (AC #080C14, etc.).
        // Airlines whose official banner is WHITE (WestJet/Hawaiian/Porter) get
        // a clean neutral dark instead — never a white side panel.
@@ -6475,10 +6820,6 @@ function uxgGateHtml(ctx) {
           : ''
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
-    +   '<div class="g8-r1-flight">'
-    +     '<span class="g8-bilbl"><span class="g8-bilbl-en">Flight</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _flightLbl2 + '</span></span>'
-    +     '<span class="g8-r1-flightnum">' + _flightNumDisp + '</span>'
-    +   '</div>'
     +   '<div class="g8-r1-right">'
     +     '<span class="g8-bilbl"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
     +     '<span class="g8-r1-gate">' + gateVal + '</span>'
@@ -7038,23 +7379,41 @@ function uxgActivateRotator() {
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
   if (!root) return;
-  var sels = ['.g8-welcome-city', '.g8-r1-dest'];
+  // NOTE: left-column values (.v2-fi-dest/.v2-fi-status-val) are NOT autofit —
+  // autofit shrinks each element independently, which makes them DIFFERENT
+  // sizes. Nick wants one uniform size per category, so they use a fixed
+  // clamp in CSS instead.
+  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value', '.v2-fi-textcol .v2-fi-title',
+              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val',
+              '.v2-rc-fi-val', '.v2-rc-acb-actype'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
     els.forEach(function(el) {
       var parent = el.parentElement;
       if (!parent) return;
-      // Reset any previously applied shrink
-      if (el.dataset._origSize) el.style.fontSize = el.dataset._origSize;
+      // Reset any previously applied shrink. NOTE: the CSS font-size uses
+      // !important, so an inline value is ignored unless we ALSO mark it
+      // !important — otherwise the shrink does nothing (text just clips).
+      if (el.dataset._origSize) el.style.setProperty('font-size', el.dataset._origSize, 'important');
       var cs = window.getComputedStyle(el);
       var size = parseFloat(cs.fontSize) || 0;
       if (!size) return;
       el.dataset._origSize = size + 'px';
+      // Available width = the parent cell's CONTENT box (minus its padding).
+      // Comparing against this — not just the element's own box — also catches
+      // the case where the value's cell stretched to fit the text and the text
+      // then spilled past the panel (e.g. long flight numbers / city names).
+      var ps = window.getComputedStyle(parent);
+      var pad = (parseFloat(ps.paddingLeft) || 0) + (parseFloat(ps.paddingRight) || 0);
+      function overflowing() {
+        var avail = parent.clientWidth - pad;
+        return (el.scrollWidth > el.clientWidth + 0.5) || (avail > 0 && el.scrollWidth > avail + 0.5);
+      }
       var guard = 0;
-      // Reduce font-size in 2px steps until the text fits, min 22px
-      while (el.scrollWidth > el.clientWidth && size > 22 && guard < 40) {
-        size -= 2;
-        el.style.fontSize = size + 'px';
+      // Reduce in 1px steps until it fits the available width, floor 12px.
+      while (overflowing() && size > 12 && guard < 110) {
+        size -= 1;
+        el.style.setProperty('font-size', size + 'px', 'important');
         guard++;
       }
     });
@@ -7293,7 +7652,7 @@ const gView = document.getElementById('gateView');
             try {
               var _inbToday = new Date().toISOString().slice(0,10);
               var _inbAirport = inboundFlight._locIata || _capturedIata;
-              loadFlight(_capturedInbound, _inbToday, _inbAirport).then(function(inbData){
+              loadFlight(_capturedInbound, _inbToday, _inbAirport).then(async function(inbData){
                 if (!inbData) return;
                 // Verify we still belong to the same view that requested this.
                 // If user switched airports or the gate now shows a different
@@ -7310,6 +7669,19 @@ const gView = document.getElementById('gateView');
                 var _altRaw = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
                 var liveSpd = (_spdRaw !== null) ? Math.round(_spdRaw) : null;
                 var liveAlt = (_altRaw !== null) ? Math.round(_altRaw) : null;
+                // Real-data fallback: AeroDataBox had no fix → try the free,
+                // keyless adsb.lol feed by callsign / registration. Real position
+                // or nothing — never fabricated.
+                if (liveSpd === null || liveAlt === null) {
+                  try {
+                    var _adsb = await gateAdsbLolPos(inbData.callsign || _capturedInbound, inbData.reg);
+                    if (_adsb) {
+                      if (liveSpd === null && _adsb.speed !== null) liveSpd = _adsb.speed;       // only fill what's missing
+                      if (liveAlt === null && _adsb.altitude !== null) liveAlt = _adsb.altitude; // (ADB often gives speed but not altitude)
+                      if (liveSpd !== null || liveAlt !== null) console.log('[FIDS] adsb.lol position for', _capturedInbound, '→ spd(kt):', liveSpd, 'alt(ft):', liveAlt);
+                    }
+                  } catch (e) { /* keep "—" */ }
+                }
                 if (liveSpd !== null || liveAlt !== null) {
                   window._gateInboundLivePos = { speed: liveSpd, altitude: liveAlt, _airport: _capturedIata, _inboundFlight: _capturedInbound };
                   console.log('[FIDS] Inbound live position for', _capturedInbound, '@', _capturedIata, '→ spd:', liveSpd, 'alt:', liveAlt);
@@ -7444,6 +7816,17 @@ const gView = document.getElementById('gateView');
         var _savedMap = document.getElementById('gateMapBox');
         var _savedMapParent = _savedMap ? _savedMap.parentElement : null;
         if (_savedMap && gateMap) { _savedMap.remove(); }
+        // Preserve the LIVE ad carousel across rebuilds: detach the node
+        // (with its playing video/ad and in-flight crossfade intact) before
+        // innerHTML wipes it, then re-attach into the fresh placeholder.
+        // Without this, every _gateKey change (status / upd / inbound poll)
+        // destroyed and recreated the carousel, so playing videos restarted
+        // ("start-stop-start"), the slide jumped back to the first, and the
+        // crossfade flashed. Mirrors the map preservation above.
+        var _savedAd = document.getElementById('gateAdCarousel');
+        var _savedAdLogo = document.getElementById('gateAdLogo');
+        if (_savedAd && _savedAd.firstChild) { _savedAd.remove(); } else { _savedAd = null; }
+        if (_savedAdLogo) { _savedAdLogo.remove(); }
         // Smooth transition: fade out, rebuild, fade in
         gView.style.transition = 'opacity 0.15s ease';
         gView.style.opacity = '0.7';
@@ -7455,7 +7838,18 @@ const gView = document.getElementById('gateView');
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
           gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs });
         }
-    try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
+        // Re-attach the preserved ad carousel BEFORE autofit/paint so the
+        // playing video is never interrupted and the slot is never empty.
+        var _newAd = document.getElementById('gateAdCarousel');
+        if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
+        var _newAdLogo = document.getElementById('gateAdLogo');
+        if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
+        // Run autofit synchronously first so the un-shrunk (large) text never
+        // paints — that was the "words bump up to twice the size then snap
+        // back" flash on every rebuild. The rAF pass stays as a correction
+        // once web fonts have fully settled.
+        try { if (typeof gateAutofit === "function") gateAutofit(gView); } catch(e){}
+        try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
         if (_savedMap && gateMap && _newMapSlot) {
@@ -7665,16 +8059,60 @@ const gView = document.getElementById('gateView');
           if (!data || !currentFlight) return;
           var changed = false;
 
+          // ── EQUIPMENT LOCK ───────────────────────────────────────────────
+          // currentFlight is rebuilt from the board feed on every refresh, so
+          // this callback re-runs and used to overwrite the aircraft/operator
+          // with whatever THIS round-trip returned. API answers vary call to
+          // call (rate limits → history fallback, thin scheduled data, multi-
+          // leg matches), which made the displayed aircraft oscillate
+          // (A321 ↔ A319 Rouge ↔ Jazz). Rank each answer's strength and keep
+          // the strongest one for this flight+date — never downgrade.
+          //   3 = today's data WITH registration (real telemetry)
+          //   2 = registration from history (majority of recent days)
+          //   1 = type only, no registration (often a generic guess)
+          var _eqKey = (String(currentFlight.flight) + '|' + _todayStr + '|' + _enrichIata).toUpperCase();
+          var _eqIncoming = {
+            key: _eqKey,
+            reg: data.reg || '',
+            aircraft: data.aircraft || '',
+            aircraftCode: data.aircraftCode || aircraftCodeToIata(data.aircraftModel) || '',
+            opCode: '', opName: ''
+          };
+          if (data.operator && data.operator.iata &&
+              data.operator.iata !== data.marketing.iata &&
+              data.operator._source !== 'same-as-marketing') {
+            _eqIncoming.opCode = data.operator.iata;
+            // v194: prefer our curated AIRLINE_NAME over API's name field
+            // (same reasoning as line 10202 — API can be stale on rebrands).
+            _eqIncoming.opName = AIRLINE_NAME[data.operator.iata] || data.operator.name || data.operator.iata;
+            _eqIncoming.opSource = data.operator._source;
+          }
+          function _eqStrength(o) {
+            if (!o) return -1;
+            if (o.reg && o.regSource !== 'history') return 3;
+            if (o.reg) return 2;
+            if (o.aircraft || o.aircraftCode) return 1;
+            return 0;
+          }
+          _eqIncoming.regSource = data._regSource || (data.reg ? 'today' : '');
+          var _eqPrev = (window._gateEquipLock && window._gateEquipLock.key === _eqKey) ? window._gateEquipLock : null;
+          var _eqAccepted = _eqStrength(_eqIncoming) >= _eqStrength(_eqPrev);
+          if (_eqAccepted) window._gateEquipLock = _eqIncoming;
+          else console.log('[FIDS] Equip lock kept for', currentFlight.flight, '— weaker data ignored',
+                           '(locked:', (_eqPrev && _eqPrev.aircraft) || '?', (_eqPrev && _eqPrev.reg) || 'no-reg',
+                           '· offered:', _eqIncoming.aircraft || '?', _eqIncoming.reg || 'no-reg', ')');
+          var _eq = window._gateEquipLock;
+
           // Registration
-          if (data.reg && !currentFlight._reg) {
-            currentFlight._reg = data.reg;
+          if (_eq.reg && !currentFlight._reg) {
+            currentFlight._reg = _eq.reg;
             changed = true;
           }
 
           // Aircraft type
-          if (data.aircraft) {
-            currentFlight._aircraft = data.aircraft;
-            currentFlight._aircraftCode = data.aircraftCode || aircraftCodeToIata(data.aircraftModel) || currentFlight._aircraftCode;
+          if (_eq.aircraft || _eq.aircraftCode) {
+            currentFlight._aircraft = _eq.aircraft || currentFlight._aircraft;
+            currentFlight._aircraftCode = _eq.aircraftCode || currentFlight._aircraftCode;
             changed = true;
           }
 
@@ -7687,20 +8125,22 @@ const gView = document.getElementById('gateView');
           // Operating carrier — from ADB's departure.airline or callsign prefix.
           // Only apply if different from the marketing carrier (otherwise it's
           // just the airline operating its own flight, no "operated by" tag needed).
-          if (data.operator && data.operator.iata &&
-              data.operator.iata !== data.marketing.iata &&
-              data.operator._source !== 'same-as-marketing') {
-            currentFlight._opCode = data.operator.iata;
-            // v194: prefer our curated AIRLINE_NAME over API's name field
-            // (same reasoning as line 10202 — API can be stale on rebrands).
-            currentFlight._opName = AIRLINE_NAME[data.operator.iata] || data.operator.name || data.operator.iata;
+          if (_eq.opCode) {
+            currentFlight._opCode = _eq.opCode;
+            currentFlight._opName = _eq.opName;
             changed = true;
             console.log('[FIDS] Operator resolved:', currentFlight.flight, '→',
-                        data.operator.iata, '(' + data.operator._source + ')');
+                        _eq.opCode, '(' + (_eq.opSource || 'locked') + ')');
           }
 
-          // Inbound — publish to window so the panel and map can read it
-          if (data.inbound) {
+          // Inbound — publish to window so the panel and map can read it.
+          // Only when this round-trip's data was accepted by the equip lock,
+          // or it's the same airframe (fresh telemetry for the locked reg) —
+          // a weaker answer with a DIFFERENT reg would swap in the wrong
+          // airframe's route (the "coming from Calgary?!" flicker).
+          var _inbOk = data.inbound && (_eqAccepted || !window._gateInbound ||
+                       (data.reg && _eq.reg && data.reg === _eq.reg));
+          if (_inbOk) {
             window._gateInbound = data.inbound;
             window._gateInboundLivePos = (data.inbound._liveSpd !== null || data.inbound._liveAlt !== null) ? {
               speed: data.inbound._liveSpd,
@@ -7731,8 +8171,10 @@ const gView = document.getElementById('gateView');
           // 5-minute refresh. Empty response = "no new info", not "clear it."
           if (!data.reg) {
             // Only mark pending if we DON'T already have a previously-cached
-            // reg from an earlier successful call.
-            if (!currentFlight.reg && !currentFlight._lastGoodReg) {
+            // reg from an earlier successful call (including the equip lock —
+            // currentFlight is rebuilt every refresh, so _lastGoodReg alone
+            // doesn't survive; the lock does).
+            if (!currentFlight.reg && !currentFlight._lastGoodReg && !_eq.reg) {
               currentFlight._aircraftPending = true;
               scheduleAircraftPendingRetry(currentFlight.flight, _enrichIata);
               changed = true;
@@ -13689,6 +14131,36 @@ async function fetchFlightPosition(flightNumber, dateStr) {
 var _loadFlightCache = {};
 var _loadFlightFetching = {};
 
+// ── adsb.lol — free, keyless, community ADS-B feed. Used ONLY as a real
+// secondary source for the inbound's live position when AeroDataBox has no
+// fix. Returns { speed:<knots>, altitude:<feet> } when the aircraft is
+// genuinely airborne, otherwise null. Never invents data.
+async function gateAdsbLolPos(callsign, reg) {
+  var urls = [];
+  var cs = callsign ? String(callsign).replace(/\s+/g, '').toUpperCase() : '';
+  var rg = reg ? String(reg).replace(/\s+/g, '').toUpperCase() : '';
+  if (cs) urls.push('https://api.adsb.lol/v2/callsign/' + encodeURIComponent(cs));
+  if (rg) urls.push('https://api.adsb.lol/v2/registration/' + encodeURIComponent(rg));
+  for (var i = 0; i < urls.length; i++) {
+    try {
+      var r = await fetch(urls[i]);
+      if (!r.ok) continue;
+      var j = await r.json();
+      var ac = (j && Array.isArray(j.ac) && j.ac.length) ? j.ac[0] : null;
+      if (!ac) continue;
+      var alt = (typeof ac.alt_baro === 'number') ? ac.alt_baro
+              : ((typeof ac.alt_geom === 'number') ? ac.alt_geom : null);   // feet
+      var gsKt = (typeof ac.gs === 'number') ? ac.gs : null;                // knots
+      // Only trust a fix that actually looks airborne (skip parked/taxiing).
+      var airborne = (alt !== null && alt > 1000) || (gsKt !== null && gsKt > 60);
+      if (!airborne) continue;
+      return { speed: (gsKt !== null ? Math.round(gsKt) : null),
+               altitude: (alt !== null ? Math.round(alt) : null) };
+    } catch (e) { /* try next / give up → null */ }
+  }
+  return null;
+}
+
 async function loadFlight(flightNumber, dateStr, airportIata) {
   if (!flightNumber) return null;
   var cacheKey = (flightNumber + '|' + (dateStr || '') + '|' + (airportIata || '')).toUpperCase();
@@ -13716,17 +14188,36 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
       var flights = await r.json();
       if (!Array.isArray(flights) || !flights.length) return null;
 
-      // Pick the best matching leg. If the caller passed airportIata, prefer
-      // legs departing from or arriving to that airport (handles cases where
-      // the same flight number operates multiple legs on the same day).
+      // Pick the best matching leg. Gate screens are DEPARTURE gates, so a
+      // leg DEPARTING from airportIata must win over a leg merely arriving
+      // there — the old first-match-wins loop let an inbound leg hijack the
+      // lookup when the same flight number flies multiple legs in a day,
+      // which swapped in the wrong aircraft/operator/route on refresh.
+      function _legDepTs(f) {
+        var st = (f && f.departure && f.departure.scheduledTime) || {};
+        return new Date(st.utc || st.local || '').getTime() || 0;
+      }
       var primaryLeg = flights[0];
       if (airportIata) {
         var ap = airportIata.toUpperCase();
+        var depMatches = [], arrMatches = [];
         for (var i = 0; i < flights.length; i++) {
           var f = flights[i];
           var depIata = (f.departure && f.departure.airport && f.departure.airport.iata) ? f.departure.airport.iata.toUpperCase() : '';
           var arrIata = (f.arrival && f.arrival.airport && f.arrival.airport.iata) ? f.arrival.airport.iata.toUpperCase() : '';
-          if (depIata === ap || arrIata === ap) { primaryLeg = f; break; }
+          if (depIata === ap) depMatches.push(f);
+          else if (arrIata === ap) arrMatches.push(f);
+        }
+        if (depMatches.length) {
+          // Multiple same-number departures from this airport in one day:
+          // take the next upcoming one (or the most recent if all are past).
+          depMatches.sort(function(a, b) { return _legDepTs(a) - _legDepTs(b); });
+          primaryLeg = depMatches[depMatches.length - 1];
+          for (var j = 0; j < depMatches.length; j++) {
+            if (_legDepTs(depMatches[j]) >= Date.now() - 30 * 60000) { primaryLeg = depMatches[j]; break; }
+          }
+        } else if (arrMatches.length) {
+          primaryLeg = arrMatches[0];
         }
       }
 
@@ -13816,7 +14307,7 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
       // number), not real telemetry. In that case, prefer history's
       // high-confidence majority winner if it conflicts. With a registration,
       // trust today's ADB completely (real telemetry).
-      var _needHistory = !result.reg || !result.operator || result.operator._source === 'same-as-marketing' || !result.aircraftCode || !result.reg;
+      var _needHistory = !result.reg || !result.operator || result.operator._source === 'same-as-marketing' || !result.aircraftCode;
       if (_needHistory) {
         try {
           var hist = await loadFlightHistory(flightNumber);
@@ -14595,6 +15086,8 @@ function applyAirportConfigToBoard(iata) {
   const _font = _pref('font');
   if (_font) {
     var _fontStacks = {
+      'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+    'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
       'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -14619,10 +15112,19 @@ function applyAirportConfigToBoard(iata) {
       _ovr.textContent = '*, *::before, *::after { font-family: ' + _stack + ' !important; }';
     }
   } else {
-    document.body.style.removeProperty('--font-primary');
-    delete document.body.dataset.fidsFont;
-    var _existingOvr = document.getElementById('fids-font-override');
-    if (_existingOvr) _existingOvr.remove();
+    // No board-pref font — but NEVER nuke a font the user picked via the
+    // FONT dropdown (fids_font_choice). This remove ran right after page
+    // load and was wiping the restored font until the user re-picked one.
+    var _manualFont = null;
+    try { _manualFont = localStorage.getItem('fids_font_choice'); } catch (e) {}
+    if (_manualFont) {
+      if (typeof restoreFontChoice === 'function' && !document.getElementById('fids-font-override')) restoreFontChoice();
+    } else {
+      document.body.style.removeProperty('--font-primary');
+      delete document.body.dataset.fidsFont;
+      var _existingOvr = document.getElementById('fids-font-override');
+      if (_existingOvr) _existingOvr.remove();
+    }
   }
 
   // ── DISPLAY MODE OVERRIDE (v218.6+) ──
@@ -16086,7 +16588,9 @@ if (document.readyState === 'loading') {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  try { changeFont('RocGrotesk-Medium'); } catch (e) {}
+  // RocGrotesk is only the DEFAULT — a font the user picked (and which
+  // changeFont persisted) must never be stomped on reload.
+  try { restoreFontChoice('Possibility'); } catch (e) {}
   const bgCtrls = document.getElementById('ctrlBgGroup');
   if (bgCtrls && screenType === 'gate') bgCtrls.style.display = 'flex';
   // If airline mode was restored from localStorage, kick off rotation.
@@ -17585,7 +18089,9 @@ var GATE_ADS_BY_AIRLINE = {
     { bg:'linear-gradient(135deg,#002868 0%,#004090 100%)', headline:'Air Transat', sub:'Your vacation starts the moment you board', logo:'/logos/airlines/canadian/transat.svg' },
   ],
   'F8': [
-    { bg:'linear-gradient(135deg,#FF6600 0%,#cc5200 100%)', headline:'Flair Airlines', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
+    // Brand-true: black lockup on Flair lime. NO text headline — the lockup
+    // already carries the company name; repeating it in type violates brand policy.
+    { bg:'linear-gradient(135deg,#A8FB96 0%,#8FE981 100%)', fg:'#1C1C1C', subFg:'rgba(28,28,28,0.85)', headline:'', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
   ],
   // NK (Spirit) ad block removed — ceased operations May 2 2026
   'HA': [
@@ -18811,13 +19317,16 @@ function buildGateAdHtml(ad) {
     // ONE compact info line: City · X km · ★ 4.6
     // When property logo has the name, SKIP this line entirely (kills duplicate)
     var _miniLine = [];
+    // Distance needs CONTEXT — "0.9 km" from what? It's from downtown.
+    var _kmCtx = ({ en:' from downtown', fr:' du centre-ville', es:' del centro' })[
+      (typeof accorLang === 'function' ? accorLang() : 'en')] || ' from downtown';
     if (!_logoHasName) {
       var _miniCity = (ad.distanceCity && ad.distanceCity.cityName) ? ad.distanceCity.cityName : (ad.address || '');
       if (_miniCity) _miniLine.push(_esc(_miniCity));
-      if (ad.distanceCity && ad.distanceCity.kmStr) _miniLine.push(_esc(ad.distanceCity.kmStr));
+      if (ad.distanceCity && ad.distanceCity.kmStr) _miniLine.push(_esc(ad.distanceCity.kmStr) + _kmCtx);
     } else if (ad.distanceCity && ad.distanceCity.kmStr) {
       // Logo has the name → just show distance, no city duplicate
-      _miniLine.push(_esc(ad.distanceCity.kmStr));
+      _miniLine.push(_esc(ad.distanceCity.kmStr) + _kmCtx);
     }
     if (ad.rating) {
       var _ratingNum = parseFloat(String(ad.rating).split('/')[0]);
@@ -19386,13 +19895,17 @@ function buildGateAdHtml(ad) {
       + 'onerror="this.style.display=\'none\';">'
       + '</div>'
     : '';
+  // Optional per-ad text colors — light-background brand slides (Flair lime)
+  // need dark copy; default stays white-on-dark.
+  var _stdFg = ad.fg || '#fff';
+  var _stdSubFg = ad.subFg || 'rgba(255,255,255,0.88)';
   return _adWrap(
     '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 36px;gap:6px;background:' + bgStyle + ';box-sizing:border-box;">'
     + (iconHtml ? '<div style="flex-shrink:0;opacity:0.9;margin-bottom:6px;">' + iconHtml + '</div>' : '')
     + _stdLogoHtml
     + '<div style="flex-shrink:0;text-align:center;max-width:100%;overflow:hidden;">'
-    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.1;max-width:100%;">' + (ad.headline || '') + '</div>'
-    + '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:rgba(255,255,255,0.88);margin-top:14px;line-height:1.3;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
+    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:' + _stdFg + ';line-height:1.1;max-width:100%;">' + (ad.headline || '') + '</div>'
+    + '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:' + _stdSubFg + ';margin-top:14px;line-height:1.3;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
     + '</div></div>'
   );
 }
@@ -19610,7 +20123,13 @@ function buildAccorAdOnlyV6(ad) {
   var _da = ad.distanceAirport, _dc = ad.distanceCity;
   if (_da && _da.kmStr) _locLineHtml += _locRow(_airTpl.replace('%k', _da.kmStr));
   if (_dc && _dc.kmStr && _dc.cityName) _locLineHtml += _locRow(_dtTpl.replace('%k', _dc.kmStr).replace('%c', _dc.cityName));
-  if (!_locLineHtml && ad.distance) _locLineHtml = _locRow(ad.distance);
+  // Fallback distance had NO context ("0.9 km" … to what?) — say what it's from.
+  var _dtShort = ({
+    en:'%k from downtown', fr:'à %k du centre-ville', es:'a %k del centro',
+    de:'%k vom Stadtzentrum', it:'a %k dal centro', pt:'a %k do centro',
+    ja:'中心部から%k', zh:'距市中心%k', ar:'%k من وسط المدينة'
+  })[_lgD] || '%k from downtown';
+  if (!_locLineHtml && ad.distance) _locLineHtml = _locRow(_dtShort.replace('%k', ad.distance));
   // city is shown standalone only when we don't have the full street address
   var _showCity = address && !_fullAddr;
   var subHtml=(_showCity||starsHtml||ratingHtml)?'<div class="axr-sub">'+(_showCity?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
@@ -19635,14 +20154,14 @@ function buildAccorAdOnlyV6(ad) {
     // there's no sentence break to land on.
     var _blMax = 170;
     if (_blurb.length > _blMax) {
-      var _cut = _blurb.slice(0, _blMax);
+      // ALWAYS end on a complete sentence — never a "…" fragment (Nick: paying
+      // advertisers can't have their copy chopped mid-sentence). Look a bit
+      // past the cap for the sentence end; if the text has no sentence break
+      // at all, drop the blurb rather than show a fragment.
+      var _cut = _blurb.slice(0, Math.min(_blurb.length, _blMax + 60));
       var _sentEnd = Math.max(_cut.lastIndexOf('. '), _cut.lastIndexOf('! '), _cut.lastIndexOf('? '));
-      if (_sentEnd > _blMax * 0.45) {
-        _blurb = _cut.slice(0, _sentEnd + 1).trim();
-      } else {
-        var _sp = _cut.lastIndexOf(' ');
-        _blurb = (_sp > 0 ? _cut.slice(0, _sp) : _cut).replace(/[\s,;:.!?-]+$/, '').trim() + '…';
-      }
+      if (/[.!?]$/.test(_cut)) _sentEnd = Math.max(_sentEnd, _cut.length - 1);
+      _blurb = (_sentEnd > 0) ? _cut.slice(0, _sentEnd + 1).trim() : '';
     }
   }
 
@@ -19686,7 +20205,7 @@ function buildAccorAdOnlyV6(ad) {
     + '</footer>';
 
   return ''
-    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" style="--axr-tint:'+tint+'">'
+    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" data-hotel-id="'+esc(String(ad.hotelId||_fullName||''))+'" style="--axr-tint:'+tint+'">'
     +   '<section class="axr-hero axr-pages">'
     +     _page1 + _page2 + _page3
     +   '</section>'
@@ -20094,14 +20613,15 @@ function buildAdLogoPanelHtml(ad) {
 function _getGateAdDwellMs(slide) {
   if (!slide) return 15000;
   // v218.96: custom slides from the Gate Theme editor carry their own
-  // configured duration. Clamp to a sensible 2s–60s range so a typo can't
-  // freeze the carousel on a single slide for the rest of the day.
+  // configured duration. Clamp to a sensible 2s–600s range so a typo can't
+  // freeze the carousel on a single slide for the rest of the day, while
+  // still allowing a long (full-length) video to play without being cut off.
   if (slide.type === 'custom') {
     // Per-item dwell (set in the Media Library Adjust panel) takes priority,
     // then any theme-editor durationMs, then a sensible default.
     var d = parseInt((slide.item && slide.item.dwellMs) || slide.durationMs, 10);
     if (!isFinite(d) || d <= 0) return 12000;
-    return Math.max(2000, Math.min(60000, d));
+    return Math.max(2000, Math.min(600000, d));
   }
   if (slide.type === 'ad') {
     var ad = slide.data || {};
@@ -20280,8 +20800,13 @@ function startGateAds() {
   // index 0 before resetting to 1, which made the carousel appear blank or
   // stuck on amenities until the timer eventually advanced.
   if (!_gateAdIndex) _gateAdIndex = 1;
-  renderGateAd(_gateAdIndex);
-  el.style.opacity = '1';
+  // Only paint when the carousel is EMPTY (fresh element after a board
+  // rebuild). Unconditional repaints on every refresh cut ads off mid-dwell
+  // and restarted the Accor 3-page slideshow / videos ("ads clash").
+  if (!el.firstChild) {
+    renderGateAd(_gateAdIndex);
+    el.style.opacity = '1';
+  }
   if (_gateAdTimer) return;
   _restartGateAdsTimer();
   // Kick off the destination-video scheduler (5-minute interval, AC-only).
@@ -20928,28 +21453,47 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
    opacity crossfade between .axr-page panels. */
 (function(){
   var EVERY = 10000;   // ms per page (matches the ~30s Accor carousel dwell)
-  var _seen = null;    // the .axr-pages element we're currently timing
-  var _next = 0;       // timestamp of the next page advance
+  // Page state survives DOM rebuilds: the board re-renders every time its
+  // render key ticks (countdowns change it every minute), which replaces the
+  // .axr-pages element. Keying the state by hotel id means a re-render of the
+  // SAME hotel resumes on the page it was showing — previously every rebuild
+  // restarted at page 1, so pages 2–3 kept getting cut off ("ads clash").
+  var _st = { id: null, idx: 0, next: 0, seen: null };
+  function _showPage(pages, idx){
+    for (var i = 0; i < pages.length; i++) pages[i].classList.toggle('axr-page-on', i === idx);
+  }
   function check(){
     var wrap = document.querySelector('.axr-pages');
-    if (!wrap) { _seen = null; return; }
+    if (!wrap) { _st.seen = null; return; }
     var pages = wrap.querySelectorAll('.axr-page');
     if (!pages || pages.length < 2) return;
     var now = Date.now();
-    // A new slide just appeared — start its clock fresh so PAGE 1 gets a full
-    // EVERY before advancing (previously a free-running timer gave it whatever
-    // was left of the cycle, sometimes only a couple seconds).
-    if (wrap !== _seen) { _seen = wrap; _next = now + EVERY; return; }
-    if (now < _next) return;
-    _next = now + EVERY;
-    var cur = -1;
-    for (var i = 0; i < pages.length; i++) {
-      if (pages[i].classList.contains('axr-page-on')) { cur = i; break; }
+    if (wrap !== _st.seen) {
+      _st.seen = wrap;
+      var art = wrap.closest ? wrap.closest('.axr') : null;
+      var id = (art && art.getAttribute('data-hotel-id')) || '';
+      if (id && id === _st.id) {
+        // Same hotel re-rendered mid-slide — resume where we were. But if the
+        // deck already ran to its last page, this is the hotel RE-APPEARING in
+        // a later carousel slot, so restart its story from page 1.
+        if (_st.idx >= pages.length - 1) { _st.idx = 0; _st.next = now + EVERY; }
+        _showPage(pages, _st.idx % pages.length);
+        if (!_st.next || _st.next <= now) _st.next = now + EVERY;
+      } else {
+        // Genuinely new slide — page 1 gets its full dwell.
+        _st.id = id; _st.idx = 0; _st.next = now + EVERY;
+      }
+      return;
     }
-    if (cur < 0) cur = 0;
-    var nxt = (cur + 1) % pages.length;
-    pages[cur].classList.remove('axr-page-on');
-    pages[nxt].classList.add('axr-page-on');
+    if (now < _st.next) return;
+    _st.next = now + EVERY;
+    // HOLD on the last page instead of wrapping back to page 1. The outer
+    // carousel keeps Accor up slightly longer than pages×EVERY, so wrapping
+    // flashed page 1 for ~1s ("Accor repeated for a split second then
+    // changed") right before the carousel advanced. Clamping lets the final
+    // page sit until the carousel moves on.
+    _st.idx = Math.min(_st.idx + 1, pages.length - 1);
+    _showPage(pages, _st.idx);
   }
   setInterval(check, 250);
 })();
@@ -20975,6 +21519,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       ];
       document.querySelectorAll('body *').forEach(function(el){
         if (!el || el.children.length) return;
+        // The v2 right panel is bilingual BY LAYOUT (English label on top,
+        // second language underneath) — rewriting its English labels to the
+        // rotating language produced "Type d'appareil" twice (no English).
+        if (el.closest && el.closest('.gad-map-col-v2')) return;
         var s = (el.textContent || '').trim();
         for (var i=0;i<pairs.length;i++){
           if (pairs[i][0].test(s)) { el.textContent = t(pairs[i][1]); break; }

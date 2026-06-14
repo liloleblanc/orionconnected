@@ -885,3 +885,22 @@
 .axr .axr-logo img.axr-hotel-svg { visibility: hidden; }
 .axr .axr-logo svg { visibility: visible; }
 .axr .axr-logo img { max-width: min(92%, 660px) !important; }
+
+/* ── v221f — Accor readability (per Nick: address was tiny, type maxed) ── */
+.axr{ --axr-logo: clamp(28px, 4.2vh, 44px); }
+/* Address line had NO rule — rendered at browser default (tiny). */
+.axr-addr-line{ font-size:calc(var(--axr-info) * 1.3); font-weight:500; color:rgba(255,255,255,.95);
+  line-height:1.3; max-width:92%; margin-top:calc(var(--axr-info) * 0.3); }
+.axr-loc-line{ font-size:calc(var(--axr-info) * 1.15); font-weight:500; color:rgba(255,255,255,.88);
+  line-height:1.3; max-width:92%; margin-top:calc(var(--axr-info) * 0.2); }
+/* Blurb slightly bigger; clamp stays so it ends clean, never mid-glyph */
+.axr-blurb{ font-size:calc(var(--axr-info) * 1.0); }
+/* Blurb: room for the full sentence-bounded text (JS guarantees it ends on
+   a complete sentence; the clamp is only a hard safety net now). */
+.axr-blurb{ -webkit-line-clamp:5; }
+/* Hotel info scale up (Nick: addresses + info too small) — raise the ratio
+   chain so name/address/amenities/blurb all grow together. */
+.axr{ --axr-name: calc(var(--axr-logo) * 0.85); --axr-info: calc(var(--axr-name) * 0.80); }
+/* Hotel brand logo a touch smaller (per Nick) — name/info sizes unchanged
+   since they derive from the VAR, not the rendered logo. */
+.axr-logo{ height: calc(var(--axr-logo) * 0.85); }
