@@ -2271,8 +2271,8 @@ var OPERATOR_LOGOS = {
   '5T':  '/logos/airlines/canadian-regional/canadian-north.svg',               // Canadian North
   '7F':  '/logos/airlines/canadian-regional/firstair.svg',                     // First Air
   '4N':  '/logos/airlines/canadian-regional/airnorth.svg',                     // Air North
-  'PB':  '/logos/airlines/canadian-regional/PAL-Airlines.svg',                 // PAL Airlines (also flies Air Canada Express)
-  'PVL': '/logos/airlines/canadian-regional/PAL-Airlines.svg',                 // PAL Airlines ICAO
+  'PB':  '/logos/airlines/canadian-regional/pal-operated-by.svg',              // PAL — emblem + "PAL" (simplified, for the Operated-by badge)
+  'PVL': '/logos/airlines/canadian-regional/pal-operated-by.svg',              // PAL Airlines ICAO
   // WestJet family
   'WR':  '/logos/airlines/canadian/encore.png',                                // Encore
   'WEN': '/logos/airlines/canadian/encore.png',                                // Encore ICAO
