@@ -18194,10 +18194,10 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'Porter Reserve', sub:'Extra legroom \u00b7 Priority services on select fares', logo:'/logos/airlines/canadian/porter.svg' },
   ],
   'UA': [
-    { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn miles with United \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united.svg' },
-    { bg:'linear-gradient(135deg,#002244 0%,#003366 100%)', headline:'United Club', sub:'Relax before your flight \u00b7 Complimentary snacks & beverages', logo:'/logos/airlines/us-major/united.svg' },
+    { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn miles with United \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
+    { bg:'linear-gradient(135deg,#002244 0%,#003366 100%)', headline:'United Club', sub:'Relax before your flight \u00b7 Complimentary snacks & beverages', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
     { bg:'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 100%)', headline:'Free Wi-Fi', sub:'Stay connected with free Starlink Wi-Fi on every flight', logo:'/logos/symbols-utility/starlink.svg' },
-    { bg:'linear-gradient(135deg,#003580 0%,#0057b8 100%)', headline:'United App', sub:'Mobile boarding pass \u00b7 Real-time flight updates', logo:'/logos/airlines/us-major/united.svg' },
+    { bg:'linear-gradient(135deg,#003580 0%,#0057b8 100%)', headline:'United App', sub:'Mobile boarding pass \u00b7 Real-time flight updates', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
   ],
   'DL': [
     { bg:'linear-gradient(135deg,#003366 0%,#00274d 100%)', headline:'SkyMiles', sub:'Earn miles on Delta \u00b7 Free Wi-Fi on every flight', logo:'/logos/airlines/us-major/delta.svg' },
