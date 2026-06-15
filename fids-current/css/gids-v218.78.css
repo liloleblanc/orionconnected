@@ -4430,3 +4430,18 @@ body, body.gids-page, body.gate-page{
 .g8-wrap.g8-airline-RV .gad-map-col-v2 .v2-rc-mapstats {
   background: #2b2e34 !important;
 }
+
+/* ── v218.99 — Header + speed bar: neutral dark GRAY for ALL airlines (Nick:
+   gray reads cleanly on every brand; the airline-tinted version clashed). ── */
+.g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+.g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  background: #2b2e34 !important;
+}
+/* Guaranteed divider line at the BOTTOM of the map (the map photo covers a
+   normal border, so draw it as an overlay above the map). ── */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { position: relative !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map::after {
+  content: "" !important; position: absolute !important; left: 0 !important; right: 0 !important;
+  bottom: 0 !important; z-index: 7 !important; height: clamp(4px,0.6vh,7px) !important;
+  background: var(--banner-bg, #042354) !important;
+}
