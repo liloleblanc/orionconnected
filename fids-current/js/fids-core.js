@@ -3875,7 +3875,7 @@ const IATA_AIRCRAFT = {
   '351':'Airbus A350-1000','380':'Airbus A380','388':'Airbus A380-800',
   '732':'Boeing 737-200','733':'Boeing 737-300','734':'Boeing 737-400','735':'Boeing 737-500','737':'Boeing 737','738':'Boeing 737-800','739':'Boeing 737-900',
   '73G':'Boeing 737-700','73H':'Boeing 737-800','73J':'Boeing 737-900ER',
-  '7M7':'Boeing 737-7 MAX','7M8':'Boeing 737-8 MAX','7M9':'Boeing 737-9 MAX',
+  '7M7':'Boeing 737-7','7M8':'Boeing 737-8','7M9':'Boeing 737-9',
   '744':'Boeing 747-400','748':'Boeing 747-8',
   '752':'Boeing 757-200','753':'Boeing 757-300',
   '763':'Boeing 767-300','764':'Boeing 767-400',
