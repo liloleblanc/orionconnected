@@ -20,6 +20,23 @@
     return null;
   }
 
+  // Allow-list the media URL before it ever reaches a .src / backgroundImage
+  // sink. Only http(s), root-/path-relative, blob: and data:image|video URLs
+  // are permitted; anything else (javascript:, vbscript:, data:text/html …)
+  // is rejected to an empty string so it can never be reinterpreted as code.
+  function _safeUrl(u) {
+    if (typeof u !== 'string') return '';
+    var s = u.trim();
+    if (!s) return '';
+    // Relative URLs (no scheme) are safe.
+    if (/^(?![a-z][a-z0-9+.-]*:)/i.test(s)) return s;
+    // Scheme-bearing URLs: only the known-safe schemes pass.
+    if (/^https?:\/\//i.test(s)) return s;
+    if (/^blob:/i.test(s)) return s;
+    if (/^data:(image|video)\//i.test(s)) return s;
+    return '';
+  }
+
   function open(itemId) {
     var rec = _item(itemId);
     if (!rec) { console.warn('[MediaAdjust] item not found:', itemId); return; }
@@ -34,6 +51,8 @@
       order: (typeof rec.order === 'number') ? rec.order : 999
     };
     var isVideo = (rec.url && /\.(mp4|webm|mov)(\?|$)/i.test(rec.url)) || rec.type === 'video';
+    // Sanitize once; every media sink below uses this allow-listed value only.
+    var mediaUrl = _safeUrl(rec.url);
 
     var ov = document.createElement('div');
     ov.id = 'mediaAdjustOverlay';
@@ -113,7 +132,7 @@
         node = document.createElement('video');
         node.autoplay = true; node.muted = true; node.loop = true;
         node.setAttribute('playsinline', '');
-        node.src = rec.url;
+        node.src = mediaUrl ? encodeURI(mediaUrl) : '';
         node.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:' + st.fit
           + ';object-position:' + posStr + ';transform:scale(' + st.zoom + ');background:#000;';
       } else {
@@ -121,7 +140,7 @@
         node.style.cssText = 'position:absolute;inset:0;background:#000;background-size:'
           + (st.fit === 'cover' ? 'cover' : 'contain')
           + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + st.zoom + ');';
-        node.style.backgroundImage = 'url("' + rec.url + '")';
+        node.style.backgroundImage = mediaUrl ? 'url("' + encodeURI(mediaUrl) + '")' : 'none';
       }
       box.appendChild(node);
       zoomVal.textContent = '×' + st.zoom.toFixed(2);
@@ -154,7 +173,7 @@
       // so detected media metadata can't be reinterpreted as markup.
       durHint.textContent = 'Set how long this video plays. Up to 600s.';
       var _probe = document.createElement('video');
-      _probe.preload = 'metadata'; _probe.muted = true; _probe.src = rec.url;
+      _probe.preload = 'metadata'; _probe.muted = true; _probe.src = mediaUrl ? encodeURI(mediaUrl) : '';
       _probe.addEventListener('loadedmetadata', function () {
         var dur = Number(_probe.duration);
         if (isFinite(dur) && dur > 0) {

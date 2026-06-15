@@ -59,6 +59,14 @@
   padding: 0 !important;
   box-sizing: border-box !important;
 }
+/* Hawaiian's wordmark reads "Hawaiian Airlines." — a long lockup that hits the
+   width cap and renders shorter than the others. Give it more height + width
+   headroom so it scales up to match. (Wordmark only — emblem is separate.) */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] {
+  height: 40px !important;
+  max-height: 40px !important;
+  max-width: 300px !important;
+}
 #fidsTable .td-airline .fids-airline-name {
   display: block !important;
   min-width: 0 !important;

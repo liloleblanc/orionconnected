@@ -2196,7 +2196,7 @@ const AIRLINE_BRAND = {
   'UA': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#1414D2', name:'United' },
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
-  'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#A8FB96', name:'Flair' },
+  'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#7AFF94', name:'Flair' },
   'LH': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#2a2a3e', accent:'#05164d', name:'Lufthansa' },
   'BA': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#1e2444', accent:'#075aaa', name:'British Airways' },
   'AF': { bg1:'#1a1a2e', bg2:'#0c0c1e', bg3:'#1e2444', accent:'#002157', name:'Air France' },
@@ -2419,7 +2419,7 @@ var WATERMARK_OVERRIDE = {
   // Canadian regionals
   'PD': '/logos/airlines/canadian/porter-white.svg',
   'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',
-  'F8': '/logos/tails-modern/F8.svg',           // real tail roundel (black + brand lime) — the old wordmark-light was a homemade placeholder
+  'F8': '/logos/airlines/canadian/flair-mark-white.png',   // brand "flair ●" mark — white wordmark + green dot (matches the gate banner; reads on the dark sky)
   'PB': '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg',
   // European
   'BA': '/logos/airlines/european/british-airways-wordmark-light.svg',
@@ -3538,7 +3538,7 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
-  'AC':'#D82F2E','WS':'#00B2A9','PD':'#254D87','PB':'#1F3876','F8':'#A8FB96',
+  'AC':'#D82F2E','WS':'#00B2A9','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
@@ -3748,7 +3748,8 @@ var AIRLINE_BACKGROUNDS = {
   ],
   'UA': [
     '/logos/Backgrounds/UA/united-background.jpg',
-    '/logos/Backgrounds/UA/united-background2.png'
+    '/logos/Backgrounds/UA/united-background2.png',
+    '/logos/Backgrounds/UA/unitedbackground3.png'
   ]
 };
 
@@ -3874,7 +3875,7 @@ const IATA_AIRCRAFT = {
   '351':'Airbus A350-1000','380':'Airbus A380','388':'Airbus A380-800',
   '732':'Boeing 737-200','733':'Boeing 737-300','734':'Boeing 737-400','735':'Boeing 737-500','737':'Boeing 737','738':'Boeing 737-800','739':'Boeing 737-900',
   '73G':'Boeing 737-700','73H':'Boeing 737-800','73J':'Boeing 737-900ER',
-  '7M7':'Boeing 737-7 MAX','7M8':'Boeing 737-8 MAX','7M9':'Boeing 737-9 MAX',
+  '7M7':'Boeing 737-7','7M8':'Boeing 737-8','7M9':'Boeing 737-9',
   '744':'Boeing 747-400','748':'Boeing 747-8',
   '752':'Boeing 757-200','753':'Boeing 757-300',
   '763':'Boeing 767-300','764':'Boeing 767-400',
@@ -4378,6 +4379,21 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   if (engineCode)                       paths.push('aircraft/' + eq + '-' + engineCode + '.png');
   if (LIVERY_FOLDERS[al])               paths.push('aircraft/' + al + '/' + eq + '.png');
   paths.push('aircraft/' + eq + '.png');
+  // Family fallback: a specific variant file may not exist for every airline
+  // (e.g. UA has 777.png but no 77W.png), so fall back to the family's base
+  // image IN THE AIRLINE'S LIVERY before dropping to a generic plane.
+  var FAMILY_BASE = {
+    // 777 family → 777
+    '772':'777','773':'777','77W':'777','77L':'777','77X':'777','77E':'777',
+    // 747 / 767 / 757 / 787 / A320 family variants → their base image
+    '744':'747','748':'747','764':'763','753':'752',
+    '789':'788','78X':'788','781':'788','32N':'320','32Q':'321'
+  };
+  var famBase = FAMILY_BASE[eq];
+  if (famBase && famBase !== eq) {
+    if (LIVERY_FOLDERS[al]) paths.push('aircraft/' + al + '/' + famBase + '.png');
+    paths.push('aircraft/' + famBase + '.png');
+  }
 
   // Drop any paths we already know are 404
   paths = paths.filter(function(p) { return !miss[p]; });
@@ -4386,7 +4402,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var src = paths[0];
   // Build a chained-fallback onerror that walks through the remaining paths
   var fbList = paths.slice(1);
-  var _imgCacheBuster = '?v=200';
+  var _imgCacheBuster = '?v=201';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -5163,9 +5179,9 @@ function _buildV2AircraftCol(ctx, vars) {
         'WR':  '/logos/symbols/airlines-mono/WS.svg',
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
-        'F8':  '/logos/airlines/canadian/flair-dot.svg',   // Flair — the black DOT from the lockup IS the emblem
+        'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-only.svg',
+        'UA':  '/logos/airlines/us-major/united-globe-clean.svg',   // United globe (white path only, padded to sit inside the round badge)
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
@@ -5300,18 +5316,37 @@ function _buildV2AircraftCol(ctx, vars) {
       // (same size, not bigger); the value is the city alone.
       var _destLabel = 'Destination' + (_destIataDisp ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destIataDisp + '</span>' : '');
       var _destValue = _destCityName || _destIataDisp;
-      var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
-      var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
-      var _depShortEn = _depRev ? 'Revised - Departure' : 'Departure';
-      var _depShortL2 = _depRev ? _L2('Révisé - Départ','Revisado - Salida') : _L2('Départ','Salida');
+      // Label stays "Boarding | Embarquement" even when the time is revised —
+      // the orange/amber revised time already signals the change, and prefixing
+      // "Revised -" to BOTH languages overflows the shelf. (Same rule as Departure.)
+      var _brdShortEn = 'Boarding';
+      var _brdShortL2 = _L2('Embarquement','Embarque');
+      // Label stays "Departure | Départ" even when the time is revised (per Nick).
+      var _depShortEn = 'Departure';
+      var _depShortL2 = _L2('Départ','Salida');
       var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
       // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
       function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
+      // A REVISED (later) departure means the flight is delayed — reflect that
+      // in the status label AND colour even if the raw feed still says
+      // "scheduled" (that's why the departure time already shows orange).
+      var _delayedByRev = _depRev;
+      if (_delayedByRev) {
+        var _rawCls = String(_fiStCls || '').toLowerCase();
+        if (_rawCls.indexOf('cancel') === -1 && _rawCls.indexOf('divert') === -1
+            && _rawCls.indexOf('board') === -1 && _rawCls.indexOf('depart') === -1) {
+          _fiStCls = ' delayed';
+        }
+      }
       // STATUS — show BOTH languages, never switch ("On Time | À l'heure").
       var _stBiling = '';
       try {
         var _stk = String((currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
         if (_stk === 'ontime') _stk = 'ontime';
+        if (_delayedByRev && (_stk === 'scheduled' || _stk === 'ontime' || _stk === '')) _stk = 'delayed';
+        // A plain "scheduled" flight with no delay reads as ON TIME (per Nick) —
+        // "Scheduled" looked wrong on a flight that's tracking on schedule.
+        else if (_stk === 'scheduled' || _stk === '') _stk = 'ontime';
         var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
         if (_ss) {
           var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
@@ -5323,10 +5358,10 @@ function _buildV2AircraftCol(ctx, vars) {
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || '—'), 'v2-fi-dest')
+        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fnNumber || _fiFlightNo || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
-        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_fiBrd) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgArrive), 'Flight Time', _L2('Durée','Duración'), _durValue, 'v2-fi-time')
         + '</div>';
@@ -5445,7 +5480,7 @@ function _buildV2MapCol(ctx, vars) {
         enroute:   { en:'Enroute', fr:'En vol', es:'En vuelo', de:'Im Flug', it:'In volo', pt:'Em voo', ja:'飛行中', zh:'飞行中', ar:'في الجو' },
         scheduled: { en:'Awaiting departure', fr:'En attente de départ', es:'En espera de salida', de:'Wartet auf Abflug', it:'In attesa di partenza', pt:'A aguardar partida', ja:'出発待ち', zh:'等待起飞', ar:'في انتظار المغادرة' },
         boarding:  { en:'Boarding', fr:'Embarquement', es:'Embarcando', de:'Boarding', it:'Imbarco', pt:'Embarque', ja:'搭乗中', zh:'登机中', ar:'الصعود' },
-        delayed:   { en:'Delayed', fr:'Retardé', es:'Retrasado', de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误', ar:'متأخر' },
+        delayed:   { en:'Delayed', fr:'En retard', es:'Retrasado', de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误', ar:'متأخر' },
         early:     { en:'Early', fr:'En avance', es:'Adelantado', de:'Früher', it:'In anticipo', pt:'Adiantado', ja:'早着', zh:'提前', ar:'مبكر' },
         cancelled: { en:'Cancelled', fr:'Annulé', es:'Cancelado', de:'Annulliert', it:'Cancellato', pt:'Cancelado', ja:'欠航', zh:'取消', ar:'ملغى' },
         arrived:   { en:'Arrived', fr:'Arrivé', es:'Aterrizado', de:'Angekommen', it:'Arrivato', pt:'Chegou', ja:'到着', zh:'已到达', ar:'وصل' },
@@ -5464,7 +5499,7 @@ function _buildV2MapCol(ctx, vars) {
       var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
       var _ST_SHORT = {
         enroute:{en:'Enroute',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
-        boarding:{en:'Boarding',fr:'Embarquement',es:'Embarcando'}, delayed:{en:'Delayed',fr:'Retardé',es:'Retrasado'},
+        boarding:{en:'Boarding',fr:'Embarquement',es:'Embarcando'}, delayed:{en:'Delayed',fr:'En retard',es:'Retrasado'},
         early:{en:'Early',fr:'En avance',es:'Adelantado'}, cancelled:{en:'Cancelled',fr:'Annulé',es:'Cancelado'},
         arrived:{en:'Arrived',fr:'Arrivé',es:'Aterrizado'}, ontime:{en:'On time',fr:"À l'heure",es:'A tiempo'}
       };
@@ -5551,8 +5586,8 @@ function _buildV2MapCol(ctx, vars) {
       // Status class for color (matches left column status colors)
       var _stCls = '';
       var _rs = _rawSt;
-      if (_rs === 'scheduled' || _rs === 'on-time' || _rs === 'ontime') _stCls = 'scheduled';
-      else if (_rs === 'boarding' || _rs === 'delayed' || _rs === 'early' || _rs === 'final-call' || _rs === 'finalcall') _stCls = 'delayed';
+      if (_rs === 'scheduled' || _rs === 'on-time' || _rs === 'ontime' || _rs === 'early') _stCls = 'scheduled';
+      else if (_rs === 'boarding' || _rs === 'delayed' || _rs === 'final-call' || _rs === 'finalcall') _stCls = 'delayed';
       else if (_rs === 'cancelled' || _rs === 'gate-closed' || _rs === 'gateclosed') _stCls = 'cancelled';
       else _stCls = 'ontime';
 
@@ -5578,7 +5613,7 @@ function _buildV2MapCol(ctx, vars) {
         departed: {en:'Departed',    fr:'Parti',        es:'Salió'},
         arrival:  {en:'Arrival',     fr:'Arrivée',      es:'Llegada'},
         arrived:  {en:'Arrived',     fr:'Arrivé',       es:'Aterrizó'},
-        delayed:  {en:'Delayed',     fr:'Retardé',      es:'Retrasado'},
+        delayed:  {en:'Delayed',     fr:'En retard',      es:'Retrasado'},
         title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre appareil entrant', es:'Información de su aeronave entrante'}
       };
       // Status-adaptive Departure / Arrival labels
@@ -5590,7 +5625,7 @@ function _buildV2MapCol(ctx, vars) {
       var _depAbbr = _departed ? 'Departed At' : 'Departure Time';
       var _arrAbbr = _arrived ? 'Arrived' : (_delayedSt ? 'Delayed' : 'Arrival Time');
       var _depWordObj = _departed ? {fr:'Parti à',es:'Salió a'} : {fr:'Heure de départ',es:'Hora de salida'};
-      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizado'} : (_delayedSt ? {fr:'Retardé',es:'Retrasado'} : {fr:"Heure d'arrivée",es:'Hora de llegada'});
+      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizado'} : (_delayedSt ? {fr:'En retard',es:'Retrasado'} : {fr:"Heure d'arrivée",es:'Hora de llegada'});
       function _i3(en, val, l2, cls){
         return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
              + '<div class="v2-rc-i3val ' + (cls||'') + '">' + val + '</div>'
@@ -5748,9 +5783,61 @@ function _buildV2MapCol(ctx, vars) {
 
     var _opCodeRaw = String(_cf._opCode || vars.airlineCode || '').trim().toUpperCase();
     var _opCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opCodeRaw]) ? CALLSIGN_TO_IATA[_opCodeRaw] : _opCodeRaw;
+    // WestJet Encore flies the Dash 8-400s for WestJet on 3xxx flight numbers.
+    // Infer Encore from the flight number (not just the equipment) — the feed
+    // leaves the marketing carrier as WS, and demo WS flights default to 737s,
+    // so an equipment-only check never fires. Livery still keys off WS below.
+    var _acFlNum = parseInt(String(_cf.flight || (vars.currentFlight && vars.currentFlight.flight) || '').replace(/\D/g, ''), 10);
+    if (_opCode === 'WS') {
+      var _wsEq = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      if (/DH8|DH4|DHC[- ]?8|Q[ -]?40|DASH[ -]?8/.test(_wsEq)) _opCode = 'WR';
+      else if (!isNaN(_acFlNum) && _acFlNum >= 3000 && _acFlNum <= 3999) _opCode = 'WR';
+    }
+    // Air Canada Express: the marketing carrier on the feed is AC, but 4-digit
+    // flights are flown by its regional partners — 8xxx / 75xx by Jazz, 16xx-19xx
+    // by Rouge. Infer the real operator from the flight number when the feed
+    // didn't tag it (livery still keys off AC below, so the paint stays correct).
+    if (_opCode === 'AC' && !isNaN(_acFlNum)) {
+      if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
+      else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
+    }
+    // Hawaiian operates its OWN metal (including the 717-200 inter-island fleet).
+    // The Alaska Air Group merger does not make Alaska the operator — so never
+    // show "Operated by Alaska" on a Hawaiian-branded flight.
+    if (String(vars.airlineCode || '').toUpperCase() === 'HA' && _opCode === 'AS') _opCode = 'HA';
+    // WestJet Encore only flies the Dash 8-400 — never a 737. If the feed (or the
+    // demo's default 737 pool) handed us a mainline frame on an Encore flight,
+    // substitute the Dash 8 so the equipment matches the "Operated by Encore" badge.
+    if (_opCode === 'WR' && (_equipCd || _equipNm)) {
+      var _wrEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      if (!/DH8|DH4|DHC|DASH|Q400/.test(_wrEqUp)) {
+        _equipCd = 'DH4';
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('DH4') : 'De Havilland Dash 8-400';
+      }
+    }
+    // Jazz only flies regional metal (CRJ-900 / Dash 8-400 / E175) — never a
+    // mainline Airbus or Boeing. If the feed handed us a mainline frame on a
+    // Jazz flight number the attribution is internally inconsistent; trust the
+    // (deterministic) flight number and show a representative Jazz type so the
+    // equipment can't contradict the "Operated by Jazz" badge below it.
+    if (_opCode === 'QK' && (_equipCd || _equipNm)) {
+      var _qkEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      var _qkRegional = /CRJ|\bCR[0-9]\b|DASH|DH[0-9]|DHC|Q400|\bE1[79]0\b|\bE175\b|\bE75\b|EMBRAER/.test(_qkEqUp);
+      if (!_qkRegional) {
+        var _jzType = ['CR9', 'DH4', 'E75'][Math.abs(isNaN(_acFlNum) ? 0 : _acFlNum) % 3];
+        _equipCd = _jzType;
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_jzType) : _jzType;
+      }
+    }
     var _liveryEq = _equipCd;
     if (_opCode === 'RV' && _liveryEq && /^[A-Z0-9]{3}$/i.test(_liveryEq)) _liveryEq = _liveryEq + 'r';
-    var _liveryAirline = _opCode;
+    // The aircraft wears the MARKETING carrier's livery, not the operator's:
+    // United Express (Republic/SkyWest/Mesa...) jets are painted United, American
+    // Eagle jets are painted American, etc. Using the operator code (YX/OO/...)
+    // missed the livery folder and fell back to a blank white plane.
+    var _mktCodeLiv = String(vars.airlineCode || '').trim().toUpperCase();
+    var _liveryAirline = _mktCodeLiv || _opCode;
+    // Rouge has its OWN paint (321r.png) but the files live in the AC folder.
     if (_opCode === 'RV' || _opCode === 'QK') _liveryAirline = 'AC';
 
     var _acImg = '';
@@ -6091,7 +6178,8 @@ function uxgGateHtml(ctx) {
 
   // Status badge class
   var stClass = '';
-  if (stKey === 'delayed' || stKey === 'early') stClass = ' delayed';
+  if (stKey === 'delayed') stClass = ' delayed';
+  else if (stKey === 'early') stClass = ' ontime';   // early is GOOD → green, not orange
   else if (stKey === 'boarding') stClass = ' boarding';
   else if (stKey === 'cancelled') stClass = ' cancelled';
   else if (stKey === 'landed' || stKey === 'arrived' || stKey === 'active' || stKey === 'en-route') stClass = ' ontime';
@@ -6564,10 +6652,10 @@ function uxgGateHtml(ctx) {
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
-    'UA': '/logos/airlines/us-major/united.svg',                                 // globe + white "UNITED"
+    'UA': '/logos/airlines/us-major/united-monochrome-white.svg',                // WHITE "UNITED" + globe (united.svg was blue = invisible on the navy banner)
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
-    // WestJet — navy banner with the white wordmark (uploaded by Nick)
-    'WS': '/logos/airlines/canadian/westjet-white-wordmark.svg',                 // white "WestJet" wordmark for the navy bar
+    // WestJet — navy banner: white "WestJet" lettering + colored (teal/navy) maple-leaf swoosh
+    'WS': '/logos/airlines/canadian/WestJet_Logo_2018-monochrome-white-colored-leaf.svg?v=5', // white wordmark + colored leaf for the navy bar
     // WHITE BANNERS — use native-color logos so they show against light background
     'HA': '/logos/airlines/us-major/Hawaiian.svg',                               // Pualani + native-color "Hawaiian Airlines"
     'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
@@ -6621,14 +6709,37 @@ function uxgGateHtml(ctx) {
   // full name), which reads far better and leaves room for the city headline.
   var _bannerUsedTile = false;
   var _bannerUsedWordmark = false;
+  var _bannerPlateForced = false;   // only genuine plate logos (BoA) get a white plate
+  // Pick the wordmark variant from the ACTUAL banner colour (the data-file
+  // override in window.AIRLINE_BRAND_COLORS wins). Light banner → dark wordmark;
+  // dark banner → white wordmark. Hardcoding a "white-banner" list was wrong:
+  // the data file recolours HA/WS/PD banners to DARK, so their dark wordmark
+  // was invisible. Luminance check keeps it correct no matter the colour.
+  function _hexIsLight(hex) {
+    if (!hex) return false;
+    var m = String(hex).replace('#', '');
+    if (m.length === 3) m = m[0]+m[0]+m[1]+m[1]+m[2]+m[2];
+    if (m.length !== 6) return false;
+    var r = parseInt(m.slice(0,2),16), g = parseInt(m.slice(2,4),16), b = parseInt(m.slice(4,6),16);
+    return (0.299*r + 0.587*g + 0.114*b) > 170;
+  }
+  var _bannerR1Now = '';
+  try {
+    var _abc = (typeof window !== 'undefined' && window.AIRLINE_BRAND_COLORS) || null;
+    if (_abc) _bannerR1Now = (_abc[_bannerBrandCode] && _abc[_bannerBrandCode].r1) || (_abc[airlineCode] && _abc[airlineCode].r1) || '';
+  } catch (e) {}
+  // HA/WS/PD default to WHITE in-code but the data file overrides them dark; if
+  // we couldn't read a colour, assume DARK (white wordmark) — every live banner
+  // is dark now, so white is the safe default.
+  var _bannerIsLight = _hexIsLight(_bannerR1Now);
   // Carriers whose own COLOUR logo reads directly on the dark header — no white
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
     'AV': '/logos/airlines/asian-other/avianca.svg',  // red avianca — pops on black
-    // Flair — the REAL "flair airlines" lockup is black ink, so filter it to
-    // white for the dark banner (no plate, per Nick). Two-row lockup: cap the
-    // height lower than single-line wordmarks or it clips in the band.
-    'F8': { src: '/logos/airlines/canadian/flair.svg', whiten: true, h: 118, w: 520 },
+    // Flair — per brand guide, the GATE uses the simple "flair ●" mark (white
+    // wordmark + green dot), NOT the full "flair airlines" lockup (that's
+    // reserved for advertisements). The mark is already white, so no whiten.
+    'F8': { src: '/logos/airlines/canadian/flair-mark-white.png', whiten: false, h: 100, w: 480 },
     // Regional carriers — white monochrome marks on file, straight onto the dark banner
     '5T': '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg',
     '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
@@ -6661,6 +6772,7 @@ function uxgGateHtml(ctx) {
     _useOverrideFile = true;          // real colours — no white filter
     _sz = { h: 106, w: 300 };         // compact brand mark on the white plate
     _bannerUsedWordmark = true;       // reuse the white-plate styling
+    _bannerPlateForced = true;        // BoA-style mark genuinely needs the plate
   }
   // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
   // Render the LOCAL dark-ink wordmark on a clean white plate: real brand type,
@@ -6668,7 +6780,10 @@ function uxgGateHtml(ctx) {
   var _bannerWordmarkBase = (typeof IATA_TO_WORDMARK !== 'undefined')
     ? (IATA_TO_WORDMARK[_bannerBrandCode] || IATA_TO_WORDMARK[airlineCode]) : null;
   if (!_useOverrideFile && _bannerWordmarkBase && typeof logoPath === 'function') {
-    r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-dark.svg');
+    // White wordmark straight on the dark banner (dark wordmark for white-banner
+    // carriers). No white plate — the wordmark stands on the banner itself.
+    var _wmVariant = _bannerIsLight ? 'dark' : 'light';
+    r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-' + _wmVariant + '.svg');
     _useOverrideFile = true;          // no white filter — wordmark as-is
     _sz = { h: 102, w: 480 };         // wide wordmark — fills the 148px band
     _bannerUsedWordmark = true;
@@ -6683,8 +6798,13 @@ function uxgGateHtml(ctx) {
     _sz = { h: 112, w: 112 };         // square brand badge
     _bannerUsedTile = true;
   }
-  var _onPlate = _bannerUsedTile || _bannerUsedWordmark;
-  var _logoStyle = 'height:' + _sz.h + 'px !important;max-height:' + _sz.h + 'px !important;'
+  var _onPlate = _bannerUsedTile || _bannerPlateForced;
+  // HARD CAP the logo height so it can NEVER exceed the banner band (which is
+  // overflow:hidden and a fixed height) — that's what was clipping tall logos
+  // (WestJet 150px, etc.). object-fit:contain keeps the aspect; max-width caps
+  // the width. 86px fits the band with margin.
+  var _logoH = Math.min(_sz.h || 120, 120);
+  var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
                  + (_useOverrideFile
                      ? (_darkLogoWhiten ? 'filter:brightness(0) invert(1) !important;' : 'filter:none !important;')
@@ -7382,7 +7502,8 @@ function gateAutofit(root) {
   // sizes. Nick wants one uniform size per category, so they use a fixed
   // clamp in CSS instead.
   var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value', '.v2-fi-textcol .v2-fi-title',
-              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val'];
+              '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val',
+              '.v2-rc-fi-val', '.v2-rc-acb-actype'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
     els.forEach(function(el) {
@@ -7396,9 +7517,39 @@ function gateAutofit(root) {
       var size = parseFloat(cs.fontSize) || 0;
       if (!size) return;
       el.dataset._origSize = size + 'px';
+      // Available width = the parent cell's CONTENT box (minus its padding).
+      // Comparing against this — not just the element's own box — also catches
+      // the case where the value's cell stretched to fit the text and the text
+      // then spilled past the panel (e.g. long flight numbers / city names).
+      var ps = window.getComputedStyle(parent);
+      var padL = parseFloat(ps.paddingLeft) || 0;
+      var padR = parseFloat(ps.paddingRight) || 0;
+      var pad = padL + padR;
+      function overflowing() {
+        // 0) DIRECT clip test: the element itself has overflow:hidden +
+        //    text-overflow:ellipsis, so when its content is wider than its own
+        //    box the text is being clipped (the "Houst…" case). This is the
+        //    most reliable signal and doesn't depend on the parent's measured
+        //    width (which can read too wide and hide the clip).
+        if (el.scrollWidth > el.clientWidth + 1) return true;
+        // Available content width of the cell.
+        var avail = parent.clientWidth - pad;
+        if (avail <= 0) return false;
+        // 1) Content wider than the cell's content box (scrollWidth catches the
+        //    full un-clipped text even under overflow:hidden/ellipsis).
+        if (el.scrollWidth > avail + 0.5) return true;
+        // 2) The element's actual painted right edge spills past the cell's
+        //    content-box right edge — catches the case where the value box grew
+        //    wider than the visible column (scrollWidth==clientWidth but still
+        //    clipped by an ancestor). Bounding rects measure the real layout.
+        var er = el.getBoundingClientRect();
+        var pr = parent.getBoundingClientRect();
+        if (er.right > (pr.right - padR) + 0.5 || er.left < (pr.left + padL) - 0.5) return true;
+        return false;
+      }
       var guard = 0;
-      // Reduce font-size in 1px steps until the text fits its box, min 14px
-      while (el.scrollWidth > el.clientWidth && size > 14 && guard < 80) {
+      // Reduce in 1px steps until it fits the available width, floor 12px.
+      while (overflowing() && size > 12 && guard < 110) {
         size -= 1;
         el.style.setProperty('font-size', size + 'px', 'important');
         guard++;
@@ -7597,13 +7748,37 @@ const gView = document.getElementById('gateView');
       // Gate-based placeholder — only used if reg lookup hasn't returned yet
       const AIRLINE_FAMILY = { 'QK':'AC','RV':'AC','ZX':'AC','9M':'AC','AC':'AC', 'WR':'WS','WS':'WS', 'PD':'PD','P3':'PD', 'PB':'PB','SP':'PB', 'TS':'TS', 'F8':'F8' };
       const depFamily = AIRLINE_FAMILY[airlineCode2] || airlineCode2;
+      // The inbound IS the same airframe doing its previous leg, so it must be
+      // the SAME aircraft type. Without this, a short-haul jet (e.g. a Hawaiian
+      // 717 that only flies inter-island) would get paired with a mainland
+      // arrival (an A330 from LAX/Tokyo) just because they shared a gate.
+      const _acFamily = function (s) {
+        var u = String(s || '').toUpperCase();
+        var m = u.match(/\b(7[0-9]7|7[0-9]8|7[0-9]9|7M[0-9]|3[0-9][0-9]|32[NQ]|2[0-9][0-9]|CR[0-9JK]|DH[0-9C]|E[0-9]{2}|AT[0-9R])\b/);
+        if (m) return m[1];
+        if (/717/.test(u)) return '717';
+        if (/787|78[0-9X]/.test(u)) return '787';
+        if (/777|77[0-9WLX]/.test(u)) return '777';
+        if (/767|76[0-9]/.test(u)) return '767';
+        if (/A?330|33[0-9]/.test(u)) return '330';
+        if (/A?321|32[1N]/.test(u)) return '321';
+        if (/A?320/.test(u)) return '320';
+        if (/A?319/.test(u)) return '319';
+        return u.replace(/[^A-Z0-9]/g, '').slice(0, 4);
+      };
+      const _outAc = _acFamily(currentFlight._aircraft || currentFlight._aircraftCode);
       const _gateMatchFallback = (data.arr || []).filter(f =>
         f.gate === _gateVal &&
         f.status !== 'departed' &&
         f.flight !== currentFlight.flight &&
         f._sortTs <= _depTs &&
         f._sortTs >= _6hBefore &&
-        (AIRLINE_FAMILY[f.airline] || f.airline) === depFamily
+        (AIRLINE_FAMILY[f.airline] || f.airline) === depFamily &&
+        // same aircraft type when both are known (it's the same plane)
+        (function () {
+          var fa = _acFamily(f._aircraft || f._aircraftCode);
+          return !_outAc || !fa || fa === _outAc;
+        })()
       ).sort((a,b) => b._sortTs - a._sortTs)[0] || null;
 
       // PRIMARY SOURCE: reg-based inbound from loadFlight. If present, use it.
@@ -7837,6 +8012,13 @@ const gView = document.getElementById('gateView');
         // once web fonts have fully settled.
         try { if (typeof gateAutofit === "function") gateAutofit(gView); } catch(e){}
         try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
+        // Re-fit once web fonts have actually loaded — DM Sans is WIDER than the
+        // fallback, so an early fit can leave long city names (e.g. "Regina")
+        // overflowing and clipping to "Regi…". And re-fit on short delays to
+        // catch values populated late by the live data feed.
+        try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); } catch(e){}
+        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 450); } catch(e){}
+        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 1300); } catch(e){}
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
         if (_savedMap && gateMap && _newMapSlot) {
@@ -11595,6 +11777,13 @@ const IATA_TO_EMBLEM = {
   'F9': '/logos/airlines/us-major/frontier-emblem.svg',  // Frontier Airlines green stylized "F" mark
   'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',  // Breeze checkmark on navy square
   'VB': '/logos/airlines/asian-other/vivaaerobus-emblem.webp',  // Viva green leaf-shape "a" emblem
+  // US majors — these render wordmark-alone (TILE_SKIP_WORDMARK_ONLY), but the
+  // wordmark text by itself loses the iconic brand symbol. Show the symbol in
+  // the emblem slot ALONGSIDE the existing wordmark (wordmark text untouched).
+  'DL': '/logos/airlines/us-major/delta-widget.svg',           // Delta red/blue widget
+  'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
+  'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
+  'UA': '/logos/airlines/us-major/united-globe-only.svg',      // United globe
 };
 
 
@@ -11780,8 +11969,8 @@ const LS = {
   flightNo:         { en:'Flight #',           fr:'Vol nº',           es:'Vuelo nº',         de:'Flug-Nr.',              it:'Volo nº',            pt:'Voo nº',           ja:'便名',     zh:'航班号',   ar:'رقم الرحلة' },
   weatherAtDest:    { en:'Weather at destination', fr:'Météo à destination', es:'Clima en destino', de:'Wetter am Ziel',    it:'Meteo a destinazione', pt:'Clima no destino', ja:'目的地の天気', zh:'目的地天气', ar:'الطقس في الوجهة' },
   weatherShort:     { en:'Weather',            fr:'Météo',            es:'Clima',            de:'Wetter',                it:'Meteo',              pt:'Clima',            ja:'天気',     zh:'天气',     ar:'الطقس' },
-  inbDelayed:{ en:'The incoming aircraft has been delayed. Updated boarding time to follow.',fr:"L'appareil en approche est retardé. Heure d'embarquement mise à jour à suivre.",es:'La aeronave entrante ha sido retrasada. Hora de embarque actualizada a continuación.',de:'Das ankommende Flugzeug hat Verspätung. Aktualisierte Boarding-Zeit folgt.',it:"L'aereo in arrivo è in ritardo. Orario d'imbarco aggiornato a seguire.",pt:'A aeronave está atrasada. Horário de embarque atualizado a seguir.',ja:'到着機が遅延しています。搭乗時刻は更新されます。',zh:'来港飞机已延误，登机时间将另行通知。',ar:'تأخرت الطائرة القادمة. سيتم تحديث وقت الصعود.' },
-  depDelayed:{ en:'This flight has been delayed. Please check the updated departure time.',fr:'Ce vol est retardé. Veuillez vérifier l\'heure de départ mise à jour.',es:'Este vuelo ha sido retrasado. Por favor verifique la hora de salida actualizada.',de:'Dieser Flug hat Verspätung. Bitte prüfen Sie die aktualisierte Abflugzeit.',it:'Questo volo è in ritardo. Si prega di verificare l\'orario di partenza aggiornato.',pt:'Este voo está atrasado. Por favor verifique o horário de partida atualizado.',ja:'この便は遅延しています。出発時刻をご確認ください。',zh:'此航班已延误，请查看更新后的出发时间。',ar:'تأخرت هذه الرحلة. يرجى التحقق من وقت المغادرة المحدث.' },
+  inbDelayed:{ en:'The incoming aircraft has been delayed. Updated boarding time to follow.',fr:"L'appareil en approche est en retard. Heure d'embarquement mise à jour à suivre.",es:'La aeronave entrante ha sido retrasada. Hora de embarque actualizada a continuación.',de:'Das ankommende Flugzeug hat Verspätung. Aktualisierte Boarding-Zeit folgt.',it:"L'aereo in arrivo è in ritardo. Orario d'imbarco aggiornato a seguire.",pt:'A aeronave está atrasada. Horário de embarque atualizado a seguir.',ja:'到着機が遅延しています。搭乗時刻は更新されます。',zh:'来港飞机已延误，登机时间将另行通知。',ar:'تأخرت الطائرة القادمة. سيتم تحديث وقت الصعود.' },
+  depDelayed:{ en:'This flight has been delayed. Please check the updated departure time.',fr:'Ce vol est en retard. Veuillez vérifier l\'heure de départ mise à jour.',es:'Este vuelo ha sido retrasado. Por favor verifique la hora de salida actualizada.',de:'Dieser Flug hat Verspätung. Bitte prüfen Sie die aktualisierte Abflugzeit.',it:'Questo volo è in ritardo. Si prega di verificare l\'orario di partenza aggiornato.',pt:'Este voo está atrasado. Por favor verifique o horário de partida atualizado.',ja:'この便は遅延しています。出発時刻をご確認ください。',zh:'此航班已延误，请查看更新后的出发时间。',ar:'تأخرت هذه الرحلة. يرجى التحقق من وقت المغادرة المحدث.' },
   nowBoardMsg:{ en:'Now boarding. Please proceed to gate',fr:'Embarquement en cours. Veuillez vous diriger vers la porte',es:'Embarcando ahora. Diríjase a la puerta',de:'Jetzt Boarding. Bitte begeben Sie sich zum Gate',it:'Imbarco in corso. Procedere al gate',pt:'Embarque em curso. Dirija-se ao portão',ja:'搭乗中です。ゲートにお進みください',zh:'正在登机，请前往登机口',ar:'الصعود الآن. يرجى التوجه إلى البوابة' },
   boardApprox:{ en:'Your flight will board in approximately',fr:"L'embarquement de votre vol commencera dans environ",es:'Su vuelo embarcará en aproximadamente',de:'Das Boarding Ihres Fluges beginnt in ca.',it:"L'imbarco del vostro volo inizierà tra circa",pt:'O embarque do seu voo começará em aproximadamente',ja:'搭乗は約',zh:'您的航班将在约',ar:'سيبدأ صعود رحلتك خلال حوالي' },
   finalCall: { en:'FINAL BOARDING CALL',fr:'DERNIER APPEL',es:'ÚLTIMA LLAMADA',de:'LETZTER AUFRUF',it:'ULTIMA CHIAMATA',pt:'ÚLTIMA CHAMADA',ja:'最終搭乗案内',zh:'最后登机广播',ar:'النداء الأخير للصعود' },
@@ -13340,7 +13529,7 @@ function buildDemoFlights(iata) {
     const entry = {
       time, upd, flight: s.flight, airline: s.al,
       status, gate: s.gate || '—', terminal: s.terminal || '—',
-      _sortTs: schedTs, _flightKey: s.flight,
+      _sortTs: schedTs, _revTs: delayTs || null, _flightKey: s.flight,
       _locIata: isDep ? s.di : s.oi,
       _airlineName: AIRLINE_NAME[s.al] || s.al,
     };
@@ -13574,12 +13763,22 @@ function buildRandomFlights(iata) {
     const status = buildDemoStatus(minsOffset, isDep, hasDelay, delayMins);
     // Extract the numeric portion of the flight number for operator detection
     var _flNumForOp = parseInt((flight || '').replace(/\D/g, ''), 10) || 0;
+    var _opCodeForEntry = rfgOperatorCode(alEntry.al, _flNumForOp);
+    // Regional partners only fly regional metal — never the marketing carrier's
+    // mainline jets. Pick from the partner's real fleet so the equipment matches
+    // the "Operated by" badge: Jazz (QK) = CRJ-900 / Dash 8-400 / E175;
+    // WestJet Encore (WR) = Dash 8-400 only.
+    var _acftForEntry = (_opCodeForEntry === 'QK')
+      ? rfgPick(['CR9', 'DH4', 'E75'], seed + i * 23)
+      : (_opCodeForEntry === 'WR')
+        ? 'DH4'
+        : rfgPickAircraft(alEntry.al, seed + i * 23);
     const entry = { time, upd, flight, airline: alEntry.al, status, gate, terminal: term,
-                    _sortTs: schedTs, _flightKey: flight, _locIata: route.di,
+                    _sortTs: schedTs, _revTs: delayTs || null, _flightKey: flight, _locIata: route.di,
                     _airlineName: AIRLINE_NAME[alEntry.al] || alEntry.al,
-                    _aircraft: rfgPickAircraft(alEntry.al, seed + i * 23),
+                    _aircraft: _acftForEntry,
                     _aircraftCode: '',
-                    _opCode: rfgOperatorCode(alEntry.al, _flNumForOp),
+                    _opCode: _opCodeForEntry,
                     _opName: rfgOperatorName(alEntry.al, _flNumForOp) };
     if (isDep) entry.dest   = route.c;
     else        entry.origin = route.c;
@@ -16129,10 +16328,10 @@ function renderHeroHotelsAsync(f, target) {
     target.innerHTML = '<div class="hero-section-empty">Hotels unavailable</div>';
     return;
   }
-  // fetchAccorHotels populates ACCOR_HOTEL_CACHE[iata] = {hotels, ts}
-  const cached = (typeof ACCOR_HOTEL_CACHE !== 'undefined') && ACCOR_HOTEL_CACHE[f._locIata];
+  // Prefer the current board language; fall back to any loaded language.
+  const cached = (typeof _accorCacheFor === 'function') && _accorCacheFor(f._locIata);
   const renderFromCache = () => {
-    const cacheEntry = (typeof ACCOR_HOTEL_CACHE !== 'undefined') ? ACCOR_HOTEL_CACHE[f._locIata] : null;
+    const cacheEntry = (typeof _accorCacheFor === 'function') ? _accorCacheFor(f._locIata) : null;
     const list = (cacheEntry && cacheEntry.hotels) || [];
     if (!list.length) {
       target.innerHTML = '<div class="hero-section-empty">No stays found for ' + f._locIata + '</div>';
@@ -18041,18 +18240,18 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'Porter Reserve', sub:'Extra legroom \u00b7 Priority services on select fares', logo:'/logos/airlines/canadian/porter.svg' },
   ],
   'UA': [
-    { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn miles with United \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united.svg' },
-    { bg:'linear-gradient(135deg,#002244 0%,#003366 100%)', headline:'United Club', sub:'Relax before your flight \u00b7 Complimentary snacks & beverages', logo:'/logos/airlines/us-major/united.svg' },
+    { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn miles with United \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
+    { bg:'linear-gradient(135deg,#002244 0%,#003366 100%)', headline:'United Club', sub:'Relax before your flight \u00b7 Complimentary snacks & beverages', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
     { bg:'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 100%)', headline:'Free Wi-Fi', sub:'Stay connected with free Starlink Wi-Fi on every flight', logo:'/logos/symbols-utility/starlink.svg' },
-    { bg:'linear-gradient(135deg,#003580 0%,#0057b8 100%)', headline:'United App', sub:'Mobile boarding pass \u00b7 Real-time flight updates', logo:'/logos/airlines/us-major/united.svg' },
+    { bg:'linear-gradient(135deg,#003580 0%,#0057b8 100%)', headline:'United App', sub:'Mobile boarding pass \u00b7 Real-time flight updates', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
   ],
   'DL': [
     { bg:'linear-gradient(135deg,#003366 0%,#00274d 100%)', headline:'SkyMiles', sub:'Earn miles on Delta \u00b7 Free Wi-Fi on every flight', logo:'/logos/airlines/us-major/delta.svg' },
   ],
   'AA': [
-    { bgColor:'linear-gradient(135deg,#102540 0%,#0a1628 100%)', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'right center', adLayout:'left-scrim', headline:'AAdvantage', sub:'Earn miles on every flight \u00b7 Exclusive member rewards', logo:'/logos/airlines/us-major/aaadvantage.png' },
-    { bgColor:'linear-gradient(135deg,#102540 0%,#0a1628 100%)', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'right center', adLayout:'left-scrim', headline:'Fly the American Way', sub:'World-class service to 350+ destinations worldwide', logo:'/logos/airlines/us-major/aaadvantage.png' },
-    { bgColor:'linear-gradient(135deg,#102540 0%,#0a1628 100%)', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'right center', adLayout:'left-scrim', headline:'Main Cabin Extra', sub:'Priority boarding \u00b7 Extra legroom on every flight', logo:'/logos/airlines/us-major/aaadvantage.png' },
+    // Finished creative \u2014 americanbackground.png is a complete ad (branding +
+    // copy baked into the art). Image-only: no app headline/sub/logo overlay.
+    { bgColor:'#ffffff', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'center', bgFit:'contain', imageOnly:true },
   ],
   'WN': [
     { bg:'linear-gradient(135deg,#c8102e 0%,#a00d1a 100%)', headline:'Rapid Rewards', sub:'Earn points on every Southwest flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/southwest.svg' },
@@ -18078,7 +18277,7 @@ var GATE_ADS_BY_AIRLINE = {
   'F8': [
     // Brand-true: black lockup on Flair lime. NO text headline — the lockup
     // already carries the company name; repeating it in type violates brand policy.
-    { bg:'linear-gradient(135deg,#A8FB96 0%,#8FE981 100%)', fg:'#1C1C1C', subFg:'rgba(28,28,28,0.85)', headline:'', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
+    { bg:'linear-gradient(135deg,#7AFF94 0%,#8FE981 100%)', fg:'#1C1C1C', subFg:'rgba(28,28,28,0.85)', headline:'', sub:'Ultra-low fares across Canada', logo:'/logos/airlines/canadian/flair.svg' },
   ],
   // NK (Spirit) ad block removed — ceased operations May 2 2026
   'HA': [
@@ -18098,8 +18297,42 @@ var GATE_ADS_BY_AIRLINE = {
 var _gIco = 'https://maps.gstatic.com/mapfiles/place_api/icons/v2/';
 // ── ACCOR HOTEL ADS ──────────────────────────────────────────────────────
 // Accor API key removed — handled by proxy
-var ACCOR_HOTEL_CACHE = {}; // keyed by dest IATA, {hotels:[], ts:}
+// Keyed by "IATA|lang" so the FRENCH board frame gets FRENCH hotel copy and the
+// ENGLISH frame gets English — Canada requires both languages equally, and the
+// list (which carries the description body) was previously cached IATA-only, so
+// a French frame showed an English body. Each language now fetches & caches
+// independently; readers prefer the current language and fall back to whatever
+// is loaded so the ad is never empty while the other language loads.
+var ACCOR_HOTEL_CACHE = {}; // keyed by "IATA|lang", {hotels:[], ts:}
 var ACCOR_CACHE_TTL = 24 * 3600000; // 24 hours
+// Build a proper Accept-Language value Accor's REFERENTIAL API will honor.
+// Their docs: they pick a language from the Accept-Language header; an empty or
+// unsupported value falls back to English. Sending a bare "fr" sometimes isn't
+// matched, so send a region-qualified, weighted list (Canada-bilingual style).
+function _accorAcceptLang(L) {
+  L = String(L || 'en').toLowerCase();
+  if (L === 'fr') return 'fr-CA,fr;q=0.9,en;q=0.3';
+  if (L === 'en') return 'en-CA,en;q=0.9';
+  return L + ',en;q=0.3';
+}
+// Current board display language (the EN/FR rotation), defaulting to English.
+function _accorLangNow() {
+  try {
+    if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) return langs[langIdx || 0];
+    if (typeof lang !== 'undefined' && lang) return lang;
+  } catch (e) {}
+  return 'en';
+}
+// Read the hotel list for an airport: prefer the current language, then fall
+// back to any language already loaded so the ad never blanks mid-rotation.
+function _accorCacheFor(iata) {
+  if (!iata) return null;
+  var L = _accorLangNow();
+  return ACCOR_HOTEL_CACHE[iata + '|' + L]
+      || ACCOR_HOTEL_CACHE[iata + '|en']
+      || ACCOR_HOTEL_CACHE[iata + '|fr']
+      || null;
+}
 
 // Accor brand colors
 var ACCOR_BRAND_COLORS = {
@@ -18175,9 +18408,12 @@ function ensureBrandInName(name, brandCode) {
 
 function fetchAccorHotels(destIata) {
   if (!destIata) return;
-  var cached = ACCOR_HOTEL_CACHE[destIata];
+  // Language for THIS fetch (the current board rotation language).
+  var _listLang = _accorLangNow();
+  var _ck = destIata + '|' + _listLang;
+  var cached = ACCOR_HOTEL_CACHE[_ck];
   if (cached && (Date.now() - cached.ts < ACCOR_CACHE_TTL)) return;
-  if (window._accorFetching) return;
+  if (window['_accorFetching_' + _ck]) return;
 
   // If COORDS missing, geocode first then fetch
   if (!COORDS[destIata]) {
@@ -18195,7 +18431,7 @@ function fetchAccorHotels(destIata) {
     return;
   }
 
-  window._accorFetching = true;
+  window['_accorFetching_' + _ck] = true;
 
   // v218.99.54 — Use DOWNTOWN coordinates (not airport) so results are
   // centered on the city, not the airport. Hotels are then filtered in
@@ -18207,30 +18443,23 @@ function fetchAccorHotels(destIata) {
   } else {
     coords = COORDS[destIata];
   }
-  // Per Accor catalog spec the LIST endpoint also honors Accept-Language
-  // (and language= as a fallback). Detail/photos and amenities both come
-  // through this call, so language matters here just as much as on the
-  // /products/accommodations detail call.
-  var _listLang = 'en';
-  try {
-    if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _listLang = langs[langIdx || 0];
-    else if (typeof lang !== 'undefined' && lang) _listLang = lang;
-  } catch (e) {}
+  // _listLang computed at the top of the function (the LIST endpoint honors
+  // Accept-Language; detail/photos/amenities all come through this call).
   var proxyUrl = 'https://fids-proxy.n-leblanc1984.workers.dev/accor/catalog/v1/hotels?latLng=' + coords[0] + ',' + coords[1]
     + '&radius=110&range=0-15&sort=distance'
     + '&language=' + encodeURIComponent(_listLang);
 
-  console.log('[ACCOR] Fetching hotels near', destIata, '(' + _listLang + ')');
-  fetch(proxyUrl, { headers: { 'Accept-Language': _listLang } })
+  console.log('[ACCOR] Fetching hotels near', destIata, '(' + _listLang + ', Accept-Language: ' + _accorAcceptLang(_listLang) + ')');
+  fetch(proxyUrl, { headers: { 'Accept-Language': _accorAcceptLang(_listLang) } })
     .then(function(r) {
       if (!r.ok) throw new Error('Proxy HTTP ' + r.status);
       return r.json();
     })
-    .then(function(data) { _processAccorData(data, destIata); window._accorFetching = false; })
+    .then(function(data) { _processAccorData(data, destIata, _listLang); window['_accorFetching_' + _ck] = false; })
     .catch(function(e) {
       console.warn('[ACCOR] Fetch failed:', e.message, '- will retry in 5min');
-      ACCOR_HOTEL_CACHE[destIata] = { hotels: [], ts: Date.now() - ACCOR_CACHE_TTL + 300000 };
-      window._accorFetching = false;
+      ACCOR_HOTEL_CACHE[_ck] = { hotels: [], ts: Date.now() - ACCOR_CACHE_TTL + 300000 };
+      window['_accorFetching_' + _ck] = false;
     });
 }
 
@@ -18359,7 +18588,7 @@ function fetchAccorHotelDetail(hotelId) {
           + encodeURIComponent(hotelId) + '/products/accommodations'
           + '?language=' + encodeURIComponent(curLang);
   fetch(url, {
-    headers: { 'Accept-Language': curLang }
+    headers: { 'Accept-Language': _accorAcceptLang(curLang) }
   })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(detail) {
@@ -18476,6 +18705,14 @@ function fetchAccorHotelDetail(hotelId) {
                   restaurants.length, 'food&bev,',
                   facilities.length, 'bath+tech,',
                   photos.length, 'photos');
+      // ── LANGUAGE PROOF (for Accor) — the amenity/restaurant WORDS Accor sent
+      // for this language. Ask for fr and see English words here = Accor's gap.
+      try {
+        console.log('%c[ACCOR-LANG PROOF] detail requested=' + curLang + ' for hotel ' + hotelId
+          + '\n  amenities returned: ' + (topAmenities.slice(0, 6).join(' · ') || '(none)')
+          + '\n  restaurants returned: ' + (restaurants.slice(0, 4).join(' · ') || '(none)'),
+          'color:#0a7; font-weight:bold');
+      } catch (e) {}
       if (accs.length === 0 || photos.length === 0) {
         window._accorEmptyLogCount = (window._accorEmptyLogCount || 0) + 1;
         if (window._accorEmptyLogCount <= 3) {
@@ -18491,7 +18728,8 @@ function fetchAccorHotelDetail(hotelId) {
     });
 }
 
-function _processAccorData(data, destIata) {
+function _processAccorData(data, destIata, langKey) {
+  var _ckLang = langKey || _accorLangNow();
   if (!data || !data.results) return;
   // Fetch brand details for any brands we haven't seen yet
   var seenBrands = {};
@@ -18741,8 +18979,20 @@ function _processAccorData(data, destIata) {
       '| location=', _h0.location);
   }
   console.log('[ACCOR]', destIata, ': filtered', beforeFilter, '→', hotels.length, 'hotels (≤' + DOWNTOWN_THRESHOLD_KM + 'km from downtown, unknowns kept)');
-  ACCOR_HOTEL_CACHE[destIata] = { hotels: hotels, ts: Date.now() };
-  console.log('[ACCOR] Loaded', hotels.length, 'hotels near', destIata);
+  ACCOR_HOTEL_CACHE[destIata + '|' + _ckLang] = { hotels: hotels, ts: Date.now() };
+  console.log('[ACCOR] Loaded', hotels.length, 'hotels near', destIata, '(' + _ckLang + ')');
+  // ── LANGUAGE PROOF (for Accor) ──────────────────────────────────────────
+  // Shows EXACTLY what language Accor returned for what we requested. If we
+  // ask for French (requested=fr) and the description below comes back in
+  // English, that is Accor's feed missing French — not a bug on our side.
+  try {
+    var _ph = hotels[0] || {};
+    var _pdesc = String(_ph.description || _ph.destinationDescription || _ph.shortDescription || '(no description field)');
+    console.log('%c[ACCOR-LANG PROOF] requested=' + _ckLang + ' for ' + destIata
+      + ' | hotel=' + (_ph.name || _ph.hotelName || _ph.propertyName || '?')
+      + '\n  description returned (first 200 chars): ' + _pdesc.slice(0, 200),
+      'color:#0a7; font-weight:bold');
+  } catch (e) {}
   // Kick off background detail fetches for restaurants / facilities / photo
   // gallery. These populate ACCOR_HOTEL_DETAIL_CACHE which the carousel
   // reads on each render — first render shows list-only data, subsequent
@@ -18936,9 +19186,9 @@ function getGateAds() {
   // Trigger Accor hotel fetch for this destination (non-blocking, cached)
   if (destIata) fetchAccorHotels(destIata);
 
-  // Get cached Accor hotels as ads
+  // Get cached Accor hotels as ads (current language preferred, any as fallback)
   var accorAds = [];
-  var accorCache = ACCOR_HOTEL_CACHE[destIata];
+  var accorCache = _accorCacheFor(destIata);
   if (accorCache && accorCache.hotels) {
     accorAds = accorCache.hotels;
   }
@@ -19004,6 +19254,18 @@ function buildGateAdHtml(ad) {
     var h = compact ? 70 : 90;
     var uniformStyle = 'max-width:' + w + 'px;width:auto;max-height:' + h + 'px;height:auto;object-fit:contain;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.55));';
     return '<img src="' + resolved + '" style="' + uniformStyle + '" onerror="this.style.display=\'none\';">';
+  }
+
+  // ── FULL CREATIVE (image-only) ────────────────────────────────────────
+  // The background image is a FINISHED ad — branding/copy is baked into the
+  // artwork. Show it on its own; never overlay an app headline / sub / logo
+  // on top (that collides with the art and looks doubled). bgFit defaults to
+  // 'cover' (fill the slot); use 'contain' to show the whole image letterboxed.
+  if (ad.imageOnly && ad.bgImage) {
+    var _icFit = ad.bgFit || 'cover';
+    return '<div style="position:absolute;inset:0;background-color:' + (ad.bgColor || ad.bg || '#000') + ';overflow:hidden;">'
+      + '<div style="position:absolute;inset:0;background-image:url(\'' + ad.bgImage + '\');background-size:' + _icFit + ';background-position:' + (ad.bgPosition || 'center') + ';background-repeat:no-repeat;"></div>'
+      + '</div>';
   }
 
   // ── LAYOUT: AC GLOBE + DESTINATION ────────────────────────────────────
@@ -19875,10 +20137,17 @@ function buildGateAdHtml(ad) {
   // v218.99.46 — Logo restored, headline + sub fonts bumped per Nick's spec.
   var bgStyle = ad.bg || 'linear-gradient(135deg,#1e2846 0%,#141e37 100%)';
   var iconHtml = ad.icon || '';
+  // These standard ads always sit on a DARK brand-colour gradient, so the logo
+  // must be WHITE or it reads as colour-on-colour (Alaska/Delta/United blue on
+  // blue). brightness(0)+invert(1) forces ANY logo (colour, dark, or already
+  // white) to a clean white silhouette. The only light-background ad (Flair
+  // lime) sets ad.fg to a dark colour — there we leave the logo as-is.
+  var _adLightBg = !!ad.fg;
+  var _stdLogoFilter = _adLightBg ? '' : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
   var _stdLogoHtml = ad.logo
     ? '<div style="flex-shrink:0;margin-bottom:18px;height:64px;display:flex;align-items:center;justify-content:center;">'
       + '<img src="' + ad.logo + '" alt="" '
-      + 'style="max-height:100%;max-width:360px;width:auto;height:auto;object-fit:contain;display:block;" '
+      + 'style="max-height:100%;max-width:360px;width:auto;height:auto;object-fit:contain;display:block;' + _stdLogoFilter + '" '
       + 'onerror="this.style.display=\'none\';">'
       + '</div>'
     : '';

@@ -957,13 +957,19 @@ body.uxg-gate-mode.uxg-controls-collapsed .ctrl { transform:none; opacity:1; poi
 .g8-board { display:none; flex:1; flex-direction:column; overflow:hidden; }
 .g8-board.active { display:flex; }
 .g8-board-hdr { display:flex; height:56px; flex-shrink:0; }
-.g8-board-hdr-now, .g8-board-hdr-next { flex:1; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; letter-spacing:0.3px; }
-.g8-board-hdr-now { background:var(--airline-accent); }
-.g8-board-hdr-next { background:#16a34a; }
+/* Boarding screen is WHITE. Dark text; the group NUMBER carries the colour so
+   "now" (accent) and "next" (green) stay distinguishable on the white panel. */
+.g8-board-hdr-now, .g8-board-hdr-next { flex:1; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; letter-spacing:0.3px; color:#0f172a; background:#fff; }
+.g8-board-hdr-now { border-bottom:4px solid var(--airline-accent); }
+.g8-board-hdr-next { border-bottom:4px solid #16a34a; }
 .g8-board-body { display:flex; flex:1; }
-.g8-board-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
-.g8-board-col.now { background:var(--airline-accent); }
-.g8-board-col.next { background:#16a34a; }
+.g8-board-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:#0f172a; background:#fff; }
+.g8-board-col.now { background:#fff; }
+.g8-board-col.next { background:#fff; border-left:2px solid #e5e7eb; }
+.g8-board-grp-label, .g8-board-lane { color:#475569; }
+.g8-board-grp-num { color:#0f172a; }
+.g8-board-col.now .g8-board-grp-num { color:var(--airline-accent); }
+.g8-board-col.next .g8-board-grp-num { color:#16a34a; }
 .g8-board-grp-label { font-size:28px; font-weight:600; opacity:.7; }
 .g8-board-grp-num { font-size:clamp(120px,18vw,220px); font-weight:900; line-height:.88; }
 .g8-board-lane { font-size:24px; font-weight:500; opacity:.6; margin-top:6px; }

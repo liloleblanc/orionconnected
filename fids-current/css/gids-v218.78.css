@@ -2616,9 +2616,9 @@ body, body.gids-page, body.gate-page{
 /* v219 — definitive slim header bar height. A .g8-wrap .g8-r1 rule (higher
    specificity than the plain .g8-r1 rules) so it actually wins the cascade. */
 .g8-wrap .g8-r1 {
-  height: 104px !important;
-  min-height: 104px !important;
-  max-height: 104px !important;
+  height: 140px !important;
+  min-height: 140px !important;
+  max-height: 140px !important;
   padding-top: 6px !important;
   padding-bottom: 6px !important;
 }
@@ -3478,7 +3478,12 @@ body, body.gids-page, body.gate-page{
   border-bottom: 3px solid var(--airline-accent, #D82F2E) !important;
 }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:last-child { border-bottom: 0 !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { flex: 2 1 0 !important; padding: 0 !important; position: relative !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { flex: 3 1 0 !important; padding: 0 !important; position: relative !important; }
+/* Right column on the SAME 6-row grid as the left rail (6 equal rows):
+   map = 3 rows, flight-info = 1 row, aircraft = 2 rows  →  3 + 1 + 2 = 6.
+   So the right dividers land on the left's row lines and the bottoms connect. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi   { flex: 1 1 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type { flex: 2 1 0 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3,
 .g8-wrap .gad-map-col-v2 .v2-rc-r2 { display: flex !important; align-items: flex-start !important; gap: clamp(4px,0.6vw,12px) !important; width: 100% !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-i3cell,
@@ -3587,11 +3592,12 @@ body, body.gids-page, body.gate-page{
 .g8-airline-F8 .g8-r1-right .g8-r1-gate { color: #1C1C1C !important; }
 .g8-airline-F8 .gad-aircraft-col .v2-fi-row .v2-fi-svg { fill: #1C1C1C !important; }
 .g8-airline-F8 .gad-aircraft-col .v2-fi-icon-wrap { color: #1C1C1C !important; }
-.g8-airline-F8 .v2-fi-emblem-img { filter: brightness(0) !important; }
+/* Flair emblem is the brand GREEN dot — keep its native color, never blacken it. */
+.g8-airline-F8 .v2-fi-emblem-img { filter: none !important; }
 
 /* Banner: tighten the left edge so the wordmark gets the room (right edge is
    already owned by the gate block); logoslot clips anything oversized. */
-.g8-wrap .g8-r1 { padding-left: clamp(12px, 1.2vw, 22px) !important; }
+.g8-wrap .g8-r1 { padding-left: clamp(24px, 2.5vw, 48px) !important; }
 .g8-wrap .g8-r1-logoslot { overflow: hidden !important; max-height: 100% !important; }
 
 /* Let the gate block run the FULL banner height (the 6px vertical padding
@@ -4111,15 +4117,25 @@ body, body.gids-page, body.gate-page{
   overflow: hidden !important;
 }
 /* TITLE overlaid at the TOP of the map. */
+/* "Your Aircraft" title — a SOLID header bar that matches the Speed/Altitude
+   bar pinned to the bottom of the map (same dark slate fill + padding), so the
+   map is bookended by two matching bars instead of a soft gradient fade. */
 .g8-wrap .gad-map-col-v2 .v2-rc-maptitle {
   position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 6 !important;
   text-align: center !important; font-weight: 800 !important; white-space: nowrap !important;
   font-size: clamp(15px,2.3vh,27px) !important; letter-spacing: 0.3px !important;
-  color: #ffffff !important; padding: clamp(5px,1vh,12px) 10px clamp(10px,1.6vh,20px) !important;
-  background: linear-gradient(180deg, rgba(8,18,40,0.85) 0%, rgba(8,18,40,0.5) 55%, rgba(8,18,40,0) 100%) !important;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.6) !important;
+  color: #ffffff !important;
+  padding: clamp(4px,0.7vh,10px) clamp(8px,0.8vw,16px) !important;
+  /* PERSONALIZED per airline: a DARK shade of the airline's own brand colour
+     (half banner-bg, half black) — red-family on Air Canada, navy on PAL, etc.
+     Darker than the banner so the panel's rounded corners stay visible. */
+  background: color-mix(in srgb, var(--banner-bg, #14181e) 52%, #000 48%) !important;
+  text-shadow: none !important;
 }
-.g8-wrap .gad-map-col-v2 .v2-rc-maptitle2 { color: var(--airline-accent3, #FAC120) !important; }
+/* "Votre Avion" sits on the dark header bar now, so it must be a LIGHT tint
+   (the airline accent3 can be dark navy = invisible on the bar). Matches the
+   Speed/Altitude bar's secondary labels. */
+.g8-wrap .gad-map-col-v2 .v2-rc-maptitle2 { color: rgba(255,255,255,0.82) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-maptitle-sep { opacity: 0.55 !important; font-weight: 500 !important; }
 /* FLIGHT-INFO shelf — label-over-value with the gold accent line, like the
    left. Row 1 = Flight | From (two cells); rows 2-3 = Status, Arrives ETA. */
@@ -4277,3 +4293,155 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-cell { flex: 1 1 auto !important; text-align: left !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-lbl { text-align: left !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-row-single .v2-rc-fi-val { text-align: center !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   FLAIR (F8) brand rule — "never use green for text". Green stays on the
+   shapes (icon badges, gate tab, the logo dot); accent-coloured TEXT goes
+   dark on the light shelves and light on the dark map.
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap.g8-airline-F8 .gad-aircraft-col .v2-fi-textcol .v2-fi-code,
+.g8-wrap.g8-airline-F8 .gad-map-col-v2 .v2-rc-fi-code {
+  color: var(--banner-bg, #1C1C1C) !important;
+}
+.g8-wrap.g8-airline-F8 .gad-map-col-v2 .v2-rc-maptitle2 {
+  color: rgba(255,255,255,0.80) !important;
+}
+
+/* ── v218.99 — NEVER clip glyph descenders (g, y, j, p). The tight line-heights
+   on the big left-panel values (0.9–0.95) made the line box shorter than the
+   glyph, so overflow:hidden (kept for the horizontal ellipsis safety) was
+   slicing the bottoms off words like "Calgary". Give the line box enough room
+   to contain the full glyph; horizontal fit is handled by gateAutofit. ── */
+.g8-wrap .gad-aircraft-col .v2-fi-value,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-dest,
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-val,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val {
+  line-height: 1.12 !important;
+}
+
+/* ── v218.99 — reduce the left-panel icon badges by ~15% (Nick). Real prior
+   size was clamp(56px,8.8vh,108px); ×0.85 → clamp(48px,7.48vh,92px). Targets
+   the .v2-fi-iconcol selector (the actual winner) so the reduction is exactly
+   15%, covering both the teal icon circles and the flight-number emblem. ── */
+.g8-wrap .gad-aircraft-col .v2-fi-iconcol .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-iconcol .v2-fi-emblem-wrap,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  width: clamp(48px,7.48vh,92px) !important; height: clamp(48px,7.48vh,92px) !important;
+  min-width: clamp(48px,7.48vh,92px) !important; min-height: clamp(48px,7.48vh,92px) !important;
+  max-width: clamp(48px,7.48vh,92px) !important; max-height: clamp(48px,7.48vh,92px) !important;
+}
+
+/* ── v218.99 — RIGHT COLUMN = FIXED 6-ROW GRID. The shelves NEVER move.
+   The column is a locked grid of 6 equal rows that line up with the left rail's
+   6 rows. Each shelf is anchored to fixed rows via grid-row, so whether or not a
+   block has content, every shelf stays EXACTLY in place — no flexing, no
+   growing, no shrinking, no collapsing. Splits (sum to 6, aligned to the left):
+     map = rows 1-2 · inbound = row 3 · aircraft image = rows 4-5 · type = row 6.
+   This block is last, so it overrides every per-breakpoint flex rule above. ── */
+.g8-wrap .gad-map-col-v2 {
+  display: grid !important;
+  /* minmax(0,1fr) — NOT 1fr — so a tall block can't stretch its row past 1/6.
+     This locks all 6 rows to exactly equal heights that line up with the left. */
+  grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
+  height: 100% !important;
+}
+/* MAP = top HALF of the column (rows 1-3); the shelves fill the bottom HALF. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: 1 / 4 !important; flex: none !important; min-height: 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: 4 / 5 !important; flex: none !important; min-height: 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: 5 / 6 !important; flex: none !important; min-height: 0 !important; height: auto !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: 6 / 7 !important; flex: none !important; min-height: 0 !important; }
+
+/* ── v218.99 — FLIGHT NUMBER / VALUE CLIP FIX. The text column is a grid cell
+   with the default min-width:auto, so a long value (e.g. "AC1983") grew the
+   cell past the column and got clipped to "AC19…" — and autofit measured the
+   GROWN width so it never shrank. min-width:0 keeps the cell at its track width
+   so autofit sees the real space and shrinks the value to fit. ── */
+.g8-wrap .gad-aircraft-col .v2-fi-row > .v2-fi-textcol,
+.g8-wrap .gad-aircraft-col .v2-fi-row > .v2-fi-iconcol { min-width: 0 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value { min-width: 0 !important; max-width: 100% !important; }
+/* Same guard for the right-column values (inbound flight #, from-city). */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-cell,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val { min-width: 0 !important; max-width: 100% !important; }
+
+/* ── v218.99 — RIGHT shelves get the SAME brushed-metal + navy divider as the
+   left rail so the two columns read as one material. Map keeps its photo but
+   gets the navy divider at its bottom. ── */
+.g8-wrap .gad-map-col-v2,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%) !important;
+  background-image:
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.34) 47%,
+      rgba(255,255,255,0.10) 55%, rgba(255,255,255,0) 82%),
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px,     rgba(0,0,0,0.055) 2px),
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px,      rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%) !important;
+}
+/* The navy divider bars between shelves — same as the left rail's row lines. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;
+}
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type { border-bottom: 0 !important; }
+
+/* ── v218.99 — FORCE the divider lines between the right shelves. Put the navy
+   bar as a border-TOP on each lower shelf (the map image can cover a bottom
+   border, but nothing covers the top of the shelves below it). ── */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  border-top: clamp(4px,0.6vh,7px) solid var(--banner-bg, #042354) !important;
+}
+
+/* ── v218.99 — SINGLE dividers only (no doubles): the map keeps its bottom
+   line, the lower shelves use only their top line. Removes the doubled-up line
+   where a border-bottom and a border-top stacked. ── */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type { border-bottom: 0 !important; }
+
+/* ── v218.99 — Remove the map's bottom border so the map↔info boundary has ONE
+   line (the lower shelf's top border), never a doubled-up line. ── */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { border-bottom: 0 !important; }
+/* Speed/Altitude bar uses the same personalized dark as the header. */
+.g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  background: color-mix(in srgb, var(--banner-bg, #14181e) 52%, #000 48%) !important;
+}
+
+/* ── v218.99 — Air Canada's secondary brand is GRAY (not the red accent), so
+   the AC "Your Aircraft" header + speed bar use a dark neutral gray. ── */
+.g8-wrap.g8-airline-AC .gad-map-col-v2 .v2-rc-maptitle,
+.g8-wrap.g8-airline-AC .gad-map-col-v2 .v2-rc-mapstats,
+.g8-wrap.g8-airline-QK .gad-map-col-v2 .v2-rc-maptitle,
+.g8-wrap.g8-airline-QK .gad-map-col-v2 .v2-rc-mapstats,
+.g8-wrap.g8-airline-RV .gad-map-col-v2 .v2-rc-maptitle,
+.g8-wrap.g8-airline-RV .gad-map-col-v2 .v2-rc-mapstats {
+  background: #2b2e34 !important;
+}
+
+/* ── v218.99 — Header + speed bar: neutral dark GRAY for ALL airlines (Nick:
+   gray reads cleanly on every brand; the airline-tinted version clashed). ── */
+.g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+.g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  background: #2b2e34 !important;
+}
+/* Guaranteed divider line at the BOTTOM of the map (the map photo covers a
+   normal border, so draw it as an overlay above the map). ── */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map { position: relative !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map::after {
+  content: "" !important; position: absolute !important; left: 0 !important; right: 0 !important;
+  bottom: 0 !important; z-index: 7 !important; height: clamp(4px,0.6vh,7px) !important;
+  background: var(--banner-bg, #042354) !important;
+}
