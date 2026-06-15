@@ -5795,14 +5795,14 @@ function _buildV2MapCol(ctx, vars) {
       if (/DH8|DH4|DHC[- ]?8|Q[ -]?40|DASH[ -]?8/.test(_wsEq)) _opCode = 'WR';
       else if (!isNaN(_acFlNum) && _acFlNum >= 3000 && _acFlNum <= 3999) _opCode = 'WR';
     }
-    // Air Canada Express: the marketing carrier on the feed is AC, but 4-digit
-    // flights are flown by its regional partners — 8xxx / 75xx by Jazz, 16xx-19xx
-    // by Rouge. Infer the real operator from the flight number when the feed
-    // didn't tag it (livery still keys off AC below, so the paint stays correct).
-    if (_opCode === 'AC' && !isNaN(_acFlNum)) {
-      // PAL Airlines operates these AC Express ranges (Eastern Canada regional —
-      // e.g. AC2256 / AC7678 Halifax↔St. John's). Check first so they don't fall
-      // into Jazz's 75xx band.
+    // Air Canada Express: the marketing carrier is AC, but 4-digit flights are
+    // flown by its regional partners — PAL (7600-7699 / 2200-2299, Eastern
+    // Canada), Jazz (8xxx / 75xx), Rouge (16xx-19xx). Key off the MARKETING
+    // carrier + flight number, NOT whatever operator the feed pre-tagged: the
+    // feed often labels these "Jazz" or "AC", which made the badge wrong. The
+    // flight number is deterministic. (Livery still keys off AC below.)
+    var _mktIsAC = String(vars.airlineCode || '').toUpperCase() === 'AC';
+    if (_mktIsAC && !isNaN(_acFlNum)) {
       if ((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299)) _opCode = 'PB';
       else if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
@@ -5880,7 +5880,12 @@ function _buildV2MapCol(ctx, vars) {
       var _opBadgeInline = '';
       var _marketingCodeShelf = String(vars.airlineCode || '').trim().toUpperCase();
       if (_opCode && _opCode !== _marketingCodeShelf) {
-        var _opNameForAlt = (vars.currentFlight && vars.currentFlight._opName)
+        // AIRLINE_NAME holds the PARENT brand for the Express partners
+        // (QK→"Air Canada", etc.), so use proper operator names for the ones we
+        // infer locally; US regionals keep the resolved name from the feed.
+        var _EXPRESS_OP_NAMES = { 'PB':'PAL Airlines', 'QK':'Jazz', 'RV':'Air Canada Rouge', 'WR':'WestJet Encore' };
+        var _opNameForAlt = _EXPRESS_OP_NAMES[_opCode]
+          || (vars.currentFlight && vars.currentFlight._opName)
           || ((typeof AIRLINE_NAME !== 'undefined') ? AIRLINE_NAME[_opCode] : _opCode)
           || _opCode;
         var _opShortName = String(_opNameForAlt).replace(/^Air Canada\s+/i, '');
