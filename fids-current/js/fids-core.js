@@ -2271,6 +2271,8 @@ var OPERATOR_LOGOS = {
   '5T':  '/logos/airlines/canadian-regional/canadian-north.svg',               // Canadian North
   '7F':  '/logos/airlines/canadian-regional/firstair.svg',                     // First Air
   '4N':  '/logos/airlines/canadian-regional/airnorth.svg',                     // Air North
+  'PB':  '/logos/airlines/canadian-regional/PAL-Airlines.svg',                 // PAL Airlines (also flies Air Canada Express)
+  'PVL': '/logos/airlines/canadian-regional/PAL-Airlines.svg',                 // PAL Airlines ICAO
   // WestJet family
   'WR':  '/logos/airlines/canadian/encore.png',                                // Encore
   'WEN': '/logos/airlines/canadian/encore.png',                                // Encore ICAO
@@ -5800,6 +5802,23 @@ function _buildV2MapCol(ctx, vars) {
     if (_opCode === 'AC' && !isNaN(_acFlNum)) {
       if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
+    }
+    // Air Canada Express Dash 8-400s are flown by BOTH Jazz AND PAL Airlines.
+    // The two are told apart by REGISTRATION: PAL uses its distinctive "P" series
+    // (C-FP•• / C-GP••), while Jazz's Dash 8-400s are C-GG••. So a Jazz-attributed
+    // Express flight on a PAL airframe is actually operated by PAL.
+    if (_opCode === 'QK' && _acReg) {
+      var _regUp = String(_acReg).toUpperCase().replace(/[\s-]/g, '');
+      var _PAL_REGS = { 'CFPAL':1, 'CFPQI':1, 'CGPAO':1, 'CGPIX':1, 'CFPVJ':1, 'CGPFI':1 };
+      if (_PAL_REGS[_regUp] || /^C[FG]P[A-Z][A-Z]$/.test(_regUp)) _opCode = 'PB';
+    }
+    // PAL flies the Dash 8-400 only — keep the equipment consistent with the badge.
+    if (_opCode === 'PB' && (_equipCd || _equipNm)) {
+      var _pbEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      if (!/DH8|DH4|DHC|DASH|Q400/.test(_pbEqUp)) {
+        _equipCd = 'DH4';
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('DH4') : 'De Havilland Dash 8-400';
+      }
     }
     // Hawaiian operates its OWN metal (including the 717-200 inter-island fleet).
     // The Alaska Air Group merger does not make Alaska the operator — so never
