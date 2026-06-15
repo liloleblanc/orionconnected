@@ -6551,13 +6551,17 @@ function uxgGateHtml(ctx) {
   // falls back to a text "Operated by [Name]" line — matching the Jazz
   // pattern Nick is happy with, and never inventing brand logos.
   if ((!_opCode || _opCode === airlineCode) && currentFlight._aircraft) {
+    // Match BOTH the full model strings AND the bare IATA codes the demo/feed
+    // use (E75/E7W = E175, E70 = E170, CR9/CR7/CR2, DH4/DH8 = Dash 8) — the
+    // code form was slipping past these checks, so E175 regional flights never
+    // got an operator.
     var _eqUC = String(currentFlight._aircraft).toUpperCase();
-    var _isE175 = /\bE17[05]\b|\bE175\b|\bEMBRAER\s+E?175\b/.test(_eqUC);
-    var _isE170 = /\bE170\b|\bEMBRAER\s+E?170\b/.test(_eqUC);
+    var _isE175 = /\bE17[05]\b|\bE175\b|\bE7[5W]\b|\bEMBRAER\s+E?175\b/.test(_eqUC);
+    var _isE170 = /\bE170\b|\bE70\b|\bEMBRAER\s+E?170\b/.test(_eqUC);
     var _isCRJ900 = /\bCRJ\s*-?\s*900\b|\bCR9\b/.test(_eqUC);
     var _isCRJ700 = /\bCRJ\s*-?\s*700\b|\bCR7\b/.test(_eqUC);
     var _isCRJ200 = /\bCRJ\s*-?\s*200\b|\bCR2\b/.test(_eqUC);
-    var _isQ400  = /\bDASH\s*8\b|\bQ400\b|\bDHC\s*-?\s*8\b/.test(_eqUC);
+    var _isQ400  = /\bDASH\s*8\b|\bQ400\b|\bDHC\s*-?\s*8\b|\bDH[48]\b/.test(_eqUC);
     var _isRegionalJet = _isE175 || _isE170 || _isCRJ900 || _isCRJ700 || _isCRJ200 || _isQ400;
     var _flightNum = parseInt(String(currentFlight.flight || '').replace(/\D/g,''), 10);
 
@@ -6640,6 +6644,19 @@ function uxgGateHtml(ctx) {
         }
       }
     }
+  }
+
+  // Persist the resolved operating carrier onto the flight object so the
+  // "Operated by" badge in the aircraft block (right column) actually shows it.
+  // Without this, US regional operators (Envoy / SkyWest / Republic / PSA /
+  // Endeavor / Mesa…) were resolved here for the banner but never reached the
+  // badge, so "Operated by" was blank for almost every US regional flight.
+  if (_opCode && _opCode !== airlineCode && !currentFlight._opCode) {
+    currentFlight._opCode = _opCode;
+    currentFlight._opName = _opName
+      || (typeof _OPNAMES !== 'undefined' && _OPNAMES[_opCode])
+      || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode])
+      || _opCode;
   }
 
   // Build airline logo for row 1 (banner — ON TOP of the gate screen).
