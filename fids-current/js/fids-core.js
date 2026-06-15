@@ -5301,8 +5301,11 @@ function _buildV2AircraftCol(ctx, vars) {
       // (same size, not bigger); the value is the city alone.
       var _destLabel = 'Destination' + (_destIataDisp ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destIataDisp + '</span>' : '');
       var _destValue = _destCityName || _destIataDisp;
-      var _brdShortEn = _brdRev ? 'Revised - Boarding' : 'Boarding';
-      var _brdShortL2 = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Embarquement','Embarque');
+      // Label stays "Boarding | Embarquement" even when the time is revised —
+      // the orange/amber revised time already signals the change, and prefixing
+      // "Revised -" to BOTH languages overflows the shelf. (Same rule as Departure.)
+      var _brdShortEn = 'Boarding';
+      var _brdShortL2 = _L2('Embarquement','Embarque');
       // Label stays "Departure | Départ" even when the time is revised (per Nick).
       var _depShortEn = 'Departure';
       var _depShortL2 = _L2('Départ','Salida');
