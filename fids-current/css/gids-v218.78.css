@@ -4361,3 +4361,33 @@ body, body.gids-page, body.gate-page{
 /* Same guard for the right-column values (inbound flight #, from-city). */
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-cell,
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val { min-width: 0 !important; max-width: 100% !important; }
+
+/* ── v218.99 — RIGHT shelves get the SAME brushed-metal + navy divider as the
+   left rail so the two columns read as one material. Map keeps its photo but
+   gets the navy divider at its bottom. ── */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%) !important;
+  background-image:
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.34) 47%,
+      rgba(255,255,255,0.10) 55%, rgba(255,255,255,0) 82%),
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px,     rgba(0,0,0,0.055) 2px),
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px,      rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%) !important;
+}
+/* The navy divider bars between shelves — same as the left rail's row lines. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;
+}
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type { border-bottom: 0 !important; }
