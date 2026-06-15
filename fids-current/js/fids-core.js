@@ -5800,7 +5800,11 @@ function _buildV2MapCol(ctx, vars) {
     // by Rouge. Infer the real operator from the flight number when the feed
     // didn't tag it (livery still keys off AC below, so the paint stays correct).
     if (_opCode === 'AC' && !isNaN(_acFlNum)) {
-      if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
+      // PAL Airlines operates these AC Express ranges (Eastern Canada regional —
+      // e.g. AC2256 / AC7678 Halifax↔St. John's). Check first so they don't fall
+      // into Jazz's 75xx band.
+      if ((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299)) _opCode = 'PB';
+      else if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
     }
     // Air Canada Express Dash 8-400s are flown by BOTH Jazz AND PAL Airlines.
