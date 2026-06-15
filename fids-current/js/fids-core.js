@@ -18191,9 +18191,9 @@ var GATE_ADS_BY_AIRLINE = {
     { bg:'linear-gradient(135deg,#003366 0%,#00274d 100%)', headline:'SkyMiles', sub:'Earn miles on Delta \u00b7 Free Wi-Fi on every flight', logo:'/logos/airlines/us-major/delta.svg' },
   ],
   'AA': [
-    { bgColor:'linear-gradient(135deg,#102540 0%,#0a1628 100%)', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'right center', adLayout:'left-scrim', headline:'AAdvantage', sub:'Earn miles on every flight \u00b7 Exclusive member rewards', logo:'/logos/airlines/us-major/aaadvantage.png' },
-    { bgColor:'linear-gradient(135deg,#102540 0%,#0a1628 100%)', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'right center', adLayout:'left-scrim', headline:'Fly the American Way', sub:'World-class service to 350+ destinations worldwide', logo:'/logos/airlines/us-major/aaadvantage.png' },
-    { bgColor:'linear-gradient(135deg,#102540 0%,#0a1628 100%)', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'right center', adLayout:'left-scrim', headline:'Main Cabin Extra', sub:'Priority boarding \u00b7 Extra legroom on every flight', logo:'/logos/airlines/us-major/aaadvantage.png' },
+    // Finished creative \u2014 americanbackground.png is a complete ad (branding +
+    // copy baked into the art). Image-only: no app headline/sub/logo overlay.
+    { bgColor:'#0a1628', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'center', bgFit:'cover', imageOnly:true },
   ],
   'WN': [
     { bg:'linear-gradient(135deg,#c8102e 0%,#a00d1a 100%)', headline:'Rapid Rewards', sub:'Earn points on every Southwest flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/southwest.svg' },
@@ -19196,6 +19196,18 @@ function buildGateAdHtml(ad) {
     var h = compact ? 70 : 90;
     var uniformStyle = 'max-width:' + w + 'px;width:auto;max-height:' + h + 'px;height:auto;object-fit:contain;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.55));';
     return '<img src="' + resolved + '" style="' + uniformStyle + '" onerror="this.style.display=\'none\';">';
+  }
+
+  // ── FULL CREATIVE (image-only) ────────────────────────────────────────
+  // The background image is a FINISHED ad — branding/copy is baked into the
+  // artwork. Show it on its own; never overlay an app headline / sub / logo
+  // on top (that collides with the art and looks doubled). bgFit defaults to
+  // 'cover' (fill the slot); use 'contain' to show the whole image letterboxed.
+  if (ad.imageOnly && ad.bgImage) {
+    var _icFit = ad.bgFit || 'cover';
+    return '<div style="position:absolute;inset:0;background-color:' + (ad.bgColor || ad.bg || '#000') + ';overflow:hidden;">'
+      + '<div style="position:absolute;inset:0;background-image:url(\'' + ad.bgImage + '\');background-size:' + _icFit + ';background-position:' + (ad.bgPosition || 'center') + ';background-repeat:no-repeat;"></div>'
+      + '</div>';
   }
 
   // ── LAYOUT: AC GLOBE + DESTINATION ────────────────────────────────────
