@@ -4419,3 +4419,14 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
   background: color-mix(in srgb, var(--banner-bg, #14181e) 52%, #000 48%) !important;
 }
+
+/* ── v218.99 — Air Canada's secondary brand is GRAY (not the red accent), so
+   the AC "Your Aircraft" header + speed bar use a dark neutral gray. ── */
+.g8-wrap.g8-airline-AC .gad-map-col-v2 .v2-rc-maptitle,
+.g8-wrap.g8-airline-AC .gad-map-col-v2 .v2-rc-mapstats,
+.g8-wrap.g8-airline-QK .gad-map-col-v2 .v2-rc-maptitle,
+.g8-wrap.g8-airline-QK .gad-map-col-v2 .v2-rc-mapstats,
+.g8-wrap.g8-airline-RV .gad-map-col-v2 .v2-rc-maptitle,
+.g8-wrap.g8-airline-RV .gad-map-col-v2 .v2-rc-mapstats {
+  background: #2b2e34 !important;
+}
