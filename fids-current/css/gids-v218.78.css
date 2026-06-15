@@ -4339,7 +4339,9 @@ body, body.gids-page, body.gate-page{
    This block is last, so it overrides every per-breakpoint flex rule above. ── */
 .g8-wrap .gad-map-col-v2 {
   display: grid !important;
-  grid-template-rows: repeat(6, 1fr) !important;
+  /* minmax(0,1fr) — NOT 1fr — so a tall block can't stretch its row past 1/6.
+     This locks all 6 rows to exactly equal heights that line up with the left. */
+  grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
   height: 100% !important;
 }
 /* MAP = top HALF of the column (rows 1-3); the shelves fill the bottom HALF. */
