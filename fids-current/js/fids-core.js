@@ -5266,7 +5266,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // and a small bilingual "Revised | Révisé" tag sits at the BOTTOM of the
         // shelf instead — so it never overflows the label line.
         var _rev = revised
-          ? '<div class="v2-fi-revised-tag" style="margin-top:clamp(2px,0.4vh,5px);font-size:clamp(11px,1.15vh,16px);font-weight:700;color:#d97706;line-height:1;white-space:nowrap;">'
+          ? '<div class="v2-fi-revised-tag" style="margin-top:clamp(2px,0.4vh,5px);font-size:clamp(16px,2vh,26px);font-weight:800;color:#d97706;line-height:1;white-space:nowrap;letter-spacing:0.02em;text-transform:uppercase;">'
             + 'Revised <span class="v2-fi-sep">|</span> ' + _L2('Révisé', 'Revisado')
             + '</div>'
           : '';
@@ -6699,6 +6699,11 @@ function uxgGateHtml(ctx) {
   // full name), which reads far better and leaves room for the city headline.
   var _bannerUsedTile = false;
   var _bannerUsedWordmark = false;
+  var _bannerPlateForced = false;   // only genuine plate logos (BoA) get a white plate
+  // Banners are BLACK or WHITE only. These carriers use a WHITE banner, so their
+  // wordmark must be the DARK (ink) variant; everyone else gets the WHITE variant
+  // straight on the dark banner — no white plate behind it.
+  var _WHITE_BANNER_CARRIERS = { 'HA':1, 'WS':1, 'PD':1 };
   // Carriers whose own COLOUR logo reads directly on the dark header — no white
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
@@ -6739,6 +6744,7 @@ function uxgGateHtml(ctx) {
     _useOverrideFile = true;          // real colours — no white filter
     _sz = { h: 106, w: 300 };         // compact brand mark on the white plate
     _bannerUsedWordmark = true;       // reuse the white-plate styling
+    _bannerPlateForced = true;        // BoA-style mark genuinely needs the plate
   }
   // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
   // Render the LOCAL dark-ink wordmark on a clean white plate: real brand type,
@@ -6746,7 +6752,10 @@ function uxgGateHtml(ctx) {
   var _bannerWordmarkBase = (typeof IATA_TO_WORDMARK !== 'undefined')
     ? (IATA_TO_WORDMARK[_bannerBrandCode] || IATA_TO_WORDMARK[airlineCode]) : null;
   if (!_useOverrideFile && _bannerWordmarkBase && typeof logoPath === 'function') {
-    r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-dark.svg');
+    // White wordmark straight on the dark banner (dark wordmark for white-banner
+    // carriers). No white plate — the wordmark stands on the banner itself.
+    var _wmVariant = (_WHITE_BANNER_CARRIERS[_bannerBrandCode] || _WHITE_BANNER_CARRIERS[airlineCode]) ? 'dark' : 'light';
+    r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-' + _wmVariant + '.svg');
     _useOverrideFile = true;          // no white filter — wordmark as-is
     _sz = { h: 102, w: 480 };         // wide wordmark — fills the 148px band
     _bannerUsedWordmark = true;
@@ -6761,7 +6770,7 @@ function uxgGateHtml(ctx) {
     _sz = { h: 112, w: 112 };         // square brand badge
     _bannerUsedTile = true;
   }
-  var _onPlate = _bannerUsedTile || _bannerUsedWordmark;
+  var _onPlate = _bannerUsedTile || _bannerPlateForced;
   // HARD CAP the logo height so it can NEVER exceed the banner band (which is
   // overflow:hidden and a fixed height) — that's what was clipping tall logos
   // (WestJet 150px, etc.). object-fit:contain keeps the aspect; max-width caps
