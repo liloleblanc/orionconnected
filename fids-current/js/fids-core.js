@@ -7489,6 +7489,12 @@ function gateAutofit(root) {
       var padR = parseFloat(ps.paddingRight) || 0;
       var pad = padL + padR;
       function overflowing() {
+        // 0) DIRECT clip test: the element itself has overflow:hidden +
+        //    text-overflow:ellipsis, so when its content is wider than its own
+        //    box the text is being clipped (the "Houst…" case). This is the
+        //    most reliable signal and doesn't depend on the parent's measured
+        //    width (which can read too wide and hide the clip).
+        if (el.scrollWidth > el.clientWidth + 1) return true;
         // Available content width of the cell.
         var avail = parent.clientWidth - pad;
         if (avail <= 0) return false;
