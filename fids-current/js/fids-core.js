@@ -11615,6 +11615,7 @@ const IATA_TO_WORDMARK = {
   // North America other
   'MX':'breeze-airways', // Breeze Airways (David Neeleman's airline, ICAO MXY)
   'AV':'avianca',         // Avianca (Colombian flag carrier)
+  'OB':'boliviana',       // Boliviana de Aviación (BoA) — navy wordmark
   // Latin America — wordmark-only (no emblem) per Nick
   'AM':'aeromexico',     // Aeroméxico
   'CM':'copa',           // Copa Airlines (Panama)
@@ -11686,6 +11687,7 @@ const LOGO_SUBFOLDER = {
   'discover-airlines.svg':'airlines/european', 'discover-airlines-wordmark-light.svg':'airlines/european', 'discover-airlines-wordmark-dark.svg':'airlines/european', 'discover-airlines-emblem.svg':'airlines/european',
   'breeze-airways.svg':'airlines/us-major', 'breeze-airways-wordmark-light.svg':'airlines/us-major', 'breeze-airways-wordmark-dark.svg':'airlines/us-major', 'breeze-airways-emblem.png':'airlines/us-major',
   'avianca.svg':'airlines/asian-other', 'avianca-wordmark-light.svg':'airlines/asian-other', 'avianca-wordmark-dark.svg':'airlines/asian-other',
+  'boliviana.svg':'airlines/asian-other', 'boliviana-wordmark-light.svg':'airlines/asian-other', 'boliviana-wordmark-dark.svg':'airlines/asian-other',
   'aeromexico-wordmark-light.svg':'airlines/asian-other', 'aeromexico-wordmark-dark.svg':'airlines/asian-other',
   'bahamasair-wordmark-light.svg':'airlines/asian-other', 'bahamasair-wordmark-dark.svg':'airlines/asian-other',
   'latam-wordmark-light.svg':'airlines/asian-other', 'latam-wordmark-dark.svg':'airlines/asian-other',
