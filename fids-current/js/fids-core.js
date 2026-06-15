@@ -11710,6 +11710,13 @@ const IATA_TO_EMBLEM = {
   'F9': '/logos/airlines/us-major/frontier-emblem.svg',  // Frontier Airlines green stylized "F" mark
   'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',  // Breeze checkmark on navy square
   'VB': '/logos/airlines/asian-other/vivaaerobus-emblem.webp',  // Viva green leaf-shape "a" emblem
+  // US majors — these render wordmark-alone (TILE_SKIP_WORDMARK_ONLY), but the
+  // wordmark text by itself loses the iconic brand symbol. Show the symbol in
+  // the emblem slot ALONGSIDE the existing wordmark (wordmark text untouched).
+  'DL': '/logos/airlines/us-major/delta-widget.svg',           // Delta red/blue widget
+  'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
+  'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
+  'UA': '/logos/airlines/us-major/united-globe-only.svg',      // United globe
 };
 
 
