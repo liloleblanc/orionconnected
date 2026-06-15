@@ -5801,6 +5801,10 @@ function _buildV2MapCol(ctx, vars) {
       if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
     }
+    // Hawaiian operates its OWN metal (including the 717-200 inter-island fleet).
+    // The Alaska Air Group merger does not make Alaska the operator — so never
+    // show "Operated by Alaska" on a Hawaiian-branded flight.
+    if (String(vars.airlineCode || '').toUpperCase() === 'HA' && _opCode === 'AS') _opCode = 'HA';
     // WestJet Encore only flies the Dash 8-400 — never a 737. If the feed (or the
     // demo's default 737 pool) handed us a mainline frame on an Encore flight,
     // substitute the Dash 8 so the equipment matches the "Operated by Encore" badge.
@@ -6706,10 +6710,28 @@ function uxgGateHtml(ctx) {
   var _bannerUsedTile = false;
   var _bannerUsedWordmark = false;
   var _bannerPlateForced = false;   // only genuine plate logos (BoA) get a white plate
-  // Banners are BLACK or WHITE only. These carriers use a WHITE banner, so their
-  // wordmark must be the DARK (ink) variant; everyone else gets the WHITE variant
-  // straight on the dark banner — no white plate behind it.
-  var _WHITE_BANNER_CARRIERS = { 'HA':1, 'WS':1, 'PD':1 };
+  // Pick the wordmark variant from the ACTUAL banner colour (the data-file
+  // override in window.AIRLINE_BRAND_COLORS wins). Light banner → dark wordmark;
+  // dark banner → white wordmark. Hardcoding a "white-banner" list was wrong:
+  // the data file recolours HA/WS/PD banners to DARK, so their dark wordmark
+  // was invisible. Luminance check keeps it correct no matter the colour.
+  function _hexIsLight(hex) {
+    if (!hex) return false;
+    var m = String(hex).replace('#', '');
+    if (m.length === 3) m = m[0]+m[0]+m[1]+m[1]+m[2]+m[2];
+    if (m.length !== 6) return false;
+    var r = parseInt(m.slice(0,2),16), g = parseInt(m.slice(2,4),16), b = parseInt(m.slice(4,6),16);
+    return (0.299*r + 0.587*g + 0.114*b) > 170;
+  }
+  var _bannerR1Now = '';
+  try {
+    var _abc = (typeof window !== 'undefined' && window.AIRLINE_BRAND_COLORS) || null;
+    if (_abc) _bannerR1Now = (_abc[_bannerBrandCode] && _abc[_bannerBrandCode].r1) || (_abc[airlineCode] && _abc[airlineCode].r1) || '';
+  } catch (e) {}
+  // HA/WS/PD default to WHITE in-code but the data file overrides them dark; if
+  // we couldn't read a colour, assume DARK (white wordmark) — every live banner
+  // is dark now, so white is the safe default.
+  var _bannerIsLight = _hexIsLight(_bannerR1Now);
   // Carriers whose own COLOUR logo reads directly on the dark header — no white
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
@@ -6760,7 +6782,7 @@ function uxgGateHtml(ctx) {
   if (!_useOverrideFile && _bannerWordmarkBase && typeof logoPath === 'function') {
     // White wordmark straight on the dark banner (dark wordmark for white-banner
     // carriers). No white plate — the wordmark stands on the banner itself.
-    var _wmVariant = (_WHITE_BANNER_CARRIERS[_bannerBrandCode] || _WHITE_BANNER_CARRIERS[airlineCode]) ? 'dark' : 'light';
+    var _wmVariant = _bannerIsLight ? 'dark' : 'light';
     r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-' + _wmVariant + '.svg');
     _useOverrideFile = true;          // no white filter — wordmark as-is
     _sz = { h: 102, w: 480 };         // wide wordmark — fills the 148px band
@@ -20091,10 +20113,17 @@ function buildGateAdHtml(ad) {
   // v218.99.46 — Logo restored, headline + sub fonts bumped per Nick's spec.
   var bgStyle = ad.bg || 'linear-gradient(135deg,#1e2846 0%,#141e37 100%)';
   var iconHtml = ad.icon || '';
+  // These standard ads always sit on a DARK brand-colour gradient, so the logo
+  // must be WHITE or it reads as colour-on-colour (Alaska/Delta/United blue on
+  // blue). brightness(0)+invert(1) forces ANY logo (colour, dark, or already
+  // white) to a clean white silhouette. The only light-background ad (Flair
+  // lime) sets ad.fg to a dark colour — there we leave the logo as-is.
+  var _adLightBg = !!ad.fg;
+  var _stdLogoFilter = _adLightBg ? '' : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
   var _stdLogoHtml = ad.logo
     ? '<div style="flex-shrink:0;margin-bottom:18px;height:64px;display:flex;align-items:center;justify-content:center;">'
       + '<img src="' + ad.logo + '" alt="" '
-      + 'style="max-height:100%;max-width:360px;width:auto;height:auto;object-fit:contain;display:block;" '
+      + 'style="max-height:100%;max-width:360px;width:auto;height:auto;object-fit:contain;display:block;' + _stdLogoFilter + '" '
       + 'onerror="this.style.display=\'none\';">'
       + '</div>'
     : '';
