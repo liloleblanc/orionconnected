@@ -18193,7 +18193,7 @@ var GATE_ADS_BY_AIRLINE = {
   'AA': [
     // Finished creative \u2014 americanbackground.png is a complete ad (branding +
     // copy baked into the art). Image-only: no app headline/sub/logo overlay.
-    { bgColor:'#0a1628', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'center', bgFit:'cover', imageOnly:true },
+    { bgColor:'#ffffff', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'center', bgFit:'contain', imageOnly:true },
   ],
   'WN': [
     { bg:'linear-gradient(135deg,#c8102e 0%,#a00d1a 100%)', headline:'Rapid Rewards', sub:'Earn points on every Southwest flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/southwest.svg' },
