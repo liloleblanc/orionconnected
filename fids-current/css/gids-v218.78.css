@@ -4329,3 +4329,18 @@ body, body.gids-page, body.gate-page{
   min-width: clamp(48px,7.48vh,92px) !important; min-height: clamp(48px,7.48vh,92px) !important;
   max-width: clamp(48px,7.48vh,92px) !important; max-height: clamp(48px,7.48vh,92px) !important;
 }
+
+/* ── v218.99 — RIGHT COLUMN: kill the empty gap, fill to the bottom (Nick).
+   The aircraft block is two shelves (illus = plane image, type = text). The
+   illus shelf was flex-grown tall while the small plane sat at its bottom,
+   leaving a blank band above it = the "gap". Fix: the MAP absorbs all the
+   leftover height; the inbound card, plane image and type each size to their
+   own content. No empty bands, column always reaches the bottom — matching the
+   left rail's full height. This block is last, so it wins over the per-breakpoint
+   flex rules above. ── */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { flex: 1 1 auto !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { flex: 0 0 auto !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 0 0 auto !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { flex: 0 0 auto !important; }
+/* If the plane image is missing, collapse its shelf entirely (no blank band). */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus:empty { display: none !important; padding: 0 !important; border: 0 !important; }
