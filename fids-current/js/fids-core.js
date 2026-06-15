@@ -5777,21 +5777,33 @@ function _buildV2MapCol(ctx, vars) {
 
     var _opCodeRaw = String(_cf._opCode || vars.airlineCode || '').trim().toUpperCase();
     var _opCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opCodeRaw]) ? CALLSIGN_TO_IATA[_opCodeRaw] : _opCodeRaw;
-    // A WestJet Dash 8-400 is always flown by WestJet Encore — show that as the
-    // operator when the feed didn't already tag it (livery still keys off the
-    // marketing carrier below, so the plane stays in WestJet colours).
+    // WestJet Encore flies the Dash 8-400s for WestJet on 3xxx flight numbers.
+    // Infer Encore from the flight number (not just the equipment) — the feed
+    // leaves the marketing carrier as WS, and demo WS flights default to 737s,
+    // so an equipment-only check never fires. Livery still keys off WS below.
+    var _acFlNum = parseInt(String(_cf.flight || (vars.currentFlight && vars.currentFlight.flight) || '').replace(/\D/g, ''), 10);
     if (_opCode === 'WS') {
       var _wsEq = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
       if (/DH8|DH4|DHC[- ]?8|Q[ -]?40|DASH[ -]?8/.test(_wsEq)) _opCode = 'WR';
+      else if (!isNaN(_acFlNum) && _acFlNum >= 3000 && _acFlNum <= 3999) _opCode = 'WR';
     }
     // Air Canada Express: the marketing carrier on the feed is AC, but 4-digit
     // flights are flown by its regional partners — 8xxx / 75xx by Jazz, 16xx-19xx
     // by Rouge. Infer the real operator from the flight number when the feed
     // didn't tag it (livery still keys off AC below, so the paint stays correct).
-    var _acFlNum = parseInt(String(_cf.flight || (vars.currentFlight && vars.currentFlight.flight) || '').replace(/\D/g, ''), 10);
     if (_opCode === 'AC' && !isNaN(_acFlNum)) {
       if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
+    }
+    // WestJet Encore only flies the Dash 8-400 — never a 737. If the feed (or the
+    // demo's default 737 pool) handed us a mainline frame on an Encore flight,
+    // substitute the Dash 8 so the equipment matches the "Operated by Encore" badge.
+    if (_opCode === 'WR' && (_equipCd || _equipNm)) {
+      var _wrEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      if (!/DH8|DH4|DHC|DASH|Q400/.test(_wrEqUp)) {
+        _equipCd = 'DH4';
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('DH4') : 'De Havilland Dash 8-400';
+      }
     }
     // Jazz only flies regional metal (CRJ-900 / Dash 8-400 / E175) — never a
     // mainline Airbus or Boeing. If the feed handed us a mainline frame on a
@@ -13678,13 +13690,15 @@ function buildRandomFlights(iata) {
     // Extract the numeric portion of the flight number for operator detection
     var _flNumForOp = parseInt((flight || '').replace(/\D/g, ''), 10) || 0;
     var _opCodeForEntry = rfgOperatorCode(alEntry.al, _flNumForOp);
-    // Jazz (AC Express, QK) only flies regional metal — never mainline
-    // narrowbodies like the A321neo. When the flight number lands in the Jazz
-    // range, pick from its real fleet (CRJ-900 / Dash 8-400 / E175) so the
-    // equipment matches the "Operated by Jazz" badge instead of contradicting it.
+    // Regional partners only fly regional metal — never the marketing carrier's
+    // mainline jets. Pick from the partner's real fleet so the equipment matches
+    // the "Operated by" badge: Jazz (QK) = CRJ-900 / Dash 8-400 / E175;
+    // WestJet Encore (WR) = Dash 8-400 only.
     var _acftForEntry = (_opCodeForEntry === 'QK')
       ? rfgPick(['CR9', 'DH4', 'E75'], seed + i * 23)
-      : rfgPickAircraft(alEntry.al, seed + i * 23);
+      : (_opCodeForEntry === 'WR')
+        ? 'DH4'
+        : rfgPickAircraft(alEntry.al, seed + i * 23);
     const entry = { time, upd, flight, airline: alEntry.al, status, gate, terminal: term,
                     _sortTs: schedTs, _revTs: delayTs || null, _flightKey: flight, _locIata: route.di,
                     _airlineName: AIRLINE_NAME[alEntry.al] || alEntry.al,
