@@ -4379,6 +4379,21 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   if (engineCode)                       paths.push('aircraft/' + eq + '-' + engineCode + '.png');
   if (LIVERY_FOLDERS[al])               paths.push('aircraft/' + al + '/' + eq + '.png');
   paths.push('aircraft/' + eq + '.png');
+  // Family fallback: a specific variant file may not exist for every airline
+  // (e.g. UA has 777.png but no 77W.png), so fall back to the family's base
+  // image IN THE AIRLINE'S LIVERY before dropping to a generic plane.
+  var FAMILY_BASE = {
+    // 777 family → 777
+    '772':'777','773':'777','77W':'777','77L':'777','77X':'777','77E':'777',
+    // 747 / 767 / 757 / 787 / A320 family variants → their base image
+    '744':'747','748':'747','764':'763','753':'752',
+    '789':'788','78X':'788','781':'788','32N':'320','32Q':'321'
+  };
+  var famBase = FAMILY_BASE[eq];
+  if (famBase && famBase !== eq) {
+    if (LIVERY_FOLDERS[al]) paths.push('aircraft/' + al + '/' + famBase + '.png');
+    paths.push('aircraft/' + famBase + '.png');
+  }
 
   // Drop any paths we already know are 404
   paths = paths.filter(function(p) { return !miss[p]; });
