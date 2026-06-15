@@ -6712,7 +6712,7 @@ function uxgGateHtml(ctx) {
   // overflow:hidden and a fixed height) — that's what was clipping tall logos
   // (WestJet 150px, etc.). object-fit:contain keeps the aspect; max-width caps
   // the width. 86px fits the band with margin.
-  var _logoH = Math.min(_sz.h || 86, 86);
+  var _logoH = Math.min(_sz.h || 120, 120);
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
                  + (_useOverrideFile

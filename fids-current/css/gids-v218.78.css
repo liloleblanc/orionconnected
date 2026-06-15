@@ -2616,9 +2616,9 @@ body, body.gids-page, body.gate-page{
 /* v219 — definitive slim header bar height. A .g8-wrap .g8-r1 rule (higher
    specificity than the plain .g8-r1 rules) so it actually wins the cascade. */
 .g8-wrap .g8-r1 {
-  height: 104px !important;
-  min-height: 104px !important;
-  max-height: 104px !important;
+  height: 140px !important;
+  min-height: 140px !important;
+  max-height: 140px !important;
   padding-top: 6px !important;
   padding-bottom: 6px !important;
 }
@@ -4126,7 +4126,7 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(15px,2.3vh,27px) !important; letter-spacing: 0.3px !important;
   color: #ffffff !important;
   padding: clamp(4px,0.7vh,10px) clamp(8px,0.8vw,16px) !important;
-  background: rgba(15,34,56,0.78) !important;
+  background: var(--banner-bg, #0f2238) !important;   /* SOLID dark, not see-through */
   text-shadow: none !important;
 }
 /* "Votre Avion" sits on the dark header bar now, so it must be a LIGHT tint
