@@ -4330,17 +4330,19 @@ body, body.gids-page, body.gate-page{
   max-width: clamp(48px,7.48vh,92px) !important; max-height: clamp(48px,7.48vh,92px) !important;
 }
 
-/* ── v218.99 — RIGHT COLUMN: kill the empty gap, fill to the bottom (Nick).
-   The aircraft block is two shelves (illus = plane image, type = text). The
-   illus shelf was flex-grown tall while the small plane sat at its bottom,
-   leaving a blank band above it = the "gap". Fix: the MAP absorbs all the
-   leftover height; the inbound card, plane image and type each size to their
-   own content. No empty bands, column always reaches the bottom — matching the
-   left rail's full height. This block is last, so it wins over the per-breakpoint
-   flex rules above. ── */
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { flex: 1 1 auto !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { flex: 0 0 auto !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { flex: 0 0 auto !important; }
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { flex: 0 0 auto !important; }
-/* If the plane image is missing, collapse its shelf entirely (no blank band). */
-.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus:empty { display: none !important; padding: 0 !important; border: 0 !important; }
+/* ── v218.99 — RIGHT COLUMN = FIXED 6-ROW GRID. The shelves NEVER move.
+   The column is a locked grid of 6 equal rows that line up with the left rail's
+   6 rows. Each shelf is anchored to fixed rows via grid-row, so whether or not a
+   block has content, every shelf stays EXACTLY in place — no flexing, no
+   growing, no shrinking, no collapsing. Splits (sum to 6, aligned to the left):
+     map = rows 1-2 · inbound = row 3 · aircraft image = rows 4-5 · type = row 6.
+   This block is last, so it overrides every per-breakpoint flex rule above. ── */
+.g8-wrap .gad-map-col-v2 {
+  display: grid !important;
+  grid-template-rows: repeat(6, 1fr) !important;
+  height: 100% !important;
+}
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: 1 / 3 !important; flex: none !important; min-height: 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: 3 / 4 !important; flex: none !important; min-height: 0 !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: 4 / 6 !important; flex: none !important; min-height: 0 !important; height: auto !important; }
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: 6 / 7 !important; flex: none !important; min-height: 0 !important; }
