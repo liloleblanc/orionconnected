@@ -53,13 +53,13 @@
 
 /* ALL speech bubble (to standard) — light card, copy + QR, tail bottom-left */
 .axr-bubble{ position:absolute; top:clamp(20px,3vh,30px); left:clamp(20px,2.4vw,30px); z-index:4;
-  display:grid; grid-template-columns:minmax(0,1fr) clamp(64px,7vw,86px); gap:clamp(12px,1.4vw,18px);
-  align-items:center; width:min(390px, 60%); padding:clamp(13px,1.5vw,18px);
+  display:grid; grid-template-columns:minmax(0,1fr) clamp(72px,8vw,100px); gap:clamp(12px,1.4vw,18px);
+  align-items:center; width:min(470px, 66%); padding:clamp(14px,1.7vw,22px);
   background:var(--all-light); color:var(--all-blue);
   border-radius:14px 14px 14px 0; box-shadow:0 14px 36px rgba(0,0,0,.34); }
 .axr-bubble::after{ content:""; position:absolute; left:0; bottom:-12px;
   border-top:12px solid var(--all-light); border-right:12px solid transparent; }
-.axr-bubble-copy{ min-width:0; font-size:clamp(13px,1vw,15px); line-height:1.25; font-weight:500; }
+.axr-bubble-copy{ min-width:0; font-size:clamp(18px,1.6vw,26px); line-height:1.22; font-weight:600; }
 .axr-qr{ aspect-ratio:1; width:100%; background:#fff; border-radius:7px; padding:6px;
   display:flex; align-items:center; justify-content:center; }
 .axr-qr svg, .axr-qr img{ width:100%; height:100%; display:block; }
