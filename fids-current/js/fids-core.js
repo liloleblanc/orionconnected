@@ -7748,13 +7748,37 @@ const gView = document.getElementById('gateView');
       // Gate-based placeholder — only used if reg lookup hasn't returned yet
       const AIRLINE_FAMILY = { 'QK':'AC','RV':'AC','ZX':'AC','9M':'AC','AC':'AC', 'WR':'WS','WS':'WS', 'PD':'PD','P3':'PD', 'PB':'PB','SP':'PB', 'TS':'TS', 'F8':'F8' };
       const depFamily = AIRLINE_FAMILY[airlineCode2] || airlineCode2;
+      // The inbound IS the same airframe doing its previous leg, so it must be
+      // the SAME aircraft type. Without this, a short-haul jet (e.g. a Hawaiian
+      // 717 that only flies inter-island) would get paired with a mainland
+      // arrival (an A330 from LAX/Tokyo) just because they shared a gate.
+      const _acFamily = function (s) {
+        var u = String(s || '').toUpperCase();
+        var m = u.match(/\b(7[0-9]7|7[0-9]8|7[0-9]9|7M[0-9]|3[0-9][0-9]|32[NQ]|2[0-9][0-9]|CR[0-9JK]|DH[0-9C]|E[0-9]{2}|AT[0-9R])\b/);
+        if (m) return m[1];
+        if (/717/.test(u)) return '717';
+        if (/787|78[0-9X]/.test(u)) return '787';
+        if (/777|77[0-9WLX]/.test(u)) return '777';
+        if (/767|76[0-9]/.test(u)) return '767';
+        if (/A?330|33[0-9]/.test(u)) return '330';
+        if (/A?321|32[1N]/.test(u)) return '321';
+        if (/A?320/.test(u)) return '320';
+        if (/A?319/.test(u)) return '319';
+        return u.replace(/[^A-Z0-9]/g, '').slice(0, 4);
+      };
+      const _outAc = _acFamily(currentFlight._aircraft || currentFlight._aircraftCode);
       const _gateMatchFallback = (data.arr || []).filter(f =>
         f.gate === _gateVal &&
         f.status !== 'departed' &&
         f.flight !== currentFlight.flight &&
         f._sortTs <= _depTs &&
         f._sortTs >= _6hBefore &&
-        (AIRLINE_FAMILY[f.airline] || f.airline) === depFamily
+        (AIRLINE_FAMILY[f.airline] || f.airline) === depFamily &&
+        // same aircraft type when both are known (it's the same plane)
+        (function () {
+          var fa = _acFamily(f._aircraft || f._aircraftCode);
+          return !_outAc || !fa || fa === _outAc;
+        })()
       ).sort((a,b) => b._sortTs - a._sortTs)[0] || null;
 
       // PRIMARY SOURCE: reg-based inbound from loadFlight. If present, use it.
