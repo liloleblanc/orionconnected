@@ -4126,7 +4126,9 @@ body, body.gids-page, body.gate-page{
   font-size: clamp(15px,2.3vh,27px) !important; letter-spacing: 0.3px !important;
   color: #ffffff !important;
   padding: clamp(4px,0.7vh,10px) clamp(8px,0.8vw,16px) !important;
-  background: var(--banner-bg, #0f2238) !important;   /* SOLID dark, not see-through */
+  /* Fixed dark slate — distinct from the banner colour so the panel's rounded
+     top corners stay visible (banner-bg matched the header and hid them). */
+  background: #0f2238 !important;
   text-shadow: none !important;
 }
 /* "Votre Avion" sits on the dark header bar now, so it must be a LIGHT tint
@@ -4392,3 +4394,12 @@ body, body.gids-page, body.gate-page{
   border-bottom: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;
 }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type { border-bottom: 0 !important; }
+
+/* ── v218.99 — FORCE the divider lines between the right shelves. Put the navy
+   bar as a border-TOP on each lower shelf (the map image can cover a bottom
+   border, but nothing covers the top of the shelves below it). ── */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  border-top: clamp(4px,0.6vh,7px) solid var(--banner-bg, #042354) !important;
+}
