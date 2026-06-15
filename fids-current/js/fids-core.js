@@ -5343,7 +5343,7 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fnNumber || _fiFlightNo || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
-        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_fiBrd) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgArrive), 'Flight Time', _L2('Durée','Duración'), _durValue, 'v2-fi-time')
         + '</div>';
@@ -5765,6 +5765,36 @@ function _buildV2MapCol(ctx, vars) {
 
     var _opCodeRaw = String(_cf._opCode || vars.airlineCode || '').trim().toUpperCase();
     var _opCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opCodeRaw]) ? CALLSIGN_TO_IATA[_opCodeRaw] : _opCodeRaw;
+    // A WestJet Dash 8-400 is always flown by WestJet Encore — show that as the
+    // operator when the feed didn't already tag it (livery still keys off the
+    // marketing carrier below, so the plane stays in WestJet colours).
+    if (_opCode === 'WS') {
+      var _wsEq = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      if (/DH8|DH4|DHC[- ]?8|Q[ -]?40|DASH[ -]?8/.test(_wsEq)) _opCode = 'WR';
+    }
+    // Air Canada Express: the marketing carrier on the feed is AC, but 4-digit
+    // flights are flown by its regional partners — 8xxx / 75xx by Jazz, 16xx-19xx
+    // by Rouge. Infer the real operator from the flight number when the feed
+    // didn't tag it (livery still keys off AC below, so the paint stays correct).
+    var _acFlNum = parseInt(String(_cf.flight || (vars.currentFlight && vars.currentFlight.flight) || '').replace(/\D/g, ''), 10);
+    if (_opCode === 'AC' && !isNaN(_acFlNum)) {
+      if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
+      else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
+    }
+    // Jazz only flies regional metal (CRJ-900 / Dash 8-400 / E175) — never a
+    // mainline Airbus or Boeing. If the feed handed us a mainline frame on a
+    // Jazz flight number the attribution is internally inconsistent; trust the
+    // (deterministic) flight number and show a representative Jazz type so the
+    // equipment can't contradict the "Operated by Jazz" badge below it.
+    if (_opCode === 'QK' && (_equipCd || _equipNm)) {
+      var _qkEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      var _qkRegional = /CRJ|\bCR[0-9]\b|DASH|DH[0-9]|DHC|Q400|\bE1[79]0\b|\bE175\b|\bE75\b|EMBRAER/.test(_qkEqUp);
+      if (!_qkRegional) {
+        var _jzType = ['CR9', 'DH4', 'E75'][Math.abs(isNaN(_acFlNum) ? 0 : _acFlNum) % 3];
+        _equipCd = _jzType;
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_jzType) : _jzType;
+      }
+    }
     var _liveryEq = _equipCd;
     if (_opCode === 'RV' && _liveryEq && /^[A-Z0-9]{3}$/i.test(_liveryEq)) _liveryEq = _liveryEq + 'r';
     // The aircraft wears the MARKETING carrier's livery, not the operator's:
@@ -13401,7 +13431,7 @@ function buildDemoFlights(iata) {
     const entry = {
       time, upd, flight: s.flight, airline: s.al,
       status, gate: s.gate || '—', terminal: s.terminal || '—',
-      _sortTs: schedTs, _flightKey: s.flight,
+      _sortTs: schedTs, _revTs: delayTs || null, _flightKey: s.flight,
       _locIata: isDep ? s.di : s.oi,
       _airlineName: AIRLINE_NAME[s.al] || s.al,
     };
@@ -13635,12 +13665,20 @@ function buildRandomFlights(iata) {
     const status = buildDemoStatus(minsOffset, isDep, hasDelay, delayMins);
     // Extract the numeric portion of the flight number for operator detection
     var _flNumForOp = parseInt((flight || '').replace(/\D/g, ''), 10) || 0;
+    var _opCodeForEntry = rfgOperatorCode(alEntry.al, _flNumForOp);
+    // Jazz (AC Express, QK) only flies regional metal — never mainline
+    // narrowbodies like the A321neo. When the flight number lands in the Jazz
+    // range, pick from its real fleet (CRJ-900 / Dash 8-400 / E175) so the
+    // equipment matches the "Operated by Jazz" badge instead of contradicting it.
+    var _acftForEntry = (_opCodeForEntry === 'QK')
+      ? rfgPick(['CR9', 'DH4', 'E75'], seed + i * 23)
+      : rfgPickAircraft(alEntry.al, seed + i * 23);
     const entry = { time, upd, flight, airline: alEntry.al, status, gate, terminal: term,
-                    _sortTs: schedTs, _flightKey: flight, _locIata: route.di,
+                    _sortTs: schedTs, _revTs: delayTs || null, _flightKey: flight, _locIata: route.di,
                     _airlineName: AIRLINE_NAME[alEntry.al] || alEntry.al,
-                    _aircraft: rfgPickAircraft(alEntry.al, seed + i * 23),
+                    _aircraft: _acftForEntry,
                     _aircraftCode: '',
-                    _opCode: rfgOperatorCode(alEntry.al, _flNumForOp),
+                    _opCode: _opCodeForEntry,
                     _opName: rfgOperatorName(alEntry.al, _flNumForOp) };
     if (isDep) entry.dest   = route.c;
     else        entry.origin = route.c;
