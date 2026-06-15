@@ -5256,26 +5256,17 @@ function _buildV2AircraftCol(ctx, vars) {
       var _li2 = 'fr';
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
-      function _shelf(icon, en, second, val, valCls, revised) {
+      function _shelf(icon, en, second, val, valCls) {
         // v223 — Nick's exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
         var _sec = (second && second !== en)
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + second + '</span>'
-          : '';
-        // When a time is revised, the label stays short ("Boarding | Embarquement")
-        // and a small bilingual "Revised | Révisé" tag sits at the BOTTOM of the
-        // shelf instead — so it never overflows the label line.
-        var _rev = revised
-          ? '<div class="v2-fi-revised-tag" style="margin-top:clamp(2px,0.4vh,5px);font-size:clamp(16px,2vh,26px);font-weight:800;color:#d97706;line-height:1;white-space:nowrap;letter-spacing:0.02em;text-transform:uppercase;">'
-            + 'Revised <span class="v2-fi-sep">|</span> ' + _L2('Révisé', 'Revisado')
-            + '</div>'
           : '';
         return '<div class="v2-fi-row">'
           + '<div class="v2-fi-iconcol">' + icon + '</div>'
           + '<div class="v2-fi-textcol">'
           +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '</div>'
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
-          +   _rev
           + '</div>'
           + '</div>';
       }
@@ -5355,8 +5346,8 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fnNumber || _fiFlightNo || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
-        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _brdRev)
-        + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time', _depRev)
+        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgArrive), 'Flight Time', _L2('Durée','Duración'), _durValue, 'v2-fi-time')
         + '</div>';
     }
