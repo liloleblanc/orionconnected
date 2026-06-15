@@ -4365,6 +4365,7 @@ body, body.gids-page, body.gate-page{
 /* ── v218.99 — RIGHT shelves get the SAME brushed-metal + navy divider as the
    left rail so the two columns read as one material. Map keeps its photo but
    gets the navy divider at its bottom. ── */
+.g8-wrap .gad-map-col-v2,
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
