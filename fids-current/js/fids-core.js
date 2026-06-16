@@ -4375,27 +4375,34 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var rawModel = opts.rawModel || (rawStr.length > 5 ? rawStr : '');
   var engineCode = engineVariantSuffix(rawModel, opts.reg);
 
-  // Try variant-specific livery → variant generic → plain livery → plain generic
-  var paths = [];
-  if (LIVERY_FOLDERS[al] && engineCode) paths.push('aircraft/' + al + '/' + eq + '-' + engineCode + '.png');
-  if (engineCode)                       paths.push('aircraft/' + eq + '-' + engineCode + '.png');
-  if (LIVERY_FOLDERS[al])               paths.push('aircraft/' + al + '/' + eq + '.png');
-  paths.push('aircraft/' + eq + '.png');
-  // Family fallback: a specific variant file may not exist for every airline
-  // (e.g. UA has 777.png but no 77W.png), so fall back to the family's base
-  // image IN THE AIRLINE'S LIVERY before dropping to a generic plane.
-  var FAMILY_BASE = {
-    // 777 family → 777
-    '772':'777','773':'777','77W':'777','77L':'777','77X':'777','77E':'777',
-    // 747 / 767 / 757 / 787 / A320 family variants → their base image
-    '744':'747','748':'747','764':'763','753':'752',
-    '789':'788','78X':'788','781':'788','32N':'320','32Q':'321'
+  // Family siblings: when the exact variant file is missing, fall back to OTHER
+  // variants of the same type — and crucially try them in the airline's OWN
+  // livery folder first. e.g. Canadian North gets a feed "73H" (a 737-800 they
+  // don't even fly); there's no 5T/73H.png, so we slide to their real 5T/733
+  // (737-300) livery instead of breaking to a "?".
+  var FAMILY_SIBLINGS = {
+    // 737 family — try the other 737s
+    '73H':['738','737','73G','733','734','73C'], '738':['73H','737','73G','733','734'],
+    '739':['73J','73H','737','738'], '737':['738','73H','73G','733'],
+    '733':['734','73C','737','738'], '734':['733','73C','737'], '73C':['733','734','737'],
+    '73G':['737','738','73H'], '73J':['739','73H','737'],
+    '7M8':['738','73H','737','73G'], '7M9':['739','73J','7M8'], '7M7':['737','73G','7M8'],
+    // 777 / 747 / 767 / 757 / 787 / A320 families
+    '772':['777'], '773':['777'], '77W':['777','773'], '77L':['777','772'], '77X':['777'],
+    '744':['747'], '748':['747','744'], '764':['763'], '753':['752'],
+    '789':['788'], '78X':['788'], '781':['788'], '788':['789'],
+    '32N':['320','319'], '32Q':['321'], '321':['32N','320'], '319':['320','32N'], '320':['319','32N']
   };
-  var famBase = FAMILY_BASE[eq];
-  if (famBase && famBase !== eq) {
-    if (LIVERY_FOLDERS[al]) paths.push('aircraft/' + al + '/' + famBase + '.png');
-    paths.push('aircraft/' + famBase + '.png');
+  var _variants = [eq].concat(FAMILY_SIBLINGS[eq] || []);
+  // Try variant-specific → exact → siblings, ALL in the airline's livery folder
+  // first, then the same chain on the generic (liveryless) images.
+  var paths = [];
+  if (LIVERY_FOLDERS[al]) {
+    if (engineCode) paths.push('aircraft/' + al + '/' + eq + '-' + engineCode + '.png');
+    for (var _vi = 0; _vi < _variants.length; _vi++) paths.push('aircraft/' + al + '/' + _variants[_vi] + '.png');
   }
+  if (engineCode) paths.push('aircraft/' + eq + '-' + engineCode + '.png');
+  for (var _vg = 0; _vg < _variants.length; _vg++) paths.push('aircraft/' + _variants[_vg] + '.png');
 
   // Drop any paths we already know are 404
   paths = paths.filter(function(p) { return !miss[p]; });
