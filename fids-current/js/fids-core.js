@@ -2271,8 +2271,8 @@ var OPERATOR_LOGOS = {
   '5T':  '/logos/airlines/canadian-regional/canadian-north.svg',               // Canadian North
   '7F':  '/logos/airlines/canadian-regional/firstair.svg',                     // First Air
   '4N':  '/logos/airlines/canadian-regional/airnorth.svg',                     // Air North
-  'PB':  '/logos/airlines/canadian-regional/pal-square.svg',              // PAL — emblem + "PAL" (simplified, for the Operated-by badge)
-  'PVL': '/logos/airlines/canadian-regional/pal-square.svg',              // PAL Airlines ICAO
+  'PB':  '/logos/airlines/canadian-regional/pal-square-badge.svg',              // PAL — emblem + "PAL" (simplified, for the Operated-by badge)
+  'PVL': '/logos/airlines/canadian-regional/pal-square-badge.svg',              // PAL Airlines ICAO
   // WestJet family
   'WR':  '/logos/airlines/canadian/encore.png',                                // Encore
   'WEN': '/logos/airlines/canadian/encore.png',                                // Encore ICAO
@@ -5931,7 +5931,7 @@ function _buildV2MapCol(ctx, vars) {
             +     'data-fallbacks="' + _candidatesJson.replace(/"/g, '&quot;') + '" '
             +     'data-fb-idx="0" '
             +     'data-fb-text="' + _shortEsc + '" '
-            +     'style="height:clamp(60px,7.6vh,92px);max-width:clamp(220px,26vw,320px);width:auto;object-fit:contain;display:block;" '
+            +     'style="height:clamp(96px,13vh,150px);max-width:clamp(320px,42vw,520px);width:auto;object-fit:contain;display:block;" '
             +     'onerror="(function(im){'
             +       'try{var fbs=JSON.parse(im.getAttribute(\'data-fallbacks\'));'
             +       'var i=parseInt(im.getAttribute(\'data-fb-idx\'),10)+1;'
