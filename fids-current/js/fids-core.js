@@ -5924,14 +5924,14 @@ function _buildV2MapCol(ctx, vars) {
             +     'data-fallbacks="' + _candidatesJson.replace(/"/g, '&quot;') + '" '
             +     'data-fb-idx="0" '
             +     'data-fb-text="' + _shortEsc + '" '
-            +     'style="height:48px;max-width:200px;width:auto;object-fit:contain;display:block;" '
+            +     'style="height:clamp(60px,7.6vh,92px);max-width:clamp(220px,26vw,320px);width:auto;object-fit:contain;display:block;" '
             +     'onerror="(function(im){'
             +       'try{var fbs=JSON.parse(im.getAttribute(\'data-fallbacks\'));'
             +       'var i=parseInt(im.getAttribute(\'data-fb-idx\'),10)+1;'
             +       'if(i<fbs.length){im.setAttribute(\'data-fb-idx\',i);im.src=fbs[i];return;}'
             +       'console.warn(\'[OP-LOGO-FAIL] all candidates failed:\',fbs);'
             +       'var txt=im.getAttribute(\'data-fb-text\')||\'\';'
-            +       'im.outerHTML=\'<span style=&quot;font-size:20px;font-weight:800;color:#0f1419;line-height:1;letter-spacing:0.2px;&quot;>\'+txt+\'</span>\';'
+            +       'im.outerHTML=\'<span style=&quot;font-size:clamp(26px,3.2vh,38px);font-weight:800;color:#0f1419;line-height:1;letter-spacing:0.2px;&quot;>\'+txt+\'</span>\';'
             +     '}catch(e){console.error(\'[OP-LOGO-FAIL]\',e);}})(this)">'
             + '</div>';
         } else {
