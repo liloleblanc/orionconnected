@@ -3441,11 +3441,14 @@ body, body.gids-page, body.gate-page{
 .gad-map-col-v2 .v2-rc-aircraft { background: transparent !important; }
 .gad-map-col-v2::before {
   content: "";
-  position: absolute; left: 0; right: 0; top: 0; bottom: 0; height: 100%;
+  /* Sit over the THREE info shelves below the map (Right 4-6). The map shelf is
+     an opaque image, so an emblem centred there would be hidden; the info
+     shelves are translucent brushed-metal and let the emblem read through. */
+  position: absolute; left: 0; right: 0; top: auto; bottom: 0; height: 58%;
   background-image: var(--wm-symbol, none);
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: 78% auto;
+  background-size: contain;
   opacity: 0.22;
   pointer-events: none;
   z-index: 0;
