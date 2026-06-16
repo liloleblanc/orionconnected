@@ -15343,6 +15343,8 @@ function applyAirportConfigToBoard(iata) {
     var _fontStacks = {
       'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
+      'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
+      'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
       'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
