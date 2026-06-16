@@ -6965,6 +6965,14 @@ function uxgGateHtml(ctx) {
   // Falls back to marketing airline's watermark, then to nothing.
   var _wmKey = (_opCode && _opCode !== airlineCode && WATERMARK_SYMBOL[_opCode]) ? _opCode : airlineCode;
   var _wmSymbol = WATERMARK_SYMBOL[_wmKey];
+  // Fallback: every airline gets a watermark from its FIDS tile icon, even when
+  // it has no hand-tuned WATERMARK_SYMBOL entry. Resolves IATA -> ICAO tile.
+  if (!_wmSymbol) {
+    var _wmTileKey = (_opCode && typeof IATA_TO_TILE_ICAO !== 'undefined' && IATA_TO_TILE_ICAO[_opCode]) ? _opCode : airlineCode;
+    if (typeof IATA_TO_TILE_ICAO !== 'undefined' && IATA_TO_TILE_ICAO[_wmTileKey]) {
+      _wmSymbol = 'logos/airline-tiles/' + IATA_TO_TILE_ICAO[_wmTileKey] + '.svg';
+    }
+  }
 
   return '<div class="g8-wrap'
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
