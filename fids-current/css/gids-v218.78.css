@@ -3441,12 +3441,12 @@ body, body.gids-page, body.gate-page{
 .gad-map-col-v2 .v2-rc-aircraft { background: transparent !important; }
 .gad-map-col-v2::before {
   content: "";
-  position: absolute; left: 0; right: 0; top: 0; height: 56%;
+  position: absolute; left: 0; right: 0; top: auto; bottom: 0; height: 48%;
   background-image: var(--wm-symbol, none);
   background-repeat: no-repeat;
-  background-position: center 10%;
-  background-size: 150% auto;
-  opacity: 0.16;
+  background-position: center center;
+  background-size: 116% auto;
+  opacity: 0.22;
   pointer-events: none;
   z-index: 0;
 }
@@ -4099,7 +4099,9 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
-  background-color: color-mix(in srgb, var(--body-bg,#e6eaef) 82%, var(--airline-accent,#8a8f96) 18%) !important;
+  /* Base colour made translucent so the airline emblem (column ::before, behind
+     these shelves) reads THROUGH the brushed metal across Right 4-6. */
+  background-color: color-mix(in srgb, color-mix(in srgb, var(--body-bg,#e6eaef) 82%, var(--airline-accent,#8a8f96) 18%) 72%, transparent) !important;
   background-image:
     linear-gradient(122deg,
       rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
