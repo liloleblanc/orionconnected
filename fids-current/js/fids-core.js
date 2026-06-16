@@ -6943,8 +6943,8 @@ function uxgGateHtml(ctx) {
   var WATERMARK_SYMBOL = {
     // Established colored emblems
     'AC': 'logos/airline-tiles/ACA-black.svg',                                   // AC black + red roundel (right-column watermark)
-    'QK': 'logos/Backgrounds/AC/aircanada-roundel-fade.svg',                     // Jazz under AC family
-    'RV': 'logos/Backgrounds/AC/aircanada-roundel-fade.svg',                     // Rouge under AC family
+    'QK': 'logos/airline-tiles/ACA-black.svg',                                   // Jazz under AC family — use AC icon
+    'RV': 'logos/airline-tiles/ACA-black.svg',                                   // Rouge under AC family — use AC icon
     'AA': '/logos/airlines/us-major/american-flight-symbol.svg',                   // AA flight symbol (red+blue gradients)
     'DL': '/logos/airlines/us-major/delta-widget.svg',                             // Delta widget (red gradient)
     'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',                         // Pualani figurehead

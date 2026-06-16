@@ -3449,7 +3449,7 @@ body, body.gids-page, body.gate-page{
   background-repeat: no-repeat;
   background-position: center center;
   background-size: contain;
-  opacity: 0.22;
+  opacity: 0.30;
   pointer-events: none;
   z-index: 0;
 }
