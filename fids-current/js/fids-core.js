@@ -3735,9 +3735,7 @@ var AIRLINE_BACKGROUNDS = {
     '/logos/Backgrounds/AC/aircanadasky.jpg',               // Blue sky with AIR CANADA wordmark
     '/logos/Backgrounds/AC/ac-clouds-star-alliance.png',    // Bright blue sky + clouds, AC wordmark + FR Star Alliance
     '/logos/Backgrounds/AC/EM-Air-Canada-AD-1A.jpg',        // "Your Somewhere Is Out There" campaign
-    '/logos/Backgrounds/AC/EM-Air-Canada-AD-2A1.jpg',       // "The World Is Not An Oyster" campaign
-    '/logos/airline-tiles/ACA-black.svg',                   // black + red maple-leaf roundel
-    '/logos/airline-tiles/ACA.svg'                          // red + white maple-leaf roundel
+    '/logos/Backgrounds/AC/EM-Air-Canada-AD-2A1.jpg'        // "The World Is Not An Oyster" campaign
   ],
   'DL': [
     '/logos/Backgrounds/DL/deltabackground.png',
@@ -6944,7 +6942,7 @@ function uxgGateHtml(ctx) {
   // of a watermark. Better to show no watermark than a busy wordmark.
   var WATERMARK_SYMBOL = {
     // Established colored emblems
-    'AC': 'logos/Backgrounds/AC/aircanada-roundel-fade.svg',                     // AC official roundel watermark
+    'AC': 'logos/airline-tiles/ACA-black.svg',                                   // AC black + red roundel (right-column watermark)
     'QK': 'logos/Backgrounds/AC/aircanada-roundel-fade.svg',                     // Jazz under AC family
     'RV': 'logos/Backgrounds/AC/aircanada-roundel-fade.svg',                     // Rouge under AC family
     'AA': '/logos/airlines/us-major/american-flight-symbol.svg',                   // AA flight symbol (red+blue gradients)
