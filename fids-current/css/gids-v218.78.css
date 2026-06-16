@@ -4447,3 +4447,23 @@ body, body.gids-page, body.gate-page{
   bottom: 0 !important; z-index: 7 !important; height: clamp(4px,0.6vh,7px) !important;
   background: var(--banner-bg, #042354) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   UNITED — glossy icon badges to match the glossy blue United orb logo.
+   Turns the flat accent-coloured circles (Flight/Destination/Status/Boarding/
+   Departure/Arrival "take-off & landing" icons) into glossy spheres.
+   Scoped to United only.
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap.g8-airline-UA .gad-aircraft-col .v2-fi-icon-badge,
+.g8-wrap.g8-airline-UA .gad-aircraft-col .v2-fi-emblem-wrap {
+  background:
+    radial-gradient(circle at 34% 27%,
+      color-mix(in srgb, var(--airline-accent,#0033A1) 26%, #ffffff) 0%,
+      color-mix(in srgb, var(--airline-accent,#0033A1) 86%, #ffffff) 33%,
+      var(--airline-accent,#0033A1) 58%,
+      color-mix(in srgb, var(--airline-accent,#0033A1) 56%, #000000) 100%) !important;
+  box-shadow:
+    inset 0 -3px 7px rgba(0,0,0,0.30),
+    inset 0 2px 5px rgba(255,255,255,0.42),
+    0 2px 6px rgba(0,0,0,0.22) !important;
+}
