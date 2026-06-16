@@ -3735,7 +3735,9 @@ var AIRLINE_BACKGROUNDS = {
     '/logos/Backgrounds/AC/aircanadasky.jpg',               // Blue sky with AIR CANADA wordmark
     '/logos/Backgrounds/AC/ac-clouds-star-alliance.png',    // Bright blue sky + clouds, AC wordmark + FR Star Alliance
     '/logos/Backgrounds/AC/EM-Air-Canada-AD-1A.jpg',        // "Your Somewhere Is Out There" campaign
-    '/logos/Backgrounds/AC/EM-Air-Canada-AD-2A1.jpg'        // "The World Is Not An Oyster" campaign
+    '/logos/Backgrounds/AC/EM-Air-Canada-AD-2A1.jpg',       // "The World Is Not An Oyster" campaign
+    '/logos/airline-tiles/ACA-black.svg',                   // black + red maple-leaf roundel
+    '/logos/airline-tiles/ACA.svg'                          // red + white maple-leaf roundel
   ],
   'DL': [
     '/logos/Backgrounds/DL/deltabackground.png',
@@ -11606,7 +11608,7 @@ if (typeof window !== 'undefined') window.WORDMARK_OVERRIDE = WORDMARK_OVERRIDE;
 // NOT PAL.svg from the pack (PAL.svg is Philippine Airlines).
 const IATA_TO_TILE_ICAO = {
   // Canadian carriers
-  'AC':'ACA',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',
+  'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',
   'PB':'PB',   // ← Nick's custom PAL Airlines logo (Newfoundland)
   'MO':'MPE',  'YP':'PCM',  'BQ':'PSC',
   // US carriers
