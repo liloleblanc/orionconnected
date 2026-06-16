@@ -2271,6 +2271,8 @@ var OPERATOR_LOGOS = {
   '5T':  '/logos/airlines/canadian-regional/canadian-north.svg',               // Canadian North
   '7F':  '/logos/airlines/canadian-regional/firstair.svg',                     // First Air
   '4N':  '/logos/airlines/canadian-regional/airnorth.svg',                     // Air North
+  'PB':  '/logos/airlines/canadian-regional/pal-square.svg',              // PAL — emblem + "PAL" (simplified, for the Operated-by badge)
+  'PVL': '/logos/airlines/canadian-regional/pal-square.svg',              // PAL Airlines ICAO
   // WestJet family
   'WR':  '/logos/airlines/canadian/encore.png',                                // Encore
   'WEN': '/logos/airlines/canadian/encore.png',                                // Encore ICAO
@@ -3875,7 +3877,7 @@ const IATA_AIRCRAFT = {
   '351':'Airbus A350-1000','380':'Airbus A380','388':'Airbus A380-800',
   '732':'Boeing 737-200','733':'Boeing 737-300','734':'Boeing 737-400','735':'Boeing 737-500','737':'Boeing 737','738':'Boeing 737-800','739':'Boeing 737-900',
   '73G':'Boeing 737-700','73H':'Boeing 737-800','73J':'Boeing 737-900ER',
-  '7M7':'Boeing 737-7 MAX','7M8':'Boeing 737-8 MAX','7M9':'Boeing 737-9 MAX',
+  '7M7':'Boeing 737-7','7M8':'Boeing 737-8','7M9':'Boeing 737-9',
   '744':'Boeing 747-400','748':'Boeing 747-8',
   '752':'Boeing 757-200','753':'Boeing 757-300',
   '763':'Boeing 767-300','764':'Boeing 767-400',
@@ -4402,7 +4404,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var src = paths[0];
   // Build a chained-fallback onerror that walks through the remaining paths
   var fbList = paths.slice(1);
-  var _imgCacheBuster = '?v=200';
+  var _imgCacheBuster = '?v=201';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -5793,14 +5795,39 @@ function _buildV2MapCol(ctx, vars) {
       if (/DH8|DH4|DHC[- ]?8|Q[ -]?40|DASH[ -]?8/.test(_wsEq)) _opCode = 'WR';
       else if (!isNaN(_acFlNum) && _acFlNum >= 3000 && _acFlNum <= 3999) _opCode = 'WR';
     }
-    // Air Canada Express: the marketing carrier on the feed is AC, but 4-digit
-    // flights are flown by its regional partners — 8xxx / 75xx by Jazz, 16xx-19xx
-    // by Rouge. Infer the real operator from the flight number when the feed
-    // didn't tag it (livery still keys off AC below, so the paint stays correct).
-    if (_opCode === 'AC' && !isNaN(_acFlNum)) {
-      if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
+    // Air Canada Express: the marketing carrier is AC, but 4-digit flights are
+    // flown by its regional partners — PAL (7600-7699 / 2200-2299, Eastern
+    // Canada), Jazz (8xxx / 75xx), Rouge (16xx-19xx). Key off the MARKETING
+    // carrier + flight number, NOT whatever operator the feed pre-tagged: the
+    // feed often labels these "Jazz" or "AC", which made the badge wrong. The
+    // flight number is deterministic. (Livery still keys off AC below.)
+    var _mktIsAC = String(vars.airlineCode || '').toUpperCase() === 'AC';
+    if (_mktIsAC && !isNaN(_acFlNum)) {
+      if ((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299)) _opCode = 'PB';
+      else if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
     }
+    // Air Canada Express Dash 8-400s are flown by BOTH Jazz AND PAL Airlines.
+    // The two are told apart by REGISTRATION: PAL uses its distinctive "P" series
+    // (C-FP•• / C-GP••), while Jazz's Dash 8-400s are C-GG••. So a Jazz-attributed
+    // Express flight on a PAL airframe is actually operated by PAL.
+    if (_opCode === 'QK' && _acReg) {
+      var _regUp = String(_acReg).toUpperCase().replace(/[\s-]/g, '');
+      var _PAL_REGS = { 'CFPAL':1, 'CFPQI':1, 'CGPAO':1, 'CGPIX':1, 'CFPVJ':1, 'CGPFI':1 };
+      if (_PAL_REGS[_regUp] || /^C[FG]P[A-Z][A-Z]$/.test(_regUp)) _opCode = 'PB';
+    }
+    // PAL flies the Dash 8-400 only — keep the equipment consistent with the badge.
+    if (_opCode === 'PB' && (_equipCd || _equipNm)) {
+      var _pbEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      if (!/DH8|DH4|DHC|DASH|Q400/.test(_pbEqUp)) {
+        _equipCd = 'DH4';
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('DH4') : 'De Havilland Dash 8-400';
+      }
+    }
+    // Hawaiian operates its OWN metal (including the 717-200 inter-island fleet).
+    // The Alaska Air Group merger does not make Alaska the operator — so never
+    // show "Operated by Alaska" on a Hawaiian-branded flight.
+    if (String(vars.airlineCode || '').toUpperCase() === 'HA' && _opCode === 'AS') _opCode = 'HA';
     // WestJet Encore only flies the Dash 8-400 — never a 737. If the feed (or the
     // demo's default 737 pool) handed us a mainline frame on an Encore flight,
     // substitute the Dash 8 so the equipment matches the "Operated by Encore" badge.
@@ -5853,7 +5880,12 @@ function _buildV2MapCol(ctx, vars) {
       var _opBadgeInline = '';
       var _marketingCodeShelf = String(vars.airlineCode || '').trim().toUpperCase();
       if (_opCode && _opCode !== _marketingCodeShelf) {
-        var _opNameForAlt = (vars.currentFlight && vars.currentFlight._opName)
+        // AIRLINE_NAME holds the PARENT brand for the Express partners
+        // (QK→"Air Canada", etc.), so use proper operator names for the ones we
+        // infer locally; US regionals keep the resolved name from the feed.
+        var _EXPRESS_OP_NAMES = { 'PB':'PAL Airlines', 'QK':'Jazz', 'RV':'Air Canada Rouge', 'WR':'WestJet Encore' };
+        var _opNameForAlt = _EXPRESS_OP_NAMES[_opCode]
+          || (vars.currentFlight && vars.currentFlight._opName)
           || ((typeof AIRLINE_NAME !== 'undefined') ? AIRLINE_NAME[_opCode] : _opCode)
           || _opCode;
         var _opShortName = String(_opNameForAlt).replace(/^Air Canada\s+/i, '');
@@ -6547,13 +6579,17 @@ function uxgGateHtml(ctx) {
   // falls back to a text "Operated by [Name]" line — matching the Jazz
   // pattern Nick is happy with, and never inventing brand logos.
   if ((!_opCode || _opCode === airlineCode) && currentFlight._aircraft) {
+    // Match BOTH the full model strings AND the bare IATA codes the demo/feed
+    // use (E75/E7W = E175, E70 = E170, CR9/CR7/CR2, DH4/DH8 = Dash 8) — the
+    // code form was slipping past these checks, so E175 regional flights never
+    // got an operator.
     var _eqUC = String(currentFlight._aircraft).toUpperCase();
-    var _isE175 = /\bE17[05]\b|\bE175\b|\bEMBRAER\s+E?175\b/.test(_eqUC);
-    var _isE170 = /\bE170\b|\bEMBRAER\s+E?170\b/.test(_eqUC);
+    var _isE175 = /\bE17[05]\b|\bE175\b|\bE7[5W]\b|\bEMBRAER\s+E?175\b/.test(_eqUC);
+    var _isE170 = /\bE170\b|\bE70\b|\bEMBRAER\s+E?170\b/.test(_eqUC);
     var _isCRJ900 = /\bCRJ\s*-?\s*900\b|\bCR9\b/.test(_eqUC);
     var _isCRJ700 = /\bCRJ\s*-?\s*700\b|\bCR7\b/.test(_eqUC);
     var _isCRJ200 = /\bCRJ\s*-?\s*200\b|\bCR2\b/.test(_eqUC);
-    var _isQ400  = /\bDASH\s*8\b|\bQ400\b|\bDHC\s*-?\s*8\b/.test(_eqUC);
+    var _isQ400  = /\bDASH\s*8\b|\bQ400\b|\bDHC\s*-?\s*8\b|\bDH[48]\b/.test(_eqUC);
     var _isRegionalJet = _isE175 || _isE170 || _isCRJ900 || _isCRJ700 || _isCRJ200 || _isQ400;
     var _flightNum = parseInt(String(currentFlight.flight || '').replace(/\D/g,''), 10);
 
@@ -6638,6 +6674,19 @@ function uxgGateHtml(ctx) {
     }
   }
 
+  // Persist the resolved operating carrier onto the flight object so the
+  // "Operated by" badge in the aircraft block (right column) actually shows it.
+  // Without this, US regional operators (Envoy / SkyWest / Republic / PSA /
+  // Endeavor / Mesa…) were resolved here for the banner but never reached the
+  // badge, so "Operated by" was blank for almost every US regional flight.
+  if (_opCode && _opCode !== airlineCode && !currentFlight._opCode) {
+    currentFlight._opCode = _opCode;
+    currentFlight._opName = _opName
+      || (typeof _OPNAMES !== 'undefined' && _OPNAMES[_opCode])
+      || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode])
+      || _opCode;
+  }
+
   // Build airline logo for row 1 (banner — ON TOP of the gate screen).
   // Use files that have WHITE LETTERING + COLOR LOGO SYMBOL so they read
   // cleanly on dark banners without needing a CSS filter.
@@ -6706,10 +6755,28 @@ function uxgGateHtml(ctx) {
   var _bannerUsedTile = false;
   var _bannerUsedWordmark = false;
   var _bannerPlateForced = false;   // only genuine plate logos (BoA) get a white plate
-  // Banners are BLACK or WHITE only. These carriers use a WHITE banner, so their
-  // wordmark must be the DARK (ink) variant; everyone else gets the WHITE variant
-  // straight on the dark banner — no white plate behind it.
-  var _WHITE_BANNER_CARRIERS = { 'HA':1, 'WS':1, 'PD':1 };
+  // Pick the wordmark variant from the ACTUAL banner colour (the data-file
+  // override in window.AIRLINE_BRAND_COLORS wins). Light banner → dark wordmark;
+  // dark banner → white wordmark. Hardcoding a "white-banner" list was wrong:
+  // the data file recolours HA/WS/PD banners to DARK, so their dark wordmark
+  // was invisible. Luminance check keeps it correct no matter the colour.
+  function _hexIsLight(hex) {
+    if (!hex) return false;
+    var m = String(hex).replace('#', '');
+    if (m.length === 3) m = m[0]+m[0]+m[1]+m[1]+m[2]+m[2];
+    if (m.length !== 6) return false;
+    var r = parseInt(m.slice(0,2),16), g = parseInt(m.slice(2,4),16), b = parseInt(m.slice(4,6),16);
+    return (0.299*r + 0.587*g + 0.114*b) > 170;
+  }
+  var _bannerR1Now = '';
+  try {
+    var _abc = (typeof window !== 'undefined' && window.AIRLINE_BRAND_COLORS) || null;
+    if (_abc) _bannerR1Now = (_abc[_bannerBrandCode] && _abc[_bannerBrandCode].r1) || (_abc[airlineCode] && _abc[airlineCode].r1) || '';
+  } catch (e) {}
+  // HA/WS/PD default to WHITE in-code but the data file overrides them dark; if
+  // we couldn't read a colour, assume DARK (white wordmark) — every live banner
+  // is dark now, so white is the safe default.
+  var _bannerIsLight = _hexIsLight(_bannerR1Now);
   // Carriers whose own COLOUR logo reads directly on the dark header — no white
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
@@ -6760,7 +6827,7 @@ function uxgGateHtml(ctx) {
   if (!_useOverrideFile && _bannerWordmarkBase && typeof logoPath === 'function') {
     // White wordmark straight on the dark banner (dark wordmark for white-banner
     // carriers). No white plate — the wordmark stands on the banner itself.
-    var _wmVariant = (_WHITE_BANNER_CARRIERS[_bannerBrandCode] || _WHITE_BANNER_CARRIERS[airlineCode]) ? 'dark' : 'light';
+    var _wmVariant = _bannerIsLight ? 'dark' : 'light';
     r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-' + _wmVariant + '.svg');
     _useOverrideFile = true;          // no white filter — wordmark as-is
     _sz = { h: 102, w: 480 };         // wide wordmark — fills the 148px band
@@ -7726,13 +7793,37 @@ const gView = document.getElementById('gateView');
       // Gate-based placeholder — only used if reg lookup hasn't returned yet
       const AIRLINE_FAMILY = { 'QK':'AC','RV':'AC','ZX':'AC','9M':'AC','AC':'AC', 'WR':'WS','WS':'WS', 'PD':'PD','P3':'PD', 'PB':'PB','SP':'PB', 'TS':'TS', 'F8':'F8' };
       const depFamily = AIRLINE_FAMILY[airlineCode2] || airlineCode2;
+      // The inbound IS the same airframe doing its previous leg, so it must be
+      // the SAME aircraft type. Without this, a short-haul jet (e.g. a Hawaiian
+      // 717 that only flies inter-island) would get paired with a mainland
+      // arrival (an A330 from LAX/Tokyo) just because they shared a gate.
+      const _acFamily = function (s) {
+        var u = String(s || '').toUpperCase();
+        var m = u.match(/\b(7[0-9]7|7[0-9]8|7[0-9]9|7M[0-9]|3[0-9][0-9]|32[NQ]|2[0-9][0-9]|CR[0-9JK]|DH[0-9C]|E[0-9]{2}|AT[0-9R])\b/);
+        if (m) return m[1];
+        if (/717/.test(u)) return '717';
+        if (/787|78[0-9X]/.test(u)) return '787';
+        if (/777|77[0-9WLX]/.test(u)) return '777';
+        if (/767|76[0-9]/.test(u)) return '767';
+        if (/A?330|33[0-9]/.test(u)) return '330';
+        if (/A?321|32[1N]/.test(u)) return '321';
+        if (/A?320/.test(u)) return '320';
+        if (/A?319/.test(u)) return '319';
+        return u.replace(/[^A-Z0-9]/g, '').slice(0, 4);
+      };
+      const _outAc = _acFamily(currentFlight._aircraft || currentFlight._aircraftCode);
       const _gateMatchFallback = (data.arr || []).filter(f =>
         f.gate === _gateVal &&
         f.status !== 'departed' &&
         f.flight !== currentFlight.flight &&
         f._sortTs <= _depTs &&
         f._sortTs >= _6hBefore &&
-        (AIRLINE_FAMILY[f.airline] || f.airline) === depFamily
+        (AIRLINE_FAMILY[f.airline] || f.airline) === depFamily &&
+        // same aircraft type when both are known (it's the same plane)
+        (function () {
+          var fa = _acFamily(f._aircraft || f._aircraftCode);
+          return !_outAc || !fa || fa === _outAc;
+        })()
       ).sort((a,b) => b._sortTs - a._sortTs)[0] || null;
 
       // PRIMARY SOURCE: reg-based inbound from loadFlight. If present, use it.
@@ -11569,6 +11660,7 @@ const IATA_TO_WORDMARK = {
   // North America other
   'MX':'breeze-airways', // Breeze Airways (David Neeleman's airline, ICAO MXY)
   'AV':'avianca',         // Avianca (Colombian flag carrier)
+  'OB':'boliviana',       // Boliviana de Aviación (BoA) — navy wordmark
   // Latin America — wordmark-only (no emblem) per Nick
   'AM':'aeromexico',     // Aeroméxico
   'CM':'copa',           // Copa Airlines (Panama)
@@ -11640,6 +11732,7 @@ const LOGO_SUBFOLDER = {
   'discover-airlines.svg':'airlines/european', 'discover-airlines-wordmark-light.svg':'airlines/european', 'discover-airlines-wordmark-dark.svg':'airlines/european', 'discover-airlines-emblem.svg':'airlines/european',
   'breeze-airways.svg':'airlines/us-major', 'breeze-airways-wordmark-light.svg':'airlines/us-major', 'breeze-airways-wordmark-dark.svg':'airlines/us-major', 'breeze-airways-emblem.png':'airlines/us-major',
   'avianca.svg':'airlines/asian-other', 'avianca-wordmark-light.svg':'airlines/asian-other', 'avianca-wordmark-dark.svg':'airlines/asian-other',
+  'boliviana.svg':'airlines/asian-other', 'boliviana-wordmark-light.svg':'airlines/asian-other', 'boliviana-wordmark-dark.svg':'airlines/asian-other',
   'aeromexico-wordmark-light.svg':'airlines/asian-other', 'aeromexico-wordmark-dark.svg':'airlines/asian-other',
   'bahamasair-wordmark-light.svg':'airlines/asian-other', 'bahamasair-wordmark-dark.svg':'airlines/asian-other',
   'latam-wordmark-light.svg':'airlines/asian-other', 'latam-wordmark-dark.svg':'airlines/asian-other',
@@ -20091,10 +20184,17 @@ function buildGateAdHtml(ad) {
   // v218.99.46 — Logo restored, headline + sub fonts bumped per Nick's spec.
   var bgStyle = ad.bg || 'linear-gradient(135deg,#1e2846 0%,#141e37 100%)';
   var iconHtml = ad.icon || '';
+  // These standard ads always sit on a DARK brand-colour gradient, so the logo
+  // must be WHITE or it reads as colour-on-colour (Alaska/Delta/United blue on
+  // blue). brightness(0)+invert(1) forces ANY logo (colour, dark, or already
+  // white) to a clean white silhouette. The only light-background ad (Flair
+  // lime) sets ad.fg to a dark colour — there we leave the logo as-is.
+  var _adLightBg = !!ad.fg;
+  var _stdLogoFilter = _adLightBg ? '' : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
   var _stdLogoHtml = ad.logo
     ? '<div style="flex-shrink:0;margin-bottom:18px;height:64px;display:flex;align-items:center;justify-content:center;">'
       + '<img src="' + ad.logo + '" alt="" '
-      + 'style="max-height:100%;max-width:360px;width:auto;height:auto;object-fit:contain;display:block;" '
+      + 'style="max-height:100%;max-width:360px;width:auto;height:auto;object-fit:contain;display:block;' + _stdLogoFilter + '" '
       + 'onerror="this.style.display=\'none\';">'
       + '</div>'
     : '';
