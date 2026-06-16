@@ -11842,7 +11842,7 @@ const IATA_TO_EMBLEM = {
 
 /* TEMP (logo cleanup): carriers to render as wordmark-alone (skip colored tile).
    Edit this list to add/remove carriers. WN excluded — no separate wordmark. */
-var TILE_SKIP_WORDMARK_ONLY = new Set(['UA','DL','AA','AS','B6','HA']);
+var TILE_SKIP_WORDMARK_ONLY = new Set(['AS','B6']);
 
 function mkLogo(code, faName) {
   const c = (code || '').trim().toUpperCase();
