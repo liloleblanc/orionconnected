@@ -11600,13 +11600,12 @@ const IATA_TO_TILE_ICAO = {
   // Canadian carriers
   'AC':'ACA',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',
   'PB':'PB',   // ← Nick's custom PAL Airlines logo (Newfoundland)
-  'MO':'MPE',  'YP':'PCM',  '3H':'AIE',  'BQ':'PSC',
-  'QK':'JZA',  'RV':'ROU',
+  'MO':'MPE',  'YP':'PCM',  'BQ':'PSC',
   // US carriers
   'UA':'UAL',  'DL':'DAL',  'AA':'AAL',  'WN':'SWA',
   // NK (Spirit) — ceased operations May 2 2026
   'B6':'JBU',  'AS':'ASA',  'F9':'FFT',  'G4':'AAY',  'HA':'HAL',
-  'SY':'SCX',  'OO':'SKW',  'YV':'ASH',  'YX':'RPA',
+  'SY':'SCX',  'OO':'SKW',  'YV':'ASH',
   // Europe
   'LH':'DLH',  'BA':'BAW',  'AF':'AFR',  'KL':'KLM',  'VS':'VIR',
   'AZ':'AZA',  'SN':'BEL',  'LX':'SWR',  'OS':'AUA',  'SK':'SAS',
