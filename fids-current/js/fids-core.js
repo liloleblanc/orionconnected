@@ -4247,6 +4247,14 @@ function aircraftCodeToIata(raw) {
   if (/^297\b/.test(s)) return '297';
 
   // ── CRJ family ──
+  // Some feeds spell it "Canadair Regional Jet 700/900" with NO "CRJ" token,
+  // which otherwise fell through to a junk 3-letter code ("CAN"). Map by series.
+  if (/CANADAIR|REGIONAL\s*JET/i.test(s)) {
+    if (/1000/.test(s)) return 'CRK';
+    if (/700|705|550/.test(s)) return 'CR7';
+    if (/200|100|440/.test(s)) return 'CR2';
+    return 'CR9'; // 900 or unspecified Canadair RJ
+  }
   if (/CRJ[\s-]*9/i.test(s)) return 'CR9';
   if (/CRJ[\s-]*7/i.test(s)) return 'CR7';
   if (/CRJ[\s-]*2/i.test(s)) return 'CR2';
