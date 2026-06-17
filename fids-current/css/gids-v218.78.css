@@ -4159,9 +4159,9 @@ body, body.gids-page, body.gate-page{
   padding-bottom: clamp(1px,0.25vh,3px) !important; white-space: nowrap !important; overflow: hidden !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val {
-  font-size: clamp(15px,2.5vh,30px) !important; font-weight: 900 !important; line-height: 1.02 !important;
+  font-size: clamp(15px,2.5vh,30px) !important; font-weight: 900 !important; line-height: 1.28 !important;
   color: var(--banner-bg,#14181E) !important; white-space: nowrap !important; overflow: hidden !important;
-  text-overflow: ellipsis !important; margin-top: clamp(0px,0.2vh,3px) !important;
+  text-overflow: ellipsis !important; margin-top: clamp(0px,0.2vh,3px) !important; padding-bottom: 0.1em !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-sep { opacity: 0.5 !important; font-weight: 500 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-status-scheduled { color: #1a8a3a !important; }
@@ -4197,7 +4197,7 @@ body, body.gids-page, body.gate-page{
 /* Flight-info: fill the band, big readable text. */
 .g8-wrap .gad-map-col-v2 .v2-rc-fi { justify-content: space-evenly !important; gap: clamp(2px,0.6vh,9px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl { font-size: clamp(13px,2.1vh,23px) !important; padding-bottom: clamp(2px,0.4vh,5px) !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-val { font-size: clamp(24px,4.6vh,52px) !important; line-height: 1.0 !important; margin-top: clamp(2px,0.4vh,5px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val { font-size: clamp(24px,4.6vh,52px) !important; line-height: 1.28 !important; margin-top: clamp(2px,0.4vh,5px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-actype-val { font-size: clamp(17px,3vh,36px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val img,
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val .v2-rc-opby-logo { height: clamp(26px,4.4vh,52px) !important; }
