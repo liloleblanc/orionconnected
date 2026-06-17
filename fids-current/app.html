@@ -100,13 +100,12 @@
     padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .fcard .al{display:flex;align-items:center;gap:11px;min-width:0;}
-  .alogo{width:34px;height:34px;border-radius:9px;flex:none;background:#fff;
-    border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;overflow:hidden;
-    font-weight:800;font-size:12px;color:#10151d;}
-  .alogo img{width:100%;height:100%;object-fit:contain;padding:4px;}
-  /* Theme-adaptive airline wordmark (mono SVG recoloured to the text colour) */
-  .wm{width:32px;height:32px;flex:none;background-color:var(--txt);
-    -webkit-mask:center/contain no-repeat;mask:center/contain no-repeat;}
+  .alogo{height:26px;flex:none;display:inline-flex;align-items:center;
+    font-weight:800;font-size:13px;color:var(--txt);}
+  .alogo img{height:100%;width:auto;max-width:108px;object-fit:contain;}
+  /* Dark mode: colour logos sit on a light pill so they stay legible */
+  :root[data-theme="dark"] .alogo:not(:empty){background:#fff;border-radius:8px;padding:4px 8px;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .alogo:not(:empty){background:#fff;border-radius:8px;padding:4px 8px;}}
   .fcard .alname{font-weight:600;font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
   .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
@@ -161,10 +160,8 @@
     color:var(--txt);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
   .dt-top .ttl{font-size:15px;font-weight:700;}
   .dt-hero{text-align:center;padding:26px 20px 8px;}
-  .dt-hero .alogo{width:60px;height:60px;border-radius:16px;margin:0 auto 14px;}
-  .dt-hero .wm{width:52px;height:52px;margin:0 auto 14px;}
-  .dt-illus{display:block;width:104px;margin:2px auto 0;opacity:.95;}
-  .dt-tail{width:50px;height:50px;object-fit:contain;margin-left:auto;flex:none;}
+  .dt-hero .alogo{height:38px;margin:0 auto 14px;}
+  .dt-illus{display:block;width:240px;max-width:86%;margin:12px auto 2px;}
   .dt-hero .flt{font-size:30px;font-weight:800;letter-spacing:-0.02em;}
   .dt-hero .al{color:var(--muted);font-size:13.5px;font-weight:500;margin-top:4px;}
   .dt-route{display:flex;align-items:center;gap:10px;justify-content:center;padding:18px 20px 6px;}
@@ -347,16 +344,61 @@ const SAMPLE=[
 ];
 function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-// Airlines with a mono wordmark (fill=currentColor) → recolour for day/night.
-const WORDMARK=new Set(['A3','AC','AF','AI','BA','ET','EW','FR','FY','GA','IB','J2','JL','JQ','JX','LA','MF','OZ','PG','PR','QF','QP','QR','RC','SN','SQ','SUN','TK','TS','TW','UB','UO','VA','VN','VS','WS','WY','ZB','ZP']);
-function airlineLogo(code,cls){
-  if(WORDMARK.has(code)){
-    const u="/logos/wordmarks-mono/"+code+".svg";
-    return '<span class="wm'+(cls?' '+cls:'')+'" style="-webkit-mask-image:url(\''+u+'\');mask-image:url(\''+u+'\')" role="img" aria-label="'+esc(code)+'"></span>';
-  }
+// Real colour airline logos — same source the main board uses.
+const AL_LOGO={
+  AC:'/logos/airlines/canadian/air-canada.svg', WS:'/logos/airlines/canadian/WestJet_Logo_2018.svg',
+  PD:'/logos/airlines/canadian/porter.svg', TS:'/logos/airlines/canadian/transat.svg',
+  F8:'/logos/airlines/canadian/flair.svg', PB:'/logos/airlines/canadian-regional/PAL-Airlines.svg',
+  B6:'/logos/airlines/us-major/jetblue.svg', DL:'/logos/airlines/us-major/delta.svg',
+  AA:'/logos/airlines/us-major/american-airlines.svg', UA:'/logos/airlines/us-major/united.svg',
+  WN:'/logos/airlines/us-major/southwest.svg', F9:'/logos/airlines/us-major/frontier.svg'
+};
+function airlineLogo(code){
+  const u=AL_LOGO[code];
+  if(u) return '<span class="alogo"><img src="'+u+'" alt="'+esc(code)+'" loading="lazy" onerror="this.parentNode.textContent=\''+esc(code)+'\'"></span>';
   const src='https://www.gstatic.com/flights/airline_logos/70px/'+encodeURIComponent(code)+'.png';
-  return '<span class="alogo"><img src="'+src+'" alt="'+esc(code)+'" loading="lazy" '
-    +'onerror="this.parentNode.textContent=\''+esc(code)+'\'"></span>';
+  return '<span class="alogo"><img src="'+src+'" alt="'+esc(code)+'" loading="lazy" onerror="this.parentNode.textContent=\''+esc(code)+'\'"></span>';
+}
+// Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
+function acType(raw){
+  if(!raw) return '';
+  let s=String(raw).trim().toUpperCase();
+  const RE={BCS:'223',CS1:'221',CS3:'223',DH8D:'DH4',DH8C:'DH3',DH8B:'DH2',DH8A:'DH1',DHC8:'DH4','32A':'319','32B':'320','32S':'320','757':'752'};
+  if(RE[s]) return RE[s];
+  if(/^[A-Z0-9]{3}$/.test(s)) return s;            // already a 3-char code (OAG)
+  if(/ATR\s*72/.test(s)) return 'AT7';
+  if(/DASH\s*8|DHC[- ]?8|Q400|DHC-8-400/.test(s)) return 'DH4';
+  s=s.replace(/^(BOEING|AIRBUS|EMBRAER|BOMBARDIER|DE HAVILLAND CANADA|DE HAVILLAND)\s*/,'').trim();
+  if(/737\s*MAX\s*8|737-?8/.test(s)) return '7M8';
+  if(/737\s*MAX\s*9|737-?9/.test(s)) return '7M9';
+  if(/737-?700/.test(s)) return '73W';
+  if(/737/.test(s)) return '73H';
+  if(/220-?100|CS100/.test(s)) return '221';
+  if(/220|CS300/.test(s)) return '223';
+  if(/319/.test(s)) return '319';
+  if(/320\s*NEO/.test(s)) return '32N';
+  if(/320/.test(s)) return '320';
+  if(/321\s*NEO/.test(s)) return '32Q';
+  if(/321/.test(s)) return '321';
+  if(/330/.test(s)) return '332';
+  if(/CRJ-?900|CRJ9/.test(s)) return 'CR9';
+  if(/CRJ-?700|CRJ7/.test(s)) return 'CR7';
+  if(/CRJ-?200|CRJ2/.test(s)) return 'CR2';
+  if(/175/.test(s)) return 'E75';
+  if(/190/.test(s)) return 'E90';
+  if(/195/.test(s)) return 'E95';
+  if(/767/.test(s)) return '763';
+  if(/777/.test(s)) return '77W';
+  if(/787-?8|788/.test(s)) return '788';
+  if(/787/.test(s)) return '789';
+  return '';
+}
+// Real aircraft livery side-view, airline-specific with a generic fallback.
+function liveryImg(airline,raw){
+  const t=acType(raw); if(!t) return '';
+  const a=String(airline||'').toUpperCase();
+  return '<img class="dt-illus" src="/aircraft/'+a+'/'+t+'.png" data-fb="/aircraft/'+t+'.png" alt="" '
+    +'onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=\'\';}else{this.style.display=\'none\';}">';
 }
 function statusOf(f){
   const st=(f.state||'').toLowerCase();
@@ -384,7 +426,7 @@ function render(){
     const gate=f.gate?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
-    return '<div class="fcard" onclick="openFlight('+i+')"><div class="row1"><div class="al">'+airlineLogo(f.airline)+'<span class="alname">'+esc(al)+'</span></div>'
+    return '<div class="fcard" onclick="openFlight('+i+')"><div class="row1"><div class="al">'+airlineLogo(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
       +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">Departs</div></div></div>'
@@ -450,19 +492,16 @@ function openFlight(i){
   if(f.baggage) cells+=cell('Baggage',f.baggage);
   const plane='<div class="dt-cell wide"><div class="planeic">'+svg(PLANE_SVG)+'</div>'
     +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
-    +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div>'
-    +'<img class="dt-tail" src="/logos/tails-modern/'+esc(f.airline)+'.svg" alt="" onerror="this.style.display=\'none\'"></div>';
+    +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
   document.getElementById('detailBody').innerHTML=
     '<div class="dt-hero">'+airlineLogo(f.airline)+'<div class="flt">'+esc(f.flight)+'</div><div class="al">'+esc(opLine)+'</div>'
-    +'<img class="dt-illus" src="/logos/aircraft-icon.png" alt=""></div>'
+    +liveryImg(f.airline,f.aircraft)+'</div>'
     +'<div class="dt-route"><div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>'
     +'<div class="line"><span class="pl">'+svg(PLANE_SVG)+'</span></div>'
     +'<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div></div>'
     +'<div class="dt-status"><span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
     +'<div class="dt-grid">'+plane+cells+'</div>'
     +'<button class="dt-cta">'+svg('<path d="M9 11l3 3 8-8"/><path d="M21 12a9 9 0 1 1-6.2-8.6"/>')+'Directions to gate</button>';
-  // fix logo size in hero
-  const hl=document.querySelector('#detailBody .dt-hero .alogo'); if(hl){hl.style.width='60px';hl.style.height='60px';hl.style.borderRadius='16px';}
   document.getElementById('detail').classList.add('show');
 }
 function closeFlight(){document.getElementById('detail').classList.remove('show');}
