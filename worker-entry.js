@@ -163,6 +163,13 @@ export default {
       if (!env || !env.OAG_KEY) {
         return jsonOag({ error: 'OAG_KEY secret is not set on the fids worker. Add it in Cloudflare → Workers → fids → Settings → Variables and Secrets.' }, 500);
       }
+      // Server-side cache: one OAG call serves all clients (refreshes, polling,
+      // multiple users) for a few minutes, so we sip the trial's call volume
+      // instead of spending one call per request.
+      const oagCache = caches.default;
+      const oagCacheKey = new Request('https://oag-cache.fids/' + dir + '?ap=' + ap + '&date=' + date);
+      const oagHit = await oagCache.match(oagCacheKey);
+      if (oagHit) return oagHit;
       const airportParam = dir === 'arr' ? 'ArrivalAirport' : 'DepartureAirport';
       const dateParam = dir === 'arr' ? 'ArrivalDateTime' : 'DepartureDateTime';
       const oagUrl = 'https://api.oag.com/flight-instances?version=v2'
@@ -173,11 +180,21 @@ export default {
         const r = await fetch(oagUrl, { headers: { 'Subscription-Key': env.OAG_KEY } });
         if (!r.ok) {
           const body = await r.text();
+          // Don't cache errors — so the next call retries once quota resets.
           return jsonOag({ error: 'OAG returned ' + r.status, detail: body.slice(0, 400) }, 502);
         }
         const raw = await r.json();
         const flights = oagClean(raw, dir);
-        return jsonOag({ airport: ap, direction: dir, date, count: flights.length, flights }, 200);
+        const resp = new Response(JSON.stringify({ airport: ap, direction: dir, date, count: flights.length, flights }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=180',
+          },
+        });
+        if (ctx && ctx.waitUntil) ctx.waitUntil(oagCache.put(oagCacheKey, resp.clone()));
+        return resp;
       } catch (e) {
         return jsonOag({ error: 'OAG fetch failed' }, 502);
       }

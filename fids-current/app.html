@@ -318,6 +318,17 @@ const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':
   'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop'};
 function acName(code){return ACTYPE[code]||code||'—';}
 let AP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
+// Shown only when live data is unavailable (e.g. OAG trial over quota), so the
+// app still demonstrates fully instead of going blank. Clearly labelled.
+const SAMPLE=[
+  {airline:'AC',flight:'AC8740',cityIata:'YUL',schedTime:'06:00',estTime:'06:00',gate:'1',aircraft:'DH4',reg:'C-GGOH',state:'scheduled',timeliness:'onTime'},
+  {airline:'AC',flight:'AC8902',cityIata:'YYZ',schedTime:'06:35',estTime:'06:35',gate:'3',aircraft:'CR9',reg:'C-FEJZ',state:'scheduled',timeliness:'onTime'},
+  {airline:'TS',flight:'TS634',cityIata:'TPA',schedTime:'07:10',estTime:'07:10',gate:'5',aircraft:'321',reg:'C-GOIF',state:'scheduled',timeliness:'onTime'},
+  {airline:'WS',flight:'WS3310',cityIata:'YYZ',schedTime:'11:40',estTime:'12:05',gate:'4',aircraft:'7M8',reg:'C-GVWS',state:'scheduled',timeliness:'delayed'},
+  {airline:'PD',flight:'PD2174',cityIata:'YTZ',schedTime:'13:15',estTime:'13:15',gate:'2',aircraft:'DH4',reg:'C-GLQO',state:'scheduled',timeliness:'onTime'},
+  {airline:'AC',flight:'AC1518',cityIata:'YUL',schedTime:'17:20',estTime:'17:20',gate:'1',aircraft:'CR9',reg:'C-FFEN',state:'scheduled',timeliness:'onTime'},
+  {airline:'WS',flight:'WS3422',cityIata:'YYZ',schedTime:'18:05',estTime:'18:05',gate:'4',aircraft:'7M8',reg:'C-GWSV',state:'scheduled',timeliness:'onTime',operatedBy:'WestJet Encore'}
+];
 function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function airlineLogo(code){
@@ -362,9 +373,15 @@ async function load(){
   if(document.hidden)return;
   try{
     const r=await fetch('/oag/departures?ap='+encodeURIComponent(AP),{cache:'no-store'});
-    const d=await r.json();FLIGHTS=(d&&d.flights)||[];
-    document.getElementById('hint').textContent=d.error?('⚠ '+d.error+(d.detail?(' — '+String(d.detail).slice(0,80)):'')):('Live departures · '+FLIGHTS.length+' flights');
-  }catch(e){document.getElementById('hint').textContent='Couldn’t reach live data';}
+    const d=await r.json();
+    if(d&&d.error){
+      FLIGHTS=SAMPLE;
+      document.getElementById('hint').textContent='Sample flights · live data over quota';
+    }else{
+      FLIGHTS=(d&&d.flights&&d.flights.length)?d.flights:SAMPLE;
+      document.getElementById('hint').textContent=(d&&d.flights&&d.flights.length)?('Live departures · '+FLIGHTS.length+' flights'):'Sample flights · no live departures';
+    }
+  }catch(e){if(!FLIGHTS.length)FLIGHTS=SAMPLE;document.getElementById('hint').textContent='Sample flights · offline';}
   render();
 }
 async function loadBrand(code){
