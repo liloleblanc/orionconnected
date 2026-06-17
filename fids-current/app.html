@@ -99,19 +99,26 @@
   .fcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
     padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);
     position:relative;overflow:hidden;}
-  /* Faded brand-emblem watermark, bleeding off the right edge behind the time */
+  /* Faded emblem watermark, bleeding off the right edge behind the time */
   .cardmark{position:absolute;top:50%;right:-16px;transform:translateY(-50%);
-    width:150px;height:150px;background:var(--brand);pointer-events:none;z-index:0;opacity:.07;
+    width:150px;height:150px;pointer-events:none;z-index:0;opacity:.12;
+    object-fit:contain;object-position:right center;}
+  .cardmark-mask{background:var(--brand);
     -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
     -webkit-mask-position:right center;mask-position:right center;
     -webkit-mask-size:contain;mask-size:contain;}
-  :root[data-theme="dark"] .cardmark{opacity:.16;}
-  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .cardmark{opacity:.16;}}
+  :root[data-theme="dark"] .cardmark{opacity:.2;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .cardmark{opacity:.2;}}
   .fcard .row1,.fcard .row2,.fcard .meta{position:relative;z-index:1;}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .fcard .al{display:flex;align-items:center;gap:9px;min-width:0;}
-  /* Official airline wordmark — light/dark variant chosen by theme */
-  .wm{height:23px;width:auto;max-width:165px;object-fit:contain;object-position:left center;display:block;flex:none;}
+  /* Official airline wordmark — brand-coloured (light) / white (dark) by theme */
+  .wm{height:23px;display:block;flex:none;}
+  img.wm{width:auto;max-width:165px;object-fit:contain;object-position:left center;}
+  span.wm{width:165px;max-width:60vw;
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-position:left center;mask-position:left center;
+    -webkit-mask-size:contain;mask-size:contain;}
   .wm-d{display:none;}
   :root[data-theme="dark"] .wm-l{display:none;} :root[data-theme="dark"] .wm-d{display:block;}
   @media(prefers-color-scheme:dark){:root[data-theme="auto"] .wm-l{display:none;} :root[data-theme="auto"] .wm-d{display:block;}}
@@ -377,18 +384,21 @@ function wmUrls(code){
   return ['/logos/airlines/'+b+'-wordmark-dark.svg','/logos/airlines/'+b+'-wordmark-light.svg'];
 }
 // Airline brand accent colours (same values the main system uses).
-const BRAND={AC:'#d91a2a',WS:'#00b2a9',TS:'#ff6600',PD:'#1a3a6b',AA:'#0078d2',DL:'#c01933',
-  UA:'#1414d2',WN:'#fbb612',B6:'#005cb9',F8:'#22b85f',F9:'#00843d',PB:'#0a3d62'};
-// Emblem (brand symbol) — hidden if the airline has none.
-function emblemImg(code){
-  return '<img class="emblem" src="/logos/symbols/airlines/'+encodeURIComponent(code)+'.svg" alt="" onerror="this.style.display=\'none\'">';
-}
-// Official airline wordmark; light/dark variants swapped by theme via CSS. Text fallback if none.
+const BRAND={AC:'#D82F2E',WS:'#00AC9D',TS:'#00B3F0',PD:'#152C53',AA:'#E02527',DL:'#E31837',
+  UA:'#0033A0',WN:'#304CB2',B6:'#00205B',F8:'#2BA84A',F9:'#026845',PB:'#FCA404'};
+// Wordmark ink for LIGHT theme — each airline's brand colour. Air Canada's
+// wordmark is black by design, so it stays black. (Dark theme uses the white
+// wordmark file instead.)
+const WM_INK={AC:'#111111',WS:'#00AC9D',PD:'#152C53',TS:'#16335F',F8:'#2BA84A',PB:'#1C3474',
+  B6:'#003876',DL:'#003A70',AA:'#0078D2',UA:'#0033A0',WN:'#304CB2',F9:'#026845'};
+// Official airline wordmark. Light theme: brand-coloured (recoloured from the
+// black wordmark via CSS mask). Dark theme: the white wordmark image. Text fallback.
 function airlineLogo(code){
   const u=wmUrls(code);
   if(!u) return '<span class="wm-txt">'+esc(AIRLINE[code]||code)+'</span>';
-  return '<img class="wm wm-l" src="'+u[0]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">'
-        +'<img class="wm wm-d" src="'+u[1]+'" alt="" loading="lazy">';
+  const ink=WM_INK[code]||'#111111';
+  return '<span class="wm wm-l" style="background:'+ink+';-webkit-mask-image:url(\''+u[0]+'\');mask-image:url(\''+u[0]+'\')"></span>'
+        +'<img class="wm wm-d" src="'+u[1]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">';
 }
 function heroWordmark(code){
   const u=wmUrls(code);
@@ -396,21 +406,25 @@ function heroWordmark(code){
   return '<img class="dt-wm dt-wm-l" src="'+u[0]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">'
         +'<img class="dt-wm dt-wm-d" src="'+u[1]+'" alt="" loading="lazy">';
 }
-// Brand emblem/symbol per airline, used as a faded watermark. Recoloured to the
-// airline's brand colour via CSS mask, so the source file's own colours don't
-// matter — only its shape (alpha) does.
-const EMBLEM={
+// Faded emblem watermark. Real colour art keeps each symbol's true colours and
+// detail (e.g. WestJet's white centre, Transat's blue star).
+const MARK_ART={
   AC:'/logos/symbols/airlines/AC.svg', WS:'/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
-  PD:'/logos/airlines/canadian/porter-p.svg', TS:'/logos/symbols/airlines/TS.svg',
-  F8:'/logos/airlines/canadian/flair-dot.svg', PB:'/logos/airlines/canadian-regional/pal-symbol.svg',
-  B6:'/logos/airlines/us-major/jetblue.svg', DL:'/logos/airlines/us-major/delta-widget.svg',
-  AA:'/logos/airlines/us-major/american-flight-symbol.svg', UA:'/logos/airlines/us-major/united-globe-only.svg',
-  WN:'/logos/symbols/airlines/WN.svg', F9:'/logos/airlines/us-major/frontier-emblem.svg'
+  TS:'/logos/symbols/airlines/TS.svg', F8:'/logos/airlines/canadian/flair-dot.svg',
+  PB:'/logos/airlines/canadian-regional/pal-symbol.svg', B6:'/logos/airlines/us-major/jetblue.svg',
+  DL:'/logos/airlines/us-major/delta-widget.svg', AA:'/logos/airlines/us-major/american-flight-symbol.svg',
+  UA:'/logos/airlines/us-major/united-globe-only.svg', WN:'/logos/symbols/airlines/WN.svg',
+  F9:'/logos/airlines/us-major/frontier-emblem.svg'
 };
-// Faded brand-emblem watermark for a flight card (empty if the airline has none).
+// Porter has no coloured symbol file — tint its 'P' mark with the brand navy.
+const MARK_MASK={PD:'/logos/airlines/canadian/porter-p.svg'};
+// Faded emblem watermark for a flight card (empty if the airline has none).
 function cardMark(code){
-  const u=EMBLEM[code]; if(!u) return '';
-  return '<span class="cardmark" style="-webkit-mask-image:url(\''+u+'\');mask-image:url(\''+u+'\')"></span>';
+  const art=MARK_ART[code];
+  if(art) return '<img class="cardmark" src="'+art+'" alt="" loading="lazy">';
+  const m=MARK_MASK[code];
+  if(m) return '<span class="cardmark cardmark-mask" style="background:var(--brand);-webkit-mask-image:url(\''+m+'\');mask-image:url(\''+m+'\')"></span>';
+  return '';
 }
 // Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
 function acType(raw){
