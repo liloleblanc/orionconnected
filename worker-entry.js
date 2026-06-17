@@ -148,6 +148,40 @@ export default {
       }
     }
 
+    // ── OAG live flight data ───────────────────────────────────────────
+    // /oag/departures?ap=YQM  (or /oag/arrivals) → OAG Flight Info v2,
+    // cleaned server-side: codeshare duplicates collapsed to the operating
+    // carrier, cargo + general-aviation filtered out, fields mapped to a
+    // simple shape the board reads. The OAG_KEY secret never reaches the
+    // browser. Built as a swappable data source — if the OAG trial ends,
+    // only this block changes.
+    if (path === '/oag/departures' || path === '/oag/arrivals') {
+      const dir = path.endsWith('/arrivals') ? 'arr' : 'dep';
+      const ap = (url.searchParams.get('ap') || 'YQM').toUpperCase().slice(0, 4);
+      const date = (url.searchParams.get('date') || new Date().toISOString().slice(0, 10)).slice(0, 10);
+      if (!env || !env.OAG_KEY) {
+        return jsonOag({ error: 'OAG_KEY secret is not set on the fids worker. Add it in Cloudflare → Workers → fids → Settings → Variables and Secrets.' }, 500);
+      }
+      const airportParam = dir === 'arr' ? 'ArrivalAirport' : 'DepartureAirport';
+      const dateParam = dir === 'arr' ? 'ArrivalDateTime' : 'DepartureDateTime';
+      const oagUrl = 'https://api.oag.com/flight-instances?version=v2'
+        + '&' + airportParam + '=' + encodeURIComponent(ap)
+        + '&' + dateParam + '=' + encodeURIComponent(date)
+        + '&CodeType=IATA&Content=Status&Limit=100';
+      try {
+        const r = await fetch(oagUrl, { headers: { 'Subscription-Key': env.OAG_KEY } });
+        if (!r.ok) {
+          const body = await r.text();
+          return jsonOag({ error: 'OAG returned ' + r.status, detail: body.slice(0, 400) }, 502);
+        }
+        const raw = await r.json();
+        const flights = oagClean(raw, dir);
+        return jsonOag({ airport: ap, direction: dir, date, count: flights.length, flights }, 200);
+      } catch (e) {
+        return jsonOag({ error: 'OAG fetch failed', detail: String(e) }, 502);
+      }
+    }
+
     // ── Everything else → static assets ────────────────────────────────
     if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
       const res = await env.ASSETS.fetch(request);
@@ -168,3 +202,59 @@ export default {
     return new Response('Not found', { status: 404 });
   },
 };
+
+// ── OAG helpers ───────────────────────────────────────────────────────────
+function jsonOag(obj, status) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+// Map OAG Flight Info v2 -> a simple board row shape, with cleanup rules.
+function oagClean(raw, dir) {
+  const data = (raw && Array.isArray(raw.data)) ? raw.data : [];
+  const out = [];
+  for (const f of data) {
+    // Keep only the OPERATING flight — skip marketing codeshare duplicates
+    // (they carry codeshare.operatingFlight pointing at the real operator).
+    if (f && f.codeshare && f.codeshare.operatingFlight) continue;
+    // Drop general aviation and pure freight/cargo.
+    if (f.flightType === 'GA') continue;
+    if (f.serviceType && f.serviceType.iata === 'F') continue;
+    const carrier = (f.carrier && (f.carrier.iata || f.carrier.icao)) || '';
+    if (!carrier || !f.flightNumber) continue;
+
+    const sd = (f.statusDetails && f.statusDetails[0]) || {};
+    const sdHere = (dir === 'arr' ? sd.arrival : sd.departure) || {};
+    const est = sdHere.estimatedTime || {};
+    const timeliness = dir === 'arr' ? est.inGateTimeliness : est.outGateTimeliness;
+    const estGate = dir === 'arr' ? (est.inGate || est.onGround) : (est.outGate || est.offGround);
+    // "here" = this airport's side, "there" = the other endpoint (the city shown).
+    const here = (dir === 'arr' ? f.arrival : f.departure) || {};
+    const there = (dir === 'arr' ? f.departure : f.arrival) || {};
+    const opName = f.codeshare && f.codeshare.operatingAirlineDisclosure
+      && f.codeshare.operatingAirlineDisclosure.name;
+
+    out.push({
+      airline: carrier,
+      flight: carrier + f.flightNumber,
+      cityIata: (there.airport && there.airport.iata) || '',
+      schedTime: (here.time && here.time.local) || '',
+      estTime: (estGate && estGate.local) ? String(estGate.local).slice(11, 16) : '',
+      gate: (sdHere.gate || here.gate || '') + '',
+      baggage: dir === 'arr' ? (sdHere.baggage || '') : '',
+      aircraft: (f.aircraftType && (f.aircraftType.iata || f.aircraftType.icao)) || '',
+      reg: (sd.equipment && sd.equipment.aircraftRegistrationNumber) || '',
+      operatedBy: opName || '',
+      state: sd.state || f.flightType || 'Scheduled',
+      timeliness: timeliness || '',
+    });
+  }
+  out.sort((a, b) => String(a.schedTime).localeCompare(String(b.schedTime)));
+  return out;
+}
