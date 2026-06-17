@@ -359,10 +359,11 @@ function render(){
   }).join('');
 }
 async function load(){
+  if(document.hidden)return;
   try{
     const r=await fetch('/oag/departures?ap='+encodeURIComponent(AP),{cache:'no-store'});
     const d=await r.json();FLIGHTS=(d&&d.flights)||[];
-    document.getElementById('hint').textContent=d.error?'Live data unavailable':('Live departures · '+FLIGHTS.length+' flights');
+    document.getElementById('hint').textContent=d.error?('⚠ '+d.error+(d.detail?(' — '+String(d.detail).slice(0,80)):'')):('Live departures · '+FLIGHTS.length+' flights');
   }catch(e){document.getElementById('hint').textContent='Couldn’t reach live data';}
   render();
 }
@@ -456,7 +457,7 @@ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
 });}catch(e){}
 
 setAirport('YQM');
-setInterval(load,60000);
+setInterval(load,180000);  // 3 min — gentle on the OAG trial quota
 setInterval(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},45000);
 </script>
 </body>
