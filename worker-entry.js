@@ -225,6 +225,8 @@ export default {
                   || (res.headers.get('Content-Type') || '').indexOf('text/html') !== -1;
       if (isHtml) {
         const h = new Headers(res.headers);
+        // Guarantee the browser renders it as a page (not raw source).
+        h.set('Content-Type', 'text/html; charset=utf-8');
         h.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         h.set('Pragma', 'no-cache');
         h.set('Expires', '0');
