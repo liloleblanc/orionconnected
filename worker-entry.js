@@ -196,9 +196,11 @@ export default {
       if (!env || !env.OAG_KEY) return jsonOag({ error: 'OAG_KEY secret not set' }, 500);
       const airportParam = dir === 'arr' ? 'ArrivalAirport' : 'DepartureAirport';
       const dateParam = dir === 'arr' ? 'ArrivalDateTime' : 'DepartureDateTime';
+      // NOTE: the date range separator '/' must stay literal — encoding it to
+      // %2F makes OAG reject the request with a 400.
       const oagUrl = 'https://api.oag.com/flight-instances?version=v2'
         + '&' + airportParam + '=' + encodeURIComponent(ap)
-        + '&' + dateParam + '=' + encodeURIComponent(today + '/' + tomorrow)
+        + '&' + dateParam + '=' + today + '/' + tomorrow
         + '&CodeType=IATA&Content=Status&Limit=200';
       try {
         const r = await fetch(oagUrl, { headers: { 'Subscription-Key': env.OAG_KEY } });
