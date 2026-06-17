@@ -85,29 +85,33 @@ function statusLabel(f) {
   return { txt:'On Time', cls:'ontime' };
 }
 
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
 function render(payload) {
   const rows = document.getElementById('rows');
   const flights = (payload && payload.flights) || [];
   if (!flights.length) {
-    rows.innerHTML = '<tr class="empty"><td colspan="8">No departures returned for ' + AP + ' today.</td></tr>';
+    rows.innerHTML = '<tr class="empty"><td colspan="8">No departures returned for ' + esc(AP) + ' today.</td></tr>';
   } else {
     rows.innerHTML = flights.map(f => {
       const city = CITY[f.cityIata] || f.cityIata || '—';
       const alName = AIRLINE[f.airline] || f.airline;
       const sched = (f.schedTime || '').slice(0,5);
-      const est = f.estTime && f.estTime !== sched ? '<div class="est">→ ' + f.estTime + '</div>' : '';
+      const est = f.estTime && f.estTime !== sched ? '<div class="est">→ ' + esc(f.estTime) + '</div>' : '';
       const s = statusLabel(f);
       const op = (f.operatedBy && f.operatedBy.toUpperCase() !== alName.toUpperCase()) ? f.operatedBy : '';
       const acReg = [f.aircraft, f.reg].filter(Boolean).join(' · ');
       return '<tr>'
-        + '<td><div class="al"><span class="badge">' + f.airline + '</span>' + alName + '</div></td>'
-        + '<td>' + f.flight + '</td>'
-        + '<td class="dest">' + city + ' <small>(' + (f.cityIata||'') + ')</small></td>'
-        + '<td class="time">' + sched + est + '</td>'
-        + '<td class="gate">' + (f.gate ? '<span>' + f.gate + '</span>' : '—') + '</td>'
-        + '<td class="ac">' + (acReg || '—') + '</td>'
-        + '<td class="op">' + (op || '') + '</td>'
-        + '<td class="st ' + s.cls + '">' + s.txt + '</td>'
+        + '<td><div class="al"><span class="badge">' + esc(f.airline) + '</span>' + esc(alName) + '</div></td>'
+        + '<td>' + esc(f.flight) + '</td>'
+        + '<td class="dest">' + esc(city) + ' <small>(' + esc(f.cityIata||'') + ')</small></td>'
+        + '<td class="time">' + esc(sched) + est + '</td>'
+        + '<td class="gate">' + (f.gate ? '<span>' + esc(f.gate) + '</span>' : '—') + '</td>'
+        + '<td class="ac">' + esc(acReg || '—') + '</td>'
+        + '<td class="op">' + esc(op || '') + '</td>'
+        + '<td class="st ' + esc(s.cls) + '">' + esc(s.txt) + '</td>'
         + '</tr>';
     }).join('');
   }
@@ -123,8 +127,8 @@ async function load() {
     if (!r.ok || data.error) {
       const note = document.getElementById('note');
       note.className = 'note err';
-      note.innerHTML = '<b>Not live yet.</b> ' + (data.error || ('HTTP ' + r.status))
-        + (data.detail ? '<br><small>' + data.detail + '</small>' : '');
+      note.innerHTML = '<b>Not live yet.</b> ' + esc(data.error || ('HTTP ' + r.status))
+        + (data.detail ? '<br><small>' + esc(data.detail) + '</small>' : '');
       document.getElementById('rows').innerHTML = '<tr class="empty"><td colspan="8">Waiting for the OAG_KEY secret to be set on the worker.</td></tr>';
       document.getElementById('meta').textContent = '';
       return;

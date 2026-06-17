@@ -178,7 +178,7 @@ export default {
         const flights = oagClean(raw, dir);
         return jsonOag({ airport: ap, direction: dir, date, count: flights.length, flights }, 200);
       } catch (e) {
-        return jsonOag({ error: 'OAG fetch failed', detail: String(e) }, 502);
+        return jsonOag({ error: 'OAG fetch failed' }, 502);
       }
     }
 
