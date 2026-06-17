@@ -104,6 +104,9 @@
     border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;overflow:hidden;
     font-weight:800;font-size:12px;color:#10151d;}
   .alogo img{width:100%;height:100%;object-fit:contain;padding:4px;}
+  /* Theme-adaptive airline wordmark (mono SVG recoloured to the text colour) */
+  .wm{width:32px;height:32px;flex:none;background-color:var(--txt);
+    -webkit-mask:center/contain no-repeat;mask:center/contain no-repeat;}
   .fcard .alname{font-weight:600;font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
   .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
@@ -159,6 +162,9 @@
   .dt-top .ttl{font-size:15px;font-weight:700;}
   .dt-hero{text-align:center;padding:26px 20px 8px;}
   .dt-hero .alogo{width:60px;height:60px;border-radius:16px;margin:0 auto 14px;}
+  .dt-hero .wm{width:52px;height:52px;margin:0 auto 14px;}
+  .dt-illus{display:block;width:104px;margin:2px auto 0;opacity:.95;}
+  .dt-tail{width:50px;height:50px;object-fit:contain;margin-left:auto;flex:none;}
   .dt-hero .flt{font-size:30px;font-weight:800;letter-spacing:-0.02em;}
   .dt-hero .al{color:var(--muted);font-size:13.5px;font-weight:500;margin-top:4px;}
   .dt-route{display:flex;align-items:center;gap:10px;justify-content:center;padding:18px 20px 6px;}
@@ -192,6 +198,8 @@
   .ad-full .tile{width:92px;height:92px;border-radius:26px;margin-bottom:22px;background:var(--accent-soft);
     color:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
   .ad-full .tile .ic{width:44px;height:44px;}
+  .ad-full .creative{width:100%;max-width:360px;max-height:48vh;object-fit:contain;border-radius:16px;
+    margin-bottom:22px;box-shadow:var(--shadow);background:#fff;}
   .ad-full .t{font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1.15;}
   .ad-full .s{color:var(--muted);font-size:15px;margin-top:12px;max-width:300px;font-weight:500;line-height:1.5;}
   .ad-full .cta{margin-top:26px;background:var(--accent);color:#fff;border:0;border-radius:13px;padding:14px 28px;font-family:inherit;font-size:15px;font-weight:700;box-shadow:var(--shadow);}
@@ -239,8 +247,8 @@
 
   <div class="ad-banner" id="adBanner" onclick="bannerTap()">
     <span class="tag">Sponsored</span>
-    <span class="tile"><svg class="ic" viewBox="0 0 24 24"><path d="M18 8h1a3 3 0 0 1 0 6h-1"/><path d="M5 8h13v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z"/><line x1="8" y1="2" x2="8" y2="4.5"/><line x1="12" y1="2" x2="12" y2="4.5"/></svg></span>
-    <div><div class="t">Grab a coffee before you fly</div><div class="s">Offers near your gate — tap to see</div></div>
+    <span class="tile" id="adBanTile"></span>
+    <div><div class="t" id="adBanT">Grab a coffee before you fly</div><div class="s" id="adBanS">Offers near your gate — tap to see</div></div>
   </div>
 
   <div class="cards" id="cards"></div>
@@ -282,6 +290,7 @@
 <div class="ad-full" id="adFull">
   <span class="tag">Advertisement</span>
   <button class="skip" onclick="closeFullAd()"><svg class="ic" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+  <img class="creative" id="adFullImg" alt="" style="display:none">
   <div class="tile" id="adFullIcon"></div>
   <div class="t" id="adFullTitle">Duty-free, your way</div>
   <div class="s" id="adFullSub">Pre-order and pick up at the gate.</div>
@@ -298,10 +307,17 @@ const SVG={
   car:'<path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13"/><path d="M4 13h16v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>'
 };
 const FULL_ADS=[
+  {img:'/logos/advertisements/app/airnova-spread.png',t:'A Class Above',s:'Air Nova — the Air Canada Connector'},
   {ic:'shop',t:'Duty-free, your way',s:'Pre-order and pick up at the gate.'},
   {ic:'food',t:'Hungry before you board?',s:'Order ahead from restaurants near your gate.'},
   {ic:'lounge',t:'Relax in the lounge',s:'Day passes available — comfort before you fly.'},
   {ic:'car',t:'Skip the taxi line',s:'Book your ride home before you land.'}
+];
+const BANNER_ADS=[
+  {ic:'bag',t:'Grab a coffee before you fly',s:'Cafés near your gate — tap to see'},
+  {ic:'shop',t:'Duty-free, your way',s:'Pre-order, pick up at the gate'},
+  {ic:'lounge',t:'Relax in the lounge',s:'Day passes available'},
+  {ic:'car',t:'Skip the taxi line',s:'Book your ride home'}
 ];
 const AP_NAME={YQM:'Greater Moncton',YHZ:'Halifax Stanfield',YYZ:'Toronto Pearson',YUL:'Montréal–Trudeau',MCO:'Orlando Intl'};
 const CITY={YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHZ:'Halifax',YYT:"St. John's",YDF:'Deer Lake',YOW:'Ottawa',
@@ -331,7 +347,13 @@ const SAMPLE=[
 ];
 function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function airlineLogo(code){
+// Airlines with a mono wordmark (fill=currentColor) → recolour for day/night.
+const WORDMARK=new Set(['A3','AC','AF','AI','BA','ET','EW','FR','FY','GA','IB','J2','JL','JQ','JX','LA','MF','OZ','PG','PR','QF','QP','QR','RC','SN','SQ','SUN','TK','TS','TW','UB','UO','VA','VN','VS','WS','WY','ZB','ZP']);
+function airlineLogo(code,cls){
+  if(WORDMARK.has(code)){
+    const u="/logos/wordmarks-mono/"+code+".svg";
+    return '<span class="wm'+(cls?' '+cls:'')+'" style="-webkit-mask-image:url(\''+u+'\');mask-image:url(\''+u+'\')" role="img" aria-label="'+esc(code)+'"></span>';
+  }
   const src='https://www.gstatic.com/flights/airline_logos/70px/'+encodeURIComponent(code)+'.png';
   return '<span class="alogo"><img src="'+src+'" alt="'+esc(code)+'" loading="lazy" '
     +'onerror="this.parentNode.textContent=\''+esc(code)+'\'"></span>';
@@ -428,9 +450,11 @@ function openFlight(i){
   if(f.baggage) cells+=cell('Baggage',f.baggage);
   const plane='<div class="dt-cell wide"><div class="planeic">'+svg(PLANE_SVG)+'</div>'
     +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
-    +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
+    +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div>'
+    +'<img class="dt-tail" src="/logos/tails-modern/'+esc(f.airline)+'.svg" alt="" onerror="this.style.display=\'none\'"></div>';
   document.getElementById('detailBody').innerHTML=
-    '<div class="dt-hero">'+airlineLogo(f.airline)+'<div class="flt">'+esc(f.flight)+'</div><div class="al">'+esc(opLine)+'</div></div>'
+    '<div class="dt-hero">'+airlineLogo(f.airline)+'<div class="flt">'+esc(f.flight)+'</div><div class="al">'+esc(opLine)+'</div>'
+    +'<img class="dt-illus" src="/logos/aircraft-icon.png" alt=""></div>'
     +'<div class="dt-route"><div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>'
     +'<div class="line"><span class="pl">'+svg(PLANE_SVG)+'</span></div>'
     +'<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div></div>'
@@ -444,9 +468,14 @@ function openFlight(i){
 function closeFlight(){document.getElementById('detail').classList.remove('show');}
 function personalize(){alert('Sign in to personalize your trip — save your flight, get gate alerts, and more. Coming soon.');}
 function bannerTap(){showFullAd();}
-let adIdx=0;
-function showFullAd(){const a=FULL_ADS[adIdx%FULL_ADS.length];adIdx++;
-  document.getElementById('adFullIcon').innerHTML=svg(SVG[a.ic]||SVG.shop);
+let adIdx=0,banIdx=0;
+function rotateBanner(){const a=BANNER_ADS[banIdx++%BANNER_ADS.length];
+  document.getElementById('adBanTile').innerHTML=svg(SVG[a.ic]||SVG.shop);
+  document.getElementById('adBanT').textContent=a.t;document.getElementById('adBanS').textContent=a.s;}
+function showFullAd(){const a=FULL_ADS[adIdx++%FULL_ADS.length];
+  const img=document.getElementById('adFullImg'),tile=document.getElementById('adFullIcon');
+  if(a.img){img.src=a.img;img.onerror=function(){img.style.display='none';tile.style.display='';tile.innerHTML=svg(SVG.shop);};img.style.display='';tile.style.display='none';}
+  else{img.style.display='none';tile.style.display='';tile.innerHTML=svg(SVG[a.ic]||SVG.shop);}
   document.getElementById('adFullTitle').textContent=a.t;document.getElementById('adFullSub').textContent=a.s;
   const el=document.getElementById('adFull');el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(closeFullAd,6500);}
 function closeFullAd(){document.getElementById('adFull').classList.remove('show');}
@@ -480,7 +509,10 @@ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
 
 setAirport('YQM');
 setInterval(load,180000);  // 3 min — gentle on the OAG trial quota
-setInterval(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},45000);
+rotateBanner();
+setInterval(rotateBanner,10000);  // banner cycles offers
+setTimeout(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},9000);   // first ad appears early
+setInterval(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},35000); // then periodically
 </script>
 </body>
 </html>
