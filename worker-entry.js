@@ -179,13 +179,25 @@ export default {
       try {
         const r = await fetch(oagUrl, { headers: { 'Subscription-Key': env.OAG_KEY } });
         if (!r.ok) {
+          // OAG over quota / error — fall back to AeroDataBox (separate source + quota).
+          try {
+            const adb = await adbFlights(ap, dir);
+            if (adb && adb.length) {
+              const aresp = new Response(JSON.stringify({ airport: ap, direction: dir, date, count: adb.length, flights: adb, source: 'adb' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=180' },
+              });
+              if (ctx && ctx.waitUntil) ctx.waitUntil(oagCache.put(oagCacheKey, aresp.clone()));
+              return aresp;
+            }
+          } catch (e2) { /* ADB also unavailable — fall through to the OAG error */ }
           const body = await r.text();
           // Don't cache errors — so the next call retries once quota resets.
           return jsonOag({ error: 'OAG returned ' + r.status, detail: body.slice(0, 400) }, 502);
         }
         const raw = await r.json();
         const flights = oagClean(raw, dir);
-        const resp = new Response(JSON.stringify({ airport: ap, direction: dir, date, count: flights.length, flights }), {
+        const resp = new Response(JSON.stringify({ airport: ap, direction: dir, date, count: flights.length, flights, source: 'oag' }), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
@@ -265,6 +277,74 @@ function jsonOag(obj, status) {
       'Cache-Control': 'no-store',
     },
   });
+}
+
+// ── AeroDataBox fallback ─────────────────────────────────────────────
+// When OAG is over its trial call-volume, fetch real data from AeroDataBox via
+// the proxy (separate key + quota) and map it into the same simple row shape so
+// the app/board are unaffected by which source served the data.
+const AP_TZ = {
+  YQM:'America/Moncton', YHZ:'America/Halifax', YSJ:'America/Moncton', YFC:'America/Moncton',
+  YYZ:'America/Toronto', YTZ:'America/Toronto', YUL:'America/Toronto', YOW:'America/Toronto',
+  YYT:'America/St_Johns', YHM:'America/Toronto', MCO:'America/New_York', TPA:'America/New_York',
+};
+function fmtLocalTz(date, tz) {
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false }).formatToParts(date);
+  const g = t => (p.find(x => x.type === t) || {}).value || '00';
+  let hh = g('hour'); if (hh === '24') hh = '00';
+  return g('year') + '-' + g('month') + '-' + g('day') + 'T' + hh + ':' + g('minute');
+}
+function adbHHMM(mv, field) {
+  const lo = mv && mv[field] && mv[field].local;
+  if (!lo) return '';
+  const t = (lo.indexOf('T') > -1 ? lo.split('T')[1] : (lo.split(' ')[1] || ''));
+  return t.slice(0, 5);
+}
+function adbState(status) {
+  const s = (status || '').toLowerCase();
+  if (s.indexOf('cancel') > -1) return 'canceled';
+  if (s === 'departed' || s === 'enroute' || s === 'approaching') return 'inair';
+  if (s === 'arrived') return 'landed';
+  return 'scheduled';
+}
+function adbTimeliness(mv, status) {
+  if ((status || '').toLowerCase() === 'delayed') return 'delayed';
+  const sd = mv && mv.scheduledTime && mv.scheduledTime.utc;
+  const rv = mv && mv.revisedTime && mv.revisedTime.utc;
+  if (sd && rv) { const d = new Date(rv) - new Date(sd); if (d > 60000) return 'delayed'; if (d < -60000) return 'early'; }
+  return '';
+}
+function mapAdb(f, dir) {
+  if (!f || f.isCargo) return null;
+  const thisMv = dir === 'arr' ? (f.arrival || {}) : (f.departure || {});
+  const otherMv = dir === 'arr' ? (f.departure || {}) : (f.arrival || {});
+  const al = (f.airline && f.airline.iata) || '';
+  const num = (f.number || '').replace(/\s+/g, '');
+  if (!al || !num) return null;
+  return {
+    airline: al, flight: num,
+    cityIata: (otherMv.airport && otherMv.airport.iata) || '',
+    schedTime: adbHHMM(thisMv, 'scheduledTime'),
+    estTime: adbHHMM(thisMv, 'revisedTime'),
+    gate: thisMv.gate || '', terminal: thisMv.terminal || '',
+    aircraft: (f.aircraft && f.aircraft.model) || '',
+    reg: (f.aircraft && f.aircraft.reg) || '',
+    state: adbState(f.status), timeliness: adbTimeliness(thisMv, f.status), operatedBy: '',
+  };
+}
+async function adbFlights(ap, dir) {
+  const tz = AP_TZ[ap] || 'America/Toronto';
+  const now = Date.now();
+  const from = fmtLocalTz(new Date(now - 2 * 3600000), tz);
+  const to = fmtLocalTz(new Date(now + 10 * 3600000), tz); // 12h window (ADB max)
+  const direction = dir === 'arr' ? 'Arrival' : 'Departure';
+  const url = 'https://fids-proxy.n-leblanc1984.workers.dev/flights/airports/iata/' + encodeURIComponent(ap) + '/' + from + '/' + to
+    + '?withLeg=true&direction=' + direction + '&withCancelled=true&withCodeshared=false&withCargo=false&withPrivate=false&withLocation=true';
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('ADB ' + r.status);
+  const j = await r.json();
+  const list = dir === 'arr' ? (j.arrivals || []) : (j.departures || []);
+  return list.map(f => mapAdb(f, dir)).filter(Boolean);
 }
 
 // Map OAG Flight Info v2 -> a simple board row shape, with cleanup rules.

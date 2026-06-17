@@ -374,12 +374,17 @@ async function load(){
   try{
     const r=await fetch('/oag/departures?ap='+encodeURIComponent(AP),{cache:'no-store'});
     const d=await r.json();
-    if(d&&d.error){
+    const live=d&&d.flights&&d.flights.length;
+    if(d&&d.error&&!live){
       FLIGHTS=SAMPLE;
       document.getElementById('hint').textContent='Sample flights · live data over quota';
+    }else if(live){
+      FLIGHTS=d.flights;
+      const src=d.source==='adb'?' · AeroDataBox':'';
+      document.getElementById('hint').textContent='Live departures · '+FLIGHTS.length+' flights'+src;
     }else{
-      FLIGHTS=(d&&d.flights&&d.flights.length)?d.flights:SAMPLE;
-      document.getElementById('hint').textContent=(d&&d.flights&&d.flights.length)?('Live departures · '+FLIGHTS.length+' flights'):'Sample flights · no live departures';
+      FLIGHTS=SAMPLE;
+      document.getElementById('hint').textContent='Sample flights · no live departures';
     }
   }catch(e){if(!FLIGHTS.length)FLIGHTS=SAMPLE;document.getElementById('hint').textContent='Sample flights · offline';}
   render();
