@@ -15145,6 +15145,18 @@ function mapADB(raw, mode) {
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs);
 }
 
+// OAG via the same-origin worker route, returned in ADB shape so mapADB can
+// consume it unchanged. Throws on any error so the caller falls back to ADB.
+async function oagFetch(iata, dir) {
+  const url = location.origin + '/oag/adb?ap=' + encodeURIComponent(iata)
+    + '&dir=' + (dir === 'arr' ? 'arr' : 'dep');
+  const r = await fetch(url, { cache: 'no-store' });
+  if (!r.ok) throw new Error('OAG HTTP ' + r.status);
+  const j = await r.json();
+  if (j && j.error) throw new Error(j.error);
+  return j;  // { departures: [...] } or { arrivals: [...] }
+}
+
 async function fetchLive() {
   const iata = document.getElementById('apSel').value;
   document.getElementById('fidsTable').style.display = 'none';
@@ -15152,10 +15164,38 @@ async function fetchLive() {
   document.getElementById('liveLabel').textContent = 'LIVE';
 
   try {
-    // AeroDataBox — sequential to stay within rate limits
-    const depRaw = await adbFetch(iata, 'Departure');
-    await new Promise(r => setTimeout(r, 1500));
-    const arrRaw = await adbFetch(iata, 'Arrival');
+    // ── DATA SOURCE: OAG (opt-in via ?src=oag) with AeroDataBox fallback ──
+    // OAG is returned by the worker already in ADB's shape, so mapADB and all
+    // downstream code run unchanged. If OAG errors or returns nothing, we fall
+    // straight back to ADB — so the board can never go blank because of OAG.
+    let depRaw, arrRaw;
+    const _src = (new URLSearchParams(location.search).get('src') || '').toLowerCase();
+    const _useOag = _src === 'oag';
+    if (_useOag) {
+      try {
+        depRaw = await oagFetch(iata, 'dep');
+        arrRaw = await oagFetch(iata, 'arr');
+        if (!((depRaw && depRaw.departures) || []).length) {
+          console.warn('[FIDS] OAG departures empty → ADB fallback');
+          depRaw = await adbFetch(iata, 'Departure');
+        }
+        if (!((arrRaw && arrRaw.arrivals) || []).length) {
+          console.warn('[FIDS] OAG arrivals empty → ADB fallback');
+          await new Promise(r => setTimeout(r, 1200));
+          arrRaw = await adbFetch(iata, 'Arrival');
+        }
+      } catch (e) {
+        console.warn('[FIDS] OAG failed → ADB fallback:', e && e.message);
+        depRaw = await adbFetch(iata, 'Departure');
+        await new Promise(r => setTimeout(r, 1500));
+        arrRaw = await adbFetch(iata, 'Arrival');
+      }
+    } else {
+      // AeroDataBox — sequential to stay within rate limits
+      depRaw = await adbFetch(iata, 'Departure');
+      await new Promise(r => setTimeout(r, 1500));
+      arrRaw = await adbFetch(iata, 'Arrival');
+    }
     data.dep = mapADB(depRaw, 'dep');
     data.arr = mapADB(arrRaw, 'arr');
     // [BELT SUMMARY v218.18] Quick breakdown of belt assignments.

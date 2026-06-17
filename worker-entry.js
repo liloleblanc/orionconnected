@@ -183,6 +183,33 @@ export default {
       }
     }
 
+    // ── OAG in AeroDataBox shape (for the real board) ──────────────────
+    // /oag/adb?ap=YQM&dir=dep  → OAG Flight Info v2 mapped into ADB's
+    // departures/arrivals structure so fids-core's mapADB() can consume it
+    // unchanged. The board uses this as a drop-in source with ADB fallback.
+    if (path === '/oag/adb') {
+      const dir = (url.searchParams.get('dir') || 'dep').toLowerCase().indexOf('arr') === 0 ? 'arr' : 'dep';
+      const ap = (url.searchParams.get('ap') || 'YQM').toUpperCase().slice(0, 4);
+      const today = (url.searchParams.get('date') || new Date().toISOString().slice(0, 10)).slice(0, 10);
+      // today through tomorrow so the board's look-ahead window is covered.
+      const tomorrow = new Date(new Date(today + 'T00:00:00Z').getTime() + 86400000).toISOString().slice(0, 10);
+      if (!env || !env.OAG_KEY) return jsonOag({ error: 'OAG_KEY secret not set' }, 500);
+      const airportParam = dir === 'arr' ? 'ArrivalAirport' : 'DepartureAirport';
+      const dateParam = dir === 'arr' ? 'ArrivalDateTime' : 'DepartureDateTime';
+      const oagUrl = 'https://api.oag.com/flight-instances?version=v2'
+        + '&' + airportParam + '=' + encodeURIComponent(ap)
+        + '&' + dateParam + '=' + encodeURIComponent(today + '/' + tomorrow)
+        + '&CodeType=IATA&Content=Status&Limit=200';
+      try {
+        const r = await fetch(oagUrl, { headers: { 'Subscription-Key': env.OAG_KEY } });
+        if (!r.ok) return jsonOag({ error: 'OAG returned ' + r.status }, 502);
+        const raw = await r.json();
+        return jsonOag(oagToAdb(raw, dir), 200);
+      } catch (e) {
+        return jsonOag({ error: 'OAG fetch failed' }, 502);
+      }
+    }
+
     // ── Everything else → static assets ────────────────────────────────
     if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
       const res = await env.ASSETS.fetch(request);
@@ -274,4 +301,96 @@ function oagClean(raw, dir) {
   const merged = Array.from(byKey.values());
   merged.sort((a, b) => String(a.schedTime).localeCompare(String(b.schedTime)));
   return merged;
+}
+
+// OAG's operating-carrier name -> IATA code, so the board shows the real
+// operator (Rouge/Jazz/PAL/Porter) straight from OAG instead of guessing by
+// flight-number range like the ADB path does.
+const OAG_OP_NAME_TO_IATA = [
+  [/rouge/i, 'RV'], [/jazz/i, 'QK'], [/pal\s*airlines|pal\b/i, 'PB'],
+  [/porter/i, 'PD'], [/transat/i, 'TS'], [/encore/i, 'WR'], [/westjet/i, 'WS'],
+];
+function oagOperatorIata(name) {
+  if (!name) return '';
+  for (const [re, code] of OAG_OP_NAME_TO_IATA) if (re.test(name)) return code;
+  return '';
+}
+
+// Map OAG Flight Info v2 -> AeroDataBox-shaped { departures|arrivals: [...] }
+// so fids-core's mapADB() consumes it unchanged.
+function oagToAdb(raw, dir) {
+  const data = (raw && Array.isArray(raw.data)) ? raw.data : [];
+  const seen = new Map();
+  const out = [];
+  for (const f of data) {
+    if (f && f.codeshare && f.codeshare.operatingFlight) continue; // marketing dupe
+    if (f.flightType === 'GA') continue;
+    if (f.serviceType && f.serviceType.iata === 'F') continue;
+    const carrier = (f.carrier && (f.carrier.iata || f.carrier.icao)) || '';
+    if (!carrier || !f.flightNumber) continue;
+
+    const sd = (f.statusDetails && f.statusDetails[0]) || {};
+    const dep = f.departure || {}, arr = f.arrival || {};
+    const sdDep = sd.departure || {}, sdArr = sd.arrival || {};
+    const depEst = sdDep.estimatedTime || {}, arrEst = sdArr.estimatedTime || {};
+
+    const opName = (f.codeshare && f.codeshare.operatingAirlineDisclosure
+      && f.codeshare.operatingAirlineDisclosure.name) || '';
+    const ownerCode = (f.codeshare && f.codeshare.aircraftOwner && f.codeshare.aircraftOwner.code) || '';
+    const opIata = oagOperatorIata(opName) || (ownerCode.length === 2 ? ownerCode : '');
+    const opAirline = opIata ? { iata: opIata, name: opName } : undefined;
+
+    const state = (sd.state || '').toLowerCase();
+    let status = '';
+    if (state === 'canceled' || state === 'cancelled') status = 'cancelled';
+    else if (state === 'outgate' || state === 'inair') status = 'departed';
+    else if (state === 'ingate' || state === 'landed') status = 'arrived';
+
+    const dt = (dObj, tObj) => (dObj && dObj.local && tObj && tObj.local)
+      ? { local: dObj.local + 'T' + tObj.local } : undefined;
+    const depSched = dt(dep.date, dep.time);
+    const arrSched = dt(arr.date, arr.time);
+    const depRev = (depEst.outGate && depEst.outGate.local) ? { local: depEst.outGate.local } : undefined;
+    const arrInGate = (arrEst.inGate && arrEst.inGate.local) || (arrEst.onGround && arrEst.onGround.local);
+    const arrRev = arrInGate ? { local: arrInGate } : undefined;
+
+    const obj = {
+      number: carrier + f.flightNumber,
+      status,
+      codeshareStatus: '',
+      callSign: '',
+      registration: (sd.equipment && sd.equipment.aircraftRegistrationNumber) || '',
+      airline: { iata: carrier, name: '' },
+      aircraft: { iataCode: (f.aircraftType && f.aircraftType.iata) || '', model: '' },
+      departure: {
+        scheduledTime: depSched,
+        revisedTime: depRev,
+        terminal: dep.terminal || sdDep.actualTerminal || '',
+        gate: sdDep.gate || dep.gate || '',
+        airport: { iata: (dep.airport && dep.airport.iata) || '', icao: (dep.airport && dep.airport.icao) || '' },
+        airline: opAirline,
+      },
+      arrival: {
+        scheduledTime: arrSched,
+        revisedTime: arrRev,
+        terminal: arr.terminal || sdArr.actualTerminal || '',
+        gate: sdArr.gate || arr.gate || '',
+        baggageBelt: sdArr.baggage || null,
+        airport: { iata: (arr.airport && arr.airport.iata) || '', icao: (arr.airport && arr.airport.icao) || '' },
+        airline: opAirline,
+      },
+      _seq: f.sequenceNumber || 0,
+    };
+
+    // Collapse multi-leg through-flights (keep the first leg).
+    const k = obj.number + '|' + ((depSched && depSched.local) || (arrSched && arrSched.local) || '');
+    const ex = seen.get(k);
+    if (ex) {
+      if (obj._seq < ex._seq) { const i = out.indexOf(ex); if (i >= 0) out[i] = obj; seen.set(k, obj); }
+      continue;
+    }
+    seen.set(k, obj);
+    out.push(obj);
+  }
+  return dir === 'arr' ? { arrivals: out } : { departures: out };
 }
