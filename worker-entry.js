@@ -244,6 +244,7 @@ function oagClean(raw, dir) {
     out.push({
       airline: carrier,
       flight: carrier + f.flightNumber,
+      seq: f.sequenceNumber || 0,
       cityIata: (there.airport && there.airport.iata) || '',
       schedTime: (here.time && here.time.local) || '',
       estTime: (estGate && estGate.local) ? String(estGate.local).slice(11, 16) : '',
@@ -256,6 +257,21 @@ function oagClean(raw, dir) {
       timeliness: timeliness || '',
     });
   }
-  out.sort((a, b) => String(a.schedTime).localeCompare(String(b.schedTime)));
-  return out;
+  // Collapse multi-leg through-flights (same flight number + time appearing once
+  // per leg, e.g. PB923 YQM→Mont-Joli→Wabush) into a single row. Keep the first
+  // leg (next physical stop) and record any onward stops.
+  const byKey = new Map();
+  for (const r of out) {
+    const k = r.airline + '|' + r.flight + '|' + r.schedTime;
+    const ex = byKey.get(k);
+    if (!ex) { byKey.set(k, r); continue; }
+    // Same flight — keep the earlier leg, note the other as an onward stop.
+    const first = r.seq < ex.seq ? r : ex;
+    const other = r.seq < ex.seq ? ex : r;
+    first.via = (first.via || []).concat(other.cityIata).filter(Boolean);
+    byKey.set(k, first);
+  }
+  const merged = Array.from(byKey.values());
+  merged.sort((a, b) => String(a.schedTime).localeCompare(String(b.schedTime)));
+  return merged;
 }

@@ -67,10 +67,23 @@
 
 <script>
 const AP = new URLSearchParams(location.search).get('ap') || 'YQM';
-const CITY = { YYZ:'Toronto', YTZ:'Toronto', YUL:'Montréal', YHZ:'Halifax', YYT:"St. John's", YDF:'Deer Lake',
-  YOW:'Ottawa', YQB:'Québec City', YWG:'Winnipeg', YVR:'Vancouver', YYC:'Calgary', YEG:'Edmonton', YHM:'Hamilton',
-  YQX:'Gander', YFC:'Fredericton', YSJ:'Saint John', YQY:'Sydney', BOS:'Boston', JFK:'New York', LGA:'New York',
-  EWR:'Newark', ORD:'Chicago', MCO:'Orlando', FLL:'Fort Lauderdale', LHR:'London' };
+const CITY = {
+  // Canada
+  YQM:'Moncton', YYZ:'Toronto', YTZ:'Toronto', YUL:'Montréal', YHZ:'Halifax', YYT:"St. John's",
+  YDF:'Deer Lake', YOW:'Ottawa', YQB:'Québec City', YWG:'Winnipeg', YVR:'Vancouver', YYC:'Calgary',
+  YEG:'Edmonton', YHM:'Hamilton', YQX:'Gander', YFC:'Fredericton', YSJ:'Saint John', YQY:'Sydney',
+  YYG:'Charlottetown', YWK:'Wabush', YYY:'Mont-Joli', YGP:'Gaspé', YZV:'Sept-Îles', YGR:'Îles-de-la-Madeleine',
+  YBG:'Bagotville', YVO:"Val-d'Or", YUY:'Rouyn-Noranda', YQR:'Regina', YXE:'Saskatoon', YYJ:'Victoria',
+  YLW:'Kelowna', YXX:'Abbotsford', YZF:'Yellowknife', YQT:'Thunder Bay', YQG:'Windsor', YXU:'London',
+  YQU:'Grande Prairie', YXS:'Prince George', YZR:'Sarnia', YAM:'Sault Ste. Marie', YTS:'Timmins',
+  // United States
+  BOS:'Boston', JFK:'New York', LGA:'New York', EWR:'Newark', ORD:'Chicago', MCO:'Orlando',
+  FLL:'Fort Lauderdale', MIA:'Miami', TPA:'Tampa', ATL:'Atlanta', PHL:'Philadelphia', DCA:'Washington',
+  IAD:'Washington', LAX:'Los Angeles', SFO:'San Francisco', SEA:'Seattle', DFW:'Dallas', DEN:'Denver',
+  LAS:'Las Vegas', PHX:'Phoenix', DTW:'Detroit', MSP:'Minneapolis', CLT:'Charlotte',
+  // International
+  LHR:'London', LGW:'London', CDG:'Paris', FRA:'Frankfurt', AMS:'Amsterdam', DUB:'Dublin',
+  CUN:'Cancún', PUJ:'Punta Cana', NAS:'Nassau', MBJ:'Montego Bay', VRA:'Varadero', SJU:'San Juan' };
 const AIRLINE = { AC:'Air Canada', PD:'Porter', WS:'WestJet', TS:'Air Transat', PB:'PAL Airlines', F8:'Flair',
   QK:'Jazz', RV:'Air Canada Rouge', W8:'Cargojet', UA:'United', AA:'American', DL:'Delta', B6:'jetBlue', EK:'Emirates' };
 
@@ -97,6 +110,8 @@ function render(payload) {
   } else {
     rows.innerHTML = flights.map(f => {
       const city = CITY[f.cityIata] || f.cityIata || '—';
+      const viaTxt = (f.via && f.via.length)
+        ? ' <small>via ' + esc(f.via.map(c => CITY[c] || c).join(', ')) + '</small>' : '';
       const alName = AIRLINE[f.airline] || f.airline;
       const sched = (f.schedTime || '').slice(0,5);
       const est = f.estTime && f.estTime !== sched ? '<div class="est">→ ' + esc(f.estTime) + '</div>' : '';
@@ -106,7 +121,7 @@ function render(payload) {
       return '<tr>'
         + '<td><div class="al"><span class="badge">' + esc(f.airline) + '</span>' + esc(alName) + '</div></td>'
         + '<td>' + esc(f.flight) + '</td>'
-        + '<td class="dest">' + esc(city) + ' <small>(' + esc(f.cityIata||'') + ')</small></td>'
+        + '<td class="dest">' + esc(city) + ' <small>(' + esc(f.cityIata||'') + ')</small>' + viaTxt + '</td>'
         + '<td class="time">' + esc(sched) + est + '</td>'
         + '<td class="gate">' + (f.gate ? '<span>' + esc(f.gate) + '</span>' : '—') + '</td>'
         + '<td class="ac">' + esc(acReg || '—') + '</td>'
