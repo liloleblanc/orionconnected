@@ -100,10 +100,10 @@
     padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .fcard .al{display:flex;align-items:center;gap:11px;min-width:0;}
-  .fcard .alogo{width:34px;height:34px;border-radius:9px;flex:none;background:#fff;
+  .alogo{width:34px;height:34px;border-radius:9px;flex:none;background:#fff;
     border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;overflow:hidden;
     font-weight:800;font-size:12px;color:#10151d;}
-  .fcard .alogo img{width:100%;height:100%;object-fit:contain;padding:4px;}
+  .alogo img{width:100%;height:100%;object-fit:contain;padding:4px;}
   .fcard .alname{font-weight:600;font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
   .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
@@ -143,6 +143,47 @@
     font-family:inherit;font-size:10px;font-weight:600;transition:color .15s;}
   .nav button .ic{width:23px;height:23px;}
   .nav button.active{color:var(--accent);}
+  .fcard{cursor:pointer;}
+  /* ── Flight detail ───────────────────────────────── */
+  .detail{position:fixed;inset:0;z-index:60;background:var(--bg);overflow-y:auto;
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    padding-bottom:calc(28px + env(safe-area-inset-bottom));}
+  .detail.show{transform:none;}
+  .dt-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+    background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  :root[data-theme="dark"] .dt-top{background:rgba(10,13,19,.8);}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .dt-top{background:rgba(10,13,19,.8);}}
+  .dt-top .back{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);
+    color:var(--txt);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .dt-top .ttl{font-size:15px;font-weight:700;}
+  .dt-hero{text-align:center;padding:26px 20px 8px;}
+  .dt-hero .alogo{width:60px;height:60px;border-radius:16px;margin:0 auto 14px;}
+  .dt-hero .flt{font-size:30px;font-weight:800;letter-spacing:-0.02em;}
+  .dt-hero .al{color:var(--muted);font-size:13.5px;font-weight:500;margin-top:4px;}
+  .dt-route{display:flex;align-items:center;gap:10px;justify-content:center;padding:18px 20px 6px;}
+  .dt-route .ep{text-align:center;min-width:84px;}
+  .dt-route .ep .city{font-size:18px;font-weight:800;letter-spacing:-0.01em;}
+  .dt-route .ep .code{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .dt-route .line{flex:1;max-width:120px;height:2px;background:var(--line2);position:relative;}
+  .dt-route .line .pl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(90deg);
+    color:var(--accent);background:var(--bg);padding:0 4px;}
+  .dt-route .line .pl .ic{width:22px;height:22px;}
+  .dt-status{display:flex;justify-content:center;padding:12px 0 18px;}
+  .dt-status .st{font-size:15px;}
+  .dt-status .st .d{width:9px;height:9px;}
+  .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 18px;}
+  .dt-cell{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow);}
+  .dt-cell.wide{grid-column:1 / -1;display:flex;align-items:center;gap:13px;}
+  .dt-cell .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  .dt-cell .v{font-size:19px;font-weight:800;letter-spacing:-0.01em;margin-top:5px;}
+  .dt-cell .sub{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px;}
+  .dt-cell .planeic{width:46px;height:46px;border-radius:12px;flex:none;background:var(--accent-soft);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;}
+  .dt-cell .planeic .ic{width:26px;height:26px;}
+  .dt-cta{margin:20px 18px 0;width:calc(100% - 36px);background:var(--accent);color:#fff;border:0;border-radius:14px;
+    padding:15px;font-family:inherit;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:var(--shadow);}
+  .dt-cta .ic{width:18px;height:18px;color:#fff;}
   /* ── Full-page ad ────────────────────────────────── */
   .ad-full{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;
     align-items:center;justify-content:center;text-align:center;padding:34px;background:var(--bg);}
@@ -229,6 +270,15 @@
     <svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg>Trip</button>
 </nav>
 
+<!-- Flight detail -->
+<div class="detail" id="detail">
+  <div class="dt-top">
+    <button class="back" onclick="closeFlight()"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="ttl">Flight details</div>
+  </div>
+  <div id="detailBody"></div>
+</div>
+
 <div class="ad-full" id="adFull">
   <span class="tag">Advertisement</span>
   <button class="skip" onclick="closeFullAd()"><svg class="ic" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
@@ -261,7 +311,13 @@ const CITY={YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHZ:'Halifax',YYT:"St. J
 const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
   B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet'};
 
-let AP='YQM',FLIGHTS=[],curView='flights';
+const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':'Airbus A320neo','32Q':'Airbus A321neo','32B':'Airbus A321neo',
+  '223':'Airbus A220-300','221':'Airbus A220-100','7M8':'Boeing 737 MAX 8','7M9':'Boeing 737 MAX 9','73H':'Boeing 737-800','738':'Boeing 737-800',
+  '7S7':'Boeing 737-700','73W':'Boeing 737-700','757':'Boeing 757','75F':'Boeing 757 Freighter','767':'Boeing 767','76Y':'Boeing 767','77W':'Boeing 777',
+  'DH4':'Dash 8-400','DH8D':'Dash 8-400','CR9':'CRJ-900','CR7':'CRJ-700','CR2':'CRJ-200','E75':'Embraer E175','E90':'Embraer E190','E95':'Embraer E195',
+  'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop'};
+function acName(code){return ACTYPE[code]||code||'—';}
+let AP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
 function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function airlineLogo(code){
@@ -286,15 +342,16 @@ function render(){
   if(q)list=list.filter(f=>{const city=(CITY[f.cityIata]||f.cityIata||'').toLowerCase();
     return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
   if(!list.length){cards.innerHTML='<div class="empty">'+svg('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>')
-    +'<div>'+(q?'No flights match “'+esc(q)+'”':'No departures right now')+'</div></div>';return;}
-  cards.innerHTML=list.map(f=>{
+    +'<div>'+(q?'No flights match “'+esc(q)+'”':'No departures right now')+'</div></div>';RENDERED=[];return;}
+  RENDERED=list;
+  cards.innerHTML=list.map((f,i)=>{
     const s=statusOf(f),city=CITY[f.cityIata]||f.cityIata||'—',al=AIRLINE[f.airline]||f.airline;
     const sched=(f.schedTime||'').slice(0,5);
     const via=(f.via&&f.via.length)?' · via '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
     const gate=f.gate?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
-    const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(f.aircraft)+'</span>':'';
+    const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
-    return '<div class="fcard"><div class="row1"><div class="al">'+airlineLogo(f.airline)+'<span class="alname">'+esc(al)+'</span></div>'
+    return '<div class="fcard" onclick="openFlight('+i+')"><div class="row1"><div class="al">'+airlineLogo(f.airline)+'<span class="alname">'+esc(al)+'</span></div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
       +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">Departs</div></div></div>'
@@ -332,6 +389,36 @@ function go(v){curView=v;
   document.getElementById('view-'+v).classList.add('active');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
   window.scrollTo(0,0);}
+const PLANE_SVG='<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>';
+function openFlight(i){
+  const f=RENDERED[i]; if(!f)return;
+  const s=statusOf(f), city=CITY[f.cityIata]||f.cityIata||'—', al=AIRLINE[f.airline]||f.airline;
+  const sched=(f.schedTime||'').slice(0,5), est=(f.estTime||'').slice(0,5);
+  const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?al+' · operated by '+f.operatedBy:al;
+  function cell(k,v,sub){return '<div class="dt-cell"><div class="k">'+k+'</div><div class="v">'+esc(v)+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>';}
+  let cells='';
+  cells+=cell('Departs',sched||'—');
+  cells+=cell('Estimated',(est&&est!==sched)?est:'On schedule');
+  cells+=cell('Gate',f.gate||'—');
+  cells+=cell('Status',s.t);
+  if(f.via&&f.via.length) cells+=cell('Via',f.via.map(c=>CITY[c]||c).join(', '));
+  if(f.baggage) cells+=cell('Baggage',f.baggage);
+  const plane='<div class="dt-cell wide"><div class="planeic">'+svg(PLANE_SVG)+'</div>'
+    +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
+    +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
+  document.getElementById('detailBody').innerHTML=
+    '<div class="dt-hero">'+airlineLogo(f.airline)+'<div class="flt">'+esc(f.flight)+'</div><div class="al">'+esc(opLine)+'</div></div>'
+    +'<div class="dt-route"><div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>'
+    +'<div class="line"><span class="pl">'+svg(PLANE_SVG)+'</span></div>'
+    +'<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div></div>'
+    +'<div class="dt-status"><span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
+    +'<div class="dt-grid">'+plane+cells+'</div>'
+    +'<button class="dt-cta">'+svg('<path d="M9 11l3 3 8-8"/><path d="M21 12a9 9 0 1 1-6.2-8.6"/>')+'Directions to gate</button>';
+  // fix logo size in hero
+  const hl=document.querySelector('#detailBody .dt-hero .alogo'); if(hl){hl.style.width='60px';hl.style.height='60px';hl.style.borderRadius='16px';}
+  document.getElementById('detail').classList.add('show');
+}
+function closeFlight(){document.getElementById('detail').classList.remove('show');}
 function personalize(){alert('Sign in to personalize your trip — save your flight, get gate alerts, and more. Coming soon.');}
 function bannerTap(){showFullAd();}
 let adIdx=0;
