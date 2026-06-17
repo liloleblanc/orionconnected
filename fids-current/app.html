@@ -100,8 +100,11 @@
     padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .fcard .al{display:flex;align-items:center;gap:9px;min-width:0;}
-  /* Brand emblem (symbol) + airline name as text — two separate things */
-  .emblem{height:26px;width:auto;flex:none;}
+  /* Official airline wordmark — light/dark variant chosen by theme */
+  .wm{height:23px;width:auto;max-width:165px;object-fit:contain;object-position:left center;display:block;flex:none;}
+  .wm-d{display:none;}
+  :root[data-theme="dark"] .wm-l{display:none;} :root[data-theme="dark"] .wm-d{display:block;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .wm-l{display:none;} :root[data-theme="auto"] .wm-d{display:block;}}
   .wm-txt{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .fcard .alname{font-weight:600;font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -159,7 +162,10 @@
     color:var(--txt);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
   .dt-top .ttl{font-size:15px;font-weight:700;}
   .dt-hero{text-align:center;padding:26px 20px 8px;}
-  .dt-emblem{height:48px;width:auto;display:block;margin:0 auto 10px;}
+  .dt-wm{height:36px;width:auto;max-width:74%;object-fit:contain;display:block;margin:0 auto 10px;}
+  .dt-wm-d{display:none;}
+  :root[data-theme="dark"] .dt-wm-l{display:none;} :root[data-theme="dark"] .dt-wm-d{display:block;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .dt-wm-l{display:none;} :root[data-theme="auto"] .dt-wm-d{display:block;}}
   .dt-name{font-size:17px;font-weight:700;text-align:center;margin-bottom:4px;letter-spacing:-0.01em;}
   .dt-hero .al-op{color:var(--muted);font-size:13px;font-weight:500;margin-top:2px;}
   .dt-illus{display:block;width:240px;max-width:86%;margin:12px auto 2px;}
@@ -346,14 +352,19 @@ const SAMPLE=[
 function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 // Real colour airline logos — same source the main board uses.
-const AL_LOGO={
-  AC:'/logos/airlines/canadian/air-canada.svg', WS:'/logos/airlines/canadian/WestJet_Logo_2018.svg',
-  PD:'/logos/airlines/canadian/porter.svg', TS:'/logos/airlines/canadian/transat.svg',
-  F8:'/logos/airlines/canadian/flair.svg', PB:'/logos/airlines/canadian-regional/PAL-Airlines.svg',
-  B6:'/logos/airlines/us-major/jetblue.svg', DL:'/logos/airlines/us-major/delta.svg',
-  AA:'/logos/airlines/us-major/american-airlines.svg', UA:'/logos/airlines/us-major/united.svg',
-  WN:'/logos/airlines/us-major/southwest.svg', F9:'/logos/airlines/us-major/frontier.svg'
+// Official airline wordmarks. Each base has a -wordmark-light.svg (dark ink, for
+// light backgrounds) and -wordmark-dark.svg (light ink, for dark backgrounds).
+const WORDMARK={
+  AC:'canadian/air-canada', WS:'canadian/westjet', PD:'canadian/porter', TS:'canadian/transat',
+  PB:'canadian-regional/pal-airlines', B6:'us-major/jetblue', DL:'us-major/delta',
+  AA:'us-major/american-airlines', UA:'us-major/united', WN:'us-major/southwest', F9:'us-major/frontier'
 };
+// Returns [lightVariantUrl, darkVariantUrl] for an airline, or null if none.
+function wmUrls(code){
+  if(code==='F8') return ['/logos/airlines/canadian/flair.svg','/logos/airlines/canadian/flair.svg']; // no light/dark pair
+  const b=WORDMARK[code]; if(!b) return null;
+  return ['/logos/airlines/'+b+'-wordmark-light.svg','/logos/airlines/'+b+'-wordmark-dark.svg'];
+}
 // Airline brand accent colours (same values the main system uses).
 const BRAND={AC:'#d91a2a',WS:'#00b2a9',TS:'#ff6600',PD:'#1a3a6b',AA:'#0078d2',DL:'#c01933',
   UA:'#1414d2',WN:'#fbb612',B6:'#005cb9',F8:'#22b85f',F9:'#00843d',PB:'#0a3d62'};
@@ -361,8 +372,19 @@ const BRAND={AC:'#d91a2a',WS:'#00b2a9',TS:'#ff6600',PD:'#1a3a6b',AA:'#0078d2',DL
 function emblemImg(code){
   return '<img class="emblem" src="/logos/symbols/airlines/'+encodeURIComponent(code)+'.svg" alt="" onerror="this.style.display=\'none\'">';
 }
-// Emblem (symbol) + airline name as text — two separate marks, no duplicate symbol.
-function airlineLogo(code){return emblemImg(code)+'<span class="wm-txt">'+esc(AIRLINE[code]||code)+'</span>';}
+// Official airline wordmark; light/dark variants swapped by theme via CSS. Text fallback if none.
+function airlineLogo(code){
+  const u=wmUrls(code);
+  if(!u) return '<span class="wm-txt">'+esc(AIRLINE[code]||code)+'</span>';
+  return '<img class="wm wm-l" src="'+u[0]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">'
+        +'<img class="wm wm-d" src="'+u[1]+'" alt="" loading="lazy">';
+}
+function heroWordmark(code){
+  const u=wmUrls(code);
+  if(!u) return '<div class="dt-name">'+esc(AIRLINE[code]||code)+'</div>';
+  return '<img class="dt-wm dt-wm-l" src="'+u[0]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">'
+        +'<img class="dt-wm dt-wm-d" src="'+u[1]+'" alt="" loading="lazy">';
+}
 // Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
 function acType(raw){
   if(!raw) return '';
@@ -499,8 +521,7 @@ function openFlight(i){
     +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
     +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
   document.getElementById('detailBody').innerHTML=
-    '<div class="dt-hero">'+emblemImg(f.airline).replace('class="emblem"','class="dt-emblem"')
-    +'<div class="dt-name">'+esc(AIRLINE[f.airline]||f.airline)+'</div>'
+    '<div class="dt-hero">'+heroWordmark(f.airline)
     +'<div class="flt">'+esc(f.flight)+'</div>'+(opLine?'<div class="al-op">'+esc(opLine)+'</div>':'')
     +liveryImg(f.airline,f.aircraft)+'</div>'
     +'<div class="dt-route"><div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>'
