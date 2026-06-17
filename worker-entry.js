@@ -201,7 +201,7 @@ export default {
       const oagUrl = 'https://api.oag.com/flight-instances?version=v2'
         + '&' + airportParam + '=' + encodeURIComponent(ap)
         + '&' + dateParam + '=' + today + '/' + tomorrow
-        + '&CodeType=IATA&Content=Status&Limit=200';
+        + '&CodeType=IATA&Content=Status&Limit=100';  // trial caps Limit at 100
       try {
         const r = await fetch(oagUrl, { headers: { 'Subscription-Key': env.OAG_KEY } });
         if (!r.ok) {
