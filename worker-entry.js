@@ -50,6 +50,7 @@ const TILE_PROVIDERS = {
 };
 
 const DAY = 86400;
+// Rebuild nonce — redeploy so the preview picks up the OAG_KEY secret (1).
 
 export default {
   async fetch(request, env, ctx) {
