@@ -3,131 +3,175 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1f3a">
+<meta name="theme-color" content="#0a0d13">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Airport Companion</title>
 <style>
   :root{
-    --bg:#0a1424; --surface:#10203a; --surface2:#16294a; --line:#21385f;
-    --txt:#eef4ff; --muted:#9fb4d4; --accent:#2f81f7; --accent2:#1d6fe0;
-    --green:#34d399; --amber:#fbbf24; --red:#f87171; --pill:#1e6f50;
-    --nav-h:64px;
+    --bg:#0a0d13; --bg2:#0d1118;
+    --surface:#12161f; --surface2:#181d28; --raise:#1d2330;
+    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
+    --txt:#f4f6fa; --muted:#8b95a7; --faint:#5d6677;
+    --accent:#4c82ff; --accent-soft:rgba(76,130,255,.14);
+    --green:#37c98b; --amber:#e0a23c; --red:#e8584f; --gold:#d8b46a;
+    --nav-h:62px; --radius:18px;
+    --shadow:0 8px 30px rgba(0,0,0,.45);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;height:100%;}
   body{
-    background:var(--bg); color:var(--txt);
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:
+      radial-gradient(1100px 460px at 50% -10%, #131b2b 0%, rgba(19,27,43,0) 60%),
+      var(--bg);
+    color:var(--txt);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased; letter-spacing:-0.01em;
     display:flex; flex-direction:column; min-height:100dvh;
     padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));
   }
-  /* ── Top bar ─────────────────────────────────────────────── */
+  svg{display:block;}
+  .ic{width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  /* ── Top bar ─────────────────────────────────────── */
   .topbar{
     position:sticky; top:0; z-index:20;
-    display:flex; align-items:center; justify-content:space-between;
-    gap:10px; padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
-    background:linear-gradient(180deg,#0d1f3c,#0a1424);
-    border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    background:linear-gradient(180deg,rgba(10,13,19,.92),rgba(10,13,19,.6));
+    backdrop-filter:blur(14px); border-bottom:1px solid var(--line);
   }
-  .ap-pick{
-    display:flex; align-items:center; gap:9px; background:var(--surface2);
-    border:1px solid var(--line); border-radius:999px; padding:8px 14px;
-    font-weight:800; font-size:15px; color:var(--txt);
-  }
-  .ap-pick .dot{width:26px;height:26px;border-radius:50%;background:var(--accent);
-    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;}
-  .ap-pick select{
-    position:absolute; opacity:0; inset:0; width:100%; height:100%; }
   .ap-wrap{position:relative;}
-  .ap-pick .chev{color:var(--muted);font-size:12px;}
+  .ap-pick{
+    display:flex; align-items:center; gap:10px;
+    background:var(--surface2); border:1px solid var(--line2); border-radius:999px;
+    padding:8px 9px 8px 9px; box-shadow:var(--shadow);}
+  .ap-pick .code{
+    width:34px;height:34px;border-radius:50%;
+    background:linear-gradient(145deg,#4c82ff,#2f6fff);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;letter-spacing:.4px;color:#fff;}
+  .ap-pick .meta{display:flex;flex-direction:column;line-height:1.05;padding-right:4px;}
+  .ap-pick .meta b{font-size:14.5px;font-weight:700;}
+  .ap-pick .meta span{font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:.02em;}
+  .ap-pick .chev{color:var(--faint);}
+  .ap-pick select{position:absolute;inset:0;width:100%;height:100%;opacity:0;}
   .me-btn{
-    width:42px;height:42px;border-radius:50%;border:1px solid var(--line);
-    background:var(--surface2); color:var(--muted); font-size:18px;
-    display:flex;align-items:center;justify-content:center;}
-  /* ── Search ──────────────────────────────────────────────── */
-  .search-wrap{padding:14px 16px 6px;}
+    width:42px;height:42px;border-radius:50%;
+    border:1px solid var(--line2); background:var(--surface2); color:var(--muted);
+    display:flex;align-items:center;justify-content:center; box-shadow:var(--shadow);}
+  .me-btn .ic{width:20px;height:20px;}
+  /* ── Search ──────────────────────────────────────── */
+  .search-wrap{padding:16px 18px 8px;}
   .search{
-    display:flex; align-items:center; gap:10px; background:var(--surface);
-    border:1px solid var(--line); border-radius:14px; padding:13px 15px;}
-  .search input{
-    flex:1; background:none; border:0; outline:0; color:var(--txt);
-    font-size:16px; font-weight:600;}
-  .search input::placeholder{color:var(--muted); font-weight:500;}
-  .search .ico{color:var(--muted); font-size:17px;}
-  .hint{padding:2px 18px 0; color:var(--muted); font-size:12.5px;}
-  /* ── Views ───────────────────────────────────────────────── */
-  .view{display:none; flex:1; padding:8px 0 16px;}
-  .view.active{display:block;}
-  .section-title{padding:14px 18px 6px; font-size:13px; letter-spacing:.08em;
-    text-transform:uppercase; color:var(--muted); font-weight:800;}
-  /* ── Ad banner ───────────────────────────────────────────── */
+    display:flex; align-items:center; gap:11px;
+    background:var(--surface); border:1px solid var(--line2); border-radius:15px;
+    padding:14px 16px; box-shadow:var(--shadow);}
+  .search .ic{width:19px;height:19px;color:var(--faint);}
+  .search input{flex:1;background:none;border:0;outline:0;color:var(--txt);
+    font-family:inherit;font-size:15.5px;font-weight:500;letter-spacing:-0.01em;}
+  .search input::placeholder{color:var(--faint);font-weight:500;}
+  .hint{padding:8px 20px 0;color:var(--muted);font-size:12.5px;font-weight:500;
+    display:flex;align-items:center;gap:7px;}
+  .hint .live{width:7px;height:7px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 0 0 rgba(55,201,139,.6);animation:pulse 2.4s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(55,201,139,.5)}70%{box-shadow:0 0 0 6px rgba(55,201,139,0)}100%{box-shadow:0 0 0 0 rgba(55,201,139,0)}}
+  /* ── Views ───────────────────────────────────────── */
+  .view{display:none;} .view.active{display:block;}
+  /* ── Ad banner ───────────────────────────────────── */
   .ad-banner{
-    margin:10px 16px 4px; border-radius:16px; overflow:hidden; position:relative;
-    background:linear-gradient(110deg,#10325f,#0c2247); border:1px solid var(--line);
-    display:flex; align-items:center; gap:14px; padding:14px 16px;}
-  .ad-banner .tag{position:absolute; top:8px; right:10px; font-size:9px; letter-spacing:.1em;
-    color:var(--muted); text-transform:uppercase; opacity:.7;}
-  .ad-banner .emoji{font-size:30px;}
-  .ad-banner .t{font-weight:800; font-size:16px;}
-  .ad-banner .s{color:var(--muted); font-size:13px; margin-top:2px;}
-  /* ── Flight cards ────────────────────────────────────────── */
-  .cards{padding:8px 16px 0; display:flex; flex-direction:column; gap:12px;}
+    margin:14px 18px 6px; border-radius:var(--radius); position:relative; overflow:hidden;
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgba(216,180,106,.12), transparent 55%),
+      linear-gradient(120deg,#171d2a,#11151e);
+    border:1px solid var(--line2); box-shadow:var(--shadow);
+    display:flex; align-items:center; gap:14px; padding:16px;}
+  .ad-banner .tile{
+    width:46px;height:46px;border-radius:13px;flex:none;
+    background:linear-gradient(150deg,rgba(216,180,106,.22),rgba(216,180,106,.06));
+    border:1px solid rgba(216,180,106,.25); color:var(--gold);
+    display:flex;align-items:center;justify-content:center;}
+  .ad-banner .tile .ic{width:23px;height:23px;}
+  .ad-banner .t{font-size:15.5px;font-weight:700;}
+  .ad-banner .s{font-size:12.5px;color:var(--muted);margin-top:2px;font-weight:500;}
+  .ad-banner .tag{position:absolute;top:10px;right:12px;font-size:8.5px;letter-spacing:.14em;
+    color:var(--faint);text-transform:uppercase;font-weight:600;}
+  /* ── Flight cards ────────────────────────────────── */
+  .cards{padding:10px 18px 4px;display:flex;flex-direction:column;gap:12px;}
   .fcard{
-    background:var(--surface); border:1px solid var(--line); border-radius:16px;
-    padding:15px 16px; display:flex; flex-direction:column; gap:12px;}
-  .fcard .row1{display:flex; align-items:center; justify-content:space-between; gap:10px;}
-  .fcard .al{display:flex; align-items:center; gap:10px; min-width:0;}
-  .fcard .badge{background:#fff; color:#0b1f3a; font-weight:900; font-size:12px;
-    padding:3px 8px; border-radius:6px;}
-  .fcard .alname{font-weight:700; font-size:14px; color:var(--muted);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .fcard .st{font-weight:800; font-size:13px; white-space:nowrap;}
+    background:linear-gradient(180deg,var(--surface),#11141c);
+    border:1px solid var(--line2); border-radius:var(--radius);
+    padding:16px 17px; display:flex; flex-direction:column; gap:13px; box-shadow:var(--shadow);}
+  .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .fcard .al{display:flex;align-items:center;gap:11px;min-width:0;}
+  .fcard .badge{
+    min-width:38px;height:30px;padding:0 9px;border-radius:9px;
+    background:linear-gradient(180deg,#fff,#e9edf4); color:#0c1118;
+    font-weight:800;font-size:12.5px;letter-spacing:.3px;
+    display:flex;align-items:center;justify-content:center;}
+  .fcard .alname{font-weight:600;font-size:13.5px;color:var(--muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0;}
+  .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
+  .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
   .st.ontime{color:var(--green);} .st.delayed,.st.early{color:var(--amber);}
   .st.cancelled{color:var(--red);} .st.boarding{color:var(--accent);}
-  .fcard .row2{display:flex; align-items:flex-end; justify-content:space-between; gap:10px;}
-  .fcard .city{font-size:23px; font-weight:800; line-height:1.05;}
-  .fcard .city small{display:block; color:var(--muted); font-size:13px; font-weight:600; margin-top:3px;}
-  .fcard .flt{color:var(--muted); font-size:12.5px; margin-top:4px;}
-  .fcard .time{text-align:right;}
-  .fcard .time .hh{font-size:23px; font-weight:800;}
-  .fcard .time .lbl{font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;}
-  .fcard .meta{display:flex; gap:8px; flex-wrap:wrap;}
-  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--surface2);
-    border:1px solid var(--line); border-radius:10px; padding:7px 11px; font-size:13px; font-weight:700;}
-  .chip .k{color:var(--muted); font-weight:600; font-size:11px;}
-  .chip.gate{background:rgba(30,111,80,.22); border-color:rgba(52,211,153,.35);}
-  .empty{padding:60px 24px; text-align:center; color:var(--muted);}
-  .empty .big{font-size:34px; margin-bottom:10px;}
-  /* ── Coming-soon placeholders ────────────────────────────── */
-  .soon{padding:54px 28px; text-align:center; color:var(--muted);}
-  .soon .ico{font-size:46px; margin-bottom:14px;}
-  .soon .h{font-size:20px; font-weight:800; color:var(--txt); margin-bottom:8px;}
-  .soon .p{font-size:14px; line-height:1.5; max-width:300px; margin:0 auto;}
-  /* ── Bottom nav ──────────────────────────────────────────── */
+  .fcard .row2{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
+  .fcard .city{font-size:24px;font-weight:800;line-height:1.04;letter-spacing:-0.02em;}
+  .fcard .sub{color:var(--muted);font-size:12px;font-weight:500;margin-top:5px;}
+  .fcard .sub b{color:var(--faint);font-weight:600;}
+  .fcard .time{text-align:right;flex:none;}
+  .fcard .time .hh{font-size:24px;font-weight:800;letter-spacing:-0.02em;}
+  .fcard .time .lbl{font-size:9.5px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;font-weight:600;margin-top:2px;}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;padding-top:2px;}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface2);
+    border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-size:12.5px;font-weight:700;}
+  .chip .ic{width:14px;height:14px;color:var(--faint);}
+  .chip .k{color:var(--faint);font-weight:500;font-size:11px;}
+  .chip.gate{background:var(--accent-soft);border-color:rgba(76,130,255,.28);color:#bcd0ff;}
+  .chip.gate .ic{color:var(--accent);}
+  .empty{padding:64px 24px;text-align:center;color:var(--muted);}
+  .empty .ic{width:38px;height:38px;color:var(--faint);margin:0 auto 14px;}
+  /* ── Coming-soon ─────────────────────────────────── */
+  .soon{padding:60px 30px;text-align:center;}
+  .soon .badge{width:64px;height:64px;border-radius:20px;margin:0 auto 18px;
+    background:var(--surface2);border:1px solid var(--line2);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .soon .badge .ic{width:30px;height:30px;}
+  .soon .h{font-size:19px;font-weight:800;letter-spacing:-0.02em;margin-bottom:8px;}
+  .soon .p{font-size:13.5px;line-height:1.55;color:var(--muted);max-width:290px;margin:0 auto;font-weight:500;}
+  .soon .tag{display:inline-block;margin-top:16px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--faint);border:1px solid var(--line2);border-radius:999px;padding:5px 12px;font-weight:600;}
+  /* ── Bottom nav ──────────────────────────────────── */
   .nav{
-    position:fixed; left:0; right:0; bottom:0; z-index:30; height:calc(var(--nav-h) + env(safe-area-inset-bottom));
-    padding-bottom:env(safe-area-inset-bottom);
-    background:rgba(12,26,49,.96); backdrop-filter:blur(12px);
-    border-top:1px solid var(--line); display:flex;}
-  .nav button{flex:1; background:none; border:0; color:var(--muted);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-    font-size:10.5px; font-weight:700; letter-spacing:.02em;}
-  .nav button .ico{font-size:21px;}
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+    background:rgba(11,14,20,.9);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;}
+  .nav button{flex:1;background:none;border:0;color:var(--faint);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    font-family:inherit;font-size:10px;font-weight:600;letter-spacing:.01em;transition:color .15s;}
+  .nav button .ic{width:23px;height:23px;}
   .nav button.active{color:var(--accent);}
-  /* ── Full-page ad interstitial ───────────────────────────── */
-  .ad-full{
-    position:fixed; inset:0; z-index:100; display:none;
-    background:linear-gradient(160deg,#0c2247,#06101f);
-    flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px;}
-  .ad-full.show{display:flex; animation:fade .35s ease;}
-  @keyframes fade{from{opacity:0}to{opacity:1}}
-  .ad-full .emoji{font-size:74px; margin-bottom:18px;}
-  .ad-full .t{font-size:30px; font-weight:900; line-height:1.15;}
-  .ad-full .s{color:var(--muted); font-size:16px; margin-top:12px; max-width:320px;}
-  .ad-full .skip{position:absolute; top:calc(env(safe-area-inset-top) + 16px); right:18px;
-    background:rgba(255,255,255,.12); color:#fff; border:0; border-radius:999px;
-    padding:9px 16px; font-size:13px; font-weight:700;}
-  .ad-full .tag{position:absolute; top:calc(env(safe-area-inset-top) + 18px); left:18px;
-    font-size:10px; letter-spacing:.12em; color:var(--muted); text-transform:uppercase;}
+  /* ── Full-page ad ────────────────────────────────── */
+  .ad-full{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:34px;
+    background:radial-gradient(120% 80% at 50% 0%, #16213a, #080b11);}
+  .ad-full.show{display:flex;animation:fade .4s ease;}
+  @keyframes fade{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+  .ad-full .tile{width:96px;height:96px;border-radius:28px;margin-bottom:24px;
+    background:linear-gradient(150deg,rgba(216,180,106,.2),rgba(216,180,106,.05));
+    border:1px solid rgba(216,180,106,.3);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .ad-full .tile .ic{width:46px;height:46px;}
+  .ad-full .t{font-size:27px;font-weight:800;letter-spacing:-0.02em;line-height:1.15;}
+  .ad-full .s{color:var(--muted);font-size:15px;margin-top:12px;max-width:300px;font-weight:500;line-height:1.5;}
+  .ad-full .cta{margin-top:26px;background:var(--accent);color:#fff;border:0;border-radius:14px;
+    padding:14px 28px;font-family:inherit;font-size:15px;font-weight:700;box-shadow:var(--shadow);}
+  .ad-full .skip{position:absolute;top:calc(env(safe-area-inset-top) + 18px);right:18px;
+    background:rgba(255,255,255,.08);color:#fff;border:1px solid var(--line2);border-radius:999px;
+    width:38px;height:38px;display:flex;align-items:center;justify-content:center;}
+  .ad-full .skip .ic{width:18px;height:18px;}
+  .ad-full .tag{position:absolute;top:calc(env(safe-area-inset-top) + 22px);left:20px;
+    font-size:9px;letter-spacing:.16em;color:var(--faint);text-transform:uppercase;font-weight:600;}
 </style>
 </head>
 <body>
@@ -135,9 +179,9 @@
 <div class="topbar">
   <div class="ap-wrap">
     <div class="ap-pick">
-      <span class="dot" id="apDot">YQM</span>
-      <span id="apLabel">Moncton</span>
-      <span class="chev">▾</span>
+      <span class="code" id="apDot">YQM</span>
+      <span class="meta"><b id="apLabel">Moncton</b><span>Your airport</span></span>
+      <svg class="ic chev" viewBox="0 0 24 24" style="width:16px;height:16px"><polyline points="6 9 12 15 18 9"/></svg>
       <select id="apSelect" aria-label="Choose airport" onchange="setAirport(this.value)">
         <option value="YQM">Moncton (YQM)</option>
         <option value="YHZ">Halifax (YHZ)</option>
@@ -147,23 +191,25 @@
       </select>
     </div>
   </div>
-  <button class="me-btn" title="Sign in to personalize" onclick="personalize()">☺</button>
+  <button class="me-btn" title="Sign in to personalize" onclick="personalize()">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
+  </button>
 </div>
 
 <!-- FLIGHTS -->
 <div class="view active" id="view-flights">
   <div class="search-wrap">
     <div class="search">
-      <span class="ico">🔍</span>
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="q" inputmode="search" placeholder="Find your flight — number or city" oninput="render()">
     </div>
   </div>
-  <div class="hint" id="hint">Live departures · updates on its own</div>
+  <div class="hint"><span class="live"></span><span id="hint">Live departures</span></div>
 
   <div class="ad-banner" id="adBanner" onclick="bannerTap()">
     <span class="tag">Sponsored</span>
-    <span class="emoji">☕</span>
-    <div><div class="t">Grab a coffee before you fly</div><div class="s">Tap for offers near your gate</div></div>
+    <span class="tile"><svg class="ic" viewBox="0 0 24 24"><path d="M18 8h1a3 3 0 0 1 0 6h-1"/><path d="M5 8h13v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z"/><line x1="8" y1="2" x2="8" y2="4.5"/><line x1="12" y1="2" x2="12" y2="4.5"/></svg></span>
+    <div><div class="t">Grab a coffee before you fly</div><div class="s">Offers near your gate — tap to see</div></div>
   </div>
 
   <div class="cards" id="cards"></div>
@@ -171,144 +217,151 @@
 
 <!-- EXPLORE -->
 <div class="view" id="view-explore">
-  <div class="soon"><div class="ico">🧭</div><div class="h">Explore the airport</div>
-    <div class="p">Find shops, food, lounges, washrooms and how to get to them — coming soon.</div></div>
+  <div class="soon">
+    <div class="badge"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.2 13.2 8.5 15.5 10.8 10.8 15.5 8.5"/></svg></div>
+    <div class="h">Explore the airport</div>
+    <div class="p">Find shops, food, lounges and washrooms — and how to get to them.</div>
+    <div class="tag">Coming soon</div>
+  </div>
 </div>
 <!-- BAGGAGE -->
 <div class="view" id="view-bag">
-  <div class="soon"><div class="ico">🧳</div><div class="h">Track your bags</div>
-    <div class="p">See your arrival baggage belt and when bags are ready — coming soon.</div></div>
+  <div class="soon">
+    <div class="badge"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><line x1="9.5" y1="11" x2="9.5" y2="16"/><line x1="14.5" y1="11" x2="14.5" y2="16"/></svg></div>
+    <div class="h">Track your bags</div>
+    <div class="p">See your arrival baggage belt and when your bags are ready.</div>
+    <div class="tag">Coming soon</div>
+  </div>
 </div>
 <!-- TRIP -->
 <div class="view" id="view-trip">
-  <div class="soon"><div class="ico">🎫</div><div class="h">Your trip</div>
-    <div class="p">Save your flight, boarding pass and bookings for quick access — coming soon.</div></div>
+  <div class="soon">
+    <div class="badge"><svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/><line x1="14" y1="6" x2="14" y2="18" stroke-dasharray="2 2.5"/></svg></div>
+    <div class="h">Your trip</div>
+    <div class="p">Save your flight and boarding pass for quick access. Sign in to unlock.</div>
+    <div class="tag">Members</div>
+  </div>
 </div>
 
 <!-- Bottom nav -->
 <nav class="nav">
-  <button class="active" data-v="flights" onclick="go('flights')"><span class="ico">✈️</span>Flights</button>
-  <button data-v="explore" onclick="go('explore')"><span class="ico">🧭</span>Explore</button>
-  <button data-v="bag" onclick="go('bag')"><span class="ico">🧳</span>Baggage</button>
-  <button data-v="trip" onclick="go('trip')"><span class="ico">🎫</span>Trip</button>
+  <button class="active" data-v="flights" onclick="go('flights')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/></svg>Flights</button>
+  <button data-v="explore" onclick="go('explore')">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.2 13.2 8.5 15.5 10.8 10.8 15.5 8.5"/></svg>Explore</button>
+  <button data-v="bag" onclick="go('bag')">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Baggage</button>
+  <button data-v="trip" onclick="go('trip')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg>Trip</button>
 </nav>
 
 <!-- Full-page ad -->
 <div class="ad-full" id="adFull">
   <span class="tag">Advertisement</span>
-  <button class="skip" onclick="closeFullAd()">Skip ✕</button>
-  <div class="emoji" id="adFullEmoji">🛍️</div>
+  <button class="skip" onclick="closeFullAd()"><svg class="ic" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+  <div class="tile" id="adFullIcon"></div>
   <div class="t" id="adFullTitle">Duty-free, your way</div>
-  <div class="s" id="adFullSub">Pre-order and pick up at the gate. Tap to explore.</div>
+  <div class="s" id="adFullSub">Pre-order and pick up at the gate.</div>
+  <button class="cta" onclick="closeFullAd()">Explore offers</button>
 </div>
 
 <script>
-const AP_LABEL = { YQM:'Moncton', YHZ:'Halifax', YYZ:'Toronto', YUL:'Montréal', MCO:'Orlando' };
-const CITY = { YYZ:'Toronto', YTZ:'Toronto', YUL:'Montréal', YHZ:'Halifax', YYT:"St. John's", YDF:'Deer Lake',
-  YOW:'Ottawa', YWK:'Wabush', YYY:'Mont-Joli', TPA:'Tampa', TLH:'Tallahassee', PSE:'Ponce', SDQ:'Santo Domingo',
-  SJU:'San Juan', BQN:'Aguadilla', CLE:'Cleveland', ATL:'Atlanta', BOS:'Boston', JFK:'New York', EWR:'Newark',
-  DFW:'Dallas', DEN:'Denver', LAX:'Los Angeles', ORD:'Chicago', MIA:'Miami', DTW:'Detroit', STI:'Santiago' };
-const AIRLINE = { AC:'Air Canada', PD:'Porter', WS:'WestJet', TS:'Air Transat', PB:'PAL Airlines', F8:'Flair',
-  B6:'jetBlue', DL:'Delta', AA:'American', UA:'United', WN:'Southwest', F9:'Frontier', MX:'Breeze', W8:'Cargojet' };
+const SVG = {
+  bag:'<path d="M18 8h1a3 3 0 0 1 0 6h-1"/><path d="M5 8h13v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z"/><line x1="8" y1="2" x2="8" y2="4.5"/><line x1="12" y1="2" x2="12" y2="4.5"/>',
+  shop:'<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8a3 3 0 0 1 6 0"/>',
+  food:'<path d="M6 3v7a2 2 0 0 0 4 0V3"/><line x1="8" y1="10" x2="8" y2="21"/><path d="M16 3c-1.5 0-2 2-2 4s.5 4 2 4v10"/>',
+  lounge:'<path d="M5 11V8a2 2 0 0 1 4 0v3"/><path d="M15 11V8a2 2 0 0 1 4 0v3"/><path d="M4 11h16v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><line x1="6" y1="20" x2="6" y2="22"/><line x1="18" y1="20" x2="18" y2="22"/>',
+  car:'<path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13"/><path d="M4 13h16v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>'
+};
+const FULL_ADS=[
+  {ic:'shop',t:'Duty-free, your way',s:'Pre-order and pick up at the gate.'},
+  {ic:'food',t:'Hungry before you board?',s:'Order ahead from restaurants near your gate.'},
+  {ic:'lounge',t:'Relax in the lounge',s:'Day passes available — comfort before you fly.'},
+  {ic:'car',t:'Skip the taxi line',s:'Book your ride home before you land.'}
+];
+const AP_LABEL={YQM:'Moncton',YHZ:'Halifax',YYZ:'Toronto',YUL:'Montréal',MCO:'Orlando'};
+const CITY={YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHZ:'Halifax',YYT:"St. John's",YDF:'Deer Lake',
+  YOW:'Ottawa',YWK:'Wabush',YYY:'Mont-Joli',TPA:'Tampa',TLH:'Tallahassee',PSE:'Ponce',SDQ:'Santo Domingo',
+  SJU:'San Juan',BQN:'Aguadilla',CLE:'Cleveland',ATL:'Atlanta',BOS:'Boston',JFK:'New York',EWR:'Newark',
+  DFW:'Dallas',DEN:'Denver',LAX:'Los Angeles',ORD:'Chicago',MIA:'Miami',DTW:'Detroit',STI:'Santiago'};
+const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
+  B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet'};
 
-let AP = 'YQM';
-let FLIGHTS = [];
-let curView = 'flights';
-
+let AP='YQM', FLIGHTS=[], curView='flights';
+function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function statusOf(f){
   const st=(f.state||'').toLowerCase();
-  if(st==='canceled'||st==='cancelled') return {t:'Cancelled',c:'cancelled'};
-  if(st==='outgate'||st==='inair') return {t:'Departed',c:'ontime'};
-  if(st==='ingate'||st==='landed') return {t:'Arrived',c:'ontime'};
+  if(st==='canceled'||st==='cancelled')return{t:'Cancelled',c:'cancelled'};
+  if(st==='outgate'||st==='inair')return{t:'Departed',c:'ontime'};
+  if(st==='ingate'||st==='landed')return{t:'Arrived',c:'ontime'};
   const tl=(f.timeliness||'').toLowerCase();
-  if(tl==='delayed') return {t:'Delayed',c:'delayed'};
-  if(tl==='early') return {t:'Early',c:'early'};
-  return {t:'On time',c:'ontime'};
+  if(tl==='delayed')return{t:'Delayed',c:'delayed'};
+  if(tl==='early')return{t:'Early',c:'early'};
+  return{t:'On time',c:'ontime'};
 }
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-
 function render(){
   const q=(document.getElementById('q').value||'').trim().toLowerCase();
   const cards=document.getElementById('cards');
   let list=FLIGHTS;
-  if(q) list=list.filter(f=>{
-    const city=(CITY[f.cityIata]||f.cityIata||'').toLowerCase();
-    return (f.flight||'').toLowerCase().includes(q) || city.includes(q) || (f.cityIata||'').toLowerCase().includes(q);
-  });
+  if(q)list=list.filter(f=>{const city=(CITY[f.cityIata]||f.cityIata||'').toLowerCase();
+    return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
   if(!list.length){
-    cards.innerHTML='<div class="empty"><div class="big">🔎</div>'+(q?'No flights match “'+esc(q)+'”.':'No departures right now.')+'</div>';
+    cards.innerHTML='<div class="empty">'+svg('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>')
+      +'<div>'+(q?'No flights match “'+esc(q)+'”':'No departures right now')+'</div></div>';
     return;
   }
   cards.innerHTML=list.map(f=>{
-    const s=statusOf(f);
-    const city=CITY[f.cityIata]||f.cityIata||'—';
-    const al=AIRLINE[f.airline]||f.airline;
+    const s=statusOf(f), city=CITY[f.cityIata]||f.cityIata||'—', al=AIRLINE[f.airline]||f.airline;
     const sched=(f.schedTime||'').slice(0,5);
     const via=(f.via&&f.via.length)?' · via '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
-    const gate=f.gate?'<span class="chip gate"><span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
-    const ac=f.aircraft?'<span class="chip"><span class="k">Aircraft</span> '+esc(f.aircraft)+'</span>':'';
-    const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">Operated by</span> '+esc(f.operatedBy)+'</span>':'';
+    const gate=f.gate?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
+    const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(f.aircraft)+'</span>':'';
+    const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
     return '<div class="fcard">'
       +'<div class="row1"><div class="al"><span class="badge">'+esc(f.airline)+'</span><span class="alname">'+esc(al)+'</span></div>'
-      +'<span class="st '+s.c+'">'+s.t+'</span></div>'
-      +'<div class="row2"><div><div class="city">'+esc(city)+'<small>'+esc(f.cityIata||'')+esc(via)+'</small></div>'
-      +'<div class="flt">'+esc(f.flight)+'</div></div>'
+      +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
+      +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
       +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">Departs</div></div></div>'
       +(gate||ac||op?'<div class="meta">'+gate+ac+op+'</div>':'')
       +'</div>';
   }).join('');
 }
-
 async function load(){
   try{
     const r=await fetch('/oag/departures?ap='+encodeURIComponent(AP),{cache:'no-store'});
-    const d=await r.json();
-    FLIGHTS=(d&&d.flights)||[];
-    document.getElementById('hint').textContent= d.error ? 'Live data unavailable right now' :
-      ('Live departures · '+(FLIGHTS.length)+' flights · updates on its own');
-  }catch(e){ document.getElementById('hint').textContent='Couldn’t reach live data'; }
+    const d=await r.json(); FLIGHTS=(d&&d.flights)||[];
+    document.getElementById('hint').textContent=d.error?'Live data unavailable':('Live departures · '+FLIGHTS.length+' flights');
+  }catch(e){document.getElementById('hint').textContent='Couldn’t reach live data';}
   render();
 }
-
 function setAirport(code){
-  AP=code;
-  document.getElementById('apDot').textContent=code;
+  AP=code; document.getElementById('apDot').textContent=code;
   document.getElementById('apLabel').textContent=AP_LABEL[code]||code;
-  document.getElementById('apSelect').value=code;
-  FLIGHTS=[]; render(); load();
+  document.getElementById('apSelect').value=code; FLIGHTS=[]; render(); load();
 }
 function go(v){
   curView=v;
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
-  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.v===v));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
   window.scrollTo(0,0);
 }
-function personalize(){ alert('Sign-in to personalize your trip is coming soon — save your flight, get gate alerts, and more.'); }
-function bannerTap(){ showFullAd(); }
-
-/* ── Ads ── */
-const FULL_ADS=[
-  {e:'🛍️',t:'Duty-free, your way',s:'Pre-order and pick up at the gate. Tap to explore.'},
-  {e:'🍔',t:'Hungry before you board?',s:'Order ahead from restaurants near your gate.'},
-  {e:'🛋️',t:'Relax in the lounge',s:'Day passes available. Comfort before you fly.'},
-  {e:'🚗',t:'Skip the taxi line',s:'Book your ride to land and go.'}
-];
-let adIdx=0, adTimer=null;
+function personalize(){alert('Sign in to personalize your trip — save your flight, get gate alerts, and more. Coming soon.');}
+function bannerTap(){showFullAd();}
+let adIdx=0;
 function showFullAd(){
-  const a=FULL_ADS[adIdx%FULL_ADS.length]; adIdx++;
-  document.getElementById('adFullEmoji').textContent=a.e;
+  const a=FULL_ADS[adIdx%FULL_ADS.length];adIdx++;
+  document.getElementById('adFullIcon').innerHTML=svg(SVG[a.ic]||SVG.shop);
   document.getElementById('adFullTitle').textContent=a.t;
   document.getElementById('adFullSub').textContent=a.s;
-  const el=document.getElementById('adFull'); el.classList.add('show');
-  clearTimeout(el._t); el._t=setTimeout(closeFullAd, 6000);  // auto-dismiss after 6s
+  const el=document.getElementById('adFull');el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(closeFullAd,6500);
 }
-function closeFullAd(){ document.getElementById('adFull').classList.remove('show'); }
-function startAdCycle(){ adTimer=setInterval(()=>{ if(curView==='flights' && !document.hidden) showFullAd(); }, 45000); }
-
+function closeFullAd(){document.getElementById('adFull').classList.remove('show');}
 setAirport('YQM');
-setInterval(load, 60000);
-startAdCycle();
+setInterval(load,60000);
+setInterval(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},45000);
 </script>
 </body>
 </html>
