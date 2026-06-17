@@ -97,7 +97,17 @@
   /* ── Flight cards ────────────────────────────────── */
   .cards{padding:10px 18px 4px;display:flex;flex-direction:column;gap:12px;}
   .fcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-    padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);}
+    padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);
+    position:relative;overflow:hidden;}
+  /* Faded brand-emblem watermark, bleeding off the right edge behind the time */
+  .cardmark{position:absolute;top:50%;right:-16px;transform:translateY(-50%);
+    width:150px;height:150px;background:var(--brand);pointer-events:none;z-index:0;opacity:.07;
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-position:right center;mask-position:right center;
+    -webkit-mask-size:contain;mask-size:contain;}
+  :root[data-theme="dark"] .cardmark{opacity:.16;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .cardmark{opacity:.16;}}
+  .fcard .row1,.fcard .row2,.fcard .meta{position:relative;z-index:1;}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .fcard .al{display:flex;align-items:center;gap:9px;min-width:0;}
   /* Official airline wordmark — light/dark variant chosen by theme */
@@ -386,6 +396,22 @@ function heroWordmark(code){
   return '<img class="dt-wm dt-wm-l" src="'+u[0]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">'
         +'<img class="dt-wm dt-wm-d" src="'+u[1]+'" alt="" loading="lazy">';
 }
+// Brand emblem/symbol per airline, used as a faded watermark. Recoloured to the
+// airline's brand colour via CSS mask, so the source file's own colours don't
+// matter — only its shape (alpha) does.
+const EMBLEM={
+  AC:'/logos/symbols/airlines/AC.svg', WS:'/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
+  PD:'/logos/airlines/canadian/porter-p.svg', TS:'/logos/symbols/airlines/TS.svg',
+  F8:'/logos/airlines/canadian/flair-dot.svg', PB:'/logos/airlines/canadian-regional/pal-symbol.svg',
+  B6:'/logos/airlines/us-major/jetblue.svg', DL:'/logos/airlines/us-major/delta-widget.svg',
+  AA:'/logos/airlines/us-major/american-flight-symbol.svg', UA:'/logos/airlines/us-major/united-globe-only.svg',
+  WN:'/logos/symbols/airlines/WN.svg', F9:'/logos/airlines/us-major/frontier-emblem.svg'
+};
+// Faded brand-emblem watermark for a flight card (empty if the airline has none).
+function cardMark(code){
+  const u=EMBLEM[code]; if(!u) return '';
+  return '<span class="cardmark" style="-webkit-mask-image:url(\''+u+'\');mask-image:url(\''+u+'\')"></span>';
+}
 // Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
 function acType(raw){
   if(!raw) return '';
@@ -453,7 +479,7 @@ function render(){
     const gate=f.gate?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
-    return '<div class="fcard" style="--brand:'+(BRAND[f.airline]||'transparent')+'" onclick="openFlight('+i+')"><div class="row1"><div class="al">'+airlineLogo(f.airline)+'</div>'
+    return '<div class="fcard" style="--brand:'+(BRAND[f.airline]||'transparent')+'" onclick="openFlight('+i+')">'+cardMark(f.airline)+'<div class="row1"><div class="al">'+airlineLogo(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
       +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">Departs</div></div></div>'
