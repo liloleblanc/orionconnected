@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1f3a">
+<title>Airport Companion</title>
+<style>
+  :root{
+    --bg:#0a1424; --surface:#10203a; --surface2:#16294a; --line:#21385f;
+    --txt:#eef4ff; --muted:#9fb4d4; --accent:#2f81f7; --accent2:#1d6fe0;
+    --green:#34d399; --amber:#fbbf24; --red:#f87171; --pill:#1e6f50;
+    --nav-h:64px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    display:flex; flex-direction:column; min-height:100dvh;
+    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  }
+  /* ── Top bar ─────────────────────────────────────────────── */
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+    background:linear-gradient(180deg,#0d1f3c,#0a1424);
+    border-bottom:1px solid var(--line);
+  }
+  .ap-pick{
+    display:flex; align-items:center; gap:9px; background:var(--surface2);
+    border:1px solid var(--line); border-radius:999px; padding:8px 14px;
+    font-weight:800; font-size:15px; color:var(--txt);
+  }
+  .ap-pick .dot{width:26px;height:26px;border-radius:50%;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;}
+  .ap-pick select{
+    position:absolute; opacity:0; inset:0; width:100%; height:100%; }
+  .ap-wrap{position:relative;}
+  .ap-pick .chev{color:var(--muted);font-size:12px;}
+  .me-btn{
+    width:42px;height:42px;border-radius:50%;border:1px solid var(--line);
+    background:var(--surface2); color:var(--muted); font-size:18px;
+    display:flex;align-items:center;justify-content:center;}
+  /* ── Search ──────────────────────────────────────────────── */
+  .search-wrap{padding:14px 16px 6px;}
+  .search{
+    display:flex; align-items:center; gap:10px; background:var(--surface);
+    border:1px solid var(--line); border-radius:14px; padding:13px 15px;}
+  .search input{
+    flex:1; background:none; border:0; outline:0; color:var(--txt);
+    font-size:16px; font-weight:600;}
+  .search input::placeholder{color:var(--muted); font-weight:500;}
+  .search .ico{color:var(--muted); font-size:17px;}
+  .hint{padding:2px 18px 0; color:var(--muted); font-size:12.5px;}
+  /* ── Views ───────────────────────────────────────────────── */
+  .view{display:none; flex:1; padding:8px 0 16px;}
+  .view.active{display:block;}
+  .section-title{padding:14px 18px 6px; font-size:13px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--muted); font-weight:800;}
+  /* ── Ad banner ───────────────────────────────────────────── */
+  .ad-banner{
+    margin:10px 16px 4px; border-radius:16px; overflow:hidden; position:relative;
+    background:linear-gradient(110deg,#10325f,#0c2247); border:1px solid var(--line);
+    display:flex; align-items:center; gap:14px; padding:14px 16px;}
+  .ad-banner .tag{position:absolute; top:8px; right:10px; font-size:9px; letter-spacing:.1em;
+    color:var(--muted); text-transform:uppercase; opacity:.7;}
+  .ad-banner .emoji{font-size:30px;}
+  .ad-banner .t{font-weight:800; font-size:16px;}
+  .ad-banner .s{color:var(--muted); font-size:13px; margin-top:2px;}
+  /* ── Flight cards ────────────────────────────────────────── */
+  .cards{padding:8px 16px 0; display:flex; flex-direction:column; gap:12px;}
+  .fcard{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:15px 16px; display:flex; flex-direction:column; gap:12px;}
+  .fcard .row1{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .fcard .al{display:flex; align-items:center; gap:10px; min-width:0;}
+  .fcard .badge{background:#fff; color:#0b1f3a; font-weight:900; font-size:12px;
+    padding:3px 8px; border-radius:6px;}
+  .fcard .alname{font-weight:700; font-size:14px; color:var(--muted);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .fcard .st{font-weight:800; font-size:13px; white-space:nowrap;}
+  .st.ontime{color:var(--green);} .st.delayed,.st.early{color:var(--amber);}
+  .st.cancelled{color:var(--red);} .st.boarding{color:var(--accent);}
+  .fcard .row2{display:flex; align-items:flex-end; justify-content:space-between; gap:10px;}
+  .fcard .city{font-size:23px; font-weight:800; line-height:1.05;}
+  .fcard .city small{display:block; color:var(--muted); font-size:13px; font-weight:600; margin-top:3px;}
+  .fcard .flt{color:var(--muted); font-size:12.5px; margin-top:4px;}
+  .fcard .time{text-align:right;}
+  .fcard .time .hh{font-size:23px; font-weight:800;}
+  .fcard .time .lbl{font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;}
+  .fcard .meta{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--surface2);
+    border:1px solid var(--line); border-radius:10px; padding:7px 11px; font-size:13px; font-weight:700;}
+  .chip .k{color:var(--muted); font-weight:600; font-size:11px;}
+  .chip.gate{background:rgba(30,111,80,.22); border-color:rgba(52,211,153,.35);}
+  .empty{padding:60px 24px; text-align:center; color:var(--muted);}
+  .empty .big{font-size:34px; margin-bottom:10px;}
+  /* ── Coming-soon placeholders ────────────────────────────── */
+  .soon{padding:54px 28px; text-align:center; color:var(--muted);}
+  .soon .ico{font-size:46px; margin-bottom:14px;}
+  .soon .h{font-size:20px; font-weight:800; color:var(--txt); margin-bottom:8px;}
+  .soon .p{font-size:14px; line-height:1.5; max-width:300px; margin:0 auto;}
+  /* ── Bottom nav ──────────────────────────────────────────── */
+  .nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:30; height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    background:rgba(12,26,49,.96); backdrop-filter:blur(12px);
+    border-top:1px solid var(--line); display:flex;}
+  .nav button{flex:1; background:none; border:0; color:var(--muted);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    font-size:10.5px; font-weight:700; letter-spacing:.02em;}
+  .nav button .ico{font-size:21px;}
+  .nav button.active{color:var(--accent);}
+  /* ── Full-page ad interstitial ───────────────────────────── */
+  .ad-full{
+    position:fixed; inset:0; z-index:100; display:none;
+    background:linear-gradient(160deg,#0c2247,#06101f);
+    flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px;}
+  .ad-full.show{display:flex; animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .ad-full .emoji{font-size:74px; margin-bottom:18px;}
+  .ad-full .t{font-size:30px; font-weight:900; line-height:1.15;}
+  .ad-full .s{color:var(--muted); font-size:16px; margin-top:12px; max-width:320px;}
+  .ad-full .skip{position:absolute; top:calc(env(safe-area-inset-top) + 16px); right:18px;
+    background:rgba(255,255,255,.12); color:#fff; border:0; border-radius:999px;
+    padding:9px 16px; font-size:13px; font-weight:700;}
+  .ad-full .tag{position:absolute; top:calc(env(safe-area-inset-top) + 18px); left:18px;
+    font-size:10px; letter-spacing:.12em; color:var(--muted); text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="ap-wrap">
+    <div class="ap-pick">
+      <span class="dot" id="apDot">YQM</span>
+      <span id="apLabel">Moncton</span>
+      <span class="chev">▾</span>
+      <select id="apSelect" aria-label="Choose airport" onchange="setAirport(this.value)">
+        <option value="YQM">Moncton (YQM)</option>
+        <option value="YHZ">Halifax (YHZ)</option>
+        <option value="YYZ">Toronto (YYZ)</option>
+        <option value="YUL">Montréal (YUL)</option>
+        <option value="MCO">Orlando (MCO)</option>
+      </select>
+    </div>
+  </div>
+  <button class="me-btn" title="Sign in to personalize" onclick="personalize()">☺</button>
+</div>
+
+<!-- FLIGHTS -->
+<div class="view active" id="view-flights">
+  <div class="search-wrap">
+    <div class="search">
+      <span class="ico">🔍</span>
+      <input id="q" inputmode="search" placeholder="Find your flight — number or city" oninput="render()">
+    </div>
+  </div>
+  <div class="hint" id="hint">Live departures · updates on its own</div>
+
+  <div class="ad-banner" id="adBanner" onclick="bannerTap()">
+    <span class="tag">Sponsored</span>
+    <span class="emoji">☕</span>
+    <div><div class="t">Grab a coffee before you fly</div><div class="s">Tap for offers near your gate</div></div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+</div>
+
+<!-- EXPLORE -->
+<div class="view" id="view-explore">
+  <div class="soon"><div class="ico">🧭</div><div class="h">Explore the airport</div>
+    <div class="p">Find shops, food, lounges, washrooms and how to get to them — coming soon.</div></div>
+</div>
+<!-- BAGGAGE -->
+<div class="view" id="view-bag">
+  <div class="soon"><div class="ico">🧳</div><div class="h">Track your bags</div>
+    <div class="p">See your arrival baggage belt and when bags are ready — coming soon.</div></div>
+</div>
+<!-- TRIP -->
+<div class="view" id="view-trip">
+  <div class="soon"><div class="ico">🎫</div><div class="h">Your trip</div>
+    <div class="p">Save your flight, boarding pass and bookings for quick access — coming soon.</div></div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="nav">
+  <button class="active" data-v="flights" onclick="go('flights')"><span class="ico">✈️</span>Flights</button>
+  <button data-v="explore" onclick="go('explore')"><span class="ico">🧭</span>Explore</button>
+  <button data-v="bag" onclick="go('bag')"><span class="ico">🧳</span>Baggage</button>
+  <button data-v="trip" onclick="go('trip')"><span class="ico">🎫</span>Trip</button>
+</nav>
+
+<!-- Full-page ad -->
+<div class="ad-full" id="adFull">
+  <span class="tag">Advertisement</span>
+  <button class="skip" onclick="closeFullAd()">Skip ✕</button>
+  <div class="emoji" id="adFullEmoji">🛍️</div>
+  <div class="t" id="adFullTitle">Duty-free, your way</div>
+  <div class="s" id="adFullSub">Pre-order and pick up at the gate. Tap to explore.</div>
+</div>
+
+<script>
+const AP_LABEL = { YQM:'Moncton', YHZ:'Halifax', YYZ:'Toronto', YUL:'Montréal', MCO:'Orlando' };
+const CITY = { YYZ:'Toronto', YTZ:'Toronto', YUL:'Montréal', YHZ:'Halifax', YYT:"St. John's", YDF:'Deer Lake',
+  YOW:'Ottawa', YWK:'Wabush', YYY:'Mont-Joli', TPA:'Tampa', TLH:'Tallahassee', PSE:'Ponce', SDQ:'Santo Domingo',
+  SJU:'San Juan', BQN:'Aguadilla', CLE:'Cleveland', ATL:'Atlanta', BOS:'Boston', JFK:'New York', EWR:'Newark',
+  DFW:'Dallas', DEN:'Denver', LAX:'Los Angeles', ORD:'Chicago', MIA:'Miami', DTW:'Detroit', STI:'Santiago' };
+const AIRLINE = { AC:'Air Canada', PD:'Porter', WS:'WestJet', TS:'Air Transat', PB:'PAL Airlines', F8:'Flair',
+  B6:'jetBlue', DL:'Delta', AA:'American', UA:'United', WN:'Southwest', F9:'Frontier', MX:'Breeze', W8:'Cargojet' };
+
+let AP = 'YQM';
+let FLIGHTS = [];
+let curView = 'flights';
+
+function statusOf(f){
+  const st=(f.state||'').toLowerCase();
+  if(st==='canceled'||st==='cancelled') return {t:'Cancelled',c:'cancelled'};
+  if(st==='outgate'||st==='inair') return {t:'Departed',c:'ontime'};
+  if(st==='ingate'||st==='landed') return {t:'Arrived',c:'ontime'};
+  const tl=(f.timeliness||'').toLowerCase();
+  if(tl==='delayed') return {t:'Delayed',c:'delayed'};
+  if(tl==='early') return {t:'Early',c:'early'};
+  return {t:'On time',c:'ontime'};
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function render(){
+  const q=(document.getElementById('q').value||'').trim().toLowerCase();
+  const cards=document.getElementById('cards');
+  let list=FLIGHTS;
+  if(q) list=list.filter(f=>{
+    const city=(CITY[f.cityIata]||f.cityIata||'').toLowerCase();
+    return (f.flight||'').toLowerCase().includes(q) || city.includes(q) || (f.cityIata||'').toLowerCase().includes(q);
+  });
+  if(!list.length){
+    cards.innerHTML='<div class="empty"><div class="big">🔎</div>'+(q?'No flights match “'+esc(q)+'”.':'No departures right now.')+'</div>';
+    return;
+  }
+  cards.innerHTML=list.map(f=>{
+    const s=statusOf(f);
+    const city=CITY[f.cityIata]||f.cityIata||'—';
+    const al=AIRLINE[f.airline]||f.airline;
+    const sched=(f.schedTime||'').slice(0,5);
+    const via=(f.via&&f.via.length)?' · via '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
+    const gate=f.gate?'<span class="chip gate"><span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
+    const ac=f.aircraft?'<span class="chip"><span class="k">Aircraft</span> '+esc(f.aircraft)+'</span>':'';
+    const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">Operated by</span> '+esc(f.operatedBy)+'</span>':'';
+    return '<div class="fcard">'
+      +'<div class="row1"><div class="al"><span class="badge">'+esc(f.airline)+'</span><span class="alname">'+esc(al)+'</span></div>'
+      +'<span class="st '+s.c+'">'+s.t+'</span></div>'
+      +'<div class="row2"><div><div class="city">'+esc(city)+'<small>'+esc(f.cityIata||'')+esc(via)+'</small></div>'
+      +'<div class="flt">'+esc(f.flight)+'</div></div>'
+      +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">Departs</div></div></div>'
+      +(gate||ac||op?'<div class="meta">'+gate+ac+op+'</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+async function load(){
+  try{
+    const r=await fetch('/oag/departures?ap='+encodeURIComponent(AP),{cache:'no-store'});
+    const d=await r.json();
+    FLIGHTS=(d&&d.flights)||[];
+    document.getElementById('hint').textContent= d.error ? 'Live data unavailable right now' :
+      ('Live departures · '+(FLIGHTS.length)+' flights · updates on its own');
+  }catch(e){ document.getElementById('hint').textContent='Couldn’t reach live data'; }
+  render();
+}
+
+function setAirport(code){
+  AP=code;
+  document.getElementById('apDot').textContent=code;
+  document.getElementById('apLabel').textContent=AP_LABEL[code]||code;
+  document.getElementById('apSelect').value=code;
+  FLIGHTS=[]; render(); load();
+}
+function go(v){
+  curView=v;
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.v===v));
+  window.scrollTo(0,0);
+}
+function personalize(){ alert('Sign-in to personalize your trip is coming soon — save your flight, get gate alerts, and more.'); }
+function bannerTap(){ showFullAd(); }
+
+/* ── Ads ── */
+const FULL_ADS=[
+  {e:'🛍️',t:'Duty-free, your way',s:'Pre-order and pick up at the gate. Tap to explore.'},
+  {e:'🍔',t:'Hungry before you board?',s:'Order ahead from restaurants near your gate.'},
+  {e:'🛋️',t:'Relax in the lounge',s:'Day passes available. Comfort before you fly.'},
+  {e:'🚗',t:'Skip the taxi line',s:'Book your ride to land and go.'}
+];
+let adIdx=0, adTimer=null;
+function showFullAd(){
+  const a=FULL_ADS[adIdx%FULL_ADS.length]; adIdx++;
+  document.getElementById('adFullEmoji').textContent=a.e;
+  document.getElementById('adFullTitle').textContent=a.t;
+  document.getElementById('adFullSub').textContent=a.s;
+  const el=document.getElementById('adFull'); el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(closeFullAd, 6000);  // auto-dismiss after 6s
+}
+function closeFullAd(){ document.getElementById('adFull').classList.remove('show'); }
+function startAdCycle(){ adTimer=setInterval(()=>{ if(curView==='flights' && !document.hidden) showFullAd(); }, 45000); }
+
+setAirport('YQM');
+setInterval(load, 60000);
+startAdCycle();
+</script>
+</body>
+</html>
