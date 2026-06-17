@@ -1403,14 +1403,3 @@ body.g8-header-is-light .g8-city-code,
 .g8-light-top .g8-city-code {
   color: #6B7280 !important;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────
-   FIDS board — keep the AIRLINE column off the FLIGHT # column.
-   The airline wordmark filled its slot right up to the cell edge while the
-   flight number sat flush-left in the next column, so "AIR CANADA" and the
-   flight number "AC2040" visually merged into one blob. Give the flight
-   number real left breathing room and pad the airline cell's right edge so
-   the two never touch. */
-#fidsTable .td-airline { padding-right: clamp(10px, 1vw, 20px) !important; }
-#fidsTable td.td-flight,
-#fidsTable .td-flight { padding-left: clamp(16px, 1.6vw, 30px) !important; }
