@@ -352,18 +352,19 @@ const SAMPLE=[
 function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 // Real colour airline logos — same source the main board uses.
-// Official airline wordmarks. Each base has a -wordmark-light.svg (dark ink, for
-// light backgrounds) and -wordmark-dark.svg (light ink, for dark backgrounds).
+// Official airline wordmarks. Naming quirk: the "-wordmark-light.svg" file uses
+// LIGHT (white) ink — for dark backgrounds — and "-wordmark-dark.svg" uses DARK
+// (black) ink for light backgrounds. wmUrls returns them as [forLightBg, forDarkBg].
 const WORDMARK={
   AC:'canadian/air-canada', WS:'canadian/westjet', PD:'canadian/porter', TS:'canadian/transat',
   PB:'canadian-regional/pal-airlines', B6:'us-major/jetblue', DL:'us-major/delta',
   AA:'us-major/american-airlines', UA:'us-major/united', WN:'us-major/southwest', F9:'us-major/frontier'
 };
-// Returns [lightVariantUrl, darkVariantUrl] for an airline, or null if none.
+// Returns [lightThemeUrl (dark ink), darkThemeUrl (white ink)], or null if none.
 function wmUrls(code){
   if(code==='F8') return ['/logos/airlines/canadian/flair.svg','/logos/airlines/canadian/flair.svg']; // no light/dark pair
   const b=WORDMARK[code]; if(!b) return null;
-  return ['/logos/airlines/'+b+'-wordmark-light.svg','/logos/airlines/'+b+'-wordmark-dark.svg'];
+  return ['/logos/airlines/'+b+'-wordmark-dark.svg','/logos/airlines/'+b+'-wordmark-light.svg'];
 }
 // Airline brand accent colours (same values the main system uses).
 const BRAND={AC:'#d91a2a',WS:'#00b2a9',TS:'#ff6600',PD:'#1a3a6b',AA:'#0078d2',DL:'#c01933',
