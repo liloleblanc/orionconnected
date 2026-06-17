@@ -100,13 +100,10 @@
     padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .fcard .al{display:flex;align-items:center;gap:9px;min-width:0;}
-  /* Two separate marks: brand emblem (symbol) + wordmark (logotype) */
-  .emblem{height:25px;width:auto;flex:none;}
-  .wm-logo{height:15px;width:auto;max-width:120px;object-fit:contain;}
-  .wm-txt{font-weight:800;font-size:14px;color:var(--txt);}
-  /* Dark mode: marks sit on a light pill so dark wordmarks stay legible */
-  :root[data-theme="dark"] .al{background:#fff;border-radius:9px;padding:5px 10px;}
-  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .al{background:#fff;border-radius:9px;padding:5px 10px;}}
+  /* Brand emblem (symbol) + airline name as text — two separate things */
+  .emblem{height:26px;width:auto;flex:none;}
+  .wm-txt{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .fcard .alname{font-weight:600;font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
   .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
@@ -162,10 +159,8 @@
     color:var(--txt);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
   .dt-top .ttl{font-size:15px;font-weight:700;}
   .dt-hero{text-align:center;padding:26px 20px 8px;}
-  .dt-emblem{height:46px;width:auto;display:block;margin:0 auto 10px;}
-  .dt-wm{height:22px;width:auto;max-width:62%;display:block;margin:0 auto 6px;}
-  :root[data-theme="dark"] .dt-wm{background:#fff;border-radius:8px;padding:5px 11px;box-sizing:content-box;}
-  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .dt-wm{background:#fff;border-radius:8px;padding:5px 11px;box-sizing:content-box;}}
+  .dt-emblem{height:48px;width:auto;display:block;margin:0 auto 10px;}
+  .dt-name{font-size:17px;font-weight:700;text-align:center;margin-bottom:4px;letter-spacing:-0.01em;}
   .dt-hero .al-op{color:var(--muted);font-size:13px;font-weight:500;margin-top:2px;}
   .dt-illus{display:block;width:240px;max-width:86%;margin:12px auto 2px;}
   .dt-hero .flt{font-size:30px;font-weight:800;letter-spacing:-0.02em;}
@@ -366,14 +361,8 @@ const BRAND={AC:'#d91a2a',WS:'#00b2a9',TS:'#ff6600',PD:'#1a3a6b',AA:'#0078d2',DL
 function emblemImg(code){
   return '<img class="emblem" src="/logos/symbols/airlines/'+encodeURIComponent(code)+'.svg" alt="" onerror="this.style.display=\'none\'">';
 }
-// Wordmark (logotype) with a text fallback.
-function wordmarkImg(code){
-  const u=AL_LOGO[code];
-  if(u) return '<img class="wm-logo" src="'+u+'" alt="'+esc(code)+'" loading="lazy" onerror="this.replaceWith(document.createTextNode(\''+esc(code)+'\'))">';
-  return '<span class="wm-txt">'+esc(code)+'</span>';
-}
-// Two separate marks: emblem + wordmark.
-function airlineLogo(code){return emblemImg(code)+wordmarkImg(code);}
+// Emblem (symbol) + airline name as text — two separate marks, no duplicate symbol.
+function airlineLogo(code){return emblemImg(code)+'<span class="wm-txt">'+esc(AIRLINE[code]||code)+'</span>';}
 // Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
 function acType(raw){
   if(!raw) return '';
@@ -510,7 +499,8 @@ function openFlight(i){
     +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
     +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
   document.getElementById('detailBody').innerHTML=
-    '<div class="dt-hero">'+emblemImg(f.airline).replace('class="emblem"','class="dt-emblem"')+wordmarkImg(f.airline).replace('wm-logo','dt-wm')
+    '<div class="dt-hero">'+emblemImg(f.airline).replace('class="emblem"','class="dt-emblem"')
+    +'<div class="dt-name">'+esc(AIRLINE[f.airline]||f.airline)+'</div>'
     +'<div class="flt">'+esc(f.flight)+'</div>'+(opLine?'<div class="al-op">'+esc(opLine)+'</div>':'')
     +liveryImg(f.airline,f.aircraft)+'</div>'
     +'<div class="dt-route"><div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>'
