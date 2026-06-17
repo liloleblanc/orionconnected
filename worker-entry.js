@@ -353,11 +353,16 @@ function oagToAdb(raw, dir) {
 
     const dt = (dObj, tObj) => (dObj && dObj.local && tObj && tObj.local)
       ? { local: dObj.local + 'T' + tObj.local } : undefined;
+    // OAG scheduled times are plain wall-clock ("2026-06-17T05:01") but the
+    // estimated times carry a tz offset ("...05:01:00-04:00"). Mixing the two
+    // makes every flight read 1 hour late in a different-tz browser. Strip the
+    // offset/seconds off the revised time so both are the same naive format.
+    const stripTz = s => String(s).slice(0, 16);
     const depSched = dt(dep.date, dep.time);
     const arrSched = dt(arr.date, arr.time);
-    const depRev = (depEst.outGate && depEst.outGate.local) ? { local: depEst.outGate.local } : undefined;
+    const depRev = (depEst.outGate && depEst.outGate.local) ? { local: stripTz(depEst.outGate.local) } : undefined;
     const arrInGate = (arrEst.inGate && arrEst.inGate.local) || (arrEst.onGround && arrEst.onGround.local);
-    const arrRev = arrInGate ? { local: arrInGate } : undefined;
+    const arrRev = arrInGate ? { local: stripTz(arrInGate) } : undefined;
 
     const obj = {
       number: carrier + f.flightNumber,
