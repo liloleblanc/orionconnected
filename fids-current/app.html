@@ -18,6 +18,25 @@
     --nav-h:62px; --radius:18px;
     --shadow:0 1px 2px rgba(16,21,29,.04), 0 6px 20px rgba(16,21,29,.06);
   }
+  /* ── Dark palette (forced, or auto via system) ─────────────── */
+  :root[data-theme="dark"]{
+    --bg:#0a0d13; --card:#12161f; --soft:#181d28; --soft2:#1d2330;
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.13);
+    --txt:#f4f6fa; --muted:#8b95a7; --faint:#5d6677;
+    --accent:#5b8dff; --accent-ink:#bcd0ff; --accent-soft:rgba(91,141,255,.16);
+    --green:#37c98b; --amber:#e0a23c; --red:#e8584f;
+    --shadow:0 8px 30px rgba(0,0,0,.45);
+  }
+  @media (prefers-color-scheme: dark){
+    :root[data-theme="auto"]{
+      --bg:#0a0d13; --card:#12161f; --soft:#181d28; --soft2:#1d2330;
+      --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.13);
+      --txt:#f4f6fa; --muted:#8b95a7; --faint:#5d6677;
+      --accent:#5b8dff; --accent-ink:#bcd0ff; --accent-soft:rgba(91,141,255,.16);
+      --green:#37c98b; --amber:#e0a23c; --red:#e8584f;
+      --shadow:0 8px 30px rgba(0,0,0,.45);
+    }
+  }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;height:100%;}
   body{
@@ -81,9 +100,9 @@
     padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .fcard .al{display:flex;align-items:center;gap:11px;min-width:0;}
-  .fcard .alogo{width:34px;height:34px;border-radius:9px;flex:none;background:var(--soft);
-    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;
-    font-weight:800;font-size:12px;color:var(--txt);}
+  .fcard .alogo{width:34px;height:34px;border-radius:9px;flex:none;background:#fff;
+    border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;overflow:hidden;
+    font-weight:800;font-size:12px;color:#10151d;}
   .fcard .alogo img{width:100%;height:100%;object-fit:contain;padding:4px;}
   .fcard .alname{font-weight:600;font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
@@ -159,9 +178,12 @@
       <option value="MCO">Orlando International (MCO)</option>
     </select>
   </div>
-  <button class="me-btn" title="Sign in" onclick="personalize()">
-    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
-  </button>
+  <div style="display:flex;gap:10px;align-items:center;flex:none;">
+    <button class="me-btn" id="themeBtn" title="Theme" onclick="cycleTheme()"><span id="themeIc"></span></button>
+    <button class="me-btn" title="Sign in" onclick="personalize()">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
+    </button>
+  </div>
 </div>
 
 <!-- FLIGHTS -->
@@ -318,6 +340,34 @@ function showFullAd(){const a=FULL_ADS[adIdx%FULL_ADS.length];adIdx++;
   document.getElementById('adFullTitle').textContent=a.t;document.getElementById('adFullSub').textContent=a.s;
   const el=document.getElementById('adFull');el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(closeFullAd,6500);}
 function closeFullAd(){document.getElementById('adFull').classList.remove('show');}
+/* ── Theme: auto (system) / light / dark ── */
+const THEMES=['auto','light','dark'];
+const THEME_IC={
+  auto:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>',
+  light:'<circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5.3" y1="5.3" x2="7" y2="7"/><line x1="17" y1="17" x2="18.7" y2="18.7"/><line x1="18.7" y1="5.3" x2="17" y2="7"/><line x1="7" y1="17" x2="5.3" y2="18.7"/>',
+  dark:'<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>'
+};
+function isDark(t){return t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);}
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  const m=document.querySelector('meta[name=theme-color]');
+  if(m)m.setAttribute('content',isDark(t)?'#0a0d13':'#ffffff');
+  const ic=document.getElementById('themeIc');
+  if(ic)ic.innerHTML='<svg class="ic" viewBox="0 0 24 24" style="width:20px;height:20px">'+THEME_IC[t]+'</svg>';
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.title='Theme: '+t;
+}
+function cycleTheme(){
+  let t=localStorage.getItem('app_theme')||'auto';
+  t=THEMES[(THEMES.indexOf(t)+1)%THEMES.length];
+  try{localStorage.setItem('app_theme',t);}catch(e){}
+  applyTheme(t);
+}
+applyTheme((function(){try{return localStorage.getItem('app_theme')||'auto';}catch(e){return 'auto';}})());
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+  const t=localStorage.getItem('app_theme')||'auto'; if(t==='auto')applyTheme('auto');
+});}catch(e){}
+
 setAirport('YQM');
 setInterval(load,60000);
 setInterval(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},45000);
