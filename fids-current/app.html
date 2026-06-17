@@ -99,13 +99,14 @@
   .fcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
     padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-  .fcard .al{display:flex;align-items:center;gap:11px;min-width:0;}
-  .alogo{height:26px;flex:none;display:inline-flex;align-items:center;
-    font-weight:800;font-size:13px;color:var(--txt);}
-  .alogo img{height:100%;width:auto;max-width:108px;object-fit:contain;}
-  /* Dark mode: colour logos sit on a light pill so they stay legible */
-  :root[data-theme="dark"] .alogo:not(:empty){background:#fff;border-radius:8px;padding:4px 8px;}
-  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .alogo:not(:empty){background:#fff;border-radius:8px;padding:4px 8px;}}
+  .fcard .al{display:flex;align-items:center;gap:9px;min-width:0;}
+  /* Two separate marks: brand emblem (symbol) + wordmark (logotype) */
+  .emblem{height:25px;width:auto;flex:none;}
+  .wm-logo{height:15px;width:auto;max-width:120px;object-fit:contain;}
+  .wm-txt{font-weight:800;font-size:14px;color:var(--txt);}
+  /* Dark mode: marks sit on a light pill so dark wordmarks stay legible */
+  :root[data-theme="dark"] .al{background:#fff;border-radius:9px;padding:5px 10px;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .al{background:#fff;border-radius:9px;padding:5px 10px;}}
   .fcard .alname{font-weight:600;font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
   .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
@@ -145,7 +146,8 @@
     font-family:inherit;font-size:10px;font-weight:600;transition:color .15s;}
   .nav button .ic{width:23px;height:23px;}
   .nav button.active{color:var(--accent);}
-  .fcard{cursor:pointer;}
+  .fcard{cursor:pointer;position:relative;overflow:hidden;}
+  .fcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brand,transparent);}
   /* ── Flight detail ───────────────────────────────── */
   .detail{position:fixed;inset:0;z-index:60;background:var(--bg);overflow-y:auto;
     transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
@@ -160,7 +162,11 @@
     color:var(--txt);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
   .dt-top .ttl{font-size:15px;font-weight:700;}
   .dt-hero{text-align:center;padding:26px 20px 8px;}
-  .dt-hero .alogo{height:38px;margin:0 auto 14px;}
+  .dt-emblem{height:46px;width:auto;display:block;margin:0 auto 10px;}
+  .dt-wm{height:22px;width:auto;max-width:62%;display:block;margin:0 auto 6px;}
+  :root[data-theme="dark"] .dt-wm{background:#fff;border-radius:8px;padding:5px 11px;box-sizing:content-box;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .dt-wm{background:#fff;border-radius:8px;padding:5px 11px;box-sizing:content-box;}}
+  .dt-hero .al-op{color:var(--muted);font-size:13px;font-weight:500;margin-top:2px;}
   .dt-illus{display:block;width:240px;max-width:86%;margin:12px auto 2px;}
   .dt-hero .flt{font-size:30px;font-weight:800;letter-spacing:-0.02em;}
   .dt-hero .al{color:var(--muted);font-size:13.5px;font-weight:500;margin-top:4px;}
@@ -353,12 +359,21 @@ const AL_LOGO={
   AA:'/logos/airlines/us-major/american-airlines.svg', UA:'/logos/airlines/us-major/united.svg',
   WN:'/logos/airlines/us-major/southwest.svg', F9:'/logos/airlines/us-major/frontier.svg'
 };
-function airlineLogo(code){
-  const u=AL_LOGO[code];
-  if(u) return '<span class="alogo"><img src="'+u+'" alt="'+esc(code)+'" loading="lazy" onerror="this.parentNode.textContent=\''+esc(code)+'\'"></span>';
-  const src='https://www.gstatic.com/flights/airline_logos/70px/'+encodeURIComponent(code)+'.png';
-  return '<span class="alogo"><img src="'+src+'" alt="'+esc(code)+'" loading="lazy" onerror="this.parentNode.textContent=\''+esc(code)+'\'"></span>';
+// Airline brand accent colours (same values the main system uses).
+const BRAND={AC:'#d91a2a',WS:'#00b2a9',TS:'#ff6600',PD:'#1a3a6b',AA:'#0078d2',DL:'#c01933',
+  UA:'#1414d2',WN:'#fbb612',B6:'#005cb9',F8:'#22b85f',F9:'#00843d',PB:'#0a3d62'};
+// Emblem (brand symbol) — hidden if the airline has none.
+function emblemImg(code){
+  return '<img class="emblem" src="/logos/symbols/airlines/'+encodeURIComponent(code)+'.svg" alt="" onerror="this.style.display=\'none\'">';
 }
+// Wordmark (logotype) with a text fallback.
+function wordmarkImg(code){
+  const u=AL_LOGO[code];
+  if(u) return '<img class="wm-logo" src="'+u+'" alt="'+esc(code)+'" loading="lazy" onerror="this.replaceWith(document.createTextNode(\''+esc(code)+'\'))">';
+  return '<span class="wm-txt">'+esc(code)+'</span>';
+}
+// Two separate marks: emblem + wordmark.
+function airlineLogo(code){return emblemImg(code)+wordmarkImg(code);}
 // Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
 function acType(raw){
   if(!raw) return '';
@@ -426,7 +441,7 @@ function render(){
     const gate=f.gate?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
-    return '<div class="fcard" onclick="openFlight('+i+')"><div class="row1"><div class="al">'+airlineLogo(f.airline)+'</div>'
+    return '<div class="fcard" style="--brand:'+(BRAND[f.airline]||'transparent')+'" onclick="openFlight('+i+')"><div class="row1"><div class="al">'+airlineLogo(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
       +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">Departs</div></div></div>'
@@ -481,27 +496,29 @@ function openFlight(i){
   const f=RENDERED[i]; if(!f)return;
   const s=statusOf(f), city=CITY[f.cityIata]||f.cityIata||'—', al=AIRLINE[f.airline]||f.airline;
   const sched=(f.schedTime||'').slice(0,5), est=(f.estTime||'').slice(0,5);
-  const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?al+' · operated by '+f.operatedBy:al;
+  const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?('Operated by '+f.operatedBy):'';
+  const brand=BRAND[f.airline]||'var(--accent)';
   function cell(k,v,sub){return '<div class="dt-cell"><div class="k">'+k+'</div><div class="v">'+esc(v)+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>';}
   let cells='';
   cells+=cell('Departs',sched||'—');
-  cells+=cell('Estimated',(est&&est!==sched)?est:'On schedule');
+  if(est&&est!==sched) cells+=cell('Estimated',est);
   cells+=cell('Gate',f.gate||'—');
-  cells+=cell('Status',s.t);
+  if(f.terminal) cells+=cell('Terminal',f.terminal);
   if(f.via&&f.via.length) cells+=cell('Via',f.via.map(c=>CITY[c]||c).join(', '));
   if(f.baggage) cells+=cell('Baggage',f.baggage);
   const plane='<div class="dt-cell wide"><div class="planeic">'+svg(PLANE_SVG)+'</div>'
     +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
     +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
   document.getElementById('detailBody').innerHTML=
-    '<div class="dt-hero">'+airlineLogo(f.airline)+'<div class="flt">'+esc(f.flight)+'</div><div class="al">'+esc(opLine)+'</div>'
+    '<div class="dt-hero">'+emblemImg(f.airline).replace('class="emblem"','class="dt-emblem"')+wordmarkImg(f.airline).replace('wm-logo','dt-wm')
+    +'<div class="flt">'+esc(f.flight)+'</div>'+(opLine?'<div class="al-op">'+esc(opLine)+'</div>':'')
     +liveryImg(f.airline,f.aircraft)+'</div>'
     +'<div class="dt-route"><div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>'
     +'<div class="line"><span class="pl">'+svg(PLANE_SVG)+'</span></div>'
     +'<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div></div>'
     +'<div class="dt-status"><span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
     +'<div class="dt-grid">'+plane+cells+'</div>'
-    +'<button class="dt-cta">'+svg('<path d="M9 11l3 3 8-8"/><path d="M21 12a9 9 0 1 1-6.2-8.6"/>')+'Directions to gate</button>';
+    +'<button class="dt-cta" style="background:'+brand+'">'+svg('<path d="M9 11l3 3 8-8"/><path d="M21 12a9 9 0 1 1-6.2-8.6"/>')+'Directions to gate</button>';
   document.getElementById('detail').classList.add('show');
 }
 function closeFlight(){document.getElementById('detail').classList.remove('show');}
