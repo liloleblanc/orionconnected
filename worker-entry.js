@@ -204,7 +204,10 @@ export default {
         + '&CodeType=IATA&Content=Status&Limit=200';
       try {
         const r = await fetch(oagUrl, { headers: { 'Subscription-Key': env.OAG_KEY } });
-        if (!r.ok) return jsonOag({ error: 'OAG returned ' + r.status }, 502);
+        if (!r.ok) {
+          const body = await r.text();
+          return jsonOag({ error: 'OAG returned ' + r.status, detail: body.slice(0, 700), sentDate: today + '/' + tomorrow }, 502);
+        }
         const raw = await r.json();
         return jsonOag(oagToAdb(raw, dir), 200);
       } catch (e) {
