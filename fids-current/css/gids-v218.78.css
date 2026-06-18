@@ -3657,7 +3657,6 @@ body, body.gids-page, body.gate-page{
       color-mix(in srgb, var(--body-bg,#eef2f6) 55%, #ffffff 45%) 0%,
       color-mix(in srgb, var(--body-bg,#dde2e8) 76%, var(--airline-accent,#8a8f96) 24%) 52%,
       color-mix(in srgb, var(--body-bg,#d3d8de) 72%, #000000 14%) 100%) !important;
-  background-attachment: fixed, fixed, fixed !important;
 }
 
 /* Both languages get EQUAL treatment in the right panel (the left rail
