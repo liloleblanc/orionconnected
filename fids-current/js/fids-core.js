@@ -3151,13 +3151,13 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   //   Property name (serif, spaced caps) below rule
   // Renderer applies brightness(0) invert(1) for white-on-dark panels.
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 36" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 2) scale(0.926)" fill="#000000" fill-rule="evenodd" clip-rule="evenodd">'
+    + '<g transform="translate(15, 2) scale(0.926)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
     + '<line x1="20" y1="22" x2="60" y2="22" stroke="#000000" stroke-width="0.3" stroke-linecap="round"/>'
     + '<text x="40" y="31" text-anchor="middle" '
     +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
-    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#000000">'
+    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
     +   name
     + '</text>'
     + '</svg>';
@@ -3219,13 +3219,13 @@ function makeEmblemsLockupSvgDataUri(propertyName) {
   // Translated: x = (80-50)/2 = 15, y = ~3 (top-aligned)
   // After scale: y-offset for vertical centering in the top portion
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 36" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 3) scale(0.901) translate(-7.25, -11.73)" fill="#000000">'
+    + '<g transform="translate(15, 3) scale(0.901) translate(-7.25, -11.73)" fill="#ffffff">'
     +   '<path d="' + _EMBLEMS_WORDMARK_D + '"/>'
     + '</g>'
     + '<line x1="20" y1="22" x2="60" y2="22" stroke="#000000" stroke-width="0.3" stroke-linecap="round"/>'
     + '<text x="40" y="31" text-anchor="middle" '
     +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
-    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#000000">'
+    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
     +   name
     + '</text>'
     + '</svg>';
