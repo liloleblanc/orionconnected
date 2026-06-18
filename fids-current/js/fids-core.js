@@ -15740,6 +15740,19 @@ try {
 // ── AIRPORT CHANGE ────────────────────────────────────────────────────────
 function onApChange() {
   const iata = document.getElementById('apSel').value;
+  // Persist the selection so a refresh doesn't snap back to the YQM default.
+  // The init reads ?ap= from the URL first (it wins over sessionStorage and the
+  // 'YQM' fallback). Until now onApChange never rewrote the URL, so switching to
+  // e.g. YHZ held only until the next reload — then the stale ?ap=YQM took over
+  // and dumped you back in Moncton. Keep the URL + sessionStorage in sync here.
+  if (iata) {
+    try {
+      sessionStorage.setItem('fids_airport', iata);
+      var _apUrl = new URL(window.location.href);
+      _apUrl.searchParams.set('ap', iata);
+      window.history.replaceState(null, '', _apUrl);
+    } catch (e) {}
+  }
   const apData = AP[iata] || { name: iata };
   // Legacy hdrApName still updated (some other code paths read it),
   // but the v2 banner now displays this through .fids-airport-name.
