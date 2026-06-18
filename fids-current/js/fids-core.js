@@ -14521,6 +14521,7 @@ function _gateStickyFix(key, lat, lng, alt, spd) {
       spd: (typeof spd === 'number') ? Math.round(spd) : null,
       ts: now
     };
+    if (typeof lat === 'number' && typeof lng === 'number') _gateTrackPush(key, lat, lng);
     return _gateFixCache;
   }
   // No fresh fix this cycle — reuse a recent one for the SAME airframe.
@@ -14530,6 +14531,39 @@ function _gateStickyFix(key, lat, lng, alt, spd) {
   // Different airframe (swap) or expired → drop it so we don't show stale data.
   if (_gateFixCache && _gateFixCache.key !== key) _gateFixCache = null;
   return null;
+}
+// ── Actual-track recorder + deviation helper ──────────────────────────────
+// We record the airframe's real positions as it flies, then draw that flown
+// track on the gate map: GREEN where it follows the assigned route, AMBER where
+// it deviates beyond a threshold (a reroute/hold is fine — just flagged). Keyed
+// by airframe so it resets on a swap.
+var _gateTrack = { key: null, points: [] };
+function _gateTrackPush(key, lat, lng) {
+  key = String(key || '');
+  if (typeof lat !== 'number' || typeof lng !== 'number') return;
+  if (_gateTrack.key !== key) { _gateTrack.key = key; _gateTrack.points = []; }
+  var pts = _gateTrack.points;
+  var last = pts[pts.length - 1];
+  if (last) {
+    // Only record once the airframe has moved ~>1.5km (de-noise jittery fixes).
+    var dLat = lat - last.lat, dLng = (lng - last.lng) * Math.cos(lat * Math.PI / 180);
+    if (Math.sqrt(dLat * dLat + dLng * dLng) * 111 < 1.5) return;
+  }
+  pts.push({ lat: lat, lng: lng });
+  if (pts.length > 80) pts.shift();
+}
+// Perpendicular (cross-track) distance in km from point P to the segment A→B,
+// using a local planar approximation (fine for regional distances).
+function _crossTrackKm(plat, plng, alat, alng, blat, blng) {
+  var latRef = ((alat + blat) / 2) * Math.PI / 180;
+  var kx = 111 * Math.cos(latRef), ky = 111;
+  var ax = alng * kx, ay = alat * ky, bx = blng * kx, by = blat * ky, px = plng * kx, py = plat * ky;
+  var dx = bx - ax, dy = by - ay;
+  var seg2 = dx * dx + dy * dy;
+  var t = seg2 ? (((px - ax) * dx + (py - ay) * dy) / seg2) : 0;
+  t = Math.max(0, Math.min(1, t));
+  var ex = px - (ax + t * dx), ey = py - (ay + t * dy);
+  return Math.sqrt(ex * ex + ey * ey);
 }
 async function gateAdsbLolPos(callsign, reg) {
   var urls = [];
@@ -17318,6 +17352,19 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   catch(e){L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);}
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  // Actual flown track over the assigned route: GREEN where it follows the
+  // assigned o→d line, AMBER where it deviates beyond ~30 km (reroute/hold —
+  // fine, just flagged so it's visible at a glance). Built from recorded fixes.
+  try {
+    var _tp = (_gateTrack && _gateTrack.key && _gateTrack.points && _gateTrack.points.length >= 2) ? _gateTrack.points : null;
+    if (_tp) {
+      for (var _ti = 1; _ti < _tp.length; _ti++) {
+        var _ta = _tp[_ti - 1], _tb = _tp[_ti];
+        var _dev = _crossTrackKm((_ta.lat + _tb.lat) / 2, (_ta.lng + _tb.lng) / 2, o[0], o[1], d[0], d[1]);
+        L.polyline([[_ta.lat, _ta.lng], [_tb.lat, _tb.lng]], { color: _dev > 30 ? '#f59e0b' : '#22c55e', weight: 4, opacity: 0.95 }).addTo(gateMap);
+      }
+    }
+  } catch (e) {}
   var planePos=L.latLng(planeLat,planeLng);
   var dLng=(d[1]-planeLng)*Math.PI/180;
   var lat1=planeLat*Math.PI/180,lat2=d[0]*Math.PI/180;
