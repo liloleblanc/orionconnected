@@ -561,5 +561,31 @@ window.addEventListener("DOMContentLoaded", async function() {
     }, 300);
 });
 </script>
+<script>
+/* Gate display: show glossy airline "orb" icons in place of the wordmark logos.
+   Scoped to this page only — the main board (fids.html) is unaffected. */
+(function(){
+  var ORB_PNG={UA:1,AA:1,WN:1};
+  var HAVE={AC:1,WS:1,PD:1,TS:1,F8:1,PB:1,B6:1,DL:1,AA:1,UA:1,WN:1,F9:1};
+  function orbUrl(c){return 'logos/airline-tiles/'+c+'-glossy.'+(ORB_PNG[c]?'png':'svg');}
+  var st=document.createElement('style');
+  st.textContent='.card-logo.is-orb{height:52px;width:52px;max-width:none;object-fit:contain;object-position:center;border-radius:50%;}';
+  document.head.appendChild(st);
+  function swap(img){
+    var c=(img.getAttribute('data-code')||'').toUpperCase();
+    if(!HAVE[c]||img.dataset.orb) return;
+    img.dataset.orb='1';
+    var orig=img.src;
+    img.classList.add('is-orb');
+    img.onerror=function(){img.onerror=null;img.classList.remove('is-orb');img.src=orig;};
+    img.src=orbUrl(c);
+  }
+  function run(){var n=document.querySelectorAll('img.card-logo[data-code]');for(var i=0;i<n.length;i++)swap(n[i]);}
+  if(document.readyState!=='loading')run();else document.addEventListener('DOMContentLoaded',run);
+  try{new MutationObserver(run).observe(document.body,{childList:true,subtree:true});}catch(e){}
+  // Route the template renderer's logo lookup to local orbs where we have them.
+  window.carrierLogoUrl=function(code){var c=String(code||'').toUpperCase();return HAVE[c]?orbUrl(c):('https://img.wway.io/pics/root/'+String(code).toLowerCase()+'@svg');};
+})();
+</script>
 </body>
 </html>

@@ -111,7 +111,10 @@
   @media(prefers-color-scheme:dark){:root[data-theme="auto"] .cardmark{opacity:.2;}}
   .fcard .row1,.fcard .row2,.fcard .meta{position:relative;z-index:1;}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-  .fcard .al{display:flex;align-items:center;gap:9px;min-width:0;}
+  .fcard .al{display:flex;align-items:center;gap:11px;min-width:0;}
+  /* Glossy airline orb icon */
+  .orb{width:46px;height:46px;flex:none;display:block;}
+  .dt-orb{width:104px;height:104px;display:block;margin:0 auto 10px;}
   /* Official airline wordmark — brand-coloured (light) / white (dark) by theme */
   .wm{height:23px;display:block;flex:none;}
   img.wm{width:auto;max-width:165px;object-fit:contain;object-position:left center;}
@@ -124,7 +127,7 @@
   @media(prefers-color-scheme:dark){:root[data-theme="auto"] .wm-l{display:none;} :root[data-theme="auto"] .wm-d{display:block;}}
   .wm-txt{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .fcard .alname{font-weight:600;font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fcard .alname{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
   .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
   .st.ontime{color:var(--green);} .st.delayed,.st.early{color:var(--amber);}
@@ -426,6 +429,10 @@ function cardMark(code){
   if(m) return '<span class="cardmark cardmark-mask" style="background:var(--brand);-webkit-mask-image:url(\''+m+'\');mask-image:url(\''+m+'\')"></span>';
   return '';
 }
+// Glossy airline "orb" icon. UA/AA/WN are official PNGs, the rest generated SVGs.
+const ORB_PNG={UA:1,AA:1,WN:1};
+function orbUrl(code){return '/logos/airline-tiles/'+code+'-glossy.'+(ORB_PNG[code]?'png':'svg');}
+function orbIcon(code,cls){return '<img class="'+(cls||'orb')+'" src="'+orbUrl(code)+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">';}
 // Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
 function acType(raw){
   if(!raw) return '';
@@ -493,7 +500,7 @@ function render(){
     const gate=f.gate?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
-    return '<div class="fcard" style="--brand:'+(BRAND[f.airline]||'transparent')+'" onclick="openFlight('+i+')">'+cardMark(f.airline)+'<div class="row1"><div class="al">'+airlineLogo(f.airline)+'</div>'
+    return '<div class="fcard" style="--brand:'+(BRAND[f.airline]||'transparent')+'" onclick="openFlight('+i+')"><div class="row1"><div class="al">'+orbIcon(f.airline)+'<span class="alname">'+esc(al)+'</span></div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
       +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">Departs</div></div></div>'
@@ -562,7 +569,8 @@ function openFlight(i){
     +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
     +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
   document.getElementById('detailBody').innerHTML=
-    '<div class="dt-hero">'+heroWordmark(f.airline)
+    '<div class="dt-hero">'+orbIcon(f.airline,'dt-orb')
+    +'<div class="dt-name">'+esc(AIRLINE[f.airline]||f.airline)+'</div>'
     +'<div class="flt">'+esc(f.flight)+'</div>'+(opLine?'<div class="al-op">'+esc(opLine)+'</div>':'')
     +liveryImg(f.airline,f.aircraft)+'</div>'
     +'<div class="dt-route"><div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>'
