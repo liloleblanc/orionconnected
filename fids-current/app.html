@@ -146,6 +146,24 @@
   .chip .k{color:var(--muted);font-weight:500;font-size:11px;}
   .chip.gate{background:var(--accent-soft);border-color:#cfe0fb;color:var(--accent-ink);}
   .chip.gate .ic{color:var(--accent);}
+  /* Shiny bubble: card background IS the brand orb. Hide the redundant stripe. */
+  .fcard::before{display:none;}
+  .bubwm{height:23px;width:auto;max-width:165px;object-fit:contain;object-position:left center;display:block;flex:none;}
+  .bubwm-txt{font-weight:800;font-size:16px;letter-spacing:-0.01em;color:var(--txt);}
+  .bubwm-txt.on-dark{color:#fff;}
+  .fcard.dark{border-color:rgba(0,0,0,.22);}
+  .fcard.dark .city,.fcard.dark .time .hh{color:#fff;}
+  .fcard.dark .sub{color:rgba(255,255,255,.85);}
+  .fcard.dark .sub b{color:#fff;}
+  .fcard.dark .time .lbl{color:rgba(255,255,255,.72);}
+  .fcard.dark .chip{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.28);color:#fff;}
+  .fcard.dark .chip .ic{color:#fff;}
+  .fcard.dark .chip .k{color:rgba(255,255,255,.82);}
+  .fcard.dark .chip.gate{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.36);color:#fff;}
+  .fcard.dark .chip.gate .ic{color:#fff;}
+  .fcard.dark .st.ontime{color:#4ade80;} .fcard.dark .st.delayed,.fcard.dark .st.early{color:#fde047;}
+  .fcard.dark .st.cancelled{color:#fca5a5;} .fcard.dark .st.boarding{color:#fff;}
+  .fcard.light .chip{background:var(--soft);}
   .empty{padding:64px 24px;text-align:center;color:var(--muted);}
   .empty .ic{width:38px;height:38px;color:var(--faint);margin:0 auto 14px;}
   /* ── Coming-soon ─────────────────────────────────── */
@@ -422,17 +440,34 @@ const MARK_ART={
 // Porter has no coloured symbol file — tint its 'P' mark with the brand navy.
 const MARK_MASK={PD:'/logos/airlines/canadian/porter-p.svg'};
 // Faded emblem watermark for a flight card (empty if the airline has none).
-function cardMark(code){
+function cardMark(code,dark){
   const art=MARK_ART[code];
-  if(art) return '<img class="cardmark" src="'+art+'" alt="" loading="lazy">';
+  if(art) return '<img class="cardmark" src="'+art+'" alt="" loading="lazy"'+(dark?' style="filter:brightness(0) invert(1)"':'')+'>';
   const m=MARK_MASK[code];
-  if(m) return '<span class="cardmark cardmark-mask" style="background:var(--brand);-webkit-mask-image:url(\''+m+'\');mask-image:url(\''+m+'\')"></span>';
+  if(m) return '<span class="cardmark cardmark-mask" style="background:'+(dark?'#fff':'var(--brand)')+';-webkit-mask-image:url(\''+m+'\');mask-image:url(\''+m+'\')"></span>';
   return '';
 }
 // Glossy airline "orb" icon. UA/AA/WN are official PNGs, the rest generated SVGs.
 const ORB_PNG={UA:1,AA:1,WN:1};
 function orbUrl(code){return '/logos/airline-tiles/'+code+'-glossy.'+(ORB_PNG[code]?'png':'svg');}
 function orbIcon(code,cls){return '<img class="'+(cls||'orb')+'" src="'+orbUrl(code)+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">';}
+// Shiny "bubble" = the glossy orb sphere used as the flight-card background.
+const ORB={AC:'#0b0b0b',WS:'#00928c',PD:'#152C53',TS:'#172B54',PB:'#1C3474',B6:'#003876',
+  UA:'#0033A0',WN:'#304CB2',F9:'#026845',F8:'#0FD55D',DL:'#ffffff',AA:'#ffffff'};
+const BUB_LIGHT={DL:1,AA:1}; // white bubbles keep dark text + colour emblem
+function _hx(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function _mix(a,b,t){const c=_hx(a),d=_hx(b);return '#'+[0,1,2].map(i=>Math.round(c[i]+(d[i]-c[i])*t).toString(16).padStart(2,'0')).join('');}
+function bubBg(code){
+  if(BUB_LIGHT[code]) return 'radial-gradient(120% 85% at 28% 2%,rgba(255,255,255,.95),rgba(255,255,255,0) 60%),linear-gradient(165deg,#ffffff,#eef0f4 55%,#dfe3ea)';
+  const base=ORB[code]||'#1b2330',top=_mix(base,'#ffffff',.30),bot=_mix(base,'#000000',.34);
+  return 'radial-gradient(120% 85% at 28% 2%,rgba(255,255,255,.30),rgba(255,255,255,0) 58%),linear-gradient(165deg,'+top+','+base+' 55%,'+bot+')';
+}
+// Airline wordmark for a bubble: white on coloured bubbles, dark on light bubbles.
+function bubWordmark(code){
+  const u=wmUrls(code);
+  if(!u) return '<span class="bubwm-txt'+(BUB_LIGHT[code]?'':' on-dark')+'">'+esc(AIRLINE[code]||code)+'</span>';
+  return '<img class="bubwm" src="'+u[0]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy"'+(BUB_LIGHT[code]?'':' style="filter:brightness(0) invert(1)"')+'>';
+}
 // Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
 function acType(raw){
   if(!raw) return '';
@@ -500,7 +535,7 @@ function render(){
     const gate=f.gate?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
-    return '<div class="fcard" style="--brand:'+(BRAND[f.airline]||'transparent')+'" onclick="openFlight('+i+')">'+cardMark(f.airline)+'<div class="row1"><div class="al">'+airlineLogo(f.airline)+'</div>'
+    return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'" onclick="openFlight('+i+')">'+cardMark(f.airline,!BUB_LIGHT[f.airline])+'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
       +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">Departs</div></div></div>'
