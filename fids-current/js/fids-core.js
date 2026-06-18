@@ -5470,6 +5470,11 @@ function _buildV2MapCol(ctx, vars) {
       // already had, so fall back to the board-captured speed/altitude here.
       if (_liveSpd === null && typeof _ib._liveSpd === 'number') _liveSpd = Math.round(_ib._liveSpd);
       if (_liveAlt === null && typeof _ib._liveAlt === 'number') _liveAlt = Math.round(_ib._liveAlt);
+      // A speed with no real altitude is a ground/stale fix (taxi roll). Showing
+      // it alone read as "141 kph at 0 ft" on an 'enroute' plane. Never show
+      // speed unless we also have a genuine airborne altitude — both or neither.
+      if (_liveAlt === null) _liveSpd = null;
+      if (_liveAlt !== null && _liveAlt <= 0) { _liveAlt = null; _liveSpd = null; }
       var _tz = vars.tz || 'UTC';
       var _destIata = (vars.iata || '').toString().toUpperCase();
       var _origIata = (_ib._locIata || '').toString().toUpperCase();
@@ -8218,10 +8223,15 @@ const gView = document.getElementById('gateView');
             // Trust the time-based calculation. ADB sometimes leaves
             // status='scheduled' for short-haul flights even after takeoff;
             // the depTs check is more reliable.
+            // If ADB explicitly reports the airframe still on the ground (altitude
+            // 0 / surface fix), do NOT draw it mid-route — that's the "plane flying
+            // before it departed" / contradicting-telemetry case. Pins only until
+            // it has a genuine airborne fix.
             var inboundActuallyAirborne = (
               depTs !== null &&
               Date.now() >= depTs &&
               inb.status !== 'cancelled' &&
+              inb._liveOnGround !== true &&
               prog > 0.02 && prog < 0.99
             );
             if (inb.status === 'arrived' || inb.status === 'landed') prog = 0.99;
@@ -14279,6 +14289,7 @@ async function fetchInboundByReg(reg, airportIata) {
       _liveLng: (best.location && (best.location.lon || best.location.lng)) || null,
       _liveAlt: _adbAltFt(best.location),
       _liveSpd: _adbSpdKt(best.location),
+      _liveOnGround: _adbOnGround(best.location),
       _inboundSource: 'reg-lookup' // flag for debugging
     };
     
@@ -14417,16 +14428,40 @@ var _loadFlightFetching = {};
 // is the root cause of "altitude blank on every flight". Use these everywhere.
 function _adbAltFt(loc) {
   if (!loc) return null;
+  // A real *airborne* altitude is never exactly 0. ADB returns altitude.feet:0
+  // (or omits it) for a ground / stale departure fix. The old display showed
+  // that as a literal "0 ft" next to a leftover taxi groundSpeed — reading as
+  // broken data ("141 kph at 0 ft"). Treat any non-positive altitude as "no
+  // airborne fix" (null → "—") and keep falling through the other field shapes.
   var a = loc.altitude, p = loc.pressureAltitude;
-  if (a && typeof a.feet === 'number') return Math.round(a.feet);
-  if (a && typeof a.meters === 'number') return Math.round(a.meters * 3.28084);
-  if (typeof a === 'number') return Math.round(a);
-  if (p && typeof p.feet === 'number') return Math.round(p.feet);
-  if (p && typeof p.meters === 'number') return Math.round(p.meters * 3.28084);
+  if (a && typeof a.feet === 'number' && a.feet > 0) return Math.round(a.feet);
+  if (a && typeof a.meters === 'number' && a.meters > 0) return Math.round(a.meters * 3.28084);
+  if (typeof a === 'number' && a > 0) return Math.round(a);
+  if (p && typeof p.feet === 'number' && p.feet > 0) return Math.round(p.feet);
+  if (p && typeof p.meters === 'number' && p.meters > 0) return Math.round(p.meters * 3.28084);
   return null;
+}
+// True when ADB explicitly reports the airframe on the ground (or only a stale
+// surface fix): an altitude field present but <= 0. Used to keep the telemetry
+// panel hidden AND the map plane off the route — so the two never contradict
+// each other ("on the ground" telemetry under a plane drawn mid-flight).
+function _adbOnGround(loc) {
+  if (!loc) return false;
+  if (_adbAltFt(loc) !== null) return false; // genuine airborne altitude
+  var a = loc.altitude, p = loc.pressureAltitude;
+  if (a && typeof a.feet === 'number' && a.feet <= 0) return true;
+  if (a && typeof a.meters === 'number' && a.meters <= 0) return true;
+  if (typeof a === 'number' && a <= 0) return true;
+  if (p && typeof p.feet === 'number' && p.feet <= 0) return true;
+  return false;
 }
 function _adbSpdKt(loc) {
   if (!loc) return null;
+  // Speed is only meaningful with a genuine airborne altitude. A groundSpeed
+  // with altitude 0 is a taxi / stale departure fix — reporting it produced the
+  // "141 kph at 0 ft" on an 'enroute' plane. Both fields light up together or
+  // not at all, so telemetry and the map can never contradict each other.
+  if (_adbAltFt(loc) === null) return null;
   var s = loc.groundSpeed;
   if (s && typeof s.kt === 'number') return Math.round(s.kt);
   if (s && typeof s.knots === 'number') return Math.round(s.knots);
@@ -15193,6 +15228,7 @@ function mapADB(raw, mode) {
     const _liveLng = (f.location&&(f.location.lon||f.location.lng))||null;
     const _liveAlt = _adbAltFt(f.location);
     const _liveSpd = _adbSpdKt(f.location);
+    const _liveOnGround = _adbOnGround(f.location);
     // Flight duration from scheduled times
     var _durationMins = null;
     const _depSched = f.departure?.scheduledTime?.local||f.departure?.scheduledTime?.utc;
@@ -15204,8 +15240,8 @@ function mapADB(raw, mode) {
     // Cargo/private filter
     if (f.isCargo===true) return null;
     return mode==='dep'
-      ?{time,upd,dateTag,flight,dest:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
-      :{time,upd,dateTag,flight,origin:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
+      ?{time,upd,dateTag,flight,dest:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
+      :{time,upd,dateTag,flight,origin:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs);
 }
 
