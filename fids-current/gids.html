@@ -563,28 +563,40 @@ window.addEventListener("DOMContentLoaded", async function() {
 </script>
 <script>
 /* Gate display: show glossy airline "orb" icons in place of the wordmark logos.
-   Scoped to this page only — the main board (fids.html) is unaffected. */
+   Scoped to this page only — the main board (fids.html) is unaffected.
+   URLs come from a fixed allowlist (no DOM-derived text in the src). */
 (function(){
-  var ORB_PNG={UA:1,AA:1,WN:1};
-  var HAVE={AC:1,WS:1,PD:1,TS:1,F8:1,PB:1,B6:1,DL:1,AA:1,UA:1,WN:1,F9:1};
-  function orbUrl(c){return 'logos/airline-tiles/'+c+'-glossy.'+(ORB_PNG[c]?'png':'svg');}
+  var ORB={
+    AC:'logos/airline-tiles/AC-glossy.svg', WS:'logos/airline-tiles/WS-glossy.svg',
+    PD:'logos/airline-tiles/PD-glossy.svg', TS:'logos/airline-tiles/TS-glossy.svg',
+    F8:'logos/airline-tiles/F8-glossy.svg', PB:'logos/airline-tiles/PB-glossy.svg',
+    B6:'logos/airline-tiles/B6-glossy.svg', DL:'logos/airline-tiles/DL-glossy.svg',
+    F9:'logos/airline-tiles/F9-glossy.svg', UA:'logos/airline-tiles/UA-glossy.png',
+    AA:'logos/airline-tiles/AA-glossy.png', WN:'logos/airline-tiles/WN-glossy.png'
+  };
+  var WWAY={
+    AC:'https://img.wway.io/pics/root/AC@svg', WS:'https://img.wway.io/pics/root/WS@svg',
+    PD:'https://img.wway.io/pics/root/PD@svg', TS:'https://img.wway.io/pics/root/TS@svg',
+    F8:'https://img.wway.io/pics/root/F8@svg', PB:'https://img.wway.io/pics/root/PB@svg',
+    B6:'https://img.wway.io/pics/root/B6@svg', DL:'https://img.wway.io/pics/root/DL@svg',
+    F9:'https://img.wway.io/pics/root/F9@svg', UA:'https://img.wway.io/pics/root/UA@svg',
+    AA:'https://img.wway.io/pics/root/AA@svg', WN:'https://img.wway.io/pics/root/WN@svg'
+  };
+  var has=function(o,k){return Object.prototype.hasOwnProperty.call(o,k);};
   var st=document.createElement('style');
   st.textContent='.card-logo.is-orb{height:52px;width:52px;max-width:none;object-fit:contain;object-position:center;border-radius:50%;}';
   document.head.appendChild(st);
   function swap(img){
     var c=(img.getAttribute('data-code')||'').toUpperCase();
-    if(!HAVE[c]||img.dataset.orb) return;
+    if(!has(ORB,c)||img.dataset.orb) return;
     img.dataset.orb='1';
-    var orig=img.src;
     img.classList.add('is-orb');
-    img.onerror=function(){img.onerror=null;img.classList.remove('is-orb');img.src=orig;};
-    img.src=orbUrl(c);
+    img.onerror=function(){img.onerror=null;img.classList.remove('is-orb');if(has(WWAY,c))img.src=WWAY[c];};
+    img.src=ORB[c];
   }
   function run(){var n=document.querySelectorAll('img.card-logo[data-code]');for(var i=0;i<n.length;i++)swap(n[i]);}
   if(document.readyState!=='loading')run();else document.addEventListener('DOMContentLoaded',run);
   try{new MutationObserver(run).observe(document.body,{childList:true,subtree:true});}catch(e){}
-  // Route the template renderer's logo lookup to local orbs where we have them.
-  window.carrierLogoUrl=function(code){var c=String(code||'').toUpperCase();return HAVE[c]?orbUrl(c):('https://img.wway.io/pics/root/'+String(code).toLowerCase()+'@svg');};
 })();
 </script>
 </body>
