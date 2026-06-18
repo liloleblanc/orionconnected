@@ -5513,7 +5513,7 @@ function _buildV2MapCol(ctx, vars) {
       var _rawSt = String(_ib.status || '').toLowerCase().trim();
       var _ibLang = (typeof lang !== 'undefined' && lang) ? lang : 'en';
       var _ST_I18N = {
-        enroute:   { en:'Enroute', fr:'En vol', es:'En vuelo', de:'Im Flug', it:'In volo', pt:'Em voo', ja:'飛行中', zh:'飞行中', ar:'في الجو' },
+        enroute:   { en:'En route', fr:'En vol', es:'En vuelo', de:'Im Flug', it:'In volo', pt:'Em voo', ja:'飛行中', zh:'飞行中', ar:'في الجو' },
         scheduled: { en:'Awaiting departure', fr:'En attente de départ', es:'En espera de salida', de:'Wartet auf Abflug', it:'In attesa di partenza', pt:'A aguardar partida', ja:'出発待ち', zh:'等待起飞', ar:'في انتظار المغادرة' },
         boarding:  { en:'Boarding', fr:'Embarquement', es:'Embarcando', de:'Boarding', it:'Imbarco', pt:'Embarque', ja:'搭乗中', zh:'登机中', ar:'الصعود' },
         delayed:   { en:'Delayed', fr:'En retard', es:'Retrasado', de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误', ar:'متأخر' },
@@ -5532,9 +5532,14 @@ function _buildV2MapCol(ctx, vars) {
       else if (_rawSt === 'landed' || _rawSt === 'arrived') _stKey = 'arrived';
       else if (_rawSt === 'ontime' || _rawSt === 'on-time') _stKey = 'ontime';
       else _stKey = 'scheduled';
+      // Verified airborne (real altitude from live telemetry) → show the PHASE
+      // 'En route' instead of the punctuality word (Early / On time) the feed
+      // hands us. A plane at altitude is unambiguously enroute. Punctuality
+      // words stay everywhere else; don't override a Cancelled/Diverted flight.
+      if (_liveAlt !== null && _rawSt !== 'cancelled' && _rawSt !== 'diverted') _stKey = 'enroute';
       var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
       var _ST_SHORT = {
-        enroute:{en:'Enroute',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
+        enroute:{en:'En route',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
         boarding:{en:'Boarding',fr:'Embarquement',es:'Embarcando'}, delayed:{en:'Delayed',fr:'En retard',es:'Retrasado'},
         early:{en:'Early',fr:'En avance',es:'Adelantado'}, cancelled:{en:'Cancelled',fr:'Annulé',es:'Cancelado'},
         arrived:{en:'Arrived',fr:'Arrivé',es:'Aterrizado'}, ontime:{en:'On time',fr:"À l'heure",es:'A tiempo'}
