@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/fids.css?v=21899-9">
   <link rel="stylesheet" href="css/fids-v3.css?v=315">
   <link rel="stylesheet" href="css/mobile.css?v=311">
-  <link rel="stylesheet" href="css/mobile-v216.css?v=312">
+  <link rel="stylesheet" href="css/mobile-v216.css?v=313">
   <link rel="stylesheet" href="css/fids-layout-fixes.css?v=21899-12">
   <link rel="stylesheet" href="css/gids-v218.78.css?v=21899-239">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
@@ -310,6 +310,11 @@
 
 <!-- ─── MOBILE VIEW (cards only — hidden on desktop) ─────────────────── -->
 <div id="mobileView">
+  <div class="m-viewtabs" id="mViewTabs">
+    <button id="vTabDep" class="m-vtab" onclick="setViewMode('dep')">✈ Departures · Départs</button>
+    <button id="vTabArr" class="m-vtab" onclick="setViewMode('arr')">✈ Arrivals · Arrivées</button>
+    <button id="vTabRotate" class="m-vtab" onclick="setViewMode('rotate')">⟳ Auto</button>
+  </div>
   <div class="mobile-cards-scroll" id="mobileCardsScroll">
     <div id="mobileCards"><div class="flight-card   " onclick="this.classList.toggle(&#39;expanded&#39;)">
       <div class="card-row1">

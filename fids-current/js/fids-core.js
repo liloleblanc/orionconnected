@@ -16041,8 +16041,8 @@ function renderMobile() {
   $el('vTabRotate').classList.toggle('active', viewMode === 'rotate');
 
   // Tab labels (bilingual)
-  $el('vTabDep').textContent = `✈ ${TL('dep')}`;
-  $el('vTabArr').textContent = `✈ ${TL('arr')}`;
+  $el('vTabDep').textContent = `✈ ${TLbi('dep')}`;
+  $el('vTabArr').textContent = `✈ ${TLbi('arr')}`;
 
   const pagerInfo = document.getElementById('mPagerInfo');
   const pagerPrev = document.getElementById('mPagerPrev');

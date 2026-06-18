@@ -34,6 +34,18 @@
   }
   #mobileCards { padding: 12px 12px 120px; }
 
+  /* Departures / Arrivals / Auto toggle for the web card view */
+  .m-viewtabs { display:flex; gap:6px; padding:10px 12px 2px; }
+  .m-vtab {
+    flex:1; padding:11px 8px; border-radius:12px;
+    border:1px solid var(--m-border,#d4d4d8); background:var(--m-bg-card,#fff);
+    color:var(--m-text,#18181b);
+    font-family:var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis;
+  }
+  .m-vtab.active { background:var(--m-text,#18181b); color:var(--m-bg-card,#fff); border-color:var(--m-text,#18181b); }
+
   /* Kill old .flight-card visuals so they don't bleed through */
   #mobileCards .flight-card {
     display: none !important;
