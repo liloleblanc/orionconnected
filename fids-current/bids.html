@@ -492,7 +492,7 @@ window.addEventListener("DOMContentLoaded", async function() {
     setTimeout(_fidsHideLoader, 8000);
 
     var params = new URLSearchParams(window.location.search);
-    var ap = params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM';
+    var ap = (params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM').toUpperCase().trim();
     var startMode = params.get('mode') || sessionStorage.getItem('fids_mode') || 'demo';
     var requestedBelt = params.get('belt') || params.get('carousel') || '';
 

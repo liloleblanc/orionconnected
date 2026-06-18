@@ -1369,7 +1369,7 @@ function openTestFlight() {
   // Pre-fill time with current time + 1 hour
   const now = new Date();
   const later = new Date(now.getTime() + 3600000);
-  const iata = document.getElementById('apSel').value;
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
   const tz = (AP[iata] || {}).tz;
   const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
                    : {hour:'2-digit', minute:'2-digit', hour12:true};
@@ -1403,7 +1403,7 @@ function submitTestFlight() {
   schedDate.setHours(h, m, 0, 0);
   if (schedDate < now - 3600000) schedDate.setDate(schedDate.getDate() + 1); // next day if past
 
-  const iata = document.getElementById('apSel').value;
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
   const tz = (AP[iata] || {}).tz;
   const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
                    : {hour:'2-digit', minute:'2-digit', hour12:true};
@@ -2087,7 +2087,7 @@ function getDedicatedRenderKey() {
 
 function updateDedicatedTimeOnly() {
   if (screenType === 'main') return;
-  const iata = document.getElementById('apSel').value;
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
@@ -7674,7 +7674,7 @@ function renderDedicatedScreen() {
 const gView = document.getElementById('gateView');
   const bView = document.getElementById('baggageView');
   const contentArea = document.querySelector('.content-area');
-  const iata = document.getElementById('apSel').value;
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
@@ -15760,7 +15760,11 @@ try {
 
 // ── AIRPORT CHANGE ────────────────────────────────────────────────────────
 function onApChange() {
-  const iata = document.getElementById('apSel').value;
+  // Normalize to uppercase — a mixed-case code (e.g. ?ap=Yhz) makes every
+  // AP[iata] lookup miss, which silently dropped the timezone to UTC and pushed
+  // boarding times 3h off. Keep the picker value canonical too.
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
+  try { var _apEl = document.getElementById('apSel'); if (_apEl && _apEl.value !== iata) _apEl.value = iata; } catch (e) {}
   // Persist the selection so a refresh doesn't snap back to the YQM default.
   // The init reads ?ap= from the URL first (it wins over sessionStorage and the
   // 'YQM' fallback). Until now onApChange never rewrote the URL, so switching to
@@ -16771,7 +16775,7 @@ try {
 // requests on every page load.
 try {
   var _initParams = new URLSearchParams(window.location.search);
-  var _initAp = _initParams.get('ap') || sessionStorage.getItem('fids_airport');
+  var _initAp = (_initParams.get('ap') || sessionStorage.getItem('fids_airport') || '').toUpperCase().trim();
   if (_initAp) {
     var _apSelEl = document.getElementById('apSel');
     if (_apSelEl) _apSelEl.value = _initAp;
