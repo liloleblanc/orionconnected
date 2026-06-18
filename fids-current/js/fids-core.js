@@ -8209,48 +8209,28 @@ const gView = document.getElementById('gateView');
               }
               initGateMapLive(_inbOriginIata || apIata, apIata, livePos.lat, livePos.lng);
             }
-          } else {
-            // Time-based estimate fallback
-            var prog = 0.5;
-            var aTs = inb._revTs || inb._sortTs;
-            var depTs = null;
-            if (aTs) {
-              depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : (aTs - 7200000);
-              var el = Date.now() - depTs;
-              var tot = aTs - depTs;
-              if (tot > 0) prog = el / tot;
+          } else if (inb._liveLat && inb._liveLng &&
+                     typeof inb._liveAlt === 'number' && inb._liveAlt > 0 &&
+                     inb._liveOnGround !== true) {
+            // Genuine airborne fix from ADB (real coordinates + a real altitude):
+            // plot the ACTUAL position. We never estimate a position from the
+            // clock anymore — that plotted a phantom plane mid-route whenever the
+            // departure/arrival times were off (e.g. the EWR Eastern / YQM Atlantic
+            // 1-hour gap), making a flight still at its gate look airborne.
+            var posKey2 = inb._liveLat.toFixed(3) + ',' + inb._liveLng.toFixed(3);
+            if (!gateMap || window._lastMapPosKey !== posKey2) {
+              window._lastMapPosKey = posKey2;
+              initGateMapLive(inb._locIata || apIata, apIata, inb._liveLat, inb._liveLng);
             }
-            // Trust the time-based calculation. ADB sometimes leaves
-            // status='scheduled' for short-haul flights even after takeoff;
-            // the depTs check is more reliable.
-            // If ADB explicitly reports the airframe still on the ground (altitude
-            // 0 / surface fix), do NOT draw it mid-route — that's the "plane flying
-            // before it departed" / contradicting-telemetry case. Pins only until
-            // it has a genuine airborne fix.
-            var inboundActuallyAirborne = (
-              depTs !== null &&
-              Date.now() >= depTs &&
-              inb.status !== 'cancelled' &&
-              inb._liveOnGround !== true &&
-              prog > 0.02 && prog < 0.99
-            );
-            if (inb.status === 'arrived' || inb.status === 'landed') prog = 0.99;
-            prog = Math.max(0.02, Math.min(0.98, prog));
-            // Only rebuild if progress changed by >2% or map doesn't exist
-            var progKey = inboundActuallyAirborne ? Math.round(prog * 50) : 'no-plane';
-            if (!gateMap || window._lastMapProgKey !== progKey) {
-              window._lastMapProgKey = progKey;
-              // If inbound has arrived, show the outbound departure route — but
-              // PINS ONLY (no plane). The aircraft is parked at the gate, so a
-              // plane icon pointing at the destination reads as "flying away"
-              // before it has actually departed.
+          } else {
+            // No real airborne fix → pins only, NEVER a clock-estimated plane.
+            // A plane icon appears solely with live ADS-B coordinates (above).
+            var pinKey = (inb.status === 'arrived' || inb.status === 'landed') ? 'arr-pins' : 'inb-pins';
+            if (!gateMap || window._lastMapProgKey !== pinKey) {
+              window._lastMapProgKey = pinKey;
               if (inb.status === 'arrived' || inb.status === 'landed') {
                 initGateMap(apIata, dstIata, -1);
-              } else if (inboundActuallyAirborne) {
-                // Show inbound route with estimated progress + plane
-                initGateMap(inb._locIata, apIata, prog);
               } else {
-                // Inbound hasn't departed yet — show route + pins only, no plane
                 initGateMap(inb._locIata, apIata, -1);
               }
             }
