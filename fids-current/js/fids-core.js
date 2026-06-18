@@ -6144,7 +6144,13 @@ function uxgGateHtml(ctx) {
   var equipRaw = currentFlight._aircraftCode || '';
   var equipName = currentFlight._aircraft || (equipRaw ? formatAircraft(equipRaw) : '');
   var minsToDep = effectiveDepTs ? Math.round((effectiveDepTs - Date.now()) / 60000) : 9999;
-  var depDelayed = currentFlight.upd && (stKey === 'delayed' || stKey === 'early');
+  // Delayed if we have EITHER a revised HH:MM string (upd) OR a revised timestamp
+  // (_revTs later than scheduled). Boarding is computed from _revTs, so if we only
+  // keyed "delayed" off `upd` the Departure line would stay on the scheduled time
+  // while Boarding moved — boarding ending up LATER than departure. Use both.
+  var _depRevTsLater = !!(currentFlight._revTs && currentFlight._sortTs &&
+                          currentFlight._revTs > currentFlight._sortTs + 60000);
+  var depDelayed = (currentFlight.upd || _depRevTsLater) && (stKey === 'delayed' || stKey === 'early');
   // If the inbound aircraft is delayed, the outbound will almost certainly be delayed too.
   // Surface that in the top banner status so it's not misleadingly shown as SCHEDULED.
   var _inbDelayCarryOver = inboundFlight && (
@@ -6201,7 +6207,17 @@ function uxgGateHtml(ctx) {
   // Dep time display
   var depTimeHtml = _to12h(currentFlight.time) || '\u2014';
   if (depDelayed) {
-    depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised">' + _to12h(currentFlight.upd) + '</span>';
+    // Revised time: prefer the feed's HH:MM string; otherwise derive it from
+    // _revTs (the SAME timestamp boarding uses) so the two lines can never
+    // disagree \u2014 i.e. boarding can't read later than departure.
+    var _revDepHHMM = currentFlight.upd;
+    if (!_revDepHHMM && currentFlight._revTs) {
+      try {
+        _revDepHHMM = new Date(currentFlight._revTs).toLocaleTimeString('en-US',
+          { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
+      } catch (e) {}
+    }
+    depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised">' + (_to12h(_revDepHHMM) || '\u2014') + '</span>';
   }
 
   // Arr time display
