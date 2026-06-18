@@ -14402,11 +14402,23 @@ async function gateAdsbLolPos(callsign, reg) {
   var urls = [];
   var cs = callsign ? String(callsign).replace(/\s+/g, '').toUpperCase() : '';
   var rg = reg ? String(reg).replace(/\s+/g, '').toUpperCase() : '';
+  // ADS-B feeds key on the ICAO callsign (e.g. POE234), but we often only have
+  // the IATA flight (PD234). Build the ICAO form and try it FIRST — this is the
+  // biggest reason altitude comes back blank for some carriers.
+  var csIcao = '';
+  var _m = cs.match(/^([A-Z]{2})(\d.*)$/);
+  if (_m) {
+    var _ICAO = { PD:'POE', AC:'ACA', WS:'WJA', TS:'TSC', F8:'FLE', PB:'PVL', QK:'JZA', RV:'ROU',
+      B6:'JBU', DL:'DAL', AA:'AAL', UA:'UAL', WN:'SWA', F9:'FFT', AS:'ASA', HA:'HAL', NK:'NKS', G4:'AAY' };
+    if (_ICAO[_m[1]]) csIcao = _ICAO[_m[1]] + _m[2];
+  }
   // Same-origin proxy (worker route /adsb/...) so the browser doesn't block the
   // cross-origin adsb.lol request (CORS) — that block left altitude blank even
   // though adsb.lol has it. Falls back to the direct URL if the proxy 404s.
+  if (csIcao) urls.push('/adsb/v2/callsign/' + encodeURIComponent(csIcao));
   if (cs) urls.push('/adsb/v2/callsign/' + encodeURIComponent(cs));
   if (rg) urls.push('/adsb/v2/registration/' + encodeURIComponent(rg));
+  if (csIcao) urls.push('https://api.adsb.lol/v2/callsign/' + encodeURIComponent(csIcao));
   if (cs) urls.push('https://api.adsb.lol/v2/callsign/' + encodeURIComponent(cs));
   if (rg) urls.push('https://api.adsb.lol/v2/registration/' + encodeURIComponent(rg));
   for (var i = 0; i < urls.length; i++) {
