@@ -6052,6 +6052,35 @@ function _buildV2MapCol(ctx, vars) {
   // v218.99.32 — Registration folded INTO the aircraft block as a second
   // column. The standalone reg block in the right column is removed.
 
+  // When there is no inbound-aircraft card to show (e.g. a departure with no
+  // tracked inbound), fill that empty shelf under the map with a faded airline
+  // emblem watermark instead of leaving it blank. Native-colour tiles (PAL,
+  // Flair) keep their colours; the rest are tinted to the airline accent.
+  if (!_inboundCard) {
+    var _emCode = String(vars.airlineCode || '').toUpperCase();
+    var _EMB = {
+      AC:'/logos/airlines/canadian/AC.TO.svg', QK:'/logos/airlines/canadian/AC.TO.svg',
+      RV:'/logos/airlines/canadian/AC.TO.svg', WS:'/logos/symbols/airlines-mono/WS.svg',
+      WR:'/logos/symbols/airlines-mono/WS.svg', PD:'/logos/airlines/canadian/porter-p.svg',
+      PB:'/logos/airline-tiles/PB.svg', F8:'/logos/airlines/canadian/flair-dot.svg',
+      UA:'/logos/airlines/us-major/united-globe-clean.svg', DL:'/logos/airlines/us-major/delta-widget.svg',
+      AA:'/logos/airlines/us-major/american-flight-symbol.svg', F9:'/logos/airlines/us-major/frontier-emblem.svg',
+      WN:'/logos/symbols/airlines/WN.svg', TS:'/logos/symbols/airlines/TS.svg',
+      B6:'/logos/airlines/us-major/jetblue.svg'
+    };
+    var _NATIVE_EMB = { PB:1, F8:1 };
+    var _emP = _EMB[_emCode];
+    if (_emP) {
+      var _emInner = _NATIVE_EMB[_emCode]
+        ? '<img src="' + _emP + '" alt="" style="width:56%;max-height:62%;object-fit:contain;opacity:0.16;" onerror="this.style.display=\'none\'">'
+        : '<span style="display:block;width:56%;height:60%;background:var(--airline-accent,#1C3474);opacity:0.13;-webkit-mask:url(\'' + _emP + '\') center/contain no-repeat;mask:url(\'' + _emP + '\') center/contain no-repeat;"></span>';
+      _inboundCard =
+          '<div class="v2-rc-shelf v2-rc-shelf-emblem" style="display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:0;flex:1 1 auto;">'
+        +   _emInner
+        + '</div>';
+    }
+  }
+
   var _rcBlockMap = {
     inboundCard: _inboundCard,
     map:         _mapBox,
