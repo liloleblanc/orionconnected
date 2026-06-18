@@ -555,5 +555,42 @@ window.addEventListener("DOMContentLoaded", function() {
     }
 });
 </script>
+<script>
+/* Web cards: show glossy airline "orb" icons in place of the wordmark logos.
+   URLs come from a fixed allowlist (no DOM-derived text in the src). */
+(function(){
+  var ORB={
+    AC:'logos/airline-tiles/AC-glossy.svg', WS:'logos/airline-tiles/WS-glossy.svg',
+    PD:'logos/airline-tiles/PD-glossy.svg', TS:'logos/airline-tiles/TS-glossy.svg',
+    F8:'logos/airline-tiles/F8-glossy.svg', PB:'logos/airline-tiles/PB-glossy.svg',
+    B6:'logos/airline-tiles/B6-glossy.svg', DL:'logos/airline-tiles/DL-glossy.svg',
+    F9:'logos/airline-tiles/F9-glossy.svg', UA:'logos/airline-tiles/UA-glossy.png',
+    AA:'logos/airline-tiles/AA-glossy.png', WN:'logos/airline-tiles/WN-glossy.png'
+  };
+  var WWAY={
+    AC:'https://img.wway.io/pics/root/AC@svg', WS:'https://img.wway.io/pics/root/WS@svg',
+    PD:'https://img.wway.io/pics/root/PD@svg', TS:'https://img.wway.io/pics/root/TS@svg',
+    F8:'https://img.wway.io/pics/root/F8@svg', PB:'https://img.wway.io/pics/root/PB@svg',
+    B6:'https://img.wway.io/pics/root/B6@svg', DL:'https://img.wway.io/pics/root/DL@svg',
+    F9:'https://img.wway.io/pics/root/F9@svg', UA:'https://img.wway.io/pics/root/UA@svg',
+    AA:'https://img.wway.io/pics/root/AA@svg', WN:'https://img.wway.io/pics/root/WN@svg'
+  };
+  var has=function(o,k){return Object.prototype.hasOwnProperty.call(o,k);};
+  var st=document.createElement('style');
+  st.textContent='.card-logo.is-orb{height:46px;width:46px;max-width:none;object-fit:contain;object-position:center;border-radius:50%;}';
+  document.head.appendChild(st);
+  function swap(img){
+    var c=(img.getAttribute('data-code')||'').toUpperCase();
+    if(!has(ORB,c)||img.dataset.orb) return;
+    img.dataset.orb='1';
+    img.classList.add('is-orb'); img.classList.remove('card-wordmark');
+    img.onerror=function(){img.onerror=null;img.classList.remove('is-orb');if(has(WWAY,c))img.src=WWAY[c];};
+    img.src=ORB[c];
+  }
+  function run(){var n=document.querySelectorAll('img.card-logo[data-code]');for(var i=0;i<n.length;i++)swap(n[i]);}
+  if(document.readyState!=='loading')run();else document.addEventListener('DOMContentLoaded',run);
+  try{new MutationObserver(run).observe(document.body,{childList:true,subtree:true});}catch(e){}
+})();
+</script>
 </body>
 </html>
