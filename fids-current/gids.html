@@ -464,7 +464,7 @@
 <script src="js/gids-layout.js?v=1"></script>
 <script src="js/fids-v2.js?v=311"></script>
 <script src="data/airline-colors.js?v=17"></script>
-<script src="js/fids-core.js?v=21906-240"></script>
+<script src="js/fids-core.js?v=21907-240"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
@@ -503,9 +503,13 @@ window.addEventListener("DOMContentLoaded", async function() {
     setTimeout(_fidsHideLoader, 8000);
 
     var params = new URLSearchParams(window.location.search);
-    var ap = (params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM').toUpperCase().trim();
-    var startMode = params.get('mode') || sessionStorage.getItem('fids_mode') || 'demo';
-    var requestedGate = params.get('gate') || '';   // e.g. C77, A4, 12
+    // Sanitize URL params at intake — IATA codes / gates are alphanumeric and mode
+    // is a fixed set. Stripping to a safe charset stops any reflected/DOM XSS via
+    // ?ap= / ?gate= / ?mode= reaching an HTML sink downstream.
+    var ap = (params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'YQM';
+    var startMode = (params.get('mode') || sessionStorage.getItem('fids_mode') || 'demo').toLowerCase().replace(/[^a-z]/g, '');
+    if (startMode !== 'live' && startMode !== 'demo') startMode = 'demo';
+    var requestedGate = (params.get('gate') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');   // e.g. C77, A4, 12
 
     var apSel = document.getElementById('apSel');
     if (apSel) apSel.value = ap;

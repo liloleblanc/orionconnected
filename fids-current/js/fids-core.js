@@ -16775,7 +16775,7 @@ try {
 // requests on every page load.
 try {
   var _initParams = new URLSearchParams(window.location.search);
-  var _initAp = (_initParams.get('ap') || sessionStorage.getItem('fids_airport') || '').toUpperCase().trim();
+  var _initAp = (_initParams.get('ap') || sessionStorage.getItem('fids_airport') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (_initAp) {
     var _apSelEl = document.getElementById('apSel');
     if (_apSelEl) _apSelEl.value = _initAp;

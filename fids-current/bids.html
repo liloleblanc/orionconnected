@@ -492,9 +492,12 @@ window.addEventListener("DOMContentLoaded", async function() {
     setTimeout(_fidsHideLoader, 8000);
 
     var params = new URLSearchParams(window.location.search);
-    var ap = (params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM').toUpperCase().trim();
-    var startMode = params.get('mode') || sessionStorage.getItem('fids_mode') || 'demo';
-    var requestedBelt = params.get('belt') || params.get('carousel') || '';
+    // Sanitize URL params at intake (alphanumeric IATA/belt, fixed mode set) so a
+    // crafted ?ap= / ?mode= / ?belt= can't carry markup into an HTML sink.
+    var ap = (params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'YQM';
+    var startMode = (params.get('mode') || sessionStorage.getItem('fids_mode') || 'demo').toLowerCase().replace(/[^a-z]/g, '');
+    if (startMode !== 'live' && startMode !== 'demo') startMode = 'demo';
+    var requestedBelt = (params.get('belt') || params.get('carousel') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
     var apSel = document.getElementById('apSel');
     if (apSel) apSel.value = ap;
