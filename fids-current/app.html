@@ -101,14 +101,14 @@
     position:relative;overflow:hidden;}
   /* Faded emblem watermark, bleeding off the right edge behind the time */
   .cardmark{position:absolute;top:50%;right:-16px;transform:translateY(-50%);
-    width:150px;height:150px;pointer-events:none;z-index:0;opacity:.12;
+    width:150px;height:150px;pointer-events:none;z-index:0;opacity:.32;
     object-fit:contain;object-position:right center;}
   .cardmark-mask{background:var(--brand);
     -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
     -webkit-mask-position:right center;mask-position:right center;
     -webkit-mask-size:contain;mask-size:contain;}
-  :root[data-theme="dark"] .cardmark{opacity:.2;}
-  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .cardmark{opacity:.2;}}
+  :root[data-theme="dark"] .cardmark{opacity:.34;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .cardmark{opacity:.34;}}
   .fcard .row1,.fcard .row2,.fcard .meta{position:relative;z-index:1;}
   .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .fcard .al{display:flex;align-items:center;gap:11px;min-width:0;}
@@ -442,7 +442,8 @@ const MARK_MASK={PD:'/logos/airlines/canadian/porter-p.svg'};
 // Faded emblem watermark for a flight card (empty if the airline has none).
 function cardMark(code,dark){
   const art=MARK_ART[code];
-  if(art) return '<img class="cardmark" src="'+art+'" alt="" loading="lazy"'+(dark?' style="filter:brightness(0) invert(1)"':'')+'>';
+  // Real airline colours (not whitened) so each bubble's emblem shows in colour.
+  if(art) return '<img class="cardmark" src="'+art+'" alt="" loading="lazy">';
   const m=MARK_MASK[code];
   if(m) return '<span class="cardmark cardmark-mask" style="background:'+(dark?'#fff':'var(--brand)')+';-webkit-mask-image:url(\''+m+'\');mask-image:url(\''+m+'\')"></span>';
   return '';
