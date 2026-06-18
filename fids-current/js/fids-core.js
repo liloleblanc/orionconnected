@@ -5468,13 +5468,27 @@ function _buildV2MapCol(ctx, vars) {
       // this inbound (the board is fetched with withLocation=true). The separate
       // by-number fetch (window._gateInboundLivePos) often misses what the board
       // already had, so fall back to the board-captured speed/altitude here.
-      if (_liveSpd === null && typeof _ib._liveSpd === 'number') _liveSpd = Math.round(_ib._liveSpd);
-      if (_liveAlt === null && typeof _ib._liveAlt === 'number') _liveAlt = Math.round(_ib._liveAlt);
-      // A speed with no real altitude is a ground/stale fix (taxi roll). Showing
-      // it alone read as "141 kph at 0 ft" on an 'enroute' plane. Never show
-      // speed unless we also have a genuine airborne altitude — both or neither.
-      if (_liveAlt === null) _liveSpd = null;
-      if (_liveAlt !== null && _liveAlt <= 0) { _liveAlt = null; _liveSpd = null; }
+      // Best candidate from this poll: board feed (withLocation) first, then the
+      // by-number window cache. Feed it through the sticky smoother so the panel
+      // doesn't blink off on polls where ADB omits the position.
+      var _wpC = (window._gateInboundLivePos && typeof window._gateInboundLivePos === 'object') ? window._gateInboundLivePos : null;
+      var _candAlt = (typeof _ib._liveAlt === 'number') ? _ib._liveAlt
+                   : (_wpC && typeof _wpC.altitude === 'number' ? _wpC.altitude : null);
+      var _candSpd = (typeof _ib._liveSpd === 'number') ? _ib._liveSpd
+                   : (_wpC && typeof _wpC.speed === 'number' ? _wpC.speed : null);
+      var _candLat = (typeof _ib._liveLat === 'number') ? _ib._liveLat : null;
+      var _candLng = (typeof _ib._liveLng === 'number') ? _ib._liveLng : null;
+      var _arrivedLikeIb = /arriv|land|cancel/i.test(String(_ib.status || ''));
+      if (_ib._liveOnGround === true || _arrivedLikeIb) { _candAlt = null; _candSpd = null; }
+      // Once on the ground there is no airborne fix to hold — drop the cache so
+      // the panel/map don't keep showing a stale cruise position post-landing.
+      if (_arrivedLikeIb && _gateFixCache && _gateFixCache.key === String(_ib.flight || _ib._reg || '')) _gateFixCache = null;
+      var _sfix = _gateStickyFix(String(_ib.flight || _ib._reg || ''), _candLat, _candLng, _candAlt, _candSpd);
+      _liveSpd = (_sfix && typeof _sfix.spd === 'number') ? _sfix.spd : null;
+      _liveAlt = (_sfix && typeof _sfix.alt === 'number') ? _sfix.alt : null;
+      // Speed and altitude appear together or not at all — never one without a
+      // genuine airborne altitude (that produced "141 kph at 0 ft").
+      if (_liveAlt === null || _liveAlt <= 0) { _liveAlt = null; _liveSpd = null; }
       var _tz = vars.tz || 'UTC';
       var _destIata = (vars.iata || '').toString().toUpperCase();
       var _origIata = (_ib._locIata || '').toString().toUpperCase();
@@ -8209,18 +8223,31 @@ const gView = document.getElementById('gateView');
               }
               initGateMapLive(_inbOriginIata || apIata, apIata, livePos.lat, livePos.lng);
             }
-          } else if (inb._liveLat && inb._liveLng &&
-                     typeof inb._liveAlt === 'number' && inb._liveAlt > 0 &&
-                     inb._liveOnGround !== true) {
-            // Genuine airborne fix from ADB (real coordinates + a real altitude):
-            // plot the ACTUAL position. We never estimate a position from the
-            // clock anymore — that plotted a phantom plane mid-route whenever the
-            // departure/arrival times were off (e.g. the EWR Eastern / YQM Atlantic
-            // 1-hour gap), making a flight still at its gate look airborne.
-            var posKey2 = inb._liveLat.toFixed(3) + ',' + inb._liveLng.toFixed(3);
+          } else if ((function(){
+                      // Same sticky fix the telemetry uses — a genuine airborne
+                      // position (real coords + real altitude), held across polls
+                      // where ADB omits it so the plane doesn't blink on and off.
+                      // Once arrived/landed there's nothing to hold → pins only.
+                      if (/arriv|land|cancel/i.test(String(inb.status || ''))) { window._gateMapFix = null; return false; }
+                      var _onG = inb._liveOnGround === true;
+                      var _mf = _gateStickyFix(
+                        String(inb.flight || inb._reg || ''),
+                        (typeof inb._liveLat === 'number') ? inb._liveLat : null,
+                        (typeof inb._liveLng === 'number') ? inb._liveLng : null,
+                        (_onG ? null : (typeof inb._liveAlt === 'number' ? inb._liveAlt : null)),
+                        (_onG ? null : (typeof inb._liveSpd === 'number' ? inb._liveSpd : null))
+                      );
+                      window._gateMapFix = (_mf && typeof _mf.lat === 'number' && typeof _mf.lng === 'number' && typeof _mf.alt === 'number' && _mf.alt > 0) ? _mf : null;
+                      return !!window._gateMapFix;
+                    })()) {
+            // Plot the ACTUAL position. We never estimate from the clock anymore —
+            // that plotted a phantom plane mid-route whenever the departure/arrival
+            // times were off (e.g. the EWR Eastern / YQM Atlantic 1-hour gap).
+            var _mfix = window._gateMapFix;
+            var posKey2 = _mfix.lat.toFixed(3) + ',' + _mfix.lng.toFixed(3);
             if (!gateMap || window._lastMapPosKey !== posKey2) {
               window._lastMapPosKey = posKey2;
-              initGateMapLive(inb._locIata || apIata, apIata, inb._liveLat, inb._liveLng);
+              initGateMapLive(inb._locIata || apIata, apIata, _mfix.lat, _mfix.lng);
             }
           } else {
             // No real airborne fix → pins only, NEVER a clock-estimated plane.
@@ -14449,6 +14476,38 @@ function _adbSpdKt(loc) {
   if (s && typeof s.kmh === 'number') return Math.round(s.kmh / 1.852);
   if (typeof s === 'number') return Math.round(s);
   if (typeof loc.groundSpeedKt === 'number') return Math.round(loc.groundSpeedKt);
+  return null;
+}
+// ── Sticky live-fix cache ─────────────────────────────────────────────────
+// AeroDataBox does not include the airframe's live position on EVERY poll, even
+// while it's cruising. Without smoothing, the telemetry panel + map plane blink
+// on and off each cycle ("flip-flopping"). Once we get a genuine airborne fix
+// for an airframe, hold it through the gaps for a short TTL instead of snapping
+// back to blank. Keyed by flight/reg so it resets the moment the gate's inbound
+// changes (aircraft swap), and expires so a landed plane stops showing.
+var _gateFixCache = null; // { key, lat, lng, alt, spd, ts }
+var _GATE_FIX_TTL = 240000; // 4 min — long enough to bridge missing polls
+function _gateStickyFix(key, lat, lng, alt, spd) {
+  key = String(key || '');
+  var now = Date.now();
+  var hasAlt = (typeof alt === 'number' && alt > 0);
+  if (hasAlt) {
+    _gateFixCache = {
+      key: key,
+      lat: (typeof lat === 'number') ? lat : null,
+      lng: (typeof lng === 'number') ? lng : null,
+      alt: Math.round(alt),
+      spd: (typeof spd === 'number') ? Math.round(spd) : null,
+      ts: now
+    };
+    return _gateFixCache;
+  }
+  // No fresh fix this cycle — reuse a recent one for the SAME airframe.
+  if (_gateFixCache && _gateFixCache.key === key && (now - _gateFixCache.ts) < _GATE_FIX_TTL) {
+    return _gateFixCache;
+  }
+  // Different airframe (swap) or expired → drop it so we don't show stale data.
+  if (_gateFixCache && _gateFixCache.key !== key) _gateFixCache = null;
   return null;
 }
 async function gateAdsbLolPos(callsign, reg) {
