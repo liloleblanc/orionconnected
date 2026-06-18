@@ -149,6 +149,30 @@ export default {
       }
     }
 
+    // ── adsb.lol live-position passthrough ─────────────────────────────
+    // /adsb/v2/callsign/<cs>  or  /adsb/v2/registration/<reg>  → adsb.lol,
+    // fetched server-side so the gate's altitude/speed fallback isn't blocked
+    // by browser CORS. Short cache keeps it fresh without hammering the API.
+    if (path.startsWith('/adsb/')) {
+      const rest = path.slice('/adsb/'.length);
+      if (!/^v2\/(callsign|registration)\/[A-Za-z0-9.\-]+$/.test(rest)) {
+        return new Response('Bad adsb path', { status: 400 });
+      }
+      try {
+        const r = await fetch('https://api.adsb.lol/' + rest, { cf: { cacheEverything: true, cacheTtl: 15 } });
+        return new Response(r.body, {
+          status: r.status,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=15',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        return new Response('adsb fetch failed', { status: 502 });
+      }
+    }
+
     // ── OAG live flight data ───────────────────────────────────────────
     // /oag/departures?ap=YQM  (or /oag/arrivals) → OAG Flight Info v2,
     // cleaned server-side: codeshare duplicates collapsed to the operating

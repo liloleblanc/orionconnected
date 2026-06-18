@@ -14394,6 +14394,11 @@ async function gateAdsbLolPos(callsign, reg) {
   var urls = [];
   var cs = callsign ? String(callsign).replace(/\s+/g, '').toUpperCase() : '';
   var rg = reg ? String(reg).replace(/\s+/g, '').toUpperCase() : '';
+  // Same-origin proxy (worker route /adsb/...) so the browser doesn't block the
+  // cross-origin adsb.lol request (CORS) — that block left altitude blank even
+  // though adsb.lol has it. Falls back to the direct URL if the proxy 404s.
+  if (cs) urls.push('/adsb/v2/callsign/' + encodeURIComponent(cs));
+  if (rg) urls.push('/adsb/v2/registration/' + encodeURIComponent(rg));
   if (cs) urls.push('https://api.adsb.lol/v2/callsign/' + encodeURIComponent(cs));
   if (rg) urls.push('https://api.adsb.lol/v2/registration/' + encodeURIComponent(rg));
   for (var i = 0; i < urls.length; i++) {
