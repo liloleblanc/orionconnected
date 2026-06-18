@@ -3444,18 +3444,11 @@ body, body.gids-page, body.gate-page{
 .gad-map-col-v2 .v2-rc-inbound,
 .gad-map-col-v2 .v2-rc-aircraft { background: transparent !important; }
 .gad-map-col-v2::before {
-  content: "";
-  /* Sit over the THREE info shelves below the map (Right 4-6). The map shelf is
-     an opaque image, so an emblem centred there would be hidden; the info
-     shelves are translucent brushed-metal and let the emblem read through. */
-  position: absolute; left: 0; right: 0; top: auto; bottom: 0; height: 58%;
-  background-image: var(--wm-symbol, none);
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: contain;
-  opacity: 0.30;
-  pointer-events: none;
-  z-index: 0;
+  /* Per-airline emblem watermark behind the right-column panels — removed per
+     feedback (read as an awkward floating mark). Kept the rule disabled so it's
+     easy to re-enable/retune later. */
+  content: none;
+  display: none;
 }
 .gad-map-col-v2 > * { position: relative; z-index: 1; }
 .gad-map-col-v2 .v2-rc-kicker {
