@@ -8382,10 +8382,21 @@ const gView = document.getElementById('gateView');
                        (data.reg && _eq.reg && data.reg === _eq.reg));
           if (_inbOk) {
             window._gateInbound = data.inbound;
-            window._gateInboundLivePos = (data.inbound._liveSpd !== null || data.inbound._liveAlt !== null) ? {
-              speed: data.inbound._liveSpd,
-              altitude: data.inbound._liveAlt
-            } : null;
+            // Merge — don't let the board's (often altitude-less) telemetry blank
+            // out a real altitude the adsb.lol fallback already wrote for this same
+            // inbound. Keep whichever field has a number.
+            (function(){
+              var _prev = window._gateInboundLivePos;
+              var _sameInb = _prev && _prev._inboundFlight && data.inbound &&
+                             _prev._inboundFlight === data.inbound.flight;
+              var _sp = (typeof data.inbound._liveSpd === 'number') ? data.inbound._liveSpd
+                      : (_sameInb && typeof _prev.speed === 'number' ? _prev.speed : null);
+              var _al = (typeof data.inbound._liveAlt === 'number') ? data.inbound._liveAlt
+                      : (_sameInb && typeof _prev.altitude === 'number' ? _prev.altitude : null);
+              window._gateInboundLivePos = (_sp !== null || _al !== null)
+                ? { speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null }
+                : null;
+            })();
             changed = true;
             console.log('[FIDS] Inbound resolved:', data.inbound.flight,
                         'from', data.inbound._locIata,
@@ -14266,8 +14277,8 @@ async function fetchInboundByReg(reg, airportIata) {
       _aircraftCode: best.aircraft ? (best.aircraft.iataCodeShort || '') : '',
       _liveLat: (best.location && best.location.lat) || null,
       _liveLng: (best.location && (best.location.lon || best.location.lng)) || null,
-      _liveAlt: (best.location && best.location.altitude && best.location.altitude.feet) || null,
-      _liveSpd: (best.location && best.location.groundSpeed && best.location.groundSpeed.kt) || null,
+      _liveAlt: _adbAltFt(best.location),
+      _liveSpd: _adbSpdKt(best.location),
       _inboundSource: 'reg-lookup' // flag for debugging
     };
     
@@ -14398,6 +14409,33 @@ var _loadFlightFetching = {};
 // secondary source for the inbound's live position when AeroDataBox has no
 // fix. Returns { speed:<knots>, altitude:<feet> } when the aircraft is
 // genuinely airborne, otherwise null. Never invents data.
+// Robust AeroDataBox live-telemetry extractors. ADB's `location` object varies:
+// altitude can be altitude.feet, altitude.meters, pressureAltitude.feet/.meters,
+// or a bare number; ground speed can be groundSpeed.kt/.knots/.kmPerHour or a
+// number. The old code read ONLY altitude.feet — so whenever ADB used another
+// shape, altitude came back null even though speed (groundSpeed.kt) worked. That
+// is the root cause of "altitude blank on every flight". Use these everywhere.
+function _adbAltFt(loc) {
+  if (!loc) return null;
+  var a = loc.altitude, p = loc.pressureAltitude;
+  if (a && typeof a.feet === 'number') return Math.round(a.feet);
+  if (a && typeof a.meters === 'number') return Math.round(a.meters * 3.28084);
+  if (typeof a === 'number') return Math.round(a);
+  if (p && typeof p.feet === 'number') return Math.round(p.feet);
+  if (p && typeof p.meters === 'number') return Math.round(p.meters * 3.28084);
+  return null;
+}
+function _adbSpdKt(loc) {
+  if (!loc) return null;
+  var s = loc.groundSpeed;
+  if (s && typeof s.kt === 'number') return Math.round(s.kt);
+  if (s && typeof s.knots === 'number') return Math.round(s.knots);
+  if (s && typeof s.kmPerHour === 'number') return Math.round(s.kmPerHour / 1.852);
+  if (s && typeof s.kmh === 'number') return Math.round(s.kmh / 1.852);
+  if (typeof s === 'number') return Math.round(s);
+  if (typeof loc.groundSpeedKt === 'number') return Math.round(loc.groundSpeedKt);
+  return null;
+}
 async function gateAdsbLolPos(callsign, reg) {
   var urls = [];
   var cs = callsign ? String(callsign).replace(/\s+/g, '').toUpperCase() : '';
@@ -14562,8 +14600,8 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         result.livePosition = {
           lat: loc.lat || loc.latitude || null,
           lng: loc.lon || loc.lng || loc.longitude || null,
-          alt: (loc.altitude && loc.altitude.feet) || null,
-          speed: (loc.groundSpeed && loc.groundSpeed.kt) || null
+          alt: _adbAltFt(loc),
+          speed: _adbSpdKt(loc)
         };
       }
 
@@ -14746,8 +14784,8 @@ async function _loadInboundByReg(reg, airportIata, primaryLeg, dateStr) {
     // Live position if airborne
     var liveSpd = null, liveAlt = null;
     if (best.location) {
-      if (best.location.groundSpeed && typeof best.location.groundSpeed.kt === 'number') liveSpd = best.location.groundSpeed.kt;
-      if (best.location.altitude && typeof best.location.altitude.feet === 'number') liveAlt = best.location.altitude.feet;
+      liveSpd = _adbSpdKt(best.location);
+      liveAlt = _adbAltFt(best.location);
     }
 
     return {
@@ -15152,8 +15190,8 @@ function mapADB(raw, mode) {
     // Live position
     const _liveLat = (f.location&&f.location.lat)||null;
     const _liveLng = (f.location&&(f.location.lon||f.location.lng))||null;
-    const _liveAlt = (f.location&&f.location.altitude?.feet)||null;
-    const _liveSpd = (f.location&&f.location.groundSpeed?.kt)||null;
+    const _liveAlt = _adbAltFt(f.location);
+    const _liveSpd = _adbSpdKt(f.location);
     // Flight duration from scheduled times
     var _durationMins = null;
     const _depSched = f.departure?.scheduledTime?.local||f.departure?.scheduledTime?.utc;
