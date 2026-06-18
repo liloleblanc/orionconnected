@@ -8230,9 +8230,12 @@ const gView = document.getElementById('gateView');
             var progKey = inboundActuallyAirborne ? Math.round(prog * 50) : 'no-plane';
             if (!gateMap || window._lastMapProgKey !== progKey) {
               window._lastMapProgKey = progKey;
-              // If inbound has arrived, show the outbound departure route
+              // If inbound has arrived, show the outbound departure route — but
+              // PINS ONLY (no plane). The aircraft is parked at the gate, so a
+              // plane icon pointing at the destination reads as "flying away"
+              // before it has actually departed.
               if (inb.status === 'arrived' || inb.status === 'landed') {
-                initGateMap(apIata, dstIata, 0.02);
+                initGateMap(apIata, dstIata, -1);
               } else if (inboundActuallyAirborne) {
                 // Show inbound route with estimated progress + plane
                 initGateMap(inb._locIata, apIata, prog);
@@ -8243,7 +8246,7 @@ const gView = document.getElementById('gateView');
             }
           }
         } else {
-          if (!gateMap && dstIata) initGateMap(apIata, dstIata, 0.02);
+          if (!gateMap && dstIata) initGateMap(apIata, dstIata, -1);
         }
       }
       setTimeout(tryInitMap, 500);
