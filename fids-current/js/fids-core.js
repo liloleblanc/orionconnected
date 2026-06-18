@@ -14566,8 +14566,28 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         result.livePosition = {
           lat: loc.lat || loc.latitude || null,
           lng: loc.lon || loc.lng || loc.longitude || null,
-          alt: (loc.altitude && loc.altitude.feet) || null,
-          speed: (loc.groundSpeed && loc.groundSpeed.kt) || null
+          // Robust altitude: AeroDataBox shapes vary (altitude.feet | altitude.meters
+          // | a plain number | pressureAltitude.feet). Reading only .feet left the
+          // altimeter blank whenever ADB used a different shape, even though speed
+          // parsed fine. Cover them all (convert metres → feet).
+          alt: (function(){
+            var a = loc.altitude;
+            if (a && typeof a.feet === 'number') return Math.round(a.feet);
+            if (a && typeof a.meters === 'number') return Math.round(a.meters * 3.28084);
+            if (typeof a === 'number') return Math.round(a);
+            if (loc.pressureAltitude && typeof loc.pressureAltitude.feet === 'number') return Math.round(loc.pressureAltitude.feet);
+            if (loc.pressureAltitude && typeof loc.pressureAltitude.meters === 'number') return Math.round(loc.pressureAltitude.meters * 3.28084);
+            return null;
+          })(),
+          speed: (function(){
+            var s = loc.groundSpeed;
+            if (s && typeof s.kt === 'number') return Math.round(s.kt);
+            if (s && typeof s.knots === 'number') return Math.round(s.knots);
+            if (s && typeof s.kmPerHour === 'number') return Math.round(s.kmPerHour / 1.852);
+            if (typeof s === 'number') return Math.round(s);
+            if (typeof loc.groundSpeedKt === 'number') return Math.round(loc.groundSpeedKt);
+            return null;
+          })()
         };
       }
 
