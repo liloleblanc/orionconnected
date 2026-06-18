@@ -14453,12 +14453,13 @@ async function gateAdsbLolPos(callsign, reg) {
   // Same-origin proxy (worker route /adsb/...) so the browser doesn't block the
   // cross-origin adsb.lol request (CORS) — that block left altitude blank even
   // though adsb.lol has it. Falls back to the direct URL if the proxy 404s.
-  if (csIcao) urls.push('/adsb/v2/callsign/' + encodeURIComponent(csIcao));
-  if (cs) urls.push('/adsb/v2/callsign/' + encodeURIComponent(cs));
+  // Keep to 1–2 same-origin proxy calls (the worker shares + caches them) so we
+  // don't trip adsb.lol's 429 rate limit. Reg is the most reliable identifier;
+  // fall back to the ICAO callsign only. No direct browser calls (CORS-blocked)
+  // and no IATA-callsign spam.
   if (rg) urls.push('/adsb/v2/registration/' + encodeURIComponent(rg));
-  if (csIcao) urls.push('https://api.adsb.lol/v2/callsign/' + encodeURIComponent(csIcao));
-  if (cs) urls.push('https://api.adsb.lol/v2/callsign/' + encodeURIComponent(cs));
-  if (rg) urls.push('https://api.adsb.lol/v2/registration/' + encodeURIComponent(rg));
+  if (csIcao && csIcao !== rg) urls.push('/adsb/v2/callsign/' + encodeURIComponent(csIcao));
+  if (!rg && !csIcao && cs) urls.push('/adsb/v2/callsign/' + encodeURIComponent(cs));
   for (var i = 0; i < urls.length; i++) {
     try {
       var r = await fetch(urls[i]);

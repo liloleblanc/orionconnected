@@ -158,16 +158,29 @@ export default {
       if (!/^v2\/(callsign|registration)\/[A-Za-z0-9.\-]+$/.test(rest)) {
         return new Response('Bad adsb path', { status: 400 });
       }
+      // adsb.lol rate-limits (HTTP 429) when over-queried — that was leaving the
+      // altimeter blank. Serve from a shared edge cache so many gate screens use
+      // ONE upstream call per airframe per 45s, and never cache a non-200 (so a
+      // 429 doesn't stick). Send a real User-Agent too.
+      const adsbCache = caches.default;
+      const adsbKey = new Request('https://adsb-cache.fids/' + rest);
+      const hit = await adsbCache.match(adsbKey);
+      if (hit) return hit;
       try {
-        const r = await fetch('https://api.adsb.lol/' + rest, { cf: { cacheEverything: true, cacheTtl: 15 } });
-        return new Response(r.body, {
+        const r = await fetch('https://api.adsb.lol/' + rest, {
+          headers: { 'User-Agent': 'orionconnected-fids/1.0 (gate display)' },
+        });
+        const body = await r.text();
+        const resp = new Response(body, {
           status: r.status,
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': 'public, max-age=15',
+            'Cache-Control': r.ok ? 'public, max-age=45' : 'no-store',
             'Access-Control-Allow-Origin': '*',
           },
         });
+        if (r.ok && ctx && ctx.waitUntil) ctx.waitUntil(adsbCache.put(adsbKey, resp.clone()));
+        return resp;
       } catch (e) {
         return new Response('adsb fetch failed', { status: 502 });
       }
