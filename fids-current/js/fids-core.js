@@ -12335,6 +12335,11 @@ const SL = k => {
   const obj = SS[k] || {};
   return obj[lang] || obj.en || k;
 };
+// Bilingual variants — always show English · French together. The web cards
+// (mobile) otherwise show only the single rotation language; the boards are
+// already bilingual, so these bring the cards in line.
+const SLbi = k => { const o = SS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
+const TLbi = k => { const o = LS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
 
 // ── LANGUAGE ROTATION — flips between selected languages ─────────────────
 function startLangRotation() {
@@ -16090,12 +16095,12 @@ function _mobileBuildContext(f, isDep) {
   const cls   = PILLCLS[f.status] || 'p-scheduled';
   const _hasGate = (f.gate && f.gate !== '—');
 
-  let stTxt = SL(f.status);
+  let stTxt = SLbi(f.status);
   if (f.upd) {
-    if (f.status === 'delayed')  stTxt = `${SL('delayed')} · ${f.upd}`;
-    if (f.status === 'early')    stTxt = `${SL('early')} · ${f.upd}`;
-    if (f.status === 'departed') stTxt = `${SL('departed')} · ${f.upd}`;
-    if (f.status === 'arrived')  stTxt = `${SL('arrived')} · ${f.upd}`;
+    if (f.status === 'delayed')  stTxt = `${SLbi('delayed')} · ${f.upd}`;
+    if (f.status === 'early')    stTxt = `${SLbi('early')} · ${f.upd}`;
+    if (f.status === 'departed') stTxt = `${SLbi('departed')} · ${f.upd}`;
+    if (f.status === 'arrived')  stTxt = `${SLbi('arrived')} · ${f.upd}`;
   }
 
   // Hide-prefix toggle from airport config / user customize — same as desktop
@@ -16154,7 +16159,7 @@ function renderMobileCompactCard(f, isDep, iata, tz, nowTs) {
       <div class="cc-city">${cityDisplay || '—'}</div>
       <div class="cc-meta">
         <span class="cc-meta-flight">${flightDisplay}</span>
-        ${_hasGate ? `<span class="cc-meta-sep">·</span><span class="cc-meta-gate">${TL('gateDep') || 'Gate'} ${f.gate}</span>` : ''}
+        ${_hasGate ? `<span class="cc-meta-sep">·</span><span class="cc-meta-gate">${TLbi('gateDep')} ${f.gate}</span>` : ''}
         ${wxStr ? `<span class="cc-meta-sep">·</span>${wxStr}` : ''}
       </div>
     </div>
