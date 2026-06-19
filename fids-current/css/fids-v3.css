@@ -2297,14 +2297,20 @@ body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
    Arrivals (no weather) — gets the 8% back distributed elsewhere via
    the explicit selector below.
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-#fidsTable colgroup col.col-airline   { width: 17% !important; min-width: 220px !important; }
-#fidsTable colgroup col.col-flight    { width:  9% !important; min-width: 110px !important; }
-#fidsTable colgroup col.col-wx        { width:  8% !important; min-width: 150px !important; }
-#fidsTable colgroup col.col-dest      { width: 24% !important; min-width: 200px !important; }
-#fidsTable colgroup col.col-gate      { width:  7% !important; min-width:  80px !important; }
-#fidsTable colgroup col.col-time      { width: 11% !important; min-width: 150px !important; }
-#fidsTable colgroup col.col-time-rev  { width:  9% !important; min-width: 130px !important; }
-#fidsTable colgroup col.col-status    { width: 15% !important; min-width: 170px !important; }
+/* table-layout:fixed IGNORES min-width on <col>, so the old percentage widths
+   let the airline column shrink below the logo+wordmark's fixed ~276px and
+   overflow into the flight number on smaller screens. Fix: columns that hold
+   fixed-size content get FIXED px that always fit; DEST stays flexible (auto)
+   to absorb the remaining screen width. This makes the board adapt to any
+   display width without the fixed-content columns ever breaking. */
+#fidsTable colgroup col.col-airline   { width: 292px !important; }
+#fidsTable colgroup col.col-flight    { width: 150px !important; }
+#fidsTable colgroup col.col-wx        { width: 150px !important; }
+#fidsTable colgroup col.col-dest      { width: auto  !important; }
+#fidsTable colgroup col.col-gate      { width:  90px !important; }
+#fidsTable colgroup col.col-time      { width: 150px !important; }
+#fidsTable colgroup col.col-time-rev  { width: 140px !important; }
+#fidsTable colgroup col.col-status    { width: 180px !important; }
 
 /* Emblem-only mode: shrink airline column further */
 body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {

@@ -904,3 +904,23 @@
 /* Hotel brand logo a touch smaller (per Nick) — name/info sizes unchanged
    since they derive from the VAR, not the rendered logo. */
 .axr-logo{ height: calc(var(--axr-logo) * 0.85); }
+
+/* ── Immunity from the board's global "* { font-family: <display font> !important }"
+   override ──────────────────────────────────────────────────────────────────
+   That override (applied at runtime for the gate screens) was forcing the heavy
+   display font (Possibility = single Bold weight) onto the Accor ad creatives,
+   which made the ad logos render very bold AND triggered a re-layout/re-scale
+   that thickened the left-rail text + icons. Re-assert the ad's own brand fonts
+   with !important + higher specificity so the creatives stay in their intended
+   (lighter) type and don't disturb the rest of the screen. */
+.axr, .axr *, #gateAdCarousel .axr, #gateAdCarousel .axr * {
+  font-family: var(--axr-body, "Accor Montserrat","Montserrat","Avenir Next","Helvetica Neue",Arial,sans-serif) !important;
+}
+.axr[data-brand-code="FAI"] .axr-name, .axr[data-brand-code="FAI"] .axr-addr,
+.axr[data-brand-code="FAI"] .axr-amen span, .axr[data-brand-code="FAI"] .axr-bubble-copy,
+.axr[data-brand-code="SOF"] .axr-name, .axr[data-brand-code="SOF"] .axr-addr,
+.axr[data-brand-code="SOF"] .axr-amen span, .axr[data-brand-code="SOF"] .axr-bubble-copy,
+.axr[data-brand-code="SLE"] .axr-name, .axr[data-brand-code="SLE"] .axr-addr,
+.axr[data-brand-code="SLE"] .axr-amen span, .axr[data-brand-code="SLE"] .axr-bubble-copy {
+  font-family: "Didot","Bodoni 72",Georgia,"Times New Roman",serif !important;
+}

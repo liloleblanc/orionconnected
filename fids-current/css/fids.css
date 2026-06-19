@@ -279,6 +279,12 @@ table {
 .col-term   { width: 5%; }
 .col-gate   { width: 6%; }
 .col-status { width: 18%; }
+/* AIRLINE and REVISED had no width, so on the 8-col Departures board they each
+   grabbed ~13% of remaining space — squeezing the airline logo+wordmark until
+   it overflowed into the flight number. Give AIRLINE real room and shrink the
+   usually-empty REVISED column. */
+.col-airline  { width: 17%; }
+.col-time-rev { width: 9%; }
 
 thead tr {
   background: #d4d4d8; 
