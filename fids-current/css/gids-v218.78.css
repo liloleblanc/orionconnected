@@ -3451,7 +3451,7 @@ body, body.gids-page, body.gate-page{
   position: absolute; left: 0; right: 0; bottom: 0; top: auto; height: 66%;
   background-image: var(--wm-symbol, none);
   background-repeat: no-repeat; background-position: center 62%; background-size: auto 94%;
-  opacity: 0.22; mix-blend-mode: multiply;
+  opacity: 0.38; mix-blend-mode: normal;
   pointer-events: none; z-index: 0;
 }
 .gad-map-col-v2 > * { position: relative; z-index: 1; }
@@ -4512,6 +4512,6 @@ body, body.gids-page, body.gate-page{
   content: ""; position: absolute; inset: 0;
   background-image: var(--wm-symbol, none);
   background-repeat: no-repeat; background-position: center; background-size: auto 78%;
-  opacity: 0.20; mix-blend-mode: multiply; pointer-events: none; z-index: 0;
+  opacity: 0.34; mix-blend-mode: normal; pointer-events: none; z-index: 0;
 }
 .gad-map-col-v2 .v2-rc-aircraft > * { position: relative; z-index: 1; }
