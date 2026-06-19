@@ -924,3 +924,17 @@
 .axr[data-brand-code="SLE"] .axr-amen span, .axr[data-brand-code="SLE"] .axr-bubble-copy {
   font-family: "Didot","Bodoni 72",Georgia,"Times New Roman",serif !important;
 }
+
+/* Elegant (Didot) luxury brands: force the serif name + light weight past the
+   board-wide font override, so Faena & co. stop rendering fat in the global font. */
+.axr[data-brand-code="FAE"] .axr-name, .axr[data-brand-code="FAI"] .axr-name,
+.axr[data-brand-code="SOF"] .axr-name, .axr[data-brand-code="SLE"] .axr-name,
+.axr[data-brand-code="RAF"] .axr-name, .axr[data-brand-code="RAH"] .axr-name,
+.axr[data-brand-code="EMB"] .axr-name, .axr[data-brand-code="BAN"] .axr-name,
+.axr[data-brand-code="ORI"] .axr-name, .axr[data-brand-code="OE"] .axr-name,
+.axr[data-brand-code="RIX"] .axr-name, .axr[data-brand-code="MAN"] .axr-name,
+.axr[data-brand-code="MGH"] .axr-name, .axr[data-brand-code="MGA"] .axr-name,
+.axr[data-brand-code="MOV"] .axr-name, .axr[data-brand-code="DEL"] .axr-name {
+  font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif !important;
+  font-weight:400 !important;
+}
