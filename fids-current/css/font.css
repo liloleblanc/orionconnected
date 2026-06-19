@@ -74,7 +74,7 @@
 .ac-ico { font-family:'ac-icons' !important; font-style:normal; font-weight:normal; line-height:1; speak:none;
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
   display:inline-flex; align-items:center; justify-content:center;
-  font-size:clamp(32px,4.6vh,62px); color:#fff; }
+  font-size:clamp(42px,6.4vh,84px); color:#fff; }
 .ac-ico-flight::before   { content:'\e9ad'; }  /* plane */
 .ac-ico-dest::before     { content:'\e974'; }  /* destination / target */
 .ac-ico-status::before   { content:'\e931'; }  /* info */
