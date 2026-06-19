@@ -4,14 +4,19 @@
  * Cloudflare serves matching static assets (everything under fids-current/)
  * FIRST, without invoking this Worker — so existing pages, JS and CSS are
  * served exactly as before. This script only runs for paths that do NOT match
- * a static asset, where it adds two same-origin passthroughs so the gate route
- * map works on display networks that block public CDNs:
+ * a static asset, where it adds same-origin passthroughs so the route map and
+ * live-position lookups work on display networks that block public CDNs:
  *
- *   /mapcdn/<file>      → the Leaflet map engine (cdnjs / unpkg)
+ *   /mapcdn/<file>                 → the map engine (Leaflet / MapLibre / three)
  *   /maptiles/<z>/<x>/<y>[@2x].png → CARTO Voyager map tiles
+ *   /demtiles/<z>/<x>/<y>.png      → AWS terrarium elevation tiles
+ *   /tiles/<provider>/<z>/<x>/<y>.png → selectable base-map tiles
+ *   /adsb/v2/<callsign|registration>/<id> → adsb.lol live position
  *
- * Both are fetched server-side by the Worker and returned from THIS domain,
- * so the displays only ever talk to your own site.
+ * All are fetched server-side by the Worker and returned from THIS domain,
+ * so the displays only ever talk to your own site. Flight data itself comes
+ * from AeroDataBox (the browser calls the fids-proxy worker directly) — this
+ * worker does NOT touch the flight feed.
  */
 
 const MAP_ENGINE = {
@@ -50,7 +55,6 @@ const TILE_PROVIDERS = {
 };
 
 const DAY = 86400;
-// Rebuild nonce — redeploy so the preview picks up the OAG_KEY secret (1).
 
 export default {
   async fetch(request, env, ctx) {
@@ -152,7 +156,8 @@ export default {
     // ── adsb.lol live-position passthrough ─────────────────────────────
     // /adsb/v2/callsign/<cs>  or  /adsb/v2/registration/<reg>  → adsb.lol,
     // fetched server-side so the gate's altitude/speed fallback isn't blocked
-    // by browser CORS. Short cache keeps it fresh without hammering the API.
+    // by browser CORS. Free, keyless feed; short shared cache avoids hammering
+    // it. This is NOT a flight-schedule source — only live lat/lng/alt/speed.
     if (path.startsWith('/adsb/')) {
       const rest = path.slice('/adsb/'.length);
       if (!/^v2\/(callsign|registration)\/[A-Za-z0-9.\-]+$/.test(rest)) {
@@ -186,101 +191,6 @@ export default {
       }
     }
 
-    // ── OAG live flight data ───────────────────────────────────────────
-    // /oag/departures?ap=YQM  (or /oag/arrivals) → OAG Flight Info v2,
-    // cleaned server-side: codeshare duplicates collapsed to the operating
-    // carrier, cargo + general-aviation filtered out, fields mapped to a
-    // simple shape the board reads. The OAG_KEY secret never reaches the
-    // browser. Built as a swappable data source — if the OAG trial ends,
-    // only this block changes.
-    if (path === '/oag/departures' || path === '/oag/arrivals') {
-      const dir = path.endsWith('/arrivals') ? 'arr' : 'dep';
-      const ap = (url.searchParams.get('ap') || 'YQM').toUpperCase().slice(0, 4);
-      const date = (url.searchParams.get('date') || new Date().toISOString().slice(0, 10)).slice(0, 10);
-      if (!env || !env.OAG_KEY) {
-        return jsonOag({ error: 'OAG_KEY secret is not set on the fids worker. Add it in Cloudflare → Workers → fids → Settings → Variables and Secrets.' }, 500);
-      }
-      // Server-side cache: one OAG call serves all clients (refreshes, polling,
-      // multiple users) for a few minutes, so we sip the trial's call volume
-      // instead of spending one call per request.
-      const oagCache = caches.default;
-      const oagCacheKey = new Request('https://oag-cache.fids/' + dir + '?ap=' + ap + '&date=' + date);
-      const oagHit = await oagCache.match(oagCacheKey);
-      if (oagHit) return oagHit;
-      const airportParam = dir === 'arr' ? 'ArrivalAirport' : 'DepartureAirport';
-      const dateParam = dir === 'arr' ? 'ArrivalDateTime' : 'DepartureDateTime';
-      const oagUrl = 'https://api.oag.com/flight-instances?version=v2'
-        + '&' + airportParam + '=' + encodeURIComponent(ap)
-        + '&' + dateParam + '=' + encodeURIComponent(date)
-        + '&CodeType=IATA&Content=Status&Limit=100';
-      try {
-        const r = await fetch(oagUrl, { headers: { 'Subscription-Key': env.OAG_KEY } });
-        if (!r.ok) {
-          // OAG over quota / error — fall back to AeroDataBox (separate source + quota).
-          try {
-            const adb = await adbFlights(ap, dir);
-            if (adb && adb.length) {
-              const aresp = new Response(JSON.stringify({ airport: ap, direction: dir, date, count: adb.length, flights: adb, source: 'adb' }), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=180' },
-              });
-              if (ctx && ctx.waitUntil) ctx.waitUntil(oagCache.put(oagCacheKey, aresp.clone()));
-              return aresp;
-            }
-          } catch (e2) { /* ADB also unavailable — fall through to the OAG error */ }
-          const body = await r.text();
-          // Don't cache errors — so the next call retries once quota resets.
-          return jsonOag({ error: 'OAG returned ' + r.status, detail: body.slice(0, 400) }, 502);
-        }
-        const raw = await r.json();
-        const flights = oagClean(raw, dir);
-        const resp = new Response(JSON.stringify({ airport: ap, direction: dir, date, count: flights.length, flights, source: 'oag' }), {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=180',
-          },
-        });
-        if (ctx && ctx.waitUntil) ctx.waitUntil(oagCache.put(oagCacheKey, resp.clone()));
-        return resp;
-      } catch (e) {
-        return jsonOag({ error: 'OAG fetch failed' }, 502);
-      }
-    }
-
-    // ── OAG in AeroDataBox shape (for the real board) ──────────────────
-    // /oag/adb?ap=YQM&dir=dep  → OAG Flight Info v2 mapped into ADB's
-    // departures/arrivals structure so fids-core's mapADB() can consume it
-    // unchanged. The board uses this as a drop-in source with ADB fallback.
-    if (path === '/oag/adb') {
-      const dir = (url.searchParams.get('dir') || 'dep').toLowerCase().indexOf('arr') === 0 ? 'arr' : 'dep';
-      const ap = (url.searchParams.get('ap') || 'YQM').toUpperCase().slice(0, 4);
-      const today = (url.searchParams.get('date') || new Date().toISOString().slice(0, 10)).slice(0, 10);
-      // today through tomorrow so the board's look-ahead window is covered.
-      const tomorrow = new Date(new Date(today + 'T00:00:00Z').getTime() + 86400000).toISOString().slice(0, 10);
-      if (!env || !env.OAG_KEY) return jsonOag({ error: 'OAG_KEY secret not set' }, 500);
-      const airportParam = dir === 'arr' ? 'ArrivalAirport' : 'DepartureAirport';
-      const dateParam = dir === 'arr' ? 'ArrivalDateTime' : 'DepartureDateTime';
-      // NOTE: the date range separator '/' must stay literal — encoding it to
-      // %2F makes OAG reject the request with a 400.
-      const oagUrl = 'https://api.oag.com/flight-instances?version=v2'
-        + '&' + airportParam + '=' + encodeURIComponent(ap)
-        + '&' + dateParam + '=' + today + '/' + tomorrow
-        + '&CodeType=IATA&Content=Status&Limit=100';  // trial caps Limit at 100
-      try {
-        const r = await fetch(oagUrl, { headers: { 'Subscription-Key': env.OAG_KEY } });
-        if (!r.ok) {
-          const body = await r.text();
-          return jsonOag({ error: 'OAG returned ' + r.status, detail: body.slice(0, 700), sentDate: today + '/' + tomorrow }, 502);
-        }
-        const raw = await r.json();
-        return jsonOag(oagToAdb(raw, dir), 200);
-      } catch (e) {
-        return jsonOag({ error: 'OAG fetch failed' }, 502);
-      }
-    }
-
     // ── Everything else → static assets ────────────────────────────────
     if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
       const res = await env.ASSETS.fetch(request);
@@ -303,240 +213,3 @@ export default {
     return new Response('Not found', { status: 404 });
   },
 };
-
-// ── OAG helpers ───────────────────────────────────────────────────────────
-function jsonOag(obj, status) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'no-store',
-    },
-  });
-}
-
-// ── AeroDataBox fallback ─────────────────────────────────────────────
-// When OAG is over its trial call-volume, fetch real data from AeroDataBox via
-// the proxy (separate key + quota) and map it into the same simple row shape so
-// the app/board are unaffected by which source served the data.
-const AP_TZ = {
-  YQM:'America/Moncton', YHZ:'America/Halifax', YSJ:'America/Moncton', YFC:'America/Moncton',
-  YYZ:'America/Toronto', YTZ:'America/Toronto', YUL:'America/Toronto', YOW:'America/Toronto',
-  YYT:'America/St_Johns', YHM:'America/Toronto', MCO:'America/New_York', TPA:'America/New_York',
-};
-function fmtLocalTz(date, tz) {
-  const p = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false }).formatToParts(date);
-  const g = t => (p.find(x => x.type === t) || {}).value || '00';
-  let hh = g('hour'); if (hh === '24') hh = '00';
-  return g('year') + '-' + g('month') + '-' + g('day') + 'T' + hh + ':' + g('minute');
-}
-function adbHHMM(mv, field) {
-  const lo = mv && mv[field] && mv[field].local;
-  if (!lo) return '';
-  const t = (lo.indexOf('T') > -1 ? lo.split('T')[1] : (lo.split(' ')[1] || ''));
-  return t.slice(0, 5);
-}
-function adbState(status) {
-  const s = (status || '').toLowerCase();
-  if (s.indexOf('cancel') > -1) return 'canceled';
-  if (s === 'departed' || s === 'enroute' || s === 'approaching') return 'inair';
-  if (s === 'arrived') return 'landed';
-  return 'scheduled';
-}
-function adbTimeliness(mv, status) {
-  if ((status || '').toLowerCase() === 'delayed') return 'delayed';
-  const sd = mv && mv.scheduledTime && mv.scheduledTime.utc;
-  const rv = mv && mv.revisedTime && mv.revisedTime.utc;
-  if (sd && rv) { const d = new Date(rv) - new Date(sd); if (d > 60000) return 'delayed'; if (d < -60000) return 'early'; }
-  return '';
-}
-function mapAdb(f, dir) {
-  if (!f || f.isCargo) return null;
-  const thisMv = dir === 'arr' ? (f.arrival || {}) : (f.departure || {});
-  const otherMv = dir === 'arr' ? (f.departure || {}) : (f.arrival || {});
-  const al = (f.airline && f.airline.iata) || '';
-  const num = (f.number || '').replace(/\s+/g, '');
-  if (!al || !num) return null;
-  return {
-    airline: al, flight: num,
-    cityIata: (otherMv.airport && otherMv.airport.iata) || '',
-    schedTime: adbHHMM(thisMv, 'scheduledTime'),
-    estTime: adbHHMM(thisMv, 'revisedTime'),
-    gate: thisMv.gate || '', terminal: thisMv.terminal || '',
-    aircraft: (f.aircraft && f.aircraft.model) || '',
-    reg: (f.aircraft && f.aircraft.reg) || '',
-    state: adbState(f.status), timeliness: adbTimeliness(thisMv, f.status), operatedBy: '',
-  };
-}
-async function adbFlights(ap, dir) {
-  const tz = AP_TZ[ap] || 'America/Toronto';
-  const now = Date.now();
-  const from = fmtLocalTz(new Date(now - 2 * 3600000), tz);
-  const to = fmtLocalTz(new Date(now + 10 * 3600000), tz); // 12h window (ADB max)
-  const direction = dir === 'arr' ? 'Arrival' : 'Departure';
-  const url = 'https://fids-proxy.n-leblanc1984.workers.dev/flights/airports/iata/' + encodeURIComponent(ap) + '/' + from + '/' + to
-    + '?withLeg=true&direction=' + direction + '&withCancelled=true&withCodeshared=false&withCargo=false&withPrivate=false&withLocation=true';
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('ADB ' + r.status);
-  const j = await r.json();
-  const list = dir === 'arr' ? (j.arrivals || []) : (j.departures || []);
-  return list.map(f => mapAdb(f, dir)).filter(Boolean);
-}
-
-// Map OAG Flight Info v2 -> a simple board row shape, with cleanup rules.
-function oagClean(raw, dir) {
-  const data = (raw && Array.isArray(raw.data)) ? raw.data : [];
-  const out = [];
-  for (const f of data) {
-    // Keep only the OPERATING flight — skip marketing codeshare duplicates
-    // (they carry codeshare.operatingFlight pointing at the real operator).
-    if (f && f.codeshare && f.codeshare.operatingFlight) continue;
-    // Drop general aviation and pure freight/cargo.
-    if (f.flightType === 'GA') continue;
-    if (f.serviceType && f.serviceType.iata === 'F') continue;
-    const carrier = (f.carrier && (f.carrier.iata || f.carrier.icao)) || '';
-    if (!carrier || !f.flightNumber) continue;
-
-    const sd = (f.statusDetails && f.statusDetails[0]) || {};
-    const sdHere = (dir === 'arr' ? sd.arrival : sd.departure) || {};
-    const est = sdHere.estimatedTime || {};
-    const timeliness = dir === 'arr' ? est.inGateTimeliness : est.outGateTimeliness;
-    const estGate = dir === 'arr' ? (est.inGate || est.onGround) : (est.outGate || est.offGround);
-    // "here" = this airport's side, "there" = the other endpoint (the city shown).
-    const here = (dir === 'arr' ? f.arrival : f.departure) || {};
-    const there = (dir === 'arr' ? f.departure : f.arrival) || {};
-    const opName = f.codeshare && f.codeshare.operatingAirlineDisclosure
-      && f.codeshare.operatingAirlineDisclosure.name;
-
-    out.push({
-      airline: carrier,
-      flight: carrier + f.flightNumber,
-      seq: f.sequenceNumber || 0,
-      cityIata: (there.airport && there.airport.iata) || '',
-      schedTime: (here.time && here.time.local) || '',
-      estTime: (estGate && estGate.local) ? String(estGate.local).slice(11, 16) : '',
-      gate: (sdHere.gate || here.gate || '') + '',
-      baggage: dir === 'arr' ? (sdHere.baggage || '') : '',
-      aircraft: (f.aircraftType && (f.aircraftType.iata || f.aircraftType.icao)) || '',
-      reg: (sd.equipment && sd.equipment.aircraftRegistrationNumber) || '',
-      operatedBy: opName || '',
-      state: sd.state || f.flightType || 'Scheduled',
-      timeliness: timeliness || '',
-    });
-  }
-  // Collapse multi-leg through-flights (same flight number + time appearing once
-  // per leg, e.g. PB923 YQM→Mont-Joli→Wabush) into a single row. Keep the first
-  // leg (next physical stop) and record any onward stops.
-  const byKey = new Map();
-  for (const r of out) {
-    const k = r.airline + '|' + r.flight + '|' + r.schedTime;
-    const ex = byKey.get(k);
-    if (!ex) { byKey.set(k, r); continue; }
-    // Same flight — keep the earlier leg, note the other as an onward stop.
-    const first = r.seq < ex.seq ? r : ex;
-    const other = r.seq < ex.seq ? ex : r;
-    first.via = (first.via || []).concat(other.cityIata).filter(Boolean);
-    byKey.set(k, first);
-  }
-  const merged = Array.from(byKey.values());
-  merged.sort((a, b) => String(a.schedTime).localeCompare(String(b.schedTime)));
-  return merged;
-}
-
-// OAG's operating-carrier name -> IATA code, so the board shows the real
-// operator (Rouge/Jazz/PAL/Porter) straight from OAG instead of guessing by
-// flight-number range like the ADB path does.
-const OAG_OP_NAME_TO_IATA = [
-  [/rouge/i, 'RV'], [/jazz/i, 'QK'], [/pal\s*airlines|pal\b/i, 'PB'],
-  [/porter/i, 'PD'], [/transat/i, 'TS'], [/encore/i, 'WR'], [/westjet/i, 'WS'],
-];
-function oagOperatorIata(name) {
-  if (!name) return '';
-  for (const [re, code] of OAG_OP_NAME_TO_IATA) if (re.test(name)) return code;
-  return '';
-}
-
-// Map OAG Flight Info v2 -> AeroDataBox-shaped { departures|arrivals: [...] }
-// so fids-core's mapADB() consumes it unchanged.
-function oagToAdb(raw, dir) {
-  const data = (raw && Array.isArray(raw.data)) ? raw.data : [];
-  const seen = new Map();
-  const out = [];
-  for (const f of data) {
-    if (f && f.codeshare && f.codeshare.operatingFlight) continue; // marketing dupe
-    if (f.flightType === 'GA') continue;
-    if (f.serviceType && f.serviceType.iata === 'F') continue;
-    const carrier = (f.carrier && (f.carrier.iata || f.carrier.icao)) || '';
-    if (!carrier || !f.flightNumber) continue;
-
-    const sd = (f.statusDetails && f.statusDetails[0]) || {};
-    const dep = f.departure || {}, arr = f.arrival || {};
-    const sdDep = sd.departure || {}, sdArr = sd.arrival || {};
-    const depEst = sdDep.estimatedTime || {}, arrEst = sdArr.estimatedTime || {};
-
-    const opName = (f.codeshare && f.codeshare.operatingAirlineDisclosure
-      && f.codeshare.operatingAirlineDisclosure.name) || '';
-    const ownerCode = (f.codeshare && f.codeshare.aircraftOwner && f.codeshare.aircraftOwner.code) || '';
-    const opIata = oagOperatorIata(opName) || (ownerCode.length === 2 ? ownerCode : '');
-    const opAirline = opIata ? { iata: opIata, name: opName } : undefined;
-
-    const state = (sd.state || '').toLowerCase();
-    let status = '';
-    if (state === 'canceled' || state === 'cancelled') status = 'cancelled';
-    else if (state === 'outgate' || state === 'inair') status = 'departed';
-    else if (state === 'ingate' || state === 'landed') status = 'arrived';
-
-    const dt = (dObj, tObj) => (dObj && dObj.local && tObj && tObj.local)
-      ? { local: dObj.local + 'T' + tObj.local } : undefined;
-    // OAG scheduled times are plain wall-clock ("2026-06-17T05:01") but the
-    // estimated times carry a tz offset ("...05:01:00-04:00"). Mixing the two
-    // makes every flight read 1 hour late in a different-tz browser. Strip the
-    // offset/seconds off the revised time so both are the same naive format.
-    const stripTz = s => String(s).slice(0, 16);
-    const depSched = dt(dep.date, dep.time);
-    const arrSched = dt(arr.date, arr.time);
-    const depRev = (depEst.outGate && depEst.outGate.local) ? { local: stripTz(depEst.outGate.local) } : undefined;
-    const arrInGate = (arrEst.inGate && arrEst.inGate.local) || (arrEst.onGround && arrEst.onGround.local);
-    const arrRev = arrInGate ? { local: stripTz(arrInGate) } : undefined;
-
-    const obj = {
-      number: carrier + f.flightNumber,
-      status,
-      codeshareStatus: '',
-      callSign: '',
-      registration: (sd.equipment && sd.equipment.aircraftRegistrationNumber) || '',
-      airline: { iata: carrier, name: '' },
-      aircraft: { iataCode: (f.aircraftType && f.aircraftType.iata) || '', model: '' },
-      departure: {
-        scheduledTime: depSched,
-        revisedTime: depRev,
-        terminal: dep.terminal || sdDep.actualTerminal || '',
-        gate: sdDep.gate || dep.gate || '',
-        airport: { iata: (dep.airport && dep.airport.iata) || '', icao: (dep.airport && dep.airport.icao) || '' },
-        airline: opAirline,
-      },
-      arrival: {
-        scheduledTime: arrSched,
-        revisedTime: arrRev,
-        terminal: arr.terminal || sdArr.actualTerminal || '',
-        gate: sdArr.gate || arr.gate || '',
-        baggageBelt: sdArr.baggage || null,
-        airport: { iata: (arr.airport && arr.airport.iata) || '', icao: (arr.airport && arr.airport.icao) || '' },
-        airline: opAirline,
-      },
-      _seq: f.sequenceNumber || 0,
-    };
-
-    // Collapse multi-leg through-flights (keep the first leg).
-    const k = obj.number + '|' + ((depSched && depSched.local) || (arrSched && arrSched.local) || '');
-    const ex = seen.get(k);
-    if (ex) {
-      if (obj._seq < ex._seq) { const i = out.indexOf(ex); if (i >= 0) out[i] = obj; seen.set(k, obj); }
-      continue;
-    }
-    seen.set(k, obj);
-    out.push(obj);
-  }
-  return dir === 'arr' ? { arrivals: out } : { departures: out };
-}
