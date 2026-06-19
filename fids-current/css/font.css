@@ -92,3 +92,7 @@
 .ac-ico-boarding { font-size:clamp(38px,5.8vh,76px) !important; }   /* boarding pass — a tad smaller */
 .ac-ico-depart   { font-size:clamp(38px,5.8vh,76px) !important; }   /* takeoff — a tad smaller */
 .ac-ico-time     { font-size:clamp(96px,15vh,180px) !important; }  /* timer — much bigger (glyph has heavy padding) */
+/* Timer glyph is heavily padded AND the orb clips it — let its badge not clip so
+   the stopwatch can actually grow. (Scoped to the timer only.) */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge:has(.ac-ico-time) { overflow: visible !important; }
+.ac-ico-time { font-size:clamp(80px,12vh,150px) !important; line-height:1 !important; }
