@@ -4500,3 +4500,8 @@ body, body.gids-page, body.gate-page{
 .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-icon-wrap { color: #f01428 !important; }
 /* AC flights — AC icon-font glyphs in brand red (match the black/red orbs) */
 .g8-wrap.g8-airline-AC .gad-aircraft-col .ac-ico { color:#f01428 !important; }
+/* Flight-orb airline emblem: a touch smaller so it fits inside the orb (was
+   filling edge-to-edge — Delta widget + others). */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-img {
+  width: 74% !important; height: 74% !important; margin: auto !important;
+}
