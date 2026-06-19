@@ -17516,6 +17516,20 @@ function _gateMapTick() {
   _gateMapCamera.lastProgKey = progKey;
 
   var renderProg = (prog < 0 || flybackActive) ? -1 : prog;
+  // SINGLE-OWNER MAP: if this inbound is airborne and we have a REAL ADS-B
+  // fix, draw the actual plane (initGateMapLive) — the very same thing
+  // tryInitMap() draws. Previously this tick always called initGateMap()
+  // with a TIME-SIMULATED arc plane, so the two controllers fought and the
+  // gate flipped between the live "flight view" and the simulated "full
+  // map" (fast on load, then every ~10s). Yielding to the live fix here
+  // makes both paths render identically → no more flip.
+  if (phase === 'airborne' && !flybackActive) {
+    var _lp = window._gateInboundLivePos;
+    var _lf = (_lp && typeof _lp.lat === 'number' && typeof _lp.lng === 'number')
+                ? _lp
+                : (window._gateMapFix && typeof window._gateMapFix.lat === 'number' ? window._gateMapFix : null);
+    if (_lf) { initGateMapLive(routeOrg, routeDst, _lf.lat, _lf.lng); return; }
+  }
   initGateMap(routeOrg, routeDst, renderProg);
 }
 
