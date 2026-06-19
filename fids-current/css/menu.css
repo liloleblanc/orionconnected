@@ -540,6 +540,17 @@ body:not(.sidebar-open) #fidsBoard {
 }
 .settings-sidebar input::placeholder,
 .settings-sidebar textarea::placeholder { color: var(--console-text-muted); }
+/* The open dropdown LIST: <option>s inherited a light text colour with no
+   solid background, so the list rendered near-invisible (faint text on the
+   OS default light popup) until hovered. Force a readable dark popup like the
+   app's other selects. */
+.settings-sidebar select option,
+.settings-sidebar .sm-select option,
+.settings-sidebar select optgroup,
+.settings-sidebar .sm-select optgroup {
+  background: #1b2130 !important;
+  color: #f3f4f6 !important;
+}
 
 .sm-row {
   display: flex;

@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Airport Companion</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --soft:#eef1f6; --soft2:#e7ebf2;
+    --line:#e6eaf0; --line2:#dde3ec;
+    --txt:#10151d; --muted:#69727f; --faint:#9aa3b1;
+    --accent:#1f6fe0; --accent-ink:#1559c0; --accent-soft:#eaf1fd;
+    --green:#16a34a; --amber:#d97706; --red:#dc2626;
+    --nav-h:62px; --radius:18px;
+    --shadow:0 1px 2px rgba(16,21,29,.04), 0 6px 20px rgba(16,21,29,.06);
+  }
+  /* ── Dark palette (forced, or auto via system) ─────────────── */
+  :root[data-theme="dark"]{
+    --bg:#0a0d13; --card:#12161f; --soft:#181d28; --soft2:#1d2330;
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.13);
+    --txt:#f4f6fa; --muted:#8b95a7; --faint:#5d6677;
+    --accent:#5b8dff; --accent-ink:#bcd0ff; --accent-soft:rgba(91,141,255,.16);
+    --green:#37c98b; --amber:#e0a23c; --red:#e8584f;
+    --shadow:0 8px 30px rgba(0,0,0,.45);
+  }
+  @media (prefers-color-scheme: dark){
+    :root[data-theme="auto"]{
+      --bg:#0a0d13; --card:#12161f; --soft:#181d28; --soft2:#1d2330;
+      --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.13);
+      --txt:#f4f6fa; --muted:#8b95a7; --faint:#5d6677;
+      --accent:#5b8dff; --accent-ink:#bcd0ff; --accent-soft:rgba(91,141,255,.16);
+      --green:#37c98b; --amber:#e0a23c; --red:#e8584f;
+      --shadow:0 8px 30px rgba(0,0,0,.45);
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased; letter-spacing:-0.011em;
+    display:flex; flex-direction:column; min-height:100dvh;
+    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  }
+  svg{display:block;}
+  .ic{width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  /* ── Header ──────────────────────────────────────── */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    background:rgba(255,255,255,.86); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0;position:relative;}
+  .brand .logo{
+    width:46px;height:46px;border-radius:13px;flex:none;
+    background:var(--soft);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    font-weight:800;font-size:13px;color:var(--accent);letter-spacing:.3px;}
+  .brand .logo img{width:100%;height:100%;object-fit:contain;padding:6px;}
+  .brand .meta{display:flex;flex-direction:column;line-height:1.12;min-width:0;}
+  .brand .meta b{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54vw;}
+  .brand .meta span{font-size:11.5px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:5px;}
+  .brand .meta .chev{width:13px;height:13px;color:var(--faint);}
+  .brand select{position:absolute;inset:0;width:100%;height:100%;opacity:0;}
+  .me-btn{width:42px;height:42px;border-radius:50%;flex:none;
+    border:1px solid var(--line);background:var(--card);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .me-btn .ic{width:20px;height:20px;}
+  /* ── Search ──────────────────────────────────────── */
+  .search-wrap{padding:16px 18px 6px;}
+  .search{display:flex;align-items:center;gap:11px;background:var(--card);
+    border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);}
+  .search .ic{width:19px;height:19px;color:var(--faint);}
+  .search input{flex:1;background:none;border:0;outline:0;color:var(--txt);
+    font-family:inherit;font-size:15.5px;font-weight:500;}
+  .search input::placeholder{color:var(--faint);font-weight:500;}
+  .hint{padding:9px 20px 0;color:var(--muted);font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:7px;}
+  .hint .live{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(22,163,74,.5);animation:pulse 2.4s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(22,163,74,.45)}70%{box-shadow:0 0 0 6px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+  /* ── Views ───────────────────────────────────────── */
+  .view{display:none;} .view.active{display:block;}
+  /* ── Ad banner ───────────────────────────────────── */
+  .ad-banner{margin:14px 18px 4px;border-radius:var(--radius);position:relative;overflow:hidden;
+    background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);
+    display:flex;align-items:center;gap:14px;padding:15px 16px;}
+  .ad-banner .tile{width:46px;height:46px;border-radius:13px;flex:none;background:var(--accent-soft);
+    color:var(--accent);display:flex;align-items:center;justify-content:center;}
+  .ad-banner .t{font-size:15px;font-weight:700;}
+  .ad-banner .s{font-size:12.5px;color:var(--muted);margin-top:2px;font-weight:500;}
+  .ad-banner .tag{position:absolute;top:9px;right:12px;font-size:8.5px;letter-spacing:.13em;color:var(--faint);text-transform:uppercase;font-weight:600;}
+  /* ── Flight cards ────────────────────────────────── */
+  .cards{padding:10px 18px 4px;display:flex;flex-direction:column;gap:12px;}
+  .fcard{background:var(--soft);border:1px solid var(--line);border-radius:var(--radius);
+    padding:15px 16px;display:flex;flex-direction:column;gap:13px;box-shadow:var(--shadow);
+    position:relative;overflow:hidden;}
+  /* Faded emblem watermark, bleeding off the right edge behind the time */
+  .cardmark{position:absolute;top:50%;right:-16px;transform:translateY(-50%);
+    width:150px;height:150px;pointer-events:none;z-index:0;opacity:.32;
+    object-fit:contain;object-position:right center;}
+  .cardmark-mask{background:var(--brand);
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-position:right center;mask-position:right center;
+    -webkit-mask-size:contain;mask-size:contain;}
+  :root[data-theme="dark"] .cardmark{opacity:.34;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .cardmark{opacity:.34;}}
+  .fcard .row1,.fcard .row2,.fcard .meta{position:relative;z-index:1;}
+  .fcard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .fcard .al{display:flex;align-items:center;gap:11px;min-width:0;}
+  /* Glossy airline orb icon */
+  .orb{width:46px;height:46px;flex:none;display:block;}
+  .dt-orb{width:104px;height:104px;display:block;margin:0 auto 10px;}
+  /* Official airline wordmark — brand-coloured (light) / white (dark) by theme */
+  .wm{height:23px;display:block;flex:none;}
+  img.wm{width:auto;max-width:165px;object-fit:contain;object-position:left center;}
+  span.wm{width:165px;max-width:60vw;
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-position:left center;mask-position:left center;
+    -webkit-mask-size:contain;mask-size:contain;}
+  .wm-d{display:none;}
+  :root[data-theme="dark"] .wm-l{display:none;} :root[data-theme="dark"] .wm-d{display:block;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .wm-l{display:none;} :root[data-theme="auto"] .wm-d{display:block;}}
+  .wm-txt{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fcard .alname{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
+  .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .st.ontime{color:var(--green);} .st.delayed,.st.early{color:var(--amber);}
+  .st.cancelled{color:var(--red);} .st.boarding{color:var(--accent);}
+  .fcard .row2{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
+  .fcard .city{font-size:23px;font-weight:800;line-height:1.05;letter-spacing:-0.02em;}
+  .fcard .sub{color:var(--muted);font-size:12px;font-weight:500;margin-top:5px;}
+  .fcard .sub b{color:var(--faint);font-weight:600;}
+  .fcard .time{text-align:right;flex:none;}
+  .fcard .time .hh{font-size:23px;font-weight:800;letter-spacing:-0.02em;}
+  .fcard .time .lbl{font-size:9.5px;letter-spacing:.11em;color:var(--faint);text-transform:uppercase;font-weight:600;margin-top:2px;}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);
+    border-radius:10px;padding:7px 11px;font-size:12.5px;font-weight:700;}
+  .chip .ic{width:14px;height:14px;color:var(--faint);}
+  .chip .k{color:var(--muted);font-weight:500;font-size:11px;}
+  .chip.gate{background:var(--accent-soft);border-color:#cfe0fb;color:var(--accent-ink);}
+  .chip.gate .ic{color:var(--accent);}
+  /* Shiny bubble: card background IS the brand orb. Hide the redundant stripe. */
+  .fcard::before{display:none;}
+  .bubwm{height:23px;width:auto;max-width:165px;object-fit:contain;object-position:left center;display:block;flex:none;}
+  .bubwm-txt{font-weight:800;font-size:16px;letter-spacing:-0.01em;color:var(--txt);}
+  .bubwm-txt.on-dark{color:#fff;}
+  .fcard.dark{border-color:rgba(0,0,0,.22);}
+  .fcard.dark .city,.fcard.dark .time .hh{color:#fff;}
+  .fcard.dark .sub{color:rgba(255,255,255,.85);}
+  .fcard.dark .sub b{color:#fff;}
+  .fcard.dark .time .lbl{color:rgba(255,255,255,.72);}
+  .fcard.dark .chip{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.28);color:#fff;}
+  .fcard.dark .chip .ic{color:#fff;}
+  .fcard.dark .chip .k{color:rgba(255,255,255,.82);}
+  .fcard.dark .chip.gate{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.36);color:#fff;}
+  .fcard.dark .chip.gate .ic{color:#fff;}
+  .fcard.dark .st.ontime{color:#4ade80;} .fcard.dark .st.delayed,.fcard.dark .st.early{color:#fde047;}
+  .fcard.dark .st.cancelled{color:#fca5a5;} .fcard.dark .st.boarding{color:#fff;}
+  .fcard.light .chip{background:var(--soft);}
+  .empty{padding:64px 24px;text-align:center;color:var(--muted);}
+  .empty .ic{width:38px;height:38px;color:var(--faint);margin:0 auto 14px;}
+  /* ── Coming-soon ─────────────────────────────────── */
+  .soon{padding:60px 30px;text-align:center;}
+  .soon .badge{width:64px;height:64px;border-radius:20px;margin:0 auto 18px;background:var(--card);
+    border:1px solid var(--line);color:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .soon .badge .ic{width:30px;height:30px;}
+  .soon .h{font-size:19px;font-weight:800;letter-spacing:-0.02em;margin-bottom:8px;}
+  .soon .p{font-size:13.5px;line-height:1.55;color:var(--muted);max-width:290px;margin:0 auto;font-weight:500;}
+  .soon .tag{display:inline-block;margin-top:16px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--muted);border:1px solid var(--line2);border-radius:999px;padding:5px 12px;font-weight:600;}
+  /* ── Bottom nav ──────────────────────────────────── */
+  .nav{position:fixed;left:0;right:0;bottom:0;z-index:30;
+    height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+    background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;}
+  .nav button{flex:1;background:none;border:0;color:var(--faint);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    font-family:inherit;font-size:10px;font-weight:600;transition:color .15s;}
+  .nav button .ic{width:23px;height:23px;}
+  .nav button.active{color:var(--accent);}
+  .fcard{cursor:pointer;position:relative;overflow:hidden;}
+  .fcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brand,transparent);}
+  /* ── Flight detail ───────────────────────────────── */
+  .detail{position:fixed;inset:0;z-index:60;background:var(--bg);overflow-y:auto;
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    padding-bottom:calc(28px + env(safe-area-inset-bottom));}
+  .detail.show{transform:none;}
+  .dt-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+    background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  :root[data-theme="dark"] .dt-top{background:rgba(10,13,19,.8);}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .dt-top{background:rgba(10,13,19,.8);}}
+  .dt-top .back{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);
+    color:var(--txt);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .dt-top .ttl{font-size:15px;font-weight:700;}
+  .dt-hero{text-align:center;padding:26px 20px 8px;}
+  .dt-wm{height:36px;width:auto;max-width:74%;object-fit:contain;display:block;margin:0 auto 10px;}
+  .dt-wm-d{display:none;}
+  :root[data-theme="dark"] .dt-wm-l{display:none;} :root[data-theme="dark"] .dt-wm-d{display:block;}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .dt-wm-l{display:none;} :root[data-theme="auto"] .dt-wm-d{display:block;}}
+  .dt-name{font-size:17px;font-weight:700;text-align:center;margin-bottom:4px;letter-spacing:-0.01em;}
+  .dt-hero .al-op{color:var(--muted);font-size:13px;font-weight:500;margin-top:2px;}
+  .dt-illus{display:block;width:240px;max-width:86%;margin:12px auto 2px;}
+  .dt-hero .flt{font-size:30px;font-weight:800;letter-spacing:-0.02em;}
+  .dt-hero .al{color:var(--muted);font-size:13.5px;font-weight:500;margin-top:4px;}
+  .dt-route{display:flex;align-items:center;gap:10px;justify-content:center;padding:18px 20px 6px;}
+  .dt-route .ep{text-align:center;min-width:84px;}
+  .dt-route .ep .city{font-size:18px;font-weight:800;letter-spacing:-0.01em;}
+  .dt-route .ep .code{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .dt-route .line{flex:1;max-width:120px;height:2px;background:var(--line2);position:relative;}
+  .dt-route .line .pl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(90deg);
+    color:var(--accent);background:var(--bg);padding:0 4px;}
+  .dt-route .line .pl .ic{width:22px;height:22px;}
+  .dt-status{display:flex;justify-content:center;padding:12px 0 18px;}
+  .dt-status .st{font-size:15px;}
+  .dt-status .st .d{width:9px;height:9px;}
+  .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 18px;}
+  .dt-cell{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow);}
+  .dt-cell.wide{grid-column:1 / -1;display:flex;align-items:center;gap:13px;}
+  .dt-cell .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  .dt-cell .v{font-size:19px;font-weight:800;letter-spacing:-0.01em;margin-top:5px;}
+  .dt-cell .sub{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px;}
+  .dt-cell .planeic{width:46px;height:46px;border-radius:12px;flex:none;background:var(--accent-soft);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;}
+  .dt-cell .planeic .ic{width:26px;height:26px;}
+  .dt-cta{margin:20px 18px 0;width:calc(100% - 36px);background:var(--accent);color:#fff;border:0;border-radius:14px;
+    padding:15px;font-family:inherit;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:var(--shadow);}
+  .dt-cta .ic{width:18px;height:18px;color:#fff;}
+  /* ── Full-page ad ────────────────────────────────── */
+  .ad-full{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:34px;background:var(--bg);}
+  .ad-full.show{display:flex;animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+  .ad-full .tile{width:92px;height:92px;border-radius:26px;margin-bottom:22px;background:var(--accent-soft);
+    color:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .ad-full .tile .ic{width:44px;height:44px;}
+  .ad-full .creative{width:100%;max-width:360px;max-height:48vh;object-fit:contain;border-radius:16px;
+    margin-bottom:22px;box-shadow:var(--shadow);background:#fff;}
+  .ad-full .t{font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1.15;}
+  .ad-full .s{color:var(--muted);font-size:15px;margin-top:12px;max-width:300px;font-weight:500;line-height:1.5;}
+  .ad-full .cta{margin-top:26px;background:var(--accent);color:#fff;border:0;border-radius:13px;padding:14px 28px;font-family:inherit;font-size:15px;font-weight:700;box-shadow:var(--shadow);}
+  .ad-full .skip{position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:18px;background:var(--card);
+    color:var(--muted);border:1px solid var(--line);border-radius:999px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .ad-full .skip .ic{width:18px;height:18px;}
+  .ad-full .tag{position:absolute;top:calc(env(safe-area-inset-top) + 20px);left:20px;font-size:9px;letter-spacing:.15em;color:var(--faint);text-transform:uppercase;font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="logo" id="apLogo">YQM</span>
+    <span class="meta">
+      <b id="apName">Greater Moncton</b>
+      <span><span id="apIata">YQM</span> · Departures
+        <svg class="ic chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </span>
+    <select id="apSelect" aria-label="Choose airport" onchange="setAirport(this.value)">
+      <option value="YQM">Greater Moncton (YQM)</option>
+      <option value="YHZ">Halifax Stanfield (YHZ)</option>
+      <option value="YYZ">Toronto Pearson (YYZ)</option>
+      <option value="YUL">Montréal–Trudeau (YUL)</option>
+      <option value="MCO">Orlando International (MCO)</option>
+    </select>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;flex:none;">
+    <button class="me-btn" id="themeBtn" title="Theme" onclick="cycleTheme()"><span id="themeIc"></span></button>
+    <button class="me-btn" title="Sign in" onclick="personalize()">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- FLIGHTS -->
+<div class="view active" id="view-flights">
+  <div class="search-wrap">
+    <div class="search">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="q" inputmode="search" placeholder="Find your flight — number or city" oninput="render()">
+    </div>
+  </div>
+  <div class="hint"><span class="live"></span><span id="hint">Live departures</span></div>
+
+  <div class="ad-banner" id="adBanner" onclick="bannerTap()">
+    <span class="tag">Sponsored</span>
+    <span class="tile" id="adBanTile"></span>
+    <div><div class="t" id="adBanT">Grab a coffee before you fly</div><div class="s" id="adBanS">Offers near your gate — tap to see</div></div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+</div>
+
+<div class="view" id="view-explore">
+  <div class="soon"><div class="badge"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.2 13.2 8.5 15.5 10.8 10.8 15.5 8.5"/></svg></div>
+    <div class="h">Explore the airport</div><div class="p">Find shops, food, lounges and washrooms — and how to get to them.</div><div class="tag">Coming soon</div></div>
+</div>
+<div class="view" id="view-bag">
+  <div class="soon"><div class="badge"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><line x1="9.5" y1="11" x2="9.5" y2="16"/><line x1="14.5" y1="11" x2="14.5" y2="16"/></svg></div>
+    <div class="h">Track your bags</div><div class="p">See your arrival baggage belt and when your bags are ready.</div><div class="tag">Coming soon</div></div>
+</div>
+<div class="view" id="view-trip">
+  <div class="soon"><div class="badge"><svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg></div>
+    <div class="h">Your trip</div><div class="p">Save your flight and boarding pass for quick access. Sign in to unlock.</div><div class="tag">Members</div></div>
+</div>
+
+<nav class="nav">
+  <button class="active" data-v="flights" onclick="go('flights')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/></svg>Flights</button>
+  <button data-v="explore" onclick="go('explore')">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.2 13.2 8.5 15.5 10.8 10.8 15.5 8.5"/></svg>Explore</button>
+  <button data-v="bag" onclick="go('bag')">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Baggage</button>
+  <button data-v="trip" onclick="go('trip')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg>Trip</button>
+</nav>
+
+<!-- Flight detail -->
+<div class="detail" id="detail">
+  <div class="dt-top">
+    <button class="back" onclick="closeFlight()"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="ttl">Flight details</div>
+  </div>
+  <div id="detailBody"></div>
+</div>
+
+<div class="ad-full" id="adFull">
+  <span class="tag">Advertisement</span>
+  <button class="skip" onclick="closeFullAd()"><svg class="ic" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+  <img class="creative" id="adFullImg" alt="" style="display:none">
+  <div class="tile" id="adFullIcon"></div>
+  <div class="t" id="adFullTitle">Duty-free, your way</div>
+  <div class="s" id="adFullSub">Pre-order and pick up at the gate.</div>
+  <button class="cta" onclick="closeFullAd()">Explore offers</button>
+</div>
+
+<script>
+const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
+const SVG={
+  bag:'<path d="M18 8h1a3 3 0 0 1 0 6h-1"/><path d="M5 8h13v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z"/><line x1="8" y1="2" x2="8" y2="4.5"/><line x1="12" y1="2" x2="12" y2="4.5"/>',
+  shop:'<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8a3 3 0 0 1 6 0"/>',
+  food:'<path d="M6 3v7a2 2 0 0 0 4 0V3"/><line x1="8" y1="10" x2="8" y2="21"/><path d="M16 3c-1.5 0-2 2-2 4s.5 4 2 4v10"/>',
+  lounge:'<path d="M5 11V8a2 2 0 0 1 4 0v3"/><path d="M15 11V8a2 2 0 0 1 4 0v3"/><path d="M4 11h16v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><line x1="6" y1="20" x2="6" y2="22"/><line x1="18" y1="20" x2="18" y2="22"/>',
+  car:'<path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13"/><path d="M4 13h16v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>'
+};
+const FULL_ADS=[
+  {img:'/logos/advertisements/app/airnova-spread.png',t:'A Class Above',s:'Air Nova — the Air Canada Connector'},
+  {ic:'shop',t:'Duty-free, your way',s:'Pre-order and pick up at the gate.'},
+  {ic:'food',t:'Hungry before you board?',s:'Order ahead from restaurants near your gate.'},
+  {ic:'lounge',t:'Relax in the lounge',s:'Day passes available — comfort before you fly.'},
+  {ic:'car',t:'Skip the taxi line',s:'Book your ride home before you land.'}
+];
+const BANNER_ADS=[
+  {ic:'bag',t:'Grab a coffee before you fly',s:'Cafés near your gate — tap to see'},
+  {ic:'shop',t:'Duty-free, your way',s:'Pre-order, pick up at the gate'},
+  {ic:'lounge',t:'Relax in the lounge',s:'Day passes available'},
+  {ic:'car',t:'Skip the taxi line',s:'Book your ride home'}
+];
+const AP_NAME={YQM:'Greater Moncton',YHZ:'Halifax Stanfield',YYZ:'Toronto Pearson',YUL:'Montréal–Trudeau',MCO:'Orlando Intl'};
+const CITY={YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHZ:'Halifax',YYT:"St. John's",YDF:'Deer Lake',YOW:'Ottawa',
+  YWK:'Wabush',YYY:'Mont-Joli',TPA:'Tampa',TLH:'Tallahassee',PSE:'Ponce',SDQ:'Santo Domingo',SJU:'San Juan',
+  BQN:'Aguadilla',CLE:'Cleveland',ATL:'Atlanta',BOS:'Boston',JFK:'New York',EWR:'Newark',DFW:'Dallas',
+  DEN:'Denver',LAX:'Los Angeles',ORD:'Chicago',MIA:'Miami',DTW:'Detroit',STI:'Santiago'};
+const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
+  B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet'};
+
+const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':'Airbus A320neo','32Q':'Airbus A321neo','32B':'Airbus A321neo',
+  '223':'Airbus A220-300','221':'Airbus A220-100','7M8':'Boeing 737 MAX 8','7M9':'Boeing 737 MAX 9','73H':'Boeing 737-800','738':'Boeing 737-800',
+  '7S7':'Boeing 737-700','73W':'Boeing 737-700','757':'Boeing 757','75F':'Boeing 757 Freighter','767':'Boeing 767','76Y':'Boeing 767','77W':'Boeing 777',
+  'DH4':'Dash 8-400','DH8D':'Dash 8-400','CR9':'CRJ-900','CR7':'CRJ-700','CR2':'CRJ-200','E75':'Embraer E175','E90':'Embraer E190','E95':'Embraer E195',
+  'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop'};
+function acName(code){return ACTYPE[code]||code||'—';}
+let AP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
+// Shown only when live data is unavailable (e.g. OAG trial over quota), so the
+// app still demonstrates fully instead of going blank. Clearly labelled.
+const SAMPLE=[
+  {airline:'AC',flight:'AC8740',cityIata:'YUL',schedTime:'06:00',estTime:'06:00',gate:'1',aircraft:'DH4',reg:'C-GGOH',state:'scheduled',timeliness:'onTime'},
+  {airline:'AC',flight:'AC8902',cityIata:'YYZ',schedTime:'06:35',estTime:'06:35',gate:'3',aircraft:'CR9',reg:'C-FEJZ',state:'scheduled',timeliness:'onTime'},
+  {airline:'TS',flight:'TS634',cityIata:'TPA',schedTime:'07:10',estTime:'07:10',gate:'5',aircraft:'321',reg:'C-GOIF',state:'scheduled',timeliness:'onTime'},
+  {airline:'WS',flight:'WS3310',cityIata:'YYZ',schedTime:'11:40',estTime:'12:05',gate:'4',aircraft:'7M8',reg:'C-GVWS',state:'scheduled',timeliness:'delayed'},
+  {airline:'PD',flight:'PD2174',cityIata:'YTZ',schedTime:'13:15',estTime:'13:15',gate:'2',aircraft:'DH4',reg:'C-GLQO',state:'scheduled',timeliness:'onTime'},
+  {airline:'AC',flight:'AC1518',cityIata:'YUL',schedTime:'17:20',estTime:'17:20',gate:'1',aircraft:'CR9',reg:'C-FFEN',state:'scheduled',timeliness:'onTime'},
+  {airline:'WS',flight:'WS3422',cityIata:'YYZ',schedTime:'18:05',estTime:'18:05',gate:'4',aircraft:'7M8',reg:'C-GWSV',state:'scheduled',timeliness:'onTime',operatedBy:'WestJet Encore'}
+];
+function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// Real colour airline logos — same source the main board uses.
+// Official airline wordmarks. Naming quirk: the "-wordmark-light.svg" file uses
+// LIGHT (white) ink — for dark backgrounds — and "-wordmark-dark.svg" uses DARK
+// (black) ink for light backgrounds. wmUrls returns them as [forLightBg, forDarkBg].
+const WORDMARK={
+  AC:'canadian/air-canada', WS:'canadian/westjet', PD:'canadian/porter', TS:'canadian/transat',
+  PB:'canadian-regional/pal-airlines', B6:'us-major/jetblue', DL:'us-major/delta',
+  AA:'us-major/american-airlines', UA:'us-major/united', WN:'us-major/southwest', F9:'us-major/frontier'
+};
+// Returns [lightThemeUrl (dark ink), darkThemeUrl (white ink)], or null if none.
+function wmUrls(code){
+  if(code==='F8') return ['/logos/airlines/canadian/flair.svg','/logos/airlines/canadian/flair.svg']; // no light/dark pair
+  const b=WORDMARK[code]; if(!b) return null;
+  return ['/logos/airlines/'+b+'-wordmark-dark.svg','/logos/airlines/'+b+'-wordmark-light.svg'];
+}
+// Airline brand accent colours (same values the main system uses).
+const BRAND={AC:'#D82F2E',WS:'#00AC9D',TS:'#00B3F0',PD:'#152C53',AA:'#E02527',DL:'#E31837',
+  UA:'#0033A0',WN:'#304CB2',B6:'#00205B',F8:'#2BA84A',F9:'#026845',PB:'#FCA404'};
+// Wordmark ink for LIGHT theme — each airline's brand colour. Air Canada's
+// wordmark is black by design, so it stays black. (Dark theme uses the white
+// wordmark file instead.)
+const WM_INK={AC:'#111111',WS:'#00AC9D',PD:'#152C53',TS:'#16335F',F8:'#2BA84A',PB:'#1C3474',
+  B6:'#003876',DL:'#003A70',AA:'#0078D2',UA:'#0033A0',WN:'#304CB2',F9:'#026845'};
+// Official airline wordmark. Light theme: brand-coloured (recoloured from the
+// black wordmark via CSS mask). Dark theme: the white wordmark image. Text fallback.
+function airlineLogo(code){
+  const u=wmUrls(code);
+  if(!u) return '<span class="wm-txt">'+esc(AIRLINE[code]||code)+'</span>';
+  const ink=WM_INK[code]||'#111111';
+  return '<span class="wm wm-l" style="background:'+ink+';-webkit-mask-image:url(\''+u[0]+'\');mask-image:url(\''+u[0]+'\')"></span>'
+        +'<img class="wm wm-d" src="'+u[1]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">';
+}
+function heroWordmark(code){
+  const u=wmUrls(code);
+  if(!u) return '<div class="dt-name">'+esc(AIRLINE[code]||code)+'</div>';
+  return '<img class="dt-wm dt-wm-l" src="'+u[0]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">'
+        +'<img class="dt-wm dt-wm-d" src="'+u[1]+'" alt="" loading="lazy">';
+}
+// Faded emblem watermark. Real colour art keeps each symbol's true colours and
+// detail (e.g. WestJet's white centre, Transat's blue star).
+const MARK_ART={
+  AC:'/logos/symbols/airlines/AC.svg', WS:'/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',
+  TS:'/logos/symbols/airlines/TS.svg', F8:'/logos/airlines/canadian/flair-dot.svg',
+  PB:'/logos/airlines/canadian-regional/pal-symbol.svg', B6:'/logos/airlines/us-major/jetblue.svg',
+  DL:'/logos/airlines/us-major/delta-widget.svg', AA:'/logos/airlines/us-major/american-flight-symbol.svg',
+  UA:'/logos/airlines/us-major/united-globe-only.svg', WN:'/logos/symbols/airlines/WN.svg',
+  F9:'/logos/airlines/us-major/frontier-emblem.svg'
+};
+// Porter has no coloured symbol file — tint its 'P' mark with the brand navy.
+const MARK_MASK={PD:'/logos/airlines/canadian/porter-p.svg'};
+// Faded emblem watermark for a flight card (empty if the airline has none).
+function cardMark(code,dark){
+  const art=MARK_ART[code];
+  // Real airline colours (not whitened) so each bubble's emblem shows in colour.
+  if(art) return '<img class="cardmark" src="'+art+'" alt="" loading="lazy">';
+  const m=MARK_MASK[code];
+  if(m) return '<span class="cardmark cardmark-mask" style="background:'+(dark?'#fff':'var(--brand)')+';-webkit-mask-image:url(\''+m+'\');mask-image:url(\''+m+'\')"></span>';
+  return '';
+}
+// Glossy airline "orb" icon. UA/AA/WN are official PNGs, the rest generated SVGs.
+const ORB_PNG={UA:1,AA:1,WN:1};
+function orbUrl(code){return '/logos/airline-tiles/'+code+'-glossy.'+(ORB_PNG[code]?'png':'svg');}
+function orbIcon(code,cls){return '<img class="'+(cls||'orb')+'" src="'+orbUrl(code)+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy">';}
+// Shiny "bubble" = the glossy orb sphere used as the flight-card background.
+const ORB={AC:'#0b0b0b',WS:'#00928c',PD:'#152C53',TS:'#172B54',PB:'#1C3474',B6:'#003876',
+  UA:'#0033A0',WN:'#304CB2',F9:'#026845',F8:'#0FD55D',DL:'#ffffff',AA:'#ffffff'};
+const BUB_LIGHT={DL:1,AA:1}; // white bubbles keep dark text + colour emblem
+function _hx(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function _mix(a,b,t){const c=_hx(a),d=_hx(b);return '#'+[0,1,2].map(i=>Math.round(c[i]+(d[i]-c[i])*t).toString(16).padStart(2,'0')).join('');}
+function bubBg(code){
+  if(BUB_LIGHT[code]) return 'radial-gradient(120% 85% at 28% 2%,rgba(255,255,255,.95),rgba(255,255,255,0) 60%),linear-gradient(165deg,#ffffff,#eef0f4 55%,#dfe3ea)';
+  const base=ORB[code]||'#1b2330',top=_mix(base,'#ffffff',.30),bot=_mix(base,'#000000',.34);
+  return 'radial-gradient(120% 85% at 28% 2%,rgba(255,255,255,.30),rgba(255,255,255,0) 58%),linear-gradient(165deg,'+top+','+base+' 55%,'+bot+')';
+}
+// Airline wordmark for a bubble: white on coloured bubbles, dark on light bubbles.
+function bubWordmark(code){
+  const u=wmUrls(code);
+  if(!u) return '<span class="bubwm-txt'+(BUB_LIGHT[code]?'':' on-dark')+'">'+esc(AIRLINE[code]||code)+'</span>';
+  return '<img class="bubwm" src="'+u[0]+'" alt="'+esc(AIRLINE[code]||code)+'" loading="lazy"'+(BUB_LIGHT[code]?'':' style="filter:brightness(0) invert(1)"')+'>';
+}
+// Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
+function acType(raw){
+  if(!raw) return '';
+  let s=String(raw).trim().toUpperCase();
+  const RE={BCS:'223',CS1:'221',CS3:'223',DH8D:'DH4',DH8C:'DH3',DH8B:'DH2',DH8A:'DH1',DHC8:'DH4','32A':'319','32B':'320','32S':'320','757':'752'};
+  if(RE[s]) return RE[s];
+  if(/^[A-Z0-9]{3}$/.test(s)) return s;            // already a 3-char code (OAG)
+  if(/ATR\s*72/.test(s)) return 'AT7';
+  if(/DASH\s*8|DHC[- ]?8|Q400|DHC-8-400/.test(s)) return 'DH4';
+  s=s.replace(/^(BOEING|AIRBUS|EMBRAER|BOMBARDIER|DE HAVILLAND CANADA|DE HAVILLAND)\s*/,'').trim();
+  if(/737\s*MAX\s*8|737-?8/.test(s)) return '7M8';
+  if(/737\s*MAX\s*9|737-?9/.test(s)) return '7M9';
+  if(/737-?700/.test(s)) return '73W';
+  if(/737/.test(s)) return '73H';
+  if(/220-?100|CS100/.test(s)) return '221';
+  if(/220|CS300/.test(s)) return '223';
+  if(/319/.test(s)) return '319';
+  if(/320\s*NEO/.test(s)) return '32N';
+  if(/320/.test(s)) return '320';
+  if(/321\s*NEO/.test(s)) return '32Q';
+  if(/321/.test(s)) return '321';
+  if(/330/.test(s)) return '332';
+  if(/CRJ-?900|CRJ9/.test(s)) return 'CR9';
+  if(/CRJ-?700|CRJ7/.test(s)) return 'CR7';
+  if(/CRJ-?200|CRJ2/.test(s)) return 'CR2';
+  if(/175/.test(s)) return 'E75';
+  if(/190/.test(s)) return 'E90';
+  if(/195/.test(s)) return 'E95';
+  if(/767/.test(s)) return '763';
+  if(/777/.test(s)) return '77W';
+  if(/787-?8|788/.test(s)) return '788';
+  if(/787/.test(s)) return '789';
+  return '';
+}
+// Real aircraft livery side-view, airline-specific with a generic fallback.
+function liveryImg(airline,raw){
+  const t=acType(raw); if(!t) return '';
+  const a=String(airline||'').toUpperCase();
+  return '<img class="dt-illus" src="/aircraft/'+a+'/'+t+'.png" data-fb="/aircraft/'+t+'.png" alt="" '
+    +'onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=\'\';}else{this.style.display=\'none\';}">';
+}
+function statusOf(f){
+  const st=(f.state||'').toLowerCase();
+  if(st==='canceled'||st==='cancelled')return{t:'Cancelled',c:'cancelled'};
+  if(st==='outgate'||st==='inair')return{t:'Departed',c:'ontime'};
+  if(st==='ingate'||st==='landed')return{t:'Arrived',c:'ontime'};
+  const tl=(f.timeliness||'').toLowerCase();
+  if(tl==='delayed')return{t:'Delayed',c:'delayed'};
+  if(tl==='early')return{t:'Early',c:'early'};
+  return{t:'On time',c:'ontime'};
+}
+function render(){
+  const q=(document.getElementById('q').value||'').trim().toLowerCase();
+  const cards=document.getElementById('cards');
+  let list=FLIGHTS;
+  if(q)list=list.filter(f=>{const city=(CITY[f.cityIata]||f.cityIata||'').toLowerCase();
+    return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
+  if(!list.length){cards.innerHTML='<div class="empty">'+svg('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>')
+    +'<div>'+(q?'No flights match “'+esc(q)+'”':'No departures right now')+'</div></div>';RENDERED=[];return;}
+  RENDERED=list;
+  cards.innerHTML=list.map((f,i)=>{
+    const s=statusOf(f),city=CITY[f.cityIata]||f.cityIata||'—',al=AIRLINE[f.airline]||f.airline;
+    const sched=(f.schedTime||'').slice(0,5);
+    const via=(f.via&&f.via.length)?' · via '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
+    const gate=f.gate?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
+    const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
+    const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
+    return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'" onclick="openFlight('+i+')">'+cardMark(f.airline,!BUB_LIGHT[f.airline])+'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div>'
+      +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
+      +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
+      +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">Departs</div></div></div>'
+      +(gate||ac||op?'<div class="meta">'+gate+ac+op+'</div>':'')+'</div>';
+  }).join('');
+}
+async function load(){
+  if(document.hidden)return;
+  try{
+    const r=await fetch('/oag/departures?ap='+encodeURIComponent(AP),{cache:'no-store'});
+    const d=await r.json();
+    const live=d&&d.flights&&d.flights.length;
+    if(d&&d.error&&!live){
+      FLIGHTS=SAMPLE;
+      document.getElementById('hint').textContent='Sample flights · live data over quota';
+    }else if(live){
+      FLIGHTS=d.flights;
+      const src=d.source==='adb'?' · AeroDataBox':'';
+      document.getElementById('hint').textContent='Live departures · '+FLIGHTS.length+' flights'+src;
+    }else{
+      FLIGHTS=SAMPLE;
+      document.getElementById('hint').textContent='Sample flights · no live departures';
+    }
+  }catch(e){if(!FLIGHTS.length)FLIGHTS=SAMPLE;document.getElementById('hint').textContent='Sample flights · offline';}
+  render();
+}
+async function loadBrand(code){
+  // Real airport logo from the public airport-config (R2-hosted).
+  try{
+    const r=await fetch(PROXY+'/api/airport-config/'+encodeURIComponent(code),{cache:'no-cache'});
+    if(r.ok){const c=await r.json();const u=c&&c.logo&&c.logo.url;
+      const el=document.getElementById('apLogo');
+      if(u){el.innerHTML='<img src="'+u+'" alt="'+esc(code)+'" onerror="this.parentNode.textContent=\''+esc(code)+'\'">';}
+      else{el.textContent=code;}}
+  }catch(e){document.getElementById('apLogo').textContent=code;}
+}
+function setAirport(code){
+  AP=code;
+  document.getElementById('apName').textContent=AP_NAME[code]||code;
+  document.getElementById('apIata').textContent=code;
+  document.getElementById('apSelect').value=code;
+  document.getElementById('apLogo').textContent=code;
+  FLIGHTS=[];render();load();loadBrand(code);
+}
+function go(v){curView=v;
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
+  window.scrollTo(0,0);}
+const PLANE_SVG='<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>';
+function openFlight(i){
+  const f=RENDERED[i]; if(!f)return;
+  const s=statusOf(f), city=CITY[f.cityIata]||f.cityIata||'—', al=AIRLINE[f.airline]||f.airline;
+  const sched=(f.schedTime||'').slice(0,5), est=(f.estTime||'').slice(0,5);
+  const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?('Operated by '+f.operatedBy):'';
+  const brand=BRAND[f.airline]||'var(--accent)';
+  function cell(k,v,sub){return '<div class="dt-cell"><div class="k">'+k+'</div><div class="v">'+esc(v)+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>';}
+  let cells='';
+  cells+=cell('Departs',sched||'—');
+  if(est&&est!==sched) cells+=cell('Estimated',est);
+  cells+=cell('Gate',f.gate||'—');
+  if(f.terminal) cells+=cell('Terminal',f.terminal);
+  if(f.via&&f.via.length) cells+=cell('Via',f.via.map(c=>CITY[c]||c).join(', '));
+  if(f.baggage) cells+=cell('Baggage',f.baggage);
+  const plane='<div class="dt-cell wide"><div class="planeic">'+svg(PLANE_SVG)+'</div>'
+    +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
+    +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
+  document.getElementById('detailBody').innerHTML=
+    '<div class="dt-hero">'+heroWordmark(f.airline)
+    +'<div class="flt">'+esc(f.flight)+'</div>'+(opLine?'<div class="al-op">'+esc(opLine)+'</div>':'')
+    +liveryImg(f.airline,f.aircraft)+'</div>'
+    +'<div class="dt-route"><div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>'
+    +'<div class="line"><span class="pl">'+svg(PLANE_SVG)+'</span></div>'
+    +'<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div></div>'
+    +'<div class="dt-status"><span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
+    +'<div class="dt-grid">'+plane+cells+'</div>'
+    +'<button class="dt-cta" style="background:'+brand+'">'+svg('<path d="M9 11l3 3 8-8"/><path d="M21 12a9 9 0 1 1-6.2-8.6"/>')+'Directions to gate</button>';
+  document.getElementById('detail').classList.add('show');
+}
+function closeFlight(){document.getElementById('detail').classList.remove('show');}
+function personalize(){alert('Sign in to personalize your trip — save your flight, get gate alerts, and more. Coming soon.');}
+function bannerTap(){showFullAd();}
+let adIdx=0,banIdx=0;
+function rotateBanner(){const a=BANNER_ADS[banIdx++%BANNER_ADS.length];
+  document.getElementById('adBanTile').innerHTML=svg(SVG[a.ic]||SVG.shop);
+  document.getElementById('adBanT').textContent=a.t;document.getElementById('adBanS').textContent=a.s;}
+function showFullAd(){const a=FULL_ADS[adIdx++%FULL_ADS.length];
+  const img=document.getElementById('adFullImg'),tile=document.getElementById('adFullIcon');
+  if(a.img){img.src=a.img;img.onerror=function(){img.style.display='none';tile.style.display='';tile.innerHTML=svg(SVG.shop);};img.style.display='';tile.style.display='none';}
+  else{img.style.display='none';tile.style.display='';tile.innerHTML=svg(SVG[a.ic]||SVG.shop);}
+  document.getElementById('adFullTitle').textContent=a.t;document.getElementById('adFullSub').textContent=a.s;
+  const el=document.getElementById('adFull');el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(closeFullAd,6500);}
+function closeFullAd(){document.getElementById('adFull').classList.remove('show');}
+/* ── Theme: auto (system) / light / dark ── */
+const THEMES=['auto','light','dark'];
+const THEME_IC={
+  auto:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>',
+  light:'<circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5.3" y1="5.3" x2="7" y2="7"/><line x1="17" y1="17" x2="18.7" y2="18.7"/><line x1="18.7" y1="5.3" x2="17" y2="7"/><line x1="7" y1="17" x2="5.3" y2="18.7"/>',
+  dark:'<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>'
+};
+function isDark(t){return t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);}
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  const m=document.querySelector('meta[name=theme-color]');
+  if(m)m.setAttribute('content',isDark(t)?'#0a0d13':'#ffffff');
+  const ic=document.getElementById('themeIc');
+  if(ic)ic.innerHTML='<svg class="ic" viewBox="0 0 24 24" style="width:20px;height:20px">'+THEME_IC[t]+'</svg>';
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.title='Theme: '+t;
+}
+function cycleTheme(){
+  let t=localStorage.getItem('app_theme')||'auto';
+  t=THEMES[(THEMES.indexOf(t)+1)%THEMES.length];
+  try{localStorage.setItem('app_theme',t);}catch(e){}
+  applyTheme(t);
+}
+applyTheme((function(){try{return localStorage.getItem('app_theme')||'auto';}catch(e){return 'auto';}})());
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+  const t=localStorage.getItem('app_theme')||'auto'; if(t==='auto')applyTheme('auto');
+});}catch(e){}
+
+setAirport('YQM');
+setInterval(load,180000);  // 3 min — gentle on the OAG trial quota
+rotateBanner();
+setInterval(rotateBanner,10000);  // banner cycles offers
+setTimeout(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},9000);   // first ad appears early
+setInterval(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},35000); // then periodically
+</script>
+</body>
+</html>

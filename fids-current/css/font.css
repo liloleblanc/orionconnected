@@ -38,11 +38,27 @@
 /* TR Tahoma (Bold) — alternate brand candidate, bundled locally. */
 @font-face { font-family:'TR Tahoma'; font-weight:100 900; font-style:normal; font-display:swap; src:url('../fonts/TR-Tahoma-Bold.ttf') format('truetype'); }
 
+/* AC Nord — Air Canada's official brand typeface, bundled locally (woff2, no
+   CDN). Two optical families: Display (headlines / gate numbers) and Text
+   (body / labels). Each weight is its own file mapped to its true weight. */
+@font-face { font-family:'AC Nord Display'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Regular.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Medium.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Bold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display'; font-weight:800 900; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Heavy.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:300; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Light.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Regular.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:400; font-style:italic;  font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Italic.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Medium.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Bold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:800 900; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Heavy.woff2') format('woff2'); }
+
 /* ── Font stacks exposed as variables ────────────────────────────────────── */
 :root {
   /* Named font stacks — referenced by --font-primary when user picks one */
   --font-possibility:   'Possibility', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-tr-tahoma:     'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif;
+  --font-ac-nord-display: 'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ac-nord-text:    'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-geist:         'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-inter:         'Inter', system-ui, -apple-system, sans-serif;
   --font-manrope:       'Manrope', system-ui, -apple-system, sans-serif;
@@ -52,3 +68,31 @@
   --font-system:        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono-stack:    'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
 }
+
+/* ── Air Canada UI icon font (icomoon) — used for the gate-row icons everywhere ── */
+@font-face { font-family:'ac-icons'; src:url('../fonts/ac-icons/icomoon.woff') format('woff'); font-weight:normal; font-style:normal; font-display:block; }
+.ac-ico { font-family:'ac-icons' !important; font-style:normal; font-weight:normal; line-height:1; speak:none;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:clamp(42px,6.4vh,84px); color:#fff; }
+.ac-ico-flight::before   { content:'\e9ad'; }  /* plane */
+.ac-ico-dest::before     { content:'\e974'; }  /* destination / target */
+.ac-ico-status::before   { content:'\e931'; }  /* info */
+.ac-ico-boarding::before { content:'\e996'; }  /* boarding pass */
+.ac-ico-depart::before   { content:'\e934'; }  /* takeoff */
+.ac-ico-time::before     { content:'\e941'; }  /* clock */
+/* Beat the global "*::before { font-family !important }" override so the icon
+   glyphs actually render in the AC icon font (class specificity > universal). */
+.ac-ico::before, .ac-ico-flight::before, .ac-ico-dest::before, .ac-ico-status::before,
+.ac-ico-boarding::before, .ac-ico-depart::before, .ac-ico-time::before {
+  font-family:'ac-icons' !important; font-style:normal !important; font-weight:normal !important;
+}
+/* Per-glyph size tuning (some glyphs read smaller/larger at the same size) */
+.ac-ico-status   { font-size:clamp(46px,7.0vh,92px) !important; }   /* bell — a tad bigger */
+.ac-ico-boarding { font-size:clamp(38px,5.8vh,76px) !important; }   /* boarding pass — a tad smaller */
+.ac-ico-depart   { font-size:clamp(38px,5.8vh,76px) !important; }   /* takeoff — a tad smaller */
+.ac-ico-time     { font-size:clamp(96px,15vh,180px) !important; }  /* timer — much bigger (glyph has heavy padding) */
+/* Timer glyph is heavily padded AND the orb clips it — let its badge not clip so
+   the stopwatch can actually grow. (Scoped to the timer only.) */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge:has(.ac-ico-time) { overflow: visible !important; }
+.ac-ico-time { font-size:clamp(80px,12vh,150px) !important; line-height:1 !important; }

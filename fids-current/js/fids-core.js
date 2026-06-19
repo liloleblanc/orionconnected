@@ -860,7 +860,7 @@ function changeFont(f) {
   // Force font on ALL elements including gate/baggage screens
   let s = document.getElementById('fids-font-override');
   if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
-  s.textContent = `*, *::before, *::after { font-family: ${fam} !important; }`;
+  s.textContent = `*, *::before, *::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
   // Persist the choice — page load used to hard-reset to Geist, wiping
   // whatever the user picked ("every time I add a new font it goes away").
   try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
@@ -909,7 +909,7 @@ function restoreFontChoice(defaultFont) {
         document.body.style.setProperty('--font-primary', _stack, 'important');
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
-        s.textContent = '*, *::before, *::after { font-family: ' + _stack + ' !important; }';
+        s.textContent = '*, *::before, *::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
         return;
       }
     }
@@ -1313,7 +1313,10 @@ function changeScreenType(val) {
 }
 
 function changeSubScreen(val) {
-  subScreenVal = val;
+  // Sanitize the gate/belt value (it comes from a DOM <select>.value, a CodeQL
+  // "DOM text reinterpreted as HTML" source) before it flows into the gate
+  // innerHTML. Gates/belts are alphanumeric — strip anything else (incl. < > & ").
+  subScreenVal = String(val == null ? '' : val).replace(/[^A-Za-z0-9 ./\-]/g, '');
   render();
 }
 
@@ -1369,7 +1372,7 @@ function openTestFlight() {
   // Pre-fill time with current time + 1 hour
   const now = new Date();
   const later = new Date(now.getTime() + 3600000);
-  const iata = document.getElementById('apSel').value;
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
   const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
                    : {hour:'2-digit', minute:'2-digit', hour12:true};
@@ -1403,7 +1406,7 @@ function submitTestFlight() {
   schedDate.setHours(h, m, 0, 0);
   if (schedDate < now - 3600000) schedDate.setDate(schedDate.getDate() + 1); // next day if past
 
-  const iata = document.getElementById('apSel').value;
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
   const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
                    : {hour:'2-digit', minute:'2-digit', hour12:true};
@@ -2087,7 +2090,7 @@ function getDedicatedRenderKey() {
 
 function updateDedicatedTimeOnly() {
   if (screenType === 'main') return;
-  const iata = document.getElementById('apSel').value;
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
@@ -3151,13 +3154,13 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   //   Property name (serif, spaced caps) below rule
   // Renderer applies brightness(0) invert(1) for white-on-dark panels.
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 36" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 2) scale(0.926)" fill="#000000" fill-rule="evenodd" clip-rule="evenodd">'
+    + '<g transform="translate(15, 2) scale(0.926)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
     + '<line x1="20" y1="22" x2="60" y2="22" stroke="#000000" stroke-width="0.3" stroke-linecap="round"/>'
     + '<text x="40" y="31" text-anchor="middle" '
     +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
-    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#000000">'
+    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
     +   name
     + '</text>'
     + '</svg>';
@@ -3219,13 +3222,13 @@ function makeEmblemsLockupSvgDataUri(propertyName) {
   // Translated: x = (80-50)/2 = 15, y = ~3 (top-aligned)
   // After scale: y-offset for vertical centering in the top portion
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 36" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 3) scale(0.901) translate(-7.25, -11.73)" fill="#000000">'
+    + '<g transform="translate(15, 3) scale(0.901) translate(-7.25, -11.73)" fill="#ffffff">'
     +   '<path d="' + _EMBLEMS_WORDMARK_D + '"/>'
     + '</g>'
     + '<line x1="20" y1="22" x2="60" y2="22" stroke="#000000" stroke-width="0.3" stroke-linecap="round"/>'
     + '<text x="40" y="31" text-anchor="middle" '
     +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
-    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#000000">'
+    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
     +   name
     + '</text>'
     + '</svg>';
@@ -5173,13 +5176,13 @@ function _buildV2AircraftCol(ctx, vars) {
     var _fiFlightNo = (currentFlight && currentFlight.flight) ? String(currentFlight.flight) : '';
     if (_fiFlightNo || _fiDep || _fiArr || _fiBrd || _fiStLbl) {
       var _svgClock = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
-      var _svgDepart = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>';
-      var _svgArrive = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM19.34 15.85c.8.21 1.62-.26 1.84-1.06.21-.8-.26-1.62-1.06-1.84l-5.31-1.42-2.76-9.02L10.12 2v8.28L5.15 8.95l-.93-2.32-1.45-.39v5.17l16.57 4.44z"/></svg>';
+      var _svgDepart = '<span class=\"ac-ico ac-ico-depart"></span>';
+      var _svgArrive = '<span class=\"ac-ico ac-ico-time"></span>';
       // v222 — new left-rail panel icons (Nick's 6-panel spec).
-      var _svgPlane = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
-      var _svgGlobe = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a7.82 7.82 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a7.99 7.99 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a7.82 7.82 0 0 1 0 4h-3.38z"/></svg>';
+      var _svgPlane = '<span class=\"ac-ico ac-ico-flight"></span>';
+      var _svgGlobe = '<span class=\"ac-ico ac-ico-dest"></span>';
       // Boarding — "enter the gate" (doorway on the right + arrow in).
-      var _svgBoarding = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4v-2h4V6h-4V4z"/><path d="M10.4 7.4 9 8.8l2.3 2.2H4v2h7.3L9 15.2l1.4 1.4 4.6-4.6z"/></svg>';
+      var _svgBoarding = '<span class=\"ac-ico ac-ico-boarding"></span>';
       // Total Flight Time — clean stopwatch.
       var _svgRoute = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M15 1H9v2h6V1zm-3 7a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0V9a1 1 0 0 0-1-1zm7.03-.61 1.42-1.42a10 10 0 0 0-1.41-1.41l-1.42 1.42A8 8 0 1 0 12 22a8 8 0 0 0 7.03-14.61zM12 20a6 6 0 1 1 0-12 6 6 0 0 1 0 12z"/></svg>';
 
@@ -5274,7 +5277,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       // v218.99.28 — Status row gets an info-circle icon in its own row,
       // label + value stacked below (matching the other time rows).
-      var _svgStatus = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>';
+      var _svgStatus = '<span class=\"ac-ico ac-ico-status"></span>';
 
       // v218.99.32 — Inline-style every badge so the cascade can't lie.
       // Single source of truth for what a flight-info badge looks like.
@@ -5468,8 +5471,27 @@ function _buildV2MapCol(ctx, vars) {
       // this inbound (the board is fetched with withLocation=true). The separate
       // by-number fetch (window._gateInboundLivePos) often misses what the board
       // already had, so fall back to the board-captured speed/altitude here.
-      if (_liveSpd === null && typeof _ib._liveSpd === 'number') _liveSpd = Math.round(_ib._liveSpd);
-      if (_liveAlt === null && typeof _ib._liveAlt === 'number') _liveAlt = Math.round(_ib._liveAlt);
+      // Best candidate from this poll: board feed (withLocation) first, then the
+      // by-number window cache. Feed it through the sticky smoother so the panel
+      // doesn't blink off on polls where ADB omits the position.
+      var _wpC = (window._gateInboundLivePos && typeof window._gateInboundLivePos === 'object') ? window._gateInboundLivePos : null;
+      var _candAlt = (typeof _ib._liveAlt === 'number') ? _ib._liveAlt
+                   : (_wpC && typeof _wpC.altitude === 'number' ? _wpC.altitude : null);
+      var _candSpd = (typeof _ib._liveSpd === 'number') ? _ib._liveSpd
+                   : (_wpC && typeof _wpC.speed === 'number' ? _wpC.speed : null);
+      var _candLat = (typeof _ib._liveLat === 'number') ? _ib._liveLat : null;
+      var _candLng = (typeof _ib._liveLng === 'number') ? _ib._liveLng : null;
+      var _arrivedLikeIb = /arriv|land|cancel/i.test(String(_ib.status || ''));
+      if (_ib._liveOnGround === true || _arrivedLikeIb) { _candAlt = null; _candSpd = null; }
+      // Once on the ground there is no airborne fix to hold — drop the cache so
+      // the panel/map don't keep showing a stale cruise position post-landing.
+      if (_arrivedLikeIb && _gateFixCache && _gateFixCache.key === String(_ib.flight || _ib._reg || '')) _gateFixCache = null;
+      var _sfix = _gateStickyFix(String(_ib.flight || _ib._reg || ''), _candLat, _candLng, _candAlt, _candSpd);
+      _liveSpd = (_sfix && typeof _sfix.spd === 'number') ? _sfix.spd : null;
+      _liveAlt = (_sfix && typeof _sfix.alt === 'number') ? _sfix.alt : null;
+      // Speed and altitude appear together or not at all — never one without a
+      // genuine airborne altitude (that produced "141 kph at 0 ft").
+      if (_liveAlt === null || _liveAlt <= 0) { _liveAlt = null; _liveSpd = null; }
       var _tz = vars.tz || 'UTC';
       var _destIata = (vars.iata || '').toString().toUpperCase();
       var _origIata = (_ib._locIata || '').toString().toUpperCase();
@@ -5494,7 +5516,7 @@ function _buildV2MapCol(ctx, vars) {
       var _rawSt = String(_ib.status || '').toLowerCase().trim();
       var _ibLang = (typeof lang !== 'undefined' && lang) ? lang : 'en';
       var _ST_I18N = {
-        enroute:   { en:'Enroute', fr:'En vol', es:'En vuelo', de:'Im Flug', it:'In volo', pt:'Em voo', ja:'飛行中', zh:'飞行中', ar:'في الجو' },
+        enroute:   { en:'En route', fr:'En vol', es:'En vuelo', de:'Im Flug', it:'In volo', pt:'Em voo', ja:'飛行中', zh:'飞行中', ar:'في الجو' },
         scheduled: { en:'Awaiting departure', fr:'En attente de départ', es:'En espera de salida', de:'Wartet auf Abflug', it:'In attesa di partenza', pt:'A aguardar partida', ja:'出発待ち', zh:'等待起飞', ar:'في انتظار المغادرة' },
         boarding:  { en:'Boarding', fr:'Embarquement', es:'Embarcando', de:'Boarding', it:'Imbarco', pt:'Embarque', ja:'搭乗中', zh:'登机中', ar:'الصعود' },
         delayed:   { en:'Delayed', fr:'En retard', es:'Retrasado', de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误', ar:'متأخر' },
@@ -5513,9 +5535,14 @@ function _buildV2MapCol(ctx, vars) {
       else if (_rawSt === 'landed' || _rawSt === 'arrived') _stKey = 'arrived';
       else if (_rawSt === 'ontime' || _rawSt === 'on-time') _stKey = 'ontime';
       else _stKey = 'scheduled';
+      // Verified airborne (real altitude from live telemetry) → show the PHASE
+      // 'En route' instead of the punctuality word (Early / On time) the feed
+      // hands us. A plane at altitude is unambiguously enroute. Punctuality
+      // words stay everywhere else; don't override a Cancelled/Diverted flight.
+      if (_liveAlt !== null && _rawSt !== 'cancelled' && _rawSt !== 'diverted') _stKey = 'enroute';
       var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
       var _ST_SHORT = {
-        enroute:{en:'Enroute',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
+        enroute:{en:'En route',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
         boarding:{en:'Boarding',fr:'Embarquement',es:'Embarcando'}, delayed:{en:'Delayed',fr:'En retard',es:'Retrasado'},
         early:{en:'Early',fr:'En avance',es:'Adelantado'}, cancelled:{en:'Cancelled',fr:'Annulé',es:'Cancelado'},
         arrived:{en:'Arrived',fr:'Arrivé',es:'Aterrizado'}, ontime:{en:'On time',fr:"À l'heure",es:'A tiempo'}
@@ -6120,7 +6147,13 @@ function uxgGateHtml(ctx) {
   var equipRaw = currentFlight._aircraftCode || '';
   var equipName = currentFlight._aircraft || (equipRaw ? formatAircraft(equipRaw) : '');
   var minsToDep = effectiveDepTs ? Math.round((effectiveDepTs - Date.now()) / 60000) : 9999;
-  var depDelayed = currentFlight.upd && (stKey === 'delayed' || stKey === 'early');
+  // Delayed if we have EITHER a revised HH:MM string (upd) OR a revised timestamp
+  // (_revTs later than scheduled). Boarding is computed from _revTs, so if we only
+  // keyed "delayed" off `upd` the Departure line would stay on the scheduled time
+  // while Boarding moved — boarding ending up LATER than departure. Use both.
+  var _depRevTsLater = !!(currentFlight._revTs && currentFlight._sortTs &&
+                          currentFlight._revTs > currentFlight._sortTs + 60000);
+  var depDelayed = (currentFlight.upd || _depRevTsLater) && (stKey === 'delayed' || stKey === 'early');
   // If the inbound aircraft is delayed, the outbound will almost certainly be delayed too.
   // Surface that in the top banner status so it's not misleadingly shown as SCHEDULED.
   var _inbDelayCarryOver = inboundFlight && (
@@ -6177,7 +6210,17 @@ function uxgGateHtml(ctx) {
   // Dep time display
   var depTimeHtml = _to12h(currentFlight.time) || '\u2014';
   if (depDelayed) {
-    depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised">' + _to12h(currentFlight.upd) + '</span>';
+    // Revised time: prefer the feed's HH:MM string; otherwise derive it from
+    // _revTs (the SAME timestamp boarding uses) so the two lines can never
+    // disagree \u2014 i.e. boarding can't read later than departure.
+    var _revDepHHMM = currentFlight.upd;
+    if (!_revDepHHMM && currentFlight._revTs) {
+      try {
+        _revDepHHMM = new Date(currentFlight._revTs).toLocaleTimeString('en-US',
+          { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
+      } catch (e) {}
+    }
+    depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised">' + (_to12h(_revDepHHMM) || '\u2014') + '</span>';
   }
 
   // Arr time display
@@ -7634,7 +7677,7 @@ function renderDedicatedScreen() {
 const gView = document.getElementById('gateView');
   const bView = document.getElementById('baggageView');
   const contentArea = document.querySelector('.content-area');
-  const iata = document.getElementById('apSel').value;
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
@@ -8204,46 +8247,47 @@ const gView = document.getElementById('gateView');
               }
               initGateMapLive(_inbOriginIata || apIata, apIata, livePos.lat, livePos.lng);
             }
-          } else {
-            // Time-based estimate fallback
-            var prog = 0.5;
-            var aTs = inb._revTs || inb._sortTs;
-            var depTs = null;
-            if (aTs) {
-              depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : (aTs - 7200000);
-              var el = Date.now() - depTs;
-              var tot = aTs - depTs;
-              if (tot > 0) prog = el / tot;
+          } else if ((function(){
+                      // Same sticky fix the telemetry uses — a genuine airborne
+                      // position (real coords + real altitude), held across polls
+                      // where ADB omits it so the plane doesn't blink on and off.
+                      // Once arrived/landed there's nothing to hold → pins only.
+                      if (/arriv|land|cancel/i.test(String(inb.status || ''))) { window._gateMapFix = null; return false; }
+                      var _onG = inb._liveOnGround === true;
+                      var _mf = _gateStickyFix(
+                        String(inb.flight || inb._reg || ''),
+                        (typeof inb._liveLat === 'number') ? inb._liveLat : null,
+                        (typeof inb._liveLng === 'number') ? inb._liveLng : null,
+                        (_onG ? null : (typeof inb._liveAlt === 'number' ? inb._liveAlt : null)),
+                        (_onG ? null : (typeof inb._liveSpd === 'number' ? inb._liveSpd : null))
+                      );
+                      window._gateMapFix = (_mf && typeof _mf.lat === 'number' && typeof _mf.lng === 'number' && typeof _mf.alt === 'number' && _mf.alt > 0) ? _mf : null;
+                      return !!window._gateMapFix;
+                    })()) {
+            // Plot the ACTUAL position. We never estimate from the clock anymore —
+            // that plotted a phantom plane mid-route whenever the departure/arrival
+            // times were off (e.g. the EWR Eastern / YQM Atlantic 1-hour gap).
+            var _mfix = window._gateMapFix;
+            var posKey2 = _mfix.lat.toFixed(3) + ',' + _mfix.lng.toFixed(3);
+            if (!gateMap || window._lastMapPosKey !== posKey2) {
+              window._lastMapPosKey = posKey2;
+              initGateMapLive(inb._locIata || apIata, apIata, _mfix.lat, _mfix.lng);
             }
-            // Trust the time-based calculation. ADB sometimes leaves
-            // status='scheduled' for short-haul flights even after takeoff;
-            // the depTs check is more reliable.
-            var inboundActuallyAirborne = (
-              depTs !== null &&
-              Date.now() >= depTs &&
-              inb.status !== 'cancelled' &&
-              prog > 0.02 && prog < 0.99
-            );
-            if (inb.status === 'arrived' || inb.status === 'landed') prog = 0.99;
-            prog = Math.max(0.02, Math.min(0.98, prog));
-            // Only rebuild if progress changed by >2% or map doesn't exist
-            var progKey = inboundActuallyAirborne ? Math.round(prog * 50) : 'no-plane';
-            if (!gateMap || window._lastMapProgKey !== progKey) {
-              window._lastMapProgKey = progKey;
-              // If inbound has arrived, show the outbound departure route
+          } else {
+            // No real airborne fix → pins only, NEVER a clock-estimated plane.
+            // A plane icon appears solely with live ADS-B coordinates (above).
+            var pinKey = (inb.status === 'arrived' || inb.status === 'landed') ? 'arr-pins' : 'inb-pins';
+            if (!gateMap || window._lastMapProgKey !== pinKey) {
+              window._lastMapProgKey = pinKey;
               if (inb.status === 'arrived' || inb.status === 'landed') {
-                initGateMap(apIata, dstIata, 0.02);
-              } else if (inboundActuallyAirborne) {
-                // Show inbound route with estimated progress + plane
-                initGateMap(inb._locIata, apIata, prog);
+                initGateMap(apIata, dstIata, -1);
               } else {
-                // Inbound hasn't departed yet — show route + pins only, no plane
                 initGateMap(inb._locIata, apIata, -1);
               }
             }
           }
         } else {
-          if (!gateMap && dstIata) initGateMap(apIata, dstIata, 0.02);
+          if (!gateMap && dstIata) initGateMap(apIata, dstIata, -1);
         }
       }
       setTimeout(tryInitMap, 500);
@@ -8379,10 +8423,21 @@ const gView = document.getElementById('gateView');
                        (data.reg && _eq.reg && data.reg === _eq.reg));
           if (_inbOk) {
             window._gateInbound = data.inbound;
-            window._gateInboundLivePos = (data.inbound._liveSpd !== null || data.inbound._liveAlt !== null) ? {
-              speed: data.inbound._liveSpd,
-              altitude: data.inbound._liveAlt
-            } : null;
+            // Merge — don't let the board's (often altitude-less) telemetry blank
+            // out a real altitude the adsb.lol fallback already wrote for this same
+            // inbound. Keep whichever field has a number.
+            (function(){
+              var _prev = window._gateInboundLivePos;
+              var _sameInb = _prev && _prev._inboundFlight && data.inbound &&
+                             _prev._inboundFlight === data.inbound.flight;
+              var _sp = (typeof data.inbound._liveSpd === 'number') ? data.inbound._liveSpd
+                      : (_sameInb && typeof _prev.speed === 'number' ? _prev.speed : null);
+              var _al = (typeof data.inbound._liveAlt === 'number') ? data.inbound._liveAlt
+                      : (_sameInb && typeof _prev.altitude === 'number' ? _prev.altitude : null);
+              window._gateInboundLivePos = (_sp !== null || _al !== null)
+                ? { speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null }
+                : null;
+            })();
             changed = true;
             console.log('[FIDS] Inbound resolved:', data.inbound.flight,
                         'from', data.inbound._locIata,
@@ -12335,6 +12390,11 @@ const SL = k => {
   const obj = SS[k] || {};
   return obj[lang] || obj.en || k;
 };
+// Bilingual variants — always show English · French together. The web cards
+// (mobile) otherwise show only the single rotation language; the boards are
+// already bilingual, so these bring the cards in line.
+const SLbi = k => { const o = SS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
+const TLbi = k => { const o = LS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
 
 // ── LANGUAGE ROTATION — flips between selected languages ─────────────────
 function startLangRotation() {
@@ -14258,8 +14318,9 @@ async function fetchInboundByReg(reg, airportIata) {
       _aircraftCode: best.aircraft ? (best.aircraft.iataCodeShort || '') : '',
       _liveLat: (best.location && best.location.lat) || null,
       _liveLng: (best.location && (best.location.lon || best.location.lng)) || null,
-      _liveAlt: (best.location && best.location.altitude && best.location.altitude.feet) || null,
-      _liveSpd: (best.location && best.location.groundSpeed && best.location.groundSpeed.kt) || null,
+      _liveAlt: _adbAltFt(best.location),
+      _liveSpd: _adbSpdKt(best.location),
+      _liveOnGround: _adbOnGround(best.location),
       _inboundSource: 'reg-lookup' // flag for debugging
     };
     
@@ -14390,12 +14451,147 @@ var _loadFlightFetching = {};
 // secondary source for the inbound's live position when AeroDataBox has no
 // fix. Returns { speed:<knots>, altitude:<feet> } when the aircraft is
 // genuinely airborne, otherwise null. Never invents data.
+// Robust AeroDataBox live-telemetry extractors. ADB's `location` object varies:
+// altitude can be altitude.feet, altitude.meters, pressureAltitude.feet/.meters,
+// or a bare number; ground speed can be groundSpeed.kt/.knots/.kmPerHour or a
+// number. The old code read ONLY altitude.feet — so whenever ADB used another
+// shape, altitude came back null even though speed (groundSpeed.kt) worked. That
+// is the root cause of "altitude blank on every flight". Use these everywhere.
+function _adbAltFt(loc) {
+  if (!loc) return null;
+  // A real *airborne* altitude is never exactly 0. ADB returns altitude.feet:0
+  // (or omits it) for a ground / stale departure fix. The old display showed
+  // that as a literal "0 ft" next to a leftover taxi groundSpeed — reading as
+  // broken data ("141 kph at 0 ft"). Treat any non-positive altitude as "no
+  // airborne fix" (null → "—") and keep falling through the other field shapes.
+  var a = loc.altitude, p = loc.pressureAltitude;
+  if (a && typeof a.feet === 'number' && a.feet > 0) return Math.round(a.feet);
+  if (a && typeof a.meters === 'number' && a.meters > 0) return Math.round(a.meters * 3.28084);
+  if (typeof a === 'number' && a > 0) return Math.round(a);
+  if (p && typeof p.feet === 'number' && p.feet > 0) return Math.round(p.feet);
+  if (p && typeof p.meters === 'number' && p.meters > 0) return Math.round(p.meters * 3.28084);
+  return null;
+}
+// True when ADB explicitly reports the airframe on the ground (or only a stale
+// surface fix): an altitude field present but <= 0. Used to keep the telemetry
+// panel hidden AND the map plane off the route — so the two never contradict
+// each other ("on the ground" telemetry under a plane drawn mid-flight).
+function _adbOnGround(loc) {
+  if (!loc) return false;
+  if (_adbAltFt(loc) !== null) return false; // genuine airborne altitude
+  var a = loc.altitude, p = loc.pressureAltitude;
+  if (a && typeof a.feet === 'number' && a.feet <= 0) return true;
+  if (a && typeof a.meters === 'number' && a.meters <= 0) return true;
+  if (typeof a === 'number' && a <= 0) return true;
+  if (p && typeof p.feet === 'number' && p.feet <= 0) return true;
+  return false;
+}
+function _adbSpdKt(loc) {
+  if (!loc) return null;
+  // Speed is only meaningful with a genuine airborne altitude. A groundSpeed
+  // with altitude 0 is a taxi / stale departure fix — reporting it produced the
+  // "141 kph at 0 ft" on an 'enroute' plane. Both fields light up together or
+  // not at all, so telemetry and the map can never contradict each other.
+  if (_adbAltFt(loc) === null) return null;
+  var s = loc.groundSpeed;
+  if (s && typeof s.kt === 'number') return Math.round(s.kt);
+  if (s && typeof s.knots === 'number') return Math.round(s.knots);
+  if (s && typeof s.kmPerHour === 'number') return Math.round(s.kmPerHour / 1.852);
+  if (s && typeof s.kmh === 'number') return Math.round(s.kmh / 1.852);
+  if (typeof s === 'number') return Math.round(s);
+  if (typeof loc.groundSpeedKt === 'number') return Math.round(loc.groundSpeedKt);
+  return null;
+}
+// ── Sticky live-fix cache ─────────────────────────────────────────────────
+// AeroDataBox does not include the airframe's live position on EVERY poll, even
+// while it's cruising. Without smoothing, the telemetry panel + map plane blink
+// on and off each cycle ("flip-flopping"). Once we get a genuine airborne fix
+// for an airframe, hold it through the gaps for a short TTL instead of snapping
+// back to blank. Keyed by flight/reg so it resets the moment the gate's inbound
+// changes (aircraft swap), and expires so a landed plane stops showing.
+var _gateFixCache = null; // { key, lat, lng, alt, spd, ts }
+var _GATE_FIX_TTL = 240000; // 4 min — long enough to bridge missing polls
+function _gateStickyFix(key, lat, lng, alt, spd) {
+  key = String(key || '');
+  var now = Date.now();
+  var hasAlt = (typeof alt === 'number' && alt > 0);
+  if (hasAlt) {
+    _gateFixCache = {
+      key: key,
+      lat: (typeof lat === 'number') ? lat : null,
+      lng: (typeof lng === 'number') ? lng : null,
+      alt: Math.round(alt),
+      spd: (typeof spd === 'number') ? Math.round(spd) : null,
+      ts: now
+    };
+    if (typeof lat === 'number' && typeof lng === 'number') _gateTrackPush(key, lat, lng);
+    return _gateFixCache;
+  }
+  // No fresh fix this cycle — reuse a recent one for the SAME airframe.
+  if (_gateFixCache && _gateFixCache.key === key && (now - _gateFixCache.ts) < _GATE_FIX_TTL) {
+    return _gateFixCache;
+  }
+  // Different airframe (swap) or expired → drop it so we don't show stale data.
+  if (_gateFixCache && _gateFixCache.key !== key) _gateFixCache = null;
+  return null;
+}
+// ── Actual-track recorder + deviation helper ──────────────────────────────
+// We record the airframe's real positions as it flies, then draw that flown
+// track on the gate map: GREEN where it follows the assigned route, AMBER where
+// it deviates beyond a threshold (a reroute/hold is fine — just flagged). Keyed
+// by airframe so it resets on a swap.
+var _gateTrack = { key: null, points: [] };
+function _gateTrackPush(key, lat, lng) {
+  key = String(key || '');
+  if (typeof lat !== 'number' || typeof lng !== 'number') return;
+  if (_gateTrack.key !== key) { _gateTrack.key = key; _gateTrack.points = []; }
+  var pts = _gateTrack.points;
+  var last = pts[pts.length - 1];
+  if (last) {
+    // Only record once the airframe has moved ~>1.5km (de-noise jittery fixes).
+    var dLat = lat - last.lat, dLng = (lng - last.lng) * Math.cos(lat * Math.PI / 180);
+    if (Math.sqrt(dLat * dLat + dLng * dLng) * 111 < 1.5) return;
+  }
+  pts.push({ lat: lat, lng: lng });
+  if (pts.length > 80) pts.shift();
+}
+// Perpendicular (cross-track) distance in km from point P to the segment A→B,
+// using a local planar approximation (fine for regional distances).
+function _crossTrackKm(plat, plng, alat, alng, blat, blng) {
+  var latRef = ((alat + blat) / 2) * Math.PI / 180;
+  var kx = 111 * Math.cos(latRef), ky = 111;
+  var ax = alng * kx, ay = alat * ky, bx = blng * kx, by = blat * ky, px = plng * kx, py = plat * ky;
+  var dx = bx - ax, dy = by - ay;
+  var seg2 = dx * dx + dy * dy;
+  var t = seg2 ? (((px - ax) * dx + (py - ay) * dy) / seg2) : 0;
+  t = Math.max(0, Math.min(1, t));
+  var ex = px - (ax + t * dx), ey = py - (ay + t * dy);
+  return Math.sqrt(ex * ex + ey * ey);
+}
 async function gateAdsbLolPos(callsign, reg) {
   var urls = [];
   var cs = callsign ? String(callsign).replace(/\s+/g, '').toUpperCase() : '';
   var rg = reg ? String(reg).replace(/\s+/g, '').toUpperCase() : '';
-  if (cs) urls.push('https://api.adsb.lol/v2/callsign/' + encodeURIComponent(cs));
-  if (rg) urls.push('https://api.adsb.lol/v2/registration/' + encodeURIComponent(rg));
+  // ADS-B feeds key on the ICAO callsign (e.g. POE234), but we often only have
+  // the IATA flight (PD234). Build the ICAO form and try it FIRST — this is the
+  // biggest reason altitude comes back blank for some carriers.
+  var csIcao = '';
+  var _m = cs.match(/^([A-Z]{2})(\d.*)$/);
+  if (_m) {
+    var _ICAO = { PD:'POE', AC:'ACA', WS:'WJA', TS:'TSC', F8:'FLE', PB:'PVL', QK:'JZA', RV:'ROU',
+      B6:'JBU', DL:'DAL', AA:'AAL', UA:'UAL', WN:'SWA', F9:'FFT', AS:'ASA', HA:'HAL', NK:'NKS', G4:'AAY' };
+    if (_ICAO[_m[1]]) csIcao = _ICAO[_m[1]] + _m[2];
+  }
+  // Same-origin proxy (worker route /adsb/...) so the browser doesn't block the
+  // cross-origin adsb.lol request (CORS) — that block left altitude blank even
+  // though adsb.lol has it. Falls back to the direct URL if the proxy 404s.
+  // Keep to 1–2 same-origin proxy calls (the worker shares + caches them) so we
+  // don't trip adsb.lol's 429 rate limit. Reg is the most reliable identifier;
+  // fall back to the ICAO callsign only. No direct browser calls (CORS-blocked)
+  // and no IATA-callsign spam.
+  if (rg) urls.push('/adsb/v2/registration/' + encodeURIComponent(rg));
+  if (csIcao && csIcao !== rg) urls.push('/adsb/v2/callsign/' + encodeURIComponent(csIcao));
+  if (!rg && !csIcao && cs) urls.push('/adsb/v2/callsign/' + encodeURIComponent(cs));
   for (var i = 0; i < urls.length; i++) {
     try {
       var r = await fetch(urls[i]);
@@ -14537,8 +14733,8 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         result.livePosition = {
           lat: loc.lat || loc.latitude || null,
           lng: loc.lon || loc.lng || loc.longitude || null,
-          alt: (loc.altitude && loc.altitude.feet) || null,
-          speed: (loc.groundSpeed && loc.groundSpeed.kt) || null
+          alt: _adbAltFt(loc),
+          speed: _adbSpdKt(loc)
         };
       }
 
@@ -14721,8 +14917,8 @@ async function _loadInboundByReg(reg, airportIata, primaryLeg, dateStr) {
     // Live position if airborne
     var liveSpd = null, liveAlt = null;
     if (best.location) {
-      if (best.location.groundSpeed && typeof best.location.groundSpeed.kt === 'number') liveSpd = best.location.groundSpeed.kt;
-      if (best.location.altitude && typeof best.location.altitude.feet === 'number') liveAlt = best.location.altitude.feet;
+      liveSpd = _adbSpdKt(best.location);
+      liveAlt = _adbAltFt(best.location);
     }
 
     return {
@@ -15127,8 +15323,9 @@ function mapADB(raw, mode) {
     // Live position
     const _liveLat = (f.location&&f.location.lat)||null;
     const _liveLng = (f.location&&(f.location.lon||f.location.lng))||null;
-    const _liveAlt = (f.location&&f.location.altitude?.feet)||null;
-    const _liveSpd = (f.location&&f.location.groundSpeed?.kt)||null;
+    const _liveAlt = _adbAltFt(f.location);
+    const _liveSpd = _adbSpdKt(f.location);
+    const _liveOnGround = _adbOnGround(f.location);
     // Flight duration from scheduled times
     var _durationMins = null;
     const _depSched = f.departure?.scheduledTime?.local||f.departure?.scheduledTime?.utc;
@@ -15140,9 +15337,21 @@ function mapADB(raw, mode) {
     // Cargo/private filter
     if (f.isCargo===true) return null;
     return mode==='dep'
-      ?{time,upd,dateTag,flight,dest:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
-      :{time,upd,dateTag,flight,origin:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
+      ?{time,upd,dateTag,flight,dest:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
+      :{time,upd,dateTag,flight,origin:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs);
+}
+
+// OAG via the same-origin worker route, returned in ADB shape so mapADB can
+// consume it unchanged. Throws on any error so the caller falls back to ADB.
+async function oagFetch(iata, dir) {
+  const url = location.origin + '/oag/adb?ap=' + encodeURIComponent(iata)
+    + '&dir=' + (dir === 'arr' ? 'arr' : 'dep');
+  const r = await fetch(url, { cache: 'no-store' });
+  if (!r.ok) throw new Error('OAG HTTP ' + r.status);
+  const j = await r.json();
+  if (j && j.error) throw new Error(j.error);
+  return j;  // { departures: [...] } or { arrivals: [...] }
 }
 
 async function fetchLive() {
@@ -15152,10 +15361,38 @@ async function fetchLive() {
   document.getElementById('liveLabel').textContent = 'LIVE';
 
   try {
-    // AeroDataBox — sequential to stay within rate limits
-    const depRaw = await adbFetch(iata, 'Departure');
-    await new Promise(r => setTimeout(r, 1500));
-    const arrRaw = await adbFetch(iata, 'Arrival');
+    // ── DATA SOURCE: OAG (opt-in via ?src=oag) with AeroDataBox fallback ──
+    // OAG is returned by the worker already in ADB's shape, so mapADB and all
+    // downstream code run unchanged. If OAG errors or returns nothing, we fall
+    // straight back to ADB — so the board can never go blank because of OAG.
+    let depRaw, arrRaw;
+    const _src = (new URLSearchParams(location.search).get('src') || '').toLowerCase();
+    const _useOag = _src === 'oag';
+    if (_useOag) {
+      try {
+        depRaw = await oagFetch(iata, 'dep');
+        arrRaw = await oagFetch(iata, 'arr');
+        if (!((depRaw && depRaw.departures) || []).length) {
+          console.warn('[FIDS] OAG departures empty → ADB fallback');
+          depRaw = await adbFetch(iata, 'Departure');
+        }
+        if (!((arrRaw && arrRaw.arrivals) || []).length) {
+          console.warn('[FIDS] OAG arrivals empty → ADB fallback');
+          await new Promise(r => setTimeout(r, 1200));
+          arrRaw = await adbFetch(iata, 'Arrival');
+        }
+      } catch (e) {
+        console.warn('[FIDS] OAG failed → ADB fallback:', e && e.message);
+        depRaw = await adbFetch(iata, 'Departure');
+        await new Promise(r => setTimeout(r, 1500));
+        arrRaw = await adbFetch(iata, 'Arrival');
+      }
+    } else {
+      // AeroDataBox — sequential to stay within rate limits
+      depRaw = await adbFetch(iata, 'Departure');
+      await new Promise(r => setTimeout(r, 1500));
+      arrRaw = await adbFetch(iata, 'Arrival');
+    }
     data.dep = mapADB(depRaw, 'dep');
     data.arr = mapADB(arrRaw, 'arr');
     // [BELT SUMMARY v218.18] Quick breakdown of belt assignments.
@@ -15206,7 +15443,11 @@ async function fetchLive() {
   } catch(e) {
     setState('loading', false);
     const p = document.getElementById('panelError');
-    p.innerHTML = 'LIVE DATA ERROR<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;">' + e.message + '</div>';
+    // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
+    // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
+    p.innerHTML = 'LIVE DATA ERROR<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
+    var _pSub = p.querySelector('.sub');
+    if (_pSub) _pSub.textContent = String((e && e.message) || '');
     p.style.display = 'block';
     console.error('ADB error:', e.message);
   }
@@ -15343,6 +15584,8 @@ function applyAirportConfigToBoard(iata) {
     var _fontStacks = {
       'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
+      'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
+      'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
       'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -15364,7 +15607,7 @@ function applyAirportConfigToBoard(iata) {
         _ovr.id = 'fids-font-override';
         document.head.appendChild(_ovr);
       }
-      _ovr.textContent = '*, *::before, *::after { font-family: ' + _stack + ' !important; }';
+      _ovr.textContent = '*, *::before, *::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
     }
   } else {
     // No board-pref font — but NEVER nuke a font the user picked via the
@@ -15558,7 +15801,24 @@ try {
 
 // ── AIRPORT CHANGE ────────────────────────────────────────────────────────
 function onApChange() {
-  const iata = document.getElementById('apSel').value;
+  // Normalize to uppercase — a mixed-case code (e.g. ?ap=Yhz) makes every
+  // AP[iata] lookup miss, which silently dropped the timezone to UTC and pushed
+  // boarding times 3h off. Keep the picker value canonical too.
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
+  try { var _apEl = document.getElementById('apSel'); if (_apEl && _apEl.value !== iata) _apEl.value = iata; } catch (e) {}
+  // Persist the selection so a refresh doesn't snap back to the YQM default.
+  // The init reads ?ap= from the URL first (it wins over sessionStorage and the
+  // 'YQM' fallback). Until now onApChange never rewrote the URL, so switching to
+  // e.g. YHZ held only until the next reload — then the stale ?ap=YQM took over
+  // and dumped you back in Moncton. Keep the URL + sessionStorage in sync here.
+  if (iata) {
+    try {
+      sessionStorage.setItem('fids_airport', iata);
+      var _apUrl = new URL(window.location.href);
+      _apUrl.searchParams.set('ap', iata);
+      window.history.replaceState(null, '', _apUrl);
+    } catch (e) {}
+  }
   const apData = AP[iata] || { name: iata };
   // Legacy hdrApName still updated (some other code paths read it),
   // but the v2 banner now displays this through .fids-airport-name.
@@ -15989,8 +16249,8 @@ function renderMobile() {
   $el('vTabRotate').classList.toggle('active', viewMode === 'rotate');
 
   // Tab labels (bilingual)
-  $el('vTabDep').textContent = `✈ ${TL('dep')}`;
-  $el('vTabArr').textContent = `✈ ${TL('arr')}`;
+  $el('vTabDep').textContent = `✈ ${TLbi('dep')}`;
+  $el('vTabArr').textContent = `✈ ${TLbi('arr')}`;
 
   const pagerInfo = document.getElementById('mPagerInfo');
   const pagerPrev = document.getElementById('mPagerPrev');
@@ -16043,12 +16303,12 @@ function _mobileBuildContext(f, isDep) {
   const cls   = PILLCLS[f.status] || 'p-scheduled';
   const _hasGate = (f.gate && f.gate !== '—');
 
-  let stTxt = SL(f.status);
+  let stTxt = SLbi(f.status);
   if (f.upd) {
-    if (f.status === 'delayed')  stTxt = `${SL('delayed')} · ${f.upd}`;
-    if (f.status === 'early')    stTxt = `${SL('early')} · ${f.upd}`;
-    if (f.status === 'departed') stTxt = `${SL('departed')} · ${f.upd}`;
-    if (f.status === 'arrived')  stTxt = `${SL('arrived')} · ${f.upd}`;
+    if (f.status === 'delayed')  stTxt = `${SLbi('delayed')} · ${f.upd}`;
+    if (f.status === 'early')    stTxt = `${SLbi('early')} · ${f.upd}`;
+    if (f.status === 'departed') stTxt = `${SLbi('departed')} · ${f.upd}`;
+    if (f.status === 'arrived')  stTxt = `${SLbi('arrived')} · ${f.upd}`;
   }
 
   // Hide-prefix toggle from airport config / user customize — same as desktop
@@ -16107,7 +16367,7 @@ function renderMobileCompactCard(f, isDep, iata, tz, nowTs) {
       <div class="cc-city">${cityDisplay || '—'}</div>
       <div class="cc-meta">
         <span class="cc-meta-flight">${flightDisplay}</span>
-        ${_hasGate ? `<span class="cc-meta-sep">·</span><span class="cc-meta-gate">${TL('gateDep') || 'Gate'} ${f.gate}</span>` : ''}
+        ${_hasGate ? `<span class="cc-meta-sep">·</span><span class="cc-meta-gate">${TLbi('gateDep')} ${f.gate}</span>` : ''}
         ${wxStr ? `<span class="cc-meta-sep">·</span>${wxStr}` : ''}
       </div>
     </div>
@@ -16556,7 +16816,7 @@ try {
 // requests on every page load.
 try {
   var _initParams = new URLSearchParams(window.location.search);
-  var _initAp = _initParams.get('ap') || sessionStorage.getItem('fids_airport');
+  var _initAp = (_initParams.get('ap') || sessionStorage.getItem('fids_airport') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (_initAp) {
     var _apSelEl = document.getElementById('apSel');
     if (_apSelEl) _apSelEl.value = _initAp;
@@ -17099,6 +17359,19 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   catch(e){L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);}
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  // Actual flown track over the assigned route: GREEN where it follows the
+  // assigned o→d line, AMBER where it deviates beyond ~30 km (reroute/hold —
+  // fine, just flagged so it's visible at a glance). Built from recorded fixes.
+  try {
+    var _tp = (_gateTrack && _gateTrack.key && _gateTrack.points && _gateTrack.points.length >= 2) ? _gateTrack.points : null;
+    if (_tp) {
+      for (var _ti = 1; _ti < _tp.length; _ti++) {
+        var _ta = _tp[_ti - 1], _tb = _tp[_ti];
+        var _dev = _crossTrackKm((_ta.lat + _tb.lat) / 2, (_ta.lng + _tb.lng) / 2, o[0], o[1], d[0], d[1]);
+        L.polyline([[_ta.lat, _ta.lng], [_tb.lat, _tb.lng]], { color: _dev > 30 ? '#f59e0b' : '#22c55e', weight: 4, opacity: 0.95 }).addTo(gateMap);
+      }
+    }
+  } catch (e) {}
   var planePos=L.latLng(planeLat,planeLng);
   var dLng=(d[1]-planeLng)*Math.PI/180;
   var lat1=planeLat*Math.PI/180,lat2=d[0]*Math.PI/180;

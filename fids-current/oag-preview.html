@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OAG Live Board — YQM</title>
+<style>
+  :root { --bg:#0b1f3a; --row1:#13294e; --row2:#0f2344; --accent:#1f6feb; --txt:#eaf1fb; --muted:#9fb4d4; --green:#39d98a; --amber:#ffb020; --red:#ff5a5a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#06101f; color:var(--txt); font-family:'Segoe UI',system-ui,-apple-system,sans-serif; }
+  .wrap { max-width:1500px; margin:0 auto; padding:18px; }
+  .note { background:#0e2747; border:1px solid #1d3c6b; border-radius:10px; padding:12px 16px; margin:0 0 16px; color:var(--muted); font-size:14px; line-height:1.5; }
+  .note b { color:var(--txt); }
+  .err { background:#3a1216; border-color:#7a242c; color:#ffd9dc; }
+  .board { border-radius:14px; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,.5); }
+  .head { display:flex; align-items:center; justify-content:space-between; background:linear-gradient(90deg,#0b1f3a,#13294e); padding:18px 24px; }
+  .head .ap { display:flex; align-items:center; gap:14px; }
+  .head .ap .dot { width:44px;height:44px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px; }
+  .head .ap .t { font-size:22px; font-weight:800; letter-spacing:.5px; }
+  .head .ap .t small { display:block; font-size:12px; color:var(--muted); font-weight:600; letter-spacing:2px; }
+  .head .ttl { font-size:28px; font-weight:800; letter-spacing:1px; text-align:right; }
+  .head .ttl small { display:block; font-size:12px; color:var(--muted); font-weight:600; letter-spacing:1px; }
+  .live { display:inline-flex; align-items:center; gap:7px; }
+  .live .pulse { width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(57,217,138,.7);animation:p 2s infinite; }
+  @keyframes p { 0%{box-shadow:0 0 0 0 rgba(57,217,138,.6)} 70%{box-shadow:0 0 0 8px rgba(57,217,138,0)} 100%{box-shadow:0 0 0 0 rgba(57,217,138,0)} }
+  table { width:100%; border-collapse:collapse; }
+  thead th { text-align:left; font-size:12px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; padding:14px 16px; background:#0a1c36; }
+  thead th.r { text-align:right; }
+  tbody td { padding:15px 16px; font-size:21px; font-weight:700; border-top:1px solid rgba(255,255,255,.05); }
+  tbody tr:nth-child(odd){ background:var(--row2); }
+  tbody tr:nth-child(even){ background:var(--row1); }
+  .al { display:flex; align-items:center; gap:12px; }
+  .al .badge { background:#fff; color:#0b1f3a; font-weight:900; font-size:14px; padding:4px 9px; border-radius:6px; min-width:42px; text-align:center; }
+  .dest small { color:var(--muted); font-weight:600; font-size:15px; }
+  .time .est { color:var(--amber); font-size:15px; font-weight:700; }
+  .gate span { background:#1e6f50; color:#fff; padding:4px 12px; border-radius:6px; font-weight:800; }
+  .ac { color:var(--muted); font-weight:600; font-size:16px; }
+  .op { color:var(--muted); font-weight:600; font-size:14px; font-style:italic; }
+  .st { text-align:right; font-weight:800; }
+  .st.ontime { color:var(--green); }
+  .st.delayed, .st.early { color:var(--amber); }
+  .st.cancelled { color:var(--red); }
+  .sub { color:var(--muted); font-size:13px; margin-top:10px; }
+  .empty td { text-align:center; color:var(--muted); font-weight:600; padding:40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="note" id="note">
+    <b>Live OAG board.</b> Pulling real-time flight data from OAG every 60 seconds via your worker — codeshares merged, cargo &amp; general-aviation filtered, gates/status/operated-by straight from the source.
+  </div>
+
+  <div class="board">
+    <div class="head">
+      <div class="ap"><div class="dot" id="apDot">YQM</div><div class="t" id="apName">Greater Moncton<small>ROMÉO LEBLANC INTL</small></div></div>
+      <div class="ttl">Departures<small id="meta"><span class="live"><span class="pulse"></span>connecting…</span></small></div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Airline</th><th>Flight</th><th>Destination</th><th>Time</th><th>Gate</th><th>Aircraft</th><th>Operated by</th><th class="r">Status</th></tr>
+      </thead>
+      <tbody id="rows"><tr class="empty"><td colspan="8">Loading live OAG data…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="sub" id="sub"></div>
+</div>
+
+<script>
+const AP = new URLSearchParams(location.search).get('ap') || 'YQM';
+const CITY = {
+  // Canada
+  YQM:'Moncton', YYZ:'Toronto', YTZ:'Toronto', YUL:'Montréal', YHZ:'Halifax', YYT:"St. John's",
+  YDF:'Deer Lake', YOW:'Ottawa', YQB:'Québec City', YWG:'Winnipeg', YVR:'Vancouver', YYC:'Calgary',
+  YEG:'Edmonton', YHM:'Hamilton', YQX:'Gander', YFC:'Fredericton', YSJ:'Saint John', YQY:'Sydney',
+  YYG:'Charlottetown', YWK:'Wabush', YYY:'Mont-Joli', YGP:'Gaspé', YZV:'Sept-Îles', YGR:'Îles-de-la-Madeleine',
+  YBG:'Bagotville', YVO:"Val-d'Or", YUY:'Rouyn-Noranda', YQR:'Regina', YXE:'Saskatoon', YYJ:'Victoria',
+  YLW:'Kelowna', YXX:'Abbotsford', YZF:'Yellowknife', YQT:'Thunder Bay', YQG:'Windsor', YXU:'London',
+  YQU:'Grande Prairie', YXS:'Prince George', YZR:'Sarnia', YAM:'Sault Ste. Marie', YTS:'Timmins',
+  // United States
+  BOS:'Boston', JFK:'New York', LGA:'New York', EWR:'Newark', ORD:'Chicago', MCO:'Orlando',
+  FLL:'Fort Lauderdale', MIA:'Miami', TPA:'Tampa', ATL:'Atlanta', PHL:'Philadelphia', DCA:'Washington',
+  IAD:'Washington', LAX:'Los Angeles', SFO:'San Francisco', SEA:'Seattle', DFW:'Dallas', DEN:'Denver',
+  LAS:'Las Vegas', PHX:'Phoenix', DTW:'Detroit', MSP:'Minneapolis', CLT:'Charlotte',
+  // International
+  LHR:'London', LGW:'London', CDG:'Paris', FRA:'Frankfurt', AMS:'Amsterdam', DUB:'Dublin',
+  CUN:'Cancún', PUJ:'Punta Cana', NAS:'Nassau', MBJ:'Montego Bay', VRA:'Varadero', SJU:'San Juan' };
+const AIRLINE = { AC:'Air Canada', PD:'Porter', WS:'WestJet', TS:'Air Transat', PB:'PAL Airlines', F8:'Flair',
+  QK:'Jazz', RV:'Air Canada Rouge', W8:'Cargojet', UA:'United', AA:'American', DL:'Delta', B6:'jetBlue', EK:'Emirates' };
+
+function statusLabel(f) {
+  const st = (f.state || '').toLowerCase();
+  if (st === 'canceled' || st === 'cancelled') return { txt:'Cancelled', cls:'cancelled' };
+  if (st === 'ingate' || st === 'landed') return { txt:'Arrived', cls:'ontime' };
+  if (st === 'outgate' || st === 'inair') return { txt:'Departed', cls:'ontime' };
+  const t = (f.timeliness || '').toLowerCase();
+  if (t === 'delayed') return { txt:'Delayed', cls:'delayed' };
+  if (t === 'early')   return { txt:'Early',   cls:'early' };
+  return { txt:'On Time', cls:'ontime' };
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+function render(payload) {
+  const rows = document.getElementById('rows');
+  const flights = (payload && payload.flights) || [];
+  if (!flights.length) {
+    rows.innerHTML = '<tr class="empty"><td colspan="8">No departures returned for ' + esc(AP) + ' today.</td></tr>';
+  } else {
+    rows.innerHTML = flights.map(f => {
+      const city = CITY[f.cityIata] || f.cityIata || '—';
+      const viaTxt = (f.via && f.via.length)
+        ? ' <small>via ' + esc(f.via.map(c => CITY[c] || c).join(', ')) + '</small>' : '';
+      const alName = AIRLINE[f.airline] || f.airline;
+      const sched = (f.schedTime || '').slice(0,5);
+      const est = f.estTime && f.estTime !== sched ? '<div class="est">→ ' + esc(f.estTime) + '</div>' : '';
+      const s = statusLabel(f);
+      const op = (f.operatedBy && f.operatedBy.toUpperCase() !== alName.toUpperCase()) ? f.operatedBy : '';
+      const acReg = [f.aircraft, f.reg].filter(Boolean).join(' · ');
+      return '<tr>'
+        + '<td><div class="al"><span class="badge">' + esc(f.airline) + '</span>' + esc(alName) + '</div></td>'
+        + '<td>' + esc(f.flight) + '</td>'
+        + '<td class="dest">' + esc(city) + ' <small>(' + esc(f.cityIata||'') + ')</small>' + viaTxt + '</td>'
+        + '<td class="time">' + esc(sched) + est + '</td>'
+        + '<td class="gate">' + (f.gate ? '<span>' + esc(f.gate) + '</span>' : '—') + '</td>'
+        + '<td class="ac">' + esc(acReg || '—') + '</td>'
+        + '<td class="op">' + esc(op || '') + '</td>'
+        + '<td class="st ' + esc(s.cls) + '">' + esc(s.txt) + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+  const now = new Date().toLocaleTimeString();
+  document.getElementById('meta').innerHTML = '<span class="live"><span class="pulse"></span>live · updated ' + now + '</span>';
+  document.getElementById('sub').textContent = 'Source: OAG Flight Info v2 · ' + (payload.count || flights.length) + ' passenger departures (codeshares deduped, cargo/GA filtered) · auto-refreshes every 60s.';
+}
+
+async function load() {
+  try {
+    const r = await fetch('/oag/departures?ap=' + encodeURIComponent(AP), { cache:'no-store' });
+    const data = await r.json();
+    if (!r.ok || data.error) {
+      const note = document.getElementById('note');
+      note.className = 'note err';
+      note.innerHTML = '<b>Not live yet.</b> ' + esc(data.error || ('HTTP ' + r.status))
+        + (data.detail ? '<br><small>' + esc(data.detail) + '</small>' : '');
+      document.getElementById('rows').innerHTML = '<tr class="empty"><td colspan="8">Waiting for the OAG_KEY secret to be set on the worker.</td></tr>';
+      document.getElementById('meta').textContent = '';
+      return;
+    }
+    render(data);
+  } catch (e) {
+    document.getElementById('meta').textContent = 'connection error';
+  }
+}
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

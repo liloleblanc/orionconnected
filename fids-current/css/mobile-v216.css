@@ -32,7 +32,19 @@
   #mobileCards {
     background: var(--m-bg-page) !important;
   }
-  #mobileCards { padding: 12px 12px 60px; }
+  #mobileCards { padding: 12px 12px 120px; }
+
+  /* Departures / Arrivals / Auto toggle for the web card view */
+  .m-viewtabs { display:flex; gap:6px; padding:10px 12px 2px; }
+  .m-vtab {
+    flex:1; padding:11px 8px; border-radius:12px;
+    border:1px solid var(--m-border,#d4d4d8); background:var(--m-bg-card,#fff);
+    color:var(--m-text,#18181b);
+    font-family:var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis;
+  }
+  .m-vtab.active { background:var(--m-text,#18181b); color:var(--m-bg-card,#fff); border-color:var(--m-text,#18181b); }
 
   /* Kill old .flight-card visuals so they don't bleed through */
   #mobileCards .flight-card {
@@ -96,8 +108,9 @@
   }
 
   .hero-time {
-    font-size: 32px;
-    font-weight: 500;
+    font-family: var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 46px;
+    font-weight: 700;
     line-height: 1;
     letter-spacing: -1.5px;
     color: var(--m-text);
@@ -121,8 +134,9 @@
     font-size: 16px;
   }
   .hero-time-new {
-    font-size: 32px;
-    font-weight: 500;
+    font-family: var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 46px;
+    font-weight: 700;
     color: var(--m-time-arrow);
     line-height: 1;
     letter-spacing: -1.5px;
@@ -134,8 +148,9 @@
     margin-bottom: 8px;
   }
   .hero-city {
-    font-size: 22px;
-    font-weight: 500;
+    font-family: var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 31px;
+    font-weight: 700;
     color: var(--m-text);
     line-height: 1.1;
     margin-bottom: 12px;
@@ -168,8 +183,9 @@
     letter-spacing: 1px;
   }
   .hero-tag-val {
-    font-size: 18px;
-    font-weight: 500;
+    font-family: var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
     color: var(--m-text);
     line-height: 1.2;
   }
