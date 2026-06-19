@@ -81,3 +81,9 @@
 .ac-ico-boarding::before { content:'\e997'; }  /* boarding pass */
 .ac-ico-depart::before   { content:'\e971'; }  /* takeoff */
 .ac-ico-time::before     { content:'\e998'; }  /* clock */
+/* Beat the global "*::before { font-family !important }" override so the icon
+   glyphs actually render in the AC icon font (class specificity > universal). */
+.ac-ico::before, .ac-ico-flight::before, .ac-ico-dest::before, .ac-ico-status::before,
+.ac-ico-boarding::before, .ac-ico-depart::before, .ac-ico-time::before {
+  font-family:'ac-icons' !important; font-style:normal !important; font-weight:normal !important;
+}
