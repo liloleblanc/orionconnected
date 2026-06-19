@@ -4498,3 +4498,5 @@ body, body.gids-page, body.gate-page{
 .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-emblem-img { filter: none !important; }
 .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-svg { fill: #f01428 !important; }
 .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-icon-wrap { color: #f01428 !important; }
+/* AC flights — AC icon-font glyphs in brand red (match the black/red orbs) */
+.g8-wrap.g8-airline-AC .gad-aircraft-col .ac-ico { color:#f01428 !important; }

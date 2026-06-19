@@ -68,3 +68,16 @@
   --font-system:        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono-stack:    'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
 }
+
+/* ── Air Canada UI icon font (icomoon) — used for the gate-row icons everywhere ── */
+@font-face { font-family:'ac-icons'; src:url('../fonts/ac-icons/icomoon.woff') format('woff'); font-weight:normal; font-style:normal; font-display:block; }
+.ac-ico { font-family:'ac-icons' !important; font-style:normal; font-weight:normal; line-height:1; speak:none;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:clamp(32px,4.6vh,62px); color:#fff; }
+.ac-ico-flight::before   { content:'\e9ad'; }  /* plane */
+.ac-ico-dest::before     { content:'\e939'; }  /* destination / target */
+.ac-ico-status::before   { content:'\e925'; }  /* info */
+.ac-ico-boarding::before { content:'\e997'; }  /* boarding pass */
+.ac-ico-depart::before   { content:'\e971'; }  /* takeoff */
+.ac-ico-time::before     { content:'\e998'; }  /* clock */

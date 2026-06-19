@@ -5176,13 +5176,13 @@ function _buildV2AircraftCol(ctx, vars) {
     var _fiFlightNo = (currentFlight && currentFlight.flight) ? String(currentFlight.flight) : '';
     if (_fiFlightNo || _fiDep || _fiArr || _fiBrd || _fiStLbl) {
       var _svgClock = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
-      var _svgDepart = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>';
-      var _svgArrive = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M2.5 19h19v2h-19zM19.34 15.85c.8.21 1.62-.26 1.84-1.06.21-.8-.26-1.62-1.06-1.84l-5.31-1.42-2.76-9.02L10.12 2v8.28L5.15 8.95l-.93-2.32-1.45-.39v5.17l16.57 4.44z"/></svg>';
+      var _svgDepart = '<span class=\"ac-ico ac-ico-depart"></span>';
+      var _svgArrive = '<span class=\"ac-ico ac-ico-time"></span>';
       // v222 — new left-rail panel icons (Nick's 6-panel spec).
-      var _svgPlane = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
-      var _svgGlobe = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a7.82 7.82 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a7.99 7.99 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a7.82 7.82 0 0 1 0 4h-3.38z"/></svg>';
+      var _svgPlane = '<span class=\"ac-ico ac-ico-flight"></span>';
+      var _svgGlobe = '<span class=\"ac-ico ac-ico-dest"></span>';
       // Boarding — "enter the gate" (doorway on the right + arrow in).
-      var _svgBoarding = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4v-2h4V6h-4V4z"/><path d="M10.4 7.4 9 8.8l2.3 2.2H4v2h7.3L9 15.2l1.4 1.4 4.6-4.6z"/></svg>';
+      var _svgBoarding = '<span class=\"ac-ico ac-ico-boarding"></span>';
       // Total Flight Time — clean stopwatch.
       var _svgRoute = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M15 1H9v2h6V1zm-3 7a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0V9a1 1 0 0 0-1-1zm7.03-.61 1.42-1.42a10 10 0 0 0-1.41-1.41l-1.42 1.42A8 8 0 1 0 12 22a8 8 0 0 0 7.03-14.61zM12 20a6 6 0 1 1 0-12 6 6 0 0 1 0 12z"/></svg>';
 
@@ -5277,7 +5277,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       // v218.99.28 — Status row gets an info-circle icon in its own row,
       // label + value stacked below (matching the other time rows).
-      var _svgStatus = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>';
+      var _svgStatus = '<span class=\"ac-ico ac-ico-status"></span>';
 
       // v218.99.32 — Inline-style every badge so the cascade can't lie.
       // Single source of truth for what a flight-info badge looks like.
