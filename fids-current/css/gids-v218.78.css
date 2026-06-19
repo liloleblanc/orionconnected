@@ -4509,3 +4509,17 @@ body, body.gids-page, body.gate-page{
   background: linear-gradient(to bottom, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 65%, rgba(255,255,255,0) 100%) !important;
   pointer-events: none !important;
 }
+
+/* ════════ v254 — Air Canada: BLACK orb badges, RED maple + red icons ════════
+   Per Nick — AC's real look: black sphere, red maple/symbols. Override the
+   accent-coloured badge to black, stop whitening the maple (its source fill is
+   #f01428), and colour the functional icons red. AC-scoped only. */
+.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
+.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
+  background: #0a0a0c !important;
+}
+.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-emblem-img {
+  filter: none !important;            /* keep the maple its native red, not white */
+}
+.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-svg { fill: #f01428 !important; }
+.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-icon-wrap { color: #f01428 !important; }
