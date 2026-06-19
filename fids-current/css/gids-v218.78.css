@@ -4502,3 +4502,16 @@ body, body.gids-page, body.gate-page{
     inset 0 -7px 14px rgba(0,0,0,0.30),
     0 5px 12px rgba(0,0,0,0.34) !important;
 }
+
+/* ════════ v248 — Emblem ALSO behind the aircraft panel (under the plane) ════
+   The column ::before centres one emblem in the middle panel; add a second,
+   dedicated emblem behind the aircraft block so the big faded mark sits UNDER
+   the plane too. */
+.gad-map-col-v2 .v2-rc-aircraft { position: relative; }
+.gad-map-col-v2 .v2-rc-aircraft::before {
+  content: ""; position: absolute; inset: 0;
+  background-image: var(--wm-symbol, none);
+  background-repeat: no-repeat; background-position: center; background-size: auto 78%;
+  opacity: 0.20; mix-blend-mode: multiply; pointer-events: none; z-index: 0;
+}
+.gad-map-col-v2 .v2-rc-aircraft > * { position: relative; z-index: 1; }
