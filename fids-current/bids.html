@@ -549,7 +549,7 @@ window.addEventListener("DOMContentLoaded", async function() {
           }
         }
         sel.selectedIndex = pickedIndex;
-        try { subScreenVal = sel.value; } catch (e) {}
+        // changeSubScreen() sets subScreenVal (sanitized); don't assign raw .value.
         if (typeof changeSubScreen === 'function') changeSubScreen(sel.value);
       }
       _fidsHideLoader();

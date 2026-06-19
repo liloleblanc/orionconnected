@@ -1313,7 +1313,10 @@ function changeScreenType(val) {
 }
 
 function changeSubScreen(val) {
-  subScreenVal = val;
+  // Sanitize the gate/belt value (it comes from a DOM <select>.value, a CodeQL
+  // "DOM text reinterpreted as HTML" source) before it flows into the gate
+  // innerHTML. Gates/belts are alphanumeric — strip anything else (incl. < > & ").
+  subScreenVal = String(val == null ? '' : val).replace(/[^A-Za-z0-9 ./\-]/g, '');
   render();
 }
 
@@ -1369,7 +1372,7 @@ function openTestFlight() {
   // Pre-fill time with current time + 1 hour
   const now = new Date();
   const later = new Date(now.getTime() + 3600000);
-  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
   const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
                    : {hour:'2-digit', minute:'2-digit', hour12:true};
@@ -1403,7 +1406,7 @@ function submitTestFlight() {
   schedDate.setHours(h, m, 0, 0);
   if (schedDate < now - 3600000) schedDate.setDate(schedDate.getDate() + 1); // next day if past
 
-  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
   const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
                    : {hour:'2-digit', minute:'2-digit', hour12:true};
@@ -2087,7 +2090,7 @@ function getDedicatedRenderKey() {
 
 function updateDedicatedTimeOnly() {
   if (screenType === 'main') return;
-  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
@@ -7674,7 +7677,7 @@ function renderDedicatedScreen() {
 const gView = document.getElementById('gateView');
   const bView = document.getElementById('baggageView');
   const contentArea = document.querySelector('.content-area');
-  const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
+  const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
@@ -15440,7 +15443,11 @@ async function fetchLive() {
   } catch(e) {
     setState('loading', false);
     const p = document.getElementById('panelError');
-    p.innerHTML = 'LIVE DATA ERROR<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;">' + e.message + '</div>';
+    // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
+    // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
+    p.innerHTML = 'LIVE DATA ERROR<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
+    var _pSub = p.querySelector('.sub');
+    if (_pSub) _pSub.textContent = String((e && e.message) || '');
     p.style.display = 'block';
     console.error('ADB error:', e.message);
   }
