@@ -2301,7 +2301,11 @@ body, body.gids-page, body.gate-page{
 }
 /* Destination + Status values — bigger */
 .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest        { font-size: clamp(40px, 5.4vh, 74px) !important; white-space: nowrap !important; line-height: 0.98 !important; max-width: 100% !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val  { font-size: clamp(40px, 5.4vh, 74px) !important; white-space: nowrap !important; line-height: 0.98 !important; max-width: 100% !important; }
+/* Status stacks TWO lines (EN over FR: "On Time" / "À l'heure"), so it must be
+   sized per-line to fit one shelf — the single-line dest size (74px) made the
+   second line overflow and clip against the divider below. */
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val  { font-size: clamp(15px, 2.2vh, 32px) !important; white-space: nowrap !important; line-height: 1.05 !important; max-width: 100% !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val .v2-fi-st2 { line-height: 1.05 !important; display: block !important; }
 /* WEATHER — same shelf, just a DARKER background + readable (light) font */
 .g8-wrap .gad-aircraft-col .v2-wx-block {
   background: #2f3946 !important;                                           /* fallback */
@@ -3440,18 +3444,15 @@ body, body.gids-page, body.gate-page{
 .gad-map-col-v2 .v2-rc-inbound,
 .gad-map-col-v2 .v2-rc-aircraft { background: transparent !important; }
 .gad-map-col-v2::before {
+  /* Per-airline emblem watermark faded into the brushed-metal, spanning the
+     whole stack of panels below the map (multiply blend so it sits IN the
+     metal). Large + centred so it reads across all the lower rectangles. */
   content: "";
-  /* Sit over the THREE info shelves below the map (Right 4-6). The map shelf is
-     an opaque image, so an emblem centred there would be hidden; the info
-     shelves are translucent brushed-metal and let the emblem read through. */
-  position: absolute; left: 0; right: 0; top: auto; bottom: 0; height: 58%;
+  position: absolute; left: 0; right: 0; bottom: 0; top: auto; height: 62%;
   background-image: var(--wm-symbol, none);
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: contain;
-  opacity: 0.30;
-  pointer-events: none;
-  z-index: 0;
+  background-repeat: no-repeat; background-position: center 48%; background-size: 84% auto;
+  opacity: 0.28; mix-blend-mode: multiply;
+  pointer-events: none; z-index: 0;
 }
 .gad-map-col-v2 > * { position: relative; z-index: 1; }
 .gad-map-col-v2 .v2-rc-kicker {
@@ -3640,9 +3641,23 @@ body, body.gids-page, body.gate-page{
   display: block !important; font-size: 0.58em !important; font-weight: 600 !important;
   color: #5b6573 !important; line-height: 1.12 !important;
 }
-/* 6. Side panels: SAME tone both sides, a step darker than before */
+/* 6. Side panels: SAME brushed-metal base on BOTH sides (refined) — fine grain,
+      a bright specular sweep, and a top-light → airline-tinted → shaded falloff. */
 .g8-wrap .gad-aircraft-col,
-.g8-wrap .gad-map-col-v2 { background: #D9DEE5 !important; }
+.g8-wrap .gad-map-col-v2 {
+  background-color: color-mix(in srgb, var(--body-bg,#d9dee5) 82%, var(--airline-accent,#8a8f96) 18%) !important;
+  background-image:
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.30) 47%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0) 82%),
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px,
+      rgba(0,0,0,0.05) 1px,      rgba(0,0,0,0.05) 2px),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 55%, #ffffff 45%) 0%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 76%, var(--airline-accent,#8a8f96) 24%) 52%,
+      color-mix(in srgb, var(--body-bg,#d3d8de) 72%, #000000 14%) 100%) !important;
+}
 
 /* Both languages get EQUAL treatment in the right panel (the left rail
    already does this) — same size, weight and ink for EN and the 2nd lang. */
@@ -4159,9 +4174,9 @@ body, body.gids-page, body.gate-page{
   padding-bottom: clamp(1px,0.25vh,3px) !important; white-space: nowrap !important; overflow: hidden !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val {
-  font-size: clamp(15px,2.5vh,30px) !important; font-weight: 900 !important; line-height: 1.02 !important;
+  font-size: clamp(15px,2.5vh,30px) !important; font-weight: 900 !important; line-height: 1.28 !important;
   color: var(--banner-bg,#14181E) !important; white-space: nowrap !important; overflow: hidden !important;
-  text-overflow: ellipsis !important; margin-top: clamp(0px,0.2vh,3px) !important;
+  text-overflow: ellipsis !important; margin-top: clamp(0px,0.2vh,3px) !important; padding-bottom: 0.1em !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-sep { opacity: 0.5 !important; font-weight: 500 !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-status-scheduled { color: #1a8a3a !important; }
@@ -4197,7 +4212,7 @@ body, body.gids-page, body.gate-page{
 /* Flight-info: fill the band, big readable text. */
 .g8-wrap .gad-map-col-v2 .v2-rc-fi { justify-content: space-evenly !important; gap: clamp(2px,0.6vh,9px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-lbl { font-size: clamp(13px,2.1vh,23px) !important; padding-bottom: clamp(2px,0.4vh,5px) !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-val { font-size: clamp(24px,4.6vh,52px) !important; line-height: 1.0 !important; margin-top: clamp(2px,0.4vh,5px) !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val { font-size: clamp(24px,4.6vh,52px) !important; line-height: 1.28 !important; margin-top: clamp(2px,0.4vh,5px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-actype-val { font-size: clamp(17px,3vh,36px) !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val img,
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val .v2-rc-opby-logo { height: clamp(26px,4.4vh,52px) !important; }
@@ -4471,14 +4486,18 @@ body, body.gids-page, body.gate-page{
     0 2px 6px rgba(0,0,0,0.22) !important;
 }
 
-/* ════════ v255 — Shiny orb badges: contained top sheen (colour-safe) ════════
-   Re-added after the font-file merge reverted it. */
+/* ════════ v253 — Shiny orb badges: contained top sheen (colour-safe) ════════
+   A defined highlight ellipse over the full-colour body reads as a glossy orb on
+   ANY accent (navy/red/teal) — unlike a full white wash, which greyed United.
+   The body colour (pre-existing color-mix gradient) is left untouched. */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-wrap,
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
   position: relative !important;
   overflow: hidden !important;
-  box-shadow: inset 0 -7px 13px rgba(0,0,0,0.30), 0 5px 12px rgba(0,0,0,0.32) !important;
+  box-shadow:
+    inset 0 -7px 13px rgba(0,0,0,0.30),
+    0 5px 12px rgba(0,0,0,0.32) !important;
 }
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge::after,
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-wrap::after,
@@ -4490,18 +4509,21 @@ body, body.gids-page, body.gate-page{
   background: linear-gradient(to bottom, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 65%, rgba(255,255,255,0) 100%) !important;
   pointer-events: none !important;
 }
-/* ════════ v255 — Air Canada: BLACK orb badges, RED maple + red icons ════════ */
+
+/* ════════ v254 — Air Canada: BLACK orb badges, RED maple + red icons ════════
+   Per Nick — AC's real look: black sphere, red maple/symbols. Override the
+   accent-coloured badge to black, stop whitening the maple (its source fill is
+   #f01428), and colour the functional icons red. AC-scoped only. */
 .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
 .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
   background: #0a0a0c !important;
 }
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-emblem-img { filter: none !important; }
+.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-emblem-img {
+  filter: none !important;            /* keep the maple its native red, not white */
+}
 .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-svg { fill: #f01428 !important; }
 .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-icon-wrap { color: #f01428 !important; }
-/* AC flights — AC icon-font glyphs in brand red (match the black/red orbs) */
+/* AC flights — AC icon-font glyphs in brand red */
 .g8-wrap.g8-airline-AC .gad-aircraft-col .ac-ico { color:#f01428 !important; }
-/* Flight-orb airline emblem: a touch smaller so it fits inside the orb (was
-   filling edge-to-edge — Delta widget + others). */
-.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-img {
-  width: 74% !important; height: 74% !important; margin: auto !important;
-}
+/* Flight-orb airline emblem a touch smaller so it fits the orb */
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-img { width: 74% !important; height: 74% !important; margin: auto !important; }
