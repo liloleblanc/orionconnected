@@ -3444,14 +3444,13 @@ body, body.gids-page, body.gate-page{
 .gad-map-col-v2 .v2-rc-inbound,
 .gad-map-col-v2 .v2-rc-aircraft { background: transparent !important; }
 .gad-map-col-v2::before {
-  /* Per-airline emblem watermark faded into the brushed-metal, spanning the
-     whole stack of panels below the map (multiply blend so it sits IN the
-     metal). Large + centred so it reads across all the lower rectangles. */
+  /* Per-airline emblem watermark faded into the brushed-metal. Fills the full
+     square panel, centred, and kept light so it sits IN the metal. */
   content: "";
-  position: absolute; left: 0; right: 0; bottom: 0; top: auto; height: 62%;
+  position: absolute; left: 0; right: 0; top: 0; bottom: 0; height: auto;
   background-image: var(--wm-symbol, none);
-  background-repeat: no-repeat; background-position: center 48%; background-size: 84% auto;
-  opacity: 0.28; mix-blend-mode: multiply;
+  background-repeat: no-repeat; background-position: center; background-size: contain;
+  opacity: 0.18; mix-blend-mode: multiply;
   pointer-events: none; z-index: 0;
 }
 .gad-map-col-v2 > * { position: relative; z-index: 1; }
