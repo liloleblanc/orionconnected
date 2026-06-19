@@ -4486,18 +4486,26 @@ body, body.gids-page, body.gate-page{
     0 2px 6px rgba(0,0,0,0.22) !important;
 }
 
-/* ════════ v251 — Shiny orb badges (gentle, colour-safe) ════════
-   Re-add the glossy 3D-sphere look on the left-rail badges WITHOUT washing the
-   brand colour to grey: a soft top highlight (low alpha so lighter accents like
-   United blue survive) + a depth shadow. background-color (the accent) is never
-   touched. */
+/* ════════ v253 — Shiny orb badges: contained top sheen (colour-safe) ════════
+   A defined highlight ellipse over the full-colour body reads as a glossy orb on
+   ANY accent (navy/red/teal) — unlike a full white wash, which greyed United.
+   The body colour (pre-existing color-mix gradient) is left untouched. */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-wrap,
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
-  background-image:
-    radial-gradient(circle at 32% 24%, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.07) 30%, rgba(255,255,255,0) 52%) !important;
+  position: relative !important;
+  overflow: hidden !important;
   box-shadow:
-    inset 0 2px 4px rgba(255,255,255,0.30),
-    inset 0 -6px 12px rgba(0,0,0,0.22),
-    0 4px 9px rgba(0,0,0,0.28) !important;
+    inset 0 -7px 13px rgba(0,0,0,0.30),
+    0 5px 12px rgba(0,0,0,0.32) !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge::after,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-wrap::after,
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap::after {
+  content: "" !important;
+  position: absolute !important; z-index: 6 !important;
+  left: 13%; right: 13%; top: 6%; height: 42%;
+  border-radius: 50% !important;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 65%, rgba(255,255,255,0) 100%) !important;
+  pointer-events: none !important;
 }
