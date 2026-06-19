@@ -860,7 +860,7 @@ function changeFont(f) {
   // Force font on ALL elements including gate/baggage screens
   let s = document.getElementById('fids-font-override');
   if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
-  s.textContent = `*, *::before, *::after { font-family: ${fam} !important; }`;
+  s.textContent = `*, *::before, *::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
   // Persist the choice — page load used to hard-reset to Geist, wiping
   // whatever the user picked ("every time I add a new font it goes away").
   try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
@@ -909,7 +909,7 @@ function restoreFontChoice(defaultFont) {
         document.body.style.setProperty('--font-primary', _stack, 'important');
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
-        s.textContent = '*, *::before, *::after { font-family: ' + _stack + ' !important; }';
+        s.textContent = '*, *::before, *::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
         return;
       }
     }
@@ -15607,7 +15607,7 @@ function applyAirportConfigToBoard(iata) {
         _ovr.id = 'fids-font-override';
         document.head.appendChild(_ovr);
       }
-      _ovr.textContent = '*, *::before, *::after { font-family: ' + _stack + ' !important; }';
+      _ovr.textContent = '*, *::before, *::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
     }
   } else {
     // No board-pref font — but NEVER nuke a font the user picked via the
