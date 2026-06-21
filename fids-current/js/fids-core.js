@@ -4441,7 +4441,12 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     + "if(/-[a-z]{2,4}\\.png$/i.test(_p)){try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[_p]=1;}catch(e){}}";
   var onerror;
   if (fbList.length > 0) {
-    var fbJson = JSON.stringify(fbList);
+    // HTML-escape the double quotes — this JSON sits inside a double-quoted
+    // onerror="" attribute, so raw " would terminate the attribute early,
+    // truncating the handler to `var fbs=[` (SyntaxError on fire), killing the
+    // fallback chain, and leaving the rest as garbage attributes that corrupt
+    // the surrounding DOM. &quot; is decoded back to " before the JS compiles.
+    var fbJson = JSON.stringify(fbList).replace(/"/g, '&quot;');
     onerror = _markMiss
       + "var fbs=" + fbJson + ";var i=parseInt(this.dataset.fbi||'0',10);"
       + "if(i<fbs.length){this.dataset.fbi=String(i+1);this.src=fbs[i]+'" + _imgCacheBuster + "';}"
