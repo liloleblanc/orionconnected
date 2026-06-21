@@ -6310,8 +6310,24 @@ function uxgGateHtml(ctx) {
   // Boarding time estimate (35 min before dep)
   var boardLeadMins = getBoardingLeadMins(equipRaw);
   var boardTimeHtml = '\u2014';
-  if (effectiveDepTs) {
-    var boardTs = effectiveDepTs - boardLeadMins*60000;
+  // Keep boarding consistent with the DISPLAYED departure. effectiveDepTs is
+  // (_revTs || _sortTs), but the Departure field shows the feed's revised time
+  // (currentFlight.upd), which can exist even when _revTs doesn't \u2014 in that
+  // case effectiveDepTs is still the SCHEDULED time, so boarding would read off
+  // the old departure while the field shows the new one. Shift the boarding
+  // base by that same delay so boarding is always exactly `lead` minutes before
+  // the time the Departure field shows. (No-op unless that divergence exists.)
+  var _effDepForBoard = effectiveDepTs;
+  if (effectiveDepTs && depDelayed && !currentFlight._revTs && currentFlight.upd && currentFlight.time) {
+    var _obP = String(currentFlight.time).split(':'), _rbP = String(currentFlight.upd).split(':');
+    if (_obP.length === 2 && _rbP.length === 2) {
+      var _delayB = (parseInt(_rbP[0],10)*60 + parseInt(_rbP[1],10)) - (parseInt(_obP[0],10)*60 + parseInt(_obP[1],10));
+      if (_delayB < 0) _delayB += 1440;            // revised crossed midnight
+      if (_delayB > 0) _effDepForBoard = effectiveDepTs + _delayB*60000;
+    }
+  }
+  if (_effDepForBoard) {
+    var boardTs = _effDepForBoard - boardLeadMins*60000;
     var bd = new Date(boardTs);
     boardTimeHtml = bd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
     // If delayed, show original boarding time struck through + new boarding time
