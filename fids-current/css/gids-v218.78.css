@@ -4590,6 +4590,17 @@ body, body.gids-page, body.gate-page{
   background-position: center 105% !important;
 }
 
+/* KLM — the crown+wordmark is a WIDE transparent logo (not a full-bleed tile),
+   so the default tile sizing left it crammed in one bottom band. Size it to
+   span the column width and sit centred, repeated down the panel so it reads
+   like a proper watermark instead of a single mark at the bottom. */
+.g8-wrap.g8-airline-KL .gad-map-col-v2::before {
+  background-repeat: repeat-y !important;
+  background-position: center top !important;
+  background-size: 78% auto !important;
+  opacity: 0.16 !important;
+}
+
 /* "Your Aircraft" panel — drifting-clouds backdrop behind the plane so it
    reads as flying above the clouds. Faded + soft top/bottom mask so it blends
    into the panel and the plane illustration stays the hero. The GIF loops on
