@@ -109,6 +109,18 @@ status. No events = ADB isn't pushing (check #1 for `isActive` and #2 for credit
    Enter at the end, then re-run command #4.
 2. **Bump `maxDeliveryRetries: 1` → `3`–`5`** in the deployed worker (≈ line
    1303) so one bad delivery never disables the subscription.
-3. **Fix the `rconsole` typo → `console`** in the deployed worker (≈ line 1135,
-   destination-info handler) — unrelated to webhooks, but it spams errors.
+3. ~~**Fix the `rconsole` typo → `console`**~~ — ✅ **DONE (2026-06-21).** Was at
+   ≈ line 1135 (the `/ai/destination-info` catch block). `rconsole` was undefined,
+   so it threw *inside* the catch and the handler crashed with a bare **500 + no
+   CORS header** instead of returning its graceful fallback. Fixed → the endpoint
+   now returns **200** with `{"hotels":[],"attractions":[],...,"status":"unavailable"}`
+   when the AI is down, and the gate's repeating red console errors are gone.
+   - **Open follow-up:** `status:"unavailable"` means the Workers **AI** call
+     itself still fails — the destination hotels/attractions panel stays blank
+     (no error now, just empty). Likely the daily **Neuron** quota, burned by the
+     heavy `/ai/citybg` + `/ai/hotelbg` image generation (flux-1-schnell / SDXL).
+     Diagnose with `wrangler tail fids-proxy` (or dashboard → Logs) and read the
+     now-working `console.error("destination-info", { error })` line. This is the
+     Workers **AI** meter — **separate from the AeroDataBox flight credits**, which
+     it did not touch.
 4. **Set a reminder** to check command #2 weekly so you refill before hitting 0.
