@@ -4589,3 +4589,20 @@ body, body.gids-page, body.gate-page{
 .g8-wrap.g8-airline-DL .gad-map-col-v2::before {
   background-position: center 105% !important;
 }
+
+/* "Your Aircraft" panel — drifting-clouds backdrop behind the plane so it
+   reads as flying above the clouds. Faded + soft top/bottom mask so it blends
+   into the panel and the plane illustration stays the hero. The GIF loops on
+   its own. Drop the file at /logos/Backgrounds/clouds-loop.gif. */
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft { position: relative !important; overflow: hidden !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: url('/logos/Backgrounds/clouds-loop.gif') center center / cover no-repeat;
+  opacity: 0.28;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 32%, #000 80%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 32%, #000 80%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft > * { position: relative; z-index: 1; }
