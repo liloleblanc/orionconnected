@@ -6993,7 +6993,7 @@ function uxgGateHtml(ctx) {
     'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',                         // Pualani figurehead
     'UA': '/logos/airlines/us-major/united-globe-only.svg',                        // United Globe
     'WS': '/logos/airline-tiles/WJA.svg',                                          // WestJet white emblem on teal square
-    'PB': '/logos/airlines/canadian-regional/pal-square-monochrome-white.svg',     // PAL white emblem (gray-blue backing added in CSS)
+    'PB': '/logos/airlines/canadian-regional/PB-blue-white.svg',                   // PAL white emblem on navy-blue square
     'PD': '/logos/Backgrounds/PD/porter-pattern-panel.png',                             // Porter faded panel pattern background
     // v208 added (true emblems only — no wordmarks):
     '9X': '/logos/airlines/us-major/mokulele-emblem.svg',                          // Mokulele plumeria (red)
