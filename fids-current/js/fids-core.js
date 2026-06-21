@@ -8021,11 +8021,16 @@ const gView = document.getElementById('gateView');
                 // loadFlight stores { lat, lng, alt, speed } — read both key spellings.
                 var _spdRaw = (typeof _lp.speed === 'number') ? _lp.speed : null;
                 var _altRaw = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
+                // Coordinates too — WITHOUT these the gate map can't plot the
+                // plane (its livePos.lat/lng check fails) so it never traces,
+                // even though spd/alt show. Accept lat/lng, lon, or latitude/longitude.
+                var _latRaw = (typeof _lp.lat === 'number') ? _lp.lat : ((typeof _lp.latitude === 'number') ? _lp.latitude : null);
+                var _lngRaw = (typeof _lp.lng === 'number') ? _lp.lng : ((typeof _lp.lon === 'number') ? _lp.lon : ((typeof _lp.longitude === 'number') ? _lp.longitude : null));
                 var liveSpd = (_spdRaw !== null) ? Math.round(_spdRaw) : null;
                 var liveAlt = (_altRaw !== null) ? Math.round(_altRaw) : null;
                 // SPD/ALT come from AeroDataBox's livePosition only.
-                if (liveSpd !== null || liveAlt !== null) {
-                  window._gateInboundLivePos = { speed: liveSpd, altitude: liveAlt, _airport: _capturedIata, _inboundFlight: _capturedInbound };
+                if (liveSpd !== null || liveAlt !== null || (_latRaw !== null && _lngRaw !== null)) {
+                  window._gateInboundLivePos = { lat: _latRaw, lng: _lngRaw, speed: liveSpd, altitude: liveAlt, _airport: _capturedIata, _inboundFlight: _capturedInbound };
                   console.log('[FIDS] Inbound live position for', _capturedInbound, '@', _capturedIata, '→ spd:', liveSpd, 'alt:', liveAlt);
                   window._lastGateKey = ''; // force re-render with telemetry
                   if (typeof requestGateRebuild === 'function') requestGateRebuild();
@@ -8515,8 +8520,13 @@ const gView = document.getElementById('gateView');
                       : (_sameInb && typeof _prev.speed === 'number' ? _prev.speed : null);
               var _al = (typeof data.inbound._liveAlt === 'number') ? data.inbound._liveAlt
                       : (_sameInb && typeof _prev.altitude === 'number' ? _prev.altitude : null);
-              window._gateInboundLivePos = (_sp !== null || _al !== null)
-                ? { speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null }
+              // Carry coordinates too so the map can actually plot the plane.
+              var _la = (typeof data.inbound._liveLat === 'number') ? data.inbound._liveLat
+                      : (_sameInb && typeof _prev.lat === 'number' ? _prev.lat : null);
+              var _ln = (typeof data.inbound._liveLng === 'number') ? data.inbound._liveLng
+                      : (_sameInb && typeof _prev.lng === 'number' ? _prev.lng : null);
+              window._gateInboundLivePos = (_sp !== null || _al !== null || (_la !== null && _ln !== null))
+                ? { lat: _la, lng: _ln, speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null }
                 : null;
             })();
             changed = true;
