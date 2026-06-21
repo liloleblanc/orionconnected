@@ -6115,6 +6115,7 @@ function _buildV2MapCol(ctx, vars) {
             : '');
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
+        +   '<div id="gateCloudsBg"></div>'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
@@ -8174,6 +8175,10 @@ const gView = document.getElementById('gateView');
         var _savedAdLogo = document.getElementById('gateAdLogo');
         if (_savedAd && _savedAd.firstChild) { _savedAd.remove(); } else { _savedAd = null; }
         if (_savedAdLogo) { _savedAdLogo.remove(); }
+        // Preserve the clouds backdrop the same way — otherwise the animated GIF
+        // restarts to frame 0 on every rebuild and visibly "skips" mid-loop.
+        var _savedClouds = document.getElementById('gateCloudsBg');
+        if (_savedClouds) { _savedClouds.remove(); } else { _savedClouds = null; }
         // Smooth transition: fade out, rebuild, fade in
         gView.style.transition = 'opacity 0.15s ease';
         gView.style.opacity = '0.7';
@@ -8191,6 +8196,9 @@ const gView = document.getElementById('gateView');
         if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
         var _newAdLogo = document.getElementById('gateAdLogo');
         if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
+        // Re-attach the preserved clouds backdrop so its GIF keeps looping.
+        var _newClouds = document.getElementById('gateCloudsBg');
+        if (_savedClouds && _newClouds) { _newClouds.replaceWith(_savedClouds); }
         // Run autofit synchronously first so the un-shrunk (large) text never
         // paints — that was the "words bump up to twice the size then snap
         // back" flash on every rebuild. The rAF pass stays as a correction
