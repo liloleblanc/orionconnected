@@ -3873,7 +3873,7 @@ const IATA_AIRCRAFT = {
   '319':'Airbus A319','320':'Airbus A320','321':'Airbus A321',
   '32N':'Airbus A320neo','21N':'Airbus A321neo','223':'Airbus A220-300',
   '318':'Airbus A318','32A':'Airbus A319','32B':'Airbus A320',
-  '32Q':'Airbus A321','32R':'Airbus A321neo','31N':'Airbus A319neo',
+  '32Q':'Airbus A321neo','32R':'Airbus A321neo','31N':'Airbus A319neo',
   '32S':'Airbus A320',
   '330':'Airbus A330','332':'Airbus A330-200','333':'Airbus A330-300',
   '339':'Airbus A330-900neo','350':'Airbus A350','359':'Airbus A350-900',
@@ -4377,6 +4377,11 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     eq = aircraftCodeToIata(equipRawOrCode);
   }
   if (!eq) return '';
+  // Air Transat's only narrowbody is the A321neo, but AeroDataBox scatters the
+  // SAME aircraft across 320 / 321 / 32N / 32Q day to day. Pin any A320-family
+  // narrowbody to 32Q (neo) for TS so the gate always shows the neo image,
+  // never a ceo/320. Other carriers genuinely fly these, so this stays TS-only.
+  if (al === 'TS' && /^(319|320|321|32N|32A|32B|32S)$/.test(eq)) eq = '32Q';
   var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, '3H':1, '5T':1 };
   var miss = (typeof window !== 'undefined') ? window.AIRCRAFT_IMG_MISSING : {};
 
@@ -8349,6 +8354,18 @@ const gView = document.getElementById('gateView');
             aircraftCode: data.aircraftCode || aircraftCodeToIata(data.aircraftModel) || '',
             opCode: '', opName: ''
           };
+          // Air Transat flies only the A321neo; ADB miscodes the same plane as
+          // 320/321/32N. Pin the TS narrowbody to 32Q so the type LABEL reads
+          // "Airbus A321neo" (the image is pinned in aircraftImgTag). TS-only.
+          if (data.marketing && data.marketing.iata === 'TS') {
+            var _tsCode = aircraftCodeToIata(_eqIncoming.aircraftCode || data.aircraftModel || '');
+            if (/^(319|320|321|32N|32A|32B|32S)$/.test(_tsCode)) {
+              _eqIncoming.aircraftCode = '32Q';
+              if (!_eqIncoming.aircraft || (/32[01]|319/.test(_eqIncoming.aircraft) && !/neo/i.test(_eqIncoming.aircraft))) {
+                _eqIncoming.aircraft = 'Airbus A321neo';
+              }
+            }
+          }
           if (data.operator && data.operator.iata &&
               data.operator.iata !== data.marketing.iata &&
               data.operator._source !== 'same-as-marketing') {
