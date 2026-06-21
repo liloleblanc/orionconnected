@@ -7942,19 +7942,7 @@ const gView = document.getElementById('gateView');
                 var _altRaw = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
                 var liveSpd = (_spdRaw !== null) ? Math.round(_spdRaw) : null;
                 var liveAlt = (_altRaw !== null) ? Math.round(_altRaw) : null;
-                // Real-data fallback: AeroDataBox had no fix → try the free,
-                // keyless adsb.lol feed by callsign / registration. Real position
-                // or nothing — never fabricated.
-                if (liveSpd === null || liveAlt === null) {
-                  try {
-                    var _adsb = await gateAdsbLolPos(inbData.callsign || _capturedInbound, inbData.reg);
-                    if (_adsb) {
-                      if (liveSpd === null && _adsb.speed !== null) liveSpd = _adsb.speed;       // only fill what's missing
-                      if (liveAlt === null && _adsb.altitude !== null) liveAlt = _adsb.altitude; // (ADB often gives speed but not altitude)
-                      if (liveSpd !== null || liveAlt !== null) console.log('[FIDS] adsb.lol position for', _capturedInbound, '→ spd(kt):', liveSpd, 'alt(ft):', liveAlt);
-                    }
-                  } catch (e) { /* keep "—" */ }
-                }
+                // SPD/ALT come from AeroDataBox's livePosition only.
                 if (liveSpd !== null || liveAlt !== null) {
                   window._gateInboundLivePos = { speed: liveSpd, altitude: liveAlt, _airport: _capturedIata, _inboundFlight: _capturedInbound };
                   console.log('[FIDS] Inbound live position for', _capturedInbound, '@', _capturedIata, '→ spd:', liveSpd, 'alt:', liveAlt);
@@ -8424,7 +8412,7 @@ const gView = document.getElementById('gateView');
           if (_inbOk) {
             window._gateInbound = data.inbound;
             // Merge — don't let the board's (often altitude-less) telemetry blank
-            // out a real altitude the adsb.lol fallback already wrote for this same
+            // out a real altitude a previous update already wrote for this same
             // inbound. Keep whichever field has a number.
             (function(){
               var _prev = window._gateInboundLivePos;
@@ -14447,10 +14435,6 @@ async function fetchFlightPosition(flightNumber, dateStr) {
 var _loadFlightCache = {};
 var _loadFlightFetching = {};
 
-// ── adsb.lol — free, keyless, community ADS-B feed. Used ONLY as a real
-// secondary source for the inbound's live position when AeroDataBox has no
-// fix. Returns { speed:<knots>, altitude:<feet> } when the aircraft is
-// genuinely airborne, otherwise null. Never invents data.
 // Robust AeroDataBox live-telemetry extractors. ADB's `location` object varies:
 // altitude can be altitude.feet, altitude.meters, pressureAltitude.feet/.meters,
 // or a bare number; ground speed can be groundSpeed.kt/.knots/.kmPerHour or a
@@ -14568,49 +14552,7 @@ function _crossTrackKm(plat, plng, alat, alng, blat, blng) {
   var ex = px - (ax + t * dx), ey = py - (ay + t * dy);
   return Math.sqrt(ex * ex + ey * ey);
 }
-async function gateAdsbLolPos(callsign, reg) {
-  var urls = [];
-  var cs = callsign ? String(callsign).replace(/\s+/g, '').toUpperCase() : '';
-  var rg = reg ? String(reg).replace(/\s+/g, '').toUpperCase() : '';
-  // ADS-B feeds key on the ICAO callsign (e.g. POE234), but we often only have
-  // the IATA flight (PD234). Build the ICAO form and try it FIRST — this is the
-  // biggest reason altitude comes back blank for some carriers.
-  var csIcao = '';
-  var _m = cs.match(/^([A-Z]{2})(\d.*)$/);
-  if (_m) {
-    var _ICAO = { PD:'POE', AC:'ACA', WS:'WJA', TS:'TSC', F8:'FLE', PB:'PVL', QK:'JZA', RV:'ROU',
-      B6:'JBU', DL:'DAL', AA:'AAL', UA:'UAL', WN:'SWA', F9:'FFT', AS:'ASA', HA:'HAL', NK:'NKS', G4:'AAY' };
-    if (_ICAO[_m[1]]) csIcao = _ICAO[_m[1]] + _m[2];
-  }
-  // Same-origin proxy (worker route /adsb/...) so the browser doesn't block the
-  // cross-origin adsb.lol request (CORS) — that block left altitude blank even
-  // though adsb.lol has it. Falls back to the direct URL if the proxy 404s.
-  // Keep to 1–2 same-origin proxy calls (the worker shares + caches them) so we
-  // don't trip adsb.lol's 429 rate limit. Reg is the most reliable identifier;
-  // fall back to the ICAO callsign only. No direct browser calls (CORS-blocked)
-  // and no IATA-callsign spam.
-  if (rg) urls.push('/adsb/v2/registration/' + encodeURIComponent(rg));
-  if (csIcao && csIcao !== rg) urls.push('/adsb/v2/callsign/' + encodeURIComponent(csIcao));
-  if (!rg && !csIcao && cs) urls.push('/adsb/v2/callsign/' + encodeURIComponent(cs));
-  for (var i = 0; i < urls.length; i++) {
-    try {
-      var r = await fetch(urls[i]);
-      if (!r.ok) continue;
-      var j = await r.json();
-      var ac = (j && Array.isArray(j.ac) && j.ac.length) ? j.ac[0] : null;
-      if (!ac) continue;
-      var alt = (typeof ac.alt_baro === 'number') ? ac.alt_baro
-              : ((typeof ac.alt_geom === 'number') ? ac.alt_geom : null);   // feet
-      var gsKt = (typeof ac.gs === 'number') ? ac.gs : null;                // knots
-      // Only trust a fix that actually looks airborne (skip parked/taxiing).
-      var airborne = (alt !== null && alt > 1000) || (gsKt !== null && gsKt > 60);
-      if (!airborne) continue;
-      return { speed: (gsKt !== null ? Math.round(gsKt) : null),
-               altitude: (alt !== null ? Math.round(alt) : null) };
-    } catch (e) { /* try next / give up → null */ }
-  }
-  return null;
-}
+// adsb.lol secondary position source removed — gate SPD/ALT now come from AeroDataBox only.
 
 async function loadFlight(flightNumber, dateStr, airportIata) {
   if (!flightNumber) return null;
