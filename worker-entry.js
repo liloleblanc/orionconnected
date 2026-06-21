@@ -149,43 +149,6 @@ export default {
       }
     }
 
-    // ── adsb.lol live-position passthrough ─────────────────────────────
-    // /adsb/v2/callsign/<cs>  or  /adsb/v2/registration/<reg>  → adsb.lol,
-    // fetched server-side so the gate's altitude/speed fallback isn't blocked
-    // by browser CORS. Short cache keeps it fresh without hammering the API.
-    if (path.startsWith('/adsb/')) {
-      const rest = path.slice('/adsb/'.length);
-      if (!/^v2\/(callsign|registration)\/[A-Za-z0-9.\-]+$/.test(rest)) {
-        return new Response('Bad adsb path', { status: 400 });
-      }
-      // adsb.lol rate-limits (HTTP 429) when over-queried — that was leaving the
-      // altimeter blank. Serve from a shared edge cache so many gate screens use
-      // ONE upstream call per airframe per 45s, and never cache a non-200 (so a
-      // 429 doesn't stick). Send a real User-Agent too.
-      const adsbCache = caches.default;
-      const adsbKey = new Request('https://adsb-cache.fids/' + rest);
-      const hit = await adsbCache.match(adsbKey);
-      if (hit) return hit;
-      try {
-        const r = await fetch('https://api.adsb.lol/' + rest, {
-          headers: { 'User-Agent': 'orionconnected-fids/1.0 (gate display)' },
-        });
-        const body = await r.text();
-        const resp = new Response(body, {
-          status: r.status,
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': r.ok ? 'public, max-age=45' : 'no-store',
-            'Access-Control-Allow-Origin': '*',
-          },
-        });
-        if (r.ok && ctx && ctx.waitUntil) ctx.waitUntil(adsbCache.put(adsbKey, resp.clone()));
-        return resp;
-      } catch (e) {
-        return new Response('adsb fetch failed', { status: 502 });
-      }
-    }
-
     // ── OAG live flight data ───────────────────────────────────────────
     // /oag/departures?ap=YQM  (or /oag/arrivals) → OAG Flight Info v2,
     // cleaned server-side: codeshare duplicates collapsed to the operating
