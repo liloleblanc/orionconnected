@@ -6985,14 +6985,15 @@ function uxgGateHtml(ctx) {
   // of a watermark. Better to show no watermark than a busy wordmark.
   var WATERMARK_SYMBOL = {
     // Established colored emblems
-    'AC': '/logos/airline-tiles/ACA-black.svg',                                   // AC black + red roundel (right-column watermark)
-    'QK': '/logos/airline-tiles/ACA-black.svg',                                   // Jazz under AC family — use AC icon
-    'RV': '/logos/airline-tiles/ACA-black.svg',                                   // Rouge under AC family — use AC icon
+    'AC': '/logos/airline-tiles/ACA.svg',                                         // AC white roundel on red square (right-column watermark)
+    'QK': '/logos/airline-tiles/ACA.svg',                                         // Jazz under AC family — use AC icon
+    'RV': '/logos/airline-tiles/ACA.svg',                                         // Rouge under AC family — use AC icon
     'AA': '/logos/airlines/us-major/american-flight-symbol.svg',                   // AA flight symbol (red+blue gradients)
     'DL': '/logos/airlines/us-major/delta-widget.svg',                             // Delta widget (red gradient)
     'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',                         // Pualani figurehead
     'UA': '/logos/airlines/us-major/united-globe-only.svg',                        // United Globe
-    'WS': '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',                 // WestJet maple swoosh
+    'WS': '/logos/airline-tiles/WJA.svg',                                          // WestJet white emblem on teal square
+    'PB': '/logos/airlines/canadian-regional/pal-square-monochrome-white.svg',     // PAL white emblem (gray-blue backing added in CSS)
     'PD': '/logos/Backgrounds/PD/porter-pattern-panel.png',                             // Porter faded panel pattern background
     // v208 added (true emblems only — no wordmarks):
     '9X': '/logos/airlines/us-major/mokulele-emblem.svg',                          // Mokulele plumeria (red)

@@ -4570,3 +4570,16 @@ body, body.gids-page, body.gate-page{
   background-position: center 116% !important;
   background-size: 100% auto !important;
 }
+
+/* PAL — the emblem SVG is white on transparent, so multiply-blend would erase
+   it. Give it its own gray-blue "faded blue" backing behind the white emblem
+   and switch to normal blend so the white mark reads, still faded into metal. */
+.g8-wrap.g8-airline-PB .gad-map-col-v2::before {
+  background-image: var(--wm-symbol, none),
+                    linear-gradient(180deg, #6b7a90 0%, #4a5870 100%) !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-position: center 120%, center !important;
+  background-size: 96% auto, 100% 100% !important;
+  mix-blend-mode: normal !important;
+  opacity: 0.30 !important;
+}
