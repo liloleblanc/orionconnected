@@ -4463,7 +4463,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
 window._detectPlaneFacing = function(img) {
   try {
     if (!img || !img.naturalWidth || !img.naturalHeight) return;
-    var panel = img.closest && (img.closest('.v2-rc-aircraft') || img.closest('.gad-map-col-v2'));
+    var panel = img.closest && (img.closest('.v2-rc-shelf-illus') || img.closest('.v2-rc-aircraft'));
     if (!panel) return;
     var w = img.naturalWidth, h = img.naturalHeight;
     var scale = Math.min(1, 240 / w);
