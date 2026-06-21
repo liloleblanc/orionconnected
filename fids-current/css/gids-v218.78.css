@@ -4606,3 +4606,11 @@ body, body.gids-page, body.gate-page{
   z-index: 0;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-aircraft > * { position: relative; z-index: 1; }
+
+/* Clouds drift follows the plane's heading. Facing varies by aircraft type,
+   not airline (AC mainline faces left, AC regional faces right), so it's
+   auto-detected per image by a canvas scan that adds .g8-plane-faces-right to
+   the panel. Mirror the clouds to match. */
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft.g8-plane-faces-right::before {
+  transform: scaleX(-1) !important;
+}
