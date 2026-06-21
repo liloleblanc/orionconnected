@@ -4,14 +4,13 @@
  * Cloudflare serves matching static assets (everything under fids-current/)
  * FIRST, without invoking this Worker — so existing pages, JS and CSS are
  * served exactly as before. This script only runs for paths that do NOT match
- * a static asset, where it adds same-origin passthroughs so the route map and
- * live-position lookups work on display networks that block public CDNs:
+ * a static asset, where it adds same-origin passthroughs so the route map
+ * works on display networks that block public CDNs:
  *
  *   /mapcdn/<file>                 → the map engine (Leaflet / MapLibre / three)
  *   /maptiles/<z>/<x>/<y>[@2x].png → CARTO Voyager map tiles
  *   /demtiles/<z>/<x>/<y>.png      → AWS terrarium elevation tiles
  *   /tiles/<provider>/<z>/<x>/<y>.png → selectable base-map tiles
- *   /adsb/v2/<callsign|registration>/<id> → adsb.lol live position
  *
  * All are fetched server-side by the Worker and returned from THIS domain,
  * so the displays only ever talk to your own site. Flight data itself comes
@@ -150,44 +149,6 @@ export default {
         });
       } catch (e) {
         return new Response('Tile fetch failed', { status: 502 });
-      }
-    }
-
-    // ── adsb.lol live-position passthrough ─────────────────────────────
-    // /adsb/v2/callsign/<cs>  or  /adsb/v2/registration/<reg>  → adsb.lol,
-    // fetched server-side so the gate's altitude/speed fallback isn't blocked
-    // by browser CORS. Free, keyless feed; short shared cache avoids hammering
-    // it. This is NOT a flight-schedule source — only live lat/lng/alt/speed.
-    if (path.startsWith('/adsb/')) {
-      const rest = path.slice('/adsb/'.length);
-      if (!/^v2\/(callsign|registration)\/[A-Za-z0-9.\-]+$/.test(rest)) {
-        return new Response('Bad adsb path', { status: 400 });
-      }
-      // adsb.lol rate-limits (HTTP 429) when over-queried — that was leaving the
-      // altimeter blank. Serve from a shared edge cache so many gate screens use
-      // ONE upstream call per airframe per 45s, and never cache a non-200 (so a
-      // 429 doesn't stick). Send a real User-Agent too.
-      const adsbCache = caches.default;
-      const adsbKey = new Request('https://adsb-cache.fids/' + rest);
-      const hit = await adsbCache.match(adsbKey);
-      if (hit) return hit;
-      try {
-        const r = await fetch('https://api.adsb.lol/' + rest, {
-          headers: { 'User-Agent': 'orionconnected-fids/1.0 (gate display)' },
-        });
-        const body = await r.text();
-        const resp = new Response(body, {
-          status: r.status,
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': r.ok ? 'public, max-age=45' : 'no-store',
-            'Access-Control-Allow-Origin': '*',
-          },
-        });
-        if (r.ok && ctx && ctx.waitUntil) ctx.waitUntil(adsbCache.put(adsbKey, resp.clone()));
-        return resp;
-      } catch (e) {
-        return new Response('adsb fetch failed', { status: 502 });
       }
     }
 
