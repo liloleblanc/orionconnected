@@ -4404,7 +4404,8 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     '73G':['737','738','73H'], '73J':['739','73H','737'],
     '7M8':['738','73H','737','73G'], '7M9':['739','73J','7M8'], '7M7':['737','73G','7M8'],
     // 777 / 747 / 767 / 757 / 787 / A320 families
-    '772':['777'], '773':['777'], '77W':['777','773'], '77L':['777','772'], '77X':['777'],
+    '772':['777','77W','773'], '773':['777','77W','772'], '77W':['777','773','772'], '77L':['777','772','77W'], '77X':['777','77W','773'],
+    '777':['77W','773','772','77L'],
     '744':['747'], '748':['747','744'], '764':['763'], '753':['752'],
     '789':['788'], '78X':['788'], '781':['788'], '788':['789'],
     '32N':['320','319'], '32Q':['321'], '321':['32N','320'], '319':['320','32N'], '320':['319','32N']
@@ -4441,7 +4442,12 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     + "if(/-[a-z]{2,4}\\.png$/i.test(_p)){try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[_p]=1;}catch(e){}}";
   var onerror;
   if (fbList.length > 0) {
-    var fbJson = JSON.stringify(fbList);
+    // HTML-escape the double quotes — this JSON sits inside a double-quoted
+    // onerror="" attribute, so raw " would terminate the attribute early,
+    // truncating the handler to `var fbs=[` (SyntaxError on fire), killing the
+    // fallback chain, and leaving the rest as garbage attributes that corrupt
+    // the surrounding DOM. &quot; is decoded back to " before the JS compiles.
+    var fbJson = JSON.stringify(fbList).replace(/"/g, '&quot;');
     onerror = _markMiss
       + "var fbs=" + fbJson + ";var i=parseInt(this.dataset.fbi||'0',10);"
       + "if(i<fbs.length){this.dataset.fbi=String(i+1);this.src=fbs[i]+'" + _imgCacheBuster + "';}"
@@ -5251,7 +5257,7 @@ function _buildV2AircraftCol(ctx, vars) {
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-clean.svg',   // United globe (white path only, padded to sit inside the round badge)
+        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // United globe (white path only, padded to sit inside the round badge)
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
@@ -7081,7 +7087,7 @@ function uxgGateHtml(ctx) {
     '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',                 // Discover tail (yellow+blue)
     'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',                    // Breeze checkmark
     'BA': '/logos/airline-tiles/BAW.svg',                                          // BA speedmarque on navy square tile
-    'AF': '/logos/airlines/european/air-france-emblem.svg',                        // Air France red wing (no SkyTeam, no wordmark)
+    'AF': '/logos/airline-tiles/AFR.svg',                                         // Air France navy/red square tile (red-wing emblem read weird)
     'KL': '/logos/airlines/european/KLM_Logo_2024.svg'                             // KLM crown + wordmark (crown-only tile read weird)
     // NOT added (no clean emblem available — wordmark-only logos would
     // look like a stamp at watermark size, not a brand mark): AS, B6, WN, TS, PD, KL
@@ -8175,10 +8181,6 @@ const gView = document.getElementById('gateView');
         var _savedAdLogo = document.getElementById('gateAdLogo');
         if (_savedAd && _savedAd.firstChild) { _savedAd.remove(); } else { _savedAd = null; }
         if (_savedAdLogo) { _savedAdLogo.remove(); }
-        // Preserve the clouds backdrop the same way — otherwise the animated GIF
-        // restarts to frame 0 on every rebuild and visibly "skips" mid-loop.
-        var _savedClouds = document.getElementById('gateCloudsBg');
-        if (_savedClouds) { _savedClouds.remove(); } else { _savedClouds = null; }
         // Smooth transition: fade out, rebuild, fade in
         gView.style.transition = 'opacity 0.15s ease';
         gView.style.opacity = '0.7';
@@ -8196,9 +8198,6 @@ const gView = document.getElementById('gateView');
         if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
         var _newAdLogo = document.getElementById('gateAdLogo');
         if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
-        // Re-attach the preserved clouds backdrop so its GIF keeps looping.
-        var _newClouds = document.getElementById('gateCloudsBg');
-        if (_savedClouds && _newClouds) { _newClouds.replaceWith(_savedClouds); }
         // Run autofit synchronously first so the un-shrunk (large) text never
         // paints — that was the "words bump up to twice the size then snap
         // back" flash on every rebuild. The rAF pass stays as a correction

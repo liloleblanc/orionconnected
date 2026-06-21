@@ -4590,6 +4590,17 @@ body, body.gids-page, body.gate-page{
   background-position: center 105% !important;
 }
 
+/* KLM — the crown+wordmark is a WIDE transparent logo (not a full-bleed tile),
+   so the default tile sizing left it crammed in one bottom band. Size it to
+   span the column width and sit centred, repeated down the panel so it reads
+   like a proper watermark instead of a single mark at the bottom. */
+.g8-wrap.g8-airline-KL .gad-map-col-v2::before {
+  background-repeat: repeat-y !important;
+  background-position: center top !important;
+  background-size: 78% auto !important;
+  opacity: 0.16 !important;
+}
+
 /* "Your Aircraft" panel — drifting-clouds backdrop behind the plane so it
    reads as flying above the clouds. Faded + soft top/bottom mask so it blends
    into the panel and the plane illustration stays the hero. The GIF loops on
@@ -4599,17 +4610,19 @@ body, body.gids-page, body.gate-page{
    it can be detached/re-attached across gate re-renders (same trick the map and
    ad carousel use). That keeps the GIF animating seamlessly instead of jumping
    back to frame 0 on every telemetry poll. */
-#gateCloudsBg {
-  position: absolute; inset: 0;
-  background: url('/logos/Backgrounds/clouds-loop.gif') center center / cover no-repeat;
-  opacity: 0.68;
+#gateCloudsBg,
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg {
+  position: absolute !important; inset: 0 !important;
+  width: 100% !important; height: 100% !important;
+  background: url('/logos/Backgrounds/clouds-loop.gif') center center / cover no-repeat !important;
+  opacity: 0.68 !important;
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 88%, transparent 100%);
           mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 88%, transparent 100%);
-  pointer-events: none;
-  z-index: 0;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  display: block !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > * { position: relative; z-index: 1; }
-.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg { z-index: 0; }
 
 /* Clouds drift follows the plane's heading. Facing varies by aircraft type,
    not airline (AC mainline faces left, AC regional faces right), so it's
