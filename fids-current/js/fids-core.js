@@ -4442,8 +4442,46 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   } else {
     onerror = "try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[this.getAttribute('src').split('?')[0]]=1;}catch(e){}this.style.display='none';";
   }
-  return '<img class="' + cls + '" src="' + srcWithBust + '" alt="' + eq + '"' + (style ? ' style="' + style + '"' : '') + ' onerror="' + onerror + '">';
+  var onload = "try{window._detectPlaneFacing&&window._detectPlaneFacing(this);}catch(e){}";
+  return '<img class="' + cls + '" src="' + srcWithBust + '" alt="' + eq + '"' + (style ? ' style="' + style + '"' : '') + ' onload="' + onload + '" onerror="' + onerror + '">';
 }
+
+// Auto-detect which way a side-view aircraft illustration faces, so the cloud
+// backdrop can drift the matching way. Facing varies per IMAGE (not airline —
+// AC mainline/regional and even two A319 liveries differ), so we read the
+// loaded PNG on a small canvas: the vertical TAIL FIN is the tallest part and
+// sits at the tail end, so whichever horizontal edge reaches highest is the
+// tail; the nose faces the opposite way. Adds .g8-plane-faces-right /
+// .g8-plane-faces-left to the .v2-rc-aircraft panel.
+window._detectPlaneFacing = function(img) {
+  try {
+    if (!img || !img.naturalWidth || !img.naturalHeight) return;
+    var panel = img.closest && (img.closest('.v2-rc-aircraft') || img.closest('.gad-map-col-v2'));
+    if (!panel) return;
+    var w = img.naturalWidth, h = img.naturalHeight;
+    var scale = Math.min(1, 240 / w);
+    var cw = Math.max(8, Math.round(w * scale)), ch = Math.max(8, Math.round(h * scale));
+    var cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    var cx = cv.getContext('2d', { willReadFrequently: true });
+    cx.drawImage(img, 0, 0, cw, ch);
+    var d = cx.getImageData(0, 0, cw, ch).data;
+    var edge = Math.max(2, Math.round(cw * 0.18));
+    function topOpaque(x0, x1) {           // smallest y with an opaque pixel = reaches highest
+      for (var y = 0; y < ch; y++) {
+        for (var x = x0; x < x1; x++) {
+          if (d[(y * cw + x) * 4 + 3] > 50) return y;
+        }
+      }
+      return ch;
+    }
+    var leftTop  = topOpaque(0, edge);
+    var rightTop = topOpaque(cw - edge, cw);
+    // Tail fin reaches higher (smaller y). Nose faces away from the tail.
+    var facesRight = leftTop < rightTop;   // tall structure on the left → tail left → nose right
+    panel.classList.toggle('g8-plane-faces-right', facesRight);
+    panel.classList.toggle('g8-plane-faces-left', !facesRight);
+  } catch (e) {}
+};
 
 
 function gateAircraftFallbackTag(airlineCode, equipLabel) {
