@@ -4559,7 +4559,14 @@ body, body.gids-page, body.gate-page{
   opacity: 0.30 !important;
 }
 
-/* AC family — the roundel reads strong, so keep it the lightest. */
+/* AC family + Flair — roundel reads strong: keep it lightest, and nudge up a touch. */
 .g8-wrap.g8-airline-AC .gad-map-col-v2::before,
 .g8-wrap.g8-airline-QK .gad-map-col-v2::before,
-.g8-wrap.g8-airline-RV .gad-map-col-v2::before { opacity: 0.13 !important; }
+.g8-wrap.g8-airline-RV .gad-map-col-v2::before,
+.g8-wrap.g8-airline-F8 .gad-map-col-v2::before { opacity: 0.13 !important; background-position: center 118% !important; }
+
+/* WestJet — a touch higher and zoomed out (smaller). */
+.g8-wrap.g8-airline-WS .gad-map-col-v2::before {
+  background-position: center 116% !important;
+  background-size: 100% auto !important;
+}
