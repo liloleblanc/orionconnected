@@ -4431,16 +4431,23 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
-  // onerror walks the fallback list in order
+  // onerror walks the fallback list in order. RESILIENCE: only ever remember
+  // ENGINE-VARIANT paths (e.g. 77W-ge.png — the dash-suffixed files that were
+  // never created) as permanently missing. NEVER blacklist a real livery file
+  // (77W.png, 777.png, 321r.png): a single transient network blip used to mark
+  // a good file missing for the whole session, which is why the plane stuck on
+  // a broken image. Real files just retry their chain on the next render.
+  var _markMiss = "var _p=this.getAttribute('src').split('?')[0];"
+    + "if(/-[a-z]{2,4}\\.png$/i.test(_p)){try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[_p]=1;}catch(e){}}";
   var onerror;
   if (fbList.length > 0) {
     var fbJson = JSON.stringify(fbList);
-    onerror = "try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[this.getAttribute('src').split('?')[0]]=1;}catch(e){}"
+    onerror = _markMiss
       + "var fbs=" + fbJson + ";var i=parseInt(this.dataset.fbi||'0',10);"
       + "if(i<fbs.length){this.dataset.fbi=String(i+1);this.src=fbs[i]+'" + _imgCacheBuster + "';}"
       + "else{this.style.display='none';}";
   } else {
-    onerror = "try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[this.getAttribute('src').split('?')[0]]=1;}catch(e){}this.style.display='none';";
+    onerror = _markMiss + "this.style.display='none';";
   }
   var onload = "try{window._detectPlaneFacing&&window._detectPlaneFacing(this);}catch(e){}";
   return '<img class="' + cls + '" src="' + srcWithBust + '" alt="' + eq + '"' + (style ? ' style="' + style + '"' : '') + ' onload="' + onload + '" onerror="' + onerror + '">';
