@@ -4594,23 +4594,23 @@ body, body.gids-page, body.gate-page{
    reads as flying above the clouds. Faded + soft top/bottom mask so it blends
    into the panel and the plane illustration stays the hero. The GIF loops on
    its own. Drop the file at /logos/Backgrounds/clouds-loop.gif. */
-.g8-wrap .gad-map-col-v2 .v2-rc-aircraft { position: relative !important; overflow: hidden !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-aircraft::before {
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { position: relative !important; overflow: hidden !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus::before {
   content: "";
   position: absolute; inset: 0;
   background: url('/logos/Backgrounds/clouds-loop.gif') center center / cover no-repeat;
-  opacity: 0.28;
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 32%, #000 80%, transparent 100%);
-          mask-image: linear-gradient(180deg, transparent 0%, #000 32%, #000 80%, transparent 100%);
+  opacity: 0.5;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 86%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 86%, transparent 100%);
   pointer-events: none;
   z-index: 0;
 }
-.g8-wrap .gad-map-col-v2 .v2-rc-aircraft > * { position: relative; z-index: 1; }
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > * { position: relative; z-index: 1; }
 
 /* Clouds drift follows the plane's heading. Facing varies by aircraft type,
    not airline (AC mainline faces left, AC regional faces right), so it's
    auto-detected per image by a canvas scan that adds .g8-plane-faces-right to
-   the panel. Mirror the clouds to match. */
-.g8-wrap .gad-map-col-v2 .v2-rc-aircraft.g8-plane-faces-right::before {
+   the illustration shelf. Mirror the clouds to match. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-faces-right::before {
   transform: scaleX(-1) !important;
 }
