@@ -4606,3 +4606,11 @@ body, body.gids-page, body.gate-page{
   z-index: 0;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-aircraft > * { position: relative; z-index: 1; }
+
+/* Clouds drift follows the plane's heading. Almost every livery's art faces
+   LEFT, but Air Transat's faces RIGHT — so mirror its clouds so the drift
+   still reads as forward motion under the nose. Add more right-facing carriers
+   to this selector list as they turn up. */
+.g8-wrap.g8-airline-TS .gad-map-col-v2 .v2-rc-aircraft::before {
+  transform: scaleX(-1) !important;
+}
