@@ -5256,7 +5256,7 @@ function _buildV2AircraftCol(ctx, vars) {
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-clean.svg',   // United globe (white path only, padded to sit inside the round badge)
+        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // United globe (white path only, padded to sit inside the round badge)
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
@@ -7086,7 +7086,7 @@ function uxgGateHtml(ctx) {
     '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',                 // Discover tail (yellow+blue)
     'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',                    // Breeze checkmark
     'BA': '/logos/airline-tiles/BAW.svg',                                          // BA speedmarque on navy square tile
-    'AF': '/logos/airlines/european/air-france-emblem.svg',                        // Air France red wing (no SkyTeam, no wordmark)
+    'AF': '/logos/airline-tiles/AFR.svg',                                         // Air France navy/red square tile (red-wing emblem read weird)
     'KL': '/logos/airlines/european/KLM_Logo_2024.svg'                             // KLM crown + wordmark (crown-only tile read weird)
     // NOT added (no clean emblem available — wordmark-only logos would
     // look like a stamp at watermark size, not a brand mark): AS, B6, WN, TS, PD, KL
