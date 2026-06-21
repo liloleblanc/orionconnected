@@ -4527,3 +4527,46 @@ body, body.gids-page, body.gate-page{
 .g8-wrap.g8-airline-AC .gad-aircraft-col .ac-ico { color:#f01428 !important; }
 /* Flight-orb airline emblem a touch smaller so it fits the orb */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-img { width: 74% !important; height: 74% !important; margin: auto !important; }
+
+/* ── v218.99 — Right column (.gad-map-col-v2) airline watermark:
+   let the per-airline emblem/pattern read BEHIND the panel content (it was
+   hidden wherever a panel had text/picture on a solid fill), and zoom Porter's
+   tiled wordmark up so it's legible. Tune sizes/opacity from the preview. */
+
+/* 1) Watermark spans the WHOLE right column (not just the bottom 62%). */
+.g8-wrap .gad-map-col-v2::before {
+  top: 0 !important; bottom: 0 !important; height: auto !important;
+  background-position: center 122% !important;
+  background-size: 120% auto !important;
+  opacity: 0.22 !important;
+}
+
+/* 2) Make the lower panel fills transparent so the watermark shows behind the
+   text. The map shelf and the coloured status pills keep their backgrounds. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map),
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map) > *,
+.g8-wrap .gad-map-col-v2 .v2-rc-time-cell,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-cell,
+.g8-wrap .gad-map-col-v2 .v2-rc-acb,
+.g8-wrap .gad-map-col-v2 .v2-rc-inbound,
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft { background: transparent !important; }
+
+/* 3) Porter: zoom the tiled "porter" wordmark in so the words are big. */
+.g8-wrap.g8-airline-PD .gad-map-col-v2::before {
+  background-repeat: no-repeat !important;
+  background-position: center 122% !important;
+  background-size: 220% auto !important;
+  opacity: 0.30 !important;
+}
+
+/* AC family + Flair — roundel reads strong: keep it lightest, and nudge up a touch. */
+.g8-wrap.g8-airline-AC .gad-map-col-v2::before,
+.g8-wrap.g8-airline-QK .gad-map-col-v2::before,
+.g8-wrap.g8-airline-RV .gad-map-col-v2::before,
+.g8-wrap.g8-airline-F8 .gad-map-col-v2::before { opacity: 0.13 !important; background-position: center 118% !important; }
+
+/* WestJet — a touch higher and zoomed out (smaller). */
+.g8-wrap.g8-airline-WS .gad-map-col-v2::before {
+  background-position: center 116% !important;
+  background-size: 100% auto !important;
+}
