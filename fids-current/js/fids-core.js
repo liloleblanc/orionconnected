@@ -6896,7 +6896,7 @@ function uxgGateHtml(ctx) {
   var _bannerTileIcao = (typeof IATA_TO_TILE_ICAO !== 'undefined')
     ? (IATA_TO_TILE_ICAO[_bannerBrandCode] || IATA_TO_TILE_ICAO[airlineCode]) : null;
   if (!_useOverrideFile && _bannerTileIcao) {
-    r1LogoSrc = 'logos/airline-tiles/' + _bannerTileIcao + '.svg';
+    r1LogoSrc = '/logos/airline-tiles/' + _bannerTileIcao + '.svg';
     _useOverrideFile = true;          // keep brand colors — skip the white filter
     _sz = { h: 112, w: 112 };         // square brand badge
     _bannerUsedTile = true;
@@ -6985,15 +6985,15 @@ function uxgGateHtml(ctx) {
   // of a watermark. Better to show no watermark than a busy wordmark.
   var WATERMARK_SYMBOL = {
     // Established colored emblems
-    'AC': 'logos/airline-tiles/ACA-black.svg',                                   // AC black + red roundel (right-column watermark)
-    'QK': 'logos/airline-tiles/ACA-black.svg',                                   // Jazz under AC family — use AC icon
-    'RV': 'logos/airline-tiles/ACA-black.svg',                                   // Rouge under AC family — use AC icon
+    'AC': '/logos/airline-tiles/ACA-black.svg',                                   // AC black + red roundel (right-column watermark)
+    'QK': '/logos/airline-tiles/ACA-black.svg',                                   // Jazz under AC family — use AC icon
+    'RV': '/logos/airline-tiles/ACA-black.svg',                                   // Rouge under AC family — use AC icon
     'AA': '/logos/airlines/us-major/american-flight-symbol.svg',                   // AA flight symbol (red+blue gradients)
     'DL': '/logos/airlines/us-major/delta-widget.svg',                             // Delta widget (red gradient)
     'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',                         // Pualani figurehead
     'UA': '/logos/airlines/us-major/united-globe-only.svg',                        // United Globe
     'WS': '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',                 // WestJet maple swoosh
-    'PD': 'logos/Backgrounds/PD/porter-pattern-panel.png',                             // Porter faded panel pattern background
+    'PD': '/logos/Backgrounds/PD/porter-pattern-panel.png',                             // Porter faded panel pattern background
     // v208 added (true emblems only — no wordmarks):
     '9X': '/logos/airlines/us-major/mokulele-emblem.svg',                          // Mokulele plumeria (red)
     'F9': '/logos/airlines/us-major/frontier-emblem.svg',                          // Frontier F-mark (green)
@@ -7013,7 +7013,7 @@ function uxgGateHtml(ctx) {
   if (!_wmSymbol) {
     var _wmTileKey = (_opCode && typeof IATA_TO_TILE_ICAO !== 'undefined' && IATA_TO_TILE_ICAO[_opCode]) ? _opCode : airlineCode;
     if (typeof IATA_TO_TILE_ICAO !== 'undefined' && IATA_TO_TILE_ICAO[_wmTileKey]) {
-      _wmSymbol = 'logos/airline-tiles/' + IATA_TO_TILE_ICAO[_wmTileKey] + '.svg';
+      _wmSymbol = '/logos/airline-tiles/' + IATA_TO_TILE_ICAO[_wmTileKey] + '.svg';
     }
   }
 
@@ -11621,7 +11621,7 @@ function logoFallback(img) {
     // alongside (since the tile itself doesn't read as a wordmark).
     img.dataset.tried = '3';
     img.dataset.logoSet = 'tile';
-    img.src = 'logos/airline-tiles/' + IATA_TO_TILE_ICAO[c] + '.svg';
+    img.src = '/logos/airline-tiles/' + IATA_TO_TILE_ICAO[c] + '.svg';
   } else if (t === '3' && IATA_TO_TILE_ICAO[c]) {
     // airline-tiles failed too (e.g. file missing) — try the icao-icons
     // archive folder as a deep-fallback. icao-icons/ is a backup copy of
@@ -11630,7 +11630,7 @@ function logoFallback(img) {
     // archive copy survived.
     img.dataset.tried = '4';
     img.dataset.logoSet = 'tile';
-    img.src = 'logos/icao-icons/' + IATA_TO_TILE_ICAO[c] + '.svg';
+    img.src = '/logos/icao-icons/' + IATA_TO_TILE_ICAO[c] + '.svg';
   } else {
     // All sources exhausted — show the airline name as text
     if (c) _logoFailCache[c] = true;
@@ -11934,7 +11934,7 @@ function mkLogo(code, faName) {
        already renders in the row, so skip the redundant colored tile and let
        the wordmark stand alone. WN kept out — it has no separate wordmark. */
     if (IATA_TO_TILE_ICAO[c] && !TILE_SKIP_WORDMARK_ONLY.has(c)) {
-      return `<img class="full-logo" data-code="${c}" data-logo-set="tile" alt="${displayName}" src="logos/airline-tiles/${IATA_TO_TILE_ICAO[c]}.svg" onerror="logoFallback(this)">`;
+      return `<img class="full-logo" data-code="${c}" data-logo-set="tile" alt="${displayName}" src="/logos/airline-tiles/${IATA_TO_TILE_ICAO[c]}.svg" onerror="logoFallback(this)">`;
     }
     // v188: emblem map — for airlines whose primary visual is an icon/symbol
     // (not a tile background), show that icon in the emblem slot alongside
@@ -11961,7 +11961,7 @@ function mkLogo(code, faName) {
   // The airline-name text label shows next to this since the tile is just
   // a square symbol and benefits from being labeled.
   if (IATA_TO_TILE_ICAO[c]) {
-    return `<img class="full-logo" data-code="${c}" data-logo-set="tile" alt="${displayName}" src="logos/airline-tiles/${IATA_TO_TILE_ICAO[c]}.svg" onerror="logoFallback(this)">`;
+    return `<img class="full-logo" data-code="${c}" data-logo-set="tile" alt="${displayName}" src="/logos/airline-tiles/${IATA_TO_TILE_ICAO[c]}.svg" onerror="logoFallback(this)">`;
   }
   
   // PRIORITY 2: existing local transparent wordmark (legacy).
