@@ -4559,24 +4559,29 @@ body, body.gids-page, body.gate-page{
   opacity: 0.30 !important;
 }
 
-/* AC family — roundel reads strong: keep it lightest. Dropped ~2cm lower. */
+/* AC family — roundel reads strong: keep it lightest. Nudged up + faded more. */
 .g8-wrap.g8-airline-AC .gad-map-col-v2::before,
 .g8-wrap.g8-airline-QK .gad-map-col-v2::before,
-.g8-wrap.g8-airline-RV .gad-map-col-v2::before { opacity: 0.13 !important; background-position: center 130% !important; }
+.g8-wrap.g8-airline-RV .gad-map-col-v2::before { opacity: 0.10 !important; background-position: center 120% !important; }
 
-/* Flair — unchanged. */
-.g8-wrap.g8-airline-F8 .gad-map-col-v2::before { opacity: 0.13 !important; background-position: center 118% !important; }
+/* Flair — dropped ~1cm lower. */
+.g8-wrap.g8-airline-F8 .gad-map-col-v2::before { opacity: 0.13 !important; background-position: center 124% !important; }
 
-/* WestJet — nudged up ~half an inch and zoomed out (smaller). */
+/* WestJet — nudged up a touch more and enlarged slightly. */
 .g8-wrap.g8-airline-WS .gad-map-col-v2::before {
-  background-position: center 108% !important;
-  background-size: 100% auto !important;
+  background-position: center 104% !important;
+  background-size: 110% auto !important;
 }
 
 /* PAL — white emblem on a navy-blue square tile (its own colour), so it uses
-   the same faded multiply treatment as the AC/WS tiles. */
+   the same faded multiply treatment as the AC/WS tiles. Nudged up. */
 .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
-  background-position: center 120% !important;
+  background-position: center 108% !important;
   background-size: 100% auto !important;
   opacity: 0.16 !important;
+}
+
+/* Delta — nudged up well clear of the bottom shelf. */
+.g8-wrap.g8-airline-DL .gad-map-col-v2::before {
+  background-position: center 105% !important;
 }
