@@ -1,15 +1,17 @@
-/* Airport / Airport X — Revolver Type Foundry (trial) */
-@font-face { font-family:'Airport'; font-weight:100; font-style:normal; font-display:swap; src:url('../fonts/Airport-Thin.woff') format('woff'); }
-@font-face { font-family:'Airport'; font-weight:200; font-style:normal; font-display:swap; src:url('../fonts/Airport-Extralight.woff') format('woff'); }
-@font-face { font-family:'Airport'; font-weight:300; font-style:normal; font-display:swap; src:url('../fonts/Airport-Light.woff') format('woff'); }
-@font-face { font-family:'Airport'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/Airport-Regular.woff') format('woff'); }
-@font-face { font-family:'Airport'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/Airport-Medium.woff') format('woff'); }
-@font-face { font-family:'Airport'; font-weight:600; font-style:normal; font-display:swap; src:url('../fonts/Airport-Semibold.woff') format('woff'); }
-@font-face { font-family:'Airport'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/Airport-Bold.woff') format('woff'); }
-@font-face { font-family:'Airport X'; font-weight:100; font-style:normal; font-display:swap; src:url('../fonts/AirportX-Thin.woff') format('woff'); }
-@font-face { font-family:'Airport X'; font-weight:200; font-style:normal; font-display:swap; src:url('../fonts/AirportX-Extralight.woff') format('woff'); }
-@font-face { font-family:'Airport X'; font-weight:300; font-style:normal; font-display:swap; src:url('../fonts/AirportX-Light.woff') format('woff'); }
-@font-face { font-family:'Airport X'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/AirportX-Regular.woff') format('woff'); }
-@font-face { font-family:'Airport X'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/AirportX-Medium.woff') format('woff'); }
-@font-face { font-family:'Airport X'; font-weight:600; font-style:normal; font-display:swap; src:url('../fonts/AirportX-Semibold.woff') format('woff'); }
-@font-face { font-family:'Airport X'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/AirportX-Bold.woff') format('woff'); }
+/* Airport / Airport X — Revolver Type Foundry (trial).
+   Both families resolve to the same AirportX_RevolverType .otf set
+   (same typeface, only .otf was supplied; Extralight + Regular are trial cuts). */
+@font-face { font-family:'Airport'; font-weight:100; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Thin.otf') format('opentype'); }
+@font-face { font-family:'Airport'; font-weight:200; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Extralight_Trial.otf') format('opentype'); }
+@font-face { font-family:'Airport'; font-weight:300; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Light.otf') format('opentype'); }
+@font-face { font-family:'Airport'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Regular_Trial.otf') format('opentype'); }
+@font-face { font-family:'Airport'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Medium.otf') format('opentype'); }
+@font-face { font-family:'Airport'; font-weight:600; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Semibold.otf') format('opentype'); }
+@font-face { font-family:'Airport'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Bold.otf') format('opentype'); }
+@font-face { font-family:'Airport X'; font-weight:100; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Thin.otf') format('opentype'); }
+@font-face { font-family:'Airport X'; font-weight:200; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Extralight_Trial.otf') format('opentype'); }
+@font-face { font-family:'Airport X'; font-weight:300; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Light.otf') format('opentype'); }
+@font-face { font-family:'Airport X'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Regular_Trial.otf') format('opentype'); }
+@font-face { font-family:'Airport X'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Medium.otf') format('opentype'); }
+@font-face { font-family:'Airport X'; font-weight:600; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Semibold.otf') format('opentype'); }
+@font-face { font-family:'Airport X'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/AirportX_RevolverType/AirportX-Bold.otf') format('opentype'); }
