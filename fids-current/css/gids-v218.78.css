@@ -4536,7 +4536,7 @@ body, body.gids-page, body.gate-page{
 /* 1) Watermark spans the WHOLE right column (not just the bottom 62%). */
 .g8-wrap .gad-map-col-v2::before {
   top: 0 !important; bottom: 0 !important; height: auto !important;
-  background-position: center 130% !important;
+  background-position: center 115% !important;
   background-size: 120% auto !important;
   opacity: 0.22 !important;
 }
@@ -4554,7 +4554,7 @@ body, body.gids-page, body.gate-page{
 /* 3) Porter: zoom the tiled "porter" wordmark in so the words are big. */
 .g8-wrap.g8-airline-PD .gad-map-col-v2::before {
   background-repeat: no-repeat !important;
-  background-position: center 130% !important;
+  background-position: center 115% !important;
   background-size: 220% auto !important;
   opacity: 0.30 !important;
 }
