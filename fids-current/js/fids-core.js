@@ -1471,7 +1471,7 @@ function submitTestFlight() {
 const WIKI_CITY = {
   YYZ:'Toronto', YTZ:'Toronto', YUL:'Montreal', YVR:'Vancouver', YYC:'Calgary', YOW:'Ottawa',
   YHZ:'Halifax,_Nova_Scotia', YQB:'Quebec_City', YWG:'Winnipeg', YEG:'Edmonton',
-  YYJ:'Victoria,_British_Columbia', YQM:'Moncton', YSJ:'Saint_John,_New_Brunswick',
+  YYJ:'Victoria,_British_Columbia', YXX:'Abbotsford,_British_Columbia', YQM:'Moncton', YSJ:'Saint_John,_New_Brunswick',
   YYT:"St._John's,_Newfoundland_and_Labrador", YFC:'Fredericton', YYG:'Charlottetown',
   JFK:'New_York_City', LGA:'New_York_City', EWR:'New_York_City',
   LAX:'Los_Angeles', SFO:'San_Francisco', ORD:'Chicago', ATL:'Atlanta',
@@ -3873,7 +3873,7 @@ const IATA_AIRCRAFT = {
   '319':'Airbus A319','320':'Airbus A320','321':'Airbus A321',
   '32N':'Airbus A320neo','21N':'Airbus A321neo','223':'Airbus A220-300',
   '318':'Airbus A318','32A':'Airbus A319','32B':'Airbus A320',
-  '32Q':'Airbus A321','32R':'Airbus A321neo','31N':'Airbus A319neo',
+  '32Q':'Airbus A321neo','32R':'Airbus A321neo','31N':'Airbus A319neo',
   '32S':'Airbus A320',
   '330':'Airbus A330','332':'Airbus A330-200','333':'Airbus A330-300',
   '339':'Airbus A330-900neo','350':'Airbus A350','359':'Airbus A350-900',
@@ -4377,6 +4377,11 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     eq = aircraftCodeToIata(equipRawOrCode);
   }
   if (!eq) return '';
+  // Air Transat's only narrowbody is the A321neo, but AeroDataBox scatters the
+  // SAME aircraft across 320 / 321 / 32N / 32Q day to day. Pin any A320-family
+  // narrowbody to 32Q (neo) for TS so the gate always shows the neo image,
+  // never a ceo/320. Other carriers genuinely fly these, so this stays TS-only.
+  if (al === 'TS' && /^(319|320|321|32N|32A|32B|32S)$/.test(eq)) eq = '32Q';
   var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, '3H':1, '5T':1 };
   var miss = (typeof window !== 'undefined') ? window.AIRCRAFT_IMG_MISSING : {};
 
@@ -4399,7 +4404,8 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     '73G':['737','738','73H'], '73J':['739','73H','737'],
     '7M8':['738','73H','737','73G'], '7M9':['739','73J','7M8'], '7M7':['737','73G','7M8'],
     // 777 / 747 / 767 / 757 / 787 / A320 families
-    '772':['777'], '773':['777'], '77W':['777','773'], '77L':['777','772'], '77X':['777'],
+    '772':['777','77W','773'], '773':['777','77W','772'], '77W':['777','773','772'], '77L':['777','772','77W'], '77X':['777','77W','773'],
+    '777':['77W','773','772','77L'],
     '744':['747'], '748':['747','744'], '764':['763'], '753':['752'],
     '789':['788'], '78X':['788'], '781':['788'], '788':['789'],
     '32N':['320','319'], '32Q':['321'], '321':['32N','320'], '319':['320','32N'], '320':['319','32N']
@@ -4426,19 +4432,69 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
-  // onerror walks the fallback list in order
+  // onerror walks the fallback list in order. RESILIENCE: only ever remember
+  // ENGINE-VARIANT paths (e.g. 77W-ge.png — the dash-suffixed files that were
+  // never created) as permanently missing. NEVER blacklist a real livery file
+  // (77W.png, 777.png, 321r.png): a single transient network blip used to mark
+  // a good file missing for the whole session, which is why the plane stuck on
+  // a broken image. Real files just retry their chain on the next render.
+  var _markMiss = "var _p=this.getAttribute('src').split('?')[0];"
+    + "if(/-[a-z]{2,4}\\.png$/i.test(_p)){try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[_p]=1;}catch(e){}}";
   var onerror;
   if (fbList.length > 0) {
-    var fbJson = JSON.stringify(fbList);
-    onerror = "try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[this.getAttribute('src').split('?')[0]]=1;}catch(e){}"
+    // HTML-escape the double quotes — this JSON sits inside a double-quoted
+    // onerror="" attribute, so raw " would terminate the attribute early,
+    // truncating the handler to `var fbs=[` (SyntaxError on fire), killing the
+    // fallback chain, and leaving the rest as garbage attributes that corrupt
+    // the surrounding DOM. &quot; is decoded back to " before the JS compiles.
+    var fbJson = JSON.stringify(fbList).replace(/"/g, '&quot;');
+    onerror = _markMiss
       + "var fbs=" + fbJson + ";var i=parseInt(this.dataset.fbi||'0',10);"
       + "if(i<fbs.length){this.dataset.fbi=String(i+1);this.src=fbs[i]+'" + _imgCacheBuster + "';}"
       + "else{this.style.display='none';}";
   } else {
-    onerror = "try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[this.getAttribute('src').split('?')[0]]=1;}catch(e){}this.style.display='none';";
+    onerror = _markMiss + "this.style.display='none';";
   }
-  return '<img class="' + cls + '" src="' + srcWithBust + '" alt="' + eq + '"' + (style ? ' style="' + style + '"' : '') + ' onerror="' + onerror + '">';
+  var onload = "try{window._detectPlaneFacing&&window._detectPlaneFacing(this);}catch(e){}";
+  return '<img class="' + cls + '" src="' + srcWithBust + '" alt="' + eq + '"' + (style ? ' style="' + style + '"' : '') + ' onload="' + onload + '" onerror="' + onerror + '">';
 }
+
+// Auto-detect which way a side-view aircraft illustration faces, so the cloud
+// backdrop can drift the matching way. Facing varies per IMAGE (not airline —
+// AC mainline/regional and even two A319 liveries differ), so we read the
+// loaded PNG on a small canvas: the vertical TAIL FIN is the tallest part and
+// sits at the tail end, so whichever horizontal edge reaches highest is the
+// tail; the nose faces the opposite way. Adds .g8-plane-faces-right /
+// .g8-plane-faces-left to the .v2-rc-aircraft panel.
+window._detectPlaneFacing = function(img) {
+  try {
+    if (!img || !img.naturalWidth || !img.naturalHeight) return;
+    var panel = img.closest && (img.closest('.v2-rc-shelf-illus') || img.closest('.v2-rc-aircraft'));
+    if (!panel) return;
+    var w = img.naturalWidth, h = img.naturalHeight;
+    var scale = Math.min(1, 240 / w);
+    var cw = Math.max(8, Math.round(w * scale)), ch = Math.max(8, Math.round(h * scale));
+    var cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    var cx = cv.getContext('2d', { willReadFrequently: true });
+    cx.drawImage(img, 0, 0, cw, ch);
+    var d = cx.getImageData(0, 0, cw, ch).data;
+    var edge = Math.max(2, Math.round(cw * 0.18));
+    function topOpaque(x0, x1) {           // smallest y with an opaque pixel = reaches highest
+      for (var y = 0; y < ch; y++) {
+        for (var x = x0; x < x1; x++) {
+          if (d[(y * cw + x) * 4 + 3] > 50) return y;
+        }
+      }
+      return ch;
+    }
+    var leftTop  = topOpaque(0, edge);
+    var rightTop = topOpaque(cw - edge, cw);
+    // Tail fin reaches higher (smaller y). Nose faces away from the tail.
+    var facesRight = leftTop < rightTop;   // tall structure on the left → tail left → nose right
+    panel.classList.toggle('g8-plane-faces-right', facesRight);
+    panel.classList.toggle('g8-plane-faces-left', !facesRight);
+  } catch (e) {}
+};
 
 
 function gateAircraftFallbackTag(airlineCode, equipLabel) {
@@ -5201,7 +5257,7 @@ function _buildV2AircraftCol(ctx, vars) {
         'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-clean.svg',   // United globe (white path only, padded to sit inside the round badge)
+        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // United globe (white path only, padded to sit inside the round badge)
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
@@ -5894,6 +5950,19 @@ function _buildV2MapCol(ctx, vars) {
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_jzType) : _jzType;
       }
     }
+    // Air Transat flies only the A321neo, but ADB scatters the SAME aircraft
+    // across 320 / 321 / 32N. Pin the TS narrowbody to 32Q (neo) HERE, at
+    // render, so BOTH the type label and the image are correct every time —
+    // even when the enrichment call (which also does this) got rate-limited.
+    if (String(vars.airlineCode || '').toUpperCase() === 'TS') {
+      var _tsCd = String(_equipCd || '').toUpperCase().trim();
+      var _tsNm = String(_equipNm || '').toUpperCase();
+      if (/^(319|320|321|32N|32A|32B|32S)$/.test(_tsCd) ||
+          (!_tsCd && /A3(19|20)\b|A321(?!\s*NEO)/.test(_tsNm))) {
+        _equipCd = '32Q';
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('32Q') : 'Airbus A321neo';
+      }
+    }
     var _liveryEq = _equipCd;
     if (_opCode === 'RV' && _liveryEq && /^[A-Z0-9]{3}$/i.test(_liveryEq)) _liveryEq = _liveryEq + 'r';
     // The aircraft wears the MARKETING carrier's livery, not the operator's:
@@ -6052,6 +6121,7 @@ function _buildV2MapCol(ctx, vars) {
             : '');
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
+        +   '<div id="gateCloudsBg"></div>'
         +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
@@ -6247,8 +6317,24 @@ function uxgGateHtml(ctx) {
   // Boarding time estimate (35 min before dep)
   var boardLeadMins = getBoardingLeadMins(equipRaw);
   var boardTimeHtml = '\u2014';
-  if (effectiveDepTs) {
-    var boardTs = effectiveDepTs - boardLeadMins*60000;
+  // Keep boarding consistent with the DISPLAYED departure. effectiveDepTs is
+  // (_revTs || _sortTs), but the Departure field shows the feed's revised time
+  // (currentFlight.upd), which can exist even when _revTs doesn't \u2014 in that
+  // case effectiveDepTs is still the SCHEDULED time, so boarding would read off
+  // the old departure while the field shows the new one. Shift the boarding
+  // base by that same delay so boarding is always exactly `lead` minutes before
+  // the time the Departure field shows. (No-op unless that divergence exists.)
+  var _effDepForBoard = effectiveDepTs;
+  if (effectiveDepTs && depDelayed && !currentFlight._revTs && currentFlight.upd && currentFlight.time) {
+    var _obP = String(currentFlight.time).split(':'), _rbP = String(currentFlight.upd).split(':');
+    if (_obP.length === 2 && _rbP.length === 2) {
+      var _delayB = (parseInt(_rbP[0],10)*60 + parseInt(_rbP[1],10)) - (parseInt(_obP[0],10)*60 + parseInt(_obP[1],10));
+      if (_delayB < 0) _delayB += 1440;            // revised crossed midnight
+      if (_delayB > 0) _effDepForBoard = effectiveDepTs + _delayB*60000;
+    }
+  }
+  if (_effDepForBoard) {
+    var boardTs = _effDepForBoard - boardLeadMins*60000;
     var bd = new Date(boardTs);
     boardTimeHtml = bd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
     // If delayed, show original boarding time struck through + new boarding time
@@ -6985,22 +7071,24 @@ function uxgGateHtml(ctx) {
   // of a watermark. Better to show no watermark than a busy wordmark.
   var WATERMARK_SYMBOL = {
     // Established colored emblems
-    'AC': '/logos/airline-tiles/ACA-black.svg',                                   // AC black + red roundel (right-column watermark)
-    'QK': '/logos/airline-tiles/ACA-black.svg',                                   // Jazz under AC family — use AC icon
-    'RV': '/logos/airline-tiles/ACA-black.svg',                                   // Rouge under AC family — use AC icon
+    'AC': '/logos/airline-tiles/ACA.svg',                                         // AC white roundel on red square (right-column watermark)
+    'QK': '/logos/airline-tiles/ACA.svg',                                         // Jazz under AC family — use AC icon
+    'RV': '/logos/airline-tiles/ACA.svg',                                         // Rouge under AC family — use AC icon
     'AA': '/logos/airlines/us-major/american-flight-symbol.svg',                   // AA flight symbol (red+blue gradients)
     'DL': '/logos/airlines/us-major/delta-widget.svg',                             // Delta widget (red gradient)
     'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',                         // Pualani figurehead
     'UA': '/logos/airlines/us-major/united-globe-only.svg',                        // United Globe
-    'WS': '/logos/airlines/canadian/WestJet_Logo_2016_symbol.svg',                 // WestJet maple swoosh
+    'WS': '/logos/airline-tiles/WJA.svg',                                          // WestJet white emblem on teal square
+    'PB': '/logos/airlines/canadian-regional/PB-blue-white.svg',                   // PAL white emblem on navy-blue square
     'PD': '/logos/Backgrounds/PD/porter-pattern-panel.png',                             // Porter faded panel pattern background
     // v208 added (true emblems only — no wordmarks):
     '9X': '/logos/airlines/us-major/mokulele-emblem.svg',                          // Mokulele plumeria (red)
     'F9': '/logos/airlines/us-major/frontier-emblem.svg',                          // Frontier F-mark (green)
     '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',                 // Discover tail (yellow+blue)
     'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',                    // Breeze checkmark
-    'BA': '/logos/airlines/european/british-airways-speedmarque.svg',              // BA speedmarque ribbon
-    'AF': '/logos/airlines/european/air-france-emblem.svg'                         // Air France red wing (no SkyTeam, no wordmark)
+    'BA': '/logos/airline-tiles/BAW.svg',                                          // BA speedmarque on navy square tile
+    'AF': '/logos/airline-tiles/AFR.svg',                                         // Air France navy/red square tile (red-wing emblem read weird)
+    'KL': '/logos/airlines/european/KLM_Logo_2024.svg'                             // KLM crown + wordmark (crown-only tile read weird)
     // NOT added (no clean emblem available — wordmark-only logos would
     // look like a stamp at watermark size, not a brand mark): AS, B6, WN, TS, PD, KL
   };
@@ -7940,11 +8028,16 @@ const gView = document.getElementById('gateView');
                 // loadFlight stores { lat, lng, alt, speed } — read both key spellings.
                 var _spdRaw = (typeof _lp.speed === 'number') ? _lp.speed : null;
                 var _altRaw = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
+                // Coordinates too — WITHOUT these the gate map can't plot the
+                // plane (its livePos.lat/lng check fails) so it never traces,
+                // even though spd/alt show. Accept lat/lng, lon, or latitude/longitude.
+                var _latRaw = (typeof _lp.lat === 'number') ? _lp.lat : ((typeof _lp.latitude === 'number') ? _lp.latitude : null);
+                var _lngRaw = (typeof _lp.lng === 'number') ? _lp.lng : ((typeof _lp.lon === 'number') ? _lp.lon : ((typeof _lp.longitude === 'number') ? _lp.longitude : null));
                 var liveSpd = (_spdRaw !== null) ? Math.round(_spdRaw) : null;
                 var liveAlt = (_altRaw !== null) ? Math.round(_altRaw) : null;
                 // SPD/ALT come from AeroDataBox's livePosition only.
-                if (liveSpd !== null || liveAlt !== null) {
-                  window._gateInboundLivePos = { speed: liveSpd, altitude: liveAlt, _airport: _capturedIata, _inboundFlight: _capturedInbound };
+                if (liveSpd !== null || liveAlt !== null || (_latRaw !== null && _lngRaw !== null)) {
+                  window._gateInboundLivePos = { lat: _latRaw, lng: _lngRaw, speed: liveSpd, altitude: liveAlt, _airport: _capturedIata, _inboundFlight: _capturedInbound };
                   console.log('[FIDS] Inbound live position for', _capturedInbound, '@', _capturedIata, '→ spd:', liveSpd, 'alt:', liveAlt);
                   window._lastGateKey = ''; // force re-render with telemetry
                   if (typeof requestGateRebuild === 'function') requestGateRebuild();
@@ -8347,6 +8440,18 @@ const gView = document.getElementById('gateView');
             aircraftCode: data.aircraftCode || aircraftCodeToIata(data.aircraftModel) || '',
             opCode: '', opName: ''
           };
+          // Air Transat flies only the A321neo; ADB miscodes the same plane as
+          // 320/321/32N. Pin the TS narrowbody to 32Q so the type LABEL reads
+          // "Airbus A321neo" (the image is pinned in aircraftImgTag). TS-only.
+          if (data.marketing && data.marketing.iata === 'TS') {
+            var _tsCode = aircraftCodeToIata(_eqIncoming.aircraftCode || data.aircraftModel || '');
+            if (/^(319|320|321|32N|32A|32B|32S)$/.test(_tsCode)) {
+              _eqIncoming.aircraftCode = '32Q';
+              if (!_eqIncoming.aircraft || (/32[01]|319/.test(_eqIncoming.aircraft) && !/neo/i.test(_eqIncoming.aircraft))) {
+                _eqIncoming.aircraft = 'Airbus A321neo';
+              }
+            }
+          }
           if (data.operator && data.operator.iata &&
               data.operator.iata !== data.marketing.iata &&
               data.operator._source !== 'same-as-marketing') {
@@ -8422,8 +8527,13 @@ const gView = document.getElementById('gateView');
                       : (_sameInb && typeof _prev.speed === 'number' ? _prev.speed : null);
               var _al = (typeof data.inbound._liveAlt === 'number') ? data.inbound._liveAlt
                       : (_sameInb && typeof _prev.altitude === 'number' ? _prev.altitude : null);
-              window._gateInboundLivePos = (_sp !== null || _al !== null)
-                ? { speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null }
+              // Carry coordinates too so the map can actually plot the plane.
+              var _la = (typeof data.inbound._liveLat === 'number') ? data.inbound._liveLat
+                      : (_sameInb && typeof _prev.lat === 'number' ? _prev.lat : null);
+              var _ln = (typeof data.inbound._liveLng === 'number') ? data.inbound._liveLng
+                      : (_sameInb && typeof _prev.lng === 'number' ? _prev.lng : null);
+              window._gateInboundLivePos = (_sp !== null || _al !== null || (_la !== null && _ln !== null))
+                ? { lat: _la, lng: _ln, speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null }
                 : null;
             })();
             changed = true;
@@ -8726,6 +8836,7 @@ const AP = {
   YHZ:{ name:'Halifax Stanfield International Airport',              tz:'America/Halifax'    },
   YQB:{ name:'Québec City Jean Lesage International Airport',        tz:'America/Toronto'    },
   YWG:{ name:'Winnipeg James Armstrong Richardson International',    tz:'America/Winnipeg'   },
+  YXX:{ name:'Abbotsford International Airport',                     tz:'America/Vancouver'  },
   JFK:{ name:'John F. Kennedy International Airport',                tz:'America/New_York'   },
   LGA:{ name:'New York LaGuardia Airport',                           tz:'America/New_York'   },
   EWR:{ name:'Newark Liberty International Airport',                 tz:'America/New_York'   },
@@ -8851,7 +8962,7 @@ const AP = {
 const CITY = {
   YYZ:'TORONTO',        YUL:'MONTREAL',       YVR:'VANCOUVER',    YYC:'CALGARY',
   YEG:'EDMONTON',       YOW:'OTTAWA',         YQM:'MONCTON',      YHZ:'HALIFAX',
-  YQB:'QUEBEC CITY',    YWG:'WINNIPEG',       YXE:'SASKATOON',    YYJ:'VICTORIA',
+  YQB:'QUEBEC CITY',    YWG:'WINNIPEG',       YXE:'SASKATOON',    YYJ:'VICTORIA',    YXX:'ABBOTSFORD',
   YDF:'DEER LAKE',      YYR:'GOOSE BAY',      YQX:'GANDER',       YSJ:'SAINT JOHN',
   YYT:"ST. JOHN'S",     YZR:'SARNIA',         YQG:'WINDSOR',      YXU:'LONDON',
   YYY:'MONT-JOLI',      YYG:'CHARLOTTETOWN',  YZV:'SEPT-ILES',    YFC:'FREDERICTON',
@@ -9645,7 +9756,7 @@ const CITY_FR = {
   YYZ:'TORONTO',           YUL:'MONTRÉAL',          YVR:'VANCOUVER',
   YYC:'CALGARY',           YEG:'EDMONTON',           YOW:'OTTAWA',
   YQM:'MONCTON',           YHZ:'HALIFAX',            YQB:'QUÉBEC',
-  YWG:'WINNIPEG',          YXE:'SASKATOON',          YYJ:'VICTORIA',
+  YWG:'WINNIPEG',          YXE:'SASKATOON',          YYJ:'VICTORIA',          YXX:'ABBOTSFORD',
   YDF:'DEER LAKE',         YYR:'GOOSE BAY',          YQX:'GANDER',
   YSJ:'SAINT JOHN',        YYT:"ST. JOHN'S",        YZR:'SARNIA',
   YQG:'WINDSOR',           YXU:'LONDON',             YYG:'CHARLOTTETOWN',
@@ -15528,6 +15639,16 @@ function applyAirportConfigToBoard(iata) {
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
       'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
       'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
+      'ac-nord-display-regular': "'AC Nord Display Regular', 'AC Nord Display', sans-serif",
+      'ac-nord-display-medium':  "'AC Nord Display Medium', 'AC Nord Display', sans-serif",
+      'ac-nord-display-bold':    "'AC Nord Display Bold', 'AC Nord Display', sans-serif",
+      'ac-nord-display-heavy':   "'AC Nord Display Heavy', 'AC Nord Display', sans-serif",
+      'ac-nord-text-light':      "'AC Nord Text Light', 'AC Nord Text', sans-serif",
+      'ac-nord-text-regular':    "'AC Nord Text Regular', 'AC Nord Text', sans-serif",
+      'ac-nord-text-italic':     "'AC Nord Text Italic', 'AC Nord Text', sans-serif",
+      'ac-nord-text-medium':     "'AC Nord Text Medium', 'AC Nord Text', sans-serif",
+      'ac-nord-text-bold':       "'AC Nord Text Bold', 'AC Nord Text', sans-serif",
+      'ac-nord-text-heavy':      "'AC Nord Text Heavy', 'AC Nord Text', sans-serif",
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
       'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -16855,6 +16976,7 @@ const AP_LIST = [
   {c:'YYJ',n:'Victoria'},{c:'YSJ',n:'Saint John NB'},{c:'YYT',n:"St. John's NL"},{c:'YQT',n:'Thunder Bay'},
   {c:'YFC',n:'Fredericton'},{c:'YYG',n:'Charlottetown'},{c:'YQY',n:'Sydney NS'},
   {c:'YXE',n:'Saskatoon'},{c:'YRJ',n:'Roberval'},{c:'YZF',n:'Yellowknife'},
+  {c:'YXX',n:'Abbotsford'},
   // USA East
   {c:'JFK',n:'New York Kennedy'},{c:'LGA',n:'New York LaGuardia'},{c:'EWR',n:'Newark'},
   {c:'ATL',n:'Atlanta'},{c:'MIA',n:'Miami'},{c:'MCO',n:'Orlando'},{c:'BOS',n:'Boston'},
@@ -17074,7 +17196,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 var gateMap=null;
-var GATE_AP={YQM:[46.11,-64.68],YUL:[45.47,-73.74],YYZ:[43.68,-79.62],YTZ:[43.63,-79.40],YOW:[45.32,-75.67],YHZ:[44.88,-63.51],YQB:[46.79,-71.39],YYC:[51.12,-114.01],YVR:[49.19,-123.18],YEG:[53.31,-113.58],YWG:[49.91,-97.24],YFC:[45.87,-66.54],YSJ:[45.32,-65.89],YYT:[47.62,-52.75],YDF:[49.21,-57.39],YQX:[48.94,-54.57],YYR:[53.32,-60.43],YYY:[48.61,-68.21],YYG:[46.29,-63.12],YZV:[50.22,-66.27],YCH:[47.01,-65.45],YQY:[46.16,-60.05],YGP:[48.78,-64.48],YBG:[48.33,-71.00],YVO:[48.05,-77.78],YXU:[43.04,-81.15],YKF:[43.46,-80.38],YAM:[46.49,-84.51],YXJ:[56.24,-120.74],YPR:[54.29,-130.44],YXS:[53.89,-122.68],YKA:[50.70,-120.44],YLW:[49.96,-119.38],YCD:[49.05,-123.87],YYJ:[48.65,-123.43],YXT:[54.47,-128.58],YZP:[53.25,-131.81],YDQ:[55.74,-120.18],YXC:[49.61,-115.78],YQQ:[49.71,-124.89],YCG:[49.30,-117.63],YQR:[50.43,-104.67],YXE:[52.17,-106.70],YQT:[48.37,-89.32],YMM:[56.65,-111.22],YXY:[60.71,-135.07],YHM:[43.17,-79.93],YSB:[46.62,-80.80],YTS:[48.57,-81.38],YQL:[49.63,-112.80],YPA:[53.21,-105.67],YQG:[42.28,-82.96],YWK:[52.92,-66.86],YTH:[55.80,-97.86],YZF:[62.46,-114.44],YFB:[63.76,-68.56],YRT:[62.81,-92.12],YCB:[69.11,-105.14],YHY:[60.84,-115.78],YFS:[61.76,-121.24],YDA:[64.04,-139.13],YSM:[60.02,-111.96],YEV:[68.30,-133.48],YOJ:[58.62,-117.16],YPE:[56.23,-117.45],YBL:[49.95,-125.27],YKZ:[43.86,-79.37],YHU:[45.52,-73.42],YMT:[49.78,-74.53],YGL:[50.28,-63.61],YGW:[55.28,-77.77],YVP:[58.10,-68.43],YPX:[60.05,-77.29],YKL:[54.80,-66.81],YNA:[50.19,-61.79],YMO:[51.29,-80.61],YQI:[43.83,-66.09],YBR:[49.91,-99.95],YQU:[50.27,-108.76],YMJ:[50.33,-105.56],YLL:[53.31,-110.07],YOC:[67.57,-139.84],YEK:[61.09,-94.07],JFK:[40.64,-73.78],LAX:[33.94,-118.41],ORD:[41.97,-87.91],ATL:[33.64,-84.43],SFO:[37.62,-122.38],SEA:[47.45,-122.31],MIA:[25.80,-80.29],BOS:[42.37,-71.01],EWR:[40.69,-74.17],MCO:[28.43,-81.31],FLL:[26.07,-80.15],DEN:[39.86,-104.67],DFW:[32.90,-97.04],IAD:[38.95,-77.46],CLE:[41.41,-81.85],SBA:[34.43,-119.84],LHR:[51.47,-.45],CDG:[49.01,2.55],FRA:[50.04,8.56],DXB:[25.25,55.36],CUN:[21.04,-86.88],PUJ:[18.57,-68.36],MBJ:[18.50,-77.91],BNA:[36.13,-86.68],PHL:[39.87,-75.24],SJD:[23.15,-109.72],GDL:[20.52,-103.31],CZM:[20.52,-86.93],PVR:[20.68,-105.25],ZIH:[17.60,-101.46],HUX:[15.78,-96.26],MTY:[25.78,-100.11],TIJ:[32.54,-116.97],CLT:[35.21,-80.94],DTW:[42.21,-83.35],MSP:[44.88,-93.22],SLC:[40.79,-111.98],PHX:[33.43,-112.01],SAN:[32.73,-117.19],PDX:[45.59,-122.60],ANC:[61.17,-149.99],HNL:[21.32,-157.92],LAS:[36.08,-115.15],IAH:[29.98,-95.34],MSY:[29.99,-90.26],RDU:[35.88,-78.79],BUF:[42.94,-78.73],PIT:[40.49,-80.23],IND:[39.72,-86.29],CMH:[39.99,-82.89],MKE:[42.95,-87.90],STL:[38.75,-90.37],RSW:[26.54,-81.76],JAX:[30.49,-81.69],BDL:[41.94,-72.68],RIC:[37.51,-77.32],SAV:[32.13,-81.20],BHM:[33.56,-86.75],TPA:[27.98,-82.53],ABQ:[35.04,-106.61],OAK:[37.72,-122.22],SJC:[37.36,-121.93],SMF:[38.70,-121.59],ONT:[34.06,-117.60],BUR:[34.20,-118.36],AUS:[30.19,-97.67],SAT:[29.53,-98.47],OKC:[35.39,-97.60],TUL:[36.20,-95.89],OMA:[41.30,-95.89],DSM:[41.53,-93.66],RNO:[39.50,-119.77],BOI:[43.56,-116.22],GEG:[47.62,-117.53],PSP:[33.83,-116.51],SNA:[33.68,-117.87],CHS:[32.90,-80.04],SAW:[40.90,29.31],IST:[41.26,28.74],AMS:[52.31,4.76],BCN:[41.30,2.08],MAD:[40.47,-3.57],FCO:[41.80,12.25],MXP:[45.63,8.72],ZRH:[47.46,8.55],MUC:[48.35,11.79],VIE:[48.11,16.57],CPH:[55.62,12.66],ARN:[59.65,17.94],HEL:[60.32,24.96],BRU:[50.90,4.48],LIS:[38.77,-9.13],ATH:[37.94,23.94],DOH:[25.27,51.61],AUH:[24.44,54.65],DEL:[28.56,77.10],BOM:[19.09,72.87],SIN:[1.35,103.99],HKG:[22.31,113.91],NRT:[35.77,140.39],ICN:[37.46,126.44],PEK:[40.08,116.58],SYD:[-33.95,151.18],MEL:[-37.67,144.84],AKL:[-37.01,174.79],GRU:[-23.43,-46.47],EZE:[-34.82,-58.54],SCL:[-33.39,-70.79],LIM:[-12.02,-77.11],LPB:[-16.51,-68.19],VVI:[-17.64,-63.14],CBB:[-17.42,-66.18],SRZ:[-17.81,-63.17],UYU:[-20.45,-66.85],TJA:[-21.56,-64.70],SRE:[-19.24,-65.15],POI:[-19.54,-65.72],TDD:[-14.82,-64.92],CIJ:[-11.04,-68.78],RIB:[-10.96,-66.10],GYA:[-10.82,-65.35],BVL:[-13.95,-65.46],CUZ:[-13.54,-71.94],BOG:[4.70,-74.15],PTY:[9.07,-79.38],GUA:[14.58,-90.53],SJO:[9.99,-84.21],KIN:[17.94,-76.78],HAV:[22.99,-82.41],OGG:[20.90,-156.43],KOA:[19.74,-156.05],ITO:[19.72,-155.05],LIH:[21.98,-159.34],MKK:[21.15,-157.10],LNY:[20.79,-156.95],BZN:[45.78,-111.16],MSO:[46.92,-114.09],BIL:[45.81,-108.54],FAR:[46.92,-96.82],FSD:[43.58,-96.74],RAP:[44.05,-103.06],GTF:[47.48,-111.37],HLN:[46.61,-112.00],MEM:[35.04,-89.98],MOB:[30.69,-88.24],PNS:[30.47,-87.19],SDF:[38.17,-85.74],LEX:[38.04,-84.61],ROC:[43.12,-77.67],SYR:[43.11,-76.11],ALB:[42.75,-73.80],PWM:[43.65,-70.31],BTV:[44.47,-73.15],MHT:[42.93,-71.43],PVD:[41.73,-71.43],ELP:[31.81,-106.38],TUS:[32.12,-110.94],COS:[38.81,-104.70],GJT:[39.12,-108.53],MFR:[42.37,-122.87],EUG:[44.12,-123.21],RDM:[44.25,-121.15],GUM:[13.48,144.80],SPN:[15.12,145.73],PPG:[-14.33,-170.71],TPE:[25.08,121.23],KIX:[34.43,135.24],ITM:[34.79,135.43],HND:[35.55,139.78],KUL:[2.74,101.71],BKK:[13.69,100.75],HKT:[8.11,98.31],MNL:[14.51,121.00],CGK:[-6.13,106.66],DPS:[-8.75,115.17],SGN:[10.82,106.66],HAN:[21.22,105.81],PVG:[31.14,121.81],CAN:[23.39,113.31],SHA:[31.20,121.34],TSN:[39.13,117.35],KMG:[25.10,102.93],TAO:[36.27,120.37],SZX:[22.64,113.81],XIY:[34.45,108.75],HGH:[30.23,120.43],NKG:[31.74,118.86],FOC:[25.93,119.66],XMN:[24.54,118.13],CKG:[29.72,106.64],CTU:[30.58,103.95],DLC:[38.97,121.55],SHE:[41.64,123.48],HRB:[45.62,126.25],CGO:[34.52,113.84],BAH:[26.27,50.63],KWI:[29.23,47.97],RUH:[24.96,46.69],JED:[21.68,39.16],MED:[24.55,39.71],DMM:[26.47,49.80],MCT:[23.59,58.28],SAH:[15.48,44.21],BGW:[33.26,44.23],EBL:[36.24,43.96],BSR:[30.55,47.66],TLV:[32.01,34.89],AMM:[31.72,35.99],BEY:[33.82,35.49],DAM:[33.41,36.51],ALP:[36.18,37.22],CAI:[30.11,31.41],HRG:[27.18,33.80],SSH:[27.98,34.39],LXR:[25.67,32.71],ASW:[23.96,32.82],ADD:[8.98,38.80],NBO:[-1.32,36.93],MBA:[-4.03,39.59],DAR:[-6.88,39.20],KGL:[-1.97,30.13],EBB:[0.04,32.45],JNB:[-26.13,28.24],CPT:[-33.97,18.60],DUR:[-29.61,31.12],HRE:[-17.92,31.09],GBE:[-24.55,25.92],LUN:[-15.33,28.45],MPM:[-25.92,32.57],TNR:[-18.79,47.48],RUN:[-20.89,55.51],MRU:[-20.43,57.68],SEZ:[-4.67,55.52],ZNZ:[-6.22,39.22],LAD:[-8.86,13.23],GIG:[-22.81,-43.25],GRU:[-23.43,-46.47],BSB:[-15.87,-47.92],CGH:[-23.63,-46.66],POA:[-29.99,-51.17],REC:[-8.13,-34.92],FOR:[-3.78,-38.53],SSA:[-12.91,-38.32],BEL:[-1.38,-48.48],MAO:[-3.04,-60.05],CWB:[-25.53,-49.18],FLN:[-27.67,-48.55],VCP:[-23.01,-47.13],BSB:[-15.87,-47.92],CCS:[10.60,-66.99],UIO:[-0.13,-78.36],GYE:[-2.16,-79.88],MDE:[6.16,-75.42],CTG:[10.44,-75.51],ADZ:[12.58,-81.71],SDQ:[18.43,-69.67],STI:[19.41,-70.60],POP:[19.76,-70.57],BGI:[13.07,-59.49],POS:[10.59,-61.34],UVF:[13.73,-60.95],GND:[12.00,-61.79],FDF:[14.59,-61.00],PTP:[16.27,-61.53],SXM:[18.04,-63.11],SDR:[18.45,-66.10],SJU:[18.44,-66.00],BQN:[18.49,-67.13],STT:[18.34,-64.97],STX:[17.70,-64.80],EIS:[18.44,-64.54],PLS:[21.77,-72.27],GCM:[19.29,-81.36],MEX:[19.44,-99.07],MID:[20.94,-89.66],ACA:[16.76,-99.75],BJX:[20.99,-101.48],OAX:[17.00,-96.73],CJS:[31.64,-106.43],HMO:[29.10,-111.05],MZT:[23.16,-106.27],CUL:[24.76,-107.47],TLC:[19.34,-99.57],PXM:[15.88,-97.09],VER:[19.15,-96.19],PVR:[20.68,-105.25],LIH:[21.98,-159.34],LGW:[51.15,-0.18],STN:[51.88,0.24],LCY:[51.51,0.05],MAN:[53.35,-2.27],EDI:[55.95,-3.37],GLA:[55.87,-4.43],BFS:[54.66,-6.22],DUB:[53.42,-6.27],ORK:[51.84,-8.49],SNN:[52.70,-8.92],KEF:[63.99,-22.62],BGO:[60.29,5.22],SVG:[58.88,5.64],OSL:[60.19,11.10],TRD:[63.46,10.92],GOT:[57.66,11.99],BMA:[59.35,17.94],MMX:[55.54,13.37],RIX:[56.92,23.97],TLL:[59.41,24.83],VNO:[54.63,25.29],WAW:[52.17,20.97],KRK:[50.07,19.78],GDN:[54.38,18.47],PRG:[50.10,14.26],BUD:[47.43,19.26],OTP:[44.57,26.10],SOF:[42.69,23.41],BEG:[44.82,20.31],ZAG:[45.74,16.07],SPU:[43.54,16.30],DBV:[42.56,18.27],SKG:[40.52,22.97],HER:[35.34,25.18],RHO:[36.41,28.09],CFU:[39.60,19.91],TSF:[45.65,12.19],VCE:[45.51,12.35],BLQ:[44.54,11.29],PSA:[43.69,10.39],NAP:[40.89,14.29],BRI:[41.14,16.76],CAG:[39.25,9.06],PMO:[38.18,13.10],CTA:[37.47,15.06],FLR:[43.81,11.20],LJU:[46.22,14.46],SZG:[47.79,13.00],INN:[47.26,11.34],GVA:[46.24,6.11],BSL:[47.59,7.53],BER:[52.36,13.50],HAM:[53.63,9.99],DUS:[51.28,6.77],STR:[48.69,9.22],CGN:[50.87,7.14],HAJ:[52.46,9.69],NUE:[49.50,11.08],LEJ:[51.42,12.24],DRS:[51.13,13.77],FMM:[47.99,10.24],FKB:[48.79,8.08],TLS:[43.63,1.36],NCE:[43.66,7.21],MRS:[43.44,5.21],LYS:[45.72,5.08],BOD:[44.83,-0.71],NTE:[47.16,-1.61],TLN:[43.09,6.15],MPL:[43.58,3.96],BIQ:[43.46,-1.53],EBM:[42.81,-1.65],LEI:[36.84,-2.37],ALC:[38.28,-0.55],VLC:[39.49,-0.48],BIO:[43.30,-2.91],SCQ:[42.90,-8.41],OPO:[41.24,-8.68],FAO:[37.01,-7.97],MAH:[39.86,4.22],PMI:[39.55,2.74],IBZ:[38.87,1.37],TCI:[28.04,-16.57],TFS:[28.04,-16.57],LPA:[27.93,-15.39],ACE:[28.95,-13.60],FUE:[28.45,-13.86],MLA:[35.86,14.48],LCA:[34.88,33.62],PFO:[34.71,32.49],TIA:[41.41,19.72],TGD:[42.36,19.25],TIV:[42.40,18.72],SJJ:[43.82,18.33],SKP:[41.96,21.62],PRN:[42.57,21.04],TSV:[-19.25,146.77],BNE:[-27.38,153.12],OOL:[-28.16,153.51],PER:[-31.94,115.97],ADL:[-34.95,138.53],HBA:[-42.84,147.51],CNS:[-16.88,145.75],DRW:[-12.41,130.87],CHC:[-43.49,172.53],ZQN:[-45.02,168.74],WLG:[-41.33,174.81],BNK:[-29.14,167.94],NAN:[-17.75,177.45],PPT:[-17.55,-149.61],NOU:[-22.01,166.21],POM:[-9.44,147.22]};
+var GATE_AP={YQM:[46.11,-64.68],YUL:[45.47,-73.74],YYZ:[43.68,-79.62],YTZ:[43.63,-79.40],YOW:[45.32,-75.67],YHZ:[44.88,-63.51],YQB:[46.79,-71.39],YYC:[51.12,-114.01],YVR:[49.19,-123.18],YEG:[53.31,-113.58],YWG:[49.91,-97.24],YFC:[45.87,-66.54],YSJ:[45.32,-65.89],YYT:[47.62,-52.75],YDF:[49.21,-57.39],YQX:[48.94,-54.57],YYR:[53.32,-60.43],YYY:[48.61,-68.21],YYG:[46.29,-63.12],YZV:[50.22,-66.27],YCH:[47.01,-65.45],YQY:[46.16,-60.05],YGP:[48.78,-64.48],YBG:[48.33,-71.00],YVO:[48.05,-77.78],YXU:[43.04,-81.15],YKF:[43.46,-80.38],YAM:[46.49,-84.51],YXJ:[56.24,-120.74],YPR:[54.29,-130.44],YXS:[53.89,-122.68],YKA:[50.70,-120.44],YLW:[49.96,-119.38],YCD:[49.05,-123.87],YYJ:[48.65,-123.43],YXX:[49.03,-122.36],YXT:[54.47,-128.58],YZP:[53.25,-131.81],YDQ:[55.74,-120.18],YXC:[49.61,-115.78],YQQ:[49.71,-124.89],YCG:[49.30,-117.63],YQR:[50.43,-104.67],YXE:[52.17,-106.70],YQT:[48.37,-89.32],YMM:[56.65,-111.22],YXY:[60.71,-135.07],YHM:[43.17,-79.93],YSB:[46.62,-80.80],YTS:[48.57,-81.38],YQL:[49.63,-112.80],YPA:[53.21,-105.67],YQG:[42.28,-82.96],YWK:[52.92,-66.86],YTH:[55.80,-97.86],YZF:[62.46,-114.44],YFB:[63.76,-68.56],YRT:[62.81,-92.12],YCB:[69.11,-105.14],YHY:[60.84,-115.78],YFS:[61.76,-121.24],YDA:[64.04,-139.13],YSM:[60.02,-111.96],YEV:[68.30,-133.48],YOJ:[58.62,-117.16],YPE:[56.23,-117.45],YBL:[49.95,-125.27],YKZ:[43.86,-79.37],YHU:[45.52,-73.42],YMT:[49.78,-74.53],YGL:[50.28,-63.61],YGW:[55.28,-77.77],YVP:[58.10,-68.43],YPX:[60.05,-77.29],YKL:[54.80,-66.81],YNA:[50.19,-61.79],YMO:[51.29,-80.61],YQI:[43.83,-66.09],YBR:[49.91,-99.95],YQU:[50.27,-108.76],YMJ:[50.33,-105.56],YLL:[53.31,-110.07],YOC:[67.57,-139.84],YEK:[61.09,-94.07],JFK:[40.64,-73.78],LAX:[33.94,-118.41],ORD:[41.97,-87.91],ATL:[33.64,-84.43],SFO:[37.62,-122.38],SEA:[47.45,-122.31],MIA:[25.80,-80.29],BOS:[42.37,-71.01],EWR:[40.69,-74.17],MCO:[28.43,-81.31],FLL:[26.07,-80.15],DEN:[39.86,-104.67],DFW:[32.90,-97.04],IAD:[38.95,-77.46],CLE:[41.41,-81.85],SBA:[34.43,-119.84],LHR:[51.47,-.45],CDG:[49.01,2.55],FRA:[50.04,8.56],DXB:[25.25,55.36],CUN:[21.04,-86.88],PUJ:[18.57,-68.36],MBJ:[18.50,-77.91],BNA:[36.13,-86.68],PHL:[39.87,-75.24],SJD:[23.15,-109.72],GDL:[20.52,-103.31],CZM:[20.52,-86.93],PVR:[20.68,-105.25],ZIH:[17.60,-101.46],HUX:[15.78,-96.26],MTY:[25.78,-100.11],TIJ:[32.54,-116.97],CLT:[35.21,-80.94],DTW:[42.21,-83.35],MSP:[44.88,-93.22],SLC:[40.79,-111.98],PHX:[33.43,-112.01],SAN:[32.73,-117.19],PDX:[45.59,-122.60],ANC:[61.17,-149.99],HNL:[21.32,-157.92],LAS:[36.08,-115.15],IAH:[29.98,-95.34],MSY:[29.99,-90.26],RDU:[35.88,-78.79],BUF:[42.94,-78.73],PIT:[40.49,-80.23],IND:[39.72,-86.29],CMH:[39.99,-82.89],MKE:[42.95,-87.90],STL:[38.75,-90.37],RSW:[26.54,-81.76],JAX:[30.49,-81.69],BDL:[41.94,-72.68],RIC:[37.51,-77.32],SAV:[32.13,-81.20],BHM:[33.56,-86.75],TPA:[27.98,-82.53],ABQ:[35.04,-106.61],OAK:[37.72,-122.22],SJC:[37.36,-121.93],SMF:[38.70,-121.59],ONT:[34.06,-117.60],BUR:[34.20,-118.36],AUS:[30.19,-97.67],SAT:[29.53,-98.47],OKC:[35.39,-97.60],TUL:[36.20,-95.89],OMA:[41.30,-95.89],DSM:[41.53,-93.66],RNO:[39.50,-119.77],BOI:[43.56,-116.22],GEG:[47.62,-117.53],PSP:[33.83,-116.51],SNA:[33.68,-117.87],CHS:[32.90,-80.04],SAW:[40.90,29.31],IST:[41.26,28.74],AMS:[52.31,4.76],BCN:[41.30,2.08],MAD:[40.47,-3.57],FCO:[41.80,12.25],MXP:[45.63,8.72],ZRH:[47.46,8.55],MUC:[48.35,11.79],VIE:[48.11,16.57],CPH:[55.62,12.66],ARN:[59.65,17.94],HEL:[60.32,24.96],BRU:[50.90,4.48],LIS:[38.77,-9.13],ATH:[37.94,23.94],DOH:[25.27,51.61],AUH:[24.44,54.65],DEL:[28.56,77.10],BOM:[19.09,72.87],SIN:[1.35,103.99],HKG:[22.31,113.91],NRT:[35.77,140.39],ICN:[37.46,126.44],PEK:[40.08,116.58],SYD:[-33.95,151.18],MEL:[-37.67,144.84],AKL:[-37.01,174.79],GRU:[-23.43,-46.47],EZE:[-34.82,-58.54],SCL:[-33.39,-70.79],LIM:[-12.02,-77.11],LPB:[-16.51,-68.19],VVI:[-17.64,-63.14],CBB:[-17.42,-66.18],SRZ:[-17.81,-63.17],UYU:[-20.45,-66.85],TJA:[-21.56,-64.70],SRE:[-19.24,-65.15],POI:[-19.54,-65.72],TDD:[-14.82,-64.92],CIJ:[-11.04,-68.78],RIB:[-10.96,-66.10],GYA:[-10.82,-65.35],BVL:[-13.95,-65.46],CUZ:[-13.54,-71.94],BOG:[4.70,-74.15],PTY:[9.07,-79.38],GUA:[14.58,-90.53],SJO:[9.99,-84.21],KIN:[17.94,-76.78],HAV:[22.99,-82.41],OGG:[20.90,-156.43],KOA:[19.74,-156.05],ITO:[19.72,-155.05],LIH:[21.98,-159.34],MKK:[21.15,-157.10],LNY:[20.79,-156.95],BZN:[45.78,-111.16],MSO:[46.92,-114.09],BIL:[45.81,-108.54],FAR:[46.92,-96.82],FSD:[43.58,-96.74],RAP:[44.05,-103.06],GTF:[47.48,-111.37],HLN:[46.61,-112.00],MEM:[35.04,-89.98],MOB:[30.69,-88.24],PNS:[30.47,-87.19],SDF:[38.17,-85.74],LEX:[38.04,-84.61],ROC:[43.12,-77.67],SYR:[43.11,-76.11],ALB:[42.75,-73.80],PWM:[43.65,-70.31],BTV:[44.47,-73.15],MHT:[42.93,-71.43],PVD:[41.73,-71.43],ELP:[31.81,-106.38],TUS:[32.12,-110.94],COS:[38.81,-104.70],GJT:[39.12,-108.53],MFR:[42.37,-122.87],EUG:[44.12,-123.21],RDM:[44.25,-121.15],GUM:[13.48,144.80],SPN:[15.12,145.73],PPG:[-14.33,-170.71],TPE:[25.08,121.23],KIX:[34.43,135.24],ITM:[34.79,135.43],HND:[35.55,139.78],KUL:[2.74,101.71],BKK:[13.69,100.75],HKT:[8.11,98.31],MNL:[14.51,121.00],CGK:[-6.13,106.66],DPS:[-8.75,115.17],SGN:[10.82,106.66],HAN:[21.22,105.81],PVG:[31.14,121.81],CAN:[23.39,113.31],SHA:[31.20,121.34],TSN:[39.13,117.35],KMG:[25.10,102.93],TAO:[36.27,120.37],SZX:[22.64,113.81],XIY:[34.45,108.75],HGH:[30.23,120.43],NKG:[31.74,118.86],FOC:[25.93,119.66],XMN:[24.54,118.13],CKG:[29.72,106.64],CTU:[30.58,103.95],DLC:[38.97,121.55],SHE:[41.64,123.48],HRB:[45.62,126.25],CGO:[34.52,113.84],BAH:[26.27,50.63],KWI:[29.23,47.97],RUH:[24.96,46.69],JED:[21.68,39.16],MED:[24.55,39.71],DMM:[26.47,49.80],MCT:[23.59,58.28],SAH:[15.48,44.21],BGW:[33.26,44.23],EBL:[36.24,43.96],BSR:[30.55,47.66],TLV:[32.01,34.89],AMM:[31.72,35.99],BEY:[33.82,35.49],DAM:[33.41,36.51],ALP:[36.18,37.22],CAI:[30.11,31.41],HRG:[27.18,33.80],SSH:[27.98,34.39],LXR:[25.67,32.71],ASW:[23.96,32.82],ADD:[8.98,38.80],NBO:[-1.32,36.93],MBA:[-4.03,39.59],DAR:[-6.88,39.20],KGL:[-1.97,30.13],EBB:[0.04,32.45],JNB:[-26.13,28.24],CPT:[-33.97,18.60],DUR:[-29.61,31.12],HRE:[-17.92,31.09],GBE:[-24.55,25.92],LUN:[-15.33,28.45],MPM:[-25.92,32.57],TNR:[-18.79,47.48],RUN:[-20.89,55.51],MRU:[-20.43,57.68],SEZ:[-4.67,55.52],ZNZ:[-6.22,39.22],LAD:[-8.86,13.23],GIG:[-22.81,-43.25],GRU:[-23.43,-46.47],BSB:[-15.87,-47.92],CGH:[-23.63,-46.66],POA:[-29.99,-51.17],REC:[-8.13,-34.92],FOR:[-3.78,-38.53],SSA:[-12.91,-38.32],BEL:[-1.38,-48.48],MAO:[-3.04,-60.05],CWB:[-25.53,-49.18],FLN:[-27.67,-48.55],VCP:[-23.01,-47.13],BSB:[-15.87,-47.92],CCS:[10.60,-66.99],UIO:[-0.13,-78.36],GYE:[-2.16,-79.88],MDE:[6.16,-75.42],CTG:[10.44,-75.51],ADZ:[12.58,-81.71],SDQ:[18.43,-69.67],STI:[19.41,-70.60],POP:[19.76,-70.57],BGI:[13.07,-59.49],POS:[10.59,-61.34],UVF:[13.73,-60.95],GND:[12.00,-61.79],FDF:[14.59,-61.00],PTP:[16.27,-61.53],SXM:[18.04,-63.11],SDR:[18.45,-66.10],SJU:[18.44,-66.00],BQN:[18.49,-67.13],STT:[18.34,-64.97],STX:[17.70,-64.80],EIS:[18.44,-64.54],PLS:[21.77,-72.27],GCM:[19.29,-81.36],MEX:[19.44,-99.07],MID:[20.94,-89.66],ACA:[16.76,-99.75],BJX:[20.99,-101.48],OAX:[17.00,-96.73],CJS:[31.64,-106.43],HMO:[29.10,-111.05],MZT:[23.16,-106.27],CUL:[24.76,-107.47],TLC:[19.34,-99.57],PXM:[15.88,-97.09],VER:[19.15,-96.19],PVR:[20.68,-105.25],LIH:[21.98,-159.34],LGW:[51.15,-0.18],STN:[51.88,0.24],LCY:[51.51,0.05],MAN:[53.35,-2.27],EDI:[55.95,-3.37],GLA:[55.87,-4.43],BFS:[54.66,-6.22],DUB:[53.42,-6.27],ORK:[51.84,-8.49],SNN:[52.70,-8.92],KEF:[63.99,-22.62],BGO:[60.29,5.22],SVG:[58.88,5.64],OSL:[60.19,11.10],TRD:[63.46,10.92],GOT:[57.66,11.99],BMA:[59.35,17.94],MMX:[55.54,13.37],RIX:[56.92,23.97],TLL:[59.41,24.83],VNO:[54.63,25.29],WAW:[52.17,20.97],KRK:[50.07,19.78],GDN:[54.38,18.47],PRG:[50.10,14.26],BUD:[47.43,19.26],OTP:[44.57,26.10],SOF:[42.69,23.41],BEG:[44.82,20.31],ZAG:[45.74,16.07],SPU:[43.54,16.30],DBV:[42.56,18.27],SKG:[40.52,22.97],HER:[35.34,25.18],RHO:[36.41,28.09],CFU:[39.60,19.91],TSF:[45.65,12.19],VCE:[45.51,12.35],BLQ:[44.54,11.29],PSA:[43.69,10.39],NAP:[40.89,14.29],BRI:[41.14,16.76],CAG:[39.25,9.06],PMO:[38.18,13.10],CTA:[37.47,15.06],FLR:[43.81,11.20],LJU:[46.22,14.46],SZG:[47.79,13.00],INN:[47.26,11.34],GVA:[46.24,6.11],BSL:[47.59,7.53],BER:[52.36,13.50],HAM:[53.63,9.99],DUS:[51.28,6.77],STR:[48.69,9.22],CGN:[50.87,7.14],HAJ:[52.46,9.69],NUE:[49.50,11.08],LEJ:[51.42,12.24],DRS:[51.13,13.77],FMM:[47.99,10.24],FKB:[48.79,8.08],TLS:[43.63,1.36],NCE:[43.66,7.21],MRS:[43.44,5.21],LYS:[45.72,5.08],BOD:[44.83,-0.71],NTE:[47.16,-1.61],TLN:[43.09,6.15],MPL:[43.58,3.96],BIQ:[43.46,-1.53],EBM:[42.81,-1.65],LEI:[36.84,-2.37],ALC:[38.28,-0.55],VLC:[39.49,-0.48],BIO:[43.30,-2.91],SCQ:[42.90,-8.41],OPO:[41.24,-8.68],FAO:[37.01,-7.97],MAH:[39.86,4.22],PMI:[39.55,2.74],IBZ:[38.87,1.37],TCI:[28.04,-16.57],TFS:[28.04,-16.57],LPA:[27.93,-15.39],ACE:[28.95,-13.60],FUE:[28.45,-13.86],MLA:[35.86,14.48],LCA:[34.88,33.62],PFO:[34.71,32.49],TIA:[41.41,19.72],TGD:[42.36,19.25],TIV:[42.40,18.72],SJJ:[43.82,18.33],SKP:[41.96,21.62],PRN:[42.57,21.04],TSV:[-19.25,146.77],BNE:[-27.38,153.12],OOL:[-28.16,153.51],PER:[-31.94,115.97],ADL:[-34.95,138.53],HBA:[-42.84,147.51],CNS:[-16.88,145.75],DRW:[-12.41,130.87],CHC:[-43.49,172.53],ZQN:[-45.02,168.74],WLG:[-41.33,174.81],BNK:[-29.14,167.94],NAN:[-17.75,177.45],PPT:[-17.55,-149.61],NOU:[-22.01,166.21],POM:[-9.44,147.22]};
 
 // ───────────────────────────────────────────────────────────────────────
 // AIRPORT COORDINATE LOOKUP
@@ -21610,6 +21732,7 @@ var _CITY_DISAMBIGUATION = {
   YHZ: 'Halifax, Nova Scotia, Canada',
   YYJ: 'Victoria, British Columbia, Canada',
   YHM: 'Hamilton, Ontario, Canada',
+  YXX: 'Abbotsford, British Columbia, Canada',
   YLW: 'Kelowna, British Columbia, Canada',
   YXE: 'Saskatoon, Saskatchewan, Canada',
   YXU: 'London, Ontario, Canada',

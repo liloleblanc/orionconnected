@@ -4559,14 +4559,75 @@ body, body.gids-page, body.gate-page{
   opacity: 0.30 !important;
 }
 
-/* AC family + Flair — roundel reads strong: keep it lightest, and nudge up a touch. */
+/* AC family — roundel reads strong: keep it lightest. Nudged up + faded more. */
 .g8-wrap.g8-airline-AC .gad-map-col-v2::before,
 .g8-wrap.g8-airline-QK .gad-map-col-v2::before,
-.g8-wrap.g8-airline-RV .gad-map-col-v2::before,
-.g8-wrap.g8-airline-F8 .gad-map-col-v2::before { opacity: 0.13 !important; background-position: center 118% !important; }
+.g8-wrap.g8-airline-RV .gad-map-col-v2::before { opacity: 0.10 !important; background-position: center 120% !important; }
 
-/* WestJet — a touch higher and zoomed out (smaller). */
+/* Flair — dropped ~1cm lower. */
+.g8-wrap.g8-airline-F8 .gad-map-col-v2::before { opacity: 0.13 !important; background-position: center 124% !important; }
+
+/* WestJet — nudged up a touch more and enlarged slightly. */
 .g8-wrap.g8-airline-WS .gad-map-col-v2::before {
-  background-position: center 116% !important;
+  background-position: center 104% !important;
+  background-size: 110% auto !important;
+}
+
+/* PAL — white emblem on a navy-blue square tile (its own colour), so it uses
+   the same faded multiply treatment as the AC/WS tiles. Nudged up. A soft
+   radial mask dissolves the tile's hard square edges so it reads as a round
+   glow, not a rectangle parked at the bottom. */
+.g8-wrap.g8-airline-PB .gad-map-col-v2::before {
+  background-position: center 108% !important;
   background-size: 100% auto !important;
+  opacity: 0.16 !important;
+  -webkit-mask-image: radial-gradient(ellipse 72% 60% at 50% 74%, #000 30%, rgba(0,0,0,0.4) 58%, transparent 80%) !important;
+          mask-image: radial-gradient(ellipse 72% 60% at 50% 74%, #000 30%, rgba(0,0,0,0.4) 58%, transparent 80%) !important;
+}
+
+/* Delta — nudged up well clear of the bottom shelf. */
+.g8-wrap.g8-airline-DL .gad-map-col-v2::before {
+  background-position: center 105% !important;
+}
+
+/* KLM — the crown+wordmark is a WIDE transparent logo (not a full-bleed tile),
+   so the default tile sizing left it crammed in one bottom band. Size it to
+   span the column width and sit centred, repeated down the panel so it reads
+   like a proper watermark instead of a single mark at the bottom. */
+.g8-wrap.g8-airline-KL .gad-map-col-v2::before {
+  background-repeat: repeat-y !important;
+  background-position: center top !important;
+  background-size: 78% auto !important;
+  opacity: 0.16 !important;
+}
+
+/* "Your Aircraft" panel — drifting-clouds backdrop behind the plane so it
+   reads as flying above the clouds. Faded + soft top/bottom mask so it blends
+   into the panel and the plane illustration stays the hero. The GIF loops on
+   its own. Drop the file at /logos/Backgrounds/clouds-loop.gif. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus { position: relative !important; overflow: hidden !important; }
+/* Clouds backdrop as a REAL element (#gateCloudsBg) rather than a ::before, so
+   it can be detached/re-attached across gate re-renders (same trick the map and
+   ad carousel use). That keeps the GIF animating seamlessly instead of jumping
+   back to frame 0 on every telemetry poll. */
+#gateCloudsBg,
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg {
+  position: absolute !important; inset: 0 !important;
+  width: 100% !important; height: 100% !important;
+  background: url('/logos/Backgrounds/clouds-loop.gif?v=2') center center / cover no-repeat !important;
+  opacity: 1 !important;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 4%, #000 97%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 4%, #000 97%, transparent 100%);
+  pointer-events: none !important;
+  z-index: 0 !important;
+  display: block !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > * { position: relative; z-index: 1; }
+
+/* Clouds drift follows the plane's heading. Facing varies by aircraft type,
+   not airline (AC mainline faces left, AC regional faces right), so it's
+   auto-detected per image by a canvas scan that adds .g8-plane-faces-right to
+   the illustration shelf. Mirror the clouds to match. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-faces-right #gateCloudsBg {
+  transform: scaleX(-1) !important;
 }

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<svg width="1080" height="1080" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" version="1.1" xml:space="preserve">
+ <desc>Created with Fabric.js 6.5.3</desc>
+ <g class="layer" display="inline">
+  <title>Layer 1</title>
+  <path d="m1.96,-5.78l1079.98,0l0,1084.6l-1079.98,0l0,-1084.6z" fill="#00007f" fill-opacity="null" id="svg_14" stroke="null" stroke-dasharray="null" stroke-linecap="null" stroke-linejoin="null" stroke-opacity="null" stroke-width="null" transform="matrix(1 0 0 1 0 0)"/>
+  <image height="0" href="./images/logo.svg" id="svg_13" width="0" x="81.43" y="185.71"/>
+  <polyline fill="none" id="svg_17" opacity="0.5" points="971.4285714285713,874.2857142857142 " stroke="null" stroke-dasharray="null" stroke-linecap="round" stroke-linejoin="null" stroke-opacity="null" stroke-width="null"/>
+  <g id="svg_39" transform="matrix(1.98578 0 0 1.98578 522.874 483.08)">
+   <g id="svg_40" transform="matrix(1 0 0 1 21.2241 24.8449)">
+    <path d="m445.88,168.1c0.66,0.16 -8.91,-6.26 -14.03,-9.31c-3.3,-1.93 -12.55,-2.89 -18.66,-0.16c-7.09,2.57 -39.78,16.36 -72.14,15.88c-32.2,-0.32 -62.91,-13.79 -67.69,-15.72c-4.79,-1.76 -203.24,-108.62 -203.24,-108.62l-17.83,-0.48l0,1.76l12.38,3.37l139.02,136.54c0,0 65.7,50.06 12.21,128.99l-78.58,130.44l25.09,-12.03l283.47,-270.66l0,0z" fill="#ffffff" fill-rule="nonzero" id="svg_41" stroke="#FFFFFF" stroke-dashoffset="0" stroke-miterlimit="4" transform=" translate(-249.1034, -250.2414)"/>
+   </g>
+   <g id="svg_42" transform="matrix(1 0 0 1 -227.8794 -225.3966)">
+    <path d="m17.04,384.01" fill="#ffffff" fill-rule="nonzero" id="svg_43" opacity="NaN" stroke="#FFFFFF" stroke-dashoffset="0" stroke-miterlimit="4" transform=" translate(0, 0)"/>
+   </g>
+  </g>
+ </g>
+</svg>

@@ -15443,6 +15443,7 @@ const AP_LIST = [
   {c:'YYJ',n:'Victoria'},{c:'YSJ',n:'Saint John NB'},{c:'YYT',n:"St. John's NL"},{c:'YQT',n:'Thunder Bay'},
   {c:'YFC',n:'Fredericton'},{c:'YYG',n:'Charlottetown'},{c:'YQY',n:'Sydney NS'},
   {c:'YXE',n:'Saskatoon'},{c:'YRJ',n:'Roberval'},{c:'YZF',n:'Yellowknife'},
+  {c:'YXX',n:'Abbotsford'},
   // USA East
   {c:'JFK',n:'New York Kennedy'},{c:'LGA',n:'New York LaGuardia'},{c:'EWR',n:'Newark'},
   {c:'ATL',n:'Atlanta'},{c:'MIA',n:'Miami'},{c:'MCO',n:'Orlando'},{c:'BOS',n:'Boston'},
