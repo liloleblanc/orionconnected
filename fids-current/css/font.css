@@ -52,6 +52,20 @@
 @font-face { font-family:'AC Nord Text'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Bold.woff2') format('woff2'); }
 @font-face { font-family:'AC Nord Text'; font-weight:800 900; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Heavy.woff2') format('woff2'); }
 
+/* Per-weight AC Nord families — each maps ALL weights to a single file so the
+   font picker can offer every weight as its own option (selecting one forces
+   that exact weight everywhere). Same woff2 files as above. */
+@font-face { font-family:'AC Nord Display Regular'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Regular.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display Medium';  font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Medium.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display Bold';    font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Bold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display Heavy';   font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Heavy.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Light';      font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Light.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Regular';    font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Regular.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Italic';     font-weight:1 1000; font-style:italic;  font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Italic.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Medium';     font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Medium.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Bold';       font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Bold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Heavy';      font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Heavy.woff2') format('woff2'); }
+
 /* ── Font stacks exposed as variables ────────────────────────────────────── */
 :root {
   /* Named font stacks — referenced by --font-primary when user picks one */

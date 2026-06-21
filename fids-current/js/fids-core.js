@@ -5899,6 +5899,19 @@ function _buildV2MapCol(ctx, vars) {
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_jzType) : _jzType;
       }
     }
+    // Air Transat flies only the A321neo, but ADB scatters the SAME aircraft
+    // across 320 / 321 / 32N. Pin the TS narrowbody to 32Q (neo) HERE, at
+    // render, so BOTH the type label and the image are correct every time —
+    // even when the enrichment call (which also does this) got rate-limited.
+    if (String(vars.airlineCode || '').toUpperCase() === 'TS') {
+      var _tsCd = String(_equipCd || '').toUpperCase().trim();
+      var _tsNm = String(_equipNm || '').toUpperCase();
+      if (/^(319|320|321|32N|32A|32B|32S)$/.test(_tsCd) ||
+          (!_tsCd && /A3(19|20)\b|A321(?!\s*NEO)/.test(_tsNm))) {
+        _equipCd = '32Q';
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('32Q') : 'Airbus A321neo';
+      }
+    }
     var _liveryEq = _equipCd;
     if (_opCode === 'RV' && _liveryEq && /^[A-Z0-9]{3}$/i.test(_liveryEq)) _liveryEq = _liveryEq + 'r';
     // The aircraft wears the MARKETING carrier's livery, not the operator's:
@@ -15548,6 +15561,16 @@ function applyAirportConfigToBoard(iata) {
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
       'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
       'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
+      'ac-nord-display-regular': "'AC Nord Display Regular', 'AC Nord Display', sans-serif",
+      'ac-nord-display-medium':  "'AC Nord Display Medium', 'AC Nord Display', sans-serif",
+      'ac-nord-display-bold':    "'AC Nord Display Bold', 'AC Nord Display', sans-serif",
+      'ac-nord-display-heavy':   "'AC Nord Display Heavy', 'AC Nord Display', sans-serif",
+      'ac-nord-text-light':      "'AC Nord Text Light', 'AC Nord Text', sans-serif",
+      'ac-nord-text-regular':    "'AC Nord Text Regular', 'AC Nord Text', sans-serif",
+      'ac-nord-text-italic':     "'AC Nord Text Italic', 'AC Nord Text', sans-serif",
+      'ac-nord-text-medium':     "'AC Nord Text Medium', 'AC Nord Text', sans-serif",
+      'ac-nord-text-bold':       "'AC Nord Text Bold', 'AC Nord Text', sans-serif",
+      'ac-nord-text-heavy':      "'AC Nord Text Heavy', 'AC Nord Text', sans-serif",
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
       'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",

@@ -913,7 +913,7 @@ body[data-fids-theme="cream"] #fidsTable td.td-time-rev.has-rev {
 /* When the revised cell is empty, give a subtle dash so the column doesn't
    look broken on rows without revisions. */
 #fidsTable td.td-time-rev:empty::before {
-  content: '—';
+  content: '\2014';
   color: rgba(255,255,255,0.25);
 }
 body[data-fids-theme="cream"] #fidsTable td.td-time-rev:empty::before {
@@ -1654,7 +1654,7 @@ body[data-fids-theme="cream"] .fids-airport-iata { color: #0a2236 !important; }
   padding-left: 12px !important;
 }
 .flight-card.has-gate::after {
-  content: '👆 TAP';
+  content: '\01F446 TAP';
   position: absolute;
   top: 6px;
   right: 8px;

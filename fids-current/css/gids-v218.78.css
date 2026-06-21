@@ -4574,11 +4574,15 @@ body, body.gids-page, body.gate-page{
 }
 
 /* PAL — white emblem on a navy-blue square tile (its own colour), so it uses
-   the same faded multiply treatment as the AC/WS tiles. Nudged up. */
+   the same faded multiply treatment as the AC/WS tiles. Nudged up. A soft
+   radial mask dissolves the tile's hard square edges so it reads as a round
+   glow, not a rectangle parked at the bottom. */
 .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-position: center 108% !important;
   background-size: 100% auto !important;
   opacity: 0.16 !important;
+  -webkit-mask-image: radial-gradient(ellipse 72% 60% at 50% 74%, #000 30%, rgba(0,0,0,0.4) 58%, transparent 80%) !important;
+          mask-image: radial-gradient(ellipse 72% 60% at 50% 74%, #000 30%, rgba(0,0,0,0.4) 58%, transparent 80%) !important;
 }
 
 /* Delta — nudged up well clear of the bottom shelf. */
