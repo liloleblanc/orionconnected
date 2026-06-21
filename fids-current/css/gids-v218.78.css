@@ -4527,3 +4527,40 @@ body, body.gids-page, body.gate-page{
 .g8-wrap.g8-airline-AC .gad-aircraft-col .ac-ico { color:#f01428 !important; }
 /* Flight-orb airline emblem a touch smaller so it fits the orb */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-img { width: 74% !important; height: 74% !important; margin: auto !important; }
+
+/* ── v218.99 — Right "Your Aircraft" column: fill it with the airline pattern
+   edge-to-edge, behind the content. The pattern was previously only on the
+   centre (.gad-info-col), so the right cards showed it tiny / only at the top. */
+.g8-wrap.g8-airline-PD .gad-aircraft-col,
+.g8-wrap.g8-airline-AC .gad-aircraft-col,
+.g8-wrap.g8-airline-QK .gad-aircraft-col,
+.g8-wrap.g8-airline-RV .gad-aircraft-col { position: relative !important; overflow: hidden !important; }
+
+.g8-wrap.g8-airline-PD .gad-aircraft-col::before,
+.g8-wrap.g8-airline-AC .gad-aircraft-col::before,
+.g8-wrap.g8-airline-QK .gad-aircraft-col::before,
+.g8-wrap.g8-airline-RV .gad-aircraft-col::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: cover !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+.g8-wrap.g8-airline-PD .gad-aircraft-col::before {
+  background-image: url('../logos/Backgrounds/PD/porter-pattern-panel.png') !important;
+  opacity: 0.18 !important;
+}
+.g8-wrap.g8-airline-AC .gad-aircraft-col::before,
+.g8-wrap.g8-airline-QK .gad-aircraft-col::before,
+.g8-wrap.g8-airline-RV .gad-aircraft-col::before {
+  background-image: url('../logos/Backgrounds/AC/aircanada-roundel-fade.svg') !important;
+  opacity: 0.12 !important;
+}
+/* Keep all the column's content above the pattern. */
+.g8-wrap.g8-airline-PD .gad-aircraft-col > *,
+.g8-wrap.g8-airline-AC .gad-aircraft-col > *,
+.g8-wrap.g8-airline-QK .gad-aircraft-col > *,
+.g8-wrap.g8-airline-RV .gad-aircraft-col > * { position: relative !important; z-index: 1 !important; }
