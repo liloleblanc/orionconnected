@@ -273,3 +273,19 @@ body {
    loader; invert to white only on the dark-themed loader. */
 .fids-loader-logo { display:block; }
 #fidsLoader[data-theme="dark"] .fids-loader-logo { filter: brightness(0) invert(1); }
+
+/* Logo-only boot loader — hide the FIDS/GIDS/BIDS text + bar; show just the
+   Orion Connected mark, centred, with a gentle pulse (per request). */
+#fidsLoader .fids-loader-brand,
+#fidsLoader .fids-loader-title,
+#fidsLoader .fids-loader-sub,
+#fidsLoader .fids-loader-bar,
+#fidsLoader .fids-loader-status { display: none !important; }
+.fids-loader-logo {
+  width: min(460px, 66vw) !important;
+  max-height: 42vh !important;
+  object-fit: contain !important;
+  margin: 0 !important;
+  animation: ocLogoPulse 2.2s ease-in-out infinite;
+}
+@keyframes ocLogoPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
