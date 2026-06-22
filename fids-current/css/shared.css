@@ -268,3 +268,8 @@ body {
   min-height: 14px;
   text-transform: uppercase;
 }
+
+/* OrionConnected boot-loader logo — dark artwork shows as-is on the light
+   loader; invert to white only on the dark-themed loader. */
+.fids-loader-logo { display:block; }
+#fidsLoader[data-theme="dark"] .fids-loader-logo { filter: brightness(0) invert(1); }
