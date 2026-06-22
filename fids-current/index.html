@@ -7,6 +7,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FIDS — Airport Display System v8</title>
+  <!-- Phones/tablets go straight to the colored-bubble passenger app
+       (Airport Companion), skipping the desktop entry/login screen. Runs in
+       <head> before paint so the entry screen never flashes. -->
+  <script>
+    (function(){
+      try{
+        var ua = navigator.userAgent || '';
+        var w  = window.innerWidth || document.documentElement.clientWidth || 0;
+        var isMobile = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(ua) || w < 700;
+        if (isMobile && !/[?&]nomobile=1/.test(location.search)) {
+          location.replace('app.html' + (location.search || ''));
+        }
+      }catch(e){}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
