@@ -7,17 +7,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FIDS — Airport Display System v8</title>
-  <!-- Phones/tablets go straight to the colored-bubble passenger app
-       (Airport Companion), skipping the desktop entry/login screen. Runs in
-       <head> before paint so the entry screen never flashes. -->
+  <!-- Auto-router for fids.orionconnected.com (runs in <head> before paint so
+       the entry screen never flashes):
+         • phones / tablets  → app.html  (colored-bubble passenger app)
+         • desktop / displays → fids.html?mode=live  (LIVE main FIDS board)
+       Escape hatches: ?entry=1 keeps the DEMO/LOGIN entry screen (admin),
+       ?nomobile=1 forces the desktop board on a phone. -->
   <script>
     (function(){
       try{
+        var qs = location.search || '';
+        if (/[?&]entry=1/.test(qs)) return;           // admin: keep the entry/login screen
         var ua = navigator.userAgent || '';
         var w  = window.innerWidth || document.documentElement.clientWidth || 0;
         var isMobile = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(ua) || w < 700;
-        if (isMobile && !/[?&]nomobile=1/.test(location.search)) {
-          location.replace('app.html' + (location.search || ''));
+        if (isMobile && !/[?&]nomobile=1/.test(qs)) {
+          location.replace('app.html' + qs);          // mobile → colored bubbles
+        } else {
+          // Desktop/displays → LIVE main board. Don't force an airport: carry a
+          // root ?ap= if present, otherwise let the board use its own
+          // saved/selected airport (works for ALL airports, not locked to YQM).
+          var apM = qs.match(/[?&]ap=([^&]+)/);
+          location.replace('fids.html?mode=live' + (apM ? '&ap=' + apM[1] : ''));
         }
       }catch(e){}
     })();
