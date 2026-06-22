@@ -89,6 +89,8 @@
   .ad-banner{margin:14px 18px 4px;border-radius:var(--radius);position:relative;overflow:hidden;
     background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);
     display:flex;align-items:center;gap:14px;padding:15px 16px;}
+  /* Mobile app is ad-free — hide the sponsored banner strip (no empty gap). */
+  #adBanner{display:none!important;}
   .ad-banner .tile{width:46px;height:46px;border-radius:13px;flex:none;background:var(--accent-soft);
     color:var(--accent);display:flex;align-items:center;justify-content:center;}
   .ad-banner .t{font-size:15px;font-weight:700;}
@@ -619,11 +621,15 @@ function openFlight(i){
 function closeFlight(){document.getElementById('detail').classList.remove('show');}
 function personalize(){alert('Sign in to personalize your trip — save your flight, get gate alerts, and more. Coming soon.');}
 function bannerTap(){showFullAd();}
+// Mobile app is ad-free (per request). Flip to true to bring ads back; the
+// big-screen FIDS/GIDS/BIDS displays are unaffected — they use their own
+// gate-ad engine in fids-core.js.
+const ADS_ENABLED=false;
 let adIdx=0,banIdx=0;
-function rotateBanner(){const a=BANNER_ADS[banIdx++%BANNER_ADS.length];
+function rotateBanner(){if(!ADS_ENABLED)return;const a=BANNER_ADS[banIdx++%BANNER_ADS.length];
   document.getElementById('adBanTile').innerHTML=svg(SVG[a.ic]||SVG.shop);
   document.getElementById('adBanT').textContent=a.t;document.getElementById('adBanS').textContent=a.s;}
-function showFullAd(){const a=FULL_ADS[adIdx++%FULL_ADS.length];
+function showFullAd(){if(!ADS_ENABLED)return;const a=FULL_ADS[adIdx++%FULL_ADS.length];
   const img=document.getElementById('adFullImg'),tile=document.getElementById('adFullIcon');
   if(a.img){img.src=a.img;img.onerror=function(){img.style.display='none';tile.style.display='';tile.innerHTML=svg(SVG.shop);};img.style.display='';tile.style.display='none';}
   else{img.style.display='none';tile.style.display='';tile.innerHTML=svg(SVG[a.ic]||SVG.shop);}
