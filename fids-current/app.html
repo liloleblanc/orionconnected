@@ -497,6 +497,12 @@ function acName(code){
   // CRJ-200 predates the deal so stays Bombardier).
   m=t.match(/CRJ[\s-]*(1000|900|700|550|200)/i);
   if(m)return (m[1]==='200'?'Bombardier':'Mitsubishi')+' CRJ-'+m[1];
+  // 737 family: bare "Boeing 737" in the feed is the MAX 8 our carriers fly
+  // (matches the big board); name the MAX variants explicitly.
+  var bt=t.trim();
+  if(/^(BOEING\s*)?737$/i.test(bt)||/737[\s-]*MAX[\s-]*8|^(BOEING\s*)?737-?8$/i.test(bt))return 'Boeing 737 MAX 8';
+  if(/737[\s-]*MAX[\s-]*9|^(BOEING\s*)?737-?9$/i.test(bt))return 'Boeing 737 MAX 9';
+  if(/737[\s-]*MAX[\s-]*7|^(BOEING\s*)?737-?7$/i.test(bt))return 'Boeing 737 MAX 7';
   return t;
 }
 let AP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
