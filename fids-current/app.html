@@ -38,13 +38,17 @@
     }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;height:100%;overscroll-behavior:none;}
+  /* No height:100% on body — it caps the body to the viewport and hides the
+     last card behind the fixed bottom nav. Let body grow with content so the
+     window scrolls and the padding-bottom clearance actually applies. */
+  html{height:100%;}
+  html,body{margin:0;overscroll-behavior:none;}
   body{
     background:var(--bg); color:var(--txt);
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     -webkit-font-smoothing:antialiased; letter-spacing:-0.011em;
     display:flex; flex-direction:column; min-height:100dvh;
-    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 80px);
+    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px);
   }
   svg{display:block;}
   .ic{width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;}
@@ -493,7 +497,7 @@ function acName(code){
   if(/DASH[\s-]*8|DHC[\s-]*8|Q400/i.test(t))return 'De Havilland Dash 8-400';
   // PAL Airlines feeds Dash 8 variants as bare "DHC-N" (DHC-3 = Dash 8-300),
   // same shorthand the big board normalises.
-  m=t.match(/^DHC[\s-]*([1-4])\b/i);
+  m=t.match(/DHC[\s-]*([1-4])(?![0-9])/i);
   if(m)return 'De Havilland Dash 8-'+m[1]+'00';
   // CRJ family → "Mitsubishi CRJ-NNN" (Mitsubishi acquired the CRJ program in 2020;
   // CRJ-200 predates the deal so stays Bombardier).
@@ -678,11 +682,10 @@ function render(){
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     // Operated-by and flight time live in the detail view ("the gate"), not on the list cards.
     // Other-end time under the main time: arrival time for a departure, origin departure time for an arrival.
-    const otherLine=f.otherTime?'<div class="arr">'+(isArr?'dep':'arr')+' '+esc((f.otherTime||'').slice(0,5))+'</div>':'';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'" onclick="openFlight('+i+')">'+cardMark(f.airline,!BUB_LIGHT[f.airline])+'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
-      +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">'+tLbl+'</div>'+otherLine+'</div></div>'
+      +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">'+tLbl+'</div></div></div>'
       +(gate||belt||ac?'<div class="meta">'+gate+belt+ac+'</div>':'')+'</div>';
   }).join('');
 }
@@ -900,7 +903,6 @@ function openFlight(i){
   let cells='';
   cells+=cell(isArr?'Arrives':'Departs',sched||'—');
   if(est&&est!==sched) cells+=cell('Estimated',est);
-  if(f.otherTime) cells+=cell(isArr?'Departed origin':'Arrives',(f.otherTime||'').slice(0,5));
   var _dur=fmtDur(f.durMin); if(_dur) cells+=cell('Flight time',_dur);
   if(isArr) cells+=cell('Baggage belt',f.belt||'TBD');
   else cells+=cell('Gate',f.gate||'—');
