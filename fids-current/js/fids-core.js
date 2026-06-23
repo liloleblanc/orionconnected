@@ -2336,8 +2336,13 @@ var OPERATOR_LOGOS_THEMED = {
 function operatorLogoUrlThemed(opCode, isDark) {
   if (!opCode) return null;
   var c = String(opCode).trim().toUpperCase();
-  var v = OPERATOR_LOGOS_THEMED[c];
-  if (v) return isDark ? v.dark : v.light;
+  // Dark (night) background → the white monochrome mark (good contrast).
+  // Light (day) background → the operator's NATURAL COLOUR logo, never the
+  // black monochrome one (per request: "the white is fine, not the black").
+  if (isDark) {
+    var v = OPERATOR_LOGOS_THEMED[c];
+    if (v) return v.dark;
+  }
   return operatorLogoUrl(c);
 }
 
@@ -5481,7 +5486,7 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgArrive), 'Arrival', _L2('Arrivée','Llegada'), (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(arrTimeStr) : arrTimeStr)) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgArrive), 'Arrival', _L2('Arrivée','Llegada'), (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}
