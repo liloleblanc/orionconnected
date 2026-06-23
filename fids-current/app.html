@@ -702,6 +702,11 @@ function render(){
 // SAMPLE is only a last-resort fallback when the live feed is unreachable.
 const ADB_BASE='https://fids-proxy.n-leblanc1984.workers.dev';
 const TZ={}; for(var _tk in AIRPORTS) TZ[_tk]=AIRPORTS[_tk].tz;
+// Airports with a real-time AeroDataBox webhook feed (push, fresher than the
+// scrape). Their cached records overlay the scrape so status/gate is live —
+// same as the big board does for Moncton.
+const CACHED_ICAO={YQM:'CYQM'};
+const WH_STATUS_ENUM={0:'scheduled',1:'scheduled',2:'active',3:'scheduled',4:'boarding',5:'gateclosed',6:'departed',7:'delayed',8:'active',9:'arrived',10:'cancelled',11:'diverted',12:'cancelled'};
 let DIR='dep';                 // active flights-view direction
 let ARRIVALS=[];               // cached arrivals (used by flights view + baggage)
 // Format a Date in the airport's local time as YYYY-MM-DDTHH:MM (ADB window).
@@ -782,11 +787,17 @@ function adbToCard(f,dir){
     _effTs:((rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime())||0
   };
 }
-// Fetch one direction across two back-to-back 12h windows, mapped + deduped.
+// Key matching the board's: flight number + scheduled UTC (dep or arr leg).
+function _rawKey(f){
+  return (f.number||'')+'|'+(((f.departure&&f.departure.scheduledTime&&f.departure.scheduledTime.utc)
+    ||(f.arrival&&f.arrival.scheduledTime&&f.arrival.scheduledTime.utc)||''));
+}
+// Fetch one direction across two back-to-back 12h windows. For airports with a
+// webhook (YQM/CYQM), overlay the fresher real-time records on the scrape.
 async function fetchDir(dir){
   const tz=TZ[AP]||'America/Toronto', now=new Date(), apiDir=dir==='arr'?'Arrival':'Departure';
   const wins=[[-3,9],[9,21]].map(([a,b])=>[adbFmt(new Date(now.getTime()+a*3600000),tz),adbFmt(new Date(now.getTime()+b*3600000),tz)]);
-  let all=[], ok=0, errs=0;
+  let raw=[], ok=0, errs=0;
   for(let i=0;i<wins.length;i++){
     const [from,to]=wins[i];
     if(i)await new Promise(r=>setTimeout(r,700));   // small gap — stay under ADB rate limit
@@ -797,16 +808,41 @@ async function fetchDir(dir){
       const r=await fetch(ADB_BASE+path,{cache:'no-store'});
       if(!r.ok)throw new Error('ADB '+r.status);
       const d=await r.json();
-      const rows=dir==='arr'?(d&&d.arrivals):(d&&d.departures);
-      all=all.concat((rows||[]).map(x=>adbToCard(x,dir)).filter(f=>f&&f.flight&&f.schedTime));
+      raw=raw.concat((dir==='arr'?(d&&d.arrivals):(d&&d.departures))||[]);   // keep RAW rows
       ok++;
     }catch(e){ errs++; }
   }
   if(!ok&&errs)throw new Error('ADB all windows failed');   // only fall back when nothing loaded
+  // De-dupe raw rows before overlay.
+  const seenR=new Set();
+  raw=raw.filter(f=>{const k=_rawKey(f);if(seenR.has(k))return false;seenR.add(k);return true;});
+  // ── WEBHOOK OVERLAY (real-time, more direct) for YQM ──
+  const icao=CACHED_ICAO[AP];
+  if(icao && raw.length){
+    try{
+      const cr=await fetch(ADB_BASE+'/flights/cached/'+icao+'?direction='+(dir==='arr'?'arr':'dep'),{cache:'no-store'});
+      if(cr.ok){
+        const cj=await cr.json();
+        if(cj && Array.isArray(cj.flights) && cj.flights.length){
+          const cutoffW=Date.now()-90*60000;   // ignore webhook records >90 min old
+          const byKey={};
+          for(const recw of cj.flights){
+            let _t=0; try{_t=new Date(recw.received_at).getTime();}catch(e){}
+            const cf=recw&&recw.flight;
+            if(cf && _t>=cutoffW){
+              if(typeof cf.status==='number') cf.status=WH_STATUS_ENUM[cf.status]||String(cf.status);
+              byKey[_rawKey(cf)]=cf;
+            }
+          }
+          for(let i=0;i<raw.length;i++){ const k=_rawKey(raw[i]); if(byKey[k]) raw[i]=byKey[k]; }
+        }
+      }
+    }catch(e){}
+  }
+  // Map → dedupe → drop stale departed/arrived → sort.
+  let all=raw.map(x=>adbToCard(x,dir)).filter(f=>f&&f.flight&&f.schedTime);
   const seen=new Set();
-  // Drop flights that are well past their (revised) time so departed flights
-  // don't linger: ~25 min after departure, ~90 min after an arrival (bags).
-  const cutoff=Date.now()-(dir==='arr'?90:25)*60000;
+  const cutoff=Date.now()-(dir==='arr'?90:25)*60000;   // departed ~25 min, arrived ~90 min
   return all.filter(f=>{const k=f.flight+'|'+f.schedTime;if(seen.has(k))return false;seen.add(k);return true;})
             .filter(f=>!f._effTs || f._effTs>=cutoff)
             .sort((a,b)=>a._ts-b._ts);
