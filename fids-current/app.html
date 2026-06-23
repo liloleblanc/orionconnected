@@ -658,6 +658,8 @@ function statusOf(f){
   if(st==='canceled'||st==='cancelled')return{t:'Cancelled',c:'cancelled'};
   if(st==='outgate'||st==='inair')return{t:'Departed',c:'ontime'};
   if(st==='ingate'||st==='landed')return{t:'Arrived',c:'ontime'};
+  if(st==='boarding')return{t:'Boarding',c:'boarding'};
+  if(st==='gateclosed')return{t:'Gate closed',c:'boarding'};
   const tl=(f.timeliness||'').toLowerCase();
   if(tl==='delayed')return{t:'Delayed',c:'delayed'};
   if(tl==='early')return{t:'Early',c:'early'};
@@ -769,7 +771,8 @@ function adbToCard(f,dir){
     terminal:(here.terminal&&here.terminal!=='-')?here.terminal:'',
     aircraft:(f.aircraft&&(f.aircraft.model||''))||'', reg:(f.aircraft&&f.aircraft.reg)||'',
     operatedBy:op, state:state, timeliness:timeliness,
-    _ts:new Date(String(sc).replace(' ','T')).getTime()||0
+    _ts:new Date(String(sc).replace(' ','T')).getTime()||0,
+    _effTs:((rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime())||0
   };
 }
 // Fetch one direction across two back-to-back 12h windows, mapped + deduped.
@@ -794,7 +797,11 @@ async function fetchDir(dir){
   }
   if(!ok&&errs)throw new Error('ADB all windows failed');   // only fall back when nothing loaded
   const seen=new Set();
+  // Drop flights that are well past their (revised) time so departed flights
+  // don't linger: ~25 min after departure, ~90 min after an arrival (bags).
+  const cutoff=Date.now()-(dir==='arr'?90:25)*60000;
   return all.filter(f=>{const k=f.flight+'|'+f.schedTime;if(seen.has(k))return false;seen.add(k);return true;})
+            .filter(f=>!f._effTs || f._effTs>=cutoff)
             .sort((a,b)=>a._ts-b._ts);
 }
 async function load(){
