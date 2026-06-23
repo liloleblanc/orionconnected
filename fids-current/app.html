@@ -141,6 +141,8 @@
   .fcard .time{text-align:right;flex:none;}
   .fcard .time .hh{font-size:23px;font-weight:800;letter-spacing:-0.02em;}
   .fcard .time .lbl{font-size:9.5px;letter-spacing:.11em;color:var(--faint);text-transform:uppercase;font-weight:600;margin-top:2px;}
+  .fcard .time .arr{font-size:12.5px;font-weight:700;color:var(--muted);margin-top:5px;}
+  .fcard.dark .time .arr{color:rgba(255,255,255,.8);}
   .meta{display:flex;gap:8px;flex-wrap:wrap;}
   .chip{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);
     border-radius:10px;padding:7px 11px;font-size:12.5px;font-weight:700;}
@@ -646,6 +648,7 @@ function liveryImg(airline,raw,operatedBy){
     +'onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=\'\';}'
     +'else if(this.dataset.fb2){this.src=this.dataset.fb2;this.dataset.fb2=\'\';}else{this.style.display=\'none\';}">';
 }
+function fmtDur(m){if(!m||m<=0)return '';const h=Math.floor(m/60),mm=m%60;return (h?h+'h':'')+(h&&mm?' ':'')+(mm?mm+'m':'');}
 function statusOf(f){
   const st=(f.state||'').toLowerCase();
   if(st==='canceled'||st==='cancelled')return{t:'Cancelled',c:'cancelled'};
@@ -674,11 +677,15 @@ function render(){
     const gate=(!isArr&&f.gate)?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
+    const dur=fmtDur(f.durMin);
+    const durChip=dur?'<span class="chip"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'+esc(dur)+'</span>':'';
+    // Other-end time under the main time: arrival time for a departure, origin departure time for an arrival.
+    const otherLine=f.otherTime?'<div class="arr">'+(isArr?'dep':'arr')+' '+esc((f.otherTime||'').slice(0,5))+'</div>':'';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'" onclick="openFlight('+i+')">'+cardMark(f.airline,!BUB_LIGHT[f.airline])+'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
-      +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">'+tLbl+'</div></div></div>'
-      +(gate||belt||ac||op?'<div class="meta">'+gate+belt+ac+op+'</div>':'')+'</div>';
+      +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">'+tLbl+'</div>'+otherLine+'</div></div>'
+      +(gate||belt||ac||op||durChip?'<div class="meta">'+gate+belt+durChip+ac+op+'</div>':'')+'</div>';
   }).join('');
 }
 // ── LIVE FLIGHTS ──────────────────────────────────────────────────────
@@ -730,16 +737,31 @@ function adbToCard(f,dir){
   if(raw==='cancelled'||raw==='canceled')state='canceled';
   else if(raw==='departed'||raw==='enroute')state=dir==='arr'?'scheduled':'outgate';
   else if(raw==='arrived'||raw==='landed')state='ingate';
+  else if(raw==='boarding')state='boarding';
+  else if(raw==='gateclosed'||raw==='gate closed')state='gateclosed';
   if(raw==='delayed')timeliness='delayed';
   else if(sc&&rv){const dt=(new Date(rv.replace(' ','T'))-new Date(sc.replace(' ','T')))/60000;
     if(dt>=5)timeliness='delayed'; else if(dt<=-5)timeliness='early';}
+  // ADB's schedule feed rarely sends a live 'Boarding' flag, so derive it from
+  // the (revised) departure time for upcoming departures — same idea as the board.
+  if(dir==='dep' && state==='scheduled'){
+    var _eff=(rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime();
+    if(_eff){var _mins=(_eff-Date.now())/60000; if(_mins>0&&_mins<=35)state='boarding';}
+  }
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
   if(!op) op=inferOperator(code,num);
+  // Other-end time (destination arrival for a departure, origin departure for an
+  // arrival) + total flight time from the two legs' UTC stamps.
+  const otherTime=adbHHMM(other.scheduledTime&&other.scheduledTime.local);
+  const depU=(dep.scheduledTime&&dep.scheduledTime.utc)||'', arrU=(arr.scheduledTime&&arr.scheduledTime.utc)||'';
+  let durMin=0;
+  if(depU&&arrU){const d=(new Date(arrU.replace(' ','T'))-new Date(depU.replace(' ','T')))/60000; if(d>0&&d<24*60)durMin=Math.round(d);}
   return{
     airline:code, flight:num, dir:dir,
     cityIata:(((other.airport&&(other.airport.iata||(other.airport.icao||'').slice(1)))||'')).toUpperCase(),
     schedTime:adbHHMM(here.scheduledTime&&here.scheduledTime.local),
     estTime:adbHHMM(here.revisedTime&&here.revisedTime.local)||adbHHMM(here.scheduledTime&&here.scheduledTime.local),
+    otherTime:otherTime, durMin:durMin,
     gate:(here.gate&&here.gate!=='-')?here.gate:'',
     belt:(dir==='arr'&&arr.baggageBelt&&arr.baggageBelt!=='-')?arr.baggageBelt:'',
     terminal:(here.terminal&&here.terminal!=='-')?here.terminal:'',
@@ -865,6 +887,8 @@ function openFlight(i){
   let cells='';
   cells+=cell(isArr?'Arrives':'Departs',sched||'—');
   if(est&&est!==sched) cells+=cell('Estimated',est);
+  if(f.otherTime) cells+=cell(isArr?'Departed origin':'Arrives',(f.otherTime||'').slice(0,5));
+  var _dur=fmtDur(f.durMin); if(_dur) cells+=cell('Flight time',_dur);
   if(isArr) cells+=cell('Baggage belt',f.belt||'TBD');
   else cells+=cell('Gate',f.gate||'—');
   if(f.terminal) cells+=cell('Terminal',f.terminal);
