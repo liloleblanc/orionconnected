@@ -659,6 +659,7 @@ function statusOf(f){
   if(st==='outgate'||st==='inair')return{t:'Departed',c:'ontime'};
   if(st==='ingate'||st==='landed')return{t:'Arrived',c:'ontime'};
   if(st==='boarding')return{t:'Boarding',c:'boarding'};
+  if(st==='final')return{t:'Final call',c:'boarding'};
   if(st==='gateclosed')return{t:'Gate closed',c:'boarding'};
   const tl=(f.timeliness||'').toLowerCase();
   if(tl==='delayed')return{t:'Delayed',c:'delayed'};
@@ -751,16 +752,21 @@ function adbToCard(f,dir){
   if(raw==='delayed')timeliness='delayed';
   else if(sc&&rv){const dt=(new Date(rv.replace(' ','T'))-new Date(sc.replace(' ','T')))/60000;
     if(dt>=5)timeliness='delayed'; else if(dt<=-5)timeliness='early';}
-  // ADB's schedule feed rarely sends a live 'Boarding' flag, so derive it from
-  // the (revised) departure time for upcoming departures — same idea as the board.
+  // ADB's schedule feed rarely sends a live 'Boarding'/'Gate closed' flag, so
+  // derive a boarding window from the (revised) departure time. Regional flights
+  // (and AC's 5 zones + pre-board) start ~45 min out; the gate is closing in the
+  // last ~12 min, so flip to "Final call" then instead of clinging to Boarding.
   if(dir==='dep' && state==='scheduled'){
     var _eff=(rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime();
-    if(_eff){var _mins=(_eff-Date.now())/60000; if(_mins>0&&_mins<=35)state='boarding';}
+    if(_eff){var _mins=(_eff-Date.now())/60000;
+      if(_mins>0&&_mins<=12)state='final';
+      else if(_mins>12&&_mins<=45)state='boarding';
+    }
   }
   // Feed status lags reality: if a departure is well past its (revised) time but
   // is still flagged boarding / gate-closed / scheduled, it has actually left —
   // show Departed, don't keep saying Boarding (e.g. AC7995 after pushback).
-  if(dir==='dep' && (state==='boarding'||state==='gateclosed'||state==='scheduled')){
+  if(dir==='dep' && (state==='boarding'||state==='gateclosed'||state==='final'||state==='scheduled')){
     var _effD=(rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime();
     if(_effD && (Date.now()-_effD)>10*60000) state='outgate';
   }
