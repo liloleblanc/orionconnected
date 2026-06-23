@@ -6050,7 +6050,7 @@ function _buildV2MapCol(ctx, vars) {
         // Candidate URL chain — tries the primary path from OPERATOR_LOGOS
         // first, then peel off the extension and try .png/.svg/-icon variants.
         // Final fallback is wordmark text in the same badge shell.
-        var _primary = (typeof operatorLogoUrlThemed === 'function') ? operatorLogoUrlThemed(_opCode, true) : null;
+        var _primary = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
         var _candidates = [];
         if (_primary) {
           _candidates.push(_primary);
@@ -6150,7 +6150,7 @@ function _buildV2MapCol(ctx, vars) {
         var _opNm6 = _cf._opName
           || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
         _opNm6 = String(_opNm6).replace(/[<>"']/g, '');
-        var _opLogo6 = (typeof operatorLogoUrlThemed === 'function') ? operatorLogoUrlThemed(_opCode, true) : null;
+        var _opLogo6 = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
         _opByVal = _opLogo6
           ? '<img class="v2-rc-opby-logo" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
             + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
@@ -7532,7 +7532,7 @@ function uxgGateHtml(ctx) {
                   }
                   if (_opTxt) {
                     // Big-display gate panel is always on a dark background → use the white logo variant.
-                    var _opLogoUrl = (typeof operatorLogoUrlThemed === 'function') ? operatorLogoUrlThemed(_opCode, true) : null;
+                    var _opLogoUrl = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
                     // Single-line layout: "Operated by [logo or text]" with
                     // label and value on the same row, vertically centered.
                     _aircraftLine += '<div style="padding:14px 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
