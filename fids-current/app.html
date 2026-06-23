@@ -489,6 +489,10 @@ function acName(code){
   m=t.match(/(?:DASH[\s-]*8|DHC[\s-]*8)[\s-]*Q?(400|402|300|311|200|100)/i);
   if(m)return 'De Havilland Dash 8-'+(m[1].charAt(0)+'00');
   if(/DASH[\s-]*8|DHC[\s-]*8|Q400/i.test(t))return 'De Havilland Dash 8-400';
+  // PAL Airlines feeds Dash 8 variants as bare "DHC-N" (DHC-3 = Dash 8-300),
+  // same shorthand the big board normalises.
+  m=t.match(/^DHC[\s-]*([1-4])\b/i);
+  if(m)return 'De Havilland Dash 8-'+m[1]+'00';
   // CRJ family → "Mitsubishi CRJ-NNN" (Mitsubishi acquired the CRJ program in 2020;
   // CRJ-200 predates the deal so stays Bombardier).
   m=t.match(/CRJ[\s-]*(1000|900|700|550|200)/i);
@@ -694,11 +698,14 @@ function adbFmt(d,tz){
 function adbHHMM(s){if(!s)return '';const m=String(s).match(/(\d{2}:\d{2})/);return m?m[1]:'';}
 // Infer the actual operating carrier for the common Air Canada Express / Rouge
 // and WestJet Encore cases the marketing code hides — matches the big board.
-function inferOperator(code,num,eq){
-  const fnum=parseInt(String(num).replace(/\D/g,''))||0, e=String(eq||'');
+function inferOperator(code,num){
+  const fnum=parseInt(String(num).replace(/\D/g,''))||0;
+  // Number-based, mirroring the big board — no equipment needed (AC7995 was
+  // missed before because its aircraft type wasn't always in the feed).
   if(code==='AC'){
     if(fnum>=1600&&fnum<=2099) return 'Air Canada Rouge';
-    if(fnum>=7000&&fnum<=8999 && /dash|dhc|crj|q400/i.test(e)) return 'Jazz';
+    if((fnum>=7600&&fnum<=7699)||(fnum>=2200&&fnum<=2299)) return 'PAL Airlines';
+    if(fnum>=7000&&fnum<=8999) return 'Jazz';
   }
   if(code==='WS' && fnum>=3000 && fnum<=3999) return 'WestJet Encore';
   return '';
@@ -721,7 +728,7 @@ function adbToCard(f,dir){
   else if(sc&&rv){const dt=(new Date(rv.replace(' ','T'))-new Date(sc.replace(' ','T')))/60000;
     if(dt>=5)timeliness='delayed'; else if(dt<=-5)timeliness='early';}
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
-  if(!op) op=inferOperator(code,num,(f.aircraft&&f.aircraft.model)||'');
+  if(!op) op=inferOperator(code,num);
   return{
     airline:code, flight:num, dir:dir,
     cityIata:(((other.airport&&(other.airport.iata||(other.airport.icao||'').slice(1)))||'')).toUpperCase(),
