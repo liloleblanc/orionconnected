@@ -2194,6 +2194,8 @@ const AIRLINE_BRAND = {
   'WS': { bg1:'#003366', bg2:'#001a33', bg3:'#004488', accent:'#00b2a9', name:'WestJet' },
   'TS': { bg1:'#003366', bg2:'#001833', bg3:'#004080', accent:'#ff6600', name:'Air Transat' },
   'PD': { bg1:'#002244', bg2:'#001122', bg3:'#003355', accent:'#1a3a6b', name:'Porter Airlines' },
+  'PB': { bg1:'#0a2a4a', bg2:'#06203a', bg3:'#0e335a', accent:'#e37222', name:'PAL Airlines' },
+  'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
   'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
   'UA': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#1414D2', name:'United' },
@@ -13139,9 +13141,14 @@ function render() {
       if (_userCfgForStyle && Object.prototype.hasOwnProperty.call(_userCfgForStyle, 'airlineStyle')) _airlineStyleForRow = _userCfgForStyle.airlineStyle;
       else if (_curCfgForStyle && Object.prototype.hasOwnProperty.call(_curCfgForStyle, 'airlineStyle')) _airlineStyleForRow = _curCfgForStyle.airlineStyle;
     } catch (e) {}
+    // Airline name in the carrier's natural brand colour (not forced black).
+    // setTheme() forces .fids-airline-name to rowText with !important, so the
+    // inline override also needs !important to win.
+    const _brandColor = (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
+    const _nameStyle = _brandColor ? ` style="color:${_brandColor} !important;"` : '';
     const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
-      ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase)}" onerror="this.outerHTML='<span class=&quot;fids-airline-name&quot;>${_airlineDisplay}</span>'">`
-      : `<span class="fids-airline-name">${_airlineDisplay}</span>`);
+      ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase)}" onerror="this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>'">`
+      : `<span class="fids-airline-name"${_nameStyle}>${_airlineDisplay}</span>`);
     const airlineCellHtml = '<td class="td-airline"><div class="fids-cell-airline">'
       +   '<div class="fids-airline-logo">' + mkLogo(_airlineCodeForLogo, f._airlineName) + '</div>'
       +   '<div class="fids-airline-wordmark-slot">' + _airlineLabelHtml + '</div>'
