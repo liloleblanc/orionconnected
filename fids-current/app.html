@@ -752,6 +752,13 @@ function adbToCard(f,dir){
     var _eff=(rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime();
     if(_eff){var _mins=(_eff-Date.now())/60000; if(_mins>0&&_mins<=35)state='boarding';}
   }
+  // Feed status lags reality: if a departure is well past its (revised) time but
+  // is still flagged boarding / gate-closed / scheduled, it has actually left —
+  // show Departed, don't keep saying Boarding (e.g. AC7995 after pushback).
+  if(dir==='dep' && (state==='boarding'||state==='gateclosed'||state==='scheduled')){
+    var _effD=(rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime();
+    if(_effD && (Date.now()-_effD)>10*60000) state='outgate';
+  }
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
   if(!op) op=inferOperator(code,num);
   // Other-end time (destination arrival for a departure, origin departure for an
