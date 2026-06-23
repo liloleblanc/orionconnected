@@ -44,7 +44,7 @@
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     -webkit-font-smoothing:antialiased; letter-spacing:-0.011em;
     display:flex; flex-direction:column; min-height:100dvh;
-    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));
+    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px);
   }
   svg{display:block;}
   .ic{width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;}
@@ -136,8 +136,8 @@
   .st.cancelled{color:var(--red);} .st.boarding{color:var(--accent);}
   .fcard .row2{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .fcard .city{font-size:23px;font-weight:800;line-height:1.05;letter-spacing:-0.02em;}
-  .fcard .sub{color:var(--muted);font-size:12px;font-weight:500;margin-top:5px;}
-  .fcard .sub b{color:var(--faint);font-weight:600;}
+  .fcard .sub{color:var(--muted);font-size:14px;font-weight:600;margin-top:6px;}
+  .fcard .sub b{color:var(--txt);font-weight:800;}
   .fcard .time{text-align:right;flex:none;}
   .fcard .time .hh{font-size:23px;font-weight:800;letter-spacing:-0.02em;}
   .fcard .time .lbl{font-size:9.5px;letter-spacing:.11em;color:var(--faint);text-transform:uppercase;font-weight:600;margin-top:2px;}
@@ -455,10 +455,18 @@ const AIRPORTS={
 };
 const REGION_LABEL={CA:'Canada',US:'United States',INT:'Sun & International'};
 const AP_NAME={}; for(var _ak in AIRPORTS) AP_NAME[_ak]=AIRPORTS[_ak].n;
-const CITY={YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHZ:'Halifax',YYT:"St. John's",YDF:'Deer Lake',YOW:'Ottawa',
-  YWK:'Wabush',YYY:'Mont-Joli',TPA:'Tampa',TLH:'Tallahassee',PSE:'Ponce',SDQ:'Santo Domingo',SJU:'San Juan',
+const CITY={YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHU:'Montréal (St-Hubert)',YHZ:'Halifax',YYT:"St. John's",
+  YDF:'Deer Lake',YOW:'Ottawa',YQB:'Québec City',YWK:'Wabush',YYY:'Mont-Joli',YBG:'Bagotville',YFC:'Fredericton',
+  YSJ:'Saint John',YQY:'Sydney',YZX:'Greenwood',YGP:'Gaspé',YGR:'Îles-de-la-Madeleine',YQM:'Moncton',
+  YYC:'Calgary',YEG:'Edmonton',YVR:'Vancouver',YWG:'Winnipeg',YYJ:'Victoria',YXX:'Abbotsford',
+  TPA:'Tampa',TLH:'Tallahassee',PSE:'Ponce',SDQ:'Santo Domingo',SJU:'San Juan',PUJ:'Punta Cana',
   BQN:'Aguadilla',CLE:'Cleveland',ATL:'Atlanta',BOS:'Boston',JFK:'New York',EWR:'Newark',DFW:'Dallas',
-  DEN:'Denver',LAX:'Los Angeles',ORD:'Chicago',MIA:'Miami',DTW:'Detroit',STI:'Santiago'};
+  DEN:'Denver',LAX:'Los Angeles',ORD:'Chicago',MIA:'Miami',MCO:'Orlando',FLL:'Fort Lauderdale',DTW:'Detroit',
+  CUN:'Cancún',NAS:'Nassau',MBJ:'Montego Bay',AUA:'Aruba',STI:'Santiago',LHR:'London',CDG:'Paris',
+  FRA:'Frankfurt',AMS:'Amsterdam',DUB:'Dublin',KEF:'Reykjavík'};
+// Fill any gaps from the airport catalogue so no destination ever shows as a
+// bare IATA code when we already know its name.
+for(var _ck in AIRPORTS){ if(!CITY[_ck]) CITY[_ck]=AIRPORTS[_ck].n; }
 const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
   B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet'};
 
@@ -616,11 +624,17 @@ function acType(raw){
   return '';
 }
 // Real aircraft livery side-view, airline-specific with a generic fallback.
-function liveryImg(airline,raw){
+// Air Canada Rouge has its own paint (e.g. 320r.png) living in the AC folder,
+// so when a flight is operated by Rouge we use the "r" variant and fall back to
+// mainline AC if that particular Rouge art is missing.
+function liveryImg(airline,raw,operatedBy){
   const t=acType(raw); if(!t) return '';
   const a=String(airline||'').toUpperCase();
-  return '<img class="dt-illus" src="/aircraft/'+a+'/'+t+'.png" data-fb="/aircraft/'+t+'.png" alt="" '
-    +'onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=\'\';}else{this.style.display=\'none\';}">';
+  const isRouge=(a==='AC' && /rouge/i.test(operatedBy||''));
+  const primary=isRouge?('/aircraft/AC/'+t+'r.png'):('/aircraft/'+a+'/'+t+'.png');
+  return '<img class="dt-illus" src="'+primary+'" data-fb="/aircraft/'+a+'/'+t+'.png" data-fb2="/aircraft/'+t+'.png" alt="" '
+    +'onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=\'\';}'
+    +'else if(this.dataset.fb2){this.src=this.dataset.fb2;this.dataset.fb2=\'\';}else{this.style.display=\'none\';}">';
 }
 function statusOf(f){
   const st=(f.state||'').toLowerCase();
@@ -851,7 +865,7 @@ function openFlight(i){
   document.getElementById('detailBody').innerHTML=
     '<div class="dt-hero">'+heroWordmark(f.airline)
     +'<div class="flt">'+esc(f.flight)+'</div>'+(opLine?'<div class="al-op">'+esc(opLine)+'</div>':'')
-    +liveryImg(f.airline,f.aircraft)+'</div>'
+    +liveryImg(f.airline,f.aircraft,f.operatedBy)+'</div>'
     +'<div class="dt-route">'+(isArr?epOther:epHere)
     +'<div class="line"><span class="pl">'+svg(PLANE_SVG)+'</span></div>'
     +(isArr?epHere:epOther)+'</div>'
