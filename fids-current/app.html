@@ -680,12 +680,13 @@ function render(){
     const belt=(isArr&&f.belt)?'<span class="chip gate">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')+'<span class="k">Belt</span> '+esc(f.belt)+'</span>':'';
     const gate=(!isArr&&f.gate)?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
-    // Operated-by and flight time live in the detail view ("the gate"), not on the list cards.
-    // Other-end time under the main time: arrival time for a departure, origin departure time for an arrival.
+    // Arrival time (for a departure) / origin departure time (for an arrival),
+    // shown under the main time on each card.
+    const otherLine=f.otherTime?'<div class="arr">'+(isArr?'Dep ':'Arr ')+esc((f.otherTime||'').slice(0,5))+'</div>':'';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'" onclick="openFlight('+i+')">'+cardMark(f.airline,!BUB_LIGHT[f.airline])+'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
-      +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">'+tLbl+'</div></div></div>'
+      +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">'+tLbl+'</div>'+otherLine+'</div></div>'
       +(gate||belt||ac?'<div class="meta">'+gate+belt+ac+'</div>':'')+'</div>';
   }).join('');
 }
@@ -903,6 +904,7 @@ function openFlight(i){
   let cells='';
   cells+=cell(isArr?'Arrives':'Departs',sched||'—');
   if(est&&est!==sched) cells+=cell('Estimated',est);
+  if(f.otherTime) cells+=cell(isArr?'Departs origin':'Arrives',(f.otherTime||'').slice(0,5));
   var _dur=fmtDur(f.durMin); if(_dur) cells+=cell('Flight time',_dur);
   if(isArr) cells+=cell('Baggage belt',f.belt||'TBD');
   else cells+=cell('Gate',f.gate||'—');
