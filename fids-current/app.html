@@ -854,10 +854,12 @@ async function load(){
     const mapped=await fetchDir(DIR);
     if(isArr) ARRIVALS=mapped;
     if(mapped.length){ FLIGHTS=mapped; hint.textContent='Live '+word+' · '+mapped.length+' flights'; }
-    else{ FLIGHTS=SAMPLE; hint.textContent='Sample flights · no live '+word; }
+    else{ FLIGHTS=[]; hint.textContent='No '+word+' right now'; }   // honest empty — never fake flights
   }catch(e){
-    if(!FLIGHTS.length)FLIGHTS=SAMPLE;
-    hint.textContent='Sample flights · offline';
+    // Transient failure (e.g. a redeploy or network blip): keep whatever was
+    // last shown and quietly reconnect. Never swap in the demo flights — that
+    // looked alarming to passengers.
+    hint.textContent=FLIGHTS.length?('Live '+word+' · reconnecting…'):'Reconnecting…';
   }
   render();
 }
