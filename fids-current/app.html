@@ -545,24 +545,77 @@ function render(){
       +(gate||ac||op?'<div class="meta">'+gate+ac+op+'</div>':'')+'</div>';
   }).join('');
 }
+// ── LIVE DEPARTURES ───────────────────────────────────────────────────
+// Pull from the SAME AeroDataBox proxy the main FIDS board uses, so the
+// app shows real live flights (the old /oag/departures route doesn't exist
+// on this origin, so it always fell back to the SAMPLE demo list). We map
+// ADB's record shape to the compact card shape below. SAMPLE is now only a
+// last-resort fallback when the live feed is unreachable.
+const ADB_BASE='https://fids-proxy.n-leblanc1984.workers.dev';
+const TZ={YQM:'America/Moncton',YHZ:'America/Halifax',YYZ:'America/Toronto',YUL:'America/Toronto',MCO:'America/New_York'};
+// Format a Date in the airport's local time as YYYY-MM-DDTHH:MM (ADB window).
+function adbFmt(d,tz){
+  try{
+    const p=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d);
+    const g=t=>p.find(x=>x.type===t).value; let hh=g('hour'); if(hh==='24')hh='00';
+    return g('year')+'-'+g('month')+'-'+g('day')+'T'+hh+':'+g('minute');
+  }catch(e){return d.toISOString().slice(0,16);}
+}
+function adbHHMM(s){if(!s)return '';const m=String(s).match(/(\d{2}:\d{2})/);return m?m[1]:'';}
+function adbToCard(f){
+  const dep=f.departure||{}, arr=f.arrival||{};
+  const num=(f.number||'').replace(/\s+/g,'').toUpperCase();
+  if(!num)return null;
+  const code=(((f.airline&&f.airline.iata)||num.replace(/[0-9].*/,''))||'').toUpperCase();
+  const raw=String(f.status||'').toLowerCase();
+  const sc=(dep.scheduledTime&&(dep.scheduledTime.utc||dep.scheduledTime.local))||'';
+  const rv=(dep.revisedTime&&(dep.revisedTime.utc||dep.revisedTime.local))||'';
+  let state='scheduled',timeliness='onTime';
+  if(raw==='cancelled'||raw==='canceled')state='canceled';
+  else if(raw==='departed'||raw==='enroute')state='outgate';
+  else if(raw==='arrived'||raw==='landed')state='ingate';
+  if(raw==='delayed')timeliness='delayed';
+  else if(sc&&rv){const dt=(new Date(rv.replace(' ','T'))-new Date(sc.replace(' ','T')))/60000;
+    if(dt>=5)timeliness='delayed'; else if(dt<=-5)timeliness='early';}
+  const op=(dep.airline&&dep.airline.iata&&dep.airline.iata.toUpperCase()!==code)?(dep.airline.name||''):'';
+  const gate=(dep.gate&&dep.gate!=='-')?dep.gate:'';
+  return{
+    airline:code, flight:num,
+    cityIata:(((arr.airport&&(arr.airport.iata||(arr.airport.icao||'').slice(1)))||'')).toUpperCase(),
+    schedTime:adbHHMM(dep.scheduledTime&&dep.scheduledTime.local),
+    estTime:adbHHMM(dep.revisedTime&&dep.revisedTime.local)||adbHHMM(dep.scheduledTime&&dep.scheduledTime.local),
+    gate:gate, aircraft:(f.aircraft&&(f.aircraft.model||''))||'', reg:(f.aircraft&&f.aircraft.reg)||'',
+    operatedBy:op, state:state, timeliness:timeliness,
+    _ts:new Date(String(sc).replace(' ','T')).getTime()||0
+  };
+}
 async function load(){
   if(document.hidden)return;
+  const tz=TZ[AP]||'America/Toronto', now=new Date();
+  const from=adbFmt(new Date(now.getTime()-2*3600000),tz);  // 12h window (ADB max)
+  const to=adbFmt(new Date(now.getTime()+10*3600000),tz);
+  const path='/flights/airports/iata/'+encodeURIComponent(AP)+'/'+from+'/'+to
+    +'?withLeg=true&direction=Departure&withCancelled=true&withCodeshared=false'
+    +'&withCargo=false&withPrivate=false&withLocation=true';
   try{
-    const r=await fetch('/oag/departures?ap='+encodeURIComponent(AP),{cache:'no-store'});
+    const r=await fetch(ADB_BASE+path,{cache:'no-store'});
+    if(!r.ok)throw new Error('ADB '+r.status);
     const d=await r.json();
-    const live=d&&d.flights&&d.flights.length;
-    if(d&&d.error&&!live){
-      FLIGHTS=SAMPLE;
-      document.getElementById('hint').textContent='Sample flights · live data over quota';
-    }else if(live){
-      FLIGHTS=d.flights;
-      const src=d.source==='adb'?' · AeroDataBox':'';
-      document.getElementById('hint').textContent='Live departures · '+FLIGHTS.length+' flights'+src;
+    let mapped=((d&&d.departures)||[]).map(adbToCard).filter(f=>f&&f.flight&&f.schedTime);
+    const seen=new Set();
+    mapped=mapped.filter(f=>{const k=f.flight+'|'+f.schedTime;if(seen.has(k))return false;seen.add(k);return true;})
+                 .sort((a,b)=>a._ts-b._ts);
+    if(mapped.length){
+      FLIGHTS=mapped;
+      document.getElementById('hint').textContent='Live departures · '+FLIGHTS.length+' flights';
     }else{
       FLIGHTS=SAMPLE;
       document.getElementById('hint').textContent='Sample flights · no live departures';
     }
-  }catch(e){if(!FLIGHTS.length)FLIGHTS=SAMPLE;document.getElementById('hint').textContent='Sample flights · offline';}
+  }catch(e){
+    if(!FLIGHTS.length)FLIGHTS=SAMPLE;
+    document.getElementById('hint').textContent='Sample flights · offline';
+  }
   render();
 }
 async function loadBrand(code){
