@@ -1710,17 +1710,6 @@ window.FIDS_CUSTOMIZE = {
       if (typeof applyAirportConfigToBoard === 'function') {
         applyAirportConfigToBoard(_code);
       }
-      // CRITICAL: also re-inject the active preset's #dynamicTheme stylesheet.
-      // applyAirportConfigToBoard only sets body[data-fids-theme]; the actual
-      // theme colours come from setTheme()/smActivatePreset(), which previously
-      // ran ONLY when the Customize menu was opened. On a fresh page load the
-      // board therefore rendered unstyled (gray, unreadable text) until the
-      // menu was touched. Re-applying the saved preset here paints the real
-      // theme on first load.
-      if (typeof smActivatePreset === 'function' && typeof _getActivePresetId === 'function') {
-        var _pid = _getActivePresetId();
-        if (_pid) smActivatePreset(_pid);
-      }
     } catch (e) {}
   }
   // Fire immediately (menu.js is loaded — this very file is running)

@@ -15794,7 +15794,12 @@ function applyAirportConfigToBoard(iata) {
       document.head.appendChild(_styleEl);
       console.log('[FIDS Theme APPLY] custom colors restored:', _cc);
     } else {
-      console.warn('[FIDS Theme APPLY] theme=custom but no customColors saved — board will fall back to navy');
+      console.warn('[FIDS Theme APPLY] theme=custom but no customColors saved — falling back to builtin theme');
+      // Never leave data-fids-theme="custom" with no colours: there are no CSS
+      // rules for bare "custom", so the board renders unstyled (gray background,
+      // unreadable text — the "gray on load" bug). Fall back to a real theme so
+      // it's always legible even if the preset hydration hasn't run yet.
+      document.body.dataset.fidsTheme = (_builtin && _builtin.theme) || 'navy';
     }
   } else {
     // Non-custom theme — strip any leftover custom CSS variables so the
