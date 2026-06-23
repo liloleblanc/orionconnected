@@ -12976,11 +12976,16 @@ function render() {
 
   const all = data[mode] || [];
   const MAX_DEPARTED = 5;
+  const DEPARTED_SHOW_MS = 30 * 60000; // keep a departed flight on the board ~30 min, not hours
   const pastStatuses = new Set(['departed','arrived','landed']);
-  const departed = all.filter(f => pastStatuses.has(f.status))
+  const departed = all.filter(f => {
+      if (!pastStatuses.has(f.status)) return false;
+      const _eff = f._revTs || f._sortTs || 0;   // effective (revised) departure time
+      return !_eff || (nowTs - _eff) <= DEPARTED_SHOW_MS;
+    })
     .sort((a, b) => b._sortTs - a._sortTs)
     .slice(0, MAX_DEPARTED)
-    .reverse(); 
+    .reverse();
   const upcoming = all.filter(f => {
     if (!f._sortTs) return true;
     if (pastStatuses.has(f.status)) return false; 
@@ -16027,8 +16032,13 @@ function getPageCount(modeKey) {
   const nowTs = Date.now();
   const all = data[modeKey] || [];
   const MAX_DEPARTED = 5;
+  const DEPARTED_SHOW_MS = 30 * 60000; // match render(): departed flights show ~30 min
   const pastStatuses = new Set(['departed','arrived','landed']);
-  const departed = all.filter(f => pastStatuses.has(f.status)).slice(0, MAX_DEPARTED);
+  const departed = all.filter(f => {
+      if (!pastStatuses.has(f.status)) return false;
+      const _eff = f._revTs || f._sortTs || 0;
+      return !_eff || (nowTs - _eff) <= DEPARTED_SHOW_MS;
+    }).slice(0, MAX_DEPARTED);
   const upcoming = all.filter(f => {
     if (!f._sortTs) return true;
     if (pastStatuses.has(f.status)) return false;
