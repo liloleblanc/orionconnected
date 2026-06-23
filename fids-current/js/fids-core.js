@@ -2318,6 +2318,27 @@ function operatorLogoUrl(opCode) {
   return OPERATOR_LOGOS[c] || null;
 }
 
+// Day/night ("light"/"dark" theme) operator logos. Single-colour wordmarks are
+// invisible against the wrong background, which is why the operator logo wasn't
+// showing on the GIDS gate screen. Pick the dark-ink mark on a light (day)
+// background and the white mark on a dark (night) background. Operators without
+// a monochrome pair fall back to their standard colour logo.
+var OPERATOR_LOGOS_THEMED = {
+  'RV':  { light:'/logos/airlines/canadian/rouge-monochrome-black.svg',                   dark:'/logos/airlines/canadian/rouge-monochrome-white.svg' },
+  'ROU': { light:'/logos/airlines/canadian/rouge-monochrome-black.svg',                   dark:'/logos/airlines/canadian/rouge-monochrome-white.svg' },
+  'QK':  { light:'/logos/airlines/canadian-regional/jazz-monochrome-black.svg',           dark:'/logos/airlines/canadian-regional/jazz-monochrome-white.svg' },
+  'JZA': { light:'/logos/airlines/canadian-regional/jazz-monochrome-black.svg',           dark:'/logos/airlines/canadian-regional/jazz-monochrome-white.svg' },
+  'PB':  { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' },
+  'PVL': { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' }
+};
+function operatorLogoUrlThemed(opCode, isDark) {
+  if (!opCode) return null;
+  var c = String(opCode).trim().toUpperCase();
+  var v = OPERATOR_LOGOS_THEMED[c];
+  if (v) return isDark ? v.dark : v.light;
+  return operatorLogoUrl(c);
+}
+
 function gatePreferredBrandCode(marketingCode, opCode, flightObj) {
   // v218.97: Marketing carrier ALWAYS wins for the banner logo and the
   // aircraft column's main brand block. "Operated by Rouge" / Jazz / etc.
@@ -4659,23 +4680,6 @@ function renderMobileGateHtml(ctx) {
       'imgGenerated=', !!_acImgHtml);
   } catch (e) {}
 
-  // Operator badge — "Operated by [LOGO]" with actual operator brand image
-  let _opBadgeHtml = '';
-  if (_opCode && _opCode !== airline) {
-    const _opLogoUrl = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
-    const _opName = currentFlight._opName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) || _opCode;
-    _opBadgeHtml = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;">'
-      + '<span style="font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:1.5px;font-weight:700;text-transform: none;">Operated by</span>';
-    if (_opLogoUrl) {
-      _opBadgeHtml += '<img src="' + _opLogoUrl + '" alt="' + _opName + '" '
-        + 'style="height:24px;max-width:120px;width:auto;object-fit:contain;background:#fff;padding:3px 6px;border-radius:4px;" '
-        + 'onerror="this.outerHTML=\'<span style=&quot;font-size:14px;font-weight:700;color:#fff;&quot;>' + String(_opName).replace(/'/g,'&#39;') + '</span>\'">';
-    } else {
-      _opBadgeHtml += '<span style="font-size:14px;font-weight:700;color:#fff;">' + _opName + '</span>';
-    }
-    _opBadgeHtml += '</div>';
-  }
-
   // ── Day/night theme: manual override (fids_console_theme) else time-of-day ──
   var _mgTheme;
   try { var _t = localStorage.getItem('fids_console_theme'); _mgTheme = (_t === 'light' || _t === 'dark') ? _t : null; } catch (e) { _mgTheme = null; }
@@ -4691,6 +4695,27 @@ function renderMobileGateHtml(ctx) {
     ink:'#ffffff', muted:'#6b7585', muted2:'#9aa4b0', accent:'#5b9dff',
     navBg:'#0c1320', planeIcon:'#54637a'
   };
+
+  // Operator badge — "Operated by [LOGO]" using the day/night logo variant so it
+  // stays visible on both the light and dark gate theme (single-colour wordmarks
+  // were invisible against the wrong background before, which is why the operator
+  // logo wasn't showing on the GIDS gate screen).
+  let _opBadgeHtml = '';
+  if (_opCode && _opCode !== airline) {
+    const _opLogoUrl = (typeof operatorLogoUrlThemed === 'function') ? operatorLogoUrlThemed(_opCode, !_lt) : null;
+    const _opName = currentFlight._opName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) || _opCode;
+    var _opBadgeBg = _lt ? 'rgba(13,22,38,0.05)' : 'rgba(255,255,255,0.05)';
+    _opBadgeHtml = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:' + _opBadgeBg + ';border-radius:8px;">'
+      + '<span style="font-size:11px;color:' + T.muted2 + ';letter-spacing:1.5px;font-weight:700;text-transform:none;">Operated by</span>';
+    if (_opLogoUrl) {
+      _opBadgeHtml += '<img src="' + _opLogoUrl + '" alt="' + _opName + '" '
+        + 'style="height:24px;max-width:120px;width:auto;object-fit:contain;display:inline-block;vertical-align:middle;" '
+        + 'onerror="this.outerHTML=\'<span style=&quot;font-size:14px;font-weight:700;color:' + T.ink + ';&quot;>' + String(_opName).replace(/'/g,'&#39;') + '</span>\'">';
+    } else {
+      _opBadgeHtml += '<span style="font-size:14px;font-weight:700;color:' + T.ink + ';">' + _opName + '</span>';
+    }
+    _opBadgeHtml += '</div>';
+  }
 
   // Home airport (origin for a departure) + destination — cleaned of trailing "(code)" and cased
   function _cleanCity(s){
@@ -7484,7 +7509,8 @@ function uxgGateHtml(ctx) {
                       + '</div>';
                   }
                   if (_opTxt) {
-                    var _opLogoUrl = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
+                    // Big-display gate panel is always on a dark background → use the white logo variant.
+                    var _opLogoUrl = (typeof operatorLogoUrlThemed === 'function') ? operatorLogoUrlThemed(_opCode, true) : null;
                     // Single-line layout: "Operated by [logo or text]" with
                     // label and value on the same row, vertically centered.
                     _aircraftLine += '<div style="padding:14px 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
