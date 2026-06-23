@@ -44,7 +44,7 @@
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     -webkit-font-smoothing:antialiased; letter-spacing:-0.011em;
     display:flex; flex-direction:column; min-height:100dvh;
-    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px);
+    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 80px);
   }
   svg{display:block;}
   .ic{width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;}
@@ -136,7 +136,7 @@
   .st.cancelled{color:var(--red);} .st.boarding{color:var(--accent);}
   .fcard .row2{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .fcard .city{font-size:23px;font-weight:800;line-height:1.05;letter-spacing:-0.02em;}
-  .fcard .sub{color:var(--muted);font-size:14px;font-weight:600;margin-top:6px;}
+  .fcard .sub{color:var(--muted);font-size:15.5px;font-weight:700;margin-top:6px;}
   .fcard .sub b{color:var(--txt);font-weight:800;}
   .fcard .time{text-align:right;flex:none;}
   .fcard .time .hh{font-size:23px;font-weight:800;letter-spacing:-0.02em;}
@@ -221,14 +221,14 @@
   :root[data-theme="dark"] .dt-wm-l{display:none;} :root[data-theme="dark"] .dt-wm-d{display:block;}
   @media(prefers-color-scheme:dark){:root[data-theme="auto"] .dt-wm-l{display:none;} :root[data-theme="auto"] .dt-wm-d{display:block;}}
   .dt-name{font-size:17px;font-weight:700;text-align:center;margin-bottom:4px;letter-spacing:-0.01em;}
-  .dt-hero .al-op{color:var(--muted);font-size:13px;font-weight:500;margin-top:2px;}
+  .dt-hero .al-op{color:var(--muted);font-size:13px;font-weight:500;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
   .dt-illus{display:block;width:240px;max-width:86%;margin:12px auto 2px;}
   .dt-hero .flt{font-size:30px;font-weight:800;letter-spacing:-0.02em;}
   .dt-hero .al{color:var(--muted);font-size:13.5px;font-weight:500;margin-top:4px;}
   .dt-route{display:flex;align-items:center;gap:10px;justify-content:center;padding:18px 20px 6px;}
   .dt-route .ep{text-align:center;min-width:84px;}
   .dt-route .ep .city{font-size:18px;font-weight:800;letter-spacing:-0.01em;}
-  .dt-route .ep .code{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .dt-route .ep .code{font-size:15px;color:var(--muted);font-weight:700;margin-top:3px;letter-spacing:.02em;}
   .dt-route .line{flex:1;max-width:120px;height:2px;background:var(--line2);position:relative;}
   .dt-route .line .pl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(90deg);
     color:var(--accent);background:var(--bg);padding:0 4px;}
@@ -676,16 +676,14 @@ function render(){
     const belt=(isArr&&f.belt)?'<span class="chip gate">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')+'<span class="k">Belt</span> '+esc(f.belt)+'</span>':'';
     const gate=(!isArr&&f.gate)?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
-    const op=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?'<span class="chip"><span class="k">by</span> '+esc(f.operatedBy)+'</span>':'';
-    const dur=fmtDur(f.durMin);
-    const durChip=dur?'<span class="chip"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'+esc(dur)+'</span>':'';
+    // Operated-by and flight time live in the detail view ("the gate"), not on the list cards.
     // Other-end time under the main time: arrival time for a departure, origin departure time for an arrival.
     const otherLine=f.otherTime?'<div class="arr">'+(isArr?'dep':'arr')+' '+esc((f.otherTime||'').slice(0,5))+'</div>':'';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'" onclick="openFlight('+i+')">'+cardMark(f.airline,!BUB_LIGHT[f.airline])+'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
       +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">'+tLbl+'</div>'+otherLine+'</div></div>'
-      +(gate||belt||ac||op||durChip?'<div class="meta">'+gate+belt+durChip+ac+op+'</div>':'')+'</div>';
+      +(gate||belt||ac?'<div class="meta">'+gate+belt+ac+'</div>':'')+'</div>';
   }).join('');
 }
 // ── LIVE FLIGHTS ──────────────────────────────────────────────────────
@@ -877,6 +875,21 @@ function go(v){curView=v;
   else if(v==='flights')load();
 }
 const PLANE_SVG='<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>';
+// Operator logo (Rouge/Jazz/PAL/Encore) for the detail view, picked light/dark
+// for the current app theme so it stays visible. Falls back to the name text.
+const OP_LOGO={
+  'Air Canada Rouge':{d:'/logos/airlines/canadian/rouge-monochrome-white.svg',                 l:'/logos/airlines/canadian/rouge-monochrome-black.svg'},
+  'Jazz':            {d:'/logos/airlines/canadian-regional/jazz-wordmark-light.svg',           l:'/logos/airlines/canadian-regional/jazz-wordmark-dark.svg'},
+  'PAL Airlines':    {d:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg', l:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg'},
+  'WestJet Encore':  {d:'/logos/airlines/canadian/encore.png',                                 l:'/logos/airlines/canadian/encore.png'}
+};
+function opLogoHtml(name){
+  const v=OP_LOGO[name]; if(!v) return '';
+  const dk=isDark(localStorage.getItem('app_theme')||'auto');
+  const u=dk?v.d:v.l;
+  return '<img src="'+u+'" alt="'+esc(name)+'" style="height:24px;width:auto;max-width:170px;object-fit:contain;vertical-align:middle;" '
+    +'onerror="this.outerHTML=&quot;'+esc(name)+'&quot;">';
+}
 function openFlight(i){
   const f=RENDERED[i]; if(!f)return;
   const s=statusOf(f), city=CITY[f.cityIata]||f.cityIata||'—', al=AIRLINE[f.airline]||f.airline;
@@ -901,7 +914,8 @@ function openFlight(i){
   const epOther='<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div>';
   document.getElementById('detailBody').innerHTML=
     '<div class="dt-hero">'+heroWordmark(f.airline)
-    +'<div class="flt">'+esc(f.flight)+'</div>'+(opLine?'<div class="al-op">'+esc(opLine)+'</div>':'')
+    +'<div class="flt">'+esc(f.flight)+'</div>'
+    +(opLine?'<div class="al-op">Operated by '+(opLogoHtml(f.operatedBy)||esc(f.operatedBy))+'</div>':'')
     +liveryImg(f.airline,f.aircraft,f.operatedBy)+'</div>'
     +'<div class="dt-route">'+(isArr?epOther:epHere)
     +'<div class="line"><span class="pl">'+svg(PLANE_SVG)+'</span></div>'
