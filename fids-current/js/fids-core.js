@@ -3899,9 +3899,9 @@ const IATA_AIRCRAFT = {
   '330':'Airbus A330','332':'Airbus A330-200','333':'Airbus A330-300',
   '339':'Airbus A330-900neo','350':'Airbus A350','359':'Airbus A350-900',
   '351':'Airbus A350-1000','380':'Airbus A380','388':'Airbus A380-800',
-  '732':'Boeing 737-200','733':'Boeing 737-300','734':'Boeing 737-400','735':'Boeing 737-500','737':'Boeing 737','738':'Boeing 737-800','739':'Boeing 737-900',
+  '732':'Boeing 737-200','733':'Boeing 737-300','734':'Boeing 737-400','735':'Boeing 737-500','737':'Boeing 737 MAX 8','738':'Boeing 737-800','739':'Boeing 737-900',
   '73G':'Boeing 737-700','73H':'Boeing 737-800','73J':'Boeing 737-900ER',
-  '7M7':'Boeing 737-7','7M8':'Boeing 737-8','7M9':'Boeing 737-9',
+  '7M7':'Boeing 737 MAX 7','7M8':'Boeing 737 MAX 8','7M9':'Boeing 737 MAX 9',
   '744':'Boeing 747-400','748':'Boeing 747-8',
   '752':'Boeing 757-200','753':'Boeing 757-300',
   '763':'Boeing 767-300','764':'Boeing 767-400',
@@ -4652,7 +4652,22 @@ function renderMobileGateHtml(ctx) {
   // Aircraft image — show the equipment livery if available
   // Rouge override: AC flights operated by RV use Rouge liveries (321r.png etc.)
   const equipRaw = currentFlight._aircraftCode || '';
-  const _opCode = currentFlight._opCode || '';
+  // Operator code for the badge + livery. Prefer any operator the feed pre-tagged,
+  // but ALWAYS fall back to the deterministic flight-number mapping so the
+  // "Operated by" logo and Rouge/Jazz/PAL liveries fire even when the feed left
+  // the operator blank (e.g. AC7995 with no equipment tagged the operator empty).
+  let _opCode = currentFlight._opCode || '';
+  (function(){
+    var _fn = parseInt(String(currentFlight.flight || '').replace(/\D/g, ''), 10);
+    if (isNaN(_fn)) return;
+    if (airline === 'AC') {
+      if ((_fn >= 7600 && _fn <= 7699) || (_fn >= 2200 && _fn <= 2299)) _opCode = 'PB';
+      else if ((_fn >= 8000 && _fn <= 8999) || (_fn >= 7500 && _fn <= 7999)) _opCode = 'QK';
+      else if (_fn >= 1600 && _fn <= 1999) _opCode = 'RV';
+    } else if (airline === 'WS' && _fn >= 3000 && _fn <= 3999) {
+      _opCode = 'WR';
+    }
+  })();
   let _acImgHtml = '';
   let _liveryEqDebug = '';
   if (equipRaw && typeof aircraftImgTag === 'function') {
