@@ -7163,8 +7163,15 @@ function uxgGateHtml(ctx) {
     _apLogoTop = (_apCfgTop && _apCfgTop.logo && _apCfgTop.logo.url) ? _apCfgTop.logo.url : null;
     if (!_apLogoTop) { try { _apLogoTop = localStorage.getItem('fids_airport_logo_' + iata); } catch (e) {} }
   } catch (e) {}
+  // Reserve just enough room on the right for the gate tab, so the airport band
+  // sits a small, EVEN gap from it (matching the logo's top/bottom breathing
+  // room) no matter how long the gate is ("3" vs "B29"). Estimate the gate-tab
+  // width from the gate string, then add a ~24px gap.
+  var _gateStr = String(gateVal || '');
+  var _gateTabW = 122 + Math.max(90, _gateStr.length * 58); // slant + pads + content
+  var _apMarginRight = (_gateTabW + 24) + 'px';
   var _apBandTop = _apLogoTop
-    ? '<div class="g8-r1-apband" style="display:flex;align-items:center;justify-content:center;align-self:stretch;flex:0 0 auto;margin:0 clamp(250px,17vw,330px) 0 auto;padding:0 38px;background:rgba(248,250,252,0.97);transform:skewX(-21deg);border-radius:24px 24px 0 0;box-shadow:0 0 22px rgba(0,0,0,0.22);">'
+    ? '<div class="g8-r1-apband" style="display:flex;align-items:center;justify-content:center;align-self:stretch;flex:0 0 auto;margin:0 ' + _apMarginRight + ' 0 auto;padding:0 38px;background:rgba(248,250,252,0.97);transform:skewX(-21deg);border-radius:24px 0 0 0;box-shadow:0 0 22px rgba(0,0,0,0.22);">'
       + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:50px;max-height:70%;max-width:440px;width:auto;object-fit:contain;transform:skewX(21deg);" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
