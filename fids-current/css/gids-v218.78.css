@@ -3579,14 +3579,25 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap .g8-r1-right::before {
   /* Angled left edge of the gate tab, painted in the BANNER background colour so
-     it reads as a clean slanted gap (was a white separator strip). Angle (~21deg)
-     matches the airport-logo band's skew. */
+     it reads as a clean slanted gap (was a white separator strip). Skewed block
+     with a rounded TOP corner so the slant apex is rounded like the airport band.
+     Angle (~21deg) matches the airport-logo band's skew. */
   content: "";
   position: absolute; top: 0; bottom: 0; left: 0;
-  width: clamp(40px, 2.6vw, 52px);
+  width: clamp(54px, 3.4vw, 72px);
   background: var(--banner-bg, #0c1119);
-  clip-path: polygon(0 0, 100% 0, 0 100%);
+  transform: skewX(-21deg);
+  transform-origin: top left;
+  border-top-right-radius: 18px;
   pointer-events: none;
+}
+/* Lock the gate tab to the SAME width as the right Aircraft panel below it, so
+   it's always the same size regardless of gate length and aligns with that
+   column. Centre the gate content within the fixed width. */
+.g8-wrap .g8-r1-right {
+  width: var(--col-left, 23%) !important;
+  justify-content: center !important;
+  padding-left: clamp(54px, 3.4vw, 72px) !important;
 }
 
 /* Gate block FLUSH to the screen: touches the top and right edges, so its
