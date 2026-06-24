@@ -7163,13 +7163,16 @@ function uxgGateHtml(ctx) {
     _apLogoTop = (_apCfgTop && _apCfgTop.logo && _apCfgTop.logo.url) ? _apCfgTop.logo.url : null;
     if (!_apLogoTop) { try { _apLogoTop = localStorage.getItem('fids_airport_logo_' + iata); } catch (e) {} }
   } catch (e) {}
-  // Position the airport band ABSOLUTELY, anchored a fixed 14px to the left of the
-  // gate tab (which is var --col-left ~23% wide at the right edge). Same skew, same
-  // height, same origin as the gate tab => the two slants are guaranteed parallel
-  // with an exact small gap (almost touching).
+  // Reserve just enough room on the right for the gate tab, so the airport band
+  // sits a small, EVEN gap from it (matching the logo's top/bottom breathing
+  // room) no matter how long the gate is ("3" vs "B29"). Estimate the gate-tab
+  // width from the gate string, then add a ~24px gap.
+  var _gateStr = String(gateVal || '');
+  var _gateTabW = 122 + Math.max(90, _gateStr.length * 58); // slant + pads + content
+  var _apMarginRight = (_gateTabW + 12) + 'px';
   var _apBandTop = _apLogoTop
-    ? '<div class="g8-r1-apband" style="position:absolute;right:calc(var(--col-left, 23%) + 14px);top:0;bottom:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:0 36px;background:rgba(248,250,252,0.97);transform:skewX(-21deg);transform-origin:bottom right;border-radius:22px 0 0 0;box-shadow:0 0 22px rgba(0,0,0,0.22);">'
-      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:50px;max-height:70%;max-width:440px;width:auto;object-fit:contain;transform:skewX(21deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
+    ? '<div class="g8-r1-apband" style="display:flex;align-items:center;justify-content:center;align-self:stretch;flex:0 0 auto;margin:0 ' + _apMarginRight + ' 0 auto;padding:0 38px;background:rgba(248,250,252,0.97);transform:skewX(-21deg);border-radius:24px 0 0 0;box-shadow:0 0 22px rgba(0,0,0,0.22);">'
+      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:50px;max-height:70%;max-width:440px;width:auto;object-fit:contain;transform:skewX(21deg);" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
 

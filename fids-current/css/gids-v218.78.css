@@ -3577,28 +3577,19 @@ body, body.gids-page, body.gate-page{
   position: relative !important;
   border-radius: 0 24px 0 0 !important;
 }
-/* Slant + rounded apex now come from skewing the gate tab itself (in the gate
-   colour), so the rounded corner is CONVEX and leans the SAME direction as the
-   airport band — a matched, symmetric pair. The old separator slash is dropped. */
-.g8-wrap .g8-r1-right::before { display: none !important; }
-
-/* Gate tab: fixed width (= right Aircraft panel) skewed into a rounded slanted
-   tab, anchored at the bottom so the bottom-right stays in the screen corner; the
-   skewed right edge runs past the screen edge and is clipped flush by the banner's
-   overflow:hidden. Top-left apex rounded to match the airport band. */
-.g8-wrap .g8-r1-right {
-  width: var(--col-left, 23%) !important;
-  justify-content: center !important;
-  padding-left: 0 !important;
-  transform: skewX(-21deg) !important;
-  transform-origin: bottom right !important;
-  border-radius: 22px 0 0 0 !important;
-}
-/* Keep the gate label + number upright inside the skewed tab. */
-.g8-wrap .g8-r1-right > .g8-bilbl,
-.g8-wrap .g8-r1-right > .g8-r1-gate {
-  transform: skewX(21deg);
-  transform-origin: bottom right;
+.g8-wrap .g8-r1-right::before {
+  /* Angled left edge of the gate tab in the BANNER background colour (clean
+     slanted gap, ~21deg to match the airport band). Skewed block with a rounded
+     top corner so the slant apex is soft, not a sharp point. The tab BODY is
+     untouched, so it stays full-bleed top-to-bottom. */
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: 0;
+  width: clamp(44px, 2.8vw, 56px);
+  background: var(--banner-bg, #0c1119);
+  transform: skewX(-21deg);
+  transform-origin: top left;
+  border-top-right-radius: 16px;
+  pointer-events: none;
 }
 
 /* Gate block FLUSH to the screen: touches the top and right edges, so its
@@ -3643,7 +3634,7 @@ body, body.gids-page, body.gate-page{
 /* 2. Screen corner BLACK outside the gate tab's rounded corner: the banner
    keeps its dark square corner there; only the tab itself is rounded. */
 .g8-wrap .g8-r1,
-.g8-wrap .g8-r1.g8-r1-bg { border-radius: 24px 24px 0 0 !important; }
+.g8-wrap .g8-r1.g8-r1-bg { border-radius: 24px 0 0 0 !important; }
 /* 3. Right panel: tighter shelf chrome → bigger type and a BIGGER MAP */
 .g8-wrap .gad-map-col-v2 .v2-rc-rtitle { padding: clamp(4px,0.6vh,9px) clamp(8px,0.8vw,16px) !important; }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf { padding-top: clamp(2px,0.4vh,6px) !important; padding-bottom: clamp(2px,0.4vh,6px) !important; }
