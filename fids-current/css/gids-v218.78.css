@@ -3578,11 +3578,14 @@ body, body.gids-page, body.gate-page{
   border-radius: 0 24px 0 0 !important;
 }
 .g8-wrap .g8-r1-right::before {
+  /* Angled left edge of the gate tab, painted in the BANNER background colour so
+     it reads as a clean slanted gap (was a white separator strip). Angle (~21deg)
+     matches the airport-logo band's skew. */
   content: "";
   position: absolute; top: 0; bottom: 0; left: 0;
-  width: calc(clamp(36px, 3.2vw, 64px) + 10px);
-  background: rgba(255,255,255,0.92);
-  clip-path: polygon(clamp(36px, 3.2vw, 64px) 0, calc(clamp(36px, 3.2vw, 64px) + 10px) 0, 10px 100%, 0 100%);
+  width: clamp(40px, 2.6vw, 52px);
+  background: var(--banner-bg, #0c1119);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
   pointer-events: none;
 }
 

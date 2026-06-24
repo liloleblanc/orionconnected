@@ -7164,7 +7164,7 @@ function uxgGateHtml(ctx) {
     if (!_apLogoTop) { try { _apLogoTop = localStorage.getItem('fids_airport_logo_' + iata); } catch (e) {} }
   } catch (e) {}
   var _apBandTop = _apLogoTop
-    ? '<div class="g8-r1-apband" style="display:flex;align-items:center;justify-content:center;align-self:stretch;flex:0 0 auto;margin:0 clamp(250px,17vw,330px) 0 auto;padding:0 38px;background:rgba(248,250,252,0.95);transform:skewX(-21deg);border-radius:18px;box-shadow:0 0 30px rgba(0,0,0,0.28);">'
+    ? '<div class="g8-r1-apband" style="display:flex;align-items:center;justify-content:center;align-self:stretch;flex:0 0 auto;margin:0 clamp(250px,17vw,330px) 0 auto;padding:0 38px;background:rgba(248,250,252,0.97);transform:skewX(-21deg);border-radius:24px 24px 0 0;box-shadow:0 0 22px rgba(0,0,0,0.22);">'
       + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:50px;max-height:70%;max-width:440px;width:auto;object-fit:contain;transform:skewX(21deg);" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
