@@ -7152,6 +7152,23 @@ function uxgGateHtml(ctx) {
     }
   }
 
+  // ── AIRPORT-LOGO BAND (top banner) ──────────────────────────────────────
+  // A neutral, slanted band carrying the airport's own logo (e.g. Moncton),
+  // sat in the top banner between the airline logo and the gate number. Neutral
+  // frosted background so it reads on any airline banner colour. Logo comes from
+  // the airport-config (same source as the footer logo).
+  var _apLogoTop = null, _apNameTop = ((AP[iata] || {}).name || iata);
+  try {
+    var _apCfgTop = (typeof getAirportConfig === 'function') ? getAirportConfig(iata) : null;
+    _apLogoTop = (_apCfgTop && _apCfgTop.logo && _apCfgTop.logo.url) ? _apCfgTop.logo.url : null;
+    if (!_apLogoTop) { try { _apLogoTop = localStorage.getItem('fids_airport_logo_' + iata); } catch (e) {} }
+  } catch (e) {}
+  var _apBandTop = _apLogoTop
+    ? '<div class="g8-r1-apband" style="display:flex;align-items:center;justify-content:center;align-self:stretch;flex:0 0 auto;padding:0 42px;margin:0 8px;background:rgba(248,250,252,0.95);clip-path:polygon(16% 0,100% 0,84% 100%,0 100%);box-shadow:0 0 30px rgba(0,0,0,0.28);">'
+      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:58px;max-height:74%;width:auto;object-fit:contain;" onerror="this.parentNode.style.display=\'none\'">'
+      + '</div>'
+    : '';
+
   return '<div class="g8-wrap'
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
        + (_bannerSpec && _bannerSpec.r1 === '#FFFFFF' ? ' g8-banner-light' : '')
@@ -7184,6 +7201,7 @@ function uxgGateHtml(ctx) {
           : ''
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
+    +   _apBandTop
     +   '<div class="g8-r1-right">'
     +     '<span class="g8-bilbl"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
     +     '<span class="g8-r1-gate">' + gateVal + '</span>'
