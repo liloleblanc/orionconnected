@@ -3577,25 +3577,13 @@ body, body.gids-page, body.gate-page{
   position: relative !important;
   border-radius: 0 24px 0 0 !important;
 }
-/* The gate tab's slant + rounded apex come from skewing the TAB ITSELF (gate
-   colour), so the top-left apex is CONVEX, the same direction as the airport band.
-   top:0/bottom:0 are kept (set in the absolute block below) so the tab stays
-   full-bleed top-to-bottom — only the slant cuts the top-left. Old slash dropped. */
-.g8-wrap .g8-r1-right::before { display: none !important; }
-
-.g8-wrap .g8-r1-right {
-  width: var(--col-left, 23%) !important;   /* line up with the right Aircraft panel */
-  box-sizing: border-box !important;
-  justify-content: center !important;
-  transform: skewX(-21deg) !important;
-  transform-origin: bottom right !important;
-  border-radius: 22px 0 0 0 !important;      /* convex rounded top-left apex */
-}
-/* Keep the gate label + number upright inside the skewed tab. */
-.g8-wrap .g8-r1-right > .g8-bilbl,
-.g8-wrap .g8-r1-right > .g8-r1-gate {
-  transform: skewX(21deg);
-  transform-origin: bottom right;
+.g8-wrap .g8-r1-right::before {
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: 0;
+  width: calc(clamp(36px, 3.2vw, 64px) + 10px);
+  background: rgba(255,255,255,0.92);
+  clip-path: polygon(clamp(36px, 3.2vw, 64px) 0, calc(clamp(36px, 3.2vw, 64px) + 10px) 0, 10px 100%, 0 100%);
+  pointer-events: none;
 }
 
 /* Gate block FLUSH to the screen: touches the top and right edges, so its
