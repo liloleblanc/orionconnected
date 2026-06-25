@@ -3631,14 +3631,17 @@ body, body.gids-page, body.gate-page{
   width: var(--col-left, 23%) !important;
   box-sizing: border-box !important;
   justify-content: center !important;
-  transform: skewX(-29deg) !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  height: auto !important;
+  transform: skewX(-21deg) !important;
   transform-origin: bottom right !important;
-  border-radius: 30px 0 0 0 !important;
+  border-radius: 34px 0 0 0 !important;
 }
 .g8-wrap .g8-r1-right > .g8-bilbl,
 .g8-wrap .g8-r1-right > .g8-r1-gate {
-  transform: skewX(29deg);
-  transform-origin: bottom right;
+  transform: skewX(21deg) !important;
+  transform-origin: bottom right !important;
 }
 
 /* ════════ v221f — Nick's tightening pass ════════ */
