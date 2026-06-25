@@ -88,7 +88,7 @@
   var root = document.documentElement.style;
   function bind(id, prop, unit, fmt){
     var el = document.getElementById(id), out = document.getElementById(id+'_v');
-    function up(){ var v = el.value; root.setProperty(prop, (prop==='--skew'? '-'+v : (prop==='--apy'||prop==='--apw'? v+'%' : v+unit))); out.textContent = (fmt? fmt(v): v+unit); }
+    function up(){ var v = el.value; root.setProperty(prop, (prop==='--skew'? '-'+v+'deg' : (prop==='--apy'||prop==='--apw'? v+'%' : v+unit))); out.textContent = (fmt? fmt(v): v+unit); }
     el.addEventListener('input', up); up();
   }
   bind('aph','--aph','px');
