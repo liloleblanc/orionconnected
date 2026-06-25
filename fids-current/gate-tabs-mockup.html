@@ -4,26 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Gate Tabs — shape mockup</title>
+<title>Gate Tabs — live mockup</title>
 <style>
-  :root { --navy:#142a52; --navy2:#1d3a6b; --gate:#1d3a6b; --apw:23%; --skew:-21deg; --gap:0px; --aph:95px; }
+  :root {
+    --gate:#1d3a6b;
+    --apw:23%;       /* gate tab width (= panel) */
+    --skew:-21deg;   /* slant angle */
+    --gap:0px;       /* gap between airport band and gate */
+    --aph:95px;      /* airport band HEIGHT */
+    --apy:50%;       /* airport band vertical center */
+    --rad:22px;      /* corner rounding */
+    --barh:150px;    /* bar height */
+  }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:#000; font-family:'DM Sans',system-ui,sans-serif; color:#fff; }
 
-  /* ── The header bar (mimics the real gate banner) ── */
   .bar {
-    position:relative;
-    height:150px;
+    position:relative; height:var(--barh);
     background:linear-gradient(180deg,#0f1f3d,#15294e);
-    overflow:hidden;
-    display:flex;
-    align-items:center;
+    overflow:hidden; display:flex; align-items:center;
   }
   .airline { font-size:64px; font-weight:800; letter-spacing:-1px; padding-left:34px; }
 
-  /* ── AIRPORT BAND ── */
   .apband {
-    position:absolute; top:50%;
+    position:absolute; top:var(--apy);
     height:var(--aph);
     right:calc(var(--apw) + var(--gap));
     z-index:3;
@@ -32,60 +36,67 @@
     background:rgba(248,250,252,0.97);
     transform:translateY(-50%) skewX(var(--skew));
     transform-origin:bottom right;
-    border-radius:22px 0 0 0;
+    border-radius:var(--rad) 0 0 0;
   }
   .apband .logo { transform:skewX(calc(-1 * var(--skew))); transform-origin:bottom right; color:#142a52; font-weight:800; font-size:17px; text-align:center; line-height:1.05; white-space:nowrap; }
 
-  /* ── GATE TAB ── (full-bleed: touches top + bottom; width = panel below) ── */
   .gatetab {
     position:absolute; top:0; bottom:0; right:0;
-    width:var(--apw);
-    z-index:2;
+    width:var(--apw); z-index:2;
     background:var(--gate);
     display:flex; align-items:center; justify-content:center; gap:18px;
     transform:skewX(var(--skew));
     transform-origin:bottom right;
-    border-radius:22px 0 0 0;
+    border-radius:var(--rad) 0 0 0;
   }
   .gatetab > * { transform:skewX(calc(-1 * var(--skew))); transform-origin:bottom right; }
   .gatetab .lbl { font-size:34px; font-weight:800; line-height:0.95; }
   .gatetab .num { font-size:88px; font-weight:800; }
 
-  /* ── the panel BELOW the gate tab, to show alignment ── */
   .below { display:flex; }
   .below .spacer { flex:1; }
-  .below .panel {
-    width:var(--apw);
-    height:120px;
-    background:#0d1b34;
-    border-top:3px solid #2a4a85;
-    display:flex; align-items:center; justify-content:center;
-    font-weight:800; font-size:22px; color:#9db4dd;
-  }
+  .below .panel { width:var(--apw); height:120px; background:#0d1b34; border-top:3px solid #2a4a85; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; color:#9db4dd; }
+
+  /* ── controls ── */
+  .panelctl { background:#11151c; padding:18px 28px; display:grid; grid-template-columns:repeat(2,minmax(280px,1fr)); gap:14px 40px; }
+  .ctl { display:flex; align-items:center; gap:14px; }
+  .ctl label { width:170px; font-size:14px; color:#cbd5e1; font-weight:700; }
+  .ctl input { flex:1; }
+  .ctl .val { width:78px; text-align:right; font-variant-numeric:tabular-nums; color:#7dd3fc; font-weight:800; font-size:15px; }
+  .hint { padding:14px 28px; color:#94a3b8; font-size:14px; line-height:1.6; }
 </style>
 </head>
 <body>
   <div class="bar">
     <div class="airline">porter</div>
-
-    <div class="apband">
-      <div class="logo">GREATER MONCTON<br>ROMÉO LEBLANC<br>INTERNATIONAL AIRPORT</div>
-    </div>
-
-    <div class="gatetab">
-      <span class="lbl">Gate<br>Porte</span>
-      <span class="num">3</span>
-    </div>
+    <div class="apband"><div class="logo">GREATER MONCTON<br>ROMÉO LEBLANC<br>INTERNATIONAL AIRPORT</div></div>
+    <div class="gatetab"><span class="lbl">Gate<br>Porte</span><span class="num">3</span></div>
   </div>
+  <div class="below"><div class="spacer"></div><div class="panel">Your Aircraft panel</div></div>
 
-  <div class="below">
-    <div class="spacer"></div>
-    <div class="panel">Your Aircraft panel (same width)</div>
+  <div class="panelctl">
+    <div class="ctl"><label>Airport height</label><input type="range" id="aph" min="40" max="150" value="95"><span class="val" id="aph_v"></span></div>
+    <div class="ctl"><label>Airport vert. center</label><input type="range" id="apy" min="20" max="80" value="50"><span class="val" id="apy_v"></span></div>
+    <div class="ctl"><label>Gap to gate</label><input type="range" id="gap" min="-20" max="50" value="0"><span class="val" id="gap_v"></span></div>
+    <div class="ctl"><label>Slant angle</label><input type="range" id="skew" min="0" max="35" value="21"><span class="val" id="skew_v"></span></div>
+    <div class="ctl"><label>Corner round</label><input type="range" id="rad" min="0" max="40" value="22"><span class="val" id="rad_v"></span></div>
+    <div class="ctl"><label>Tab width %</label><input type="range" id="apw" min="14" max="32" value="23"><span class="val" id="apw_v"></span></div>
   </div>
+  <div class="hint">Drag the sliders until it looks right — it updates live. When it's perfect, just say "done" (I can read the values) or tell me the numbers shown. This page does NOT touch the real gate screen.</div>
 
-  <p style="padding:18px 34px;color:#9db4dd;font-size:15px;line-height:1.6;">
-    This is an isolated mockup of just the two tabs — it does NOT touch the real gate screen.<br>
-    Tweakable: slant angle, gap, corner rounding, width. Tell me what to change here.
-  </p>
+<script>
+  var root = document.documentElement.style;
+  function bind(id, prop, unit, fmt){
+    var el = document.getElementById(id), out = document.getElementById(id+'_v');
+    function up(){ var v = el.value; root.setProperty(prop, (prop==='--skew'? '-'+v : (prop==='--apy'||prop==='--apw'? v+'%' : v+unit))); out.textContent = (fmt? fmt(v): v+unit); }
+    el.addEventListener('input', up); up();
+  }
+  bind('aph','--aph','px');
+  bind('apy','--apy','%', function(v){return v+'%';});
+  bind('gap','--gap','px');
+  bind('skew','--skew','deg', function(v){return v+'°';});
+  bind('rad','--rad','px');
+  bind('apw','--apw','%', function(v){return v+'%';});
+</script>
 </body>
 </html>
