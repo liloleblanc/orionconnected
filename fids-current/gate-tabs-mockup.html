@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gate Tabs — shape mockup</title>
 <style>
-  :root { --navy:#142a52; --navy2:#1d3a6b; --gate:#1d3a6b; --apw:23%; --skew:-21deg; --gap:14px; }
+  :root { --navy:#142a52; --navy2:#1d3a6b; --gate:#1d3a6b; --apw:23%; --skew:-21deg; --gap:0px; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:#000; font-family:'DM Sans',system-ui,sans-serif; color:#fff; }
 
@@ -27,13 +27,13 @@
     right:calc(var(--apw) + var(--gap));
     z-index:3;
     display:flex; align-items:center; justify-content:center;
-    padding:0 40px;
+    padding:0 16px;
     background:rgba(248,250,252,0.97);
     transform:skewX(var(--skew));
     transform-origin:bottom right;
     border-radius:22px 0 0 0;
   }
-  .apband .logo { transform:skewX(calc(-1 * var(--skew))); transform-origin:bottom right; color:#142a52; font-weight:800; font-size:22px; text-align:center; line-height:1.05; white-space:nowrap; }
+  .apband .logo { transform:skewX(calc(-1 * var(--skew))); transform-origin:bottom right; color:#142a52; font-weight:800; font-size:17px; text-align:center; line-height:1.05; white-space:nowrap; }
 
   /* ── GATE TAB ── (full-bleed: touches top + bottom; width = panel below) ── */
   .gatetab {
