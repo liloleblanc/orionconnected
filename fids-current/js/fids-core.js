@@ -7202,7 +7202,7 @@ function uxgGateHtml(ctx) {
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
     +   _apBandTop
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:0 !important;bottom:0 !important;width:var(--col-left, 23%);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:34px 0 0 0 !important;overflow:visible;">'
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:15% !important;right:0 !important;bottom:0 !important;width:var(--col-left, 23%);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:34px 0 0 0 !important;overflow:visible;">'
     +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
     +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
     +   '</div>'
