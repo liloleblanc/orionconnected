@@ -7164,8 +7164,8 @@ function uxgGateHtml(ctx) {
     if (!_apLogoTop) { try { _apLogoTop = localStorage.getItem('fids_airport_logo_' + iata); } catch (e) {} }
   } catch (e) {}
   var _apBandTop = _apLogoTop
-    ? '<div class="g8-r1-apband" style="position:absolute;right:calc(var(--col-left, 23%) + 9px);top:15%;bottom:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
-      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:420px;width:auto;object-fit:contain;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
+    ? '<div class="g8-r1-apband" style="position:absolute;right:calc(var(--col-left, 23%) + 9px);top:15%;bottom:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(0deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
+      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:420px;width:auto;object-fit:contain;transform:skewX(0deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
 
@@ -7202,9 +7202,9 @@ function uxgGateHtml(ctx) {
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
     +   _apBandTop
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:15% !important;right:0 !important;bottom:0 !important;width:var(--col-left, 23%);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:34px 0 0 0 !important;overflow:visible;">'
-    +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
-    +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:15% !important;right:0 !important;bottom:0 !important;width:var(--col-left, 23%);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(0deg) !important;transform-origin:bottom right;border-radius:34px 0 0 0 !important;overflow:visible;">'
+    +     '<span class="g8-bilbl" style="transform:skewX(0deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
+    +     '<span class="g8-r1-gate" style="transform:skewX(0deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
     +   '</div>'
     + '</div>'
     // ROW 2 - flight number + fields (full width)
