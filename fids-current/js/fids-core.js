@@ -7229,7 +7229,7 @@ function uxgGateHtml(ctx) {
     // ROW 3+4 — CONDITIONAL: boarding/final/countdown = FULL WIDTH, else split layout
     + (boardActive || finalActive || showCountdown
       // ═══ BOARDING MODE: solid message strip + full takeover (no ads, no aircraft, just the message) ═══
-      ? (r3Left ? '<div class="g8-r3" style="background:' + accent + ';">' + r3Left + '</div>' : '')
+      ? (r3Left ? '<div class="g8-r3" style="background:rgba(0,0,0,0.85);">' + r3Left + '</div>' : '')
       + '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
       // ═══ IDLE MODE: layout depends on GATE_LAYOUT_V2 flag ═══
       : (window.GATE_LAYOUT_V2
@@ -7254,7 +7254,7 @@ function uxgGateHtml(ctx) {
           // ╚═══════════════════════════════════════════════════════════════════════════════╝
           // ─── V1 (LEGACY) LAYOUT: photo+welcome left, aircraft+map right, ad strip bottom ───
           : '<div style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;position:relative;z-index:2;">'
-        + (_ovMsg ? '<div class="g8-r3" style="background:' + accent + ';flex-shrink:0;">' + _ovMsg + '</div>' : '')
+        + (_ovMsg ? '<div class="g8-r3" style="background:rgba(0,0,0,0.85);flex-shrink:0;">' + _ovMsg + '</div>' : '')
         // MAIN CONTENT: two columns
         +   '<div style="display:flex;flex:1;overflow:hidden;gap:0;min-height:0;">'
         // LEFT COLUMN — photo + welcome text
