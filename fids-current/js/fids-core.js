@@ -15909,6 +15909,11 @@ function applyAirportConfigToBoard(iata) {
   // Force the table to re-render so flight-number stripping picks up the toggle
   try {
     if (typeof _lastTbodyHtml !== 'undefined') _lastTbodyHtml = '';
+    // Also force the GATE screen to rebuild (mirrors 'fids-gate-theme-ready' below) —
+    // without this, a gate that painted before the async airport-config/logo fetch
+    // resolved would never pick up the airport-logo band; render() alone is a no-op
+    // for the gate view since it's keyed on _lastGateKey.
+    window._lastGateKey = '';
     if (typeof render === 'function') render();
   } catch (e) {}
 }
