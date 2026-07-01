@@ -3622,6 +3622,28 @@ body, body.gids-page, body.gate-page{
   height: auto !important;
 }
 
+/* ── Gate tab final shape (dialed in on the slider mockup) ──
+   Slanted tab (29deg) with a convex rounded top-left (30px), sized to the right
+   Aircraft panel (var --col-left) so it lines up, full-bleed top-to-bottom. The
+   old white separator slash is dropped; the gate text is counter-skewed upright. */
+.g8-wrap .g8-r1-right::before { display: none !important; }
+.g8-wrap .g8-r1-right {
+  width: var(--col-left, 23%) !important;
+  box-sizing: border-box !important;
+  justify-content: center !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  height: auto !important;
+  transform: skewX(-21deg) !important;
+  transform-origin: bottom right !important;
+  border-radius: 34px 0 0 0 !important;
+}
+.g8-wrap .g8-r1-right > .g8-bilbl,
+.g8-wrap .g8-r1-right > .g8-r1-gate {
+  transform: skewX(21deg) !important;
+  transform-origin: bottom right !important;
+}
+
 /* ════════ v221f — Nick's tightening pass ════════ */
 /* 1. Flight NUMBER (centre) a tiny bit smaller — labels unchanged */
 .g8-wrap .g8-r1-flightnum { font-size: clamp(48px, 5.2vw, 82px) !important; }
