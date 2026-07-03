@@ -319,11 +319,12 @@ body[data-fids-layout="right"] .fids-banner-time-block {
 }
 .fids-table thead th {
   text-align: left;
-  padding: 16px var(--fids-pad-x);
+  padding: 18px var(--fids-pad-x);
   color: var(--fids-header-tint);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  /* 16px → 22px per Nick: the column headers read too small on the boards. */
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
   text-transform: none;        /* title case, NOT all caps */
   white-space: nowrap;
 }
@@ -2303,14 +2304,19 @@ body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
    fixed-size content get FIXED px that always fit; DEST stays flexible (auto)
    to absorb the remaining screen width. This makes the board adapt to any
    display width without the fixed-content columns ever breaking. */
-#fidsTable colgroup col.col-airline   { width: 292px !important; }
-#fidsTable colgroup col.col-flight    { width: 150px !important; }
-#fidsTable colgroup col.col-wx        { width: 150px !important; }
+/* Column widths SCALE with the screen (clamp): full size on a 1920 display,
+   proportionally slimmer below so the flexible DEST column never starves —
+   fixed px totals were eating the whole row width on smaller windows and
+   truncating destinations ("St-Hubert…"). TIME/REVISED/STATUS keep enough
+   room for revised times + FR statuses ("EN RETARD") at every size. */
+#fidsTable colgroup col.col-airline   { width: clamp(240px, 15.5vw, 292px) !important; }
+#fidsTable colgroup col.col-flight    { width: clamp(100px, 7vw, 150px) !important; }
+#fidsTable colgroup col.col-wx        { width: clamp(124px, 8.2vw, 150px) !important; }
 #fidsTable colgroup col.col-dest      { width: auto  !important; }
-#fidsTable colgroup col.col-gate      { width:  90px !important; }
-#fidsTable colgroup col.col-time      { width: 150px !important; }
-#fidsTable colgroup col.col-time-rev  { width: 140px !important; }
-#fidsTable colgroup col.col-status    { width: 180px !important; }
+#fidsTable colgroup col.col-gate      { width: clamp(100px, 7vw, 134px) !important; }
+#fidsTable colgroup col.col-time      { width: clamp(146px, 10vw, 178px) !important; }
+#fidsTable colgroup col.col-time-rev  { width: clamp(146px, 10vw, 178px) !important; }
+#fidsTable colgroup col.col-status    { width: clamp(160px, 12.2vw, 235px) !important; }
 
 /* Emblem-only mode: shrink airline column further */
 body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
@@ -3627,4 +3633,158 @@ body[data-fids-airline-style="emblem"] .bidsv2-airline-name {
 }
 body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
   justify-content: center !important;
+}
+
+/* v218.99 — FIDS board: bigger column headers + DISTINCT header band (per
+   Nick — it read as the same colour as everything around it).
+   NB: the live table has NO .fids-table class, and every THEME sets its own
+   `body[data-fids-theme=…] #fidsTable thead th { font-size:16px !important }`
+   — so this must match that specificity (and sit later in the file) to win. */
+@media (min-width: 701px) {
+  /* Row text scales with the screen (28px cap = the approved 1920 look) so
+     revised times ("5:30 AM+1") and FR statuses ("EN RETARD") fit the
+     responsive columns at any display width. td[class] + trailing position
+     out-ranks the per-theme 28px !important rules. */
+  body #fidsTable tbody tr td[class],
+  body[data-fids-theme] #fidsTable tbody tr td[class] {
+    font-size: clamp(20px, 1.7vw, 28px) !important;
+  }
+  /* Weather wrapper had a fixed width narrower than its cell — the icon+temp
+     clipped inside it even with room to spare. Let it use the cell. */
+  body #fidsTable td.td-wx .fids-cell-weather {
+    width: auto !important;
+    max-width: 100% !important;
+  }
+  /* Airline wordmark slot scales too — its fixed 218px overflowed the airline
+     column at narrow widths and crowded the flight number. */
+  body { --fids-wordmark-slot-w: clamp(165px, 11.5vw, 218px); }
+
+  body #fidsTable thead th,
+  body[data-fids-theme] #fidsTable thead th {
+    /* scales with the screen so REVISED/CAROUSEL fit the slimmer columns */
+    font-size: clamp(16px, 1.15vw, 22px) !important;
+    font-weight: 800 !important;
+    padding-top: 18px !important;
+    padding-bottom: 18px !important;
+    background: rgba(4, 12, 26, 0.55) !important;
+    color: #ffffff !important;
+    border-bottom: 3px solid var(--fids-hdr-accent, #FAC120) !important;
+  }
+
+  /* ── GATE-STYLE BANNER, take 2 — same recipe as the GIDS gate banner:
+     clock holds the airline-wordmark position on the left; a WIDE white
+     band skewed −24° carries the airport logo; a strong ACCENT block
+     (gold, navy text — echoes the ticker) carries Departures/Arrivals.
+     All three touch the banner top and bottom. Desktop only. */
+  :root { --fids-hdr-block-w: 380px; --fids-hdr-accent: #FAC120; }
+  .fids-banner { position: relative !important; overflow: hidden !important; }
+  /* THREE clean sections (per Nick): [navy: time+date][white: airport logo]
+     [gold: Departures+icon] — slanted seams, no background stripes leaking
+     between them. Deep navy complements the gold block and the header line. */
+  /* Banner base — the dark strip BEHIND the three tabs; it shows through the
+     angled gaps between them so each section reads as its own tab. */
+  .fids-banner {
+    background: #0b0f16 !important;
+    border-top-left-radius: 30px !important;
+  }
+  .fids-banner .fids-banner-chevrons { display: none !important; }
+
+  /* TAB 1 — navy, time + date. ANGLED like the others: its right edge slants
+     at the shared −24°; it bleeds 80px off-screen left so the skew can't
+     expose the corner. */
+  .fids-banner-time-block {
+    /* First tab: ANGLED LEFT edge with the black base OUTSIDE it; the right
+       side runs UNDER the white band — NO gap between blue and white. */
+    position: absolute !important; left: 29px !important; right: auto !important;
+    top: 0 !important; bottom: 0 !important;
+    width: calc((100vw - 60px) / 3 + 40px) !important;
+    display: flex !important; flex-direction: column !important;
+    align-items: flex-start !important; justify-content: center !important;
+    padding: 0 24px 0 48px !important; box-sizing: border-box !important;
+    /* black FADES into the tab from its angled left edge (per Nick) */
+    background: linear-gradient(90deg, #0b0f16 0%, #0e2748 32%) !important;
+    transform: skewX(-24deg) !important; transform-origin: bottom left !important;
+    border-radius: 30px 0 0 0 !important;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16) !important;
+    text-align: left !important; z-index: 1 !important;
+  }
+  .fids-banner-time-block > * { transform: skewX(24deg); transform-origin: bottom left; }
+  .fids-banner-time-block .fids-banner-date {
+    display: block !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-size: clamp(16px, 1.2vw, 22px) !important;
+    font-weight: 600 !important;
+    margin-top: 2px !important;
+  }
+
+  /* White airport band — UNCHANGED from the approved equal-thirds layout:
+     right-anchored, runs under the gold block, logo centred in the visible
+     middle third. */
+  .fids-airport-pill {
+    position: absolute !important; top: 0 !important; bottom: 0 !important;
+    right: 0 !important; left: auto !important; margin: 0 !important;
+    height: auto !important; max-height: none !important;
+    width: calc(100vw - (100vw - 60px) / 3 - 29px) !important; min-width: 0 !important;
+    max-width: none !important;   /* legacy 440px cap squeezed the band to its padding */
+    display: flex !important; align-items: center !important;
+    justify-content: center !important; gap: 20px !important;
+    padding: 0 40px !important;
+    padding-right: calc((100vw - 60px) / 3 + 54px) !important;
+    background: rgba(248, 250, 252, 0.97) !important;
+    transform: skewX(-24deg) !important; transform-origin: bottom right !important;
+    border-radius: 30px 0 0 0 !important;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16) !important;
+    z-index: 2 !important;
+  }
+  .fids-airport-pill > * { transform: skewX(24deg); transform-origin: bottom right; }
+  .fids-airport-pill .fids-airport-text { display: none !important; }
+  .fids-airport-pill .fids-airport-logo-img,
+  .fids-airport-pill #fidsAirportLogoImg {
+    max-width: 340px !important;
+    max-height: 72% !important;
+    width: auto !important; height: auto !important;
+    object-fit: contain !important;
+  }
+
+  /* Accent block — GOLD, exactly the RIGHT THIRD (equal sections per Nick).
+     Bleeds 80px past the right edge so the skew shows no corner gap; the
+     icon+label pair centres INSIDE the visible gold. */
+  .fids-banner-board {
+    position: absolute !important; top: 0 !important; bottom: 0 !important;
+    right: -80px !important; left: auto !important; margin: 0 !important;
+    width: calc((100vw - 60px) / 3 + 111px) !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    gap: 14px !important; padding: 0 104px 0 24px !important;
+    background: var(--fids-hdr-accent, #FAC120) !important;
+    transform: skewX(-24deg) !important; transform-origin: bottom right !important;
+    border-radius: 30px 0 0 0 !important;   /* rounded top-left tip, matching the white band */
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16) !important;
+    z-index: 3 !important;
+  }
+  .fids-banner-board > * { transform: skewX(24deg); transform-origin: bottom right; }
+  .fids-banner-board .fids-board-label {
+    color: #0d2440 !important;
+    font-size: clamp(30px, 2.4vw, 46px) !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    width: auto !important; max-width: none !important;
+    text-align: center !important;
+  }
+  .fids-banner-board .fids-board-icon {
+    background: transparent !important;
+    border-radius: 0 !important;
+    width: 54px !important; height: 54px !important;
+    box-shadow: none !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    margin: 0 !important;   /* legacy margins pushed the icon away from the label */
+    flex: 0 0 auto !important;
+  }
+  /* Icon + lettering: ONE colour (navy on gold) — no black-icon/white-text
+     mismatch from theme rules. */
+  .fids-banner-board .fids-board-icon svg,
+  .fids-banner-board .fids-board-icon .fids-icon-dep,
+  .fids-banner-board .fids-board-icon .fids-icon-arr { fill: #0d2440 !important; width: 48px !important; height: 48px !important; }
+  body .fids-banner-board .fids-board-label,
+  body[data-fids-theme] .fids-banner-board .fids-board-label { color: #0d2440 !important; margin: 0 !important; }
 }

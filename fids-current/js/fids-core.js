@@ -5301,7 +5301,7 @@ function _buildV2AircraftCol(ctx, vars) {
         'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
         'WR':  '/logos/symbols/airlines-mono/WS.svg',
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
-        'PB':  '/logos/airline-tiles/PB.svg',   // PAL — native full-colour gold tile (Destination icon)
+        'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
         'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // United globe (white path only, padded to sit inside the round badge)
@@ -5322,7 +5322,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        var NATIVE_COLOR_EMBLEMS = { 'PB': true, 'F8': true };  // (PD now uses a white "p" on the accent circle, not native)
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true };  // (PD uses a white "p", and PB a white arrow, on the accent circle — not native; F8's green dot stays full-colour)
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
@@ -5337,7 +5337,12 @@ function _buildV2AircraftCol(ctx, vars) {
         var IMG = native
           ? 'width:100%;height:100%;object-fit:cover;display:block;'
           : 'width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);';
-        return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + BADGE + '">'
+        // Native full-bleed tiles get a marker class: the stylesheet forces
+        // object-fit:contain !important on emblem imgs (right for symbol
+        // emblems), which would beat the inline `cover` and leave the square
+        // tile visible inside the round badge (PAL read as a square in the
+        // circle). The class lets CSS re-assert cover for tiles only.
+        return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (native ? ' v2-fi-emblem-native' : '') + '" style="' + BADGE + '">'
           + '<img src="' + path + '" alt="" class="v2-fi-emblem-img" style="' + IMG + '" '
           + 'onerror="this.outerHTML=\'<svg viewBox=\\\'0 0 24 24\\\' style=\\\'width:100%;height:100%;fill:#fff;\\\'><path d=\\\'M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z\\\'/></svg>\'">'
           + '</div>';
@@ -6130,12 +6135,11 @@ function _buildV2MapCol(ctx, vars) {
           + '</div>';
       }
 
-      // Shelf 6 — Aircraft type (+reg). Long manufacturer names shortened so it
-      // fits one line (auto-fit shrinks the rest).
+      // Shelf 6 — Aircraft type (+reg). FULL manufacturer name per Nick
+      // ("De Havilland Dash 8-300", not "Dash 8-300") — the auto-fit
+      // shrinks the line if it runs long.
       var _lang2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
-      var _acModel = String(_equipNm || _equipCd || '')
-        .replace(/^De Havilland(\s+Canada)?\s+/i, '')   // "De Havilland Dash 8-400" → "Dash 8-400"
-        .replace(/^Bombardier\s+/i, '');
+      var _acModel = String(_equipNm || _equipCd || '');
       var _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg : '');
       // Shorter label per Nick: "Aircraft / Appareil" (was "Aircraft type").
       var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
@@ -7036,10 +7040,10 @@ function uxgGateHtml(ctx) {
   }
   var _onPlate = _bannerUsedTile || _bannerPlateForced;
   // HARD CAP the logo height so it can NEVER exceed the banner band (which is
-  // overflow:hidden and a fixed height) — that's what was clipping tall logos
-  // (WestJet 150px, etc.). object-fit:contain keeps the aspect; max-width caps
-  // the width. 86px fits the band with margin.
-  var _logoH = Math.min(_sz.h || 120, 120);
+  // overflow:hidden and a fixed height). 76px in the 112px band leaves real
+  // margins above and below — at the old 120px cap, wide all-caps marks
+  // (WESTJET) filled the band edge-to-edge and read as bulging (per Nick).
+  var _logoH = Math.min(_sz.h || 120, 76);
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
                  + (_useOverrideFile
@@ -7163,9 +7167,19 @@ function uxgGateHtml(ctx) {
     _apLogoTop = (_apCfgTop && _apCfgTop.logo && _apCfgTop.logo.url) ? _apCfgTop.logo.url : null;
     if (!_apLogoTop) { try { _apLogoTop = localStorage.getItem('fids_airport_logo_' + iata); } catch (e) {} }
   } catch (e) {}
+  // Original band structure (top:15%, solid frosted-white, rounded top-left),
+  // with two fixes per Nick:
+  // 1. ONE SLAB with the gate block — the band runs all the way to the screen
+  //    edge (right:0) UNDERNEATH the gate block (z-index below it), so its
+  //    skewed right edge is hidden and there is no wedge gap between the white
+  //    band and the gate block. padding-right keeps the logo centred in the
+  //    visible portion left of the block.
+  // 2. Logo white-box fix — mix-blend-mode:multiply makes any white background
+  //    baked into the uploaded airport-logo file disappear against the white
+  //    band (coloured ink is unaffected).
   var _apBandTop = _apLogoTop
-    ? '<div class="g8-r1-apband" style="position:absolute;right:calc(var(--col-left, 23%));top:15%;bottom:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
-      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:420px;width:auto;object-fit:contain;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
+    ? '<div class="g8-r1-apband" style="position:absolute;right:0;top:0;bottom:0;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;padding-right:calc(var(--col-left, 23%) + 26px);background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
+      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:420px;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
 
@@ -7202,9 +7216,14 @@ function uxgGateHtml(ctx) {
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
     +   _apBandTop
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:15% !important;right:0 !important;bottom:0 !important;width:var(--col-left, 23%);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(0deg) !important;transform-origin:bottom right;border-radius:0 !important;overflow:visible;">'
-    +     '<span class="g8-bilbl" style="transform:skewX(0deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
-    +     '<span class="g8-r1-gate" style="transform:skewX(0deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
+    // Gate block: FULL banner height (top:0), skewed −24° in PARALLEL with the
+    // airport band so the white↔accent seam keeps the slanted angle (it went
+    // vertical when the block was straight). The block bleeds 80px past the
+    // right screen edge so its skewed top-right corner can never expose a gap;
+    // inner spans counter-skew +24° to stay upright.
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
+    +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
+    +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
     +   '</div>'
     + '</div>'
     // ROW 2 - flight number + fields (full width)
@@ -8258,6 +8277,40 @@ const gView = document.getElementById('gateView');
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
           gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs });
         }
+        // Align the right-column airline watermark band to the MAP's real
+        // bottom edge: the map shelf height varies by layout, so a fixed
+        // CSS % left the logo's top hidden behind the map (read as "too
+        // high / off-centre"). Measure and expose it as --gate-wm-top; the
+        // ::before rule consumes it so the mark is centred in exactly the
+        // visible below-map area. setTimeout (not rAF — rAF is suspended in
+        // background tabs) + a slow self-healing interval for late layout
+        // shifts (fonts, autofit, telemetry rows appearing).
+        try {
+          if (typeof window._alignGateWm !== 'function') {
+            window._alignGateWm = function(){
+              try {
+                var _wmCol = document.querySelector('.gad-map-col-v2');
+                var _wmMap = _wmCol && _wmCol.querySelector('.v2-rc-shelf-map');
+                if (_wmCol && _wmMap) {
+                  var _wmTopPx = Math.round(_wmMap.offsetTop + _wmMap.offsetHeight);
+                  if (_wmTopPx > 0) _wmCol.style.setProperty('--gate-wm-top', _wmTopPx + 'px');
+                }
+                // Publish the right column's REAL width so the banner's gate
+                // block can span exactly to the column seam (its slanted left
+                // edge lines up with the 3rd panel from the right / the
+                // "Your Aircraft" column boundary). Set on :root — stale
+                // duplicate .g8-wrap nodes made a wrap-scoped var ambiguous.
+                if (_wmCol) {
+                  var _rcw = Math.round(_wmCol.getBoundingClientRect().width);
+                  if (_rcw > 0) document.documentElement.style.setProperty('--gate-rcw', _rcw + 'px');
+                }
+              } catch (e) {}
+            };
+            setInterval(window._alignGateWm, 2000);
+          }
+          setTimeout(window._alignGateWm, 60);
+          setTimeout(window._alignGateWm, 600);
+        } catch (e) {}
         // Re-attach the preserved ad carousel BEFORE autofit/paint so the
         // playing video is never interrupted and the slot is never empty.
         var _newAd = document.getElementById('gateAdCarousel');
@@ -11879,6 +11932,7 @@ const IATA_TO_WORDMARK = {
   // Canadian carriers
   'AC':'air-canada',  'WS':'westjet',  'PD':'porter',  'TS':'transat',
   'PB':'pal-airlines',
+  'F8':'flair',    // Flair — proper wordmark (their logo must NEVER render green, per brand policy)
   'QK':'jazz',     // Air Canada Jazz
   'RV':'air-canada',  // Air Canada Rouge → use AC wordmark
   '3H':'air-canada',  // Air Inuit branded as AC for some routes
@@ -12052,7 +12106,12 @@ function logoPath(basename) {
 function wordmarkSrc(base) {
   // v191: route through logoPath() so reorganized logos resolve correctly
   const fname = base + '-wordmark-' + wordmarkVariant() + '.svg';
-  return logoPath(fname);
+  // Cache token: un-versioned wordmark URLs let a transient 404 (e.g. a brief
+  // deploy window) get cached by the browser FOREVER — every board render then
+  // fires onerror and shows the text-name fallback instead of the wordmark,
+  // and kiosk displays can't be hard-refreshed. A build-tied token makes every
+  // deploy mint fresh URLs, so poisoned caches self-heal.
+  return logoPath(fname) + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
 }
 
 // IATA → emblem-only icon URL. Used by mkLogo() to populate the emblem
@@ -13172,10 +13231,16 @@ function render() {
     // Airline name in the carrier's natural brand colour (not forced black).
     // setTheme() forces .fids-airline-name to rowText with !important, so the
     // inline override also needs !important to win.
-    const _brandColor = (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
+    // F8 (Flair): brand policy forbids their name/logo ever rendering in the
+    // green accent — the text fallback stays the default row colour.
+    const _brandColor = (_airlineCodeForLogo === 'F8') ? ''
+      : (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
     const _nameStyle = _brandColor ? ` style="color:${_brandColor} !important;"` : '';
+    // onerror: RETRY once with a unique cache-buster before falling back to the
+    // text name — a transient asset hiccup (or a stale cached 404) must not
+    // permanently demote the wordmark to lettering on a display.
     const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
-      ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase)}" onerror="this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>'">`
+      ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
       : `<span class="fids-airline-name"${_nameStyle}>${_airlineDisplay}</span>`);
     const airlineCellHtml = '<td class="td-airline"><div class="fids-cell-airline">'
       +   '<div class="fids-airline-logo">' + mkLogo(_airlineCodeForLogo, f._airlineName) + '</div>'

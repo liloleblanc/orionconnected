@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<svg width="1080" height="1080" xmlns="http://www.w3.org/2000/svg" version="1.1" xml:space="preserve">
+ <desc>PAL Airlines arrow — SYMBOL ONLY, transparent background, MIRRORED left-to-right per Nick. Size "Y": ~80% of the canvas, diagonal tips just inside a circular badge crop. White-on-gold via the standard (non-native) emblem pipeline.</desc>
+ <g transform="translate(1080 0) scale(-1 1)">
+  <g transform="matrix(1.74 0 0 1.74 503.07 496.77)">
+   <g transform="matrix(1 0 0 1 21.2241 24.8449)">
+    <path d="m445.88,168.1c0.66,0.16 -8.91,-6.26 -14.03,-9.31c-3.3,-1.93 -12.55,-2.89 -18.66,-0.16c-7.09,2.57 -39.78,16.36 -72.14,15.88c-32.2,-0.32 -62.91,-13.79 -67.69,-15.72c-4.79,-1.76 -203.24,-108.62 -203.24,-108.62l-17.83,-0.48l0,1.76l12.38,3.37l139.02,136.54c0,0 65.7,50.06 12.21,128.99l-78.58,130.44l25.09,-12.03l283.47,-270.66l0,0z" fill="rgb(255,255,255)" fill-rule="nonzero" transform="translate(-249.1034, -250.2414)"/>
+   </g>
+  </g>
+ </g>
+</svg>
