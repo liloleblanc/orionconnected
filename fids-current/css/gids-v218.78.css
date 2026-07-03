@@ -2240,8 +2240,14 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .g8-r1-right { margin-left: 0 !important; }
 .g8-wrap .g8-r1-logoslot .g8-r1-logo,
 .g8-wrap .g8-r1-logoslot img.g8-r1-logo {
-  height: clamp(90px, 9.8vh, 134px) !important;
-  max-height: clamp(90px, 9.8vh, 134px) !important;
+  /* Sized with ROOM in the slim banner (112px): the 100px cap left ~6px of
+     breathing space, so wide all-caps marks (WESTJET) bulged against the
+     edges. ~76px cap gives real margins above and below. */
+  height: clamp(52px, 6.4vh, 76px) !important;
+  max-height: clamp(52px, 6.4vh, 76px) !important;
+  max-width: clamp(240px, 24vw, 360px) !important;
+  width: auto !important;
+  object-fit: contain !important;
 }
 /* flight block fills the middle and centres within it */
 .g8-wrap .g8-r1-flight { flex: 1 1 0 !important; justify-content: center !important; }
@@ -2618,13 +2624,18 @@ body, body.gids-page, body.gate-page{
   line-height: 1 !important;
 }
 /* v219 — definitive slim header bar height. A .g8-wrap .g8-r1 rule (higher
-   specificity than the plain .g8-r1 rules) so it actually wins the cascade. */
+   specificity than the plain .g8-r1 rules) so it actually wins the cascade.
+   140 → 112px per Nick: the banner should hug the airport-logo band and the
+   gate block (no dead space above/below them), not tower over them. */
 .g8-wrap .g8-r1 {
-  height: 140px !important;
-  min-height: 140px !important;
-  max-height: 140px !important;
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
+  height: 112px !important;
+  min-height: 112px !important;
+  max-height: 112px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  /* the gate block intentionally bleeds 80px past the right edge (skew cover) */
+  overflow: hidden !important;
+  position: relative !important;
 }
 .g8-wrap .g8-r1-dest .g8-city-code,
 .g8-wrap .g8-r1-dest > span:nth-child(2) {
@@ -2879,6 +2890,15 @@ body, body.gids-page, body.gate-page{
   height: 100% !important;
   object-fit: contain !important;
 }
+/* Native FULL-BLEED tile emblems (PAL, Flair — .v2-fi-emblem-native from
+   fids-core) must COVER the round badge so the square tile is cropped into
+   the circle. Without this, the contain rule above beats the inline cover
+   and PAL renders as a square tile bleeding against the gold circle. */
+.gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap.v2-fi-emblem-native .v2-fi-emblem-img {
+  object-fit: cover !important;
+}
+/* PAL: the emblem uses PB-arrow.svg — the arrow SYMBOL alone, rendered
+   white on the standard glossy gold badge like the other icons. */
 
 
 
@@ -3217,9 +3237,11 @@ body, body.gids-page, body.gate-page{
 
 /* ── VALUE (big number/time) — glyph height matched to the icon badge ───
    Font px must exceed the icon px because glyph height is ~70% of font-size;
-   bumped so the digits visually equal the icon circle. */
+   bumped so the digits visually equal the icon circle.
+   Floor 70→46px: on shorter windows the 70px floor overflowed the shelf and
+   clipped values ("508" cut in half) — scale down instead of bulge. */
 .gad-aircraft-col .v2-fi-row .v2-fi-value {
-  font-size: clamp(70px, 9vh, 120px);
+  font-size: clamp(46px, 9vh, 120px);
   font-weight: 900;
   color: #fff;
   opacity: 1;
@@ -3228,6 +3250,11 @@ body, body.gids-page, body.gate-page{
   padding: 0;
   margin: 0;
   white-space: nowrap;
+}
+/* Containment: the text column clips instead of bulging past its shelf. */
+.gad-aircraft-col .v2-fi-row .v2-fi-textcol {
+  min-width: 0 !important;
+  overflow: hidden !important;
 }
 /* Force: time + flight number values are AS BIG AS THE ICON (equal height).
    To keep "X:XX PM" on screen at that size, the value spans the full row
@@ -4555,12 +4582,19 @@ body, body.gids-page, body.gate-page{
    hidden wherever a panel had text/picture on a solid fill), and zoom Porter's
    tiled wordmark up so it's legible. Tune sizes/opacity from the preview. */
 
-/* 1) Watermark spans the WHOLE right column (not just the bottom 62%). */
+/* 1) Watermark = ONE brand mark filling the ENTIRE below-map band top-to-
+   bottom (auto 100%: height spans all three lower rectangles exactly, aspect
+   kept — the logo is wider than the column so its sides crop off; Nick's
+   pick "B" from the treatment comparison). The band's TOP is the map's real
+   bottom edge, measured per render into --gate-wm-top (fixed % left the
+   logo's top hidden under the map → read as off-centre). Behind everything
+   incl. the plane, light. Porter/KLM keep their own pattern rules below. */
 .g8-wrap .gad-map-col-v2::before {
-  top: 0 !important; bottom: 0 !important; height: auto !important;
-  background-position: center 122% !important;
-  background-size: 120% auto !important;
-  opacity: 0.22 !important;
+  top: var(--gate-wm-top, 38%) !important; bottom: 0 !important; height: auto !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: auto 100% !important;
+  opacity: 0.15 !important;
 }
 
 /* 2) Make the lower panel fills transparent so the watermark shows behind the
@@ -4573,43 +4607,66 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-inbound,
 .g8-wrap .gad-map-col-v2 .v2-rc-aircraft { background: transparent !important; }
 
-/* 3) Porter: zoom the tiled "porter" wordmark in so the words are big. */
+/* 3) Porter: the watermark file is a full navy "porter" PATTERN PANEL (diagonal
+   wordmark grid). Tile it at 120% width (repeat) so the grid reads as an even,
+   ALIGNED pattern across the panels BELOW the map (inbound card + aircraft +
+   type — the ::before band already excludes the map area), with the words at a
+   modest size instead of one blown-up band clustered at the bottom. It sits
+   behind the plane (z-index:0) at low opacity, so the pattern fills in
+   around/behind the aircraft illustration without affecting it. */
 .g8-wrap.g8-airline-PD .gad-map-col-v2::before {
-  background-repeat: no-repeat !important;
-  background-position: center 122% !important;
-  background-size: 220% auto !important;
+  background-repeat: repeat !important;
+  background-position: center top !important;
+  background-size: 120% auto !important;
   opacity: 0.30 !important;
 }
+/* The watermark band must NEVER show through the map panel: when Leaflet fails
+   to load (offline preview / kiosk without network) the map shelf is otherwise
+   transparent and the pattern bleeds into it. Solid fallback bg — invisible
+   behind a healthy map, hides the band when the map is absent. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf-map { background: #e9edf4 !important; }
 
-/* AC family — roundel reads strong: keep it lightest. Nudged up + faded more. */
+/* Per-airline tweaks are OPACITY-ONLY now — position/size/repeat come from the
+   generic single-mark rule above so every carrier gets ONE large light emblem
+   across the lower rectangles (the old bottom-anchored nudges left each mark
+   as a sliver). */
+/* AC family — roundel reads strong: keep it lightest. */
 .g8-wrap.g8-airline-AC .gad-map-col-v2::before,
 .g8-wrap.g8-airline-QK .gad-map-col-v2::before,
-.g8-wrap.g8-airline-RV .gad-map-col-v2::before { opacity: 0.10 !important; background-position: center 120% !important; }
+.g8-wrap.g8-airline-RV .gad-map-col-v2::before { opacity: 0.10 !important; }
 
-/* Flair — dropped ~1cm lower. */
-.g8-wrap.g8-airline-F8 .gad-map-col-v2::before { opacity: 0.13 !important; background-position: center 124% !important; }
+/* Flair — the green dot reads loud: a touch fainter. */
+.g8-wrap.g8-airline-F8 .gad-map-col-v2::before { opacity: 0.13 !important; }
 
-/* WestJet — nudged up a touch more and enlarged slightly. */
-.g8-wrap.g8-airline-WS .gad-map-col-v2::before {
-  background-position: center 104% !important;
-  background-size: 110% auto !important;
-}
-
-/* PAL — white emblem on a navy-blue square tile (its own colour), so it uses
-   the same faded multiply treatment as the AC/WS tiles. Nudged up. A soft
-   radial mask dissolves the tile's hard square edges so it reads as a round
-   glow, not a rectangle parked at the bottom. */
+/* PAL — navy square tile: fainter so the stacked tiles stay a whisper.
+   scaleX(-1) mirrors the arrow left-to-right (matches the flipped badge). */
 .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
-  background-position: center 108% !important;
-  background-size: 100% auto !important;
   opacity: 0.16 !important;
-  -webkit-mask-image: radial-gradient(ellipse 72% 60% at 50% 74%, #000 30%, rgba(0,0,0,0.4) 58%, transparent 80%) !important;
-          mask-image: radial-gradient(ellipse 72% 60% at 50% 74%, #000 30%, rgba(0,0,0,0.4) 58%, transparent 80%) !important;
+  transform: scaleX(-1) !important;
 }
 
-/* Delta — nudged up well clear of the bottom shelf. */
-.g8-wrap.g8-airline-DL .gad-map-col-v2::before {
-  background-position: center 105% !important;
+/* ── Logo overflow guards (Nick: "logos are popping out / bulging") ──
+   Every right-column shelf clips its content, and the two operator-logo
+   slots get hard caps so an oversized brand file can never stretch or
+   spill its panel — it scales down inside instead. */
+.g8-wrap .gad-map-col-v2 .v2-rc-shelf { overflow: hidden !important; }
+.g8-wrap .v2-rc-aircraft-op-inline img {
+  height: auto !important;
+  max-height: clamp(48px, 6.5vh, 92px) !important;
+  max-width: clamp(160px, 18vw, 280px) !important;
+  object-fit: contain !important;
+}
+.g8-wrap .v2-rc-acb-opby-logo img,
+.g8-wrap img.v2-rc-opby-logo {
+  max-height: clamp(26px, 4.2vh, 58px) !important;
+  max-width: min(46%, 240px) !important;
+  width: auto !important;
+  object-fit: contain !important;
+}
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-img img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
 }
 
 /* KLM — the crown+wordmark is a WIDE transparent logo (not a full-bleed tile),
@@ -4637,7 +4694,9 @@ body, body.gids-page, body.gate-page{
   position: absolute !important; inset: 0 !important;
   width: 100% !important; height: 100% !important;
   background: url('/logos/Backgrounds/clouds-loop.gif?v=2') center center / cover no-repeat !important;
-  opacity: 1 !important;
+  /* 0.85 per Nick: clouds clearly visible behind the plane, with just a
+     hint of the airline watermark still reading through. */
+  opacity: 0.85 !important;
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 4%, #000 97%, transparent 100%);
           mask-image: linear-gradient(180deg, transparent 0%, #000 4%, #000 97%, transparent 100%);
   pointer-events: none !important;
@@ -4652,4 +4711,43 @@ body, body.gids-page, body.gate-page{
    the illustration shelf. Mirror the clouds to match. */
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-faces-right #gateCloudsBg {
   transform: scaleX(-1) !important;
+}
+
+/* v218.99 — GIDS banner consistency (per Nick): the gate block carries the
+   SAME shadow as the airport band — no shadowed-vs-flat mismatch between tabs. */
+.g8-wrap .g8-r1-right { box-shadow: 0 6px 14px rgba(0,0,0,0.16) !important; }
+
+/* v218.99 — GATE banner: the AIRPORT band and GATE block tabs match the FIDS
+   board tabs (per Nick): equal visible widths, same -24 angle, same rounded
+   top-left tip. The airline side is untouched. */
+.g8-wrap .g8-r1-apband {
+  width: calc(2 * var(--gate-rcw, 25%) - 24px) !important;
+  /* centre content in the VISIBLE half of the band (the other half runs
+     under the gate block) — was using --col-left 23% while the block uses
+     --gate-rcw 25%, so logos drifted toward the seams. */
+  padding-left: 36px !important;
+  padding-right: calc(var(--gate-rcw, 25%) + 44px) !important;
+}
+/* AUTO-FIT: any airport logo, any shape, always inside the visible band. */
+.g8-wrap .g8-r1-apband img {
+  max-width: 100% !important;
+  max-height: 62% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+/* v218.99 — text fit (per Nick: "text overflowing / missing edges"):
+   1) right-card values ("Scheduled | Prévu") were cutting descenders at the
+      bottom — taller line box + padding;
+   2) left-rail shelf titles clip with an ellipsis instead of a raw mid-letter
+      cut when a bilingual label runs long. */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-val {
+  line-height: 1.38 !important;
+  padding-bottom: 0.2em !important;
+}
+.g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-title {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }

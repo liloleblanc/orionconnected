@@ -101,12 +101,21 @@
 .ac-ico-boarding::before, .ac-ico-depart::before, .ac-ico-time::before {
   font-family:'ac-icons' !important; font-style:normal !important; font-weight:normal !important;
 }
-/* Per-glyph size tuning (some glyphs read smaller/larger at the same size) */
-.ac-ico-status   { font-size:clamp(46px,7.0vh,92px) !important; }   /* bell — a tad bigger */
-.ac-ico-boarding { font-size:clamp(38px,5.8vh,76px) !important; }   /* boarding pass — a tad smaller */
-.ac-ico-depart   { font-size:clamp(38px,5.8vh,76px) !important; }   /* takeoff — a tad smaller */
-.ac-ico-time     { font-size:clamp(96px,15vh,180px) !important; }  /* timer — much bigger (glyph has heavy padding) */
-/* Timer glyph is heavily padded AND the orb clips it — let its badge not clip so
-   the stopwatch can actually grow. (Scoped to the timer only.) */
+/* Per-glyph size tuning — normalized so every flight-info badge glyph renders the
+   SAME visible size (~58px optical box at 1080p). Each icomoon glyph fills its em
+   differently (measured ink-height ÷ em: plane .99, target .97, bell .81, boarding
+   .92, takeoff .85, stopwatch .88), so a single font-size would look uneven. These
+   font-sizes = target ÷ that ratio, so the mark you actually SEE matches across all
+   six rows (Flight · Destination · Status · Boarding · Departure · Arrival). If you
+   add a row icon, canvas-measure its ink ratio and size it the same way. */
+.ac-ico-flight   { font-size:clamp(36px,5.42vh,74px) !important; }   /* plane     — ink .99 */
+.ac-ico-dest     { font-size:clamp(36px,5.54vh,76px) !important; }   /* target    — ink .97 */
+.ac-ico-status   { font-size:clamp(43px,6.63vh,90px) !important; }   /* bell      — ink .81 */
+.ac-ico-boarding { font-size:clamp(38px,5.84vh,80px) !important; }   /* boarding  — ink .92 */
+.ac-ico-depart   { font-size:clamp(41px,6.32vh,86px) !important; }   /* takeoff   — ink .85 */
+/* The stopwatch badge must not clip (its glyph sits high in the em). And the
+   icon rule must out-specify gids-v218.78.css's `.gad-aircraft-col [class*="time"]
+   {font-size:…34px}` — that value-text rule's [class*="time"] also matches
+   ac-ico-TIME, so a bare `.ac-ico-time` loses to it. Hence the deep scope below. */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge:has(.ac-ico-time) { overflow: visible !important; }
-.ac-ico-time { font-size:clamp(80px,12vh,150px) !important; line-height:1 !important; }
+.g8-wrap .gad-aircraft-col .v2-fi-icon-badge .ac-ico-time { font-size:clamp(39px,6.10vh,82px) !important; line-height:1 !important; }  /* stopwatch — ink .88 */
