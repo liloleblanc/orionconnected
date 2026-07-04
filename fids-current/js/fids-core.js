@@ -12023,8 +12023,10 @@ const IATA_TO_WORDMARK = {
 function wordmarkVariant() {
   try {
     var theme = (document.body && document.body.getAttribute('data-fids-theme')) || '';
-    // Light themes (cream-coloured background) — use dark ink
-    if (theme === 'cream' || theme === 'light') return 'dark';
+    // Light-background themes — use the colored ("dark"-ink) wordmark
+    // artwork. Same set as the CSS light-theme icon rules (cream / light /
+    // paper / sky). Nick: light themes must show the wordmarks in color.
+    if (theme === 'cream' || theme === 'light' || theme === 'paper' || theme === 'sky') return 'dark';
   } catch (e) {}
   // Default: dark theme → use the white/light-ink variant
   return 'light';
@@ -15451,11 +15453,23 @@ function mapADB(raw, mode) {
     const cityName=mode==='dep'
       ?(f.arrival?.airport?.name||f.arrival?.airport?.municipalityName||'')
       :(f.departure?.airport?.name||f.departure?.airport?.municipalityName||'');
-    const locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
-    // If locIata is empty, try reverse lookup from city name
-    if (!locIata && locName !== '—') {
-      for (const [k,v] of Object.entries(CITY)) { if (v === locName) { locIata = k; break; } }
+    // Some feed rows arrive with NO iata/icao (Goose Bay, some Montreal /
+    // Edmonton rows). Reverse-look the code up from the city/airport name —
+    // case- and accent-insensitive (CITY values are ALL-CAPS, the API sends
+    // mixed case, so a strict === never matched). Restoring the code also
+    // reconnects the weather column, which keys off _locIata via COORDS.
+    if (!locIata && cityName) {
+      const _fold = s => String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+(INTERNATIONAL\s+|REGIONAL\s+)?AIRPORT$/,'').replace(/\s+/g, ' ').trim();
+      const _cn = _fold(cityName);
+      if (_cn) {
+        for (const [k, v] of Object.entries(CITY)) { if (_fold(v) === _cn) { locIata = k; break; } }
+        if (!locIata && typeof AP !== 'undefined') {
+          for (const k of Object.keys(AP)) { if (_fold(AP[k].name) === _cn) { locIata = k; break; } }
+        }
+      }
     }
+    const locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
     const terminal=(mode==='dep'?f.departure?.terminal:f.arrival?.terminal)||'—';
     const gate=(mode==='dep'?f.departure?.gate:f.arrival?.gate)||'—';
     const belt=(mode==='arr'?f.arrival?.baggageBelt:null)||null;

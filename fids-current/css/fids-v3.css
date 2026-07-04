@@ -3796,3 +3796,15 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
   height: 42px !important;
   max-height: 42px !important;
 }
+
+/* ── Clock readable on EVERY theme (Nick, Jul 2026) ─────────────────────────
+   The redesigned three-tab banner puts the clock on the dark navy tab no
+   matter which theme is active. Light themes (cream/paper/light/sky) were
+   still inking the time dark — black text on a navy tab. This block sits at
+   the very end of the file so it out-cascades every per-theme rule above. */
+@media (min-width: 701px) {
+  body .fids-banner-time,
+  body[data-fids-theme] .fids-banner-time { color: #ffffff !important; }
+  body .fids-banner-date,
+  body[data-fids-theme] .fids-banner-date { color: rgba(255,255,255,0.88) !important; }
+}
