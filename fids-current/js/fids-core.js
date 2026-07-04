@@ -15904,7 +15904,7 @@ function applyAirportConfigToBoard(iata) {
   let _theme  = _pref('theme') || _builtin.theme;
   // Theme lineup reduced to the teal (Nick) — anything else saved on a
   // display (old navy/sky/cream/etc.) coerces to teal; custom stays.
-  var _ALLOWED_THEMES = { 'tus-teal': 1, 'tus-teal-deep': 1, 'custom': 1 };
+  var _ALLOWED_THEMES = { 'tus-teal': 1, 'tus-teal-deep': 1, 'mist': 1, 'custom': 1 };
   if (!_ALLOWED_THEMES[_theme]) _theme = 'tus-teal';
   // Logo position is nested under .logo.position in admin KV but flat in user prefs
   const _layout = _pref('logoPosition')

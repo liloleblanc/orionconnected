@@ -3819,3 +3819,58 @@ body.fids-light-board #fidsTable thead th {
   color: #0d2440 !important;
   border-bottom-color: #0d2440 !important;
 }
+
+/* ── MIST — the new light theme (Nick, Jul 2026) ────────────────────────────
+   Light but never washed out: soft blue-grey board, pale rows one step off
+   white, deep navy lettering. Headers and wordmark ink adapt automatically
+   via the fids-light-board luminance system; the three-tab banner keeps its
+   navy/white/gold tabs. */
+body[data-fids-theme="mist"] {
+  --fids-bg:           #C7D2DD;
+  --fids-banner-bg:    #0b0f16;
+  --fids-banner-text:  #ffffff;
+  --fids-text:         #16283C;
+  --fids-text-muted:   rgba(22,40,60,0.66);
+  --fids-stripe:       #DAE3EA;
+  --fids-divider:      rgba(22,40,60,0.10);
+  --fids-pill-bg:      #ffffff;
+  --fids-pill-text:    #16283C;
+  --fids-hdr-accent:   #0d2440;
+  --fids-row-odd:      #E9EEF3;
+  --fids-row-h:        66px;
+  background: #C7D2DD !important;
+}
+body[data-fids-theme="mist"] #fidsBoard,
+body[data-fids-theme="mist"] #fidsTable {
+  background: #C7D2DD !important;
+}
+body[data-fids-theme="mist"] #fidsTable tbody tr {
+  background: #E9EEF3 !important;
+  color: #16283C !important;
+}
+body[data-fids-theme="mist"] #fidsTable tbody tr:nth-child(even) {
+  background: #DAE3EA !important;
+}
+body[data-fids-theme="mist"] #fidsTable tbody tr td {
+  color: #16283C !important;
+  border: none !important;
+}
+body[data-fids-theme="mist"] #fidsTable tbody tr,
+body[data-fids-theme="mist"] #fidsTable tbody tr td {
+  font-size: 28px !important;
+  font-weight: 600 !important;
+}
+body[data-fids-theme="mist"] #fidsTable tbody tr td.td-status,
+body[data-fids-theme="mist"] #fidsTable tbody tr td.td-status * {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+}
+/* Status colors tuned for the pale rows — deep enough to read at distance */
+body[data-fids-theme="mist"] #fidsTable td.td-status .st-ontime,
+body[data-fids-theme="mist"] #fidsTable td.td-status [class*="ontime"] { color: #157A43 !important; }
+body[data-fids-theme="mist"] #fidsTable td.td-status [class*="delay"] { color: #A66F00 !important; }
+body[data-fids-theme="mist"] #fidsTable td.td-status [class*="cancel"] { color: #B3261E !important; }
+/* Ticker strip keeps dark footing so white ticker text stays readable */
+body[data-fids-theme="mist"] .fids-footer {
+  background: #16283C !important;
+}
