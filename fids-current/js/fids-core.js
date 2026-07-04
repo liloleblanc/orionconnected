@@ -12467,6 +12467,20 @@ function airportCityNameSafe_v21877(code, langOverride) {
   return city || '';
 }
 
+// A trailing 3-letter word is only an airport code if we actually know it —
+// otherwise it's part of the city name ("Goose Bay", "Medicine Hat", "La Paz").
+function _isRealApCode(code) {
+  var c = String(code || '').toUpperCase();
+  if (!/^[A-Z]{3}$/.test(c)) return false;
+  if (typeof CITY !== 'undefined' && CITY[c]) return true;
+  if (typeof CITY_FR !== 'undefined' && CITY_FR[c]) return true;
+  if (typeof CITY_ES !== 'undefined' && CITY_ES[c]) return true;
+  if (typeof AP !== 'undefined' && AP[c]) return true;
+  if (typeof GATE_AP !== 'undefined' && GATE_AP[c]) return true;
+  if (typeof AIRPORT_COORDS !== 'undefined' && AIRPORT_COORDS[c]) return true;
+  return false;
+}
+
 function normalizeDisplayCity(raw, iata) {
   var s = String(raw || '').replace(/\s+/g, ' ').trim();
   if (!s || s === '—') return s;
@@ -12487,11 +12501,17 @@ function normalizeDisplayCity(raw, iata) {
     if (looked2) s = looked2;
   }
 
-  // If no separate code was supplied, accept only explicit code formatting.
+  // If no separate code was supplied, accept only explicit code formatting —
+  // and only codes we recognize, so "Goose Bay" never parses as "Goose (BAY)".
   if (!code) {
-    var m = s.match(/^(.+?)\s*\(\s*([A-Za-z]{3})\s*\)$/) ||
-            s.match(/^(.+?)(?:\s+|-|\/|,)\s*([A-Za-z]{3})$/);
-    if (m) code = String(m[2] || '').toUpperCase();
+    var mp = s.match(/^(.+?)\s*\(\s*([A-Za-z]{3})\s*\)$/);
+    if (mp && !_isRealApCode(mp[2])) {
+      // "(BAY)" is part of the name, not a code — fold it back in.
+      s = (mp[1] + ' ' + mp[2]).replace(/\s+/g, ' ').trim();
+      mp = null;
+    }
+    var m = mp || s.match(/^(.+?)(?:\s+|-|\/|,)\s*([A-Za-z]{3})$/);
+    if (m && (mp || _isRealApCode(m[2]))) code = String(m[2] || '').toUpperCase();
   }
 
   // Remove only explicit duplicate copies of the same code.
@@ -12542,9 +12562,14 @@ function formatCityIata(raw, iata, langOverride) {
       rawStr = dup[1].trim();
       code = dup[3].toUpperCase();
     } else {
-      var m = rawStr.match(/^(.+?)\s*\(\s*([A-Za-z]{3})\s*\)$/) ||
-              rawStr.match(/^(.+?)(?:\s+|-|\/|,)\s*([A-Za-z]{3})$/);
-      if (m) {
+      var mp2 = rawStr.match(/^(.+?)\s*\(\s*([A-Za-z]{3})\s*\)$/);
+      if (mp2 && !_isRealApCode(mp2[2])) {
+        // "Goose (BAY)" — the parenthesized word isn't a code; repair the name.
+        rawStr = (mp2[1] + ' ' + mp2[2]).replace(/\s+/g, ' ').trim();
+        mp2 = null;
+      }
+      var m = mp2 || rawStr.match(/^(.+?)(?:\s+|-|\/|,)\s*([A-Za-z]{3})$/);
+      if (m && (mp2 || _isRealApCode(m[2]))) {
         rawStr = m[1].trim();
         code = m[2].toUpperCase();
       } else if (/^[A-Za-z]{3}$/.test(rawStr)) {
