@@ -3874,3 +3874,9 @@ body[data-fids-theme="mist"] #fidsTable td.td-status [class*="cancel"] { color: 
 body[data-fids-theme="mist"] .fids-footer {
   background: #16283C !important;
 }
+/* Mist: departed rows were white-on-pale — mute to readable slate instead */
+body[data-fids-theme="mist"] #fidsTable .td-status.fids-status-departed,
+body[data-fids-theme="mist"] #fidsTable .td-status.fids-status-departed *,
+body[data-fids-theme="mist"] #fidsTable .fids-status-departed {
+  color: rgba(22, 40, 60, 0.48) !important;
+}
