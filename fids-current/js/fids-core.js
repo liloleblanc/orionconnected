@@ -3646,6 +3646,23 @@ function getAirlineAccent(code) {
   return AIRLINE_ACCENT[code] || AIRLINE_ACCENT[(code||'').substring(0,2)] || '#0033A1';
 }
 
+// ── AIR CANADA EXPRESS CODE-PAIRING MATRIX (enforced) ────────────────────
+// Marketing AC flight-number ranges → operating carrier + scheduled aircraft.
+// The pairing is contractual, so it trumps whatever operator/equipment the
+// feed pre-tagged for these ranges:
+//   AC7000–7299 → PB PAL Airlines    DH4 De Havilland Dash 8-400
+//   AC7950–8249 → QK Jazz Aviation   DH4 De Havilland Dash 8-400
+//   AC8250–8549 → QK Jazz Aviation   E75 Embraer E175
+//   AC8550–8999 → QK Jazz Aviation   CR9 Mitsubishi CRJ-900
+function acExpressMatrix(fn) {
+  if (isNaN(fn)) return null;
+  if (fn >= 7000 && fn <= 7299) return { op:'PB', opName:'PAL Airlines',  eq:'DH4', eqTest:/DH8|DH4|DHC|DASH|Q400/ };
+  if (fn >= 7950 && fn <= 8249) return { op:'QK', opName:'Jazz Aviation', eq:'DH4', eqTest:/DH8|DH4|DHC|DASH|Q400/ };
+  if (fn >= 8250 && fn <= 8549) return { op:'QK', opName:'Jazz Aviation', eq:'E75', eqTest:/\bE75\b|E175|\bE7W\b/ };
+  if (fn >= 8550 && fn <= 8999) return { op:'QK', opName:'Jazz Aviation', eq:'CR9', eqTest:/\bCR9\b|CRJ[- ]?9/ };
+  return null;
+}
+
 // Hawaii airports — used only as a fallback signal when equipment is unknown.
 // Comprehensive list per FAA/Wikipedia (commercial primary + nonprimary + GA + military).
 // Updated v186 to include all Mokulele-served small-island airports (HNM, MUE, LUP)
@@ -4668,8 +4685,9 @@ function renderMobileGateHtml(ctx) {
     var _fn = parseInt(String(currentFlight.flight || '').replace(/\D/g, ''), 10);
     if (isNaN(_fn)) return;
     if (airline === 'AC') {
-      if ((_fn >= 7600 && _fn <= 7699) || (_fn >= 2200 && _fn <= 2299)) _opCode = 'PB';
-      else if ((_fn >= 8000 && _fn <= 8999) || (_fn >= 7500 && _fn <= 7999)) _opCode = 'QK';
+      var _mxm = (typeof acExpressMatrix === 'function') ? acExpressMatrix(_fn) : null;
+      if (_mxm) _opCode = _mxm.op;
+      else if ((_fn >= 7600 && _fn <= 7699) || (_fn >= 2200 && _fn <= 2299)) _opCode = 'PB';
       else if (_fn >= 1600 && _fn <= 1999) _opCode = 'RV';
     } else if (airline === 'WS' && _fn >= 3000 && _fn <= 3999) {
       _opCode = 'WR';
@@ -5952,16 +5970,19 @@ function _buildV2MapCol(ctx, vars) {
     // feed often labels these "Jazz" or "AC", which made the badge wrong. The
     // flight number is deterministic. (Livery still keys off AC below.)
     var _mktIsAC = String(vars.airlineCode || '').toUpperCase() === 'AC';
+    var _mxGate = (_mktIsAC && typeof acExpressMatrix === 'function') ? acExpressMatrix(_acFlNum) : null;
     if (_mktIsAC && !isNaN(_acFlNum)) {
-      if ((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299)) _opCode = 'PB';
-      else if ((_acFlNum >= 8000 && _acFlNum <= 8999) || (_acFlNum >= 7500 && _acFlNum <= 7999)) _opCode = 'QK';
+      if (_mxGate) _opCode = _mxGate.op;
+      else if ((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299)) _opCode = 'PB';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
     }
     // Air Canada Express Dash 8-400s are flown by BOTH Jazz AND PAL Airlines.
     // The two are told apart by REGISTRATION: PAL uses its distinctive "P" series
     // (C-FP•• / C-GP••), while Jazz's Dash 8-400s are C-GG••. So a Jazz-attributed
     // Express flight on a PAL airframe is actually operated by PAL.
-    if (_opCode === 'QK' && _acReg) {
+    // (Skip the registration heuristic when the flight number is inside the
+    // enforced Express matrix — the contractual pairing wins.)
+    if (_opCode === 'QK' && !_mxGate && _acReg) {
       var _regUp = String(_acReg).toUpperCase().replace(/[\s-]/g, '');
       var _PAL_REGS = { 'CFPAL':1, 'CFPQI':1, 'CGPAO':1, 'CGPIX':1, 'CFPVJ':1, 'CGPFI':1 };
       if (_PAL_REGS[_regUp] || /^C[FG]P[A-Z][A-Z]$/.test(_regUp)) _opCode = 'PB';
@@ -6000,6 +6021,16 @@ function _buildV2MapCol(ctx, vars) {
         var _jzType = ['CR9', 'DH4', 'E75'][Math.abs(isNaN(_acFlNum) ? 0 : _acFlNum) % 3];
         _equipCd = _jzType;
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_jzType) : _jzType;
+      }
+    }
+    // Enforce the scheduled type from the Express code-pairing matrix — each
+    // range flies ONE type (7000-7299/7950-8249 Dash 8-400, 8250-8549 E175,
+    // 8550-8999 CRJ-900), so the display never contradicts the flight number.
+    if (_mxGate) {
+      var _mxEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      if (!_mxGate.eqTest.test(_mxEqUp)) {
+        _equipCd = _mxGate.eq;
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_mxGate.eq) : _mxGate.eq;
       }
     }
     // Air Transat flies only the A321neo, but ADB scatters the SAME aircraft
@@ -6046,7 +6077,7 @@ function _buildV2MapCol(ctx, vars) {
         // AIRLINE_NAME holds the PARENT brand for the Express partners
         // (QK→"Air Canada", etc.), so use proper operator names for the ones we
         // infer locally; US regionals keep the resolved name from the feed.
-        var _EXPRESS_OP_NAMES = { 'PB':'PAL Airlines', 'QK':'Jazz', 'RV':'Air Canada Rouge', 'WR':'WestJet Encore' };
+        var _EXPRESS_OP_NAMES = { 'PB':'PAL Airlines', 'QK':'Jazz Aviation', 'RV':'Air Canada Rouge', 'WR':'WestJet Encore' };
         var _opNameForAlt = _EXPRESS_OP_NAMES[_opCode]
           || (vars.currentFlight && vars.currentFlight._opName)
           || ((typeof AIRLINE_NAME !== 'undefined') ? AIRLINE_NAME[_opCode] : _opCode)
@@ -13267,9 +13298,20 @@ function render() {
     const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
       ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
       : `<span class="fids-airline-name"${_nameStyle}>${_airlineDisplay}</span>`);
+    // Operated-by sub-label — the marketing carrier keeps the big wordmark
+    // (passengers look for the airline on their ticket); the Express operating
+    // partner rides underneath, from the enforced code-pairing matrix.
+    let _opSubHtml = '';
+    try {
+      const _fnRow = parseInt(String(f.flight || '').replace(/\D/g, ''), 10);
+      const _mxRow = (_airlineCodeForLogo === 'AC' && typeof acExpressMatrix === 'function') ? acExpressMatrix(_fnRow) : null;
+      const _opNameRow = _mxRow ? _mxRow.opName
+        : ((f._opCode && f._opCode !== _airlineCodeForLogo && f._opName) ? f._opName : '');
+      if (_opNameRow) _opSubHtml = '<div class="fids-operated-by">Operated by ' + _opNameRow + '</div>';
+    } catch (e) {}
     const airlineCellHtml = '<td class="td-airline"><div class="fids-cell-airline">'
       +   '<div class="fids-airline-logo">' + mkLogo(_airlineCodeForLogo, f._airlineName) + '</div>'
-      +   '<div class="fids-airline-wordmark-slot">' + _airlineLabelHtml + '</div>'
+      +   '<div class="fids-airline-wordmark-slot' + (_opSubHtml ? ' has-op' : '') + '">' + _airlineLabelHtml + _opSubHtml + '</div>'
       + '</div></td>';
 
     const destCellHtml = (() => {

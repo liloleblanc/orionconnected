@@ -3788,3 +3788,30 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
   body .fids-banner-board .fids-board-label,
   body[data-fids-theme] .fids-banner-board .fids-board-label { color: #0d2440 !important; margin: 0 !important; }
 }
+
+/* ── Operated-by sub-label (AC Express code-pairing matrix) ─────────────────
+   Marketing wordmark on top, operating partner underneath. The slot keeps its
+   fixed height: stack vertically, shrink the wordmark, everything clipped so
+   nothing bulges the row. */
+#fidsTable .td-airline .fids-airline-wordmark-slot.has-op {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 1px !important;
+}
+#fidsTable .td-airline .fids-airline-wordmark-slot.has-op .fids-airline-wordmark {
+  height: auto !important;
+  max-height: calc(var(--fids-brand-slot-h) * 0.58) !important;
+}
+#fidsTable .td-airline .fids-operated-by {
+  font-size: clamp(11px, 0.85vw, 15px);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--fids-muted, #8a94a6);
+  text-transform: none;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x, 10px) * 2));
+}
