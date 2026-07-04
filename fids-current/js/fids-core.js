@@ -12153,8 +12153,32 @@ function logoPath(basename) {
   const sub = LOGO_SUBFOLDER[basename];
   return sub ? '/logos/' + sub + '/' + basename : '/logos/' + basename;
 }
+// Light-background themes must show each carrier's REAL brand-color wordmark
+// (Nick). The '-dark' files are black monochrome — black is only correct when
+// the brand itself is black (e.g. Flair, whose lettering is genuinely black
+// and can never be green per policy — intentionally absent from this map).
+const COLOR_WORDMARKS = {
+  'air-canada':      '/logos/airlines/canadian/air-canada.svg',
+  'westjet':         '/logos/airlines/canadian/WestJet_Logo_2018.svg',
+  'porter':          '/logos/airlines/canadian/porter.svg',
+  'transat':         '/logos/airlines/canadian/transat.svg',
+  'united':          '/logos/airlines/us-major/united.svg',
+  'delta':           '/logos/airlines/us-major/delta.svg',
+  'american':        '/logos/airlines/us-major/American_Airlines_Logo_2013_alternative_variant.svg',
+  'southwest':       '/logos/airlines/us-major/southwest.svg',
+  'alaska-airlines': '/logos/airlines/us-major/alaska-airlines.svg',
+  'hawaiian':        '/logos/airlines/us-major/Hawaiian.svg',
+  'frontier':        '/logos/airlines/us-major/frontier.svg',
+  'jetblue':         '/logos/airlines/us-major/jetblue.svg',
+  'pal-airlines':    '/logos/airlines/canadian-regional/PAL-Airlines.svg',
+  'jazz':            '/logos/airlines/canadian-regional/jazz.svg',
+  'discover-airlines': '/logos/airlines/european/discover-airlines-wordmark-color.svg',
+};
 function wordmarkSrc(base) {
   // v191: route through logoPath() so reorganized logos resolve correctly
+  if (wordmarkVariant() === 'dark' && COLOR_WORDMARKS[base]) {
+    return COLOR_WORDMARKS[base] + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
+  }
   const fname = base + '-wordmark-' + wordmarkVariant() + '.svg';
   // Cache token: un-versioned wordmark URLs let a transient 404 (e.g. a brief
   // deploy window) get cached by the browser FOREVER — every board render then
