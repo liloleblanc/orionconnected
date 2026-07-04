@@ -57,6 +57,9 @@
       var b = document.createElement('button'); b.className = 'mbar-title';
       b.innerHTML = title + '<span class="car">▾</span>';
       var p = document.createElement('div'); p.className = 'mbar-panel';
+      // clicks INSIDE a dropdown must not bubble to the document closer —
+      // selects/buttons were vanishing mid-click ("kicks me out").
+      p.addEventListener('click', function (e) { e.stopPropagation(); });
       b.addEventListener('click', function (e) {
         e.stopPropagation();
         var was = g.classList.contains('open');
@@ -89,11 +92,10 @@
     }
 
     // ── build the bar ───────────────────────────────────────────────────
+    // No separate "Menu" button — everything lives under the titles, and the
+    // sidebar opens from the Options links (or the gear when the bar is hidden).
     var menuBtn = ctrl.querySelector('.btn-menu');
-    if (menuBtn) {
-      menuBtn.textContent = '☰ Menu';
-      menuBtn.onclick = function () { closeAll(); if (typeof window.openOverlayMenu === 'function') window.openOverlayMenu(); };
-    }
+    if (menuBtn) menuBtn.style.display = 'none';
 
     var stw = ctrl.querySelector('.screen-type-wrap');
 
@@ -146,8 +148,14 @@
     }
     hz.addEventListener('mouseenter', armHide);
     hz.addEventListener('touchstart', armHide, { passive: true });
-    ctrl.addEventListener('mousemove', armHide);
-    ctrl.addEventListener('click', armHide);
+    // While the pointer is anywhere over the bar, it NEVER hides — the timer
+    // only runs once the mouse has left. No more disappearing mid-use.
+    ctrl.addEventListener('mouseenter', function () {
+      document.body.classList.remove('mbar-hidden');
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+    });
+    ctrl.addEventListener('mouseleave', armHide);
+    ctrl.addEventListener('click', function () { document.body.classList.remove('mbar-hidden'); });
     armHide();
   }
 

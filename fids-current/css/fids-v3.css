@@ -3880,3 +3880,21 @@ body[data-fids-theme="mist"] #fidsTable .td-status.fids-status-departed *,
 body[data-fids-theme="mist"] #fidsTable .fids-status-departed {
   color: rgba(22, 40, 60, 0.48) !important;
 }
+/* Mist banner: light filler (no blue-on-blue), gold Departures/Arrivals tab
+   restored — a var fallback chain was painting it navy-on-navy. */
+body[data-fids-theme="mist"] { --fids-banner-accent: #FAC120; }
+body[data-fids-theme="mist"] .fids-banner {
+  background: #C7D2DD !important;
+  border-bottom: none !important;
+}
+body[data-fids-theme="mist"] .fids-banner-board {
+  background: #FAC120 !important;
+}
+body[data-fids-theme="mist"] .fids-banner-board .fids-board-label {
+  color: #0d2440 !important;
+}
+body[data-fids-theme="mist"] .fids-banner-board .fids-board-icon svg,
+body[data-fids-theme="mist"] .fids-banner-board .fids-icon-dep,
+body[data-fids-theme="mist"] .fids-banner-board .fids-icon-arr {
+  fill: #0d2440 !important;
+}
