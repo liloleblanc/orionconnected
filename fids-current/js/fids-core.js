@@ -21083,8 +21083,8 @@ function buildAccorAdOnlyV6(ad) {
   // Full hotel name incl. brand — the slide's `headline` is brand-stripped
   // (so the logo isn't duplicated), so use ad.nameFull for the bubble/context.
   var _fullName = first(ad.nameFull, hotelName);
-  var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(_fullName);
-  var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
+  // QR bubble removed per Nick (Jul 2026): no barcode on Accor slides.
+  var bubbleHtml='';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
   // Other languages → localized ALL lockup with a 'Member of' lead-in.
