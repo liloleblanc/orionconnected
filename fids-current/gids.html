@@ -71,7 +71,6 @@
 <!-- ─── FIDS BOARD ────────────────────────────────────────────────── -->
 <div id="fidsBoard">
 <div class="ctrl show">
-  <button class="btn btn-menu" onclick="toggleToolbar()">☰ MENU</button>
   <button class="btn btn-toggle" onclick="var p=document.getElementById(&#39;apPanel&#39;);p.classList.toggle(&#39;hidden&#39;);" id="btnAirport">✈ AIRPORT</button>
   <div class="screen-type-wrap">
     <label>DISPLAY:</label>
@@ -95,22 +94,6 @@
     <button class="ctrl-bg-btn" onclick="setDedicatedBgMode(&#39;airline&#39;)" title="Airline"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.2);background:linear-gradient(180deg,#0b1a33,#d8232a)"></span></button>
     <button class="ctrl-bg-btn" onclick="setDedicatedBgMode(&#39;custom&#39;)" title="Custom (saved URLs)"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.2);background:linear-gradient(135deg,#7c3aed,#a78bfa)"></span></button>
     <button class="ctrl-bg-btn" onclick="manageCustomBgUrls()" title="Manage Custom URLs" style="padding:0 6px;font-size:11px;">⚙</button>
-  </div>
-
-  <div class="ctrl-bg-group" id="ctrlFontGroup" style="display:flex;align-items:center;gap:4px;margin-left:6px;">
-    <label style="font-size:8px;letter-spacing:1px;color:#a1a1aa;font-weight:700;">FONT:</label>
-    <select id="fontSel" onchange="changeFont(this.value)" style="background:#27272a;color:#fff;border:1px solid #3f3f46;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;">
-      <option value="Possibility">Possibility</option>
-      <option value="TR Tahoma">TR Tahoma</option>
-      <option value="Geist">Geist</option>
-      <option value="Inter">Inter</option>
-      <option value="Manrope">Manrope</option>
-      <option value="Space Grotesk">Space Grotesk</option>
-      <option value="Airport">Airport</option>
-      <option value="Airport X">Airport X</option>
-      <option value="DM Sans">DM Sans</option>
-      <option value="JetBrains Mono">JetBrains Mono (mono)</option>
-    </select>
   </div>
   <div class="ctrl-spacer"></div>
   <span class="ctrl-info" id="lastUp">LIVE · 11:40 a.m.</span>
@@ -471,7 +454,7 @@
 <script src="js/screen-capture.js?v=1"></script>
 <script src="js/menu.js?v=21899-40"></script>
 <script src="js/gids-mobile-nav.js?v=1"></script><!-- TEMP: mobile gate nav + theme -->
-<script src="js/menubar.js?v=6"></script>
+<script src="js/menubar.js?v=7"></script>
 <script src="js/editor-roles.js?v=1"></script>
 <script>
 window.addEventListener("DOMContentLoaded", async function() {

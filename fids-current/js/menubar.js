@@ -87,7 +87,8 @@
       if (!el) return null;
       if (label) { var s = document.createElement('div'); s.className = 'mbar-sec'; s.textContent = label; panel.appendChild(s); }
       panel.appendChild(el);
-      el.style.display = '';
+      // NB: never touch el.style.display — several controls (override,
+      // background group) are admin/context-gated by their inline display.
       return el;
     }
     function link(panel, label, fn) {
@@ -101,11 +102,6 @@
     }
 
     // ── build the bar ───────────────────────────────────────────────────
-    // No separate "Menu" button — everything lives under the titles, and the
-    // sidebar opens from the Options links (or the gear when the bar is hidden).
-    var menuBtn = ctrl.querySelector('.btn-menu');
-    if (menuBtn) menuBtn.style.display = 'none';
-
     var stw = ctrl.querySelector('.screen-type-wrap');
 
     var gDisplay = group('Display');
@@ -114,7 +110,27 @@
     var apBtn = document.getElementById('btnAirport');
     if (apBtn) { gDisplay.panel.appendChild(apBtn); }
     move('ctrlBgGroup', gDisplay.panel, 'Background');
-    move('ctrlFontGroup', gDisplay.panel, 'Font');
+    // Font — mirror the console's canonical list (brand fonts + AC Nord +
+    // custom uploads) instead of the stale legacy #fontSel list; changes
+    // proxy through cuFontChanged() so persistence stays canonical.
+    (function () {
+      var sec = document.createElement('div'); sec.className = 'mbar-sec'; sec.textContent = 'Font';
+      gDisplay.panel.appendChild(sec);
+      var fsel = document.createElement('select'); fsel.className = 'mbar-theme';
+      gDisplay.panel.appendChild(fsel);
+      function syncFonts() {
+        var src = document.getElementById('cuFontSelect');
+        if (!src || !src.options.length) return;
+        if (fsel.innerHTML !== src.innerHTML) fsel.innerHTML = src.innerHTML;
+        fsel.value = src.value;
+      }
+      fsel.addEventListener('change', function () {
+        var c = document.getElementById('cuFontSelect');
+        if (c) { c.value = fsel.value; if (typeof window.cuFontChanged === 'function') window.cuFontChanged(); }
+      });
+      gDisplay.root.querySelector('.mbar-title').addEventListener('click', syncFonts);
+      setTimeout(syncFonts, 1800); // the console fragment loads async
+    })();
 
     var gOps = group('Operations');
     move('testFlightBtn', gOps.panel);
@@ -150,8 +166,7 @@
     link(gOptions.panel, 'Media…', function () { sidebarTab('media'); });
 
     // insert groups right after the Menu button
-    var anchor = menuBtn ? menuBtn.nextSibling : ctrl.firstChild;
-    ctrl.insertBefore(gDisplay.root, anchor);
+    ctrl.insertBefore(gDisplay.root, ctrl.firstChild);
     ctrl.insertBefore(gOps.root, gDisplay.root.nextSibling);
     ctrl.insertBefore(gOptions.root, gOps.root.nextSibling);
 
