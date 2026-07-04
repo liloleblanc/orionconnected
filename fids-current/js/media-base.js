@@ -35,7 +35,16 @@
   function base() {
     try {
       var b = (localStorage.getItem('fids_media_base') || '').trim();
-      return b ? b.replace(/\/+$/, '') : '';
+      if (!b) return '';
+      b = b.replace(/\/+$/, '');
+      // A scheme-less value ("fids.orionconnected.com") used to be prepended
+      // as-is, producing RELATIVE urls that doubled the domain
+      // (host/host/logos/... → 404 → every wordmark fell back to text).
+      if (!/^https?:\/\//i.test(b)) b = 'https://' + b;
+      // Pointing the media base at THIS host is a no-op by definition —
+      // return '' so the engine's own same-origin paths are used untouched.
+      try { if (new URL(b).host === location.host) return ''; } catch (e) { return ''; }
+      return b;
     } catch (e) { return ''; }
   }
   function isFlat() {
