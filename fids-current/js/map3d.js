@@ -253,7 +253,10 @@
   }
 
   var CSS = '.m3d-wrap{position:absolute;inset:0;background:#05080f;overflow:hidden;}'
-    + '.m3d-map{position:absolute;inset:0;}'
+    // !important + explicit size: maplibre adds .maplibregl-map{position:relative}
+    // to this SAME element and its stylesheet loads after ours — without these
+    // the container collapsed to 0 height and the canvas fell back to 300px.
+    + '.m3d-map{position:absolute !important;inset:0 !important;width:100% !important;height:100% !important;}'
     + '.m3d-chip{position:absolute;left:22px;bottom:22px;z-index:5;color:#fff;background:rgba(8,14,30,.62);backdrop-filter:blur(8px);'
     + 'padding:14px 20px;border:1px solid rgba(120,160,250,.3);border-radius:12px;transition:opacity .35s ease;max-width:70%;}'
     + '.m3d-t1{font-size:clamp(22px,2vw,34px);font-weight:800;line-height:1.1;}'
