@@ -12154,25 +12154,43 @@ function logoPath(basename) {
   return sub ? '/logos/' + sub + '/' + basename : '/logos/' + basename;
 }
 // Light-background themes must show each carrier's REAL brand-color wordmark
-// (Nick). The '-dark' files are black monochrome — black is only correct when
-// the brand itself is black (e.g. Flair, whose lettering is genuinely black
-// and can never be green per policy — intentionally absent from this map).
+// (Nick). The '-dark' files are black monochrome, and lockup files carry the
+// symbol the tile already shows — so these are the SAME wordmark-only artwork
+// recolored to each carrier's brand lettering color. Flair stays black on
+// purpose: black IS its lettering (and never green, per policy).
 const COLOR_WORDMARKS = {
-  'air-canada':      '/logos/airlines/canadian/air-canada.svg',
-  'westjet':         '/logos/airlines/canadian/WestJet_Logo_2018.svg',
-  'porter':          '/logos/airlines/canadian/porter.svg',
-  'transat':         '/logos/airlines/canadian/transat.svg',
-  'united':          '/logos/airlines/us-major/united.svg',
-  'delta':           '/logos/airlines/us-major/delta.svg',
-  'american':        '/logos/airlines/us-major/American_Airlines_Logo_2013_alternative_variant.svg',
-  'southwest':       '/logos/airlines/us-major/southwest.svg',
-  'alaska-airlines': '/logos/airlines/us-major/alaska-airlines.svg',
-  'hawaiian':        '/logos/airlines/us-major/Hawaiian.svg',
-  'frontier':        '/logos/airlines/us-major/frontier.svg',
-  'jetblue':         '/logos/airlines/us-major/jetblue.svg',
-  'pal-airlines':    '/logos/airlines/canadian-regional/PAL-Airlines.svg',
-  'jazz':            '/logos/airlines/canadian-regional/jazz.svg',
+  'royal-air-maroc': '/logos/airlines/alliances/royal-air-maroc-wordmark-color.svg',
+  'aeromexico': '/logos/airlines/asian-other/aeromexico-wordmark-color.svg',
+  'avianca': '/logos/airlines/asian-other/avianca-wordmark-color.svg',
+  'boliviana': '/logos/airlines/asian-other/boliviana-wordmark-color.svg',
+  'copa': '/logos/airlines/asian-other/copa-wordmark-color.svg',
+  'gol': '/logos/airlines/asian-other/gol-wordmark-color.svg',
+  'latam': '/logos/airlines/asian-other/latam-wordmark-color.svg',
+  'vivaaerobus': '/logos/airlines/asian-other/vivaaerobus-wordmark-color.svg',
+  'volaris': '/logos/airlines/asian-other/volaris-wordmark-color.svg',
+  'jazz': '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
+  'pal-airlines': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
+  'air-canada': '/logos/airlines/canadian/air-canada-wordmark-color.svg',
+  'flair': '/logos/airlines/canadian/flair-wordmark-color.svg',
+  'porter': '/logos/airlines/canadian/porter-wordmark-color.svg',
+  'transat': '/logos/airlines/canadian/transat-wordmark-color.svg',
+  'westjet': '/logos/airlines/canadian/westjet-wordmark-color.svg',
+  'air-france': '/logos/airlines/european/air-france-wordmark-color.svg',
+  'british-airways': '/logos/airlines/european/british-airways-wordmark-color.svg',
   'discover-airlines': '/logos/airlines/european/discover-airlines-wordmark-color.svg',
+  'klm': '/logos/airlines/european/klm-wordmark-color.svg',
+  'lot': '/logos/airlines/european/lot-wordmark-color.svg',
+  'tap-portugal': '/logos/airlines/european/tap-portugal-wordmark-color.svg',
+  'virgin-atlantic': '/logos/airlines/european/virgin-atlantic-wordmark-color.svg',
+  'alaska-airlines': '/logos/airlines/us-major/alaska-airlines-wordmark-color.svg',
+  'american-airlines': '/logos/airlines/us-major/american-airlines-wordmark-color.svg',
+  'american': '/logos/airlines/us-major/american-wordmark-color.svg',
+  'delta': '/logos/airlines/us-major/delta-wordmark-color.svg',
+  'frontier': '/logos/airlines/us-major/frontier-wordmark-color.svg',
+  'hawaiian': '/logos/airlines/us-major/hawaiian-wordmark-color.svg',
+  'jetblue': '/logos/airlines/us-major/jetblue-wordmark-color.svg',
+  'southwest': '/logos/airlines/us-major/southwest-wordmark-color.svg',
+  'united': '/logos/airlines/us-major/united-wordmark-color.svg',
 };
 function wordmarkSrc(base) {
   // v191: route through logoPath() so reorganized logos resolve correctly
