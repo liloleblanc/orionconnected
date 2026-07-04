@@ -21045,6 +21045,56 @@ function buildAccorAdOnlyV6(ad) {
     + '</article>';
 }
 
+// ── 3D FLIGHT MAP SLIDE — context builder ─────────────────────────────
+// Everything the GateMap3D module needs about the gate's current flight:
+// route coords, names, brand colour, live progress/telemetry, dest weather.
+// Returns null when there is no plottable route (slide is skipped).
+function _map3dFlightCtx() {
+  try {
+    var cf = window._gateCurrentFlight;
+    if (!cf) return null;
+    var APC = window.AIRPORT_COORDS || {};
+    var oI = String(((document.getElementById('apSel') || {}).value || '')).toUpperCase();
+    var dI = String(cf._locIata || '').toUpperCase();
+    var oC = APC[oI], dC = APC[dI];
+    if (!oC || !dC || oI === dI) return null;
+    var cityOf = function (ia) {
+      try { if (typeof CITY !== 'undefined' && CITY[ia]) return CITY[ia]; } catch (e) {}
+      try { if (typeof AP !== 'undefined' && AP[ia] && AP[ia].city) return AP[ia].city; } catch (e) {}
+      return ia;
+    };
+    // Time-based progress between (revised) departure and arrival; 0 before
+    // departure — the map plays a showcase glide of the planned route.
+    var prog = 0;
+    try {
+      var depTs = (cf._revTs && cf._revTs > cf._sortTs) ? cf._revTs : (cf._sortTs || 0);
+      var arrTs = cf._arrTs || 0;
+      if (depTs && arrTs > depTs) prog = Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
+    } catch (e) {}
+    var wx = '';
+    try {
+      var w = (typeof TOMORROW_WX !== 'undefined') ? TOMORROW_WX[dI] : null;
+      if (w && w.current && typeof w.current.temp !== 'undefined') {
+        wx = (typeof displayTemp === 'function' ? displayTemp(Math.round(w.current.temp)) : Math.round(w.current.temp) + '°')
+           + ((typeof tioLabel === 'function' && w.current.code) ? ' · ' + tioLabel(w.current.code) : '');
+      }
+    } catch (e) {}
+    return {
+      o: [oC[1], oC[0]], d: [dC[1], dC[0]],          // AIRPORT_COORDS is [lat,lng]
+      oc: oI, dc: dI, oCity: cityOf(oI), dCity: cityOf(dI),
+      airline: cf._airlineName || cf.airline || '',
+      fl: cf.flight || '',
+      col: window._gateAccent || '#5fa8ff',
+      progress: prog,
+      speedKph: (typeof cf._liveSpd === 'number') ? Math.round(cf._liveSpd * 1.852) : 0,
+      altFt: (typeof cf._liveAlt === 'number') ? Math.round(cf._liveAlt) : 0,
+      acType: cf._aircraft || '',
+      etaStr: '',
+      destWx: wx
+    };
+  } catch (e) { return null; }
+}
+
 function renderGateAd(index) {
   var el = document.getElementById('gateAdCarousel');
   if (!el) return;
@@ -21057,6 +21107,22 @@ function renderGateAd(index) {
   var totalSlots = slides.length;
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
   var slide = slides[slot];
+
+  // ── 3D flight map slide: mounts the MapLibre/three engine into the ad
+  // slot for its dwell, then the next tick tears it down. Any OTHER slide
+  // type must destroy a live map first (innerHTML swaps would orphan it).
+  if (slide && slide.type === 'map3d') {
+    var _m3dCtx = _map3dFlightCtx();
+    if (_m3dCtx && window.GateMap3D && window.GateMap3D.available()) {
+      window.GateMap3D.mount(el, _m3dCtx, (typeof _getGateAdDwellMs === 'function') ? _getGateAdDwellMs(slide) : 60000);
+      return;
+    }
+    // context vanished — fall through and render the next slot instead
+    slide = slides[(slot + 1) % totalSlots] || slide;
+  }
+  if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
+    try { window.GateMap3D.destroy(); } catch (e) {}
+  }
 
   // ── Custom theme slide (image or video uploaded via Media Library) ──
   if (slide && slide.type === 'custom' && slide.item) {
@@ -21444,6 +21510,9 @@ function buildAdLogoPanelHtml(ad) {
 // than text-only Wi-Fi ads or Did You Know facts. Returns ms.
 function _getGateAdDwellMs(slide) {
   if (!slide) return 15000;
+  // 3D flight map holds the slot for about a minute (per Nick) —
+  // four camera views ~15s each inside GateMap3D's sequence.
+  if (slide.type === 'map3d') return 60000;
   // v218.96: custom slides from the Gate Theme editor carry their own
   // configured duration. Clamp to a sensible 2s–600s range so a typo can't
   // freeze the carousel on a single slide for the rest of the day, while
@@ -21552,6 +21621,16 @@ function _buildGateAdSlideList() {
     else if (airlineAdSlides.length) deck = airlineAdSlides;  // airline ads
     else deck = [{ type: 'ad', data: { bg: 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)', headline: 'Welcome aboard', sub: 'Gate information display' } }];
   }
+
+  // ── 6. 3D FLIGHT MAP — one slide per cycle when the engine can run and
+  // the gate's flight has a plottable route. Slots in early (position 1)
+  // so the flight showcase leads the rotation without pre-empting slide 0.
+  try {
+    if (window.GateMap3D && window.GateMap3D.available()
+        && typeof _map3dFlightCtx === 'function' && _map3dFlightCtx()) {
+      deck.splice(Math.min(1, deck.length), 0, { type: 'map3d' });
+    }
+  } catch (e) {}
 
   return deck;
 }
