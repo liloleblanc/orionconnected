@@ -12170,7 +12170,8 @@ const COLOR_WORDMARKS = {
   'volaris': '/logos/airlines/asian-other/volaris-wordmark-color.svg',
   'jazz': '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
   'pal-airlines': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
-  'air-canada': '/logos/airlines/canadian/air-canada-wordmark-color.svg',
+  // 'air-canada' intentionally absent — AC's wordmark lettering IS black
+  // (red is only the rondelle), so light themes use the black '-dark' file.
   'flair': '/logos/airlines/canadian/flair-wordmark-color.svg',
   'porter': '/logos/airlines/canadian/porter-wordmark-color.svg',
   'transat': '/logos/airlines/canadian/transat-wordmark-color.svg',
