@@ -8404,6 +8404,17 @@ const gView = document.getElementById('gateView');
         window._gateInbound = null;
         window._gateInboundLivePos = null;
         window._gateLastFlightKey = currentFlight.flight;
+        // The ad carousel is preserved across gate rebuilds (videos must not
+        // restart) — but a mounted flight-map slide belongs to the PREVIOUS
+        // flight ("WestJet gate showing Porter's map" on rotating displays).
+        // Kill it and restart the rotation so the new flight gets its own map.
+        try {
+          if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
+            window.GateMap3D.destroy();
+            if (typeof stopGateAds === 'function') stopGateAds();
+            if (typeof startGateAds === 'function') setTimeout(startGateAds, 80);
+          }
+        } catch (e) {}
       }
       window._gateCurrentFlight = currentFlight;
       // Defensive: nuke any stranded floating "DESTINATION City" label from

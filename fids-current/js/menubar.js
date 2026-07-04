@@ -37,6 +37,10 @@
       + 'body.fids-light-board .mbar-link:hover{background:rgba(13,36,64,.07);color:#0d2440;}'
       + 'body.fids-light-board .mbar-sec{color:#6b7c92;}'
       + '.mbar-panel select.mbar-theme{min-height:32px;border-radius:7px;}'
+      // Full sections re-parented from the retired console — wide scrollable panels
+      + '.mbar-panel.mbar-wide{width:470px;max-width:min(94vw,540px);max-height:74vh;overflow-y:auto;overscroll-behavior:contain;}'
+      + '.mbar-panel.mbar-wide .sm-tab-content{display:block !important;position:static !important;max-height:none !important;overflow:visible !important;padding:0 !important;}'
+      + '@media (min-width:701px){#overlayMenu{display:none !important;}}'
       + '.ctrl{transition:transform .3s ease, opacity .3s ease;}'
       + 'body.mbar-hidden .ctrl{transform:translateY(-115%);opacity:0;pointer-events:none;}'
       + '#mbarHotzone{position:fixed;top:0;left:0;right:0;height:14px;z-index:99998;background:transparent;}'
@@ -96,10 +100,6 @@
       b.addEventListener('click', function () { closeAll(); try { fn(); } catch (e) {} });
       panel.appendChild(b);
     }
-    function sidebarTab(tab) {
-      if (typeof window.openOverlayMenu === 'function') window.openOverlayMenu();
-      if (typeof window.smSwitchTab === 'function') setTimeout(function () { window.smSwitchTab(tab); }, 80);
-    }
 
     // ── build the bar ───────────────────────────────────────────────────
     var stw = ctrl.querySelector('.screen-type-wrap');
@@ -158,12 +158,56 @@
       });
       gOptions.panel.appendChild(tsel);
     })();
-    var secL = document.createElement('div'); secL.className = 'mbar-sec'; secL.textContent = 'More';
-    gOptions.panel.appendChild(secL);
-    link(gOptions.panel, 'Board settings…', function () { sidebarTab('display'); });
-    link(gOptions.panel, 'Advanced customize…', function () { sidebarTab('customize'); });
-    link(gOptions.panel, 'Airport…', function () { sidebarTab('airport'); });
-    link(gOptions.panel, 'Media…', function () { sidebarTab('media'); });
+    // ── FULL MENUS (Nick): the console's sections live IN the bar now — the
+    // console overlay itself is retired on desktop. The fragment loads async,
+    // so poll for it, then re-parent each tab's content into its own wide
+    // dropdown. Admin-gated sections appear/disappear with their console
+    // tab-button visibility (checked on every open + a slow poll).
+    if (window.innerWidth > 700) (function () {
+      var SECTIONS = [
+        { title: 'Board',     tab: 'smTab_display' },
+        { title: 'Search',    tab: 'smTab_search' },
+        { title: 'Customize', tab: 'smTab_customize' },
+        { title: 'Airport',   tab: 'smTab_airport', gateBtn: 'smTabAirport' },
+        { title: 'Media',     tab: 'smTab_media',   gateBtn: 'smTabMedia' },
+        { title: 'Users',     tab: 'smTab_users',   gateBtn: 'smTabUsers' }
+      ];
+      var made = {};
+      function buildSections() {
+        SECTIONS.forEach(function (s) {
+          if (made[s.tab]) return;
+          var content = document.getElementById(s.tab);
+          if (!content) return;
+          var g = group(s.title);
+          g.panel.classList.add('mbar-wide');
+          g.panel.appendChild(content);
+          ctrl.insertBefore(g.root, gOptions.root);
+          made[s.tab] = g;
+          if (s.gateBtn) g.root.style.display = 'none'; // until the gate says visible
+        });
+        // neuter the retired console opener so nothing can pop the empty shell
+        if (made['smTab_customize'] && typeof window.openOverlayMenu === 'function' && !window.openOverlayMenu._mbarNoop) {
+          var noop = function () {};
+          noop._mbarNoop = true;
+          window.openOverlayMenu = noop;
+        }
+      }
+      function syncAdminVisibility() {
+        SECTIONS.forEach(function (s) {
+          if (!s.gateBtn || !made[s.tab]) return;
+          var btn = document.getElementById(s.gateBtn);
+          var vis = btn && getComputedStyle(btn).display !== 'none';
+          made[s.tab].root.style.display = vis ? '' : 'none';
+        });
+      }
+      var tries = 0;
+      var poll = setInterval(function () {
+        buildSections();
+        syncAdminVisibility();
+        if (++tries > 40 && made['smTab_customize']) clearInterval(poll);
+      }, 500);
+      setInterval(syncAdminVisibility, 3000);
+    })();
 
     // insert groups right after the Menu button
     ctrl.insertBefore(gDisplay.root, ctrl.firstChild);
