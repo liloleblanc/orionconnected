@@ -24,10 +24,19 @@
       // panel actually render; the auto-hide below owns visibility from here.
       + 'body .ctrl.show{display:flex !important;}'
       + 'body .ap-panel:not(.hidden){display:block !important;}'
-      // the legacy ⚙ badge overlaps the Menu title while the bar is out —
-      // it only needs to exist as the opener when the bar is hidden.
-      + 'body:not(.mbar-hidden) #menuBadge{opacity:0 !important;pointer-events:none !important;}'
-      + 'body:not(.mbar-hidden) #menuTrigger{opacity:0 !important;pointer-events:none !important;}'
+      // the legacy ⚙ openers are gone for good (Nick) — the top hot-zone is
+      // the one way to reveal the bar.
+      + '#menuBadge,#menuTrigger{display:none !important;}'
+      // light-board adaptation — on light themes the bar itself goes light
+      + 'body.fids-light-board .ctrl{background:rgba(233,238,243,0.97) !important;box-shadow:0 2px 12px rgba(13,36,64,0.18) !important;}'
+      + 'body.fids-light-board .mbar-title{color:#16283C;}'
+      + 'body.fids-light-board .mbar-title:hover{background:rgba(13,36,64,.08);}'
+      + 'body.fids-light-board .mbar-group.open .mbar-title{background:rgba(13,36,64,.12);color:#0d2440;}'
+      + 'body.fids-light-board .mbar-panel{background:#ffffff;border-color:#C7D2DD;box-shadow:0 12px 30px rgba(13,36,64,.25);}'
+      + 'body.fids-light-board .mbar-link{color:#31435a;}'
+      + 'body.fids-light-board .mbar-link:hover{background:rgba(13,36,64,.07);color:#0d2440;}'
+      + 'body.fids-light-board .mbar-sec{color:#6b7c92;}'
+      + '.mbar-panel select.mbar-theme{min-height:32px;border-radius:7px;}'
       + '.ctrl{transition:transform .3s ease, opacity .3s ease;}'
       + 'body.mbar-hidden .ctrl{transform:translateY(-115%);opacity:0;pointer-events:none;}'
       + '#mbarHotzone{position:fixed;top:0;left:0;right:0;height:14px;z-index:99998;background:transparent;}'
@@ -113,11 +122,32 @@
     link(gOps.panel, 'Refresh live data', function () { if (typeof window.fetchLive === 'function') window.fetchLive(); });
 
     var gOptions = group('Options');
+    // Theme lives RIGHT HERE — one click, no console detour (Nick).
+    (function () {
+      var sec = document.createElement('div'); sec.className = 'mbar-sec'; sec.textContent = 'Theme';
+      gOptions.panel.appendChild(sec);
+      var tsel = document.createElement('select'); tsel.className = 'mbar-theme';
+      [['', 'Airport default (Teal)'], ['tus-teal', 'Teal'], ['tus-teal-deep', 'Teal Deep'], ['mist', 'Mist (light)'], ['custom', 'Custom']].forEach(function (o) {
+        var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; tsel.appendChild(op);
+      });
+      try {
+        var ap = (document.getElementById('apSel') || {}).value || '';
+        var raw = ap && localStorage.getItem('fids_customize_' + ap);
+        if (raw) tsel.value = JSON.parse(raw).theme || '';
+      } catch (e) {}
+      tsel.addEventListener('change', function () {
+        // proxy through the console's own handler so persistence/apply stay canonical
+        var c = document.getElementById('cuThemeSelect');
+        if (c) { c.value = tsel.value; if (typeof window.cuThemeChanged === 'function') window.cuThemeChanged(); }
+      });
+      gOptions.panel.appendChild(tsel);
+    })();
+    var secL = document.createElement('div'); secL.className = 'mbar-sec'; secL.textContent = 'More';
+    gOptions.panel.appendChild(secL);
     link(gOptions.panel, 'Board settings…', function () { sidebarTab('display'); });
-    link(gOptions.panel, 'Customize (theme, colors)…', function () { sidebarTab('customize'); });
+    link(gOptions.panel, 'Advanced customize…', function () { sidebarTab('customize'); });
     link(gOptions.panel, 'Airport…', function () { sidebarTab('airport'); });
     link(gOptions.panel, 'Media…', function () { sidebarTab('media'); });
-    link(gOptions.panel, 'Search flights…', function () { sidebarTab('search'); });
 
     // insert groups right after the Menu button
     var anchor = menuBtn ? menuBtn.nextSibling : ctrl.firstChild;
