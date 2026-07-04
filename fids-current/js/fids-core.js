@@ -13305,8 +13305,16 @@ function render() {
     try {
       const _fnRow = parseInt(String(f.flight || '').replace(/\D/g, ''), 10);
       const _mxRow = (_airlineCodeForLogo === 'AC' && typeof acExpressMatrix === 'function') ? acExpressMatrix(_fnRow) : null;
-      const _opNameRow = _mxRow ? _mxRow.opName
-        : ((f._opCode && f._opCode !== _airlineCodeForLogo && f._opName) ? f._opName : '');
+      // Same precedence as the gate: matrix, then the legacy deterministic
+      // ranges, and only then whatever operator the feed pre-tagged.
+      let _opNameRow = _mxRow ? _mxRow.opName : '';
+      if (!_opNameRow && _airlineCodeForLogo === 'AC' && !isNaN(_fnRow)) {
+        if ((_fnRow >= 7600 && _fnRow <= 7699) || (_fnRow >= 2200 && _fnRow <= 2299)) _opNameRow = 'PAL Airlines';
+        else if (_fnRow >= 1600 && _fnRow <= 1999) _opNameRow = 'Rouge';
+      }
+      if (!_opNameRow && f._opCode && f._opCode !== _airlineCodeForLogo && f._opName) _opNameRow = f._opName;
+      // "Air Canada Rouge" won't fit the slot — the brand is already implied.
+      _opNameRow = String(_opNameRow || '').replace(/^Air Canada\s+/i, '');
       if (_opNameRow) _opSubHtml = '<div class="fids-operated-by">Operated by ' + _opNameRow + '</div>';
     } catch (e) {}
     const airlineCellHtml = '<td class="td-airline"><div class="fids-cell-airline">'
