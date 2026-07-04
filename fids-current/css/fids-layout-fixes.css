@@ -303,8 +303,8 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
    Goal: all FIDS row airline marks share the same left edge, visual baseline,
    and approximate optical size while preserving each carrier's real artwork. */
 :root {
-  --fids-logo-tile-size: 54px;
-  --fids-logo-inner-size: 44px;
+  --fids-logo-tile-size: 58px; /* tiles nearly full row height per Nick */
+  --fids-logo-inner-size: 54px;
   --fids-wordmark-slot-w: 218px;
   --fids-wordmark-slot-pad-x: 10px;
   --fids-wordmark-optical-h: 30px;
@@ -321,7 +321,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
   max-width: var(--fids-logo-tile-size) !important;
   min-height: var(--fids-logo-tile-size) !important;
   max-height: var(--fids-logo-tile-size) !important;
-  padding: 5px !important;
+  padding: 2px !important;
   box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
