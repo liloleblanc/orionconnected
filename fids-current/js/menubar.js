@@ -24,6 +24,9 @@
       // panel actually render; the auto-hide below owns visibility from here.
       + 'body .ctrl.show{display:flex !important;}'
       + 'body .ap-panel:not(.hidden){display:block !important;}'
+      // the legacy ⚙ badge overlaps the Menu title while the bar is out —
+      // it only needs to exist as the opener when the bar is hidden.
+      + 'body:not(.mbar-hidden) #menuBadge{opacity:0 !important;pointer-events:none !important;}'
       + '.ctrl{transition:transform .3s ease, opacity .3s ease;}'
       + 'body.mbar-hidden .ctrl{transform:translateY(-115%);opacity:0;pointer-events:none;}'
       + '#mbarHotzone{position:fixed;top:0;left:0;right:0;height:14px;z-index:99998;background:transparent;}'
