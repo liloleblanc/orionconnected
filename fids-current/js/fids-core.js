@@ -12021,11 +12021,28 @@ const IATA_TO_WORDMARK = {
 // Returns 'dark' or 'light' — append it to the wordmark base to form
 // the full filename: `${base}-wordmark-${variant}.svg`.
 function wordmarkVariant() {
+  // Nick: EVERY theme (built-in, custom, future) must adapt automatically —
+  // light backgrounds get the colored wordmark artwork, dark backgrounds get
+  // the white variant. Measure the actual row background luminance instead
+  // of maintaining a theme-name list.
+  try {
+    var probe = document.querySelector('#fidsTable tbody tr td') ||
+                document.querySelector('#fidsTable') || document.body;
+    var el = probe, bg = '';
+    while (el && el.nodeType === 1) {
+      var c = getComputedStyle(el).backgroundColor;
+      if (c && c !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(c)) { bg = c; break; }
+      el = el.parentElement;
+    }
+    var m = bg.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
+    if (m) {
+      var lum = 0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3];
+      return lum > 150 ? 'dark' : 'light';
+    }
+  } catch (e) {}
   try {
     var theme = (document.body && document.body.getAttribute('data-fids-theme')) || '';
-    // Light-background themes — use the colored ("dark"-ink) wordmark
-    // artwork. Same set as the CSS light-theme icon rules (cream / light /
-    // paper / sky). Nick: light themes must show the wordmarks in color.
+    // Fallback name list if no computed background was readable.
     if (theme === 'cream' || theme === 'light' || theme === 'paper' || theme === 'sky') return 'dark';
   } catch (e) {}
   // Default: dark theme → use the white/light-ink variant
@@ -13178,7 +13195,13 @@ function render() {
 
   const contentH = document.querySelector('.content-area')?.offsetHeight || 600;
   const theadH   = document.querySelector('thead')?.offsetHeight || 30;
-  const rowH     = 56;
+  // Measure the real rendered row height — themes vary it (58-66px). The old
+  // hardcoded 56 overcounted rows per page, clipping the last row mid-height.
+  // A row must NEVER be cut: prefer the measured height, else the theme var,
+  // else a conservative 62.
+  const _measuredRowH = document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
+  const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
+  const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
   const available = contentH - theadH;
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   const totalPages = Math.ceil(allFiltered.length / rowsPerPage);
@@ -15839,6 +15862,15 @@ function applyAirportConfigToBoard(iata) {
   document.body.dataset.fidsLayout = _layout;
   // Diagnostic
   try { console.log('[FIDS Theme APPLY] body.dataset.fidsTheme =', _theme, '(from userCfg=', _userCfg && _userCfg.theme, ', adminCfg=', _adminCfg && _adminCfg.theme, ', builtin=', _builtin.theme, ')'); } catch (e) {}
+  // Wordmark ink (color vs white) is chosen at render time from the actual
+  // row background — when the theme really changes, re-bake the rows after
+  // the new theme CSS takes effect so every wordmark flips variant with it.
+  try {
+    if (window._lastAppliedFidsTheme !== undefined && window._lastAppliedFidsTheme !== _theme) {
+      setTimeout(function () { try { if (typeof render === 'function') render(); } catch (e) {} }, 80);
+    }
+    window._lastAppliedFidsTheme = _theme;
+  } catch (e) {}
 
   // ── FONT (v218.6+) ──
   // User-chosen font wins over admin > built-in (Geist default from CSS).
@@ -16207,7 +16239,13 @@ function getPageCount(modeKey) {
   const flights = applySearch([...departed, ...upcoming]);
   const contentH = document.querySelector('.content-area')?.offsetHeight || 600;
   const theadH   = document.querySelector('thead')?.offsetHeight || 30;
-  const rowH     = 56;
+  // Measure the real rendered row height — themes vary it (58-66px). The old
+  // hardcoded 56 overcounted rows per page, clipping the last row mid-height.
+  // A row must NEVER be cut: prefer the measured height, else the theme var,
+  // else a conservative 62.
+  const _measuredRowH = document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
+  const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
+  const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
   const available = contentH - theadH;
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   return Math.max(1, Math.ceil(flights.length / rowsPerPage));
