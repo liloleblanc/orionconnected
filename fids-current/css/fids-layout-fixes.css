@@ -307,7 +307,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
   --fids-logo-inner-size: 54px;
   --fids-wordmark-slot-w: 218px;
   --fids-wordmark-slot-pad-x: 10px;
-  --fids-wordmark-optical-h: 34px; /* +13% — marks read small next to the 58px tiles */
+  --fids-wordmark-optical-h: 30px; /* Nick: the +13% pass was too big — original calibration restored */
 }
 #fidsTable .td-airline .fids-cell-airline {
   grid-template-columns: var(--fids-logo-tile-size) minmax(0, var(--fids-wordmark-slot-w)) !important;
@@ -367,22 +367,22 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
   margin: 0 !important;
 }
 /* Big blocky all-caps marks need less height; thin script/wide marks need more room. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { --wm-h: 32px; --wm-w: 198px; } /* Southwest */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AC"] { --wm-h: 29px; --wm-w: 198px; } /* Air Canada */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="LA"] { --wm-h: 30px; --wm-w: 196px; } /* LATAM */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AF"] { --wm-h: 26px; --wm-w: 198px; } /* Air France */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { --wm-h: 36px; --wm-w: 198px; --wm-y: -1px; } /* Frontier */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="IB"] { --wm-h: 33px; --wm-w: 136px; } /* Iberia */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="G3"] { --wm-h: 23px; --wm-w: 145px; } /* GOL */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"] { --wm-h: 32px; --wm-w: 159px; } /* jetBlue */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"] { --wm-h: 30px; --wm-w: 196px; --wm-y: 1px; } /* Delta */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AA"] { --wm-h: 32px; --wm-w: 198px; } /* American */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { --wm-h: 34px; --wm-w: 150px; } /* Alaska */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { --wm-h: 33px; --wm-w: 150px; } /* Avianca */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"] { --wm-h: 31px; --wm-w: 184px; } /* United */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="NK"] { --wm-h: 32px; --wm-w: 161px; } /* Spirit */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { --wm-h: 33px; --wm-w: 173px; } /* WestJet */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="BA"] { --wm-h: 31px; --wm-w: 198px; } /* British Airways */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { --wm-h: 28px; --wm-w: 178px; } /* Southwest */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AC"] { --wm-h: 25px; --wm-w: 188px; } /* Air Canada */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="LA"] { --wm-h: 26px; --wm-w: 170px; } /* LATAM */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AF"] { --wm-h: 23px; --wm-w: 184px; } /* Air France */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { --wm-h: 32px; --wm-w: 205px; --wm-y: -1px; } /* Frontier */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="IB"] { --wm-h: 29px; --wm-w: 118px; } /* Iberia */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="G3"] { --wm-h: 20px; --wm-w: 126px; } /* GOL */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"] { --wm-h: 28px; --wm-w: 138px; } /* jetBlue */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"] { --wm-h: 26px; --wm-w: 170px; --wm-y: 1px; } /* Delta */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AA"] { --wm-h: 28px; --wm-w: 176px; } /* American */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { --wm-h: 30px; --wm-w: 130px; } /* Alaska */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { --wm-h: 29px; --wm-w: 130px; } /* Avianca */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"] { --wm-h: 27px; --wm-w: 160px; } /* United */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="NK"] { --wm-h: 28px; --wm-w: 140px; } /* Spirit */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { --wm-h: 29px; --wm-w: 150px; } /* WestJet */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="BA"] { --wm-h: 27px; --wm-w: 190px; } /* British Airways */
 #fidsTable .td-airline .fids-airline-name {
   width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;
   max-width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;
