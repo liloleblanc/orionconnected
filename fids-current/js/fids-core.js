@@ -15795,15 +15795,15 @@ async function fetchLive() {
 // side (left/right). Logo images come from localStorage via the existing
 // _loadAirportLogoForCode() system (keyed by 'fids_airport_logo_' + IATA).
 const V2_AIRPORT_THEME = {
-  'YQM': { theme: 'navy',  layout: 'left' },
-  'YHZ': { theme: 'navy',  layout: 'left' },
-  'YYZ': { theme: 'navy',  layout: 'left' },
-  'YUL': { theme: 'navy',  layout: 'left' },
-  'YOW': { theme: 'navy',  layout: 'left' },
+  'YQM': { theme: 'tus-teal',  layout: 'left' },
+  'YHZ': { theme: 'tus-teal',  layout: 'left' },
+  'YYZ': { theme: 'tus-teal',  layout: 'left' },
+  'YUL': { theme: 'tus-teal',  layout: 'left' },
+  'YOW': { theme: 'tus-teal',  layout: 'left' },
   'YYC': { theme: 'amber', layout: 'left' },
   'YVR': { theme: 'green', layout: 'left' },
   'YYJ': { theme: 'green', layout: 'left' },
-  'YYT': { theme: 'navy',  layout: 'left' },
+  'YYT': { theme: 'tus-teal',  layout: 'left' },
   'YHM': { theme: 'grey',  layout: 'left' }
 };
 const V2_AIRPORT_SHORT_NAME = {
@@ -15900,8 +15900,12 @@ function applyAirportConfigToBoard(iata) {
   }
 
   // Theme + layout — user customize > admin KV > built-in defaults
-  const _builtin = V2_AIRPORT_THEME[iata] || { theme: 'navy', layout: 'left' };
-  const _theme  = _pref('theme') || _builtin.theme;
+  const _builtin = V2_AIRPORT_THEME[iata] || { theme: 'tus-teal', layout: 'left' };
+  let _theme  = _pref('theme') || _builtin.theme;
+  // Theme lineup reduced to the teal (Nick) — anything else saved on a
+  // display (old navy/sky/cream/etc.) coerces to teal; custom stays.
+  var _ALLOWED_THEMES = { 'tus-teal': 1, 'tus-teal-deep': 1, 'custom': 1 };
+  if (!_ALLOWED_THEMES[_theme]) _theme = 'tus-teal';
   // Logo position is nested under .logo.position in admin KV but flat in user prefs
   const _layout = _pref('logoPosition')
                 || (_adminCfg && _adminCfg.logo && _adminCfg.logo.position)
