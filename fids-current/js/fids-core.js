@@ -13236,6 +13236,11 @@ function render() {
   tbl.style.display = allFiltered.length ? '' : 'none';
   if (!allFiltered.length) return;
 
+  // Light/dark board flag — same luminance measurement as the wordmark ink.
+  // CSS keys off body.fids-light-board so headers (and anything else that
+  // must flip with the background) adapt on EVERY theme automatically.
+  try { document.body.classList.toggle('fids-light-board', wordmarkVariant() === 'dark'); } catch (e) {}
+
   const contentH = document.querySelector('.content-area')?.offsetHeight || 600;
   const theadH   = document.querySelector('thead')?.offsetHeight || 30;
   // Measure the real rendered row height — themes vary it (58-66px). The old

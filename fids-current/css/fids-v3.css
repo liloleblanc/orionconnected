@@ -3808,3 +3808,14 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
   body .fids-banner-date,
   body[data-fids-theme] .fids-banner-date { color: rgba(255,255,255,0.88) !important; }
 }
+
+/* ── Headers adapt to light boards (Nick, Jul 2026) ─────────────────────────
+   body.fids-light-board is set at render time from measured row-background
+   luminance (same signal as the wordmark ink). White header lettering on a
+   pale board becomes navy on a soft navy tint — works on every light theme,
+   current or future, with no per-theme list. */
+body.fids-light-board #fidsTable thead th {
+  background: rgba(13, 36, 64, 0.07) !important;
+  color: #0d2440 !important;
+  border-bottom-color: #0d2440 !important;
+}
