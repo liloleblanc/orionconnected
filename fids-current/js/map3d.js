@@ -150,7 +150,13 @@
   }
 
   function _later(fn, ms) { _timers.push(setTimeout(fn, ms)); }
-  function _clearTimers() { _timers.forEach(clearTimeout); _timers = []; }
+  function _clearTimers() {
+    _timers.forEach(function (t) {
+      if (t && t.__ro) { try { t.__ro.disconnect(); } catch (e) {} }
+      else clearTimeout(t);
+    });
+    _timers = [];
+  }
 
   // ── the minute-long 4-view sequence ───────────────────────────────────
   function _sequence(dwellMs) {
@@ -299,8 +305,23 @@
             ] },
           center: flight.o, zoom: 6, pitch: 0, bearing: 0
         });
+        // The carousel can still be mid-layout when MapLibre measures the
+        // container (seen live: 300px-tall canvas in an 891px wrapper → the
+        // slide reads as a black screen). Re-measure after layout settles and
+        // keep a ResizeObserver on the wrapper for any later reflow.
+        var _kick = function () { try { if (_map) _map.resize(); } catch (e) {} };
+        _timers.push(setTimeout(_kick, 400));
+        _timers.push(setTimeout(_kick, 1500));
+        try {
+          if (typeof ResizeObserver === 'function') {
+            var ro = new ResizeObserver(_kick);
+            ro.observe(_container.querySelector('.m3d-wrap'));
+            _timers.push({ __ro: ro });   // destroyed alongside timers
+          }
+        } catch (e) {}
         _map.on('load', function () {
           if (!_mounted) return;
+          _kick();
           try { _map.setTerrain({ source: 'dem', exaggeration: 1.6 }); } catch (e) {}
           try { _map.setSky({ 'sky-color': '#0a1736', 'sky-horizon-blend': 0.55, 'horizon-color': '#1a3b6e', 'horizon-fog-blend': 0.5, 'fog-color': '#070b14', 'fog-ground-blend': 0.55 }); } catch (e) {}
           _setupRoute();
