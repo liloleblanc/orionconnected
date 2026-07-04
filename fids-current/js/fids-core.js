@@ -11922,7 +11922,7 @@ const IATA_TO_TILE_ICAO = {
   'PB':'PB',   // ← Nick's custom PAL Airlines logo (Newfoundland)
   'MO':'MPE',  'YP':'PCM',  'BQ':'PSC',
   // US carriers
-  'UA':'UAL',  'DL':'DAL',  'AA':'AAL',  'WN':'SWA',
+  'UA':'UAL-sq',  'DL':'DAL',  'AA':'AAL',  'WN':'SWA',   // UAL-sq: square vector tile (UAL.svg is an embedded PNG — wrong look per Nick)
   // NK (Spirit) — ceased operations May 2 2026
   'B6':'JBU',  'AS':'ASA',  'F9':'FFT',  'G4':'AAY',  'HA':'HAL',
   'SY':'SCX',  'OO':'SKW',  'YV':'ASH',
@@ -13298,28 +13298,11 @@ function render() {
     const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
       ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
       : `<span class="fids-airline-name"${_nameStyle}>${_airlineDisplay}</span>`);
-    // Operated-by sub-label — the marketing carrier keeps the big wordmark
-    // (passengers look for the airline on their ticket); the Express operating
-    // partner rides underneath, from the enforced code-pairing matrix.
-    let _opSubHtml = '';
-    try {
-      const _fnRow = parseInt(String(f.flight || '').replace(/\D/g, ''), 10);
-      const _mxRow = (_airlineCodeForLogo === 'AC' && typeof acExpressMatrix === 'function') ? acExpressMatrix(_fnRow) : null;
-      // Same precedence as the gate: matrix, then the legacy deterministic
-      // ranges, and only then whatever operator the feed pre-tagged.
-      let _opNameRow = _mxRow ? _mxRow.opName : '';
-      if (!_opNameRow && _airlineCodeForLogo === 'AC' && !isNaN(_fnRow)) {
-        if ((_fnRow >= 7600 && _fnRow <= 7699) || (_fnRow >= 2200 && _fnRow <= 2299)) _opNameRow = 'PAL Airlines';
-        else if (_fnRow >= 1600 && _fnRow <= 1999) _opNameRow = 'Rouge';
-      }
-      if (!_opNameRow && f._opCode && f._opCode !== _airlineCodeForLogo && f._opName) _opNameRow = f._opName;
-      // "Air Canada Rouge" won't fit the slot — the brand is already implied.
-      _opNameRow = String(_opNameRow || '').replace(/^Air Canada\s+/i, '');
-      if (_opNameRow) _opSubHtml = '<div class="fids-operated-by">Operated by ' + _opNameRow + '</div>';
-    } catch (e) {}
+    // (Operated-by label lives on the GATE screen only — Nick doesn't want it
+    // on the main board; the enforced Express matrix still drives the gate.)
     const airlineCellHtml = '<td class="td-airline"><div class="fids-cell-airline">'
       +   '<div class="fids-airline-logo">' + mkLogo(_airlineCodeForLogo, f._airlineName) + '</div>'
-      +   '<div class="fids-airline-wordmark-slot' + (_opSubHtml ? ' has-op' : '') + '">' + _airlineLabelHtml + _opSubHtml + '</div>'
+      +   '<div class="fids-airline-wordmark-slot">' + _airlineLabelHtml + '</div>'
       + '</div></td>';
 
     const destCellHtml = (() => {

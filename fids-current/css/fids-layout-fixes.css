@@ -3,7 +3,7 @@
    across FIDS, BIDS, and GIDS without relying on per-logo lucky sizing. */
 
 :root {
-  --fids-brand-slot-h: 54px;
+  --fids-brand-slot-h: 58px; /* airline tiles nearly full row height (62px rows) per Nick */
   --fids-wordmark-h: 30px;
   --fids-wordmark-w: 245px;
   --gate-logo-slot-w: clamp(150px, 16vw, 300px);
@@ -260,7 +260,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-name
   column-gap: 12px !important;
 }
 #fidsTable .td-airline .fids-airline-logo {
-  padding: 4px !important;
+  padding: 2px !important; /* was 4px — tiles should fill nearly the whole row height */
 }
 #fidsTable .td-airline .fids-airline-wordmark-slot {
   width: var(--fids-wordmark-slot-w) !important;
