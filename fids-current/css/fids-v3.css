@@ -3825,7 +3825,7 @@ body.fids-light-board #fidsTable thead th {
    white, deep navy lettering. Headers and wordmark ink adapt automatically
    via the fids-light-board luminance system; the three-tab banner keeps its
    navy/white/gold tabs. */
-body[data-fids-theme="mist"] {
+body[data-fids-theme="mist"]:not([data-page="bids"]) {
   --fids-bg:           #C7D2DD;
   --fids-banner-bg:    #0b0f16;
   --fids-banner-text:  #ffffff;
@@ -3840,7 +3840,7 @@ body[data-fids-theme="mist"] {
   --fids-row-h:        66px;
   background: #C7D2DD !important;
 }
-body[data-fids-theme="mist"] #fidsBoard,
+body[data-fids-theme="mist"]:not([data-page="bids"]) #fidsBoard,
 body[data-fids-theme="mist"] #fidsTable {
   background: #C7D2DD !important;
 }
