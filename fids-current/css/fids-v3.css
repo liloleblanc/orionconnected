@@ -3956,3 +3956,12 @@ body.fids-light-board #fidsTable tbody tr.row-cancelled,
 body.fids-light-board #fidsTable tbody tr.row-cancelled td,
 body.fids-light-board #fidsTable tbody tr.row-diverted,
 body.fids-light-board #fidsTable tbody tr.row-diverted td { background: #DE4B58 !important; }
+
+/* Revised column on light boards: the "—" (and any un-revised cell) was
+   white-on-white. Muted navy for the dash; genuine revised times keep amber. */
+body.fids-light-board #fidsTable td.td-time-rev { color: rgba(22, 40, 60, 0.45) !important; }
+body.fids-light-board #fidsTable td.td-time-rev.has-rev,
+body.fids-light-board #fidsTable td.td-time-rev.has-rev * { color: #A66F00 !important; }
+
+/* Departed flights: the WHOLE row fades, not just the status word. */
+body #fidsTable tbody tr:has(td.fids-status-departed) { opacity: 0.55; }
