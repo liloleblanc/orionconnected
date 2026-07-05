@@ -3902,8 +3902,9 @@ body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev) * { color: r
 body .bidsv2-screen,
 body #baggageView .bidsv2-screen,
 body[data-page="bids"] .bidsv2-screen { background: var(--fids-bg, #0a1628) !important; }
-body.fids-light-board .bidsv2-screen,
-body.fids-light-board #baggageView .bidsv2-screen { background: #0a1628 !important; }
+/* (Light-board dark pin REMOVED Jul 2026 — Nick: 'baggage mist does not
+   stay mist'. bids-v2.css now carries a full light-board adaptation:
+   Mist canvas, dark ink, brand-color wordmarks.) */
 
 body .bidsv2-carousel-label { color: #22344D !important; opacity: 1 !important; }
 body .bidsv2-carousel-number { color: #0E2748 !important; opacity: 1 !important; }
