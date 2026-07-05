@@ -4036,6 +4036,6 @@ body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev) * { color: r
    bids-v2 is built on white lettering but keyed its background to the
    THEME's --fids-bg — a light board theme (Mist) turned the whole design
    pale grey-on-grey. It gets its own dark canvas on every theme. */
-body .bidsv2-page,
-body #baggageView .bidsv2-page,
-body[data-page="bids"] .bidsv2-page { background: #0a1628 !important; }
+body .bidsv2-screen,
+body #baggageView .bidsv2-screen,
+body[data-page="bids"] .bidsv2-screen { background: #0a1628 !important; }
