@@ -5342,7 +5342,9 @@ function _buildV2AircraftCol(ctx, vars) {
         'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
         // International
         'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
-        'AF':  '/logos/airlines/european/air-france-emblem.svg',
+        'AF':  '/logos/airlines/european/air-france-emblem.svg?v=2',   // rebuilt Jul 2026 — official accent path, centered (old file was a clipped sliver)
+        'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
+        'BW':  '/logos/airlines/asian-other/caribbean-emblem.png',     // official hummingbird (airline's own brand art)
         '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg'
       };
       function _emblemImg(code) {
@@ -6950,7 +6952,9 @@ function uxgGateHtml(ctx) {
     'HA': '/logos/airlines/us-major/Hawaiian.svg',                               // Pualani + native-color "Hawaiian Airlines"
     'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
     'PB': '/logos/airlines/canadian-regional/pal-airlines-swoosh-white.svg',     // PAL — gold swoosh + white wordmark for the navy bar
-    'BA': '/logos/airlines/european/BA-square.svg',                              // British Airways
+    // BA override REMOVED Jul 2026 (Nick: 'British Airways is not correct') —
+    // BA now flows through the emblem+wordmark path: Speedmarque tile +
+    // official-blue BRITISH AIRWAYS lettering.
     '4Y': '/logos/airlines/european/discover-airlines-emblem.svg'               // Discover Airlines (Lufthansa Group, ICAO OCN)
   };
   // Per-airline size overrides for banner logo
@@ -7074,7 +7078,11 @@ function uxgGateHtml(ctx) {
     // White wordmark straight on the dark banner (dark wordmark for white-banner
     // carriers). No white plate — the wordmark stands on the banner itself.
     var _wmVariant = _bannerIsLight ? 'dark' : 'light';
-    r1LogoSrc = logoPath(_bannerWordmarkBase + '-wordmark-' + _wmVariant + '.svg');
+    // Route through wordmarkSrc so raster-only carriers (Caribbean) and any
+    // future overrides resolve the same way the boards do.
+    r1LogoSrc = (typeof wordmarkSrc === 'function')
+      ? wordmarkSrc(_bannerWordmarkBase, _wmVariant).split('?')[0]
+      : logoPath(_bannerWordmarkBase + '-wordmark-' + _wmVariant + '.svg');
     _useOverrideFile = true;          // no white filter — wordmark as-is
     _sz = { h: 102, w: 480 };         // wide wordmark — fills the 148px band
     _bannerUsedWordmark = true;
@@ -7117,12 +7125,32 @@ function uxgGateHtml(ctx) {
                  // Logo sits on a clean white rounded plate so it reads on the
                  // dark header and is never clipped by the banner band.
                  + (_onPlate ? 'background:#fff !important;border-radius:14px !important;padding:' + (_bannerUsedWordmark ? '8px 16px' : '8px') + ' !important;box-sizing:border-box !important;' : '');
+  // Nick (Jul 2026): the gate header shows the airline EMBLEM/tile BESIDE the
+  // wordmark — many carriers rendered lettering alone up top. Only the
+  // wordmark-file path needs the added icon; override lockups already carry
+  // their symbols.
+  var _bannerEmblemSrc = '';
+  if (_bannerWmFromBase) {
+    try {
+      var _embCode2 = _bannerBrandCode || airlineCode;
+      var _embF = (typeof IATA_TO_EMBLEM !== 'undefined') ? (IATA_TO_EMBLEM[_embCode2] || IATA_TO_EMBLEM[airlineCode]) : null;
+      var _embT = (typeof IATA_TO_TILE_ICAO !== 'undefined') ? (IATA_TO_TILE_ICAO[_embCode2] || IATA_TO_TILE_ICAO[airlineCode]) : null;
+      if (_embF) _bannerEmblemSrc = _embF;
+      else if (_embT) _bannerEmblemSrc = '/logos/airline-tiles/' + _embT + '.svg';
+    } catch (e) {}
+  }
+  var _bannerEmblemHtml = _bannerEmblemSrc
+    ? '<img class="g8-r1-emblem" src="' + _bannerEmblemSrc + '" alt="" style="width:64px;height:64px;min-width:64px;border-radius:12px;object-fit:contain;flex:0 0 auto;display:block;" onerror="this.remove()">'
+    : '';
   var r1LogoHtml = '';
   if (_g8LogoCache[airlineCode] === 'text') {
     // Already know images fail - show text immediately, no flicker
     r1LogoHtml = '<span class="g8-r1-airline">' + airlineName + '</span>';
   } else {
     r1LogoHtml = '<img class="g8-r1-logo' + (_onPlate ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
+    if (_bannerEmblemHtml) {
+      r1LogoHtml = '<span class="g8-r1-brandpair" style="display:inline-flex;align-items:center;gap:16px;">' + _bannerEmblemHtml + r1LogoHtml + '</span>';
+    }
   }
 
   // Per-airline color spec. Each airline has:
@@ -12065,6 +12093,8 @@ const IATA_TO_WORDMARK = {
   '9X':'mokulele',  // Mokulele / Southern Airways Express
   // Europe
   'BA':'british-airways',  'AF':'air-france',  'KL':'klm',
+  'FI':'icelandair',       // official Commons artwork, lettering split from the tail-fin (Jul 2026)
+  'BW':'caribbean',        // official raster brand art (no public vector) — served via WORDMARK_RASTER
   'LO':'lot',              // LOT Polish Airlines
   'VS':'virgin-atlantic',  // Virgin Atlantic
   'TP':'tap-portugal',     // TAP Air Portugal
@@ -12287,6 +12317,7 @@ const COLOR_WORDMARKS = {
   'air-france': '/logos/airlines/european/air-france-wordmark-color.svg',
   'british-airways': '/logos/airlines/european/british-airways-wordmark-color.svg',
   'discover-airlines': '/logos/airlines/european/discover-airlines-wordmark-color.svg',
+  'icelandair': '/logos/airlines/european/icelandair-wordmark-color.svg',
   'klm': '/logos/airlines/european/klm-wordmark-color.svg',
   'lot': '/logos/airlines/european/lot-wordmark-color.svg',
   'tap-portugal': '/logos/airlines/european/tap-portugal-wordmark-color.svg',
@@ -12302,12 +12333,23 @@ const COLOR_WORDMARKS = {
   'sun-country': '/logos/airlines/us-major/sun-country-wordmark-color.svg',
   'united': '/logos/airlines/us-major/united-wordmark-color.svg',
 };
+// Carriers whose OFFICIAL artwork exists only as raster (the airline's own
+// brand PNGs — no public vector anywhere). Same variant semantics: 'light'
+// = white art for dark boards, 'dark' = colored art for light boards.
+const WORDMARK_RASTER = {
+  'caribbean': { light: '/logos/airlines/asian-other/caribbean-wordmark-light.png',
+                 dark:  '/logos/airlines/asian-other/caribbean-wordmark-color.png' }
+};
 function wordmarkSrc(base, forceVariant) {
   // v191: route through logoPath() so reorganized logos resolve correctly
   // forceVariant: per-context override ('dark'|'light') for surfaces whose
   // background is NOT the measured board (e.g. baggage rows are always dark
   // navy, and a state-tinted row needs the dark-ink artwork regardless).
   const _variant = forceVariant || wordmarkVariant();
+  if (WORDMARK_RASTER[base]) {
+    return WORDMARK_RASTER[base][_variant === 'dark' ? 'dark' : 'light']
+      + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
+  }
   if (_variant === 'dark' && COLOR_WORDMARKS[base]) {
     return COLOR_WORDMARKS[base] + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
   }
@@ -12331,6 +12373,7 @@ const IATA_TO_EMBLEM = {
   'F9': '/logos/airlines/us-major/frontier-emblem.svg',  // Frontier Airlines green stylized "F" mark
   'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',  // Breeze checkmark on navy square
   'VB': '/logos/airlines/asian-other/vivaaerobus-emblem.webp',  // Viva green leaf-shape "a" emblem
+  'BW': '/logos/airlines/asian-other/caribbean-emblem.png',     // Caribbean hummingbird (official brand art; no tile exists)
   // US majors — these render wordmark-alone (TILE_SKIP_WORDMARK_ONLY), but the
   // wordmark text by itself loses the iconic brand symbol. Show the symbol in
   // the emblem slot ALONGSIDE the existing wordmark (wordmark text untouched).
@@ -19170,7 +19213,13 @@ var GATE_ADS_BY_AIRLINE = {
     { bg:'linear-gradient(135deg,#002157 0%,#003380 100%)', headline:'Flying Blue', sub:'Earn miles with Air France \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/air-france.svg' },
   ],
   'BA': [
-    { bg:'linear-gradient(135deg,#2E5DA4 0%,#1a4a8a 100%)', headline:'Executive Club', sub:'Earn Avios points with British Airways \u00b7 Oneworld', logo:'/logos/airlines/european/british-airways.svg' },
+    { bg:'linear-gradient(135deg,#2E5DA4 0%,#1a4a8a 100%)', headline:'Executive Club', sub:'Earn Avios points with British Airways \u00b7 Oneworld', logo:'/logos/airlines/european/british-airways-wordmark-light.svg' },
+  ],
+  'FI': [
+    { bg:'linear-gradient(135deg,#001B71 0%,#0a2f9e 100%)', headline:'Saga Club', sub:'Earn Saga Points with Icelandair', logo:'/logos/airlines/european/icelandair-wordmark-light.svg' },
+  ],
+  'BW': [
+    { bg:'linear-gradient(135deg,#5E2554 0%,#AA4399 100%)', headline:'Caribbean Miles', sub:'Earn miles with Caribbean Airlines', logo:'/logos/airlines/asian-other/caribbean-wordmark-light.png' },
   ],
   'TS': [
     { bg:'linear-gradient(135deg,#002868 0%,#004090 100%)', headline:'Air Transat', sub:'Your vacation starts the moment you board', logo:'/logos/airlines/canadian/transat.svg' },

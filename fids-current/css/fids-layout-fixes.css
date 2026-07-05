@@ -1442,3 +1442,6 @@ body.g8-header-is-light .g8-city-code,
 #fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] { --wm-h: 30px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] { --wm-h: 29px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { --wm-h: 23px; }
+/* Icelandair + Caribbean — wired Jul 2026 (ink aspects 10.35 / 7.31) */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { --wm-h: 19px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { --wm-h: 21px; }
