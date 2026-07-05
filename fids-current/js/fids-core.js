@@ -22865,3 +22865,27 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   window.addEventListener('load', lockAccor);
   setInterval(lockAccor, 500);
 })();
+
+// ── SELF-UPDATE ─────────────────────────────────────────────────────────
+// Kiosk pages run for days and never re-fetch their HTML, so deploys only
+// reached screens after a MANUAL refresh — the root of many "it's still
+// broken" reports (the fix was live; the screen was stale). Poll our own
+// document (served no-store) for a changed build token; when a new deploy
+// lands, reload once. Displays are always-on, so a reload between data
+// polls is invisible.
+(function () {
+  function _tok(s) { var m = String(s || '').match(/fids-core\.js\?v=([0-9]+)/); return m ? m[1] : null; }
+  var _running = null;
+  try { _running = _tok(document.documentElement.innerHTML); } catch (e) {}
+  if (!_running) return;
+  setInterval(function () {
+    try {
+      fetch(location.pathname + location.search, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.text() : null; })
+        .then(function (html) {
+          var t = _tok(html);
+          if (t && t !== _running) location.reload();
+        }).catch(function () {});
+    } catch (e) {}
+  }, 5 * 60000);
+})();
