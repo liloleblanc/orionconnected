@@ -17754,8 +17754,19 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   else if (nearDst < 0.20) zoom = cruiseZoom + 1;
   else zoom = cruiseZoom;
   gateMap.setView([planeLat, planeLng], zoom);
-  try{var arc=L.Polyline.Arc(o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap);}
-  catch(e){L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);}
+  // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
+  // solid behind it, dashed ahead — so the plane always sits ON its line.
+  // (The old single ideal arc left any real-world deviation looking
+  // 'off course' with the plane floating beside the route.)
+  var _pp = [planeLat, planeLng];
+  try{
+    L.Polyline.Arc(o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap);
+    L.Polyline.Arc(_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap);
+  }
+  catch(e){
+    L.polyline([o,_pp],{color:'#60a5fa',weight:4,opacity:0.9}).addTo(gateMap);
+    L.polyline([_pp,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);
+  }
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   // Actual flown track over the assigned route: GREEN where it follows the
@@ -17766,8 +17777,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     if (_tp) {
       for (var _ti = 1; _ti < _tp.length; _ti++) {
         var _ta = _tp[_ti - 1], _tb = _tp[_ti];
-        var _dev = _crossTrackKm((_ta.lat + _tb.lat) / 2, (_ta.lng + _tb.lng) / 2, o[0], o[1], d[0], d[1]);
-        L.polyline([[_ta.lat, _ta.lng], [_tb.lat, _tb.lng]], { color: _dev > 30 ? '#f59e0b' : '#22c55e', weight: 4, opacity: 0.95 }).addTo(gateMap);
+        L.polyline([[_ta.lat, _ta.lng], [_tb.lat, _tb.lng]], { color: '#60a5fa', weight: 4, opacity: 0.95 }).addTo(gateMap);
       }
     }
   } catch (e) {}
