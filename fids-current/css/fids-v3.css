@@ -3996,3 +3996,21 @@ body #fidsTable tbody tr.row-cancelled td.td-time *,
 body #fidsTable tbody tr.row-cancelled td.td-time-rev *,
 body #fidsTable tbody tr.row-delayed td .fids-cell-time,
 body #fidsTable tbody tr.row-cancelled td .fids-cell-time { background: transparent !important; box-shadow: none !important; text-shadow: none !important; }
+
+/* Even-row zebra rules (tr:nth-child(even)) outranked the tinted-row rule,
+   leaving the TR teal under 75%-opacity cells → the olive box behind struck
+   times. :nth-child(n) matches every row and ties the zebra specificity;
+   tail placement wins the tie. Struck times on tinted rows drop the fade. */
+body #fidsTable tbody tr.row-delayed:nth-child(n),
+body #fidsTable tbody tr.row-delayed:nth-child(n) td { background: #E5A800 !important; }
+body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n),
+body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n) td { background: #F5C441 !important; }
+body #fidsTable tbody tr.row-cancelled:nth-child(n),
+body #fidsTable tbody tr.row-cancelled:nth-child(n) td,
+body #fidsTable tbody tr.row-diverted:nth-child(n),
+body #fidsTable tbody tr.row-diverted:nth-child(n) td { background: #A61B2B !important; }
+body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(n),
+body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(n) td { background: #DE4B58 !important; }
+body #fidsTable tbody tr.row-delayed td.td-time-sched.is-revised,
+body #fidsTable tbody tr.row-cancelled td.td-time-sched.is-revised,
+body #fidsTable tbody tr.row-diverted td.td-time-sched.is-revised { opacity: 1 !important; }
