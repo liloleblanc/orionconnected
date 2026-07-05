@@ -3965,3 +3965,34 @@ body.fids-light-board #fidsTable td.td-time-rev.has-rev * { color: #A66F00 !impo
 
 /* Departed flights: the WHOLE row fades, not just the status word. */
 body #fidsTable tbody tr:has(td.fids-status-departed) { opacity: 0.55; }
+
+/* ── Tinted-row legibility (Nick: 'cant see numbers and letters') ───────────
+   On DELAYED/CANCELLED rows every glyph takes the row ink — including the
+   revised time, the struck original, and the status word, whose own color
+   rules tied with the row rules and were winning by file order. Highlight
+   boxes behind times are stripped. Appended last: these win every tie. */
+body #fidsTable tbody tr.row-delayed td,
+body #fidsTable tbody tr.row-delayed td *,
+body #fidsTable tbody tr.row-delayed td.td-status,
+body #fidsTable tbody tr.row-delayed td.td-status *,
+body #fidsTable tbody tr.row-delayed td.td-time-rev,
+body #fidsTable tbody tr.row-delayed td.td-time-rev.has-rev,
+body #fidsTable tbody tr.row-delayed td.td-time-rev.has-rev * { color: #102437 !important; }
+body.fids-light-board #fidsTable tbody tr.row-delayed td,
+body.fids-light-board #fidsTable tbody tr.row-delayed td *,
+body.fids-light-board #fidsTable tbody tr.row-delayed td.td-status,
+body.fids-light-board #fidsTable tbody tr.row-delayed td.td-status *,
+body.fids-light-board #fidsTable tbody tr.row-delayed td.td-time-rev,
+body.fids-light-board #fidsTable tbody tr.row-delayed td.td-time-rev.has-rev,
+body.fids-light-board #fidsTable tbody tr.row-delayed td.td-time-rev.has-rev * { color: #3A2B00 !important; }
+body #fidsTable tbody tr.row-cancelled td, body #fidsTable tbody tr.row-cancelled td *,
+body #fidsTable tbody tr.row-cancelled td.td-status, body #fidsTable tbody tr.row-cancelled td.td-status *,
+body #fidsTable tbody tr.row-cancelled td.td-time-rev.has-rev, body #fidsTable tbody tr.row-cancelled td.td-time-rev.has-rev *,
+body #fidsTable tbody tr.row-diverted td, body #fidsTable tbody tr.row-diverted td * { color: #ffffff !important; }
+/* strip highlight boxes behind times on tinted rows (keep icons intact) */
+body #fidsTable tbody tr.row-delayed td.td-time *, 
+body #fidsTable tbody tr.row-delayed td.td-time-rev *,
+body #fidsTable tbody tr.row-cancelled td.td-time *,
+body #fidsTable tbody tr.row-cancelled td.td-time-rev *,
+body #fidsTable tbody tr.row-delayed td .fids-cell-time,
+body #fidsTable tbody tr.row-cancelled td .fids-cell-time { background: transparent !important; box-shadow: none !important; text-shadow: none !important; }
