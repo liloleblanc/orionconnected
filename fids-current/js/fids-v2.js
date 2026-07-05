@@ -35,6 +35,8 @@
     'st-departed':    { en:'Departed',    fr:'Parti',         es:'Salido',         de:'Abgeflogen',       it:'Partito',          pt:'Partiu',           ja:'出発済',   zh:'已起飞',   ar:'غادرت' },
     'st-arrived':     { en:'Arrived',     fr:'Arrivé',        es:'Llegado',        de:'Angekommen',       it:'Arrivato',         pt:'Chegou',           ja:'到着',     zh:'已到达',   ar:'وصلت' },
     'st-delayed':     { en:'Delayed',     fr:'En retard',     es:'Retrasado',      de:'Verspätet',        it:'In ritardo',       pt:'Atrasado',         ja:'遅延',     zh:'延误',     ar:'متأخر' },
+    'st-early':       { en:'Early',       fr:'En avance',     es:'Adelantado',     de:'Verfrüht',         it:'In anticipo',      pt:'Adiantado',        ja:'早着',     zh:'提前',     ar:'مبكر' },
+
     'st-cancelled':   { en:'Cancelled',   fr:'Annulé',        es:'Cancelado',      de:'Annulliert',       it:'Cancellato',       pt:'Cancelado',        ja:'欠航',     zh:'取消',     ar:'ملغاة' },
     'st-diverted':    { en:'Diverted',    fr:'Dérouté',       es:'Desviado',       de:'Umgeleitet',       it:'Dirottato',        pt:'Desviado',         ja:'目的地変更', zh:'改航', ar:'محول' },
     now:              { en:'Now',         fr:'Maintenant',    es:'Ahora',          de:'Jetzt',            it:'Ora',              pt:'Agora',            ja:'変更',     zh:'现改为',   ar:'الآن' }
@@ -61,6 +63,7 @@
     if (s === 'departed' || s === 'expected' || s === 'enroute' || s === 'inair' || s === 'in-air') return 'departed';
     if (s === 'arrived' || s === 'landed' || s === 'at-gate' || s === 'gate') return 'arrived';
     if (s === 'delayed' || s === 'late') return 'delayed';
+    if (s === 'early' || s === 'ahead-of-schedule') return 'early';
     if (s === 'on-time' || s === 'ontime' || s === 'on time') return 'on-time';
     return 'scheduled';
   }
