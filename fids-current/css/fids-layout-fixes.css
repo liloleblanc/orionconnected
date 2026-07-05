@@ -1629,3 +1629,20 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   max-width: 96% !important; max-height: 100% !important; width: auto !important; height: auto !important;
   object-fit: contain !important; display: block !important;
 }
+
+/* ── Takeover mechanics: the panel GROWS out of the right column and covers
+   center + right; the right column hides beneath so nothing shows twice. ── */
+.bigcraft-overlay {
+  position: absolute !important;
+  z-index: 45 !important;
+  overflow: hidden !important;
+  border-radius: 14px !important;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.45) !important;
+  transform-origin: 92% 42% !important;
+  animation: bigcraftGrow 650ms cubic-bezier(0.22, 0.9, 0.3, 1) both !important;
+}
+@keyframes bigcraftGrow {
+  from { transform: scale(0.34); opacity: 0.25; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.g8-bigcraft-active .gad-map-col-v2 { visibility: hidden !important; }
