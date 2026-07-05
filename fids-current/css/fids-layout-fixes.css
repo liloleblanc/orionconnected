@@ -1447,14 +1447,27 @@ body.g8-header-is-light .g8-city-code,
 #fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { --wm-h: 21px; }
 
 /* Right-column shelves (below the mini map): the 3D globe artwork replaces
-   the faded airline-logo watermark (Nick, Jul 2026). */
-.gad-map-col-v2::before {
+   the faded airline-logo watermark (Nick, Jul 2026). ONE globe, always:
+   the legacy per-airline watermark rules TILED the band (Porter repeat at
+   120%, KLM repeat-y — that's where the doubled globes came from) and the
+   generic .g8-wrap rule out-specified the sizing/opacity. Every variant is
+   pinned here at matching-or-higher specificity, and this file loads last. */
+html .gad-map-col-v2::before,
+html .g8-wrap .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-PD .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-KL .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-AC .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-QK .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-RV .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-F8 .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-image: url('/logos/3d_globe_desktop.svg') !important;
-  /* Nick: stretched and more visible — fill the whole shelf zone. */
-  background-size: 100% 100% !important;
-  background-position: center center !important;
+  background-size: cover !important;
+  background-position: center bottom !important;
+  background-repeat: no-repeat !important;
   opacity: 0.85 !important;
   mix-blend-mode: normal !important;
+  transform: none !important;
 }
 
 /* No white sliver between the gate block and the Your Aircraft panel
