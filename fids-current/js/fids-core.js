@@ -3620,6 +3620,18 @@ var _g8LogoCache = {};
 function g8LogoFail(img) {
   var code = img.getAttribute('data-code') || '';
   var fb = img.getAttribute('data-fb');
+  // PAIR mode (emblem tile already shown beside this wordmark): external
+  // lockup fallbacks would render the carrier's symbol a second time.
+  // One retry with a fresh cache-buster, then the plain text name.
+  if (img.getAttribute('data-pairmode') === '1') {
+    if (!img.dataset.pmr) { img.dataset.pmr = '1'; img.src = img.src.split('?')[0] + '?r=' + Date.now(); return; }
+    var nmP = img.getAttribute('data-name') || '';
+    var spP = document.createElement('span');
+    spP.className = 'g8-r1-airline';
+    spP.textContent = nmP;
+    if (img.parentNode) img.parentNode.replaceChild(spP, img);
+    return;
+  }
   // v197: for IATA codes that have been recycled (e.g. 4Y was Yute Air, now
   // Discover Airlines), skip external logo services — they serve the OLD
   // carrier's logo. Go straight to text fallback.
@@ -7079,9 +7091,10 @@ function uxgGateHtml(ctx) {
     // carriers). No white plate — the wordmark stands on the banner itself.
     var _wmVariant = _bannerIsLight ? 'dark' : 'light';
     // Route through wordmarkSrc so raster-only carriers (Caribbean) and any
-    // future overrides resolve the same way the boards do.
+    // future overrides resolve the same way the boards do. KEEP the build
+    // token — an untokenized URL lets one transient 404 poison a kiosk cache.
     r1LogoSrc = (typeof wordmarkSrc === 'function')
-      ? wordmarkSrc(_bannerWordmarkBase, _wmVariant).split('?')[0]
+      ? wordmarkSrc(_bannerWordmarkBase, _wmVariant)
       : logoPath(_bannerWordmarkBase + '-wordmark-' + _wmVariant + '.svg');
     _useOverrideFile = true;          // no white filter — wordmark as-is
     _sz = { h: 102, w: 480 };         // wide wordmark — fills the 148px band
@@ -7147,7 +7160,12 @@ function uxgGateHtml(ctx) {
     // Already know images fail - show text immediately, no flicker
     r1LogoHtml = '<span class="g8-r1-airline">' + airlineName + '</span>';
   } else {
-    r1LogoHtml = '<img class="g8-r1-logo' + (_onPlate ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
+    // In PAIR mode (our emblem tile already beside the wordmark) the img must
+    // NEVER fall back to an external avs.io/gstatic LOCKUP — those carry the
+    // carrier's symbol again, so a single failed wordmark fetch put TWO
+    // emblems in the banner (Nick saw it on Icelandair). data-pairmode makes
+    // g8LogoFail go straight to the text name instead.
+    r1LogoHtml = '<img class="g8-r1-logo' + (_onPlate ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
     if (_bannerEmblemHtml) {
       r1LogoHtml = '<span class="g8-r1-brandpair" style="display:inline-flex;align-items:center;gap:16px;">' + _bannerEmblemHtml + r1LogoHtml + '</span>';
     }
