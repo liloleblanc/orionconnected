@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animated Weather — Preview</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { background:#05080f; font-family:'DM Sans',-apple-system,'Segoe UI',sans-serif; color:#e6e9ee; }
+  #bar { position:sticky; top:0; z-index:5; padding:12px 18px; background:rgba(5,10,20,.92); border-bottom:1px solid #1d2636; }
+  #bar b { color:#FAC120; font-size:13px; letter-spacing:.5px; } #bar span { color:#8b96a5; font-size:13px; }
+  .wrap { max-width:1220px; margin:0 auto; padding:24px 16px 60px; }
+  h2 { font-size:18px; font-weight:800; margin:30px 0 6px; } h2:first-child { margin-top:6px; }
+  .sub { color:#8b96a5; font-size:13.5px; margin-bottom:14px; line-height:1.5; }
+
+  .boards { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:900px){ .boards { grid-template-columns:1fr; } }
+  .board { border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,.08); }
+  .board.mist { background:#C7D2DD; } .board.teal { background:#0D4D8B; }
+  .bt { font-size:12px; font-weight:800; letter-spacing:1px; padding:9px 14px; }
+  .mist .bt { color:#5B6B7C; } .teal .bt { color:rgba(255,255,255,.55); }
+  .frow { display:grid; grid-template-columns:120px 1fr 130px 90px; gap:10px; align-items:center;
+          padding:9px 14px; font-size:15px; font-weight:700; }
+  .mist .frow:nth-child(even){ background:#E9EEF3; } .mist .frow:nth-child(odd){ background:#DAE3EA; }
+  .mist .frow { color:#16283C; }
+  .teal .frow:nth-child(even){ background:rgba(255,255,255,.055); }
+  .teal .frow { color:#fff; }
+  .wxcell { display:flex; align-items:center; gap:8px; }
+  .wxcell img { width:52px; height:52px; display:block; }
+  .wxcell b { font-size:18px; }
+  .cond { opacity:.55; font-size:12px; }
+
+  .cards { display:grid; grid-template-columns:1.35fr 1fr; gap:16px; }
+  @media (max-width:900px){ .cards { grid-template-columns:1fr; } }
+  .gatecard { border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,.08);
+              background:linear-gradient(135deg,#0d2440 0%,#164a7c 100%); padding:22px 24px; }
+  .gc-kicker { font-size:12px; font-weight:800; letter-spacing:2px; color:rgba(255,255,255,.55); text-transform:uppercase; }
+  .gc-city { font-size:30px; font-weight:900; margin-top:2px; }
+  .gc-hero { display:flex; align-items:center; gap:16px; margin:10px 0 6px; }
+  .gc-hero img { width:120px; height:120px; display:block; }
+  .gc-temp { font-size:64px; font-weight:900; line-height:1; }
+  .gc-cond { font-size:18px; font-weight:700; color:rgba(255,255,255,.85); }
+  .gc-meta { display:flex; gap:22px; margin-top:10px; color:rgba(255,255,255,.75); font-size:14px; font-weight:700; }
+  .gc-meta b { color:#fff; }
+  .gc-note { margin-top:12px; font-size:12px; color:rgba(255,255,255,.45); }
+
+  .fivepanel { border-radius:14px; border:1px solid rgba(255,255,255,.08); background:#0b1322; padding:18px 20px; }
+  .fp-title { font-size:14px; font-weight:800; letter-spacing:1px; color:#8b96a5; margin-bottom:10px; }
+  .fp-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .fp-day { background:rgba(255,255,255,.045); border-radius:10px; padding:12px 8px; text-align:center; }
+  .fp-day .d { font-size:13px; font-weight:800; color:#aeb7c4; }
+  .fp-day img { width:56px; height:56px; margin:6px auto; display:block; }
+  .fp-day .hi { font-size:18px; font-weight:900; }
+  .fp-day .lo { font-size:13px; font-weight:700; color:#8b96a5; }
+
+  .footer-note { margin-top:28px; padding:16px 18px; border:1px solid #1d2636; border-radius:12px;
+                 background:#0b111d; color:#aeb7c4; font-size:14px; line-height:1.65; }
+  .footer-note b { color:#e6e9ee; }
+  .err { color:#f87171; font-size:13px; }
+</style>
+</head>
+<body>
+<div id="bar"><b>ANIMATED WEATHER — PREVIEW · NOT LIVE ON BOARDS</b> <span>· Meteocons animated icons (MIT-licensed) driven by the same live weather feed the boards already use. Say GO and I wire them in.</span></div>
+<div class="wrap">
+
+  <h2>1 · Board rows — animated icons in the Weather column</h2>
+  <div class="sub">Same rows, same sizes — the icon just moves now: rays rotate, rain falls, snow drifts, lightning flickers. One sample of each condition on both themes.</div>
+  <div class="boards">
+    <div class="board mist"><div class="bt">MIST (LIGHT)</div><div id="rowsMist"></div></div>
+    <div class="board teal"><div class="bt">TEAL (DARK)</div><div id="rowsTeal"></div></div>
+  </div>
+
+  <h2>2 · Gate — destination weather card &amp; 5-day outlook</h2>
+  <div class="sub">Live from the boards' own weather feed, right now, for Halifax. On a real gate this card would show the DESTINATION city's weather.</div>
+  <div class="cards">
+    <div class="gatecard">
+      <div class="gc-kicker">Arrival Weather · Météo à l'arrivée</div>
+      <div class="gc-city">Halifax (YHZ)</div>
+      <div class="gc-hero">
+        <img id="liveIcon" src="logos/weather/animated/clear-day.svg" alt="">
+        <div><div class="gc-temp" id="liveTemp">—</div><div class="gc-cond" id="liveCond">loading live weather…</div></div>
+      </div>
+      <div class="gc-meta">
+        <span>Feels like <b id="liveFeels">—</b></span>
+        <span>Wind <b id="liveWind">—</b></span>
+        <span>Humidity <b id="liveHum">—</b></span>
+      </div>
+      <div class="gc-note" id="liveNote">Fetched live from the same Tomorrow.io proxy the boards use.</div>
+    </div>
+    <div class="fivepanel">
+      <div class="fp-title" id="fpTitle">OUTLOOK · HALIFAX</div>
+      <div class="fp-grid" id="fiveGrid"></div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <b>Nothing ships until you say GO.</b> On approval: board weather columns get the animated icons (FIDS + gate strip), the gate gets the destination card, and the multi-day outlook panel can join the gate rotation (currently the feed provides ~2 days hourly; a daily-forecast proxy route would unlock the full 5). All icons are local files — no external services on the displays.
+  </div>
+</div>
+
+<script>
+(function () {
+  var A = 'logos/weather/animated/';
+  function icon(code, night) {
+    var c = Number(code) || 0;
+    if (c === 1101) return night ? 'partly-cloudy-night' : 'partly-cloudy-day';
+    if (c === 1102) return 'overcast-day';
+    if (c === 1001) return 'cloudy';
+    if (c === 2000 || c === 2100) return 'fog';
+    if (c === 4000) return 'drizzle';
+    if (c === 4200 || c === 4001) return 'rain';
+    if (c === 4201) return 'extreme-rain';
+    if (c === 5001 || c === 5100 || c === 5000) return 'snow';
+    if (c === 5101) return 'extreme-snow';
+    if (c >= 6000 && c < 7000) return 'sleet';
+    if (c >= 7000 && c < 8000) return 'hail';
+    if (c === 8000) return night ? 'thunderstorms-rain' : 'thunderstorms-day-rain';
+    return night ? 'clear-night' : 'clear-day';
+  }
+  var LBL = { 'clear-day':'Sunny','clear-night':'Clear','partly-cloudy-day':'Partly cloudy','partly-cloudy-night':'Partly cloudy',
+    'overcast-day':'Overcast','cloudy':'Cloudy','fog':'Fog','drizzle':'Drizzle','rain':'Rain','extreme-rain':'Heavy rain',
+    'snow':'Snow','extreme-snow':'Heavy snow','sleet':'Freezing rain','hail':'Ice pellets',
+    'thunderstorms-day-rain':'Thunderstorm','thunderstorms-rain':'Thunderstorm','wind':'Windy','mist':'Mist' };
+
+  // 1 · showcase rows — one of each condition family
+  var demo = [
+    { fl:'AC663',  city:'Montreal (YUL)',   ic:'clear-day',             t:'26°C' },
+    { fl:'WS803',  city:'Toronto (YYZ)',    ic:'partly-cloudy-day',     t:'24°C' },
+    { fl:'PD204',  city:'Ottawa (YOW)',     ic:'rain',                  t:'17°C' },
+    { fl:'AC7696', city:'Gander (YQX)',     ic:'fog',                   t:'11°C' },
+    { fl:'FI607',  city:'Reykjavik (KEF)',  ic:'snow',                  t:'-2°C' },
+    { fl:'BW551',  city:'Port of Spain (POS)', ic:'thunderstorms-day-rain', t:'31°C' }
+  ];
+  ['rowsMist', 'rowsTeal'].forEach(function (id) {
+    var html = demo.map(function (r) {
+      return '<div class="frow"><span>' + r.fl + '</span><span>' + r.city + '</span>'
+        + '<span class="wxcell"><img src="' + A + r.ic + '.svg" alt=""><b>' + r.t + '</b></span>'
+        + '<span class="cond">' + (LBL[r.ic] || '') + '</span></div>';
+    }).join('');
+    document.getElementById(id).innerHTML = html;
+  });
+
+  // 2 · LIVE Halifax weather from the boards' own proxy
+  var P = 'https://fids-proxy.n-leblanc1984.workers.dev';
+  var LOC = '44.8808,-63.5086';
+  fetch(P + '/weather/realtime?location=' + LOC + '&units=metric')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var v = d && d.data && d.data.values; if (!v) throw new Error('no data');
+      var h = new Date().getHours(), night = h < 6 || h >= 21;
+      var ic = icon(v.weatherCode, night);
+      document.getElementById('liveIcon').src = A + ic + '.svg';
+      document.getElementById('liveTemp').textContent = Math.round(v.temperature) + '°C';
+      document.getElementById('liveCond').textContent = LBL[ic] || '';
+      document.getElementById('liveFeels').textContent = Math.round(v.temperatureApparent) + '°C';
+      document.getElementById('liveWind').textContent = Math.round(v.windSpeed) + ' km/h';
+      document.getElementById('liveHum').textContent = Math.round(v.humidity) + '%';
+    })
+    .catch(function (e) {
+      document.getElementById('liveCond').innerHTML = '<span class="err">live fetch unavailable from this origin — works on fids.orionconnected.com</span>';
+    });
+
+  // 5-day: aggregate the hourly forecast into daily hi/lo + midday condition
+  fetch(P + '/weather/forecast?location=' + LOC + '&timesteps=1h&units=metric')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var hrs = (d && d.timelines && (d.timelines.hourly || d.timelines['1h'])) || [];
+      var days = {};
+      hrs.forEach(function (h) {
+        var day = String(h.time).slice(0, 10);
+        var v = h.values || {};
+        (days[day] = days[day] || { hi: -99, lo: 99, codes: {} });
+        if (typeof v.temperature === 'number') {
+          if (v.temperature > days[day].hi) days[day].hi = v.temperature;
+          if (v.temperature < days[day].lo) days[day].lo = v.temperature;
+        }
+        var hr = Number(String(h.time).slice(11, 13));
+        if (hr >= 11 && hr <= 16 && typeof v.weatherCode !== 'undefined') {
+          days[day].codes[v.weatherCode] = (days[day].codes[v.weatherCode] || 0) + 1;
+        }
+      });
+      var keys = Object.keys(days).sort().slice(0, 5);
+      try { document.getElementById('fpTitle').textContent = keys.length + '-DAY · HALIFAX'; } catch (e) {}
+      var names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      document.getElementById('fiveGrid').innerHTML = keys.map(function (k) {
+        var dd = days[k];
+        var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || 0;
+        var dt = new Date(k + 'T12:00:00');
+        return '<div class="fp-day"><div class="d">' + names[dt.getDay()] + '</div>'
+          + '<img src="' + A + icon(code, false) + '.svg" alt="">'
+          + '<div class="hi">' + Math.round(dd.hi) + '°</div><div class="lo">' + Math.round(dd.lo) + '°</div></div>';
+      }).join('');
+    })
+    .catch(function () {
+      document.getElementById('fiveGrid').innerHTML = '<div class="err" style="grid-column:1/-1">forecast fetch unavailable from this origin — works on fids.orionconnected.com</div>';
+    });
+})();
+</script>
+</body>
+</html>
