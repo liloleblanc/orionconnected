@@ -3961,3 +3961,12 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
 
 /* Sun Country (SY) — official artwork wired Jul 2026 (ink aspect 7.5). */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="SY"] { height: 22px; }
+
+/* Nick's nudges Jul 5 2026 — mirrors fids-layout-fixes.css (which governs). */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { height: 28px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: 22px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PD"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] { height: 30px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] { height: 29px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { height: 23px; }

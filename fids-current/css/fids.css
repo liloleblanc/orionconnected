@@ -2012,3 +2012,10 @@ body.uxg-gate-mode .g8-wrap * { font-family: inherit; }
 
 /* Sun Country (SY) mobile card — Jul 2026 */
 .card-logo.card-wordmark[data-code="SY"] { height: 14px; }
+
+/* Nick's nudges Jul 5 2026 (~0.62x of the FIDS heights) */
+.card-logo.card-wordmark[data-code="B6"], .card-logo.card-wordmark[data-code="AS"] { height: 17px; }
+.card-logo.card-wordmark[data-code="F9"] { height: 14px; }
+.card-logo.card-wordmark[data-code="PD"] { height: 19px; }
+.card-logo.card-wordmark[data-code="F8"] { height: 18px; }
+.card-logo.card-wordmark[data-code="HA"] { height: 14px; }

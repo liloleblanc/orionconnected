@@ -577,3 +577,10 @@ body .bidsv2-flight-row.bidsv2-row-diverted, body .bidsv2-flight-row.bidsv2-row-
 
 /* Sun Country (SY) — Jul 2026 */
 .bidsv2-airline-wordmark[data-code="SY"] { height: 15px; }
+
+/* Nick's nudges Jul 5 2026 (~0.66x of the FIDS heights) */
+.bidsv2-airline-wordmark[data-code="B6"], .bidsv2-airline-wordmark[data-code="AS"] { height: 18px; }
+.bidsv2-airline-wordmark[data-code="F9"] { height: 15px; }
+.bidsv2-airline-wordmark[data-code="PD"] { height: 20px; }
+.bidsv2-airline-wordmark[data-code="F8"] { height: 19px; }
+.bidsv2-airline-wordmark[data-code="HA"] { height: 15px; }
