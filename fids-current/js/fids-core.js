@@ -8925,19 +8925,29 @@ const gView = document.getElementById('gateView');
             </div>
             ${_pageFlights.length ? _pageFlights.map((f) => {
               const stTxt = SL(f.status);
-              const isArr = f.status === 'arrived' || f.status === 'landed';
-              const isDelayed = f.status === 'delayed';
+              // Normalize like the FIDS board does — raw string equality
+              // missed 'landed'/'late'/'early' variants, so Early stayed
+              // white and states colored on one screen but not the other.
+              const _bStKey = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus(f.status) : String(f.status || '');
+              const isArr = _bStKey === 'arrived';
+              const isDelayed = _bStKey === 'delayed';
+              const isEarly = _bStKey === 'early';
               const cityDisplay = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, lang) : normalizeDisplayCity(f.origin || '—', f._locIata);
               const airlineName = (f._airlineName || f.airline || '').toString().toUpperCase();
               const logoHtml = mkLogo(f.airline, f._airlineName);
-              const statusClass = isArr ? 'bidsv2-status-arrived' : (isDelayed ? 'bidsv2-status-delayed' : 'bidsv2-status-other');
+              const statusClass = isArr ? 'bidsv2-status-arrived' : (isDelayed ? 'bidsv2-status-delayed' : (isEarly ? 'bidsv2-status-early' : 'bidsv2-status-other'));
+              // Row-level state class — same grammar as the FIDS board
+              // (delayed/cancelled/diverted rows become solid blocks).
+              const _bRowCls = isDelayed ? ' bidsv2-row-delayed'
+                             : (_bStKey === 'cancelled' ? ' bidsv2-row-cancelled'
+                             : (_bStKey === 'diverted' ? ' bidsv2-row-diverted' : ''));
               // Strip airline prefix if user enabled "Hide airline code in flight #"
               let _flightDisp = f.flight || '';
               if (_bidsHidePrefix && _flightDisp) {
                 const _s = String(_flightDisp).replace(/^([A-Z]{3}|[A-Z][A-Z0-9]|[A-Z0-9][A-Z])[\s-]*/i, '');
                 if (_s) _flightDisp = _s;
               }
-              return `<div class="bidsv2-flight-row">
+              return `<div class="bidsv2-flight-row${_bRowCls}">
                 <div class="bidsv2-col-flight">
                   <div class="bidsv2-airline-block">${logoHtml}</div>
                   <div class="bidsv2-flight-meta">
@@ -12055,7 +12065,11 @@ function wordmarkVariant() {
   try {
     // Never probe a state-tinted or history row — a delayed/cancelled/faded
     // first row flipped ALL wordmarks white mid-screen (Nick).
-    var probe = document.querySelector('#fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(:has(.fids-status-departed)):not(:has(.fids-status-arrived)):not(:has(.fids-status-gate-closed)) td')
+    // Class-only selector: the previous :has() version THREW on display
+    // hardware whose browser predates :has() support, which skipped the
+    // whole measurement and broke every light-board adaptation out there.
+    var probe = document.querySelector('#fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td')
+             || document.querySelector('#fidsTable tbody tr td')
              || document.querySelector('#fidsTable') || document.body;
     var el = probe, bg = '';
     while (el && el.nodeType === 1) {
@@ -12222,12 +12236,16 @@ const COLOR_WORDMARKS = {
   'southwest': '/logos/airlines/us-major/southwest-wordmark-color.svg',
   'united': '/logos/airlines/us-major/united-wordmark-color.svg',
 };
-function wordmarkSrc(base) {
+function wordmarkSrc(base, forceVariant) {
   // v191: route through logoPath() so reorganized logos resolve correctly
-  if (wordmarkVariant() === 'dark' && COLOR_WORDMARKS[base]) {
+  // forceVariant: per-context override ('dark'|'light') for surfaces whose
+  // background is NOT the measured board (e.g. baggage rows are always dark
+  // navy, and a state-tinted row needs the dark-ink artwork regardless).
+  const _variant = forceVariant || wordmarkVariant();
+  if (_variant === 'dark' && COLOR_WORDMARKS[base]) {
     return COLOR_WORDMARKS[base] + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
   }
-  const fname = base + '-wordmark-' + wordmarkVariant() + '.svg';
+  const fname = base + '-wordmark-' + _variant + '.svg';
   // Cache token: un-versioned wordmark URLs let a transient 404 (e.g. a brief
   // deploy window) get cached by the browser FOREVER — every board render then
   // fires onerror and shows the text-name fallback instead of the wordmark,
@@ -13319,7 +13337,14 @@ function render() {
     const isCanc    = stKey === 'cancelled';
     const isDiv     = stKey === 'diverted';
     const isDelayed = stKey === 'delayed';
-    const rowExtra  = isCanc ? 'row-cancelled' : (isDiv ? 'row-diverted' : (isDelayed ? 'row-delayed' : ''));
+    // Every state gets a REAL row class. History fades / early-green / the
+    // final-call row used to lean on tr:has(td.fids-status-*), and :has()
+    // silently does nothing on older display hardware — rows colored on one
+    // screen and not another (Nick: 'colors are very glitchy').
+    const _ROW_CLS  = { 'cancelled':'row-cancelled', 'diverted':'row-diverted', 'delayed':'row-delayed',
+                        'final-call':'row-final', 'early':'row-early', 'departed':'row-departed',
+                        'arrived':'row-arrived', 'gate-closed':'row-gate-closed' };
+    const rowExtra  = _ROW_CLS[stKey] || '';
 
     // Status cell — uses the v2 helper so translations/NOW-prefix logic is
     // centralized. Falls back to the legacy SL() helper if v2 helper isn't

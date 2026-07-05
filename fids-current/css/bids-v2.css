@@ -499,3 +499,9 @@ body[data-fids-theme="custom"] .bidsv2-list-header,
 body[data-fids-theme="custom"] .bidsv2-footer-msg,
 body[data-fids-theme="custom"] .bidsv2-status-other { color: var(--fids-text, #ffffff) !important; opacity: .75; }
 body[data-fids-airline-style="emblem"] .bidsv2-airline-name { display: none !important; }
+
+/* ── Status grammar parity with the FIDS board (Nick, Jul 2026) ─────────────
+   Early = green, same family as Arrived. The renderer now normalizes raw
+   feed statuses ('landed', 'late', 'ahead-of-schedule'...) before mapping
+   the class, so state colors stop depending on the feed's exact wording. */
+body .bidsv2-col-status.bidsv2-status-early { color: #34d399 !important; }
