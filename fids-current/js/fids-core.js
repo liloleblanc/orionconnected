@@ -20069,13 +20069,18 @@ function buildGateAdHtml(ad) {
     // v218.99.51 — Logo MUCH bigger (Nick: needs to match body text scale).
     // Right-side image panel dropped — was rendering squished/half.
     // Photo now sits as a faded full-width background behind the text.
-    var _adLogoHtml = ad.logo
-      ? '<div style="margin-bottom:28px;height:110px;display:flex;align-items:center;">'
-        + '<img src="' + ad.logo + '" alt="" '
-        + 'style="max-height:100%;max-width:520px;width:auto;height:auto;object-fit:contain;object-position:left center;display:block;" '
-        + 'onerror="this.style.display=\'none\';">'
-        + '</div>'
-      : '';
+    // v219 — honor the per-brand treatment map: the raw render made dark
+    // logos (VIPorter navy) invisible on dark scrims.
+    var _adLogoHtml = '';
+    if (ad.logo) {
+      var _lsTreat = (typeof getLogoTreatment === 'function') ? getLogoTreatment(ad.logo) : null;
+      var _lsImgStyle = 'max-height:100%;max-width:520px;width:auto;height:auto;object-fit:contain;object-position:left center;display:block;';
+      if (_lsTreat === 'invert' || _lsTreat === 'white_bg_invert') _lsImgStyle = 'filter:brightness(0) invert(1);' + _lsImgStyle;
+      var _lsImg = '<img src="' + ad.logo + '" alt="" style="' + _lsImgStyle + '" onerror="this.style.display=\'none\';">';
+      _adLogoHtml = (_lsTreat === 'white_card' || _lsTreat === 'color_card')
+        ? '<div style="margin-bottom:28px;height:110px;display:inline-flex;align-items:center;background:#fff;border-radius:14px;padding:14px 26px;box-shadow:0 6px 18px rgba(0,0,0,0.35);">' + _lsImg + '</div>'
+        : '<div style="margin-bottom:28px;height:110px;display:flex;align-items:center;">' + _lsImg + '</div>';
+    }
     if (ad.bgImage) {
       // Full-bleed photo background with a strong left-side dark scrim
       // so text remains legible. No more squished right panel.
