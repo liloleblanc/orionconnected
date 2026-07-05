@@ -4110,3 +4110,6 @@ body.fids-light-board #fidsTable tbody tr:has(td.fids-status-arrived),
 body.fids-light-board #fidsTable tbody tr:has(td.fids-status-arrived) td,
 body.fids-light-board #fidsTable tbody tr:has(td.fids-status-gate-closed),
 body.fids-light-board #fidsTable tbody tr:has(td.fids-status-gate-closed) td { background: #AEB7C1 !important; }
+/* Final Call block ink on light boards too (the light word rule outranked it) */
+body.fids-light-board #fidsTable td.td-status.fids-status-final,
+body.fids-light-board #fidsTable td.td-status.fids-status-final * { color: #102437 !important; }
