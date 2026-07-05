@@ -20081,6 +20081,17 @@ function buildGateAdHtml(ad) {
         + '<img src="' + ad.logo + '" alt="" style="' + _lsImgStyle + '" onerror="this.style.display=\'none\';">'
         + '</div>';
     }
+    // The headline never repeats the brand the logo already says (Nick:
+    // "why is VIPorter there twice") — if the logo filename contains the
+    // normalized headline, the wordmark IS the headline; show only the sub.
+    var _lsHeadline = ad.headline || '';
+    try {
+      if (ad.logo && _lsHeadline) {
+        var _normH = _lsHeadline.toLowerCase().replace(/[^a-z0-9]/g, '');
+        var _normL = String(ad.logo).split('/').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (_normH && _normL.indexOf(_normH) !== -1) _lsHeadline = '';
+      }
+    } catch (e) {}
     if (ad.bgImage) {
       // Full-bleed photo background with a strong left-side dark scrim
       // so text remains legible. No more squished right panel.
@@ -20089,7 +20100,7 @@ function buildGateAdHtml(ad) {
         + '<div style="position:absolute;inset:0;background:linear-gradient(90deg,' + _bgLeft + ' 0%,' + _bgLeft + ' 35%,rgba(0,0,0,0.65) 70%,rgba(0,0,0,0.35) 100%);"></div>'
         + '<div style="position:relative;z-index:2;width:100%;height:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 36px;max-width:70%;box-sizing:border-box;">'
         +   _adLogoHtml
-        +   '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + (ad.headline || '') + '</div>'
+        +   (_lsHeadline ? '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + _lsHeadline + '</div>' : '')
         +   (ad.sub ? '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:rgb(220,225,235);margin-top:18px;line-height:1.3;max-width:100%;">' + ad.sub + '</div>' : '')
         + '</div>'
         + '</div>'
@@ -20099,7 +20110,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="width:100%;height:100%;background:' + _bgLeft + ';display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 36px;">'
         +   _adLogoHtml
-        +   '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + (ad.headline || '') + '</div>'
+        +   (_lsHeadline ? '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + _lsHeadline + '</div>' : '')
         +   (ad.sub ? '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:rgb(220,225,235);margin-top:18px;line-height:1.3;max-width:100%;">' + ad.sub + '</div>' : '')
         + '</div>'
       );
