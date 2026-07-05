@@ -4140,4 +4140,35 @@ body.fids-light-board #baggageView .bidsv2-screen { background: #0a1628 !importa
 
 body .bidsv2-carousel-label { color: #22344D !important; opacity: 1 !important; }
 body .bidsv2-carousel-number { color: #0E2748 !important; opacity: 1 !important; }
+
+/* ── STATE RULES RE-BASED ON ROW CLASSES (Nick: 'colors are very glitchy') ──
+   History fades, the grey band and early-green revised times leaned on
+   tr:has(td.fids-status-*). :has() is unsupported on older display
+   hardware — those kiosks silently skipped every one of these rules, so
+   the same flight colored on one screen and not on another. The renderer
+   now stamps row-departed / row-arrived / row-gate-closed / row-early /
+   row-final classes on the <tr>; these class rules work on EVERY browser.
+   The :has() versions above stay for markup rendered by any other path.
+   NOTE: keep class selectors in their own rules — grouping them with a
+   :has() selector makes old browsers drop the whole rule. */
+body #fidsTable tbody tr.row-departed:nth-child(n),
+body #fidsTable tbody tr.row-arrived:nth-child(n),
+body #fidsTable tbody tr.row-gate-closed:nth-child(n) { opacity: 0.55; }
+body #fidsTable tbody tr.row-departed:nth-child(n),
+body #fidsTable tbody tr.row-departed:nth-child(n) td,
+body #fidsTable tbody tr.row-arrived:nth-child(n),
+body #fidsTable tbody tr.row-arrived:nth-child(n) td,
+body #fidsTable tbody tr.row-gate-closed:nth-child(n),
+body #fidsTable tbody tr.row-gate-closed:nth-child(n) td { background: #262D36 !important; }
+body.fids-light-board #fidsTable tbody tr.row-departed:nth-child(n),
+body.fids-light-board #fidsTable tbody tr.row-departed:nth-child(n) td,
+body.fids-light-board #fidsTable tbody tr.row-arrived:nth-child(n),
+body.fids-light-board #fidsTable tbody tr.row-arrived:nth-child(n) td,
+body.fids-light-board #fidsTable tbody tr.row-gate-closed:nth-child(n),
+body.fids-light-board #fidsTable tbody tr.row-gate-closed:nth-child(n) td { background: #AEB7C1 !important; }
+/* Early: the revised (earlier) time goes green with the status word */
+body #fidsTable tbody tr.row-early td.td-time-rev.has-rev,
+body #fidsTable tbody tr.row-early td.td-time-rev.has-rev * { color: #7FE7A6 !important; }
+body.fids-light-board #fidsTable tbody tr.row-early td.td-time-rev.has-rev,
+body.fids-light-board #fidsTable tbody tr.row-early td.td-time-rev.has-rev * { color: #157A43 !important; }
 body .bidsv2-clock { color: #ffffff !important; opacity: 1 !important; font-weight: 800 !important; }

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Status Colors — Preview</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { background:#05080f; font-family:'DM Sans',-apple-system,'Segoe UI',sans-serif; color:#e6e9ee; }
+  #bar { position:sticky; top:0; z-index:50; display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+         padding:12px 18px; background:rgba(5,10,20,0.92); backdrop-filter:blur(8px); border-bottom:1px solid #1d2636; }
+  #bar .tag { color:#8b96a5; font-size:13px; font-weight:700; letter-spacing:.5px; }
+  #bar .hint { color:#FAC120; font-size:13px; font-weight:700; }
+  .wrap { max-width:1180px; margin:0 auto; padding:26px 18px 60px; }
+  h2 { font-size:18px; font-weight:800; letter-spacing:.3px; margin:34px 0 6px; }
+  h2:first-child { margin-top:8px; }
+  .sub { color:#8b96a5; font-size:13.5px; line-height:1.5; margin-bottom:14px; }
+  .live-note { display:inline-block; background:#123524; color:#7FE7A6; font-size:11px; font-weight:800;
+               letter-spacing:.5px; padding:2px 8px; border-radius:6px; margin-left:8px; vertical-align:2px; }
+
+  /* ── FIDS mini boards ── */
+  .boards { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:900px){ .boards { grid-template-columns:1fr; } }
+  .board { border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); }
+  .board-name { font-size:12px; font-weight:800; letter-spacing:1px; color:#8b96a5; padding:8px 14px; }
+  .board.mist  { background:#C7D2DD; }
+  .board.teal  { background:#0D4D8B; }
+  .board.mist .board-name { color:#5B6B7C; }
+  .board.teal .board-name { color:rgba(255,255,255,0.55); }
+  .frow { display:grid; grid-template-columns:185px 64px minmax(0,1.35fr) 40px 80px 80px 96px; gap:9px;
+          align-items:center; padding:11px 14px; font-size:14.5px; font-weight:700; }
+  .frow > span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .board.mist .frow:nth-child(even){ background:#E9EEF3; } .board.mist .frow:nth-child(odd){ background:#DAE3EA; }
+  .board.mist .frow { color:#16283C; }
+  .board.teal .frow:nth-child(even){ background:rgba(255,255,255,0.055); } .board.teal .frow:nth-child(odd){ background:rgba(255,255,255,0.02); }
+  .board.teal .frow { color:#ffffff; }
+  .frow.fhead { font-size:11.5px; font-weight:800; letter-spacing:.8px; opacity:.65; padding:8px 14px; }
+  .fair { display:flex; align-items:center; gap:9px; min-width:0; }
+  .fair .tile { width:34px; height:34px; flex-shrink:0; object-fit:contain; }
+  .fair .wm { height:17px; width:auto; max-width:134px; object-fit:contain; object-position:left center; display:block; }
+  .fdim { opacity:.55; }
+  .fstrike { text-decoration:line-through; opacity:.75; }
+
+  /* state rows */
+  .frow.st-final   { background:#F28C00 !important; color:#102437 !important; }
+  .frow.st-delayed { background:#EDBB00 !important; color:#102437 !important; }
+  .st-word-board   { color:#FFB000; }
+  .board.mist .st-word-board { color:#A66F00; }
+  .st-ontime { }
+
+  /* ── Baggage mock ── */
+  .bids { background:#0F5296; border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.08);
+          display:grid; grid-template-columns:170px 1fr; }
+  @media (max-width:700px){ .bids { grid-template-columns:1fr; } }
+  .bids-car { background:#ffffff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:30px 10px; }
+  .bids-car .lbl { color:#22344D; font-size:15px; font-weight:800; letter-spacing:3px; text-transform:uppercase; }
+  .bids-car .num { color:#0E2748; font-size:72px; font-weight:900; line-height:1; }
+  .bids-list { padding:6px 0; }
+  .brow { display:grid; grid-template-columns:195px minmax(0,1fr) 70px 104px; gap:12px; align-items:center;
+          padding:13px 22px; background:rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.08);
+          color:#fff; font-weight:800; }
+  .brow:nth-child(odd){ background:rgba(255,255,255,0.085); }
+  .brow.bhead { font-size:11.5px; letter-spacing:1.5px; color:rgba(255,255,255,.65); text-transform:uppercase;
+                background:transparent; font-weight:800; padding:10px 22px 6px; }
+  .bfl { display:flex; align-items:center; gap:13px; min-width:0; }
+  .bfl .tile { width:44px; height:44px; flex-shrink:0; background:#fff; border-radius:4px; padding:4px; object-fit:contain; }
+  .bfl .meta { display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .bfl .wm { height:16px; width:auto; max-width:150px; object-fit:contain; object-position:left center; display:block; }
+  .bfl .num { font-size:19px; font-weight:900; letter-spacing:1px; }
+  .bcity { font-size:17px; letter-spacing:.5px; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .btime { font-size:17px; font-variant-numeric:tabular-nums; }
+  .bst   { font-size:14px; letter-spacing:2px; text-transform:uppercase; }
+  .bst.early { color:#34d399; }
+  .bst.other { color:rgba(255,255,255,.75); }
+  .brow.st-delayed   { background:#EDBB00 !important; color:#102437 !important; }
+  .brow.st-delayed .bst { color:#102437; }
+  .brow.st-cancelled { background:#C8102E !important; }
+  .brow.st-cancelled .bst { color:#ffffff; }
+
+  .footer-note { margin-top:30px; padding:16px 18px; border:1px solid #1d2636; border-radius:12px;
+                 background:#0b111d; color:#aeb7c4; font-size:14px; line-height:1.65; }
+  .footer-note b { color:#e6e9ee; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <span class="tag">PREVIEW — STATUS COLORS · NOT LIVE</span>
+  <span class="hint">Nothing on this page touches the displays until you say GO.</span>
+</div>
+<div class="wrap">
+
+  <h2>1 · FIDS — Final call becomes a whole orange row</h2>
+  <div class="sub">Orange (#F28C00), dark navy lettering — clearly hotter than the yellow Delayed row sitting next to it. Shown on both themes.</div>
+  <div class="boards">
+    <div class="board mist">
+      <div class="board-name">MIST (LIGHT)</div>
+      <div class="frow fhead"><span>Airline</span><span>Flight #</span><span>To</span><span>Gate</span><span>Time</span><span>Revised</span><span>Status</span></div>
+      <div class="frow"><span class="fair"><img class="tile" src="logos/airline-tiles/PTR.svg" alt=""><img class="wm" src="logos/airlines/canadian/porter-wordmark-color.svg" alt="Porter"></span><span>PD204</span><span>Toronto (YYZ)</span><span>12</span><span>12:55 PM</span><span style="opacity:.5">—</span><span>On time</span></div>
+      <div class="frow st-final"><span class="fair"><img class="tile" src="logos/airline-tiles/ACA-black.svg" alt=""><img class="wm" src="logos/airlines/canadian/air-canada-wordmark-dark.svg" alt="Air Canada"></span><span>AC663</span><span>Montreal (YUL)</span><span>15</span><span>12:25 PM</span><span style="opacity:.5">—</span><span>Final call</span></div>
+      <div class="frow"><span class="fair"><img class="tile" src="logos/airline-tiles/ACA-black.svg" alt=""><img class="wm" src="logos/airlines/canadian/air-canada-wordmark-dark.svg" alt="Air Canada"></span><span>AC7696</span><span>Gander (YQX)</span><span>2A</span><span>12:40 PM</span><span style="opacity:.5">—</span><span class="st-word-board">Boarding</span></div>
+      <div class="frow st-delayed"><span class="fair"><img class="tile" src="logos/airline-tiles/WJA.svg" alt=""><img class="wm" src="logos/airlines/canadian/westjet-wordmark-color.svg" alt="WestJet"></span><span>WS803</span><span>Toronto (YYZ)</span><span>18</span><span class="fstrike">1:30 PM</span><span>2:07 PM</span><span>Delayed</span></div>
+    </div>
+    <div class="board teal">
+      <div class="board-name">TEAL (DARK)</div>
+      <div class="frow fhead"><span>Airline</span><span>Flight #</span><span>To</span><span>Gate</span><span>Time</span><span>Revised</span><span>Status</span></div>
+      <div class="frow"><span class="fair"><img class="tile" src="logos/airline-tiles/PTR.svg" alt=""><img class="wm" src="logos/airlines/canadian/porter-wordmark-light.svg" alt="Porter"></span><span>PD204</span><span>Toronto (YYZ)</span><span>12</span><span>12:55 PM</span><span style="opacity:.5">—</span><span>On time</span></div>
+      <div class="frow st-final"><span class="fair"><img class="tile" src="logos/airline-tiles/ACA-black.svg" alt=""><img class="wm" src="logos/airlines/canadian/air-canada-wordmark-dark.svg" alt="Air Canada"></span><span>AC663</span><span>Montreal (YUL)</span><span>15</span><span>12:25 PM</span><span style="opacity:.5">—</span><span>Final call</span></div>
+      <div class="frow"><span class="fair"><img class="tile" src="logos/airline-tiles/ACA-black.svg" alt=""><img class="wm" src="logos/airlines/canadian/air-canada-wordmark-light.svg" alt="Air Canada"></span><span>AC7696</span><span>Gander (YQX)</span><span>2A</span><span>12:40 PM</span><span style="opacity:.5">—</span><span class="st-word-board">Boarding</span></div>
+      <div class="frow st-delayed"><span class="fair"><img class="tile" src="logos/airline-tiles/WJA.svg" alt=""><img class="wm" src="logos/airlines/canadian/westjet-wordmark-color.svg" alt="WestJet"></span><span>WS803</span><span>Toronto (YYZ)</span><span>18</span><span class="fstrike">1:30 PM</span><span>2:07 PM</span><span>Delayed</span></div>
+    </div>
+  </div>
+
+  <h2>2 · Baggage — real wordmarks + the same full-row blocks as the FIDS</h2>
+  <div class="sub">Airline lettering becomes the real wordmark artwork (white on the blue rows, brand color on tinted rows). Delayed goes full-row yellow, Cancelled full-row crimson — identical grammar to the main board. Early in green.<span class="live-note">EARLY GREEN IS ALREADY SHIPPING TONIGHT</span></div>
+  <div class="bids">
+    <div class="bids-car"><div class="lbl">Carousel</div><div class="num">1</div></div>
+    <div class="bids-list">
+      <div class="brow bhead"><span>Flight #</span><span>From</span><span>Time</span><span>Status</span></div>
+      <div class="brow"><span class="bfl"><img class="tile" src="logos/airline-tiles/ACA-black.svg" alt=""><span class="meta"><img class="wm" src="logos/airlines/canadian/air-canada-wordmark-light.svg" alt="Air Canada"><span class="num">AC608</span></span></span><span class="bcity">Toronto (YYZ)</span><span class="btime">15:09</span><span class="bst early">Early</span></div>
+      <div class="brow st-delayed"><span class="bfl"><img class="tile" src="logos/airline-tiles/WJA.svg" alt=""><span class="meta"><img class="wm" src="logos/airlines/canadian/westjet-wordmark-color.svg" alt="WestJet"><span class="num">WS71</span></span></span><span class="bcity">Amsterdam (AMS)</span><span class="btime">15:10</span><span class="bst">Delayed</span></div>
+      <div class="brow"><span class="bfl"><img class="tile" src="logos/airline-tiles/ACA-black.svg" alt=""><span class="meta"><img class="wm" src="logos/airlines/canadian/air-canada-wordmark-light.svg" alt="Air Canada"><span class="num">AC7690</span></span></span><span class="bcity">Ottawa (YOW)</span><span class="btime">15:15</span><span class="bst other">Scheduled</span></div>
+      <div class="brow"><span class="bfl"><img class="tile" src="logos/airline-tiles/AAL.svg" alt=""><span class="meta"><img class="wm" src="logos/airlines/us-major/american-wordmark-light.svg" alt="American"><span class="num">AA4608</span></span></span><span class="bcity">Washington (DCA)</span><span class="btime">15:28</span><span class="bst early">Early</span></div>
+      <div class="brow st-cancelled"><span class="bfl"><img class="tile" src="logos/airline-tiles/ACA-black.svg" alt=""><span class="meta"><img class="wm" src="logos/airlines/canadian/air-canada-wordmark-light.svg" alt="Air Canada"><span class="num">AC869</span></span></span><span class="bcity">London (LHR)</span><span class="btime">15:30</span><span class="bst">Cancelled</span></div>
+      <div class="brow"><span class="bfl"><img class="tile" src="logos/airline-tiles/PTR.svg" alt=""><span class="meta"><img class="wm" src="logos/airlines/canadian/porter-wordmark-light.svg" alt="Porter"><span class="num">PD205</span></span></span><span class="bcity">Toronto (YYZ)</span><span class="btime">15:37</span><span class="bst other">Scheduled</span></div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <b>Shipping tonight regardless</b> (bug fixes): the color-consistency repair for the displays — state colors were built on a CSS feature some of the screen hardware doesn't support, which is why they came and went — plus green Early on the baggage board.<br>
+    <b>Waiting on your GO:</b> the orange Final-call row · baggage full-row blocks · baggage wordmarks. Reply with GO (or what to tweak) and they ship.
+  </div>
+
+</div>
+</body>
+</html>
