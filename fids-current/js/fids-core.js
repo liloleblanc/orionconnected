@@ -21299,6 +21299,9 @@ function _map3dFlightCtx() {
       fl: inb.flight || '',
       col: window._gateAccent || '#5fa8ff',
       progress: prog,
+      // TRUE live fix [lng,lat] — the 3D plane must sit exactly where the
+      // 2D mini map shows it (Nick: 'not aligning with the other map').
+      pos: (liveLat !== null && liveLng !== null && !inb._liveOnGround) ? [liveLng, liveLat] : null,
       speedKph: (typeof inb._liveSpd === 'number') ? Math.round(inb._liveSpd * 1.852) : 0,
       altFt: (typeof inb._liveAlt === 'number') ? Math.round(inb._liveAlt) : 0,
       acType: inb._aircraft || '',

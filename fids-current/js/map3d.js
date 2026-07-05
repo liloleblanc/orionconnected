@@ -21,9 +21,9 @@
   // Proto-calibrated model constants
   var HEADING_OFFSET = Math.PI / 2;
   var HEADING_SIGN   = -1;
-  var TARGET_METERS  = 9000;
+  var TARGET_METERS  = 21000;  // v6: the 320 must be SEEN (Nick)
   var MODEL_FACING   = Math.PI / 2;
-  var PLANE_ALT_M    = 3000;
+  var PLANE_ALT_M    = 2600;
 
   var _libsFailed = false, _libsReady = false, _loading = null;
   var _map = null, _container = null, _timers = [], _mounted = false;
@@ -97,10 +97,26 @@
           - Math.sin(a[1] * toR) * Math.cos(b[1] * toR) * Math.cos((b[0] - a[0]) * toR);
     return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
   }
-  function _splitAt(line, prog) {
-    var idx = Math.max(1, Math.min(line.length - 1, Math.round(prog * (line.length - 1))));
-    var brg = _bearing(line[Math.max(0, idx - 1)], line[Math.min(line.length - 1, idx + 1)]);
-    return { flown: line.slice(0, idx + 1), remain: line.slice(idx), pos: line[idx], brg: brg };
+  function _splitAt(line, prog, livePos) {
+    var idx;
+    if (livePos) {
+      // TRUE live fix: split at the nearest route vertex but position the
+      // plane at the actual lat/lng — so it always matches the 2D map.
+      var best = 1, bd = Infinity;
+      for (var i = 0; i < line.length; i++) {
+        var dx = line[i][0] - livePos[0], dy = line[i][1] - livePos[1];
+        var dd = dx * dx + dy * dy;
+        if (dd < bd) { bd = dd; best = i; }
+      }
+      idx = Math.max(1, Math.min(line.length - 1, best));
+      var flown = line.slice(0, idx + 1); flown.push(livePos.slice());
+      var remain = [livePos.slice()].concat(line.slice(idx));
+      var brg = _bearing(livePos, line[Math.min(line.length - 1, idx + 1)]);
+      return { flown: flown, remain: remain, pos: livePos.slice(), brg: brg };
+    }
+    idx = Math.max(1, Math.min(line.length - 1, Math.round(prog * (line.length - 1))));
+    var brg2 = _bearing(line[Math.max(0, idx - 1)], line[Math.min(line.length - 1, idx + 1)]);
+    return { flown: line.slice(0, idx + 1), remain: line.slice(idx), pos: line[idx], brg: brg2 };
   }
 
   // ── CSS ─────────────────────────────────────────────────────────────────
@@ -198,9 +214,14 @@
     };
   }
 
+  function _dispAlt(f) {
+    var m = (f && f.altFt) ? f.altFt * 0.3048 : PLANE_ALT_M;
+    return Math.max(1100, Math.min(3400, m));
+  }
+
   // ── route + markers ─────────────────────────────────────────────────────
   function _drawRoute(f) {
-    var sp = _splitAt(_line, f.progress);
+    var sp = _splitAt(_line, f.progress, f.pos);
     _map.addSource('m3d-remain', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: sp.remain } } });
     _map.addSource('m3d-flown', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: sp.flown } } });
     _map.addLayer({ id: 'm3d-remain', type: 'line', source: 'm3d-remain', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-opacity': 0.55, 'line-width': 3, 'line-dasharray': [2, 1.6] } });
@@ -213,16 +234,16 @@
       el.appendChild(lab); el.appendChild(dot);
       _markers.push(new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(m[0]).addTo(_map));
     });
-    _planeState.pos = sp.pos; _planeState.yaw = sp.brg * Math.PI / 180; _planeState.show = true;
+    _planeState.pos = sp.pos; _planeState.yaw = sp.brg * Math.PI / 180; _planeState.alt = _dispAlt(f); _planeState.show = true;
   }
 
   function _updatePlane(f) {
-    var sp = _splitAt(_line, f.progress);
+    var sp = _splitAt(_line, f.progress, f.pos);
     try {
       _map.getSource('m3d-flown').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: sp.flown } });
       _map.getSource('m3d-remain').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: sp.remain } });
     } catch (e) {}
-    _planeState.pos = sp.pos; _planeState.yaw = sp.brg * Math.PI / 180;
+    _planeState.pos = sp.pos; _planeState.yaw = sp.brg * Math.PI / 180; _planeState.alt = _dispAlt(f);
     try {
       var src = _map.getSource('m3d-plane');
       if (src) src.setData({ type: 'Feature', properties: { bearing: sp.brg }, geometry: { type: 'Point', coordinates: sp.pos } });
@@ -262,19 +283,19 @@
       _chip(f.airline + ' ' + f.fl, f.oCity + ' → ' + f.dCity + (f.etaStr ? ' · ' + TLm('arrives') + ' ' + f.etaStr : ''));
     }
     function segChase(f) {
-      var sp = _splitAt(_line, f.progress);
-      _map.easeTo({ center: sp.pos, zoom: 8.8, pitch: 62, bearing: sp.brg, duration: 3800, easing: ease });
+      var sp = _splitAt(_line, f.progress, f.pos);
+      _map.easeTo({ center: sp.pos, zoom: 9.6, pitch: 58, bearing: sp.brg, duration: 3800, easing: ease });
       _chip(f.airline + ' ' + f.fl, (f.speedKph ? f.speedKph + ' km/h · ' : '') + (f.altFt ? f.altFt.toLocaleString() + ' ft' : Math.round(f.progress * 100) + '%'));
     }
     function segOrbit(f) {
-      var sp = _splitAt(_line, f.progress);
-      _map.easeTo({ center: sp.pos, zoom: 8.2, pitch: 57, bearing: sp.brg + 105, duration: 3800, easing: ease });
+      var sp = _splitAt(_line, f.progress, f.pos);
+      _map.easeTo({ center: sp.pos, zoom: 9.2, pitch: 55, bearing: sp.brg + 105, duration: 3800, easing: ease });
       _t(function () { try { if (_map) _map.easeTo({ bearing: sp.brg + 165, duration: Math.max(1000, seg - 4200), easing: function (t) { return t; } }); } catch (e) {} }, 4000);
       _chip((f.acType || f.airline + ' ' + f.fl), Math.round(f.progress * 100) + '% ' + TLm('ofRoute'));
     }
     function segArrival(f) {
-      var sp = _splitAt(_line, f.progress);
-      _map.easeTo({ center: f.d, zoom: 8.6, pitch: 48, bearing: _bearing(sp.pos, f.d), duration: 3800, easing: ease });
+      var sp = _splitAt(_line, f.progress, f.pos);
+      _map.easeTo({ center: f.d, zoom: 9.0, pitch: 48, bearing: _bearing(sp.pos, f.d), duration: 3800, easing: ease });
       _chip(f.dCity, (f.destWx ? f.destWx : f.dc) + (f.etaStr ? ' · ' + TLm('arrives') + ' ' + f.etaStr : ''));
     }
     var order = [segOverview, segChase, segOrbit, segArrival], i = 0;
@@ -305,7 +326,7 @@
         var el = _container.querySelector('.m3d-map');
         if (!el) return;
         _line = _gc(flight.o, flight.d, 160);
-        var sp = _splitAt(_line, flight.progress);
+        var sp = _splitAt(_line, flight.progress, flight.pos);
         _map = new maplibregl.Map({
           container: el, maxZoom: 13, attributionControl: false, interactive: false,
           style: { version: 8, sources: {
