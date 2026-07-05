@@ -7883,6 +7883,11 @@ function gateAutofit(root) {
 
 function renderDedicatedScreen() {
   if (screenType === 'gate') { document.body.classList.add('uxg-gate-mode'); }
+  // Light/dark board flag on DEDICATED screens too — it only ran in the main
+  // board's renderer, so every light-board rule (Revised dashes, adaptive
+  // headers, status inks) silently skipped gate/baggage screens (Nick:
+  // 'they're still white the hyphens').
+  try { document.body.classList.toggle('fids-light-board', wordmarkVariant() === 'dark'); } catch (e) {}
   
 // ── GATE v5 weather builder ──
 
