@@ -1574,3 +1574,58 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   max-height: clamp(44px, 6.4vh, 88px) !important;
   max-width: min(62%, 320px) !important;
 }
+
+/* ── YOUR AIRCRAFT — BIG takeover slide (3D map retired, Nick Jul 2026) ── */
+.bigcraft-wrap {
+  display: grid !important;
+  grid-template-columns: 1fr clamp(280px, 34%, 460px) !important;
+  width: 100% !important; height: 100% !important;
+  background: #0b1322 !important;
+}
+.bigcraft-mapcol { position: relative !important; min-width: 0 !important; min-height: 0 !important; }
+.bigcraft-map { position: absolute !important; inset: 0 !important; }
+.bigcraft-est {
+  position: absolute !important; left: 14px !important; bottom: 12px !important; z-index: 500 !important;
+  background: rgba(5,10,20,0.78) !important; color: rgba(255,255,255,0.85) !important;
+  font-size: clamp(10px, 1.2vh, 14px) !important; font-weight: 700 !important;
+  padding: 4px 10px !important; border-radius: 8px !important; letter-spacing: 0.3px !important;
+}
+.bigcraft-side {
+  display: flex !important; flex-direction: column !important; min-width: 0 !important;
+  background: #eef1f6 !important; padding: clamp(12px, 1.8vh, 24px) clamp(14px, 1.4vw, 26px) !important;
+  gap: clamp(8px, 1.2vh, 18px) !important;
+  --banner-bg: #14181E;
+}
+.bigcraft-title {
+  font-size: clamp(15px, 2vh, 24px) !important; font-weight: 900 !important;
+  color: #14181E !important; letter-spacing: 0.2px !important;
+}
+.bigcraft-table { flex: 0 0 auto !important; }
+.bigcraft-side .v2-rc-fi-trow {
+  display: grid !important; grid-template-columns: clamp(78px, 7.4vw, 124px) 1fr !important;
+  align-items: center !important; column-gap: clamp(10px, 1.2vw, 22px) !important;
+  padding: clamp(4px, 0.8vh, 11px) 0 !important;
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important; min-width: 0 !important;
+}
+.bigcraft-side .v2-rc-fi-trow:last-child { border-bottom: none !important; }
+.bigcraft-side .v2-rc-fi-tlbl {
+  display: flex !important; flex-direction: column !important;
+  font-size: clamp(10px, 1.4vh, 16px) !important; font-weight: 700 !important;
+  color: #14181E !important; line-height: 1.1 !important; white-space: nowrap !important; overflow: hidden !important;
+}
+.bigcraft-side .v2-rc-fi-tval {
+  font-size: clamp(15px, 2.4vh, 29px) !important; font-weight: 900 !important; line-height: 1.25 !important;
+  color: #14181E !important; white-space: nowrap !important; overflow: hidden !important;
+  text-overflow: ellipsis !important; min-width: 0 !important; padding-bottom: 0.06em !important;
+}
+.bigcraft-side .v2-rc-fi-tval.v2-rc-status-scheduled { color: #16a34a !important; }
+.bigcraft-side .v2-rc-fi-tval.v2-rc-status-delayed { color: #d97706 !important; }
+.bigcraft-side .v2-rc-fi-tval.v2-rc-status-cancelled { color: #c01622 !important; }
+.bigcraft-plane {
+  flex: 1 1 auto !important; min-height: 0 !important; display: flex !important;
+  align-items: flex-end !important; justify-content: center !important; overflow: hidden !important;
+}
+.bigcraft-plane img {
+  max-width: 96% !important; max-height: 100% !important; width: auto !important; height: auto !important;
+  object-fit: contain !important; display: block !important;
+}
