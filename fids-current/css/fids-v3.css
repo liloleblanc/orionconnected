@@ -4014,3 +4014,16 @@ body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(n) td { backgr
 body #fidsTable tbody tr.row-delayed td.td-time-sched.is-revised,
 body #fidsTable tbody tr.row-cancelled td.td-time-sched.is-revised,
 body #fidsTable tbody tr.row-diverted td.td-time-sched.is-revised { opacity: 1 !important; }
+
+/* ── Early = GREEN numbers (Nick: amber on an early time reads as a delay) ──
+   The revised time on an EARLY flight goes green with the word; the amber
+   revised color stays for everything else. */
+body #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev,
+body #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev * { color: #7FE7A6 !important; }
+body.fids-light-board #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev,
+body.fids-light-board #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev * { color: #157A43 !important; }
+
+/* Revised "—" dashes: darker on light boards — 0.45 alpha read as white on
+   the white zebra rows (Nick). */
+body.fids-light-board #fidsTable td.td-time-rev:not(.has-rev),
+body.fids-light-board #fidsTable td.td-time-rev:not(.has-rev) * { color: rgba(22, 40, 60, 0.68) !important; }
