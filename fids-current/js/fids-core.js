@@ -21495,7 +21495,7 @@ function _liveFixPhysOk(inb) {
   } catch (e) { return true; }
 }
 
-function _map3dFlightCtx() {
+function _map3dFlightCtx(allowEstimated) {
   try {
     var inb = window._gateInbound;
     if (!inb || !inb._locIata) return null;
@@ -21543,6 +21543,12 @@ function _map3dFlightCtx() {
     }
     // Landed / at the gate → nothing to plot; the slide skips itself.
     if (prog >= 0.99 || inb.status === 'arrived' || inb.status === 'landed') return null;
+    // HONESTY RULE (Nick, Jul 2026): callers that plot a confident aircraft
+    // (the retired 3D view) get NOTHING without a real live fix. The BIG
+    // Your-Aircraft slide passes allowEstimated=true and renders the same
+    // schematic the mini map shows (route + glyph at time-progress), with
+    // ctx.estimated set so it can present honestly.
+    if (!fixOk && !allowEstimated) return null;
     var etaStr = '';
     try {
       var mins = Math.round((arrTs - Date.now()) / 60000);
@@ -21568,9 +21574,14 @@ function _map3dFlightCtx() {
       pos: fixOk ? [liveLng, liveLat] : null,
       speedKph: (fixOk && typeof inb._liveSpd === 'number') ? Math.round(inb._liveSpd * 1.852) : 0,
       altFt: (fixOk && typeof inb._liveAlt === 'number') ? Math.round(inb._liveAlt) : 0,
-      acType: inb._aircraft || '',
+      // Same equipment resolution as the aircraft panel: prefer the
+      // registration-backed OUTBOUND equipment (it's the same tail on the
+      // turnaround) over the inbound row's often-generic type — the map
+      // chip said 737-800 while the panel said 737 MAX 8 (Nick).
+      acType: ((window._gateCurrentFlight && window._gateCurrentFlight._aircraft) || inb._aircraft || ''),
       etaStr: etaStr,
-      destWx: wx
+      destWx: wx,
+      estimated: !fixOk
     };
   } catch (e) { return null; }
 }
@@ -21588,20 +21599,19 @@ function renderGateAd(index) {
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
   var slide = slides[slot];
 
-  // ── 3D FLIGHT MAP — the BIG CENTER showcase (Nick): one minute, four 3D
-  // angles, the A320 model, INBOUND flight only. Replaces the old flat
-  // overhead slide in this same slot, keeping the rotating info views.
-  if (slide && slide.type === 'map3d') {
-    var _m3dCtx = (typeof _map3dFlightCtx === 'function') ? _map3dFlightCtx() : null;
-    if (_m3dCtx && window.GateMap3D && window.GateMap3D.available()) {
-      window.GateMap3D.mount(el, _m3dCtx, {
-        cycleMs: (typeof _getGateAdDwellMs === 'function') ? _getGateAdDwellMs(slide) : 60000,
-        refresh: _map3dFlightCtx
-      });
+  // ── YOUR AIRCRAFT — BIG (Nick, Jul 2026). The 3D map is RETIRED; once
+  // per cycle the center enlarges the right column's Your Aircraft view:
+  // big flat route map + all the flight info + the aircraft.
+  if (slide && slide.type === 'bigcraft') {
+    var _bcCtx = (typeof _map3dFlightCtx === 'function') ? _map3dFlightCtx(true) : null;
+    if (_bcCtx && typeof _renderBigCraft === 'function') {
+      _renderBigCraft(el, _bcCtx);
       return;
     }
-    slide = slides[(slot + 1) % totalSlots] || slide; // no inbound airborne — next slide
+    slide = slides[(slot + 1) % totalSlots] || slide; // nothing to show — next slide
   }
+  // Any non-bigcraft slide: tear the big map down so Leaflet doesn't leak.
+  try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
   if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
     try { window.GateMap3D.destroy(); } catch (e) {} // another slide takes the slot
   }
@@ -22104,12 +22114,14 @@ function _buildGateAdSlideList() {
     else deck = [{ type: 'ad', data: { bg: 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)', headline: 'Welcome aboard', sub: 'Gate information display' } }];
   }
 
-  // ── 6. 3D FLIGHT MAP — one showcase slide per cycle in the BIG CENTER
-  // panel, when the engine can run and a real inbound is airborne.
+  // ── 6. YOUR AIRCRAFT — BIG (Nick, Jul 2026): the 3D map is RETIRED.
+  // Once per cycle the center shows the right column's Your Aircraft
+  // content ENLARGED — big flat route map + flight info + aircraft.
+  // Needs a real inbound with a plottable route (same ctx the mini map
+  // logic uses); skips itself when there's nothing truthful to show.
   try {
-    if (window.GateMap3D && window.GateMap3D.available()
-        && typeof _map3dFlightCtx === 'function' && _map3dFlightCtx()) {
-      deck.splice(Math.min(1, deck.length), 0, { type: 'map3d' });
+    if (typeof _map3dFlightCtx === 'function' && _map3dFlightCtx(true)) {
+      deck.splice(Math.min(1, deck.length), 0, { type: 'bigcraft' });
     }
   } catch (e) {}
 
@@ -23168,3 +23180,74 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     }, 1000);
   } catch (e) {}
 })();
+
+// ── YOUR AIRCRAFT — BIG takeover slide (Nick, Jul 2026) ────────────────────
+// The 3D map is retired. Once per ad cycle the big center panel shows the
+// right column's Your Aircraft content ENLARGED: a full flat route map
+// (same Leaflet language as the mini map) beside the flight info table and
+// the aircraft. Honest by construction: with no live fix the plane glyph
+// sits at time-progress exactly like the mini map, captioned 'Estimated'.
+function _renderBigCraft(el, ctx) {
+  try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
+  var inb = window._gateInbound || {};
+  var stKey = String(inb.status || '').toLowerCase().replace(/[\s_-]/g, '');
+  var ss = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
+  var stShow = ss ? (ss.en.replace(/\b\w/g, function (c) { return c.toUpperCase(); }) + ' <span class="v2-rc-fi-sep">|</span> ' + ss.fr) : (inb.status || '—');
+  var stCls = /delay|retard/i.test(stKey) ? 'delayed' : (/cancel/i.test(stKey) ? 'cancelled' : 'scheduled');
+  var acImg = '';
+  try { var im = document.querySelector('.v2-rc-shelf-illus img, .g8-aircraft-img'); if (im && im.src) acImg = im.src; } catch (e) {}
+  var reg = inb._reg ? '  |  ' + String(inb._reg).toUpperCase() : '';
+  function row(l1, l2, val, cls) {
+    return '<div class="v2-rc-fi-trow"><div class="v2-rc-fi-tlbl"><span>' + l1 + '</span><span>' + l2 + '</span></div>'
+         + '<div class="v2-rc-fi-tval' + (cls ? ' ' + cls : '') + '">' + val + '</div></div>';
+  }
+  el.innerHTML =
+      '<div class="bigcraft-wrap">'
+    +   '<div class="bigcraft-mapcol">'
+    +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
+    +     (ctx.estimated ? '<div class="bigcraft-est">Estimated position · Position estimée</div>' : '')
+    +   '</div>'
+    +   '<div class="bigcraft-side">'
+    +     '<div class="bigcraft-title">Your Aircraft <span class="v2-rc-fi-sep">|</span> Votre Avion</div>'
+    +     '<div class="v2-rc-fi-table bigcraft-table">'
+    +       row('Flight', 'Vol', ctx.fl || '—')
+    +       row('From', 'De', (ctx.oCity || ctx.oc || '—') + (ctx.oc ? ' (' + ctx.oc + ')' : ''))
+    +       row('Status', 'Statut', stShow, 'v2-rc-status-' + stCls)
+    +       (ctx.etaStr ? row('Arrives in', 'Arrive dans', ctx.etaStr) : '')
+    +       ((ctx.acType || reg) ? row('Aircraft', 'Avion', (ctx.acType || '—') + reg) : '')
+    +     '</div>'
+    +     (acImg ? '<div class="bigcraft-plane"><img src="' + acImg + '" alt=""></div>' : '')
+    +   '</div>'
+    + '</div>';
+  // Flat route map — full-route view, arc + endpoints + plane glyph at progress.
+  try {
+    if (typeof L === 'undefined' || typeof L.map !== 'function') return;
+    var o = [ctx.o[1], ctx.o[0]], d = [ctx.d[1], ctx.d[0]];   // ctx stores [lng,lat]
+    var m = L.map('bigCraftMap', { zoomControl: false, attributionControl: false, dragging: false,
+      scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false });
+    window._bigCraftMap = m;
+    _gateMapTileLayer().addTo(m);
+    m.fitBounds([o, d], { padding: [70, 70], maxZoom: 8 });
+    var arc = null;
+    try { arc = L.Polyline.Arc(o, d, { vertices: 100, color: '#60a5fa', weight: 4, opacity: 0.7, dashArray: '10,8', noClip: true }).addTo(m); }
+    catch (e2) { arc = L.polyline([o, d], { color: '#60a5fa', weight: 4, opacity: 0.7, dashArray: '10,8' }).addTo(m); }
+    L.circleMarker(o, { radius: 7, color: '#60a5fa', fillColor: '#60a5fa', fillOpacity: 1, weight: 0 }).addTo(m)
+      .bindTooltip(ctx.oc || '', { permanent: true, direction: 'bottom', className: 'gate-map-label', offset: [0, 6] });
+    L.circleMarker(d, { radius: 7, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1, weight: 0 }).addTo(m)
+      .bindTooltip(ctx.dc || '', { permanent: true, direction: 'bottom', className: 'gate-map-label', offset: [0, 6] });
+    var p = Math.max(0.02, Math.min(0.98, ctx.progress || 0));
+    var ll = arc.getLatLngs ? arc.getLatLngs() : [o, d];
+    if (ll.length > 2) {
+      var idx = Math.min(Math.floor(p * ll.length), ll.length - 1);
+      var pos = ctx.pos ? [ctx.pos[1], ctx.pos[0]] : ll[idx];
+      var s0 = ll[Math.max(idx - 3, 0)], s1 = ll[Math.min(idx + 3, ll.length - 1)];
+      var dLng = (s1.lng - s0.lng) * Math.PI / 180, la1 = s0.lat * Math.PI / 180, la2 = s1.lat * Math.PI / 180;
+      var brg = Math.atan2(Math.sin(dLng) * Math.cos(la2),
+                Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng)) * 180 / Math.PI;
+      L.marker(pos, { zIndexOffset: 1000, icon: L.divIcon({
+        html: '<div style="transform:rotate(' + brg + 'deg);width:56px;height:56px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="56" height="56" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',
+        iconSize: [56, 56], iconAnchor: [28, 28], className: '' }) }).addTo(m);
+    }
+    setTimeout(function () { try { if (window._bigCraftMap) { window._bigCraftMap.invalidateSize(); window._bigCraftMap.fitBounds([o, d], { padding: [70, 70], maxZoom: 8 }); } } catch (e3) {} }, 150);
+  } catch (e4) {}
+}
