@@ -21099,7 +21099,9 @@ function buildAccorAdOnlyV6(ad) {
   // Full hotel name incl. brand — the slide's `headline` is brand-stripped
   // (so the logo isn't duplicated), so use ad.nameFull for the bubble/context.
   var _fullName = first(ad.nameFull, hotelName);
-  var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br>' + esc(_fullName);
+  // Brand policy (Nick): a hotel name is NEVER split across two lines —
+  // .axr-one-line keeps it whole and the fitter shrinks it until it fits.
+  var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br><span class="axr-one-line">' + esc(_fullName) + '</span>';
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
@@ -21224,16 +21226,16 @@ function buildAccorAdOnlyV6(ad) {
 }
 
 // ── 3D FLIGHT MAP SLIDE — context builder ─────────────────────────────
-// Everything the GateMap3D module needs about the gate's current flight:
-// route coords, names, brand colour, live progress/telemetry, dest weather.
-// Returns null when there is no plottable route (slide is skipped).
+// Nick: the big map shows ONLY the INCOMING flight — the aircraft that is
+// actually flying to this gate (origin → THIS airport, plane at its live
+// position when we have one). No inbound airborne = no map slide.
 function _map3dFlightCtx() {
   try {
-    var cf = window._gateCurrentFlight;
-    if (!cf) return null;
+    var inb = window._gateInbound;
+    if (!inb || !inb._locIata) return null;
     var APC = window.AIRPORT_COORDS || {};
-    var oI = String(((document.getElementById('apSel') || {}).value || '')).toUpperCase();
-    var dI = String(cf._locIata || '').toUpperCase();
+    var dI = String(window._gateIata || ((document.getElementById('apSel') || {}).value || '')).toUpperCase();
+    var oI = String(inb._locIata || '').toUpperCase();
     var oC = APC[oI], dC = APC[dI];
     if (!oC || !dC || oI === dI) return null;
     var cityOf = function (ia) {
@@ -21241,13 +21243,35 @@ function _map3dFlightCtx() {
       try { if (typeof AP !== 'undefined' && AP[ia] && AP[ia].city) return AP[ia].city; } catch (e) {}
       return ia;
     };
-    // Time-based progress between (revised) departure and arrival; 0 before
-    // departure — the map plays a showcase glide of the planned route.
-    var prog = 0;
-    try {
-      var depTs = (cf._revTs && cf._revTs > cf._sortTs) ? cf._revTs : (cf._sortTs || 0);
-      var arrTs = cf._arrTs || 0;
+    // Progress: live position beats the clock. Project the live fix onto the
+    // route by share of distance covered; otherwise fall back to time-based.
+    var _hav = function (a, b) {
+      var toR = Math.PI / 180, R = 6371;
+      var dLa = (b[0] - a[0]) * toR, dLo = (b[1] - a[1]) * toR;
+      var s = Math.sin(dLa / 2) * Math.sin(dLa / 2)
+            + Math.cos(a[0] * toR) * Math.cos(b[0] * toR) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+      return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+    };
+    var prog = -1;
+    var liveLat = (typeof inb._liveLat === 'number') ? inb._liveLat : null;
+    var liveLng = (typeof inb._liveLng === 'number') ? inb._liveLng : null;
+    if (liveLat !== null && liveLng !== null && !inb._liveOnGround) {
+      var dOrg = _hav(oC, [liveLat, liveLng]);
+      var dDst = _hav([liveLat, liveLng], dC);
+      if (dOrg + dDst > 1) prog = Math.max(0.02, Math.min(0.98, dOrg / (dOrg + dDst)));
+    }
+    var arrTs = inb._revTs || inb._sortTs || 0;
+    if (prog < 0) {
+      var depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : (arrTs ? arrTs - 7200000 : 0);
       if (depTs && arrTs > depTs) prog = Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
+      else prog = 0;
+    }
+    // Landed / at the gate → nothing to plot; the slide skips itself.
+    if (prog >= 0.99 || inb.status === 'arrived' || inb.status === 'landed') return null;
+    var etaStr = '';
+    try {
+      var mins = Math.round((arrTs - Date.now()) / 60000);
+      if (mins > 0) etaStr = (mins >= 60 ? Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm' : mins + ' min');
     } catch (e) {}
     var wx = '';
     try {
@@ -21260,14 +21284,14 @@ function _map3dFlightCtx() {
     return {
       o: [oC[1], oC[0]], d: [dC[1], dC[0]],          // AIRPORT_COORDS is [lat,lng]
       oc: oI, dc: dI, oCity: cityOf(oI), dCity: cityOf(dI),
-      airline: cf._airlineName || cf.airline || '',
-      fl: cf.flight || '',
+      airline: inb._airlineName || inb.airline || '',
+      fl: inb.flight || '',
       col: window._gateAccent || '#5fa8ff',
       progress: prog,
-      speedKph: (typeof cf._liveSpd === 'number') ? Math.round(cf._liveSpd * 1.852) : 0,
-      altFt: (typeof cf._liveAlt === 'number') ? Math.round(cf._liveAlt) : 0,
-      acType: cf._aircraft || '',
-      etaStr: '',
+      speedKph: (typeof inb._liveSpd === 'number') ? Math.round(inb._liveSpd * 1.852) : 0,
+      altFt: (typeof inb._liveAlt === 'number') ? Math.round(inb._liveAlt) : 0,
+      acType: inb._aircraft || '',
+      etaStr: etaStr,
       destWx: wx
     };
   } catch (e) { return null; }
@@ -22457,6 +22481,21 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   function _scanAndUpgrade() {
     var nodes = document.querySelectorAll('.hotel-ad-qr');
     for (var i = 0; i < nodes.length; i++) _upgradeQR(nodes[i]);
+    // Hotel names never wrap (brand policy) — shrink each one-liner until it
+    // fits its box instead. Same continuous pass as the QR upgrade.
+    var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx');
+    for (var j = 0; j < ones.length; j++) {
+      var el = ones[j];
+      if (el.dataset.fitW === String(el.clientWidth) || !el.clientWidth) continue;
+      el.style.fontSize = '';
+      var base = parseFloat(getComputedStyle(el).fontSize) || 16;
+      var size = base, guard = 12;
+      while (el.scrollWidth > el.clientWidth + 1 && size > base * 0.5 && guard-- > 0) {
+        size -= Math.max(1, size * 0.07);
+        el.style.fontSize = size + 'px';
+      }
+      el.dataset.fitW = String(el.clientWidth);
+    }
   }
   // Initial scan after a tick to let qrcode.js finish loading
   setTimeout(_scanAndUpgrade, 100);
