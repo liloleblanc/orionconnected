@@ -1535,7 +1535,7 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   grid-template-columns: clamp(96px, 8.6vw, 146px) 1fr !important;
   align-items: center !important;
   column-gap: clamp(10px, 1.2vw, 22px) !important;
-  padding: clamp(3px, 0.7vh, 9px) 0 !important;
+  padding: clamp(2px, 0.45vh, 6px) 0 !important;
   border-bottom: 1px solid rgba(20, 24, 30, 0.18) !important;
   min-width: 0 !important;
 }
@@ -1546,8 +1546,8 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   white-space: nowrap !important; overflow: hidden !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval {
-  font-size: clamp(16px, 2.3vh, 28px) !important; font-weight: 900 !important;
-  line-height: 1.2 !important; color: var(--banner-bg, #14181E) !important;
+  font-size: clamp(15px, 2.2vh, 27px) !important; font-weight: 900 !important;
+  line-height: 1.25 !important; padding-bottom: 0.06em !important; color: var(--banner-bg, #14181E) !important;
   white-space: nowrap !important; overflow: hidden !important;
   text-overflow: ellipsis !important; min-width: 0 !important;
 }
