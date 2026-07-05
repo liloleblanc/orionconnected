@@ -15435,12 +15435,20 @@ function adbStatus(f, mode, schedTs, nowTs) {
   // Use revised time for status progression if delayed
   const refTs = (revTs && revTs > schedTs + 5*60000) ? revTs : schedTs;
   const minsToRef = (refTs - nowTs) / 60000;
-  if(revTs && revTs > schedTs + 5*60000 && minsToRef > 30) return 'delayed';
-  if(revTs && revTs < schedTs - 5*60000 && minsToRef > 30) return 'early';
-  if(mode==='dep'){if(minsToRef>=-5&&minsToRef<0)return'gateclosed';if(minsToRef>=0&&minsToRef<=10)return'final';if(minsToRef>=0&&minsToRef<=30)return'boarding';if(minsToRef>=0&&minsToRef<=90)return'ontime';}
-  else{if(minsToRef>=-30&&minsToRef<=0)return'landed';if(minsToRef>=0&&minsToRef<=60)return'ontime';}
-  if(refTs<nowTs-5*60000)return mode==='dep'?'departed':'arrived';
-  return 'scheduled';
+  // Base phase from the (revised) reference time — boarding/final/gate
+  // phases always outrank a delay/early label.
+  let base = null;
+  if(mode==='dep'){if(minsToRef>=-5&&minsToRef<0)base='gateclosed';else if(minsToRef>=0&&minsToRef<=10)base='final';else if(minsToRef>=0&&minsToRef<=30)base='boarding';else if(minsToRef>=0&&minsToRef<=90)base='ontime';}
+  else{if(minsToRef>=-30&&minsToRef<=0)base='landed';else if(minsToRef>=0&&minsToRef<=60)base='ontime';}
+  if(base===null){ if(refTs<nowTs-5*60000)base=(mode==='dep'?'departed':'arrived'); else base='scheduled'; }
+  // The revised time is the TRUTH for neutral statuses at ANY horizon
+  // (Nick: 'flights delayed showing on time and early should be early') —
+  // the old >30-min gate let a flight revised 40 min later read 'On time'.
+  if(base==='ontime'||base==='scheduled'){
+    if(revTs && revTs > schedTs + 5*60000) return 'delayed';
+    if(revTs && revTs < schedTs - 5*60000) return 'early';
+  }
+  return base;
 }
 function mapADB(raw, mode) {
   const nowTs=Date.now(), list=mode==='dep'?(raw.departures||[]):(raw.arrivals||[]);
