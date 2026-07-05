@@ -1532,21 +1532,24 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow {
   display: grid !important;
-  grid-template-columns: clamp(96px, 8.6vw, 146px) 1fr !important;
+  grid-template-columns: clamp(70px, 6.6vw, 110px) 1fr !important;
   align-items: center !important;
   column-gap: clamp(10px, 1.2vw, 22px) !important;
-  padding: clamp(2px, 0.45vh, 6px) 0 !important;
+  padding: clamp(1px, 0.3vh, 5px) 0 !important;
   border-bottom: 1px solid rgba(20, 24, 30, 0.18) !important;
   min-width: 0 !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-last { border-bottom: none !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl {
-  font-size: clamp(11px, 1.5vh, 17px) !important; font-weight: 700 !important;
+  display: flex !important; flex-direction: column !important;
+  font-size: clamp(10px, 1.35vh, 15px) !important; font-weight: 700 !important;
   color: var(--banner-bg, #14181E) !important; letter-spacing: 0.2px !important;
+  line-height: 1.1 !important;
   white-space: nowrap !important; overflow: hidden !important;
 }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span { display: block !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval {
-  font-size: clamp(15px, 2.2vh, 27px) !important; font-weight: 900 !important;
+  font-size: clamp(15px, 2.35vh, 28px) !important; font-weight: 900 !important;
   line-height: 1.25 !important; padding-bottom: 0.06em !important; color: var(--banner-bg, #14181E) !important;
   white-space: nowrap !important; overflow: hidden !important;
   text-overflow: ellipsis !important; min-width: 0 !important;
