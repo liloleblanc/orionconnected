@@ -12760,6 +12760,12 @@ function startLangRotation() {
   if (langRotateTimer) clearInterval(langRotateTimer);
   if (langs.length <= 1) return;
   langRotateTimer = setInterval(() => {
+    // The MAIN board's paging clock (tick_carousel: EN page → FR page →
+    // advance) OWNS the language there. This second timer flipping lang on
+    // its own 30s beat produced '15 seconds English, 1 second French'
+    // depending on phase offset (Nick). It now only serves screens the
+    // paging clock doesn't cover.
+    if (screenType === 'main' && typeof pageTimer !== 'undefined' && pageTimer) return;
     langIdx = (langIdx + 1) % langs.length;
     lang = langs[langIdx];
     updateTicker();
