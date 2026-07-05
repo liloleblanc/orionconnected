@@ -4751,3 +4751,18 @@ body, body.gids-page, body.gate-page{
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
+
+/* ── Fold fix (Nick, Jul 2026): the AIRCRAFT DETAILS placeholder must never
+   steal rail space from the flight-info shelves. When aircraft data blips
+   out after a poll rebuild, is-bare switched the placeholder on in the SAME
+   column as the shelves — compressing all six rows (clipped text + dead gap)
+   until the data returned. If the shelves live in this column, no placeholder. */
+.g8-wrap .gad-aircraft-col.is-bare:has(.v2-flightinfo-block)::after,
+.g8-wrap .gad-aircraft-col.is-bare:has(.v2-flightinfo-block)::before {
+  content: none !important;
+  display: none !important;
+}
+.g8-wrap .gad-aircraft-col .v2-flightinfo-block {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
