@@ -5609,6 +5609,11 @@ function _buildV2MapCol(ctx, vars) {
       var _candLng = (typeof _ib._liveLng === 'number') ? _ib._liveLng : null;
       var _arrivedLikeIb = /arriv|land|cancel/i.test(String(_ib.status || ''));
       if (_ib._liveOnGround === true || _arrivedLikeIb) { _candAlt = null; _candSpd = null; }
+      // Physically impossible for this airframe → someone else's fix. Show
+      // nothing rather than a lie (Q400 'at 36,000 ft').
+      if (typeof _liveFixPhysOk === 'function' && !_liveFixPhysOk(_ib)) {
+        _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
+      }
       // Once on the ground there is no airborne fix to hold — drop the cache so
       // the panel/map don't keep showing a stale cruise position post-landing.
       if (_arrivedLikeIb && _gateFixCache && _gateFixCache.key === String(_ib.flight || _ib._reg || '')) _gateFixCache = null;
@@ -21243,6 +21248,23 @@ function buildAccorAdOnlyV6(ad) {
 // Nick: the big map shows ONLY the INCOMING flight — the aircraft that is
 // actually flying to this gate (origin → THIS airport, plane at its live
 // position when we have one). No inbound airborne = no map slide.
+// Live-fix sanity gate (Nick: 'a Q400 at 31,400 ft is bullshit'). ADB
+// sometimes returns another aircraft's position for a marketing number.
+// A fix that is physically impossible for the airframe type is DISCARDED
+// everywhere — telemetry panel and map alike show nothing false.
+function _liveFixPhysOk(inb) {
+  try {
+    if (!inb) return false;
+    var eq = String(inb._aircraft || inb._aircraftCode || '').toUpperCase();
+    var prop = /DH[0-9C]|DASH|Q400|AT[0-9R]/.test(eq);
+    var altFt = (typeof inb._liveAlt === 'number') ? inb._liveAlt : null;
+    var spdKt = (typeof inb._liveSpd === 'number') ? inb._liveSpd : null;
+    if (prop && ((altFt !== null && altFt > 27500) || (spdKt !== null && spdKt > 380))) return false;
+    if (altFt !== null && altFt > 45000) return false; // nothing regional flies here
+    return true;
+  } catch (e) { return true; }
+}
+
 function _map3dFlightCtx() {
   try {
     var inb = window._gateInbound;
@@ -21269,10 +21291,19 @@ function _map3dFlightCtx() {
     var prog = -1;
     var liveLat = (typeof inb._liveLat === 'number') ? inb._liveLat : null;
     var liveLng = (typeof inb._liveLng === 'number') ? inb._liveLng : null;
-    if (liveLat !== null && liveLng !== null && !inb._liveOnGround) {
+    var fixOk = liveLat !== null && liveLng !== null && !inb._liveOnGround && _liveFixPhysOk(inb);
+    if (fixOk) {
+      // Corridor gate: the fix must sit near this route, or it's someone
+      // else's airplane. Compare against the direct path with slack.
       var dOrg = _hav(oC, [liveLat, liveLng]);
       var dDst = _hav([liveLat, liveLng], dC);
-      if (dOrg + dDst > 1) prog = Math.max(0.02, Math.min(0.98, dOrg / (dOrg + dDst)));
+      var dTot = _hav(oC, dC);
+      if (dTot > 1 && (dOrg + dDst) > Math.max(dTot * 1.25, dTot + 160)) fixOk = false;
+    }
+    if (fixOk) {
+      var dOrg2 = _hav(oC, [liveLat, liveLng]);
+      var dDst2 = _hav([liveLat, liveLng], dC);
+      if (dOrg2 + dDst2 > 1) prog = Math.max(0.02, Math.min(0.98, dOrg2 / (dOrg2 + dDst2)));
     }
     var arrTs = inb._revTs || inb._sortTs || 0;
     if (prog < 0) {
@@ -21304,9 +21335,9 @@ function _map3dFlightCtx() {
       progress: prog,
       // TRUE live fix [lng,lat] — the 3D plane must sit exactly where the
       // 2D mini map shows it (Nick: 'not aligning with the other map').
-      pos: (liveLat !== null && liveLng !== null && !inb._liveOnGround) ? [liveLng, liveLat] : null,
-      speedKph: (typeof inb._liveSpd === 'number') ? Math.round(inb._liveSpd * 1.852) : 0,
-      altFt: (typeof inb._liveAlt === 'number') ? Math.round(inb._liveAlt) : 0,
+      pos: fixOk ? [liveLng, liveLat] : null,
+      speedKph: (fixOk && typeof inb._liveSpd === 'number') ? Math.round(inb._liveSpd * 1.852) : 0,
+      altFt: (fixOk && typeof inb._liveAlt === 'number') ? Math.round(inb._liveAlt) : 0,
       acType: inb._aircraft || '',
       etaStr: etaStr,
       destWx: wx

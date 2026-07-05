@@ -117,7 +117,9 @@
       idx = Math.max(1, Math.min(line.length - 1, best));
       var flown = line.slice(0, idx + 1); flown.push(livePos.slice());
       var remain = [livePos.slice()].concat(line.slice(idx));
-      var brg = _bearing(livePos, line[Math.min(line.length - 1, idx + 1)]);
+      // Heading = the ROUTE TANGENT at this point. Bearing-to-next-vertex
+      // from a slightly off-line fix pointed the nose sideways (Nick).
+      var brg = _bearing(line[Math.max(0, idx - 1)], line[Math.min(line.length - 1, idx + 1)]);
       return { flown: flown, remain: remain, pos: livePos.slice(), brg: brg };
     }
     idx = Math.max(1, Math.min(line.length - 1, Math.round(prog * (line.length - 1))));
