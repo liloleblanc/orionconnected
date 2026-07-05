@@ -12053,8 +12053,10 @@ function wordmarkVariant() {
   // the white variant. Measure the actual row background luminance instead
   // of maintaining a theme-name list.
   try {
-    var probe = document.querySelector('#fidsTable tbody tr td') ||
-                document.querySelector('#fidsTable') || document.body;
+    // Never probe a state-tinted or history row — a delayed/cancelled/faded
+    // first row flipped ALL wordmarks white mid-screen (Nick).
+    var probe = document.querySelector('#fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(:has(.fids-status-departed)):not(:has(.fids-status-arrived)):not(:has(.fids-status-gate-closed)) td')
+             || document.querySelector('#fidsTable') || document.body;
     var el = probe, bg = '';
     while (el && el.nodeType === 1) {
       var c = getComputedStyle(el).backgroundColor;

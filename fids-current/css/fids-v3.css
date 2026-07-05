@@ -4113,3 +4113,31 @@ body.fids-light-board #fidsTable tbody tr:has(td.fids-status-gate-closed) td { b
 /* Final Call block ink on light boards too (the light word rule outranked it) */
 body.fids-light-board #fidsTable td.td-status.fids-status-final,
 body.fids-light-board #fidsTable td.td-status.fids-status-final * { color: #102437 !important; }
+
+/* ── Grammar polish round 2 (Nick) ──────────────────────────────────────────
+   1. DELAYED: cleaner YELLOW (the dark amber read muddy brown) — dark navy
+      lettering for contrast on the brighter block.
+   2. Revised '—' hyphens get an actual COLOR on dark boards (soft steel
+      blue), not a shade of white.
+   3. Baggage themable again: dark themes tint the baggage canvas via the
+      theme; only LIGHT boards pin the dark fallback (white lettering).
+   4. Carrousel label/number and the clock: full-strength ink. */
+body #fidsTable tbody tr.row-delayed:nth-child(n),
+body #fidsTable tbody tr.row-delayed:nth-child(n) td,
+body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n),
+body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n) td { background: #EDBB00 !important; }
+body #fidsTable tbody tr.row-delayed td, body #fidsTable tbody tr.row-delayed td *,
+body.fids-light-board #fidsTable tbody tr.row-delayed td, body.fids-light-board #fidsTable tbody tr.row-delayed td * { color: #102437 !important; }
+
+body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev),
+body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev) * { color: rgba(143, 183, 232, 0.65) !important; }
+
+body .bidsv2-screen,
+body #baggageView .bidsv2-screen,
+body[data-page="bids"] .bidsv2-screen { background: var(--fids-bg, #0a1628) !important; }
+body.fids-light-board .bidsv2-screen,
+body.fids-light-board #baggageView .bidsv2-screen { background: #0a1628 !important; }
+
+body .bidsv2-carousel-label { color: #22344D !important; opacity: 1 !important; }
+body .bidsv2-carousel-number { color: #0E2748 !important; opacity: 1 !important; }
+body .bidsv2-clock { color: #ffffff !important; opacity: 1 !important; font-weight: 800 !important; }
