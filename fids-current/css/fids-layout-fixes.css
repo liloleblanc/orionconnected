@@ -1450,9 +1450,10 @@ body.g8-header-is-light .g8-city-code,
    the faded airline-logo watermark (Nick, Jul 2026). */
 .gad-map-col-v2::before {
   background-image: url('/logos/3d_globe_desktop.svg') !important;
-  background-size: 92% auto !important;
-  background-position: center 58% !important;
-  opacity: 0.55 !important;
+  /* Nick: stretched and more visible — fill the whole shelf zone. */
+  background-size: 100% 100% !important;
+  background-position: center center !important;
+  opacity: 0.85 !important;
   mix-blend-mode: normal !important;
 }
 
