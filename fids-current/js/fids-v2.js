@@ -84,7 +84,8 @@
       'final-call':  'fids-status-final',
       'gate-closed': 'fids-status-gate-closed',
       'departed':    'fids-status-departed',
-      'arrived':     'fids-status-arrived'
+      'arrived':     'fids-status-arrived',
+      'early':       'fids-status-early'
     };
     return {
       html: T('st-' + st, lang),
