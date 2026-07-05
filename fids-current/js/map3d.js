@@ -202,6 +202,11 @@
     };
   }
 
+  function _dispAlt(f) {
+    var m = (f && f.altFt) ? f.altFt * 0.3048 : PLANE_ALT_M;
+    return Math.max(1100, Math.min(3400, m));
+  }
+
   // ── route + markers ─────────────────────────────────────────────────────
   function _drawRoute(f) {
     var sp = _splitAt(_line, f.progress, f.pos);
@@ -331,7 +336,7 @@
         _map.on('load', function () {
           if (!_mounted) return;
           try { _map.setTerrain({ source: 'dem', exaggeration: 1.35 }); } catch (e) {}
-          _drawRoute(flight);
+          try { _drawRoute(flight); } catch (e) { try { console.error('[m3d] route', e); } catch (e2) {} }
           // Clean flat icon immediately (same look as the 2D map) …
           try {
             var c = document.createElement('canvas'); c.width = 64; c.height = 64;
