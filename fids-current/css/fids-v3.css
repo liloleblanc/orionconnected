@@ -4031,3 +4031,11 @@ body.fids-light-board #fidsTable td.td-time-rev:not(.has-rev) * { color: rgba(22
 /* Revised "—" on DARK boards: never stark white — muted so real times pop. */
 body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev),
 body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev) * { color: rgba(255, 255, 255, 0.45) !important; }
+
+/* ── Baggage design owns its canvas (Nick: washed grey baggage) ─────────────
+   bids-v2 is built on white lettering but keyed its background to the
+   THEME's --fids-bg — a light board theme (Mist) turned the whole design
+   pale grey-on-grey. It gets its own dark canvas on every theme. */
+body .bidsv2-page,
+body #baggageView .bidsv2-page,
+body[data-page="bids"] .bidsv2-page { background: #0a1628 !important; }
