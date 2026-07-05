@@ -20069,17 +20069,17 @@ function buildGateAdHtml(ad) {
     // v218.99.51 — Logo MUCH bigger (Nick: needs to match body text scale).
     // Right-side image panel dropped — was rendering squished/half.
     // Photo now sits as a faded full-width background behind the text.
-    // v219 — honor the per-brand treatment map: the raw render made dark
-    // logos (VIPorter navy) invisible on dark scrims.
+    // v219 — dark/colored logos render as WHITE INK on the dark scrim.
+    // Never a white card behind the logo (Nick: "never do white bandaid").
+    // no_filter artwork (already white/light files) renders as-is.
     var _adLogoHtml = '';
     if (ad.logo) {
       var _lsTreat = (typeof getLogoTreatment === 'function') ? getLogoTreatment(ad.logo) : null;
       var _lsImgStyle = 'max-height:100%;max-width:520px;width:auto;height:auto;object-fit:contain;object-position:left center;display:block;';
-      if (_lsTreat === 'invert' || _lsTreat === 'white_bg_invert') _lsImgStyle = 'filter:brightness(0) invert(1);' + _lsImgStyle;
-      var _lsImg = '<img src="' + ad.logo + '" alt="" style="' + _lsImgStyle + '" onerror="this.style.display=\'none\';">';
-      _adLogoHtml = (_lsTreat === 'white_card' || _lsTreat === 'color_card')
-        ? '<div style="margin-bottom:28px;height:110px;display:inline-flex;align-items:center;background:#fff;border-radius:14px;padding:14px 26px;box-shadow:0 6px 18px rgba(0,0,0,0.35);">' + _lsImg + '</div>'
-        : '<div style="margin-bottom:28px;height:110px;display:flex;align-items:center;">' + _lsImg + '</div>';
+      if (_lsTreat && _lsTreat !== 'no_filter') _lsImgStyle = 'filter:brightness(0) invert(1) drop-shadow(0 2px 8px rgba(0,0,0,0.4));' + _lsImgStyle;
+      _adLogoHtml = '<div style="margin-bottom:28px;height:110px;display:flex;align-items:center;">'
+        + '<img src="' + ad.logo + '" alt="" style="' + _lsImgStyle + '" onerror="this.style.display=\'none\';">'
+        + '</div>';
     }
     if (ad.bgImage) {
       // Full-bleed photo background with a strong left-side dark scrim
