@@ -1279,6 +1279,10 @@ function scheduleGateControlsAutoHide() {
 
 function changeScreenType(val) {
   screenType = val;
+  // Survive the self-update reloads: a screen put into gate/baggage mode via
+  // the MENU (no URL param) was being dumped back to the main board on every
+  // deploy (Nick: 'what happened to baggage… it's all over the place').
+  try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: val, s: (typeof subScreenVal !== 'undefined' ? subScreenVal : '') })); } catch (e) {}
   document.body.classList.toggle('uxg-gate-mode', val === 'gate');
   if (val !== 'gate') { if (typeof stopGateAds==='function') stopGateAds(); } else { if (typeof startGateAds==='function' && !_gateAdTimer) startGateAds(); }
   
@@ -1313,6 +1317,7 @@ function changeScreenType(val) {
 }
 
 function changeSubScreen(val) {
+  try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: (typeof screenType !== 'undefined' ? screenType : 'main'), s: val })); } catch (e) {}
   // Sanitize the gate/belt value (it comes from a DOM <select>.value, a CodeQL
   // "DOM text reinterpreted as HTML" source) before it flows into the gate
   // innerHTML. Gates/belts are alphanumeric — strip anything else (incl. < > & ").
@@ -22925,5 +22930,45 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     window.addEventListener('scroll', pin, { passive: true });
     setInterval(pin, 3000);
     pin();
+  } catch (e) {}
+})();
+
+
+// ── SCREEN-STATE RESTORE ────────────────────────────────────────────────
+// Menu-selected screen type/sub-screen survive reloads (incl. the deploy
+// self-update). Only on the generic board page — gids/bids own their type.
+(function () {
+  try {
+    if (document.body && document.body.getAttribute('data-page')) return; // dedicated page
+    var raw = localStorage.getItem('fids_screen_state');
+    if (!raw) return;
+    var st = JSON.parse(raw);
+    if (!st || !st.t || st.t === 'main') return;
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      var ready = window._initialFetchDone === true;
+      if (!ready && tries < 40) return;
+      clearInterval(iv);
+      if (!ready) return;
+      try {
+        if (typeof changeScreenType === 'function' && screenType !== st.t) {
+          var sel = document.getElementById('screenTypeSel');
+          if (sel) sel.value = st.t;
+          changeScreenType(st.t);
+        }
+        if (st.s) {
+          setTimeout(function () {
+            try {
+              var sub = document.getElementById('subScreenSel');
+              if (sub && Array.prototype.some.call(sub.options, function (o) { return o.value === st.s; })) {
+                sub.value = st.s;
+                if (typeof changeSubScreen === 'function') changeSubScreen(st.s);
+              }
+            } catch (e) {}
+          }, 1200);
+        }
+      } catch (e) {}
+    }, 1000);
   } catch (e) {}
 })();
