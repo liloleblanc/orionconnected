@@ -3970,3 +3970,5 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
 #fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] { height: 30px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] { height: 29px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { height: 23px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { height: 19px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { height: 21px; }

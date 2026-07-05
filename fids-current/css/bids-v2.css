@@ -584,3 +584,5 @@ body .bidsv2-flight-row.bidsv2-row-diverted, body .bidsv2-flight-row.bidsv2-row-
 .bidsv2-airline-wordmark[data-code="PD"] { height: 20px; }
 .bidsv2-airline-wordmark[data-code="F8"] { height: 19px; }
 .bidsv2-airline-wordmark[data-code="HA"] { height: 15px; }
+.bidsv2-airline-wordmark[data-code="FI"] { height: 13px; }
+.bidsv2-airline-wordmark[data-code="BW"] { height: 14px; }
