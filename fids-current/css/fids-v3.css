@@ -3958,3 +3958,6 @@ body #fidsTable tbody tr.row-final td.td-time *,
 body #fidsTable tbody tr.row-final td.td-time-rev *,
 body #fidsTable tbody tr.row-final td .fids-cell-time { background: transparent !important; box-shadow: none !important; text-shadow: none !important; }
 body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !important; }
+
+/* Sun Country (SY) — official artwork wired Jul 2026 (ink aspect 7.5). */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="SY"] { height: 22px; }

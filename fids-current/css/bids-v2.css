@@ -574,3 +574,6 @@ body .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n) { background: #C8102E 
 body .bidsv2-flight-row.bidsv2-row-diverted:nth-child(n) { background: #185A9D !important; }
 body .bidsv2-flight-row.bidsv2-row-cancelled, body .bidsv2-flight-row.bidsv2-row-cancelled *,
 body .bidsv2-flight-row.bidsv2-row-diverted, body .bidsv2-flight-row.bidsv2-row-diverted * { color: #ffffff !important; }
+
+/* Sun Country (SY) — Jul 2026 */
+.bidsv2-airline-wordmark[data-code="SY"] { height: 15px; }

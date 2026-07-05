@@ -1425,3 +1425,7 @@ body.g8-header-is-light .g8-city-code,
 .g8-light-top .g8-city-code {
   color: #6B7280 !important;
 }
+
+/* Sun Country (SY) — added Jul 2026 from the official lockup (ink aspect 7.5
+   → H = 60/sqrt(7.5) ≈ 22). Same calibration rule as the regenerated table. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="SY"] { --wm-h: 22px; }
