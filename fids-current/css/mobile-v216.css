@@ -413,13 +413,23 @@
     margin-bottom: 4px;
     height: 18px;
   }
-  .cc-logo-row .card-logo,
-  .cc-logo-row .card-wordmark,
-  .cc-logo-row img {
+  /* Jul 2026: wordmarks EXCLUDED from the 14px flattener — the SVGs are now
+     ink-tight and per-carrier heights live in fids.css; forcing one height
+     here reintroduced the optical-size mismatch on phones. Width/row caps
+     kept so wide marks still fit the 18px logo row. */
+  .cc-logo-row .card-logo:not(.card-wordmark),
+  .cc-logo-row img:not(.card-wordmark):not(.card-logo) {
     height: 14px !important;
     max-width: 100px !important;
     width: auto !important;
     object-fit: contain;
+  }
+  .cc-logo-row .card-logo.card-wordmark {
+    max-height: 18px;
+    max-width: 100px !important;
+    width: auto !important;
+    object-fit: contain;
+    object-position: left center;
   }
   .cc-city {
     font-size: 17px;

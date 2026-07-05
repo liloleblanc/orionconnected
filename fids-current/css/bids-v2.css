@@ -505,3 +505,59 @@ body[data-fids-airline-style="emblem"] .bidsv2-airline-name { display: none !imp
    feed statuses ('landed', 'late', 'ahead-of-schedule'...) before mapping
    the class, so state colors stop depending on the feed's exact wording. */
 body .bidsv2-col-status.bidsv2-status-early { color: #34d399 !important; }
+
+/* ── Baggage real wordmarks (Nick: 'should match baggage', Jul 2026) ───────
+   Same artwork and the same calibration as the FIDS board, ~0.66x for the
+   baggage row budget. White variants on the dark rows; the airline tile
+   stays in its white block on the left. */
+.bidsv2-airline-wordmark {
+  height: 15px;
+  width: auto;
+  max-width: 170px;
+  object-fit: contain;
+  object-position: left center;
+  display: block;
+}
+.bidsv2-airline-wordmark[data-code="4Y"],
+.bidsv2-airline-wordmark[data-code="AV"],
+.bidsv2-airline-wordmark[data-code="WS"] { height: 20px; }
+.bidsv2-airline-wordmark[data-code="HA"],
+.bidsv2-airline-wordmark[data-code="OO"],
+.bidsv2-airline-wordmark[data-code="P3"],
+.bidsv2-airline-wordmark[data-code="PD"],
+.bidsv2-airline-wordmark[data-code="QK"],
+.bidsv2-airline-wordmark[data-code="VB"] { height: 18px; }
+.bidsv2-airline-wordmark[data-code="AM"],
+.bidsv2-airline-wordmark[data-code="AS"],
+.bidsv2-airline-wordmark[data-code="B6"],
+.bidsv2-airline-wordmark[data-code="G3"],
+.bidsv2-airline-wordmark[data-code="KL"] { height: 17px; }
+.bidsv2-airline-wordmark[data-code="LA"],
+.bidsv2-airline-wordmark[data-code="PB"],
+.bidsv2-airline-wordmark[data-code="TS"],
+.bidsv2-airline-wordmark[data-code="Y4"] { height: 16px; }
+.bidsv2-airline-wordmark[data-code="9X"],
+.bidsv2-airline-wordmark[data-code="AA"],
+.bidsv2-airline-wordmark[data-code="DL"],
+.bidsv2-airline-wordmark[data-code="LO"],
+.bidsv2-airline-wordmark[data-code="MX"],
+.bidsv2-airline-wordmark[data-code="UA"],
+.bidsv2-airline-wordmark[data-code="UP"],
+.bidsv2-airline-wordmark[data-code="VS"],
+.bidsv2-airline-wordmark[data-code="WN"] { height: 15px; }
+.bidsv2-airline-wordmark[data-code="AT"],
+.bidsv2-airline-wordmark[data-code="BA"],
+.bidsv2-airline-wordmark[data-code="CM"],
+.bidsv2-airline-wordmark[data-code="F8"],
+.bidsv2-airline-wordmark[data-code="TP"] { height: 14px; }
+.bidsv2-airline-wordmark[data-code="AF"],
+.bidsv2-airline-wordmark[data-code="F9"] { height: 13px; }
+.bidsv2-airline-wordmark[data-code="3H"],
+.bidsv2-airline-wordmark[data-code="AC"],
+.bidsv2-airline-wordmark[data-code="PT"],
+.bidsv2-airline-wordmark[data-code="RV"] { height: 12px; }
+.bidsv2-airline-wordmark[data-code="OB"],
+.bidsv2-airline-wordmark[data-code="YX"] { height: 11px; }
+body[data-fids-logo-size="small"] .bidsv2-airline-wordmark { transform: scale(0.85); transform-origin: left center; }
+body[data-fids-logo-size="large"] .bidsv2-airline-wordmark { transform: scale(1.2); transform-origin: left center; }
+body[data-fids-airline-style="emblem"] .bidsv2-airline-wordmark { display: none !important; }

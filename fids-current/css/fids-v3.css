@@ -621,16 +621,13 @@ body {
   overflow: hidden;
   min-width: 0;
 }
-/* v194: When the emblem slot is empty (no tile, no emblem image, no SVG inside),
-   collapse it to zero width so the wordmark doesn't get pushed 68px to the right
-   by an empty 54px box + 14px gap. Affects Porter, Discover Airlines, and any
-   other carrier with a wordmark but no tile/emblem. */
+/* Every wordmark starts at the SAME x (Nick, Jul 2026): the logo slot is
+   a constant-width spacer even when a carrier has no tile/emblem, so the
+   wordmark column lines up down the whole board. (The old v194 rule
+   collapsed empty slots to zero, which left tile-less carriers flush-left
+   while everyone else sat 68px in.) */
 #fidsTable .td-airline .fids-cell-airline > .fids-airline-logo:empty {
-  width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  display: none;
+  width: 54px;
 }
 #fidsTable .td-airline .fids-airline-logo {
   width: 54px;
@@ -716,7 +713,7 @@ body {
    max-width 260px keeps even the widest wordmarks (BA, AF, AC) inside the
    column budget. object-position: left aligns them all at the same x. */
 #fidsTable .td-airline .fids-airline-wordmark {
-  height: 28px;
+  height: 25px;
   width: auto;
   max-width: 260px;
   object-fit: contain;
@@ -730,79 +727,64 @@ body {
      color logos like Delta/KLM/Hawaiian mangles their brand colors. */
 }
 
-/* ── Per-carrier height overrides ──────────────────────────────────────
-   Each value picked so the rendered LETTERS land at ~22px regardless of
-   how much padding or x-height variation the source SVG has. Measured
-   with cairosvg + pixel scan, see chat history for derivation. */
-
-/* Air Canada — 11:1 aspect ratio means even a small height pushes a
-   wide rendered image. v218.7: trimmed from 20px → 18px per Nick (slightly
-   smaller, was reading larger than other airlines in the column). */
+/* ── Per-carrier wordmark heights — REGENERATED (Nick, Jul 2026) ────────
+   Every wordmark SVG's viewBox was normalized to its true rendered ink
+   (measured by rasterizing + alpha-scan; see git history), so a CSS height
+   here is the exact letter height on screen — no more per-file padding
+   guesswork. All marks share the same left edge: no per-code padding, the
+   logo slot is a constant 54px + 14px gap even when empty.
+   Heights: Nick-approved values preserved (AC 18, WS 30, PD 28, UA 23,
+   AM 26, AV 32...), his flagged four corrected (AA/DL 23, F9 20, B6 26
+   with its tile restored), the rest set by visual weight
+   H = 60/sqrt(ink aspect), clamped 16-29. Regenerate with the script in
+   the session scratchpad rather than hand-editing single values. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { height: 32px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { height: 30px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="P3"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PD"] { height: 28px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="OO"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="QK"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="VB"] { height: 27px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AM"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="G3"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="KL"] { height: 26px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="TS"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="Y4"] { height: 25px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="LA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PB"] { height: 24px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="UP"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="VS"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { height: 23px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="9X"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="LO"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="MX"] { height: 22px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AT"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="BA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="CM"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="TP"] { height: 21px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AF"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: 20px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AC"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="RV"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"] {
-  height: 18px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PT"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="RV"] { height: 18px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="OB"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="YX"] { height: 16px; }
 
-/* jetBlue — v203: rebuilt clean white wordmark (was using a filter-converted
-   blue version that rendered as dark blue on dark navy = invisible).
-   New SVG aspect 3.2:1 — at 50px tall renders ~160px wide. "Tad to the left"
-   per request: no left padding, just sits flush at cell start. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"] {
-  height: 42px;
-  max-width: 160px;
-  padding-left: 6px;
-  margin-left: 0;
-  box-sizing: content-box;
-}
-
-/* NK (Spirit) — ceased operations May 2 2026 — CSS rule removed */
-
-/* Mokulele (9X) — v188: split into two pieces:
-   - The plumeria flower lives in the EMBLEM slot (.fids-airline-logo)
-     via IATA_TO_EMBLEM map, sized larger than default tile (44×44).
-   - The "MOKULELE" wordmark lives separately in the wordmark slot.
-   Both are larger than default for a stronger Mokulele presence on the row. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="9X"] {
-  height: 38px;
-  max-width: 200px;
-}
-/* Mokulele flower emblem sizing — bigger than the standard 36px tile
-   since the flower is the airline's primary visual identity. */
+/* Emblem sizing for icon-first carriers (Mokulele, Frontier, Discover,
+   Breeze) — the symbol is the brand identity, so it renders larger than
+   the standard 36px tile. Preserved from the previous calibration. */
 #fidsTable .td-airline .fids-airline-logo img.airline-emblem[data-code="9X"],
 #fidsTable .td-airline .fids-airline-logo .full-logo.airline-emblem[data-code="9X"],
-#fidsTable .td-airline .fids-airline-logo img[data-logo-set="emblem"][data-code="9X"] {
-  width: 46px !important;
-  height: 46px !important;
-  max-width: 46px !important;
-  max-height: 46px !important;
-}
-
-/* British Airways — v204: 11:1 aspect (273x25 viewBox) is just like Air Canada,
-   so use the same height treatment (~18-20px) to keep it proportional in the row.
-   At 32px it was rendering ~350px wide which fought the column max-width and
-   came out distorted. 20px puts it at ~220px wide, comfortably matching AC.
-   v205: BA replaced with the negative variant (red speedmarque + white text)
-   from Nick's upload. New file aspect 6.47:1 instead of 11:1 — bumped height
-   accordingly. At 32px → ~207px wide, in-line with AC family. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="BA"] {
-  height: 32px;
-  max-width: 240px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* Frontier (F9) — v205: official green wordmark + emblem.
-   Wordmark 7.45:1 aspect — at 26px height renders ~194px wide. Emblem 1.20:1
-   square-ish, sized like other emblems (Mokulele/Discover). */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] {
-  height: 23px;
-  max-width: 200px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
+#fidsTable .td-airline .fids-airline-logo img[data-logo-set="emblem"][data-code="9X"],
 #fidsTable .td-airline .fids-airline-logo img.airline-emblem[data-code="F9"],
 #fidsTable .td-airline .fids-airline-logo .full-logo.airline-emblem[data-code="F9"],
 #fidsTable .td-airline .fids-airline-logo img[data-logo-set="emblem"][data-code="F9"] {
@@ -811,65 +793,6 @@ body {
   max-width: 46px !important;
   max-height: 46px !important;
 }
-
-/* United — has globe icon + UNITED wordmark. v187: 25→24px (a tad smaller per
-   request), AND tightened SVG viewBox to remove ~28 units of trailing+wordmark-gap
-   padding to address "tad too padded at beginning" feedback. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"] {
-  height: 24px;
-}
-
-/* Delta — same icon+wordmark issue. Triangle icon was looming too large at 32px.
-   v203: small left padding to shift right per request. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"] {
-  height: 26px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* Hawaiian — pualani face + "Hawaiian Airlines" wordmark. The illustrated
-   face is softer and reads smaller than UA/DL's solid icons. Bump up. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] {
-  height: 40px;
-}
-
-/* Air France — v204: 10.5:1 wide aspect, same as BA/AC. Was rendering ~335px
-   wide at 32px height which fought the column. 20px → ~210px wide, in line. */
-/* Air France (AF) — v214: aspect 10.46:1, max-width was clamping it tiny.
-   Bumped max-width to 270px so the AIRFRANCE wordmark renders at full 26px
-   height. Padding-left removed per request — sits flush left with other rows. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AF"] {
-  height: 26px;
-  max-width: 270px;
-  padding-left: 4px;
-  margin-left: 0;
-  box-sizing: content-box;
-}
-
-/* Porter (PD) — v194: a tad bigger than default, since the wordmark itself
-   is a clean horizontal lockup with the raccoon ribbon. Default 28px reads
-   small; bumping to 32px gives it the right visual weight against AC/WS.
-   v218: slight right nudge per Nick. */
-/* Porter — lowercase "porter" + raccoon ribbon. Default 28px reads small.
-   v218: bumped to 32px. v218.8: trimmed to 28px so it stops dominating
-   the row relative to AC and WS which are smaller. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="PD"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] {
-  height: 28px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* Discover Airlines (4Y) — v201: official Discover Airlines wordmark from
-   discover-airlines.com (lowercase "discover." with yellow dot + "airlines"
-   below). Stacked 2-line layout, 2.9:1 aspect (139x48 viewBox). At 44px
-   height renders ~127px wide which fits cleanly alongside the tail emblem. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"] {
-  height: 44px;
-  max-width: 150px;
-}
-/* Discover emblem sizing — bigger than default 36px tile since the emblem
-   is the airline's canonical visual identity. Same treatment as Mokulele. */
 #fidsTable .td-airline .fids-airline-logo img.airline-emblem[data-code="4Y"],
 #fidsTable .td-airline .fids-airline-logo .full-logo.airline-emblem[data-code="4Y"],
 #fidsTable .td-airline .fids-airline-logo img[data-logo-set="emblem"][data-code="4Y"] {
@@ -878,156 +801,6 @@ body {
   max-width: 50px !important;
   max-height: 50px !important;
 }
-
-/* Southwest — was rendering too tall; calibrated down. v201: small left
-   shift per request ("smidge to the right") since the wordmark sits flush
-   left against the cell start. 8px of leading padding lets it breathe. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] {
-  height: 30px;
-  padding-left: 8px;
-  box-sizing: content-box;
-}
-
-/* WestJet — slightly bigger than default to match neighbors.
-   v218: slight right nudge + slightly bigger per Nick.
-   v218.7: trimmed from 34px → 30px per Nick (was reading too large
-   compared to other airlines on a populated board). */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] {
-  height: 30px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* PAL Airlines (PB) — slight right nudge per Nick (v218). */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="PB"] {
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* v218 Group A sizing/positioning per Nick.
-   Default wordmark height is 28px; tweaks below are relative to that. */
-
-/* Avianca (AV) — bigger */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] {
-  height: 32px;
-}
-
-/* Aeroméxico (AM) — slightly smaller, tad right */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AM"] {
-  height: 26px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* Copa (CM) — tad right */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="CM"] {
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* LATAM (LA) — tad bigger, tad right */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="LA"] {
-  height: 32px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* Volaris (Y4) — tad bigger */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="Y4"] {
-  height: 32px;
-}
-
-/* Virgin Atlantic (VS) — bigger */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="VS"] {
-  height: 32px;
-}
-
-/* VivaAerobus (VB) — slight right + bigger */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="VB"] {
-  height: 32px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* (Older Porter PD 28px rule — REMOVED in v194 cleanup; use the 32px rule
-   above. Likewise older Discover 4Y 26px rule is removed.) */
-
-/* v194: For airlines with no emblem (Porter, Discover, etc.), the wordmark
-   was sitting flush-left against the cell start. Add a small left margin
-   on the wordmark when its sibling emblem is empty/hidden. */
-#fidsTable .td-airline .fids-cell-airline > .fids-airline-logo:empty + .fids-airline-wordmark,
-#fidsTable .td-airline .fids-cell-airline > .fids-airline-logo[style*="display: none"] + .fids-airline-wordmark {
-  margin-left: 6px;
-}
-
-/* (Older HA rule that was overriding the higher one above — removed in v185.) */
-
-/* Piedmont (YV/YX) — major viewBox padding requires a big bump. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="YV"] {
-  height: 42px;
-}
-/* Republic Airways (YX) — v204: 6.67:1 wider than YV, so at the same 42px
-   it rendered ~280px wide. 36px keeps proportional weight, ~240px wide. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="YX"] {
-  height: 36px;
-  max-width: 240px;
-}
-
-/* Alaska Airlines (AS) — v206: a bit bigger + shifted right per request.
-   Wordmark aspect 3.35:1, default 28px was undersized vs neighbors. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] {
-  height: 36px;
-  max-width: 240px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* Virgin Atlantic (VS) — v206: real logo installed (purple "virgin atlantic"
-   wordmark + red Virgin tail icon). Aspect 1.40:1 — at 50px tall renders ~70px
-   wide due to the integrated tail icon making the artwork mostly square. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="VS"] {
-  height: 50px;
-  max-width: 100px;
-}
-
-/* Avianca (AV) — v214: tight-viewBox SVG (cropped to actual content),
-   aspect 3.94:1. At 32px height renders ~126px wide. Padding-left 6px shift
-   right consistent with peers. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] {
-  height: 32px;
-  max-width: 160px;
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* GOL (G3) — v215: slight right shift per request, no logo wired yet so
-   this currently affects the text fallback rendering. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="G3"],
-#fidsTable .td-airline .fids-airline-name[data-code="G3"] {
-  padding-left: 6px;
-  box-sizing: content-box;
-}
-
-/* LOT Polish (LO) — v204: 2.67:1 narrow aspect — at default 28px it renders
-   ~75px wide which is undersized vs neighbors. Bumped to 36px → ~96px. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="LO"] {
-  height: 36px;
-}
-
-/* Breeze Airways (MX) — v205: official "Breeze" wordmark with blue checkmark
-   above the second 'e'. Aspect 3.16:1, navy text on transparent (light variant
-   converts to white). 36px height → ~114px wide, balanced with neighbors. */
-/* Breeze Airways (MX) — v211: slightly bigger + shifted right per request.
-   Aspect 3.16:1, navy text on transparent (light variant converts to white).
-   At 42px height renders ~133px wide. padding-left 6px gives breathing room. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="MX"] {
-  height: 42px;
-  max-width: 160px;
-  padding-left: 10px;
-  box-sizing: content-box;
-}
-/* Breeze emblem (checkmark on navy square 200x200) — bigger than default
-   tile size since it's the brand identity icon, same as Mokulele/Discover. */
 #fidsTable .td-airline .fids-airline-logo img.airline-emblem[data-code="MX"],
 #fidsTable .td-airline .fids-airline-logo .full-logo.airline-emblem[data-code="MX"],
 #fidsTable .td-airline .fids-airline-logo img[data-logo-set="emblem"][data-code="MX"] {
@@ -1037,9 +810,6 @@ body {
   max-height: 46px !important;
   border-radius: 6px;
 }
-
-/* WS, PD, PB, AA, UA, DL, AS, OO, KL, QK, 9X all measured close enough
-   to default 24px to need no override. */
 
 /* Cancelled / diverted rows: the row background turns red. The wordmark
    loaded for the active theme might no longer have enough contrast against
@@ -3789,13 +3559,10 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
   body[data-fids-theme] .fids-banner-board .fids-board-label { color: #0d2440 !important; margin: 0 !important; }
 }
 
-/* ── Board airline branding (Nick, Jul 2026) ────────────────────────────────
-   Flair's wordmark is a wide flat lockup that reads small at the shared
-   wordmark height — give it a taller cap of its own. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] {
-  height: 42px !important;
-  max-height: 42px !important;
-}
+/* (F8 42px !important special-case REMOVED Jul 2026 — it was compensating
+   for the old padded flair SVG and, at (1,3,0) !important, out-cascaded the
+   regenerated calibration tables. The ink-tight file + the per-code table
+   in fids-layout-fixes.css govern now.) */
 
 /* ── Clock readable on EVERY theme (Nick, Jul 2026) ─────────────────────────
    The redesigned three-tab banner puts the clock on the dark navy tab no
