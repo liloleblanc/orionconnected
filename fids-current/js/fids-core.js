@@ -23188,6 +23188,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 // the aircraft. Honest by construction: with no live fix the plane glyph
 // sits at time-progress exactly like the mini map, captioned 'Estimated'.
 function _bigCraftTeardown() {
+  try { (window._bigCraftTimers || []).forEach(function (id) { clearTimeout(id); clearInterval(id); }); window._bigCraftTimers = []; } catch (e) {}
   try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
   try { if (window._bigCraftOverlay) { window._bigCraftOverlay.remove(); window._bigCraftOverlay = null; } } catch (e) {}
   try { document.querySelectorAll('.g8-bigcraft-active').forEach(function (w) { w.classList.remove('g8-bigcraft-active'); }); } catch (e) {}
@@ -23266,16 +23267,39 @@ function _renderBigCraft(el, ctx) {
       .bindTooltip(ctx.dc || '', { permanent: true, direction: 'bottom', className: 'gate-map-label', offset: [0, 6] });
     var p = Math.max(0.02, Math.min(0.98, ctx.progress || 0));
     var ll = arc.getLatLngs ? arc.getLatLngs() : [o, d];
+    var _bcPlanePos = null;
     if (ll.length > 2) {
       var idx = Math.min(Math.floor(p * ll.length), ll.length - 1);
       var pos = ctx.pos ? [ctx.pos[1], ctx.pos[0]] : ll[idx];
+      _bcPlanePos = pos;
       var s0 = ll[Math.max(idx - 3, 0)], s1 = ll[Math.min(idx + 3, ll.length - 1)];
       var dLng = (s1.lng - s0.lng) * Math.PI / 180, la1 = s0.lat * Math.PI / 180, la2 = s1.lat * Math.PI / 180;
       var brg = Math.atan2(Math.sin(dLng) * Math.cos(la2),
                 Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng)) * 180 / Math.PI;
       L.marker(pos, { zIndexOffset: 1000, icon: L.divIcon({
         html: '<div style="transform:rotate(' + brg + 'deg);width:56px;height:56px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="56" height="56" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',
-        iconSize: [56, 56], iconAnchor: [28, 28], className: '' }) }).addTo(m);
+        iconSize: [56, 56], iconAnchor: [28, 28], className: 'bigcraft-plane-pulse' }) }).addTo(m);
+    }
+    // CAMERA CHOREOGRAPHY (Nick: 'more animated, zoom in onto the map'):
+    // after the grow-in settles, fly IN toward the aircraft, hold, then ease
+    // back OUT to the whole route — repeating gently through the dwell.
+    window._bigCraftTimers = window._bigCraftTimers || [];
+    if (_bcPlanePos && typeof m.flyTo === 'function') {
+      var _bcCycle = function () {
+        try {
+          if (!window._bigCraftMap) return;
+          var zNow = window._bigCraftMap.getZoom() || 5;
+          window._bigCraftMap.flyTo(_bcPlanePos, Math.min(zNow + 2, 9), { duration: 2.6, easeLinearity: 0.15 });
+          window._bigCraftTimers.push(setTimeout(function () {
+            try {
+              if (!window._bigCraftMap) return;
+              window._bigCraftMap.flyToBounds([o, d], { padding: [70, 70], maxZoom: 8, duration: 2.8 });
+            } catch (eB) {}
+          }, 9500));
+        } catch (eA) {}
+      };
+      window._bigCraftTimers.push(setTimeout(_bcCycle, 1800));   // after the grow-in
+      window._bigCraftTimers.push(setInterval(_bcCycle, 21000)); // gentle repeat
     }
     setTimeout(function () { try { if (window._bigCraftMap) { window._bigCraftMap.invalidateSize(); window._bigCraftMap.fitBounds([o, d], { padding: [70, 70], maxZoom: 8 }); } } catch (e3) {} }, 150);
   } catch (e4) {}
