@@ -17806,25 +17806,8 @@ var _gateMapCamera = {
 function _gateMapTick() {
   var mb = document.getElementById('gateMapBox');
   if (!mb || mb.offsetHeight < 10) return; // not rendered yet
-  // ── 3D TAKEOVER (Nick): while a real inbound is airborne, the 3D flight
-  // map replaces the classic 2D map IN THIS SAME BLOCK — same options,
-  // same box, one-minute four-angle cycle, A320 model at the live
-  // position. Lands / no inbound / engine unavailable → classic 2D map.
-  try {
-    if (window.GateMap3D && window.GateMap3D.available()) {
-      var _ctx3d = (typeof _map3dFlightCtx === 'function') ? _map3dFlightCtx() : null;
-      if (_ctx3d) {
-        if (gateMap) { try { gateMap.remove(); } catch (e) {} gateMap = null; }
-        window.GateMap3D.mount(mb, _ctx3d, {
-          cycleMs: 60000,
-          refresh: _map3dFlightCtx,
-          onEnd: function () { try { _gateMapTick(); } catch (e) {} }
-        });
-        return;
-      }
-      if (window.GateMap3D.mounted()) window.GateMap3D.destroy();
-    }
-  } catch (e) {}
+  // (v219.1: the 3D showcase lives in the BIG CENTER rotation — renderGateAd.
+  // This small map window keeps the classic 2D map, always.)
   var inb = window._gateInbound;
   var apIata = window._gateIata || 'YQM';
   var cf = window._gateCurrentFlight;
@@ -21338,11 +21321,22 @@ function renderGateAd(index) {
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
   var slide = slides[slot];
 
-  // (v219: the 3D flight map is no longer an ad slide — it lives in the
-  // gate's MAP block, replacing the classic 2D map while an inbound is
-  // airborne. See _gateMapTick. Nothing here may touch GateMap3D.)
+  // ── 3D FLIGHT MAP — the BIG CENTER showcase (Nick): one minute, four 3D
+  // angles, the A320 model, INBOUND flight only. Replaces the old flat
+  // overhead slide in this same slot, keeping the rotating info views.
   if (slide && slide.type === 'map3d') {
-    slide = slides[(slot + 1) % totalSlots] || slide; // legacy deck entry — skip
+    var _m3dCtx = (typeof _map3dFlightCtx === 'function') ? _map3dFlightCtx() : null;
+    if (_m3dCtx && window.GateMap3D && window.GateMap3D.available()) {
+      window.GateMap3D.mount(el, _m3dCtx, {
+        cycleMs: (typeof _getGateAdDwellMs === 'function') ? _getGateAdDwellMs(slide) : 60000,
+        refresh: _map3dFlightCtx
+      });
+      return;
+    }
+    slide = slides[(slot + 1) % totalSlots] || slide; // no inbound airborne — next slide
+  }
+  if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
+    try { window.GateMap3D.destroy(); } catch (e) {} // another slide takes the slot
   }
 
   // ── Custom theme slide (image or video uploaded via Media Library) ──
@@ -21733,6 +21727,7 @@ function _getGateAdDwellMs(slide) {
   if (!slide) return 15000;
   // 3D flight map holds the slot for about a minute (per Nick) —
   // four camera views ~15s each inside GateMap3D's sequence.
+  if (slide.type === 'map3d') return 60000;
   // v218.96: custom slides from the Gate Theme editor carry their own
   // configured duration. Clamp to a sensible 2s–600s range so a typo can't
   // freeze the carousel on a single slide for the rest of the day, while
@@ -21842,8 +21837,14 @@ function _buildGateAdSlideList() {
     else deck = [{ type: 'ad', data: { bg: 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)', headline: 'Welcome aboard', sub: 'Gate information display' } }];
   }
 
-  // (v219: the 3D flight map moved out of the ad rotation and into the
-  // gate's MAP block — see _gateMapTick.)
+  // ── 6. 3D FLIGHT MAP — one showcase slide per cycle in the BIG CENTER
+  // panel, when the engine can run and a real inbound is airborne.
+  try {
+    if (window.GateMap3D && window.GateMap3D.available()
+        && typeof _map3dFlightCtx === 'function' && _map3dFlightCtx()) {
+      deck.splice(Math.min(1, deck.length), 0, { type: 'map3d' });
+    }
+  } catch (e) {}
 
   return deck;
 }
