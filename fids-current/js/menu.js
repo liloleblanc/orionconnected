@@ -16,6 +16,16 @@
     // Initialize after insertion — menu elements now exist
     if (typeof _syncMenu === 'function') _syncMenu();
     if (typeof smRenderPresets === 'function') smRenderPresets();
+    // Late repaint: the airport code resolves after boot, so paint the form
+    // from the SAVED prefs once it's known — the theme select otherwise sat
+    // on 'default' while the board ran the saved theme (and any save then
+    // wiped it).
+    setTimeout(function () {
+      try {
+        var raw = localStorage.getItem(_cuStorageKey());
+        if (raw && typeof _cuPaintForm === 'function') _cuPaintForm(JSON.parse(raw) || {});
+      } catch (e) {}
+    }, 2500);
   } catch (err) {
     console.error('[menu] Failed to load menu.html:', err);
   }
@@ -1642,8 +1652,17 @@ function _cuApplyDisplayMode(mode) {
 }
 
 // Save form, then re-apply config to the live board
+var _cuThemeExplicitDefault = false;
 function cuApplyAndSave() {
-  var prefs = _cuReadForm();
+  // MERGE the form over what's saved — an unsynced/untouched control must
+  // never erase a saved setting (Nick: changing the FONT reverted the
+  // THEME to teal, because the theme select was sitting on '' and the
+  // wholesale save dropped theme:'mist').
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(_cuStorageKey()) || '{}') || {}; } catch (e) {}
+  var prefs = Object.assign({}, saved, _cuReadForm());
+  // Explicitly choosing "Use airport default" is the ONE case that clears it.
+  if (_cuThemeExplicitDefault) { prefs.theme = ''; delete prefs.themePresetId; _cuThemeExplicitDefault = false; }
   _cuSave(prefs);
   // Tell the FIDS to re-merge admin defaults + local prefs
   try {
@@ -2003,6 +2022,7 @@ function cuThemeChanged() {
   var sel = document.getElementById('cuThemeSelect');
   if (!sel) return;
   var v = sel.value;
+  _cuThemeExplicitDefault = (v === '');
   var colorsWrap = document.getElementById('cuColorsWrap');
   var deleteBtn = document.getElementById('cuDeletePresetBtn');
 
