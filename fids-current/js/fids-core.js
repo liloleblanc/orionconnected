@@ -8410,9 +8410,7 @@ const gView = document.getElementById('gateView');
         // Kill it and restart the rotation so the new flight gets its own map.
         try {
           if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
-            window.GateMap3D.destroy();
-            if (typeof stopGateAds === 'function') stopGateAds();
-            if (typeof startGateAds === 'function') setTimeout(startGateAds, 80);
+            window.GateMap3D.destroy(); // next _gateMapTick remounts for the new flight
           }
         } catch (e) {}
       }
@@ -17808,6 +17806,25 @@ var _gateMapCamera = {
 function _gateMapTick() {
   var mb = document.getElementById('gateMapBox');
   if (!mb || mb.offsetHeight < 10) return; // not rendered yet
+  // ── 3D TAKEOVER (Nick): while a real inbound is airborne, the 3D flight
+  // map replaces the classic 2D map IN THIS SAME BLOCK — same options,
+  // same box, one-minute four-angle cycle, A320 model at the live
+  // position. Lands / no inbound / engine unavailable → classic 2D map.
+  try {
+    if (window.GateMap3D && window.GateMap3D.available()) {
+      var _ctx3d = (typeof _map3dFlightCtx === 'function') ? _map3dFlightCtx() : null;
+      if (_ctx3d) {
+        if (gateMap) { try { gateMap.remove(); } catch (e) {} gateMap = null; }
+        window.GateMap3D.mount(mb, _ctx3d, {
+          cycleMs: 60000,
+          refresh: _map3dFlightCtx,
+          onEnd: function () { try { _gateMapTick(); } catch (e) {} }
+        });
+        return;
+      }
+      if (window.GateMap3D.mounted()) window.GateMap3D.destroy();
+    }
+  } catch (e) {}
   var inb = window._gateInbound;
   var apIata = window._gateIata || 'YQM';
   var cf = window._gateCurrentFlight;
@@ -21321,20 +21338,11 @@ function renderGateAd(index) {
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
   var slide = slides[slot];
 
-  // ── 3D flight map slide: mounts the MapLibre/three engine into the ad
-  // slot for its dwell, then the next tick tears it down. Any OTHER slide
-  // type must destroy a live map first (innerHTML swaps would orphan it).
+  // (v219: the 3D flight map is no longer an ad slide — it lives in the
+  // gate's MAP block, replacing the classic 2D map while an inbound is
+  // airborne. See _gateMapTick. Nothing here may touch GateMap3D.)
   if (slide && slide.type === 'map3d') {
-    var _m3dCtx = _map3dFlightCtx();
-    if (_m3dCtx && window.GateMap3D && window.GateMap3D.available()) {
-      window.GateMap3D.mount(el, _m3dCtx, (typeof _getGateAdDwellMs === 'function') ? _getGateAdDwellMs(slide) : 60000);
-      return;
-    }
-    // context vanished — fall through and render the next slot instead
-    slide = slides[(slot + 1) % totalSlots] || slide;
-  }
-  if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
-    try { window.GateMap3D.destroy(); } catch (e) {}
+    slide = slides[(slot + 1) % totalSlots] || slide; // legacy deck entry — skip
   }
 
   // ── Custom theme slide (image or video uploaded via Media Library) ──
@@ -21725,7 +21733,6 @@ function _getGateAdDwellMs(slide) {
   if (!slide) return 15000;
   // 3D flight map holds the slot for about a minute (per Nick) —
   // four camera views ~15s each inside GateMap3D's sequence.
-  if (slide.type === 'map3d') return 60000;
   // v218.96: custom slides from the Gate Theme editor carry their own
   // configured duration. Clamp to a sensible 2s–600s range so a typo can't
   // freeze the carousel on a single slide for the rest of the day, while
@@ -21835,15 +21842,8 @@ function _buildGateAdSlideList() {
     else deck = [{ type: 'ad', data: { bg: 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)', headline: 'Welcome aboard', sub: 'Gate information display' } }];
   }
 
-  // ── 6. 3D FLIGHT MAP — one slide per cycle when the engine can run and
-  // the gate's flight has a plottable route. Slots in early (position 1)
-  // so the flight showcase leads the rotation without pre-empting slide 0.
-  try {
-    if (window.GateMap3D && window.GateMap3D.available()
-        && typeof _map3dFlightCtx === 'function' && _map3dFlightCtx()) {
-      deck.splice(Math.min(1, deck.length), 0, { type: 'map3d' });
-    }
-  } catch (e) {}
+  // (v219: the 3D flight map moved out of the ad rotation and into the
+  // gate's MAP block — see _gateMapTick.)
 
   return deck;
 }
