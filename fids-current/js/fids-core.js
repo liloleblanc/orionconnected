@@ -8991,7 +8991,7 @@ const gView = document.getElementById('gateView');
               // onerror string, where a stray quote kills the fallback.
               const _bSafeName = airlineName.replace(/[^A-Z0-9ÀÂÉÈÊÎÔÛÇ &().-]/gi, '');
               const _bAirlineHtml = _bidsEmblemOnly ? '' : (_bWmBase
-                ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
+                ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
                 : '<div class="bidsv2-airline-name">' + airlineName + '</div>');
               return `<div class="bidsv2-flight-row${_bRowCls}">
                 <div class="bidsv2-col-flight">
@@ -13492,8 +13492,12 @@ function render() {
     // onerror: RETRY once with a unique cache-buster before falling back to the
     // text name — a transient asset hiccup (or a stale cached 404) must not
     // permanently demote the wordmark to lettering on a display.
+    // DELAYED (yellow) and FINAL CALL (orange) rows are light blocks even on
+    // dark boards — use the brand-color/dark-ink artwork there; the crimson
+    // and blue blocks keep the white artwork (matches the approved preview).
+    const _rowWmVariant = (isDelayed || stKey === 'final-call') ? 'dark' : undefined;
     const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
-      ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
+      ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase, _rowWmVariant)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
       : `<span class="fids-airline-name"${_nameStyle}>${_airlineDisplay}</span>`);
     // (Operated-by label lives on the GATE screen only — Nick doesn't want it
     // on the main board; the enforced Express matrix still drives the gate.)

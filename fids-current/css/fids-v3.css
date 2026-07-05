@@ -3939,3 +3939,22 @@ body #fidsTable tbody tr.row-early td.td-time-rev.has-rev * { color: #7FE7A6 !im
 body.fids-light-board #fidsTable tbody tr.row-early td.td-time-rev.has-rev,
 body.fids-light-board #fidsTable tbody tr.row-early td.td-time-rev.has-rev * { color: #157A43 !important; }
 body .bidsv2-clock { color: #ffffff !important; opacity: 1 !important; font-weight: 800 !important; }
+
+/* ══ FINAL CALL = WHOLE ROW ORANGE (Nick's GO, Jul 5 2026) ══════════════════
+   Solid #F28C00 across the row — hotter than the yellow Delayed block,
+   dark navy lettering, identical on every theme. The old amber STATUS-CELL
+   block dissolves into the row. */
+body #fidsTable tbody tr.row-final:nth-child(n),
+body #fidsTable tbody tr.row-final:nth-child(n) td,
+body.fids-light-board #fidsTable tbody tr.row-final:nth-child(n),
+body.fids-light-board #fidsTable tbody tr.row-final:nth-child(n) td { background: #F28C00 !important; }
+body #fidsTable tbody tr.row-final td,
+body #fidsTable tbody tr.row-final td *,
+body.fids-light-board #fidsTable tbody tr.row-final td,
+body.fids-light-board #fidsTable tbody tr.row-final td * { color: #102437 !important; }
+body #fidsTable tbody tr.row-final td.td-status.fids-status-final { background: transparent !important; }
+/* no highlight boxes or faded struck times inside the orange block */
+body #fidsTable tbody tr.row-final td.td-time *,
+body #fidsTable tbody tr.row-final td.td-time-rev *,
+body #fidsTable tbody tr.row-final td .fids-cell-time { background: transparent !important; box-shadow: none !important; text-shadow: none !important; }
+body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !important; }
