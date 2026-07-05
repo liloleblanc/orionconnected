@@ -324,7 +324,7 @@
             }, layers: [
               { id: 'bg', type: 'background', paint: { 'background-color': '#05080f' } },
               { id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-fade-duration': 300 } },
-              { id: 'hills', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.55, 'hillshade-shadow-color': '#0b1426', 'hillshade-highlight-color': '#ffffff' } },
+              { id: 'hills', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.3, 'hillshade-shadow-color': '#0b1426', 'hillshade-highlight-color': '#ffffff' } },
               { id: 'labels', type: 'raster', source: 'labels', paint: { 'raster-fade-duration': 200 } }
             ] },
           center: sp.pos, zoom: 6, pitch: 0, bearing: 0
@@ -335,7 +335,7 @@
         _map.on('error', function () { /* tile hiccups must not kill the block */ });
         _map.on('load', function () {
           if (!_mounted) return;
-          try { _map.setTerrain({ source: 'dem', exaggeration: 1.35 }); } catch (e) {}
+          try { _map.setTerrain({ source: 'dem', exaggeration: 1.2 }); } catch (e) {}
           try { _drawRoute(flight); } catch (e) { try { console.error('[m3d] route', e); } catch (e2) {} }
           // Clean flat icon immediately (same look as the 2D map) …
           try {
@@ -364,6 +364,14 @@
             var f2;
             try { f2 = _refreshFn ? _refreshFn() : undefined; } catch (e) { f2 = undefined; }
             if (f2 === null) { var cb = _onEnd; API.destroy(); if (cb) { try { cb(); } catch (e) {} } return; }
+            if (f2 && _flight && f2.fl !== _flight.fl) {
+              // different inbound now — remount cleanly, never mix two
+              // flights' route/plane/chip on one map
+              var cont = _container, opts2 = { cycleMs: (opts && opts.cycleMs) || 60000, refresh: _refreshFn, onEnd: _onEnd };
+              API.destroy();
+              API.mount(cont, f2, opts2);
+              return;
+            }
             if (f2) { _flight = f2; _updatePlane(f2); }
           }, 10000);
         });
