@@ -3908,3 +3908,51 @@ body[data-fids-theme="mist"] .fids-banner-board .fids-icon-arr {
   html { overflow: hidden !important; }
   body.fids-v2-page { overflow: hidden !important; }
 }
+
+/* ── SEMANTIC STATUS COLORS — every theme (Nick) ────────────────────────────
+   Words: good states GREEN (On time / Scheduled / Boarding / Arrivé / Early),
+   Final call & Gate closed AMBER, Departed muted. Never white-on-white.
+   Rows: Delayed = WHOLE ROW amber. Cancelled/Diverted = WHOLE ROW red.
+   Appended last so it out-cascades every per-theme rule above. */
+body #fidsTable tbody tr td.td-status,
+body #fidsTable tbody tr td.td-status * { color: #7FE7A6 !important; }
+body.fids-light-board #fidsTable tbody tr td.td-status,
+body.fids-light-board #fidsTable tbody tr td.td-status * { color: #157A43 !important; }
+
+body #fidsTable td.td-status.fids-status-final,
+body #fidsTable td.td-status.fids-status-final *,
+body #fidsTable td.td-status.fids-status-gate-closed,
+body #fidsTable td.td-status.fids-status-gate-closed * { color: #FAC120 !important; }
+body.fids-light-board #fidsTable td.td-status.fids-status-final,
+body.fids-light-board #fidsTable td.td-status.fids-status-final *,
+body.fids-light-board #fidsTable td.td-status.fids-status-gate-closed,
+body.fids-light-board #fidsTable td.td-status.fids-status-gate-closed * { color: #A66F00 !important; }
+
+body #fidsTable td.td-status.fids-status-departed,
+body #fidsTable td.td-status.fids-status-departed * { color: rgba(255,255,255,0.55) !important; }
+body.fids-light-board #fidsTable td.td-status.fids-status-departed,
+body.fids-light-board #fidsTable td.td-status.fids-status-departed * { color: rgba(22,40,60,0.48) !important; }
+
+/* DELAYED — the whole row goes amber, dark lettering for contrast */
+body #fidsTable tbody tr.row-delayed,
+body #fidsTable tbody tr.row-delayed td { background: #E5A800 !important; }
+body #fidsTable tbody tr.row-delayed td,
+body #fidsTable tbody tr.row-delayed td * { color: #102437 !important; }
+body.fids-light-board #fidsTable tbody tr.row-delayed,
+body.fids-light-board #fidsTable tbody tr.row-delayed td { background: #F5C441 !important; }
+body.fids-light-board #fidsTable tbody tr.row-delayed td,
+body.fids-light-board #fidsTable tbody tr.row-delayed td * { color: #3A2B00 !important; }
+
+/* CANCELLED / DIVERTED — the whole row goes red, white lettering */
+body #fidsTable tbody tr.row-cancelled,
+body #fidsTable tbody tr.row-cancelled td,
+body #fidsTable tbody tr.row-diverted,
+body #fidsTable tbody tr.row-diverted td { background: #A61B2B !important; }
+body #fidsTable tbody tr.row-cancelled td,
+body #fidsTable tbody tr.row-cancelled td *,
+body #fidsTable tbody tr.row-diverted td,
+body #fidsTable tbody tr.row-diverted td * { color: #ffffff !important; }
+body.fids-light-board #fidsTable tbody tr.row-cancelled,
+body.fids-light-board #fidsTable tbody tr.row-cancelled td,
+body.fids-light-board #fidsTable tbody tr.row-diverted,
+body.fids-light-board #fidsTable tbody tr.row-diverted td { background: #DE4B58 !important; }
