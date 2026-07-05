@@ -4039,3 +4039,54 @@ body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev) * { color: r
 body .bidsv2-screen,
 body #baggageView .bidsv2-screen,
 body[data-page="bids"] .bidsv2-screen { background: #0a1628 !important; }
+
+/* ══ STATUS GRAMMAR (Nick's industry review) ═══════════════════════════════
+   Standard flow = quiet TEXT colors, no blocks. Irregular ops = SOLID
+   blocks with white lettering. History = faded rows. Light/dark board
+   adaptation unchanged underneath. Appended last: wins all prior blocks. */
+/* Neutral flow (On time / Scheduled): standard board ink, no green */
+body #fidsTable tbody tr td.td-status,
+body #fidsTable tbody tr td.td-status * { color: #ffffff !important; }
+body.fids-light-board #fidsTable tbody tr td.td-status,
+body.fids-light-board #fidsTable tbody tr td.td-status * { color: #16283C !important; }
+/* Early: plain green */
+body #fidsTable td.td-status.fids-status-early,
+body #fidsTable td.td-status.fids-status-early * { color: #7FE7A6 !important; }
+body.fids-light-board #fidsTable td.td-status.fids-status-early,
+body.fids-light-board #fidsTable td.td-status.fids-status-early * { color: #157A43 !important; }
+/* Boarding / Final call: plain amber */
+body #fidsTable td.td-status.fids-status-boarding,
+body #fidsTable td.td-status.fids-status-boarding *,
+body #fidsTable td.td-status.fids-status-final,
+body #fidsTable td.td-status.fids-status-final * { color: #FFB000 !important; }
+body.fids-light-board #fidsTable td.td-status.fids-status-boarding,
+body.fids-light-board #fidsTable td.td-status.fids-status-boarding *,
+body.fids-light-board #fidsTable td.td-status.fids-status-final,
+body.fids-light-board #fidsTable td.td-status.fids-status-final * { color: #A66F00 !important; }
+/* History (Departed / Arrived / Gate closed): dim grey word, whole row fades */
+body #fidsTable td.td-status.fids-status-departed, body #fidsTable td.td-status.fids-status-departed *,
+body #fidsTable td.td-status.fids-status-arrived, body #fidsTable td.td-status.fids-status-arrived *,
+body #fidsTable td.td-status.fids-status-gate-closed, body #fidsTable td.td-status.fids-status-gate-closed * { color: rgba(160,170,182,0.9) !important; }
+body #fidsTable tbody tr:has(td.fids-status-departed),
+body #fidsTable tbody tr:has(td.fids-status-arrived),
+body #fidsTable tbody tr:has(td.fids-status-gate-closed) { opacity: 0.55; }
+/* IRREGULAR OPS — solid blocks, white lettering, identical on every theme */
+body #fidsTable tbody tr.row-delayed:nth-child(n),
+body #fidsTable tbody tr.row-delayed:nth-child(n) td,
+body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n),
+body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n) td { background: #9A6400 !important; }
+body #fidsTable tbody tr.row-delayed td, body #fidsTable tbody tr.row-delayed td *,
+body.fids-light-board #fidsTable tbody tr.row-delayed td, body.fids-light-board #fidsTable tbody tr.row-delayed td * { color: #ffffff !important; }
+body #fidsTable tbody tr.row-cancelled:nth-child(n),
+body #fidsTable tbody tr.row-cancelled:nth-child(n) td,
+body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(n),
+body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(n) td { background: #C8102E !important; }
+body #fidsTable tbody tr.row-diverted:nth-child(n),
+body #fidsTable tbody tr.row-diverted:nth-child(n) td { background: #185A9D !important; }
+body #fidsTable tbody tr.row-cancelled td, body #fidsTable tbody tr.row-cancelled td *,
+body #fidsTable tbody tr.row-diverted td, body #fidsTable tbody tr.row-diverted td * { color: #ffffff !important; }
+/* NEW GATE — solid amber block on just the gate cell */
+body #fidsTable td.td-gate .gate-changed-badge {
+  display: inline-block; background: #FFB000 !important; color: #102437 !important;
+  padding: 3px 16px; border-radius: 9px; font-weight: 800;
+}

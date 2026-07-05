@@ -83,6 +83,7 @@
       'delayed':     'fids-status-delayed',
       'final-call':  'fids-status-final',
       'gate-closed': 'fids-status-gate-closed',
+      'boarding':    'fids-status-boarding',
       'departed':    'fids-status-departed',
       'arrived':     'fids-status-arrived',
       'early':       'fids-status-early'
