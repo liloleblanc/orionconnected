@@ -1465,7 +1465,10 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-size: cover !important;
   background-position: center bottom !important;
   background-repeat: no-repeat !important;
-  opacity: 0.85 !important;
+  /* Nick: 'too seen' at 0.85 and the red arcs clash with some airline
+     palettes — lighter and black & white. */
+  opacity: 0.42 !important;
+  filter: grayscale(1) !important;
   mix-blend-mode: normal !important;
   transform: none !important;
 }
@@ -1529,7 +1532,7 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow {
   display: grid !important;
-  grid-template-columns: clamp(80px, 7.6vw, 128px) 1fr !important;
+  grid-template-columns: clamp(96px, 8.6vw, 146px) 1fr !important;
   align-items: center !important;
   column-gap: clamp(10px, 1.2vw, 22px) !important;
   padding: clamp(3px, 0.7vh, 9px) 0 !important;
@@ -1538,12 +1541,12 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-last { border-bottom: none !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl {
-  font-size: clamp(10px, 1.35vh, 16px) !important; font-weight: 700 !important;
+  font-size: clamp(11px, 1.5vh, 17px) !important; font-weight: 700 !important;
   color: var(--banner-bg, #14181E) !important; letter-spacing: 0.2px !important;
   white-space: nowrap !important; overflow: hidden !important;
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval {
-  font-size: clamp(14px, 2.15vh, 26px) !important; font-weight: 900 !important;
+  font-size: clamp(16px, 2.3vh, 28px) !important; font-weight: 900 !important;
   line-height: 1.2 !important; color: var(--banner-bg, #14181E) !important;
   white-space: nowrap !important; overflow: hidden !important;
   text-overflow: ellipsis !important; min-width: 0 !important;
