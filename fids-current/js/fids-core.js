@@ -13489,7 +13489,19 @@ function render() {
       console.error('[FIDS HidePrefix] error:', e);
     }
     const flightCellHtml = '<td class="td-flight fids-cell-flight">' + _flightDisplay + '</td>';
-    const gateCellHtml = '<td class="td-gate">' + (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—')) + '</td>';
+    // NEW GATE (industry convention): a solid amber block on JUST the gate
+    // cell for 15 minutes after a gate change — passengers must not walk to
+    // the wrong wing. Uses the existing per-flight gate-change history.
+    let _gateChanged = false;
+    try {
+      const _gh = (typeof getGateHistory === 'function') ? getGateHistory() : null;
+      const _ge = _gh && _gh[f.flight];
+      if (_ge && _ge.changedAt && (Date.now() - _ge.changedAt) < 15 * 60000 && _ge.previousGate) _gateChanged = true;
+    } catch (e) {}
+    const _gateVal2 = (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—'));
+    const gateCellHtml = '<td class="td-gate">'
+      + (_gateChanged ? '<span class="gate-changed-badge">' + _gateVal2 + '</span>' : _gateVal2)
+      + '</td>';
     const carouselCellHtml = '<td class="td-gate">' + (f.gate && f.gate !== '—' ? f.gate : '—') + '</td>';
     // Phase 4: Sched + Revised as separate columns.
     // Scheduled cell: original time, strikethrough when revised, otherwise normal.
