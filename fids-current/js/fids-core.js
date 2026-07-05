@@ -5845,17 +5845,26 @@ function _buildV2MapCol(ctx, vars) {
         ? (_stEn + ' <span class="v2-rc-fi-sep">|</span> ' + _stFr) : _stEn;
       // ONE flight-info shelf: Flight·From + Status (bilingual). No ETA row —
       // that lives on the left/departure side.
+      // Nick's Jul 2026 layout: bilingual labels STACKED on the left (Flight
+      // over Vol), value BESIDE them spanning both lines. The From cell is
+      // literal to his sketch: "From YYZ" over "De Toronto".
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi">'
         +   '<div class="v2-rc-fi-row">'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Flight <span class="v2-rc-fi-sep">|</span> Vol</div>'
-        +       '<div class="v2-rc-fi-val">' + (_ibFltCompact || '—') + '</div></div>'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">From <span class="v2-rc-fi-sep">|</span> <span class="v2-rc-fi-code">' + (_origIata || 'De') + '</span></div>'
-        +       '<div class="v2-rc-fi-val">' + (_origCity || _origIata || '—') + '</div></div>'
+        +     '<div class="v2-rc-fi-cell v2-rc-fi-pair">'
+        +       '<div class="v2-rc-fi-lblstack"><span>Flight</span><span>Vol</span></div>'
+        +       '<div class="v2-rc-fi-val v2-rc-fi-val-pair">' + (_ibFltCompact || '—') + '</div>'
+        +     '</div>'
+        +     '<div class="v2-rc-fi-cell v2-rc-fi-duo">'
+        +       '<span class="v2-rc-fi-duolbl">From</span><span class="v2-rc-fi-duocode">' + (_origIata || '—') + '</span>'
+        +       '<span class="v2-rc-fi-duolbl">De</span><span class="v2-rc-fi-duocity">' + (_origCity || _origIata || '—') + '</span>'
+        +     '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Status <span class="v2-rc-fi-sep">|</span> Statut</div>'
-        +       '<div class="v2-rc-fi-val v2-rc-status-' + _stCls + '">' + _stShow + '</div></div>'
+        +     '<div class="v2-rc-fi-cell v2-rc-fi-pair">'
+        +       '<div class="v2-rc-fi-lblstack"><span>Status</span><span>Statut</span></div>'
+        +       '<div class="v2-rc-fi-val v2-rc-fi-val-pair v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
+        +     '</div>'
         +   '</div>'
         + '</div></div>';
 
@@ -5948,17 +5957,24 @@ function _buildV2MapCol(ctx, vars) {
       var _dStShow = (_dStFr && _dStFr !== _dStEn)
         ? (_dStEn + ' <span class="v2-rc-fi-sep">|</span> ' + _dStFr) : (_dStEn || _dStLabel || '—');
       // Flight·To + Status only (no departing-in row — it's on the left).
+      // Same stacked-label layout as the inbound card (Nick, Jul 2026).
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi">'
         +   '<div class="v2-rc-fi-row">'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Flight <span class="v2-rc-fi-sep">|</span> Vol</div>'
-        +       '<div class="v2-rc-fi-val">' + (_dFltCompact || '—') + '</div></div>'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Destination <span class="v2-rc-fi-sep">|</span> <span class="v2-rc-fi-code">' + (_dDest || 'À') + '</span></div>'
-        +       '<div class="v2-rc-fi-val">' + (_dDestCity || _dDest || '—') + '</div></div>'
+        +     '<div class="v2-rc-fi-cell v2-rc-fi-pair">'
+        +       '<div class="v2-rc-fi-lblstack"><span>Flight</span><span>Vol</span></div>'
+        +       '<div class="v2-rc-fi-val v2-rc-fi-val-pair">' + (_dFltCompact || '—') + '</div>'
+        +     '</div>'
+        +     '<div class="v2-rc-fi-cell v2-rc-fi-duo">'
+        +       '<span class="v2-rc-fi-duolbl">Destination</span><span class="v2-rc-fi-duocode">' + (_dDest || '—') + '</span>'
+        +       '<span class="v2-rc-fi-duolbl">À</span><span class="v2-rc-fi-duocity">' + (_dDestCity || _dDest || '—') + '</span>'
+        +     '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-row v2-rc-fi-row-single">'
-        +     '<div class="v2-rc-fi-cell"><div class="v2-rc-fi-lbl">Status <span class="v2-rc-fi-sep">|</span> Statut</div>'
-        +       '<div class="v2-rc-fi-val v2-rc-status-' + _dStCls + '">' + _dStShow + '</div></div>'
+        +     '<div class="v2-rc-fi-cell v2-rc-fi-pair">'
+        +       '<div class="v2-rc-fi-lblstack"><span>Status</span><span>Statut</span></div>'
+        +       '<div class="v2-rc-fi-val v2-rc-fi-val-pair v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+        +     '</div>'
         +   '</div>'
         + '</div></div>';
     } catch (e) {}
