@@ -4724,9 +4724,11 @@ body, body.gids-page, body.gate-page{
   width: calc(2 * var(--gate-rcw, 25%) - 24px) !important;
   /* centre content in the VISIBLE half of the band (the other half runs
      under the gate block) — was using --col-left 23% while the block uses
-     --gate-rcw 25%, so logos drifted toward the seams. */
-  padding-left: 36px !important;
-  padding-right: calc(var(--gate-rcw, 25%) + 44px) !important;
+     --gate-rcw 25%, so logos drifted toward the seams.
+     Jul 2026 (Nick): margins SYMMETRIC around the airport logo — the old
+     36/+44 split left ~2x more white on the left of the logo. */
+  padding-left: 22px !important;
+  padding-right: calc(var(--gate-rcw, 25%) + 58px) !important;
 }
 /* AUTO-FIT: any airport logo, any shape, always inside the visible band. */
 .g8-wrap .g8-r1-apband img {

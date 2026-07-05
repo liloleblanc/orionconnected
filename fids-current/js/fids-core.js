@@ -8934,16 +8934,17 @@ const gView = document.getElementById('gateView');
       }, BIDS_ROTATE_MS);
     }
 
-    // White wordmarks need DARK rows. Stock themes keep baggage dark (Mist
-    // pins the dark canvas), but a light CUSTOM theme paints the screen
-    // light — measure the previous render's canvas and flip to the dark-ink
-    // artwork there. Self-corrects within one render pass after any switch.
-    var _bWmVariant = 'light';
+    // White wordmarks need DARK rows; light boards (Mist) now render the
+    // baggage screen LIGHT, so they need the brand-color/dark artwork.
+    // Default from the light-board flag (known BEFORE first paint — kills
+    // the white-on-white flash Nick saw), then let the measured canvas of
+    // the previous render override for custom themes.
+    var _bWmVariant = document.body.classList.contains('fids-light-board') ? 'dark' : 'light';
     try {
       var _bScrProbe = document.querySelector('.bidsv2-screen');
       if (_bScrProbe) {
         var _bLumM = getComputedStyle(_bScrProbe).backgroundColor.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
-        if (_bLumM && (0.2126 * _bLumM[1] + 0.7152 * _bLumM[2] + 0.0722 * _bLumM[3]) > 150) _bWmVariant = 'dark';
+        if (_bLumM) _bWmVariant = (0.2126 * _bLumM[1] + 0.7152 * _bLumM[2] + 0.0722 * _bLumM[3]) > 150 ? 'dark' : 'light';
       }
     } catch (e) {}
 

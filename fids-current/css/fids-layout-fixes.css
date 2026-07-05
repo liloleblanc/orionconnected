@@ -1445,3 +1445,22 @@ body.g8-header-is-light .g8-city-code,
 /* Icelandair + Caribbean — wired Jul 2026 (ink aspects 10.35 / 7.31) */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { --wm-h: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { --wm-h: 21px; }
+
+/* Right-column shelves (below the mini map): the 3D globe artwork replaces
+   the faded airline-logo watermark (Nick, Jul 2026). */
+.gad-map-col-v2::before {
+  background-image: url('/logos/3d_globe_desktop.svg') !important;
+  background-size: 92% auto !important;
+  background-position: center 58% !important;
+  opacity: 0.55 !important;
+  mix-blend-mode: normal !important;
+}
+
+/* No white sliver between the gate block and the Your Aircraft panel
+   (Nick): the gate tab spans the banner's full inner height and covers
+   the white band's bottom edge. min-height wins over WHATEVER sets the
+   tab's fixed height (it computes short of the banner box). */
+.g8-wrap .g8-r1 .g8-r1-right {
+  top: 0 !important;
+  min-height: 100% !important;
+}

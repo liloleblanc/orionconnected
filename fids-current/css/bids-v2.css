@@ -586,3 +586,24 @@ body .bidsv2-flight-row.bidsv2-row-diverted, body .bidsv2-flight-row.bidsv2-row-
 .bidsv2-airline-wordmark[data-code="HA"] { height: 15px; }
 .bidsv2-airline-wordmark[data-code="FI"] { height: 13px; }
 .bidsv2-airline-wordmark[data-code="BW"] { height: 14px; }
+
+/* ── Baggage follows LIGHT boards properly (Nick, Jul 2026): the old rule
+   pinned a dark canvas under the white lettering; Mist now renders as
+   Mist — light canvas, dark ink, brand-color wordmarks (the renderer
+   picks the 'dark' artwork variant from the light-board state). ── */
+body.fids-light-board .bidsv2-screen,
+body.fids-light-board #baggageView .bidsv2-screen { background: var(--fids-bg, #C7D2DD) !important; }
+body.fids-light-board .bidsv2-flight-row { background: rgba(22,40,60,0.05) !important; }
+body.fids-light-board .bidsv2-flight-row:nth-child(odd) { background: rgba(22,40,60,0.095) !important; }
+body.fids-light-board .bidsv2-flight-num,
+body.fids-light-board .bidsv2-col-from,
+body.fids-light-board .bidsv2-col-time { color: #16283C !important; }
+body.fids-light-board .bidsv2-airline-name,
+body.fids-light-board .bidsv2-list-header,
+body.fids-light-board .bidsv2-footer-msg,
+body.fids-light-board .bidsv2-page-indicator,
+body.fids-light-board .bidsv2-status-other { color: #3A4E66 !important; }
+body.fids-light-board .bidsv2-status-arrived { color: #0E7A3C !important; }
+body.fids-light-board .bidsv2-status-early { color: #157A43 !important; }
+body.fids-light-board .bidsv2-status-delayed { color: #A66F00 !important; }
+body.fids-light-board .bidsv2-empty { color: #3A4E66 !important; }
