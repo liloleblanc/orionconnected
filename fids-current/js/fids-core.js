@@ -21610,8 +21610,8 @@ function renderGateAd(index) {
     }
     slide = slides[(slot + 1) % totalSlots] || slide; // nothing to show — next slide
   }
-  // Any non-bigcraft slide: tear the big map down so Leaflet doesn't leak.
-  try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
+  // Any non-bigcraft slide: tear the takeover down (overlay + map + class).
+  try { if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown(); } catch (e) {}
   if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
     try { window.GateMap3D.destroy(); } catch (e) {} // another slide takes the slot
   }
@@ -23187,8 +23187,17 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 // (same Leaflet language as the mini map) beside the flight info table and
 // the aircraft. Honest by construction: with no live fix the plane glyph
 // sits at time-progress exactly like the mini map, captioned 'Estimated'.
-function _renderBigCraft(el, ctx) {
+function _bigCraftTeardown() {
   try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
+  try { if (window._bigCraftOverlay) { window._bigCraftOverlay.remove(); window._bigCraftOverlay = null; } } catch (e) {}
+  try { document.querySelectorAll('.g8-bigcraft-active').forEach(function (w) { w.classList.remove('g8-bigcraft-active'); }); } catch (e) {}
+}
+function _renderBigCraft(el, ctx) {
+  // Nick: ONE panel that GROWS into the screen — never the same content
+  // twice. The takeover renders as an overlay spanning the center + right
+  // columns with a grow-from-the-right animation, and the right column
+  // hides beneath it for the duration of the slide.
+  if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown();
   var inb = window._gateInbound || {};
   var stKey = String(inb.status || '').toLowerCase().replace(/[\s_-]/g, '');
   var ss = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
@@ -23201,7 +23210,24 @@ function _renderBigCraft(el, ctx) {
     return '<div class="v2-rc-fi-trow"><div class="v2-rc-fi-tlbl"><span>' + l1 + '</span><span>' + l2 + '</span></div>'
          + '<div class="v2-rc-fi-tval' + (cls ? ' ' + cls : '') + '">' + val + '</div></div>';
   }
-  el.innerHTML =
+  var _bcWrapEl = el.closest ? (el.closest('.g8-wrap') || document.body) : document.body;
+  var _bcRight = document.querySelector('.gad-map-col-v2');
+  var _bcElR = el.getBoundingClientRect(), _bcWrapR = _bcWrapEl.getBoundingClientRect();
+  var _bcRightR = _bcRight ? _bcRight.getBoundingClientRect() : _bcElR;
+  // Robust union: if the right column measures empty (hidden/mid-render),
+  // extend to the wrap's right edge so the takeover always reaches it.
+  var _bcRightUsable = _bcRightR.width > 10 && _bcRightR.height > 10;
+  var _bcRightEdge = _bcRightUsable ? Math.max(_bcElR.right, _bcRightR.right) : (_bcWrapR.right - 8);
+  var _bcTop = _bcRightUsable ? Math.min(_bcElR.top, _bcRightR.top) : _bcElR.top;
+  var _bcBottom = _bcRightUsable ? Math.max(_bcElR.bottom, _bcRightR.bottom) : _bcElR.bottom;
+  var _bcOv = document.createElement('div');
+  _bcOv.className = 'bigcraft-overlay';
+  _bcOv.style.left = Math.round(_bcElR.left - _bcWrapR.left) + 'px';
+  _bcOv.style.top = Math.round(_bcTop - _bcWrapR.top) + 'px';
+  _bcOv.style.width = Math.round(_bcRightEdge - _bcElR.left) + 'px';
+  _bcOv.style.height = Math.round(_bcBottom - _bcTop) + 'px';
+  el.innerHTML = '';
+  _bcOv.innerHTML =
       '<div class="bigcraft-wrap">'
     +   '<div class="bigcraft-mapcol">'
     +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
@@ -23219,6 +23245,9 @@ function _renderBigCraft(el, ctx) {
     +     (acImg ? '<div class="bigcraft-plane"><img src="' + acImg + '" alt=""></div>' : '')
     +   '</div>'
     + '</div>';
+  _bcWrapEl.appendChild(_bcOv);
+  _bcWrapEl.classList.add('g8-bigcraft-active');
+  window._bigCraftOverlay = _bcOv;
   // Flat route map — full-route view, arc + endpoints + plane glyph at progress.
   try {
     if (typeof L === 'undefined' || typeof L.map !== 'function') return;
