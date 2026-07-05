@@ -22889,3 +22889,22 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     } catch (e) {}
   }, 5 * 60000);
 })();
+
+// ── KIOSK SCROLL PIN ────────────────────────────────────────────────────
+// Belt to the CSS lock's braces: if anything ever scrolls a desktop board
+// page (spacebar, stray touch, focus jump), snap back to the top instantly
+// so the banner can never sit above the viewport again.
+(function () {
+  try {
+    var mq = window.matchMedia('(min-width: 701px)');
+    function pin() {
+      if (!mq.matches) return;
+      var se = document.scrollingElement || document.documentElement;
+      if (se.scrollTop) se.scrollTop = 0;
+      if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+    }
+    window.addEventListener('scroll', pin, { passive: true });
+    setInterval(pin, 3000);
+    pin();
+  } catch (e) {}
+})();

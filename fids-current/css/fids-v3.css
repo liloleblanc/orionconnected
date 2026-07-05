@@ -3898,3 +3898,13 @@ body[data-fids-theme="mist"] .fids-banner-board .fids-icon-dep,
 body[data-fids-theme="mist"] .fids-banner-board .fids-icon-arr {
   fill: #0d2440 !important;
 }
+
+/* ── Kiosk scroll lock (Nick: 'still no top') ───────────────────────────────
+   html had overflow-y auto; when a display's larger fonts made content
+   exceed the viewport, any stray scroll pushed the ENTIRE banner above the
+   screen — and it stayed there. Board pages never legitimately scroll on
+   displays. Mobile (≤700px) keeps its scrolling. */
+@media (min-width: 701px) {
+  html { overflow: hidden !important; }
+  body.fids-v2-page { overflow: hidden !important; }
+}
