@@ -1429,3 +1429,16 @@ body.g8-header-is-light .g8-city-code,
 /* Sun Country (SY) — added Jul 2026 from the official lockup (ink aspect 7.5
    → H = 60/sqrt(7.5) ≈ 22). Same calibration rule as the regenerated table. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="SY"] { --wm-h: 22px; }
+
+/* Nick's nudges, Jul 5 2026 (override the generated table above):
+   jetBlue/Alaska slightly bigger, Frontier slightly bigger, Porter bigger.
+   Flair re-cut to the word 'flair' alone (aspect 2.5) and Hawaiian to
+   'Hawaiian' alone (aspect 7.0) — heights recomputed by the same
+   visual-weight rule. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { --wm-h: 28px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { --wm-h: 22px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PD"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] { --wm-h: 30px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] { --wm-h: 29px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { --wm-h: 23px; }
