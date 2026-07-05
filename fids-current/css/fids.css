@@ -2009,3 +2009,6 @@ body.uxg-gate-mode .g8-wrap * { font-family: inherit; }
   0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.5); }
   50%      { box-shadow: 0 0 0 6px rgba(249,115,22,0); }
 }
+
+/* Sun Country (SY) mobile card — Jul 2026 */
+.card-logo.card-wordmark[data-code="SY"] { height: 14px; }

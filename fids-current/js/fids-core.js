@@ -12056,6 +12056,7 @@ const IATA_TO_WORDMARK = {
   'F9':'frontier',  // Frontier Airlines — official green wordmark + emblem from Nick's upload
   // NK (Spirit) — ceased operations May 2 2026
   'AS':'alaska-airlines',  'HA':'hawaiian',
+  'SY':'sun-country',      // Sun Country — official lockup split: sun mark → SCX tile, lettering here (Jul 2026)
   'OO':'skywest-airlines',
   'PT':'piedmont',         // Piedmont Airlines (IATA: PT, ICAO: PDT — flies as American Eagle)
   'YX':'republic',         // Republic Airways (IATA: YX, ICAO: RPA — flies as American Eagle, Delta Connection, United Express)
@@ -12177,7 +12178,7 @@ const LOGO_SUBFOLDER = {
   'ac-roundel.png':'airlines/canadian', 'aeroplan.svg':'airlines/canadian', 'air-canada-white.svg':'airlines/canadian', 'air-canada-wordmark-dark.svg':'airlines/canadian', 'air-canada-wordmark-light.svg':'airlines/canadian', 'air-canada.svg':'airlines/canadian', 'air-france-wordmark-dark.svg':'airlines/european',
   'air-france-wordmark-light.svg':'airlines/european', 'air-france.svg':'airlines/european', 'alaska-airlines-wordmark-dark.svg':'airlines/us-major',
   'alaska-airlines-wordmark-light.svg':'airlines/us-major', 'alaska-airlines.svg':'airlines/us-major', 'all-accor.svg':'hotels/accor-corporate', 'aloft.png':'hotels/marriott', 'american-airlines-white.svg':'airlines/us-major', 'american-airlines-wordmark-dark.svg':'airlines/us-major', 'american-airlines-wordmark-light.svg':'airlines/us-major',
-  'american-airlines.svg':'airlines/us-major', 'american-flight-symbol.svg':'airlines/us-major', 'american-wordmark-dark.svg':'airlines/us-major', 'american-wordmark-light.svg':'airlines/us-major', 'angsana.svg':'hotels/accor-premium', 'art-series.svg':'hotels/accor-premium', 'autograph-collection.png':'hotels/marriott',
+  'american-airlines.svg':'airlines/us-major', 'american-flight-symbol.svg':'airlines/us-major', 'american-wordmark-dark.svg':'airlines/us-major', 'american-wordmark-light.svg':'airlines/us-major', 'sun-country-wordmark-dark.svg':'airlines/us-major', 'sun-country-wordmark-light.svg':'airlines/us-major', 'sun-country-wordmark-color.svg':'airlines/us-major', 'angsana.svg':'hotels/accor-premium', 'art-series.svg':'hotels/accor-premium', 'autograph-collection.png':'hotels/marriott',
   'autograph-collection.svg':'hotels/marriott', 'banyan-tree.png':'hotels/accor-luxury', 'banyan-tree.svg':'hotels/accor-luxury', 'baymont.png':'hotels/wyndham',
   'best-western.png':'hotels/other-chains', 'best-western.svg':'hotels/other-chains', 'breakfree.svg':'hotels/accor-midscale', 'british-airways-wordmark-dark.svg':'airlines/european',
   'british-airways-wordmark-light.svg':'airlines/european', 'british-airways.svg':'airlines/european', 'candlewood-suites.png':'hotels/ihg', 'carlson.png':'hotels/other-chains',
@@ -12297,6 +12298,7 @@ const COLOR_WORDMARKS = {
   'hawaiian': '/logos/airlines/us-major/hawaiian-wordmark-color.svg',
   'jetblue': '/logos/airlines/us-major/jetblue-wordmark-color.svg',
   'southwest': '/logos/airlines/us-major/southwest-wordmark-color.svg',
+  'sun-country': '/logos/airlines/us-major/sun-country-wordmark-color.svg',
   'united': '/logos/airlines/us-major/united-wordmark-color.svg',
 };
 function wordmarkSrc(base, forceVariant) {
