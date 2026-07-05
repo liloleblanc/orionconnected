@@ -4090,3 +4090,23 @@ body #fidsTable td.td-gate .gate-changed-badge {
   display: inline-block; background: #FFB000 !important; color: #102437 !important;
   padding: 3px 16px; border-radius: 9px; font-weight: 800;
 }
+
+/* ── Grammar refinements (Nick) ─────────────────────────────────────────────
+   FINAL CALL: urgent → solid amber block on the status cell (same accent as
+   the NEW GATE badge). History rows sit on a darker grey band under the fade
+   so they read as a recessed section, not just dimmer text. */
+body #fidsTable td.td-status.fids-status-final { background: #FFB000 !important; }
+body #fidsTable td.td-status.fids-status-final,
+body #fidsTable td.td-status.fids-status-final * { color: #102437 !important; }
+body #fidsTable tbody tr:has(td.fids-status-departed),
+body #fidsTable tbody tr:has(td.fids-status-departed) td,
+body #fidsTable tbody tr:has(td.fids-status-arrived),
+body #fidsTable tbody tr:has(td.fids-status-arrived) td,
+body #fidsTable tbody tr:has(td.fids-status-gate-closed),
+body #fidsTable tbody tr:has(td.fids-status-gate-closed) td { background: #262D36 !important; }
+body.fids-light-board #fidsTable tbody tr:has(td.fids-status-departed),
+body.fids-light-board #fidsTable tbody tr:has(td.fids-status-departed) td,
+body.fids-light-board #fidsTable tbody tr:has(td.fids-status-arrived),
+body.fids-light-board #fidsTable tbody tr:has(td.fids-status-arrived) td,
+body.fids-light-board #fidsTable tbody tr:has(td.fids-status-gate-closed),
+body.fids-light-board #fidsTable tbody tr:has(td.fids-status-gate-closed) td { background: #AEB7C1 !important; }
