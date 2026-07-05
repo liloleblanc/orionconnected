@@ -1548,3 +1548,23 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   white-space: nowrap !important; overflow: hidden !important;
   text-overflow: ellipsis !important; min-width: 0 !important;
 }
+
+/* Flight-shelf table: status VALUE takes the status color (Nick), and the
+   row separators take the AIRLINE accent so the shelf reads on-brand. */
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-scheduled,
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime { color: #16a34a !important; }
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed { color: #d97706 !important; }
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled { color: #c01622 !important; }
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow {
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-last { border-bottom: none !important; }
+
+/* Operated-by logo: PAL's wide swoosh lockup rendered tiny under the generic
+   caps — give it real presence (Nick: 'Operated by PAL is too small'). */
+html .g8-wrap img.v2-rc-opby-logo[src*="pal-airlines"],
+html .g8-wrap .v2-rc-acb-opby-logo img[src*="pal-airlines"],
+html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
+  max-height: clamp(44px, 6.4vh, 88px) !important;
+  max-width: min(62%, 320px) !important;
+}

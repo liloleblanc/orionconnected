@@ -21485,7 +21485,11 @@ function _liveFixPhysOk(inb) {
     var prop = /DH[0-9C]|DASH|Q400|AT[0-9R]/.test(eq);
     var altFt = (typeof inb._liveAlt === 'number') ? inb._liveAlt : null;
     var spdKt = (typeof inb._liveSpd === 'number') ? inb._liveSpd : null;
-    if (prop && ((altFt !== null && altFt > 27500) || (spdKt !== null && spdKt > 380))) return false;
+    // 450 kt GROUND speed cap: a Dash-8 with a strong tailwind legitimately
+    // exceeds 380 kt over the ground — the old cap hid REAL telemetry. The
+    // altitude cap is what catches wrong-aircraft fixes (the original
+    // 'Q400 at 31,400 ft' lie).
+    if (prop && ((altFt !== null && altFt > 27500) || (spdKt !== null && spdKt > 450))) return false;
     if (altFt !== null && altFt > 45000) return false; // nothing regional flies here
     return true;
   } catch (e) { return true; }
