@@ -7,7 +7,8 @@
      • the 3D A320 model from the prototype at the flight's REAL position
        (live telemetry when available), refreshed every 10s — no sweep
      • terrain + hillshade for the 3D feel; satellite base, route lines
-   Fallback ladder: GLB model → procedural 3D plane → flat icon. If WebGL
+   Plane ladder: the REAL a320neo.glb only — a clean flat icon holds the
+   position until the model is ready (or if it fails). No stand-ins. If WebGL
    or the libs fail, available() goes false and the classic 2D map stays.
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 (function () {
@@ -16,6 +17,7 @@
   var MAPLIBRE_CSS = '/mapcdn/maplibre-gl.css';
   var MAPLIBRE_JS  = '/mapcdn/maplibre-gl.js';
   var THREE_JS     = '/mapcdn/three.min.js';
+  var GLTF_JS      = '/mapcdn/gltf-loader.js'; // attaches THREE.GLTFLoader (r128 UMD)
   var MODEL_URL    = '/models/a320neo.glb';
 
   // Proto-calibrated model constants
@@ -48,27 +50,31 @@
     } catch (e) { return false; }
   }
 
+  function _loadScript(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script'); s.src = src;
+      s.onload = res; s.onerror = function () { rej(new Error(src)); };
+      document.head.appendChild(s);
+    });
+  }
   function _loadLibs() {
     if (_libsReady) return Promise.resolve();
     if (_loading) return _loading;
-    _loading = new Promise(function (resolve, reject) {
-      var pending = 0, failed = false;
-      function done() { if (--pending === 0 && !failed) { _libsReady = true; resolve(); } }
-      function fail() { if (!failed) { failed = true; _libsFailed = true; reject(new Error('libs')); } }
-      if (!document.querySelector('link[href*="maplibre-gl.css"]')) {
-        var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = MAPLIBRE_CSS;
-        document.head.appendChild(l);
-      }
-      [MAPLIBRE_JS, THREE_JS].forEach(function (src) {
-        var have = (src === MAPLIBRE_JS && window.maplibregl) || (src === THREE_JS && window.THREE);
-        if (have) return;
-        pending++;
-        var s = document.createElement('script'); s.src = src;
-        s.onload = done; s.onerror = fail;
-        document.head.appendChild(s);
-      });
-      if (pending === 0) { _libsReady = true; resolve(); }
-    });
+    if (!document.querySelector('link[href*="maplibre-gl.css"]')) {
+      var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = MAPLIBRE_CSS;
+      document.head.appendChild(l);
+    }
+    _loading = Promise.all([
+      window.maplibregl ? Promise.resolve() : _loadScript(MAPLIBRE_JS),
+      (window.THREE ? Promise.resolve() : _loadScript(THREE_JS)).then(function () {
+        // GLTFLoader is NOT in the three bundle — this was why the real
+        // model never appeared. Loaded after three; failure is non-fatal
+        // (the flat icon simply stays).
+        if (window.THREE && typeof window.THREE.GLTFLoader === 'function') return;
+        return _loadScript(GLTF_JS).catch(function () {});
+      })
+    ]).then(function () { _libsReady = true; })
+      .catch(function (e) { _libsFailed = true; throw e; });
     return _loading;
   }
 
@@ -140,26 +146,11 @@
     document.head.appendChild(st);
   }
 
-  // ── 3D plane (three.js custom layer, from the proto) ────────────────────
-  function _buildProcedural(T, accentHex) {
-    var body = new T.Group();
-    var white = new T.MeshStandardMaterial({ color: 0xeef2f8, metalness: 0.45, roughness: 0.45 });
-    var accent = new T.MeshStandardMaterial({ color: new T.Color(accentHex || '#D82F2E'), metalness: 0.35, roughness: 0.5 });
-    var dark = new T.MeshStandardMaterial({ color: 0x222a36, metalness: 0.4, roughness: 0.6 });
-    var fus = new T.Mesh(new T.CylinderGeometry(700, 700, 7000, 18), white); fus.rotation.z = Math.PI / 2; body.add(fus);
-    var nose = new T.Mesh(new T.ConeGeometry(700, 1700, 18), white); nose.rotation.z = -Math.PI / 2; nose.position.x = 4350; body.add(nose);
-    var tail = new T.Mesh(new T.ConeGeometry(620, 1500, 18), white); tail.rotation.z = Math.PI / 2; tail.position.x = -4000; body.add(tail);
-    var wing = new T.Mesh(new T.BoxGeometry(1900, 180, 12500), accent); wing.position.x = -200; body.add(wing);
-    var tp = new T.Mesh(new T.BoxGeometry(1200, 150, 4800), accent); tp.position.x = -3500; body.add(tp);
-    var fin = new T.Mesh(new T.BoxGeometry(1400, 2100, 160), accent); fin.position.set(-3500, 950, 0); body.add(fin);
-    var win = new T.Mesh(new T.BoxGeometry(5200, 260, 260), dark); win.position.set(300, 360, 0); body.add(win);
-    return { group: body, accent: accent };
-  }
-
-  function _makePlaneLayer(accentHex) {
+  // ── 3D plane: the REAL model only (three.js custom layer) ──────────────
+  function _makePlaneLayer(accentHex, onModelReady) {
     var T = window.THREE;
-    if (!T) return null;
-    var bits = { scene: null, camera: null, renderer: null, group: null };
+    if (!T || typeof T.GLTFLoader !== 'function') return null; // no loader → flat icon stays
+    var bits = { scene: null, camera: null, renderer: null, group: null, hasModel: false };
     return {
       id: 'm3d-plane3d', type: 'custom', renderingMode: '3d',
       onAdd: function (m, gl) {
@@ -168,34 +159,29 @@
         bits.scene.add(new T.AmbientLight(0xffffff, 0.9));
         var d1 = new T.DirectionalLight(0xffffff, 0.95); d1.position.set(0.4, 0.8, 0.6); bits.scene.add(d1);
         var d2 = new T.DirectionalLight(0x88aaff, 0.35); d2.position.set(-0.5, 0.2, -0.4); bits.scene.add(d2);
-        var pivot = new T.Group();
-        var proc = _buildProcedural(T, accentHex);
-        pivot.add(proc.group);
-        bits.group = pivot;
-        bits.scene.add(pivot);
-        // The real A320 (Nick's "320") replaces the procedural body on load.
+        bits.group = new T.Group();
+        bits.scene.add(bits.group);
         try {
-          if (typeof T.GLTFLoader === 'function') {
-            new T.GLTFLoader().load(MODEL_URL, function (gltf) {
-              try {
-                var model = gltf.scene;
-                var box = new T.Box3().setFromObject(model), size = new T.Vector3(); box.getSize(size);
-                var maxDim = Math.max(size.x, size.y, size.z) || 1, sc = TARGET_METERS / maxDim;
-                model.scale.setScalar(sc);
-                var c = new T.Vector3(); box.getCenter(c);
-                model.position.set(-c.x * sc, -c.y * sc, -c.z * sc);
-                model.rotation.set(0, MODEL_FACING, 0);
-                pivot.remove(proc.group);
-                pivot.add(model);
-              } catch (e) {}
-            }, undefined, function () { /* keep procedural on failure */ });
-          }
+          new T.GLTFLoader().load(MODEL_URL, function (gltf) {
+            try {
+              var model = gltf.scene;
+              var box = new T.Box3().setFromObject(model), size = new T.Vector3(); box.getSize(size);
+              var maxDim = Math.max(size.x, size.y, size.z) || 1, sc = TARGET_METERS / maxDim;
+              model.scale.setScalar(sc);
+              var c = new T.Vector3(); box.getCenter(c);
+              model.position.set(-c.x * sc, -c.y * sc, -c.z * sc);
+              model.rotation.set(0, MODEL_FACING, 0);
+              bits.group.add(model);
+              bits.hasModel = true;
+              if (onModelReady) { try { onModelReady(); } catch (e) {} }
+            } catch (e) {}
+          }, undefined, function () { /* GLB failed → the flat icon stays */ });
         } catch (e) {}
         bits.renderer = new T.WebGLRenderer({ canvas: m.getCanvas(), context: gl, antialias: true });
         bits.renderer.autoClear = false;
       },
       render: function (gl, args) {
-        if (!_planeState.show || !bits.group || !_map) return;
+        if (!bits.hasModel || !_planeState.show || !_map) return;
         try {
           bits.group.rotation.set(0, HEADING_SIGN * _planeState.yaw + HEADING_OFFSET, 0);
           var merc = maplibregl.MercatorCoordinate.fromLngLat({ lng: _planeState.pos[0], lat: _planeState.pos[1] }, _planeState.alt);
@@ -212,11 +198,6 @@
         } catch (e) {}
       }
     };
-  }
-
-  function _dispAlt(f) {
-    var m = (f && f.altFt) ? f.altFt * 0.3048 : PLANE_ALT_M;
-    return Math.max(1100, Math.min(3400, m));
   }
 
   // ── route + markers ─────────────────────────────────────────────────────
@@ -349,22 +330,25 @@
           if (!_mounted) return;
           try { _map.setTerrain({ source: 'dem', exaggeration: 1.35 }); } catch (e) {}
           _drawRoute(flight);
-          var layer = null;
-          try { layer = _makePlaneLayer(flight.col); if (layer) _map.addLayer(layer); } catch (e) { layer = null; }
-          if (!layer) {
-            // last-resort flat icon so there is ALWAYS exactly one plane
-            try {
-              var c = document.createElement('canvas'); c.width = 64; c.height = 64;
-              var g = c.getContext('2d'); g.translate(32, 32); g.fillStyle = '#fff';
-              g.beginPath(); g.moveTo(0, -22); g.lineTo(6, -4); g.lineTo(24, 6); g.lineTo(24, 12); g.lineTo(4, 8);
-              g.lineTo(4, 16); g.lineTo(10, 22); g.lineTo(10, 26); g.lineTo(0, 23); g.lineTo(-10, 26); g.lineTo(-10, 22);
-              g.lineTo(-4, 16); g.lineTo(-4, 8); g.lineTo(-24, 12); g.lineTo(-24, 6); g.lineTo(-6, -4); g.closePath(); g.fill();
-              _map.addImage('m3dplane', g.getImageData(0, 0, 64, 64), { pixelRatio: 2 });
-              _map.addSource('m3d-plane', { type: 'geojson', data: { type: 'Feature', properties: { bearing: sp.brg }, geometry: { type: 'Point', coordinates: sp.pos } } });
-              _map.addLayer({ id: 'm3d-plane', type: 'symbol', source: 'm3d-plane', layout: { 'icon-image': 'm3dplane', 'icon-rotate': ['get', 'bearing'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-size': 0.85 } });
-            } catch (e) {}
-          }
-          _cameraLoop(opts.cycleMs || 60000);
+          // Clean flat icon immediately (same look as the 2D map) …
+          try {
+            var c = document.createElement('canvas'); c.width = 64; c.height = 64;
+            var g = c.getContext('2d'); g.translate(32, 32); g.fillStyle = '#fff';
+            g.beginPath(); g.moveTo(0, -22); g.lineTo(6, -4); g.lineTo(24, 6); g.lineTo(24, 12); g.lineTo(4, 8);
+            g.lineTo(4, 16); g.lineTo(10, 22); g.lineTo(10, 26); g.lineTo(0, 23); g.lineTo(-10, 26); g.lineTo(-10, 22);
+            g.lineTo(-4, 16); g.lineTo(-4, 8); g.lineTo(-24, 12); g.lineTo(-24, 6); g.lineTo(-6, -4); g.closePath(); g.fill();
+            _map.addImage('m3dplane', g.getImageData(0, 0, 64, 64), { pixelRatio: 2 });
+            _map.addSource('m3d-plane', { type: 'geojson', data: { type: 'Feature', properties: { bearing: sp.brg }, geometry: { type: 'Point', coordinates: sp.pos } } });
+            _map.addLayer({ id: 'm3d-plane', type: 'symbol', source: 'm3d-plane', layout: { 'icon-image': 'm3dplane', 'icon-rotate': ['get', 'bearing'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-size': 0.85 } });
+          } catch (e) {}
+          // … and the REAL A320 replaces it the moment the model is in.
+          try {
+            var layer = _makePlaneLayer(flight.col, function () {
+              try { if (_map && _map.getLayer('m3d-plane')) _map.setLayoutProperty('m3d-plane', 'visibility', 'none'); } catch (e) {}
+            });
+            if (layer) _map.addLayer(layer);
+          } catch (e) {}
+                    _cameraLoop(opts.cycleMs || 60000);
           // Real-position refresh — no sweep, ever. A fresh context (live
           // telemetry) every 10s; when the flight lands the host is told so
           // it can fall back to the classic 2D map.

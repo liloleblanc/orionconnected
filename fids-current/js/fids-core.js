@@ -6023,12 +6023,15 @@ function _buildV2MapCol(ctx, vars) {
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_jzType) : _jzType;
       }
     }
-    // Enforce the scheduled type from the Express code-pairing matrix — each
-    // range flies ONE type (7000-7299/7950-8249 Dash 8-400, 8250-8549 E175,
-    // 8550-8999 CRJ-900), so the display never contradicts the flight number.
+    // Express matrix fills the SCHEDULED type in only when the feed has no
+    // credible regional equipment. When the feed reports a real regional
+    // airframe (E175 on a nominal Dash range, etc.) the REAL aircraft wins —
+    // live telemetry must never contradict the label (Nick: a 'Q400' showing
+    // 31,400 ft was the matrix overwriting an actual E175).
     if (_mxGate) {
       var _mxEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
-      if (!_mxGate.eqTest.test(_mxEqUp)) {
+      var _mxRealRegional = /CRJ|\bCR[0-9JK]\b|DASH|DH[0-9C]|Q400|E1[79][05]|\bE7[05W]\b|EMBRAER/.test(_mxEqUp);
+      if (!_mxRealRegional && !_mxGate.eqTest.test(_mxEqUp)) {
         _equipCd = _mxGate.eq;
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_mxGate.eq) : _mxGate.eq;
       }
