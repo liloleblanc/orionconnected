@@ -4027,3 +4027,7 @@ body.fids-light-board #fidsTable tbody tr:has(td.fids-status-early) td.td-time-r
    the white zebra rows (Nick). */
 body.fids-light-board #fidsTable td.td-time-rev:not(.has-rev),
 body.fids-light-board #fidsTable td.td-time-rev:not(.has-rev) * { color: rgba(22, 40, 60, 0.68) !important; }
+
+/* Revised "—" on DARK boards: never stark white — muted so real times pop. */
+body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev),
+body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev) * { color: rgba(255, 255, 255, 0.45) !important; }
