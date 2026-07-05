@@ -221,6 +221,13 @@
   .dt-top .ttl{font-size:15px;font-weight:700;}
   .dt-hero{text-align:center;padding:26px 20px 8px;}
   .dt-wm{height:36px;width:auto;max-width:74%;object-fit:contain;display:block;margin:0 auto 10px;}
+  /* Jul 2026: wordmark SVGs were re-cut to their true ink. Southwest and
+     jetBlue previously carried heavy canvas padding, so at the flat 23px/36px
+     they now render larger than the rest of the lineup — compensate here. */
+  img.wm[src*="southwest-wordmark"],.bubwm[src*="southwest-wordmark"]{height:18px;}
+  .dt-wm[src*="southwest-wordmark"]{height:28px;}
+  img.wm[src*="jetblue-wordmark"],.bubwm[src*="jetblue-wordmark"]{height:20px;}
+  .dt-wm[src*="jetblue-wordmark"]{height:32px;}
   .dt-wm-d{display:none;}
   :root[data-theme="dark"] .dt-wm-l{display:none;} :root[data-theme="dark"] .dt-wm-d{display:block;}
   @media(prefers-color-scheme:dark){:root[data-theme="auto"] .dt-wm-l{display:none;} :root[data-theme="auto"] .dt-wm-d{display:block;}}

@@ -59,14 +59,7 @@
   padding: 0 !important;
   box-sizing: border-box !important;
 }
-/* Hawaiian's wordmark reads "Hawaiian Airlines." — a long lockup that hits the
-   width cap and renders shorter than the others. Give it more height + width
-   headroom so it scales up to match. (Wordmark only — emblem is separate.) */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] {
-  height: 40px !important;
-  max-height: 40px !important;
-  max-width: 300px !important;
-}
+/* (HA 40px special-case removed Jul 2026 — calibrated table below governs.) */
 #fidsTable .td-airline .fids-airline-name {
   display: block !important;
   min-width: 0 !important;
@@ -307,7 +300,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
   --fids-logo-inner-size: 54px;
   --fids-wordmark-slot-w: 218px;
   --fids-wordmark-slot-pad-x: 10px;
-  --fids-wordmark-optical-h: 30px; /* Nick: the +13% pass was too big — original calibration restored */
+  --fids-wordmark-optical-h: 25px; /* Nick: the +13% pass was too big — original calibration restored */
 }
 #fidsTable .td-airline .fids-cell-airline {
   grid-template-columns: var(--fids-logo-tile-size) minmax(0, var(--fids-wordmark-slot-w)) !important;
@@ -366,23 +359,52 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
   display: block !important;
   margin: 0 !important;
 }
-/* Big blocky all-caps marks need less height; thin script/wide marks need more room. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { --wm-h: 28px; --wm-w: 178px; } /* Southwest */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AC"] { --wm-h: 25px; --wm-w: 188px; } /* Air Canada */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="LA"] { --wm-h: 26px; --wm-w: 170px; } /* LATAM */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AF"] { --wm-h: 23px; --wm-w: 184px; } /* Air France */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { --wm-h: 32px; --wm-w: 205px; --wm-y: -1px; } /* Frontier */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="IB"] { --wm-h: 29px; --wm-w: 118px; } /* Iberia */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="G3"] { --wm-h: 20px; --wm-w: 126px; } /* GOL */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"] { --wm-h: 28px; --wm-w: 138px; } /* jetBlue */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"] { --wm-h: 26px; --wm-w: 170px; --wm-y: 1px; } /* Delta */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AA"] { --wm-h: 28px; --wm-w: 176px; } /* American */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { --wm-h: 30px; --wm-w: 130px; } /* Alaska */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { --wm-h: 29px; --wm-w: 130px; } /* Avianca */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"] { --wm-h: 27px; --wm-w: 160px; } /* United */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="NK"] { --wm-h: 28px; --wm-w: 140px; } /* Spirit */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { --wm-h: 29px; --wm-w: 150px; } /* WestJet */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="BA"] { --wm-h: 27px; --wm-w: 190px; } /* British Airways */
+/* Per-carrier wordmark heights — REGENERATED (Nick, Jul 2026). The SVG
+   files were normalized to their true rendered ink (raster-measured), so
+   --wm-h is the exact letter height; the 198px slot width caps only the
+   ultra-wide marks (AC/BA/PT/OB), matching the look Nick approved. No
+   per-code widths or nudges needed anymore. Regenerate via the script in
+   the session scratchpad; don't hand-tune single values here. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { --wm-h: 32px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { --wm-h: 30px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="P3"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PD"] { --wm-h: 28px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="OO"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="QK"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="VB"] { --wm-h: 27px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AM"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="G3"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="KL"] { --wm-h: 26px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="TS"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="Y4"] { --wm-h: 25px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="LA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PB"] { --wm-h: 24px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="UP"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="VS"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { --wm-h: 23px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="9X"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="LO"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="MX"] { --wm-h: 22px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AT"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="BA"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="CM"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="TP"] { --wm-h: 21px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AF"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { --wm-h: 20px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PT"] { --wm-h: 18px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AC"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="RV"] { --wm-h: 17px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="OB"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="YX"] { --wm-h: 16px; }
 #fidsTable .td-airline .fids-airline-name {
   width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;
   max-width: calc(var(--fids-wordmark-slot-w) - (var(--fids-wordmark-slot-pad-x) * 2)) !important;

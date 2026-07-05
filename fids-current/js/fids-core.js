@@ -1885,7 +1885,8 @@ async function setGateBg(bgDiv, locIata) {
         bgDiv.style.backgroundImage = "url('" + _logoUrl + "'), " + _skyGrad;
         bgDiv.style.backgroundRepeat = 'no-repeat, no-repeat';
         bgDiv.style.backgroundPosition = 'center center, center';
-        bgDiv.style.backgroundSize = '55% auto, cover';
+        var _wmComp = (typeof WATERMARK_INK_COMP !== 'undefined' && WATERMARK_INK_COMP[_airlineCode]) || 1;
+        bgDiv.style.backgroundSize = Math.round(55 * _wmComp) + '% auto, cover';
         bgDiv.style.backgroundBlendMode = 'normal, normal';
       } else {
         bgDiv.style.background = _skyGrad;
@@ -2472,6 +2473,11 @@ var WATERMARK_OVERRIDE = {
 function airlineWatermarkUrl(code) {
   return WATERMARK_OVERRIDE[code] || carrierLogoUrl(code);
 }
+// Jul 2026: wordmark SVGs were re-cut to their true ink. The sky watermark
+// paints them at a fixed 55% background width, so carriers whose old file
+// was mostly padding would suddenly render up to 2x larger. Scale the
+// background width by the old ink-width fraction to keep the tuned look.
+var WATERMARK_INK_COMP = { 'LO': 0.49, 'AT': 0.73, 'AF': 0.77, 'B6': 0.91, 'AS': 0.93, 'KL': 0.93 };
 
 // Map Accor brand codes to their local logo files in /logos/. Used by the
 // v218.99.28 — Brand code → human-readable name. The Catalog API returns
@@ -6993,6 +6999,7 @@ function uxgGateHtml(ctx) {
   // full name), which reads far better and leaves room for the city headline.
   var _bannerUsedTile = false;
   var _bannerUsedWordmark = false;
+  var _bannerWmFromBase = false;   // true only when the *-wordmark-*.svg file itself renders
   var _bannerPlateForced = false;   // only genuine plate logos (BoA) get a white plate
   // Pick the wordmark variant from the ACTUAL banner colour (the data-file
   // override in window.AIRLINE_BRAND_COLORS wins). Light banner → dark wordmark;
@@ -7071,6 +7078,7 @@ function uxgGateHtml(ctx) {
     _useOverrideFile = true;          // no white filter — wordmark as-is
     _sz = { h: 102, w: 480 };         // wide wordmark — fills the 148px band
     _bannerUsedWordmark = true;
+    _bannerWmFromBase = true;         // wordmark FILE in use — ink comp applies
   }
   // Fallback for carriers with a square tile but no wordmark (e.g. BoA→BOV):
   // colored brand badge instead of an ugly force-whitened external lockup.
@@ -7088,6 +7096,19 @@ function uxgGateHtml(ctx) {
   // margins above and below — at the old 120px cap, wide all-caps marks
   // (WESTJET) filled the band edge-to-edge and read as bulging (per Nick).
   var _logoH = Math.min(_sz.h || 120, 76);
+  // Jul 2026: the wordmark SVGs were re-cut to their true ink, so the flat
+  // 76px cap (tuned against the old padded canvases) would inflate the
+  // previously padded marks up to 2x here. Scale by each file's OLD ink
+  // fraction so the banner keeps the exact letter size it had before.
+  var _BANNER_INK_COMP = { 'republic':0.48, 'lot':0.52, 'piedmont':0.54,
+    'mokulele':0.58, 'royal-air-maroc':0.57, 'latam':0.62, 'tap-portugal':0.65,
+    'air-france':0.76, 'southwest':0.77, 'vivaaerobus':0.80,
+    'virgin-atlantic':0.80, 'boliviana':0.79, 'jetblue':0.87, 'flair':0.75,
+    'volaris':0.85 };
+  if (typeof _bannerWmFromBase !== 'undefined' && _bannerWmFromBase
+      && _BANNER_INK_COMP[_bannerWordmarkBase]) {
+    _logoH = Math.round(_logoH * _BANNER_INK_COMP[_bannerWordmarkBase]);
+  }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
                  + (_useOverrideFile
@@ -8885,6 +8906,19 @@ const gView = document.getElementById('gateView');
       }, BIDS_ROTATE_MS);
     }
 
+    // White wordmarks need DARK rows. Stock themes keep baggage dark (Mist
+    // pins the dark canvas), but a light CUSTOM theme paints the screen
+    // light — measure the previous render's canvas and flip to the dark-ink
+    // artwork there. Self-corrects within one render pass after any switch.
+    var _bWmVariant = 'light';
+    try {
+      var _bScrProbe = document.querySelector('.bidsv2-screen');
+      if (_bScrProbe) {
+        var _bLumM = getComputedStyle(_bScrProbe).backgroundColor.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
+        if (_bLumM && (0.2126 * _bLumM[1] + 0.7152 * _bLumM[2] + 0.0722 * _bLumM[3]) > 150) _bWmVariant = 'dark';
+      }
+    } catch (e) {}
+
     bView.innerHTML = `
       <div class="bidsv2-screen">
 
@@ -8947,11 +8981,23 @@ const gView = document.getElementById('gateView');
                 const _s = String(_flightDisp).replace(/^([A-Z]{3}|[A-Z][A-Z0-9]|[A-Z0-9][A-Z])[\s-]*/i, '');
                 if (_s) _flightDisp = _s;
               }
+              // Real wordmark artwork instead of the typed name — same files
+              // as the FIDS board (Nick: 'the real wordmark like FIDS').
+              // Baggage rows are dark on every theme, so the white 'light'
+              // variant; falls back to the typed name if the image dies.
+              const _bWmCode = (f.airline || '').trim().toUpperCase();
+              const _bWmBase = IATA_TO_WORDMARK[_bWmCode];
+              // No apostrophes/quotes: the name is embedded in the inline
+              // onerror string, where a stray quote kills the fallback.
+              const _bSafeName = airlineName.replace(/[^A-Z0-9ÀÂÉÈÊÎÔÛÇ &().-]/gi, '');
+              const _bAirlineHtml = _bidsEmblemOnly ? '' : (_bWmBase
+                ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
+                : '<div class="bidsv2-airline-name">' + airlineName + '</div>');
               return `<div class="bidsv2-flight-row${_bRowCls}">
                 <div class="bidsv2-col-flight">
                   <div class="bidsv2-airline-block">${logoHtml}</div>
                   <div class="bidsv2-flight-meta">
-                    ${_bidsEmblemOnly ? '' : '<div class="bidsv2-airline-name">' + airlineName + '</div>'}
+                    ${_bAirlineHtml}
                     <div class="bidsv2-flight-num">${_flightDisp}</div>
                   </div>
                 </div>
@@ -12068,18 +12114,35 @@ function wordmarkVariant() {
     // Class-only selector: the previous :has() version THREW on display
     // hardware whose browser predates :has() support, which skipped the
     // whole measurement and broke every light-board adaptation out there.
-    var probe = document.querySelector('#fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td')
-             || document.querySelector('#fidsTable tbody tr td')
-             || document.querySelector('#fidsTable') || document.body;
-    var el = probe, bg = '';
-    while (el && el.nodeType === 1) {
-      var c = getComputedStyle(el).backgroundColor;
-      if (c && c !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(c)) { bg = c; break; }
-      el = el.parentElement;
+    // Average BOTH zebra shades (odd + even row) — on themes whose row
+    // luminance sits near the 150 threshold, sampling whichever row came
+    // first made the whole board flip white↔color between page rotations.
+    var _rowLum = function (el) {
+      var bg = '';
+      while (el && el.nodeType === 1) {
+        var c = getComputedStyle(el).backgroundColor;
+        if (c && c !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(c)) { bg = c; break; }
+        el = el.parentElement;
+      }
+      var m = bg.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
+      return m ? (0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3]) : null;
+    };
+    var tds = document.querySelectorAll('#fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td:first-child');
+    var lums = [], parities = {};
+    for (var ti = 0; ti < tds.length && lums.length < 2; ti++) {
+      var trEl = tds[ti].parentElement;
+      var par = (Array.prototype.indexOf.call(trEl.parentElement.children, trEl)) % 2;
+      if (parities[par]) continue;
+      var lv = _rowLum(tds[ti]);
+      if (lv !== null) { lums.push(lv); parities[par] = 1; }
     }
-    var m = bg.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
-    if (m) {
-      var lum = 0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3];
+    if (!lums.length) {
+      var fb = _rowLum(document.querySelector('#fidsTable tbody tr td')
+             || document.querySelector('#fidsTable') || document.body);
+      if (fb !== null) lums.push(fb);
+    }
+    if (lums.length) {
+      var lum = lums.reduce(function (a, b) { return a + b; }, 0) / lums.length;
       return lum > 150 ? 'dark' : 'light';
     }
   } catch (e) {}
@@ -12275,9 +12338,10 @@ const IATA_TO_EMBLEM = {
 };
 
 
-/* TEMP (logo cleanup): carriers to render as wordmark-alone (skip colored tile).
-   Edit this list to add/remove carriers. WN excluded — no separate wordmark. */
-var TILE_SKIP_WORDMARK_ONLY = new Set(['AS','B6']);
+/* Carriers to render as wordmark-alone (skip colored tile). Emptied Jul 2026:
+   Nick wants every carrier to carry its icon ("JetBlue doesnt have a icon") —
+   B6 gets the navy JBU tile back, AS the ASA tile. Keep the mechanism. */
+var TILE_SKIP_WORDMARK_ONLY = new Set([]);
 
 function mkLogo(code, faName) {
   const c = (code || '').trim().toUpperCase();

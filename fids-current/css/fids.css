@@ -696,7 +696,7 @@ thead th { height: 50px; }
    the same visual weight; width auto-scales but caps at 110px for
    very wide wordmarks. */
 .card-logo.card-wordmark {
-  height: 18px;
+  height: 16px;
   width: auto;
   max-width: 110px;
   object-fit: contain;
@@ -704,26 +704,49 @@ thead th { height: 50px; }
   flex-shrink: 0;
 }
 
-/* Per-carrier height overrides for mobile cards — calibrated so each
-   wordmark renders at roughly the same visual letter weight. Mirrors
-   the desktop-table treatment in fids-v3.css but scaled for the mobile
-   card height budget. AC's 11:1 aspect needs the smallest height to
-   avoid being clipped at the 110px max-width. */
-.card-logo.card-wordmark[data-code="AC"],
-.card-logo.card-wordmark[data-code="RV"],
-.card-logo.card-wordmark[data-code="3H"] { height: 12px; }
-.card-logo.card-wordmark[data-code="B6"] { height: 22px; }
-/* NK (Spirit) — ceased operations May 2 2026 */
-.card-logo.card-wordmark[data-code="UA"],
+/* Per-carrier height overrides for mobile cards — REGENERATED (Jul 2026)
+   from the normalized (ink-tight) wordmark files; ~0.62x of the desktop
+   FIDS table heights in fids-v3.css. Regenerate, don't hand-edit. */
+.card-logo.card-wordmark[data-code="4Y"],
+.card-logo.card-wordmark[data-code="AV"],
+.card-logo.card-wordmark[data-code="WS"] { height: 19px; }
+.card-logo.card-wordmark[data-code="HA"],
+.card-logo.card-wordmark[data-code="OO"],
+.card-logo.card-wordmark[data-code="P3"],
+.card-logo.card-wordmark[data-code="PD"],
+.card-logo.card-wordmark[data-code="QK"],
+.card-logo.card-wordmark[data-code="VB"] { height: 17px; }
+.card-logo.card-wordmark[data-code="AM"],
+.card-logo.card-wordmark[data-code="AS"],
+.card-logo.card-wordmark[data-code="B6"],
+.card-logo.card-wordmark[data-code="G3"],
+.card-logo.card-wordmark[data-code="KL"],
+.card-logo.card-wordmark[data-code="TS"],
+.card-logo.card-wordmark[data-code="Y4"] { height: 16px; }
+.card-logo.card-wordmark[data-code="LA"],
+.card-logo.card-wordmark[data-code="PB"] { height: 15px; }
+.card-logo.card-wordmark[data-code="9X"],
+.card-logo.card-wordmark[data-code="AA"],
 .card-logo.card-wordmark[data-code="DL"],
+.card-logo.card-wordmark[data-code="LO"],
+.card-logo.card-wordmark[data-code="MX"],
+.card-logo.card-wordmark[data-code="UA"],
+.card-logo.card-wordmark[data-code="UP"],
+.card-logo.card-wordmark[data-code="VS"],
+.card-logo.card-wordmark[data-code="WN"] { height: 14px; }
+.card-logo.card-wordmark[data-code="AT"],
 .card-logo.card-wordmark[data-code="BA"],
-.card-logo.card-wordmark[data-code="AF"] { height: 20px; }
-.card-logo.card-wordmark[data-code="WN"],
-.card-logo.card-wordmark[data-code="HA"] { height: 19px; }
-.card-logo.card-wordmark[data-code="YV"],
-.card-logo.card-wordmark[data-code="YX"] { height: 26px; }
-/* Mokulele — flower icon + wide wordmark needs more height to read clearly */
-.card-logo.card-wordmark[data-code="9X"] { height: 28px; }
+.card-logo.card-wordmark[data-code="CM"],
+.card-logo.card-wordmark[data-code="F8"],
+.card-logo.card-wordmark[data-code="TP"] { height: 13px; }
+.card-logo.card-wordmark[data-code="AF"],
+.card-logo.card-wordmark[data-code="F9"] { height: 12px; }
+.card-logo.card-wordmark[data-code="3H"],
+.card-logo.card-wordmark[data-code="AC"],
+.card-logo.card-wordmark[data-code="PT"],
+.card-logo.card-wordmark[data-code="RV"] { height: 11px; }
+.card-logo.card-wordmark[data-code="OB"],
+.card-logo.card-wordmark[data-code="YX"] { height: 10px; }
 
 .card-logo-fb { font-size: 13px; font-weight: 700; color: #3f3f46; }
 .card-flight { font-size: 15px; font-weight: 700; color: #52525b; letter-spacing: 0.5px; }
