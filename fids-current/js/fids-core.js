@@ -16418,6 +16418,18 @@ function applyAirportConfigToBoard(iata) {
       _logoImg.style.display = '';
       _pill.classList.add('has-logo');
       _logoImg.onerror = function() {
+        // One transient fetch blip on a kiosk was hiding the airport logo
+        // until the NEXT config event (can be hours) — retry with a
+        // cache-buster before giving up.
+        if (!_logoImg._retriedOnce) {
+          _logoImg._retriedOnce = true;
+          setTimeout(function () {
+            try {
+              _logoImg.src = _logoUrl + (_logoUrl.indexOf('?') === -1 ? '?r=' : '&r=') + Date.now();
+            } catch (e) {}
+          }, 5000);
+          return;
+        }
         _logoImg.style.display = 'none';
         _pill.classList.remove('has-logo');
       };
@@ -23794,3 +23806,22 @@ var _gateMapCamera = {
   nextFlybackAt: 0        // ts: when to next start a flyback during cruise
 };
 
+
+// ── Board-top watchdog (Nick: 'a lot of times the top does not show up in
+// the FIDS with the time airport logo and such') ─────────────────────────
+// On kiosks the main board's banner must ALWAYS sit at the top of the
+// screen. Field failure modes this heals: (a) the TV browser ends up
+// scrolled so the banner sits above the viewport (anchor-scroll after a
+// refresh or remote input — worse the longer the flight list), (b) a
+// dedicated-screen render hid the banner and a later flip back to main
+// missed a restore path. Checked every 5s; no-ops when healthy.
+setInterval(function () {
+  try {
+    var bn = document.getElementById('fidsBanner');
+    if (!bn) return; // not the main-board page
+    var _st = (typeof screenType !== 'undefined') ? screenType : 'main';
+    if (_st !== 'main') return;
+    if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
+    if (bn.style.display === 'none') bn.style.display = '';
+  } catch (e) {}
+}, 5000);
