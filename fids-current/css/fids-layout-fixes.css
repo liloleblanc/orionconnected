@@ -1940,3 +1940,15 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-size: 200% auto !important;
   background-position: center 32% !important;
 }
+
+/* Slide-entry transition (Nick: 'transitions are very dry'): each new slide
+   in the gate ad deck eases in — soft fade with a gentle drift — instead of
+   the hard innerHTML cut. Entry-only (no exit hold): media starts instantly
+   and the bigcraft takeover keeps its own grow animation. */
+@keyframes gadSlideIn {
+  from { opacity: 0; transform: translateX(2.2%) scale(0.992); }
+  to   { opacity: 1; transform: none; }
+}
+html #gateAdCarousel > * {
+  animation: gadSlideIn 560ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
