@@ -2126,6 +2126,8 @@ function updateDedicatedTimeOnly() {
   if (footer) footer.textContent = dateDisplay;
   const banClock = document.getElementById('dedicatedBannerClock');
   if (banClock) banClock.textContent = timeStr;
+  const bidsDate = document.getElementById('bidsBannerDate');
+  if (bidsDate) bidsDate.textContent = `${_cap(dayName)}, ${_cap(monthName)} ${now.getDate()}`;
   const emptyTime = document.getElementById('dedicatedEmptyTime');
   if (emptyTime) emptyTime.textContent = timeStr;
   // Update boarding countdown
@@ -9040,20 +9042,35 @@ const gView = document.getElementById('gateView');
     bView.innerHTML = `
       <div class="bidsv2-screen">
 
-        <!-- Banner: logo left + airport name + clock tab right -->
-        <div class="bidsv2-banner">
-          <div class="bidsv2-banner-left">
-            <div class="bidsv2-logo">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
-              </svg>
-            </div>
-            <div class="bidsv2-airport-name">${(AP[iata]||{}).name || iata}</div>
-          </div>
-          <div class="bidsv2-clock-tab">
-            <div class="bidsv2-clock">${timeStr}</div>
-          </div>
-        </div>
+        <!-- Banner — same v2 chevron pattern as the FIDS board (Nick): time
+             + date top-right, airport pill (logo + IATA + name) center, and
+             the screen title right. Classes come from fids-v3.css so every
+             theme (including custom) styles it exactly like the board. -->
+        ${(function () {
+          var _lg = '';
+          try { _lg = localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch (e) {}
+          var _l2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(iata)[1] || 'fr') : 'fr';
+          var _ttl = 'Baggage claim <span class="bidsv2-hsep">|</span> '
+                   + (_l2b === 'es' ? 'Recogida de equipaje' : 'Retrait des bagages');
+          return '<div class="fids-banner bidsv2-fids-banner">'
+            + '<div class="fids-banner-chevrons" aria-hidden="true"></div>'
+            + '<div class="fids-banner-time-block">'
+            +   '<div class="fids-banner-time" id="dedicatedBannerClock">' + timeStr + '</div>'
+            +   '<div class="fids-banner-date" id="bidsBannerDate">' + _cap(dayName) + ', ' + _cap(monthName) + ' ' + now.getDate() + '</div>'
+            + '</div>'
+            + '<div class="fids-airport-pill' + (_lg ? ' has-logo' : '') + '">'
+            +   (_lg ? '<img class="fids-airport-logo-img" src="' + _lg + '" alt="" onerror="this.style.display=\'none\'">' : '')
+            +   '<div class="fids-airport-text">'
+            +     '<div class="fids-airport-iata">' + iata + '</div>'
+            +     '<div class="fids-airport-name">' + ((AP[iata] || {}).name || iata) + '</div>'
+            +   '</div>'
+            + '</div>'
+            + '<div class="fids-banner-board">'
+            +   '<div class="fids-board-icon" aria-hidden="true"><svg viewBox="0 0 24 24" style="width:44px;height:44px;fill:currentColor;"><path d="M17 6h-2V4c0-1.1-.9-2-2-2h-2C9.9 2 9 2.9 9 4v2H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2 0 .55.45 1 1 1s1-.45 1-1h6c0 .55.45 1 1 1s1-.45 1-1c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2h2v2h-2V4zm-2 15H8V9h1v10zm3.5 0h-2V9h2v10zm3.5 0h-1V9h1v10z"/></svg></div>'
+            +   '<div class="fids-board-label">' + _ttl + '</div>'
+            + '</div>'
+          + '</div>';
+        })()}
 
         <!-- Body: carousel block left + flight list right -->
         <div class="bidsv2-body">
@@ -16209,6 +16226,13 @@ function applyAirportConfigToBoard(iata) {
   // Theme + layout — user customize > admin KV > built-in defaults
   const _builtin = V2_AIRPORT_THEME[iata] || { theme: 'tus-teal', layout: 'left' };
   let _theme  = _pref('theme') || _builtin.theme;
+  // Day/night scheduling (Customize → Day & night) overrides the single
+  // theme when enabled. '' from the schedule = "airport default" → keep the
+  // normal resolution chain.
+  try {
+    var _dnT = _fidsDayNightTheme(_userCfg && _userCfg.dayNight, iata);
+    if (_dnT) _theme = _dnT;
+  } catch (e) {}
   // Theme lineup reduced to the teal (Nick) — anything else saved on a
   // display (old navy/sky/cream/etc.) coerces to teal; custom stays.
   var _ALLOWED_THEMES = { 'tus-teal': 1, 'tus-teal-deep': 1, 'mist': 1, 'custom': 1 };
@@ -16332,6 +16356,14 @@ function applyAirportConfigToBoard(iata) {
       if (_existing) _existing.remove();
       var _styleEl = document.createElement('style');
       _styleEl.id = '_fidsCustomThemeRules';
+      // STATE ROWS ARE EXEMPT (Nick: 'delayed colors early etc dont work for
+      // custom and even highlight rows'): the unguarded row/td rules were
+      // out-cascading the status grammar blocks (Delayed yellow, Cancelled
+      // crimson, Final Call orange, history fade) and their inks. Every row
+      // background/colour rule below skips state-classed rows so the blocks
+      // and highlights render identically on custom themes.
+      var _nsF = ':not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed)';
+      var _nsB = ':not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted)';
       _styleEl.textContent =
         'body[data-fids-theme="custom"] #fidsTable, body[data-fids-theme="custom"] .bidsv2-screen { background:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.text || '#fff') + ' !important; }' +
         'body[data-fids-theme="custom"] .bidsv2-banner { background:' + (_cc.hdr || _cc.bg || '#0a1628') + ' !important; }' +
@@ -16339,14 +16371,14 @@ function applyAirportConfigToBoard(iata) {
         'body[data-fids-theme="custom"] .bidsv2-logo, body[data-fids-theme="custom"] .bidsv2-status-arrived { color:' + (_cc.accent || '#eab308') + ' !important; }' +
         'body[data-fids-theme="custom"] .bidsv2-carousel-block { background:' + (_cc.rowOdd || '#fff') + ' !important; }' +
         'body[data-fids-theme="custom"] .bidsv2-carousel-label, body[data-fids-theme="custom"] .bidsv2-carousel-number, body[data-fids-theme="custom"] .bidsv2-clock { color:' + (_cc.bg || '#0a1628') + ' !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-list-header, body[data-fids-theme="custom"] .bidsv2-airline-name, body[data-fids-theme="custom"] .bidsv2-status-other, body[data-fids-theme="custom"] .bidsv2-footer-msg { color:' + (_cc.text || '#fff') + ' !important; opacity:.75; }' +
-        'body[data-fids-theme="custom"] .bidsv2-flight-row { background:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; border-bottom-color:' + (_cc.accent || 'rgba(255,255,255,.12)') + '33 !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) { background:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-col-status { color:' + (_cc.text || '#fff') + ' !important; }' +
-        'body[data-fids-theme="custom"] #fidsTable tbody tr { background:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
-        'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(even) { background:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; }' +
+        'body[data-fids-theme="custom"] .bidsv2-list-header, body[data-fids-theme="custom"] .bidsv2-airline-name, body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-status-other, body[data-fids-theme="custom"] .bidsv2-footer-msg { color:' + (_cc.text || '#fff') + ' !important; opacity:.75; }' +
+        'body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' { background:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; border-bottom-color:' + (_cc.accent || 'rgba(255,255,255,.12)') + '33 !important; }' +
+        'body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ':nth-child(odd) { background:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
+        'body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-col-status { color:' + (_cc.text || '#fff') + ' !important; }' +
+        'body[data-fids-theme="custom"] #fidsTable tbody tr' + _nsF + ' { background:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
+        'body[data-fids-theme="custom"] #fidsTable tbody tr' + _nsF + ':nth-child(even) { background:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; }' +
         'body[data-fids-theme="custom"] #fidsTable thead th { background:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.hdrText || '#fff') + ' !important; }' +
-        'body[data-fids-theme="custom"] #fidsTable td { color:' + (_cc.text || '#fff') + ' !important; }';
+        'body[data-fids-theme="custom"] #fidsTable tbody tr' + _nsF + ' td { color:' + (_cc.text || '#fff') + ' !important; }';
       document.head.appendChild(_styleEl);
       console.log('[FIDS Theme APPLY] custom colors restored:', _cc);
     } else {
@@ -23832,3 +23864,62 @@ setInterval(function () {
     if (bn.style.display === 'none') bn.style.display = '';
   } catch (e) {}
 }, 5000);
+
+// ── Day/night theme scheduling (Nick: 'no way of controlling the night vs
+// day colors') ─────────────────────────────────────────────────────────────
+// Which PERIOD ('day' | 'night') the schedule is in RIGHT NOW, in the
+// airport's local time. '' means scheduling is off/unset. Kept separate from
+// the theme lookup so the watchdog can detect boundary crossings even when a
+// period maps to "airport default" (theme '') — the dead zone the theme-only
+// check had.
+function _fidsDayNightPeriod(dn, iata) {
+  if (!dn || !dn.enabled) return '';
+  var tz;
+  try { tz = (typeof AP !== 'undefined' && AP[iata] && AP[iata].tz) || undefined; } catch (e) {}
+  var cur;
+  try {
+    cur = new Date().toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).slice(0, 5);
+  } catch (e) {
+    var _d = new Date();
+    cur = ('0' + _d.getHours()).slice(-2) + ':' + ('0' + _d.getMinutes()).slice(-2);
+  }
+  if (cur.slice(0, 2) === '24') cur = '00' + cur.slice(2); // some ICU builds emit 24:xx
+  var ds = dn.dayStart || '07:00', ns = dn.nightStart || '19:00';
+  // HH:MM strings compare lexicographically. Handles schedules that cross
+  // midnight in either direction.
+  var isDay = (ds <= ns) ? (cur >= ds && cur < ns) : (cur >= ds || cur < ns);
+  return isDay ? 'day' : 'night';
+}
+
+// Resolves which theme the schedule wants RIGHT NOW. Returns '' when
+// scheduling is off OR the active period says "airport default" (the normal
+// resolution chain then stands). Side effect: stamps the current period key
+// so the watchdog only fires on an actual boundary crossing, not every tick.
+function _fidsDayNightTheme(dn, iata) {
+  try {
+    var p = _fidsDayNightPeriod(dn, iata);
+    if (!p) return '';
+    try { window._fidsLastDnKey = iata + ':' + p; } catch (e) {}
+    return (p === 'day' ? dn.day : dn.night) || '';
+  } catch (e) { return ''; }
+}
+
+// Boundary watchdog: once a minute, re-apply the airport config when the
+// schedule crosses from one period to the other — that re-resolves the theme
+// and repaints the board/gate/baggage through the canonical path. Tracks the
+// PERIOD (not the resolved theme) so a period that maps to "airport default"
+// still triggers the switch. Only fires at the actual boundary (the resolver
+// keeps _fidsLastDnKey current on every render), so it never re-renders on a
+// steady-state minute.
+setInterval(function () {
+  try {
+    var iata = String(((document.getElementById('apSel') || {}).value || '')).toUpperCase();
+    if (!iata) return;
+    var cfg = (window.FIDS_CUSTOMIZE && window.FIDS_CUSTOMIZE.load) ? window.FIDS_CUSTOMIZE.load(iata) : null;
+    var dn = cfg && cfg.dayNight;
+    if (!dn || !dn.enabled) return;
+    var key = iata + ':' + _fidsDayNightPeriod(dn, iata);
+    if (window._fidsLastDnKey === key) return; // no boundary crossed
+    if (typeof applyAirportConfigToBoard === 'function') applyAirportConfigToBoard(iata);
+  } catch (e) {}
+}, 60000);

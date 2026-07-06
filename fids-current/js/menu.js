@@ -1335,7 +1335,22 @@ function _cuReadForm() {
   // Without this, theme='custom' was saved with no color data, and the next
   // applyAirportConfigToBoard() call fell back to navy/default because no
   // CSS variables were set.
-  if (p.theme === 'custom') {
+  // Day & night scheduling — only persist once the section has been PAINTED
+  // (the quick-theme proxy in the menu bar calls this with the Customize tab
+  // never opened; reading unpainted controls would erase saved scheduling —
+  // same merge rule as the theme/font fields).
+  var _dnEn = document.getElementById('cuDnEnabled');
+  if (_dnEn && _dnEn.dataset.painted === '1') {
+    p.dayNight = {
+      enabled: !!_dnEn.checked,
+      day: (document.getElementById('cuDnDay') || {}).value || '',
+      night: (document.getElementById('cuDnNight') || {}).value || '',
+      dayStart: (document.getElementById('cuDnDayStart') || {}).value || '07:00',
+      nightStart: (document.getElementById('cuDnNightStart') || {}).value || '19:00'
+    };
+  }
+  if (p.theme === 'custom'
+      || (p.dayNight && (p.dayNight.day === 'custom' || p.dayNight.night === 'custom'))) {
     try {
       p.customColors = _cuReadColorsFromEditor();
     } catch (e) {}
@@ -1374,8 +1389,41 @@ function _cuPaintForm(prefs) {
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel) fontSel.value = prefs.font || '';
+  // Day & night scheduling
+  var dnEn = document.getElementById('cuDnEnabled');
+  if (dnEn) {
+    var dn = prefs.dayNight || {};
+    dnEn.checked = !!dn.enabled;
+    dnEn.dataset.painted = '1';
+    var dnW = document.getElementById('cuDnWrap');
+    if (dnW) dnW.style.display = dn.enabled ? '' : 'none';
+    var _e;
+    if ((_e = document.getElementById('cuDnDay')))        _e.value = dn.day || '';
+    if ((_e = document.getElementById('cuDnNight')))      _e.value = dn.night || 'tus-teal-deep';
+    if ((_e = document.getElementById('cuDnDayStart')))   _e.value = dn.dayStart || '07:00';
+    if ((_e = document.getElementById('cuDnNightStart'))) _e.value = dn.nightStart || '19:00';
+  }
   // Display mode pill UI
   cuSetDisplayModeUI(prefs.displayMode || 'auto');
+}
+
+// ── Day & night scheduling (Nick: 'no way of controlling the night vs day
+// colors') — toggle reveals the schedule; any change saves through the
+// canonical merge path. Picking Custom for either period reveals the colour
+// editor so there's something to edit.
+function cuDayNightChanged() {
+  var en = document.getElementById('cuDnEnabled');
+  var wrap = document.getElementById('cuDnWrap');
+  if (wrap && en) wrap.style.display = en.checked ? '' : 'none';
+  try {
+    var d = (document.getElementById('cuDnDay') || {}).value;
+    var n = (document.getElementById('cuDnNight') || {}).value;
+    if (d === 'custom' || n === 'custom') {
+      var cw = document.getElementById('cuColorsWrap');
+      if (cw) cw.style.display = '';
+    }
+  } catch (e) {}
+  cuApplyAndSave();
 }
 
 // Logo position toggle (Customize)
