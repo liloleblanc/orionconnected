@@ -23340,6 +23340,71 @@ function _wxAnimIcon(code, night) {
   if (c === 8000) return night ? 'thunderstorms-rain' : 'thunderstorms-day-rain';
   return night ? 'clear-night' : 'clear-day';
 }
+// WMO daily codes (Open-Meteo /wxdaily) → animated icon names.
+function _wmoAnimIcon(code) {
+  var c = Number(code) || 0;
+  if (c === 0 || c === 1) return 'clear-day';
+  if (c === 2) return 'partly-cloudy-day';
+  if (c === 3) return 'overcast-day';
+  if (c === 45 || c === 48) return 'fog';
+  if (c >= 51 && c <= 55) return 'drizzle';
+  if (c === 56 || c === 57 || c === 66 || c === 67) return 'sleet';
+  if (c === 61 || c === 63 || c === 80 || c === 81) return 'rain';
+  if (c === 65 || c === 82) return 'extreme-rain';
+  if (c === 71 || c === 73 || c === 77 || c === 85) return 'snow';
+  if (c === 75 || c === 86) return 'extreme-snow';
+  if (c >= 95) return 'thunderstorms-day-rain';
+  return 'cloudy';
+}
+// Inline the animated SVGs so their animations ALWAYS run (some display
+// stacks freeze SVG animation inside <img>). Fetched once, cached.
+window._wxSvgTxt = window._wxSvgTxt || {};
+function _wxHydrateSvgs(root) {
+  try {
+    root.querySelectorAll('img.wxanim[data-wx]').forEach(function (img) {
+      var name = img.getAttribute('data-wx');
+      function inject(txt) {
+        try {
+          if (!img.parentNode) return;
+          var span = document.createElement('span');
+          span.className = 'wxanim-host ' + (img.className || '');
+          span.style.cssText = img.getAttribute('style') || '';
+          span.innerHTML = txt;
+          var svg = span.querySelector('svg');
+          if (svg) { svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); svg.style.display = 'block'; }
+          img.parentNode.replaceChild(span, img);
+        } catch (e) {}
+      }
+      if (window._wxSvgTxt[name]) { inject(window._wxSvgTxt[name]); return; }
+      fetch('/logos/weather/animated/' + name + '.svg')
+        .then(function (r) { return r.ok ? r.text() : null; })
+        .then(function (txt) { if (txt) { window._wxSvgTxt[name] = txt; inject(txt); } })
+        .catch(function () {});
+    });
+  } catch (e) {}
+}
+// 7-day daily forecast via the site worker's keyless /wxdaily route.
+window._wxDaily = window._wxDaily || {};
+function _wxFetchDaily(iata, onReady) {
+  try {
+    var C = (typeof COORDS !== 'undefined' && COORDS[iata]) || null;
+    if (!C) return null;
+    var hit = window._wxDaily[iata];
+    if (hit && (Date.now() - hit.ts) < 1800000) return hit.data;
+    if (hit && hit.pending) return null;
+    window._wxDaily[iata] = { pending: true, ts: 0, data: null };
+    fetch('/wxdaily?location=' + C[0] + ',' + C[1])
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (d && d.daily && d.daily.time) {
+          window._wxDaily[iata] = { data: d.daily, ts: Date.now() };
+          if (typeof onReady === 'function') onReady();
+        } else { window._wxDaily[iata] = { data: null, ts: Date.now() }; }
+      })
+      .catch(function () { window._wxDaily[iata] = { data: null, ts: Date.now() }; });
+    return null;
+  } catch (e) { return null; }
+}
 function _renderWxCard(el) {
   try {
     var cf = window._gateCurrentFlight;
@@ -23350,7 +23415,6 @@ function _renderWxCard(el) {
     var city = '';
     try { city = (typeof CITY !== 'undefined' && CITY[dest]) || (AP[dest] && AP[dest].city) || dest; } catch (e) { city = dest; }
     if (typeof tc === 'function') { try { city = tc(city); } catch (e2) {} }
-    // Destination-local night detection
     var night = false;
     try {
       var tz = (AP[dest] || {}).tz;
@@ -23359,50 +23423,68 @@ function _renderWxCard(el) {
     } catch (e3) {}
     var ic = _wxAnimIcon(cur.code, night);
     var cond = (typeof tioLabel === 'function' ? tioLabel(cur.code) : '') || '';
-    var tempStr = (typeof displayTemp === 'function') ? displayTemp(Math.round(cur.temp)) : Math.round(cur.temp) + '°C';
-    var feels = (typeof cur.feelsLike === 'number')
-      ? ((typeof displayTemp === 'function') ? displayTemp(Math.round(cur.feelsLike)) : Math.round(cur.feelsLike) + '°C') : null;
-    // Outlook: aggregate cached hourly into daily hi/lo + midday condition
-    var tiles = '';
-    var days = {}, order = [];
-    (wx.hourly || []).forEach(function (h) {
-      if (!h || typeof h.temp !== 'number' || !h.time) return;
-      var day = String(h.time).slice(0, 10);
-      if (!days[day]) { days[day] = { hi: -99, lo: 99, codes: {} }; order.push(day); }
-      if (h.temp > days[day].hi) days[day].hi = h.temp;
-      if (h.temp < days[day].lo) days[day].lo = h.temp;
-      var hr = Number(String(h.time).slice(11, 13));
-      if (hr >= 11 && hr <= 16 && typeof h.code !== 'undefined') days[day].codes[h.code] = (days[day].codes[h.code] || 0) + 1;
-    });
+    var dT = function (v) { return (typeof displayTemp === 'function') ? displayTemp(Math.round(v)) : Math.round(v) + '°C'; };
     var names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    var keys = order.sort().slice(0, 5);
-    keys.forEach(function (k) {
-      var dd = days[k];
-      var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
-      var dt = new Date(k + 'T12:00:00');
-      var hiS = (typeof displayTemp === 'function') ? displayTemp(Math.round(dd.hi)) : Math.round(dd.hi) + '°';
-      var loS = (typeof displayTemp === 'function') ? displayTemp(Math.round(dd.lo)) : Math.round(dd.lo) + '°';
-      tiles += '<div class="wxc-day"><div class="wxc-d">' + names[dt.getDay()] + '</div>'
-        + '<img src="/logos/weather/animated/' + _wxAnimIcon(code, false) + '.svg" alt="">'
-        + '<div class="wxc-hi">' + hiS + '</div><div class="wxc-lo">' + loS + '</div></div>';
+
+    // 7-DAY outlook: prefer the daily route; fall back to 48h hourly rollup.
+    var tiles = '', nDays = 0;
+    var daily = _wxFetchDaily(dest, function () {
+      // re-render in place if the weather scene is still on screen
+      try { if (el && el.isConnected && el.querySelector('.wxcard-wrap')) _renderWxCard(el); } catch (eR) {}
     });
+    if (daily && daily.time && daily.time.length) {
+      for (var i = 0; i < Math.min(7, daily.time.length); i++) {
+        var dt = new Date(daily.time[i] + 'T12:00:00');
+        var icd = _wmoAnimIcon(daily.weather_code[i]);
+        tiles += '<div class="wxc-day"><div class="wxc-d">' + names[dt.getDay()] + '</div>'
+          + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
+          + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
+          + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
+        nDays++;
+      }
+    } else {
+      var days = {}, order = [];
+      (wx.hourly || []).forEach(function (h) {
+        if (!h || typeof h.temp !== 'number' || !h.time) return;
+        var day = String(h.time).slice(0, 10);
+        if (!days[day]) { days[day] = { hi: -99, lo: 99, codes: {} }; order.push(day); }
+        if (h.temp > days[day].hi) days[day].hi = h.temp;
+        if (h.temp < days[day].lo) days[day].lo = h.temp;
+        var hr = Number(String(h.time).slice(11, 13));
+        if (hr >= 11 && hr <= 16 && typeof h.code !== 'undefined') days[day].codes[h.code] = (days[day].codes[h.code] || 0) + 1;
+      });
+      order.sort().slice(0, 7).forEach(function (k) {
+        var dd = days[k];
+        var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
+        var dt2 = new Date(k + 'T12:00:00');
+        var ich = _wxAnimIcon(code, false);
+        tiles += '<div class="wxc-day"><div class="wxc-d">' + names[dt2.getDay()] + '</div>'
+          + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
+          + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
+        nDays++;
+      });
+    }
+
     el.innerHTML =
-        '<div class="wxcard-wrap">'
+        '<div class="wxcard-wrap wxcard-col">'
       +   '<div class="wxcard-main">'
-      +     '<div class="wxc-kicker">Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée</div>'
-      +     '<div class="wxc-city">' + city + ' (' + dest + ')</div>'
-      +     '<div class="wxc-hero">'
-      +       '<img src="/logos/weather/animated/' + ic + '.svg" alt="">'
-      +       '<div><div class="wxc-temp">' + tempStr + '</div><div class="wxc-cond">' + cond + '</div></div>'
+      +     '<div class="wxc-head">'
+      +       '<div><div class="wxc-kicker">Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée</div>'
+      +       '<div class="wxc-city">' + city + ' (' + dest + ')</div></div>'
       +     '</div>'
-      +     '<div class="wxc-meta">'
-      +       (feels ? '<span>Feels like <b>' + feels + '</b></span>' : '')
-      +       (typeof cur.windSpeed === 'number' ? '<span>Wind <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
-      +       (typeof cur.humidity === 'number' ? '<span>Humidity <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
+      +     '<div class="wxc-hero">'
+      +       '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
+      +       '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
+      +       '<div class="wxc-meta">'
+      +         (typeof cur.feelsLike === 'number' ? '<span>Feels like <b>' + dT(cur.feelsLike) + '</b></span>' : '')
+      +         (typeof cur.windSpeed === 'number' ? '<span>Wind <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
+      +         (typeof cur.humidity === 'number' ? '<span>Humidity <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
+      +       '</div></div>'
       +     '</div>'
       +   '</div>'
-      +   (tiles ? '<div class="wxcard-outlook"><div class="wxc-title">' + keys.length + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS</div><div class="wxc-grid">' + tiles + '</div></div>' : '')
+      +   (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '')
       + '</div>';
+    _wxHydrateSvgs(el);
     return true;
   } catch (e) { return false; }
 }
