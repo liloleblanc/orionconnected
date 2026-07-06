@@ -6977,7 +6977,7 @@ function uxgGateHtml(ctx) {
     // WHITE BANNERS — use native-color logos so they show against light background
     'HA': '/logos/airlines/us-major/Hawaiian.svg',                               // Pualani + native-color "Hawaiian Airlines"
     'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
-    'PB': '/logos/airlines/canadian-regional/pal-airlines-swoosh-white.svg',     // PAL — gold swoosh + white wordmark for the navy bar
+    'PB': '/logos/airlines/canadian-regional/pal-airlines-swoosh-white.svg?v=2', // PAL — gold swoosh + white wordmark; v2 = ink-normalized (was 31% empty canvas → read tiny)
     // BA override REMOVED Jul 2026 (Nick: 'British Airways is not correct') —
     // BA now flows through the emblem+wordmark path: Speedmarque tile +
     // official-blue BRITISH AIRWAYS lettering.
