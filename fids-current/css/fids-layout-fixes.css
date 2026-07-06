@@ -1954,3 +1954,12 @@ html #gateAdCarousel > * {
   animation: gadSlideIn 560ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
+
+/* Main-board banner pinned (Nick: 'a lot of times the top does not show
+   up') — sticky keeps the time/airport band on screen even if a kiosk
+   browser ends up with the page scrolled. */
+html body .fids-banner {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 60 !important;
+}
