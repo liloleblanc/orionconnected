@@ -8980,6 +8980,16 @@ const gView = document.getElementById('gateView');
       }
     } catch (e) {}
 
+    // Bilingual column titles — 'Flight | Vol' etc. (Nick), never a
+    // rotating single language, '#' clutter dropped so titles fit one line.
+    function _bidsHdr(key) {
+      var l2 = 'fr';
+      try { l2 = (typeof boardLangsFor === 'function' ? (boardLangsFor(iata)[1] || 'fr') : (langs && langs[1]) || 'fr'); } catch (e) {}
+      var o = (typeof LS !== 'undefined' && LS[key]) || {};
+      var a = String(o.en || key).replace(/\s*#\s*$/, '');
+      var b = String(o[l2] || '').replace(/\s*#\s*$/, '');
+      return (b && b !== a) ? (a + ' <span class="bidsv2-hsep">|</span> ' + b) : a;
+    }
     bView.innerHTML = `
       <div class="bidsv2-screen">
 
@@ -9013,10 +9023,10 @@ const gView = document.getElementById('gateView');
 
           <div class="bidsv2-flight-list">
             <div class="bidsv2-list-header">
-              <div class="bidsv2-col-flight">${TL('flight')}</div>
-              <div class="bidsv2-col-from">${TL('destArr')}</div>
-              <div class="bidsv2-col-time">${TL('time')}</div>
-              <div class="bidsv2-col-status">${TL('status')}</div>
+              <div class="bidsv2-col-flight">${_bidsHdr('flight')}</div>
+              <div class="bidsv2-col-from">${_bidsHdr('destArr')}</div>
+              <div class="bidsv2-col-time">${_bidsHdr('time')}</div>
+              <div class="bidsv2-col-status">${_bidsHdr('status')}</div>
             </div>
             ${_pageFlights.length ? _pageFlights.map((f) => {
               const stTxt = SL(f.status);
