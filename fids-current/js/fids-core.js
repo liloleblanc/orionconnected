@@ -6990,8 +6990,9 @@ function uxgGateHtml(ctx) {
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
     // WestJet — navy banner: white "WestJet" lettering + colored (teal/navy) maple-leaf swoosh
     'WS': '/logos/airlines/canadian/WestJet_Logo_2018-monochrome-white-colored-leaf.svg?v=5', // white wordmark + colored leaf for the navy bar
-    // WHITE BANNERS — use native-color logos so they show against light background
-    'HA': '/logos/airlines/us-major/Hawaiian.svg',                               // Pualani + native-color "Hawaiian Airlines"
+    // HA override REMOVED Jul 2026 (Nick: banner wordmark must be WHITE, icon
+    // keeps its colors) — HA flows through the emblem+wordmark pair: native
+    // Pualani beside hawaiian-wordmark-light.svg (white lettering).
     'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
     'PB': '/logos/airlines/canadian-regional/pal-airlines-swoosh-white.svg?v=2', // PAL — gold swoosh + white wordmark; v2 = ink-normalized (was 31% empty canvas → read tiny)
     // BA override REMOVED Jul 2026 (Nick: 'British Airways is not correct') —
