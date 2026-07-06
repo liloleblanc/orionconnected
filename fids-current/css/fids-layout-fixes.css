@@ -1804,24 +1804,67 @@ html .bidsv2-list-header {
 }
 html .bidsv2-list-header + .bidsv2-flight-row { margin-top: 0 !important; }
 
-/* GIDS flight shelf (below the map) — Nick: a separator LINE between the
-   stacked title words (Flight / Vol), and the values pulled in CLOSE to
-   the titles (the label column was reserving far too much width). */
-html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow {
-  grid-template-columns: clamp(54px, 5vw, 92px) 1fr !important;
-  column-gap: clamp(8px, 0.9vw, 14px) !important;
+/* GIDS flight shelf (below the map) — Nick round 2: NO long line (the
+   divider hugs the word itself, not the whole label column), and the
+   values pulled in tight. The grid moves UP to the table with
+   display:contents rows so every row shares ONE max-content label column
+   (per-row grids gave each row its own width — values didn't line up).
+   Separators move onto the cells: a contents row renders no border. */
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table {
+  display: grid !important;
+  grid-template-columns: max-content 1fr !important;
+  /* no column-gap: the cells' border-bottoms must meet in one continuous
+     line — the label cell's right padding provides the spacing instead */
+  column-gap: 0 !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow { display: contents !important; }
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+  padding-top: clamp(1px, 0.3vh, 5px) !important;
+  padding-bottom: clamp(1px, 0.3vh, 5px) !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  padding-right: clamp(6px, 0.7vw, 10px) !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-last > .v2-rc-fi-tlbl,
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-last > .v2-rc-fi-tval { border-bottom: none !important; }
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl { justify-content: center !important; }
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  display: flex !important; align-items: center !important; white-space: nowrap !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child {
+  align-self: flex-start !important; /* border = word width, not column width */
   border-bottom: 1px solid rgba(20, 24, 30, 0.32) !important;
   padding-bottom: 2px !important;
   margin-bottom: 2px !important;
 }
 /* Same treatment inside the BIG takeover panel's table. */
-html .bigcraft-side .v2-rc-fi-trow {
-  grid-template-columns: clamp(58px, 5.4vw, 100px) 1fr !important;
-  column-gap: clamp(8px, 0.9vw, 14px) !important;
+html .bigcraft-side .v2-rc-fi-table {
+  display: grid !important;
+  grid-template-columns: max-content 1fr !important;
+  column-gap: 0 !important;
+}
+html .bigcraft-side .v2-rc-fi-trow { display: contents !important; }
+html .bigcraft-side .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html .bigcraft-side .v2-rc-fi-trow > .v2-rc-fi-tval {
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+  padding-top: clamp(4px, 0.8vh, 11px) !important;
+  padding-bottom: clamp(4px, 0.8vh, 11px) !important;
+}
+html .bigcraft-side .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  padding-right: clamp(6px, 0.7vw, 10px) !important;
+}
+html .bigcraft-side .v2-rc-fi-trow:last-child > .v2-rc-fi-tlbl,
+html .bigcraft-side .v2-rc-fi-trow:last-child > .v2-rc-fi-tval,
+html .bigcraft-side .v2-rc-fi-trow-last > .v2-rc-fi-tlbl,
+html .bigcraft-side .v2-rc-fi-trow-last > .v2-rc-fi-tval { border-bottom: none !important; }
+html .bigcraft-side .v2-rc-fi-tlbl { justify-content: center !important; }
+html .bigcraft-side .v2-rc-fi-trow > .v2-rc-fi-tval {
+  display: flex !important; align-items: center !important; white-space: nowrap !important;
 }
 html .bigcraft-side .v2-rc-fi-tlbl span:first-child {
+  align-self: flex-start !important;
   border-bottom: 1px solid rgba(20, 24, 30, 0.32) !important;
   padding-bottom: 2px !important;
   margin-bottom: 2px !important;
@@ -1835,4 +1878,38 @@ html .wxc-day img, html .wxc-day .wxanim-host svg,
 html .wxc-hour img, html .wxc-hour .wxanim-host svg,
 html .wxc-hero img, html .wxc-hero .wxanim-host svg {
   filter: brightness(1.15) saturate(1.1) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45)) !important;
+}
+
+/* PAL operated-by logo, take 2 (Nick: "i asked bigger its not been done"):
+   the first bump only raised max-height, but gids-v218.78 pins height: with
+   !important on these imgs, so the cap was never reached. Force the height
+   itself, at higher specificity than every gids rule. */
+html .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-logo img[src*="pal-airlines"],
+html .g8-wrap .gad-map-col-v2 img.v2-rc-opby-logo[src*="pal-airlines"],
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val img[src*="pal-airlines"] {
+  height: clamp(46px, 7vh, 96px) !important;
+  max-height: none !important;
+  max-width: min(68%, 360px) !important;
+  width: auto !important;
+  object-fit: contain !important;
+}
+
+/* "expected | prévu" qualifier on a history-sourced registration — small
+   and muted next to the tail number; disappears once today's confirmed
+   reg arrives. */
+html .g8-wrap .v2-rc-reg-expected {
+  font-size: 0.52em !important;
+  font-weight: 600 !important;
+  opacity: 0.62 !important;
+  letter-spacing: 0.3px !important;
+  white-space: nowrap !important;
+}
+
+/* Flex tvals drop the whitespace text nodes around the bilingual pipe
+   (anonymous flex items trim collapsible spaces) — put the space on the
+   sep itself. em-based so it tracks the shrink-to-fit font size; no flex
+   gap (needs Chrome 84+, some kiosks are older). */
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval .v2-rc-fi-sep,
+html .bigcraft-side .v2-rc-fi-trow > .v2-rc-fi-tval .v2-rc-fi-sep {
+  margin: 0 0.28em !important;
 }
