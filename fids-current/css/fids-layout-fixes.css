@@ -1653,3 +1653,34 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.14); }
 }
+
+/* ── ARRIVAL WEATHER scene (gate rotation) ── */
+.wxcard-wrap {
+  display: grid !important; grid-template-columns: 1.3fr 1fr !important;
+  gap: clamp(14px, 1.6vw, 28px) !important; width: 100% !important; height: 100% !important;
+  background: linear-gradient(135deg, #0d2440 0%, #164a7c 100%) !important;
+  padding: clamp(18px, 2.6vh, 36px) clamp(20px, 2vw, 40px) !important; box-sizing: border-box !important;
+  align-items: center !important;
+}
+.wxcard-main { min-width: 0 !important; }
+.wxc-kicker { font-size: clamp(11px, 1.4vh, 17px) !important; font-weight: 800 !important; letter-spacing: 2px !important;
+  color: rgba(255,255,255,.55) !important; text-transform: uppercase !important; }
+.wxc-city { font-size: clamp(22px, 3.4vh, 42px) !important; font-weight: 900 !important; color: #fff !important; margin-top: 4px !important;
+  white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+.wxc-hero { display: flex !important; align-items: center !important; gap: clamp(12px, 1.4vw, 24px) !important; margin: clamp(6px, 1.2vh, 16px) 0 !important; }
+.wxc-hero img { width: clamp(90px, 15vh, 170px) !important; height: clamp(90px, 15vh, 170px) !important; display: block !important; }
+.wxc-temp { font-size: clamp(42px, 7.5vh, 92px) !important; font-weight: 900 !important; line-height: 1 !important; color: #fff !important; }
+.wxc-cond { font-size: clamp(14px, 2.1vh, 26px) !important; font-weight: 700 !important; color: rgba(255,255,255,.85) !important; }
+.wxc-meta { display: flex !important; gap: clamp(14px, 1.8vw, 30px) !important; color: rgba(255,255,255,.75) !important;
+  font-size: clamp(12px, 1.7vh, 20px) !important; font-weight: 700 !important; flex-wrap: wrap !important; }
+.wxc-meta b { color: #fff !important; }
+.wxcard-outlook { min-width: 0 !important; }
+.wxc-title { font-size: clamp(11px, 1.5vh, 18px) !important; font-weight: 800 !important; letter-spacing: 1.5px !important;
+  color: rgba(255,255,255,.55) !important; margin-bottom: clamp(6px, 1vh, 12px) !important; }
+.wxc-grid { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)) !important; gap: clamp(6px, 0.8vw, 12px) !important; }
+.wxc-day { background: rgba(255,255,255,.07) !important; border-radius: 12px !important;
+  padding: clamp(8px, 1.4vh, 16px) 6px !important; text-align: center !important; }
+.wxc-d { font-size: clamp(11px, 1.5vh, 17px) !important; font-weight: 800 !important; color: rgba(255,255,255,.7) !important; }
+.wxc-day img { width: clamp(44px, 7vh, 80px) !important; height: clamp(44px, 7vh, 80px) !important; margin: 4px auto !important; display: block !important; }
+.wxc-hi { font-size: clamp(15px, 2.2vh, 26px) !important; font-weight: 900 !important; color: #fff !important; }
+.wxc-lo { font-size: clamp(12px, 1.6vh, 19px) !important; font-weight: 700 !important; color: rgba(255,255,255,.55) !important; }
