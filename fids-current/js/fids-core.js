@@ -9068,7 +9068,7 @@ const gView = document.getElementById('gateView');
             +   '</div>'
             + '</div>'
             + '<div class="fids-banner-board">'
-            +   '<div class="fids-board-icon" aria-hidden="true"><svg viewBox="0 0 24 24" style="width:44px;height:44px;fill:currentColor;"><path d="M17 6h-2V4c0-1.1-.9-2-2-2h-2C9.9 2 9 2.9 9 4v2H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2 0 .55.45 1 1 1s1-.45 1-1h6c0 .55.45 1 1 1s1-.45 1-1c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2h2v2h-2V4zm-2 15H8V9h1v10zm3.5 0h-2V9h2v10zm3.5 0h-1V9h1v10z"/></svg></div>'
+            +   '<div class="fids-board-icon" aria-hidden="true"><span class="ac-ico ac-ico-baggage" style="font-size:clamp(30px,4vh,44px);line-height:1;"></span></div>'
             +   '<div class="fids-board-label">' + _ttl + '</div>'
             + '</div>'
           + '</div>';
@@ -12137,7 +12137,7 @@ if (typeof window !== 'undefined') window.WORDMARK_OVERRIDE = WORDMARK_OVERRIDE;
 // NOT PAL.svg from the pack (PAL.svg is Philippine Airlines).
 const IATA_TO_TILE_ICAO = {
   // Canadian carriers
-  'AC':'ACA',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // ACA = official red tile, white maple (Nick: 'only use Air Canada icons from the proper icons list' — the black variant is retired)
+  'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // AC tile is the BLACK variant — Nick: 'its black normally' (red swap was a misread, reverted)
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
   'PB':'PB',   // ← Nick's custom PAL Airlines logo (Newfoundland)
   'MO':'MPE',  'YP':'PCM',  'BQ':'PSC',
