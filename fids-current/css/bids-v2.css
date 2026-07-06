@@ -162,7 +162,6 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-weight: 700;
   letter-spacing: 3px;
   color: rgba(255,255,255,0.4);
-  text-transform: uppercase;
 }
 
 /* ─── BANNER (top strip with logo + clock) ─────────────────────────── */
@@ -196,7 +195,6 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-weight: 800;
   letter-spacing: 2px;
   line-height: 1.1;
-  text-transform: uppercase;
   color: #ffffff;
   max-width: 50vw;
 }
@@ -273,7 +271,6 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-weight: 900;
   letter-spacing: 6px;
   color: var(--fids-bg, #050033);
-  text-transform: uppercase;
   margin-bottom: 8px;
   text-align: center;
 }
@@ -306,7 +303,6 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-weight: 700;
   letter-spacing: 4px;
   color: rgba(255,255,255,0.55);
-  text-transform: uppercase;
   border-bottom: none;
 }
 
@@ -377,7 +373,6 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-weight: 800;
   letter-spacing: 1px;
   color: rgba(255,255,255,0.65);
-  text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -396,7 +391,6 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-weight: 800;
   color: #ffffff;
   letter-spacing: 1px;
-  text-transform: uppercase;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -416,7 +410,6 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-size: 16px;
   font-weight: 800;
   letter-spacing: 2px;
-  text-transform: uppercase;
 }
 .bidsv2-status-arrived {
   color: #10b981;
@@ -435,7 +428,6 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-weight: 700;
   color: rgba(255,255,255,0.45);
   letter-spacing: 4px;
-  text-transform: uppercase;
 }
 
 /* ─── FOOTER (bottom welcome strip) ───────────────────────────────── */
@@ -456,7 +448,6 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
 }
 .bidsv2-footer-msg {
   color: #ffffff;
-  text-transform: uppercase;
 }
 .bidsv2-footer-date {
   color: rgba(255,255,255,0.6);

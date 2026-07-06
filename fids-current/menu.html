@@ -124,6 +124,39 @@
         <optgroup label="Saved presets" id="cuPresetGroup"></optgroup>
       </select>
 
+      <!-- ─── 1a. DAY & NIGHT ─── -->
+      <div data-sec="look-basic" style="margin-bottom:14px;">
+        <div class="sm-label">Day &amp; night</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#d1d5db;margin:2px 0 8px;cursor:pointer;">
+          <input type="checkbox" id="cuDnEnabled" onchange="cuDayNightChanged()"> Switch theme automatically by time of day
+        </label>
+        <div id="cuDnWrap" style="display:none;">
+          <div style="display:grid;grid-template-columns:44px 1fr 106px;gap:8px;align-items:center;margin-bottom:8px;">
+            <span style="font-size:12px;color:#9ca3af;">Day</span>
+            <select class="sm-select" id="cuDnDay" onchange="cuDayNightChanged()" style="margin:0;">
+              <option value="">Airport default (Teal)</option>
+              <option value="tus-teal">Teal</option>
+              <option value="tus-teal-deep">Teal Deep</option>
+              <option value="mist">Mist (light)</option>
+              <option value="custom">Custom colours</option>
+            </select>
+            <input type="time" class="sm-select" id="cuDnDayStart" value="07:00" onchange="cuDayNightChanged()" style="margin:0;">
+          </div>
+          <div style="display:grid;grid-template-columns:44px 1fr 106px;gap:8px;align-items:center;">
+            <span style="font-size:12px;color:#9ca3af;">Night</span>
+            <select class="sm-select" id="cuDnNight" onchange="cuDayNightChanged()" style="margin:0;">
+              <option value="">Airport default (Teal)</option>
+              <option value="tus-teal">Teal</option>
+              <option value="tus-teal-deep">Teal Deep</option>
+              <option value="mist">Mist (light)</option>
+              <option value="custom">Custom colours</option>
+            </select>
+            <input type="time" class="sm-select" id="cuDnNightStart" value="19:00" onchange="cuDayNightChanged()" style="margin:0;">
+          </div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:6px;">Each theme starts at its time — airport local time.</div>
+        </div>
+      </div>
+
       <!-- ─── 1b. FONT ─── -->
       <div class="sm-label" data-sec="look-adv">Font</div>
       <select class="sm-select" id="cuFontSelect" style="margin-bottom:14px;" onchange="cuFontChanged()">
