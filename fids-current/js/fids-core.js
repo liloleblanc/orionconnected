@@ -19876,6 +19876,8 @@ function _processAccorData(data, destIata, langKey) {
       _propertyLockup: _propertyLockupPath,
       // v218.99.25 — extended Catalog fields for the Option D overlay
       advantages: Array.isArray(h.advantages) ? h.advantages : [],
+      amenityFree: (h.amenity && Array.isArray(h.amenity.free)) ? h.amenity.free : [],
+      labels: Array.isArray(h.label) ? h.label.map(String) : [],
       factsheetUrl: h.factsheetUrl || ('https://all.accor.com/hotel/' + (h.id || '') + '/index.en.shtml'),
       hotelId: h.id || '',
       description: h.description || '',
@@ -21401,7 +21403,23 @@ function buildAccorAdOnlyV6(ad) {
       (_detail && _detail.topAmenities && _detail.topAmenities.length) ? _detail.topAmenities : amenities,
       (_detail && _detail.facilities) ? _detail.facilities : []
   )).slice(0, 6);
-  var _restList = _dedupe((_detail && _detail.restaurants) ? _detail.restaurants : []).slice(0, 5);
+  // REAL hotel dining (Nick: page 3 was showing in-room kettles/fridges):
+  // prose 'advantages' that mention dining first, then hotel-level dining
+  // amenities and program labels. In-room food&bev only as a last resort.
+  var _dineRx = /restaurant|resto|\bbar\b|dining|breakfast|d[ée]jeuner|cuisine|lounge|caf[ée]|terrasse|patio|buffet/i;
+  var _dineAdv = (Array.isArray(ad.advantages) ? ad.advantages : []).filter(function (a) { return _dineRx.test(String(a)); });
+  var _amenFree = Array.isArray(ad.amenityFree) ? ad.amenityFree : [];
+  var _lblsAd = Array.isArray(ad.labels) ? ad.labels : [];
+  var _dfr = accorLang() === 'fr';
+  var _dineAmen = [];
+  if (_amenFree.indexOf('restaurant') !== -1) _dineAmen.push(_dfr ? 'Restaurant sur place' : 'On-site restaurant');
+  if (_amenFree.indexOf('bar') !== -1) _dineAmen.push(_dfr ? 'Bar-salon' : 'Bar & lounge');
+  if (_lblsAd.indexOf('COMPLIMENTARY_BREAKFAST') !== -1) _dineAmen.push(_dfr ? 'Petit-déjeuner offert' : 'Complimentary breakfast');
+  else if (_amenFree.indexOf('breakfast') !== -1) _dineAmen.push(_dfr ? 'Petit-déjeuner' : 'Breakfast available');
+  if (_amenFree.indexOf('room_service') !== -1) _dineAmen.push(_dfr ? 'Service aux chambres' : 'Room service');
+  if (_lblsAd.indexOf('DINING_OFFER') !== -1) _dineAmen.push(_dfr ? 'Offres restauration pour les clients' : 'Dining offers for guests');
+  var _restList = _dedupe(_dineAdv.concat(_dineAmen)).slice(0, 5);
+  if (!_restList.length) _restList = _dedupe((_detail && _detail.restaurants) ? _detail.restaurants : []).slice(0, 5);
   var _blurb = first(ad.description, ad.destinationDescription, '');
   if (_blurb) {
     _blurb = String(_blurb).replace(/\s+/g, ' ').trim();
@@ -23263,59 +23281,15 @@ function _renderBigCraft(el, ctx) {
   _bcWrapEl.appendChild(_bcOv);
   _bcWrapEl.classList.add('g8-bigcraft-active');
   window._bigCraftOverlay = _bcOv;
-  // Flat route map — full-route view, arc + endpoints + plane glyph at progress.
+  // THE SAME MAP AS THE MINI, ENLARGED (Nick: 'literally the same as now
+  // except enlarged'): verbatim clones of the mini-map builders rendering
+  // into the big container — same tiles, phase zoom, labels, plane icon.
   try {
-    if (typeof L === 'undefined' || typeof L.map !== 'function') return;
-    var o = [ctx.o[1], ctx.o[0]], d = [ctx.d[1], ctx.d[0]];   // ctx stores [lng,lat]
-    var m = L.map('bigCraftMap', { zoomControl: false, attributionControl: false, dragging: false,
-      scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false });
-    window._bigCraftMap = m;
-    _gateMapTileLayer().addTo(m);
-    m.fitBounds([o, d], { padding: [70, 70], maxZoom: 8 });
-    var arc = null;
-    try { arc = L.Polyline.Arc(o, d, { vertices: 100, color: '#60a5fa', weight: 4, opacity: 0.7, dashArray: '10,8', noClip: true }).addTo(m); }
-    catch (e2) { arc = L.polyline([o, d], { color: '#60a5fa', weight: 4, opacity: 0.7, dashArray: '10,8' }).addTo(m); }
-    L.circleMarker(o, { radius: 7, color: '#60a5fa', fillColor: '#60a5fa', fillOpacity: 1, weight: 0 }).addTo(m)
-      .bindTooltip(ctx.oc || '', { permanent: true, direction: 'bottom', className: 'gate-map-label', offset: [0, 6] });
-    L.circleMarker(d, { radius: 7, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1, weight: 0 }).addTo(m)
-      .bindTooltip(ctx.dc || '', { permanent: true, direction: 'bottom', className: 'gate-map-label', offset: [0, 6] });
-    var p = Math.max(0.02, Math.min(0.98, ctx.progress || 0));
-    var ll = arc.getLatLngs ? arc.getLatLngs() : [o, d];
-    var _bcPlanePos = null;
-    if (ll.length > 2) {
-      var idx = Math.min(Math.floor(p * ll.length), ll.length - 1);
-      var pos = ctx.pos ? [ctx.pos[1], ctx.pos[0]] : ll[idx];
-      _bcPlanePos = pos;
-      var s0 = ll[Math.max(idx - 3, 0)], s1 = ll[Math.min(idx + 3, ll.length - 1)];
-      var dLng = (s1.lng - s0.lng) * Math.PI / 180, la1 = s0.lat * Math.PI / 180, la2 = s1.lat * Math.PI / 180;
-      var brg = Math.atan2(Math.sin(dLng) * Math.cos(la2),
-                Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng)) * 180 / Math.PI;
-      L.marker(pos, { zIndexOffset: 1000, icon: L.divIcon({
-        html: '<div style="transform:rotate(' + brg + 'deg);width:56px;height:56px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="56" height="56" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',
-        iconSize: [56, 56], iconAnchor: [28, 28], className: 'bigcraft-plane-pulse' }) }).addTo(m);
+    if (typeof L !== 'undefined' && typeof L.map === 'function') {
+      var _bcO = ctx.oc, _bcD = ctx.dc;
+      if (ctx.pos) _bigMapCloneLive(_bcO, _bcD, ctx.pos[1], ctx.pos[0]);
+      else _bigMapClone(_bcO, _bcD, ctx.progress);
     }
-    // CAMERA CHOREOGRAPHY (Nick: 'more animated, zoom in onto the map'):
-    // after the grow-in settles, fly IN toward the aircraft, hold, then ease
-    // back OUT to the whole route — repeating gently through the dwell.
-    window._bigCraftTimers = window._bigCraftTimers || [];
-    if (_bcPlanePos && typeof m.flyTo === 'function') {
-      var _bcCycle = function () {
-        try {
-          if (!window._bigCraftMap) return;
-          var zNow = window._bigCraftMap.getZoom() || 5;
-          window._bigCraftMap.flyTo(_bcPlanePos, Math.min(zNow + 2, 9), { duration: 2.6, easeLinearity: 0.15 });
-          window._bigCraftTimers.push(setTimeout(function () {
-            try {
-              if (!window._bigCraftMap) return;
-              window._bigCraftMap.flyToBounds([o, d], { padding: [70, 70], maxZoom: 8, duration: 2.8 });
-            } catch (eB) {}
-          }, 9500));
-        } catch (eA) {}
-      };
-      window._bigCraftTimers.push(setTimeout(_bcCycle, 1800));   // after the grow-in
-      window._bigCraftTimers.push(setInterval(_bcCycle, 21000)); // gentle repeat
-    }
-    setTimeout(function () { try { if (window._bigCraftMap) { window._bigCraftMap.invalidateSize(); window._bigCraftMap.fitBounds([o, d], { padding: [70, 70], maxZoom: 8 }); } } catch (e3) {} }, 150);
   } catch (e4) {}
 }
 
@@ -23405,6 +23379,20 @@ function _wxFetchDaily(iata, onReady) {
     return null;
   } catch (e) { return null; }
 }
+// Labels keyed by the ICON actually shown — icon and wording can never
+// disagree (Nick saw a sun captioned 'Nuageux').
+var _WXLBL = {
+  'clear-day': ['Sunny', 'Ensoleillé'], 'clear-night': ['Clear', 'Dégagé'],
+  'partly-cloudy-day': ['Partly cloudy', 'Partiellement nuageux'],
+  'partly-cloudy-night': ['Partly cloudy', 'Partiellement nuageux'],
+  'overcast-day': ['Overcast', 'Couvert'], 'overcast': ['Overcast', 'Couvert'],
+  'cloudy': ['Cloudy', 'Nuageux'], 'fog': ['Fog', 'Brouillard'], 'mist': ['Mist', 'Brume'],
+  'drizzle': ['Drizzle', 'Bruine'], 'rain': ['Rain', 'Pluie'], 'extreme-rain': ['Heavy rain', 'Pluie forte'],
+  'snow': ['Snow', 'Neige'], 'extreme-snow': ['Heavy snow', 'Neige forte'],
+  'sleet': ['Freezing rain', 'Pluie verglaçante'], 'hail': ['Ice pellets', 'Grésil'],
+  'thunderstorms-day-rain': ['Thunderstorm', 'Orage'], 'thunderstorms-rain': ['Thunderstorm', 'Orage'],
+  'wind': ['Windy', 'Venteux']
+};
 function _renderWxCard(el) {
   try {
     var cf = window._gateCurrentFlight;
@@ -23422,7 +23410,8 @@ function _renderWxCard(el) {
       night = hh < 6 || hh >= 21;
     } catch (e3) {}
     var ic = _wxAnimIcon(cur.code, night);
-    var cond = (typeof tioLabel === 'function' ? tioLabel(cur.code) : '') || '';
+    var _lblPair = _WXLBL[ic] || ['', ''];
+    var cond = _lblPair[0] + (_lblPair[1] && _lblPair[1] !== _lblPair[0] ? ' <span class="v2-rc-fi-sep">|</span> ' + _lblPair[1] : '');
     var dT = function (v) { return (typeof displayTemp === 'function') ? displayTemp(Math.round(v)) : Math.round(v) + '°C'; };
     var names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -23465,6 +23454,20 @@ function _renderWxCard(el) {
       });
     }
 
+    // Next hours: 6 upcoming entries from the cached hourly forecast.
+    var hoursHtml = '';
+    try {
+      var nowTs = Date.now(), shown = 0;
+      (wx.hourly || []).forEach(function (h) {
+        if (shown >= 6 || !h || typeof h.temp !== 'number' || !h.ts || h.ts < nowTs) return;
+        var ich = _wxAnimIcon(h.code, night);
+        var hLbl = new Date(h.ts).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).toLowerCase().replace(' ', '');
+        hoursHtml += '<div class="wxc-hour"><div class="wxc-hr">' + hLbl + '</div>'
+          + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
+          + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';
+        shown++;
+      });
+    } catch (eH) {}
     el.innerHTML =
         '<div class="wxcard-wrap wxcard-col">'
       +   '<div class="wxcard-main">'
@@ -23482,9 +23485,202 @@ function _renderWxCard(el) {
       +       '</div></div>'
       +     '</div>'
       +   '</div>'
+      +   (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">Next hours <span class="v2-rc-fi-sep">|</span> Prochaines heures</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
       +   (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '')
       + '</div>';
     _wxHydrateSvgs(el);
     return true;
   } catch (e) { return false; }
 }
+
+
+// ── Verbatim mini-map clones for the BIG takeover (auto-substituted) ──
+function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('bigCraftMap');if(!mb)return;
+  // Resolve airport coords. If either is unknown, kick off async lookup
+  // and retry — the map will populate as soon as both coords arrive.
+  var o=_lookupAirport(org), d=_lookupAirport(dst);
+  if (!o || !d) {
+    var pending = [];
+    if (!o) pending.push(_fetchAirportCoords(org));
+    if (!d) pending.push(_fetchAirportCoords(dst));
+    Promise.all(pending).then(function() {
+      // Re-attempt once both resolutions are in
+      if (_lookupAirport(org) && _lookupAirport(dst)) {
+        _bigMapClone(org, dst, prog);
+      } else {
+        // Could not resolve — leave the box empty rather than gray squares
+        try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch(e){}
+        if (mb) mb.innerHTML = '';
+      }
+    });
+    return;
+  }
+  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(window._bigCraftMap);
+  // Calculate total route distance for zoom scaling
+  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
+  // Base cruise zoom depends on route length (short=7, medium=6, long=5, transcon=4)
+  var cruiseZoom = totalDist < 5 ? 7 : totalDist < 15 ? 6 : totalDist < 30 ? 5 : 4;
+  // Progressive zoom: plane-centered, zoom matches flight phase
+  var p = Math.max(0, Math.min(1, prog || 0));
+  var zoom, center;
+  if (p < 0.02) {
+    // Before departure: show the FULL route so users see where they're going.
+    // Fit the map bounds to both origin + destination with padding.
+    // Set a placeholder zoom; we'll overwrite it with fitBounds after setView below.
+    zoom = cruiseZoom; center = [(o[0]+d[0])/2, (o[1]+d[1])/2];
+  } else if (p < 0.06) {
+    // Taxi/takeoff: zoom out to city-wide
+    zoom = 10; center = o;
+  } else if (p < 0.12) {
+    // Initial climb: province/state level
+    zoom = 8; center = o;
+  } else if (p < 0.25) {
+    // Climbing: transition to cruise
+    zoom = cruiseZoom + 1; center = o;
+  } else if (p < 0.75) {
+    // Cruise: regional view centered on plane position
+    zoom = cruiseZoom;
+    // Interpolate plane position along route
+    var pNorm = (p - 0.25) / 0.5; // 0→1 within cruise phase
+    center = [o[0] + (d[0]-o[0]) * p, o[1] + (d[1]-o[1]) * p];
+  } else if (p < 0.88) {
+    // Descent: zoom back in
+    zoom = cruiseZoom + 1; center = d;
+  } else if (p < 0.94) {
+    // Approach: province/state level on destination
+    zoom = 8; center = d;
+  } else if (p < 0.98) {
+    // Final approach: city-wide on destination
+    zoom = 10; center = d;
+  } else {
+    // Landed: city-level on destination
+    zoom = 11; center = d;
+  }
+  window._bigCraftMap.setView(center, zoom);
+  // For pre-departure flights, fit bounds to show both endpoints with padding.
+  if (p < 0.02) {
+    try {
+      window._bigCraftMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
+    } catch(e) { /* fallback to setView above */ }
+  }
+  try{var arc=null; if(_gateMapShowOverlay('route')){ arc=L.Polyline.Arc(o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap);} }catch(e){if(_gateMapShowOverlay('route')){var arc=L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(window._bigCraftMap);}}L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+      var planePos=ll[planeIdx];
+      var nextIdx=Math.min(planeIdx+3,ll.length-1);
+      var prevIdx=Math.max(planeIdx-3,0);
+      var segStart=ll[prevIdx],segEnd=ll[nextIdx];
+      var dLng=(segEnd.lng-segStart.lng)*Math.PI/180;
+      var lat1=segStart.lat*Math.PI/180,lat2=segEnd.lat*Math.PI/180;
+      var y2=Math.sin(dLng)*Math.cos(lat2);
+      var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
+      var bearing=Math.atan2(y2,x2)*180/Math.PI;
+      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+      // Center on plane during cruise
+      if (p >= 0.12 && p <= 0.88) {
+        window._bigCraftMap.setView(planePos, zoom);
+      }
+  }setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},500);}
+
+
+function _bigMapCloneLive(org,dst,planeLat,planeLng){
+  if(typeof L==='undefined'||typeof L.map!=='function')return;
+  var mb=document.getElementById('bigCraftMap');if(!mb)return;
+  var o=_lookupAirport(org), d=_lookupAirport(dst);
+  if (!o || !d) {
+    var pending = [];
+    if (!o) pending.push(_fetchAirportCoords(org));
+    if (!d) pending.push(_fetchAirportCoords(dst));
+    Promise.all(pending).then(function() {
+      if (_lookupAirport(org) && _lookupAirport(dst)) {
+        _bigMapCloneLive(org, dst, planeLat, planeLng);
+      } else {
+        try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch(e){}
+        if (mb) mb.innerHTML = '';
+      }
+    });
+    return;
+  }
+  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
+  window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+  _gateMapTileLayer().addTo(window._bigCraftMap);
+  var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
+  var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
+  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
+  var cruiseZoom = totalDist < 5 ? 7 : totalDist < 15 ? 6 : totalDist < 30 ? 5 : 4;
+  var nearOrg = distToOrg / totalDist;
+  var nearDst = distToDst / totalDist;
+  var zoom;
+  if (nearOrg < 0.05) zoom = 10;
+  else if (nearOrg < 0.10) zoom = 8;
+  else if (nearOrg < 0.20) zoom = cruiseZoom + 1;
+  else if (nearDst < 0.05) zoom = 10;
+  else if (nearDst < 0.10) zoom = 8;
+  else if (nearDst < 0.20) zoom = cruiseZoom + 1;
+  else zoom = cruiseZoom;
+  window._bigCraftMap.setView([planeLat, planeLng], zoom);
+  // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
+  // solid behind it, dashed ahead — so the plane always sits ON its line.
+  // (The old single ideal arc left any real-world deviation looking
+  // 'off course' with the plane floating beside the route.)
+  var _pp = [planeLat, planeLng];
+  try{
+    L.Polyline.Arc(o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap);
+    L.Polyline.Arc(_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap);
+  }
+  catch(e){
+    L.polyline([o,_pp],{color:'#60a5fa',weight:4,opacity:0.9}).addTo(window._bigCraftMap);
+    L.polyline([_pp,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(window._bigCraftMap);
+  }
+  L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  // Actual flown track over the assigned route: GREEN where it follows the
+  // assigned o→d line, AMBER where it deviates beyond ~30 km (reroute/hold —
+  // fine, just flagged so it's visible at a glance). Built from recorded fixes.
+  try {
+    var _tp = (_gateTrack && _gateTrack.key && _gateTrack.points && _gateTrack.points.length >= 2) ? _gateTrack.points : null;
+    if (_tp) {
+      for (var _ti = 1; _ti < _tp.length; _ti++) {
+        var _ta = _tp[_ti - 1], _tb = _tp[_ti];
+        L.polyline([[_ta.lat, _ta.lng], [_tb.lat, _tb.lng]], { color: '#60a5fa', weight: 4, opacity: 0.95 }).addTo(window._bigCraftMap);
+      }
+    }
+  } catch (e) {}
+  var planePos=L.latLng(planeLat,planeLng);
+  var dLng=(d[1]-planeLng)*Math.PI/180;
+  var lat1=planeLat*Math.PI/180,lat2=d[0]*Math.PI/180;
+  var y2=Math.sin(dLng)*Math.cos(lat2);
+  var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
+  var bearing=Math.atan2(y2,x2)*180/Math.PI;
+  L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+  setTimeout(function(){if(window._bigCraftMap)window._bigCraftMap.invalidateSize();},500);
+}
+// ──────────────────────────────────────────────────────────────────────
+// CINEMATIC MAP CAMERA  (tracks aircraft by REGISTRATION)
+// ──────────────────────────────────────────────────────────────────────
+// The aircraft (airframe) is the constant — flights and gates are labels
+// attached to it. As long as the same registration is at our gate, we
+// follow IT through its lifecycle:
+//
+//   Inbound scheduled, not yet airborne   Full inbound route (origin → us)
+//   Inbound airborne                      Cinematic camera on the plane
+//     ├─ taxi/takeoff (p<0.06)             Tight zoom on origin
+//     ├─ climb (p<0.25)                    Gradually zoom out
+//     ├─ cruise (p<0.75)                   Regional view following plane
+//     │    └─ flyback every 60s for 10s     Full A→B route, then back
+//     ├─ descent (p<0.88)                  Zoom in on destination region
+//     └─ approach (p<0.98)                 Tight on destination
+//   Inbound landed, plane at OUR gate     Full route of the OUTBOUND
+//                                         (where this plane is going next)
+//   Different registration arrives        Immediately switch to new plane
+//     (mechanical / aircraft swap)
+//
+// The render loop runs every 10 seconds. State is keyed by registration so
+// we only rebuild when the airframe changes or a phase boundary crosses.
+
+var _gateMapCamera = {
+  reg: null,              // current airframe being tracked
+  phase: null,            // 'pre' | 'airborne' | 'at-gate' | 'no-data'
+  lastProgKey: null,      // throttle rebuilds when nothing changed
+  flybackUntil: 0,        // ts: showing full-route view until this time
+  nextFlybackAt: 0        // ts: when to next start a flyback during cruise
+};
+
