@@ -1684,3 +1684,99 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
 .wxc-day img { width: clamp(44px, 7vh, 80px) !important; height: clamp(44px, 7vh, 80px) !important; margin: 4px auto !important; display: block !important; }
 .wxc-hi { font-size: clamp(15px, 2.2vh, 26px) !important; font-weight: 900 !important; color: #fff !important; }
 .wxc-lo { font-size: clamp(12px, 1.6vh, 19px) !important; font-weight: 700 !important; color: rgba(255,255,255,.55) !important; }
+
+/* Weather scene v2: full-width column layout — hero on top, the week as a
+   full-width strip below (Nick: 'maybe 7 days, maximize your space'). */
+html .wxcard-wrap.wxcard-col {
+  display: flex !important; flex-direction: column !important;
+  justify-content: space-between !important; align-items: stretch !important;
+  gap: clamp(10px, 1.6vh, 22px) !important;
+}
+html .wxcard-col .wxc-hero img, html .wxcard-col .wxc-hero .wxanim-host {
+  width: clamp(110px, 19vh, 210px) !important; height: clamp(110px, 19vh, 210px) !important;
+  display: block !important; flex: 0 0 auto !important;
+}
+html .wxcard-col .wxc-strip { width: 100% !important; }
+html .wxcard-col .wxc-grid { display: grid !important; gap: clamp(8px, 1vw, 16px) !important; }
+html .wxcard-col .wxc-grid-7 { grid-template-columns: repeat(7, 1fr) !important; }
+html .wxcard-col .wxc-grid-6 { grid-template-columns: repeat(6, 1fr) !important; }
+html .wxcard-col .wxc-grid-5 { grid-template-columns: repeat(5, 1fr) !important; }
+html .wxcard-col .wxc-grid-2, html .wxcard-col .wxc-grid-3, html .wxcard-col .wxc-grid-4 { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important; }
+html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
+  width: clamp(52px, 9vh, 100px) !important; height: clamp(52px, 9vh, 100px) !important;
+  margin: 4px auto !important; display: block !important;
+}
+html .wxanim-host { display: block !important; }
+
+/* ── Baggage: state blocks BEAT the light-board zebra (the odd-row light rule
+   tied specificity and, being later, killed the yellow on odd rows — Nick's
+   screenshot). Highest specificity, both palettes, end of cascade. ── */
+html body.fids-light-board .bidsv2-flight-row.bidsv2-row-delayed:nth-child(n),
+html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-delayed:nth-child(n) { background: #EDBB00 !important; }
+html body .bidsv2-flight-row.bidsv2-row-delayed, html body .bidsv2-flight-row.bidsv2-row-delayed * { color: #102437 !important; }
+html body.fids-light-board .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n),
+html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n) { background: #C8102E !important; }
+html body.fids-light-board .bidsv2-flight-row.bidsv2-row-diverted:nth-child(n),
+html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-diverted:nth-child(n) { background: #185A9D !important; }
+html body .bidsv2-flight-row.bidsv2-row-cancelled, html body .bidsv2-flight-row.bidsv2-row-cancelled *,
+html body .bidsv2-flight-row.bidsv2-row-diverted, html body .bidsv2-flight-row.bidsv2-row-diverted * { color: #ffffff !important; }
+
+/* ── Baggage legibility (Nick): bigger flight number + wordmark; the list
+   header gets a readable band (its dark-grey diagonal ate 'VOL #'). ── */
+html .bidsv2-flight-num { font-size: 28px !important; letter-spacing: 0.5px !important; }
+html .bidsv2-airline-name { font-size: 19px !important; }
+html body.fids-light-board .bidsv2-list-header {
+  background: rgba(255, 255, 255, 0.78) !important;
+  color: #22344D !important;
+  padding-top: 10px !important; padding-bottom: 10px !important;
+  border-radius: 10px !important;
+}
+html body:not(.fids-light-board) .bidsv2-list-header {
+  background: rgba(5, 15, 35, 0.45) !important;
+  padding-top: 10px !important; padding-bottom: 10px !important;
+  border-radius: 10px !important;
+}
+
+/* Baggage wordmarks BIGGER (Nick: 'cant see it') — 0.85x of the FIDS
+   heights, replacing the 0.66x table above (html prefix wins). */
+html .bidsv2-airline-wordmark { height: 18px; }
+html .bidsv2-airline-wordmark[data-code="4Y"],
+html .bidsv2-airline-wordmark[data-code="AV"],
+html .bidsv2-airline-wordmark[data-code="PD"],
+html .bidsv2-airline-wordmark[data-code="WS"] { height: 26px; }
+html .bidsv2-airline-wordmark[data-code="F8"] { height: 25px; }
+html .bidsv2-airline-wordmark[data-code="AS"],
+html .bidsv2-airline-wordmark[data-code="B6"] { height: 24px; }
+html .bidsv2-airline-wordmark[data-code="OO"],
+html .bidsv2-airline-wordmark[data-code="QK"],
+html .bidsv2-airline-wordmark[data-code="VB"] { height: 23px; }
+html .bidsv2-airline-wordmark[data-code="AM"],
+html .bidsv2-airline-wordmark[data-code="G3"],
+html .bidsv2-airline-wordmark[data-code="KL"] { height: 22px; }
+html .bidsv2-airline-wordmark[data-code="TS"],
+html .bidsv2-airline-wordmark[data-code="Y4"] { height: 21px; }
+html .bidsv2-airline-wordmark[data-code="AA"],
+html .bidsv2-airline-wordmark[data-code="DL"],
+html .bidsv2-airline-wordmark[data-code="HA"],
+html .bidsv2-airline-wordmark[data-code="LA"],
+html .bidsv2-airline-wordmark[data-code="PB"],
+html .bidsv2-airline-wordmark[data-code="UA"],
+html .bidsv2-airline-wordmark[data-code="UP"],
+html .bidsv2-airline-wordmark[data-code="VS"],
+html .bidsv2-airline-wordmark[data-code="WN"] { height: 20px; }
+html .bidsv2-airline-wordmark[data-code="9X"],
+html .bidsv2-airline-wordmark[data-code="F9"],
+html .bidsv2-airline-wordmark[data-code="LO"],
+html .bidsv2-airline-wordmark[data-code="MX"],
+html .bidsv2-airline-wordmark[data-code="SY"] { height: 19px; }
+html .bidsv2-airline-wordmark[data-code="AT"],
+html .bidsv2-airline-wordmark[data-code="BA"],
+html .bidsv2-airline-wordmark[data-code="BW"],
+html .bidsv2-airline-wordmark[data-code="CM"],
+html .bidsv2-airline-wordmark[data-code="TP"] { height: 18px; }
+html .bidsv2-airline-wordmark[data-code="AF"] { height: 17px; }
+html .bidsv2-airline-wordmark[data-code="FI"] { height: 16px; }
+html .bidsv2-airline-wordmark[data-code="AC"],
+html .bidsv2-airline-wordmark[data-code="PT"] { height: 15px; }
+html .bidsv2-airline-wordmark[data-code="OB"],
+html .bidsv2-airline-wordmark[data-code="YX"] { height: 14px; }

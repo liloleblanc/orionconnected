@@ -83,6 +83,33 @@ export default {
       }
     }
 
+    // ── 7-day weather passthrough (Open-Meteo, keyless) ─────────────────
+    // /wxdaily?location=44.88,-63.51 → daily code + hi/lo for 7 days.
+    // The Tomorrow.io proxy (separate worker) only returns 48h hourly; this
+    // route feeds the gate Arrival Weather outlook's full week.
+    if (path === '/wxdaily') {
+      const loc = url.searchParams.get('location') || '';
+      const m = /^(-?[\d.]+),(-?[\d.]+)$/.exec(loc);
+      if (!m) return new Response('Bad location', { status: 400 });
+      try {
+        const om = 'https://api.open-meteo.com/v1/forecast?latitude=' + m[1]
+          + '&longitude=' + m[2]
+          + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
+          + '&timezone=auto&forecast_days=7';
+        const r = await fetch(om, { cf: { cacheEverything: true, cacheTtl: 1800 } });
+        return new Response(r.body, {
+          status: r.status,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=1800',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        return new Response('wxdaily fetch failed', { status: 502 });
+      }
+    }
+
     // ── Map tiles passthrough ───────────────────────────────────────────
     // /maptiles/7/40/72.png  or  /maptiles/7/40/72@2x.png
     if (path.startsWith('/maptiles/')) {
