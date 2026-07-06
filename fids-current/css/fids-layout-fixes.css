@@ -1898,12 +1898,18 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-val.v2-rc-opby-val img[src*="pal-airline
    and muted next to the tail number; disappears once today's confirmed
    reg arrives. */
 html .g8-wrap .v2-rc-reg-expected {
+  /* UNDER the reg, not beside it (Nick: 'too much space wasted') —
+     block in text flow, full-width line in the flex value cells. */
+  display: block !important;
+  flex-basis: 100% !important;
+  margin-top: 1px !important;
   font-size: 0.52em !important;
   font-weight: 600 !important;
   opacity: 0.62 !important;
   letter-spacing: 0.3px !important;
   white-space: nowrap !important;
 }
+html .bigcraft-side .v2-rc-fi-trow > .v2-rc-fi-tval { flex-wrap: wrap !important; }
 
 /* Flex tvals drop the whitespace text nodes around the bilingual pipe
    (anonymous flex items trim collapsible spaces) — put the space on the

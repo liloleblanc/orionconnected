@@ -4929,7 +4929,7 @@ function renderMobileGateHtml(ctx) {
     +   '<div style="' + FS.label + 'color:' + T.muted + ';margin-bottom:10px;">' + TL('aircraftLbl') + '</div>'
     +   ((_acType || _acCode) ? '<div style="' + FS.value + 'color:' + T.ink + ';">' + (_acType || _acCode) + '</div>' : '')
     +   (_acReg ? '<div style="margin-top:10px;"><div style="' + FS.label + 'color:' + T.muted + ';">' + TL('reg') + '</div><div style="' + FS.body + 'color:' + T.muted2 + ';margin-top:2px;">' + _acReg
-          + (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="font-size:0.6em;font-weight:600;opacity:0.7;white-space:nowrap;">expected | prévu</span>' : '') + '</div></div>' : '')
+          + (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="display:block;font-size:0.6em;font-weight:600;opacity:0.7;white-space:nowrap;">expected | prévu</span>' : '') + '</div></div>' : '')
     +   (_acImgHtml ? '<div style="text-align:center;margin-top:14px;">' + _acImgHtml.replace(/max-height:120px/g, 'max-height:170px') + '</div>' : '')
     + '</div>'
     + (_opBadgeHtml ? '<div style="background:' + T.panel + ';padding:0 20px 14px;">' + _opBadgeHtml + '</div>' : '')
@@ -7705,7 +7705,7 @@ function uxgGateHtml(ctx) {
                       +     'color:#fff;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.45);'
                       +     'padding:4px 12px;border-radius:5px;font-family:\'SF Mono\',\'Roboto Mono\',Menlo,Consolas,monospace;'
                       +     'font-size:22px;">' + String(_reg).toUpperCase()
-                      +     (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="font-size:12px;font-weight:600;opacity:0.7;">expected | prévu</span>' : '') + '</span>'
+                      +     (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="display:block;font-size:12px;font-weight:600;opacity:0.7;">expected | prévu</span>' : '') + '</span>'
                       + '</div>'
                       + '</div>';
                   } else if (_prettyType) {
@@ -7720,7 +7720,7 @@ function uxgGateHtml(ctx) {
                       +   'color:#fff;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.45);'
                       +   'padding:5px 16px;border-radius:5px;font-family:\'SF Mono\',\'Roboto Mono\',Menlo,Consolas,monospace;'
                       +   'font-size:24px;">' + String(_reg).toUpperCase()
-                      +   (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="font-size:13px;font-weight:600;opacity:0.7;">expected | prévu</span>' : '') + '</span>'
+                      +   (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="display:block;font-size:13px;font-weight:600;opacity:0.7;">expected | prévu</span>' : '') + '</span>'
                       + '</div>';
                   }
                   if (_opTxt) {
@@ -23437,7 +23437,14 @@ function _renderBigCraft(el, ctx) {
               ? row('To', 'Vers', (ctx.dCity || ctx.dc || '—') + (ctx.dc ? ' (' + ctx.dc + ')' : ''))
               : row('From', 'De', (ctx.oCity || ctx.oc || '—') + (ctx.oc ? ' (' + ctx.oc + ')' : '')))
     +       row('Status', 'Statut', stShow, 'v2-rc-status-' + stCls)
+    // Live telemetry — same numbers as the mini map's Speed/Altitude bar
+    // (Nick: 'All this and more needs to be on the big map'). Honest by
+    // construction: rows only exist with a REAL live fix (ctx.pos), never
+    // at time-progress/estimated.
+    +       ((ctx.pos && ctx.speedKph) ? row('Speed', 'Vitesse', ctx.speedKph.toLocaleString() + ' kph') : '')
+    +       ((ctx.pos && ctx.altFt) ? row('Altitude', 'Altitude', ctx.altFt.toLocaleString() + ' ft <span class="v2-rc-fi-sep">|</span> pieds') : '')
     +       (ctx.etaStr ? row('Arrives in', 'Arrive dans', ctx.etaStr) : '')
+    +       (ctx.destWx ? row('Weather', 'Météo', ctx.destWx) : '')
     +       ((ctx.acType || reg) ? row('Aircraft', 'Avion', (ctx.acType || '—') + reg) : '')
     +     '</div>'
     +     (acImg ? '<div class="bigcraft-plane"><img src="' + acImg + '" alt=""></div>' : '')
