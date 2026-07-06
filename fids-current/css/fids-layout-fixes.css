@@ -1462,8 +1462,8 @@ html .g8-wrap.g8-airline-RV .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-F8 .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-image: url('/logos/3d_globe_desktop.svg') !important;
-  background-size: cover !important;
-  background-position: center bottom !important;
+  background-size: 100% 100% !important;
+  background-position: center center !important;
   background-repeat: no-repeat !important;
   /* Nick: 'too seen' at 0.85 and the red arcs clash with some airline
      palettes — lighter and black & white. */
@@ -1780,3 +1780,10 @@ html .bidsv2-airline-wordmark[data-code="AC"],
 html .bidsv2-airline-wordmark[data-code="PT"] { height: 15px; }
 html .bidsv2-airline-wordmark[data-code="OB"],
 html .bidsv2-airline-wordmark[data-code="YX"] { height: 14px; }
+
+/* Weather scene v3: hourly strip fills the middle; broadcast rhythm. */
+html .wxc-hoursgrid { display: grid !important; grid-template-columns: repeat(6, 1fr) !important; gap: clamp(8px, 1vw, 16px) !important; }
+html .wxc-hour { background: rgba(255,255,255,.06) !important; border-radius: 12px !important; padding: clamp(6px, 1.1vh, 14px) 6px !important; text-align: center !important; }
+html .wxc-hr { font-size: clamp(11px, 1.5vh, 17px) !important; font-weight: 800 !important; color: rgba(255,255,255,.65) !important; }
+html .wxc-hour img, html .wxc-hour .wxanim-host { width: clamp(40px, 6.5vh, 74px) !important; height: clamp(40px, 6.5vh, 74px) !important; margin: 3px auto !important; display: block !important; }
+html .wxc-ht { font-size: clamp(14px, 2vh, 24px) !important; font-weight: 900 !important; color: #fff !important; }

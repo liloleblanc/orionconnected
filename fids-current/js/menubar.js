@@ -184,6 +184,17 @@
           ctrl.insertBefore(g.root, gOptions.root);
           made[s.tab] = g;
           if (s.gateBtn) g.root.style.display = 'none'; // until the gate says visible
+          // The console modules LOAD their data on tab ACTIVATION
+          // (smSwitchTab) — which the bar never fired, so Media opened to
+          // an empty shell (Nick: 'does not work for media, it stops
+          // there'). Fire the activation whenever the dropdown opens.
+          (function (tabKey, groupEl) {
+            groupEl.root.querySelector('.mbar-title').addEventListener('click', function () {
+              if (groupEl.root.classList.contains('open') && typeof window.smSwitchTab === 'function') {
+                try { window.smSwitchTab(tabKey); } catch (e) {}
+              }
+            });
+          })(s.tab.replace('smTab_', ''), g);
         });
         // neuter the retired console opener so nothing can pop the empty shell
         if (made['smTab_customize'] && typeof window.openOverlayMenu === 'function' && !window.openOverlayMenu._mbarNoop) {
