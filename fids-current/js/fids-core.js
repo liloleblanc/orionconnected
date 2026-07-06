@@ -21585,10 +21585,22 @@ function _liveFixPhysOk(inb) {
 function _map3dFlightCtx(allowEstimated) {
   try {
     var inb = window._gateInbound;
-    if (!inb || !inb._locIata) return null;
+    // OUTBOUND fallback (Nick: 'the map doesnt become big at times'): when no
+    // inbound airframe is resolvable — common now that the feed rarely
+    // publishes tails, and 'expected' tails are display-only by design — the
+    // takeover shows the DEPARTING flight's own route (gate → destination),
+    // the same schematic the mini map draws in that state. Glyph sits at the
+    // origin until wheels-up; time-progress after departure.
+    var _legOut = false;
+    if (!inb || !inb._locIata) {
+      var _ocf = window._gateCurrentFlight;
+      if (_ocf && _ocf._locIata) { inb = _ocf; _legOut = true; }
+      else return null;
+    }
     var APC = window.AIRPORT_COORDS || {};
-    var dI = String(window._gateIata || ((document.getElementById('apSel') || {}).value || '')).toUpperCase();
-    var oI = String(inb._locIata || '').toUpperCase();
+    var gI = String(window._gateIata || ((document.getElementById('apSel') || {}).value || '')).toUpperCase();
+    var dI = _legOut ? String(inb._locIata || '').toUpperCase() : gI;
+    var oI = _legOut ? gI : String(inb._locIata || '').toUpperCase();
     var oC = APC[oI], dC = APC[dI];
     if (!oC || !dC || oI === dI) return null;
     var cityOf = function (ia) {
@@ -21623,6 +21635,12 @@ function _map3dFlightCtx(allowEstimated) {
       if (dOrg2 + dDst2 > 1) prog = Math.max(0.02, Math.min(0.98, dOrg2 / (dOrg2 + dDst2)));
     }
     var arrTs = inb._revTs || inb._sortTs || 0;
+    if (_legOut) {
+      // Departure rows: _sortTs IS the departure time — derive the arrival
+      // from the scheduled duration so progress/ETA stay meaningful. With no
+      // duration the glyph simply holds at the origin (prog 0, no ETA).
+      arrTs = (arrTs && inb._durationMins) ? arrTs + inb._durationMins * 60000 : 0;
+    }
     if (prog < 0) {
       var depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : (arrTs ? arrTs - 7200000 : 0);
       if (depTs && arrTs > depTs) prog = Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
@@ -21668,7 +21686,8 @@ function _map3dFlightCtx(allowEstimated) {
       acType: ((window._gateCurrentFlight && window._gateCurrentFlight._aircraft) || inb._aircraft || ''),
       etaStr: etaStr,
       destWx: wx,
-      estimated: !fixOk
+      estimated: !fixOk,
+      out: _legOut
     };
   } catch (e) { return null; }
 }
@@ -23308,14 +23327,17 @@ function _renderBigCraft(el, ctx) {
   // columns with a grow-from-the-right animation, and the right column
   // hides beneath it for the duration of the slide.
   if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown();
-  var inb = window._gateInbound || {};
+  // Leg-aware: on the outbound fallback (ctx.out) the status/reg belong to
+  // the departing flight, not the (absent) inbound.
+  var inb = (ctx && ctx.out) ? (window._gateCurrentFlight || {}) : (window._gateInbound || {});
   var stKey = String(inb.status || '').toLowerCase().replace(/[\s_-]/g, '');
   var ss = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
   var stShow = ss ? (ss.en.replace(/\b\w/g, function (c) { return c.toUpperCase(); }) + ' <span class="v2-rc-fi-sep">|</span> ' + ss.fr) : (inb.status || '—');
   var stCls = /delay|retard/i.test(stKey) ? 'delayed' : (/cancel/i.test(stKey) ? 'cancelled' : 'scheduled');
   var acImg = '';
   try { var im = document.querySelector('.v2-rc-shelf-illus img, .g8-aircraft-img'); if (im && im.src) acImg = im.src; } catch (e) {}
-  var reg = inb._reg ? '  |  ' + String(inb._reg).toUpperCase() : '';
+  var reg = inb._reg ? '  |  ' + String(inb._reg).toUpperCase()
+    + (/^history/.test(String(inb._regSource || '')) ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> prévu</span>' : '') : '';
   function row(l1, l2, val, cls) {
     return '<div class="v2-rc-fi-trow"><div class="v2-rc-fi-tlbl"><span>' + l1 + '</span><span>' + l2 + '</span></div>'
          + '<div class="v2-rc-fi-tval' + (cls ? ' ' + cls : '') + '">' + val + '</div></div>';
@@ -23347,7 +23369,9 @@ function _renderBigCraft(el, ctx) {
     +     '<div class="bigcraft-title">Your Aircraft <span class="v2-rc-fi-sep">|</span> Votre Avion</div>'
     +     '<div class="v2-rc-fi-table bigcraft-table">'
     +       row('Flight', 'Vol', ctx.fl || '—')
-    +       row('From', 'De', (ctx.oCity || ctx.oc || '—') + (ctx.oc ? ' (' + ctx.oc + ')' : ''))
+    +       (ctx.out
+              ? row('To', 'Vers', (ctx.dCity || ctx.dc || '—') + (ctx.dc ? ' (' + ctx.dc + ')' : ''))
+              : row('From', 'De', (ctx.oCity || ctx.oc || '—') + (ctx.oc ? ' (' + ctx.oc + ')' : '')))
     +       row('Status', 'Statut', stShow, 'v2-rc-status-' + stCls)
     +       (ctx.etaStr ? row('Arrives in', 'Arrive dans', ctx.etaStr) : '')
     +       ((ctx.acType || reg) ? row('Aircraft', 'Avion', (ctx.acType || '—') + reg) : '')

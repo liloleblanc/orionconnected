@@ -1913,3 +1913,25 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval .v2-rc-fi-sep,
 html .bigcraft-side .v2-rc-fi-trow > .v2-rc-fi-tval .v2-rc-fi-sep {
   margin: 0 0.28em !important;
 }
+
+/* Globe actually visible (Nick: 'globe map not fixed'). Diagnosis: the
+   shelves are ALREADY forced transparent by gids-v218.78 (the old watermark
+   rule `.v2-rc-shelf:not(.v2-rc-shelf-map) { background: transparent }` at
+   higher specificity than everything since), so the pseudo has been
+   rendering all along — as a WHITE sphere over the column's white-ish
+   brushed panel: invisible by CONTRAST, not by cascade. multiply makes the
+   artwork's white vanish into the panel while the grey continents and dots
+   DARKEN it — reads clearly on every airline, still black & white. */
+html .gad-map-col-v2::before,
+html .g8-wrap .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-PD .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-KL .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-AC .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-QK .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-RV .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-F8 .gad-map-col-v2::before,
+html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
+  mix-blend-mode: multiply !important;
+  opacity: 0.85 !important;
+  filter: grayscale(1) brightness(0.9) contrast(1.45) !important;
+}
