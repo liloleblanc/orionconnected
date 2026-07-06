@@ -1465,10 +1465,10 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-size: 100% 100% !important;
   background-position: center center !important;
   background-repeat: no-repeat !important;
-  /* Nick: 'too seen' at 0.85 and the red arcs clash with some airline
-     palettes — lighter and black & white. */
-  opacity: 0.42 !important;
-  filter: grayscale(1) !important;
+  /* B&W per Nick; 0.42 made the white sphere vanish into the light panel
+     ('dont see it') — more presence + contrast so the continents read. */
+  opacity: 0.8 !important;
+  filter: grayscale(1) contrast(1.25) !important;
   mix-blend-mode: normal !important;
   transform: none !important;
 }
@@ -1825,4 +1825,14 @@ html .bigcraft-side .v2-rc-fi-tlbl span:first-child {
   border-bottom: 1px solid rgba(20, 24, 30, 0.32) !important;
   padding-bottom: 2px !important;
   margin-bottom: 2px !important;
+}
+
+/* Weather icons legibility (Nick: 'some days nothing, no icons'): the
+   dark-grey cloud icons (overcast, thunderstorm) disappeared against the
+   navy tiles. Lighter tile panels + a lift + shadow behind every icon. */
+html .wxc-day, html .wxc-hour { background: rgba(255, 255, 255, 0.16) !important; }
+html .wxc-day img, html .wxc-day .wxanim-host svg,
+html .wxc-hour img, html .wxc-hour .wxanim-host svg,
+html .wxc-hero img, html .wxc-hero .wxanim-host svg {
+  filter: brightness(1.15) saturate(1.1) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45)) !important;
 }
