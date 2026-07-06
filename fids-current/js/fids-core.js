@@ -580,7 +580,10 @@ function scheduleAircraftPendingRetry(flightNumber, airportIata) {
     delete _acPendingRetries[flightNumber];
     var cf = window._gateCurrentFlight;
     if (!cf || cf.flight !== flightNumber) return; // flight changed, abort
-    if (cf._reg) return; // reg arrived via another path
+    // A history-sourced reg does NOT satisfy the retry — the whole point is
+    // to keep checking for today's confirmed tail so the "expected | prévu"
+    // qualifier can drop. Only a confirmed (non-history) reg aborts.
+    if (cf._reg && !/^history/.test(String(cf._regSource || ''))) return;
     cf._gateEnriched = false; // allow re-enrichment
     window._lastGateKey = ''; // force re-render which re-fetches
     if (typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
@@ -4913,7 +4916,8 @@ function renderMobileGateHtml(ctx) {
     + '<div style="background:' + T.panel + ';padding:18px 20px;">'
     +   '<div style="' + FS.label + 'color:' + T.muted + ';margin-bottom:10px;">' + TL('aircraftLbl') + '</div>'
     +   ((_acType || _acCode) ? '<div style="' + FS.value + 'color:' + T.ink + ';">' + (_acType || _acCode) + '</div>' : '')
-    +   (_acReg ? '<div style="margin-top:10px;"><div style="' + FS.label + 'color:' + T.muted + ';">' + TL('reg') + '</div><div style="' + FS.body + 'color:' + T.muted2 + ';margin-top:2px;">' + _acReg + '</div></div>' : '')
+    +   (_acReg ? '<div style="margin-top:10px;"><div style="' + FS.label + 'color:' + T.muted + ';">' + TL('reg') + '</div><div style="' + FS.body + 'color:' + T.muted2 + ';margin-top:2px;">' + _acReg
+          + (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="font-size:0.6em;font-weight:600;opacity:0.7;white-space:nowrap;">expected | prévu</span>' : '') + '</div></div>' : '')
     +   (_acImgHtml ? '<div style="text-align:center;margin-top:14px;">' + _acImgHtml.replace(/max-height:120px/g, 'max-height:170px') + '</div>' : '')
     + '</div>'
     + (_opBadgeHtml ? '<div style="background:' + T.panel + ';padding:0 20px 14px;">' + _opBadgeHtml + '</div>' : '')
@@ -5173,10 +5177,13 @@ function _buildV2AircraftCol(ctx, vars) {
   // ── Optional registration row (only if reg is known) ─────────────────
   var _regBlock = '';
   if (_reg) {
+    // History-sourced tails (majority or latest-observation) are qualified —
+    // only when the shown value actually came from the history-filled field.
+    var _regHist = (_reg === currentFlight._reg) && /^history/.test(String(currentFlight._regSource || ''));
     _regBlock =
         '<div class="v2-reg-block">'
       +   '<div class="v2-reg-lbl">' + (TL('reg') || 'Registration') + '</div>'
-      +   '<div class="v2-reg-val">' + _reg + '</div>'
+      +   '<div class="v2-reg-val">' + _reg + (_regHist ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> prévu</span>' : '') + '</div>'
       + '</div>';
   }
 
@@ -6218,7 +6225,15 @@ function _buildV2MapCol(ctx, vars) {
       // shrinks the line if it runs long.
       var _lang2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
       var _acModel = String(_equipNm || _equipCd || '');
-      var _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg : '');
+      // A history-sourced tail is a real prior observation, not today's
+      // confirmed assignment — qualify it, and drop the qualifier the moment
+      // the enrichment retry lands today's reg (regSource flips off history).
+      var _acRegSrc = String((vars.currentFlight && vars.currentFlight._regSource) || '');
+      var _acRegTag = (/^history/.test(_acRegSrc) && _acReg)
+        ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> '
+          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
+        : '';
+      var _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg + _acRegTag : '');
       // Shorter label per Nick: "Aircraft / Appareil" (was "Aircraft type").
       var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
       // Operated by — when the operating carrier differs from the marketing
@@ -6521,7 +6536,8 @@ function uxgGateHtml(ctx) {
     r3Left = TL('willBoardIn') + ' ' + minsToBoard + ' ' + (minsToBoard!==1?TL('minutes').toLowerCase():TL('minute').toLowerCase()) + '.';
   }
   if (equipName || currentFlight._reg) {
-    var regStr = currentFlight._reg ? ' · ' + currentFlight._reg : '';
+    var _regHistT = /^history/.test(String(currentFlight._regSource || ''));
+    var regStr = currentFlight._reg ? ' · ' + currentFlight._reg + (_regHistT ? ' (expected | prévu)' : '') : '';
     r3Right = TL('equipToday')+' ' + (equipName || '') + regStr;
     // Reset aircraft image when flight changes
     if (window._gateLastFlight !== currentFlight.flight) {
@@ -7675,7 +7691,8 @@ function uxgGateHtml(ctx) {
                       +   '<span style="display:inline-block;font-weight:800;letter-spacing:1px;'
                       +     'color:#fff;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.45);'
                       +     'padding:4px 12px;border-radius:5px;font-family:\'SF Mono\',\'Roboto Mono\',Menlo,Consolas,monospace;'
-                      +     'font-size:22px;">' + String(_reg).toUpperCase() + '</span>'
+                      +     'font-size:22px;">' + String(_reg).toUpperCase()
+                      +     (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="font-size:12px;font-weight:600;opacity:0.7;">expected | prévu</span>' : '') + '</span>'
                       + '</div>'
                       + '</div>';
                   } else if (_prettyType) {
@@ -7689,7 +7706,8 @@ function uxgGateHtml(ctx) {
                       + '<span style="display:inline-block;font-weight:800;letter-spacing:1.5px;'
                       +   'color:#fff;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.45);'
                       +   'padding:5px 16px;border-radius:5px;font-family:\'SF Mono\',\'Roboto Mono\',Menlo,Consolas,monospace;'
-                      +   'font-size:24px;">' + String(_reg).toUpperCase() + '</span>'
+                      +   'font-size:24px;">' + String(_reg).toUpperCase()
+                      +   (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="font-size:13px;font-weight:600;opacity:0.7;">expected | prévu</span>' : '') + '</span>'
                       + '</div>';
                   }
                   if (_opTxt) {
@@ -8721,8 +8739,10 @@ const gView = document.getElementById('gateView');
           }
           function _eqStrength(o) {
             if (!o) return -1;
-            if (o.reg && o.regSource !== 'history') return 3;
-            if (o.reg) return 2;
+            var src = String(o.regSource || '');
+            if (o.reg && !/^history/.test(src)) return 3; // today's telemetry
+            if (o.reg && src === 'history') return 2;     // >=60% majority of recent days
+            if (o.reg) return 1.5;                        // 'history-latest': single observation
             if (o.aircraft || o.aircraftCode) return 1;
             return 0;
           }
@@ -8735,8 +8755,17 @@ const gView = document.getElementById('gateView');
                            '· offered:', _eqIncoming.aircraft || '?', _eqIncoming.reg || 'no-reg', ')');
           var _eq = window._gateEquipLock;
 
-          // Registration
+          // Registration — mirror the lock. The lock is monotonic (never
+          // downgrades), so this can only upgrade a history tail to today's
+          // confirmed one; the strict !currentFlight._reg guard blocked that
+          // upgrade on same-object retries. Manual overrides (set before
+          // enrichment) differ from _eq.reg and are left alone.
           if (_eq.reg && !currentFlight._reg) {
+            currentFlight._reg = _eq.reg;
+            changed = true;
+          } else if (_eq.reg && currentFlight._reg
+                     && /^history/.test(String(currentFlight._regSource || ''))
+                     && currentFlight._reg !== _eq.reg) {
             currentFlight._reg = _eq.reg;
             changed = true;
           }
@@ -8803,7 +8832,14 @@ const gView = document.getElementById('gateView');
           // Track the source of the reg/operator so other code (and optional
           // future visual indicators) can tell today's confirmed data from
           // historical-majority data. Both are real, just from different days.
-          if (data._regSource) currentFlight._regSource = data._regSource;
+          // _regSource must describe the reg actually ON the flight object —
+          // the lock's (copied above) or a manual override's — never whatever
+          // this (possibly lock-rejected) round returned. A raw-round stamp
+          // put "expected | prévu" on confirmed tails when a thin round got
+          // rejected by the lock, and dropped it off lock-restored history
+          // tails on rounds with no reg at all.
+          currentFlight._regSource = (currentFlight._reg && _eq.reg === currentFlight._reg)
+            ? (_eq.regSource || '') : '';
           if (data.operator && data.operator._source) currentFlight._operatorSource = data.operator._source;
 
           // "Pending" means: no reg available from today OR from history.
@@ -8839,7 +8875,7 @@ const gView = document.getElementById('gateView');
             // Cache the good reg so we don't lose it on the next empty response
             currentFlight._lastGoodReg = data.reg;
             // If reg came from history, keep checking for today's confirmed reg.
-            if (data._regSource === 'history') {
+            if (/^history/.test(String(data._regSource || ''))) {
               scheduleAircraftPendingRetry(currentFlight.flight, _enrichIata);
               console.log('[FIDS] Reg from history for', currentFlight.flight, '- will re-check for today\'s confirmed reg');
             }
@@ -15324,6 +15360,15 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
               console.log('[loadFlight]', flightNumber, 'reg from history:', hist.reg.value,
                 '(' + Math.round(hist.reg.confidence*100) + '% confidence,',
                 hist.reg.observed + '/' + hist.reg.total + ' days)');
+            } else if (!result.reg && hist.regLatest) {
+              // No majority winner (fleets that rotate tails daily never
+              // produce one) — fall back to the most recent real observation.
+              // The UI shows this with an "expected | prévu" qualifier and
+              // keeps re-checking for today's confirmed tail.
+              result.reg = hist.regLatest.value;
+              result._regSource = 'history-latest';
+              console.log('[loadFlight]', flightNumber, 'reg from latest observation:',
+                hist.regLatest.value, '(' + (hist.regLatest.date || 'undated') + ')');
             }
             // Aircraft type — only fill from history if today has nothing
             var _todayHasReg = !!result.reg && result._regSource !== 'history';
@@ -15361,6 +15406,10 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
             }
             // If we got a reg from history but have no inbound yet (because
             // step 5 skipped it due to no reg), try the inbound lookup now.
+            // NOTE: majority-history regs only — a 'history-latest' reg is
+            // display-only ("expected | prévu") and must not seed the inbound
+            // airframe lookup: a live fix found for the WRONG tail would
+            // render as confirmed telemetry on the map.
             if (result._regSource === 'history' && !result.inbound && airportIata) {
               // Use the historical reg to look up today's airframe path.
               // This may or may not match today — if the reg hasn't actually
@@ -15569,6 +15618,10 @@ async function loadFlightHistory(flightNumber) {
       // Tally observations
       var regCounts = {}, typeCounts = {}, opCounts = {}, modelCounts = {};
       var observedDays = 0;
+      // Most recent observed tail — rotating fleets (Encore, Jazz, PAL) never
+      // clear the 60% majority bar, so the latest real observation is kept as
+      // a fallback the UI can show with an explicit "expected" qualifier.
+      var _regLatest = null, _regLatestTs = -1, _regLatestKey = '';
 
       legs.forEach(function(leg) {
         observedDays++;
@@ -15576,6 +15629,11 @@ async function loadFlightHistory(flightNumber) {
         if (ac.reg) {
           var r = ac.reg.trim().toUpperCase();
           regCounts[r] = (regCounts[r] || 0) + 1;
+          var _lk = String((leg.departure && leg.departure.scheduledTime
+            && (leg.departure.scheduledTime.utc || leg.departure.scheduledTime.local)) || '');
+          // Order on epoch ms — utc and local strings don't compare cleanly.
+          var _lts = _lk ? (new Date(_lk).getTime() || 0) : 0;
+          if (!_regLatest || _lts >= _regLatestTs) { _regLatest = r; _regLatestTs = _lts; _regLatestKey = _lk; }
         }
         if (ac.iataCodeShort || ac.iataCode) {
           var t = (ac.iataCodeShort || ac.iataCode).trim();
@@ -15611,6 +15669,7 @@ async function loadFlightHistory(flightNumber) {
         _cachedAt: Date.now(),
         _observedDays: observedDays,
         reg:         majorityWinner(regCounts),
+        regLatest:   _regLatest ? { value: _regLatest, date: _regLatestKey } : null,
         aircraftCode: majorityWinner(typeCounts),
         aircraftModel: majorityWinner(modelCounts),
         operator:    majorityWinner(opCounts)
@@ -22814,18 +22873,26 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   function _scanAndUpgrade() {
     var nodes = document.querySelectorAll('.hotel-ad-qr');
     for (var i = 0; i < nodes.length; i++) _upgradeQR(nodes[i]);
-    // Hotel names never wrap (brand policy) — shrink each one-liner until it
-    // fits its box instead. Same continuous pass as the QR upgrade.
-    var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx');
+    // One-line fields never truncate (Nick: "no more hiding words") — shrink
+    // each until it fits its box instead. Hotel names, plus the gate rail's
+    // destination city, status pair, and the aircraft type+registration line.
+    // setProperty('important') because the gate fields' sizes are pinned with
+    // !important in CSS — a plain inline style would lose the cascade.
+    var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
+      + ' .gad-aircraft-col .v2-fi-value.v2-fi-dest,'
+      + ' .gad-aircraft-col .v2-fi-value.v2-fi-status-val,'
+      + ' .gad-map-col-v2 .v2-rc-acb-actype,'
+      + ' .gad-map-col-v2 .v2-rc-fi-tval,'
+      + ' .bigcraft-side .v2-rc-fi-tval');
     for (var j = 0; j < ones.length; j++) {
       var el = ones[j];
       if (el.dataset.fitW === String(el.clientWidth) || !el.clientWidth) continue;
-      el.style.fontSize = '';
+      el.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(el).fontSize) || 16;
       var size = base, guard = 12;
       while (el.scrollWidth > el.clientWidth + 1 && size > base * 0.5 && guard-- > 0) {
         size -= Math.max(1, size * 0.07);
-        el.style.fontSize = size + 'px';
+        el.style.setProperty('font-size', size + 'px', 'important');
       }
       el.dataset.fitW = String(el.clientWidth);
     }
