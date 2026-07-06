@@ -1974,3 +1974,34 @@ html body .fids-banner {
 html .bidsv2-screen .fids-banner { flex: 0 0 auto !important; width: 100% !important; position: relative !important; }
 html .bidsv2-screen .fids-airport-pill:not(.has-logo) .fids-airport-iata { color: #0d2440 !important; }
 html .bidsv2-screen .fids-airport-pill:not(.has-logo) .fids-airport-name { color: #31435a !important; }
+
+/* Baggage screen bottom band (Nick: footer 'irrelevant' — removed; bottom
+   'match lines wise with the top symmetry'): a slim strip carrying the SAME
+   angled slats as the top decoration, mirrored vertically. */
+html .bidsv2-screen .bidsv2-bottom-band {
+  flex: 0 0 auto !important;
+  height: clamp(16px, 2.4vh, 28px) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(105deg, transparent 0%, transparent 28%, var(--fids-banner-accent, rgba(255,255,255,0.18)) 28%, var(--fids-banner-accent, rgba(255,255,255,0.18)) 32%, transparent 32%),
+    linear-gradient(105deg, transparent 0%, transparent 36%, var(--fids-banner-bg, rgba(255,255,255,0.10)) 36%, var(--fids-banner-bg, rgba(255,255,255,0.10)) 42%, transparent 42%),
+    linear-gradient(105deg, transparent 0%, transparent 22%, var(--fids-banner-bg, rgba(255,255,255,0.06)) 22%, var(--fids-banner-bg, rgba(255,255,255,0.06)) 25%, transparent 25%) !important;
+  transform: scaleY(-1) !important; /* mirror of the top slats */
+  opacity: 0.55 !important;
+}
+
+/* Suitcase icon in the title tab was squished (Nick) — the theme sizes only
+   its own plane icons; force a square box for the baggage glyph. */
+html .bidsv2-screen .fids-board-icon { display: flex !important; align-items: center !important; justify-content: center !important; flex: 0 0 auto !important; }
+html .bidsv2-screen .fids-board-icon svg { width: clamp(30px, 4vh, 44px) !important; height: clamp(30px, 4vh, 44px) !important; flex: 0 0 auto !important; }
+
+/* List headers on ONE line (Nick: 'Flight | Vol needs to be on one line').
+   The flight header cell computed display:grid, which stacked the three
+   nodes (word, pipe, word) into rows regardless of nowrap — flex row it. */
+html .bidsv2-list-header > div {
+  white-space: nowrap !important;
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 0.35em !important;
+}
