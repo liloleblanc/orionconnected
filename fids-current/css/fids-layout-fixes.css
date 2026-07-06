@@ -1461,7 +1461,7 @@ html .g8-wrap.g8-airline-QK .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-RV .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-F8 .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
-  background-image: url('/logos/3d_globe_desktop.svg') !important;
+  background-image: url('/logos/3d_globe_desktop.svg?v=2') !important; /* v2 = route arcs + pins removed (Nick) */
   background-size: 100% 100% !important;
   background-position: center center !important;
   background-repeat: no-repeat !important;
