@@ -1953,20 +1953,3 @@ html #gateAdCarousel > * {
   animation: gadSlideIn 560ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
-/* No hairline striping (Nick: 'i hate those lines — in reality they are
-   annoying'): the 1-2px repeating brushed-grain stripes shimmer and moiré
-   on the real panels. Same metal tone and depth — soft specular sweep +
-   vertical shading — with the repeating hairline layers removed, on BOTH
-   columns and the left-rail shelf rows so the material stays matched. */
-html .g8-wrap .gad-aircraft-col,
-html .g8-wrap .gad-map-col-v2,
-html .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
-  background-image:
-    linear-gradient(122deg,
-      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
-      rgba(255,255,255,0.30) 47%, rgba(255,255,255,0.09) 55%, rgba(255,255,255,0) 82%),
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
-      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
-      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%) !important;
-}
