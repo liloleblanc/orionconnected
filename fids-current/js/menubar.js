@@ -139,24 +139,43 @@
 
     var gOptions = group('Options');
     // Theme lives RIGHT HERE — one click, no console detour (Nick).
+    // 'Custom' is NOT in this quick list (Nick: picking it here just turned
+    // the board black — the colour editor lives in the Customize dropdown,
+    // which was closed). Custom routes to Customize via the link below, so
+    // exactly ONE place edits colours.
     (function () {
-      var sec = document.createElement('div'); sec.className = 'mbar-sec'; sec.textContent = 'Theme';
+      var sec = document.createElement('div'); sec.className = 'mbar-sec'; sec.textContent = 'Quick theme';
       gOptions.panel.appendChild(sec);
       var tsel = document.createElement('select'); tsel.className = 'mbar-theme';
-      [['', 'Airport default (Teal)'], ['tus-teal', 'Teal'], ['tus-teal-deep', 'Teal Deep'], ['mist', 'Mist (light)'], ['custom', 'Custom']].forEach(function (o) {
+      [['', 'Airport default (Teal)'], ['tus-teal', 'Teal'], ['tus-teal-deep', 'Teal Deep'], ['mist', 'Mist (light)']].forEach(function (o) {
         var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; tsel.appendChild(op);
       });
-      try {
-        var ap = (document.getElementById('apSel') || {}).value || '';
-        var raw = ap && localStorage.getItem('fids_customize_' + ap);
-        if (raw) tsel.value = JSON.parse(raw).theme || '';
-      } catch (e) {}
+      function _syncFromSaved() {
+        try {
+          var ap = (document.getElementById('apSel') || {}).value || '';
+          var raw = ap && localStorage.getItem('fids_customize_' + ap);
+          var t = raw ? (JSON.parse(raw).theme || '') : '';
+          // a saved custom theme isn't in the quick list — leave selection alone
+          if (t !== 'custom') tsel.value = t;
+        } catch (e) {}
+      }
+      _syncFromSaved();
+      // stay in sync when the theme was changed from the Customize section
+      tsel.addEventListener('mousedown', _syncFromSaved);
       tsel.addEventListener('change', function () {
         // proxy through the console's own handler so persistence/apply stay canonical
         var c = document.getElementById('cuThemeSelect');
         if (c) { c.value = tsel.value; if (typeof window.cuThemeChanged === 'function') window.cuThemeChanged(); }
       });
       gOptions.panel.appendChild(tsel);
+      link(gOptions.panel, 'Custom colours… (opens Customize)', function () {
+        var titles = document.querySelectorAll('.mbar-title');
+        for (var i = 0; i < titles.length; i++) {
+          if (titles[i].textContent.replace('▾', '').trim() === 'Customize') { titles[i].click(); return; }
+        }
+        // mobile / section not built — fall back to the overlay console
+        if (typeof window.openOverlayMenu === 'function') window.openOverlayMenu();
+      });
     })();
     // ── FULL MENUS (Nick): the console's sections live IN the bar now — the
     // console overlay itself is retired on desktop. The fragment loads async,
