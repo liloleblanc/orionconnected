@@ -1787,3 +1787,42 @@ html .wxc-hour { background: rgba(255,255,255,.06) !important; border-radius: 12
 html .wxc-hr { font-size: clamp(11px, 1.5vh, 17px) !important; font-weight: 800 !important; color: rgba(255,255,255,.65) !important; }
 html .wxc-hour img, html .wxc-hour .wxanim-host { width: clamp(40px, 6.5vh, 74px) !important; height: clamp(40px, 6.5vh, 74px) !important; margin: 3px auto !important; display: block !important; }
 html .wxc-ht { font-size: clamp(14px, 2vh, 24px) !important; font-weight: 900 !important; color: #fff !important; }
+
+/* Baggage header titles (Nick): 'Flight | Vol' style, ALL the same size,
+   one line, visible; the data rows pulled up close to the title band. */
+html .bidsv2-list-header > div {
+  font-size: clamp(14px, 1.9vh, 22px) !important;
+  letter-spacing: 1.2px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  line-height: 1.15 !important;
+}
+html .bidsv2-hsep { opacity: 0.45 !important; font-weight: 500 !important; }
+html .bidsv2-list-header {
+  padding-bottom: 6px !important;
+  margin-bottom: 2px !important;
+}
+html .bidsv2-list-header + .bidsv2-flight-row { margin-top: 0 !important; }
+
+/* GIDS flight shelf (below the map) — Nick: a separator LINE between the
+   stacked title words (Flight / Vol), and the values pulled in CLOSE to
+   the titles (the label column was reserving far too much width). */
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow {
+  grid-template-columns: clamp(54px, 5vw, 92px) 1fr !important;
+  column-gap: clamp(8px, 0.9vw, 14px) !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child {
+  border-bottom: 1px solid rgba(20, 24, 30, 0.32) !important;
+  padding-bottom: 2px !important;
+  margin-bottom: 2px !important;
+}
+/* Same treatment inside the BIG takeover panel's table. */
+html .bigcraft-side .v2-rc-fi-trow {
+  grid-template-columns: clamp(58px, 5.4vw, 100px) 1fr !important;
+  column-gap: clamp(8px, 0.9vw, 14px) !important;
+}
+html .bigcraft-side .v2-rc-fi-tlbl span:first-child {
+  border-bottom: 1px solid rgba(20, 24, 30, 0.32) !important;
+  padding-bottom: 2px !important;
+  margin-bottom: 2px !important;
+}
