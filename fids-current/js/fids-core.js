@@ -1050,6 +1050,13 @@ function _saveCustomBgUrls(arr) {
 function setDedicatedBgMode(mode) {
   try {
     if (typeof setGateBgMode === 'function') setGateBgMode(mode);
+    // Custom backgrounds need saved image URLs — with none, the screen just
+    // went BLACK and looked broken (Nick). Open the URL manager right away
+    // so picking Custom always leads somewhere.
+    if (mode === 'custom' && typeof _loadCustomBgUrls === 'function'
+        && !_loadCustomBgUrls().length && typeof manageCustomBgUrls === 'function') {
+      manageCustomBgUrls();
+    }
     if (typeof dedicatedRenderKey !== 'undefined') dedicatedRenderKey = '';
     if (typeof renderDedicatedScreen === 'function') {
       renderDedicatedScreen();
