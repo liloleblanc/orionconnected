@@ -580,10 +580,13 @@ function scheduleAircraftPendingRetry(flightNumber, airportIata) {
     delete _acPendingRetries[flightNumber];
     var cf = window._gateCurrentFlight;
     if (!cf || cf.flight !== flightNumber) return; // flight changed, abort
-    // A history-sourced reg does NOT satisfy the retry — the whole point is
-    // to keep checking for today's confirmed tail so the "expected | prévu"
-    // qualifier can drop. Only a confirmed (non-history) reg aborts.
-    if (cf._reg && !/^history/.test(String(cf._regSource || ''))) return;
+    // Any displayed reg aborts the retry (including an "expected" history
+    // tail): the retry force-rebuilds the whole gate, which restarted the
+    // weather/takeover slides every 3 minutes on expected-reg gates (Nick:
+    // 'something refreshes... reboot'). Expected → confirmed upgrades ride
+    // the NATURAL poll instead — each board refresh rebuilds the flight and
+    // re-runs enrichment past the 60s cache, so today's tail still lands.
+    if (cf._reg) return;
     cf._gateEnriched = false; // allow re-enrichment
     window._lastGateKey = ''; // force re-render which re-fetches
     if (typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
@@ -22906,7 +22909,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       + ' .bigcraft-side .v2-rc-fi-tval');
     for (var j = 0; j < ones.length; j++) {
       var el = ones[j];
-      if (el.dataset.fitW === String(el.clientWidth) || !el.clientWidth) continue;
+      // Guard fingerprint includes the TEXT, not just the width: the gate
+      // rail updates values in place (same node, same width, new city), and
+      // a width-only stamp blocked refits forever — 'Victoria' stayed
+      // truncated whenever the previous city had already been fitted.
+      var _fp = el.clientWidth + ':' + (el.textContent || '').length + ':' + (el.textContent || '').slice(0, 24);
+      if (el.dataset.fitW === _fp || !el.clientWidth) continue;
       el.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(el).fontSize) || 16;
       var size = base, guard = 12;
@@ -22914,7 +22922,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         size -= Math.max(1, size * 0.07);
         el.style.setProperty('font-size', size + 'px', 'important');
       }
-      el.dataset.fitW = String(el.clientWidth);
+      el.dataset.fitW = _fp;
     }
   }
   // Initial scan after a tick to let qrcode.js finish loading
