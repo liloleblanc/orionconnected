@@ -1934,4 +1934,9 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   mix-blend-mode: multiply !important;
   opacity: 0.85 !important;
   filter: grayscale(1) brightness(0.9) contrast(1.45) !important;
+  /* ZOOMED IN (Nick: 'not really enlarged') — the sphere renders bigger than
+     the band and crops, so the dotted continents read close-up instead of
+     the whole globe squeezed to fit. */
+  background-size: 200% auto !important;
+  background-position: center 32% !important;
 }
