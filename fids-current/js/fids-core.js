@@ -9048,7 +9048,7 @@ const gView = document.getElementById('gateView');
              theme (including custom) styles it exactly like the board. -->
         ${(function () {
           var _lg = '';
-          try { _lg = localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch (e) {}
+          try { _lg = window._fidsResolvedAirportLogo || localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch (e) {}
           // Single language, rotating with the board's language cycle —
           // exactly like the FIDS board label ('Departures' / 'Départs').
           var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
@@ -9147,11 +9147,10 @@ const gView = document.getElementById('gateView');
           </div>
         </div>
 
-        <!-- Footer: welcome + date -->
-        <div class="bidsv2-footer">
-          <div class="bidsv2-footer-msg">${TL('welcome') || 'Welcome to'} ${(AP[iata]||{}).name || iata}</div>
-          <div class="bidsv2-footer-date">${dateDisplay}</div>
-        </div>
+        <!-- Bottom band — the welcome/date footer is retired (Nick:
+             'irrelevant'); a slim strip mirrors the top banner's angled
+             lines so the screen is symmetric top to bottom. -->
+        <div class="bidsv2-bottom-band" aria-hidden="true"></div>
 
       </div>`;
 
@@ -12138,7 +12137,7 @@ if (typeof window !== 'undefined') window.WORDMARK_OVERRIDE = WORDMARK_OVERRIDE;
 // NOT PAL.svg from the pack (PAL.svg is Philippine Airlines).
 const IATA_TO_TILE_ICAO = {
   // Canadian carriers
-  'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',
+  'AC':'ACA',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // ACA = official red tile, white maple (Nick: 'only use Air Canada icons from the proper icons list' — the black variant is retired)
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
   'PB':'PB',   // ← Nick's custom PAL Airlines logo (Newfoundland)
   'MO':'MPE',  'YP':'PCM',  'BQ':'PSC',
@@ -16453,6 +16452,9 @@ function applyAirportConfigToBoard(iata) {
   if (!_logoUrl && typeof _loadAirportLogoForCode === 'function') {
     _loadAirportLogoForCode(iata);
   }
+  // Stash the resolved logo for renderers that build their own banner (the
+  // baggage screen) — localStorage alone missed admin-KV-configured logos.
+  try { window._fidsResolvedAirportLogo = _logoUrl || ''; } catch (e) {}
   if (_logoImg && _pill) {
     if (_logoUrl) {
       _logoImg.src = _logoUrl;
