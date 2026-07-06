@@ -9049,9 +9049,11 @@ const gView = document.getElementById('gateView');
         ${(function () {
           var _lg = '';
           try { _lg = localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch (e) {}
-          var _l2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(iata)[1] || 'fr') : 'fr';
-          var _ttl = 'Baggage claim <span class="bidsv2-hsep">|</span> '
-                   + (_l2b === 'es' ? 'Recogida de equipaje' : 'Retrait des bagages');
+          // Single language, rotating with the board's language cycle —
+          // exactly like the FIDS board label ('Departures' / 'Départs').
+          var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
+                          de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem' };
+          var _ttl = _ttlMap[(typeof lang !== 'undefined' && lang) || 'en'] || _ttlMap.en;
           return '<div class="fids-banner bidsv2-fids-banner">'
             + '<div class="fids-banner-chevrons" aria-hidden="true"></div>'
             + '<div class="fids-banner-time-block">'

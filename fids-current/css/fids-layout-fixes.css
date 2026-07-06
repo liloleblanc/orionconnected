@@ -1965,32 +1965,12 @@ html body .fids-banner {
 }
 
 /* BIDS banner = the FIDS chevron banner (Nick: 'same pattern as the FIDS
-   for the top') — shim so the shared .fids-banner sits cleanly inside the
-   baggage screen's column layout. */
-html .bidsv2-screen .fids-banner {
-  flex: 0 0 auto !important; width: 100% !important; position: relative !important;
-  display: flex !important; align-items: stretch !important;
-  gap: clamp(12px, 1.5vw, 28px) !important;
-}
-/* The theme's absolute banner geometry is tuned for the FIDS page — inside
-   the baggage screen the three blocks overlapped and ran off the right
-   edge. Static flex row instead: pill left (layout 'left', like FIDS),
-   title tab and time tab right. Each block keeps its theme tab styling. */
-html .bidsv2-screen .fids-banner-time-block,
-html .bidsv2-screen .fids-airport-pill,
-html .bidsv2-screen .fids-banner-board {
-  position: static !important; transform: none !important;
-  left: auto !important; right: auto !important; top: auto !important; bottom: auto !important;
-  width: auto !important; max-width: none !important; flex: 0 1 auto !important; min-width: 0 !important;
-}
-html .bidsv2-screen .fids-airport-pill { order: 0 !important; flex: 1 1 auto !important; justify-content: flex-start !important; }
-html .bidsv2-screen .fids-banner-board { order: 1 !important; flex: 0 0 auto !important; }
-html .bidsv2-screen .fids-banner-time-block { order: 2 !important; }
-html .bidsv2-screen .fids-board-label { white-space: nowrap !important; font-size: clamp(18px, 2.7vh, 31px) !important; }
-html .bidsv2-screen .fids-board-label .bidsv2-hsep { opacity: 0.5; font-weight: 500; }
-/* Pill text on the baggage banner: the theme hides/whitens it for the FIDS
-   page (logo-first pill) — in the baggage banner the pill is a white plate,
-   so force the IATA + name visible in dark ink. */
-html .bidsv2-screen .fids-airport-text { display: flex !important; flex-direction: column !important; justify-content: center !important; }
-html .bidsv2-screen .fids-airport-iata { display: block !important; color: #0d2440 !important; font-size: clamp(24px, 3.4vh, 38px) !important; line-height: 1.05 !important; }
-html .bidsv2-screen .fids-airport-name { display: block !important; color: #31435a !important; font-size: clamp(13px, 1.8vh, 20px) !important; }
+   for the top' — round 2: 'I ASKED FOR THE SAME AS FIDS'). NO custom
+   layout: the theme's own banner geometry applies verbatim — time+date
+   LEFT, airport pill (logo on plate) CENTER, board title RIGHT — exactly
+   as on the FIDS board. Only two shims: slot the banner into the baggage
+   screen's column flow, and give the pill readable dark ink when an
+   airport has no logo stored (the theme designs the pill around a logo).*/
+html .bidsv2-screen .fids-banner { flex: 0 0 auto !important; width: 100% !important; position: relative !important; }
+html .bidsv2-screen .fids-airport-pill:not(.has-logo) .fids-airport-iata { color: #0d2440 !important; }
+html .bidsv2-screen .fids-airport-pill:not(.has-logo) .fids-airport-name { color: #31435a !important; }
