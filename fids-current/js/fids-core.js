@@ -16238,6 +16238,14 @@ function applyAirportConfigToBoard(iata) {
   // display (old navy/sky/cream/etc.) coerces to teal; custom stays.
   var _ALLOWED_THEMES = { 'tus-teal': 1, 'tus-teal-deep': 1, 'mist': 1, 'custom': 1 };
   if (!_ALLOWED_THEMES[_theme]) _theme = 'tus-teal';
+  // Explicit URL override for kiosk / stream / DigitalOcean deploys: these
+  // boot a clean browser every time with no saved Customize prefs, so the
+  // theme always fell back to the airport default (teal). Pin it on the URL:
+  //   ?theme=mist   (also tus-teal, tus-teal-deep). Wins over everything.
+  try {
+    var _urlTheme = new URLSearchParams(location.search).get('theme');
+    if (_urlTheme && _ALLOWED_THEMES[_urlTheme]) _theme = _urlTheme;
+  } catch (e) {}
   // Logo position is nested under .logo.position in admin KV but flat in user prefs
   const _layout = _pref('logoPosition')
                 || (_adminCfg && _adminCfg.logo && _adminCfg.logo.position)
