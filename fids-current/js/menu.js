@@ -316,6 +316,22 @@ function smRenderPresets() {
 }
 
 function smActivatePreset(id) {
+  // A pinned URL theme (kiosk/stream, e.g. ?theme=mist) is authoritative. Do
+  // NOT let a saved custom preset override it by injecting the #dynamicTheme
+  // block (body{background:…!important}) — that leak forced the BAGGAGE screen
+  // dark (#544f4f) on ?theme=mist. Enforce the pin and bail.
+  try {
+    var _pin = (new URLSearchParams(window.location.search).get('theme') || '').trim().toLowerCase();
+    if (/^(mist|tus-teal|tus-teal-deep)$/.test(_pin)) {
+      var _dt = document.getElementById('dynamicTheme'); if (_dt) _dt.remove();
+      var _cr = document.getElementById('_fidsCustomThemeRules'); if (_cr) _cr.remove();
+      document.body.dataset.fidsTheme = _pin;
+      ['--fids-banner-bg','--fids-banner-text','--fids-banner-accent',
+       '--fids-bg','--fids-text','--fids-stripe','--fids-divider','--fids-row-odd']
+        .forEach(function (k) { document.body.style.removeProperty(k); });
+      return;
+    }
+  } catch (e) {}
   var presets = _getPresets();
   var preset = null;
   for (var i = 0; i < presets.length; i++) {
