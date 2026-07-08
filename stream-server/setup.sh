@@ -24,13 +24,19 @@ STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/fids.html?ap=YQM&mode=
 
 # YouTube target bitrate — 4500k suits 1080p30. Bump to 6000k if your upload
 # is solid and you want crisper text.
-VIDEO_BITRATE="${VIDEO_BITRATE:-4500k}"
+VIDEO_BITRATE="${VIDEO_BITRATE:-6000k}"
 
 echo "== Orion FIDS → YouTube Live setup =="
 echo "Streaming: $STREAM_URL"
 echo
 
 # ── 1. Stream key ───────────────────────────────────────────────────────────
+# Re-running to apply an update? Reuse the key already on disk so you don't
+# have to paste it again.
+if [ -z "${YT_KEY:-}" ] && [ -f /opt/fids-stream/config.env ]; then
+  YT_KEY="$( . /opt/fids-stream/config.env >/dev/null 2>&1; printf '%s' "${YT_KEY:-}" )"
+  [ -n "$YT_KEY" ] && echo "Reusing the stream key already saved on this server."
+fi
 if [ -z "${YT_KEY:-}" ]; then
   read -rp "Paste your YouTube stream key: " YT_KEY
 fi
@@ -87,12 +93,20 @@ CHROME_PID=$!
 sleep 8   # let the board load its fonts + first data
 
 # Capture the framebuffer + a silent audio track → YouTube RTMP.
-# (YouTube requires an audio track even for a silent board.)
+#  -map: explicitly send BOTH the video (input 0) and the silent audio
+#        (input 1). Without this the audio stream was dropped → YouTube
+#        reported "audio bitrate 0".
+#  CBR:  a near-static departures board compresses to a tiny bitrate, which
+#        YouTube reads as "not receiving enough video" and buffers. minrate=
+#        maxrate=bitrate + nal-hrd=cbr pads to a constant bitrate so YouTube
+#        always gets a full, smooth stream.
 ffmpeg -loglevel warning \
   -f x11grab -video_size 1920x1080 -framerate 30 -i :99 \
   -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+  -map 0:v:0 -map 1:a:0 \
   -c:v libx264 -preset veryfast -pix_fmt yuv420p \
-  -b:v "$VIDEO_BITRATE" -maxrate "$VIDEO_BITRATE" -bufsize 9000k \
+  -b:v "$VIDEO_BITRATE" -minrate "$VIDEO_BITRATE" -maxrate "$VIDEO_BITRATE" -bufsize "$VIDEO_BITRATE" \
+  -x264-params "nal-hrd=cbr:force-cfr=1" \
   -g 60 -r 30 -c:a aac -b:a 128k -ar 44100 \
   -f flv "rtmp://a.rtmp.youtube.com/live2/$YT_KEY"
 
