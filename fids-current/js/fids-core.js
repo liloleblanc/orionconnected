@@ -40,6 +40,14 @@ function $el(id) { return document.getElementById(id) || {classList:{toggle:()=>
 
 const FIDS_API_BASE = 'https://fids-proxy.n-leblanc1984.workers.dev';
 
+// Official per-airport logos bundled in the repo — these take precedence over
+// the admin-config/localStorage logo so the correct artwork always shows
+// (Nick supplied the YQM bilingual mark; the blue-on-light 'color' variant
+// suits the light banner centre). Transparent SVGs.
+const BUNDLED_AIRPORT_LOGO = {
+  'YQM': '/logos/airports/CYQM-color.svg'
+};
+
 // In-memory cache, populated lazily. Keys are normalized airport codes.
 const _airportConfigCache = {};
 const _airlineOverrideCache = {};
@@ -9048,7 +9056,7 @@ const gView = document.getElementById('gateView');
              theme (including custom) styles it exactly like the board. -->
         ${(function () {
           var _lg = '';
-          try { _lg = window._fidsResolvedAirportLogo || localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch (e) {}
+          try { _lg = (typeof BUNDLED_AIRPORT_LOGO !== 'undefined' && BUNDLED_AIRPORT_LOGO[iata]) || window._fidsResolvedAirportLogo || localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch (e) {}
           // Single language, rotating with the board's language cycle —
           // exactly like the FIDS board label ('Departures' / 'Départs').
           var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
@@ -16446,13 +16454,15 @@ function applyAirportConfigToBoard(iata) {
   }
   document.body.classList.add('fids-v2-page');
 
-  // Logo image — admin URL wins, then localStorage cache, then wway.io fetch.
+  // Logo image — a bundled per-airport logo wins first (Nick supplied the
+  // official YQM artwork; it overrides the stale wide logo in admin config),
+  // then admin URL, then localStorage cache.
   const _logoImg = document.getElementById('fidsAirportLogoImg');
   const _pill = document.getElementById('fidsAirportPill');
-  let _logoUrl = '';
-  if (_adminCfg && _adminCfg.logo && _adminCfg.logo.url) {
+  let _logoUrl = (typeof BUNDLED_AIRPORT_LOGO !== 'undefined' && BUNDLED_AIRPORT_LOGO[iata]) || '';
+  if (!_logoUrl && _adminCfg && _adminCfg.logo && _adminCfg.logo.url) {
     _logoUrl = _adminCfg.logo.url;
-  } else {
+  } else if (!_logoUrl) {
     try { _logoUrl = localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch(e) {}
   }
   if (!_logoUrl && typeof _loadAirportLogoForCode === 'function') {
