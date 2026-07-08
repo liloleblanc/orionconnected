@@ -19,6 +19,34 @@
     } catch (e) {}
   })();
   </script>
+  <script>
+  /* Orion screen rotation: add ?rotate=fids,gids,bids (aliases: departures,
+     gates, bags) and optional &dwell=SECONDS to auto-cycle through the boards.
+     Default 30s. All other params (ap, theme, stream, mode) carry across. */
+  (function(){
+    try {
+      var q = new URLSearchParams(window.location.search);
+      var rot = (q.get('rotate') || '').trim();
+      if (!rot) return;
+      var dwell = parseInt(q.get('dwell') || q.get('every') || '30', 10);
+      if (!(dwell > 0)) dwell = 30;
+      var map = { fids:'fids.html', departures:'fids.html', dep:'fids.html', flights:'fids.html',
+                  gids:'gids.html', gates:'gids.html', gate:'gids.html',
+                  bids:'bids.html', bags:'bids.html', bag:'bids.html', baggage:'bids.html' };
+      var list = rot.split(',').map(function(s){ return map[s.trim().toLowerCase()]; }).filter(Boolean);
+      list = list.filter(function(f,i){ return i === 0 || f !== list[i-1]; }); // collapse repeats
+      if (list.length < 2) return;
+      var here = (window.location.pathname.split('/').pop() || '').toLowerCase();
+      if (here.slice(-5) !== '.html') here = 'fids.html';
+      var idx = list.indexOf(here);
+      var next = (idx < 0) ? list[0] : list[(idx + 1) % list.length];
+      if (!next || next === here) return;
+      window.setTimeout(function(){
+        window.location.href = next + window.location.search;
+      }, dwell * 1000);
+    } catch (e) {}
+  })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
