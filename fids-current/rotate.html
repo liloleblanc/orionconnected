@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YQM Rotating Display</title>
+  <style>
+    html, body { margin: 0; height: 100%; width: 100%; overflow: hidden;
+                 background: #0b1a2b; cursor: none; }
+    /* Each board lives in its own iframe, loaded ONCE and kept alive. We only
+       toggle which one is visible — no reloads, no re-splash, no drift. */
+    .oc-frame {
+      position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0;
+      margin: 0; padding: 0; display: block;
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: opacity .45s ease;
+      z-index: 1;
+    }
+    .oc-frame.oc-active {
+      opacity: 1; visibility: visible; pointer-events: auto; z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <script>
+  /* Orion in-place rotator.
+     URL: rotate.html?ap=YQM&mode=live&theme=mist[&stream=1]&rotate=fids,gids,bids,gids&dwell=60
+       rotate = ordered sequence of boards (aliases: departures/gates/bags, etc.);
+                a board may repeat in the sequence (e.g. gates between each).
+       dwell  = seconds per screen (default 60).
+     Every OTHER param (ap, mode, theme, stream, …) is forwarded to each board.
+     All boards load up front and stay loaded; switching is just a class toggle,
+     so the timer stays exact and nothing reloads between screens. */
+  (function () {
+    try {
+      var q = new URLSearchParams(window.location.search);
+
+      var rot = (q.get('rotate') || 'fids,gids,bids').trim();
+      var dwell = parseInt(q.get('dwell') || q.get('every') || '60', 10);
+      if (!(dwell > 0)) dwell = 60;
+
+      var MAP = {
+        fids: 'fids.html', departures: 'fids.html', dep: 'fids.html', flights: 'fids.html',
+        gids: 'gids.html', gates: 'gids.html', gate: 'gids.html',
+        bids: 'bids.html', bags: 'bids.html', bag: 'bids.html', baggage: 'bids.html'
+      };
+
+      // Ordered sequence of pages (repeats allowed), collapsing accidental
+      // back-to-back duplicates so a screen never "switches to itself".
+      var seq = rot.split(',').map(function (s) { return MAP[s.trim().toLowerCase()]; }).filter(Boolean);
+      seq = seq.filter(function (p, i) { return i === 0 || p !== seq[i - 1]; });
+      if (seq.length === 0) seq = ['fids.html'];
+
+      // Params passed to each board: everything EXCEPT the rotator's own controls
+      // (so the boards don't try to rotate themselves).
+      q.delete('rotate'); q.delete('dwell'); q.delete('every');
+      var childQ = q.toString();
+      var childSuffix = childQ ? ('?' + childQ) : '';
+
+      // One iframe per UNIQUE page (gids appears once even if it recurs in seq).
+      var frameFor = {};
+      var uniquePages = seq.filter(function (p, i) { return seq.indexOf(p) === i; });
+      uniquePages.forEach(function (page) {
+        var f = document.createElement('iframe');
+        f.className = 'oc-frame';
+        f.setAttribute('scrolling', 'no');
+        f.setAttribute('allow', 'autoplay');
+        f.src = page + childSuffix;
+        document.body.appendChild(f);
+        frameFor[page] = f;
+      });
+
+      var idx = 0;
+      frameFor[seq[0]].classList.add('oc-active');
+
+      if (seq.length < 2) return; // single board — nothing to rotate
+
+      // Drift-corrected scheduler: each switch is pinned to wall-clock so a
+      // slow board render can never make the cadence wander.
+      var t0 = Date.now();
+      var step = 0;
+      function nextDelay() { step++; return Math.max(250, (t0 + step * dwell * 1000) - Date.now()); }
+      function tick() {
+        var cur = frameFor[seq[idx]];
+        idx = (idx + 1) % seq.length;
+        var nxt = frameFor[seq[idx]];
+        if (nxt !== cur) {
+          nxt.classList.add('oc-active');
+          cur.classList.remove('oc-active');
+        }
+        window.setTimeout(tick, nextDelay());
+      }
+      window.setTimeout(tick, nextDelay());
+    } catch (e) { /* if anything fails, the first board still shows */ }
+  })();
+  </script>
+</body>
+</html>
