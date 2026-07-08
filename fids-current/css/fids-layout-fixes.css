@@ -2112,6 +2112,7 @@ html.fids-stream .content-area {
 }
 html.fids-stream #fidsTable {
   width: 100% !important;
+  height: 100% !important;   /* fill the frame; rows distribute (no dead space when few flights) */
   background: #544f4f !important;
   border-collapse: collapse !important;
 }
@@ -2133,7 +2134,7 @@ html.fids-stream #fidsTable thead th {
 html.fids-stream #fidsTable tbody tr:not(.row-cancelled):not(.row-diverted):not(.row-delayed):not(.row-final) {
   background: #ffffff !important;
   height: var(--oc-stream-row-h) !important;
-  max-height: var(--oc-stream-row-h) !important;
+  max-height: none !important;   /* grow to fill when few flights */
   min-height: var(--oc-stream-row-h) !important;
   border-bottom: 1px solid rgba(14,49,68,0.18) !important;
 }
@@ -2150,7 +2151,7 @@ html.fids-stream #fidsTable .td-time-rev,
 html.fids-stream #fidsTable .td-status,
 html.fids-stream #fidsTable .td-wx {
   height: var(--oc-stream-row-h) !important;
-  max-height: var(--oc-stream-row-h) !important;
+  max-height: none !important;
   min-height: var(--oc-stream-row-h) !important;
   padding: 0 var(--oc-stream-pad-x) !important;
   font-size: var(--oc-stream-cell-font) !important;
