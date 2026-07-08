@@ -2012,54 +2012,22 @@ html .bidsv2-list-header > div {
   gap: 0.35em !important;
 }
 
-
 /* ==========================================================================
-   Orion YouTube / stream compact layout
-   Enable with: /fids?mode=live&ap=YQM&stream=1
-   Purpose: compact rows, locked 16:9 kiosk appearance, GMIA-style theme,
-   and AC Nord Display font for browser-capture/YouTube output.
+   Orion YouTube / stream mode  —  ?stream=1  (also compact=1 / yt=1)
+   The stream must look EXACTLY like the normal display (Nick's reference):
+   same Geist font, full-size airport + airline logos, mist theme. Stream
+   mode does ONLY four things: hide the operator chrome, hide the login chip,
+   lock the page to the viewport, and let the flight table fill the frame so
+   a light-traffic airport doesn't leave a grey gap under the last row.
+   Everything else is inherited from the normal board untouched.
    ========================================================================== */
-html.fids-stream,
-html.fids-stream body {
+html.fids-stream, html.fids-stream body {
   width: 100vw !important;
   height: 100vh !important;
   overflow: hidden !important;
-  background: #544f4f !important;
 }
 
-html.fids-stream body {
-  /* Tune these first if you want the board larger/smaller. */
-  --oc-stream-row-h: 28px;   /* Nick: smallest rows */
-  --oc-stream-cell-font: 15px;
-  --oc-stream-head-font: 13px;
-  --oc-stream-pad-x: 10px;
-
-  --font-primary: 'AC Nord Display Bold', 'AC Nord Display', 'AC Nord Text', Arial, sans-serif !important;
-  --fids-banner-bg: #0e3144 !important;
-  --fids-banner-accent: #fffdfa !important;
-  --fids-banner-text: #fbf3f3 !important;
-  --fids-bg: #544f4f !important;
-  --fids-row-odd: #ffffff !important;
-  --fids-stripe: #d6d6d6 !important;
-  --fids-text: #423d3d !important;
-  --fids-header-tint: #fbf3f3 !important;
-  --fids-divider: rgba(14,49,68,0.28) !important;
-  --fids-row-h: var(--oc-stream-row-h) !important;
-  color: var(--fids-text) !important;
-}
-
-/* Force the stream font without breaking icon fonts. */
-html.fids-stream body,
-html.fids-stream body *:not(.ac-ico):not(.ac-ico::before):not(.ac-ico::after) {
-  font-family: var(--font-primary) !important;
-}
-html.fids-stream .ac-ico,
-html.fids-stream .ac-ico::before,
-html.fids-stream .ac-ico::after {
-  font-family: 'ac-icons' !important;
-}
-
-/* Kiosk output should not show admin/menu/search chrome. */
+/* Clean capture — no menu bar, airport panel, modals, or login chip. */
 html.fids-stream .ctrl,
 html.fids-stream .ap-panel,
 html.fids-stream #apPanel,
@@ -2072,157 +2040,32 @@ html.fids-stream #overridePanel {
   pointer-events: none !important;
 }
 
+/* Fill the frame: board is a flex column, the flight table stretches, and
+   rows distribute — so few flights grow to fill instead of leaving dead
+   space, and a busy board packs in more. Ticker stays pinned at the bottom. */
 html.fids-stream #fidsBoard {
   width: 100vw !important;
   height: 100vh !important;
-  min-height: 100vh !important;
-  background: #544f4f !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
+html.fids-stream .content-area { flex: 1 1 auto !important; overflow: hidden !important; }
+html.fids-stream #fidsTable { height: 100% !important; }
+html.fids-stream .ticker { flex: 0 0 auto !important; }
 
-/* Slightly tighter banner so more rows fit in 1080p. */
-html.fids-stream .fids-banner {
-  height: 128px !important;
-  padding: 0 48px !important;
-  gap: 24px !important;
-  background: #0e3144 !important;
-  border-bottom: 0 !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 60 !important;
+/* Force AC Nord Bold Display on ALL text (Nick: "it should all be AC Nord
+   Bold Display" — it was falling back to Possibility). Icons keep their
+   icon font; logos are SVG/img so unaffected. */
+html.fids-stream body {
+  --font-primary: 'AC Nord Display Bold', 'AC Nord Display', 'AC Nord Text', Arial, sans-serif !important;
 }
-html.fids-stream .fids-banner-chevrons { opacity: 0.20 !important; }
-html.fids-stream .fids-banner-time { font-size: 24px !important; font-weight: 800 !important; }
-html.fids-stream .fids-banner-date { font-size: 11px !important; }
-html.fids-stream .fids-airport-pill {
-  height: 88px !important;
-  padding: 8px 18px !important;
-  max-width: 360px !important;
-  border-radius: 8px !important;
+html.fids-stream body,
+html.fids-stream body *:not(.ac-ico):not([class*="ac-ico"]) {
+  font-family: 'AC Nord Display Bold', 'AC Nord Display', 'AC Nord Text', Arial, sans-serif !important;
 }
-html.fids-stream .fids-airport-logo-img { height: 70px !important; max-width: 300px !important; }
-html.fids-stream .fids-board-icon { width: 82px !important; height: 82px !important; }
-html.fids-stream .fids-board-icon svg { width: 48px !important; height: 48px !important; fill: #0e3144 !important; }
-html.fids-stream .fids-board-label { font-size: 52px !important; min-width: 260px !important; }
-
-/* Main table + GMIA colors. */
-html.fids-stream .content-area {
-  flex: 1 1 auto !important;
-  overflow: hidden !important;
-  background: #544f4f !important;
-}
-html.fids-stream #fidsTable {
-  width: 100% !important;
-  height: 100% !important;   /* fill the frame; rows distribute (no dead space when few flights) */
-  background: #544f4f !important;
-  border-collapse: collapse !important;
-}
-html.fids-stream #fidsTable thead tr,
-html.fids-stream #fidsTable thead th {
-  background: #0e3144 !important;
-  color: #fbf3f3 !important;
-  border: 0 !important;
-}
-html.fids-stream #fidsTable thead th {
-  padding: 7px var(--oc-stream-pad-x) !important;
-  font-size: var(--oc-stream-head-font) !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.02em !important;
-  line-height: 1 !important;
-  height: 30px !important;
-}
-
-html.fids-stream #fidsTable tbody tr:not(.row-cancelled):not(.row-diverted):not(.row-delayed):not(.row-final) {
-  background: #ffffff !important;
-  height: var(--oc-stream-row-h) !important;
-  max-height: none !important;   /* grow to fill when few flights */
-  min-height: var(--oc-stream-row-h) !important;
-  border-bottom: 1px solid rgba(14,49,68,0.18) !important;
-}
-html.fids-stream #fidsTable tbody tr:not(.row-cancelled):not(.row-diverted):not(.row-delayed):not(.row-final):nth-child(even) {
-  background: #d6d6d6 !important;
-}
-html.fids-stream #fidsTable tbody td,
-html.fids-stream #fidsTable .td-airline,
-html.fids-stream #fidsTable .td-dest,
-html.fids-stream #fidsTable .td-flight,
-html.fids-stream #fidsTable .td-gate,
-html.fids-stream #fidsTable .td-time,
-html.fids-stream #fidsTable .td-time-rev,
-html.fids-stream #fidsTable .td-status,
-html.fids-stream #fidsTable .td-wx {
-  height: var(--oc-stream-row-h) !important;
-  max-height: none !important;
-  min-height: var(--oc-stream-row-h) !important;
-  padding: 0 var(--oc-stream-pad-x) !important;
-  font-size: var(--oc-stream-cell-font) !important;
-  font-weight: 800 !important;
-  line-height: 1 !important;
-  letter-spacing: 0.01em !important;
-  color: #423d3d !important;
-  vertical-align: middle !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  box-sizing: border-box !important;
-  border: 0 !important;
-}
-html.fids-stream #fidsTable .td-status { text-align: right !important; padding-right: 16px !important; }
-
-/* Compact airline tile/wordmark column. */
-html.fids-stream #fidsTable .td-airline .fids-cell-airline {
-  gap: 8px !important;
-  min-height: var(--oc-stream-row-h) !important;
-}
-html.fids-stream #fidsTable .td-airline .fids-airline-logo,
-html.fids-stream #fidsTable .td-airline .fids-cell-airline > .fids-airline-logo:empty {
-  width: var(--oc-stream-row-h) !important;
-  height: var(--oc-stream-row-h) !important;
-  min-width: var(--oc-stream-row-h) !important;
-}
-html.fids-stream #fidsTable .td-airline .fids-airline-logo img,
-html.fids-stream #fidsTable .td-airline .fids-airline-logo svg {
-  width: 28px !important;
-  height: 28px !important;
-  max-width: 28px !important;
-  max-height: 28px !important;
-}
-html.fids-stream #fidsTable .td-airline .fids-airline-logo .full-logo {
-  width: var(--oc-stream-row-h) !important;
-  height: var(--oc-stream-row-h) !important;
-  max-width: var(--oc-stream-row-h) !important;
-  max-height: var(--oc-stream-row-h) !important;
-}
-html.fids-stream #fidsTable .td-airline .fids-airline-wordmark,
-html.fids-stream #fidsTable .td-airline .fids-airline-wordmark[data-code] {
-  height: 18px !important;
-  max-height: 20px !important;
-  max-width: 210px !important;
-}
-html.fids-stream #fidsTable .td-airline .fids-airline-name { font-size: 18px !important; }
-
-/* Compact weather without distorting the sprite positions. Chrome's zoom
-   scales the background sprite and the layout box together. */
-html.fids-stream #fidsTable .fids-cell-weather {
-  gap: 4px !important;
-  align-items: center !important;
-  font-size: 17px !important;
-  line-height: 1 !important;
-}
-html.fids-stream #fidsTable .fids-wx-cell {
-  zoom: 0.68 !important;
-  flex: 0 0 auto !important;
-}
-
-/* Compact bottom ticker to save vertical room. */
-html.fids-stream .ticker {
-  padding: 7px 0 !important;
-  border-top: 2px solid #0e3144 !important;
-  background: #27272a !important;
-  flex: 0 0 auto !important;
-}
-html.fids-stream .ticker span {
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  letter-spacing: 2px !important;
-  text-transform: uppercase !important;
+html.fids-stream .ac-ico,
+html.fids-stream [class*="ac-ico"],
+html.fids-stream .ac-ico::before,
+html.fids-stream .ac-ico::after {
+  font-family: 'ac-icons' !important;
 }
