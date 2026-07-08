@@ -23349,6 +23349,55 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   }, 5 * 60000);
 })();
 
+// ── GATE SCREEN AUTO-CYCLE ──────────────────────────────────────────────
+// The gate (GIDS) view is a PER-GATE display: it filters to subScreenVal and
+// defaults to the first gate, so a single screen only ever shows Gate 1. For
+// the stream / rotator we want it to walk through every gate that has an
+// upcoming departure. Enabled automatically when the page runs INSIDE the
+// rotator (an iframe) or in stream mode; a standalone per-gate display (top
+// window, no flags) stays pinned to its gate. Override with ?gatecycle=SECONDS
+// (or ?gatecycle=0 to force off). Cycling advances subScreenVal through the
+// live gate list and re-renders — subScreenVal survives data refreshes as long
+// as the gate still has flights.
+(function () {
+  try {
+    var q = new URLSearchParams(window.location.search);
+    var raw = q.get('gatecycle');
+    var enabled, secs = 15;
+    if (raw != null && raw !== '') {
+      var n = parseInt(raw, 10);
+      if (raw === '0' || n === 0) { enabled = false; }
+      else { enabled = true; if (n >= 3) secs = n; }
+    } else {
+      enabled = (window.self !== window.top) ||
+                q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
+    }
+    if (!enabled) return;
+    setInterval(function () {
+      try {
+        if (typeof screenType === 'undefined' || screenType !== 'gate') return;
+        if (typeof data === 'undefined' || !data) return;
+        var now = Date.now();
+        var gates = (data.dep || []).filter(function (f) {
+          if (!f.gate || f.gate === '—') return false;
+          if (f.status === 'cancelled' || f.status === 'departed') return false;
+          var eff = f._revTs || f._sortTs || 0;
+          if (eff && (now - eff) > 10 * 60000) return false;
+          return true;
+        }).map(function (f) { return f.gate; });
+        gates = gates.filter(function (g, i) { return gates.indexOf(g) === i; }).sort();
+        if (gates.length < 2) return;                 // one gate → nothing to cycle
+        var i = gates.indexOf(subScreenVal);
+        var next = gates[(i + 1) % gates.length];      // i===-1 → starts at gates[0]
+        if (next && next !== subScreenVal) {
+          subScreenVal = next;
+          if (typeof render === 'function') render();
+        }
+      } catch (e) {}
+    }, secs * 1000);
+  } catch (e) {}
+})();
+
 // ── KIOSK SCROLL PIN ────────────────────────────────────────────────────
 // Belt to the CSS lock's braces: if anything ever scrolls a desktop board
 // page (spacebar, stray touch, focus jump), snap back to the top instantly
