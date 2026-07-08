@@ -2091,6 +2091,11 @@ html body[data-fids-mode="arr"] .fids-banner .fids-board-icon::before {
 html .fids-banner .fids-board-icon {
   width: 100px !important; height: 100px !important; min-width: 0 !important;
   border-radius: 50% !important; gap: 0 !important; padding: 0 !important;
+  /* The board tab is a skewed parallelogram (~-24°), so its left edge is a
+     diagonal that sits further right at the top. Nudge the icon (and the
+     label after it) deeper into the yellow so the plane / suitcase clears
+     that diagonal and stays fully contained, not spilling past the edge. */
+  margin-left: 34px !important;
 }
 html .fids-banner .fids-banner-board { gap: 16px !important; }
 
