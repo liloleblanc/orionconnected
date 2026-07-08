@@ -2068,3 +2068,23 @@ html.fids-stream .ac-ico::before,
 html.fids-stream .ac-ico::after {
   font-family: 'ac-icons' !important;
 }
+
+/* Fill leftover space below the flights with a soft Orion mark — turns
+   low-traffic dead space (few flights, esp. overnight) into branding for the
+   stream. The ::after grows to fill; when the board is full it gets zero
+   height and vanishes. Stream mode only. */
+html.fids-stream .content-area {
+  display: flex !important;
+  flex-direction: column !important;
+}
+html.fids-stream .content-area > #fidsTable { flex: 0 0 auto !important; }
+html.fids-stream .content-area::after {
+  content: '' !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  background-image: url('/OrionConnectedLogos/colored-logo.svg') !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: auto min(46%, 190px) !important;
+  opacity: 0.5 !important;
+}
