@@ -13225,6 +13225,24 @@ const THEME_LOGOS = {
 };
 
 function setTheme(name) {
+  // A pinned URL theme (kiosk/stream, e.g. ?theme=mist) is authoritative and is
+  // driven by the CSS theme rules. Never let a saved custom/legacy preset
+  // re-inject a #dynamicTheme block (body{background:…!important}) that shadows
+  // it — that leak forced the BAGGAGE screen dark (#544f4f) on ?theme=mist even
+  // though the board resolved to mist. Enforce the pin and bail.
+  try {
+    var _pin = (new URLSearchParams(window.location.search).get('theme') || '').trim().toLowerCase();
+    if (/^(mist|tus-teal|tus-teal-deep)$/.test(_pin)) {
+      currentTheme = _pin;
+      var _dt = document.getElementById('dynamicTheme'); if (_dt) _dt.remove();
+      var _cr = document.getElementById('_fidsCustomThemeRules'); if (_cr) _cr.remove();
+      document.body.dataset.fidsTheme = _pin;
+      ['--fids-banner-bg','--fids-banner-text','--fids-banner-accent',
+       '--fids-bg','--fids-text','--fids-stripe','--fids-divider','--fids-row-odd']
+        .forEach(function (k) { document.body.style.removeProperty(k); });
+      return;
+    }
+  } catch (e) {}
   currentTheme = name;
   const t = THEMES[name] || THEMES.gold;
   THEME_LIST.forEach(n => {
