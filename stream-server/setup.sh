@@ -75,6 +75,7 @@ echo "Chrome: $CHROME_BIN"
 
 # ── 3. Config + launcher ────────────────────────────────────────────────────
 install -d /opt/fids-stream
+install -d /opt/fids-stream/music   # drop licensed audio files here for music
 
 cat > /opt/fids-stream/config.env <<CFG
 STREAM_URL="$STREAM_URL"
@@ -111,10 +112,33 @@ sleep 2
 CHROME_PID=$!
 sleep 8   # let the board load its fonts + first data
 
-# Capture the framebuffer + a silent audio track → YouTube RTMP.
-#  -map: explicitly send BOTH the video (input 0) and the silent audio
-#        (input 1). Without this the audio stream was dropped → YouTube
-#        reported "audio bitrate 0".
+# Audio source: background music if the operator dropped any audio files in
+# /opt/fids-stream/music/, otherwise a silent track. Drop .mp3/.m4a/.aac/.wav/
+# .flac/.ogg files in that folder and restart the service to enable music.
+#   IMPORTANT: only use music you're licensed to broadcast (YouTube Audio
+#   Library, Epidemic Sound, a track you own, etc.). Copyrighted songs get
+#   caught by YouTube Content ID and the stream is muted or the channel struck.
+MUSIC_DIR=/opt/fids-stream/music
+PLAYLIST=/opt/fids-stream/playlist.txt
+# nullglob → unmatched patterns vanish (no literal '*.wav'); nocaseglob → .MP3 too
+shopt -s nullglob nocaseglob
+MUSIC_FILES=("$MUSIC_DIR"/*.mp3 "$MUSIC_DIR"/*.m4a "$MUSIC_DIR"/*.aac \
+             "$MUSIC_DIR"/*.wav "$MUSIC_DIR"/*.flac "$MUSIC_DIR"/*.ogg)
+shopt -u nullglob nocaseglob
+if [ "${#MUSIC_FILES[@]}" -gt 0 ]; then
+  : > "$PLAYLIST"
+  for f in "${MUSIC_FILES[@]}"; do printf "file '%s'\n" "$f" >> "$PLAYLIST"; done
+  echo "Music: looping ${#MUSIC_FILES[@]} track(s) from $MUSIC_DIR"
+  AUDIO_IN=(-stream_loop -1 -f concat -safe 0 -i "$PLAYLIST")
+else
+  echo "Music: none found in $MUSIC_DIR — streaming silent audio"
+  AUDIO_IN=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100)
+fi
+
+# Capture the framebuffer + the audio track → YouTube RTMP.
+#  -map: explicitly send BOTH the video (input 0) and the audio (input 1).
+#        Without this the audio stream was dropped → YouTube reported
+#        "audio bitrate 0".
 #  -thread_queue_size: the capture thread was blocking on a 1-core box
 #        ("Thread message queue blocking"); a bigger queue absorbs the jitter.
 #  CBR:  a near-static departures board compresses to a tiny bitrate, which
@@ -124,9 +148,10 @@ sleep 8   # let the board load its fonts + first data
 #  ultrafast: lightest CPU preset — lets a single core hold the framerate.
 #  -draw_mouse 0: don't capture the headless browser's mouse cursor (it was
 #                 showing as a pointer stuck in the middle of the stream).
+#  -shortest is deliberately omitted so the (looped) music never ends the run.
 ffmpeg -loglevel warning \
   -f x11grab -draw_mouse 0 -thread_queue_size 1024 -video_size "${WIDTH}x${HEIGHT}" -framerate "$FRAMERATE" -i :99 \
-  -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+  "${AUDIO_IN[@]}" \
   -map 0:v:0 -map 1:a:0 \
   -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
   -b:v "$VIDEO_BITRATE" -minrate "$VIDEO_BITRATE" -maxrate "$VIDEO_BITRATE" -bufsize "$VIDEO_BITRATE" \
@@ -172,3 +197,6 @@ echo "  Watch logs:   journalctl -u fids-stream -f"
 echo "  Restart:      systemctl restart fids-stream"
 echo "  Stop:         systemctl stop fids-stream"
 echo "  Change board: edit /opt/fids-stream/config.env, then restart"
+echo "  Add music:    put licensed audio in /opt/fids-stream/music/, then restart"
+echo "                (only music you're licensed to broadcast — YouTube Content"
+echo "                 ID mutes/strikes copyrighted songs)"
