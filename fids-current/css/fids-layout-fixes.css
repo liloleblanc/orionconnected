@@ -2093,3 +2093,11 @@ html .fids-banner .fids-board-icon {
   border-radius: 50% !important; gap: 0 !important; padding: 0 !important;
 }
 html .fids-banner .fids-banner-board { gap: 16px !important; }
+
+/* Baggage banner: same title/icon treatment as the FIDS board, but keep the
+   AC SUITCASE (not the plane). Remove the plane glyph the FIDS rule adds,
+   enlarge the suitcase, and give the (longer) baggage titles their own
+   fixed reserve so the icon + first letter stay put on language rotation. */
+html body .bidsv2-fids-banner .fids-board-icon::before { content: "" !important; display: none !important; }
+html .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage { font-size: 56px !important; color: #14263f !important; }
+html .bidsv2-fids-banner .fids-board-label { font-size: 54px !important; min-width: 560px !important; }
