@@ -22,9 +22,15 @@ set -euo pipefail
 # stream= flags. Keep mode=live for real flight data.
 STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/fids.html?ap=YQM&mode=live&stream=1&theme=mist}"
 
-# YouTube target bitrate — 4500k suits 1080p30. Bump to 6000k if your upload
-# is solid and you want crisper text.
-VIDEO_BITRATE="${VIDEO_BITRATE:-6000k}"
+# Capture size + framerate + bitrate. Defaults are tuned for a 1 vCPU
+# droplet: 720p @ 20 fps is plenty for a departures board and a single core
+# can encode it while holding a steady bitrate. If you resize the droplet to
+# 2+ vCPU and want crisp 1080p, set these before running:
+#   WIDTH=1920 HEIGHT=1080 FRAMERATE=30 VIDEO_BITRATE=6000k sudo bash setup.sh
+WIDTH="${WIDTH:-1280}"
+HEIGHT="${HEIGHT:-720}"
+FRAMERATE="${FRAMERATE:-20}"
+VIDEO_BITRATE="${VIDEO_BITRATE:-3500k}"
 
 echo "== Orion FIDS → YouTube Live setup =="
 echo "Streaming: $STREAM_URL"
@@ -66,6 +72,9 @@ cat > /opt/fids-stream/config.env <<CFG
 STREAM_URL="$STREAM_URL"
 YT_KEY="$YT_KEY"
 CHROME_BIN="$CHROME_BIN"
+WIDTH="$WIDTH"
+HEIGHT="$HEIGHT"
+FRAMERATE="$FRAMERATE"
 VIDEO_BITRATE="$VIDEO_BITRATE"
 CFG
 chmod 600 /opt/fids-stream/config.env   # keeps the stream key private
@@ -77,18 +86,20 @@ set -euo pipefail
 source /opt/fids-stream/config.env
 export DISPLAY=:99
 
-# Virtual 1080p framebuffer
-Xvfb :99 -screen 0 1920x1080x24 -nolisten tcp &
+# Virtual framebuffer at the configured size
+Xvfb :99 -screen 0 "${WIDTH}x${HEIGHT}x24" -nolisten tcp &
 XVFB_PID=$!
 sleep 2
 
-# Full-screen kiosk Chrome pointed at the stream board
+# Full-screen kiosk Chrome pointed at the stream board. --disable-gpu et al.
+# keep a 1-core box from wasting cycles on (failing) GPU init.
 "$CHROME_BIN" \
   --kiosk --no-sandbox --no-first-run --no-default-browser-check \
   --disable-infobars --disable-session-crashed-bubble \
   --disable-features=Translate --autoplay-policy=no-user-gesture-required \
+  --disable-gpu --disable-software-rasterizer --disable-dev-shm-usage \
   --force-device-scale-factor=1 --hide-scrollbars \
-  --window-position=0,0 --window-size=1920,1080 "$STREAM_URL" &
+  --window-position=0,0 --window-size="${WIDTH},${HEIGHT}" "$STREAM_URL" &
 CHROME_PID=$!
 sleep 8   # let the board load its fonts + first data
 
@@ -96,18 +107,21 @@ sleep 8   # let the board load its fonts + first data
 #  -map: explicitly send BOTH the video (input 0) and the silent audio
 #        (input 1). Without this the audio stream was dropped → YouTube
 #        reported "audio bitrate 0".
+#  -thread_queue_size: the capture thread was blocking on a 1-core box
+#        ("Thread message queue blocking"); a bigger queue absorbs the jitter.
 #  CBR:  a near-static departures board compresses to a tiny bitrate, which
 #        YouTube reads as "not receiving enough video" and buffers. minrate=
 #        maxrate=bitrate + nal-hrd=cbr pads to a constant bitrate so YouTube
 #        always gets a full, smooth stream.
+#  ultrafast: lightest CPU preset — lets a single core hold the framerate.
 ffmpeg -loglevel warning \
-  -f x11grab -video_size 1920x1080 -framerate 30 -i :99 \
+  -f x11grab -thread_queue_size 1024 -video_size "${WIDTH}x${HEIGHT}" -framerate "$FRAMERATE" -i :99 \
   -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
   -map 0:v:0 -map 1:a:0 \
-  -c:v libx264 -preset veryfast -pix_fmt yuv420p \
+  -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
   -b:v "$VIDEO_BITRATE" -minrate "$VIDEO_BITRATE" -maxrate "$VIDEO_BITRATE" -bufsize "$VIDEO_BITRATE" \
   -x264-params "nal-hrd=cbr:force-cfr=1" \
-  -g 60 -r 30 -c:a aac -b:a 128k -ar 44100 \
+  -g "$((FRAMERATE * 2))" -r "$FRAMERATE" -c:a aac -b:a 128k -ar 44100 \
   -f flv "rtmp://a.rtmp.youtube.com/live2/$YT_KEY"
 
 # ffmpeg exited → tear down so systemd restarts from a clean slate
