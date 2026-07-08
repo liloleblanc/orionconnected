@@ -2101,26 +2101,3 @@ html .fids-banner .fids-banner-board { gap: 16px !important; }
 html body .bidsv2-fids-banner .fids-board-icon::before { content: "" !important; display: none !important; }
 html .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage { font-size: 56px !important; color: #14263f !important; }
 html .bidsv2-fids-banner .fids-board-label { font-size: 54px !important; min-width: 560px !important; }
-
-/* Airport logo — transparent (no white card), the official bundled YQM mark,
-   centred in the banner's clear zone and sized to sit cleanly without
-   clipping into the yellow board tab. The mark is bilingual (EN | crest |
-   FR), ~8:1, so the banner width caps how tall it can be. */
-html .fids-banner .fids-airport-pill {
-  position: absolute !important;
-  left: 54.5% !important;
-  top: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  z-index: 2 !important;
-  max-width: none !important;
-}
-html body .fids-banner .fids-airport-pill img.fids-airport-logo-img,
-html body .fids-banner .fids-airport-pill img#fidsAirportLogoImg {
-  max-width: 440px !important;
-  max-height: 108px !important;
-  width: auto !important;
-  height: auto !important;
-}
