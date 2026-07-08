@@ -40,6 +40,21 @@ function $el(id) { return document.getElementById(id) || {classList:{toggle:()=>
 
 const FIDS_API_BASE = 'https://fids-proxy.n-leblanc1984.workers.dev';
 
+// Gate screen day/night ('light'/'dark'). Priority: an explicit manual choice
+// (localStorage fids_console_theme) wins; then a PINNED URL theme (kiosk/stream,
+// e.g. ?theme=mist) forces the LIGHT gate so it matches the light board instead
+// of following time-of-day — that mismatch made the gate go dark at night while
+// the board stayed mist; then, otherwise, time-of-day (light 06:00–19:00).
+function _gateDayNightTheme() {
+  try { var _t = localStorage.getItem('fids_console_theme'); if (_t === 'light' || _t === 'dark') return _t; } catch (e) {}
+  try {
+    var _u = new URLSearchParams(window.location.search).get('theme');
+    if (_u && /^(mist|tus-teal|tus-teal-deep|light|day)$/i.test(_u.trim())) return 'light';
+  } catch (e) {}
+  var _h = new Date().getHours();
+  return (_h >= 6 && _h < 19) ? 'light' : 'dark';
+}
+
 // In-memory cache, populated lazily. Keys are normalized airport codes.
 const _airportConfigCache = {};
 const _airlineOverrideCache = {};
@@ -4595,9 +4610,7 @@ function renderMobileBaggageHtml(ctx) {
   const beltVal = _bMatch ? _bMatch[2] : (subScreenVal || '—');
 
   // theme (same logic as gate)
-  var _bgTheme;
-  try { var _t = localStorage.getItem('fids_console_theme'); _bgTheme = (_t === 'light' || _t === 'dark') ? _t : null; } catch (e) { _bgTheme = null; }
-  if (!_bgTheme) { var _h = new Date().getHours(); _bgTheme = (_h >= 6 && _h < 19) ? 'light' : 'dark'; }
+  var _bgTheme = _gateDayNightTheme();
   var _lt = (_bgTheme === 'light');
   var T = _lt
     ? { pageBg:'#f4f7fa', header:'#e9eef4', card:'#ffffff', line:'rgba(16,32,55,0.10)', ink:'#0d1626', muted:'#7a8696', muted2:'#475569', navBg:'#e9eef4' }
@@ -4758,10 +4771,8 @@ function renderMobileGateHtml(ctx) {
       'imgGenerated=', !!_acImgHtml);
   } catch (e) {}
 
-  // ── Day/night theme: manual override (fids_console_theme) else time-of-day ──
-  var _mgTheme;
-  try { var _t = localStorage.getItem('fids_console_theme'); _mgTheme = (_t === 'light' || _t === 'dark') ? _t : null; } catch (e) { _mgTheme = null; }
-  if (!_mgTheme) { var _h = new Date().getHours(); _mgTheme = (_h >= 6 && _h < 19) ? 'light' : 'dark'; }
+  // ── Day/night theme: manual override → pinned URL theme → time-of-day ──
+  var _mgTheme = _gateDayNightTheme();
   var _lt = (_mgTheme === 'light');
 
   var T = _lt ? {
