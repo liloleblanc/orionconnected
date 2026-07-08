@@ -78,22 +78,35 @@
 
       if (seq.length < 2) return; // single board — nothing to rotate
 
-      // Drift-corrected scheduler: each switch is pinned to wall-clock so a
-      // slow board render can never make the cadence wander.
-      var t0 = Date.now();
-      var step = 0;
-      function nextDelay() { step++; return Math.max(250, (t0 + step * dwell * 1000) - Date.now()); }
-      function tick() {
+      // The actual switch: cheap class toggle (cross-fade).
+      function advance() {
         var cur = frameFor[seq[idx]];
         idx = (idx + 1) % seq.length;
         var nxt = frameFor[seq[idx]];
-        if (nxt !== cur) {
-          nxt.classList.add('oc-active');
-          cur.classList.remove('oc-active');
-        }
-        window.setTimeout(tick, nextDelay());
+        if (nxt !== cur) { nxt.classList.add('oc-active'); cur.classList.remove('oc-active'); }
       }
-      window.setTimeout(tick, nextDelay());
+
+      // The gate board runs a continuous map render loop; because same-origin
+      // iframes share the main thread, a main-thread setTimeout can get starved
+      // and the rotation "sticks" on the gate. Drive the clock from a Web Worker
+      // (its own thread — never frozen by board rendering); it posts a tick and
+      // the main thread does the cheap toggle at its next yield. Fall back to a
+      // drift-corrected setTimeout if Workers/CSP are unavailable.
+      var driven = false;
+      try {
+        var _wsrc = 'var d=' + (dwell * 1000) + ';setInterval(function(){postMessage(1);}, d);';
+        var _w = new Worker(URL.createObjectURL(new Blob([_wsrc], { type: 'application/javascript' })));
+        _w.onmessage = advance;
+        driven = true;
+      } catch (e) { /* fall through to setTimeout */ }
+      if (!driven) {
+        var t0 = Date.now(), step = 0;
+        var tick = function () {
+          advance(); step++;
+          window.setTimeout(tick, Math.max(250, (t0 + (step + 1) * dwell * 1000) - Date.now()));
+        };
+        window.setTimeout(tick, dwell * 1000);
+      }
     } catch (e) { /* if anything fails, the first board still shows */ }
   })();
   </script>
