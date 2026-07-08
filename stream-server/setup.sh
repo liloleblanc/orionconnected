@@ -18,19 +18,27 @@
 set -euo pipefail
 
 # ── Config ──────────────────────────────────────────────────────────────────
+# On a RE-RUN, reuse whatever was saved last time (resolution, bitrate, URL,
+# key) so a plain `bash setup.sh` keeps your existing setup. Precedence per
+# setting: env var you pass  >  saved value  >  default. To change one thing,
+# just prepend it, e.g.  VIDEO_BITRATE=8000k bash setup.sh.
+_saved() {  # read one KEY="value" line from the saved config, if present
+  [ -f /opt/fids-stream/config.env ] || return 0
+  sed -n "s/^$1=\"\{0,1\}\([^\"]*\)\"\{0,1\}$/\1/p" /opt/fids-stream/config.env | head -1
+}
+
 # The board to stream. Change ap= for a different airport, or theme= /
 # stream= flags. Keep mode=live for real flight data.
+STREAM_URL="${STREAM_URL:-$(_saved STREAM_URL)}"
 STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/fids.html?ap=YQM&mode=live&stream=1&theme=mist}"
 
-# Capture size + framerate + bitrate. Defaults are tuned for a 1 vCPU
-# droplet: 720p @ 20 fps is plenty for a departures board and a single core
-# can encode it while holding a steady bitrate. If you resize the droplet to
-# 2+ vCPU and want crisp 1080p, set these before running:
-#   WIDTH=1920 HEIGHT=1080 FRAMERATE=30 VIDEO_BITRATE=6000k sudo bash setup.sh
-WIDTH="${WIDTH:-1280}"
-HEIGHT="${HEIGHT:-720}"
-FRAMERATE="${FRAMERATE:-20}"
-VIDEO_BITRATE="${VIDEO_BITRATE:-3500k}"
+# Capture size + framerate + bitrate. Defaults (below) suit a 1 vCPU droplet:
+# 720p @ 20 fps. On a 2+ vCPU box run once with 1080p and it sticks:
+#   WIDTH=1920 HEIGHT=1080 FRAMERATE=30 VIDEO_BITRATE=6000k bash setup.sh
+WIDTH="${WIDTH:-$(_saved WIDTH)}";                 WIDTH="${WIDTH:-1280}"
+HEIGHT="${HEIGHT:-$(_saved HEIGHT)}";              HEIGHT="${HEIGHT:-720}"
+FRAMERATE="${FRAMERATE:-$(_saved FRAMERATE)}";     FRAMERATE="${FRAMERATE:-20}"
+VIDEO_BITRATE="${VIDEO_BITRATE:-$(_saved VIDEO_BITRATE)}"; VIDEO_BITRATE="${VIDEO_BITRATE:-3500k}"
 
 echo "== Orion FIDS → YouTube Live setup =="
 echo "Streaming: $STREAM_URL"
@@ -39,8 +47,8 @@ echo
 # ── 1. Stream key ───────────────────────────────────────────────────────────
 # Re-running to apply an update? Reuse the key already on disk so you don't
 # have to paste it again.
-if [ -z "${YT_KEY:-}" ] && [ -f /opt/fids-stream/config.env ]; then
-  YT_KEY="$( . /opt/fids-stream/config.env >/dev/null 2>&1; printf '%s' "${YT_KEY:-}" )"
+if [ -z "${YT_KEY:-}" ]; then
+  YT_KEY="$(_saved YT_KEY)"
   [ -n "$YT_KEY" ] && echo "Reusing the stream key already saved on this server."
 fi
 if [ -z "${YT_KEY:-}" ]; then
