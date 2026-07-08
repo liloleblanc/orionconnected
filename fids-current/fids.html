@@ -36,11 +36,12 @@
       var list = rot.split(',').map(function(s){ return map[s.trim().toLowerCase()]; }).filter(Boolean);
       list = list.filter(function(f,i){ return i === 0 || f !== list[i-1]; }); // collapse repeats
       if (list.length < 2) return;
-      var here = (window.location.pathname.split('/').pop() || '').toLowerCase();
-      if (here.slice(-5) !== '.html') here = 'fids.html';
-      var idx = list.indexOf(here);
+      // handle both /gids.html and the clean /gids the app rewrites to
+      var here = (window.location.pathname.split('/').pop() || '').toLowerCase().replace(/\.html$/, '');
+      var norm = ({ fids:'fids.html', gids:'gids.html', bids:'bids.html' })[here] || 'fids.html';
+      var idx = list.indexOf(norm);
       var next = (idx < 0) ? list[0] : list[(idx + 1) % list.length];
-      if (!next || next === here) return;
+      if (!next || next === norm) return;
       window.setTimeout(function(){
         window.location.href = next + window.location.search;
       }, dwell * 1000);
