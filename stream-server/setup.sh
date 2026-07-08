@@ -28,9 +28,12 @@ _saved() {  # read one KEY="value" line from the saved config, if present
 }
 
 # The board to stream. Change ap= for a different airport, or theme= /
-# stream= flags. Keep mode=live for real flight data.
+# stream= flags. Keep mode=live for real flight data. The rotate= list cycles
+# Departures → Gates → Bags → Gates (gates shown between each, so all three
+# screens keep coming round) at one minute each; drop rotate=/dwell= for a
+# single fixed board.
 STREAM_URL="${STREAM_URL:-$(_saved STREAM_URL)}"
-STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/fids.html?ap=YQM&mode=live&stream=1&theme=mist}"
+STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/fids.html?ap=YQM&mode=live&stream=1&theme=mist&rotate=fids,gids,bids,gids&dwell=60}"
 
 # Capture size + framerate + bitrate. Defaults (below) suit a 1 vCPU droplet:
 # 720p @ 20 fps. On a 2+ vCPU box run once with 1080p and it sticks:
