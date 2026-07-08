@@ -2050,7 +2050,6 @@ html.fids-stream #fidsBoard {
   flex-direction: column !important;
 }
 html.fids-stream .content-area { flex: 1 1 auto !important; overflow: hidden !important; }
-html.fids-stream #fidsTable { height: 100% !important; }
 html.fids-stream .ticker { flex: 0 0 auto !important; }
 
 /* Force AC Nord Bold Display on ALL text (Nick: "it should all be AC Nord
