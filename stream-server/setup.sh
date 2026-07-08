@@ -136,7 +136,10 @@ WantedBy=multi-user.target
 SVC
 
 systemctl daemon-reload
-systemctl enable --now fids-stream.service
+systemctl enable fids-stream.service
+# restart (not just 'enable --now') so RE-RUNNING this installer actually
+# applies the new run.sh — '--now' alone won't touch an already-running service.
+systemctl restart fids-stream.service
 
 echo
 echo "✅ Streaming. YouTube Studio should show the feed 'live' within a minute."
