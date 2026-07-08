@@ -114,8 +114,10 @@ sleep 8   # let the board load its fonts + first data
 #        maxrate=bitrate + nal-hrd=cbr pads to a constant bitrate so YouTube
 #        always gets a full, smooth stream.
 #  ultrafast: lightest CPU preset — lets a single core hold the framerate.
+#  -draw_mouse 0: don't capture the headless browser's mouse cursor (it was
+#                 showing as a pointer stuck in the middle of the stream).
 ffmpeg -loglevel warning \
-  -f x11grab -thread_queue_size 1024 -video_size "${WIDTH}x${HEIGHT}" -framerate "$FRAMERATE" -i :99 \
+  -f x11grab -draw_mouse 0 -thread_queue_size 1024 -video_size "${WIDTH}x${HEIGHT}" -framerate "$FRAMERATE" -i :99 \
   -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
   -map 0:v:0 -map 1:a:0 \
   -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
