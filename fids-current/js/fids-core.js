@@ -15942,43 +15942,41 @@ function mapADB(raw, mode) {
 
     let _belt = f.arrival?.baggageBelt || null;
     if (mode === 'arr') {
-      if (_belt) {
+      const _apForBelt = document.getElementById('apSel').value;
+      if (_apForBelt === 'YQM') {
+        // YQM has exactly TWO carousels: domestic → 1, international
+        // (incl. US, which clears customs) → 2. Override whatever ADB
+        // returns — it reports phantom belt numbers (3,4,…) that don't exist
+        // here (Nick: 'all 1 unless it's international then 2').
+        const _YQM_INTL_CARRIERS = new Set(['TS','WG']);
+        let _isIntl;
+        if (_YQM_INTL_CARRIERS.has(airline)) {
+          _isIntl = true;
+        } else {
+          const _CA_FALLBACK = new Set([
+            'YYZ','YTZ','YUL','YVR','YYC','YEG','YOW','YQM','YHZ','YQB','YWG',
+            'YYJ','YSJ','YYT','YFC','YYG','YQT','YQY','YDF','YQX','YYR','YYY',
+            'YXE','YXS','YXU','YZF','YZR','YHM','YKF','YAM','YSB','YYB','YPQ',
+            'YZT','YYF','YXT','YPR','YYD','YDQ','YKA'
+          ]);
+          const isCanadian = locIata && (CITY_TYPE[locIata] === 'canada' || _CA_FALLBACK.has(locIata));
+          _isIntl = !isCanadian;
+        }
+        _belt = _isIntl ? '2' : '1';
+      } else if (_belt) {
         const _termRaw = (terminal && terminal !== '—') ? String(terminal).trim() : '';
         const _termNorm = _termRaw.replace(/^T/i, '');  // "T1" → "1"
         if (_termNorm) {
-          // Path A: belt + terminal → composite key
           _belt = _termNorm + '-' + String(_belt);
         } else {
-          // Path B: belt but no terminal
-          const apIataNow = document.getElementById('apSel').value;
-          if (_MULTI_TERMINAL_AIRPORTS.has(apIataNow)) {
-            // Drop the flight — we can't trust where it belongs
+          if (_MULTI_TERMINAL_AIRPORTS.has(_apForBelt)) {
             _belt = null;
           } else {
-            // Single-terminal airport, raw belt is fine
             _belt = String(_belt);
           }
         }
       } else {
-        // Path C: no belt at all. Synthesize per-airport.
-        const apIataNow = document.getElementById('apSel').value;
-        if (apIataNow === 'YQM') {
-          const _YQM_INTL_CARRIERS = new Set(['TS','WG']);
-          if (_YQM_INTL_CARRIERS.has(airline)) {
-            _belt = '2';
-          } else {
-            const _CA_FALLBACK = new Set([
-              'YYZ','YTZ','YUL','YVR','YYC','YEG','YOW','YQM','YHZ','YQB','YWG',
-              'YYJ','YSJ','YYT','YFC','YYG','YQT','YQY','YDF','YQX','YYR','YYY',
-              'YXE','YXS','YXU','YZF','YZR','YHM','YKF','YAM','YSB','YYB','YPQ',
-              'YZT','YYF','YXT','YPR','YYD','YDQ','YKA'
-            ]);
-            const isCanadian = locIata && (CITY_TYPE[locIata] === 'canada' || _CA_FALLBACK.has(locIata));
-            _belt = isCanadian ? '1' : '2';
-          }
-        } else {
-          _belt = '1';
-        }
+        _belt = '1';
       }
     }
     const _checkIn = f.departure?.checkInDesk || null;
