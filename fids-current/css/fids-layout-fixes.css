@@ -2069,3 +2069,27 @@ html.fids-stream .ac-ico::after {
   font-family: 'ac-icons' !important;
 }
 
+
+/* Board title bigger + both plane icons together (Nick: 'enlarge the titles
+   more' + 'plane up and down icons close together'). Show the up
+   (departures) AND down (arrivals) plane in one rounded white badge instead
+   of swapping one out, and pull the badge close to the title. */
+html .fids-banner .fids-board-label { font-size: 64px !important; min-width: 360px !important; text-align: left !important; }
+/* ONE plane badge that swaps with the board mode, drawn from the AC icon
+   font: takeoff (departures) / landing (arrivals). The built-in SVGs are
+   hidden and replaced by the glyph. */
+html .fids-banner .fids-board-icon svg { display: none !important; }
+html .fids-banner .fids-board-icon::before {
+  font-family: 'ac-icons' !important;
+  content: '\e934' !important;   /* takeoff / up — departures */
+  font-size: 60px !important; line-height: 1 !important;
+  color: #14263f !important;
+}
+html body[data-fids-mode="arr"] .fids-banner .fids-board-icon::before {
+  content: '\e933' !important;   /* landing — arrivals */
+}
+html .fids-banner .fids-board-icon {
+  width: 100px !important; height: 100px !important; min-width: 0 !important;
+  border-radius: 50% !important; gap: 0 !important; padding: 0 !important;
+}
+html .fids-banner .fids-banner-board { gap: 16px !important; }
