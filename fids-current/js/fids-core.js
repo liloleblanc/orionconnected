@@ -23373,8 +23373,20 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
                 q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
     }
     if (!enabled) return;
+    // While inside the rotator, only cycle when THIS board is the one on
+    // display — the rotator posts {oc:'active'|'inactive'} on every switch.
+    // Re-rendering the gate board every 15s while it's hidden jammed the shared
+    // main thread and froze the whole rotation ("stuck on gids"). Default
+    // visible so a standalone gids (no rotator, no messages) still cycles.
+    var _ocVisible = true;
+    window.addEventListener('message', function (ev) {
+      var d = ev && ev.data;
+      if (d && d.oc === 'inactive') _ocVisible = false;
+      else if (d && d.oc === 'active') _ocVisible = true;
+    });
     setInterval(function () {
       try {
+        if (!_ocVisible) return;
         if (typeof screenType === 'undefined' || screenType !== 'gate') return;
         if (typeof data === 'undefined' || !data) return;
         var now = Date.now();
