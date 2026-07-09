@@ -149,10 +149,33 @@ if [ -n "${MUSIC_URL:-}" ]; then
   AUDIO_IN=(-nostdin -reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 \
             -reconnect_delay_max 5 -i "$MUSIC_URL")
 elif [ "${#MUSIC_FILES[@]}" -gt 0 ]; then
-  : > "$PLAYLIST"
-  for f in "${MUSIC_FILES[@]}"; do printf "file '%s'\n" "$f" >> "$PLAYLIST"; done
-  echo "Music: looping ${#MUSIC_FILES[@]} track(s) from $MUSIC_DIR"
-  AUDIO_IN=(-stream_loop -1 -f concat -safe 0 -i "$PLAYLIST")
+  # Pre-blend all tracks into ONE uniform file and loop that, instead of
+  # looping a live concat playlist. Files off the internet have mixed sample
+  # rates / channel counts, and the live concat demuxer quit at the seam
+  # between two mismatched tracks — ffmpeg exited and systemd restarted the
+  # whole stream every couple of minutes. Baking one clean AAC file offline
+  # (tolerant re-encode) removes every seam, so the live loop can't choke.
+  # Cached: only rebuilt when a track is added/changed. If the bake fails for
+  # any reason, we fall back to silence so the STREAM never goes down.
+  MIXED=/opt/fids-stream/music.m4a
+  if [ ! -s "$MIXED" ] || [ -n "$(find "${MUSIC_FILES[@]}" -newer "$MIXED" 2>/dev/null)" ]; then
+    echo "Music: blending ${#MUSIC_FILES[@]} track(s) into one clean loop (first run takes ~a minute)…"
+    : > "$PLAYLIST"
+    for f in "${MUSIC_FILES[@]}"; do printf "file '%s'\n" "$f" >> "$PLAYLIST"; done
+    if ffmpeg -y -hide_banner -loglevel error -f concat -safe 0 -i "$PLAYLIST" \
+         -vn -c:a aac -b:a 128k -ar 44100 -ac 2 "$MIXED.part"; then
+      mv -f "$MIXED.part" "$MIXED"
+    else
+      rm -f "$MIXED.part"
+    fi
+  fi
+  if [ -s "$MIXED" ]; then
+    echo "Music: looping ${#MUSIC_FILES[@]} track(s) from $MUSIC_DIR"
+    AUDIO_IN=(-stream_loop -1 -i "$MIXED")
+  else
+    echo "Music: blend failed — streaming silent audio (stream stays up)"
+    AUDIO_IN=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100)
+  fi
 else
   echo "Music: none set — streaming silent audio"
   AUDIO_IN=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100)
