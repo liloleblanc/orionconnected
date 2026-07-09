@@ -44,6 +44,16 @@ HEIGHT="${HEIGHT:-$(_saved HEIGHT)}";              HEIGHT="${HEIGHT:-720}"
 FRAMERATE="${FRAMERATE:-$(_saved FRAMERATE)}";     FRAMERATE="${FRAMERATE:-20}"
 VIDEO_BITRATE="${VIDEO_BITRATE:-$(_saved VIDEO_BITRATE)}"; VIDEO_BITRATE="${VIDEO_BITRATE:-3500k}"
 
+# Optional background music. Two ways (MUSIC_URL wins if both are set):
+#   • MUSIC_URL = a DIRECT audio stream URL (Icecast/SHOUTcast/HLS/.mp3 stream),
+#     e.g.  MUSIC_URL="https://example.com/stream.mp3" bash setup.sh
+#     NOT a YouTube/Spotify/webpage link. Only use a stream you're licensed to
+#     rebroadcast — YouTube Content ID mutes/strikes copyrighted audio.
+#   • otherwise, audio files dropped in /opt/fids-stream/music/ (looped).
+#   • otherwise, silent.
+# Pass MUSIC_URL="" to clear a saved stream and fall back to files/silence.
+MUSIC_URL="${MUSIC_URL-$(_saved MUSIC_URL)}"
+
 echo "== Orion FIDS → YouTube Live setup =="
 echo "Streaming: $STREAM_URL"
 echo
@@ -89,6 +99,7 @@ WIDTH="$WIDTH"
 HEIGHT="$HEIGHT"
 FRAMERATE="$FRAMERATE"
 VIDEO_BITRATE="$VIDEO_BITRATE"
+MUSIC_URL="$MUSIC_URL"
 CFG
 chmod 600 /opt/fids-stream/config.env   # keeps the stream key private
 
@@ -116,12 +127,15 @@ sleep 2
 CHROME_PID=$!
 sleep 8   # let the board load its fonts + first data
 
-# Audio source: background music if the operator dropped any audio files in
-# /opt/fids-stream/music/, otherwise a silent track. Drop .mp3/.m4a/.aac/.wav/
-# .flac/.ogg files in that folder and restart the service to enable music.
-#   IMPORTANT: only use music you're licensed to broadcast (YouTube Audio
-#   Library, Epidemic Sound, a track you own, etc.). Copyrighted songs get
-#   caught by YouTube Content ID and the stream is muted or the channel struck.
+# Audio source, in priority order:
+#   1. MUSIC_URL — a live audio stream (radio-style). Reconnect flags keep it
+#      going if the stream briefly drops.
+#   2. audio files dropped in /opt/fids-stream/music/ (looped).
+#   3. silent track.
+#   IMPORTANT: only use audio you're licensed to broadcast (YouTube Audio
+#   Library, a stream-safe/royalty-free service, a track you own, etc.).
+#   Copyrighted music — including most internet radio — gets caught by YouTube
+#   Content ID and the stream is muted or the channel struck.
 MUSIC_DIR=/opt/fids-stream/music
 PLAYLIST=/opt/fids-stream/playlist.txt
 # nullglob → unmatched patterns vanish (no literal '*.wav'); nocaseglob → .MP3 too
@@ -129,13 +143,18 @@ shopt -s nullglob nocaseglob
 MUSIC_FILES=("$MUSIC_DIR"/*.mp3 "$MUSIC_DIR"/*.m4a "$MUSIC_DIR"/*.aac \
              "$MUSIC_DIR"/*.wav "$MUSIC_DIR"/*.flac "$MUSIC_DIR"/*.ogg)
 shopt -u nullglob nocaseglob
-if [ "${#MUSIC_FILES[@]}" -gt 0 ]; then
+if [ -n "${MUSIC_URL:-}" ]; then
+  echo "Music: live audio stream — $MUSIC_URL"
+  # -reconnect* → survive brief drops; -nostdin so a stalled input can't hang.
+  AUDIO_IN=(-nostdin -reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 \
+            -reconnect_delay_max 5 -i "$MUSIC_URL")
+elif [ "${#MUSIC_FILES[@]}" -gt 0 ]; then
   : > "$PLAYLIST"
   for f in "${MUSIC_FILES[@]}"; do printf "file '%s'\n" "$f" >> "$PLAYLIST"; done
   echo "Music: looping ${#MUSIC_FILES[@]} track(s) from $MUSIC_DIR"
   AUDIO_IN=(-stream_loop -1 -f concat -safe 0 -i "$PLAYLIST")
 else
-  echo "Music: none found in $MUSIC_DIR — streaming silent audio"
+  echo "Music: none set — streaming silent audio"
   AUDIO_IN=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100)
 fi
 
@@ -201,6 +220,8 @@ echo "  Watch logs:   journalctl -u fids-stream -f"
 echo "  Restart:      systemctl restart fids-stream"
 echo "  Stop:         systemctl stop fids-stream"
 echo "  Change board: edit /opt/fids-stream/config.env, then restart"
-echo "  Add music:    put licensed audio in /opt/fids-stream/music/, then restart"
-echo "                (only music you're licensed to broadcast — YouTube Content"
-echo "                 ID mutes/strikes copyrighted songs)"
+echo "  Music (files):  put licensed audio in /opt/fids-stream/music/, restart"
+echo "  Music (stream): MUSIC_URL=\"https://…/stream.mp3\" bash setup.sh"
+echo "                  (direct audio stream only; both must be music you're"
+echo "                   licensed to rebroadcast — YouTube Content ID mutes/"
+echo "                   strikes copyrighted audio, incl. most internet radio)"
