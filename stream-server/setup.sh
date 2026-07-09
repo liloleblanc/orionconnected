@@ -159,33 +159,40 @@ elif [ "${#MUSIC_FILES[@]}" -gt 0 ]; then
   # any reason, we fall back to silence so the STREAM never goes down.
   MIXED=/opt/fids-stream/music.m4a
   WORK=/opt/fids-stream/_musicwork
-  if [ ! -s "$MIXED" ] || [ -n "$(find "${MUSIC_FILES[@]}" -newer "$MIXED" 2>/dev/null)" ]; then
-    echo "Music: blending ${#MUSIC_FILES[@]} track(s) into one clean loop (first run takes ~a minute)…"
+  STAMP="$WORK/.normalized"
+  # Step 1 (cached): normalize EACH track on its own to identical AAC/44.1k/stereo.
+  # One-at-a-time (not via a mixed concat) means a weird or half-downloaded file
+  # just gets skipped instead of killing the whole blend. The normalized tracks are
+  # KEPT in $WORK between runs and only rebuilt when a track is added/changed, so a
+  # plain restart doesn't pay the ~minute re-encode.
+  if [ ! -e "$STAMP" ] || [ -n "$(find "${MUSIC_FILES[@]}" -newer "$STAMP" 2>/dev/null)" ]; then
+    echo "Music: normalizing ${#MUSIC_FILES[@]} track(s) (first run takes ~a minute)…"
     rm -rf "$WORK"; mkdir -p "$WORK"
-    : > "$PLAYLIST"
     i=0
     for f in "${MUSIC_FILES[@]}"; do
-      # Normalize EACH track on its own to identical AAC/44.1k/stereo. Doing them
-      # one-at-a-time (not via a mixed concat) means a weird or half-downloaded
-      # file just gets skipped instead of killing the whole blend.
       if ffmpeg -y -hide_banner -loglevel error -i "$f" -vn -ar 44100 -ac 2 \
-           -c:a aac -b:a 128k -f mp4 "$WORK/$i.m4a" 2>/dev/null; then
-        printf "file '%s/%d.m4a'\n" "$WORK" "$i" >> "$PLAYLIST"
-      else
+           -c:a aac -b:a 128k -f mp4 "$WORK/$i.m4a" 2>/dev/null; then :; else
         echo "Music: skipped (won't decode) $(basename "$f")"
       fi
       i=$((i + 1))
     done
-    # Stitch the now-identical tracks into one file. -f mp4 forces the muxer so
-    # the .part temp name can't confuse ffmpeg's format detection (that instant
-    # 'blend failed' was ffmpeg unable to guess a format for 'music.m4a.part').
-    if [ -s "$PLAYLIST" ] && ffmpeg -y -hide_banner -loglevel error \
+    touch "$STAMP"
+  fi
+  # Step 2 (EVERY start): shuffle the normalized tracks into a fresh RANDOM order and
+  # stitch them into one clean loop. This is a fast stream copy (no re-encode), so
+  # every `systemctl restart fids-stream` reorders the playlist — that's how you get
+  # a new random order. -f mp4 forces the muxer so the .part temp name can't confuse
+  # ffmpeg's format detection (that instant 'blend failed' was ffmpeg unable to guess
+  # a format for 'music.m4a.part').
+  shopt -s nullglob; NORM=("$WORK"/*.m4a); shopt -u nullglob
+  if [ "${#NORM[@]}" -gt 0 ]; then
+    printf '%s\n' "${NORM[@]}" | shuf | sed "s/.*/file '&'/" > "$PLAYLIST"
+    if ffmpeg -y -hide_banner -loglevel error \
          -f concat -safe 0 -i "$PLAYLIST" -c copy -f mp4 "$MIXED.part"; then
       mv -f "$MIXED.part" "$MIXED"
     else
       rm -f "$MIXED.part"
     fi
-    rm -rf "$WORK"
   fi
   if [ -s "$MIXED" ]; then
     echo "Music: looping ${#MUSIC_FILES[@]} track(s) from $MUSIC_DIR"
