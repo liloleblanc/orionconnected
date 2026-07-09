@@ -8434,9 +8434,16 @@ const gView = document.getElementById('gateView');
         // destroyed and recreated the carousel, so playing videos restarted
         // ("start-stop-start"), the slide jumped back to the first, and the
         // crossfade flashed. Mirrors the map preservation above.
+        // ...but only when the AIRLINE is unchanged. When the gate cycles to a
+        // different carrier, the live carousel is the PREVIOUS airline's advert
+        // — preserving it flashed "previous airline's ad, then the current one"
+        // on the rotating gate. On a carrier change, drop it so the slot
+        // rebuilds fresh for the new airline (renderGateAd re-fills it below).
+        var _gateAdAirlineSame = (window._gateCurrentAirline === (currentFlight.airline || ''));
         var _savedAd = document.getElementById('gateAdCarousel');
         var _savedAdLogo = document.getElementById('gateAdLogo');
-        if (_savedAd && _savedAd.firstChild) { _savedAd.remove(); } else { _savedAd = null; }
+        if (_gateAdAirlineSame && _savedAd && _savedAd.firstChild) { _savedAd.remove(); }
+        else { _savedAd = null; _savedAdLogo = null; }
         if (_savedAdLogo) { _savedAdLogo.remove(); }
         // Smooth transition: fade out, rebuild, fade in
         gView.style.transition = 'opacity 0.15s ease';
@@ -8572,6 +8579,10 @@ const gView = document.getElementById('gateView');
       // reflects the new carrier's available slides.
       if (_prevAirline !== window._gateCurrentAirline) {
         try { if (typeof refreshAirlineBgPicker === 'function') refreshAirlineBgPicker(); } catch(e) {}
+        // Carrier changed (gate cycle) — the ad slot was rebuilt fresh above;
+        // fill it immediately from slide 0 so the new airline's advert shows at
+        // once instead of a blank slot until the next carousel tick.
+        try { _gateAdIndex = 0; if (typeof renderGateAd === 'function') renderGateAd(0); } catch(e) {}
       }
 
       // Fetch Tomorrow.io weather for departure airport + destination (non-blocking)
