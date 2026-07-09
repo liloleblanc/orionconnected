@@ -22410,6 +22410,7 @@ function _restartGateAdsTimer() {
         var nowSlide = _getGateAdSlideAt(_gateAdIndex);
         dwell = _getGateAdDwellMs(nowSlide);
       } catch (e) {}
+      dwell = Math.max(22000, dwell);   // Nick: slides were flicking by every 5-10s — hold each ≥22s
       _gateAdTimer = setTimeout(_tick, dwell);
     }, 700);
   };
@@ -22419,6 +22420,7 @@ function _restartGateAdsTimer() {
     var firstSlide = _getGateAdSlideAt(_gateAdIndex);
     initDwell = _getGateAdDwellMs(firstSlide);
   } catch (e) {}
+  initDwell = Math.max(22000, initDwell);   // ≥22s per slide (Nick — no more 5-10s flicker)
   _gateAdTimer = setTimeout(_tick, initDwell);
 }
 
