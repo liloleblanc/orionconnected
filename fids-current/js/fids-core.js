@@ -23455,6 +23455,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 (function () {
   try {
     if (document.body && document.body.getAttribute('data-page')) return; // dedicated page
+    // In the rotator (iframe) or stream mode, fids.html is ALWAYS the departures
+    // board. All three boards share the same-origin localStorage, so gids writing
+    // its 'gate' screen type into fids_screen_state leaked into fids on restore —
+    // the departures screen came up as a GATE ("no FIDS screen" on the stream).
+    // Only the top-level, non-stream board page honours a saved screen type.
+    if (window.self !== window.top || document.documentElement.classList.contains('fids-stream')) return;
     var raw = localStorage.getItem('fids_screen_state');
     if (!raw) return;
     var st = JSON.parse(raw);
