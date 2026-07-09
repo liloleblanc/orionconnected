@@ -22274,13 +22274,18 @@ function _buildGateAdSlideList() {
 
   // ── 1. Uploaded MEDIA (R2 library + pasted LocalMedia), airline-if-set-else-global
   //    FIDS_MEDIA resolvers are already wrapped by local-media.js to include both.
+  // Stream mode (Nick): DECODING video ads spikes memory and OOM-restarts the
+  // whole stream on the small box. Drop all video slides — the players are
+  // never created, so no video decode. Images / text / photo ads only.
+  var _noVideo = false;
+  try { _noVideo = document.documentElement.classList.contains('fids-stream'); } catch (e) {}
   var mediaSlides = [];
   try {
     var M = window.FIDS_MEDIA;
     if (M) {
       var vids = (typeof M.getAssignedVideosForAirline === 'function' ? M.getAssignedVideosForAirline(code) : []) || [];
       var imgs = (typeof M.getAssignedImagesForAirline === 'function' ? M.getAssignedImagesForAirline(code) : []) || [];
-      [].concat(vids, imgs).forEach(function (entry) {
+      (_noVideo ? imgs : [].concat(vids, imgs)).forEach(function (entry) {
         var it = entry && entry.item ? entry.item : entry;
         if (it && (it.url || it.ytId)) {
           mediaSlides.push({ type: 'custom', item: it, fit: (entry && entry.fit) || 'cover' });
@@ -22301,6 +22306,7 @@ function _buildGateAdSlideList() {
   var airlineAdSlides = [];
   var accorSlides = [];
   ads.forEach(function (a) {
+    if (_noVideo && a && a.adLayout === 'video-bg') return; // no video ads on the stream
     if (a && a.isAccorHotel) accorSlides.push({ type: 'ad', data: a });
     else airlineAdSlides.push({ type: 'ad', data: a });
   });
