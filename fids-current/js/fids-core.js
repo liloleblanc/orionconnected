@@ -23374,7 +23374,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   try {
     var q = new URLSearchParams(window.location.search);
     var raw = q.get('gatecycle');
-    var enabled, secs = 15;
+    var enabled, secs = 60;   // hold each gate ~1 min before advancing (Nick)
     if (raw != null && raw !== '') {
       var n = parseInt(raw, 10);
       if (raw === '0' || n === 0) { enabled = false; }
