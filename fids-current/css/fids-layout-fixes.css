@@ -2107,10 +2107,29 @@ html body .bidsv2-fids-banner .fids-board-icon::before { content: "" !important;
 html .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage { font-size: 56px !important; color: #14263f !important; }
 html .bidsv2-fids-banner .fids-board-label { font-size: 54px !important; min-width: 560px !important; }
 
-/* Baggage screen on the MIST theme: the board reads light (grey banner + light
-   rows), but .bidsv2-screen fell back to the dark base --fids-bg (#0a0e1a) —
-   the light-board rule's var(--fids-bg,#C7D2DD) never got its light fallback
-   because --fids-bg is always set — so the baggage screen stayed dark and
-   didn't match the board. Pin it to the mist grey so baggage is "fully mist".
-   Rows/text already have their light-board treatment. */
+/* Baggage screen on the MIST theme — make it fully light AND readable,
+   independent of the fids-light-board flag (that flag is decided by measuring
+   #fidsTable's luminance, but the baggage screen has no #fidsTable, so it's
+   unreliable there and left the rows dark / the airline name white on a light
+   background). Mirror the light-board baggage palette scoped to the reliably-
+   set data-fids-theme="mist", and also darken the airline-name containers
+   (.bidsv2-col-flight / -flight-meta) that the light-board rules miss. Kept at
+   the light-board rules' specificity (no #id on the row rules) so the delayed/
+   cancelled/diverted highlight rows keep their own colors. */
 html body[data-fids-theme="mist"] #baggageView .bidsv2-screen { background: #C7D2DD !important; }
+body[data-fids-theme="mist"] .bidsv2-flight-row { background: rgba(22,40,60,0.05) !important; }
+body[data-fids-theme="mist"] .bidsv2-flight-row:nth-child(odd) { background: rgba(22,40,60,0.095) !important; }
+body[data-fids-theme="mist"] .bidsv2-flight-num,
+body[data-fids-theme="mist"] .bidsv2-col-from,
+body[data-fids-theme="mist"] .bidsv2-col-time,
+body[data-fids-theme="mist"] .bidsv2-col-flight,
+body[data-fids-theme="mist"] .bidsv2-flight-meta { color: #16283C !important; }
+body[data-fids-theme="mist"] .bidsv2-airline-name,
+body[data-fids-theme="mist"] .bidsv2-list-header,
+body[data-fids-theme="mist"] .bidsv2-footer-msg,
+body[data-fids-theme="mist"] .bidsv2-page-indicator,
+body[data-fids-theme="mist"] .bidsv2-status-other { color: #3A4E66 !important; }
+body[data-fids-theme="mist"] .bidsv2-status-arrived { color: #0E7A3C !important; }
+body[data-fids-theme="mist"] .bidsv2-status-early { color: #157A43 !important; }
+body[data-fids-theme="mist"] .bidsv2-status-delayed { color: #A66F00 !important; }
+body[data-fids-theme="mist"] .bidsv2-empty { color: #3A4E66 !important; }
