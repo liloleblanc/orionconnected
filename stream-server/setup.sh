@@ -44,15 +44,25 @@ HEIGHT="${HEIGHT:-$(_saved HEIGHT)}";              HEIGHT="${HEIGHT:-720}"
 FRAMERATE="${FRAMERATE:-$(_saved FRAMERATE)}";     FRAMERATE="${FRAMERATE:-20}"
 VIDEO_BITRATE="${VIDEO_BITRATE:-$(_saved VIDEO_BITRATE)}"; VIDEO_BITRATE="${VIDEO_BITRATE:-3500k}"
 
-# Optional background music. Two ways (MUSIC_URL wins if both are set):
+# Background music, in priority order:
 #   • MUSIC_URL = a DIRECT audio stream URL (Icecast/SHOUTcast/HLS/.mp3 stream),
 #     e.g.  MUSIC_URL="https://example.com/stream.mp3" bash setup.sh
 #     NOT a YouTube/Spotify/webpage link. Only use a stream you're licensed to
 #     rebroadcast — YouTube Content ID mutes/strikes copyrighted audio.
 #   • otherwise, audio files dropped in /opt/fids-stream/music/ (looped).
-#   • otherwise, silent.
-# Pass MUSIC_URL="" to clear a saved stream and fall back to files/silence.
+#   • otherwise, a GENERATED ambient bed (default) — see AMBIENT_MUSIC below.
+# Pass MUSIC_URL="" to clear a saved stream and fall back to files/ambient.
 MUSIC_URL="${MUSIC_URL-$(_saved MUSIC_URL)}"
+
+# Generated ambient music (default ON). When no MUSIC_URL and no files are set,
+# the stream plays a calm, slowly-evolving synth pad that ffmpeg SYNTHESIZES on
+# the fly. Because it's generated (not a recording), it has no audio fingerprint
+# for YouTube Content ID to match — so the stream can never be muted or
+# interrupted for it, unlike real tracks (even most "royalty-free" / "no
+# copyright" music, which is often still registered in Content ID and will still
+# stop a LIVE stream). Set AMBIENT_MUSIC=off for a silent track instead. Drop
+# your own licensed files in /opt/fids-stream/music/ to override the bed.
+AMBIENT_MUSIC="${AMBIENT_MUSIC:-$(_saved AMBIENT_MUSIC)}"; AMBIENT_MUSIC="${AMBIENT_MUSIC:-on}"
 
 echo "== Orion FIDS → YouTube Live setup =="
 echo "Streaming: $STREAM_URL"
@@ -100,6 +110,7 @@ HEIGHT="$HEIGHT"
 FRAMERATE="$FRAMERATE"
 VIDEO_BITRATE="$VIDEO_BITRATE"
 MUSIC_URL="$MUSIC_URL"
+AMBIENT_MUSIC="$AMBIENT_MUSIC"
 CFG
 chmod 600 /opt/fids-stream/config.env   # keeps the stream key private
 
@@ -150,6 +161,29 @@ shopt -s nullglob nocaseglob
 MUSIC_FILES=("$MUSIC_DIR"/*.mp3 "$MUSIC_DIR"/*.m4a "$MUSIC_DIR"/*.aac \
              "$MUSIC_DIR"/*.wav "$MUSIC_DIR"/*.flac "$MUSIC_DIR"/*.ogg)
 shopt -u nullglob nocaseglob
+
+# Generated ambient bed. ffmpeg SYNTHESIZES this — a calm, slowly-evolving
+# C-major sine pad, each partial on its own slow tremolo, through a soft reverb
+# and low-pass, mixed quiet (~-23 LUFS, a background level). It's an INFINITE
+# lavfi source (no file, no loop seam) fed straight to the encoder as input 1.
+# Being synthesized, it has NO recording fingerprint — YouTube Content ID has
+# nothing to match, so the LIVE stream can never be muted or interrupted for it.
+# Stereo via two channel expressions (|) with slightly different LFO phases for
+# a wide, calm image. Only 'PI'/'t'/numbers here — no shell '$', so it's safe in
+# this quoted heredoc.
+AMBIENT_CHAIN="aevalsrc=0.16*sin(2*PI*130.81*t)*(0.55+0.45*sin(2*PI*0.050*t))+0.14*sin(2*PI*196.00*t)*(0.55+0.45*sin(2*PI*0.033*t))+0.12*sin(2*PI*261.63*t)*(0.55+0.45*sin(2*PI*0.067*t))+0.10*sin(2*PI*329.63*t)*(0.55+0.45*sin(2*PI*0.017*t))+0.07*sin(2*PI*392.00*t)*(0.55+0.45*sin(2*PI*0.083*t))|0.16*sin(2*PI*130.81*t)*(0.55+0.45*sin(2*PI*0.047*t))+0.14*sin(2*PI*196.00*t)*(0.55+0.45*sin(2*PI*0.036*t))+0.12*sin(2*PI*261.63*t)*(0.55+0.45*sin(2*PI*0.063*t))+0.10*sin(2*PI*329.63*t)*(0.55+0.45*sin(2*PI*0.019*t))+0.07*sin(2*PI*392.00*t)*(0.55+0.45*sin(2*PI*0.088*t)):s=44100,aecho=0.8:0.85:900|1600:0.25|0.16,lowpass=f=1800,volume=0.8"
+
+# Fallback bed when there's no MUSIC_URL and no licensed files: the generated
+# ambient pad (default) unless AMBIENT_MUSIC=off, then a silent track. Either
+# way the stream stays up.
+_set_fallback_bed() {
+  if [ "${AMBIENT_MUSIC:-on}" != "off" ]; then
+    AUDIO_IN=(-f lavfi -i "$AMBIENT_CHAIN")
+  else
+    AUDIO_IN=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100)
+  fi
+}
+
 if [ -n "${MUSIC_URL:-}" ]; then
   echo "Music: live audio stream — $MUSIC_URL"
   # -reconnect* → survive brief drops; -nostdin so a stalled input can't hang.
@@ -205,12 +239,20 @@ elif [ "${#MUSIC_FILES[@]}" -gt 0 ]; then
     echo "Music: looping ${#MUSIC_FILES[@]} track(s) from $MUSIC_DIR"
     AUDIO_IN=(-stream_loop -1 -i "$MIXED")
   else
-    echo "Music: blend failed — streaming silent audio (stream stays up)"
-    AUDIO_IN=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100)
+    if [ "${AMBIENT_MUSIC:-on}" != "off" ]; then
+      echo "Music: blend failed — using the generated ambient bed (stream stays up)"
+    else
+      echo "Music: blend failed — streaming silent audio (stream stays up)"
+    fi
+    _set_fallback_bed
   fi
 else
-  echo "Music: none set — streaming silent audio"
-  AUDIO_IN=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100)
+  if [ "${AMBIENT_MUSIC:-on}" != "off" ]; then
+    echo "Music: none set — generated ambient bed (Content-ID-safe, can't be muted)"
+  else
+    echo "Music: none set — streaming silent audio"
+  fi
+  _set_fallback_bed
 fi
 
 # Capture the framebuffer + the audio track → YouTube RTMP.
@@ -275,8 +317,13 @@ echo "  Watch logs:   journalctl -u fids-stream -f"
 echo "  Restart:      systemctl restart fids-stream"
 echo "  Stop:         systemctl stop fids-stream"
 echo "  Change board: edit /opt/fids-stream/config.env, then restart"
-echo "  Music (files):  put licensed audio in /opt/fids-stream/music/, restart"
-echo "  Music (stream): MUSIC_URL=\"https://…/stream.mp3\" bash setup.sh"
-echo "                  (direct audio stream only; both must be music you're"
-echo "                   licensed to rebroadcast — YouTube Content ID mutes/"
-echo "                   strikes copyrighted audio, incl. most internet radio)"
+echo "  Music (default): a generated ambient bed plays — synthesized, so YouTube"
+echo "                   Content ID can never mute or interrupt the stream for it."
+echo "  Music (silent):  AMBIENT_MUSIC=off bash setup.sh"
+echo "  Music (files):   put licensed audio in /opt/fids-stream/music/, restart"
+echo "                   (overrides the ambient bed; must be music you're licensed"
+echo "                    to broadcast AND that clears Content ID — even 'no"
+echo "                    copyright' tracks often carry a claim that stops a LIVE"
+echo "                    stream. Verify in YouTube Studio first.)"
+echo "  Music (stream):  MUSIC_URL=\"https://…/stream.mp3\" bash setup.sh"
+echo "                   (direct audio stream only, same licensing/Content-ID caveat)"
