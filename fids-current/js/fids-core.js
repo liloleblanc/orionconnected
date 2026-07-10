@@ -22403,6 +22403,12 @@ function _restartGateAdsTimer() {
   var gen = ++_gateAdGen;
   var _tick = function() {
     if (gen !== _gateAdGen) return; // superseded — abandon this chain
+    // Inside the rotator, tell the parent an ad just completed its full dwell.
+    // The rotator only switches away from the gate on one of these boundaries
+    // (once past its minimum), so an ad is never chopped mid-display.
+    if (window.self !== window.top) {
+      try { window.parent.postMessage({ ocGateBoundary: true }, '*'); } catch (e) {}
+    }
     var el2 = document.getElementById('gateAdCarousel');
     if (!el2) {
       // Element may briefly be missing during a re-render; try again soon

@@ -89,6 +89,20 @@
 
       if (seq.length < 2) return; // single board — nothing to rotate
 
+      // ── Timing ────────────────────────────────────────────────────────────
+      // Every screen shows for at least `dwell`. A non-gate board (fids/bids)
+      // advances exactly at dwell. The GATE runs an ad carousel whose slides are
+      // UNEVEN in length (map ~60s, hotel ~31s, standard ~22s), so advancing on a
+      // fixed clock chops whatever ad is mid-play. Instead the gate posts
+      // {ocGateBoundary:true} the instant each ad finishes; we switch away only on
+      // the first boundary AT/AFTER dwell — the gate always ends on a clean ad
+      // boundary (never cut) and naturally stretches to fit whole ads. `maxMs` is
+      // a hard cap so the rotation can never freeze on the gate if boundaries stop.
+      var GATE = 'gids.html';
+      var minMs = dwell * 1000;
+      var maxMs = Math.max(minMs * 3, minMs + 120000);
+      var slotStart = Date.now();
+
       // The actual switch: cheap class toggle (cross-fade) + active/inactive ping.
       function advance() {
         var cur = frameFor[seq[idx]];
@@ -98,29 +112,38 @@
           nxt.classList.add('oc-active'); cur.classList.remove('oc-active');
           ocTell(cur, false); ocTell(nxt, true);
         }
+        slotStart = Date.now();
       }
 
-      // The gate board runs a continuous map render loop; because same-origin
-      // iframes share the main thread, a main-thread setTimeout can get starved
-      // and the rotation "sticks" on the gate. Drive the clock from a Web Worker
-      // (its own thread — never frozen by board rendering); it posts a tick and
-      // the main thread does the cheap toggle at its next yield. Fall back to a
-      // drift-corrected setTimeout if Workers/CSP are unavailable.
+      // A gate ad just finished. If we're on the gate and past the minimum, switch
+      // NOW — exactly on the boundary, so nothing is cut. Boundaries before the
+      // minimum are ignored (we never advance mid-ad).
+      window.addEventListener('message', function (ev) {
+        var d = ev && ev.data;
+        if (!d || !d.ocGateBoundary) return;
+        if (seq[idx] === GATE && (Date.now() - slotStart) >= minMs) advance();
+      });
+
+      // Clock lives in a Web Worker (own thread — board rendering can't starve it,
+      // which used to make the rotation "stick"). It heartbeats every second; the
+      // main thread makes the cheap decision. Non-gate boards advance at dwell;
+      // the gate advance is boundary-driven above, with maxMs as a safety net.
+      function beat() {
+        var elapsed = Date.now() - slotStart;
+        if (seq[idx] === GATE) {
+          if (elapsed >= maxMs) advance();
+        } else if (elapsed >= minMs) {
+          advance();
+        }
+      }
       var driven = false;
       try {
-        var _wsrc = 'var d=' + (dwell * 1000) + ';setInterval(function(){postMessage(1);}, d);';
+        var _wsrc = 'setInterval(function(){postMessage(1);}, 1000);';
         var _w = new Worker(URL.createObjectURL(new Blob([_wsrc], { type: 'application/javascript' })));
-        _w.onmessage = advance;
+        _w.onmessage = beat;
         driven = true;
-      } catch (e) { /* fall through to setTimeout */ }
-      if (!driven) {
-        var t0 = Date.now(), step = 0;
-        var tick = function () {
-          advance(); step++;
-          window.setTimeout(tick, Math.max(250, (t0 + (step + 1) * dwell * 1000) - Date.now()));
-        };
-        window.setTimeout(tick, dwell * 1000);
-      }
+      } catch (e) { /* fall through to setInterval */ }
+      if (!driven) { window.setInterval(beat, 1000); }
     } catch (e) { /* if anything fails, the first board still shows */ }
   })();
   </script>
