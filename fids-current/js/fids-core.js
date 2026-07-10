@@ -23897,9 +23897,21 @@ function _renderWxCard(el) {
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually
     // changed (weather refreshes ~every 30 min, or the destination changes).
-    if (el._wxLastHtml === _wxHtml && el.querySelector && el.querySelector('.wxcard-wrap')) return true;
-    el._wxLastHtml = _wxHtml;
+    // Tint the card with the current airline's accent colour so the weather
+    // matches the gate's airline theming (same accentTint the other weather
+    // panels use; AC red auto-swaps to charcoal to avoid muddy maroon). Folded
+    // into the cache key so an airline change re-tints.
+    var _wxBg = 'linear-gradient(135deg, #0d2440 0%, #164a7c 100%)';
+    try {
+      var _wxAcc = (typeof getAirlineAccent === 'function') ? getAirlineAccent((cf && cf.airline) || '') : '';
+      if (_wxAcc && typeof accentTint === 'function') _wxBg = accentTint(_wxAcc, 0.28);
+    } catch (e) {}
+    var _wxSig = _wxHtml + '||' + _wxBg;
+    if (el._wxLastHtml === _wxSig && el.querySelector && el.querySelector('.wxcard-wrap')) return true;
+    el._wxLastHtml = _wxSig;
     el.innerHTML = _wxHtml;
+    var _wxWrap = el.querySelector('.wxcard-wrap');
+    if (_wxWrap) _wxWrap.style.setProperty('background', _wxBg, 'important');
     _wxHydrateSvgs(el);
     return true;
   } catch (e) { return false; }
