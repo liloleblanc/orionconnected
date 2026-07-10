@@ -1366,6 +1366,17 @@ function updateSubScreens() {
   let useGate = true;
   if (isBag) {
     locations = [...new Set(flights.map(f => f._belt).filter(b => b && b !== '—'))].sort();
+    // YQM has exactly two carousels: 1 (domestic) and 2 (international). Always
+    // surface BOTH — even an empty Carousel 2 — so travelers always see where
+    // international bags come out (Nick). Other airports list only live belts.
+    try {
+      var _apBagSel = document.getElementById('apSel');
+      if (_apBagSel && _apBagSel.value === 'YQM') {
+        if (locations.indexOf('1') === -1) locations.push('1');
+        if (locations.indexOf('2') === -1) locations.push('2');
+        locations = [...new Set(locations)].sort();
+      }
+    } catch (e) {}
     useGate = false;
   } else {
     locations = [...new Set(flights.map(f => f.gate).filter(g => g && g !== '—'))].sort();
@@ -23460,6 +23471,59 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // Standalone default: plain interval. If a rotator message arrives the handler
     // cancels this and takes over.
     _timer = setInterval(function () { pickGate(); }, secs * 1000);
+  } catch (e) {}
+})();
+
+// ── BAGGAGE CAROUSEL CYCLE ──────────────────────────────────────────────
+// The bids board shows ONE carousel at a time (subScreenVal). For the stream /
+// rotator, walk through every carousel so each one shows — including an EMPTY
+// Carousel 2 at YQM (international; Nick wants it always visible so travelers
+// see where international bags come out). Same enable rules + pause-when-hidden
+// as the gate cycle. Override with ?bagcycle=SECONDS (?bagcycle=0 to force off).
+(function () {
+  try {
+    var q = new URLSearchParams(window.location.search);
+    var raw = q.get('bagcycle');
+    var enabled, secs = 20;
+    if (raw != null && raw !== '') {
+      var n = parseInt(raw, 10);
+      if (raw === '0' || n === 0) { enabled = false; }
+      else { enabled = true; if (n >= 3) secs = n; }
+    } else {
+      enabled = (window.self !== window.top) ||
+                q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
+    }
+    if (!enabled) return;
+    function bagBelts() {
+      try {
+        var ap = document.getElementById('apSel');
+        if (ap && ap.value === 'YQM') return ['1', '2'];   // always both carousels
+        var b = ((typeof data !== 'undefined' && data && data.arr) || [])
+                  .map(function (f) { return f._belt; })
+                  .filter(function (x) { return x && x !== '—'; });
+        return b.filter(function (x, i) { return b.indexOf(x) === i; }).sort();
+      } catch (e) { return []; }
+    }
+    var _ocVisible = true;
+    window.addEventListener('message', function (ev) {
+      var d = ev && ev.data;
+      if (d && d.oc === 'inactive') _ocVisible = false;
+      else if (d && d.oc === 'active') _ocVisible = true;
+    });
+    setInterval(function () {
+      try {
+        if (!_ocVisible) return;
+        if (typeof screenType === 'undefined' || screenType !== 'baggage') return;
+        var belts = bagBelts();
+        if (belts.length < 2) return;                  // one carousel → nothing to cycle
+        var i = belts.indexOf(subScreenVal);
+        var next = belts[(i + 1) % belts.length];       // i===-1 → starts at belts[0]
+        if (next && next !== subScreenVal) {
+          subScreenVal = next;
+          if (typeof render === 'function') render();
+        }
+      } catch (e) {}
+    }, secs * 1000);
   } catch (e) {}
 })();
 
