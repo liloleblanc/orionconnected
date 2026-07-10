@@ -23466,13 +23466,21 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     //    porter"). Picking while hidden means the new gate is already rendered
     //    before it fades in — no visible gate-to-gate switch.
     //  • Standalone gids (no rotator, no oc messages): cycle on a plain interval.
-    var _timer = null;
+    var _timer = null, _pickTimer = null;
     function stopTimer() { if (_timer) { clearInterval(_timer); _timer = null; } }
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data;
       if (!d || (d.oc !== 'active' && d.oc !== 'inactive')) return;
       stopTimer();                          // a rotator drives us → not timed
-      if (d.oc === 'inactive') pickGate();  // advance to the next gate WHILE hidden
+      if (_pickTimer) { clearTimeout(_pickTimer); _pickTimer = null; }
+      if (d.oc === 'inactive') {
+        // Swap to the next gate only AFTER the cross-fade OUT completes (~0.45s),
+        // so the board is FULLY hidden when its content changes. Picking on the
+        // instant it goes inactive changed the gate mid-fade — a visible, abrupt
+        // gate-to-gate switch. It stays hidden through the other screens, so by
+        // the time it fades back in it's already the new gate — no visible swap.
+        _pickTimer = setTimeout(function () { _pickTimer = null; pickGate(); }, 650);
+      }
     });
     // Standalone default: plain interval. If a rotator message arrives the handler
     // cancels this and takes over.
