@@ -6492,12 +6492,20 @@ function uxgGateHtml(ctx) {
   // base by that same delay so boarding is always exactly `lead` minutes before
   // the time the Departure field shows. (No-op unless that divergence exists.)
   var _effDepForBoard = effectiveDepTs;
-  if (effectiveDepTs && depDelayed && !currentFlight._revTs && currentFlight.upd && currentFlight.time) {
+  // The Departure field shows the feed's revised time (currentFlight.upd) when
+  // delayed. Derive boarding's base the SAME way — scheduled (_sortTs) shifted by
+  // (upd - scheduled) — rather than trusting effectiveDepTs (_revTs). The feed
+  // sometimes leaves _revTs at the SCHEDULED time while only `upd` carries the
+  // delay; effectiveDepTs then reads the OLD departure and boarding lands ~lead
+  // min before it (e.g. 4:55am boarding under a 7:00am departure). Basing on
+  // _sortTs + delay matches the displayed departure and can't double-count the
+  // delay (we never add it on top of an already-revised _revTs).
+  if (depDelayed && currentFlight._sortTs && currentFlight.upd && currentFlight.time) {
     var _obP = String(currentFlight.time).split(':'), _rbP = String(currentFlight.upd).split(':');
     if (_obP.length === 2 && _rbP.length === 2) {
       var _delayB = (parseInt(_rbP[0],10)*60 + parseInt(_rbP[1],10)) - (parseInt(_obP[0],10)*60 + parseInt(_obP[1],10));
       if (_delayB < 0) _delayB += 1440;            // revised crossed midnight
-      if (_delayB > 0) _effDepForBoard = effectiveDepTs + _delayB*60000;
+      if (_delayB > 0) _effDepForBoard = currentFlight._sortTs + _delayB*60000;
     }
   }
   if (_effDepForBoard) {
