@@ -23459,20 +23459,20 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 
     // TWO drive modes:
     //  • Inside the rotator the gate board is shown for ONE full dwell slot at a
-    //    time. A free-running interval fires at an arbitrary phase relative to
-    //    when the slot starts, so the gate could advance a split-second after it
-    //    appears (Nick: "it gets to the gate and it's already been playing, we
-    //    maybe see a split second"). Instead: pick one fresh gate the MOMENT the
-    //    slot starts (oc:'active') and hold it for the whole slot — no interval.
-    //    The rotator posts {oc:'active'|'inactive'} on load + every switch.
+    //    time, holding a single gate (no interval). We pick the next gate when the
+    //    board goes HIDDEN (oc:'inactive'), NOT when it appears — the iframe stays
+    //    alive between slots, so picking on 'active' left the PREVIOUS gate on
+    //    screen for a beat before swapping (Nick: "switched AC fraction second to
+    //    porter"). Picking while hidden means the new gate is already rendered
+    //    before it fades in — no visible gate-to-gate switch.
     //  • Standalone gids (no rotator, no oc messages): cycle on a plain interval.
     var _timer = null;
     function stopTimer() { if (_timer) { clearInterval(_timer); _timer = null; } }
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data;
       if (!d || (d.oc !== 'active' && d.oc !== 'inactive')) return;
-      stopTimer();                       // a rotator drives us → activation-driven, not timed
-      if (d.oc === 'active') pickGate(); // fresh gate for this slot, held the full dwell
+      stopTimer();                          // a rotator drives us → not timed
+      if (d.oc === 'inactive') pickGate();  // advance to the next gate WHILE hidden
     });
     // Standalone default: plain interval. If a rotator message arrives the handler
     // cancels this and takes over.
