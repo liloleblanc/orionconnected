@@ -16025,7 +16025,13 @@ function mapADB(raw, mode) {
             'YXE','YXS','YXU','YZF','YZR','YHM','YKF','YAM','YSB','YYB','YPQ',
             'YZT','YYF','YXT','YPR','YYD','YDQ','YKA'
           ]);
-          const isCanadian = locIata && (CITY_TYPE[locIata] === 'canada' || _CA_FALLBACK.has(locIata));
+          // Canadian airport IATA codes are ~all Y-prefixed; treat any 3-char
+          // Y-code as domestic so a Canadian origin missing from CITY_TYPE / the
+          // fallback list (e.g. St-Hubert YHU) isn't mis-sent to the international
+          // carousel. Scoped to YQM, whose only non-Canadian arrivals are sun
+          // charters (caught by the carrier check above) or US cities (non-Y
+          // codes) — so this can't mislabel a real international flight.
+          const isCanadian = locIata && (CITY_TYPE[locIata] === 'canada' || _CA_FALLBACK.has(locIata) || /^Y[A-Z0-9]{2}$/i.test(locIata));
           _isIntl = !isCanadian;
         }
         _belt = _isIntl ? '2' : '1';
