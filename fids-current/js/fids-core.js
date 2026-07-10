@@ -23392,20 +23392,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
                 q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
     }
     if (!enabled) return;
-    // While inside the rotator, only cycle when THIS board is the one on
-    // display — the rotator posts {oc:'active'|'inactive'} on every switch.
-    // Re-rendering the gate board every 15s while it's hidden jammed the shared
-    // main thread and froze the whole rotation ("stuck on gids"). Default
-    // visible so a standalone gids (no rotator, no messages) still cycles.
-    var _ocVisible = true;
-    window.addEventListener('message', function (ev) {
-      var d = ev && ev.data;
-      if (d && d.oc === 'inactive') _ocVisible = false;
-      else if (d && d.oc === 'active') _ocVisible = true;
-    });
-    setInterval(function () {
+
+    // Advance to a FRESH gate — random, never an immediate repeat — among the
+    // gates that currently have a live, upcoming departure.
+    function pickGate() {
       try {
-        if (!_ocVisible) return;
         if (typeof screenType === 'undefined' || screenType !== 'gate') return;
         if (typeof data === 'undefined' || !data) return;
         var now = Date.now();
@@ -23417,15 +23408,37 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
           return true;
         }).map(function (f) { return f.gate; });
         gates = gates.filter(function (g, i) { return gates.indexOf(g) === i; }).sort();
-        if (gates.length < 2) return;                 // one gate → nothing to cycle
-        var i = gates.indexOf(subScreenVal);
-        var next = gates[(i + 1) % gates.length];      // i===-1 → starts at gates[0]
-        if (next && next !== subScreenVal) {
-          subScreenVal = next;
+        if (gates.length < 1) return;
+        var pool = gates.filter(function (g) { return g !== subScreenVal; });
+        if (!pool.length) return;                      // only one live gate — leave it
+        var pick = pool[Math.floor(Math.random() * pool.length)];
+        if (pick && pick !== subScreenVal) {
+          subScreenVal = pick;
           if (typeof render === 'function') render();
         }
       } catch (e) {}
-    }, secs * 1000);
+    }
+
+    // TWO drive modes:
+    //  • Inside the rotator the gate board is shown for ONE full dwell slot at a
+    //    time. A free-running interval fires at an arbitrary phase relative to
+    //    when the slot starts, so the gate could advance a split-second after it
+    //    appears (Nick: "it gets to the gate and it's already been playing, we
+    //    maybe see a split second"). Instead: pick one fresh gate the MOMENT the
+    //    slot starts (oc:'active') and hold it for the whole slot — no interval.
+    //    The rotator posts {oc:'active'|'inactive'} on load + every switch.
+    //  • Standalone gids (no rotator, no oc messages): cycle on a plain interval.
+    var _timer = null;
+    function stopTimer() { if (_timer) { clearInterval(_timer); _timer = null; } }
+    window.addEventListener('message', function (ev) {
+      var d = ev && ev.data;
+      if (!d || (d.oc !== 'active' && d.oc !== 'inactive')) return;
+      stopTimer();                       // a rotator drives us → activation-driven, not timed
+      if (d.oc === 'active') pickGate(); // fresh gate for this slot, held the full dwell
+    });
+    // Standalone default: plain interval. If a rotator message arrives the handler
+    // cancels this and takes over.
+    _timer = setInterval(function () { pickGate(); }, secs * 1000);
   } catch (e) {}
 })();
 
