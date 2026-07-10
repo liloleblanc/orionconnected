@@ -117,8 +117,15 @@ sleep 2
 
 # Full-screen kiosk Chrome pointed at the stream board. --disable-gpu et al.
 # keep a 1-core box from wasting cycles on (failing) GPU init.
+# FRESH PROFILE + no disk cache: rotate.html and the board HTML carry no cache
+# token, and Chrome's persistent profile was pinning OLD copies across restarts —
+# so deploys (new rotator/JS) never reached the stream. Wiping the profile and
+# shrinking the cache means every restart, and every in-session self-update
+# reload, pulls the latest from the server.
+rm -rf /opt/fids-stream/chrome-profile
 "$CHROME_BIN" \
   --kiosk --no-sandbox --no-first-run --no-default-browser-check \
+  --user-data-dir=/opt/fids-stream/chrome-profile --disk-cache-size=1 \
   --disable-infobars --disable-session-crashed-bubble \
   --disable-features=Translate --autoplay-policy=no-user-gesture-required \
   --disable-gpu --disable-software-rasterizer --disable-dev-shm-usage \
