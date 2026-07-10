@@ -23782,7 +23782,7 @@ function _renderWxCard(el) {
         shown++;
       });
     } catch (eH) {}
-    el.innerHTML =
+    var _wxHtml =
         '<div class="wxcard-wrap wxcard-col">'
       +   '<div class="wxcard-main">'
       +     '<div class="wxc-head">'
@@ -23802,6 +23802,13 @@ function _renderWxCard(el) {
       +   (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">Next hours <span class="v2-rc-fi-sep">|</span> Prochaines heures</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
       +   (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '')
       + '</div>';
+    // The gate board re-renders every few seconds (countdown / data refresh); the
+    // weather scene rebuilt its innerHTML each time, reloading every animated SVG
+    // icon → a visible flicker. Only touch the DOM when the rendered HTML actually
+    // changed (weather refreshes ~every 30 min, or the destination changes).
+    if (el._wxLastHtml === _wxHtml && el.querySelector && el.querySelector('.wxcard-wrap')) return true;
+    el._wxLastHtml = _wxHtml;
+    el.innerHTML = _wxHtml;
     _wxHydrateSvgs(el);
     return true;
   } catch (e) { return false; }
