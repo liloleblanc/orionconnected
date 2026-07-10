@@ -13799,7 +13799,14 @@ function render() {
     const gateCellHtml = '<td class="td-gate">'
       + (_gateChanged ? '<span class="gate-changed-badge">' + _gateVal2 + '</span>' : _gateVal2)
       + '</td>';
-    const carouselCellHtml = '<td class="td-gate">' + (f.gate && f.gate !== '—' ? f.gate : '—') + '</td>';
+    // Arrivals "Carousel" column must show the baggage belt (_belt — carries the
+    // per-airport rule, e.g. YQM domestic→1 / international→2), NOT f.gate (that's
+    // the arrival GATE, which is why this column was showing the feed's phantom
+    // 3/4 while the bags board correctly showed 1). Strip any terminal prefix
+    // ("1-4" → "4") so it matches the bags board.
+    var _arrBeltM = f._belt ? String(f._belt).match(/^(\w+)-(.+)$/) : null;
+    var _arrBeltVal = _arrBeltM ? _arrBeltM[2] : (f._belt || '');
+    const carouselCellHtml = '<td class="td-gate">' + (_arrBeltVal && _arrBeltVal !== '—' ? _arrBeltVal : '—') + '</td>';
     // Phase 4: Sched + Revised as separate columns.
     // Scheduled cell: original time, strikethrough when revised, otherwise normal.
     // Revised cell: shows the revised time in accent color, or empty/dash when none.
