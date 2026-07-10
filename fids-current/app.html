@@ -968,9 +968,20 @@ function openFlight(i){
   const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?('Operated by '+f.operatedBy):'';
   function cell(k,v,sub){return '<div class="dt-cell"><div class="k">'+k+'</div><div class="v">'+esc(v)+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>';}
   let cells='';
-  cells+=cell(isArr?'Arrives':'Departs',sched||'—');
-  if(est&&est!==sched) cells+=cell('Estimated',est);
-  if(f.otherTime) cells+=cell(isArr?'Departs origin':'Arrives',(f.otherTime||'').slice(0,5));
+  // Every time is in its OWN airport's local zone (standard airline convention),
+  // so label each with its city. Without this a cross-timezone leg looks wrong:
+  // a Toronto departure (21:05) and a Moncton arrival (00:08) don't visibly add
+  // up to the flight time (2h03) unless the +1h zone change is made explicit.
+  // 'here' is this airport (Moncton on the YQM app); 'other' is origin/dest.
+  const hereName=(AP_NAME[AP]||AP), otherName=(city&&city!=='—')?city:'';
+  const hereTz=hereName?hereName+' time':'', otherTz=otherName?otherName+' time':'';
+  const delayed=!!(est&&est!==sched);
+  // When a time has been revised, lead with 'Scheduled' + a separate 'Estimated'
+  // so the delayed arrival is unmistakable (was: 'Arrives' showing the stale
+  // scheduled time while the flight was actually hours late).
+  cells+=cell(delayed?(isArr?'Scheduled arrival':'Scheduled'):(isArr?'Arrives':'Departs'),sched||'—',hereTz);
+  if(delayed) cells+=cell('Estimated',est,hereTz);
+  if(f.otherTime) cells+=cell(isArr?'Departs origin':'Arrives',(f.otherTime||'').slice(0,5),otherTz);
   var _dur=fmtDur(f.durMin); if(_dur) cells+=cell('Flight time',_dur);
   if(isArr) cells+=cell('Baggage belt',f.belt||'TBD');
   else cells+=cell('Gate',f.gate||'—');
