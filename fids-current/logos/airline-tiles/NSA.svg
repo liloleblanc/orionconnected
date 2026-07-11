@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#b01117" d="M0 0h100v100H0z"/><svg x="14" y="14" width="72" height="72" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet"><path fill="#ffffff" d="m251.60252,13.24306l-149.07968,473.51388l149.09332,-116.24635l149.09332,116.24635l-149.10696,-473.51388z"/><path fill="#ffffff" d="m8.70526,196.14105l164.14994,0l-44.77437,87.98695l-119.37558,-87.98695z"/><path fill="#ffffff" d="m491.29476,196.14105l-119.37558,87.98695l-44.77437,-87.98695l164.14995,0z"/></svg></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#ffffff" d="M0 0h100v100H0z"/><svg x="12" y="12" width="76" height="76" viewBox="6.71 11.24 486.59 477.51" preserveAspectRatio="xMidYMid meet">
+
+ <g>
+  <title>Layer 1</title>
+  <g stroke="null" data-name="star icon" id="star_icon">
+   <path stroke="null" fill="#b01117" d="m251.60252,13.24306l-149.07968,473.51388l149.09332,-116.24635l149.09332,116.24635l-149.10696,-473.51388z" data-name="Path 12" id="Path_12"/>
+   <path stroke="null" fill="#f9a51a" d="m251.60252,13.24306l-149.07968,473.51388l149.09332,-116.24635l-0.01364,-357.26753z" data-name="Path 13" id="Path_13"/>
+   <path stroke="null" fill="#f9a51a" d="m8.70526,196.14105l164.14994,0l-44.77437,87.98695l-119.37558,-87.98695z" data-name="Path 14" id="Path_14"/>
+   <path stroke="null" fill="#f9a51a" d="m371.91918,284.09985l119.37558,-87.98695l-157.7536,0" data-name="Path 15" id="Path_15"/>
+  </g>
+ </g>
+</svg></svg>
