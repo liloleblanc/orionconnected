@@ -12054,6 +12054,7 @@ const AIRLINE_NAME = {
   'AC':'AIR CANADA',  'WS':'WESTJET',     'PD':'PORTER',      'F8':'FLAIR',
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
+  'JV':'BEARSKIN',    'WP':'WASAYA',      'NSA':'NORTH STAR AIR',
   'QK':'AIR CANADA',  'RV':'AIR CANADA',  'RJ':'AIR CANADA',  'ZX':'AIR CANADA',
   '9M':'AIR CANADA',  '9L':'AIR CANADA',  'SP':'PAL AIRLINES',
   '9X':'MOKULELE',    'W8':'CARGOJET',
@@ -12227,6 +12228,9 @@ const IATA_TO_WORDMARK = {
   // Canadian carriers
   'AC':'air-canada',  'WS':'westjet',  'PD':'porter',  'TS':'transat',
   'PB':'pal-airlines',
+  'JV':'bearskin',      // Bearskin Airlines
+  'WP':'wasaya',        // Wasaya Airways
+  'NSA':'north-star',   // North Star Air (no IATA — keyed on ICAO; confirm feed code)
   'F8':'flair',    // Flair — proper wordmark (their logo must NEVER render green, per brand policy)
   'QK':'jazz',     // Air Canada Jazz
   'RV':'air-canada',  // Air Canada Rouge → use AC wordmark
@@ -12355,7 +12359,7 @@ const LOGO_SUBFOLDER = {
   'Holiday-Inn-Logo.svg':'hotels/ihg', 'Holiday_Inn.svg':'hotels/ihg', 'Hyatt-01.eps':'hotels/hyatt', 'KLM_Logo_1971_SkyTeam.svg':'airlines/european',
   'KLM_Logo_2011.svg':'airlines/european', 'KLM_Logo_2011_SkyTeam.svg':'airlines/european', 'KLM_Logo_2024 (1).svg':'airlines/european', 'KLM_Logo_2024.svg':'airlines/european',
   'Logo Alternative.svg':'hotels/hilton', 'Logo.svg':'hotels/hilton', 'Lufthansa_Logo_2018.svg':'airlines/european', 'Oneworld-Logo.png':'airlines/alliances',
-  'Oneworld.svg':'airlines/alliances', 'Oneworld_logo.svg':'airlines/alliances', 'PAL-Airlines.svg':'airlines/canadian-regional', 'Porter_Airlines_Logo_2006.svg':'airlines/canadian',
+  'Oneworld.svg':'airlines/alliances', 'Oneworld_logo.svg':'airlines/alliances', 'PAL-Airlines.svg':'airlines/canadian-regional', 'bearskin-wordmark-light.svg':'airlines/canadian-regional', 'wasaya-wordmark-light.svg':'airlines/canadian-regional', 'north-star-wordmark-light.svg':'airlines/canadian-regional', 'Porter_Airlines_Logo_2006.svg':'airlines/canadian',
   'SO.png':'hotels/accor-premium', 'Skywest-Airlines-01.svg':'airlines/us-regional', 'Sofitel-01.eps':'hotels/accor-luxury', 'Sofitel-01.jpg':'hotels/accor-luxury',
   'Sofitel-01.png':'hotels/accor-luxury', 'WestJet_Logo_2016_symbol.svg':'airlines/canadian', 'WestJet_Logo_2018.svg':'airlines/canadian', 'WestJet_Logo_2018_white_wordmark.svg':'airlines/canadian', 'aaadvantage-white.png':'airlines/us-major', 'aaadvantage.png':'airlines/us-major', 'ac-hotels.png':'hotels/marriott',
   'ac-roundel.png':'airlines/canadian', 'aeroplan.svg':'airlines/canadian', 'air-canada-white.svg':'airlines/canadian', 'air-canada-wordmark-dark.svg':'airlines/canadian', 'air-canada-wordmark-light.svg':'airlines/canadian', 'air-canada.svg':'airlines/canadian', 'air-france-wordmark-dark.svg':'airlines/european',
@@ -12460,6 +12464,9 @@ const COLOR_WORDMARKS = {
   'volaris': '/logos/airlines/asian-other/volaris-wordmark-color.svg',
   'jazz': '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
   'pal-airlines': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
+  'bearskin': '/logos/airlines/canadian-regional/bearskin.svg',              // color lockup for light bg
+  'wasaya': '/logos/airlines/canadian-regional/wasaya.svg',                  // color lockup for light bg
+  'north-star': '/logos/airlines/canadian-regional/north-star-wordmark.svg', // color lockup for light bg
   // 'air-canada' intentionally absent — AC's wordmark lettering IS black
   // (red is only the rondelle), so light themes use the black '-dark' file.
   'flair': '/logos/airlines/canadian/flair-wordmark-color.svg',
@@ -12520,6 +12527,9 @@ function wordmarkSrc(base, forceVariant) {
 // AA's eagle box) and from IATA_TO_WORDMARK (text portion). When both an
 // emblem and a wordmark exist, the row shows: [emblem] [wordmark text].
 const IATA_TO_EMBLEM = {
+  'JV': '/logos/airlines/canadian-regional/bearskin-emblem.svg',      // Bearskin bear-paw emblem
+  'WP': '/logos/airlines/canadian-regional/wasaya-emblem.svg',        // Wasaya emblem
+  'NSA': '/logos/airlines/canadian-regional/north-star-emblem.svg',   // North Star Air emblem
   '9X': '/logos/airlines/us-major/mokulele-emblem.svg',  // Mokulele plumeria flower
   '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',  // Discover Airlines tail-fin emblem (yellow + blue gradient)
   'F9': '/logos/airlines/us-major/frontier-emblem.svg',  // Frontier Airlines green stylized "F" mark
