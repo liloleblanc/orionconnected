@@ -8737,10 +8737,29 @@ const gView = document.getElementById('gateView');
             // real altitude exists) — the phantom-plane guard lives there. The
             // mini map thus matches the big takeover ('map still not', Nick).
             var _estProg = 0;
-            if (inb.status !== 'arrived' && inb.status !== 'landed') {
+            if (inb.status !== 'arrived' && inb.status !== 'landed' && inb._locIata) {
+              // Compute from THIS inbound record directly — the shared ctx
+              // builder reads window._gateInbound and silently swaps to the
+              // OUTBOUND leg when that global isn't set yet, which made the
+              // glyph never appear here (Nick: 'map doesn't work still').
               try {
-                var _ectx = (typeof _map3dFlightCtx === 'function') ? _map3dFlightCtx(true) : null;
-                if (_ectx && !_ectx.out && !_ectx.pos && _ectx.progress >= 0.02 && _ectx.progress <= 0.98) _estProg = _ectx.progress;
+                var _stAirMini = /active|en-?route|departed/i.test(String(inb.status || ''))
+                  || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!inb._revTs)
+                  || (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
+                var _arrTMini = inb._revTs || inb._sortTs || 0;
+                var _apcMini = window.AIRPORT_COORDS || {};
+                var _ocMini = _apcMini[String(inb._locIata).toUpperCase()];
+                var _dcMini = _apcMini[String(apIata).toUpperCase()];
+                if (_stAirMini && _arrTMini && _ocMini && _dcMini) {
+                  var _toR = Math.PI / 180;
+                  var _dla = (_dcMini[0] - _ocMini[0]) * _toR, _dlo = (_dcMini[1] - _ocMini[1]) * _toR;
+                  var _hv = Math.sin(_dla / 2) * Math.sin(_dla / 2)
+                          + Math.cos(_ocMini[0] * _toR) * Math.cos(_dcMini[0] * _toR) * Math.sin(_dlo / 2) * Math.sin(_dlo / 2);
+                  var _kmMini = 6371 * 2 * Math.atan2(Math.sqrt(_hv), Math.sqrt(1 - _hv));
+                  var _durMini = Math.max(3600000, (_kmMini / 13 + 25) * 60000);   // ~780 km/h + 25 min
+                  var _pMini = (Date.now() - (_arrTMini - _durMini)) / _durMini;
+                  if (_pMini >= 0.02 && _pMini <= 0.98) _estProg = _pMini;
+                }
               } catch (e) {}
             }
             if (_estProg > 0) {
