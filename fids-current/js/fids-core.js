@@ -2278,6 +2278,9 @@ var LOCAL_LOGOS = {
   'TS': '/logos/airlines/canadian/transat.svg',                   // Air Transat
   'F8': '/logos/airlines/canadian/flair.svg',                     // Flair
   'PB': '/logos/airlines/canadian-regional/PAL-Airlines.svg',              // PAL Airlines
+  'JV': '/logos/airlines/canadian-regional/bearskin.svg',         // Bearskin Airlines (IATA JV / ICAO BLS)
+  'WP': '/logos/airlines/canadian-regional/wasaya.svg',           // Wasaya Airways (IATA WP / ICAO WSG)
+  'NSA': '/logos/airlines/canadian-regional/north-star-air.svg',  // North Star Air (no IATA; ICAO NSA — confirm the code the feed reports)
   // ── US carriers ──
   'UA': '/logos/airlines/us-major/united.svg',                    // United — clean blue wordmark
   'DL': '/logos/airlines/us-major/delta.svg',
