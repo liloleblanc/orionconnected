@@ -21840,20 +21840,32 @@ function _regTrueType(reg) {
     var LS_KEY = 'fids_reg_type_v1';
     var store = {};
     try { store = JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch (e) {}
-    if (r in store) { window._regTypeCache[r] = store[r] || ''; return window._regTypeCache[r]; }
-    window._regTypeCache[r] = '';   // in-flight sentinel — one fetch per tail
+    // Only POSITIVE answers come from the persistent store — a '' there is
+    // legacy poison from a failed lookup (it made the panel flip back to the
+    // scheduled type forever, Nick: 'ouch aircraft switched again').
+    if (store[r]) { window._regTypeCache[r] = store[r]; return store[r]; }
+    // In-flight/failed sentinel lives in MEMORY only, with an expiry so a
+    // transient API failure retries instead of poisoning the tail for good.
+    var _now = Date.now();
+    window._regTypeRetry = window._regTypeRetry || {};
+    if (window._regTypeRetry[r] && _now < window._regTypeRetry[r]) return '';
+    window._regTypeRetry[r] = _now + 10 * 60000;   // one attempt per 10 min max
     fetch('https://fids-proxy.n-leblanc1984.workers.dev/aircrafts/reg/' + encodeURIComponent(r))
       .then(function (resp) { return resp.ok ? resp.json() : null; })
       .then(function (ac) {
-        var t = ac ? String(ac.typeName || ac.model || '').trim() : '';
+        // ADB aircraft objects vary: typeName / model / productionLine.
+        var t = ac ? String(ac.typeName || ac.model || ac.productionLine || '').trim() : '';
         if (t && !/^(airbus|boeing|embraer|bombardier|de havilland|atr|mitsubishi|cessna|beech)/i.test(t)) {
           var mfr = (String(ac.productionLine || '').match(/^(Airbus|Boeing|Embraer|Bombardier|De Havilland|ATR|Mitsubishi)/i) || [])[1] || '';
           if (mfr) t = mfr + ' ' + t;
         }
-        window._regTypeCache[r] = t;
-        try { store[r] = t; localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch (e) {}
+        if (t) {
+          window._regTypeCache[r] = t;
+          try { store[r] = t; localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch (e) {}
+        }
+        try { console.log('[REGTYPE]', r, '→', t || '(no type in response — will retry)'); } catch (e) {}
       })
-      .catch(function () { delete window._regTypeCache[r]; });
+      .catch(function () { try { console.log('[REGTYPE]', r, 'lookup failed — will retry'); } catch (e) {} });
     return '';
   } catch (e) { return ''; }
 }
