@@ -365,6 +365,12 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
    ultra-wide marks (AC/BA/PT/OB), matching the look Nick approved. No
    per-code widths or nudges needed anymore. Regenerate via the script in
    the session scratchpad; don't hand-tune single values here. */
+/* Tall LOCKUPS (not normalized letter marks): Wasaya stacks syllabics over the
+   word and North Star integrates a circle badge, so at the standard optical
+   height the lettering read tiny (Nick: 'not big enough'). Calibrated
+   empirically against the WestJet 30px reference; slot is 58px so both fit. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WT"] { --wm-h: 44px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="NSA"] { --wm-h: 50px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { --wm-h: 32px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { --wm-h: 30px; }

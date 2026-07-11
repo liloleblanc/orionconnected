@@ -12470,7 +12470,7 @@ const COLOR_WORDMARKS = {
   'pal-airlines': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
   'bearskin': '/logos/airlines/canadian-regional/bearskin.svg',              // color lockup for light bg
   'wasaya': '/logos/airlines/canadian-regional/wasaya.svg',                  // color lockup for light bg
-  'north-star': '/logos/airlines/canadian-regional/north-star-wordmark.svg', // color lockup for light bg
+  'north-star': '/logos/airlines/canadian-regional/north-star-air.svg', // horizontal colour lockup (badge version was unreadable at row height)
   // 'air-canada' intentionally absent — AC's wordmark lettering IS black
   // (red is only the rondelle), so light themes use the black '-dark' file.
   'flair': '/logos/airlines/canadian/flair-wordmark-color.svg',
