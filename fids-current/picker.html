@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
   <link rel="stylesheet" href="css/shared.css?v=21899-21">
+  <link rel="stylesheet" href="css/font.css?v=1">
   <link rel="stylesheet" href="css/entry.css?v=35">
   <link rel="stylesheet" href="css/mobile.css?v=1">
 </head>
@@ -20,49 +21,131 @@
      SCREEN PICKER
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="pickerScreen" class="picker-screen show">
-  <div class="picker-inner">
-    <div class="picker-label">SELECT DISPLAY · CHOISIR L'AFFICHAGE</div>
-    <div id="pickerBadge" class="picker-mode-badge demo">DEMO</div>
-
-    <div class="picker-cards">
-
-      <!-- FIDS -->
-      <div class="picker-card" onclick="pickScreen('fids')">
-        <div class="picker-card-icon" style="font-size:16px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,0.5);">F</div>
-        <div class="picker-card-title">FIDS</div>
-        <div class="picker-card-desc">FLIGHT INFORMATION<br>DISPLAY SYSTEM</div>
-        <div style="margin-top:12px;font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:1px;line-height:1.5;">Departures · Arrivals · Full board<br>Multi-language · Themed display</div>
-        <div class="picker-card-desc-fr">SYSTEME D'INFORMATION DES VOLS</div>
+  <div class="ocb">
+    <!-- Brand rail — same design language as the entry screen + boot loaders -->
+    <div class="ocb-rail">
+      <div class="ocb-brand">
+        <img class="ocb-logo" src="/OrionConnectedLogos/transparent-logo.svg" alt="Orion Connected">
+        <div class="ocb-lockup">Connecting Beyond</div>
       </div>
-
-      <!-- GIDS -->
-      <div class="picker-card" onclick="pickScreen('gids')">
-        <div class="picker-card-icon" style="font-size:16px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,0.5);">G</div>
-        <div class="picker-card-title">GIDS</div>
-        <div class="picker-card-desc">GATE INFORMATION<br>DISPLAY SYSTEM</div>
-        <div style="margin-top:12px;font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:1px;line-height:1.5;">Per-gate departure info<br>Boarding zones · Weather · Map</div>
-        <div class="picker-card-desc-fr">SYSTEME D'INFORMATION DES PORTES</div>
+      <div class="ocb-id">
+        <div class="ocb-code">FIDS</div>
+        <div class="ocb-name">Airport Display System</div>
       </div>
-
-      <!-- BIDS -->
-      <div class="picker-card" onclick="pickScreen('bids')">
-        <div class="picker-card-icon" style="font-size:16px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,0.5);">B</div>
-        <div class="picker-card-title">BIDS</div>
-        <div class="picker-card-desc">BAGGAGE INFORMATION<br>DISPLAY SYSTEM</div>
-        <div style="margin-top:12px;font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:1px;line-height:1.5;">Carousel assignments<br>Arrival status · Flight tracking</div>
-        <div class="picker-card-desc-fr">SYSTEME D'INFORMATION DES BAGAGES</div>
-      </div>
-
+      <div class="ocb-boot"><span class="ocb-dot"></span>SELECT DISPLAY</div>
     </div>
 
-    <button class="picker-back" onclick="goBack()">← BACK</button>
+    <!-- Stage: mode badge + display cards -->
+    <div class="ocb-stage">
+      <div class="ocb-head">
+        <div class="ocb-hero">Select display</div>
+        <div id="pickerBadge" class="picker-mode-badge demo">DEMO</div>
+      </div>
+      <div class="ocb-sub">Choisir l'affichage</div>
 
-    <!-- User info (visible in live mode) -->
-    <div id="pickerUserInfo" style="margin-top:24px; font-size:10px; letter-spacing:2px; color:rgba(255,255,255,0.2); display:none;">
-      SIGNED IN AS <span id="pickerUser" style="color:rgba(255,255,255,0.5);"></span>
-      · <a href="#" onclick="doLogout();return false;" style="color:rgba(234,179,8,0.5);text-decoration:none;letter-spacing:2px;">LOGOUT</a>
+      <div class="ocb-cards">
+        <div class="ocb-card" onclick="pickScreen('fids')">
+          <div class="ocb-card-code">F.I.D.S.</div>
+          <div class="ocb-card-name">Flight Information Display Screen</div>
+          <div class="ocb-card-desc">Departures · Arrivals · Full board<br>Multi-language · Themed display</div>
+          <div class="ocb-card-fr">Système d'information des vols</div>
+        </div>
+        <div class="ocb-card" onclick="pickScreen('gids')">
+          <div class="ocb-card-code">G.A.T.E.</div>
+          <div class="ocb-card-name">Gate &amp; Advertisement Terminal Experience</div>
+          <div class="ocb-card-desc">Per-gate departure info<br>Boarding zones · Weather · Map</div>
+          <div class="ocb-card-fr">Système d'information des portes</div>
+        </div>
+        <div class="ocb-card" onclick="pickScreen('bids')">
+          <div class="ocb-card-code">B.A.G.S.</div>
+          <div class="ocb-card-name">Baggage Arrival Gateway Screen</div>
+          <div class="ocb-card-desc">Carousel assignments<br>Arrival status · Flight tracking</div>
+          <div class="ocb-card-fr">Système d'information des bagages</div>
+        </div>
+      </div>
+
+      <div class="ocb-foot">
+        <button class="ocb-btn ocb-btn-ghost" onclick="goBack()">← BACK</button>
+        <div id="pickerUserInfo" class="ocb-user" style="display:none;">
+          SIGNED IN AS <span id="pickerUser"></span>
+          · <a href="#" onclick="doLogout();return false;">LOGOUT</a>
+        </div>
+      </div>
     </div>
   </div>
+
+  <style>
+    #pickerScreen{ position:fixed; inset:0; z-index:100; display:block; padding:0;
+      background:#fbfcfe; transition:opacity .4s ease; }
+    #pickerScreen .ocb{ position:absolute; inset:0; display:flex; }
+    #pickerScreen .ocb-rail{
+      flex:0 0 clamp(240px,20vw,340px); box-sizing:border-box;
+      background:linear-gradient(165deg,#313130 0%,#1c1c1b 100%);
+      display:flex; flex-direction:column; justify-content:center;
+      gap:clamp(24px,3.4vh,44px); padding:clamp(30px,4vh,56px) clamp(26px,2.2vw,40px);
+    }
+    #pickerScreen .ocb-brand{ display:flex; flex-direction:column; gap:14px; align-items:flex-start; }
+    #pickerScreen .ocb-logo{ width:clamp(88px,7.4vw,132px); height:auto; object-fit:contain; filter:brightness(0) invert(1); }
+    #pickerScreen .ocb-lockup{ font-family:'AC Nord Text','AC Nord Display',system-ui,sans-serif;
+      font-size:clamp(13px,1.15vw,19px); font-weight:600; color:rgba(255,255,255,.62); }
+    #pickerScreen .ocb-code{ font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(34px,3.1vw,58px); font-weight:800; color:#fff; line-height:1; }
+    #pickerScreen .ocb-name{ margin-top:10px; font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(11px,.92vw,16px); line-height:1.4; color:rgba(255,255,255,.55); max-width:15em; }
+    #pickerScreen .ocb-boot{ display:flex; align-items:center; gap:8px; font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(9px,.75vw,13px); font-weight:700; letter-spacing:.22em; color:rgba(255,255,255,.5); }
+    #pickerScreen .ocb-dot{ width:7px; height:7px; border-radius:50%; background:#eab308;
+      box-shadow:0 0 10px rgba(234,179,8,.7); animation:fids-loader-pulse 2s ease-in-out infinite; }
+    #pickerScreen .ocb-stage{
+      flex:1 1 auto; display:flex; flex-direction:column; justify-content:center; align-items:flex-start;
+      padding:0 clamp(40px,4.2vw,88px);
+      background:linear-gradient(180deg,#fbfcfe 0%,#eef2f8 100%); color:#0f172a; }
+    #pickerScreen .ocb-head{ display:flex; align-items:center; gap:18px; }
+    #pickerScreen .ocb-hero{ font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(34px,3.6vw,64px); font-weight:800; letter-spacing:-.03em; line-height:1; }
+    #pickerScreen .picker-mode-badge{ font-family:'AC Nord Display',system-ui,sans-serif;
+      font-size:clamp(11px,.85vw,14px); font-weight:800; letter-spacing:.18em;
+      padding:7px 16px; border-radius:999px; }
+    #pickerScreen .picker-mode-badge.demo{ background:rgba(15,23,42,.07); color:#475569; border:1px solid rgba(15,23,42,.14); }
+    #pickerScreen .picker-mode-badge.live{ background:rgba(16,185,129,.12); color:#047857; border:1px solid rgba(16,185,129,.4); }
+    #pickerScreen .ocb-sub{ margin-top:10px; font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(12px,1vw,17px); color:#94a3b8; }
+    #pickerScreen .ocb-cards{ margin-top:clamp(26px,3.6vh,46px); display:flex; gap:clamp(14px,1.6vw,26px); flex-wrap:wrap; }
+    #pickerScreen .ocb-card{
+      flex:1 1 240px; max-width:330px; box-sizing:border-box; cursor:pointer;
+      background:#fff; border:1px solid rgba(15,23,42,.1); border-radius:16px;
+      padding:clamp(20px,2.6vh,30px) clamp(18px,1.8vw,26px);
+      transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+    #pickerScreen .ocb-card:hover{ transform:translateY(-3px); border-color:#d97706;
+      box-shadow:0 14px 34px rgba(15,23,42,.12); }
+    #pickerScreen .ocb-card-code{ font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(24px,2vw,34px); font-weight:800; color:#0f172a; line-height:1; }
+    #pickerScreen .ocb-card:hover .ocb-card-code{ color:#d97706; }
+    #pickerScreen .ocb-card-name{ margin-top:9px; font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(11px,.9vw,14px); font-weight:700; color:#475569; line-height:1.35; min-height:2.7em; }
+    #pickerScreen .ocb-card-desc{ margin-top:12px; font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(10px,.8vw,12.5px); color:#94a3b8; line-height:1.55; }
+    #pickerScreen .ocb-card-fr{ margin-top:12px; font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(9px,.72vw,11px); letter-spacing:.06em; color:#c2cbd6; }
+    #pickerScreen .ocb-foot{ margin-top:clamp(26px,3.6vh,46px); display:flex; align-items:center; gap:22px; }
+    #pickerScreen .ocb-btn{ font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(12px,.95vw,15px); font-weight:800; letter-spacing:.12em;
+      padding:12px 26px; border-radius:10px; cursor:pointer;
+      background:transparent; border:1px solid rgba(15,23,42,.22); color:#0f172a;
+      transition:transform .15s ease, border-color .15s ease; }
+    #pickerScreen .ocb-btn:hover{ transform:translateY(-1px); border-color:rgba(15,23,42,.45); }
+    #pickerScreen .ocb-user{ font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:10px; letter-spacing:.18em; font-weight:700; color:#94a3b8; }
+    #pickerScreen .ocb-user span{ color:#475569; }
+    #pickerScreen .ocb-user a{ color:#d97706; text-decoration:none; letter-spacing:.18em; }
+    @media (max-aspect-ratio:1/1){
+      #pickerScreen .ocb{ flex-direction:column; overflow:auto; }
+      #pickerScreen .ocb-rail{ flex-basis:auto; }
+      #pickerScreen .ocb-stage{ align-items:center; text-align:center; padding:clamp(24px,4vh,48px) 20px; }
+      #pickerScreen .ocb-cards{ justify-content:center; }
+      #pickerScreen .ocb-foot{ justify-content:center; }
+    }
+  </style>
 </div>
 
 <script src="js/auth.js?v=35"></script>
