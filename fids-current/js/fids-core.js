@@ -6074,6 +6074,25 @@ function _buildV2MapCol(ctx, vars) {
     var _equipNm = _outEquipNm || _inbEquipNm;
     // v218.99.32 — Registration folded into aircraft block (two-column)
     var _acReg = (vars.currentFlight && vars.currentFlight._reg) || (_anyInb && _ib2 && _ib2._reg) || '';
+    // STICKY expected tail (Nick: 'that aircraft loves to change wow'): the
+    // history-based 'expected' reg flaps between candidate tails poll to
+    // poll, dragging the type + photo with it. Once a tail is shown for this
+    // flight, HOLD it — only a CONFIRMED (non-history) reg or a new flight
+    // may replace it; a blank poll never blanks the shelf.
+    try {
+      var _regSrcSt = String((vars.currentFlight && vars.currentFlight._regSource) || '');
+      var _fltKeySt = String((vars.currentFlight && (vars.currentFlight.flight || '')) || '') + '|' + String(vars.iata || '');
+      var _stickSt = window._gateRegSticky;
+      var _sameKeySt = _stickSt && _stickSt.k === _fltKeySt && (Date.now() - _stickSt.ts) < 6 * 3600000;
+      if (_acReg && !/^history/.test(_regSrcSt)) {
+        window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now() };
+      } else if (_acReg) {
+        if (_sameKeySt && _stickSt.reg) _acReg = _stickSt.reg;
+        else window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now() };
+      } else if (_sameKeySt && _stickSt.reg) {
+        _acReg = _stickSt.reg;
+      }
+    } catch (e) {}
 
     var _opCodeRaw = String(_cf._opCode || vars.airlineCode || '').trim().toUpperCase();
     var _opCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opCodeRaw]) ? CALLSIGN_TO_IATA[_opCodeRaw] : _opCodeRaw;
@@ -6189,8 +6208,15 @@ function _buildV2MapCol(ctx, vars) {
       // The photo must match the TAIL, not the schedule: a MAX 8 picture next
       // to 'Boeing 737-700 | C-FWSI' contradicts itself (Nick). When the
       // reg-true type is known, resolve the livery image from IT.
-      var _regTrueImg = (typeof _regTrueType === 'function' && _acReg && _opCode !== 'RV')
-        ? _regTrueType(_acReg) : '';   // Rouge keeps its 321r suffix path
+      var _regTrueImg = (typeof _regTrueType === 'function' && _acReg) ? _regTrueType(_acReg) : '';
+      if (_regTrueImg && _opCode === 'RV') {
+        // Rouge: keep the Rouge paint but on the TRUE airframe — normalise the
+        // reg-true type to a code and re-apply the 'r' suffix (C-FZUG is an
+        // A319 → 319r.png, not the scheduled 321r; Nick: 'showing a 320
+        // picture with 319 registration').
+        var _rcRouge = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_regTrueImg) : '';
+        _regTrueImg = (_rcRouge && /^[A-Z0-9]{3}$/i.test(_rcRouge)) ? (_rcRouge + 'r') : '';
+      }
       var _imgEq = _regTrueImg || _liveryEq;
       if (typeof aircraftImgTag === 'function' && _imgEq) {
         _acImg = aircraftImgTag(_liveryAirline, _imgEq, {
@@ -8756,6 +8782,16 @@ const gView = document.getElementById('gateView');
                   || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!(inb._revTs || inb.upd))
                   || (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
                 var _arrTMini = inb._revTs || inb._sortTs || 0;
+                // STICKY airborne: once this flight has qualified, keep the
+                // glyph through polls whose object momentarily lacks the
+                // revision markers (Nick: 'no map again — not very stable').
+                // Expires 15 min after the effective arrival.
+                try {
+                  window._miniAirSticky = window._miniAirSticky || {};
+                  var _fkMini = String(inb.flight || '') + '|' + String(inb._locIata || '');
+                  if (_stAirMini) window._miniAirSticky[_fkMini] = Date.now();
+                  else if (window._miniAirSticky[_fkMini] && _arrTMini && Date.now() < _arrTMini + 15 * 60000) _stAirMini = true;
+                } catch (e) {}
                 var _apcMini = window.AIRPORT_COORDS || {};
                 var _ocMini = _apcMini[String(inb._locIata).toUpperCase()];
                 var _dcMini = _apcMini[String(apIata).toUpperCase()];

@@ -1845,6 +1845,23 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child {
   padding-bottom: 2px !important;
   margin-bottom: 2px !important;
 }
+/* Vertical centering — every label and value sits dead-centre in the HEIGHT
+   of its own row (Nick: 'the rows with the info need to be centered by
+   height within its row'). Cells stretch to the row height; content centres. */
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table { align-items: stretch !important; }
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  align-self: stretch !important;
+  display: flex !important;
+  min-height: 0 !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  align-items: center !important;
+}
 /* 4-row variant — the restored Arrival row overflowed the 3-row shelf and the
    rows collided (Nick: 'see how tight that is'). Tighter type + rhythm so all
    four rows breathe inside the same shelf. */
