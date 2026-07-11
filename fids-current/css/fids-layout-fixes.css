@@ -1847,13 +1847,33 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child {
 }
 /* Vertical centering — every label and value sits dead-centre in the HEIGHT
    of its own row (Nick: 'the rows with the info need to be centered by
-   height within its row'). Cells stretch to the row height; content centres. */
-html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table { align-items: stretch !important; }
+   height within its row'). The table fills its shelf, rows share the height
+   EQUALLY (no more clipped first row), and content centres in each row. */
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table {
+  align-items: stretch !important;
+  height: 100% !important;
+  grid-auto-rows: minmax(0, 1fr) !important;
+  align-content: stretch !important;
+}
+/* Same for the LEFT rail (Nick: 'apply everywhere — especially the outbound
+   status'): every shelf row takes an EQUAL share of the rail and its copy
+   (icon + label + value) centres in that share, so the dividers land at even
+   intervals instead of hugging whichever row has the tallest value. */
+html .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  flex: 1 1 0 !important;
+  align-items: center !important;
+  min-height: 0 !important;
+}
+html .g8-wrap .gad-aircraft-col .v2-fi-row > .v2-fi-textcol {
+  justify-content: center !important;
+}
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
   align-self: stretch !important;
   display: flex !important;
   min-height: 0 !important;
+  box-sizing: border-box !important;   /* padding/border INSIDE the equal track — else the last row clips */
+  overflow: hidden !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
   flex-direction: column !important;
