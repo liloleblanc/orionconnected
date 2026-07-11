@@ -1845,6 +1845,26 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child {
   padding-bottom: 2px !important;
   margin-bottom: 2px !important;
 }
+/* 4-row variant — the restored Arrival row overflowed the 3-row shelf and the
+   rows collided (Nick: 'see how tight that is'). Tighter type + rhythm so all
+   four rows breathe inside the same shelf. */
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl {
+  font-size: clamp(9px, 1.1vh, 12px) !important;
+  line-height: 1.05 !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tval {
+  font-size: clamp(13px, 1.85vh, 22px) !important;
+  line-height: 1.15 !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  padding-top: clamp(1px, 0.18vh, 2px) !important;
+  padding-bottom: clamp(1px, 0.18vh, 2px) !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl span:first-child {
+  padding-bottom: 1px !important;
+  margin-bottom: 1px !important;
+}
 /* Same treatment inside the BIG takeover panel's table. */
 html .bigcraft-side .v2-rc-fi-table {
   display: grid !important;

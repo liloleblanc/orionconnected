@@ -4394,7 +4394,7 @@ function aircraftCodeToIata(raw) {
   // ── 737 Next Gen ──
   if (/737[\s-]*800/i.test(s)) return '738';
   if (/737[\s-]*900/i.test(s)) return '739';
-  if (/737[\s-]*700/i.test(s)) return '73H';
+  if (/737[\s-]*700/i.test(s)) return '73G'; // 73G = 737-700 (73H is the -800 — this returned the wrong airframe AND the wrong photo, Nick's C-FWSI case)
   if (/737[\s-]*600/i.test(s)) return '736';
   if (/737[\s-]*500/i.test(s)) return '735';
   if (/737[\s-]*400/i.test(s)) return '734';
@@ -5924,7 +5924,7 @@ function _buildV2MapCol(ctx, vars) {
           + '</div>';
       }
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table">'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table' + (_ibArrRowHtml ? ' v2-rc-fi-t4' : '') + '">'
         +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>Flight</span><span>Vol</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
@@ -6179,9 +6179,15 @@ function _buildV2MapCol(ctx, vars) {
 
     var _acImg = '';
     try {
-      if (typeof aircraftImgTag === 'function' && _liveryEq) {
-        _acImg = aircraftImgTag(_liveryAirline, _liveryEq, {
-          rawModel: _equipNm || _equipCd || '',
+      // The photo must match the TAIL, not the schedule: a MAX 8 picture next
+      // to 'Boeing 737-700 | C-FWSI' contradicts itself (Nick). When the
+      // reg-true type is known, resolve the livery image from IT.
+      var _regTrueImg = (typeof _regTrueType === 'function' && _acReg && _opCode !== 'RV')
+        ? _regTrueType(_acReg) : '';   // Rouge keeps its 321r suffix path
+      var _imgEq = _regTrueImg || _liveryEq;
+      if (typeof aircraftImgTag === 'function' && _imgEq) {
+        _acImg = aircraftImgTag(_liveryAirline, _imgEq, {
+          rawModel: _regTrueImg || _equipNm || _equipCd || '',
           reg: _acReg || ''
         });
       }
@@ -8725,15 +8731,36 @@ const gView = document.getElementById('gateView');
               initGateMapLive(inb._locIata || apIata, apIata, _mfix.lat, _mfix.lng);
             }
           } else {
-            // No real airborne fix → pins only, NEVER a clock-estimated plane.
-            // A plane icon appears solely with live ADS-B coordinates (above).
-            var pinKey = (inb.status === 'arrived' || inb.status === 'landed') ? 'arr-pins' : 'inb-pins';
-            if (!gateMap || window._lastMapProgKey !== pinKey) {
-              window._lastMapProgKey = pinKey;
-              if (inb.status === 'arrived' || inb.status === 'landed') {
-                initGateMap(apIata, dstIata, -1);
-              } else {
-                initGateMap(inb._locIata, apIata, -1);
+            // No real airborne fix. Try an HONEST estimated glyph first: the
+            // shared ctx builder computes distance-based time-progress and only
+            // returns progress > 0 when the FEED says the flight is flying (or
+            // real altitude exists) — the phantom-plane guard lives there. The
+            // mini map thus matches the big takeover ('map still not', Nick).
+            var _estProg = 0;
+            if (inb.status !== 'arrived' && inb.status !== 'landed') {
+              try {
+                var _ectx = (typeof _map3dFlightCtx === 'function') ? _map3dFlightCtx(true) : null;
+                if (_ectx && !_ectx.out && !_ectx.pos && _ectx.progress >= 0.02 && _ectx.progress <= 0.98) _estProg = _ectx.progress;
+              } catch (e) {}
+            }
+            if (_estProg > 0) {
+              // Bucket the key so the glyph advances every ~2% of the route.
+              var progKey = 'inb-est-' + Math.round(_estProg * 50);
+              if (!gateMap || window._lastMapProgKey !== progKey) {
+                window._lastMapProgKey = progKey;
+                initGateMap(inb._locIata, apIata, _estProg);
+              }
+            } else {
+              // Pins only — a plane icon needs live coords or a feed-confirmed
+              // airborne estimate, never a bare clock.
+              var pinKey = (inb.status === 'arrived' || inb.status === 'landed') ? 'arr-pins' : 'inb-pins';
+              if (!gateMap || window._lastMapProgKey !== pinKey) {
+                window._lastMapProgKey = pinKey;
+                if (inb.status === 'arrived' || inb.status === 'landed') {
+                  initGateMap(apIata, dstIata, -1);
+                } else {
+                  initGateMap(inb._locIata, apIata, -1);
+                }
               }
             }
           }
@@ -21885,7 +21912,12 @@ function _map3dFlightCtx(allowEstimated) {
     // flying (or with real altitude). A clock alone must never launch a plane
     // that is still at the origin gate — that was the original phantom bug.
     if (!_legOut && !fixOk && prog > 0) {
-      var _stAirborne = /active|en-?route|departed/i.test(String(inb.status || ''));
+      var _stAirborne = /active|en-?route|departed/i.test(String(inb.status || ''))
+        // Early / On time WITH a live-revised ETA = the feed is actively
+        // tracking the flight (WS790 'Early, 6:03 PM' had no phase word but
+        // was unambiguously airborne, Nick). A bare punctuality word without
+        // a revision stays grounded — it can be assigned pre-departure.
+        || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!inb._revTs);
       var _altAirborne = (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
       if (!_stAirborne && !_altAirborne) prog = 0;
     }
