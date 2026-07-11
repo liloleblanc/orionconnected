@@ -27,7 +27,7 @@ window.AIRLINE_BRAND_COLORS = {
   'MO': { r1:'#10243F', r1Text:'#FFFFFF', r2:'#C8102E', body:'#EAEFF5', bodyText:'#10243F' }, // Calm Air
   'YP': { r1:'#1C3050', r1Text:'#FFFFFF', r2:'#1B75BC', body:'#EBEFF4', bodyText:'#1C3050' }, // Perimeter
   'JV': { r1:'#910028', r1Text:'#FFFFFF', r2:'#C8102E', body:'#F6ECEE', bodyText:'#910028' }, // Bearskin Airlines (crimson #910028 sampled from logo)
-  'WP': { r1:'#CD342B', r1Text:'#FFFFFF', r2:'#E1241B', body:'#F7ECEB', bodyText:'#9A241D' }, // Wasaya Airways (red #CD342B sampled from logo)
+  'WT': { r1:'#CD342B', r1Text:'#FFFFFF', r2:'#E1241B', body:'#F7ECEB', bodyText:'#9A241D' }, // Wasaya Airways (red #CD342B sampled from logo)
   'NSA': { r1:'#B01117', r1Text:'#FFFFFF', r2:'#F9A51A', body:'#F6EEE6', bodyText:'#8A0D12' }, // North Star Air (red #B01117 + gold #F9A51A sampled from logo)
   '5T': { r1:'#003F87', r1Text:'#FFFFFF', r2:'#00A9CE', body:'#EAEFF6', bodyText:'#003F87' }, // Canadian North
   '4N': { r1:'#13294B', r1Text:'#FFFFFF', r2:'#F2A900', body:'#F3F0E8', bodyText:'#13294B' }, // Air North

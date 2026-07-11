@@ -2279,7 +2279,7 @@ var LOCAL_LOGOS = {
   'F8': '/logos/airlines/canadian/flair.svg',                     // Flair
   'PB': '/logos/airlines/canadian-regional/PAL-Airlines.svg',              // PAL Airlines
   'JV': '/logos/airlines/canadian-regional/bearskin.svg',         // Bearskin Airlines (IATA JV / ICAO BLS)
-  'WP': '/logos/airlines/canadian-regional/wasaya.svg',           // Wasaya Airways (IATA WP / ICAO WSG)
+  'WT': '/logos/airlines/canadian-regional/wasaya.svg',           // Wasaya Airways (feed code WT; ICAO WSG)
   'NSA': '/logos/airlines/canadian-regional/north-star-air.svg',  // North Star Air (no IATA; ICAO NSA — confirm the code the feed reports)
   // ── US carriers ──
   'UA': '/logos/airlines/us-major/united.svg',                    // United — clean blue wordmark
@@ -9394,6 +9394,7 @@ const CITY = {
   YLC:'KIMMIRUT',       YVP:'KUUJJUAQ',       YWB:'KANGIQSUJUAQ', YKU:'CHISASIBI',
   YGL:'LA GRANDE',      YPX:'PUVIRNITUQ',     YUD:'UMIUJAQ',      YMX:'MIRABEL',
   YSY:'SACHS HARBOUR',  YKQ:'WASKAGANISH',    YNS:'NEMISCAU',     YQK:'KENORA',
+  YXL:'SIOUX LOOKOUT',
   PWM:'PORTLAND',       BGR:'BANGOR',         BTV:'BURLINGTON',
   JFK:'NEW YORK',   LGA:'NEW YORK',   EWR:'NEWARK',       BOS:'BOSTON',
   LAX:'LOS ANGELES',    ORD:'CHICAGO',    ATL:'ATLANTA',      MIA:'MIAMI',
@@ -10188,6 +10189,7 @@ const CITY_FR = {
   YGR:'ÎLES-DE-LA-MADELEINE', YBC:'BAIE-COMEAU',    YRI:'RIVIÈRE-DU-LOUP',
   YTZ:'TORONTO',    YHM:'HAMILTON',           YKF:'KITCHENER',
   YGK:'KINGSTON',          YPQ:'PETERBOROUGH',       YQK:'KENORA',
+  YXL:'SIOUX LOOKOUT',
   YNS:'NEMISCAU',          YKQ:'WASKAGANISH',        YSY:'SACHS HARBOUR',
   YQC:'QUAQTAQ',           YPH:'INUKJUAK',           YLC:'KIMMIRUT',
   YWB:'KANGIQSUJUAQ',      YUD:'UMIUJAQ',            YMX:'MIRABEL',
@@ -10978,6 +10980,7 @@ const CITY_FR = {
 
 // ── AIRPORT COORDINATES ─────────────────────────────
 const COORDS = {
+  YXL:[50.11,-91.91], YQK:[49.79,-94.36],   // Sioux Lookout, Kenora (weather)
   YYZ:[43.68,-79.63], YUL:[45.47,-73.74], YVR:[49.19,-123.18], YYC:[51.11,-114.02],
   YEG:[53.31,-113.58], YOW:[45.32,-75.67], YQM:[46.11,-64.68], YHZ:[44.88,-63.51],
   YQB:[46.79,-71.39], YWG:[49.91,-97.24], YXE:[52.17,-106.70], YYJ:[48.65,-123.43],
@@ -12054,7 +12057,7 @@ const AIRLINE_NAME = {
   'AC':'AIR CANADA',  'WS':'WESTJET',     'PD':'PORTER',      'F8':'FLAIR',
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
-  'JV':'BEARSKIN',    'WP':'WASAYA',      'NSA':'NORTH STAR AIR',
+  'JV':'BEARSKIN',    'WT':'WASAYA',      'NSA':'NORTH STAR AIR',
   'QK':'AIR CANADA',  'RV':'AIR CANADA',  'RJ':'AIR CANADA',  'ZX':'AIR CANADA',
   '9M':'AIR CANADA',  '9L':'AIR CANADA',  'SP':'PAL AIRLINES',
   '9X':'MOKULELE',    'W8':'CARGOJET',
@@ -12186,6 +12189,7 @@ const IATA_TO_TILE_ICAO = {
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
   'PB':'PB',   // ← Nick's custom PAL Airlines logo (Newfoundland)
   'MO':'MPE',  'YP':'PCM',  'BQ':'PSC',
+  'JV':'BLS',  'WT':'WSG',  'NSA':'NSA',   // Bearskin / Wasaya / North Star — brand square + white emblem
   // US carriers
   'UA':'UAL-sq',  'DL':'DAL',  'AA':'AAL',  'WN':'SWA',   // UAL-sq: square vector tile (UAL.svg is an embedded PNG — wrong look per Nick)
   // NK (Spirit) — ceased operations May 2 2026
@@ -12229,7 +12233,7 @@ const IATA_TO_WORDMARK = {
   'AC':'air-canada',  'WS':'westjet',  'PD':'porter',  'TS':'transat',
   'PB':'pal-airlines',
   'JV':'bearskin',      // Bearskin Airlines
-  'WP':'wasaya',        // Wasaya Airways
+  'WT':'wasaya',        // Wasaya Airways
   'NSA':'north-star',   // North Star Air (no IATA — keyed on ICAO; confirm feed code)
   'F8':'flair',    // Flair — proper wordmark (their logo must NEVER render green, per brand policy)
   'QK':'jazz',     // Air Canada Jazz
@@ -12528,7 +12532,7 @@ function wordmarkSrc(base, forceVariant) {
 // emblem and a wordmark exist, the row shows: [emblem] [wordmark text].
 const IATA_TO_EMBLEM = {
   'JV': '/logos/airlines/canadian-regional/bearskin-emblem.svg',      // Bearskin bear-paw emblem
-  'WP': '/logos/airlines/canadian-regional/wasaya-emblem.svg',        // Wasaya emblem
+  'WT': '/logos/airlines/canadian-regional/wasaya-emblem.svg',        // Wasaya emblem
   'NSA': '/logos/airlines/canadian-regional/north-star-emblem.svg',   // North Star Air emblem
   '9X': '/logos/airlines/us-major/mokulele-emblem.svg',  // Mokulele plumeria flower
   '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',  // Discover Airlines tail-fin emblem (yellow + blue gradient)
