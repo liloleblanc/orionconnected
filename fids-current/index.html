@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="css/shared.css?v=21899-21">
+  <link rel="stylesheet" href="css/font.css?v=1">
   <link rel="stylesheet" href="css/entry.css?v=35">
   <link rel="stylesheet" href="css/mobile.css?v=1">
 </head>
@@ -47,41 +48,130 @@
      ENTRY SCREEN — Two buttons: DEMO and LOGIN
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="entryScreen" class="entry-screen">
-  <div class="entry-inner">
-    <div class="entry-icon"></div>
-    <div class="entry-brand">FLIGHT INFORMATION DISPLAY SYSTEM</div>
-    <div class="entry-title">FIDS</div>
-    <div class="entry-sub">AIRPORT DISPLAY SYSTEM</div>
-    <div class="entry-sub-fr">SYSTÈME D'AFFICHAGE AÉROPORTUAIRE</div>
-    <div class="entry-divider"></div>
-    <div class="entry-buttons">
-      <button class="entry-btn entry-btn-demo" onclick="enterDemo()">
-        DEMO
-      </button>
-      <button class="entry-btn entry-btn-login" onclick="showLogin()">
-        LOGIN
-      </button>
+  <div class="ocb">
+    <!-- Brand rail — same design language as the F.I.D.S./G.A.T.E./B.A.G.S. boot loaders -->
+    <div class="ocb-rail">
+      <div class="ocb-brand">
+        <img class="ocb-logo" src="/OrionConnectedLogos/transparent-logo.svg" alt="Orion Connected">
+        <div class="ocb-lockup">Connecting Beyond</div>
+      </div>
+      <div class="ocb-id">
+        <div class="ocb-code">FIDS</div>
+        <div class="ocb-name">Airport Display System</div>
+      </div>
+      <div class="ocb-boot"><span class="ocb-dot"></span>SECURE ENTRY</div>
     </div>
-    <div class="entry-version">v8 · ORION CONNECTED</div>
+
+    <!-- Stage: rotating greeting + actions -->
+    <div class="ocb-stage">
+      <div class="ocb-hero" id="ocbHero">Welcome</div>
+      <div class="ocb-sub">Administrator &amp; display entry · Entrée administrateur et affichage</div>
+      <div class="ocb-actions">
+        <button class="ocb-btn ocb-btn-primary" onclick="showLogin()">LOGIN</button>
+        <button class="ocb-btn ocb-btn-ghost" onclick="enterDemo()">DEMO</button>
+      </div>
+      <div class="ocb-langs" id="ocbLangs"></div>
+      <div class="ocb-version">v8 · ORION CONNECTED</div>
+    </div>
   </div>
+
+  <style>
+    #entryScreen{ position:fixed; inset:0; z-index:100; display:block; padding:0;
+      background:#fbfcfe; transition:opacity .4s ease; }
+    #entryScreen .ocb{ position:absolute; inset:0; display:flex; }
+    #entryScreen .ocb-rail{
+      flex:0 0 clamp(240px,20vw,340px); box-sizing:border-box;
+      background:linear-gradient(165deg,#313130 0%,#1c1c1b 100%);
+      display:flex; flex-direction:column; justify-content:center;
+      gap:clamp(24px,3.4vh,44px); padding:clamp(30px,4vh,56px) clamp(26px,2.2vw,40px);
+    }
+    #entryScreen .ocb-brand{ display:flex; flex-direction:column; gap:14px; align-items:flex-start; }
+    #entryScreen .ocb-logo{ width:clamp(88px,7.4vw,132px); height:auto; object-fit:contain; filter:brightness(0) invert(1); }
+    #entryScreen .ocb-lockup{ font-family:'AC Nord Text','AC Nord Display',system-ui,sans-serif;
+      font-size:clamp(13px,1.15vw,19px); font-weight:600; letter-spacing:.01em; color:rgba(255,255,255,.62); }
+    #entryScreen .ocb-code{ font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(34px,3.1vw,58px); font-weight:800; letter-spacing:.01em; color:#fff; line-height:1; }
+    #entryScreen .ocb-name{ margin-top:10px; font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(11px,.92vw,16px); font-weight:400; line-height:1.4; color:rgba(255,255,255,.55); max-width:15em; }
+    #entryScreen .ocb-boot{ display:flex; align-items:center; gap:8px; font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(9px,.75vw,13px); font-weight:700; letter-spacing:.22em; color:rgba(255,255,255,.5); }
+    #entryScreen .ocb-dot{ width:7px; height:7px; border-radius:50%; background:#eab308;
+      box-shadow:0 0 10px rgba(234,179,8,.7); animation:fids-loader-pulse 2s ease-in-out infinite; }
+    #entryScreen .ocb-stage{
+      flex:1 1 auto; display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+      padding:0 clamp(40px,4.2vw,88px);
+      background:linear-gradient(180deg,#fbfcfe 0%,#eef2f8 100%); color:#0f172a;
+    }
+    #entryScreen .ocb-hero{ font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(40px,5vw,92px); font-weight:800; letter-spacing:-.03em; line-height:1; color:#0f172a;
+      transition:opacity .5s ease, transform .5s ease; }
+    #entryScreen .ocb-hero.is-swap{ opacity:0; transform:translateY(10px); }
+    #entryScreen .ocb-sub{ margin-top:clamp(14px,1.8vh,22px); font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(12px,1vw,17px); color:#475569; }
+    #entryScreen .ocb-actions{ margin-top:clamp(26px,3.4vh,44px); display:flex; gap:14px; }
+    #entryScreen .ocb-btn{ font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(13px,1vw,17px); font-weight:800; letter-spacing:.12em;
+      padding:clamp(12px,1.4vh,16px) clamp(26px,2.4vw,42px); border-radius:10px; cursor:pointer;
+      transition:transform .15s ease, box-shadow .15s ease, background .15s ease; }
+    #entryScreen .ocb-btn:hover{ transform:translateY(-1px); }
+    #entryScreen .ocb-btn-primary{ background:#d97706; border:1px solid #d97706; color:#fff;
+      box-shadow:0 6px 18px rgba(217,119,6,.28); }
+    #entryScreen .ocb-btn-primary:hover{ background:#c26a05; }
+    #entryScreen .ocb-btn-ghost{ background:transparent; border:1px solid rgba(15,23,42,.22); color:#0f172a; }
+    #entryScreen .ocb-btn-ghost:hover{ border-color:rgba(15,23,42,.45); }
+    #entryScreen .ocb-langs{ margin-top:clamp(22px,3vh,36px); display:flex; align-items:center; gap:clamp(10px,1vw,16px); }
+    #entryScreen .ocb-lang{ font-family:'AC Nord Text',system-ui,sans-serif; font-size:clamp(10px,.85vw,14px);
+      letter-spacing:.1em; font-weight:500; color:#94a3b8; transition:color .3s, font-weight .3s; }
+    #entryScreen .ocb-lang.is-on{ color:#d97706; font-weight:700; }
+    #entryScreen .ocb-version{ margin-top:clamp(26px,3.6vh,46px); font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:11px; letter-spacing:.22em; font-weight:700; color:#94a3b8; }
+    @media (max-aspect-ratio:1/1){
+      #entryScreen .ocb{ flex-direction:column; }
+      #entryScreen .ocb-rail{ flex-basis:auto; }
+      #entryScreen .ocb-stage{ align-items:center; text-align:center; padding-top:clamp(24px,4vh,48px); }
+      #entryScreen .ocb-actions{ justify-content:center; }
+    }
+  </style>
+
+  <script>
+  (function(){
+    var root = document.currentScript.closest('#entryScreen');
+    if(!root || root._ocbInit) return; root._ocbInit = true;
+    var GREET = [["EN","Welcome"],["FR","Bienvenue"],["ES","Bienvenido"],["DE","Willkommen"],["PT","Bem-vindo"],["中文","欢迎"]];
+    var heroEl = root.querySelector('#ocbHero');
+    var langsEl = root.querySelector('#ocbLangs');
+    GREET.forEach(function(g){ var s=document.createElement('span'); s.className='ocb-lang'; s.textContent=g[0]; langsEl.appendChild(s); });
+    var chips = langsEl.children;
+    heroEl.textContent = GREET[0][1]; chips[0].classList.add('is-on');
+    var i = 0;
+    setInterval(function(){
+      i=(i+1)%GREET.length;
+      heroEl.classList.add('is-swap');
+      setTimeout(function(){
+        heroEl.textContent = GREET[i][1];
+        for(var k=0;k<chips.length;k++) chips[k].classList.toggle('is-on', k===i);
+        heroEl.classList.remove('is-swap');
+      }, 260);
+    }, 2800);
+  })();
+  </script>
 </div>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      LOGIN MODAL
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="loginOverlay" class="login-overlay">
-  <div class="login-card">
-    <div class="login-header">FIDS</div>
-    <div class="login-title">LIVE ACCESS</div>
-    <div class="login-subtitle">ACCÈS EN DIRECT</div>
-    <div class="gold-line" style="margin-bottom: 32px;"></div>
+  <div class="ocb-login-card">
+    <div class="ocb-login-kicker">ORION CONNECTED</div>
+    <div class="ocb-login-title">Live access</div>
+    <div class="ocb-login-sub">Accès en direct</div>
 
-    <div class="login-field">
+    <div class="ocb-field">
       <label>USERNAME · NOM D'UTILISATEUR</label>
       <input id="loginUser" type="text" autocomplete="username"
              onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
     </div>
-    <div class="login-field" style="margin-bottom: 24px;">
+    <div class="ocb-field">
       <label>PASSWORD · MOT DE PASSE</label>
       <input id="loginPass" type="password" autocomplete="current-password"
              onkeydown="if(event.key==='Enter')attemptLogin()">
@@ -89,13 +179,52 @@
 
     <div id="loginError" class="login-error"></div>
 
-    <div class="login-actions">
-      <button class="login-btn-submit" onclick="attemptLogin()">LOGIN</button>
-      <button class="login-btn-cancel" onclick="hideLogin()">CANCEL</button>
+    <div class="ocb-login-actions">
+      <button class="ocb-btn ocb-btn-primary login-btn-submit" onclick="attemptLogin()">LOGIN</button>
+      <button class="ocb-btn ocb-btn-ghost" onclick="hideLogin()">CANCEL</button>
     </div>
 
-    <div class="login-hint">LIVE DATA REQUIRES AUTHENTICATED ACCESS</div>
+    <div class="ocb-login-hint"><span class="ocb-dot"></span>LIVE DATA REQUIRES AUTHENTICATED ACCESS</div>
   </div>
+
+  <style>
+    #loginOverlay{ position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
+      background:rgba(15,23,42,.45); backdrop-filter:blur(6px); }
+    #loginOverlay.open{ display:flex; }
+    #loginOverlay .ocb-login-card{
+      width:min(440px, 92vw); box-sizing:border-box; background:#fbfcfe; border-radius:18px;
+      border:1px solid rgba(15,23,42,.08); box-shadow:0 30px 80px rgba(15,23,42,.35);
+      padding:clamp(28px,4vh,44px) clamp(26px,3vw,42px);
+      font-family:'AC Nord Text',system-ui,sans-serif; color:#0f172a; }
+    #loginOverlay .ocb-login-kicker{ font-size:10px; letter-spacing:.26em; font-weight:700; color:#94a3b8; }
+    #loginOverlay .ocb-login-title{ margin-top:10px; font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:32px; font-weight:800; letter-spacing:-.02em; line-height:1; }
+    #loginOverlay .ocb-login-sub{ margin-top:6px; font-size:13px; color:#94a3b8; margin-bottom:26px; }
+    #loginOverlay .ocb-field{ margin-bottom:18px; }
+    #loginOverlay .ocb-field label{ display:block; font-size:10px; letter-spacing:.18em; font-weight:700; color:#475569; margin-bottom:7px; }
+    #loginOverlay .ocb-field input{
+      width:100%; box-sizing:border-box; padding:13px 14px; border-radius:10px;
+      border:1px solid rgba(15,23,42,.14); background:#fff; color:#0f172a;
+      font-family:'AC Nord Text',system-ui,sans-serif; font-size:16px; outline:none;
+      transition:border-color .15s ease, box-shadow .15s ease; }
+    #loginOverlay .ocb-field input:focus{ border-color:#d97706; box-shadow:0 0 0 3px rgba(217,119,6,.18); }
+    #loginOverlay .login-error{ display:none; margin:2px 0 14px; font-size:13px; font-weight:700; color:#dc2626; }
+    #loginOverlay .login-error.show{ display:block; }
+    #loginOverlay .ocb-login-actions{ display:flex; gap:12px; margin-top:6px; }
+    #loginOverlay .ocb-btn{ font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif; font-size:14px;
+      font-weight:800; letter-spacing:.12em; padding:13px 30px; border-radius:10px; cursor:pointer;
+      transition:transform .15s ease, background .15s ease; }
+    #loginOverlay .ocb-btn:hover{ transform:translateY(-1px); }
+    #loginOverlay .ocb-btn-primary{ background:#d97706; border:1px solid #d97706; color:#fff;
+      box-shadow:0 6px 18px rgba(217,119,6,.28); }
+    #loginOverlay .ocb-btn-primary:hover{ background:#c26a05; }
+    #loginOverlay .ocb-btn-primary:disabled{ opacity:.6; cursor:default; transform:none; }
+    #loginOverlay .ocb-btn-ghost{ background:transparent; border:1px solid rgba(15,23,42,.22); color:#0f172a; }
+    #loginOverlay .ocb-login-hint{ display:flex; align-items:center; gap:8px; margin-top:24px;
+      font-size:9.5px; letter-spacing:.2em; font-weight:700; color:#94a3b8; }
+    #loginOverlay .ocb-dot{ width:6px; height:6px; border-radius:50%; background:#eab308;
+      box-shadow:0 0 8px rgba(234,179,8,.7); animation:fids-loader-pulse 2s ease-in-out infinite; }
+  </style>
 </div>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
