@@ -90,13 +90,187 @@
 })();
 </script>
 <!-- Transition loader -->
-<div id="fidsLoader">
-  <img class="fids-loader-logo" src="/OrionConnectedLogos/transparent-logo.svg" alt="Orion Connected">
-  <div class="fids-loader-brand">FLIGHT INFORMATION DISPLAY</div>
-  <div class="fids-loader-title">FIDS</div>
-  <div class="fids-loader-sub">SYSTÈME D'INFORMATION DES VOLS</div>
-  <div class="fids-loader-bar"><div class="fids-loader-dot"></div></div>
-  <div class="fids-loader-status" id="fidsLoaderStatus">LOADING…</div>
+<!-- ══════════════════════════════════════════════════════════════════
+     OrionConnected boot loader — F.I.D.S. (Flight Information Display Screen)
+     Drop-in replacement for the old <div id="fidsLoader">…</div> block.
+     • Keeps id="fidsLoader" + a hidden #fidsLoaderStatus so the existing
+       _fidsHideLoader() / .is-hidden / .is-gone fade + data-theme hooks
+       in this page's init script keep working, untouched.
+     • Rotates ONE language at a time (English default) and counts a live %.
+     • Consumes the --ld-* theme vars already defined in css/shared.css,
+       so light + dark night mode both work with no extra CSS.
+     ══════════════════════════════════════════════════════════════════ -->
+<div id="fidsLoader" data-screen="F.I.D.S.">
+  <!-- Kept so the page's init JS can set status text + fade the loader. -->
+  <span id="fidsLoaderStatus" style="display:none;"></span>
+
+  <div class="ocb">
+    <!-- Brand rail (fixed identity, English — the letters spell the name) -->
+    <div class="ocb-rail">
+      <div class="ocb-brand">
+        <img class="ocb-logo" src="/OrionConnectedLogos/transparent-logo.svg" alt="Orion Connected">
+        <div class="ocb-lockup">Connecting Beyond</div>
+      </div>
+      <div class="ocb-id">
+        <div class="ocb-code">F.I.D.S.</div>
+        <div class="ocb-name">Flight Information Display Screen</div>
+      </div>
+      <div class="ocb-boot"><span class="ocb-dot"></span>LOADING</div>
+    </div>
+
+    <!-- Stage: rotating localized greeting + live % + language ticker -->
+    <div class="ocb-stage">
+      <div class="ocb-hero" id="ocbHero">Welcome</div>
+      <div class="ocb-pct"><span id="ocbPct">0</span><i>%</i></div>
+      <div class="ocb-track"><div class="ocb-fill" id="ocbFill"></div></div>
+      <div class="ocb-langs" id="ocbLangs"></div>
+    </div>
+  </div>
+
+  <style>
+    /* Override the legacy centred flex layout for the split panel. */
+    #fidsLoader .ocb{ position:absolute; inset:0; display:flex; z-index:1; }
+    /* ── Brand rail ─────────────────────────────────────────── */
+    #fidsLoader .ocb-rail{
+      flex:0 0 clamp(240px, 20vw, 340px); box-sizing:border-box;
+      background:linear-gradient(165deg,#313130 0%,#1c1c1b 100%);
+      display:flex; flex-direction:column; justify-content:center;
+      gap:clamp(24px,3.4vh,44px); padding:clamp(30px,4vh,56px) clamp(26px,2.2vw,40px);
+    }
+    #fidsLoader .ocb-brand{ display:flex; flex-direction:column; gap:14px; align-items:flex-start; }
+    #fidsLoader .ocb-logo{
+      width:clamp(88px,7.4vw,132px); height:auto; object-fit:contain;
+      filter:brightness(0) invert(1); animation:none !important; max-height:none !important; margin:0 !important;
+    }
+    #fidsLoader .ocb-lockup{
+      font-family:'AC Nord Text','AC Nord Display',system-ui,sans-serif;
+      font-size:clamp(13px,1.15vw,19px); font-weight:600; letter-spacing:.01em; color:rgba(255,255,255,.62);
+    }
+    #fidsLoader .ocb-code{
+      font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(34px,3.1vw,58px); font-weight:800; letter-spacing:.01em; color:#fff; line-height:1;
+    }
+    #fidsLoader .ocb-name{
+      margin-top:10px; font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(11px,.92vw,16px); font-weight:400; line-height:1.4; color:rgba(255,255,255,.55); max-width:15em;
+    }
+    #fidsLoader .ocb-boot{
+      display:flex; align-items:center; gap:8px;
+      font-family:'AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(9px,.75vw,13px); font-weight:700; letter-spacing:.22em; color:rgba(255,255,255,.5);
+    }
+    #fidsLoader .ocb-dot{
+      width:7px; height:7px; border-radius:50%; background:#eab308;
+      box-shadow:0 0 10px rgba(234,179,8,.7); animation:fids-loader-pulse 2s ease-in-out infinite;
+    }
+    /* ── Stage ──────────────────────────────────────────────── */
+    #fidsLoader .ocb-stage{
+      flex:1 1 auto; display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+      padding:0 clamp(40px,4.2vw,88px); position:relative; color:var(--ld-text);
+    }
+    #fidsLoader .ocb-hero{
+      font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+      font-size:clamp(40px,5vw,92px); font-weight:800; letter-spacing:-.03em; line-height:1;
+      color:var(--ld-text); max-width:100%;
+      transition:opacity .5s var(--ease-out,ease), transform .5s var(--ease-out,ease);
+    }
+    #fidsLoader .ocb-hero.is-swap{ opacity:0; transform:translateY(10px); }
+    #fidsLoader .ocb-pct{
+      margin-top:clamp(20px,2.6vh,34px); display:flex; align-items:baseline; gap:5px;
+      font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
+    }
+    #fidsLoader .ocb-pct span{ font-size:clamp(30px,2.7vw,50px); font-weight:800; color:var(--ld-text); font-variant-numeric:tabular-nums; line-height:1; }
+    #fidsLoader .ocb-pct i{ font-style:normal; font-size:clamp(14px,1.1vw,20px); font-weight:700; color:var(--ld-accent); }
+    #fidsLoader .ocb-track{
+      margin-top:14px; width:min(280px,60%); height:3px; border-radius:3px;
+      background:var(--ld-border); overflow:hidden;
+    }
+    #fidsLoader .ocb-fill{ height:100%; width:0%; border-radius:3px; background:var(--ld-accent); transition:width .18s linear; }
+    #fidsLoader .ocb-langs{ margin-top:clamp(18px,2.4vh,30px); display:flex; align-items:center; gap:clamp(10px,1vw,16px); }
+    #fidsLoader .ocb-lang{
+      font-family:'AC Nord Text',system-ui,sans-serif; font-size:clamp(10px,.85vw,14px);
+      letter-spacing:.1em; font-weight:500; color:var(--ld-text-muted); transition:color .3s, font-weight .3s;
+    }
+    #fidsLoader .ocb-lang.is-on{ color:var(--ld-accent); font-weight:700; }
+    /* Narrow / portrait screens: stack the rail on top. */
+    @media (max-aspect-ratio:1/1){
+      #fidsLoader .ocb{ flex-direction:column; }
+      #fidsLoader .ocb-rail{ flex-basis:auto; }
+      #fidsLoader .ocb-stage{ align-items:center; text-align:center; padding-top:clamp(24px,4vh,48px); }
+      #fidsLoader .ocb-track{ width:min(280px,80%); }
+    }
+  </style>
+
+  <script>
+  /* Self-contained: language rotation (EN first) + live %. Guards against
+     double-init and stops itself when the loader is hidden. */
+  (function(){
+    var root = document.currentScript.closest('#fidsLoader');
+    if(!root || root._ocbInit) return; root._ocbInit = true;
+
+    /* Sub-label from the page's real context (?ap= / ?gate=), not a demo value. */
+    try {
+      var q = new URLSearchParams(window.location.search);
+      var ap = (q.get('ap') || sessionStorage.getItem('fids_airport') || '').toUpperCase();
+      var gate = (q.get('gate') || '').toUpperCase();
+      var _lbl = ap ? (ap + ' · LOADING') : 'LOADING';
+      var bootEl = root.querySelector('.ocb-boot');
+      if (bootEl) {
+        while (bootEl.childNodes.length > 1) bootEl.removeChild(bootEl.lastChild);
+        bootEl.appendChild(document.createTextNode(_lbl));
+      }
+    } catch(e) {}
+
+
+    var GREET = [["EN","Welcome"],["FR","Bienvenue"],["ES","Bienvenido"],["DE","Willkommen"],["PT","Bem-vindo"],["中文","欢迎"]];
+    var heroEl = root.querySelector('#ocbHero');
+    var langsEl = root.querySelector('#ocbLangs');
+    var pctEl = root.querySelector('#ocbPct');
+    var fillEl = root.querySelector('#ocbFill');
+
+    /* Build the language ticker chips once. */
+    GREET.forEach(function(g){
+      var s = document.createElement('span');
+      s.className = 'ocb-lang'; s.textContent = g[0];
+      langsEl.appendChild(s);
+    });
+    var chips = langsEl.children;
+
+    var i = 0;
+    function paint(){
+      heroEl.classList.add('is-swap');
+      setTimeout(function(){
+        heroEl.textContent = GREET[i][1];
+        for(var k=0;k<chips.length;k++) chips[k].classList.toggle('is-on', k===i);
+        heroEl.classList.remove('is-swap');
+      }, 260);
+    }
+    /* First paint (English) immediately, no fade. */
+    heroEl.textContent = GREET[0][1];
+    chips[0].classList.add('is-on');
+
+    var langTimer = setInterval(function(){ i=(i+1)%GREET.length; paint(); }, 2800);
+
+    /* Percentage — ease toward 100, hold near the top until the real
+       load finishes and the page fades the loader out. */
+    var pct = 0;
+    var pctTimer = setInterval(function(){
+      var step = pct < 80 ? 2 : (pct < 95 ? 0.6 : 0.15);
+      pct = Math.min(99, pct + step);
+      pctEl.textContent = Math.round(pct);
+      fillEl.style.width = pct + '%';
+    }, 60);
+
+    /* When the page adds .is-hidden (data loaded), snap to 100 and stop. */
+    var obs = new MutationObserver(function(){
+      if(root.classList.contains('is-hidden') || root.classList.contains('is-gone')){
+        pctEl.textContent = '100'; fillEl.style.width = '100%';
+        clearInterval(langTimer); clearInterval(pctTimer); obs.disconnect();
+      }
+    });
+    obs.observe(root, {attributes:true, attributeFilter:['class']});
+  })();
+  </script>
 </div>
 
 <!-- ─── FIDS BOARD ────────────────────────────────────────────────── -->
