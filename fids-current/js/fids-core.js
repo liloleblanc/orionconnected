@@ -5911,9 +5911,13 @@ function _buildV2MapCol(ctx, vars) {
         var _ibArrLblFr = (_stKey === 'arrived') ? 'Arrivé' : 'Arrivée';
         var _ibArrVal;
         if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
+          // Revised time + a small 'revised | révisé' tag, ALL in the status
+          // colour (green when earlier — Nick: 'revised beside it and all
+          // green'). Mirrors the reg row's 'expected | prévu' treatment.
           var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-ontime' : 'v2-rc-status-delayed';
           _ibArrVal = '<span style="text-decoration:line-through;opacity:.5;margin-right:.45em;">' + _ibArrSchedStr + '</span>'
-                    + '<span class="' + _ibRevCls + '">' + _ibArrRevStr + '</span>';
+                    + '<span class="' + _ibRevCls + '">' + _ibArrRevStr
+                    + ' <span style="font-size:.58em;font-weight:700;letter-spacing:.02em;opacity:.85;">revised <span class="v2-rc-fi-sep">|</span> révisé</span></span>';
         } else {
           _ibArrVal = _ibArrSchedStr;
         }
