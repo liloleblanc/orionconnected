@@ -5914,10 +5914,13 @@ function _buildV2MapCol(ctx, vars) {
           // Revised time + a small 'revised | révisé' tag, ALL in the status
           // colour (green when earlier — Nick: 'revised beside it and all
           // green'). Mirrors the reg row's 'expected | prévu' treatment.
-          var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-ontime' : 'v2-rc-status-delayed';
+          // Colour INLINE: the status-colour CSS targets the row value element
+          // itself, not spans inside it — the class alone left this navy and
+          // tiny (Nick: 'its not green'). Green earlier / amber later.
+          var _ibRevHex = (_ibRevTs < _ibArrTs) ? '#16a34a' : '#d97706';
           _ibArrVal = '<span style="text-decoration:line-through;opacity:.5;margin-right:.45em;">' + _ibArrSchedStr + '</span>'
-                    + '<span class="' + _ibRevCls + '">' + _ibArrRevStr
-                    + ' <span style="font-size:.58em;font-weight:700;letter-spacing:.02em;opacity:.85;">revised <span class="v2-rc-fi-sep">|</span> révisé</span></span>';
+                    + '<span style="color:' + _ibRevHex + ';font-weight:900;">' + _ibArrRevStr
+                    + ' <span style="font-size:.74em;font-weight:800;letter-spacing:.02em;">revised <span class="v2-rc-fi-sep" style="opacity:.55;">|</span> révisé</span></span>';
         } else {
           _ibArrVal = _ibArrSchedStr;
         }
@@ -8748,7 +8751,9 @@ const gView = document.getElementById('gateView');
               // glyph never appear here (Nick: 'map doesn't work still').
               try {
                 var _stAirMini = /active|en-?route|departed/i.test(String(inb.status || ''))
-                  || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!inb._revTs)
+                  // revision evidence lives in _revTs OR the .upd string
+                  // depending on which enrichment built this object
+                  || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!(inb._revTs || inb.upd))
                   || (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
                 var _arrTMini = inb._revTs || inb._sortTs || 0;
                 var _apcMini = window.AIRPORT_COORDS || {};
@@ -8763,6 +8768,9 @@ const gView = document.getElementById('gateView');
                   var _durMini = Math.max(3600000, (_kmMini / 13 + 25) * 60000);   // ~780 km/h + 25 min
                   var _pMini = (Date.now() - (_arrTMini - _durMini)) / _durMini;
                   if (_pMini >= 0.02 && _pMini <= 0.98) _estProg = _pMini;
+                  try { console.log('[MINIMAP-EST]', { st: inb.status, revTs: !!inb._revTs, upd: inb.upd || '', air: _stAirMini, p: +(_pMini || 0).toFixed(3) }); } catch (e) {}
+                } else {
+                  try { console.log('[MINIMAP-EST] skipped', { st: inb.status, air: _stAirMini, arrTs: !!_arrTMini, oc: !!_ocMini, dc: !!_dcMini, loc: inb._locIata }); } catch (e) {}
                 }
               } catch (e) {}
             }

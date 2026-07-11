@@ -1849,11 +1849,11 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child {
    rows collided (Nick: 'see how tight that is'). Tighter type + rhythm so all
    four rows breathe inside the same shelf. */
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl {
-  font-size: clamp(9px, 1.1vh, 12px) !important;
+  font-size: clamp(9px, 1.2vh, 13px) !important;
   line-height: 1.05 !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tval {
-  font-size: clamp(13px, 1.85vh, 22px) !important;
+  font-size: clamp(14px, 2.05vh, 24px) !important;
   line-height: 1.15 !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
