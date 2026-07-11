@@ -1,0 +1,12 @@
+<svg width="500" height="500" xmlns="http://www.w3.org/2000/svg">
+
+ <g>
+  <title>Layer 1</title>
+  <g stroke="null" data-name="star icon" id="star_icon">
+   <path stroke="null" fill="#b01117" d="m251.60252,13.24306l-149.07968,473.51388l149.09332,-116.24635l149.09332,116.24635l-149.10696,-473.51388z" data-name="Path 12" id="Path_12"/>
+   <path stroke="null" fill="#f9a51a" d="m251.60252,13.24306l-149.07968,473.51388l149.09332,-116.24635l-0.01364,-357.26753z" data-name="Path 13" id="Path_13"/>
+   <path stroke="null" fill="#f9a51a" d="m8.70526,196.14105l164.14994,0l-44.77437,87.98695l-119.37558,-87.98695z" data-name="Path 14" id="Path_14"/>
+   <path stroke="null" fill="#f9a51a" d="m371.91918,284.09985l119.37558,-87.98695l-157.7536,0" data-name="Path 15" id="Path_15"/>
+  </g>
+ </g>
+</svg>
