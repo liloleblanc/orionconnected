@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22144';
+var FIDS_BUILD_TAG = 'v22145';
 (function(){
   try {
     function _addTag(){
@@ -19410,15 +19410,13 @@ function playUploadedVideo(slot, videoUrl, playback) {
 
   function _positionNative() {
     if (!_nativeVideoEl) return;
-    // Anchor to the VISIBLE ad panel: gatePhotoBg's rect extends under the
-    // right column, which pushed the centered media under it (Nick: 'the
-    // ads are cut off'). The carousel element IS the visible panel.
-    var _vp = document.getElementById('gateAdCarousel');
-    var liveSlot = (_vp && _vp.getBoundingClientRect().width > 0) ? _vp
-                 : (document.getElementById('gatePhotoBg') || slot);
-    if (!liveSlot) return;
+    // Anchor to the measured VISIBLE panel region (the raw carousel /
+    // gatePhotoBg boxes can run past the viewport and under the columns).
+    var _vvr = (typeof _adVisibleRect === 'function') ? _adVisibleRect() : null;
+    var liveSlot = document.getElementById('gatePhotoBg') || slot;
+    if (!liveSlot && !_vvr) return;
     if (_nativeVideoEl.style.display === 'none') return;
-    var r = liveSlot.getBoundingClientRect();
+    var r = _vvr || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return; // detached element
     var _nvIx = Math.round(r.width * 0.06), _nvIy = Math.round(r.height * 0.06);
     _nativeVideoEl.style.left = Math.round(r.left + _nvIx) + 'px';
@@ -19513,13 +19511,12 @@ function playLibraryImage(slot, item) {
 
   function _positionImg() {
     if (!_libImgEl) return;
-    // Same visible-panel anchoring as _positionNative (right-edge cut fix).
-    var _vp = document.getElementById('gateAdCarousel');
-    var liveSlot = (_vp && _vp.getBoundingClientRect().width > 0) ? _vp
-                 : (document.getElementById('gatePhotoBg') || slot);
-    if (!liveSlot) return;
+    // Same visible-region anchoring as _positionNative.
+    var _vir = (typeof _adVisibleRect === 'function') ? _adVisibleRect() : null;
+    var liveSlot = document.getElementById('gatePhotoBg') || slot;
+    if (!liveSlot && !_vir) return;
     if (_libImgEl.style.display === 'none') return;
-    var r = liveSlot.getBoundingClientRect();
+    var r = _vir || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
     var _liIx = Math.round(r.width * 0.06), _liIy = Math.round(r.height * 0.06);
     _libImgEl.style.left = Math.round(r.left + _liIx) + 'px';
@@ -22591,6 +22588,28 @@ function _adGlobeBackdrop() {
     + '<div style="position:absolute;top:-8%;bottom:-8%;right:4.2%;width:1%;background:var(--airline-accent,#D82F2E);opacity:.45;transform:skewX(-14deg);pointer-events:none;"></div>';
 }
 
+// The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
+// viewport bottom and under the side columns (v22144 stamp proved it: the
+// frame's dots/handles rendered off-screen inside the oversized box, so the
+// design 'never changed' on the live board). Clamp to viewport and columns.
+function _adVisibleRect() {
+  try {
+    var el = document.getElementById('gateAdCarousel');
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (!r || r.width < 40 || r.height < 40) return null;
+    var L = Math.max(r.left, 0), T = Math.max(r.top, 0);
+    var R = Math.min(r.right, window.innerWidth || r.right);
+    var B = Math.min(r.bottom, window.innerHeight || r.bottom);
+    var mc = document.querySelector('.gad-map-col-v2');
+    if (mc) { var mr = mc.getBoundingClientRect(); if (mr.width > 0 && mr.left > L && mr.left < R) R = mr.left; }
+    var ac = document.querySelector('.gad-aircraft-col');
+    if (ac) { var ar = ac.getBoundingClientRect(); if (ar.width > 0 && ar.right > L && ar.right < R * 0.6) L = ar.right; }
+    if (R - L < 40 || B - T < 40) return null;
+    return { left: L, top: T, width: R - L, height: B - T, elLeft: r.left, elTop: r.top };
+  } catch (e) { return null; }
+}
+
 function renderGateAd(index) {
   var el = document.getElementById('gateAdCarousel');
   if (!el) return;
@@ -22657,12 +22676,18 @@ function renderGateAd(index) {
       // accent-tinted vignette. NOT a blurred video copy — a second decoding
       // <video> would double the decode load and OOM the small stream box.
       if (fit === 'contain') {
-        // Card-on-frame: the ad floats inset over the branded surround. The
-        // per-item zoom is a cover-mode crop tool — honoured there, ignored
-        // here so a zoomed white clip can't bury the frame (Nick's Cargo ad).
-        customHtml = _adGlobeBackdrop()
+        // Card-on-frame INSIDE THE VISIBLE REGION: the carousel element's own
+        // box can run past the viewport/columns, which pushed the frame's
+        // dots and handles off-screen. Wrap everything in a div sized to the
+        // measured visible panel.
+        var _vv = _adVisibleRect();
+        var _wrapStyle = _vv
+          ? 'position:absolute;left:' + Math.round(_vv.left - _vv.elLeft) + 'px;top:' + Math.round(_vv.top - _vv.elTop) + 'px;width:' + Math.round(_vv.width) + 'px;height:' + Math.round(_vv.height) + 'px;overflow:hidden;'
+          : 'position:absolute;inset:0;overflow:hidden;';
+        customHtml = '<div style="' + _wrapStyle + '">' + _adGlobeBackdrop()
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));"></video>';
+          + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));"></video>'
+          + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
           + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:' + posStr + ';transform:scale(' + zoom + ');"></video>';
@@ -22674,9 +22699,14 @@ function renderGateAd(index) {
       // nothing; 'it should be similar to the one with the red, with the
       // globe pattern'). 'cover' fills the panel, no backdrop needed.
       if (fit === 'contain') {
-        customHtml = _adGlobeBackdrop()
+        var _vi = _adVisibleRect();
+        var _wrapStyleI = _vi
+          ? 'position:absolute;left:' + Math.round(_vi.left - _vi.elLeft) + 'px;top:' + Math.round(_vi.top - _vi.elTop) + 'px;width:' + Math.round(_vi.width) + 'px;height:' + Math.round(_vi.height) + 'px;overflow:hidden;'
+          : 'position:absolute;inset:0;overflow:hidden;';
+        customHtml = '<div style="' + _wrapStyleI + '">' + _adGlobeBackdrop()
           + '<img src="' + item.url + '" alt=""'
-          + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));">';
+          + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));">'
+          + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
           + '\');background-size:cover;background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + zoom + ');"></div>';
