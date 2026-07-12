@@ -13374,7 +13374,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22165';
+var FIDS_BUILD_TAG = 'v22166';
 (function(){
   try {
     function _addTag(){
@@ -22619,10 +22619,10 @@ function _adBackdropHtml(blurUrl) {
       + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.16);"></div>'
     : '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#151c2a 0%,#0a0e16 100%);"></div>'
       + '<div style="position:absolute;inset:0;background:var(--airline-accent,#D82F2E);opacity:.22;"></div>';
-  var dots = '<div style="position:absolute;left:-10%;right:-10%;bottom:-8%;height:64%;'
+  var dots = '<div style="position:absolute;left:-10%;right:-10%;bottom:-8%;height:74%;'
     + 'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
     + 'background-size:cover;background-position:center top;background-repeat:no-repeat;'
-    + 'opacity:.22;filter:grayscale(1) brightness(1.7);mix-blend-mode:screen;pointer-events:none;"></div>';
+    + 'opacity:.42;filter:grayscale(1) brightness(1.85);mix-blend-mode:screen;pointer-events:none;"></div>';
   // Diagonal slat set (Nick: 'maybe more diagonal lines?') — the two thick
   // edge handles plus echoing thinner slats stepping inward on both sides.
   function _slat(side, off, w, op) {
