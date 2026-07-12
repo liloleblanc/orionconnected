@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22142';
+var FIDS_BUILD_TAG = 'v22143';
 (function(){
   try {
     function _addTag(){
@@ -19397,8 +19397,12 @@ function playUploadedVideo(slot, videoUrl, playback) {
 
   function _positionNative() {
     if (!_nativeVideoEl) return;
-    // Re-fetch slot by ID — closure ref may be stale after a panel re-render
-    var liveSlot = document.getElementById('gatePhotoBg') || slot;
+    // Anchor to the VISIBLE ad panel: gatePhotoBg's rect extends under the
+    // right column, which pushed the centered media under it (Nick: 'the
+    // ads are cut off'). The carousel element IS the visible panel.
+    var _vp = document.getElementById('gateAdCarousel');
+    var liveSlot = (_vp && _vp.getBoundingClientRect().width > 0) ? _vp
+                 : (document.getElementById('gatePhotoBg') || slot);
     if (!liveSlot) return;
     if (_nativeVideoEl.style.display === 'none') return;
     var r = liveSlot.getBoundingClientRect();
@@ -19496,7 +19500,10 @@ function playLibraryImage(slot, item) {
 
   function _positionImg() {
     if (!_libImgEl) return;
-    var liveSlot = document.getElementById('gatePhotoBg') || slot;
+    // Same visible-panel anchoring as _positionNative (right-edge cut fix).
+    var _vp = document.getElementById('gateAdCarousel');
+    var liveSlot = (_vp && _vp.getBoundingClientRect().width > 0) ? _vp
+                 : (document.getElementById('gatePhotoBg') || slot);
     if (!liveSlot) return;
     if (_libImgEl.style.display === 'none') return;
     var r = liveSlot.getBoundingClientRect();
@@ -22296,10 +22303,19 @@ function buildAccorAdOnlyV6(ad) {
   // the score + QR close.
   var _roomPages = _rooms.slice(0, 3).filter(function (r) { return r.name; });
   _roomPages.forEach(function (r) {
+    // Room description ends on a COMPLETE sentence, never a mid-word chop
+    // (Nick: 'the description is cut off').
+    var _rd = String(r.desc || '');
+    if (_rd.length > 150) {
+      var _rc = _rd.slice(0, 190);
+      var _pe = Math.max(_rc.lastIndexOf('. '), _rc.lastIndexOf('! '), _rc.lastIndexOf('? '),
+                         /[.!?]$/.test(_rc) ? _rc.length - 1 : -1);
+      _rd = (_pe > 40) ? _rc.slice(0, _pe + 1) : _rd.slice(0, 145).replace(/\s+\S*$/, '');
+    }
     _pageBodies.push({ photo: r.photo || _ph2, body:
         '<div class="ax7-ctx axr-one-line">' + esc(r.name) + '</div>'
       + (r.amen && r.amen.length ? _chipList(r.amen) : '')
-      + (r.desc ? '<p class="ax7-blurb">' + esc(r.desc) + '</p>' : '') });
+      + (_rd ? '<p class="ax7-blurb">' + esc(_rd) + '</p>' : '') });
   });
   // CLOSING page — restaurants (when the key returns them), offers, the
   // hotel's own words, check-in/out, score + QR. Its own page so room pages
@@ -23941,9 +23957,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // Same hotel re-rendered mid-slide — resume where we were. But if the
         // deck already ran to its last page, this is the hotel RE-APPEARING in
         // a later carousel slot, so restart its story from page 1.
-        if (_st.idx >= pages.length - 1) { _st.idx = 0; _st.next = now + EVERY; }
+        if (_st.idx >= pages.length - 1) { _st.idx = 0; }
         _showPage(pages, _st.idx % pages.length);
-        if (!_st.next || _st.next <= now) _st.next = now + EVERY;
+        // FULL dwell for the resumed page — a board re-render mid-page was
+        // leaving it only the leftover seconds (Nick: 'the second room cuts
+        // after 2 seconds').
+        _st.next = now + EVERY;
       } else {
         // Genuinely new slide — page 1 gets its full dwell.
         _st.id = id; _st.idx = 0; _st.next = now + EVERY;
