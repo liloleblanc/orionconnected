@@ -2302,7 +2302,7 @@ html .wxcard-wrap > .wxc-globe {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: 0.38;
+  opacity: 0.26;
   filter: grayscale(1) brightness(1.8);
   mix-blend-mode: screen;
   pointer-events: none;
