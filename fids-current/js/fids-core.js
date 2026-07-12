@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22138';
+var FIDS_BUILD_TAG = 'v22139';
 (function(){
   try {
     function _addTag(){
@@ -19313,7 +19313,11 @@ function _ensureMediaFrame() {
   _mediaFrameEl = document.createElement('div');
   _mediaFrameEl.id = 'fidsMediaFrame';
   _mediaFrameEl.style.position = 'fixed';
-  _mediaFrameEl.style.zIndex = '4';
+  // z 5: the gate welcome panel paints its background at z-index 5 — a frame
+  // at 4 sat UNDER it (Nick's flat-red bands). Equal z + appended to <body>
+  // (later in DOM) puts the frame above the panel, and the media at 6 above
+  // the frame.
+  _mediaFrameEl.style.zIndex = '5';
   _mediaFrameEl.style.pointerEvents = 'none';
   _mediaFrameEl.style.overflow = 'hidden';
   _mediaFrameEl.style.display = 'none';
@@ -19361,7 +19365,7 @@ function playUploadedVideo(slot, videoUrl, playback) {
     _nativeVideoEl.controls = false;
     _nativeVideoEl.style.position = 'fixed';
     _nativeVideoEl.style.objectFit = 'contain';   /* whole ad visible; the branded frame fills the rest */
-    _nativeVideoEl.style.zIndex = '5';
+    _nativeVideoEl.style.zIndex = '6';
     _nativeVideoEl.style.pointerEvents = 'none';
     _nativeVideoEl.style.background = 'transparent';
     _nativeVideoEl.style.filter = 'drop-shadow(0 10px 30px rgba(10,20,40,0.28))';
@@ -19471,7 +19475,7 @@ function playLibraryImage(slot, item) {
     _libImgEl.id = 'fidsLibraryImage';
     _libImgEl.style.position = 'fixed';
     _libImgEl.style.objectFit = 'contain';   /* whole ad visible; the branded frame fills the rest */
-    _libImgEl.style.zIndex = '5';
+    _libImgEl.style.zIndex = '6';
     _libImgEl.style.pointerEvents = 'none';
     _libImgEl.style.background = 'transparent';
     _libImgEl.style.filter = 'drop-shadow(0 10px 30px rgba(10,20,40,0.28))';
