@@ -19266,6 +19266,43 @@ function playYouTubePlaylist(slot, playlistId) {
 // element instead of the YouTube iframe. The element is positioned over
 // the slot the same way the YT iframe is.
 // playback: { loop?: bool } — if loop, native <video> will replay automatically.
+// ── Branded FRAME behind library media (Nick: uploaded ads must sit on the
+// dots-world panel — the light brushed base + grey globe + accent handles —
+// like the aircraft-info background, not on their own baked backgrounds or
+// black). One fixed layer just under the media element; the media renders
+// object-fit:contain with a transparent back so the frame shows through
+// wherever the ad doesn't reach.
+var _mediaFrameEl = null;
+function _ensureMediaFrame() {
+  if (_mediaFrameEl) return _mediaFrameEl;
+  _mediaFrameEl = document.createElement('div');
+  _mediaFrameEl.id = 'fidsMediaFrame';
+  _mediaFrameEl.style.position = 'fixed';
+  _mediaFrameEl.style.zIndex = '4';
+  _mediaFrameEl.style.pointerEvents = 'none';
+  _mediaFrameEl.style.overflow = 'hidden';
+  _mediaFrameEl.style.display = 'none';
+  _mediaFrameEl.innerHTML = (typeof _adGlobeBackdrop === 'function') ? _adGlobeBackdrop() : '';
+  document.body.appendChild(_mediaFrameEl);
+  return _mediaFrameEl;
+}
+function _positionMediaFrame(r) {
+  var f = _ensureMediaFrame();
+  // The frame lives on <body>, outside .g8-wrap — pull the airline accent
+  // across so the handles keep the airline's colour.
+  try {
+    var _gw = document.querySelector('.g8-wrap');
+    var _acc = _gw ? getComputedStyle(_gw).getPropertyValue('--airline-accent') : '';
+    if (_acc) f.style.setProperty('--airline-accent', _acc.trim());
+  } catch (e) {}
+  f.style.left = Math.round(r.left) + 'px';
+  f.style.top = Math.round(r.top) + 'px';
+  f.style.width = Math.round(r.width) + 'px';
+  f.style.height = Math.round(r.height) + 'px';
+  f.style.display = 'block';
+}
+function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'none'; }
+
 var _nativeVideoEl = null;
 function playUploadedVideo(slot, videoUrl, playback) {
   playback = playback || {};
@@ -19288,10 +19325,11 @@ function playUploadedVideo(slot, videoUrl, playback) {
     _nativeVideoEl.playsInline = true;
     _nativeVideoEl.controls = false;
     _nativeVideoEl.style.position = 'fixed';
-    _nativeVideoEl.style.objectFit = 'cover';
+    _nativeVideoEl.style.objectFit = 'contain';   /* whole ad visible; the branded frame fills the rest */
     _nativeVideoEl.style.zIndex = '5';
     _nativeVideoEl.style.pointerEvents = 'none';
-    _nativeVideoEl.style.background = '#000';
+    _nativeVideoEl.style.background = 'transparent';
+    _nativeVideoEl.style.filter = 'drop-shadow(0 10px 30px rgba(10,20,40,0.28))';
     _nativeVideoEl.addEventListener('ended', function() {
       // If loop is set, the native element handles replay itself via .loop
       // attribute and 'ended' shouldn't fire. This handler only runs on
@@ -19326,6 +19364,7 @@ function playUploadedVideo(slot, videoUrl, playback) {
     _nativeVideoEl.style.width = Math.round(r.width) + 'px';
     _nativeVideoEl.style.height = Math.round(r.height) + 'px';
     _nativeVideoEl.style.display = 'block';
+    try { _positionMediaFrame(r); } catch (e) {}
   }
   _positionNative();
   if (_videoResizeObserver) { try { _videoResizeObserver.disconnect(); } catch(e){} _videoResizeObserver = null; }
@@ -19358,6 +19397,7 @@ function playUploadedVideo(slot, videoUrl, playback) {
 }
 
 function _hideNativeVideo() {
+  try { _hideMediaFrame(); } catch (e) {}
   if (_nativeVideoEl) {
     try { _nativeVideoEl.pause(); _nativeVideoEl.removeAttribute('src'); _nativeVideoEl.load(); } catch (e) {}
     _nativeVideoEl.style.display = 'none';
@@ -19395,10 +19435,11 @@ function playLibraryImage(slot, item) {
     _libImgEl = document.createElement('img');
     _libImgEl.id = 'fidsLibraryImage';
     _libImgEl.style.position = 'fixed';
-    _libImgEl.style.objectFit = 'cover';
+    _libImgEl.style.objectFit = 'contain';   /* whole ad visible; the branded frame fills the rest */
     _libImgEl.style.zIndex = '5';
     _libImgEl.style.pointerEvents = 'none';
-    _libImgEl.style.background = '#000';
+    _libImgEl.style.background = 'transparent';
+    _libImgEl.style.filter = 'drop-shadow(0 10px 30px rgba(10,20,40,0.28))';
     _libImgEl.addEventListener('error', function() {
       console.warn('[IMAGE] failed to load', item.url);
       _hideDestinationVideoOverlay();
@@ -19419,6 +19460,7 @@ function playLibraryImage(slot, item) {
     _libImgEl.style.width = Math.round(r.width) + 'px';
     _libImgEl.style.height = Math.round(r.height) + 'px';
     _libImgEl.style.display = 'block';
+    try { _positionMediaFrame(r); } catch (e) {}
   }
   _libImgEl.src = item.url;
   _positionImg();
@@ -19458,6 +19500,7 @@ function playLibraryImage(slot, item) {
 }
 
 function _hideLibraryImage() {
+  try { _hideMediaFrame(); } catch (e) {}
   if (_libImgTimeout) { clearTimeout(_libImgTimeout); _libImgTimeout = null; }
   if (_libImgEl) {
     _libImgEl.style.display = 'none';
