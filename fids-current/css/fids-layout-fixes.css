@@ -2218,3 +2218,94 @@ body[data-fids-theme="mist"] .bidsv2-status-arrived { color: #0E7A3C !important;
 body[data-fids-theme="mist"] .bidsv2-status-early { color: #157A43 !important; }
 body[data-fids-theme="mist"] .bidsv2-status-delayed { color: #A66F00 !important; }
 body[data-fids-theme="mist"] .bidsv2-empty { color: #3A4E66 !important; }
+
+/* Bottom band carries the baggage TICKER now (Nick: 'ticker info messages
+   on bags') — taller and readable; the mirrored slat art would flip the
+   text, so it's replaced by the banner colour under the scroll. */
+html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
+  height: clamp(34px, 4.6vh, 52px) !important;
+  transform: none !important;
+  opacity: 1 !important;
+  background: var(--fids-banner-bg, #050033) !important;
+  display: flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+}
+
+
+
+/* Alliance logo at full presence — the gids rule faded it to 0.65 which,
+   combined with the (now fixed) :empty hide, made it read as absent. */
+html .g8-wrap .g8-r1-star {
+  opacity: 0.95 !important;
+}
+
+/* ── Final-call / gate-closed takeover: WHITE text on the deep-red panel
+   (the navy ink was near-black on red — unreadable, Nick's YHZ shot),
+   plus the new flight-identity line. ── */
+html .g8-final .g8-final-hdr,
+html .g8-final .g8-final-allgrp,
+html .g8-final .g8-final-sub,
+html .g8-final .g8-final-flight {
+  color: #ffffff !important;
+}
+html .g8-final .g8-final-sub { opacity: 0.88; }
+html .g8-final .g8-final-flight {
+  font-size: clamp(26px, 3.6vh, 52px);
+  font-weight: 900;
+  letter-spacing: .01em;
+  margin-bottom: clamp(8px, 1.4vh, 20px);
+}
+html .g8-final .g8-final-flight .g8-final-sep { opacity: .55; font-weight: 400; }
+
+/* ── Star Alliance mark: PROPORTIONATE beside the wordmark (Nick vetoed the
+   104px square blob) — small, centered, subtle, like real airline lockups. ── */
+html body .g8-wrap .g8-r1-star {
+  width: auto !important;
+  min-width: 0 !important;
+  height: clamp(54px, 7.6vh, 88px) !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: clamp(54px, 7.6vh, 88px) !important;
+  margin-left: 26px !important;
+  opacity: 1 !important;
+  align-self: center !important;
+}
+
+/* ── YQM main/baggage boards: the Acadian flag lives in the banner tabs too
+   (Nick: 'flag in YQM was to be on every screen') — blue time tab with the
+   gold star, white airport band, RED board tab. ── */
+body.fids-ap-YQM .fids-banner-time-block {
+  background: linear-gradient(90deg, #0b0f16 0%, #003DA5 32%) !important;
+}
+body.fids-ap-YQM .fids-banner-time::before {
+  content: '★ ';
+  color: #FFD600;
+  font-size: 0.62em;
+  vertical-align: 0.18em;
+}
+body.fids-ap-YQM .fids-banner-board {
+  background: #D21034 !important;
+}
+body.fids-ap-YQM .fids-banner-board .fids-board-label { color: #ffffff !important; }
+body.fids-ap-YQM .fids-banner-board .fids-board-icon { background: #ffffff !important; }
+body.fids-ap-YQM .fids-banner-board .fids-board-icon svg { fill: #D21034 !important; }
+
+
+/* ── Arrival-weather scene: the dots-world globe breathes behind the card,
+   same treatment as the ad surround (Nick). ── */
+html .wxcard-wrap { position: relative !important; overflow: hidden !important; }
+html .wxcard-wrap > .wxc-globe {
+  position: absolute;
+  inset: -12%;
+  background-image: url('/logos/3d_globe_desktop.svg?v=2');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.26;
+  filter: grayscale(1) brightness(1.8);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 0;
+}
+html .wxcard-wrap > *:not(.wxc-globe) { position: relative; z-index: 1; }

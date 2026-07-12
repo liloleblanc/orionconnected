@@ -598,3 +598,28 @@ body.fids-light-board .bidsv2-status-arrived { color: #0E7A3C !important; }
 body.fids-light-board .bidsv2-status-early { color: #157A43 !important; }
 body.fids-light-board .bidsv2-status-delayed { color: #A66F00 !important; }
 body.fids-light-board .bidsv2-empty { color: #3A4E66 !important; }
+
+/* ─── BOTTOM-BAND TICKER — baggage-hall info messages (Nick) ────────────── */
+.bidsv2-bottom-band.bidsv2-ticker {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.bidsv2-ticker-track {
+  display: inline-flex;
+  width: max-content;
+  animation: bidsv2TickerScroll 90s linear infinite;
+  will-change: transform;
+}
+.bidsv2-ticker-track span {
+  font-size: clamp(15px, 2.2vh, 22px);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.88);
+  padding-right: 8px;
+}
+@keyframes bidsv2TickerScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}

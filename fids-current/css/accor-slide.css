@@ -1,46 +1,71 @@
 @charset "UTF-8";
 /* ════════════════════════════════════════════════════════════════════════
-   ACCOR HOTEL SLIDE — clean stylesheet (replaces ads-only-accor-v6.css V6–V23)
+   ACCOR HOTEL SLIDE — v2 "AC Nord edition"
    Scoped entirely to .axr-*. No !important needed: nothing else targets these.
-   Hierarchy via CSS vars: LOGO height = 100% ref; NAME = 75%; INFO = 62%.
+   Hierarchy via CSS vars: LOGO height = 100% ref; NAME = 78%; INFO = 62%.
+   TYPE: AC Nord Display (names/headlines) + AC Nord Text (everything else)
+   so hotel ads sit natively beside the rest of the FIDS type system.
+   Brand palettes stay per-brand (see generated section / gen-brand-styles.py).
    ════════════════════════════════════════════════════════════════════════ */
+/* Air Canada icomoon UI icons — same set the gate info rows use */
+@font-face{ font-family:'ac-icons'; src:url('../fonts/ac-icons/icomoon.woff') format('woff');
+  font-weight:normal; font-style:normal; font-display:block; }
 .axr, .axr *{ box-sizing:border-box; }
 .axr{
   --all-blue:#050033; --all-light:#F4F4F5; --all-gold:#C9A227;
+  /* Accor digital gradient gold (brand book): #FFD280 → #A88054 at 42° */
+  --axr-goldgrad:linear-gradient(42deg,#A88054 0%,#FFD280 100%);
   --axr-tint:#0a1a3a;
-  --axr-body:"Accor Montserrat","Montserrat","Avenir Next","Helvetica Neue",Arial,sans-serif;
+  --axr-display:"AC Nord Display","AC Nord Text","Montserrat","Helvetica Neue",Arial,sans-serif;
+  --axr-body:"AC Nord Text","Montserrat","Avenir Next","Helvetica Neue",Arial,sans-serif;
   /* responsive logo reference — scales with the ad well height */
   --axr-logo: clamp(24px, 3.6vh, 38px);    /* LOGO = 100% (sized down per Nick) */
   --axr-name: calc(var(--axr-logo) * 0.78);/* NAME = 78% of logo */
-  --axr-info: calc(var(--axr-name) * 0.62);/* INFO = 62% of name */
+  --axr-info: calc(var(--axr-name) * 0.72);/* INFO = 72% of name (bumped per Nick) */
   position:relative; width:100%; height:100%; overflow:hidden;
   display:grid; grid-template-rows:1fr auto;
   background:var(--all-blue); color:#fff; font-family:var(--axr-body);
+  font-weight:400;
 }
 
 /* ── 3-page slideshow: each .axr-page is a full-bleed layer, crossfaded ── */
 .axr-pages{ position:relative; }
 .axr-page{ position:absolute; inset:0; opacity:0; transition:opacity .8s ease; pointer-events:none; }
 .axr-page.axr-page-on{ opacity:1; }
-/* Page kicker (gold eyebrow) + small context hotel name on pages 2–3 */
-.axr-page-kicker{ font-size:calc(var(--axr-info) * 0.95); letter-spacing:.18em; text-transform: none;
-  color:var(--all-gold); font-weight:700; margin-bottom:calc(var(--axr-info) * 0.25); }
+/* Page kicker (accent eyebrow) on page 3; page 2's "The hotel" label is
+   dropped (Nick, Jul 2026) — the hotel name itself is the heading there. */
+.axr-page:nth-child(2) .axr-page-kicker{ display:none; }
+/* Page kicker + context hotel name on pages 2–3 */
+.axr-page-kicker{ font-family:var(--axr-body); font-size:calc(var(--axr-info) * 0.9);
+  letter-spacing:.24em; text-transform: none;
+  color:var(--all-gold); font-weight:500; margin-bottom:calc(var(--axr-info) * 0.3); }
 /* Brand policy (Nick): the hotel name is NEVER split across lines — one line,
    whole, shrunk-to-fit by the fitter in fids-core (no clamp, no ellipsis). */
-.axr-page-ctx{ font-size:var(--axr-name); font-weight:800; line-height:1.05; letter-spacing:-.01em;
-  margin-bottom:calc(var(--axr-info) * 0.45); max-width:92%;
+.axr-page-ctx{ font-family:var(--axr-display); font-size:calc(var(--axr-name) * 1.3); font-weight:700;
+  line-height:1.05; letter-spacing:-.005em;
+  margin-bottom:calc(var(--axr-info) * 0.55); max-width:92%;
   display:block; white-space:nowrap; overflow:hidden; }
 .axr-one-line{ display:inline-block; max-width:100%; white-space:nowrap; overflow:hidden; vertical-align:bottom; }
-.axr-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:calc(var(--axr-info) * 0.34); }
-.axr-list li{ position:relative; padding-left:1.3em; font-size:calc(var(--axr-info) * 0.95); font-weight:500;
-  line-height:1.25; max-width:92%; }
+.axr-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:calc(var(--axr-info) * 0.42); }
+.axr-list li{ position:relative; padding-left:1.65em; font-size:calc(var(--axr-info) * 1.18); font-weight:400;
+  line-height:1.3; max-width:92%; letter-spacing:.005em; }
 .axr-list li::before{ content:"\203A"; position:absolute; left:0; color:var(--all-gold); font-weight:700; }
-.axr-blurb{ margin:calc(var(--axr-info) * 0.5) 0 0; font-size:calc(var(--axr-info) * 0.9); font-weight:400;
-  line-height:1.4; opacity:.92; max-width:92%;
+/* AC icon bullets: page 2 (the hotel) = circled check; page 3 (dining) = fork & knife */
+.axr-page:nth-child(2) .axr-list li::before,
+.axr-page:nth-child(3) .axr-list li::before{
+  font-family:'ac-icons' !important; font-weight:normal; font-style:normal;
+  font-size:.92em; top:.14em; }
+.axr-page:nth-child(2) .axr-list li::before{ content:'\e972'; }
+.axr-page:nth-child(3) .axr-list li::before{ content:'\e965'; }
+.axr-blurb{ margin:calc(var(--axr-info) * 0.6) 0 0; font-size:calc(var(--axr-info) * 1.02); font-weight:300;
+  line-height:1.46; opacity:.94; max-width:88%; letter-spacing:.01em;
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 .axr-sub-rating{ margin-top:calc(var(--axr-info) * 0.3); }
-/* Footer — ALL mark only, centered */
-.axr-all.axr-all-simple{ justify-content:center !important; background:var(--all-blue) !important; border-top:2px solid rgba(255,255,255,.1) !important; }
+/* Footer — ALL mark only, centered, over a gradient-gold hairline */
+.axr-all.axr-all-simple{ justify-content:center !important; background:var(--all-blue) !important;
+  border-top:none !important; position:relative; }
+.axr-all.axr-all-simple::before{ content:""; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--axr-goldgrad); opacity:.85; }
 .axr-all.axr-all-simple .axr-all-mark{ height:clamp(40px,5.4vh,58px); }
 .axr-all.axr-all-simple .axr-all-mark img{ height:100%; width:auto; display:block; filter:drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
 
@@ -51,8 +76,8 @@
 /* Partial gradient — photo stays visible top/right; brand tint deepens bottom-left */
 .axr-hero-grad{ position:absolute; inset:0;
   background:
-    linear-gradient(90deg, rgba(0,0,0,.60) 0%, rgba(0,0,0,.22) 44%, rgba(0,0,0,0) 72%),
-    linear-gradient(0deg, var(--axr-tint) -8%, color-mix(in srgb, var(--axr-tint) 55%, transparent) 24%, transparent 56%);
+    linear-gradient(90deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.24) 44%, rgba(0,0,0,0) 72%),
+    linear-gradient(0deg, var(--axr-tint) -6%, color-mix(in srgb, var(--axr-tint) 58%, transparent) 26%, transparent 58%);
 }
 
 /* ALL speech bubble (to standard) — light card, copy + QR, tail bottom-left */
@@ -60,10 +85,13 @@
   display:grid; grid-template-columns:minmax(0,1fr) clamp(72px,8vw,100px); gap:clamp(12px,1.4vw,18px);
   align-items:center; width:min(470px, 66%); padding:clamp(14px,1.7vw,22px);
   background:var(--all-light); color:var(--all-blue);
-  border-radius:14px 14px 14px 0; box-shadow:0 14px 36px rgba(0,0,0,.34); }
+  border-radius:12px 12px 12px 0; box-shadow:0 14px 36px rgba(0,0,0,.34); }
 .axr-bubble::after{ content:""; position:absolute; left:0; bottom:-12px;
   border-top:12px solid var(--all-light); border-right:12px solid transparent; }
-.axr-bubble-copy{ min-width:0; font-size:clamp(18px,1.6vw,26px); line-height:1.22; font-weight:600; }
+.axr-bubble-copy{ min-width:0; font-family:var(--axr-display); font-size:clamp(18px,1.6vw,26px);
+  line-height:1.24; font-weight:500; letter-spacing:.002em; }
+.axr-bubble-copy::before{ font-family:'ac-icons' !important; content:'\e968'; display:block;
+  font-size:1.25em; line-height:1; margin-bottom:.3em; color:var(--all-gold); font-weight:normal; }
 .axr-qr{ aspect-ratio:1; width:100%; background:#fff; border-radius:7px; padding:6px;
   display:flex; align-items:center; justify-content:center; }
 .axr-qr svg, .axr-qr img{ width:100%; height:100%; display:block; }
@@ -71,8 +99,13 @@
 /* Hotel content — bottom-left over the gradient */
 .axr-hotel{ position:absolute; left:clamp(28px,3vw,44px); right:clamp(28px,3vw,44px);
   bottom:clamp(22px,3.2vh,34px); z-index:3;
-  display:flex; flex-direction:column; gap:calc(var(--axr-info) * 0.26);
+  display:flex; flex-direction:column; gap:calc(var(--axr-info) * 0.28);
   text-shadow:0 2px 14px rgba(0,0,0,.55); }
+/* Accent grounding bar above the content block — gradient gold, brand-tinted
+   brands override --axr-goldgrad via their accent (generated section). */
+.axr-hotel::before{ content:""; width:clamp(36px,3.4vw,56px); height:3px; border-radius:2px;
+  background:var(--axr-goldgrad); margin-bottom:calc(var(--axr-info) * 0.35);
+  box-shadow:0 1px 6px rgba(0,0,0,.35); }
 /* LOGO (100%) */
 .axr-logo{ height:var(--axr-logo); display:flex; align-items:flex-end; }
 .axr-logo img, .axr-logo svg{ height:100%; width:auto; max-width:min(60%,400px); object-fit:contain;
@@ -80,30 +113,38 @@
 .axr-logo svg{ max-width:min(54%,360px) !important; }
 .axr-logo img{ height:100%; width:auto; max-width:min(58%,360px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
-.axr-logo-text{ font-weight:800; font-size:var(--axr-logo); line-height:1;
-  letter-spacing:.04em; text-transform: none; }
-/* NAME (75% of logo) */
-.axr-name{ margin:0; font-weight:800; font-size:var(--axr-name); line-height:1.0;
-  letter-spacing:-.02em; max-width:90%;
+.axr-logo-text{ font-family:var(--axr-display); font-weight:700; font-size:var(--axr-logo); line-height:1;
+  letter-spacing:.03em; text-transform: none; }
+/* NAME (78% of logo) — AC Nord Display */
+.axr-name{ margin:0; font-family:var(--axr-display); font-weight:700; font-size:var(--axr-name);
+  line-height:1.02; letter-spacing:-.008em; max-width:90%;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-/* INFO (62% of name) */
+/* INFO (62% of name) — AC Nord Text */
 .axr-sub{ display:flex; align-items:baseline; gap:clamp(10px,1.2vw,16px); flex-wrap:wrap; font-size:var(--axr-info); }
-.axr-addr{ color:rgba(255,255,255,.92); font-weight:500; }
-.axr-stars{ color:var(--all-gold); letter-spacing:.05em; white-space:nowrap; }
-.axr-score{ font-weight:700; }
-.axr-score small{ font-weight:500; opacity:.82; font-size:.72em; }
+.axr-addr{ color:rgba(255,255,255,.92); font-weight:500; letter-spacing:.01em; }
+.axr-addr-line{ font-size:var(--axr-info); font-weight:400; color:rgba(255,255,255,.9); letter-spacing:.01em; }
+.axr-loc-line{ font-size:calc(var(--axr-info) * 0.92); font-weight:300; color:rgba(255,255,255,.82);
+  display:flex; align-items:center; }
+.axr-loc-pin{ color:var(--all-gold); margin-right:.55em; font-size:0; display:inline-flex; align-items:center; }
+.axr-loc-pin::before{ font-family:'ac-icons' !important; content:'\e973'; font-style:normal;
+  font-size:calc(var(--axr-info) * 1.0); line-height:1; }
+/* second distance row = city centre → home glyph */
+.axr-loc-line + .axr-loc-line .axr-loc-pin::before{ content:'\e9a4'; }
+.axr-stars{ color:var(--all-gold); letter-spacing:.08em; white-space:nowrap; }
+.axr-score{ font-weight:700; font-family:var(--axr-display); }
+.axr-score small{ font-weight:400; opacity:.82; font-size:.72em; font-family:var(--axr-body); }
 /* bullets — medium, never bigger than name */
 .axr-amen{ display:flex; flex-wrap:wrap; gap:clamp(6px,.7vw,9px); margin-top:calc(var(--axr-info) * 0.25); }
-.axr-amen span{ font-size:calc(var(--axr-info) * 0.82); line-height:1; padding:.45em .85em;
-  border:1px solid rgba(255,255,255,.5); border-radius:999px; background:rgba(0,0,0,.24);
-  font-weight:500; white-space:nowrap; }
+.axr-amen span{ font-size:calc(var(--axr-info) * 0.82); line-height:1; padding:.5em .9em;
+  border:1px solid rgba(255,255,255,.28); border-radius:999px; background:rgba(255,255,255,.08);
+  font-weight:400; white-space:nowrap; letter-spacing:.02em; backdrop-filter:blur(2px); }
 
 /* ── ALL endorsement band — full width, ALL blue, the loyalty layer ──── */
 .axr-all{ background:var(--all-blue); display:flex; align-items:center; justify-content:flex-start;
   gap:clamp(14px,1.8vw,22px); padding:clamp(18px,2.6vh,26px) clamp(28px,3vw,44px); border-top:2px solid rgba(255,255,255,.1); }
 .axr-all-left{ display:flex; align-items:center; gap:clamp(14px,1.8vw,22px); min-width:0; }
-.axr-all-lbl{ font-size:clamp(12px,1.5vh,17px); letter-spacing:.18em; text-transform: none;
-  color:rgba(255,255,255,.85); white-space:nowrap; font-weight:600; }
+.axr-all-lbl{ font-size:clamp(12px,1.5vh,17px); letter-spacing:.2em; text-transform: none;
+  color:rgba(255,255,255,.85); white-space:nowrap; font-weight:500; }
 /* ALL lockup — min size per Brand Book p.113, white, slight shadow */
 .axr-all-mark{ height:clamp(48px,6.5vh,66px); display:flex; align-items:center;
   filter:drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
@@ -132,779 +173,998 @@
    ════════════════════════════════════════════════════════════════════════ */
 
 /* FAI — Fairmont (elegant) */
-.axr[data-brand-code="FAI"]{ --all-blue:#14161C; --axr-tint:#14161C; --all-gold:#B88D5B; --all-light:#EFE9DE; }
-.axr[data-brand-code="FAI"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="FAI"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="FAI"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="FAI"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="FAI"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EFE6D6; }
-.axr[data-brand-code="FAI"] .axr-stars{ color:#B88D5B; letter-spacing:.12em; }
-.axr[data-brand-code="FAI"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="FAI"]{ --all-blue:#14161C; --axr-tint:#14161C; --all-gold:#B88D5B; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#B88D5B 0%,#D0B494 100%); }
+.axr[data-brand-code="FAI"] .axr-logo{ height:auto; }
+.axr[data-brand-code="FAI"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="FAI"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="FAI"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="FAI"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="FAI"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="FAI"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EFE6D6; }
+.axr[data-brand-code="FAI"] .axr-addr-line, .axr[data-brand-code="FAI"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#EFE6D6; }
+.axr[data-brand-code="FAI"] .axr-stars{ color:#B88D5B; letter-spacing:.14em; }
+.axr[data-brand-code="FAI"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="FAI"] .axr-score small{ color:#B88D5B; }
 .axr[data-brand-code="FAI"] .axr-amen{ gap:0; }
-.axr[data-brand-code="FAI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#EFE6D6; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="FAI"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#B88D5B; font-style:normal; }
+.axr[data-brand-code="FAI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#EFE6D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="FAI"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B88D5B; font-style:normal; }
+.axr[data-brand-code="FAI"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="FAI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="FAI"] .axr-bubble{ background:#EFE9DE; color:#14161C; border:1px solid #B88D5B; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="FAI"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="FAI"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="FAI"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="FAI"] .axr-all{ background:transparent; border-top:1px solid rgba(184,141,91,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="FAI"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="FAI"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* SOF — Sofitel (elegant) */
-.axr[data-brand-code="SOF"]{ --all-blue:#0B0B0D; --axr-tint:#0B0B0D; --all-gold:#B6912E; --all-light:#EFE9DE; }
-.axr[data-brand-code="SOF"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="SOF"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="SOF"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="SOF"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="SOF"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#ECE6DA; }
-.axr[data-brand-code="SOF"] .axr-stars{ color:#B6912E; letter-spacing:.12em; }
-.axr[data-brand-code="SOF"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="SOF"]{ --all-blue:#0B0B0D; --axr-tint:#0B0B0D; --all-gold:#B6912E; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#B6912E 0%,#CFB777 100%); }
+.axr[data-brand-code="SOF"] .axr-logo{ height:auto; }
+.axr[data-brand-code="SOF"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="SOF"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="SOF"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="SOF"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="SOF"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="SOF"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#ECE6DA; }
+.axr[data-brand-code="SOF"] .axr-addr-line, .axr[data-brand-code="SOF"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#ECE6DA; }
+.axr[data-brand-code="SOF"] .axr-stars{ color:#B6912E; letter-spacing:.14em; }
+.axr[data-brand-code="SOF"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="SOF"] .axr-score small{ color:#B6912E; }
 .axr[data-brand-code="SOF"] .axr-amen{ gap:0; }
-.axr[data-brand-code="SOF"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#ECE6DA; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="SOF"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#B6912E; font-style:normal; }
+.axr[data-brand-code="SOF"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#ECE6DA; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="SOF"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B6912E; font-style:normal; }
+.axr[data-brand-code="SOF"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="SOF"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="SOF"] .axr-bubble{ background:#EFE9DE; color:#0B0B0D; border:1px solid #B6912E; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="SOF"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="SOF"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="SOF"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="SOF"] .axr-all{ background:transparent; border-top:1px solid rgba(182,145,46,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="SOF"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="SOF"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* SLE — Sofitel Legend (elegant) */
-.axr[data-brand-code="SLE"]{ --all-blue:#0B0B0D; --axr-tint:#0B0B0D; --all-gold:#B6912E; --all-light:#EFE9DE; }
-.axr[data-brand-code="SLE"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="SLE"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="SLE"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="SLE"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="SLE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#ECE6DA; }
-.axr[data-brand-code="SLE"] .axr-stars{ color:#B6912E; letter-spacing:.12em; }
-.axr[data-brand-code="SLE"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="SLE"]{ --all-blue:#0B0B0D; --axr-tint:#0B0B0D; --all-gold:#B6912E; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#B6912E 0%,#CFB777 100%); }
+.axr[data-brand-code="SLE"] .axr-logo{ height:auto; }
+.axr[data-brand-code="SLE"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="SLE"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="SLE"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="SLE"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="SLE"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="SLE"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#ECE6DA; }
+.axr[data-brand-code="SLE"] .axr-addr-line, .axr[data-brand-code="SLE"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#ECE6DA; }
+.axr[data-brand-code="SLE"] .axr-stars{ color:#B6912E; letter-spacing:.14em; }
+.axr[data-brand-code="SLE"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="SLE"] .axr-score small{ color:#B6912E; }
 .axr[data-brand-code="SLE"] .axr-amen{ gap:0; }
-.axr[data-brand-code="SLE"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#ECE6DA; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="SLE"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#B6912E; font-style:normal; }
+.axr[data-brand-code="SLE"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#ECE6DA; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="SLE"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B6912E; font-style:normal; }
+.axr[data-brand-code="SLE"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="SLE"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="SLE"] .axr-bubble{ background:#EFE9DE; color:#0B0B0D; border:1px solid #B6912E; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="SLE"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="SLE"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="SLE"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="SLE"] .axr-all{ background:transparent; border-top:1px solid rgba(182,145,46,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="SLE"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="SLE"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* RAF — Raffles (elegant) */
-.axr[data-brand-code="RAF"]{ --all-blue:#15241F; --axr-tint:#15241F; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="RAF"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="RAF"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="RAF"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="RAF"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="RAF"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EFE9DD; }
-.axr[data-brand-code="RAF"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
-.axr[data-brand-code="RAF"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="RAF"]{ --all-blue:#15241F; --axr-tint:#15241F; --all-gold:#C2A35C; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#C2A35C 0%,#D7C395 100%); }
+.axr[data-brand-code="RAF"] .axr-logo{ height:auto; }
+.axr[data-brand-code="RAF"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="RAF"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="RAF"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="RAF"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="RAF"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="RAF"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EFE9DD; }
+.axr[data-brand-code="RAF"] .axr-addr-line, .axr[data-brand-code="RAF"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#EFE9DD; }
+.axr[data-brand-code="RAF"] .axr-stars{ color:#C2A35C; letter-spacing:.14em; }
+.axr[data-brand-code="RAF"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="RAF"] .axr-score small{ color:#C2A35C; }
 .axr[data-brand-code="RAF"] .axr-amen{ gap:0; }
-.axr[data-brand-code="RAF"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#EFE9DD; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="RAF"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="RAF"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#EFE9DD; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="RAF"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="RAF"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="RAF"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="RAF"] .axr-bubble{ background:#EFE9DE; color:#15241F; border:1px solid #C2A35C; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="RAF"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="RAF"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="RAF"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="RAF"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="RAF"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="RAF"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* RAH — Raffles (elegant) */
-.axr[data-brand-code="RAH"]{ --all-blue:#15241F; --axr-tint:#15241F; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="RAH"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="RAH"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="RAH"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="RAH"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="RAH"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EFE9DD; }
-.axr[data-brand-code="RAH"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
-.axr[data-brand-code="RAH"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="RAH"]{ --all-blue:#15241F; --axr-tint:#15241F; --all-gold:#C2A35C; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#C2A35C 0%,#D7C395 100%); }
+.axr[data-brand-code="RAH"] .axr-logo{ height:auto; }
+.axr[data-brand-code="RAH"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="RAH"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="RAH"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="RAH"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="RAH"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="RAH"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EFE9DD; }
+.axr[data-brand-code="RAH"] .axr-addr-line, .axr[data-brand-code="RAH"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#EFE9DD; }
+.axr[data-brand-code="RAH"] .axr-stars{ color:#C2A35C; letter-spacing:.14em; }
+.axr[data-brand-code="RAH"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="RAH"] .axr-score small{ color:#C2A35C; }
 .axr[data-brand-code="RAH"] .axr-amen{ gap:0; }
-.axr[data-brand-code="RAH"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#EFE9DD; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="RAH"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="RAH"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#EFE9DD; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="RAH"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="RAH"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="RAH"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="RAH"] .axr-bubble{ background:#EFE9DE; color:#15241F; border:1px solid #C2A35C; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="RAH"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="RAH"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="RAH"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="RAH"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="RAH"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="RAH"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* EMB — Emblems (elegant) */
-.axr[data-brand-code="EMB"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#B89B6E; --all-light:#EFE9DE; }
-.axr[data-brand-code="EMB"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="EMB"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="EMB"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="EMB"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="EMB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#ECE6DA; }
-.axr[data-brand-code="EMB"] .axr-stars{ color:#B89B6E; letter-spacing:.12em; }
-.axr[data-brand-code="EMB"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="EMB"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#B89B6E; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#B89B6E 0%,#D0BEA0 100%); }
+.axr[data-brand-code="EMB"] .axr-logo{ height:auto; }
+.axr[data-brand-code="EMB"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="EMB"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="EMB"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="EMB"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="EMB"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="EMB"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#ECE6DA; }
+.axr[data-brand-code="EMB"] .axr-addr-line, .axr[data-brand-code="EMB"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#ECE6DA; }
+.axr[data-brand-code="EMB"] .axr-stars{ color:#B89B6E; letter-spacing:.14em; }
+.axr[data-brand-code="EMB"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="EMB"] .axr-score small{ color:#B89B6E; }
 .axr[data-brand-code="EMB"] .axr-amen{ gap:0; }
-.axr[data-brand-code="EMB"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#ECE6DA; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="EMB"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#B89B6E; font-style:normal; }
+.axr[data-brand-code="EMB"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#ECE6DA; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="EMB"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B89B6E; font-style:normal; }
+.axr[data-brand-code="EMB"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="EMB"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="EMB"] .axr-bubble{ background:#EFE9DE; color:#1A1A1A; border:1px solid #B89B6E; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="EMB"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="EMB"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="EMB"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="EMB"] .axr-all{ background:transparent; border-top:1px solid rgba(184,155,110,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="EMB"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="EMB"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* BAN — Banyan Tree (elegant) */
-.axr[data-brand-code="BAN"]{ --all-blue:#163A33; --axr-tint:#163A33; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="BAN"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="BAN"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="BAN"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="BAN"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="BAN"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EDE7D7; }
-.axr[data-brand-code="BAN"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
-.axr[data-brand-code="BAN"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="BAN"]{ --all-blue:#163A33; --axr-tint:#163A33; --all-gold:#C2A35C; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#C2A35C 0%,#D7C395 100%); }
+.axr[data-brand-code="BAN"] .axr-logo{ height:auto; }
+.axr[data-brand-code="BAN"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="BAN"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="BAN"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="BAN"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="BAN"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="BAN"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EDE7D7; }
+.axr[data-brand-code="BAN"] .axr-addr-line, .axr[data-brand-code="BAN"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#EDE7D7; }
+.axr[data-brand-code="BAN"] .axr-stars{ color:#C2A35C; letter-spacing:.14em; }
+.axr[data-brand-code="BAN"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="BAN"] .axr-score small{ color:#C2A35C; }
 .axr[data-brand-code="BAN"] .axr-amen{ gap:0; }
-.axr[data-brand-code="BAN"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#EDE7D7; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="BAN"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="BAN"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#EDE7D7; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="BAN"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="BAN"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="BAN"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="BAN"] .axr-bubble{ background:#EFE9DE; color:#163A33; border:1px solid #C2A35C; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="BAN"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="BAN"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="BAN"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="BAN"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="BAN"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="BAN"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* ORI — Orient Express (elegant) */
-.axr[data-brand-code="ORI"]{ --all-blue:#0E1B2A; --axr-tint:#0E1B2A; --all-gold:#B99653; --all-light:#EFE9DE; }
-.axr[data-brand-code="ORI"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="ORI"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="ORI"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="ORI"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="ORI"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EDE6D6; }
-.axr[data-brand-code="ORI"] .axr-stars{ color:#B99653; letter-spacing:.12em; }
-.axr[data-brand-code="ORI"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="ORI"]{ --all-blue:#0E1B2A; --axr-tint:#0E1B2A; --all-gold:#B99653; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#B99653 0%,#D1BA8F 100%); }
+.axr[data-brand-code="ORI"] .axr-logo{ height:auto; }
+.axr[data-brand-code="ORI"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="ORI"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="ORI"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="ORI"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="ORI"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="ORI"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EDE6D6; }
+.axr[data-brand-code="ORI"] .axr-addr-line, .axr[data-brand-code="ORI"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#EDE6D6; }
+.axr[data-brand-code="ORI"] .axr-stars{ color:#B99653; letter-spacing:.14em; }
+.axr[data-brand-code="ORI"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="ORI"] .axr-score small{ color:#B99653; }
 .axr[data-brand-code="ORI"] .axr-amen{ gap:0; }
-.axr[data-brand-code="ORI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#EDE6D6; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="ORI"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#B99653; font-style:normal; }
+.axr[data-brand-code="ORI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#EDE6D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="ORI"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B99653; font-style:normal; }
+.axr[data-brand-code="ORI"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="ORI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="ORI"] .axr-bubble{ background:#EFE9DE; color:#0E1B2A; border:1px solid #B99653; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="ORI"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="ORI"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="ORI"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="ORI"] .axr-all{ background:transparent; border-top:1px solid rgba(185,150,83,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="ORI"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="ORI"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* OE — Orient Express (elegant) */
-.axr[data-brand-code="OE"]{ --all-blue:#0E1B2A; --axr-tint:#0E1B2A; --all-gold:#B99653; --all-light:#EFE9DE; }
-.axr[data-brand-code="OE"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="OE"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="OE"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="OE"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="OE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EDE6D6; }
-.axr[data-brand-code="OE"] .axr-stars{ color:#B99653; letter-spacing:.12em; }
-.axr[data-brand-code="OE"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="OE"]{ --all-blue:#0E1B2A; --axr-tint:#0E1B2A; --all-gold:#B99653; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#B99653 0%,#D1BA8F 100%); }
+.axr[data-brand-code="OE"] .axr-logo{ height:auto; }
+.axr[data-brand-code="OE"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="OE"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="OE"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="OE"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="OE"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="OE"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EDE6D6; }
+.axr[data-brand-code="OE"] .axr-addr-line, .axr[data-brand-code="OE"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#EDE6D6; }
+.axr[data-brand-code="OE"] .axr-stars{ color:#B99653; letter-spacing:.14em; }
+.axr[data-brand-code="OE"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="OE"] .axr-score small{ color:#B99653; }
 .axr[data-brand-code="OE"] .axr-amen{ gap:0; }
-.axr[data-brand-code="OE"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#EDE6D6; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="OE"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#B99653; font-style:normal; }
+.axr[data-brand-code="OE"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#EDE6D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="OE"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B99653; font-style:normal; }
+.axr[data-brand-code="OE"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="OE"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="OE"] .axr-bubble{ background:#EFE9DE; color:#0E1B2A; border:1px solid #B99653; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="OE"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="OE"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="OE"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="OE"] .axr-all{ background:transparent; border-top:1px solid rgba(185,150,83,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="OE"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="OE"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* FAE — Faena (elegant) */
-.axr[data-brand-code="FAE"]{ --all-blue:#5E1417; --axr-tint:#5E1417; --all-gold:#C8A24A; --all-light:#EFE9DE; }
-.axr[data-brand-code="FAE"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="FAE"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="FAE"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="FAE"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="FAE"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F2E7D6; }
-.axr[data-brand-code="FAE"] .axr-stars{ color:#C8A24A; letter-spacing:.12em; }
-.axr[data-brand-code="FAE"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="FAE"]{ --all-blue:#5E1417; --axr-tint:#5E1417; --all-gold:#C8A24A; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#C8A24A 0%,#DBC289 100%); }
+.axr[data-brand-code="FAE"] .axr-logo{ height:auto; }
+.axr[data-brand-code="FAE"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="FAE"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="FAE"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="FAE"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="FAE"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="FAE"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#F2E7D6; }
+.axr[data-brand-code="FAE"] .axr-addr-line, .axr[data-brand-code="FAE"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#F2E7D6; }
+.axr[data-brand-code="FAE"] .axr-stars{ color:#C8A24A; letter-spacing:.14em; }
+.axr[data-brand-code="FAE"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="FAE"] .axr-score small{ color:#C8A24A; }
 .axr[data-brand-code="FAE"] .axr-amen{ gap:0; }
-.axr[data-brand-code="FAE"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#F2E7D6; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="FAE"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#C8A24A; font-style:normal; }
+.axr[data-brand-code="FAE"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#F2E7D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="FAE"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C8A24A; font-style:normal; }
+.axr[data-brand-code="FAE"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="FAE"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="FAE"] .axr-bubble{ background:#EFE9DE; color:#5E1417; border:1px solid #C8A24A; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="FAE"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="FAE"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="FAE"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="FAE"] .axr-all{ background:transparent; border-top:1px solid rgba(200,162,74,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="FAE"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="FAE"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* RIX — Rixos (elegant) */
-.axr[data-brand-code="RIX"]{ --all-blue:#1A1712; --axr-tint:#1A1712; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="RIX"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="RIX"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="RIX"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="RIX"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="RIX"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EFE7D6; }
-.axr[data-brand-code="RIX"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
-.axr[data-brand-code="RIX"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="RIX"]{ --all-blue:#1A1712; --axr-tint:#1A1712; --all-gold:#C2A35C; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#C2A35C 0%,#D7C395 100%); }
+.axr[data-brand-code="RIX"] .axr-logo{ height:auto; }
+.axr[data-brand-code="RIX"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="RIX"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="RIX"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="RIX"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="RIX"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="RIX"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EFE7D6; }
+.axr[data-brand-code="RIX"] .axr-addr-line, .axr[data-brand-code="RIX"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#EFE7D6; }
+.axr[data-brand-code="RIX"] .axr-stars{ color:#C2A35C; letter-spacing:.14em; }
+.axr[data-brand-code="RIX"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="RIX"] .axr-score small{ color:#C2A35C; }
 .axr[data-brand-code="RIX"] .axr-amen{ gap:0; }
-.axr[data-brand-code="RIX"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#EFE7D6; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="RIX"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="RIX"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#EFE7D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="RIX"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="RIX"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="RIX"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="RIX"] .axr-bubble{ background:#EFE9DE; color:#1A1712; border:1px solid #C2A35C; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="RIX"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="RIX"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="RIX"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="RIX"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="RIX"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="RIX"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* MAN — Mantis (elegant) */
-.axr[data-brand-code="MAN"]{ --all-blue:#1C2A1E; --axr-tint:#1C2A1E; --all-gold:#B89B6E; --all-light:#EFE9DE; }
-.axr[data-brand-code="MAN"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="MAN"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="MAN"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="MAN"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="MAN"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#EDE7D7; }
-.axr[data-brand-code="MAN"] .axr-stars{ color:#B89B6E; letter-spacing:.12em; }
-.axr[data-brand-code="MAN"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="MAN"]{ --all-blue:#1C2A1E; --axr-tint:#1C2A1E; --all-gold:#B89B6E; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#B89B6E 0%,#D0BEA0 100%); }
+.axr[data-brand-code="MAN"] .axr-logo{ height:auto; }
+.axr[data-brand-code="MAN"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="MAN"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="MAN"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="MAN"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="MAN"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="MAN"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EDE7D7; }
+.axr[data-brand-code="MAN"] .axr-addr-line, .axr[data-brand-code="MAN"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#EDE7D7; }
+.axr[data-brand-code="MAN"] .axr-stars{ color:#B89B6E; letter-spacing:.14em; }
+.axr[data-brand-code="MAN"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="MAN"] .axr-score small{ color:#B89B6E; }
 .axr[data-brand-code="MAN"] .axr-amen{ gap:0; }
-.axr[data-brand-code="MAN"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#EDE7D7; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="MAN"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#B89B6E; font-style:normal; }
+.axr[data-brand-code="MAN"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#EDE7D7; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="MAN"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B89B6E; font-style:normal; }
+.axr[data-brand-code="MAN"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="MAN"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="MAN"] .axr-bubble{ background:#EFE9DE; color:#1C2A1E; border:1px solid #B89B6E; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="MAN"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="MAN"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="MAN"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MAN"] .axr-all{ background:transparent; border-top:1px solid rgba(184,155,110,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="MAN"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="MAN"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* MGH — MGallery (elegant) */
-.axr[data-brand-code="MGH"]{ --all-blue:#12120D; --axr-tint:#12120D; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="MGH"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="MGH"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="MGH"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="MGH"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="MGH"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0E7DB; }
-.axr[data-brand-code="MGH"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
-.axr[data-brand-code="MGH"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="MGH"]{ --all-blue:#12120D; --axr-tint:#12120D; --all-gold:#C2A35C; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#C2A35C 0%,#D7C395 100%); }
+.axr[data-brand-code="MGH"] .axr-logo{ height:auto; }
+.axr[data-brand-code="MGH"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="MGH"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="MGH"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="MGH"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="MGH"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="MGH"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#F0E7DB; }
+.axr[data-brand-code="MGH"] .axr-addr-line, .axr[data-brand-code="MGH"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#F0E7DB; }
+.axr[data-brand-code="MGH"] .axr-stars{ color:#C2A35C; letter-spacing:.14em; }
+.axr[data-brand-code="MGH"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="MGH"] .axr-score small{ color:#C2A35C; }
 .axr[data-brand-code="MGH"] .axr-amen{ gap:0; }
-.axr[data-brand-code="MGH"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#F0E7DB; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="MGH"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="MGH"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#F0E7DB; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="MGH"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="MGH"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="MGH"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="MGH"] .axr-bubble{ background:#EFE9DE; color:#12120D; border:1px solid #C2A35C; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="MGH"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="MGH"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="MGH"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MGH"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="MGH"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="MGH"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* MGA — MGallery (elegant) */
-.axr[data-brand-code="MGA"]{ --all-blue:#12120D; --axr-tint:#12120D; --all-gold:#C2A35C; --all-light:#EFE9DE; }
-.axr[data-brand-code="MGA"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="MGA"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="MGA"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="MGA"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="MGA"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0E7DB; }
-.axr[data-brand-code="MGA"] .axr-stars{ color:#C2A35C; letter-spacing:.12em; }
-.axr[data-brand-code="MGA"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="MGA"]{ --all-blue:#12120D; --axr-tint:#12120D; --all-gold:#C2A35C; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#C2A35C 0%,#D7C395 100%); }
+.axr[data-brand-code="MGA"] .axr-logo{ height:auto; }
+.axr[data-brand-code="MGA"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="MGA"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="MGA"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="MGA"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="MGA"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="MGA"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#F0E7DB; }
+.axr[data-brand-code="MGA"] .axr-addr-line, .axr[data-brand-code="MGA"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#F0E7DB; }
+.axr[data-brand-code="MGA"] .axr-stars{ color:#C2A35C; letter-spacing:.14em; }
+.axr[data-brand-code="MGA"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="MGA"] .axr-score small{ color:#C2A35C; }
 .axr[data-brand-code="MGA"] .axr-amen{ gap:0; }
-.axr[data-brand-code="MGA"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#F0E7DB; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="MGA"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="MGA"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#F0E7DB; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="MGA"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
+.axr[data-brand-code="MGA"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="MGA"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="MGA"] .axr-bubble{ background:#EFE9DE; color:#12120D; border:1px solid #C2A35C; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="MGA"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="MGA"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="MGA"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MGA"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="MGA"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="MGA"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* MOV — Movenpick (elegant) */
-.axr[data-brand-code="MOV"]{ --all-blue:#2A1418; --axr-tint:#2A1418; --all-gold:#C8A24A; --all-light:#EFE9DE; }
-.axr[data-brand-code="MOV"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="MOV"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="MOV"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="MOV"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="MOV"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F1E8DC; }
-.axr[data-brand-code="MOV"] .axr-stars{ color:#C8A24A; letter-spacing:.12em; }
-.axr[data-brand-code="MOV"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="MOV"]{ --all-blue:#2A1418; --axr-tint:#2A1418; --all-gold:#C8A24A; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#C8A24A 0%,#DBC289 100%); }
+.axr[data-brand-code="MOV"] .axr-logo{ height:auto; }
+.axr[data-brand-code="MOV"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="MOV"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="MOV"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="MOV"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="MOV"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="MOV"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#F1E8DC; }
+.axr[data-brand-code="MOV"] .axr-addr-line, .axr[data-brand-code="MOV"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#F1E8DC; }
+.axr[data-brand-code="MOV"] .axr-stars{ color:#C8A24A; letter-spacing:.14em; }
+.axr[data-brand-code="MOV"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="MOV"] .axr-score small{ color:#C8A24A; }
 .axr[data-brand-code="MOV"] .axr-amen{ gap:0; }
-.axr[data-brand-code="MOV"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#F1E8DC; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="MOV"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#C8A24A; font-style:normal; }
+.axr[data-brand-code="MOV"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#F1E8DC; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="MOV"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C8A24A; font-style:normal; }
+.axr[data-brand-code="MOV"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="MOV"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="MOV"] .axr-bubble{ background:#EFE9DE; color:#2A1418; border:1px solid #C8A24A; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="MOV"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="MOV"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="MOV"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MOV"] .axr-all{ background:transparent; border-top:1px solid rgba(200,162,74,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="MOV"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="MOV"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* DEL — Delano (elegant) */
-.axr[data-brand-code="DEL"]{ --all-blue:#111214; --axr-tint:#111214; --all-gold:#C9A227; --all-light:#EFE9DE; }
-.axr[data-brand-code="DEL"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="DEL"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="DEL"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="DEL"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="DEL"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0ECE3; }
-.axr[data-brand-code="DEL"] .axr-stars{ color:#C9A227; letter-spacing:.12em; }
-.axr[data-brand-code="DEL"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="DEL"]{ --all-blue:#111214; --axr-tint:#111214; --all-gold:#C9A227; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#C9A227 0%,#DBC272 100%); }
+.axr[data-brand-code="DEL"] .axr-logo{ height:auto; }
+.axr[data-brand-code="DEL"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="DEL"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="DEL"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="DEL"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="DEL"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="DEL"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#F0ECE3; }
+.axr[data-brand-code="DEL"] .axr-addr-line, .axr[data-brand-code="DEL"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#F0ECE3; }
+.axr[data-brand-code="DEL"] .axr-stars{ color:#C9A227; letter-spacing:.14em; }
+.axr[data-brand-code="DEL"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="DEL"] .axr-score small{ color:#C9A227; }
 .axr[data-brand-code="DEL"] .axr-amen{ gap:0; }
-.axr[data-brand-code="DEL"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#F0ECE3; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="DEL"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#C9A227; font-style:normal; }
+.axr[data-brand-code="DEL"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#F0ECE3; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="DEL"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C9A227; font-style:normal; }
+.axr[data-brand-code="DEL"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="DEL"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="DEL"] .axr-bubble{ background:#EFE9DE; color:#111214; border:1px solid #C9A227; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="DEL"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="DEL"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="DEL"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="DEL"] .axr-all{ background:transparent; border-top:1px solid rgba(201,162,39,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="DEL"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="DEL"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* PUL — Pullman (modern) */
-.axr[data-brand-code="PUL"]{ --all-blue:#0C0C0E; --axr-tint:#0C0C0E; --all-gold:#D2A24B; }
-.axr[data-brand-code="PUL"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="PUL"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="PUL"] .axr-name{ color:#F0EFEC; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="PUL"]{ --all-blue:#0C0C0E; --axr-tint:#0C0C0E; --all-gold:#D2A24B;
+  --axr-goldgrad:linear-gradient(42deg,#D2A24B 0%,#DDB978 100%); }
+.axr[data-brand-code="PUL"] .axr-logo{ height:auto; }
+.axr[data-brand-code="PUL"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="PUL"] .axr-name{ color:#F0EFEC; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="PUL"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="PUL"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="PUL"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="PUL"] .axr-addr{ color:#F0EFEC; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="PUL"] .axr-addr-line, .axr[data-brand-code="PUL"] .axr-loc-line{ color:#F0EFEC; }
 .axr[data-brand-code="PUL"] .axr-stars{ color:#D2A24B; }
 .axr[data-brand-code="PUL"] .axr-amen{ gap:0; }
-.axr[data-brand-code="PUL"] .axr-amen span{ background:none; border:none; padding:0; color:#F0EFEC; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="PUL"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#D2A24B; }
+.axr[data-brand-code="PUL"] .axr-amen span{ background:none; border:none; padding:0; color:#F0EFEC; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="PUL"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#D2A24B; }
 .axr[data-brand-code="PUL"] .axr-all{ background:color-mix(in srgb, #0C0C0E 86%, #000); }
 
 /* SWI — Swissotel (modern) */
-.axr[data-brand-code="SWI"]{ --all-blue:#16181C; --axr-tint:#16181C; --all-gold:#E2001A; }
-.axr[data-brand-code="SWI"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="SWI"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="SWI"] .axr-name{ color:#F2F2F2; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="SWI"]{ --all-blue:#301A0D; --axr-tint:#301A0D; --all-gold:#E42313;
+  --axr-goldgrad:linear-gradient(42deg,#E42313 0%,#EA5A4E 100%); }
+.axr[data-brand-code="SWI"] .axr-logo{ height:auto; }
+.axr[data-brand-code="SWI"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="SWI"] .axr-name{ color:#DCCFBE; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="SWI"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="SWI"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="SWI"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
-.axr[data-brand-code="SWI"] .axr-addr{ color:#F2F2F2; font-weight:500; letter-spacing:.02em; }
-.axr[data-brand-code="SWI"] .axr-stars{ color:#E2001A; }
+.axr[data-brand-code="SWI"] .axr-addr{ color:#DCCFBE; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="SWI"] .axr-addr-line, .axr[data-brand-code="SWI"] .axr-loc-line{ color:#DCCFBE; }
+.axr[data-brand-code="SWI"] .axr-stars{ color:#E42313; }
 .axr[data-brand-code="SWI"] .axr-amen{ gap:0; }
-.axr[data-brand-code="SWI"] .axr-amen span{ background:none; border:none; padding:0; color:#F2F2F2; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="SWI"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#E2001A; }
-.axr[data-brand-code="SWI"] .axr-all{ background:color-mix(in srgb, #16181C 86%, #000); }
+.axr[data-brand-code="SWI"] .axr-amen span{ background:none; border:none; padding:0; color:#DCCFBE; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="SWI"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#E42313; }
+.axr[data-brand-code="SWI"] .axr-all{ background:color-mix(in srgb, #301A0D 86%, #000); }
 
 /* NOV — Novotel (modern) */
-.axr[data-brand-code="NOV"]{ --all-blue:#14163C; --axr-tint:#14163C; --all-gold:#3D63FF; }
-.axr[data-brand-code="NOV"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="NOV"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="NOV"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="NOV"]{ --all-blue:#14163C; --axr-tint:#14163C; --all-gold:#3D63FF;
+  --axr-goldgrad:linear-gradient(42deg,#3D63FF 0%,#6D8AFF 100%); }
+.axr[data-brand-code="NOV"] .axr-logo{ height:auto; }
+.axr[data-brand-code="NOV"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="NOV"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="NOV"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="NOV"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="NOV"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="NOV"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="NOV"] .axr-addr-line, .axr[data-brand-code="NOV"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="NOV"] .axr-stars{ color:#3D63FF; }
 .axr[data-brand-code="NOV"] .axr-amen{ gap:0; }
-.axr[data-brand-code="NOV"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="NOV"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#3D63FF; }
+.axr[data-brand-code="NOV"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="NOV"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#3D63FF; }
 .axr[data-brand-code="NOV"] .axr-all{ background:color-mix(in srgb, #14163C 86%, #000); }
 
 /* MER — Mercure (modern) */
-.axr[data-brand-code="MER"]{ --all-blue:#14233F; --axr-tint:#14233F; --all-gold:#B59A5E; }
-.axr[data-brand-code="MER"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="MER"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="MER"] .axr-name{ color:#F0ECDF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="MER"]{ --all-blue:#14233F; --axr-tint:#14233F; --all-gold:#B59A5E;
+  --axr-goldgrad:linear-gradient(42deg,#B59A5E 0%,#C7B386 100%); }
+.axr[data-brand-code="MER"] .axr-logo{ height:auto; }
+.axr[data-brand-code="MER"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="MER"] .axr-name{ color:#F0ECDF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="MER"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="MER"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="MER"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="MER"] .axr-addr{ color:#F0ECDF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="MER"] .axr-addr-line, .axr[data-brand-code="MER"] .axr-loc-line{ color:#F0ECDF; }
 .axr[data-brand-code="MER"] .axr-stars{ color:#B59A5E; }
 .axr[data-brand-code="MER"] .axr-amen{ gap:0; }
-.axr[data-brand-code="MER"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECDF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="MER"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#B59A5E; }
+.axr[data-brand-code="MER"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECDF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="MER"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#B59A5E; }
 .axr[data-brand-code="MER"] .axr-all{ background:color-mix(in srgb, #14233F 86%, #000); }
 
 /* GRA — Grand Mercure (modern) */
-.axr[data-brand-code="GRA"]{ --all-blue:#16233C; --axr-tint:#16233C; --all-gold:#C2A35C; }
-.axr[data-brand-code="GRA"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="GRA"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="GRA"] .axr-name{ color:#F0ECDF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="GRA"]{ --all-blue:#16233C; --axr-tint:#16233C; --all-gold:#C2A35C;
+  --axr-goldgrad:linear-gradient(42deg,#C2A35C 0%,#D1BA84 100%); }
+.axr[data-brand-code="GRA"] .axr-logo{ height:auto; }
+.axr[data-brand-code="GRA"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="GRA"] .axr-name{ color:#F0ECDF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="GRA"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="GRA"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="GRA"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="GRA"] .axr-addr{ color:#F0ECDF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="GRA"] .axr-addr-line, .axr[data-brand-code="GRA"] .axr-loc-line{ color:#F0ECDF; }
 .axr[data-brand-code="GRA"] .axr-stars{ color:#C2A35C; }
 .axr[data-brand-code="GRA"] .axr-amen{ gap:0; }
-.axr[data-brand-code="GRA"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECDF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="GRA"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#C2A35C; }
+.axr[data-brand-code="GRA"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECDF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="GRA"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#C2A35C; }
 .axr[data-brand-code="GRA"] .axr-all{ background:color-mix(in srgb, #16233C 86%, #000); }
 
 /* HOF — Handwritten (modern) */
-.axr[data-brand-code="HOF"]{ --all-blue:#1C1C22; --axr-tint:#1C1C22; --all-gold:#D8A24B; }
-.axr[data-brand-code="HOF"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="HOF"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="HOF"] .axr-name{ color:#F0ECE3; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="HOF"]{ --all-blue:#1C1C22; --axr-tint:#1C1C22; --all-gold:#D8A24B;
+  --axr-goldgrad:linear-gradient(42deg,#D8A24B 0%,#E1B978 100%); }
+.axr[data-brand-code="HOF"] .axr-logo{ height:auto; }
+.axr[data-brand-code="HOF"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="HOF"] .axr-name{ color:#F0ECE3; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="HOF"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="HOF"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="HOF"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="HOF"] .axr-addr{ color:#F0ECE3; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="HOF"] .axr-addr-line, .axr[data-brand-code="HOF"] .axr-loc-line{ color:#F0ECE3; }
 .axr[data-brand-code="HOF"] .axr-stars{ color:#D8A24B; }
 .axr[data-brand-code="HOF"] .axr-amen{ gap:0; }
-.axr[data-brand-code="HOF"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="HOF"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#D8A24B; }
+.axr[data-brand-code="HOF"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="HOF"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#D8A24B; }
 .axr[data-brand-code="HOF"] .axr-all{ background:color-mix(in srgb, #1C1C22 86%, #000); }
 
 /* TRB — Tribe (modern) */
-.axr[data-brand-code="TRB"]{ --all-blue:#111114; --axr-tint:#111114; --all-gold:#C8A24A; }
-.axr[data-brand-code="TRB"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="TRB"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="TRB"] .axr-name{ color:#F0EFEC; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="TRB"]{ --all-blue:#111114; --axr-tint:#111114; --all-gold:#C8A24A;
+  --axr-goldgrad:linear-gradient(42deg,#C8A24A 0%,#D5B977 100%); }
+.axr[data-brand-code="TRB"] .axr-logo{ height:auto; }
+.axr[data-brand-code="TRB"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="TRB"] .axr-name{ color:#F0EFEC; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="TRB"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="TRB"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="TRB"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="TRB"] .axr-addr{ color:#F0EFEC; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="TRB"] .axr-addr-line, .axr[data-brand-code="TRB"] .axr-loc-line{ color:#F0EFEC; }
 .axr[data-brand-code="TRB"] .axr-stars{ color:#C8A24A; }
 .axr[data-brand-code="TRB"] .axr-amen{ gap:0; }
-.axr[data-brand-code="TRB"] .axr-amen span{ background:none; border:none; padding:0; color:#F0EFEC; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="TRB"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#C8A24A; }
+.axr[data-brand-code="TRB"] .axr-amen span{ background:none; border:none; padding:0; color:#F0EFEC; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="TRB"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#C8A24A; }
 .axr[data-brand-code="TRB"] .axr-all{ background:color-mix(in srgb, #111114 86%, #000); }
 
 /* TRI — Tribe (modern) */
-.axr[data-brand-code="TRI"]{ --all-blue:#111114; --axr-tint:#111114; --all-gold:#C8A24A; }
-.axr[data-brand-code="TRI"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="TRI"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="TRI"] .axr-name{ color:#F0EFEC; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="TRI"]{ --all-blue:#111114; --axr-tint:#111114; --all-gold:#C8A24A;
+  --axr-goldgrad:linear-gradient(42deg,#C8A24A 0%,#D5B977 100%); }
+.axr[data-brand-code="TRI"] .axr-logo{ height:auto; }
+.axr[data-brand-code="TRI"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="TRI"] .axr-name{ color:#F0EFEC; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="TRI"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="TRI"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="TRI"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="TRI"] .axr-addr{ color:#F0EFEC; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="TRI"] .axr-addr-line, .axr[data-brand-code="TRI"] .axr-loc-line{ color:#F0EFEC; }
 .axr[data-brand-code="TRI"] .axr-stars{ color:#C8A24A; }
 .axr[data-brand-code="TRI"] .axr-amen{ gap:0; }
-.axr[data-brand-code="TRI"] .axr-amen span{ background:none; border:none; padding:0; color:#F0EFEC; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="TRI"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#C8A24A; }
+.axr[data-brand-code="TRI"] .axr-amen span{ background:none; border:none; padding:0; color:#F0EFEC; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="TRI"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#C8A24A; }
 .axr[data-brand-code="TRI"] .axr-all{ background:color-mix(in srgb, #111114 86%, #000); }
 
 /* HB — The Hoxton (modern) */
-.axr[data-brand-code="HB"]{ --all-blue:#1E1A16; --axr-tint:#1E1A16; --all-gold:#D98E4B; }
-.axr[data-brand-code="HB"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="HB"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="HB"] .axr-name{ color:#F0E7DB; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="HB"]{ --all-blue:#1E1A16; --axr-tint:#1E1A16; --all-gold:#D98E4B;
+  --axr-goldgrad:linear-gradient(42deg,#D98E4B 0%,#E2AA78 100%); }
+.axr[data-brand-code="HB"] .axr-logo{ height:auto; }
+.axr[data-brand-code="HB"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="HB"] .axr-name{ color:#F0E7DB; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="HB"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="HB"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="HB"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="HB"] .axr-addr{ color:#F0E7DB; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="HB"] .axr-addr-line, .axr[data-brand-code="HB"] .axr-loc-line{ color:#F0E7DB; }
 .axr[data-brand-code="HB"] .axr-stars{ color:#D98E4B; }
 .axr[data-brand-code="HB"] .axr-amen{ gap:0; }
-.axr[data-brand-code="HB"] .axr-amen span{ background:none; border:none; padding:0; color:#F0E7DB; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="HB"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#D98E4B; }
+.axr[data-brand-code="HB"] .axr-amen span{ background:none; border:none; padding:0; color:#F0E7DB; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="HB"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#D98E4B; }
 .axr[data-brand-code="HB"] .axr-all{ background:color-mix(in srgb, #1E1A16 86%, #000); }
 
 /* MAS — Mama Shelter (modern) */
-.axr[data-brand-code="MAS"]{ --all-blue:#141414; --axr-tint:#141414; --all-gold:#F4C20D; }
-.axr[data-brand-code="MAS"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="MAS"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="MAS"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="MAS"]{ --all-blue:#141414; --axr-tint:#141414; --all-gold:#F4C20D;
+  --axr-goldgrad:linear-gradient(42deg,#F4C20D 0%,#F6D149 100%); }
+.axr[data-brand-code="MAS"] .axr-logo{ height:auto; }
+.axr[data-brand-code="MAS"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="MAS"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="MAS"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="MAS"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="MAS"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="MAS"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="MAS"] .axr-addr-line, .axr[data-brand-code="MAS"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="MAS"] .axr-stars{ color:#F4C20D; }
 .axr[data-brand-code="MAS"] .axr-amen{ gap:0; }
-.axr[data-brand-code="MAS"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="MAS"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#F4C20D; }
+.axr[data-brand-code="MAS"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="MAS"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#F4C20D; }
 .axr[data-brand-code="MAS"] .axr-all{ background:color-mix(in srgb, #141414 86%, #000); }
 
 /* MSH — Mama Shelter (modern) */
-.axr[data-brand-code="MSH"]{ --all-blue:#141414; --axr-tint:#141414; --all-gold:#F4C20D; }
-.axr[data-brand-code="MSH"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="MSH"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="MSH"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="MSH"]{ --all-blue:#141414; --axr-tint:#141414; --all-gold:#F4C20D;
+  --axr-goldgrad:linear-gradient(42deg,#F4C20D 0%,#F6D149 100%); }
+.axr[data-brand-code="MSH"] .axr-logo{ height:auto; }
+.axr[data-brand-code="MSH"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="MSH"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="MSH"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="MSH"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="MSH"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="MSH"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="MSH"] .axr-addr-line, .axr[data-brand-code="MSH"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="MSH"] .axr-stars{ color:#F4C20D; }
 .axr[data-brand-code="MSH"] .axr-amen{ gap:0; }
-.axr[data-brand-code="MSH"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="MSH"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#F4C20D; }
+.axr[data-brand-code="MSH"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="MSH"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#F4C20D; }
 .axr[data-brand-code="MSH"] .axr-all{ background:color-mix(in srgb, #141414 86%, #000); }
 
 /* N25 — 25hours (modern) */
-.axr[data-brand-code="N25"]{ --all-blue:#121212; --axr-tint:#121212; --all-gold:#F25C05; }
-.axr[data-brand-code="N25"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="N25"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="N25"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="N25"]{ --all-blue:#121212; --axr-tint:#121212; --all-gold:#F25C05;
+  --axr-goldgrad:linear-gradient(42deg,#F25C05 0%,#F58443 100%); }
+.axr[data-brand-code="N25"] .axr-logo{ height:auto; }
+.axr[data-brand-code="N25"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="N25"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="N25"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="N25"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="N25"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="N25"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="N25"] .axr-addr-line, .axr[data-brand-code="N25"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="N25"] .axr-stars{ color:#F25C05; }
 .axr[data-brand-code="N25"] .axr-amen{ gap:0; }
-.axr[data-brand-code="N25"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="N25"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#F25C05; }
+.axr[data-brand-code="N25"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="N25"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#F25C05; }
 .axr[data-brand-code="N25"] .axr-all{ background:color-mix(in srgb, #121212 86%, #000); }
 
 /* 25H — 25hours (modern) */
-.axr[data-brand-code="25H"]{ --all-blue:#121212; --axr-tint:#121212; --all-gold:#F25C05; }
-.axr[data-brand-code="25H"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="25H"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="25H"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="25H"]{ --all-blue:#121212; --axr-tint:#121212; --all-gold:#F25C05;
+  --axr-goldgrad:linear-gradient(42deg,#F25C05 0%,#F58443 100%); }
+.axr[data-brand-code="25H"] .axr-logo{ height:auto; }
+.axr[data-brand-code="25H"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="25H"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="25H"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="25H"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="25H"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="25H"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="25H"] .axr-addr-line, .axr[data-brand-code="25H"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="25H"] .axr-stars{ color:#F25C05; }
 .axr[data-brand-code="25H"] .axr-amen{ gap:0; }
-.axr[data-brand-code="25H"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="25H"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#F25C05; }
+.axr[data-brand-code="25H"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="25H"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#F25C05; }
 .axr[data-brand-code="25H"] .axr-all{ background:color-mix(in srgb, #121212 86%, #000); }
 
 /* MON — Mondrian (modern) */
-.axr[data-brand-code="MON"]{ --all-blue:#101018; --axr-tint:#101018; --all-gold:#C77DFF; }
-.axr[data-brand-code="MON"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="MON"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="MON"] .axr-name{ color:#F0EFF5; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="MON"]{ --all-blue:#101018; --axr-tint:#101018; --all-gold:#C77DFF;
+  --axr-goldgrad:linear-gradient(42deg,#C77DFF 0%,#D59DFF 100%); }
+.axr[data-brand-code="MON"] .axr-logo{ height:auto; }
+.axr[data-brand-code="MON"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="MON"] .axr-name{ color:#F0EFF5; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="MON"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="MON"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="MON"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="MON"] .axr-addr{ color:#F0EFF5; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="MON"] .axr-addr-line, .axr[data-brand-code="MON"] .axr-loc-line{ color:#F0EFF5; }
 .axr[data-brand-code="MON"] .axr-stars{ color:#C77DFF; }
 .axr[data-brand-code="MON"] .axr-amen{ gap:0; }
-.axr[data-brand-code="MON"] .axr-amen span{ background:none; border:none; padding:0; color:#F0EFF5; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="MON"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#C77DFF; }
+.axr[data-brand-code="MON"] .axr-amen span{ background:none; border:none; padding:0; color:#F0EFF5; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="MON"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#C77DFF; }
 .axr[data-brand-code="MON"] .axr-all{ background:color-mix(in srgb, #101018 86%, #000); }
 
 /* HYD — Hyde (modern) */
-.axr[data-brand-code="HYD"]{ --all-blue:#14141A; --axr-tint:#14141A; --all-gold:#C9A227; }
-.axr[data-brand-code="HYD"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="HYD"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="HYD"] .axr-name{ color:#F0ECE3; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="HYD"]{ --all-blue:#14141A; --axr-tint:#14141A; --all-gold:#C9A227;
+  --axr-goldgrad:linear-gradient(42deg,#C9A227 0%,#D6B95D 100%); }
+.axr[data-brand-code="HYD"] .axr-logo{ height:auto; }
+.axr[data-brand-code="HYD"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="HYD"] .axr-name{ color:#F0ECE3; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="HYD"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="HYD"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="HYD"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="HYD"] .axr-addr{ color:#F0ECE3; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="HYD"] .axr-addr-line, .axr[data-brand-code="HYD"] .axr-loc-line{ color:#F0ECE3; }
 .axr[data-brand-code="HYD"] .axr-stars{ color:#C9A227; }
 .axr[data-brand-code="HYD"] .axr-amen{ gap:0; }
-.axr[data-brand-code="HYD"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="HYD"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#C9A227; }
+.axr[data-brand-code="HYD"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="HYD"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#C9A227; }
 .axr[data-brand-code="HYD"] .axr-all{ background:color-mix(in srgb, #14141A 86%, #000); }
 
 /* SLS — SLS (modern) */
-.axr[data-brand-code="SLS"]{ --all-blue:#0E0E12; --axr-tint:#0E0E12; --all-gold:#C9A227; }
-.axr[data-brand-code="SLS"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="SLS"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="SLS"] .axr-name{ color:#F0ECE3; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="SLS"]{ --all-blue:#0E0E12; --axr-tint:#0E0E12; --all-gold:#C9A227;
+  --axr-goldgrad:linear-gradient(42deg,#C9A227 0%,#D6B95D 100%); }
+.axr[data-brand-code="SLS"] .axr-logo{ height:auto; }
+.axr[data-brand-code="SLS"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="SLS"] .axr-name{ color:#F0ECE3; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="SLS"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="SLS"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="SLS"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="SLS"] .axr-addr{ color:#F0ECE3; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="SLS"] .axr-addr-line, .axr[data-brand-code="SLS"] .axr-loc-line{ color:#F0ECE3; }
 .axr[data-brand-code="SLS"] .axr-stars{ color:#C9A227; }
 .axr[data-brand-code="SLS"] .axr-amen{ gap:0; }
-.axr[data-brand-code="SLS"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="SLS"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#C9A227; }
+.axr[data-brand-code="SLS"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="SLS"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#C9A227; }
 .axr[data-brand-code="SLS"] .axr-all{ background:color-mix(in srgb, #0E0E12 86%, #000); }
 
 /* SO — SO/ (modern) */
-.axr[data-brand-code="SO"]{ --all-blue:#121016; --axr-tint:#121016; --all-gold:#E6007E; }
-.axr[data-brand-code="SO"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="SO"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="SO"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="SO"]{ --all-blue:#121016; --axr-tint:#121016; --all-gold:#E6007E;
+  --axr-goldgrad:linear-gradient(42deg,#E6007E 0%,#EC3F9E 100%); }
+.axr[data-brand-code="SO"] .axr-logo{ height:auto; }
+.axr[data-brand-code="SO"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="SO"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="SO"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="SO"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="SO"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="SO"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="SO"] .axr-addr-line, .axr[data-brand-code="SO"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="SO"] .axr-stars{ color:#E6007E; }
 .axr[data-brand-code="SO"] .axr-amen{ gap:0; }
-.axr[data-brand-code="SO"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="SO"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#E6007E; }
+.axr[data-brand-code="SO"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="SO"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#E6007E; }
 .axr[data-brand-code="SO"] .axr-all{ background:color-mix(in srgb, #121016 86%, #000); }
 
 /* SEQ — SO/ (modern) */
-.axr[data-brand-code="SEQ"]{ --all-blue:#121016; --axr-tint:#121016; --all-gold:#E6007E; }
-.axr[data-brand-code="SEQ"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="SEQ"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="SEQ"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="SEQ"]{ --all-blue:#121016; --axr-tint:#121016; --all-gold:#E6007E;
+  --axr-goldgrad:linear-gradient(42deg,#E6007E 0%,#EC3F9E 100%); }
+.axr[data-brand-code="SEQ"] .axr-logo{ height:auto; }
+.axr[data-brand-code="SEQ"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="SEQ"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="SEQ"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="SEQ"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="SEQ"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="SEQ"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="SEQ"] .axr-addr-line, .axr[data-brand-code="SEQ"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="SEQ"] .axr-stars{ color:#E6007E; }
 .axr[data-brand-code="SEQ"] .axr-amen{ gap:0; }
-.axr[data-brand-code="SEQ"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="SEQ"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#E6007E; }
+.axr[data-brand-code="SEQ"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="SEQ"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#E6007E; }
 .axr[data-brand-code="SEQ"] .axr-all{ background:color-mix(in srgb, #121016 86%, #000); }
 
 /* ART — Art Series (modern) */
-.axr[data-brand-code="ART"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#C9A227; }
-.axr[data-brand-code="ART"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="ART"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="ART"] .axr-name{ color:#F0ECE3; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="ART"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#C9A227;
+  --axr-goldgrad:linear-gradient(42deg,#C9A227 0%,#D6B95D 100%); }
+.axr[data-brand-code="ART"] .axr-logo{ height:auto; }
+.axr[data-brand-code="ART"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="ART"] .axr-name{ color:#F0ECE3; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="ART"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="ART"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="ART"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="ART"] .axr-addr{ color:#F0ECE3; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="ART"] .axr-addr-line, .axr[data-brand-code="ART"] .axr-loc-line{ color:#F0ECE3; }
 .axr[data-brand-code="ART"] .axr-stars{ color:#C9A227; }
 .axr[data-brand-code="ART"] .axr-amen{ gap:0; }
-.axr[data-brand-code="ART"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="ART"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#C9A227; }
+.axr[data-brand-code="ART"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="ART"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#C9A227; }
 .axr[data-brand-code="ART"] .axr-all{ background:color-mix(in srgb, #1A1A1A 86%, #000); }
 
 /* SEB — The Sebel (elegant) */
-.axr[data-brand-code="SEB"]{ --all-blue:#1A2230; --axr-tint:#1A2230; --all-gold:#B59A5E; --all-light:#EFE9DE; }
-.axr[data-brand-code="SEB"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="SEB"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="SEB"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="SEB"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="SEB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0ECDF; }
-.axr[data-brand-code="SEB"] .axr-stars{ color:#B59A5E; letter-spacing:.12em; }
-.axr[data-brand-code="SEB"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="SEB"]{ --all-blue:#1A2230; --axr-tint:#1A2230; --all-gold:#B59A5E; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#B59A5E 0%,#CEBD96 100%); }
+.axr[data-brand-code="SEB"] .axr-logo{ height:auto; }
+.axr[data-brand-code="SEB"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="SEB"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="SEB"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="SEB"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="SEB"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="SEB"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#F0ECDF; }
+.axr[data-brand-code="SEB"] .axr-addr-line, .axr[data-brand-code="SEB"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#F0ECDF; }
+.axr[data-brand-code="SEB"] .axr-stars{ color:#B59A5E; letter-spacing:.14em; }
+.axr[data-brand-code="SEB"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="SEB"] .axr-score small{ color:#B59A5E; }
 .axr[data-brand-code="SEB"] .axr-amen{ gap:0; }
-.axr[data-brand-code="SEB"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#F0ECDF; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="SEB"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#B59A5E; font-style:normal; }
+.axr[data-brand-code="SEB"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#F0ECDF; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="SEB"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B59A5E; font-style:normal; }
+.axr[data-brand-code="SEB"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="SEB"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="SEB"] .axr-bubble{ background:#EFE9DE; color:#1A2230; border:1px solid #B59A5E; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="SEB"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="SEB"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="SEB"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="SEB"] .axr-all{ background:transparent; border-top:1px solid rgba(181,154,94,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="SEB"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="SEB"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* TSB — The Sebel (elegant) */
-.axr[data-brand-code="TSB"]{ --all-blue:#1A2230; --axr-tint:#1A2230; --all-gold:#B59A5E; --all-light:#EFE9DE; }
-.axr[data-brand-code="TSB"] .axr-logo{ height:clamp(124px,23vh,224px); }
-.axr[data-brand-code="TSB"] .axr-logo img{ max-width:min(94%,600px); max-height:100%; }
-.axr[data-brand-code="TSB"] .axr-name{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.01em; font-size:calc(var(--axr-logo)*0.52); }
-.axr[data-brand-code="TSB"] .axr-sub{ font-size:calc(var(--axr-info)*0.80); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="TSB"] .axr-addr{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.12em; text-transform: none; font-size:.8em; color:#F0ECDF; }
-.axr[data-brand-code="TSB"] .axr-stars{ color:#B59A5E; letter-spacing:.12em; }
-.axr[data-brand-code="TSB"] .axr-score{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; color:#fff; }
+.axr[data-brand-code="TSB"]{ --all-blue:#1A2230; --axr-tint:#1A2230; --all-gold:#B59A5E; --all-light:#EFE9DE;
+  --axr-goldgrad:linear-gradient(42deg,#B59A5E 0%,#CEBD96 100%); }
+.axr[data-brand-code="TSB"] .axr-logo{ height:auto; }
+.axr[data-brand-code="TSB"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
+.axr[data-brand-code="TSB"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="TSB"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="TSB"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
+.axr[data-brand-code="TSB"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
+.axr[data-brand-code="TSB"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#F0ECDF; }
+.axr[data-brand-code="TSB"] .axr-addr-line, .axr[data-brand-code="TSB"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#F0ECDF; }
+.axr[data-brand-code="TSB"] .axr-stars{ color:#B59A5E; letter-spacing:.14em; }
+.axr[data-brand-code="TSB"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="TSB"] .axr-score small{ color:#B59A5E; }
 .axr[data-brand-code="TSB"] .axr-amen{ gap:0; }
-.axr[data-brand-code="TSB"] .axr-amen span{ background:none; border:none; padding:0; font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; font-style:italic; color:#F0ECDF; font-size:calc(var(--axr-info)*0.82); }
-.axr[data-brand-code="TSB"] .axr-amen span:not(:last-child)::after{ content:"\B7"; margin:0 .55em; color:#B59A5E; font-style:normal; }
+.axr[data-brand-code="TSB"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#F0ECDF; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="TSB"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B59A5E; font-style:normal; }
+.axr[data-brand-code="TSB"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="TSB"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="TSB"] .axr-bubble{ background:#EFE9DE; color:#1A2230; border:1px solid #B59A5E; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="TSB"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="TSB"] .axr-bubble-copy{ font-family:'Didot','Bodoni 72',Georgia,'Times New Roman',serif; letter-spacing:.02em; }
+.axr[data-brand-code="TSB"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="TSB"] .axr-all{ background:transparent; border-top:1px solid rgba(181,154,94,0.6); padding:14px 0 8px; }
+.axr[data-brand-code="TSB"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="TSB"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
 
 /* ADA — Adagio (modern) */
-.axr[data-brand-code="ADA"]{ --all-blue:#14233F; --axr-tint:#14233F; --all-gold:#E08A2E; }
-.axr[data-brand-code="ADA"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="ADA"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="ADA"] .axr-name{ color:#F0ECDF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="ADA"]{ --all-blue:#14233F; --axr-tint:#14233F; --all-gold:#E08A2E;
+  --axr-goldgrad:linear-gradient(42deg,#E08A2E 0%,#E7A762 100%); }
+.axr[data-brand-code="ADA"] .axr-logo{ height:auto; }
+.axr[data-brand-code="ADA"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="ADA"] .axr-name{ color:#F0ECDF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="ADA"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="ADA"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="ADA"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="ADA"] .axr-addr{ color:#F0ECDF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="ADA"] .axr-addr-line, .axr[data-brand-code="ADA"] .axr-loc-line{ color:#F0ECDF; }
 .axr[data-brand-code="ADA"] .axr-stars{ color:#E08A2E; }
 .axr[data-brand-code="ADA"] .axr-amen{ gap:0; }
-.axr[data-brand-code="ADA"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECDF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="ADA"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#E08A2E; }
+.axr[data-brand-code="ADA"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECDF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="ADA"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#E08A2E; }
 .axr[data-brand-code="ADA"] .axr-all{ background:color-mix(in srgb, #14233F 86%, #000); }
 
 /* ADG — Adagio (modern) */
-.axr[data-brand-code="ADG"]{ --all-blue:#14233F; --axr-tint:#14233F; --all-gold:#E08A2E; }
-.axr[data-brand-code="ADG"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="ADG"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="ADG"] .axr-name{ color:#F0ECDF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="ADG"]{ --all-blue:#14233F; --axr-tint:#14233F; --all-gold:#E08A2E;
+  --axr-goldgrad:linear-gradient(42deg,#E08A2E 0%,#E7A762 100%); }
+.axr[data-brand-code="ADG"] .axr-logo{ height:auto; }
+.axr[data-brand-code="ADG"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="ADG"] .axr-name{ color:#F0ECDF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="ADG"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="ADG"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="ADG"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="ADG"] .axr-addr{ color:#F0ECDF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="ADG"] .axr-addr-line, .axr[data-brand-code="ADG"] .axr-loc-line{ color:#F0ECDF; }
 .axr[data-brand-code="ADG"] .axr-stars{ color:#E08A2E; }
 .axr[data-brand-code="ADG"] .axr-amen{ gap:0; }
-.axr[data-brand-code="ADG"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECDF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="ADG"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#E08A2E; }
+.axr[data-brand-code="ADG"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECDF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="ADG"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#E08A2E; }
 .axr[data-brand-code="ADG"] .axr-all{ background:color-mix(in srgb, #14233F 86%, #000); }
 
 /* IBS — ibis (modern) */
-.axr[data-brand-code="IBS"]{ --all-blue:#0E0A0F; --axr-tint:#0E0A0F; --all-gold:#E2231A; }
-.axr[data-brand-code="IBS"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="IBS"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="IBS"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="IBS"]{ --all-blue:#0E0A0F; --axr-tint:#0E0A0F; --all-gold:#E2231A;
+  --axr-goldgrad:linear-gradient(42deg,#E2231A 0%,#E95A53 100%); }
+.axr[data-brand-code="IBS"] .axr-logo{ height:auto; }
+.axr[data-brand-code="IBS"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="IBS"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="IBS"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="IBS"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="IBS"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="IBS"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="IBS"] .axr-addr-line, .axr[data-brand-code="IBS"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="IBS"] .axr-stars{ color:#E2231A; }
 .axr[data-brand-code="IBS"] .axr-amen{ gap:0; }
-.axr[data-brand-code="IBS"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="IBS"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#E2231A; }
+.axr[data-brand-code="IBS"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="IBS"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#E2231A; }
 .axr[data-brand-code="IBS"] .axr-all{ background:color-mix(in srgb, #0E0A0F 86%, #000); }
 
 /* IBH — ibis (modern) */
-.axr[data-brand-code="IBH"]{ --all-blue:#0E0A0F; --axr-tint:#0E0A0F; --all-gold:#E2231A; }
-.axr[data-brand-code="IBH"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="IBH"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="IBH"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="IBH"]{ --all-blue:#0E0A0F; --axr-tint:#0E0A0F; --all-gold:#E2231A;
+  --axr-goldgrad:linear-gradient(42deg,#E2231A 0%,#E95A53 100%); }
+.axr[data-brand-code="IBH"] .axr-logo{ height:auto; }
+.axr[data-brand-code="IBH"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="IBH"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="IBH"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="IBH"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="IBH"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="IBH"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="IBH"] .axr-addr-line, .axr[data-brand-code="IBH"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="IBH"] .axr-stars{ color:#E2231A; }
 .axr[data-brand-code="IBH"] .axr-amen{ gap:0; }
-.axr[data-brand-code="IBH"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="IBH"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#E2231A; }
+.axr[data-brand-code="IBH"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="IBH"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#E2231A; }
 .axr[data-brand-code="IBH"] .axr-all{ background:color-mix(in srgb, #0E0A0F 86%, #000); }
 
 /* IBI — ibis Styles (modern) */
-.axr[data-brand-code="IBI"]{ --all-blue:#0E0A0F; --axr-tint:#0E0A0F; --all-gold:#E40046; }
-.axr[data-brand-code="IBI"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="IBI"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="IBI"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="IBI"]{ --all-blue:#0E0A0F; --axr-tint:#0E0A0F; --all-gold:#E40046;
+  --axr-goldgrad:linear-gradient(42deg,#E40046 0%,#EA3F74 100%); }
+.axr[data-brand-code="IBI"] .axr-logo{ height:auto; }
+.axr[data-brand-code="IBI"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="IBI"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="IBI"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="IBI"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="IBI"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="IBI"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="IBI"] .axr-addr-line, .axr[data-brand-code="IBI"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="IBI"] .axr-stars{ color:#E40046; }
 .axr[data-brand-code="IBI"] .axr-amen{ gap:0; }
-.axr[data-brand-code="IBI"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="IBI"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#E40046; }
+.axr[data-brand-code="IBI"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="IBI"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#E40046; }
 .axr[data-brand-code="IBI"] .axr-all{ background:color-mix(in srgb, #0E0A0F 86%, #000); }
 
 /* IBB — ibis budget (modern) */
-.axr[data-brand-code="IBB"]{ --all-blue:#0A1A3A; --axr-tint:#0A1A3A; --all-gold:#F39200; }
-.axr[data-brand-code="IBB"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="IBB"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="IBB"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="IBB"]{ --all-blue:#0A1A3A; --axr-tint:#0A1A3A; --all-gold:#F39200;
+  --axr-goldgrad:linear-gradient(42deg,#F39200 0%,#F6AD3F 100%); }
+.axr[data-brand-code="IBB"] .axr-logo{ height:auto; }
+.axr[data-brand-code="IBB"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="IBB"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="IBB"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="IBB"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="IBB"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="IBB"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="IBB"] .axr-addr-line, .axr[data-brand-code="IBB"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="IBB"] .axr-stars{ color:#F39200; }
 .axr[data-brand-code="IBB"] .axr-amen{ gap:0; }
-.axr[data-brand-code="IBB"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="IBB"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#F39200; }
+.axr[data-brand-code="IBB"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="IBB"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#F39200; }
 .axr[data-brand-code="IBB"] .axr-all{ background:color-mix(in srgb, #0A1A3A 86%, #000); }
 
 /* JO — JO&JOE (modern) */
-.axr[data-brand-code="JO"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#FFD400; }
-.axr[data-brand-code="JO"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="JO"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="JO"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="JO"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#FFD400;
+  --axr-goldgrad:linear-gradient(42deg,#FFD400 0%,#FFDE3F 100%); }
+.axr[data-brand-code="JO"] .axr-logo{ height:auto; }
+.axr[data-brand-code="JO"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="JO"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="JO"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="JO"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="JO"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="JO"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="JO"] .axr-addr-line, .axr[data-brand-code="JO"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="JO"] .axr-stars{ color:#FFD400; }
 .axr[data-brand-code="JO"] .axr-amen{ gap:0; }
-.axr[data-brand-code="JO"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="JO"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#FFD400; }
+.axr[data-brand-code="JO"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="JO"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#FFD400; }
 .axr[data-brand-code="JO"] .axr-all{ background:color-mix(in srgb, #1A1A1A 86%, #000); }
 
 /* JOJ — JO&JOE (modern) */
-.axr[data-brand-code="JOJ"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#FFD400; }
-.axr[data-brand-code="JOJ"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="JOJ"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="JOJ"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="JOJ"]{ --all-blue:#1A1A1A; --axr-tint:#1A1A1A; --all-gold:#FFD400;
+  --axr-goldgrad:linear-gradient(42deg,#FFD400 0%,#FFDE3F 100%); }
+.axr[data-brand-code="JOJ"] .axr-logo{ height:auto; }
+.axr[data-brand-code="JOJ"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="JOJ"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="JOJ"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="JOJ"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="JOJ"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="JOJ"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="JOJ"] .axr-addr-line, .axr[data-brand-code="JOJ"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="JOJ"] .axr-stars{ color:#FFD400; }
 .axr[data-brand-code="JOJ"] .axr-amen{ gap:0; }
-.axr[data-brand-code="JOJ"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="JOJ"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#FFD400; }
+.axr[data-brand-code="JOJ"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="JOJ"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#FFD400; }
 .axr[data-brand-code="JOJ"] .axr-all{ background:color-mix(in srgb, #1A1A1A 86%, #000); }
 
 /* GRT — greet (modern) */
-.axr[data-brand-code="GRT"]{ --all-blue:#12241A; --axr-tint:#12241A; --all-gold:#7AB648; }
-.axr[data-brand-code="GRT"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="GRT"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="GRT"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="GRT"]{ --all-blue:#12241A; --axr-tint:#12241A; --all-gold:#7AB648;
+  --axr-goldgrad:linear-gradient(42deg,#7AB648 0%,#9BC875 100%); }
+.axr[data-brand-code="GRT"] .axr-logo{ height:auto; }
+.axr[data-brand-code="GRT"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="GRT"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="GRT"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="GRT"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="GRT"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="GRT"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="GRT"] .axr-addr-line, .axr[data-brand-code="GRT"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="GRT"] .axr-stars{ color:#7AB648; }
 .axr[data-brand-code="GRT"] .axr-amen{ gap:0; }
-.axr[data-brand-code="GRT"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="GRT"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#7AB648; }
+.axr[data-brand-code="GRT"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="GRT"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#7AB648; }
 .axr[data-brand-code="GRT"] .axr-all{ background:color-mix(in srgb, #12241A 86%, #000); }
 
 /* BRK — BreakFree (modern) */
-.axr[data-brand-code="BRK"]{ --all-blue:#102A3A; --axr-tint:#102A3A; --all-gold:#27AAE1; }
-.axr[data-brand-code="BRK"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="BRK"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="BRK"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="BRK"]{ --all-blue:#102A3A; --axr-tint:#102A3A; --all-gold:#27AAE1;
+  --axr-goldgrad:linear-gradient(42deg,#27AAE1 0%,#5DBFE8 100%); }
+.axr[data-brand-code="BRK"] .axr-logo{ height:auto; }
+.axr[data-brand-code="BRK"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="BRK"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="BRK"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="BRK"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="BRK"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="BRK"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="BRK"] .axr-addr-line, .axr[data-brand-code="BRK"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="BRK"] .axr-stars{ color:#27AAE1; }
 .axr[data-brand-code="BRK"] .axr-amen{ gap:0; }
-.axr[data-brand-code="BRK"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="BRK"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#27AAE1; }
+.axr[data-brand-code="BRK"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="BRK"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#27AAE1; }
 .axr[data-brand-code="BRK"] .axr-all{ background:color-mix(in srgb, #102A3A 86%, #000); }
 
 /* BKF — BreakFree (modern) */
-.axr[data-brand-code="BKF"]{ --all-blue:#102A3A; --axr-tint:#102A3A; --all-gold:#27AAE1; }
-.axr[data-brand-code="BKF"] .axr-logo{ height:clamp(120px,22vh,216px); }
-.axr[data-brand-code="BKF"] .axr-logo img{ max-width:min(92%,580px); max-height:100%; }
-.axr[data-brand-code="BKF"] .axr-name{ color:#FFFFFF; font-size:calc(var(--axr-logo)*0.55); font-weight:600; letter-spacing:0; }
+.axr[data-brand-code="BKF"]{ --all-blue:#102A3A; --axr-tint:#102A3A; --all-gold:#27AAE1;
+  --axr-goldgrad:linear-gradient(42deg,#27AAE1 0%,#5DBFE8 100%); }
+.axr[data-brand-code="BKF"] .axr-logo{ height:auto; }
+.axr[data-brand-code="BKF"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="BKF"] .axr-name{ color:#FFFFFF; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="BKF"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="BKF"] .axr-page-kicker{ font-weight:500; }
 .axr[data-brand-code="BKF"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
 .axr[data-brand-code="BKF"] .axr-addr{ color:#FFFFFF; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="BKF"] .axr-addr-line, .axr[data-brand-code="BKF"] .axr-loc-line{ color:#FFFFFF; }
 .axr[data-brand-code="BKF"] .axr-stars{ color:#27AAE1; }
 .axr[data-brand-code="BKF"] .axr-amen{ gap:0; }
-.axr[data-brand-code="BKF"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); }
-.axr[data-brand-code="BKF"] .axr-amen span:not(:last-child)::after{ content:"\2022"; margin:0 .5em; color:#27AAE1; }
+.axr[data-brand-code="BKF"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="BKF"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#27AAE1; }
 .axr[data-brand-code="BKF"] .axr-all{ background:color-mix(in srgb, #102A3A 86%, #000); }
 
-
-/* Full street address line (under the property name) */
-.axr .axr-addr-line{
-  font-size:calc(var(--axr-info) * 0.92);
-  color:rgba(255,255,255,0.82);
-  letter-spacing:.01em; line-height:1.2;
-  margin-top:calc(var(--axr-info) * 0.1);
+/* Room pages: the room-type heading a touch smaller and in the brand accent
+   so it reads as a category label, not a second hotel name (Nick). */
+.axr .axr-page-ctx.axr-room-name {
+  font-size: calc(var(--axr-name) * 1.0);
+  /* accent hue lightened toward white — pure brand accents (Novotel blue)
+     were too dark to read over the hero photo (Nick) */
+  color: color-mix(in srgb, var(--all-gold) 45%, #fff);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
 }
-.axr .axr-loc-line{
-  display:flex; align-items:center; gap:.4em;
-  font-size:calc(var(--axr-info) * 0.86);
-  color:rgba(255,255,255,0.74);
-  letter-spacing:.01em; line-height:1.2;
-  margin-top:calc(var(--axr-info) * 0.12);
+
+/* Room pages, wordmark-only brands: property name sits under the wordmark. */
+.axr .axr-room-hotel {
+  font-family: var(--axr-display);
+  font-size: calc(var(--axr-name) * 1.3);
+  font-weight: 700;
+  color: #ffffff;
+  margin: calc(var(--axr-info) * 0.25) 0 calc(var(--axr-info) * 0.15);
 }
-.axr .axr-loc-pin{ font-size:.78em; opacity:.85; line-height:1; }
-
-/* ── Logo flicker fix ──────────────────────────────────────────────────
-   Hide the raw hotel-logo <img> until the helper swaps in the correct
-   (cropped, white) inlined SVG, so the slide never flashes the black /
-   wrong-size pre-inline state — even on language-switch re-renders. The
-   inlined <svg> (which replaces the <img>) is unaffected and shows normally.
-   ──────────────────────────────────────────────────────────────────── */
-.axr .axr-logo img.axr-hotel-svg { visibility: hidden; }
-.axr .axr-logo svg { visibility: visible; }
-.axr .axr-logo img { max-width: min(92%, 660px) !important; }
-
-/* ── v221f — Accor readability (per Nick: address was tiny, type maxed) ── */
-.axr{ --axr-logo: clamp(28px, 4.2vh, 44px); }
-/* Address line had NO rule — rendered at browser default (tiny). */
-.axr-addr-line{ font-size:calc(var(--axr-info) * 1.3); font-weight:500; color:rgba(255,255,255,.95);
-  line-height:1.3; max-width:92%; margin-top:calc(var(--axr-info) * 0.3); }
-.axr-loc-line{ font-size:calc(var(--axr-info) * 1.15); font-weight:500; color:rgba(255,255,255,.88);
-  line-height:1.3; max-width:92%; margin-top:calc(var(--axr-info) * 0.2); }
-/* Blurb slightly bigger; clamp stays so it ends clean, never mid-glyph */
-.axr-blurb{ font-size:calc(var(--axr-info) * 1.0); }
-/* Blurb: room for the full sentence-bounded text (JS guarantees it ends on
-   a complete sentence; the clamp is only a hard safety net now). */
-.axr-blurb{ -webkit-line-clamp:5; }
-/* Hotel info scale up (Nick: addresses + info too small) — raise the ratio
-   chain so name/address/amenities/blurb all grow together. */
-.axr{ --axr-name: calc(var(--axr-logo) * 0.85); --axr-info: calc(var(--axr-name) * 0.80); }
-/* Hotel brand logo a touch smaller (per Nick) — name/info sizes unchanged
-   since they derive from the VAR, not the rendered logo. */
-.axr-logo{ height: calc(var(--axr-logo) * 0.85); }

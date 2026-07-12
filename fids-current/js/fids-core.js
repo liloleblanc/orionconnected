@@ -953,7 +953,10 @@ function startAirlineBgRotation() {
     if (GATE_BG_MODE !== 'airline') { stopAirlineBgRotation(); return; }
     var code = (window._gateCurrentAirline || '').toUpperCase();
     var slides = getAirlineBgSlides(code);
-    if (!slides.length) return;
+    // A single slide has nothing to rotate to — repainting it anyway made
+    // the whole screen visibly pulse on every tick (Nick: 'everything on
+    // the screen bumps in and out about every 10 seconds').
+    if (slides.length < 2) return;
     _airlineBgIndex = (_airlineBgIndex + 1) % slides.length;
     // Repaint both photo layers directly (avoid a full screen rebuild).
     var ids = ['gatePhotoBg','gateWelcomePhotoBg','gateBgDiv'];
@@ -961,7 +964,7 @@ function startAirlineBgRotation() {
       var el = document.getElementById(ids[i]);
       if (el) setGateBg(el, window._gateIata || '');
     }
-  }, 10000);
+  }, 45000); // was 10s — a 10-second full-background swap read as a constant bump
 }
 
 // Update the menu dropdown (if visible) with the current airline's slide list.
@@ -971,7 +974,7 @@ function refreshAirlineBgPicker() {
   var code = (window._gateCurrentAirline || '').toUpperCase();
   var slides = code ? getAirlineBgSlides(code) : [];
   var current = GATE_AIRLINE_BG_PICK;
-  var html = '<option value="auto"' + (current === 'auto' ? ' selected' : '') + '>Auto (rotate every 10s)</option>';
+  var html = '<option value="auto"' + (current === 'auto' ? ' selected' : '') + '>Auto (rotate every 45s)</option>';
   for (var i = 0; i < slides.length; i++) {
     var val = String(i);
     var sel2 = (current === val) ? ' selected' : '';
@@ -2270,7 +2273,8 @@ const AIRLINE_EMBLEM = {
 var LOCAL_LOGOS = {
   // ── Canadian mainline + regionals ──
   'AC': '/logos/airlines/canadian/air-canada.svg',
-  'WS': '/logos/airlines/canadian/WestJet_Logo_2018.svg',         // WestJet 2018 navy + teal wordmark
+  'WS': '/logos/airlines/canadian/westjet-2025/WestJet-logo-colour.png', // WestJet official (Dec 2025 brand pack)
+  'WG': '/logos/airlines/canadian/sunwing/Sunwing-Logo-Colour.png',       // Sunwing official (Dec 2025 brand pack)
   'WR': '/logos/airlines/canadian/encore.png',                    // Encore
   'PD': '/logos/airlines/canadian/porter.svg',                    // Porter (correct — NOT viporter)
   'QK': '/logos/airlines/canadian-regional/jazz.svg',             // Jazz
@@ -3236,12 +3240,16 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   //   Horizontal rule below wordmark
   //   Property name (serif, spaced caps) below rule
   // Renderer applies brightness(0) invert(1) for white-on-dark panels.
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 36" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 2) scale(0.926)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
+  // Official Fairmont lockups (e.g. 'Fairmont / LE REINE ELIZABETH') are ONE
+  // unit: script wordmark with the spaced-caps property name directly under
+  // it — no rule between them (Nick: 'nowhere in that logo is there black,
+  // and so separated — no'). Everything renders white; the renderer's
+  // brightness/invert filter handles dark-on-light contexts.
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 32" preserveAspectRatio="xMidYMid meet">'
+    + '<g transform="translate(15, 1) scale(0.926)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
-    + '<line x1="20" y1="22" x2="60" y2="22" stroke="#000000" stroke-width="0.3" stroke-linecap="round"/>'
-    + '<text x="40" y="31" text-anchor="middle" '
+    + '<text x="40" y="27" text-anchor="middle" '
     +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
     +   name
@@ -3304,12 +3312,14 @@ function makeEmblemsLockupSvgDataUri(propertyName) {
   // Target: width 50, centered → scale = 50/55.52 = 0.901
   // Translated: x = (80-50)/2 = 15, y = ~3 (top-aligned)
   // After scale: y-offset for vertical centering in the top portion
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 36" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 3) scale(0.901) translate(-7.25, -11.73)" fill="#ffffff">'
+  // No rule between wordmark and name — official lockups are one unit, and
+  // the black stroke read as a stray black bar on photos (same fix as the
+  // Fairmont generator).
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 32" preserveAspectRatio="xMidYMid meet">'
+    + '<g transform="translate(15, 2) scale(0.901) translate(-7.25, -11.73)" fill="#ffffff">'
     +   '<path d="' + _EMBLEMS_WORDMARK_D + '"/>'
     + '</g>'
-    + '<line x1="20" y1="22" x2="60" y2="22" stroke="#000000" stroke-width="0.3" stroke-linecap="round"/>'
-    + '<text x="40" y="31" text-anchor="middle" '
+    + '<text x="40" y="27" text-anchor="middle" '
     +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
     +   name
@@ -3516,6 +3526,18 @@ var LOGO_TREATMENT = {
   'westjet-encore':'white_card',
   'encore':'white_card',
   'WestJet_Logo_2018':'white_card',
+  'WestJet-logo-colour':'white_card',
+  'WestJet-logo-greyscale':'white_card',
+  'WestJet-Rewards-logo-colour':'white_card',
+  'WestJet-Rewards-logo-colour-French':'white_card',
+  'WestJet-Vacations-logo-colour':'white_card',
+  'WestJet-Vacations-logo-colour-French':'white_card',
+  'WestJet-Cargo-logo-colour':'white_card',
+  'WestJet-leaf-colour':'no_filter',
+  'Sunwing-Logo-Colour':'white_card',
+  'Sunwing-Logo-White':'no_filter',
+  'Sunwing-Vacations-Group-colour':'white_card',
+  'Sunwing-Vacations-Group-White':'no_filter',
   // ── Accor Luxury / Lifestyle / Premium brands (added 2026) ────────────
   // 'invert' = dark single-color logo → render as white on dark carousel.
   // 'no_filter' = already-light or color-card design → render as-is.
@@ -3626,7 +3648,7 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
-  'AC':'#D82F2E','WS':'#00B2A9','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
+  'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
@@ -5683,6 +5705,23 @@ function _buildV2MapCol(ctx, vars) {
       if (typeof _liveFixPhysOk === 'function' && !_liveFixPhysOk(_ib)) {
         _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
       }
+      // LEG-WINDOW GUARD (Nick: 'impossible — this aircraft is not en route').
+      // ADB's withLocation position belongs to the AIRFRAME, not the leg — it
+      // can be a stale cruise fix from a previous flight or linger after
+      // landing. A fix only counts as THIS leg being airborne inside the
+      // leg's plausible window: from ~its departure (arrival − duration −
+      // 25 min pad) until arrival + 8 min. Outside that, show nothing.
+      try {
+        var _lwArr = (_ib._revTs && _ib._revTs > _ib._sortTs) ? _ib._revTs : (_ib._sortTs || 0);
+        if (_lwArr) {
+          var _lwSpan = ((_ib._durationMins || 240) + 25) * 60000;
+          var _lwNow = Date.now();
+          if (_lwNow < _lwArr - _lwSpan || _lwNow > _lwArr + 8 * 60000) {
+            _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
+            if (_gateFixCache && _gateFixCache.key === String(_ib.flight || _ib._reg || '')) _gateFixCache = null;
+          }
+        }
+      } catch (e) {}
       // Once on the ground there is no airborne fix to hold — drop the cache so
       // the panel/map don't keep showing a stale cruise position post-landing.
       if (_arrivedLikeIb && _gateFixCache && _gateFixCache.key === String(_ib.flight || _ib._reg || '')) _gateFixCache = null;
@@ -6860,9 +6899,19 @@ function uxgGateHtml(ctx) {
     var finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
     var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
     var finalSub = isGateClosed ? '' : TL('proceedGate');
+    // Flight identity ON the takeover (Nick: 'why is there no flight info
+    // here') — the panel replaces the whole centre, so it must say WHICH
+    // flight it's calling.
+    var _fcDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
+    var _fcTime = currentFlight.upd || currentFlight.time || '';
+    var _fcInfo = '<div class="g8-final-flight">'
+      + (currentFlight.flight || '')
+      + (_fcDest ? ' <span class="g8-final-sep">·</span> ' + _fcDest + (locIata ? ' (' + locIata + ')' : '') : '')
+      + (_fcTime ? ' <span class="g8-final-sep">·</span> ' + _fcTime : '')
+      + '</div>';
     finalHtml = '<div class="g8-final active">'
       + '<div class="g8-final-hdr">' + finalHdr + '</div>'
-      + '<div class="g8-final-body"><div class="g8-final-text"><div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
+      + '<div class="g8-final-body"><div class="g8-final-text">' + _fcInfo + '<div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
       + '</div>';
   }
 
@@ -6920,16 +6969,25 @@ function uxgGateHtml(ctx) {
     'AM':'skyteam','RO':'skyteam','SV':'skyteam','ME':'skyteam','VS':'skyteam',
     'KQ':'skyteam','UX':'skyteam','OK':'skyteam','XK':'skyteam'
   };
+  // Dark-banner-safe variants — the colored lockups (black Star Alliance
+  // wordmark, navy oneworld) were invisible on the black R1 band, which is
+  // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/star-alliance-logo.svg',
-    'oneworld': '/logos/airlines/alliances/Oneworld_logo.svg',
+    'star':     '/logos/airlines/alliances/StarGray-bright-text.svg',  // Nick's lockup, lettering brightened for the black band
+    'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
   var starHtml = '';
+  // These carriers' banner wordmark IS the official combined
+  // airline+alliance lockup — a separate mark would show the alliance twice.
+  var _COMBINED_ALLIANCE_LOCKUP = { 'UA': 1, 'KL': 1 };
   var _allianceKey = ALLIANCE_MAP[airlineCode];
-  if (_allianceKey && !window._allianceFailed) {
+  if (_allianceKey && !_COMBINED_ALLIANCE_LOCKUP[airlineCode]) {
     var _allianceCls = 'g8-r1-star g8-r1-alliance-' + _allianceKey;
-    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';window._allianceFailed=true;">';
+    // onerror hides only THIS img — the old window._allianceFailed flag was a
+    // global kill switch: one transient 404 disabled alliance logos for the
+    // rest of the session.
+    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
   }
 
   // Operator info (used by equipment panel; top banner no longer shows this line)
@@ -7107,8 +7165,13 @@ function uxgGateHtml(ctx) {
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
-    'UA': '/logos/airlines/us-major/united-monochrome-white.svg',                // WHITE "UNITED" + globe (united.svg was blue = invisible on the navy banner)
+    // Official COMBINED airline+alliance lockups (Nick: 'there are multiple
+    // logos for alliance partners — use them'). Carriers with a combined
+    // lockup skip the separate alliance mark (see _COMBINED_ALLIANCE_LOCKUP).
+    'UA': '/logos/airlines/us-major/United_Airlines_Logo_2019_full_Star_Alliance-monochrome-white.svg',
+    'KL': '/logos/airlines/european/KLM_Logo_2011_SkyTeam-monochrome-white.svg',
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
+    'WG': '/logos/airlines/canadian/sunwing/Sunwing-Logo-White.png',             // Sunwing official white (Dec 2025 pack) for the dark banner
     // WestJet — navy banner: white "WestJet" lettering + colored (teal/navy) maple-leaf swoosh
     'WS': '/logos/airlines/canadian/WestJet_Logo_2018-monochrome-white-colored-leaf.svg?v=5', // white wordmark + colored leaf for the navy bar
     // HA override REMOVED Jul 2026 (Nick: banner wordmark must be WHITE, icon
@@ -7440,9 +7503,16 @@ function uxgGateHtml(ctx) {
   // 2. Logo white-box fix — mix-blend-mode:multiply makes any white background
   //    baked into the uploaded airport-logo file disappear against the white
   //    band (coloured ink is unaffected).
+  // v223 — the top-right is a ROW OF EQUAL TABS (Nick: 'the tabs need to
+  // look the same, same curvature, same size'): every tab is the gate
+  // block's exact grammar — width var(--gate-rcw), skewX(-24°), 30px
+  // top-left radius — each stacked UNDER the tab to its right so only its
+  // rounded corner shows at the seam. Order right→left: Gate (accent) |
+  // airport band (white) | Time (blue-first per Nick — at YQM the three
+  // read Acadian blue | white | red, the flag across the top).
   var _apBandTop = _apLogoTop
-    ? '<div class="g8-r1-apband" style="position:absolute;right:0;top:0;bottom:0;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;padding-right:calc(var(--col-left, 23%) + 26px);background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
-      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:420px;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
+    ? '<div class="g8-r1-apband" style="position:absolute;right:0;top:0;bottom:0;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
+      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:100%;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
 
@@ -7451,8 +7521,13 @@ function uxgGateHtml(ctx) {
        + (_bannerSpec && _bannerSpec.r1 === '#FFFFFF' ? ' g8-banner-light' : '')
        + (_wmSymbol ? ' g8-wrap-watermark' : '')
        + (airlineCode ? ' g8-airline-' + airlineCode : '')
+       + (iata ? ' g8-ap-' + String(iata).toUpperCase() : '')
        + '" data-pill-style="' + (window._gateStatusPillStyle || 'opaque') + '"'
-       + ' style="--airline-accent:' + accent
+       // Shared width for the three top tabs (Time | airport | Gate) — equal
+       // tabs (Nick) sized so all three still leave room for wide airline
+       // wordmarks on the left.
+       + ' style="--g8-tab-w:clamp(240px,17.5vw,420px)'
+       + ';--airline-accent:' + accent
        // 3rd brand colour (airline-colors.js r3) — distinct accent for the
        // secondary line etc. Falls back to the main accent when not defined.
        + ';--airline-accent3:' + ((_bannerSpec && _bannerSpec.r3) ? _bannerSpec.r3 : accent)
@@ -7479,12 +7554,52 @@ function uxgGateHtml(ctx) {
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
     +   _apBandTop
+    // TIME TAB (Nick: 'the gate needs the time — another tab exactly as the
+    // ones existing, time a different color'): a skewed box in the SAME
+    // grammar as the Gate block, sitting just left of it. At YQM it takes
+    // Acadian blue + the gold star, so the top tabs read blue | white | red
+    // — the Acadian flag across the banner (Nick: 'the flag on the top in
+    // the tabs, each tab a different color'). The value carries
+    // .v2-fi-clock-val + data-tz, so the global 5s clock updater keeps it
+    // ticking.
+    +   (function () {
+          var _tbYQM = String(iata).toUpperCase() === 'YQM';
+          // Non-YQM: a fixed deep slate — accent3 could match the gate accent
+          // (AC red next to red gate = 'red and red', per Nick at YHZ).
+          var _tbBg = _tbYQM ? '#003DA5' : '#1F2C44';
+          var _tbTz = (AP[iata] || {}).tz || '';
+          var _tbNow = '';
+          try {
+            var _tbO = _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
+            _tbNow = new Date().toLocaleTimeString('en-US', _tbO).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
+          } catch (e) {}
+          // Same tab grammar as the gate block: width --gate-rcw, 30px
+          // top-left radius, stacked UNDER the airport band (z1 < band z2 <
+          // gate z3) so each seam shows only the next tab's rounded corner.
+          // Slot: two tabs left of the gate when the airport band exists,
+          // one tab left otherwise.
+          // The airport band (CSS-governed) is double width with its right
+          // half under the gate block: its visible left edge sits at
+          // 2*tab-w - 24px from the right. The time tab slots left of that
+          // with a 30px underlap; without a band, directly left of the gate.
+          var _tbRight = _apLogoTop
+            ? 'calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 54px)'
+            : 'calc(var(--gate-rcw, 25%) - 30px)';
+          return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
+            + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
+            +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
+            +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
+            +     'Time <span style="opacity:.6">|</span> Heure</span>'
+            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(36px,5.4vh,76px);font-weight:900;color:#fff;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
+            + '</span>'
+            + '</div>';
+        })()
     // Gate block: FULL banner height (top:0), skewed −24° in PARALLEL with the
     // airport band so the white↔accent seam keeps the slanted angle (it went
     // vertical when the block was straight). The block bleeds 80px past the
     // right screen edge so its skewed top-right corner can never expose a gap;
     // inner spans counter-skew +24° to stay upright.
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:' + (String(iata).toUpperCase() === 'YQM' ? '#D21034' : 'var(--airline-accent,#1aa)') + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
     +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
     +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
     +   '</div>'
@@ -8114,6 +8229,10 @@ function renderDedicatedScreen() {
   // headers, status inks) silently skipped gate/baggage screens (Nick:
   // 'they're still white the hyphens').
   try { document.body.classList.toggle('fids-light-board', wordmarkVariant() === 'dark'); } catch (e) {}
+  try {
+    var _apClsIata = (document.getElementById('apSel') || {}).value || '';
+    document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+  } catch (e) {}
   
 // ── GATE v5 weather builder ──
 
@@ -9322,10 +9441,20 @@ const gView = document.getElementById('gateView');
           </div>
         </div>
 
-        <!-- Bottom band — the welcome/date footer is retired (Nick:
-             'irrelevant'); a slim strip mirrors the top banner's angled
-             lines so the screen is symmetric top to bottom. -->
-        <div class="bidsv2-bottom-band" aria-hidden="true"></div>
+        <!-- Bottom band = scrolling info TICKER (Nick: 'the ticker info
+             messages on bags'). Bilingual baggage-hall messages loop in a
+             marquee; the track is doubled so the wrap is seamless. -->
+        <div class="bidsv2-bottom-band bidsv2-ticker" aria-hidden="true">
+          ${(function(){
+            const _a = BAGS_TICKER_MSG[langs[0]] || BAGS_TICKER_MSG.en;
+            const _b = (langs[1] && BAGS_TICKER_MSG[langs[1]] && langs[1] !== langs[0]) ? BAGS_TICKER_MSG[langs[1]] : null;
+            const _txt = _a.map(function(m, i){
+              return '✈︎  ' + m + (_b ? '  ·  ' + _b[i] : '');
+            }).join('   ·   ') + '   ·   ';
+            const _esc = _txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+            return '<div class="bidsv2-ticker-track"><span>' + _esc + '</span><span>' + _esc + '</span></div>';
+          })()}
+        </div>
 
       </div>`;
 
@@ -12185,7 +12314,7 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
-  'AC':'AIR CANADA',  'WS':'WESTJET',     'PD':'PORTER',      'F8':'FLAIR',
+  'AC':'AIR CANADA',  'WS':'WESTJET', 'WG':'SUNWING',     'PD':'PORTER',      'F8':'FLAIR',
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
   'JV':'BEARSKIN',    'WT':'WASAYA',      'NSA':'NORTH STAR AIR',
@@ -13208,9 +13337,10 @@ function startLangRotation() {
     updateTicker();
     if (screenType === 'main' && (data.dep.length || data.arr.length)) render();
     if (screenType !== 'main') {
-      // v9: Targeted text updates — no DOM rebuild, no flicker
-      window._lastGateKey = '';
-      renderDedicatedScreen();
+      // v22158 — do NOT force a full gate rebuild here: the v2 gate is
+      // bilingual-simultaneous, and the rebuild on every 30s flip made the
+      // whole screen visibly bounce (Nick: 'still bouncing every so often').
+      // Widgets with their own timers (ticker, clock, ads) keep rotating.
     }
   }, 30000); // flip every 30 seconds
 }
@@ -13240,6 +13370,47 @@ function updateLangButtons() {
 }
 
 // ── TICKER — interleaves selected languages ──────────────────────────────
+// Baggage-hall ticker messages (Nick: 'the ticker info messages on bags').
+// Same bilingual pattern as the main-board ticker, baggage-flavoured.
+// On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
+// looking at' guessing during preview reviews. Bump with the cache token.
+var FIDS_BUILD_TAG = 'v22171';
+(function(){
+  try {
+    function _addTag(){
+      if (document.getElementById('fidsBuildTag')) return;
+      var d = document.createElement('div');
+      d.id = 'fidsBuildTag';
+      d.textContent = FIDS_BUILD_TAG;
+      d.style.cssText = 'position:fixed;left:7px;bottom:1px;z-index:99999;font:600 10px/1.6 monospace;color:rgba(128,138,152,0.55);pointer-events:none;';
+      document.body.appendChild(d);
+      setInterval(function(){
+        try {
+          var t = FIDS_BUILD_TAG + (window._adDiag ? ' · ' + window._adDiag : '');
+          // Name the element actually PAINTING the ad panel's centre pixel —
+          // the definitive answer to which of the several renderers is on top.
+          var c = document.getElementById('gateAdCarousel');
+          if (c) {
+            var r = c.getBoundingClientRect();
+            if (r.width > 0) {
+              var e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+              if (e) t += ' · top:' + (e.id || (e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.split(' ')[0] : '')));
+            }
+          }
+          d.textContent = t;
+        } catch (e) {}
+      }, 2000);
+    }
+    if (document.body) _addTag(); else document.addEventListener('DOMContentLoaded', _addTag);
+  } catch (e) {}
+})();
+
+const BAGS_TICKER_MSG = {
+  en: ['MANY BAGS LOOK ALIKE — PLEASE CHECK YOUR BAG TAG','LUGGAGE CARTS ARE AVAILABLE NEAR THE EXIT','REPORT DAMAGED OR MISSING BAGGAGE TO YOUR AIRLINE','PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES','REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF','THANK YOU FOR FLYING WITH US — WELCOME'],
+  fr: ['PLUSIEURS VALISES SE RESSEMBLENT — VÉRIFIEZ VOTRE ÉTIQUETTE','DES CHARIOTS À BAGAGES SONT DISPONIBLES PRÈS DE LA SORTIE','SIGNALEZ TOUT BAGAGE ENDOMMAGÉ OU MANQUANT À VOTRE TRANSPORTEUR','VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS','SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL','MERCI D\'AVOIR VOYAGÉ AVEC NOUS — BIENVENUE'],
+  es: ['MUCHAS MALETAS SON PARECIDAS — VERIFIQUE SU ETIQUETA','HAY CARRITOS DE EQUIPAJE CERCA DE LA SALIDA','REPORTE EQUIPAJE DAÑADO O FALTANTE A SU AEROLÍNEA','MANTENGA SU EQUIPAJE CON USTED EN TODO MOMENTO','REPORTE ACTIVIDAD SOSPECHOSA AL PERSONAL','GRACIAS POR VOLAR CON NOSOTROS — BIENVENIDOS']
+};
+
 const TICKER_MSG = {
   en: ['PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES','UNATTENDED ITEMS WILL BE CONFISCATED BY SECURITY','PROCEED TO YOUR GATE 30 MINUTES BEFORE DEPARTURE','BOARDING GATES CLOSE 15 MINUTES PRIOR TO DEPARTURE','REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF','CHECK MONITORS FOR UPDATED GATE INFORMATION'],
   fr: ["VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS","LES OBJETS SANS SURVEILLANCE SERONT CONFISQUÉS","PRÉSENTEZ-VOUS À LA PORTE 30 MINUTES AVANT LE DÉPART","FERMETURE DES PORTES 15 MINUTES AVANT LE DÉPART","SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL","CONSULTEZ LES ÉCRANS POUR TOUTE MISE À JOUR"],
@@ -13718,6 +13889,10 @@ function render() {
   // CSS keys off body.fids-light-board so headers (and anything else that
   // must flip with the background) adapt on EVERY theme automatically.
   try { document.body.classList.toggle('fids-light-board', wordmarkVariant() === 'dark'); } catch (e) {}
+  try {
+    var _apClsIata = (document.getElementById('apSel') || {}).value || '';
+    document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+  } catch (e) {}
 
   const contentH = document.querySelector('.content-area')?.offsetHeight || 600;
   const theadH   = document.querySelector('thead')?.offsetHeight || 30;
@@ -19097,6 +19272,7 @@ function tryPlayDestinationVideo() {
 // playback: { loop?: bool } — if loop, replay from start when video ends.
 function playSavedVideo(slot, videoId, playback) {
   playback = playback || {};
+  window._adDiag = 'yt-vid';
   return ensureVideoPlayer().then(function() {
     if (!_ytPlayer || !slot || !videoId) return;
     // Encode loop in cdKey so onStateChange can detect it
@@ -19249,10 +19425,95 @@ function playYouTubePlaylist(slot, playlistId) {
 // element instead of the YouTube iframe. The element is positioned over
 // the slot the same way the YT iframe is.
 // playback: { loop?: bool } — if loop, native <video> will replay automatically.
+// ── Branded FRAME behind library media (Nick: uploaded ads must sit on the
+// dots-world panel — the light brushed base + grey globe + accent handles —
+// like the aircraft-info background, not on their own baked backgrounds or
+// black). One fixed layer just under the media element; the media renders
+// object-fit:contain with a transparent back so the frame shows through
+// wherever the ad doesn't reach.
+var _mediaFrameEl = null;
+function _ensureMediaFrame() {
+  if (_mediaFrameEl) return _mediaFrameEl;
+  _mediaFrameEl = document.createElement('div');
+  _mediaFrameEl.id = 'fidsMediaFrame';
+  _mediaFrameEl.style.position = 'fixed';
+  // z 5: the gate welcome panel paints its background at z-index 5 — a frame
+  // at 4 sat UNDER it (Nick's flat-red bands). Equal z + appended to <body>
+  // (later in DOM) puts the frame above the panel, and the media at 6 above
+  // the frame.
+  _mediaFrameEl.style.zIndex = '5';
+  _mediaFrameEl.style.pointerEvents = 'none';
+  _mediaFrameEl.style.overflow = 'hidden';
+  _mediaFrameEl.style.display = 'none';
+  document.body.appendChild(_mediaFrameEl);
+  return _mediaFrameEl;
+}
+function _positionMediaFrame(r, blurUrl) {
+  var f = _ensureMediaFrame();
+  var _bk = String(blurUrl || '');
+  if (f._blurKey !== _bk) {
+    f._blurKey = _bk;
+    f.innerHTML = ((typeof _adBackdropHtml === 'function') ? _adBackdropHtml(_bk) : '')
+      // Tech border around the media box (frame spans the same rect the
+      // media is positioned in, so the helper's inset lines up with it).
+      + ((typeof _adTechFrameHtml === 'function') ? _adTechFrameHtml() : '');
+  }
+  // The frame lives on <body>, outside .g8-wrap — pull the airline accent
+  // across so the handles keep the airline's colour.
+  try {
+    var _gw = document.querySelector('.g8-wrap');
+    var _acc = _gw ? getComputedStyle(_gw).getPropertyValue('--airline-accent') : '';
+    if (_acc) f.style.setProperty('--airline-accent', _acc.trim());
+  } catch (e) {}
+  f.style.left = Math.round(r.left) + 'px';
+  f.style.top = Math.round(r.top) + 'px';
+  f.style.width = Math.round(r.width) + 'px';
+  f.style.height = Math.round(r.height) + 'px';
+  f.style.display = 'block';
+}
+function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'none'; }
+
+/* Tech-frame fitter: contain-fit media draws smaller than its element box —
+   shrink each .ad-tech-frame to the media's ACTUAL drawn rectangle so the
+   frame hugs the ad itself (Nick), whatever the creative's aspect ratio. */
+(function () {
+  function _drawnRect(m) {
+    var mw = m.videoWidth || m.naturalWidth, mh = m.videoHeight || m.naturalHeight;
+    var b = m.getBoundingClientRect();
+    if (!mw || !mh || !b.width || !b.height) return null;
+    var ar = mw / mh, br = b.width / b.height, w, h;
+    if (ar >= br) { w = b.width; h = b.width / ar; } else { h = b.height; w = b.height * ar; }
+    return { left: b.left + (b.width - w) / 2, top: b.top + (b.height - h) / 2, width: w, height: h };
+  }
+  function _tick() {
+    var frames = document.querySelectorAll('.ad-tech-frame');
+    for (var i = 0; i < frames.length; i++) {
+      var f = frames[i];
+      var host = f.parentElement;
+      if (!host) continue;
+      var m = host.querySelector('img.ad-tech-media, video.ad-tech-media');
+      if (!m && typeof _libImgEl !== 'undefined' && _libImgEl && _libImgEl.style.display !== 'none') m = _libImgEl;
+      if (!m && typeof _nativeVideoEl !== 'undefined' && _nativeVideoEl && _nativeVideoEl.style.display !== 'none') m = _nativeVideoEl;
+      if (!m) continue;
+      var r = _drawnRect(m);
+      if (!r) continue;
+      var hb = host.getBoundingClientRect();
+      var pad = Math.max(12, Math.min(22, Math.round(r.width * 0.02)));
+      f.style.left = Math.round(r.left - hb.left - pad) + 'px';
+      f.style.top = Math.round(r.top - hb.top - pad) + 'px';
+      f.style.width = Math.round(r.width + 2 * pad) + 'px';
+      f.style.height = Math.round(r.height + 2 * pad) + 'px';
+      f.style.right = 'auto'; f.style.bottom = 'auto';
+    }
+  }
+  setInterval(_tick, 600);
+})();
+
 var _nativeVideoEl = null;
 function playUploadedVideo(slot, videoUrl, playback) {
   playback = playback || {};
   if (!slot || !videoUrl) return;
+  window._adDiag = 'lib-vid';
   var cdKey = 'upload:' + videoUrl;
   var slotKey = (slot.id || 'slot') + '|' + cdKey;
   if (_videoCurrentSlotId === slotKey && _currentVideoIdx === cdKey) return;
@@ -19271,10 +19532,11 @@ function playUploadedVideo(slot, videoUrl, playback) {
     _nativeVideoEl.playsInline = true;
     _nativeVideoEl.controls = false;
     _nativeVideoEl.style.position = 'fixed';
-    _nativeVideoEl.style.objectFit = 'cover';
-    _nativeVideoEl.style.zIndex = '5';
+    _nativeVideoEl.style.objectFit = 'contain';   /* whole ad visible; the branded frame fills the rest */
+    _nativeVideoEl.style.zIndex = '6';
     _nativeVideoEl.style.pointerEvents = 'none';
-    _nativeVideoEl.style.background = '#000';
+    _nativeVideoEl.style.background = 'transparent';
+    _nativeVideoEl.style.filter = 'drop-shadow(0 10px 30px rgba(10,20,40,0.28))';
     _nativeVideoEl.addEventListener('ended', function() {
       // If loop is set, the native element handles replay itself via .loop
       // attribute and 'ended' shouldn't fire. This handler only runs on
@@ -19298,17 +19560,23 @@ function playUploadedVideo(slot, videoUrl, playback) {
 
   function _positionNative() {
     if (!_nativeVideoEl) return;
-    // Re-fetch slot by ID — closure ref may be stale after a panel re-render
+    // Anchor to the measured VISIBLE panel region (the raw carousel /
+    // gatePhotoBg boxes can run past the viewport and under the columns).
+    var _vvr = (typeof _adVisibleRect === 'function') ? _adVisibleRect() : null;
     var liveSlot = document.getElementById('gatePhotoBg') || slot;
-    if (!liveSlot) return;
+    if (!liveSlot && !_vvr) return;
     if (_nativeVideoEl.style.display === 'none') return;
-    var r = liveSlot.getBoundingClientRect();
+    var r = _vvr || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return; // detached element
+    // Full width, tiny vertical breathing room (Nick: 'entire width, stretch
+    // a bit up not much').
+    var _nvIy = Math.round(r.height * 0.0125);
     _nativeVideoEl.style.left = Math.round(r.left) + 'px';
-    _nativeVideoEl.style.top = Math.round(r.top) + 'px';
+    _nativeVideoEl.style.top = Math.round(r.top + _nvIy) + 'px';
     _nativeVideoEl.style.width = Math.round(r.width) + 'px';
-    _nativeVideoEl.style.height = Math.round(r.height) + 'px';
+    _nativeVideoEl.style.height = Math.round(r.height - 2 * _nvIy) + 'px';
     _nativeVideoEl.style.display = 'block';
+    try { _positionMediaFrame(r, ''); } catch (e) {}
   }
   _positionNative();
   if (_videoResizeObserver) { try { _videoResizeObserver.disconnect(); } catch(e){} _videoResizeObserver = null; }
@@ -19341,6 +19609,7 @@ function playUploadedVideo(slot, videoUrl, playback) {
 }
 
 function _hideNativeVideo() {
+  try { _hideMediaFrame(); } catch (e) {}
   if (_nativeVideoEl) {
     try { _nativeVideoEl.pause(); _nativeVideoEl.removeAttribute('src'); _nativeVideoEl.load(); } catch (e) {}
     _nativeVideoEl.style.display = 'none';
@@ -19362,6 +19631,7 @@ var _libImgEl = null;
 var _libImgTimeout = null;
 function playLibraryImage(slot, item) {
   if (!slot || !item || !item.url) return;
+  window._adDiag = 'lib-img';
   var cdKey = 'image:' + item.id;
   var slotKey = (slot.id || 'slot') + '|' + cdKey;
   if (_videoCurrentSlotId === slotKey && _currentVideoIdx === cdKey) return;
@@ -19378,10 +19648,11 @@ function playLibraryImage(slot, item) {
     _libImgEl = document.createElement('img');
     _libImgEl.id = 'fidsLibraryImage';
     _libImgEl.style.position = 'fixed';
-    _libImgEl.style.objectFit = 'cover';
-    _libImgEl.style.zIndex = '5';
+    _libImgEl.style.objectFit = 'contain';   /* whole ad visible; the branded frame fills the rest */
+    _libImgEl.style.zIndex = '6';
     _libImgEl.style.pointerEvents = 'none';
-    _libImgEl.style.background = '#000';
+    _libImgEl.style.background = 'transparent';
+    _libImgEl.style.filter = 'drop-shadow(0 10px 30px rgba(10,20,40,0.28))';
     _libImgEl.addEventListener('error', function() {
       console.warn('[IMAGE] failed to load', item.url);
       _hideDestinationVideoOverlay();
@@ -19392,16 +19663,22 @@ function playLibraryImage(slot, item) {
 
   function _positionImg() {
     if (!_libImgEl) return;
+    // Same visible-region anchoring as _positionNative.
+    var _vir = (typeof _adVisibleRect === 'function') ? _adVisibleRect() : null;
     var liveSlot = document.getElementById('gatePhotoBg') || slot;
-    if (!liveSlot) return;
+    if (!liveSlot && !_vir) return;
     if (_libImgEl.style.display === 'none') return;
-    var r = liveSlot.getBoundingClientRect();
+    var r = _vir || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
+    // Full width, tiny vertical breathing room (Nick: 'entire width, stretch
+    // a bit up not much').
+    var _liIy = Math.round(r.height * 0.0125);
     _libImgEl.style.left = Math.round(r.left) + 'px';
-    _libImgEl.style.top = Math.round(r.top) + 'px';
+    _libImgEl.style.top = Math.round(r.top + _liIy) + 'px';
     _libImgEl.style.width = Math.round(r.width) + 'px';
-    _libImgEl.style.height = Math.round(r.height) + 'px';
+    _libImgEl.style.height = Math.round(r.height - 2 * _liIy) + 'px';
     _libImgEl.style.display = 'block';
+    try { _positionMediaFrame(r, item.url); } catch (e) {}
   }
   _libImgEl.src = item.url;
   _positionImg();
@@ -19441,6 +19718,7 @@ function playLibraryImage(slot, item) {
 }
 
 function _hideLibraryImage() {
+  try { _hideMediaFrame(); } catch (e) {}
   if (_libImgTimeout) { clearTimeout(_libImgTimeout); _libImgTimeout = null; }
   if (_libImgEl) {
     _libImgEl.style.display = 'none';
@@ -19562,7 +19840,7 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#080C14', adLayout:'left-scrim', headline:'Fast, free Wi-Fi', sub:'for Aeroplan Members', _customLogoVideo:'/logos/Backgrounds/AC/wifi-ac.mp4' },
   ],
   'WS': [
-    { bg:'linear-gradient(135deg,#00313c 0%,#00505c 100%)', headline:'WestJet Rewards', sub:'Earn WestJet dollars on every flight', logo:'/logos/airlines/canadian/WestJet_Logo_2018.svg' },
+    { bg:'linear-gradient(135deg,#00313c 0%,#00505c 100%)', headline:'WestJet Rewards', sub:'Earn WestJet dollars on every flight', logo:'/logos/airlines/canadian/westjet-2025/WestJet-Rewards-logo-colour.png' },
     { bg:'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 100%)', headline:'Free Starlink Wi-Fi', sub:'Stream & browse \u00b7 Powered by Starlink', logo:'/logos/symbols-utility/starlink.svg' },
   ],
   'PD': [
@@ -19655,6 +19933,9 @@ function _accorAcceptLang(L) {
 // Current board display language (the EN/FR rotation), defaulting to English.
 function _accorLangNow() {
   try {
+    // Ad decks alternate EN/FR deterministically (see renderGateAd) — the
+    // forced language also drives which per-language cache/fetch is used.
+    if (window._accorAdForcedLang) return window._accorAdForcedLang;
     if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) return langs[langIdx || 0];
     if (typeof lang !== 'undefined' && lang) return lang;
   } catch (e) {}
@@ -20027,12 +20308,64 @@ function fetchAccorHotelDetail(hotelId) {
       var facilities = byCount(roomBath).slice(0, 3)
                        .concat(byCount(roomTech).slice(0, 3));
 
+      // ── ROOM TYPES ── the accommodations endpoint names every room class
+      // ('Superior Room, 2 Queen Beds' …) with its own gallery — data we
+      // never surfaced (Nick: 'I asked for options such as menus and things
+      // we don't use'). Capture name + first photo per room class.
+      var roomsSeen = {};
+      var rooms = [];
+      accs.forEach(function(acc) {
+        var rn = String(acc.name || acc.label || acc.title || (acc.room && (acc.room.name || acc.room.label)) || '').replace(/\s+/g, ' ').trim();
+        // Accor bed codes read like fare buckets ('DBL/DBL') — spell them
+        // out (Nick: 'DBL/DBL that is 2 Double Beds').
+        rn = rn.replace(/\bDBL\s*\/\s*DBL\b/gi, '2 Double Beds')
+               .replace(/\bTWN\s*\/\s*TWN\b/gi, '2 Twin Beds')
+               .replace(/\bQUE\s*\/\s*QUE\b/gi, '2 Queen Beds')
+               .replace(/\bKNG\b/gi, 'King Bed')
+               .replace(/\bQUE\b/gi, 'Queen Bed')
+               .replace(/\bDBL\b/gi, 'Double Bed')
+               .replace(/\bTWN\b/gi, 'Twin Beds');
+        if (!rn || roomsSeen[rn.toLowerCase()]) return;
+        roomsSeen[rn.toLowerCase()] = 1;
+        var rp = '';
+        var rSrc = (acc.medias && acc.medias.photos) || acc.photos || [];
+        if (Array.isArray(rSrc) && rSrc.length) {
+          var m0 = rSrc[0];
+          rp = (typeof m0 === 'string') ? m0
+             : (m0['1024x768'] || m0['740x555'] || m0['346x260'] || m0.url || '');
+          if (rp && rp.indexOf('//') === 0) rp = 'https:' + rp;
+        }
+        // Per-room amenities + description (each room PAGE sells itself)
+        var ra = [];
+        if (Array.isArray(acc.topAmenities)) {
+          acc.topAmenities.forEach(function(a) {
+            var lb = (typeof a === 'string') ? a : (a && (a.value || a.name || a.label) || '');
+            if (lb && ra.indexOf(lb) === -1) ra.push(lb);
+          });
+        }
+        var rd = String(acc.description || acc.shortDescription || '').replace(/\s+/g, ' ').trim();
+        rooms.push({ name: rn, photo: rp, amen: ra.slice(0, 4), desc: rd });
+      });
+      // Regulate room VARIETY: Accor lists bed-count variants of the same
+      // class as separate rooms ('Superior Room, 1 Queen Bed' / ', 2 Queen
+      // Beds'), so a naive top-3 could be three Superiors. Order one room
+      // per family (name before the comma) first, variants after — the ad
+      // builder's slice(0,3) then shows genuinely different room types.
+      var famSeen = {}, famFirst = [], famRest = [];
+      rooms.forEach(function(r) {
+        var fam = r.name.split(',')[0].toLowerCase().trim();
+        if (!famSeen[fam]) { famSeen[fam] = 1; famFirst.push(r); }
+        else famRest.push(r);
+      });
+      rooms = famFirst.concat(famRest);
+
       ACCOR_HOTEL_DETAIL_CACHE[cacheKey] = {
         ts: Date.now(),
         restaurants: restaurants,
         facilities: facilities,
         topAmenities: topAmenities,
         photos: photos,
+        rooms: rooms.slice(0, 4),
         roomCount: accs.length,
         lang: curLang
       };
@@ -20064,6 +20397,128 @@ function fetchAccorHotelDetail(hotelId) {
       console.warn('[ACCOR-DETAIL]', hotelId, '(' + curLang + ') failed:', e.message);
     });
 }
+
+// ── HOTEL-LEVEL master record: REAL restaurants & bars + categorized hotel
+// photos (Nick: 'don't they offer anything else — menus, restaurant pictures,
+// there has to be'). The accommodations endpoint above is ROOM-level; dining
+// lives on the hotel record. The exact shape varies by tenant, so this PROBES
+// candidate endpoints in order and keeps the first that yields dining data —
+// [ACCOR-MASTER] console lines report exactly what each hotel returned.
+var ACCOR_HOTEL_MASTER_CACHE = {};
+function fetchAccorHotelMaster(hotelId) {
+  if (!hotelId) return;
+  var curLang = 'en';
+  try {
+    if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) curLang = langs[langIdx || 0];
+    else if (typeof lang !== 'undefined' && lang) curLang = lang;
+  } catch (e) {}
+  var cacheKey = hotelId + '|' + curLang;
+  var cached = ACCOR_HOTEL_MASTER_CACHE[cacheKey];
+  if (cached && (Date.now() - cached.ts) < ACCOR_DETAIL_TTL) return;
+  if (window['_accorMasterPending_' + cacheKey]) return;
+  window['_accorMasterPending_' + cacheKey] = true;
+  var BASE = 'https://fids-proxy.n-leblanc1984.workers.dev/accor/catalog/v1/hotels/' + encodeURIComponent(hotelId);
+  var Q = '?language=' + encodeURIComponent(curLang);
+  var candidates = [BASE + Q, BASE + '/services' + Q, BASE + '/restaurants' + Q];
+  function _photoUrl(m) {
+    if (!m) return '';
+    var u = (typeof m === 'string') ? m
+          : (m['1024x768'] || m['2048x1536'] || m['1920x1080'] || m['953x385']
+             || m['740x555'] || m['480x360'] || m['346x260'] || m.url || m.href || '');
+    if (u && u.indexOf('//') === 0) u = 'https:' + u;
+    return u || '';
+  }
+  // Walk any response shape and pull out restaurant-like objects (something
+  // with a name plus a dining-ish type/category/description) and categorized
+  // photos. Depth-limited so a pathological payload can't spin.
+  function _mine(node) {
+    var out = { rests: [], photos: [] };
+    function walk(n, keyHint, depth) {
+      if (!n || depth > 6) return;
+      if (Array.isArray(n)) { n.forEach(function (x) { walk(x, keyHint, depth + 1); }); return; }
+      if (typeof n !== 'object') return;
+      var keys = Object.keys(n);
+      var name = n.name || n.label || n.title || '';
+      var kind = String(n.type || n.category || n.kind || keyHint || '');
+      var isDining = /restaurant|\bbar\b|dining|breakfast|lounge/i.test(kind)
+                  || /restaurant|\bbar\b|brasserie|bistro|grill|lounge/i.test(String(name));
+      if (name && isDining && typeof name === 'string') {
+        var ph = [];
+        var mSrc = (n.medias && (n.medias.photos || n.medias)) || n.photos || n.images || [];
+        if (Array.isArray(mSrc)) mSrc.forEach(function (m) { var u = _photoUrl(m); if (u) ph.push(u); });
+        out.rests.push({
+          name: String(name).trim(),
+          kind: String(n.cuisine || n.cuisineType || n.category || n.type || '').trim(),
+          desc: String(n.description || n.shortDescription || n.desc || '').replace(/\s+/g, ' ').trim(),
+          photos: ph
+        });
+        return; // don't re-mine children of a matched restaurant
+      }
+      // categorized hotel photo?
+      var pu = _photoUrl(n);
+      if (pu && (n.category || n.type || keyHint === 'photos' || keyHint === 'medias')) {
+        out.photos.push({ url: pu, cat: String(n.category || n.type || '').toUpperCase() });
+      }
+      keys.forEach(function (k) { walk(n[k], k, depth + 1); });
+    }
+    walk(node, '', 0);
+    // dedupe restaurants by name
+    var seen = {};
+    out.rests = out.rests.filter(function (r) {
+      var k = r.name.toLowerCase(); if (seen[k]) return false; seen[k] = 1; return true;
+    });
+    return out;
+  }
+  (function tryNext(i) {
+    if (i >= candidates.length) {
+      delete window['_accorMasterPending_' + cacheKey];
+      var _exh = window['_accorMasterExtras_' + cacheKey] || null;
+      ACCOR_HOTEL_MASTER_CACHE[cacheKey] = { ts: Date.now(), restaurants: [], photos: [], extras: _exh, empty: !_exh };
+      console.log('[ACCOR-MASTER]', hotelId, '(' + curLang + ') → no dining data on any endpoint' + (_exh ? ' (extras kept)' : ''));
+      return;
+    }
+    fetch(candidates[i], { headers: { 'Accept-Language': _accorAcceptLang(curLang) } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) { tryNext(i + 1); return; }
+        var mined = _mine(data);
+        // Hotel-master EXTRAS (shape confirmed from Nick's real response):
+        // managerMessage prose, enhancedDescription, offer labels, free-amenity
+        // flags, check-in/out hours — content the card never used.
+        if (data && (data.id || data.brand) && !window['_accorMasterExtras_' + cacheKey]) {
+          window['_accorMasterExtras_' + cacheKey] = {
+            managerMessage: String(data.managerMessage || '').replace(/\s+/g, ' ').trim(),
+            enhancedDescription: String(data.enhancedDescription || '').replace(/\s+/g, ' ').trim(),
+            labels: Array.isArray(data.label) ? data.label : [],
+            amenityFree: (data.amenity && Array.isArray(data.amenity.free)) ? data.amenity.free : [],
+            checkIn: String(data.checkInHour || '').trim(),
+            checkOut: String(data.checkOutHour || '').trim()
+          };
+        }
+        console.log('[ACCOR-MASTER]', hotelId, '(' + curLang + ') probe', candidates[i].replace(/^.*\/hotels\//, 'hotels/'),
+                    '→ keys:', Object.keys(data).slice(0, 20).join(','),
+                    '| restaurants:', mined.rests.length, '| categorized photos:', mined.photos.length);
+        if (mined.rests.length || mined.photos.length || i === candidates.length - 1) {
+          delete window['_accorMasterPending_' + cacheKey];
+          ACCOR_HOTEL_MASTER_CACHE[cacheKey] = {
+            ts: Date.now(),
+            restaurants: mined.rests.slice(0, 4),
+            photos: mined.photos.slice(0, 24),
+            extras: window['_accorMasterExtras_' + cacheKey] || null,
+            empty: !(mined.rests.length || mined.photos.length || window['_accorMasterExtras_' + cacheKey])
+          };
+          try {
+            console.log('%c[ACCOR-MASTER] ' + hotelId + ' dining: '
+              + (mined.rests.map(function (r) { return r.name + (r.kind ? ' (' + r.kind + ')' : ''); }).join(' · ') || '(none)')
+              + ' | extras: ' + (window['_accorMasterExtras_' + cacheKey] ? Object.keys(window['_accorMasterExtras_' + cacheKey]).join(',') : '(none)'),
+              'color:#b60; font-weight:bold');
+          } catch (e) {}
+        } else tryNext(i + 1);
+      })
+      .catch(function () { tryNext(i + 1); });
+  })(0);
+}
+if (typeof window !== 'undefined') window.fetchAccorHotelMaster = fetchAccorHotelMaster;
 
 function _processAccorData(data, destIata, langKey) {
   var _ckLang = langKey || _accorLangNow();
@@ -20174,7 +20629,21 @@ function _processAccorData(data, destIata, langKey) {
         .replace(/,?\s*fairmont\s*$/i, '')
         .replace(/^the\s+/i, '')
         .trim();
-      if (FAIRMONT_PROPERTY_LOCKUPS[_lockupKey]) {
+      // French property names (Nick: 'in French [Queen] Elizabeth is
+      // Fairmont Le Reine Elizabeth', 'use the one I provided') — on FR
+      // boards use the OFFICIAL brand art with the French name (derived
+      // from the brand-team editable file, not a runtime composition).
+      var _frLockupPath = null;
+      try {
+        var _curL = (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) ? langs[langIdx || 0]
+                  : ((typeof lang !== 'undefined' && lang) || 'en');
+        if (_curL === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(hotelName)) {
+          _frLockupPath = '/logos/hotels/accor-luxury/fairmont/editable_svg_white/010_Fairmont_Le_Reine_Elizabeth.svg';
+        }
+      } catch (e) {}
+      if (_frLockupPath) {
+        _propertyLockupPath = _frLockupPath;
+      } else if (FAIRMONT_PROPERTY_LOCKUPS[_lockupKey]) {
         // Official brand-team file — preferred
         _propertyLockupPath = FAIRMONT_PROPERTY_LOCKUPS[_lockupKey];
       } else if (FAIRMONT_PROPERTY_LOCKUPS[hotelName.toLowerCase().trim()]) {
@@ -20728,6 +21197,20 @@ function buildGateAdHtml(ad) {
   if (ad.adLayout === 'video-bg') {
     var _vidBg = ad.bgColor || '#000000';
     var _vidFit = ad.objectFit || 'contain';
+    window._adDiag = 'classic-vid/' + _vidFit;
+    // Letterboxed ('contain') classic video ads get the branded light frame —
+    // brushed base + dots world + accent handles (Nick: the flat bgColor bands
+    // were exactly the look he wanted replaced). 'cover' fills, no frame.
+    if (_vidFit === 'contain' && typeof _adGlobeBackdrop === 'function') {
+      return _adWrap(
+        '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
+        + _adBackdropHtml('')
+        + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
+        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
+        + ' onerror="this.style.display=\'none\';"></video>' + _adTechFrameHtml()
+        + '</div>'
+      );
+    }
     return _adWrap(
       '<div style="width:100%;height:100%;background:' + _vidBg + ';overflow:hidden;">'
       + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
@@ -20743,6 +21226,17 @@ function buildGateAdHtml(ad) {
   if (ad.adLayout === 'image-only') {
     var _imgBg = ad.bgColor || '#000000';
     var _imgFit = ad.imageFit || 'contain';
+    window._adDiag = 'classic-img/' + _imgFit;
+    // Letterboxed ('contain') designed assets sit on the branded light frame
+    // (brushed base + dots world + accent handles) instead of a flat colour.
+    if (_imgFit === 'contain' && typeof _adGlobeBackdrop === 'function') {
+      return _adWrap(
+        '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
+        + _adBackdropHtml(ad.bgImage)
+        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+        + '</div>'
+      );
+    }
     return _adWrap(
       '<div style="width:100%;height:100%;background:' + _imgBg + ';background-image:url(\'' + ad.bgImage + '\');background-size:' + _imgFit + ';background-position:center;background-repeat:no-repeat;"></div>'
     );
@@ -21658,7 +22152,9 @@ function buildAccorAdOnlyV6(ad) {
     }
     return s;
   }
-  var displayName=haveLogo?stripBrand(hotelName):String(hotelName).trim();
+  // Brand policy (Nick): never print the brand twice — the logo slot ALWAYS
+  // carries the brand (image or text label), so the name is always stripped.
+  var displayName=stripBrand(hotelName);
   // Property lockups (Fairmont/Emblems per-property art, runtime-generated or
   // brand-team file) already bake the property name INTO the logo artwork, so
   // printing the name again below it is a duplicate. Suppress the text name
@@ -21824,7 +22320,13 @@ function buildAccorAdOnlyV6(ad) {
   function _heroImg(u){ return u ? '<div class="axr-hero-img" style="background-image:url(\''+esc(u)+'\')"></div>' : '<div class="axr-hero-img axr-hero-noimg"></div>'; }
   function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul>' : ''; }
   var _ph0 = _photoSet[0]||photo||'', _ph1 = _photoSet[1]||_ph0, _ph2 = _photoSet[2]||_ph1;
-  var _ctxName   = '<div class="axr-page-ctx">'+esc(_fullName)+'</div>';
+  // Continuation pages carry the brand LOGO (Nick: 'the logo should be on
+  // all screens'), so the context name is the brand-stripped property name —
+  // wordmark + full name would print the brand twice.
+  // Property lockups already carry the property name inside the artwork —
+  // repeating it as the page context printed the name twice (Nick). Pages
+  // with a lockup logo get no extra name line.
+  var _ctxName   = lockupHasName ? '' : '<div class="axr-page-ctx">'+esc(displayName)+'</div>';
   var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
   var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
 
@@ -21839,7 +22341,7 @@ function buildAccorAdOnlyV6(ad) {
   var _page2 = '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
-    +   '<div class="axr-page-kicker">'+esc(_kHotel)+'</div>' + _ctxName
+    + logoHtml + _ctxName
     +   _list(_amenList) + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
     + '</div></div>';
   // Page 3 — DINING & REVIEWS: restaurants + guest rating + QR
@@ -21847,9 +22349,39 @@ function buildAccorAdOnlyV6(ad) {
     + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'
     + bubbleHtml
     + '<div class="axr-hotel">'
-    +   '<div class="axr-page-kicker">'+esc(_kDining)+'</div>' + _ctxName
+    + logoHtml + _ctxName
     +   _list(_restList) + _ratingRow
     + '</div></div>';
+
+  // ROOM PAGES (Nick: '2 to 3 different room options, show 10 seconds maybe,
+  // and description and amenities and pictures') — each room class gets its
+  // own page in the same design grammar: its photo as the hero, its name as
+  // the page heading, its own amenities and description.
+  var _roomsHtml = '';
+  try {
+    var _rooms = (_detail && Array.isArray(_detail.rooms)) ? _detail.rooms.filter(function (r) { return r && r.name; }) : [];
+    _roomsHtml = _rooms.slice(0, 3).map(function (r) {
+      var _rd = String(r.desc || '');
+      if (_rd.length > 150) {
+        var _rc2 = _rd.slice(0, 190);
+        var _pe2 = Math.max(_rc2.lastIndexOf('. '), _rc2.lastIndexOf('! '), _rc2.lastIndexOf('? '),
+                            /[.!?]$/.test(_rc2) ? _rc2.length - 1 : -1);
+        _rd = (_pe2 > 40) ? _rc2.slice(0, _pe2 + 1) : _rd.slice(0, 145).replace(/\s+\S*$/, '');
+      }
+      return '<div class="axr-page">'
+        + _heroImg(r.photo || _ph1) + '<div class="axr-hero-grad"></div>'
+        + '<div class="axr-hotel">'
+        + logoHtml
+        // Brands whose logo is just the wordmark (Novotel etc.) carry the
+        // property name under it (Nick); property lockups (Fairmont…)
+        // already have the name inside the artwork.
+        +   (lockupHasName ? '' : '<div class="axr-room-hotel">' + esc(displayName) + '</div>')
+        +   '<div class="axr-page-ctx axr-room-name">' + esc(r.name) + '</div>'
+        +   _list((r.amen || []).slice(0, 4))
+        +   (_rd ? '<p class="axr-blurb">' + esc(_rd) + '</p>' : '')
+        + '</div></div>';
+    }).join('');
+  } catch (e) { _roomsHtml = ''; }
 
   // Footer — just the ALL mark, centered (per Nick: "ALL only, centered").
   var _footerHtml = '<footer class="axr-all axr-all-simple">'
@@ -21859,7 +22391,7 @@ function buildAccorAdOnlyV6(ad) {
   return ''
     + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" data-hotel-id="'+esc(String(ad.hotelId||_fullName||''))+'" style="--axr-tint:'+tint+'">'
     +   '<section class="axr-hero axr-pages">'
-    +     _page1 + _page2 + _page3
+    +     _page1 + _page2 + _page3 + _roomsHtml
     +   '</section>'
     +   _footerHtml
     + '</article>';
@@ -22070,6 +22602,77 @@ function _map3dFlightCtx(allowEstimated) {
   } catch (e) { return null; }
 }
 
+// Branded LIGHT surround for ads that don't fill the panel (Nick, pointing at
+// the Your Aircraft panel: 'a background like the aircraft info — the dots
+// world… I did like this — also the pattern'). Same recipe as that panel:
+// soft white brushed base, the dotted globe faded in grey (multiply, rising
+// from the bottom), and the airline-accent diagonal 'handles' at both edges.
+function _adBackdropHtml(blurUrl) {
+  // BLEND backdrop (Nick: 'nothing blends, it's just pasted'): images fill
+  // their own surround with a blown-up blurred copy of themselves (TV
+  // ambient), videos get a dark airline-accent vignette (a second decoding
+  // video would OOM the stream box). The dots world breathes through both,
+  // and the accent handles hold the edges.
+  var base = blurUrl
+    ? '<div style="position:absolute;inset:-60px;background-image:url(\'' + blurUrl + '\');'
+      + 'background-size:cover;background-position:center;filter:blur(46px) saturate(1.2) brightness(.92);transform:scale(1.15);"></div>'
+      + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.16);"></div>'
+    : '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#151c2a 0%,#0a0e16 100%);"></div>'
+      + '<div style="position:absolute;inset:0;background:var(--airline-accent,#D82F2E);opacity:.22;"></div>';
+  var dots = '<div style="position:absolute;left:-14%;right:-14%;top:-10%;bottom:-10%;'
+    + 'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
+    + 'background-size:cover;background-position:center 30%;background-repeat:no-repeat;'
+    + 'opacity:.42;filter:grayscale(1) brightness(1.85);mix-blend-mode:screen;pointer-events:none;"></div>';
+  // Diagonal slat set (Nick: 'maybe more diagonal lines?') — the two thick
+  // edge handles plus echoing thinner slats stepping inward on both sides.
+  function _slat(side, off, w, op) {
+    return '<div style="position:absolute;top:-8%;bottom:-8%;' + side + ':' + off + ';width:' + w + ';'
+      + 'background:var(--airline-accent,#D82F2E);opacity:' + op + ';transform:skewX(-14deg);pointer-events:none;"></div>';
+  }
+  var handles = _slat('left', '-3.5%', '6%', '.9') + _slat('right', '-3.5%', '6%', '.9')
+    + _slat('left', '3.6%', '1.1%', '.55') + _slat('right', '3.6%', '1.1%', '.55')
+    + _slat('left', '5.9%', '0.45%', '.35') + _slat('right', '5.9%', '0.45%', '.35');
+  return base + dots + handles;
+}
+function _adGlobeBackdrop() { return _adBackdropHtml(''); }
+
+// Tech-frame border drawn AROUND contain-fit ad media (Nick: 'a border
+// around these, kinda like the tech look from earlier'). Thin light frame +
+// accent corner brackets, painted ABOVE the media (append after it).
+function _adTechFrameHtml() {
+  // CONTEMPORARY BEZEL (Nick: 'a border, not lines') — a thick gradient
+  // mat the ad sits IN, like a framed poster: accent surface, rounded,
+  // deep shadow. Painted BEHIND the media (media carries z-index:1); the
+  // fitter inflates it ~16px beyond the ad's drawn rectangle.
+  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
+    + 'background:linear-gradient(160deg, color-mix(in srgb, var(--airline-accent,#38bdf8) 86%, #fff) 0%, var(--airline-accent,#38bdf8) 42%, color-mix(in srgb, var(--airline-accent,#38bdf8) 52%, #000) 100%);'
+    + 'border-radius:24px;'
+    + 'box-shadow:0 18px 50px rgba(5,10,20,0.45), inset 0 1px 0 rgba(255,255,255,0.35);'
+    + 'pointer-events:none;"></div>';
+}
+
+// The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
+// viewport bottom and under the side columns (v22144 stamp proved it: the
+// frame's dots/handles rendered off-screen inside the oversized box, so the
+// design 'never changed' on the live board). Clamp to viewport and columns.
+function _adVisibleRect() {
+  try {
+    var el = document.getElementById('gateAdCarousel');
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (!r || r.width < 40 || r.height < 40) return null;
+    var L = Math.max(r.left, 0), T = Math.max(r.top, 0);
+    var R = Math.min(r.right, window.innerWidth || r.right);
+    var B = Math.min(r.bottom, window.innerHeight || r.bottom);
+    var mc = document.querySelector('.gad-map-col-v2');
+    if (mc) { var mr = mc.getBoundingClientRect(); if (mr.width > 0 && mr.left > L && mr.left < R) R = mr.left; }
+    var ac = document.querySelector('.gad-aircraft-col');
+    if (ac) { var ar = ac.getBoundingClientRect(); if (ar.width > 0 && ar.right > L && ar.right < R * 0.6) L = ar.right; }
+    if (R - L < 40 || B - T < 40) return null;
+    return { left: L, top: T, width: R - L, height: B - T, elLeft: r.left, elTop: r.top };
+  } catch (e) { return null; }
+}
+
 function renderGateAd(index) {
   var el = document.getElementById('gateAdCarousel');
   if (!el) return;
@@ -22108,6 +22711,12 @@ function renderGateAd(index) {
   // ── Custom theme slide (image or video uploaded via Media Library) ──
   if (slide && slide.type === 'custom' && slide.item) {
     var item = slide.item;
+    // Include the media file's basename so a misbehaving slide (e.g. the
+    // white/blank video from Nick's 2026-07-12 screenshot) can be identified
+    // straight from the corner stamp.
+    var _diagBase = '';
+    try { _diagBase = String(item.url || '').split('?')[0].split('/').pop().slice(-28); } catch (e) {}
+    window._adDiag = 'car-' + (item.type || '?') + '/' + ((item.fit === 'cover') ? 'cover' : 'contain') + (_diagBase ? ':' + _diagBase : '');
     // Per-item display controls (set in the Media Library preview/adjust panel).
     // fit: 'contain' (show whole, default) | 'cover' (fill+crop)
     // zoom: 1 = natural; posX/posY: 0-100 framing when zoomed/cover.
@@ -22129,26 +22738,47 @@ function renderGateAd(index) {
           + ' allow="autoplay; encrypted-media" allowfullscreen></iframe>';
       }
     } else if (item.type === 'video' && item.url) {
-      // Letterbox bars: an accent-tinted vignette instead of flat black (Nick:
-      // 'a lot of black'). NOT a blurred video copy — a second decoding <video>
-      // would double the decode load and OOM the small stream box.
-      customHtml = '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#101725 0%,#05070d 100%);"></div>'
-        + '<div style="position:absolute;inset:0;background:var(--airline-accent,#1c2a44);opacity:.22;"></div>'
-        + '<video src="' + item.url + '" autoplay muted loop playsinline'
-        + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + fit + ';object-position:' + posStr + ';transform:scale(' + zoom + ');"></video>';
+      // Letterbox bars: the DOTTED-GLOBE treatment from the Your Aircraft
+      // panel (Nick: 'a background like the aircraft info — the dots world'),
+      // rising from the bottom as a faint screen-blend glow over an
+      // accent-tinted vignette. NOT a blurred video copy — a second decoding
+      // <video> would double the decode load and OOM the small stream box.
+      if (fit === 'contain') {
+        // Card-on-frame INSIDE THE VISIBLE REGION: the carousel element's own
+        // box can run past the viewport/columns, which pushed the frame's
+        // dots and handles off-screen. Wrap everything in a div sized to the
+        // measured visible panel.
+        var _vv = _adVisibleRect();
+        var _wrapStyle = _vv
+          ? 'position:absolute;left:' + Math.round(_vv.left - _vv.elLeft) + 'px;top:' + Math.round(_vv.top - _vv.elTop) + 'px;width:' + Math.round(_vv.width) + 'px;height:' + Math.round(_vv.height) + 'px;overflow:hidden;'
+          : 'position:absolute;inset:0;overflow:hidden;';
+        customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
+          + '<video src="' + item.url + '" autoplay muted loop playsinline'
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
+          + '</div>';
+      } else {
+        customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
+          + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:' + posStr + ';transform:scale(' + zoom + ');"></video>';
+      }
     } else if (item.type === 'image' && item.url) {
-      // Blur-fill (Nick: kill the black bars): when the ad doesn't fill the
-      // panel ('contain'), back it with a blown-up blurred copy of ITSELF so
-      // every ad reads as designed-for-the-screen. inset:-48px + extra scale
-      // hide the blur's soft edges. 'cover' fills the panel, no backdrop needed.
-      var _blurBack = (fit === 'contain')
-        ? '<div style="position:absolute;inset:-48px;background-image:url(\'' + item.url
-          + '\');background-size:cover;background-position:center;background-repeat:no-repeat;'
-          + 'filter:blur(30px) brightness(.55) saturate(1.15);transform:scale(1.12);"></div>'
-        : '';
-      customHtml = _blurBack
-        + '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
-        + '\');background-size:' + (fit === 'cover' ? 'cover' : 'contain') + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + zoom + ');"></div>';
+      // Letterboxed ('contain') image ads sit on the BRANDED backdrop — the
+      // airline-accent vignette with the dots-world globe, same as video ads
+      // (Nick: the blur-fill of a mostly-WHITE ad like AC Altitude showed
+      // nothing; 'it should be similar to the one with the red, with the
+      // globe pattern'). 'cover' fills the panel, no backdrop needed.
+      if (fit === 'contain') {
+        var _vi = _adVisibleRect();
+        var _wrapStyleI = _vi
+          ? 'position:absolute;left:' + Math.round(_vi.left - _vi.elLeft) + 'px;top:' + Math.round(_vi.top - _vi.elTop) + 'px;width:' + Math.round(_vi.width) + 'px;height:' + Math.round(_vi.height) + 'px;overflow:hidden;'
+          : 'position:absolute;inset:0;overflow:hidden;';
+        customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
+          + '<img src="' + item.url + '" alt=""'
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+          + '</div>';
+      } else {
+        customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
+          + '\');background-size:cover;background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + zoom + ');"></div>';
+      }
     }
     // include framing controls in the dedupe key so adjustments re-render live
     var _frameKey = fit + zoom + posX + posY;
@@ -22158,7 +22788,8 @@ function renderGateAd(index) {
       el.style.background = '#000';
       el.style.position = 'relative';
       el.style.overflow = 'hidden';
-      el.innerHTML = customHtml || '<div style="position:absolute;inset:0;background:#0b1020;"></div>';
+      el.innerHTML = customHtml
+        || ('<div style="position:absolute;inset:0;background:#0b1020;"></div>' + _adGlobeBackdrop());
       el.style.opacity = '1';
       // Clear the logo rail for custom slides — they're meant to be full-bleed
       var logoEl0 = document.getElementById('gateAdLogo');
@@ -22171,6 +22802,12 @@ function renderGateAd(index) {
   var html = '';
   if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorAdOnlyV6 === 'function') {
     try {
+      // Deterministic language alternation (Nick: 'I still don't see English
+      // ads'): every Accor appearance flips EN <-> FR instead of trusting
+      // the board rotation, which can sit on one language for long spells
+      // (or be configured single-language).
+      window._accorAdForcedLang = (window._accorAdForcedLang === 'en') ? 'fr' : 'en';
+      window._adDiag = 'accor:' + window._accorAdForcedLang;
       html = buildAccorAdOnlyV6(slide.data);
     } catch (e) {
       console.error('[ACCOR-AD6-FAILED]', e);
@@ -22522,8 +23159,32 @@ function _getGateAdDwellMs(slide) {
   }
   if (slide.type === 'ad') {
     var ad = slide.data || {};
-    // Accor hotel ads (real photo, brand lockup) — longest dwell
-    if (ad.isAccorHotel) return 31000; // 3-page slideshow: ~10s/page × 3 + buffer
+    // Accor hotel ads (real photo, brand lockup) — longest dwell. The deck
+    // is 3 base pages + up to 3 room pages (10s each), so size the dwell to
+    // the ACTUAL page count or the carousel advances mid-deck and chops the
+    // first room page after ~1s. The slide is already rendered when this
+    // runs, so count the live .axr-page panels; fall back to the detail
+    // cache, then to the base 3.
+    if (ad.isAccorHotel) {
+      var _axN = 0;
+      try {
+        var _axEls = document.querySelectorAll('.axr-pages .axr-page');
+        if (_axEls && _axEls.length >= 3) _axN = _axEls.length;
+      } catch (e) {}
+      if (!_axN && ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
+        try {
+          var _axL = 'en';
+          if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _axL = langs[langIdx || 0];
+          else if (typeof lang !== 'undefined' && lang) _axL = lang;
+          var _axD = ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId + '|' + _axL] || ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId] || null;
+          if (_axD && Array.isArray(_axD.rooms)) {
+            _axN = 3 + Math.min(3, _axD.rooms.filter(function (r) { return r && r.name; }).length);
+          }
+        } catch (e) {}
+      }
+      if (!_axN) _axN = 3;
+      return _axN * 10000 + 1000; // full dwell per page + fade buffer
+    }
     // Generic hotel ads (Hilton, etc. — large logo + city sub)
     if (ad.logo && /hilton|marriott|hyatt|ihg/i.test(ad.logo)) return 18000;
     // Video-bg ads run on their own video timeline; let them sit longer
@@ -23357,7 +24018,15 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     if (s) { s.style.height = '100%'; s.style.width = 'auto'; s.style.maxWidth = '100%'; }
     if (isHotelLogo && s) {
       var shapes = s.querySelectorAll('path,polygon,rect,circle,ellipse');
-      for (var k = 0; k < shapes.length; k++) shapes[k].style.fill = '#fff';
+      for (var k = 0; k < shapes.length; k++) {
+        // Skip fill:none shapes — brand SVG exports (e.g. Pullman) carry a
+        // full-canvas bounds <rect fill="none">; force-filling it painted a
+        // solid white box over the whole wordmark.
+        var _sf = '';
+        try { _sf = (getComputedStyle(shapes[k]).fill || '').toLowerCase(); } catch (e) {}
+        if (_sf === 'none') continue;
+        shapes[k].style.fill = '#fff';
+      }
     }
   }
   function _cropLockup(img) {
@@ -23407,6 +24076,25 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 })();
 
 
+/* Local-time shelf clock — keeps every .v2-fi-clock-val ticking between
+   board re-renders (the board only rebuilds about once a minute, so the
+   shelf would otherwise show a stale minute). */
+(function(){
+  function _tick(){
+    var els = document.querySelectorAll('.v2-fi-clock-val');
+    for (var i = 0; i < els.length; i++) {
+      var tz = els[i].getAttribute('data-tz') || '';
+      try {
+        var o = tz ? { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
+        var s = new Date().toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; });
+        if (s && els[i].textContent !== s) els[i].textContent = s;
+      } catch (e) {}
+    }
+  }
+  setInterval(_tick, 5000);
+})();
+
+
 /* Accor hotel slide — 3-page rotation. Crossfades the current slide's pages
    (location → the hotel → dining & reviews) ~10s apart. One global interval
    (no per-element timers) so re-renders never leak timers; CSS handles the
@@ -23436,9 +24124,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // Same hotel re-rendered mid-slide — resume where we were. But if the
         // deck already ran to its last page, this is the hotel RE-APPEARING in
         // a later carousel slot, so restart its story from page 1.
-        if (_st.idx >= pages.length - 1) { _st.idx = 0; _st.next = now + EVERY; }
+        if (_st.idx >= pages.length - 1) { _st.idx = 0; }
         _showPage(pages, _st.idx % pages.length);
-        if (!_st.next || _st.next <= now) _st.next = now + EVERY;
+        // FULL dwell for the resumed page — a board re-render mid-page was
+        // leaving it only the leftover seconds (Nick: 'the second room cuts
+        // after 2 seconds').
+        _st.next = now + EVERY;
       } else {
         // Genuinely new slide — page 1 gets its full dwell.
         _st.id = id; _st.idx = 0; _st.next = now + EVERY;
@@ -24131,6 +24822,7 @@ function _renderWxCard(el) {
     } catch (eH) {}
     var _wxHtml =
         '<div class="wxcard-wrap wxcard-col">'
+      +   '<div class="wxc-globe" aria-hidden="true"></div>'
       +   '<div class="wxcard-main">'
       +     '<div class="wxc-head">'
       +       '<div><div class="wxc-kicker">Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée</div>'
@@ -24159,8 +24851,15 @@ function _renderWxCard(el) {
     // into the cache key so an airline change re-tints.
     var _wxBg = 'linear-gradient(135deg, #0d2440 0%, #164a7c 100%)';
     try {
-      var _wxAcc = (typeof getAirlineAccent === 'function') ? getAirlineAccent((cf && cf.airline) || '') : '';
-      if (_wxAcc && typeof accentTint === 'function') _wxBg = accentTint(_wxAcc, 0.28);
+      // Use the LIVE gate theme (the .g8-wrap inline --airline-accent var,
+      // same source the media frame reads) — the static AIRLINE_ACCENT table
+      // misses codes and fell back to a generic blue that didn't match the
+      // board (Nick: 'the colors for the weather are not at all matching').
+      var _wxAcc = '';
+      var _wxGw = document.querySelector('.g8-wrap');
+      if (_wxGw) _wxAcc = (getComputedStyle(_wxGw).getPropertyValue('--airline-accent') || '').trim();
+      if (!_wxAcc && typeof getAirlineAccent === 'function') _wxAcc = getAirlineAccent((cf && cf.airline) || '');
+      if (_wxAcc && typeof accentTint === 'function') _wxBg = accentTint(_wxAcc, 0.42);
     } catch (e) {}
     var _wxSig = _wxHtml + '||' + _wxBg;
     if (el._wxLastHtml === _wxSig && el.querySelector && el.querySelector('.wxcard-wrap')) return true;
@@ -24381,6 +25080,16 @@ setInterval(function () {
     if (_st !== 'main') return;
     if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
     if (bn.style.display === 'none') bn.style.display = '';
+    // Third failure mode (Nick's 2026-07-12 screenshot: table at y=0, banner
+    // gone entirely): the banner is COLLAPSED — hidden by a stylesheet rule
+    // or a stray class rather than inline display. Inline-clearing above
+    // can't heal that, so force it visible at the !important level.
+    if (!bn.offsetHeight) {
+      bn.style.setProperty('display', 'flex', 'important');
+      bn.style.setProperty('visibility', 'visible', 'important');
+      bn.style.setProperty('opacity', '1', 'important');
+      try { console.warn('[TOP-WATCHDOG] banner was collapsed — forced visible; classes:', bn.className); } catch (e) {}
+    }
   } catch (e) {}
 }, 5000);
 

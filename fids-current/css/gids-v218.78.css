@@ -1610,7 +1610,10 @@ body, body.gids-page, body.gate-page{
   width: auto !important;
   opacity: 0.65 !important;
 }
-.g8-wrap .g8-r1-star:empty,
+/* NOTE: an <img> is ALWAYS :empty (no child nodes) — the old bare :empty
+   selector force-hid every alliance LOGO image, which is why Star Alliance
+   never showed (Nick). Only hide empty CONTAINERS. */
+.g8-wrap .g8-r1-star:empty:not(img):not(svg),
 .g8-wrap .g8-r1-star:not(:has(*)):not(img):not(svg) {
   display: none !important;
 }
@@ -4721,14 +4724,17 @@ body, body.gids-page, body.gate-page{
    board tabs (per Nick): equal visible widths, same -24 angle, same rounded
    top-left tip. The airline side is untouched. */
 .g8-wrap .g8-r1-apband {
-  width: calc(2 * var(--gate-rcw, 25%) - 24px) !important;
-  /* centre content in the VISIBLE half of the band (the other half runs
-     under the gate block) — was using --col-left 23% while the block uses
-     --gate-rcw 25%, so logos drifted toward the seams.
-     Jul 2026 (Nick): margins SYMMETRIC around the airport logo — the old
-     36/+44 split left ~2x more white on the left of the logo. */
+  /* Tab widths come from --g8-tab-w (set inline on .g8-wrap): three equal
+     tabs — Time | airport | Gate — must fit beside the airline wordmark,
+     so each is narrower than the old --gate-rcw. The band is still double
+     width: its right half runs under the gate block. */
+  /* Right half runs under the GATE tab (full --gate-rcw, matching the
+     Your Aircraft column per Nick); visible half is --g8-tab-w wide. */
+  width: calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 24px) !important;
+  /* Symmetric margins in the VISIBLE half: content area = tab-w - 68,
+     centred exactly on the visible-half midpoint (tab-w/2 - 12). */
   padding-left: 22px !important;
-  padding-right: calc(var(--gate-rcw, 25%) + 58px) !important;
+  padding-right: calc(var(--gate-rcw, 25%) + 22px) !important;
 }
 /* AUTO-FIT: any airport logo, any shape, always inside the visible band. */
 .g8-wrap .g8-r1-apband img {
