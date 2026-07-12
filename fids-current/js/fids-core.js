@@ -5571,6 +5571,23 @@ function _buildV2AircraftCol(ctx, vars) {
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
 
+      // v223 — LOCAL TIME shelf (Nick: 'the gate needs the time now — another
+      // tab exactly as the ones existing, with the time a different color').
+      // Same shelf grammar; badge uses the secondary accent, value carries
+      // .v2-fi-clock so CSS colours it apart from the flight times. The value
+      // is stamped with the airport tz and kept ticking by the clock updater.
+      var _clockTz = '';
+      try { _clockTz = (typeof AP !== 'undefined' && AP[String((vars && vars.iata) || '').toUpperCase()] || {}).tz || ''; } catch (e) {}
+      var _clockNow = '';
+      try {
+        var _ckO = _clockTz ? { timeZone: _clockTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
+        _clockNow = _amPm(new Date().toLocaleTimeString('en-US', _ckO));
+      } catch (e) {}
+      var _clockBadge = '<div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-clock-badge" style="'
+        + BADGE_STYLE.replace('background:var(--airline-accent,#D82F2E)', 'background:var(--airline-accent3,var(--airline-accent,#D82F2E))')
+        + '">' + '<span class=\"ac-ico ac-ico-time"></span>' + '</div>';
+      var _clockVal = '<span class="v2-fi-clock-val" data-tz="' + _clockTz + '">' + (_clockNow || '—') + '</span>';
+
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fnNumber || _fiFlightNo || '—'), 'v2-fi-dest')
@@ -5579,6 +5596,7 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgArrive), 'Arrival', _L2('Arrivée','Llegada'), (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
+        + _shelf(_clockBadge, 'Time Now', _L2('Heure actuelle','Hora actual'), _clockVal, 'v2-fi-time v2-fi-clock')
         + '</div>';
     }
   } catch (e) {}
@@ -6937,16 +6955,22 @@ function uxgGateHtml(ctx) {
     'AM':'skyteam','RO':'skyteam','SV':'skyteam','ME':'skyteam','VS':'skyteam',
     'KQ':'skyteam','UX':'skyteam','OK':'skyteam','XK':'skyteam'
   };
+  // Dark-banner-safe variants — the colored lockups (black Star Alliance
+  // wordmark, navy oneworld) were invisible on the black R1 band, which is
+  // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/star-alliance-logo.svg',
-    'oneworld': '/logos/airlines/alliances/Oneworld_logo.svg',
+    'star':     '/logos/airlines/alliances/star-alliance-logo-monochrome-white.svg',
+    'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
   var starHtml = '';
   var _allianceKey = ALLIANCE_MAP[airlineCode];
-  if (_allianceKey && !window._allianceFailed) {
+  if (_allianceKey) {
     var _allianceCls = 'g8-r1-star g8-r1-alliance-' + _allianceKey;
-    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';window._allianceFailed=true;">';
+    // onerror hides only THIS img — the old window._allianceFailed flag was a
+    // global kill switch: one transient 404 disabled alliance logos for the
+    // rest of the session.
+    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
   }
 
   // Operator info (used by equipment panel; top banner no longer shows this line)
@@ -7468,6 +7492,7 @@ function uxgGateHtml(ctx) {
        + (_bannerSpec && _bannerSpec.r1 === '#FFFFFF' ? ' g8-banner-light' : '')
        + (_wmSymbol ? ' g8-wrap-watermark' : '')
        + (airlineCode ? ' g8-airline-' + airlineCode : '')
+       + (iata ? ' g8-ap-' + String(iata).toUpperCase() : '')
        + '" data-pill-style="' + (window._gateStatusPillStyle || 'opaque') + '"'
        + ' style="--airline-accent:' + accent
        // 3rd brand colour (airline-colors.js r3) — distinct accent for the
@@ -7494,7 +7519,13 @@ function uxgGateHtml(ctx) {
           ? ' style="background:' + _bannerSpec.r1 + ' !important;color:' + (_bannerSpec.r1Text || '#FFFFFF') + ' !important;"'
           : ''
       ) + '>'
-    +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
+    +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml
+    // Moncton is the heart of Acadia — YQM boards fly the Acadian flag in
+    // the top band (per Nick), next to the airline/alliance marks.
+    +     (String(iata).toUpperCase() === 'YQM'
+            ? '<img class="g8-r1-acadia" src="/logos/flags/acadia.svg" alt="Acadian flag" onerror="this.style.display=\'none\'">'
+            : '')
+    +   '</div>'
     +   _apBandTop
     // Gate block: FULL banner height (top:0), skewed −24° in PARALLEL with the
     // airport band so the white↔accent seam keeps the slanted angle (it went
@@ -13271,7 +13302,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22149';
+var FIDS_BUILD_TAG = 'v22150';
 (function(){
   try {
     function _addTag(){
@@ -23862,6 +23893,25 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   setTimeout(_scanLockups, 60);
   setTimeout(_scanLockups, 300);
   setInterval(_scanLockups, 3000); // slow backstop only
+})();
+
+
+/* Local-time shelf clock — keeps every .v2-fi-clock-val ticking between
+   board re-renders (the board only rebuilds about once a minute, so the
+   shelf would otherwise show a stale minute). */
+(function(){
+  function _tick(){
+    var els = document.querySelectorAll('.v2-fi-clock-val');
+    for (var i = 0; i < els.length; i++) {
+      var tz = els[i].getAttribute('data-tz') || '';
+      try {
+        var o = tz ? { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
+        var s = new Date().toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; });
+        if (s && els[i].textContent !== s) els[i].textContent = s;
+      } catch (e) {}
+    }
+  }
+  setInterval(_tick, 5000);
 })();
 
 

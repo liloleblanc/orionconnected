@@ -2231,3 +2231,53 @@ html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
   align-items: center !important;
   white-space: nowrap !important;
 }
+
+/* ── v223 — Local-time shelf (Nick: 'gate needs the time now, another tab
+   same concept, time a different color'). Value picks up the airline accent
+   instead of the standard navy; the badge uses the secondary accent inline. */
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-clock,
+.g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-clock .v2-fi-clock-val {
+  color: var(--airline-accent, #C8102E) !important;
+}
+/* The clock value span must ride the shelf's value tier — a generic
+   value-span rule (sized for revised-time suffixes) shrank it to 20px. */
+html .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-clock .v2-fi-clock-val {
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-weight: inherit !important;
+}
+
+/* ── v223 — ACADIAN THEME, Moncton (YQM) boards only (per Nick). ── */
+/* The Acadian flag in the top band, sized with the alliance mark. */
+.g8-ap-YQM .g8-r1-acadia {
+  width: auto !important;
+  height: 56px !important;
+  max-height: 56px !important;
+  border-radius: 6px !important;
+  margin-left: 14px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important;
+  object-fit: contain !important;
+  align-self: center !important;
+}
+/* Left-rail tabs cycle the flag: blue star-field, white, red — the badge and
+   the title underline carry the colour so every tab reads distinct. White
+   tabs flip the glyph/underline to Acadian blue so they stay visible. */
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:nth-child(3n+1) .v2-fi-icon-badge { background: #003DA5 !important; }
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:nth-child(3n+1) .v2-fi-title { border-bottom-color: #003DA5 !important; }
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:nth-child(3n+2) .v2-fi-icon-badge {
+  background: #FFFFFF !important;
+  box-shadow: inset 0 0 0 3px #003DA5 !important;
+}
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:nth-child(3n+2) .v2-fi-icon-badge .ac-ico { color: #003DA5 !important; }
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:nth-child(3n+2) .v2-fi-title { border-bottom-color: #A9B4C4 !important; }
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:nth-child(3n) .v2-fi-icon-badge { background: #D21034 !important; }
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:nth-child(3n) .v2-fi-title { border-bottom-color: #D21034 !important; }
+/* The Time Now tab keeps its own colour: the flag's gold star. */
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:last-child .v2-fi-icon-badge {
+  background: #FFD600 !important;
+  box-shadow: none !important;
+}
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:last-child .v2-fi-icon-badge .ac-ico { color: #003DA5 !important; }
+.g8-ap-YQM .gad-aircraft-col .v2-fi-row:last-child .v2-fi-title { border-bottom-color: #FFD600 !important; }
+.g8-ap-YQM .gad-aircraft-col .v2-fi-value.v2-fi-clock,
+.g8-ap-YQM .gad-aircraft-col .v2-fi-value.v2-fi-clock .v2-fi-clock-val { color: #003DA5 !important; }
