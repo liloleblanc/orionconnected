@@ -7477,7 +7477,7 @@ function uxgGateHtml(ctx) {
   // airport band (white) | Time (blue-first per Nick — at YQM the three
   // read Acadian blue | white | red, the flag across the top).
   var _apBandTop = _apLogoTop
-    ? '<div class="g8-r1-apband" style="position:absolute;right:calc(var(--gate-rcw, 25%) - 30px);top:0;bottom:0;width:calc(var(--gate-rcw, 25%) + 30px);box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
+    ? '<div class="g8-r1-apband" style="position:absolute;right:0;top:0;bottom:0;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
       + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:100%;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
@@ -7489,7 +7489,11 @@ function uxgGateHtml(ctx) {
        + (airlineCode ? ' g8-airline-' + airlineCode : '')
        + (iata ? ' g8-ap-' + String(iata).toUpperCase() : '')
        + '" data-pill-style="' + (window._gateStatusPillStyle || 'opaque') + '"'
-       + ' style="--airline-accent:' + accent
+       // Shared width for the three top tabs (Time | airport | Gate) — equal
+       // tabs (Nick) sized so all three still leave room for wide airline
+       // wordmarks on the left.
+       + ' style="--g8-tab-w:clamp(240px,17.5vw,420px)'
+       + ';--airline-accent:' + accent
        // 3rd brand colour (airline-colors.js r3) — distinct accent for the
        // secondary line etc. Falls back to the main accent when not defined.
        + ';--airline-accent3:' + ((_bannerSpec && _bannerSpec.r3) ? _bannerSpec.r3 : accent)
@@ -7538,10 +7542,14 @@ function uxgGateHtml(ctx) {
           // gate z3) so each seam shows only the next tab's rounded corner.
           // Slot: two tabs left of the gate when the airport band exists,
           // one tab left otherwise.
+          // The airport band (CSS-governed) is double width with its right
+          // half under the gate block: its visible left edge sits at
+          // 2*tab-w - 24px from the right. The time tab slots left of that
+          // with a 30px underlap; without a band, directly left of the gate.
           var _tbRight = _apLogoTop
-            ? 'calc(2 * var(--gate-rcw, 25%) - 60px)'
-            : 'calc(var(--gate-rcw, 25%) - 30px)';
-          return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
+            ? 'calc(2 * var(--g8-tab-w, var(--gate-rcw, 25%)) - 54px)'
+            : 'calc(var(--g8-tab-w, var(--gate-rcw, 25%)) - 30px)';
+          return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
             +   '<span style="font-size:clamp(13px,1.7vh,23px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
             +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
@@ -7555,7 +7563,7 @@ function uxgGateHtml(ctx) {
     // vertical when the block was straight). The block bleeds 80px past the
     // right screen edge so its skewed top-right corner can never expose a gap;
     // inner spans counter-skew +24° to stay upright.
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
     +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
     +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
     +   '</div>'
@@ -13325,7 +13333,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22153';
+var FIDS_BUILD_TAG = 'v22154';
 (function(){
   try {
     function _addTag(){
