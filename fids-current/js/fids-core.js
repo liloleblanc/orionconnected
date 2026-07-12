@@ -6973,18 +6973,32 @@ function uxgGateHtml(ctx) {
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/star-alliance-symbol-white.svg',
+    'star':     '/logos/airlines/alliances/star-alliance-symbol.svg',
     'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
   var starHtml = '';
+  // These carriers' banner wordmark IS the official combined
+  // airline+alliance lockup — a separate mark would show the alliance twice.
+  var _COMBINED_ALLIANCE_LOCKUP = { 'UA': 1, 'KL': 1 };
   var _allianceKey = ALLIANCE_MAP[airlineCode];
-  if (_allianceKey) {
+  if (_allianceKey && !_COMBINED_ALLIANCE_LOCKUP[airlineCode]) {
     var _allianceCls = 'g8-r1-star g8-r1-alliance-' + _allianceKey;
     // onerror hides only THIS img — the old window._allianceFailed flag was a
     // global kill switch: one transient 404 disabled alliance logos for the
     // rest of the session.
-    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
+    // Dark-background primary arrangement: the official multi-tone silver
+    // symbol + white STAR ALLIANCE lettering. The lettering is real text
+    // (crisp at banner size — the lockup file's path letters turned to mush
+    // when scaled this small). Other alliances keep their plain mark.
+    if (_allianceKey === 'star') {
+      starHtml = '<span class="g8-r1-star-lockup" style="display:inline-flex;align-items:center;gap:13px;margin-left:20px;">'
+        + '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS.star + '" alt="Star Alliance" onload="this.classList.add(\'loaded\')" onerror="this.parentNode.style.display=\'none\';">'
+        + '<span style="color:#ffffff;font-weight:600;letter-spacing:.15em;font-size:clamp(11px,1.55vh,17px);white-space:nowrap;">STAR ALLIANCE</span>'
+        + '</span>';
+    } else {
+      starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
+    }
   }
 
   // Operator info (used by equipment panel; top banner no longer shows this line)
@@ -7162,7 +7176,11 @@ function uxgGateHtml(ctx) {
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
-    'UA': '/logos/airlines/us-major/united-monochrome-white.svg',                // WHITE "UNITED" + globe (united.svg was blue = invisible on the navy banner)
+    // Official COMBINED airline+alliance lockups (Nick: 'there are multiple
+    // logos for alliance partners — use them'). Carriers with a combined
+    // lockup skip the separate alliance mark (see _COMBINED_ALLIANCE_LOCKUP).
+    'UA': '/logos/airlines/us-major/United_Airlines_Logo_2019_full_Star_Alliance-monochrome-white.svg',
+    'KL': '/logos/airlines/european/KLM_Logo_2011_SkyTeam-monochrome-white.svg',
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
     'WG': '/logos/airlines/canadian/sunwing/Sunwing-Logo-White.png',             // Sunwing official white (Dec 2025 pack) for the dark banner
     // WestJet — navy banner: white "WestJet" lettering + colored (teal/navy) maple-leaf swoosh
@@ -13367,7 +13385,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22159';
+var FIDS_BUILD_TAG = 'v22160';
 (function(){
   try {
     function _addTag(){
@@ -19491,10 +19509,11 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       var r = _drawnRect(m);
       if (!r) continue;
       var hb = host.getBoundingClientRect();
-      f.style.left = Math.round(r.left - hb.left) + 'px';
-      f.style.top = Math.round(r.top - hb.top) + 'px';
-      f.style.width = Math.round(r.width) + 'px';
-      f.style.height = Math.round(r.height) + 'px';
+      var pad = Math.max(12, Math.min(22, Math.round(r.width * 0.02)));
+      f.style.left = Math.round(r.left - hb.left - pad) + 'px';
+      f.style.top = Math.round(r.top - hb.top - pad) + 'px';
+      f.style.width = Math.round(r.width + 2 * pad) + 'px';
+      f.style.height = Math.round(r.height + 2 * pad) + 'px';
       f.style.right = 'auto'; f.style.bottom = 'auto';
     }
   }
@@ -21189,7 +21208,7 @@ function buildGateAdHtml(ad) {
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml('')
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
-        + ' class="ad-tech-media" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
+        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
         + ' onerror="this.style.display=\'none\';"></video>' + _adTechFrameHtml()
         + '</div>'
       );
@@ -21216,7 +21235,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml(ad.bgImage)
-        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
         + '</div>'
       );
     }
@@ -22612,11 +22631,15 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  // SOLID border around the ad (Nick: 'a border damn it, not lines') —
-  // a clean accent frame with an inner white hairline and soft glow.
+  // CONTEMPORARY BEZEL (Nick: 'a border, not lines') — a thick gradient
+  // mat the ad sits IN, like a framed poster: accent surface, rounded,
+  // deep shadow. Painted BEHIND the media (media carries z-index:1); the
+  // fitter inflates it ~16px beyond the ad's drawn rectangle.
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
-    + 'border:5px solid var(--airline-accent,#38bdf8);border-radius:16px;'
-    + 'box-shadow:inset 0 0 0 2px rgba(255,255,255,0.65), 0 0 30px color-mix(in srgb, var(--airline-accent,#38bdf8) 28%, transparent), 0 14px 44px rgba(5,10,20,0.40);pointer-events:none;"></div>';
+    + 'background:linear-gradient(160deg, color-mix(in srgb, var(--airline-accent,#38bdf8) 86%, #fff) 0%, var(--airline-accent,#38bdf8) 42%, color-mix(in srgb, var(--airline-accent,#38bdf8) 52%, #000) 100%);'
+    + 'border-radius:24px;'
+    + 'box-shadow:0 18px 50px rgba(5,10,20,0.45), inset 0 1px 0 rgba(255,255,255,0.35);'
+    + 'pointer-events:none;"></div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
@@ -22722,7 +22745,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' class="ad-tech-media" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
@@ -22741,7 +22764,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
           + '<img src="' + item.url + '" alt=""'
-          + ' class="ad-tech-media" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
