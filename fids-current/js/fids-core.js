@@ -8222,6 +8222,10 @@ function renderDedicatedScreen() {
   // headers, status inks) silently skipped gate/baggage screens (Nick:
   // 'they're still white the hyphens').
   try { document.body.classList.toggle('fids-light-board', wordmarkVariant() === 'dark'); } catch (e) {}
+  try {
+    var _apClsIata = (document.getElementById('apSel') || {}).value || '';
+    document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+  } catch (e) {}
   
 // ── GATE v5 weather builder ──
 
@@ -13363,7 +13367,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22158';
+var FIDS_BUILD_TAG = 'v22159';
 (function(){
   try {
     function _addTag(){
@@ -13878,6 +13882,10 @@ function render() {
   // CSS keys off body.fids-light-board so headers (and anything else that
   // must flip with the background) adapt on EVERY theme automatically.
   try { document.body.classList.toggle('fids-light-board', wordmarkVariant() === 'dark'); } catch (e) {}
+  try {
+    var _apClsIata = (document.getElementById('apSel') || {}).value || '';
+    document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+  } catch (e) {}
 
   const contentH = document.querySelector('.content-area')?.offsetHeight || 600;
   const theadH   = document.querySelector('thead')?.offsetHeight || 30;
@@ -22604,21 +22612,11 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  var C = 'var(--airline-accent,#38bdf8)';
-  function corner(pos) {
-    var s = 'position:absolute;width:30px;height:30px;border:3px solid ' + C + ';';
-    if (pos === 'tl') s += 'top:-2px;left:-2px;border-right:none;border-bottom:none;border-radius:14px 0 0 0;';
-    if (pos === 'tr') s += 'top:-2px;right:-2px;border-left:none;border-bottom:none;border-radius:0 14px 0 0;';
-    if (pos === 'bl') s += 'bottom:-2px;left:-2px;border-right:none;border-top:none;border-radius:0 0 0 14px;';
-    if (pos === 'br') s += 'bottom:-2px;right:-2px;border-left:none;border-top:none;border-radius:0 0 14px 0;';
-    return '<i style="' + s + '"></i>';
-  }
+  // SOLID border around the ad (Nick: 'a border damn it, not lines') —
+  // a clean accent frame with an inner white hairline and soft glow.
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
-    + 'border:2px solid rgba(255,255,255,0.32);border-radius:14px;'
-    // Contemporary glow: hairline ring + soft accent bloom + depth shadow.
-    + 'box-shadow:0 0 0 1px rgba(255,255,255,0.10), 0 0 34px color-mix(in srgb, ' + C + ' 30%, transparent), 0 14px 44px rgba(5,10,20,0.40);pointer-events:none;">'
-    + corner('tl') + corner('tr') + corner('bl') + corner('br')
-    + '</div>';
+    + 'border:5px solid var(--airline-accent,#38bdf8);border-radius:16px;'
+    + 'box-shadow:inset 0 0 0 2px rgba(255,255,255,0.65), 0 0 30px color-mix(in srgb, var(--airline-accent,#38bdf8) 28%, transparent), 0 14px 44px rgba(5,10,20,0.40);pointer-events:none;"></div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
