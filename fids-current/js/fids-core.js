@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22140';
+var FIDS_BUILD_TAG = 'v22141';
 (function(){
   try {
     function _addTag(){
@@ -13281,6 +13281,9 @@ var FIDS_BUILD_TAG = 'v22140';
       d.textContent = FIDS_BUILD_TAG;
       d.style.cssText = 'position:fixed;left:7px;bottom:1px;z-index:99999;font:600 10px/1.6 monospace;color:rgba(128,138,152,0.55);pointer-events:none;';
       document.body.appendChild(d);
+      setInterval(function(){
+        try { d.textContent = FIDS_BUILD_TAG + (window._adDiag ? ' · ' + window._adDiag : ''); } catch (e) {}
+      }, 2000);
     }
     if (document.body) _addTag(); else document.addEventListener('DOMContentLoaded', _addTag);
   } catch (e) {}
@@ -19149,6 +19152,7 @@ function tryPlayDestinationVideo() {
 // playback: { loop?: bool } — if loop, replay from start when video ends.
 function playSavedVideo(slot, videoId, playback) {
   playback = playback || {};
+  window._adDiag = 'yt-vid';
   return ensureVideoPlayer().then(function() {
     if (!_ytPlayer || !slot || !videoId) return;
     // Encode loop in cdKey so onStateChange can detect it
@@ -19346,6 +19350,7 @@ var _nativeVideoEl = null;
 function playUploadedVideo(slot, videoUrl, playback) {
   playback = playback || {};
   if (!slot || !videoUrl) return;
+  window._adDiag = 'lib-vid';
   var cdKey = 'upload:' + videoUrl;
   var slotKey = (slot.id || 'slot') + '|' + cdKey;
   if (_videoCurrentSlotId === slotKey && _currentVideoIdx === cdKey) return;
@@ -19458,6 +19463,7 @@ var _libImgEl = null;
 var _libImgTimeout = null;
 function playLibraryImage(slot, item) {
   if (!slot || !item || !item.url) return;
+  window._adDiag = 'lib-img';
   var cdKey = 'image:' + item.id;
   var slotKey = (slot.id || 'slot') + '|' + cdKey;
   if (_videoCurrentSlotId === slotKey && _currentVideoIdx === cdKey) return;
@@ -20980,6 +20986,7 @@ function buildGateAdHtml(ad) {
   if (ad.adLayout === 'video-bg') {
     var _vidBg = ad.bgColor || '#000000';
     var _vidFit = ad.objectFit || 'contain';
+    window._adDiag = 'classic-vid/' + _vidFit;
     // Letterboxed ('contain') classic video ads get the branded light frame —
     // brushed base + dots world + accent handles (Nick: the flat bgColor bands
     // were exactly the look he wanted replaced). 'cover' fills, no frame.
@@ -21008,6 +21015,7 @@ function buildGateAdHtml(ad) {
   if (ad.adLayout === 'image-only') {
     var _imgBg = ad.bgColor || '#000000';
     var _imgFit = ad.imageFit || 'contain';
+    window._adDiag = 'classic-img/' + _imgFit;
     // Letterboxed ('contain') designed assets sit on the branded light frame
     // (brushed base + dots world + accent handles) instead of a flat colour.
     if (_imgFit === 'contain' && typeof _adGlobeBackdrop === 'function') {
@@ -22590,6 +22598,7 @@ function renderGateAd(index) {
   // ── Custom theme slide (image or video uploaded via Media Library) ──
   if (slide && slide.type === 'custom' && slide.item) {
     var item = slide.item;
+    window._adDiag = 'car-' + (item.type || '?') + '/' + ((item.fit === 'cover') ? 'cover' : 'contain');
     // Per-item display controls (set in the Media Library preview/adjust panel).
     // fit: 'contain' (show whole, default) | 'cover' (fill+crop)
     // zoom: 1 = natural; posX/posY: 0-100 framing when zoomed/cover.
@@ -22652,6 +22661,7 @@ function renderGateAd(index) {
   var html = '';
   if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorAdOnlyV6 === 'function') {
     try {
+      window._adDiag = 'accor';
       html = buildAccorAdOnlyV6(slide.data);
     } catch (e) {
       console.error('[ACCOR-AD6-FAILED]', e);
