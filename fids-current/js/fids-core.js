@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22147';
+var FIDS_BUILD_TAG = 'v22148';
 (function(){
   try {
     function _addTag(){
@@ -22928,8 +22928,32 @@ function _getGateAdDwellMs(slide) {
   }
   if (slide.type === 'ad') {
     var ad = slide.data || {};
-    // Accor hotel ads (real photo, brand lockup) — longest dwell
-    if (ad.isAccorHotel) return 31000; // 3-page slideshow: ~10s/page × 3 + buffer
+    // Accor hotel ads (real photo, brand lockup) — longest dwell. The deck
+    // is 3 base pages + up to 3 room pages (10s each), so size the dwell to
+    // the ACTUAL page count or the carousel advances mid-deck and chops the
+    // first room page after ~1s. The slide is already rendered when this
+    // runs, so count the live .axr-page panels; fall back to the detail
+    // cache, then to the base 3.
+    if (ad.isAccorHotel) {
+      var _axN = 0;
+      try {
+        var _axEls = document.querySelectorAll('.axr-pages .axr-page');
+        if (_axEls && _axEls.length >= 3) _axN = _axEls.length;
+      } catch (e) {}
+      if (!_axN && ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
+        try {
+          var _axL = 'en';
+          if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _axL = langs[langIdx || 0];
+          else if (typeof lang !== 'undefined' && lang) _axL = lang;
+          var _axD = ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId + '|' + _axL] || ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId] || null;
+          if (_axD && Array.isArray(_axD.rooms)) {
+            _axN = 3 + Math.min(3, _axD.rooms.filter(function (r) { return r && r.name; }).length);
+          }
+        } catch (e) {}
+      }
+      if (!_axN) _axN = 3;
+      return _axN * 10000 + 1000; // full dwell per page + fade buffer
+    }
     // Generic hotel ads (Hilton, etc. — large logo + city sub)
     if (ad.logo && /hilton|marriott|hyatt|ihg/i.test(ad.logo)) return 18000;
     // Video-bg ads run on their own video timeline; let them sit longer
