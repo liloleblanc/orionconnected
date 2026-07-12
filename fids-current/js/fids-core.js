@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22143';
+var FIDS_BUILD_TAG = 'v22144';
 (function(){
   try {
     function _addTag(){
@@ -13282,7 +13282,20 @@ var FIDS_BUILD_TAG = 'v22143';
       d.style.cssText = 'position:fixed;left:7px;bottom:1px;z-index:99999;font:600 10px/1.6 monospace;color:rgba(128,138,152,0.55);pointer-events:none;';
       document.body.appendChild(d);
       setInterval(function(){
-        try { d.textContent = FIDS_BUILD_TAG + (window._adDiag ? ' · ' + window._adDiag : ''); } catch (e) {}
+        try {
+          var t = FIDS_BUILD_TAG + (window._adDiag ? ' · ' + window._adDiag : '');
+          // Name the element actually PAINTING the ad panel's centre pixel —
+          // the definitive answer to which of the several renderers is on top.
+          var c = document.getElementById('gateAdCarousel');
+          if (c) {
+            var r = c.getBoundingClientRect();
+            if (r.width > 0) {
+              var e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+              if (e) t += ' · top:' + (e.id || (e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.split(' ')[0] : '')));
+            }
+          }
+          d.textContent = t;
+        } catch (e) {}
       }, 2000);
     }
     if (document.body) _addTag(); else document.addEventListener('DOMContentLoaded', _addTag);
