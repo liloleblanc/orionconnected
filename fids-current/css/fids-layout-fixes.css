@@ -2263,11 +2263,11 @@ html .g8-final .g8-final-flight .g8-final-sep { opacity: .55; font-weight: 400; 
 html body .g8-wrap .g8-r1-star {
   width: auto !important;
   min-width: 0 !important;
-  height: clamp(40px, 5.6vh, 62px) !important;
+  height: clamp(54px, 7.6vh, 88px) !important;
   min-height: 0 !important;
   max-width: none !important;
-  max-height: clamp(40px, 5.6vh, 62px) !important;
-  margin-left: 0 !important;
+  max-height: clamp(54px, 7.6vh, 88px) !important;
+  margin-left: 26px !important;
   opacity: 1 !important;
   align-self: center !important;
 }

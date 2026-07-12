@@ -13374,7 +13374,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22161';
+var FIDS_BUILD_TAG = 'v22162';
 (function(){
   try {
     function _addTag(){
@@ -22610,8 +22610,15 @@ function _adBackdropHtml(blurUrl) {
     + 'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
     + 'background-size:cover;background-position:center top;background-repeat:no-repeat;'
     + 'opacity:.22;filter:grayscale(1) brightness(1.7);mix-blend-mode:screen;pointer-events:none;"></div>';
-  var handles = '<div style="position:absolute;top:-8%;bottom:-8%;left:-3.5%;width:6%;background:var(--airline-accent,#D82F2E);opacity:.9;transform:skewX(-14deg);pointer-events:none;"></div>'
-    + '<div style="position:absolute;top:-8%;bottom:-8%;right:-3.5%;width:6%;background:var(--airline-accent,#D82F2E);opacity:.9;transform:skewX(-14deg);pointer-events:none;"></div>';
+  // Diagonal slat set (Nick: 'maybe more diagonal lines?') — the two thick
+  // edge handles plus echoing thinner slats stepping inward on both sides.
+  function _slat(side, off, w, op) {
+    return '<div style="position:absolute;top:-8%;bottom:-8%;' + side + ':' + off + ';width:' + w + ';'
+      + 'background:var(--airline-accent,#D82F2E);opacity:' + op + ';transform:skewX(-14deg);pointer-events:none;"></div>';
+  }
+  var handles = _slat('left', '-3.5%', '6%', '.9') + _slat('right', '-3.5%', '6%', '.9')
+    + _slat('left', '3.6%', '1.1%', '.55') + _slat('right', '3.6%', '1.1%', '.55')
+    + _slat('left', '5.9%', '0.45%', '.35') + _slat('right', '5.9%', '0.45%', '.35');
   return base + dots + handles;
 }
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
