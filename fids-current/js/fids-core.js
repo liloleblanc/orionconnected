@@ -20065,6 +20065,109 @@ function fetchAccorHotelDetail(hotelId) {
     });
 }
 
+// ── HOTEL-LEVEL master record: REAL restaurants & bars + categorized hotel
+// photos (Nick: 'don't they offer anything else — menus, restaurant pictures,
+// there has to be'). The accommodations endpoint above is ROOM-level; dining
+// lives on the hotel record. The exact shape varies by tenant, so this PROBES
+// candidate endpoints in order and keeps the first that yields dining data —
+// [ACCOR-MASTER] console lines report exactly what each hotel returned.
+var ACCOR_HOTEL_MASTER_CACHE = {};
+function fetchAccorHotelMaster(hotelId) {
+  if (!hotelId) return;
+  var curLang = 'en';
+  try {
+    if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) curLang = langs[langIdx || 0];
+    else if (typeof lang !== 'undefined' && lang) curLang = lang;
+  } catch (e) {}
+  var cacheKey = hotelId + '|' + curLang;
+  var cached = ACCOR_HOTEL_MASTER_CACHE[cacheKey];
+  if (cached && (Date.now() - cached.ts) < ACCOR_DETAIL_TTL) return;
+  if (window['_accorMasterPending_' + cacheKey]) return;
+  window['_accorMasterPending_' + cacheKey] = true;
+  var BASE = 'https://fids-proxy.n-leblanc1984.workers.dev/accor/catalog/v1/hotels/' + encodeURIComponent(hotelId);
+  var Q = '?language=' + encodeURIComponent(curLang);
+  var candidates = [BASE + Q, BASE + '/services' + Q, BASE + '/restaurants' + Q];
+  function _photoUrl(m) {
+    if (!m) return '';
+    var u = (typeof m === 'string') ? m
+          : (m['1024x768'] || m['2048x1536'] || m['1920x1080'] || m['953x385']
+             || m['740x555'] || m['480x360'] || m['346x260'] || m.url || m.href || '');
+    if (u && u.indexOf('//') === 0) u = 'https:' + u;
+    return u || '';
+  }
+  // Walk any response shape and pull out restaurant-like objects (something
+  // with a name plus a dining-ish type/category/description) and categorized
+  // photos. Depth-limited so a pathological payload can't spin.
+  function _mine(node) {
+    var out = { rests: [], photos: [] };
+    function walk(n, keyHint, depth) {
+      if (!n || depth > 6) return;
+      if (Array.isArray(n)) { n.forEach(function (x) { walk(x, keyHint, depth + 1); }); return; }
+      if (typeof n !== 'object') return;
+      var keys = Object.keys(n);
+      var name = n.name || n.label || n.title || '';
+      var kind = String(n.type || n.category || n.kind || keyHint || '');
+      var isDining = /restaurant|\bbar\b|dining|breakfast|lounge/i.test(kind)
+                  || /restaurant|\bbar\b|brasserie|bistro|grill|lounge/i.test(String(name));
+      if (name && isDining && typeof name === 'string') {
+        var ph = [];
+        var mSrc = (n.medias && (n.medias.photos || n.medias)) || n.photos || n.images || [];
+        if (Array.isArray(mSrc)) mSrc.forEach(function (m) { var u = _photoUrl(m); if (u) ph.push(u); });
+        out.rests.push({
+          name: String(name).trim(),
+          kind: String(n.cuisine || n.cuisineType || n.category || n.type || '').trim(),
+          desc: String(n.description || n.shortDescription || n.desc || '').replace(/\s+/g, ' ').trim(),
+          photos: ph
+        });
+        return; // don't re-mine children of a matched restaurant
+      }
+      // categorized hotel photo?
+      var pu = _photoUrl(n);
+      if (pu && (n.category || n.type || keyHint === 'photos' || keyHint === 'medias')) {
+        out.photos.push({ url: pu, cat: String(n.category || n.type || '').toUpperCase() });
+      }
+      keys.forEach(function (k) { walk(n[k], k, depth + 1); });
+    }
+    walk(node, '', 0);
+    // dedupe restaurants by name
+    var seen = {};
+    out.rests = out.rests.filter(function (r) {
+      var k = r.name.toLowerCase(); if (seen[k]) return false; seen[k] = 1; return true;
+    });
+    return out;
+  }
+  (function tryNext(i) {
+    if (i >= candidates.length) {
+      delete window['_accorMasterPending_' + cacheKey];
+      ACCOR_HOTEL_MASTER_CACHE[cacheKey] = { ts: Date.now(), restaurants: [], photos: [], empty: true };
+      console.log('[ACCOR-MASTER]', hotelId, '(' + curLang + ') → no dining data on any endpoint');
+      return;
+    }
+    fetch(candidates[i], { headers: { 'Accept-Language': _accorAcceptLang(curLang) } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) { tryNext(i + 1); return; }
+        var mined = _mine(data);
+        console.log('[ACCOR-MASTER]', hotelId, '(' + curLang + ') probe', candidates[i].replace(/^.*\/hotels\//, 'hotels/'),
+                    '→ keys:', Object.keys(data).slice(0, 20).join(','),
+                    '| restaurants:', mined.rests.length, '| categorized photos:', mined.photos.length);
+        if (mined.rests.length || mined.photos.length) {
+          delete window['_accorMasterPending_' + cacheKey];
+          ACCOR_HOTEL_MASTER_CACHE[cacheKey] = {
+            ts: Date.now(), restaurants: mined.rests.slice(0, 4), photos: mined.photos.slice(0, 24)
+          };
+          try {
+            console.log('%c[ACCOR-MASTER] ' + hotelId + ' dining: '
+              + (mined.rests.map(function (r) { return r.name + (r.kind ? ' (' + r.kind + ')' : ''); }).join(' · ') || '(none)'),
+              'color:#b60; font-weight:bold');
+          } catch (e) {}
+        } else tryNext(i + 1);
+      })
+      .catch(function () { tryNext(i + 1); });
+  })(0);
+}
+if (typeof window !== 'undefined') window.fetchAccorHotelMaster = fetchAccorHotelMaster;
+
 function _processAccorData(data, destIata, langKey) {
   var _ckLang = langKey || _accorLangNow();
   if (!data || !data.results) return;
@@ -21621,6 +21724,20 @@ function buildAccorAdOnlyV6(ad) {
       try { fetchAccorHotelDetail(ad.hotelId); } catch (e) {}
     }
   }
+  // Hotel-level master record — REAL restaurants/bars + categorized photos.
+  var _master = null;
+  if (ad.hotelId && typeof ACCOR_HOTEL_MASTER_CACHE !== 'undefined') {
+    var _mLang = 'en';
+    try {
+      if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _mLang = langs[langIdx || 0];
+      else if (typeof lang !== 'undefined' && lang) _mLang = lang;
+    } catch (e) {}
+    _master = ACCOR_HOTEL_MASTER_CACHE[ad.hotelId + '|' + _mLang] || ACCOR_HOTEL_MASTER_CACHE[ad.hotelId] || null;
+    if ((!_master || _master.empty) && typeof fetchAccorHotelMaster === 'function') {
+      try { fetchAccorHotelMaster(ad.hotelId); } catch (e) {}
+    }
+    if (_master && _master.empty) _master = null;
+  }
   _photoSet = _photoSet.slice(0, 6);
   var _photosAttr = (_photoSet.length > 1) ? " data-photos='" + esc(JSON.stringify(_photoSet)) + "'" : '';
 
@@ -21833,6 +21950,25 @@ function buildAccorAdOnlyV6(ad) {
   // distances, icon amenity chips, real dining, blurb, QR. Rotator/QR/fitter
   // hooks (.axr-pages/.axr-page/.hotel-ad-qr/.axr-one-line) are unchanged.
   var _ph0 = _photoSet[0]||photo||'', _ph1 = _photoSet[1]||_ph0, _ph2 = _photoSet[2]||_ph1;
+  // Categorized master photos upgrade the defaults: the building for page 1,
+  // a real dining shot for page 3.
+  if (_master && Array.isArray(_master.photos)) {
+    var _mExt = null, _mDine = null;
+    _master.photos.forEach(function(p){
+      if (!p || !p.url) return;
+      if (!_mExt  && /EXTERIOR|FACADE|OUTSIDE|BUILDING/.test(p.cat)) _mExt  = p.url;
+      if (!_mDine && /RESTAURANT|BAR|BREAKFAST|DINING|FOOD/.test(p.cat)) _mDine = p.url;
+    });
+    if (_mExt)  _ph0 = _mExt;
+    if (_mDine) _ph2 = _mDine;
+  }
+  if (_master && Array.isArray(_master.restaurants)) {
+    var _masterDinePhoto = false;
+    for (var _ri = 0; _ri < _master.restaurants.length && !_masterDinePhoto; _ri++) {
+      var _rp = _master.restaurants[_ri].photos;
+      if (_rp && _rp.length) { _ph2 = _rp[0]; _masterDinePhoto = true; }
+    }
+  }
   function _photoSide(u){
     return '<div class="ax7-photo">'
       + (u ? '<div class="ax7-photo-img" style="background-image:url(\''+esc(u)+'\')"></div>'
@@ -21907,13 +22043,26 @@ function buildAccorAdOnlyV6(ad) {
     +     (_blurb ? '<p class="ax7-blurb">'+esc(_blurb)+'</p>' : '')
     +   '</div>' + _dots(1)
     + '</div></div>';
-  // Page 3 — DINING & REVIEWS: dining chips, review score block, QR invite
+  // Page 3 — DINING & REVIEWS. Real restaurants from the hotel master record
+  // get proper cards (name · cuisine · one-liner); otherwise the curated
+  // dining chips carry the page.
+  var _dineHtml = '';
+  if (_master && _master.restaurants && _master.restaurants.length) {
+    _dineHtml = '<div class="ax7-rests">' + _master.restaurants.slice(0, 3).map(function (r) {
+      return '<div class="ax7-rest">'
+        + '<div class="ax7-rest-name">' + esc(r.name) + (r.kind ? '<span class="ax7-rest-kind">' + esc(r.kind) + '</span>' : '') + '</div>'
+        + (r.desc ? '<div class="ax7-rest-desc">' + esc(r.desc) + '</div>' : '')
+        + '</div>';
+    }).join('') + '</div>';
+  } else {
+    _dineHtml = _chipList(_restList.slice(0,4), 'ax7-amen-dine');
+  }
   var _page3 = '<div class="axr-page ax7-page">'
     + _photoSide(_ph2)
     + '<div class="ax7-panel">'
     +   '<div class="ax7-panel-main">'
     +     '<div class="ax7-kicker">'+esc(_kDining)+'</div>' + _ctx7
-    +     _chipList(_restList.slice(0,4), 'ax7-amen-dine')
+    +     _dineHtml
     +     _scoreBlock + _qr7
     +   '</div>' + _dots(2)
     + '</div></div>';
