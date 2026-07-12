@@ -7469,9 +7469,16 @@ function uxgGateHtml(ctx) {
   // 2. Logo white-box fix — mix-blend-mode:multiply makes any white background
   //    baked into the uploaded airport-logo file disappear against the white
   //    band (coloured ink is unaffected).
+  // v223 — the top-right is a ROW OF EQUAL TABS (Nick: 'the tabs need to
+  // look the same, same curvature, same size'): every tab is the gate
+  // block's exact grammar — width var(--gate-rcw), skewX(-24°), 30px
+  // top-left radius — each stacked UNDER the tab to its right so only its
+  // rounded corner shows at the seam. Order right→left: Gate (accent) |
+  // airport band (white) | Time (blue-first per Nick — at YQM the three
+  // read Acadian blue | white | red, the flag across the top).
   var _apBandTop = _apLogoTop
-    ? '<div class="g8-r1-apband" style="position:absolute;right:0;top:0;bottom:0;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;padding-right:calc(var(--col-left, 23%) + 26px);background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
-      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:420px;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
+    ? '<div class="g8-r1-apband" style="position:absolute;right:calc(var(--gate-rcw, 25%) - 30px);top:0;bottom:0;width:calc(var(--gate-rcw, 25%) + 30px);box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
+      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:100%;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
 
@@ -7526,7 +7533,15 @@ function uxgGateHtml(ctx) {
             var _tbO = _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
             _tbNow = new Date().toLocaleTimeString('en-US', _tbO).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
           } catch (e) {}
-          return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:calc(var(--gate-rcw, 25%) - 26px) !important;bottom:0 !important;width:15% !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 18px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:-6px 0 14px rgba(0,0,0,0.25);overflow:hidden;z-index:4;">'
+          // Same tab grammar as the gate block: width --gate-rcw, 30px
+          // top-left radius, stacked UNDER the airport band (z1 < band z2 <
+          // gate z3) so each seam shows only the next tab's rounded corner.
+          // Slot: two tabs left of the gate when the airport band exists,
+          // one tab left otherwise.
+          var _tbRight = _apLogoTop
+            ? 'calc(2 * var(--gate-rcw, 25%) - 60px)'
+            : 'calc(var(--gate-rcw, 25%) - 30px)';
+          return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
             +   '<span style="font-size:clamp(13px,1.7vh,23px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
             +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
@@ -13310,7 +13325,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22152';
+var FIDS_BUILD_TAG = 'v22153';
 (function(){
   try {
     function _addTag(){
@@ -20511,18 +20526,19 @@ function _processAccorData(data, destIata, langKey) {
         .replace(/^the\s+/i, '')
         .trim();
       // French property names (Nick: 'in French [Queen] Elizabeth is
-      // Fairmont Le Reine Elizabeth') — on FR boards, compose the lockup
-      // with the official French property name instead of the English file.
-      var _frLockupName = null;
+      // Fairmont Le Reine Elizabeth', 'use the one I provided') — on FR
+      // boards use the OFFICIAL brand art with the French name (derived
+      // from the brand-team editable file, not a runtime composition).
+      var _frLockupPath = null;
       try {
         var _curL = (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) ? langs[langIdx || 0]
                   : ((typeof lang !== 'undefined' && lang) || 'en');
         if (_curL === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(hotelName)) {
-          _frLockupName = 'Le Reine Elizabeth';
+          _frLockupPath = '/logos/hotels/accor-luxury/fairmont/editable_svg_white/010_Fairmont_Le_Reine_Elizabeth.svg';
         }
       } catch (e) {}
-      if (_frLockupName && typeof makeFairmontLockupSvgDataUri === 'function') {
-        _propertyLockupPath = makeFairmontLockupSvgDataUri(_frLockupName);
+      if (_frLockupPath) {
+        _propertyLockupPath = _frLockupPath;
       } else if (FAIRMONT_PROPERTY_LOCKUPS[_lockupKey]) {
         // Official brand-team file — preferred
         _propertyLockupPath = FAIRMONT_PROPERTY_LOCKUPS[_lockupKey];

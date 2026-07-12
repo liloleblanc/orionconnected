@@ -2233,3 +2233,9 @@ html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
 }
 
 
+
+/* Alliance logo at full presence — the gids rule faded it to 0.65 which,
+   combined with the (now fixed) :empty hide, made it read as absent. */
+html .g8-wrap .g8-r1-star {
+  opacity: 0.95 !important;
+}

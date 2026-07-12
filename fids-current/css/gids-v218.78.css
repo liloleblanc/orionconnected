@@ -1610,7 +1610,10 @@ body, body.gids-page, body.gate-page{
   width: auto !important;
   opacity: 0.65 !important;
 }
-.g8-wrap .g8-r1-star:empty,
+/* NOTE: an <img> is ALWAYS :empty (no child nodes) — the old bare :empty
+   selector force-hid every alliance LOGO image, which is why Star Alliance
+   never showed (Nick). Only hide empty CONTAINERS. */
+.g8-wrap .g8-r1-star:empty:not(img):not(svg),
 .g8-wrap .g8-r1-star:not(:has(*)):not(img):not(svg) {
   display: none !important;
 }
