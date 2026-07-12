@@ -953,7 +953,10 @@ function startAirlineBgRotation() {
     if (GATE_BG_MODE !== 'airline') { stopAirlineBgRotation(); return; }
     var code = (window._gateCurrentAirline || '').toUpperCase();
     var slides = getAirlineBgSlides(code);
-    if (!slides.length) return;
+    // A single slide has nothing to rotate to — repainting it anyway made
+    // the whole screen visibly pulse on every tick (Nick: 'everything on
+    // the screen bumps in and out about every 10 seconds').
+    if (slides.length < 2) return;
     _airlineBgIndex = (_airlineBgIndex + 1) % slides.length;
     // Repaint both photo layers directly (avoid a full screen rebuild).
     var ids = ['gatePhotoBg','gateWelcomePhotoBg','gateBgDiv'];
@@ -961,7 +964,7 @@ function startAirlineBgRotation() {
       var el = document.getElementById(ids[i]);
       if (el) setGateBg(el, window._gateIata || '');
     }
-  }, 10000);
+  }, 45000); // was 10s — a 10-second full-background swap read as a constant bump
 }
 
 // Update the menu dropdown (if visible) with the current airline's slide list.
@@ -971,7 +974,7 @@ function refreshAirlineBgPicker() {
   var code = (window._gateCurrentAirline || '').toUpperCase();
   var slides = code ? getAirlineBgSlides(code) : [];
   var current = GATE_AIRLINE_BG_PICK;
-  var html = '<option value="auto"' + (current === 'auto' ? ' selected' : '') + '>Auto (rotate every 10s)</option>';
+  var html = '<option value="auto"' + (current === 'auto' ? ' selected' : '') + '>Auto (rotate every 45s)</option>';
   for (var i = 0; i < slides.length; i++) {
     var val = String(i);
     var sel2 = (current === val) ? ' selected' : '';
@@ -2270,7 +2273,8 @@ const AIRLINE_EMBLEM = {
 var LOCAL_LOGOS = {
   // ── Canadian mainline + regionals ──
   'AC': '/logos/airlines/canadian/air-canada.svg',
-  'WS': '/logos/airlines/canadian/WestJet_Logo_2018.svg',         // WestJet 2018 navy + teal wordmark
+  'WS': '/logos/airlines/canadian/westjet-2025/WestJet-logo-colour.png', // WestJet official (Dec 2025 brand pack)
+  'WG': '/logos/airlines/canadian/sunwing/Sunwing-Logo-Colour.png',       // Sunwing official (Dec 2025 brand pack)
   'WR': '/logos/airlines/canadian/encore.png',                    // Encore
   'PD': '/logos/airlines/canadian/porter.svg',                    // Porter (correct — NOT viporter)
   'QK': '/logos/airlines/canadian-regional/jazz.svg',             // Jazz
@@ -3522,6 +3526,18 @@ var LOGO_TREATMENT = {
   'westjet-encore':'white_card',
   'encore':'white_card',
   'WestJet_Logo_2018':'white_card',
+  'WestJet-logo-colour':'white_card',
+  'WestJet-logo-greyscale':'white_card',
+  'WestJet-Rewards-logo-colour':'white_card',
+  'WestJet-Rewards-logo-colour-French':'white_card',
+  'WestJet-Vacations-logo-colour':'white_card',
+  'WestJet-Vacations-logo-colour-French':'white_card',
+  'WestJet-Cargo-logo-colour':'white_card',
+  'WestJet-leaf-colour':'no_filter',
+  'Sunwing-Logo-Colour':'white_card',
+  'Sunwing-Logo-White':'no_filter',
+  'Sunwing-Vacations-Group-colour':'white_card',
+  'Sunwing-Vacations-Group-White':'no_filter',
   // ── Accor Luxury / Lifestyle / Premium brands (added 2026) ────────────
   // 'invert' = dark single-color logo → render as white on dark carousel.
   // 'no_filter' = already-light or color-card design → render as-is.
@@ -3632,7 +3648,7 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
-  'AC':'#D82F2E','WS':'#00B2A9','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
+  'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
@@ -6947,7 +6963,7 @@ function uxgGateHtml(ctx) {
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/star-alliance.svg',
+    'star':     '/logos/airlines/alliances/star-alliance-symbol.svg',
     'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
@@ -7138,6 +7154,7 @@ function uxgGateHtml(ctx) {
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
     'UA': '/logos/airlines/us-major/united-monochrome-white.svg',                // WHITE "UNITED" + globe (united.svg was blue = invisible on the navy banner)
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
+    'WG': '/logos/airlines/canadian/sunwing/Sunwing-Logo-White.png',             // Sunwing official white (Dec 2025 pack) for the dark banner
     // WestJet — navy banner: white "WestJet" lettering + colored (teal/navy) maple-leaf swoosh
     'WS': '/logos/airlines/canadian/WestJet_Logo_2018-monochrome-white-colored-leaf.svg?v=5', // white wordmark + colored leaf for the navy bar
     // HA override REMOVED Jul 2026 (Nick: banner wordmark must be WHITE, icon
@@ -7563,7 +7580,7 @@ function uxgGateHtml(ctx) {
     // vertical when the block was straight). The block bleeds 80px past the
     // right screen edge so its skewed top-right corner can never expose a gap;
     // inner spans counter-skew +24° to stay upright.
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:' + (String(iata).toUpperCase() === 'YQM' ? '#D21034' : 'var(--airline-accent,#1aa)') + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
     +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
     +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
     +   '</div>'
@@ -12274,7 +12291,7 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
-  'AC':'AIR CANADA',  'WS':'WESTJET',     'PD':'PORTER',      'F8':'FLAIR',
+  'AC':'AIR CANADA',  'WS':'WESTJET', 'WG':'SUNWING',     'PD':'PORTER',      'F8':'FLAIR',
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
   'JV':'BEARSKIN',    'WT':'WASAYA',      'NSA':'NORTH STAR AIR',
@@ -13333,7 +13350,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22155';
+var FIDS_BUILD_TAG = 'v22156';
 (function(){
   try {
     function _addTag(){
@@ -19408,7 +19425,10 @@ function _positionMediaFrame(r, blurUrl) {
   var _bk = String(blurUrl || '');
   if (f._blurKey !== _bk) {
     f._blurKey = _bk;
-    f.innerHTML = (typeof _adBackdropHtml === 'function') ? _adBackdropHtml(_bk) : '';
+    f.innerHTML = ((typeof _adBackdropHtml === 'function') ? _adBackdropHtml(_bk) : '')
+      // Tech border around the media box (frame spans the same rect the
+      // media is positioned in, so the helper's inset lines up with it).
+      + ((typeof _adTechFrameHtml === 'function') ? _adTechFrameHtml() : '');
   }
   // The frame lives on <body>, outside .g8-wrap — pull the airline accent
   // across so the handles keep the airline's colour.
@@ -19756,7 +19776,7 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#080C14', adLayout:'left-scrim', headline:'Fast, free Wi-Fi', sub:'for Aeroplan Members', _customLogoVideo:'/logos/Backgrounds/AC/wifi-ac.mp4' },
   ],
   'WS': [
-    { bg:'linear-gradient(135deg,#00313c 0%,#00505c 100%)', headline:'WestJet Rewards', sub:'Earn WestJet dollars on every flight', logo:'/logos/airlines/canadian/WestJet_Logo_2018.svg' },
+    { bg:'linear-gradient(135deg,#00313c 0%,#00505c 100%)', headline:'WestJet Rewards', sub:'Earn WestJet dollars on every flight', logo:'/logos/airlines/canadian/westjet-2025/WestJet-Rewards-logo-colour.png' },
     { bg:'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 100%)', headline:'Free Starlink Wi-Fi', sub:'Stream & browse \u00b7 Powered by Starlink', logo:'/logos/symbols-utility/starlink.svg' },
   ],
   'PD': [
@@ -21111,7 +21131,7 @@ function buildGateAdHtml(ad) {
         + _adBackdropHtml('')
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
         + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
-        + ' onerror="this.style.display=\'none\';"></video>'
+        + ' onerror="this.style.display=\'none\';"></video>' + _adTechFrameHtml()
         + '</div>'
       );
     }
@@ -21137,7 +21157,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml(ad.bgImage)
-        + '<img src="' + ad.bgImage + '" alt="" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">'
+        + '<img src="' + ad.bgImage + '" alt="" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
         + '</div>'
       );
     }
@@ -22529,6 +22549,26 @@ function _adBackdropHtml(blurUrl) {
 }
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 
+// Tech-frame border drawn AROUND contain-fit ad media (Nick: 'a border
+// around these, kinda like the tech look from earlier'). Thin light frame +
+// accent corner brackets, painted ABOVE the media (append after it).
+function _adTechFrameHtml() {
+  var C = 'var(--airline-accent,#38bdf8)';
+  function corner(pos) {
+    var s = 'position:absolute;width:30px;height:30px;border:3px solid ' + C + ';';
+    if (pos === 'tl') s += 'top:-2px;left:-2px;border-right:none;border-bottom:none;border-radius:14px 0 0 0;';
+    if (pos === 'tr') s += 'top:-2px;right:-2px;border-left:none;border-bottom:none;border-radius:0 14px 0 0;';
+    if (pos === 'bl') s += 'bottom:-2px;left:-2px;border-right:none;border-top:none;border-radius:0 0 0 14px;';
+    if (pos === 'br') s += 'bottom:-2px;right:-2px;border-left:none;border-top:none;border-radius:0 0 14px 0;';
+    return '<i style="' + s + '"></i>';
+  }
+  return '<div style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
+    + 'border:2px solid rgba(255,255,255,0.30);border-radius:14px;'
+    + 'box-shadow:0 10px 36px rgba(5,10,20,0.35);pointer-events:none;">'
+    + corner('tl') + corner('tr') + corner('bl') + corner('br')
+    + '</div>';
+}
+
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
 // viewport bottom and under the side columns (v22144 stamp proved it: the
 // frame's dots/handles rendered off-screen inside the oversized box, so the
@@ -22632,7 +22672,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>'
+          + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
@@ -22651,7 +22691,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
           + '<img src="' + item.url + '" alt=""'
-          + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">'
+          + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
