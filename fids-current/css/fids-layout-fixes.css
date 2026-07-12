@@ -1862,10 +1862,32 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table {
 html .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   flex: 1 1 0 !important;
   align-items: center !important;
+  align-content: center !important;   /* the row is a GRID: centre the track too, not just items in it */
   min-height: 0 !important;
 }
 html .g8-wrap .gad-aircraft-col .v2-fi-row > .v2-fi-textcol {
   justify-content: center !important;
+}
+/* Rail type sized to FIT one-sixth of the rail (Nick: rows read un-centred on
+   the live board). Root cause: the copy stack (title+value, vh-clamped to the
+   VIEWPORT) measures ~160px while each equal row share is ~140px on a 1080p
+   board — every shelf clipped a few px of label at the top and value at the
+   bottom, so the centering had no slack to act on. Trim the type + chrome so
+   the stack lands ~115px and genuinely floats centred in its row. */
+html .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title {
+  font-size: clamp(14px, 2.0vh, 24px) !important;
+  padding-bottom: clamp(2px, 0.3vh, 5px) !important;
+  border-bottom-width: clamp(2px, 0.32vh, 4px) !important;
+}
+html .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value,
+html .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-dest {
+  font-size: clamp(36px, 8.2vh, 94px) !important;
+  line-height: 1.05 !important;
+  margin-top: clamp(1px, 0.25vh, 4px) !important;
+}
+html .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-val {
+  font-size: clamp(20px, 3.8vh, 50px) !important;
+  line-height: 1.05 !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
