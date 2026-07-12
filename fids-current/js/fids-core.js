@@ -6973,7 +6973,7 @@ function uxgGateHtml(ctx) {
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/star-alliance-symbol.svg',
+    'star':     '/logos/airlines/alliances/star-alliance-symbol-white.svg',
     'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
@@ -13326,9 +13326,10 @@ function startLangRotation() {
     updateTicker();
     if (screenType === 'main' && (data.dep.length || data.arr.length)) render();
     if (screenType !== 'main') {
-      // v9: Targeted text updates — no DOM rebuild, no flicker
-      window._lastGateKey = '';
-      renderDedicatedScreen();
+      // v22158 — do NOT force a full gate rebuild here: the v2 gate is
+      // bilingual-simultaneous, and the rebuild on every 30s flip made the
+      // whole screen visibly bounce (Nick: 'still bouncing every so often').
+      // Widgets with their own timers (ticker, clock, ads) keep rotating.
     }
   }, 30000); // flip every 30 seconds
 }
@@ -13362,7 +13363,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22157';
+var FIDS_BUILD_TAG = 'v22158';
 (function(){
   try {
     function _addTag(){
@@ -19457,6 +19458,41 @@ function _positionMediaFrame(r, blurUrl) {
 }
 function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'none'; }
 
+/* Tech-frame fitter: contain-fit media draws smaller than its element box —
+   shrink each .ad-tech-frame to the media's ACTUAL drawn rectangle so the
+   frame hugs the ad itself (Nick), whatever the creative's aspect ratio. */
+(function () {
+  function _drawnRect(m) {
+    var mw = m.videoWidth || m.naturalWidth, mh = m.videoHeight || m.naturalHeight;
+    var b = m.getBoundingClientRect();
+    if (!mw || !mh || !b.width || !b.height) return null;
+    var ar = mw / mh, br = b.width / b.height, w, h;
+    if (ar >= br) { w = b.width; h = b.width / ar; } else { h = b.height; w = b.height * ar; }
+    return { left: b.left + (b.width - w) / 2, top: b.top + (b.height - h) / 2, width: w, height: h };
+  }
+  function _tick() {
+    var frames = document.querySelectorAll('.ad-tech-frame');
+    for (var i = 0; i < frames.length; i++) {
+      var f = frames[i];
+      var host = f.parentElement;
+      if (!host) continue;
+      var m = host.querySelector('img.ad-tech-media, video.ad-tech-media');
+      if (!m && typeof _libImgEl !== 'undefined' && _libImgEl && _libImgEl.style.display !== 'none') m = _libImgEl;
+      if (!m && typeof _nativeVideoEl !== 'undefined' && _nativeVideoEl && _nativeVideoEl.style.display !== 'none') m = _nativeVideoEl;
+      if (!m) continue;
+      var r = _drawnRect(m);
+      if (!r) continue;
+      var hb = host.getBoundingClientRect();
+      f.style.left = Math.round(r.left - hb.left) + 'px';
+      f.style.top = Math.round(r.top - hb.top) + 'px';
+      f.style.width = Math.round(r.width) + 'px';
+      f.style.height = Math.round(r.height) + 'px';
+      f.style.right = 'auto'; f.style.bottom = 'auto';
+    }
+  }
+  setInterval(_tick, 600);
+})();
+
 var _nativeVideoEl = null;
 function playUploadedVideo(slot, videoUrl, playback) {
   playback = playback || {};
@@ -19881,6 +19917,9 @@ function _accorAcceptLang(L) {
 // Current board display language (the EN/FR rotation), defaulting to English.
 function _accorLangNow() {
   try {
+    // Ad decks alternate EN/FR deterministically (see renderGateAd) — the
+    // forced language also drives which per-language cache/fetch is used.
+    if (window._accorAdForcedLang) return window._accorAdForcedLang;
     if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) return langs[langIdx || 0];
     if (typeof lang !== 'undefined' && lang) return lang;
   } catch (e) {}
@@ -21142,7 +21181,7 @@ function buildGateAdHtml(ad) {
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml('')
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
-        + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
+        + ' class="ad-tech-media" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
         + ' onerror="this.style.display=\'none\';"></video>' + _adTechFrameHtml()
         + '</div>'
       );
@@ -21169,7 +21208,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml(ad.bgImage)
-        + '<img src="' + ad.bgImage + '" alt="" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
         + '</div>'
       );
     }
@@ -22574,9 +22613,10 @@ function _adTechFrameHtml() {
     if (pos === 'br') s += 'bottom:-2px;right:-2px;border-left:none;border-top:none;border-radius:0 0 14px 0;';
     return '<i style="' + s + '"></i>';
   }
-  return '<div style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
-    + 'border:2px solid rgba(255,255,255,0.30);border-radius:14px;'
-    + 'box-shadow:0 10px 36px rgba(5,10,20,0.35);pointer-events:none;">'
+  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
+    + 'border:2px solid rgba(255,255,255,0.32);border-radius:14px;'
+    // Contemporary glow: hairline ring + soft accent bloom + depth shadow.
+    + 'box-shadow:0 0 0 1px rgba(255,255,255,0.10), 0 0 34px color-mix(in srgb, ' + C + ' 30%, transparent), 0 14px 44px rgba(5,10,20,0.40);pointer-events:none;">'
     + corner('tl') + corner('tr') + corner('bl') + corner('br')
     + '</div>';
 }
@@ -22684,7 +22724,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
@@ -22703,7 +22743,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
           + '<img src="' + item.url + '" alt=""'
-          + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
@@ -22732,7 +22772,12 @@ function renderGateAd(index) {
   var html = '';
   if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorAdOnlyV6 === 'function') {
     try {
-      window._adDiag = 'accor:' + ((typeof _accorLangNow === 'function') ? _accorLangNow() : '?');
+      // Deterministic language alternation (Nick: 'I still don't see English
+      // ads'): every Accor appearance flips EN <-> FR instead of trusting
+      // the board rotation, which can sit on one language for long spells
+      // (or be configured single-language).
+      window._accorAdForcedLang = (window._accorAdForcedLang === 'en') ? 'fr' : 'en';
+      window._adDiag = 'accor:' + window._accorAdForcedLang;
       html = buildAccorAdOnlyV6(slide.data);
     } catch (e) {
       console.error('[ACCOR-AD6-FAILED]', e);

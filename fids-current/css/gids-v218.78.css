@@ -4731,8 +4731,10 @@ body, body.gids-page, body.gate-page{
   /* Right half runs under the GATE tab (full --gate-rcw, matching the
      Your Aircraft column per Nick); visible half is --g8-tab-w wide. */
   width: calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 24px) !important;
+  /* Symmetric margins in the VISIBLE half: content area = tab-w - 68,
+     centred exactly on the visible-half midpoint (tab-w/2 - 12). */
   padding-left: 22px !important;
-  padding-right: calc(var(--gate-rcw, 25%) + 58px) !important;
+  padding-right: calc(var(--gate-rcw, 25%) + 22px) !important;
 }
 /* AUTO-FIT: any airport logo, any shape, always inside the visible band. */
 .g8-wrap .g8-r1-apband img {
