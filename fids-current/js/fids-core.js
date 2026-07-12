@@ -6973,7 +6973,7 @@ function uxgGateHtml(ctx) {
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/star-alliance-symbol.svg',
+    'star':     '/logos/airlines/alliances/StarGray.svg',  // official grey lockup (Nick's upload)
     'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
@@ -6987,18 +6987,7 @@ function uxgGateHtml(ctx) {
     // onerror hides only THIS img — the old window._allianceFailed flag was a
     // global kill switch: one transient 404 disabled alliance logos for the
     // rest of the session.
-    // Dark-background primary arrangement: the official multi-tone silver
-    // symbol + white STAR ALLIANCE lettering. The lettering is real text
-    // (crisp at banner size — the lockup file's path letters turned to mush
-    // when scaled this small). Other alliances keep their plain mark.
-    if (_allianceKey === 'star') {
-      starHtml = '<span class="g8-r1-star-lockup" style="display:inline-flex;align-items:center;gap:13px;margin-left:20px;">'
-        + '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS.star + '" alt="Star Alliance" onload="this.classList.add(\'loaded\')" onerror="this.parentNode.style.display=\'none\';">'
-        + '<span style="color:#ffffff;font-weight:600;letter-spacing:.15em;font-size:clamp(11px,1.55vh,17px);white-space:nowrap;">STAR ALLIANCE</span>'
-        + '</span>';
-    } else {
-      starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
-    }
+    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
   }
 
   // Operator info (used by equipment panel; top banner no longer shows this line)
@@ -13385,7 +13374,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22160';
+var FIDS_BUILD_TAG = 'v22161';
 (function(){
   try {
     function _addTag(){
