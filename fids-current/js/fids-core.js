@@ -22287,15 +22287,25 @@ function _map3dFlightCtx(allowEstimated) {
   } catch (e) { return null; }
 }
 
-// Dotted-globe backdrop for ad panels (Nick: 'a background like the aircraft
-// info — the dots world'). Same artwork the Your Aircraft column uses, rising
-// from the panel's bottom edge as a faint screen-blend glow so the dotted
-// continents read on the dark vignette without competing with the ad itself.
+// Branded LIGHT surround for ads that don't fill the panel (Nick, pointing at
+// the Your Aircraft panel: 'a background like the aircraft info — the dots
+// world… I did like this — also the pattern'). Same recipe as that panel:
+// soft white brushed base, the dotted globe faded in grey (multiply, rising
+// from the bottom), and the airline-accent diagonal 'handles' at both edges.
 function _adGlobeBackdrop() {
-  return '<div style="position:absolute;left:-10%;right:-10%;bottom:-6%;height:62%;'
-    + 'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
-    + 'background-size:cover;background-position:center top;background-repeat:no-repeat;'
-    + 'opacity:.2;filter:grayscale(1) brightness(1.6);mix-blend-mode:screen;pointer-events:none;"></div>';
+  return ''
+    // light brushed base (matches the board's panel metal)
+    + '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#f7f9fc 0%,#e9edf3 55%,#dfe4ec 100%);"></div>'
+    // dots world — grey multiply, rising from the bottom like the aircraft panel
+    + '<div style="position:absolute;left:-10%;right:-10%;bottom:-8%;height:64%;'
+    +   'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
+    +   'background-size:cover;background-position:center top;background-repeat:no-repeat;'
+    +   'opacity:.5;filter:grayscale(1) brightness(0.97) contrast(1.25);mix-blend-mode:multiply;pointer-events:none;"></div>'
+    // accent HANDLES — skewed ribbons hugging the left and right edges
+    + '<div style="position:absolute;top:-8%;bottom:-8%;left:-3.5%;width:6.5%;background:var(--airline-accent,#D82F2E);transform:skewX(-14deg);pointer-events:none;"></div>'
+    + '<div style="position:absolute;top:-8%;bottom:-8%;left:4.2%;width:1%;background:var(--airline-accent,#D82F2E);opacity:.45;transform:skewX(-14deg);pointer-events:none;"></div>'
+    + '<div style="position:absolute;top:-8%;bottom:-8%;right:-3.5%;width:6.5%;background:var(--airline-accent,#D82F2E);transform:skewX(-14deg);pointer-events:none;"></div>'
+    + '<div style="position:absolute;top:-8%;bottom:-8%;right:4.2%;width:1%;background:var(--airline-accent,#D82F2E);opacity:.45;transform:skewX(-14deg);pointer-events:none;"></div>';
 }
 
 function renderGateAd(index) {
@@ -22362,9 +22372,7 @@ function renderGateAd(index) {
       // rising from the bottom as a faint screen-blend glow over an
       // accent-tinted vignette. NOT a blurred video copy — a second decoding
       // <video> would double the decode load and OOM the small stream box.
-      customHtml = '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#101725 0%,#05070d 100%);"></div>'
-        + '<div style="position:absolute;inset:0;background:var(--airline-accent,#1c2a44);opacity:.18;"></div>'
-        + _adGlobeBackdrop()
+      customHtml = _adGlobeBackdrop()
         + '<video src="' + item.url + '" autoplay muted loop playsinline'
         + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + fit + ';object-position:' + posStr + ';transform:scale(' + zoom + ');"></video>';
     } else if (item.type === 'image' && item.url) {
@@ -22373,11 +22381,7 @@ function renderGateAd(index) {
       // (Nick: the blur-fill of a mostly-WHITE ad like AC Altitude showed
       // nothing; 'it should be similar to the one with the red, with the
       // globe pattern'). 'cover' fills the panel, no backdrop needed.
-      var _brandBack = (fit === 'contain')
-        ? '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#101725 0%,#05070d 100%);"></div>'
-          + '<div style="position:absolute;inset:0;background:var(--airline-accent,#1c2a44);opacity:.18;"></div>'
-          + _adGlobeBackdrop()
-        : '';
+      var _brandBack = (fit === 'contain') ? _adGlobeBackdrop() : '';
       customHtml = _brandBack
         + '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
         + '\');background-size:' + (fit === 'cover' ? 'cover' : 'contain') + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + zoom + ');"></div>';
