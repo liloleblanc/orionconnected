@@ -22287,6 +22287,17 @@ function _map3dFlightCtx(allowEstimated) {
   } catch (e) { return null; }
 }
 
+// Dotted-globe backdrop for ad panels (Nick: 'a background like the aircraft
+// info — the dots world'). Same artwork the Your Aircraft column uses, rising
+// from the panel's bottom edge as a faint screen-blend glow so the dotted
+// continents read on the dark vignette without competing with the ad itself.
+function _adGlobeBackdrop() {
+  return '<div style="position:absolute;left:-10%;right:-10%;bottom:-6%;height:62%;'
+    + 'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
+    + 'background-size:cover;background-position:center top;background-repeat:no-repeat;'
+    + 'opacity:.2;filter:grayscale(1) brightness(1.6);mix-blend-mode:screen;pointer-events:none;"></div>';
+}
+
 function renderGateAd(index) {
   var el = document.getElementById('gateAdCarousel');
   if (!el) return;
@@ -22346,11 +22357,14 @@ function renderGateAd(index) {
           + ' allow="autoplay; encrypted-media" allowfullscreen></iframe>';
       }
     } else if (item.type === 'video' && item.url) {
-      // Letterbox bars: an accent-tinted vignette instead of flat black (Nick:
-      // 'a lot of black'). NOT a blurred video copy — a second decoding <video>
-      // would double the decode load and OOM the small stream box.
+      // Letterbox bars: the DOTTED-GLOBE treatment from the Your Aircraft
+      // panel (Nick: 'a background like the aircraft info — the dots world'),
+      // rising from the bottom as a faint screen-blend glow over an
+      // accent-tinted vignette. NOT a blurred video copy — a second decoding
+      // <video> would double the decode load and OOM the small stream box.
       customHtml = '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#101725 0%,#05070d 100%);"></div>'
-        + '<div style="position:absolute;inset:0;background:var(--airline-accent,#1c2a44);opacity:.22;"></div>'
+        + '<div style="position:absolute;inset:0;background:var(--airline-accent,#1c2a44);opacity:.18;"></div>'
+        + _adGlobeBackdrop()
         + '<video src="' + item.url + '" autoplay muted loop playsinline'
         + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + fit + ';object-position:' + posStr + ';transform:scale(' + zoom + ');"></video>';
     } else if (item.type === 'image' && item.url) {
@@ -22375,7 +22389,8 @@ function renderGateAd(index) {
       el.style.background = '#000';
       el.style.position = 'relative';
       el.style.overflow = 'hidden';
-      el.innerHTML = customHtml || '<div style="position:absolute;inset:0;background:#0b1020;"></div>';
+      el.innerHTML = customHtml
+        || ('<div style="position:absolute;inset:0;background:#0b1020;"></div>' + _adGlobeBackdrop());
       el.style.opacity = '1';
       // Clear the logo rail for custom slides — they're meant to be full-bleed
       var logoEl0 = document.getElementById('gateAdLogo');
