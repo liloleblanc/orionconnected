@@ -5683,6 +5683,23 @@ function _buildV2MapCol(ctx, vars) {
       if (typeof _liveFixPhysOk === 'function' && !_liveFixPhysOk(_ib)) {
         _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
       }
+      // LEG-WINDOW GUARD (Nick: 'impossible — this aircraft is not en route').
+      // ADB's withLocation position belongs to the AIRFRAME, not the leg — it
+      // can be a stale cruise fix from a previous flight or linger after
+      // landing. A fix only counts as THIS leg being airborne inside the
+      // leg's plausible window: from ~its departure (arrival − duration −
+      // 25 min pad) until arrival + 8 min. Outside that, show nothing.
+      try {
+        var _lwArr = (_ib._revTs && _ib._revTs > _ib._sortTs) ? _ib._revTs : (_ib._sortTs || 0);
+        if (_lwArr) {
+          var _lwSpan = ((_ib._durationMins || 240) + 25) * 60000;
+          var _lwNow = Date.now();
+          if (_lwNow < _lwArr - _lwSpan || _lwNow > _lwArr + 8 * 60000) {
+            _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
+            if (_gateFixCache && _gateFixCache.key === String(_ib.flight || _ib._reg || '')) _gateFixCache = null;
+          }
+        }
+      } catch (e) {}
       // Once on the ground there is no airborne fix to hold — drop the cache so
       // the panel/map don't keep showing a stale cruise position post-landing.
       if (_arrivedLikeIb && _gateFixCache && _gateFixCache.key === String(_ib.flight || _ib._reg || '')) _gateFixCache = null;
@@ -20831,6 +20848,19 @@ function buildGateAdHtml(ad) {
   if (ad.adLayout === 'video-bg') {
     var _vidBg = ad.bgColor || '#000000';
     var _vidFit = ad.objectFit || 'contain';
+    // Letterboxed ('contain') classic video ads get the branded light frame —
+    // brushed base + dots world + accent handles (Nick: the flat bgColor bands
+    // were exactly the look he wanted replaced). 'cover' fills, no frame.
+    if (_vidFit === 'contain' && typeof _adGlobeBackdrop === 'function') {
+      return _adWrap(
+        '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
+        + _adGlobeBackdrop()
+        + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
+        + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;"'
+        + ' onerror="this.style.display=\'none\';"></video>'
+        + '</div>'
+      );
+    }
     return _adWrap(
       '<div style="width:100%;height:100%;background:' + _vidBg + ';overflow:hidden;">'
       + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
@@ -20846,6 +20876,16 @@ function buildGateAdHtml(ad) {
   if (ad.adLayout === 'image-only') {
     var _imgBg = ad.bgColor || '#000000';
     var _imgFit = ad.imageFit || 'contain';
+    // Letterboxed ('contain') designed assets sit on the branded light frame
+    // (brushed base + dots world + accent handles) instead of a flat colour.
+    if (_imgFit === 'contain' && typeof _adGlobeBackdrop === 'function') {
+      return _adWrap(
+        '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
+        + _adGlobeBackdrop()
+        + '<div style="position:absolute;inset:0;background-image:url(\'' + ad.bgImage + '\');background-size:contain;background-position:center;background-repeat:no-repeat;"></div>'
+        + '</div>'
+      );
+    }
     return _adWrap(
       '<div style="width:100%;height:100%;background:' + _imgBg + ';background-image:url(\'' + ad.bgImage + '\');background-size:' + _imgFit + ';background-position:center;background-repeat:no-repeat;"></div>'
     );
@@ -22030,43 +22070,48 @@ function buildAccorAdOnlyV6(ad) {
   // says the brand without showing it.
   var _brandBar = '<div class="ax7-brandbar">' + logoHtml + '</div>';
 
-  // Page 1 — THE PROPERTY: name, stars + score + reviews, address, distances
-  var _page1 = '<div class="axr-page axr-page-on ax7-page">'
-    + _photoSide(_ph0) + _brandBar
-    + '<div class="ax7-tier">'
-    +   (showName ? '<h1 class="ax7-name axr-one-line">'+esc(displayName)+'</h1>' : '')
-    +   _starsScoreRow + _addrLineHtml
-    +   (_locLineHtml ? '<div class="ax7-loc">'+_locLineHtml+'</div>' : '')
-    + '</div>' + _dots(0) + '</div>';
-  // Page 2 — THE HOTEL: icon amenity pills + blurb
-  var _page2 = '<div class="axr-page ax7-page">'
-    + _photoSide(_ph1) + _brandBar
-    + '<div class="ax7-tier">'
-    +   '<div class="ax7-kicker">'+esc(_kHotel)+'</div>'
-    +   _chipList(_amenList)
-    +   (_blurb ? '<p class="ax7-blurb">'+esc(_blurb)+'</p>' : '')
-    + '</div>' + _dots(1) + '</div>';
-  // Page 3 — DINING & REVIEWS. Real restaurants from the hotel master record
-  // get proper cards (name · cuisine · one-liner); otherwise the curated
-  // dining chips carry the page. Score + QR close the story.
-  var _dineHtml = '';
-  if (_master && _master.restaurants && _master.restaurants.length) {
-    _dineHtml = '<div class="ax7-rests">' + _master.restaurants.slice(0, 2).map(function (r) {
-      return '<div class="ax7-rest">'
-        + '<div class="ax7-rest-name">' + esc(r.name) + (r.kind ? '<span class="ax7-rest-kind">' + esc(r.kind) + '</span>' : '') + '</div>'
-        + (r.desc ? '<div class="ax7-rest-desc">' + esc(r.desc) + '</div>' : '')
-        + '</div>';
-    }).join('') + '</div>';
-  } else {
-    _dineHtml = _chipList(_restList.slice(0,4), 'ax7-amen-dine');
+  // Deck: pages carry NO kicker titles (Nick: '"The hotel / L'hôtel",
+  // "Restauration & avis" — I hate the title') and the dining page exists
+  // ONLY when Accor actually returned restaurants — an empty dining page
+  // sold nothing ('what restaurant?? theres nothing on it').
+  var _hasRests = !!(_master && _master.restaurants && _master.restaurants.length);
+  var _restCards = _hasRests
+    ? '<div class="ax7-rests">' + _master.restaurants.slice(0, 2).map(function (r) {
+        return '<div class="ax7-rest">'
+          + '<div class="ax7-rest-name">' + esc(r.name) + (r.kind ? '<span class="ax7-rest-kind">' + esc(r.kind) + '</span>' : '') + '</div>'
+          + (r.desc ? '<div class="ax7-rest-desc">' + esc(r.desc) + '</div>' : '')
+          + '</div>';
+      }).join('') + '</div>'
+    : '';
+  var _pageBodies = [];
+  // P1 — THE PROPERTY: name, stars + score + reviews, address, distances
+  _pageBodies.push({ photo: _ph0, body:
+      (showName ? '<h1 class="ax7-name axr-one-line">'+esc(displayName)+'</h1>' : '')
+    + _starsScoreRow + _addrLineHtml
+    + (_locLineHtml ? '<div class="ax7-loc">'+_locLineHtml+'</div>' : '') });
+  // P2 — amenity pills + blurb; carries the score + QR close when no dining page follows
+  _pageBodies.push({ photo: _ph1, body:
+      _chipList(_amenList)
+    + (_blurb ? '<p class="ax7-blurb">'+esc(_blurb)+'</p>' : '')
+    + (_hasRests ? '' : '<div class="ax7-close-row">' + _qr7 + '</div>') });
+  // P3 — real dining only: restaurant cards + score + QR
+  if (_hasRests) {
+    _pageBodies.push({ photo: _ph2, body:
+        _restCards
+      + '<div class="ax7-close-row">' + _scoreBlock + _qr7 + '</div>' });
   }
-  var _page3 = '<div class="axr-page ax7-page">'
-    + _photoSide(_ph2) + _brandBar
-    + '<div class="ax7-tier">'
-    +   '<div class="ax7-kicker">'+esc(_kDining)+'</div>'
-    +   _dineHtml
-    +   '<div class="ax7-close-row">' + _scoreBlock + _qr7 + '</div>'
-    + '</div>' + _dots(2) + '</div>';
+  function _dotsN(active, total) {
+    if (total < 2) return '';
+    var d = '';
+    for (var i = 0; i < total; i++) d += '<span class="'+(i===active?'ax7-dot ax7-dot-on':'ax7-dot')+'"></span>';
+    return '<div class="ax7-dots">'+d+'</div>';
+  }
+  var _pagesHtml = _pageBodies.map(function (p, i) {
+    return '<div class="axr-page'+(i===0?' axr-page-on':'')+' ax7-page">'
+      + _photoSide(p.photo) + _brandBar
+      + '<div class="ax7-tier">' + p.body + '</div>'
+      + _dotsN(i, _pageBodies.length) + '</div>';
+  }).join('');
 
   // Footer — just the ALL mark, centered (per Nick: "ALL only, centered").
   var _footerHtml = '<footer class="axr-all axr-all-simple">'
@@ -22076,7 +22121,7 @@ function buildAccorAdOnlyV6(ad) {
   return ''
     + '<article class="axr ax7 axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" data-hotel-id="'+esc(String(ad.hotelId||_fullName||''))+'" style="--axr-tint:'+tint+'">'
     +   '<section class="axr-hero axr-pages ax7-pages">'
-    +     _page1 + _page2 + _page3
+    +     _pagesHtml
     +   '</section>'
     +   _footerHtml
     + '</article>';
