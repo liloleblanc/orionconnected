@@ -6947,7 +6947,7 @@ function uxgGateHtml(ctx) {
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/star-alliance-logo-monochrome-white.svg',
+    'star':     '/logos/airlines/alliances/star-alliance.svg',
     'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
@@ -7547,8 +7547,8 @@ function uxgGateHtml(ctx) {
           // 2*tab-w - 24px from the right. The time tab slots left of that
           // with a 30px underlap; without a band, directly left of the gate.
           var _tbRight = _apLogoTop
-            ? 'calc(2 * var(--g8-tab-w, var(--gate-rcw, 25%)) - 54px)'
-            : 'calc(var(--g8-tab-w, var(--gate-rcw, 25%)) - 30px)';
+            ? 'calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 54px)'
+            : 'calc(var(--gate-rcw, 25%) - 30px)';
           return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
             +   '<span style="font-size:clamp(13px,1.7vh,23px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
@@ -7563,7 +7563,7 @@ function uxgGateHtml(ctx) {
     // vertical when the block was straight). The block bleeds 80px past the
     // right screen edge so its skewed top-right corner can never expose a gap;
     // inner spans counter-skew +24° to stay upright.
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
     +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
     +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
     +   '</div>'
@@ -13333,7 +13333,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22154';
+var FIDS_BUILD_TAG = 'v22155';
 (function(){
   try {
     function _addTag(){
@@ -22680,7 +22680,7 @@ function renderGateAd(index) {
   var html = '';
   if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorAdOnlyV6 === 'function') {
     try {
-      window._adDiag = 'accor';
+      window._adDiag = 'accor:' + ((typeof _accorLangNow === 'function') ? _accorLangNow() : '?');
       html = buildAccorAdOnlyV6(slide.data);
     } catch (e) {
       console.error('[ACCOR-AD6-FAILED]', e);
