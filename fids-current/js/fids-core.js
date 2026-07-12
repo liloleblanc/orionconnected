@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22139';
+var FIDS_BUILD_TAG = 'v22140';
 (function(){
   try {
     function _addTag(){
@@ -20144,7 +20144,16 @@ function fetchAccorHotelDetail(hotelId) {
              : (m0['1024x768'] || m0['740x555'] || m0['346x260'] || m0.url || '');
           if (rp && rp.indexOf('//') === 0) rp = 'https:' + rp;
         }
-        rooms.push({ name: rn, photo: rp });
+        // Per-room amenities + description (each room PAGE sells itself)
+        var ra = [];
+        if (Array.isArray(acc.topAmenities)) {
+          acc.topAmenities.forEach(function(a) {
+            var lb = (typeof a === 'string') ? a : (a && (a.value || a.name || a.label) || '');
+            if (lb && ra.indexOf(lb) === -1) ra.push(lb);
+          });
+        }
+        var rd = String(acc.description || acc.shortDescription || '').replace(/\s+/g, ' ').trim();
+        rooms.push({ name: rn, photo: rp, amen: ra.slice(0, 4), desc: rd });
       });
 
       ACCOR_HOTEL_DETAIL_CACHE[cacheKey] = {
@@ -20260,8 +20269,9 @@ function fetchAccorHotelMaster(hotelId) {
   (function tryNext(i) {
     if (i >= candidates.length) {
       delete window['_accorMasterPending_' + cacheKey];
-      ACCOR_HOTEL_MASTER_CACHE[cacheKey] = { ts: Date.now(), restaurants: [], photos: [], empty: true };
-      console.log('[ACCOR-MASTER]', hotelId, '(' + curLang + ') → no dining data on any endpoint');
+      var _exh = window['_accorMasterExtras_' + cacheKey] || null;
+      ACCOR_HOTEL_MASTER_CACHE[cacheKey] = { ts: Date.now(), restaurants: [], photos: [], extras: _exh, empty: !_exh };
+      console.log('[ACCOR-MASTER]', hotelId, '(' + curLang + ') → no dining data on any endpoint' + (_exh ? ' (extras kept)' : ''));
       return;
     }
     fetch(candidates[i], { headers: { 'Accept-Language': _accorAcceptLang(curLang) } })
@@ -20269,17 +20279,35 @@ function fetchAccorHotelMaster(hotelId) {
       .then(function (data) {
         if (!data) { tryNext(i + 1); return; }
         var mined = _mine(data);
+        // Hotel-master EXTRAS (shape confirmed from Nick's real response):
+        // managerMessage prose, enhancedDescription, offer labels, free-amenity
+        // flags, check-in/out hours — content the card never used.
+        if (data && (data.id || data.brand) && !window['_accorMasterExtras_' + cacheKey]) {
+          window['_accorMasterExtras_' + cacheKey] = {
+            managerMessage: String(data.managerMessage || '').replace(/\s+/g, ' ').trim(),
+            enhancedDescription: String(data.enhancedDescription || '').replace(/\s+/g, ' ').trim(),
+            labels: Array.isArray(data.label) ? data.label : [],
+            amenityFree: (data.amenity && Array.isArray(data.amenity.free)) ? data.amenity.free : [],
+            checkIn: String(data.checkInHour || '').trim(),
+            checkOut: String(data.checkOutHour || '').trim()
+          };
+        }
         console.log('[ACCOR-MASTER]', hotelId, '(' + curLang + ') probe', candidates[i].replace(/^.*\/hotels\//, 'hotels/'),
                     '→ keys:', Object.keys(data).slice(0, 20).join(','),
                     '| restaurants:', mined.rests.length, '| categorized photos:', mined.photos.length);
-        if (mined.rests.length || mined.photos.length) {
+        if (mined.rests.length || mined.photos.length || i === candidates.length - 1) {
           delete window['_accorMasterPending_' + cacheKey];
           ACCOR_HOTEL_MASTER_CACHE[cacheKey] = {
-            ts: Date.now(), restaurants: mined.rests.slice(0, 4), photos: mined.photos.slice(0, 24)
+            ts: Date.now(),
+            restaurants: mined.rests.slice(0, 4),
+            photos: mined.photos.slice(0, 24),
+            extras: window['_accorMasterExtras_' + cacheKey] || null,
+            empty: !(mined.rests.length || mined.photos.length || window['_accorMasterExtras_' + cacheKey])
           };
           try {
             console.log('%c[ACCOR-MASTER] ' + hotelId + ' dining: '
-              + (mined.rests.map(function (r) { return r.name + (r.kind ? ' (' + r.kind + ')' : ''); }).join(' · ') || '(none)'),
+              + (mined.rests.map(function (r) { return r.name + (r.kind ? ' (' + r.kind + ')' : ''); }).join(' · ') || '(none)')
+              + ' | extras: ' + (window['_accorMasterExtras_' + cacheKey] ? Object.keys(window['_accorMasterExtras_' + cacheKey]).join(',') : '(none)'),
               'color:#b60; font-weight:bold');
           } catch (e) {}
         } else tryNext(i + 1);
@@ -22203,9 +22231,42 @@ function buildAccorAdOnlyV6(ad) {
   // Offer chips — the flags/prose Accor sends that never made the card:
   // dining advantages, COMPLIMENTARY_BREAKFAST / DINING_OFFER labels,
   // on-site restaurant / bar / room service amenity flags (_restList
-  // aggregates exactly these upstream).
-  var _offerChips = _chipList(_restList.slice(0, 4), 'ax7-amen-dine');
-  var _hasP3 = _hasRests || _rooms.length > 0 || _restList.length > 0;
+  // aggregates exactly these upstream) PLUS the hotel-master label set
+  // (shape confirmed from Nick's real /hotels/{id} response).
+  var _xt = (_master && _master.extras) ? _master.extras : null;
+  var _xfr = (accorLang() === 'fr');
+  var _LABEL_OFFERS = {
+    'DINING_SPA_WITH_STAY':            _xfr ? 'Crédits restauration & spa' : 'Dining & spa credits with stay',
+    'DIGITAL_WELCOME_DRINK_REDEEMABLE':_xfr ? 'Boisson de bienvenue offerte' : 'Welcome drink offered',
+    'WELCOME_DRINK':                   _xfr ? 'Boisson de bienvenue offerte' : 'Welcome drink offered',
+    'SUITE_NIGHT_UPGRADE':             _xfr ? 'Surclassements suite' : 'Suite night upgrades',
+    'COMPLIMENTARY_BREAKFAST':         _xfr ? 'Petit-déjeuner offert' : 'Complimentary breakfast',
+    'DINING_OFFER':                    _xfr ? 'Offres restauration' : 'Dining offers for guests',
+    'BEST_PRICE_GUARANTEE':            _xfr ? 'Meilleur prix garanti' : 'Best price guarantee'
+  };
+  var _offerItems = _restList.slice();
+  if (_xt && Array.isArray(_xt.labels)) {
+    _xt.labels.forEach(function (L) {
+      var lbl = _LABEL_OFFERS[String(L || '').toUpperCase()];
+      if (lbl && _offerItems.indexOf(lbl) === -1) _offerItems.push(lbl);
+    });
+  }
+  var _offerChips = _chipList(_dedupe(_offerItems).slice(0, 5), 'ax7-amen-dine');
+  // The hotel's OWN words (managerMessage) or the enhanced marketing copy —
+  // prose the card never used.
+  var _hotelWords = _xt ? (_xt.managerMessage || _xt.enhancedDescription || '') : '';
+  var _hotelWordsHtml = _hotelWords
+    ? '<p class="ax7-blurb ax7-hotel-words">“' + esc(_hotelWords) + '”</p>'
+    : '';
+  // Check-in / check-out hours
+  var _ciCo = (_xt && (_xt.checkIn || _xt.checkOut))
+    ? '<div class="ax7-cico">'
+      + (_xt.checkIn  ? (_xfr ? 'Arrivée '  : 'Check-in ')  + esc(_xt.checkIn)  : '')
+      + (_xt.checkIn && _xt.checkOut ? ' <span class="axr-sep">·</span> ' : '')
+      + (_xt.checkOut ? (_xfr ? 'Départ '   : 'Check-out ') + esc(_xt.checkOut) : '')
+      + '</div>'
+    : '';
+  var _hasP3 = _hasRests || _rooms.length > 0 || _offerItems.length > 0 || !!_hotelWords;
   var _pageBodies = [];
   // P1 — THE PROPERTY: name, stars + score + reviews, address, distances
   _pageBodies.push({ photo: _ph0, body:
@@ -22217,12 +22278,25 @@ function buildAccorAdOnlyV6(ad) {
       _chipList(_amenList)
     + (_blurb ? '<p class="ax7-blurb">'+esc(_blurb)+'</p>' : '')
     + (_hasP3 ? '' : '<div class="ax7-close-row">' + _qr7 + '</div>') });
-  // P3 — THE OPTIONS: restaurants (when real) → room types → offers → score + QR
+  // ROOM PAGES (Nick: '2 to 3 different room options, show 10 seconds
+  // maybe, and description and amenities and pictures') — each room class
+  // gets its OWN page: its photo full-bleed, its name, its own amenities
+  // and description. The rotator turns pages every ~10s, so each room gets
+  // its ten seconds. Offers/hotel-words/check-in ride the final page with
+  // the score + QR close.
+  var _roomPages = _rooms.slice(0, 3).filter(function (r) { return r.name; });
+  _roomPages.forEach(function (r) {
+    _pageBodies.push({ photo: r.photo || _ph2, body:
+        '<div class="ax7-ctx axr-one-line">' + esc(r.name) + '</div>'
+      + (r.amen && r.amen.length ? _chipList(r.amen) : '')
+      + (r.desc ? '<p class="ax7-blurb">' + esc(r.desc) + '</p>' : '') });
+  });
+  // CLOSING page — restaurants (when the key returns them), offers, the
+  // hotel's own words, check-in/out, score + QR. Its own page so room pages
+  // stay clean and the deck always ends on the invitation.
   if (_hasP3) {
-    var _p3Photo = (_rooms.length && _rooms[0].photo) ? _rooms[0].photo : _ph2;
-    _pageBodies.push({ photo: _hasRests ? _ph2 : _p3Photo, body:
-        _restCards + _roomCards
-      + (_hasRests ? '' : _offerChips)
+    _pageBodies.push({ photo: _ph2, body:
+        _restCards + _offerChips + _hotelWordsHtml + _ciCo
       + '<div class="ax7-close-row">' + _scoreBlock + _qr7 + '</div>' });
   }
   function _dotsN(active, total) {

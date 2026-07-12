@@ -1013,3 +1013,12 @@
 .ax7-room-name{ padding:clamp(6px,0.9vh,10px) clamp(8px,0.9vw,12px);
   font-weight:700; font-size:clamp(12px,1.8vh,18px); line-height:1.22;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* Hotel's own words + check-in/out line (hotel-master extras) */
+.ax7-hotel-words{ font-style:italic; opacity:.92; }
+.ax7-cico{ font-size:clamp(13px,1.9vh,19px); font-weight:600; opacity:.9; }
+.ax7-cico .axr-sep{ opacity:.5; margin:0 .3em; }
+
+/* Room-page title (reused .ax7-ctx hook) — big, matches the page-1 name tier */
+.ax7 .ax7-ctx{ font-weight:800; font-size:clamp(26px,4.2vh,50px); line-height:1.04;
+  letter-spacing:-.01em; display:block; white-space:nowrap; overflow:hidden; max-width:100%; }
