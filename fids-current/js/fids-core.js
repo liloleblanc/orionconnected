@@ -22015,40 +22015,43 @@ function buildAccorAdOnlyV6(ad) {
       + '</div>'
     : (starsHtml ? '<div class="ax7-review">'+starsHtml+'</div>' : '');
   var _starsScoreRow = (starsHtml||rating)
-    ? '<div class="ax7-stars-row">'+(starsHtml||'')+(rating?'<span class="axr-score">'+esc(rating)+'<small>/5</small></span>':'')+'</div>'
+    ? '<div class="ax7-stars-row">'+(starsHtml||'')
+      + (rating?'<span class="axr-score">'+esc(rating)+'<small>/5</small></span>':'')
+      + (reviewCount?'<span class="ax7-count">'+esc(reviewCount)+' '+reviewsLabel+'</span>':'')
+      + '</div>'
     : '';
-  var _ctx7 = '<div class="ax7-ctx axr-one-line">'+esc(_fullName)+'</div>';
   var _scanLbl = safeTL('scanToDiscover','Scan to discover');
   var _qr7 = (factsheetUrl && factsheetUrl!=='#')
     ? '<div class="ax7-scan"><div class="ax7-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div>'
       + '<div class="ax7-scan-copy">'+_scanLbl+'<br><b class="axr-one-line">'+esc(_fullName)+'</b></div></div>'
     : '';
+  // The brand WORDMARK anchors every page top-left (Nick: pages that named
+  // the brand in plain text with no logo 'don't sit well') — so no page ever
+  // says the brand without showing it.
+  var _brandBar = '<div class="ax7-brandbar">' + logoHtml + '</div>';
 
-  // Page 1 — WELCOME/LOCATION: logo, name, stars+score, address, distances
+  // Page 1 — THE PROPERTY: name, stars + score + reviews, address, distances
   var _page1 = '<div class="axr-page axr-page-on ax7-page">'
-    + _photoSide(_ph0)
-    + '<div class="ax7-panel">'
-    +   '<div class="ax7-panel-main">' + logoHtml
-    +     (showName ? '<h1 class="ax7-name axr-one-line">'+esc(displayName)+'</h1>' : '')
-    +     _starsScoreRow + _addrLineHtml + (_locLineHtml ? '<div class="ax7-loc">'+_locLineHtml+'</div>' : '')
-    +   '</div>' + _dots(0)
-    + '</div></div>';
-  // Page 2 — THE HOTEL: icon amenity chips + blurb
+    + _photoSide(_ph0) + _brandBar
+    + '<div class="ax7-tier">'
+    +   (showName ? '<h1 class="ax7-name axr-one-line">'+esc(displayName)+'</h1>' : '')
+    +   _starsScoreRow + _addrLineHtml
+    +   (_locLineHtml ? '<div class="ax7-loc">'+_locLineHtml+'</div>' : '')
+    + '</div>' + _dots(0) + '</div>';
+  // Page 2 — THE HOTEL: icon amenity pills + blurb
   var _page2 = '<div class="axr-page ax7-page">'
-    + _photoSide(_ph1)
-    + '<div class="ax7-panel">'
-    +   '<div class="ax7-panel-main">'
-    +     '<div class="ax7-kicker">'+esc(_kHotel)+'</div>' + _ctx7
-    +     _chipList(_amenList)
-    +     (_blurb ? '<p class="ax7-blurb">'+esc(_blurb)+'</p>' : '')
-    +   '</div>' + _dots(1)
-    + '</div></div>';
+    + _photoSide(_ph1) + _brandBar
+    + '<div class="ax7-tier">'
+    +   '<div class="ax7-kicker">'+esc(_kHotel)+'</div>'
+    +   _chipList(_amenList)
+    +   (_blurb ? '<p class="ax7-blurb">'+esc(_blurb)+'</p>' : '')
+    + '</div>' + _dots(1) + '</div>';
   // Page 3 — DINING & REVIEWS. Real restaurants from the hotel master record
   // get proper cards (name · cuisine · one-liner); otherwise the curated
-  // dining chips carry the page.
+  // dining chips carry the page. Score + QR close the story.
   var _dineHtml = '';
   if (_master && _master.restaurants && _master.restaurants.length) {
-    _dineHtml = '<div class="ax7-rests">' + _master.restaurants.slice(0, 3).map(function (r) {
+    _dineHtml = '<div class="ax7-rests">' + _master.restaurants.slice(0, 2).map(function (r) {
       return '<div class="ax7-rest">'
         + '<div class="ax7-rest-name">' + esc(r.name) + (r.kind ? '<span class="ax7-rest-kind">' + esc(r.kind) + '</span>' : '') + '</div>'
         + (r.desc ? '<div class="ax7-rest-desc">' + esc(r.desc) + '</div>' : '')
@@ -22058,14 +22061,12 @@ function buildAccorAdOnlyV6(ad) {
     _dineHtml = _chipList(_restList.slice(0,4), 'ax7-amen-dine');
   }
   var _page3 = '<div class="axr-page ax7-page">'
-    + _photoSide(_ph2)
-    + '<div class="ax7-panel">'
-    +   '<div class="ax7-panel-main">'
-    +     '<div class="ax7-kicker">'+esc(_kDining)+'</div>' + _ctx7
-    +     _dineHtml
-    +     _scoreBlock + _qr7
-    +   '</div>' + _dots(2)
-    + '</div></div>';
+    + _photoSide(_ph2) + _brandBar
+    + '<div class="ax7-tier">'
+    +   '<div class="ax7-kicker">'+esc(_kDining)+'</div>'
+    +   _dineHtml
+    +   '<div class="ax7-close-row">' + _scoreBlock + _qr7 + '</div>'
+    + '</div>' + _dots(2) + '</div>';
 
   // Footer — just the ALL mark, centered (per Nick: "ALL only, centered").
   var _footerHtml = '<footer class="axr-all axr-all-simple">'
