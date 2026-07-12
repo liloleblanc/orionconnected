@@ -3236,12 +3236,16 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   //   Horizontal rule below wordmark
   //   Property name (serif, spaced caps) below rule
   // Renderer applies brightness(0) invert(1) for white-on-dark panels.
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 36" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 2) scale(0.926)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
+  // Official Fairmont lockups (e.g. 'Fairmont / LE REINE ELIZABETH') are ONE
+  // unit: script wordmark with the spaced-caps property name directly under
+  // it — no rule between them (Nick: 'nowhere in that logo is there black,
+  // and so separated — no'). Everything renders white; the renderer's
+  // brightness/invert filter handles dark-on-light contexts.
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 32" preserveAspectRatio="xMidYMid meet">'
+    + '<g transform="translate(15, 1) scale(0.926)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
-    + '<line x1="20" y1="22" x2="60" y2="22" stroke="#000000" stroke-width="0.3" stroke-linecap="round"/>'
-    + '<text x="40" y="31" text-anchor="middle" '
+    + '<text x="40" y="27" text-anchor="middle" '
     +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
     +   name
@@ -3304,12 +3308,14 @@ function makeEmblemsLockupSvgDataUri(propertyName) {
   // Target: width 50, centered → scale = 50/55.52 = 0.901
   // Translated: x = (80-50)/2 = 15, y = ~3 (top-aligned)
   // After scale: y-offset for vertical centering in the top portion
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 36" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 3) scale(0.901) translate(-7.25, -11.73)" fill="#ffffff">'
+  // No rule between wordmark and name — official lockups are one unit, and
+  // the black stroke read as a stray black bar on photos (same fix as the
+  // Fairmont generator).
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 32" preserveAspectRatio="xMidYMid meet">'
+    + '<g transform="translate(15, 2) scale(0.901) translate(-7.25, -11.73)" fill="#ffffff">'
     +   '<path d="' + _EMBLEMS_WORDMARK_D + '"/>'
     + '</g>'
-    + '<line x1="20" y1="22" x2="60" y2="22" stroke="#000000" stroke-width="0.3" stroke-linecap="round"/>'
-    + '<text x="40" y="31" text-anchor="middle" '
+    + '<text x="40" y="27" text-anchor="middle" '
     +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
     +   name
@@ -5571,23 +5577,6 @@ function _buildV2AircraftCol(ctx, vars) {
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
 
-      // v223 — LOCAL TIME shelf (Nick: 'the gate needs the time now — another
-      // tab exactly as the ones existing, with the time a different color').
-      // Same shelf grammar; badge uses the secondary accent, value carries
-      // .v2-fi-clock so CSS colours it apart from the flight times. The value
-      // is stamped with the airport tz and kept ticking by the clock updater.
-      var _clockTz = '';
-      try { _clockTz = (typeof AP !== 'undefined' && AP[String((vars && vars.iata) || '').toUpperCase()] || {}).tz || ''; } catch (e) {}
-      var _clockNow = '';
-      try {
-        var _ckO = _clockTz ? { timeZone: _clockTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
-        _clockNow = _amPm(new Date().toLocaleTimeString('en-US', _ckO));
-      } catch (e) {}
-      var _clockBadge = '<div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-clock-badge" style="'
-        + BADGE_STYLE.replace('background:var(--airline-accent,#D82F2E)', 'background:var(--airline-accent3,var(--airline-accent,#D82F2E))')
-        + '">' + '<span class=\"ac-ico ac-ico-time"></span>' + '</div>';
-      var _clockVal = '<span class="v2-fi-clock-val" data-tz="' + _clockTz + '">' + (_clockNow || '—') + '</span>';
-
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fnNumber || _fiFlightNo || '—'), 'v2-fi-dest')
@@ -5596,7 +5585,6 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgArrive), 'Arrival', _L2('Arrivée','Llegada'), (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
-        + _shelf(_clockBadge, 'Time Now', _L2('Heure actuelle','Hora actual'), _clockVal, 'v2-fi-time v2-fi-clock')
         + '</div>';
     }
   } catch (e) {}
@@ -7519,14 +7507,34 @@ function uxgGateHtml(ctx) {
           ? ' style="background:' + _bannerSpec.r1 + ' !important;color:' + (_bannerSpec.r1Text || '#FFFFFF') + ' !important;"'
           : ''
       ) + '>'
-    +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml
-    // Moncton is the heart of Acadia — YQM boards fly the Acadian flag in
-    // the top band (per Nick), next to the airline/alliance marks.
-    +     (String(iata).toUpperCase() === 'YQM'
-            ? '<img class="g8-r1-acadia" src="/logos/flags/acadia.svg" alt="Acadian flag" onerror="this.style.display=\'none\'">'
-            : '')
-    +   '</div>'
+    +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
     +   _apBandTop
+    // TIME TAB (Nick: 'the gate needs the time — another tab exactly as the
+    // ones existing, time a different color'): a skewed box in the SAME
+    // grammar as the Gate block, sitting just left of it. At YQM it takes
+    // Acadian blue + the gold star, so the top tabs read blue | white | red
+    // — the Acadian flag across the banner (Nick: 'the flag on the top in
+    // the tabs, each tab a different color'). The value carries
+    // .v2-fi-clock-val + data-tz, so the global 5s clock updater keeps it
+    // ticking.
+    +   (function () {
+          var _tbYQM = String(iata).toUpperCase() === 'YQM';
+          var _tbBg = _tbYQM ? '#003DA5' : 'var(--airline-accent3,#2f3946)';
+          var _tbTz = (AP[iata] || {}).tz || '';
+          var _tbNow = '';
+          try {
+            var _tbO = _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
+            _tbNow = new Date().toLocaleTimeString('en-US', _tbO).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
+          } catch (e) {}
+          return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:calc(var(--gate-rcw, 25%) - 26px) !important;bottom:0 !important;width:15% !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 18px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:-6px 0 14px rgba(0,0,0,0.25);overflow:hidden;z-index:4;">'
+            + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
+            +   '<span style="font-size:clamp(13px,1.7vh,23px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
+            +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
+            +     'Time <span style="opacity:.6">|</span> Heure</span>'
+            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(28px,4vh,56px);font-weight:900;color:#fff;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
+            + '</span>'
+            + '</div>';
+        })()
     // Gate block: FULL banner height (top:0), skewed −24° in PARALLEL with the
     // airport band so the white↔accent seam keeps the slanted angle (it went
     // vertical when the block was straight). The block bleeds 80px past the
@@ -13302,7 +13310,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22151';
+var FIDS_BUILD_TAG = 'v22152';
 (function(){
   try {
     function _addTag(){
@@ -22195,7 +22203,10 @@ function buildAccorAdOnlyV6(ad) {
   // Continuation pages carry the brand LOGO (Nick: 'the logo should be on
   // all screens'), so the context name is the brand-stripped property name —
   // wordmark + full name would print the brand twice.
-  var _ctxName   = '<div class="axr-page-ctx">'+esc(displayName)+'</div>';
+  // Property lockups already carry the property name inside the artwork —
+  // repeating it as the page context printed the name twice (Nick). Pages
+  // with a lockup logo get no extra name line.
+  var _ctxName   = lockupHasName ? '' : '<div class="axr-page-ctx">'+esc(displayName)+'</div>';
   var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
   var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
 
