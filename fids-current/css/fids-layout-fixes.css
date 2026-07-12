@@ -2218,3 +2218,16 @@ body[data-fids-theme="mist"] .bidsv2-status-arrived { color: #0E7A3C !important;
 body[data-fids-theme="mist"] .bidsv2-status-early { color: #157A43 !important; }
 body[data-fids-theme="mist"] .bidsv2-status-delayed { color: #A66F00 !important; }
 body[data-fids-theme="mist"] .bidsv2-empty { color: #3A4E66 !important; }
+
+/* Bottom band carries the baggage TICKER now (Nick: 'ticker info messages
+   on bags') — taller and readable; the mirrored slat art would flip the
+   text, so it's replaced by the banner colour under the scroll. */
+html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
+  height: clamp(34px, 4.6vh, 52px) !important;
+  transform: none !important;
+  opacity: 1 !important;
+  background: var(--fids-banner-bg, #050033) !important;
+  display: flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+}

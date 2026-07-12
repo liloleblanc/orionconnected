@@ -9339,10 +9339,20 @@ const gView = document.getElementById('gateView');
           </div>
         </div>
 
-        <!-- Bottom band — the welcome/date footer is retired (Nick:
-             'irrelevant'); a slim strip mirrors the top banner's angled
-             lines so the screen is symmetric top to bottom. -->
-        <div class="bidsv2-bottom-band" aria-hidden="true"></div>
+        <!-- Bottom band = scrolling info TICKER (Nick: 'the ticker info
+             messages on bags'). Bilingual baggage-hall messages loop in a
+             marquee; the track is doubled so the wrap is seamless. -->
+        <div class="bidsv2-bottom-band bidsv2-ticker" aria-hidden="true">
+          ${(function(){
+            const _a = BAGS_TICKER_MSG[langs[0]] || BAGS_TICKER_MSG.en;
+            const _b = (langs[1] && BAGS_TICKER_MSG[langs[1]] && langs[1] !== langs[0]) ? BAGS_TICKER_MSG[langs[1]] : null;
+            const _txt = _a.map(function(m, i){
+              return '✈︎  ' + m + (_b ? '  ·  ' + _b[i] : '');
+            }).join('   ·   ') + '   ·   ';
+            const _esc = _txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+            return '<div class="bidsv2-ticker-track"><span>' + _esc + '</span><span>' + _esc + '</span></div>';
+          })()}
+        </div>
 
       </div>`;
 
@@ -13257,6 +13267,31 @@ function updateLangButtons() {
 }
 
 // ── TICKER — interleaves selected languages ──────────────────────────────
+// Baggage-hall ticker messages (Nick: 'the ticker info messages on bags').
+// Same bilingual pattern as the main-board ticker, baggage-flavoured.
+// On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
+// looking at' guessing during preview reviews. Bump with the cache token.
+var FIDS_BUILD_TAG = 'v22138';
+(function(){
+  try {
+    function _addTag(){
+      if (document.getElementById('fidsBuildTag')) return;
+      var d = document.createElement('div');
+      d.id = 'fidsBuildTag';
+      d.textContent = FIDS_BUILD_TAG;
+      d.style.cssText = 'position:fixed;left:7px;bottom:1px;z-index:99999;font:600 10px/1.6 monospace;color:rgba(128,138,152,0.55);pointer-events:none;';
+      document.body.appendChild(d);
+    }
+    if (document.body) _addTag(); else document.addEventListener('DOMContentLoaded', _addTag);
+  } catch (e) {}
+})();
+
+const BAGS_TICKER_MSG = {
+  en: ['MANY BAGS LOOK ALIKE — PLEASE CHECK YOUR BAG TAG','LUGGAGE CARTS ARE AVAILABLE NEAR THE EXIT','REPORT DAMAGED OR MISSING BAGGAGE TO YOUR AIRLINE','PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES','REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF','THANK YOU FOR FLYING WITH US — WELCOME'],
+  fr: ['PLUSIEURS VALISES SE RESSEMBLENT — VÉRIFIEZ VOTRE ÉTIQUETTE','DES CHARIOTS À BAGAGES SONT DISPONIBLES PRÈS DE LA SORTIE','SIGNALEZ TOUT BAGAGE ENDOMMAGÉ OU MANQUANT À VOTRE TRANSPORTEUR','VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS','SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL','MERCI D\'AVOIR VOYAGÉ AVEC NOUS — BIENVENUE'],
+  es: ['MUCHAS MALETAS SON PARECIDAS — VERIFIQUE SU ETIQUETA','HAY CARRITOS DE EQUIPAJE CERCA DE LA SALIDA','REPORTE EQUIPAJE DAÑADO O FALTANTE A SU AEROLÍNEA','MANTENGA SU EQUIPAJE CON USTED EN TODO MOMENTO','REPORTE ACTIVIDAD SOSPECHOSA AL PERSONAL','GRACIAS POR VOLAR CON NOSOTROS — BIENVENIDOS']
+};
+
 const TICKER_MSG = {
   en: ['PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES','UNATTENDED ITEMS WILL BE CONFISCATED BY SECURITY','PROCEED TO YOUR GATE 30 MINUTES BEFORE DEPARTURE','BOARDING GATES CLOSE 15 MINUTES PRIOR TO DEPARTURE','REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF','CHECK MONITORS FOR UPDATED GATE INFORMATION'],
   fr: ["VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS","LES OBJETS SANS SURVEILLANCE SERONT CONFISQUÉS","PRÉSENTEZ-VOUS À LA PORTE 30 MINUTES AVANT LE DÉPART","FERMETURE DES PORTES 15 MINUTES AVANT LE DÉPART","SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL","CONSULTEZ LES ÉCRANS POUR TOUTE MISE À JOUR"],
@@ -20087,12 +20122,34 @@ function fetchAccorHotelDetail(hotelId) {
       var facilities = byCount(roomBath).slice(0, 3)
                        .concat(byCount(roomTech).slice(0, 3));
 
+      // ── ROOM TYPES ── the accommodations endpoint names every room class
+      // ('Superior Room, 2 Queen Beds' …) with its own gallery — data we
+      // never surfaced (Nick: 'I asked for options such as menus and things
+      // we don't use'). Capture name + first photo per room class.
+      var roomsSeen = {};
+      var rooms = [];
+      accs.forEach(function(acc) {
+        var rn = String(acc.name || acc.label || acc.title || (acc.room && (acc.room.name || acc.room.label)) || '').replace(/\s+/g, ' ').trim();
+        if (!rn || roomsSeen[rn.toLowerCase()]) return;
+        roomsSeen[rn.toLowerCase()] = 1;
+        var rp = '';
+        var rSrc = (acc.medias && acc.medias.photos) || acc.photos || [];
+        if (Array.isArray(rSrc) && rSrc.length) {
+          var m0 = rSrc[0];
+          rp = (typeof m0 === 'string') ? m0
+             : (m0['1024x768'] || m0['740x555'] || m0['346x260'] || m0.url || '');
+          if (rp && rp.indexOf('//') === 0) rp = 'https:' + rp;
+        }
+        rooms.push({ name: rn, photo: rp });
+      });
+
       ACCOR_HOTEL_DETAIL_CACHE[cacheKey] = {
         ts: Date.now(),
         restaurants: restaurants,
         facilities: facilities,
         topAmenities: topAmenities,
         photos: photos,
+        rooms: rooms.slice(0, 4),
         roomCount: accs.length,
         lang: curLang
       };
@@ -22114,9 +22171,12 @@ function buildAccorAdOnlyV6(ad) {
   var _brandBar = '<div class="ax7-brandbar">' + logoHtml + '</div>';
 
   // Deck: pages carry NO kicker titles (Nick: '"The hotel / L'hôtel",
-  // "Restauration & avis" — I hate the title') and the dining page exists
-  // ONLY when Accor actually returned restaurants — an empty dining page
-  // sold nothing ('what restaurant?? theres nothing on it').
+  // "Restauration & avis" — I hate the title'). Page 3 sells the OPTIONS
+  // Accor gives us that we never used (Nick: 'I asked for options such as
+  // menus and things we don't use'): real restaurants when the key returns
+  // them, the hotel's ROOM TYPES with their own photos, and the offer flags
+  // (complimentary breakfast, dining offers, on-site restaurant/bar) —
+  // never an empty page promising nothing.
   var _hasRests = !!(_master && _master.restaurants && _master.restaurants.length);
   var _restCards = _hasRests
     ? '<div class="ax7-rests">' + _master.restaurants.slice(0, 2).map(function (r) {
@@ -22126,21 +22186,39 @@ function buildAccorAdOnlyV6(ad) {
           + '</div>';
       }).join('') + '</div>'
     : '';
+  // Room-type cards from the accommodations catalog (name + own photo).
+  var _rooms = (_detail && Array.isArray(_detail.rooms)) ? _detail.rooms.filter(function (r) { return r && r.name; }) : [];
+  var _roomCards = _rooms.length
+    ? '<div class="ax7-rooms">' + _rooms.slice(0, 3).map(function (r) {
+        return '<div class="ax7-room">'
+          + (r.photo ? '<div class="ax7-room-photo" style="background-image:url(\'' + esc(r.photo) + '\')"></div>' : '')
+          + '<div class="ax7-room-name">' + esc(r.name) + '</div>'
+          + '</div>';
+      }).join('') + '</div>'
+    : '';
+  // Offer chips — the flags/prose Accor sends that never made the card:
+  // dining advantages, COMPLIMENTARY_BREAKFAST / DINING_OFFER labels,
+  // on-site restaurant / bar / room service amenity flags (_restList
+  // aggregates exactly these upstream).
+  var _offerChips = _chipList(_restList.slice(0, 4), 'ax7-amen-dine');
+  var _hasP3 = _hasRests || _rooms.length > 0 || _restList.length > 0;
   var _pageBodies = [];
   // P1 — THE PROPERTY: name, stars + score + reviews, address, distances
   _pageBodies.push({ photo: _ph0, body:
       (showName ? '<h1 class="ax7-name axr-one-line">'+esc(displayName)+'</h1>' : '')
     + _starsScoreRow + _addrLineHtml
     + (_locLineHtml ? '<div class="ax7-loc">'+_locLineHtml+'</div>' : '') });
-  // P2 — amenity pills + blurb; carries the score + QR close when no dining page follows
+  // P2 — amenity pills + blurb; carries the QR close when no page 3 follows
   _pageBodies.push({ photo: _ph1, body:
       _chipList(_amenList)
     + (_blurb ? '<p class="ax7-blurb">'+esc(_blurb)+'</p>' : '')
-    + (_hasRests ? '' : '<div class="ax7-close-row">' + _qr7 + '</div>') });
-  // P3 — real dining only: restaurant cards + score + QR
-  if (_hasRests) {
-    _pageBodies.push({ photo: _ph2, body:
-        _restCards
+    + (_hasP3 ? '' : '<div class="ax7-close-row">' + _qr7 + '</div>') });
+  // P3 — THE OPTIONS: restaurants (when real) → room types → offers → score + QR
+  if (_hasP3) {
+    var _p3Photo = (_rooms.length && _rooms[0].photo) ? _rooms[0].photo : _ph2;
+    _pageBodies.push({ photo: _hasRests ? _ph2 : _p3Photo, body:
+        _restCards + _roomCards
+      + (_hasRests ? '' : _offerChips)
       + '<div class="ax7-close-row">' + _scoreBlock + _qr7 + '</div>' });
   }
   function _dotsN(active, total) {
