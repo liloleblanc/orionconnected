@@ -2239,3 +2239,21 @@ html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
 html .g8-wrap .g8-r1-star {
   opacity: 0.95 !important;
 }
+
+/* ── Final-call / gate-closed takeover: WHITE text on the deep-red panel
+   (the navy ink was near-black on red — unreadable, Nick's YHZ shot),
+   plus the new flight-identity line. ── */
+html .g8-final .g8-final-hdr,
+html .g8-final .g8-final-allgrp,
+html .g8-final .g8-final-sub,
+html .g8-final .g8-final-flight {
+  color: #ffffff !important;
+}
+html .g8-final .g8-final-sub { opacity: 0.88; }
+html .g8-final .g8-final-flight {
+  font-size: clamp(26px, 3.6vh, 52px);
+  font-weight: 900;
+  letter-spacing: .01em;
+  margin-bottom: clamp(8px, 1.4vh, 20px);
+}
+html .g8-final .g8-final-flight .g8-final-sep { opacity: .55; font-weight: 400; }

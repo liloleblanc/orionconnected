@@ -6899,9 +6899,19 @@ function uxgGateHtml(ctx) {
     var finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
     var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
     var finalSub = isGateClosed ? '' : TL('proceedGate');
+    // Flight identity ON the takeover (Nick: 'why is there no flight info
+    // here') — the panel replaces the whole centre, so it must say WHICH
+    // flight it's calling.
+    var _fcDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
+    var _fcTime = currentFlight.upd || currentFlight.time || '';
+    var _fcInfo = '<div class="g8-final-flight">'
+      + (currentFlight.flight || '')
+      + (_fcDest ? ' <span class="g8-final-sep">·</span> ' + _fcDest + (locIata ? ' (' + locIata + ')' : '') : '')
+      + (_fcTime ? ' <span class="g8-final-sep">·</span> ' + _fcTime : '')
+      + '</div>';
     finalHtml = '<div class="g8-final active">'
       + '<div class="g8-final-hdr">' + finalHdr + '</div>'
-      + '<div class="g8-final-body"><div class="g8-final-text"><div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
+      + '<div class="g8-final-body"><div class="g8-final-text">' + _fcInfo + '<div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
       + '</div>';
   }
 
@@ -7547,7 +7557,9 @@ function uxgGateHtml(ctx) {
     // ticking.
     +   (function () {
           var _tbYQM = String(iata).toUpperCase() === 'YQM';
-          var _tbBg = _tbYQM ? '#003DA5' : 'var(--airline-accent3,#2f3946)';
+          // Non-YQM: a fixed deep slate — accent3 could match the gate accent
+          // (AC red next to red gate = 'red and red', per Nick at YHZ).
+          var _tbBg = _tbYQM ? '#003DA5' : '#1F2C44';
           var _tbTz = (AP[iata] || {}).tz || '';
           var _tbNow = '';
           try {
@@ -7568,10 +7580,10 @@ function uxgGateHtml(ctx) {
             : 'calc(var(--gate-rcw, 25%) - 30px)';
           return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
-            +   '<span style="font-size:clamp(13px,1.7vh,23px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
+            +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
             +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
             +     'Time <span style="opacity:.6">|</span> Heure</span>'
-            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(28px,4vh,56px);font-weight:900;color:#fff;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
+            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(36px,5.4vh,76px);font-weight:900;color:#fff;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
         })()
@@ -13350,7 +13362,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22156';
+var FIDS_BUILD_TAG = 'v22157';
 (function(){
   try {
     function _addTag(){
