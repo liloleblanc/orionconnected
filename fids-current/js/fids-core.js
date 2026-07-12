@@ -13374,7 +13374,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22163';
+var FIDS_BUILD_TAG = 'v22164';
 (function(){
   try {
     function _addTag(){
@@ -22372,6 +22372,10 @@ function buildAccorAdOnlyV6(ad) {
         + _heroImg(r.photo || _ph1) + '<div class="axr-hero-grad"></div>'
         + '<div class="axr-hotel">'
         + logoHtml
+        // Brands whose logo is just the wordmark (Novotel etc.) carry the
+        // property name under it (Nick); property lockups (Fairmont…)
+        // already have the name inside the artwork.
+        +   (lockupHasName ? '' : '<div class="axr-room-hotel">' + esc(displayName) + '</div>')
         +   '<div class="axr-page-ctx axr-room-name">' + esc(r.name) + '</div>'
         +   _list((r.amen || []).slice(0, 4))
         +   (_rd ? '<p class="axr-blurb">' + esc(_rd) + '</p>' : '')

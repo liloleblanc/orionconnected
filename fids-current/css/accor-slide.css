@@ -1156,3 +1156,12 @@
   font-size: calc(var(--axr-name) * 1.0);
   color: var(--all-gold);
 }
+
+/* Room pages, wordmark-only brands: property name sits under the wordmark. */
+.axr .axr-room-hotel {
+  font-family: var(--axr-display);
+  font-size: calc(var(--axr-name) * 0.88);
+  font-weight: 700;
+  color: #ffffff;
+  margin: calc(var(--axr-info) * 0.25) 0 calc(var(--axr-info) * 0.15);
+}
