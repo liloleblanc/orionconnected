@@ -22368,16 +22368,17 @@ function renderGateAd(index) {
         + '<video src="' + item.url + '" autoplay muted loop playsinline'
         + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + fit + ';object-position:' + posStr + ';transform:scale(' + zoom + ');"></video>';
     } else if (item.type === 'image' && item.url) {
-      // Blur-fill (Nick: kill the black bars): when the ad doesn't fill the
-      // panel ('contain'), back it with a blown-up blurred copy of ITSELF so
-      // every ad reads as designed-for-the-screen. inset:-48px + extra scale
-      // hide the blur's soft edges. 'cover' fills the panel, no backdrop needed.
-      var _blurBack = (fit === 'contain')
-        ? '<div style="position:absolute;inset:-48px;background-image:url(\'' + item.url
-          + '\');background-size:cover;background-position:center;background-repeat:no-repeat;'
-          + 'filter:blur(30px) brightness(.55) saturate(1.15);transform:scale(1.12);"></div>'
+      // Letterboxed ('contain') image ads sit on the BRANDED backdrop — the
+      // airline-accent vignette with the dots-world globe, same as video ads
+      // (Nick: the blur-fill of a mostly-WHITE ad like AC Altitude showed
+      // nothing; 'it should be similar to the one with the red, with the
+      // globe pattern'). 'cover' fills the panel, no backdrop needed.
+      var _brandBack = (fit === 'contain')
+        ? '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#101725 0%,#05070d 100%);"></div>'
+          + '<div style="position:absolute;inset:0;background:var(--airline-accent,#1c2a44);opacity:.18;"></div>'
+          + _adGlobeBackdrop()
         : '';
-      customHtml = _blurBack
+      customHtml = _brandBack
         + '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
         + '\');background-size:' + (fit === 'cover' ? 'cover' : 'contain') + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + zoom + ');"></div>';
     }
