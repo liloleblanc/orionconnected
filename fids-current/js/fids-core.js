@@ -4394,7 +4394,7 @@ function aircraftCodeToIata(raw) {
   // ── 737 Next Gen ──
   if (/737[\s-]*800/i.test(s)) return '738';
   if (/737[\s-]*900/i.test(s)) return '739';
-  if (/737[\s-]*700/i.test(s)) return '73H';
+  if (/737[\s-]*700/i.test(s)) return '73G'; // 73G = 737-700 (73H is the -800 — this returned the wrong airframe AND the wrong photo, Nick's C-FWSI case)
   if (/737[\s-]*600/i.test(s)) return '736';
   if (/737[\s-]*500/i.test(s)) return '735';
   if (/737[\s-]*400/i.test(s)) return '734';
@@ -5895,8 +5895,43 @@ function _buildV2MapCol(ctx, vars) {
       var _ibCityCode = _origCity
         ? (_origCity + (_origIata ? ' (' + _origIata + ')' : ''))
         : (_origIata || '—');
+      // Arrival row — RESTORED (Nick: 'we don't have an arrival time anymore
+      // on there, we did before and we need it'). Scheduled time, with a
+      // strike + revised time when the ETA moved: green when earlier (early
+      // is good), amber when later. Label flips to Arrived once it's in.
+      var _ibFmtT = function (ts) {
+        try { return new Date(ts).toLocaleTimeString('en-US', { timeZone: _tz || 'UTC', hour: 'numeric', minute: '2-digit', hour12: true }); }
+        catch (e) { return ''; }
+      };
+      var _ibArrSchedStr = _ibArrTs ? _ibFmtT(_ibArrTs) : '';
+      var _ibArrRevStr = (_ibRevTs && Math.abs(_ibRevTs - _ibArrTs) >= 60000) ? _ibFmtT(_ibRevTs) : '';
+      var _ibArrRowHtml = '';
+      if (_ibArrSchedStr) {
+        var _ibArrLblEn = (_stKey === 'arrived') ? 'Arrived' : 'Arrival';
+        var _ibArrLblFr = (_stKey === 'arrived') ? 'Arrivé' : 'Arrivée';
+        var _ibArrVal;
+        if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
+          // Revised time + a small 'revised | révisé' tag, ALL in the status
+          // colour (green when earlier — Nick: 'revised beside it and all
+          // green'). Mirrors the reg row's 'expected | prévu' treatment.
+          // Colour INLINE: the status-colour CSS targets the row value element
+          // itself, not spans inside it — the class alone left this navy and
+          // tiny (Nick: 'its not green'). Green earlier / amber later.
+          var _ibRevHex = (_ibRevTs < _ibArrTs) ? '#16a34a' : '#d97706';
+          _ibArrVal = '<span style="text-decoration:line-through;opacity:.5;margin-right:.45em;">' + _ibArrSchedStr + '</span>'
+                    + '<span style="color:' + _ibRevHex + ';font-weight:900;">' + _ibArrRevStr
+                    + ' <span style="font-size:.74em;font-weight:800;letter-spacing:.02em;">revised <span class="v2-rc-fi-sep" style="opacity:.55;">|</span> révisé</span></span>';
+        } else {
+          _ibArrVal = _ibArrSchedStr;
+        }
+        _ibArrRowHtml =
+            '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+          +   '<div class="v2-rc-fi-tlbl"><span>' + _ibArrLblEn + '</span><span>' + _ibArrLblFr + '</span></div>'
+          +   '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>'
+          + '</div>';
+      }
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table">'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table' + (_ibArrRowHtml ? ' v2-rc-fi-t4' : '') + '">'
         +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>Flight</span><span>Vol</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
@@ -5905,10 +5940,11 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-rc-fi-tlbl"><span>From</span><span>De</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +   '<div class="v2-rc-fi-trow' + (_ibArrRowHtml ? '' : ' v2-rc-fi-trow-last') + '">'
         +     '<div class="v2-rc-fi-tlbl"><span>Status</span><span>Statut</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +   '</div>'
+        +   _ibArrRowHtml
         + '</div></div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
@@ -6038,6 +6074,25 @@ function _buildV2MapCol(ctx, vars) {
     var _equipNm = _outEquipNm || _inbEquipNm;
     // v218.99.32 — Registration folded into aircraft block (two-column)
     var _acReg = (vars.currentFlight && vars.currentFlight._reg) || (_anyInb && _ib2 && _ib2._reg) || '';
+    // STICKY expected tail (Nick: 'that aircraft loves to change wow'): the
+    // history-based 'expected' reg flaps between candidate tails poll to
+    // poll, dragging the type + photo with it. Once a tail is shown for this
+    // flight, HOLD it — only a CONFIRMED (non-history) reg or a new flight
+    // may replace it; a blank poll never blanks the shelf.
+    try {
+      var _regSrcSt = String((vars.currentFlight && vars.currentFlight._regSource) || '');
+      var _fltKeySt = String((vars.currentFlight && (vars.currentFlight.flight || '')) || '') + '|' + String(vars.iata || '');
+      var _stickSt = window._gateRegSticky;
+      var _sameKeySt = _stickSt && _stickSt.k === _fltKeySt && (Date.now() - _stickSt.ts) < 6 * 3600000;
+      if (_acReg && !/^history/.test(_regSrcSt)) {
+        window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now() };
+      } else if (_acReg) {
+        if (_sameKeySt && _stickSt.reg) _acReg = _stickSt.reg;
+        else window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now() };
+      } else if (_sameKeySt && _stickSt.reg) {
+        _acReg = _stickSt.reg;
+      }
+    } catch (e) {}
 
     var _opCodeRaw = String(_cf._opCode || vars.airlineCode || '').trim().toUpperCase();
     var _opCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opCodeRaw]) ? CALLSIGN_TO_IATA[_opCodeRaw] : _opCodeRaw;
@@ -6150,9 +6205,22 @@ function _buildV2MapCol(ctx, vars) {
 
     var _acImg = '';
     try {
-      if (typeof aircraftImgTag === 'function' && _liveryEq) {
-        _acImg = aircraftImgTag(_liveryAirline, _liveryEq, {
-          rawModel: _equipNm || _equipCd || '',
+      // The photo must match the TAIL, not the schedule: a MAX 8 picture next
+      // to 'Boeing 737-700 | C-FWSI' contradicts itself (Nick). When the
+      // reg-true type is known, resolve the livery image from IT.
+      var _regTrueImg = (typeof _regTrueType === 'function' && _acReg) ? _regTrueType(_acReg) : '';
+      if (_regTrueImg && _opCode === 'RV') {
+        // Rouge: keep the Rouge paint but on the TRUE airframe — normalise the
+        // reg-true type to a code and re-apply the 'r' suffix (C-FZUG is an
+        // A319 → 319r.png, not the scheduled 321r; Nick: 'showing a 320
+        // picture with 319 registration').
+        var _rcRouge = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_regTrueImg) : '';
+        _regTrueImg = (_rcRouge && /^[A-Z0-9]{3}$/i.test(_rcRouge)) ? (_rcRouge + 'r') : '';
+      }
+      var _imgEq = _regTrueImg || _liveryEq;
+      if (typeof aircraftImgTag === 'function' && _imgEq) {
+        _acImg = aircraftImgTag(_liveryAirline, _imgEq, {
+          rawModel: _regTrueImg || _equipNm || _equipCd || '',
           reg: _acReg || ''
         });
       }
@@ -6262,6 +6330,14 @@ function _buildV2MapCol(ctx, vars) {
       // shrinks the line if it runs long.
       var _lang2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
       var _acModel = String(_equipNm || _equipCd || '');
+      // The REG is a specific airframe — its true type (ADB lookup, cached)
+      // beats the scheduled equipment, which lies on swaps (MAX 8 vs the
+      // -700 that C-FWSI actually is, per Nick).
+      try {
+        var _regTrue = (_acReg && typeof _regTrueType === 'function') ? _regTrueType(_acReg) : '';
+        if (_regTrue) _acModel = _regTrue;
+        if (typeof window !== 'undefined') window._gateAcRegShown = _acReg || '';
+      } catch (e) {}
       // A history-sourced tail is a real prior observation, not today's
       // confirmed assignment — qualify it, and drop the qualifier the moment
       // the enrichment retry lands today's reg (regSource flips off history).
@@ -8688,15 +8764,70 @@ const gView = document.getElementById('gateView');
               initGateMapLive(inb._locIata || apIata, apIata, _mfix.lat, _mfix.lng);
             }
           } else {
-            // No real airborne fix → pins only, NEVER a clock-estimated plane.
-            // A plane icon appears solely with live ADS-B coordinates (above).
-            var pinKey = (inb.status === 'arrived' || inb.status === 'landed') ? 'arr-pins' : 'inb-pins';
-            if (!gateMap || window._lastMapProgKey !== pinKey) {
-              window._lastMapProgKey = pinKey;
-              if (inb.status === 'arrived' || inb.status === 'landed') {
-                initGateMap(apIata, dstIata, -1);
-              } else {
-                initGateMap(inb._locIata, apIata, -1);
+            // No real airborne fix. Try an HONEST estimated glyph first: the
+            // shared ctx builder computes distance-based time-progress and only
+            // returns progress > 0 when the FEED says the flight is flying (or
+            // real altitude exists) — the phantom-plane guard lives there. The
+            // mini map thus matches the big takeover ('map still not', Nick).
+            var _estProg = 0;
+            if (inb.status !== 'arrived' && inb.status !== 'landed' && inb._locIata) {
+              // Compute from THIS inbound record directly — the shared ctx
+              // builder reads window._gateInbound and silently swaps to the
+              // OUTBOUND leg when that global isn't set yet, which made the
+              // glyph never appear here (Nick: 'map doesn't work still').
+              try {
+                var _stAirMini = /active|en-?route|departed/i.test(String(inb.status || ''))
+                  // revision evidence lives in _revTs OR the .upd string
+                  // depending on which enrichment built this object
+                  || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!(inb._revTs || inb.upd))
+                  || (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
+                var _arrTMini = inb._revTs || inb._sortTs || 0;
+                // STICKY airborne: once this flight has qualified, keep the
+                // glyph through polls whose object momentarily lacks the
+                // revision markers (Nick: 'no map again — not very stable').
+                // Expires 15 min after the effective arrival.
+                try {
+                  window._miniAirSticky = window._miniAirSticky || {};
+                  var _fkMini = String(inb.flight || '') + '|' + String(inb._locIata || '');
+                  if (_stAirMini) window._miniAirSticky[_fkMini] = Date.now();
+                  else if (window._miniAirSticky[_fkMini] && _arrTMini && Date.now() < _arrTMini + 15 * 60000) _stAirMini = true;
+                } catch (e) {}
+                var _apcMini = window.AIRPORT_COORDS || {};
+                var _ocMini = _apcMini[String(inb._locIata).toUpperCase()];
+                var _dcMini = _apcMini[String(apIata).toUpperCase()];
+                if (_stAirMini && _arrTMini && _ocMini && _dcMini) {
+                  var _toR = Math.PI / 180;
+                  var _dla = (_dcMini[0] - _ocMini[0]) * _toR, _dlo = (_dcMini[1] - _ocMini[1]) * _toR;
+                  var _hv = Math.sin(_dla / 2) * Math.sin(_dla / 2)
+                          + Math.cos(_ocMini[0] * _toR) * Math.cos(_dcMini[0] * _toR) * Math.sin(_dlo / 2) * Math.sin(_dlo / 2);
+                  var _kmMini = 6371 * 2 * Math.atan2(Math.sqrt(_hv), Math.sqrt(1 - _hv));
+                  var _durMini = Math.max(3600000, (_kmMini / 13 + 25) * 60000);   // ~780 km/h + 25 min
+                  var _pMini = (Date.now() - (_arrTMini - _durMini)) / _durMini;
+                  if (_pMini >= 0.02 && _pMini <= 0.98) _estProg = _pMini;
+                  try { console.log('[MINIMAP-EST]', { st: inb.status, revTs: !!inb._revTs, upd: inb.upd || '', air: _stAirMini, p: +(_pMini || 0).toFixed(3) }); } catch (e) {}
+                } else {
+                  try { console.log('[MINIMAP-EST] skipped', { st: inb.status, air: _stAirMini, arrTs: !!_arrTMini, oc: !!_ocMini, dc: !!_dcMini, loc: inb._locIata }); } catch (e) {}
+                }
+              } catch (e) {}
+            }
+            if (_estProg > 0) {
+              // Bucket the key so the glyph advances every ~2% of the route.
+              var progKey = 'inb-est-' + Math.round(_estProg * 50);
+              if (!gateMap || window._lastMapProgKey !== progKey) {
+                window._lastMapProgKey = progKey;
+                initGateMap(inb._locIata, apIata, _estProg);
+              }
+            } else {
+              // Pins only — a plane icon needs live coords or a feed-confirmed
+              // airborne estimate, never a bare clock.
+              var pinKey = (inb.status === 'arrived' || inb.status === 'landed') ? 'arr-pins' : 'inb-pins';
+              if (!gateMap || window._lastMapProgKey !== pinKey) {
+                window._lastMapProgKey = pinKey;
+                if (inb.status === 'arrived' || inb.status === 'landed') {
+                  initGateMap(apIata, dstIata, -1);
+                } else {
+                  initGateMap(inb._locIata, apIata, -1);
+                }
               }
             }
           }
@@ -21736,6 +21867,54 @@ function _liveFixPhysOk(inb) {
   } catch (e) { return true; }
 }
 
+// ── REG → TRUE AIRFRAME TYPE ────────────────────────────────────────────
+// The aircraft shelf glued the OUTBOUND's scheduled equipment to the
+// INBOUND's real tail — on an equipment swap that lies ('Boeing 737 MAX 8 |
+// C-FWSI' when C-FWSI is a 737-700, Nick). A registration IS a specific
+// airframe, so resolve its true type from ADB /aircrafts/reg/ (via the
+// proxy) and let it win. Cached permanently in localStorage — a tail's type
+// never changes — so each tail costs one lookup ever. Async: returns '' on
+// the first call and the ~15 s panel re-render picks up the cached answer.
+function _regTrueType(reg) {
+  try {
+    var r = String(reg || '').replace(/[^A-Z0-9-]/gi, '').toUpperCase();
+    if (!r || r.length < 4) return '';
+    window._regTypeCache = window._regTypeCache || {};
+    if (r in window._regTypeCache) return window._regTypeCache[r] || '';
+    var LS_KEY = 'fids_reg_type_v1';
+    var store = {};
+    try { store = JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch (e) {}
+    // Only POSITIVE answers come from the persistent store — a '' there is
+    // legacy poison from a failed lookup (it made the panel flip back to the
+    // scheduled type forever, Nick: 'ouch aircraft switched again').
+    if (store[r]) { window._regTypeCache[r] = store[r]; return store[r]; }
+    // In-flight/failed sentinel lives in MEMORY only, with an expiry so a
+    // transient API failure retries instead of poisoning the tail for good.
+    var _now = Date.now();
+    window._regTypeRetry = window._regTypeRetry || {};
+    if (window._regTypeRetry[r] && _now < window._regTypeRetry[r]) return '';
+    window._regTypeRetry[r] = _now + 10 * 60000;   // one attempt per 10 min max
+    fetch('https://fids-proxy.n-leblanc1984.workers.dev/aircrafts/reg/' + encodeURIComponent(r))
+      .then(function (resp) { return resp.ok ? resp.json() : null; })
+      .then(function (ac) {
+        // ADB aircraft objects vary: typeName / model / productionLine.
+        var t = ac ? String(ac.typeName || ac.model || ac.productionLine || '').trim() : '';
+        if (t && !/^(airbus|boeing|embraer|bombardier|de havilland|atr|mitsubishi|cessna|beech)/i.test(t)) {
+          var mfr = (String(ac.productionLine || '').match(/^(Airbus|Boeing|Embraer|Bombardier|De Havilland|ATR|Mitsubishi)/i) || [])[1] || '';
+          if (mfr) t = mfr + ' ' + t;
+        }
+        if (t) {
+          window._regTypeCache[r] = t;
+          try { store[r] = t; localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch (e) {}
+        }
+        try { console.log('[REGTYPE]', r, '→', t || '(no type in response — will retry)'); } catch (e) {}
+      })
+      .catch(function () { try { console.log('[REGTYPE]', r, 'lookup failed — will retry'); } catch (e) {} });
+    return '';
+  } catch (e) { return ''; }
+}
+if (typeof window !== 'undefined') window._regTrueType = _regTrueType;
+
 function _map3dFlightCtx(allowEstimated) {
   try {
     var inb = window._gateInbound;
@@ -21796,9 +21975,30 @@ function _map3dFlightCtx(allowEstimated) {
       arrTs = (arrTs && inb._durationMins) ? arrTs + inb._durationMins * 60000 : 0;
     }
     if (prog < 0) {
-      var depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : (arrTs ? arrTs - 7200000 : 0);
+      // No scheduled departure on the row → derive the flight duration from
+      // the route distance (~780 km/h + 25 min taxi/climb) instead of a flat
+      // 2 h. The flat guess pinned a 5 h Calgary/Edmonton inbound at progress
+      // 0 for its first 3 hours — glyph hidden under the origin pin, so the
+      // big map showed 'just dotted lines' (Nick).
+      var _estDurMs = 0;
+      try { _estDurMs = (_hav(oC, dC) / 13 + 25) * 60000; } catch (e) {}
+      var depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal)
+                : (arrTs ? arrTs - Math.max(3600000, _estDurMs || 7200000) : 0);
       if (depTs && arrTs > depTs) prog = Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
       else prog = 0;
+    }
+    // Phantom guard: a time-progress glyph only for a flight the FEED says is
+    // flying (or with real altitude). A clock alone must never launch a plane
+    // that is still at the origin gate — that was the original phantom bug.
+    if (!_legOut && !fixOk && prog > 0) {
+      var _stAirborne = /active|en-?route|departed/i.test(String(inb.status || ''))
+        // Early / On time WITH a live-revised ETA = the feed is actively
+        // tracking the flight (WS790 'Early, 6:03 PM' had no phase word but
+        // was unambiguously airborne, Nick). A bare punctuality word without
+        // a revision stays grounded — it can be assigned pre-departure.
+        || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!inb._revTs);
+      var _altAirborne = (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
+      if (!_stAirborne && !_altAirborne) prog = 0;
     }
     // Landed / at the gate → nothing to plot; the slide skips itself.
     if (prog >= 0.99 || inb.status === 'arrived' || inb.status === 'landed') return null;
@@ -21837,7 +22037,8 @@ function _map3dFlightCtx(allowEstimated) {
       // registration-backed OUTBOUND equipment (it's the same tail on the
       // turnaround) over the inbound row's often-generic type — the map
       // chip said 737-800 while the panel said 737 MAX 8 (Nick).
-      acType: ((window._gateCurrentFlight && window._gateCurrentFlight._aircraft) || inb._aircraft || ''),
+      acType: ((typeof _regTrueType === 'function' && window._gateAcRegShown) ? _regTrueType(window._gateAcRegShown) : '')
+           || ((window._gateCurrentFlight && window._gateCurrentFlight._aircraft) || inb._aircraft || ''),
       etaStr: etaStr,
       destWx: wx,
       estimated: !fixOk,

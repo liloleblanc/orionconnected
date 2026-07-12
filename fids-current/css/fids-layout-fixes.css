@@ -1845,6 +1845,63 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child {
   padding-bottom: 2px !important;
   margin-bottom: 2px !important;
 }
+/* Vertical centering — every label and value sits dead-centre in the HEIGHT
+   of its own row (Nick: 'the rows with the info need to be centered by
+   height within its row'). The table fills its shelf, rows share the height
+   EQUALLY (no more clipped first row), and content centres in each row. */
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table {
+  align-items: stretch !important;
+  height: 100% !important;
+  grid-auto-rows: minmax(0, 1fr) !important;
+  align-content: stretch !important;
+}
+/* Same for the LEFT rail (Nick: 'apply everywhere — especially the outbound
+   status'): every shelf row takes an EQUAL share of the rail and its copy
+   (icon + label + value) centres in that share, so the dividers land at even
+   intervals instead of hugging whichever row has the tallest value. */
+html .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  flex: 1 1 0 !important;
+  align-items: center !important;
+  min-height: 0 !important;
+}
+html .g8-wrap .gad-aircraft-col .v2-fi-row > .v2-fi-textcol {
+  justify-content: center !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  align-self: stretch !important;
+  display: flex !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;   /* padding/border INSIDE the equal track — else the last row clips */
+  overflow: hidden !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  align-items: center !important;
+}
+/* 4-row variant — the restored Arrival row overflowed the 3-row shelf and the
+   rows collided (Nick: 'see how tight that is'). Tighter type + rhythm so all
+   four rows breathe inside the same shelf. */
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl {
+  font-size: clamp(9px, 1.2vh, 13px) !important;
+  line-height: 1.05 !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tval {
+  font-size: clamp(14px, 2.05vh, 24px) !important;
+  line-height: 1.15 !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  padding-top: clamp(1px, 0.18vh, 2px) !important;
+  padding-bottom: clamp(1px, 0.18vh, 2px) !important;
+}
+html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl span:first-child {
+  padding-bottom: 1px !important;
+  margin-bottom: 1px !important;
+}
 /* Same treatment inside the BIG takeover panel's table. */
 html .bigcraft-side .v2-rc-fi-table {
   display: grid !important;
