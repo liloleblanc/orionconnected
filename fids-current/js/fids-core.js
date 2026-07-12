@@ -13374,7 +13374,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22162';
+var FIDS_BUILD_TAG = 'v22163';
 (function(){
   try {
     function _addTag(){
@@ -20316,6 +20316,15 @@ function fetchAccorHotelDetail(hotelId) {
       var rooms = [];
       accs.forEach(function(acc) {
         var rn = String(acc.name || acc.label || acc.title || (acc.room && (acc.room.name || acc.room.label)) || '').replace(/\s+/g, ' ').trim();
+        // Accor bed codes read like fare buckets ('DBL/DBL') — spell them
+        // out (Nick: 'DBL/DBL that is 2 Double Beds').
+        rn = rn.replace(/\bDBL\s*\/\s*DBL\b/gi, '2 Double Beds')
+               .replace(/\bTWN\s*\/\s*TWN\b/gi, '2 Twin Beds')
+               .replace(/\bQUE\s*\/\s*QUE\b/gi, '2 Queen Beds')
+               .replace(/\bKNG\b/gi, 'King Bed')
+               .replace(/\bQUE\b/gi, 'Queen Bed')
+               .replace(/\bDBL\b/gi, 'Double Bed')
+               .replace(/\bTWN\b/gi, 'Twin Beds');
         if (!rn || roomsSeen[rn.toLowerCase()]) return;
         roomsSeen[rn.toLowerCase()] = 1;
         var rp = '';
@@ -22363,7 +22372,7 @@ function buildAccorAdOnlyV6(ad) {
         + _heroImg(r.photo || _ph1) + '<div class="axr-hero-grad"></div>'
         + '<div class="axr-hotel">'
         + logoHtml
-        +   '<div class="axr-page-ctx">' + esc(r.name) + '</div>'
+        +   '<div class="axr-page-ctx axr-room-name">' + esc(r.name) + '</div>'
         +   _list((r.amen || []).slice(0, 4))
         +   (_rd ? '<p class="axr-blurb">' + esc(_rd) + '</p>' : '')
         + '</div></div>';

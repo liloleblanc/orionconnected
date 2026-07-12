@@ -1149,3 +1149,10 @@
 .axr[data-brand-code="BKF"] .axr-amen span{ background:none; border:none; padding:0; color:#FFFFFF; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
 .axr[data-brand-code="BKF"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#27AAE1; }
 .axr[data-brand-code="BKF"] .axr-all{ background:color-mix(in srgb, #102A3A 86%, #000); }
+
+/* Room pages: the room-type heading a touch smaller and in the brand accent
+   so it reads as a category label, not a second hotel name (Nick). */
+.axr .axr-page-ctx.axr-room-name {
+  font-size: calc(var(--axr-name) * 1.0);
+  color: var(--all-gold);
+}
