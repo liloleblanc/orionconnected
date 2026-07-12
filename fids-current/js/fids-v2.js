@@ -184,6 +184,17 @@
         nameKey = window.TIO_ICON[numKey];
       }
     }
+    // v223 — clean animated icon set (same icons the arrival-weather card
+    // uses): the old sprite bakes a teal disc behind every icon, which
+    // clashed with every board theme (Nick: 'the colors for the weather are
+    // not at all matching'). Sprite kept below as fallback for names the
+    // animated set doesn't cover.
+    const _animSet = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'mist':1,'overcast-day':1,'overcast':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'thunderstorms-day-rain':1,'thunderstorms-rain':1,'wind':1 };
+    if (_animSet[nameKey]) {
+      return '<img class="fids-wx-cell" src="/logos/weather/animated/' + nameKey + '.svg" alt="" aria-hidden="true" style="'
+        + 'display:inline-block;width:' + size + 'px;height:' + size + 'px;'
+        + 'flex-shrink:0;object-fit:contain;vertical-align:middle;">';
+    }
     const iconKey = WX_CODE_MAP[nameKey] || 'clear';
     const cell = WX_CELL[iconKey];
     if (!cell) return '';

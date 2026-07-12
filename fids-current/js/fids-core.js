@@ -13302,7 +13302,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22150';
+var FIDS_BUILD_TAG = 'v22151';
 (function(){
   try {
     function _addTag(){
@@ -20502,7 +20502,20 @@ function _processAccorData(data, destIata, langKey) {
         .replace(/,?\s*fairmont\s*$/i, '')
         .replace(/^the\s+/i, '')
         .trim();
-      if (FAIRMONT_PROPERTY_LOCKUPS[_lockupKey]) {
+      // French property names (Nick: 'in French [Queen] Elizabeth is
+      // Fairmont Le Reine Elizabeth') — on FR boards, compose the lockup
+      // with the official French property name instead of the English file.
+      var _frLockupName = null;
+      try {
+        var _curL = (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) ? langs[langIdx || 0]
+                  : ((typeof lang !== 'undefined' && lang) || 'en');
+        if (_curL === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(hotelName)) {
+          _frLockupName = 'Le Reine Elizabeth';
+        }
+      } catch (e) {}
+      if (_frLockupName && typeof makeFairmontLockupSvgDataUri === 'function') {
+        _propertyLockupPath = makeFairmontLockupSvgDataUri(_frLockupName);
+      } else if (FAIRMONT_PROPERTY_LOCKUPS[_lockupKey]) {
         // Official brand-team file — preferred
         _propertyLockupPath = FAIRMONT_PROPERTY_LOCKUPS[_lockupKey];
       } else if (FAIRMONT_PROPERTY_LOCKUPS[hotelName.toLowerCase().trim()]) {
@@ -22541,7 +22554,12 @@ function renderGateAd(index) {
   // ── Custom theme slide (image or video uploaded via Media Library) ──
   if (slide && slide.type === 'custom' && slide.item) {
     var item = slide.item;
-    window._adDiag = 'car-' + (item.type || '?') + '/' + ((item.fit === 'cover') ? 'cover' : 'contain');
+    // Include the media file's basename so a misbehaving slide (e.g. the
+    // white/blank video from Nick's 2026-07-12 screenshot) can be identified
+    // straight from the corner stamp.
+    var _diagBase = '';
+    try { _diagBase = String(item.url || '').split('?')[0].split('/').pop().slice(-28); } catch (e) {}
+    window._adDiag = 'car-' + (item.type || '?') + '/' + ((item.fit === 'cover') ? 'cover' : 'contain') + (_diagBase ? ':' + _diagBase : '');
     // Per-item display controls (set in the Media Library preview/adjust panel).
     // fit: 'contain' (show whole, default) | 'cover' (fill+crop)
     // zoom: 1 = natural; posX/posY: 0-100 framing when zoomed/cover.
@@ -24899,6 +24917,16 @@ setInterval(function () {
     if (_st !== 'main') return;
     if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
     if (bn.style.display === 'none') bn.style.display = '';
+    // Third failure mode (Nick's 2026-07-12 screenshot: table at y=0, banner
+    // gone entirely): the banner is COLLAPSED — hidden by a stylesheet rule
+    // or a stray class rather than inline display. Inline-clearing above
+    // can't heal that, so force it visible at the !important level.
+    if (!bn.offsetHeight) {
+      bn.style.setProperty('display', 'flex', 'important');
+      bn.style.setProperty('visibility', 'visible', 'important');
+      bn.style.setProperty('opacity', '1', 'important');
+      try { console.warn('[TOP-WATCHDOG] banner was collapsed — forced visible; classes:', bn.className); } catch (e) {}
+    }
   } catch (e) {}
 }, 5000);
 
