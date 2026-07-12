@@ -6973,7 +6973,7 @@ function uxgGateHtml(ctx) {
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/StarGray.svg',  // official grey lockup (Nick's upload)
+    'star':     '/logos/airlines/alliances/StarGray-bright-text.svg',  // Nick's lockup, lettering brightened for the black band
     'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
@@ -13374,7 +13374,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22166';
+var FIDS_BUILD_TAG = 'v22167';
 (function(){
   try {
     function _addTag(){
