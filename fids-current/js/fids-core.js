@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22145';
+var FIDS_BUILD_TAG = 'v22146';
 (function(){
   try {
     function _addTag(){
@@ -19338,12 +19338,16 @@ function _ensureMediaFrame() {
   _mediaFrameEl.style.pointerEvents = 'none';
   _mediaFrameEl.style.overflow = 'hidden';
   _mediaFrameEl.style.display = 'none';
-  _mediaFrameEl.innerHTML = (typeof _adGlobeBackdrop === 'function') ? _adGlobeBackdrop() : '';
   document.body.appendChild(_mediaFrameEl);
   return _mediaFrameEl;
 }
-function _positionMediaFrame(r) {
+function _positionMediaFrame(r, blurUrl) {
   var f = _ensureMediaFrame();
+  var _bk = String(blurUrl || '');
+  if (f._blurKey !== _bk) {
+    f._blurKey = _bk;
+    f.innerHTML = (typeof _adBackdropHtml === 'function') ? _adBackdropHtml(_bk) : '';
+  }
   // The frame lives on <body>, outside .g8-wrap — pull the airline accent
   // across so the handles keep the airline's colour.
   try {
@@ -19418,13 +19422,13 @@ function playUploadedVideo(slot, videoUrl, playback) {
     if (_nativeVideoEl.style.display === 'none') return;
     var r = _vvr || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return; // detached element
-    var _nvIx = Math.round(r.width * 0.06), _nvIy = Math.round(r.height * 0.06);
+    var _nvIx = Math.round(r.width * 0.025), _nvIy = Math.round(r.height * 0.025);
     _nativeVideoEl.style.left = Math.round(r.left + _nvIx) + 'px';
     _nativeVideoEl.style.top = Math.round(r.top + _nvIy) + 'px';
     _nativeVideoEl.style.width = Math.round(r.width - 2 * _nvIx) + 'px';
     _nativeVideoEl.style.height = Math.round(r.height - 2 * _nvIy) + 'px';
     _nativeVideoEl.style.display = 'block';
-    try { _positionMediaFrame(r); } catch (e) {}
+    try { _positionMediaFrame(r, ''); } catch (e) {}
   }
   _positionNative();
   if (_videoResizeObserver) { try { _videoResizeObserver.disconnect(); } catch(e){} _videoResizeObserver = null; }
@@ -19518,13 +19522,13 @@ function playLibraryImage(slot, item) {
     if (_libImgEl.style.display === 'none') return;
     var r = _vir || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
-    var _liIx = Math.round(r.width * 0.06), _liIy = Math.round(r.height * 0.06);
+    var _liIx = Math.round(r.width * 0.025), _liIy = Math.round(r.height * 0.025);
     _libImgEl.style.left = Math.round(r.left + _liIx) + 'px';
     _libImgEl.style.top = Math.round(r.top + _liIy) + 'px';
     _libImgEl.style.width = Math.round(r.width - 2 * _liIx) + 'px';
     _libImgEl.style.height = Math.round(r.height - 2 * _liIy) + 'px';
     _libImgEl.style.display = 'block';
-    try { _positionMediaFrame(r); } catch (e) {}
+    try { _positionMediaFrame(r, item.url); } catch (e) {}
   }
   _libImgEl.src = item.url;
   _positionImg();
@@ -21012,9 +21016,9 @@ function buildGateAdHtml(ad) {
     if (_vidFit === 'contain' && typeof _adGlobeBackdrop === 'function') {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
-        + _adGlobeBackdrop()
+        + _adBackdropHtml('')
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
-        + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;display:block;filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));"'
+        + ' style="position:absolute;left:2.5%;top:2.5%;width:95%;height:95%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
         + ' onerror="this.style.display=\'none\';"></video>'
         + '</div>'
       );
@@ -21040,8 +21044,8 @@ function buildGateAdHtml(ad) {
     if (_imgFit === 'contain' && typeof _adGlobeBackdrop === 'function') {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
-        + _adGlobeBackdrop()
-        + '<img src="' + ad.bgImage + '" alt="" style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));">'
+        + _adBackdropHtml(ad.bgImage)
+        + '<img src="' + ad.bgImage + '" alt="" style="position:absolute;left:2.5%;top:2.5%;width:95%;height:95%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">'
         + '</div>'
       );
     }
@@ -22572,21 +22576,27 @@ function _map3dFlightCtx(allowEstimated) {
 // world… I did like this — also the pattern'). Same recipe as that panel:
 // soft white brushed base, the dotted globe faded in grey (multiply, rising
 // from the bottom), and the airline-accent diagonal 'handles' at both edges.
-function _adGlobeBackdrop() {
-  return ''
-    // light brushed base (matches the board's panel metal)
-    + '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#f7f9fc 0%,#e9edf3 55%,#dfe4ec 100%);"></div>'
-    // dots world — grey multiply, rising from the bottom like the aircraft panel
-    + '<div style="position:absolute;left:-10%;right:-10%;bottom:-8%;height:64%;'
-    +   'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
-    +   'background-size:cover;background-position:center top;background-repeat:no-repeat;'
-    +   'opacity:.5;filter:grayscale(1) brightness(0.97) contrast(1.25);mix-blend-mode:multiply;pointer-events:none;"></div>'
-    // accent HANDLES — skewed ribbons hugging the left and right edges
-    + '<div style="position:absolute;top:-8%;bottom:-8%;left:-3.5%;width:6.5%;background:var(--airline-accent,#D82F2E);transform:skewX(-14deg);pointer-events:none;"></div>'
-    + '<div style="position:absolute;top:-8%;bottom:-8%;left:4.2%;width:1%;background:var(--airline-accent,#D82F2E);opacity:.45;transform:skewX(-14deg);pointer-events:none;"></div>'
-    + '<div style="position:absolute;top:-8%;bottom:-8%;right:-3.5%;width:6.5%;background:var(--airline-accent,#D82F2E);transform:skewX(-14deg);pointer-events:none;"></div>'
-    + '<div style="position:absolute;top:-8%;bottom:-8%;right:4.2%;width:1%;background:var(--airline-accent,#D82F2E);opacity:.45;transform:skewX(-14deg);pointer-events:none;"></div>';
+function _adBackdropHtml(blurUrl) {
+  // BLEND backdrop (Nick: 'nothing blends, it's just pasted'): images fill
+  // their own surround with a blown-up blurred copy of themselves (TV
+  // ambient), videos get a dark airline-accent vignette (a second decoding
+  // video would OOM the stream box). The dots world breathes through both,
+  // and the accent handles hold the edges.
+  var base = blurUrl
+    ? '<div style="position:absolute;inset:-60px;background-image:url(\'' + blurUrl + '\');'
+      + 'background-size:cover;background-position:center;filter:blur(46px) saturate(1.2) brightness(.92);transform:scale(1.15);"></div>'
+      + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.16);"></div>'
+    : '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#151c2a 0%,#0a0e16 100%);"></div>'
+      + '<div style="position:absolute;inset:0;background:var(--airline-accent,#D82F2E);opacity:.22;"></div>';
+  var dots = '<div style="position:absolute;left:-10%;right:-10%;bottom:-8%;height:64%;'
+    + 'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
+    + 'background-size:cover;background-position:center top;background-repeat:no-repeat;'
+    + 'opacity:.22;filter:grayscale(1) brightness(1.7);mix-blend-mode:screen;pointer-events:none;"></div>';
+  var handles = '<div style="position:absolute;top:-8%;bottom:-8%;left:-3.5%;width:6%;background:var(--airline-accent,#D82F2E);opacity:.9;transform:skewX(-14deg);pointer-events:none;"></div>'
+    + '<div style="position:absolute;top:-8%;bottom:-8%;right:-3.5%;width:6%;background:var(--airline-accent,#D82F2E);opacity:.9;transform:skewX(-14deg);pointer-events:none;"></div>';
+  return base + dots + handles;
 }
+function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
 // viewport bottom and under the side columns (v22144 stamp proved it: the
@@ -22684,9 +22694,9 @@ function renderGateAd(index) {
         var _wrapStyle = _vv
           ? 'position:absolute;left:' + Math.round(_vv.left - _vv.elLeft) + 'px;top:' + Math.round(_vv.top - _vv.elTop) + 'px;width:' + Math.round(_vv.width) + 'px;height:' + Math.round(_vv.height) + 'px;overflow:hidden;'
           : 'position:absolute;inset:0;overflow:hidden;';
-        customHtml = '<div style="' + _wrapStyle + '">' + _adGlobeBackdrop()
+        customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));"></video>'
+          + ' style="position:absolute;left:2.5%;top:2.5%;width:95%;height:95%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>'
           + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
@@ -22703,9 +22713,9 @@ function renderGateAd(index) {
         var _wrapStyleI = _vi
           ? 'position:absolute;left:' + Math.round(_vi.left - _vi.elLeft) + 'px;top:' + Math.round(_vi.top - _vi.elTop) + 'px;width:' + Math.round(_vi.width) + 'px;height:' + Math.round(_vi.height) + 'px;overflow:hidden;'
           : 'position:absolute;inset:0;overflow:hidden;';
-        customHtml = '<div style="' + _wrapStyleI + '">' + _adGlobeBackdrop()
+        customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
           + '<img src="' + item.url + '" alt=""'
-          + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));">'
+          + ' style="position:absolute;left:2.5%;top:2.5%;width:95%;height:95%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">'
           + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
