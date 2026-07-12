@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22141';
+var FIDS_BUILD_TAG = 'v22142';
 (function(){
   try {
     function _addTag(){
@@ -19403,10 +19403,11 @@ function playUploadedVideo(slot, videoUrl, playback) {
     if (_nativeVideoEl.style.display === 'none') return;
     var r = liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return; // detached element
-    _nativeVideoEl.style.left = Math.round(r.left) + 'px';
-    _nativeVideoEl.style.top = Math.round(r.top) + 'px';
-    _nativeVideoEl.style.width = Math.round(r.width) + 'px';
-    _nativeVideoEl.style.height = Math.round(r.height) + 'px';
+    var _nvIx = Math.round(r.width * 0.06), _nvIy = Math.round(r.height * 0.06);
+    _nativeVideoEl.style.left = Math.round(r.left + _nvIx) + 'px';
+    _nativeVideoEl.style.top = Math.round(r.top + _nvIy) + 'px';
+    _nativeVideoEl.style.width = Math.round(r.width - 2 * _nvIx) + 'px';
+    _nativeVideoEl.style.height = Math.round(r.height - 2 * _nvIy) + 'px';
     _nativeVideoEl.style.display = 'block';
     try { _positionMediaFrame(r); } catch (e) {}
   }
@@ -19500,10 +19501,11 @@ function playLibraryImage(slot, item) {
     if (_libImgEl.style.display === 'none') return;
     var r = liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
-    _libImgEl.style.left = Math.round(r.left) + 'px';
-    _libImgEl.style.top = Math.round(r.top) + 'px';
-    _libImgEl.style.width = Math.round(r.width) + 'px';
-    _libImgEl.style.height = Math.round(r.height) + 'px';
+    var _liIx = Math.round(r.width * 0.06), _liIy = Math.round(r.height * 0.06);
+    _libImgEl.style.left = Math.round(r.left + _liIx) + 'px';
+    _libImgEl.style.top = Math.round(r.top + _liIy) + 'px';
+    _libImgEl.style.width = Math.round(r.width - 2 * _liIx) + 'px';
+    _libImgEl.style.height = Math.round(r.height - 2 * _liIy) + 'px';
     _libImgEl.style.display = 'block';
     try { _positionMediaFrame(r); } catch (e) {}
   }
@@ -20995,7 +20997,7 @@ function buildGateAdHtml(ad) {
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adGlobeBackdrop()
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
-        + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;"'
+        + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;display:block;filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));"'
         + ' onerror="this.style.display=\'none\';"></video>'
         + '</div>'
       );
@@ -21022,7 +21024,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adGlobeBackdrop()
-        + '<div style="position:absolute;inset:0;background-image:url(\'' + ad.bgImage + '\');background-size:contain;background-position:center;background-repeat:no-repeat;"></div>'
+        + '<img src="' + ad.bgImage + '" alt="" style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));">'
         + '</div>'
       );
     }
@@ -22625,19 +22627,31 @@ function renderGateAd(index) {
       // rising from the bottom as a faint screen-blend glow over an
       // accent-tinted vignette. NOT a blurred video copy — a second decoding
       // <video> would double the decode load and OOM the small stream box.
-      customHtml = _adGlobeBackdrop()
-        + '<video src="' + item.url + '" autoplay muted loop playsinline'
-        + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + fit + ';object-position:' + posStr + ';transform:scale(' + zoom + ');"></video>';
+      if (fit === 'contain') {
+        // Card-on-frame: the ad floats inset over the branded surround. The
+        // per-item zoom is a cover-mode crop tool — honoured there, ignored
+        // here so a zoomed white clip can't bury the frame (Nick's Cargo ad).
+        customHtml = _adGlobeBackdrop()
+          + '<video src="' + item.url + '" autoplay muted loop playsinline'
+          + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));"></video>';
+      } else {
+        customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
+          + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:' + posStr + ';transform:scale(' + zoom + ');"></video>';
+      }
     } else if (item.type === 'image' && item.url) {
       // Letterboxed ('contain') image ads sit on the BRANDED backdrop — the
       // airline-accent vignette with the dots-world globe, same as video ads
       // (Nick: the blur-fill of a mostly-WHITE ad like AC Altitude showed
       // nothing; 'it should be similar to the one with the red, with the
       // globe pattern'). 'cover' fills the panel, no backdrop needed.
-      var _brandBack = (fit === 'contain') ? _adGlobeBackdrop() : '';
-      customHtml = _brandBack
-        + '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
-        + '\');background-size:' + (fit === 'cover' ? 'cover' : 'contain') + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + zoom + ');"></div>';
+      if (fit === 'contain') {
+        customHtml = _adGlobeBackdrop()
+          + '<img src="' + item.url + '" alt=""'
+          + ' style="position:absolute;left:7%;top:7%;width:86%;height:86%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 10px 30px rgba(10,20,40,0.30));">';
+      } else {
+        customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
+          + '\');background-size:cover;background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + zoom + ');"></div>';
+      }
     }
     // include framing controls in the dedupe key so adjustments re-render live
     var _frameKey = fit + zoom + posX + posY;
