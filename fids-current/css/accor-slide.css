@@ -1154,7 +1154,10 @@
    so it reads as a category label, not a second hotel name (Nick). */
 .axr .axr-page-ctx.axr-room-name {
   font-size: calc(var(--axr-name) * 1.0);
-  color: var(--all-gold);
+  /* accent hue lightened toward white — pure brand accents (Novotel blue)
+     were too dark to read over the hero photo (Nick) */
+  color: color-mix(in srgb, var(--all-gold) 45%, #fff);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
 }
 
 /* Room pages, wordmark-only brands: property name sits under the wordmark. */
