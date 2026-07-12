@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22148';
+var FIDS_BUILD_TAG = 'v22149';
 (function(){
   try {
     function _addTag(){
@@ -19422,10 +19422,12 @@ function playUploadedVideo(slot, videoUrl, playback) {
     if (_nativeVideoEl.style.display === 'none') return;
     var r = _vvr || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return; // detached element
-    var _nvIx = Math.round(r.width * 0.025), _nvIy = Math.round(r.height * 0.025);
-    _nativeVideoEl.style.left = Math.round(r.left + _nvIx) + 'px';
+    // Full width, tiny vertical breathing room (Nick: 'entire width, stretch
+    // a bit up not much').
+    var _nvIy = Math.round(r.height * 0.0125);
+    _nativeVideoEl.style.left = Math.round(r.left) + 'px';
     _nativeVideoEl.style.top = Math.round(r.top + _nvIy) + 'px';
-    _nativeVideoEl.style.width = Math.round(r.width - 2 * _nvIx) + 'px';
+    _nativeVideoEl.style.width = Math.round(r.width) + 'px';
     _nativeVideoEl.style.height = Math.round(r.height - 2 * _nvIy) + 'px';
     _nativeVideoEl.style.display = 'block';
     try { _positionMediaFrame(r, ''); } catch (e) {}
@@ -19522,10 +19524,12 @@ function playLibraryImage(slot, item) {
     if (_libImgEl.style.display === 'none') return;
     var r = _vir || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
-    var _liIx = Math.round(r.width * 0.025), _liIy = Math.round(r.height * 0.025);
-    _libImgEl.style.left = Math.round(r.left + _liIx) + 'px';
+    // Full width, tiny vertical breathing room (Nick: 'entire width, stretch
+    // a bit up not much').
+    var _liIy = Math.round(r.height * 0.0125);
+    _libImgEl.style.left = Math.round(r.left) + 'px';
     _libImgEl.style.top = Math.round(r.top + _liIy) + 'px';
-    _libImgEl.style.width = Math.round(r.width - 2 * _liIx) + 'px';
+    _libImgEl.style.width = Math.round(r.width) + 'px';
     _libImgEl.style.height = Math.round(r.height - 2 * _liIy) + 'px';
     _libImgEl.style.display = 'block';
     try { _positionMediaFrame(r, item.url); } catch (e) {}
@@ -20184,6 +20188,18 @@ function fetchAccorHotelDetail(hotelId) {
         var rd = String(acc.description || acc.shortDescription || '').replace(/\s+/g, ' ').trim();
         rooms.push({ name: rn, photo: rp, amen: ra.slice(0, 4), desc: rd });
       });
+      // Regulate room VARIETY: Accor lists bed-count variants of the same
+      // class as separate rooms ('Superior Room, 1 Queen Bed' / ', 2 Queen
+      // Beds'), so a naive top-3 could be three Superiors. Order one room
+      // per family (name before the comma) first, variants after — the ad
+      // builder's slice(0,3) then shows genuinely different room types.
+      var famSeen = {}, famFirst = [], famRest = [];
+      rooms.forEach(function(r) {
+        var fam = r.name.split(',')[0].toLowerCase().trim();
+        if (!famSeen[fam]) { famSeen[fam] = 1; famFirst.push(r); }
+        else famRest.push(r);
+      });
+      rooms = famFirst.concat(famRest);
 
       ACCOR_HOTEL_DETAIL_CACHE[cacheKey] = {
         ts: Date.now(),
@@ -21018,7 +21034,7 @@ function buildGateAdHtml(ad) {
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml('')
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
-        + ' style="position:absolute;left:2.5%;top:2.5%;width:95%;height:95%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
+        + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
         + ' onerror="this.style.display=\'none\';"></video>'
         + '</div>'
       );
@@ -21045,7 +21061,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml(ad.bgImage)
-        + '<img src="' + ad.bgImage + '" alt="" style="position:absolute;left:2.5%;top:2.5%;width:95%;height:95%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">'
+        + '<img src="' + ad.bgImage + '" alt="" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">'
         + '</div>'
       );
     }
@@ -22132,7 +22148,10 @@ function buildAccorAdOnlyV6(ad) {
   function _heroImg(u){ return u ? '<div class="axr-hero-img" style="background-image:url(\''+esc(u)+'\')"></div>' : '<div class="axr-hero-img axr-hero-noimg"></div>'; }
   function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul>' : ''; }
   var _ph0 = _photoSet[0]||photo||'', _ph1 = _photoSet[1]||_ph0, _ph2 = _photoSet[2]||_ph1;
-  var _ctxName   = '<div class="axr-page-ctx">'+esc(_fullName)+'</div>';
+  // Continuation pages carry the brand LOGO (Nick: 'the logo should be on
+  // all screens'), so the context name is the brand-stripped property name —
+  // wordmark + full name would print the brand twice.
+  var _ctxName   = '<div class="axr-page-ctx">'+esc(displayName)+'</div>';
   var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
   var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
 
@@ -22147,7 +22166,7 @@ function buildAccorAdOnlyV6(ad) {
   var _page2 = '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
-    +   '<div class="axr-page-kicker">'+esc(_kHotel)+'</div>' + _ctxName
+    + logoHtml + _ctxName
     +   _list(_amenList) + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
     + '</div></div>';
   // Page 3 — DINING & REVIEWS: restaurants + guest rating + QR
@@ -22155,7 +22174,7 @@ function buildAccorAdOnlyV6(ad) {
     + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'
     + bubbleHtml
     + '<div class="axr-hotel">'
-    +   '<div class="axr-page-kicker">'+esc(_kDining)+'</div>' + _ctxName
+    + logoHtml + _ctxName
     +   _list(_restList) + _ratingRow
     + '</div></div>';
 
@@ -22177,6 +22196,7 @@ function buildAccorAdOnlyV6(ad) {
       return '<div class="axr-page">'
         + _heroImg(r.photo || _ph1) + '<div class="axr-hero-grad"></div>'
         + '<div class="axr-hotel">'
+        + logoHtml
         +   '<div class="axr-page-ctx">' + esc(r.name) + '</div>'
         +   _list((r.amen || []).slice(0, 4))
         +   (_rd ? '<p class="axr-blurb">' + esc(_rd) + '</p>' : '')
@@ -22528,7 +22548,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' style="position:absolute;left:2.5%;top:2.5%;width:95%;height:95%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>'
+          + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>'
           + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
@@ -22547,7 +22567,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
           + '<img src="' + item.url + '" alt=""'
-          + ' style="position:absolute;left:2.5%;top:2.5%;width:95%;height:95%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">'
+          + ' style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">'
           + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
@@ -23787,7 +23807,15 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     if (s) { s.style.height = '100%'; s.style.width = 'auto'; s.style.maxWidth = '100%'; }
     if (isHotelLogo && s) {
       var shapes = s.querySelectorAll('path,polygon,rect,circle,ellipse');
-      for (var k = 0; k < shapes.length; k++) shapes[k].style.fill = '#fff';
+      for (var k = 0; k < shapes.length; k++) {
+        // Skip fill:none shapes — brand SVG exports (e.g. Pullman) carry a
+        // full-canvas bounds <rect fill="none">; force-filling it painted a
+        // solid white box over the whole wordmark.
+        var _sf = '';
+        try { _sf = (getComputedStyle(shapes[k]).fill || '').toLowerCase(); } catch (e) {}
+        if (_sf === 'none') continue;
+        shapes[k].style.fill = '#fff';
+      }
     }
   }
   function _cropLockup(img) {
@@ -24592,8 +24620,15 @@ function _renderWxCard(el) {
     // into the cache key so an airline change re-tints.
     var _wxBg = 'linear-gradient(135deg, #0d2440 0%, #164a7c 100%)';
     try {
-      var _wxAcc = (typeof getAirlineAccent === 'function') ? getAirlineAccent((cf && cf.airline) || '') : '';
-      if (_wxAcc && typeof accentTint === 'function') _wxBg = accentTint(_wxAcc, 0.28);
+      // Use the LIVE gate theme (the .g8-wrap inline --airline-accent var,
+      // same source the media frame reads) — the static AIRLINE_ACCENT table
+      // misses codes and fell back to a generic blue that didn't match the
+      // board (Nick: 'the colors for the weather are not at all matching').
+      var _wxAcc = '';
+      var _wxGw = document.querySelector('.g8-wrap');
+      if (_wxGw) _wxAcc = (getComputedStyle(_wxGw).getPropertyValue('--airline-accent') || '').trim();
+      if (!_wxAcc && typeof getAirlineAccent === 'function') _wxAcc = getAirlineAccent((cf && cf.airline) || '');
+      if (_wxAcc && typeof accentTint === 'function') _wxBg = accentTint(_wxAcc, 0.42);
     } catch (e) {}
     var _wxSig = _wxHtml + '||' + _wxBg;
     if (el._wxLastHtml === _wxSig && el.querySelector && el.querySelector('.wxcard-wrap')) return true;
