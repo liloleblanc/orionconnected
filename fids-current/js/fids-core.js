@@ -13374,7 +13374,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22169';
+var FIDS_BUILD_TAG = 'v22170';
 (function(){
   try {
     function _addTag(){
@@ -24822,6 +24822,7 @@ function _renderWxCard(el) {
     } catch (eH) {}
     var _wxHtml =
         '<div class="wxcard-wrap wxcard-col">'
+      +   '<div class="wxc-globe" aria-hidden="true"></div>'
       +   '<div class="wxcard-main">'
       +     '<div class="wxc-head">'
       +       '<div><div class="wxc-kicker">Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée</div>'

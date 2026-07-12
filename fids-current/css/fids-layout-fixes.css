@@ -2291,3 +2291,21 @@ body.fids-ap-YQM .fids-banner-board .fids-board-label { color: #ffffff !importan
 body.fids-ap-YQM .fids-banner-board .fids-board-icon { background: #ffffff !important; }
 body.fids-ap-YQM .fids-banner-board .fids-board-icon svg { fill: #D21034 !important; }
 
+
+/* ── Arrival-weather scene: the dots-world globe breathes behind the card,
+   same treatment as the ad surround (Nick). ── */
+html .wxcard-wrap { position: relative !important; overflow: hidden !important; }
+html .wxcard-wrap > .wxc-globe {
+  position: absolute;
+  inset: -12%;
+  background-image: url('/logos/3d_globe_desktop.svg?v=2');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.38;
+  filter: grayscale(1) brightness(1.8);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 0;
+}
+html .wxcard-wrap > *:not(.wxc-globe) { position: relative; z-index: 1; }
