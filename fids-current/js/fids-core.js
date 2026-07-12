@@ -13271,7 +13271,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22146';
+var FIDS_BUILD_TAG = 'v22147';
 (function(){
   try {
     function _addTag(){
@@ -21927,20 +21927,6 @@ function buildAccorAdOnlyV6(ad) {
       try { fetchAccorHotelDetail(ad.hotelId); } catch (e) {}
     }
   }
-  // Hotel-level master record — REAL restaurants/bars + categorized photos.
-  var _master = null;
-  if (ad.hotelId && typeof ACCOR_HOTEL_MASTER_CACHE !== 'undefined') {
-    var _mLang = 'en';
-    try {
-      if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _mLang = langs[langIdx || 0];
-      else if (typeof lang !== 'undefined' && lang) _mLang = lang;
-    } catch (e) {}
-    _master = ACCOR_HOTEL_MASTER_CACHE[ad.hotelId + '|' + _mLang] || ACCOR_HOTEL_MASTER_CACHE[ad.hotelId] || null;
-    if ((!_master || _master.empty) && typeof fetchAccorHotelMaster === 'function') {
-      try { fetchAccorHotelMaster(ad.hotelId); } catch (e) {}
-    }
-    if (_master && _master.empty) _master = null;
-  }
   _photoSet = _photoSet.slice(0, 6);
   var _photosAttr = (_photoSet.length > 1) ? " data-photos='" + esc(JSON.stringify(_photoSet)) + "'" : '';
 
@@ -21978,7 +21964,9 @@ function buildAccorAdOnlyV6(ad) {
     }
     return s;
   }
-  var displayName=haveLogo?stripBrand(hotelName):String(hotelName).trim();
+  // Brand policy (Nick): never print the brand twice — the logo slot ALWAYS
+  // carries the brand (image or text label), so the name is always stripped.
+  var displayName=stripBrand(hotelName);
   // Property lockups (Fairmont/Emblems per-property art, runtime-generated or
   // brand-team file) already bake the property name INTO the logo artwork, so
   // printing the name again below it is a duplicate. Suppress the text name
@@ -21991,12 +21979,7 @@ function buildAccorAdOnlyV6(ad) {
   else if(Array.isArray(ad.amenities)) amenities=ad.amenities;
   else if(Array.isArray(ad.features)) amenities=ad.features;
   else if(Array.isArray(ad.advantages)) amenities=ad.advantages;
-  amenities=amenities.map(function(x){ if(typeof x==='string') return x; return first(x&&x.label,x&&x.name,x&&x.title,x&&x.code,''); }).filter(Boolean);
-  // FULL list feeds the sell-first curation below — slicing to 4 first starved
-  // the ranking and let 'Iron'/'Direct dial telephone' back onto the card
-  // whenever the sellable prefix was short (Nick saw exactly that).
-  var amenitiesFull=amenities.slice();
-  amenities=amenities.slice(0,4);
+  amenities=amenities.map(function(x){ if(typeof x==='string') return x; return first(x&&x.label,x&&x.name,x&&x.title,x&&x.code,''); }).filter(Boolean).slice(0,4);
   if(!amenities.length){ var lAmen=accorLang(); var fb={ en:['Restaurant','Wi‑Fi','Comfort rooms'],fr:['Restaurant','Wi‑Fi','Chambres confortables'],es:['Restaurante','Wi‑Fi','Habitaciones confortables'],de:['Restaurant','WLAN','Komfortzimmer'],it:['Ristorante','Wi‑Fi','Camere confortevoli'],pt:['Restaurante','Wi‑Fi','Quartos confortáveis'],ja:['レストラン','Wi‑Fi','快適な客室'],zh:['餐厅','Wi‑Fi','舒适客房'],ar:['مطعم','واي فاي','غرف مريحة'] }; amenities=fb[lAmen]||fb.en; }
 
   var starCount=Math.max(0,Math.min(5,Math.round(stars||0)));
@@ -22085,7 +22068,7 @@ function buildAccorAdOnlyV6(ad) {
   var _amenSellRx = /pool|piscine|spa\b|sauna|hammam|jacuzzi|massage|fitness|gym|restaurant|resto|\bbar\b|lounge|breakfast|d[ée]jeuner|rooftop|terrace|terrasse|view|vue\b|parking|shuttle|navette|airport transfer|pet|animaux|kids|famille|family|beach|plage|golf|concierge|room service|service aux chambres|24[\/ -]?(h|hour|heures)|business cent|meeting|ev charg|borne|wi-?fi|internet/i;
   var _amenDullRx = /\biron(ing)?\b|fer [àa] repasser|telephone|t[ée]l[ée]phone|hair ?dry|s[èe]che-cheveux|kettle|bouilloire|coffee maker|minibar|mini-bar|\btv\b|television|t[ée]l[ée]vision|radio|\bdesk\b|bureau|bathrobe|peignoir|\bsafe\b|coffre|wardrobe|armoire|blackout|rideaux|toiletries|wake-?up|r[ée]veil|air condition|climatisation|heating|chauffage|carpet|moquette/i;
   var _amenAll = _dedupe([].concat(
-      (_detail && _detail.topAmenities && _detail.topAmenities.length) ? _detail.topAmenities : (typeof amenitiesFull !== 'undefined' ? amenitiesFull : amenities),
+      (_detail && _detail.topAmenities && _detail.topAmenities.length) ? _detail.topAmenities : amenities,
       (_detail && _detail.facilities) ? _detail.facilities : []
   ));
   var _amenSell = [], _amenMid = [], _amenDull = [];
@@ -22120,7 +22103,7 @@ function buildAccorAdOnlyV6(ad) {
     // like "...is ideal for business trips. With…". Prefer the last full
     // sentence within the limit; only fall back to a word-cut + ellipsis if
     // there's no sentence break to land on.
-    var _blMax = 150;   // v7 panel fits ~4 lines × ~38 chars — a longer sentence hits the line-clamp ellipsis
+    var _blMax = 170;
     if (_blurb.length > _blMax) {
       // ALWAYS end on a complete sentence — never a "…" fragment (Nick: paying
       // advertisers can't have their copy chopped mid-sentence). Look a bit
@@ -22146,211 +22129,60 @@ function buildAccorAdOnlyV6(ad) {
   var _kHotel  = ({en:'The hotel',fr:"L'hôtel",es:'El hotel',de:'Das Hotel',it:"L'hotel",pt:'O hotel',ja:'ホテル',zh:'酒店',ar:'الفندق'})[_acL] || 'The hotel';
   var _kDining = ({en:'Dining & reviews',fr:'Restauration & avis',es:'Gastronomía y reseñas',de:'Gastronomie & Bewertungen',it:'Ristorazione e recensioni',pt:'Restauração e avaliações',ja:'ダイニング＆レビュー',zh:'餐饮与评价',ar:'المطاعم والتقييمات'})[_acL] || 'Dining & reviews';
 
-  // ── v7 RELOOK (Nick: 'relook the Accor ads — the API offers so much more').
-  // Magazine SPLIT layout instead of text-over-photo: the photo owns the left
-  // ~58% with a slow Ken Burns drift; the right panel carries the brand colour
-  // and ALL the API data — logo, name, stars + live review score, address +
-  // distances, icon amenity chips, real dining, blurb, QR. Rotator/QR/fitter
-  // hooks (.axr-pages/.axr-page/.hotel-ad-qr/.axr-one-line) are unchanged.
+  function _heroImg(u){ return u ? '<div class="axr-hero-img" style="background-image:url(\''+esc(u)+'\')"></div>' : '<div class="axr-hero-img axr-hero-noimg"></div>'; }
+  function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul>' : ''; }
   var _ph0 = _photoSet[0]||photo||'', _ph1 = _photoSet[1]||_ph0, _ph2 = _photoSet[2]||_ph1;
-  // Categorized master photos upgrade the defaults: the building for page 1,
-  // a real dining shot for page 3.
-  if (_master && Array.isArray(_master.photos)) {
-    var _mExt = null, _mDine = null;
-    _master.photos.forEach(function(p){
-      if (!p || !p.url) return;
-      if (!_mExt  && /EXTERIOR|FACADE|OUTSIDE|BUILDING/.test(p.cat)) _mExt  = p.url;
-      if (!_mDine && /RESTAURANT|BAR|BREAKFAST|DINING|FOOD/.test(p.cat)) _mDine = p.url;
-    });
-    if (_mExt)  _ph0 = _mExt;
-    if (_mDine) _ph2 = _mDine;
-  }
-  if (_master && Array.isArray(_master.restaurants)) {
-    var _masterDinePhoto = false;
-    for (var _ri = 0; _ri < _master.restaurants.length && !_masterDinePhoto; _ri++) {
-      var _rp = _master.restaurants[_ri].photos;
-      if (_rp && _rp.length) { _ph2 = _rp[0]; _masterDinePhoto = true; }
-    }
-  }
-  function _photoSide(u){
-    return '<div class="ax7-photo">'
-      + (u ? '<div class="ax7-photo-img" style="background-image:url(\''+esc(u)+'\')"></div>'
-           : '<div class="ax7-photo-img ax7-photo-noimg"></div>')
-      + '<div class="ax7-photo-grad"></div></div>';
-  }
-  // Tiny inline icons keyed off the amenity wording — a chip with a mark reads
-  // as designed; a naked text list reads as a data dump.
-  function _amenIcon(label){
-    var s = String(label||'').toLowerCase();
-    var P = function(d){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>'; };
-    if (/wi-?fi|internet/.test(s)) return P('<path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 15.5a5.5 5.5 0 0 1 7 0"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/>');
-    if (/pool|piscine|swim/.test(s)) return P('<path d="M2 17c2 1.4 4 1.4 6 0s4-1.4 6 0 4 1.4 6 0"/><path d="M2 21c2 1.4 4 1.4 6 0s4-1.4 6 0 4 1.4 6 0"/><path d="M14 13V5a2 2 0 0 0-4 0"/><path d="M14 9h-4"/>');
-    if (/fitness|gym/.test(s)) return P('<path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/>');
-    if (/restaurant|resto|dining|cuisine|bistro/.test(s)) return P('<path d="M7 3v7a2 2 0 0 0 2 2v9M11 3v5M7 3v5M17 3c-2 2-2 5-2 8h2v10"/>');
-    if (/\bbar\b|lounge|cocktail/.test(s)) return P('<path d="M5 4h14l-7 8z"/><path d="M12 12v7M8 21h8"/>');
-    if (/breakfast|d[ée]jeuner|caf[ée]|coffee/.test(s)) return P('<path d="M4 9h12v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M16 10h2a2.5 2.5 0 0 1 0 5h-2"/>');
-    if (/spa|sauna|massage|hammam|jacuzzi/.test(s)) return P('<path d="M12 4c1.6 1.6 1.6 3.4 0 5-1.6-1.6-1.6-3.4 0-5z"/><path d="M4 15c2.5 2 5 3 8 3s5.5-1 8-3"/><path d="M4 19c2.5 2 5 3 8 3s5.5-1 8-3"/>');
-    if (/parking/.test(s)) return P('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 17V7h4.5a3 3 0 0 1 0 6H9"/>');
-    if (/shuttle|navette|transfer|airport/.test(s)) return P('<path d="M4 16V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9"/><path d="M2 16h20v2h-2M4 18H2z"/><circle cx="8" cy="19" r="1.6"/><circle cx="16" cy="19" r="1.6"/>');
-    if (/pet|animaux|dog/.test(s)) return P('<circle cx="7" cy="8" r="1.6"/><circle cx="12" cy="6" r="1.6"/><circle cx="17" cy="8" r="1.6"/><path d="M12 11c3 0 5.5 2.2 5.5 4.6 0 1.6-1.3 2.4-2.6 2.4-1.1 0-1.9-.5-2.9-.5s-1.8.5-2.9.5c-1.3 0-2.6-.8-2.6-2.4C6.5 13.2 9 11 12 11z"/>');
-    if (/room service|service aux chambres|24/.test(s)) return P('<path d="M3 18h18"/><path d="M5 18a7 7 0 0 1 14 0"/><path d="M12 8v3M10 8h4"/>');
-    if (/view|vue|rooftop|terrace|terrasse/.test(s)) return P('<circle cx="12" cy="12" r="3.2"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4"/>');
-    if (/meeting|business/.test(s)) return P('<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M8 21h8"/>');
-    return P('<path d="M20 6L9 17l-5-5"/>');
-  }
-  function _chipList(items, cls){
-    if (!items || !items.length) return '';
-    return '<ul class="ax7-amen '+(cls||'')+'">'
-      + items.map(function(i){ return '<li>'+_amenIcon(i)+'<span>'+esc(i)+'</span></li>'; }).join('')
-      + '</ul>';
-  }
-  function _dots(active){
-    var d = '';
-    for (var i = 0; i < 3; i++) d += '<span class="'+(i===active?'ax7-dot ax7-dot-on':'ax7-dot')+'"></span>';
-    return '<div class="ax7-dots">'+d+'</div>';
-  }
-  var _scoreBlock = rating
-    ? '<div class="ax7-review">'
-      +   '<div class="ax7-review-num">'+esc(rating)+'<small>/5</small></div>'
-      +   '<div class="ax7-review-side">'+(starsHtml||'')
-      +     (reviewCount ? '<div class="ax7-review-count">'+esc(reviewCount)+' '+reviewsLabel+'</div>' : '')
-      +   '</div>'
-      + '</div>'
-    : (starsHtml ? '<div class="ax7-review">'+starsHtml+'</div>' : '');
-  var _starsScoreRow = (starsHtml||rating)
-    ? '<div class="ax7-stars-row">'+(starsHtml||'')
-      + (rating?'<span class="axr-score">'+esc(rating)+'<small>/5</small></span>':'')
-      + (reviewCount?'<span class="ax7-count">'+esc(reviewCount)+' '+reviewsLabel+'</span>':'')
-      + '</div>'
-    : '';
-  var _scanLbl = safeTL('scanToDiscover','Scan to discover');
-  var _qr7 = (factsheetUrl && factsheetUrl!=='#')
-    ? '<div class="ax7-scan"><div class="ax7-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div>'
-      + '<div class="ax7-scan-copy">'+_scanLbl+'<br><b class="axr-one-line">'+esc(_fullName)+'</b></div></div>'
-    : '';
-  // The brand WORDMARK anchors every page top-left (Nick: pages that named
-  // the brand in plain text with no logo 'don't sit well') — so no page ever
-  // says the brand without showing it.
-  var _brandBar = '<div class="ax7-brandbar">' + logoHtml + '</div>';
+  var _ctxName   = '<div class="axr-page-ctx">'+esc(_fullName)+'</div>';
+  var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
+  var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
 
-  // Deck: pages carry NO kicker titles (Nick: '"The hotel / L'hôtel",
-  // "Restauration & avis" — I hate the title'). Page 3 sells the OPTIONS
-  // Accor gives us that we never used (Nick: 'I asked for options such as
-  // menus and things we don't use'): real restaurants when the key returns
-  // them, the hotel's ROOM TYPES with their own photos, and the offer flags
-  // (complimentary breakfast, dining offers, on-site restaurant/bar) —
-  // never an empty page promising nothing.
-  var _hasRests = !!(_master && _master.restaurants && _master.restaurants.length);
-  var _restCards = _hasRests
-    ? '<div class="ax7-rests">' + _master.restaurants.slice(0, 2).map(function (r) {
-        return '<div class="ax7-rest">'
-          + '<div class="ax7-rest-name">' + esc(r.name) + (r.kind ? '<span class="ax7-rest-kind">' + esc(r.kind) + '</span>' : '') + '</div>'
-          + (r.desc ? '<div class="ax7-rest-desc">' + esc(r.desc) + '</div>' : '')
-          + '</div>';
-      }).join('') + '</div>'
-    : '';
-  // Room-type cards from the accommodations catalog (name + own photo).
-  var _rooms = (_detail && Array.isArray(_detail.rooms)) ? _detail.rooms.filter(function (r) { return r && r.name; }) : [];
-  var _roomCards = _rooms.length
-    ? '<div class="ax7-rooms">' + _rooms.slice(0, 3).map(function (r) {
-        return '<div class="ax7-room">'
-          + (r.photo ? '<div class="ax7-room-photo" style="background-image:url(\'' + esc(r.photo) + '\')"></div>' : '')
-          + '<div class="ax7-room-name">' + esc(r.name) + '</div>'
-          + '</div>';
-      }).join('') + '</div>'
-    : '';
-  // Offer chips — the flags/prose Accor sends that never made the card:
-  // dining advantages, COMPLIMENTARY_BREAKFAST / DINING_OFFER labels,
-  // on-site restaurant / bar / room service amenity flags (_restList
-  // aggregates exactly these upstream) PLUS the hotel-master label set
-  // (shape confirmed from Nick's real /hotels/{id} response).
-  var _xt = (_master && _master.extras) ? _master.extras : null;
-  var _xfr = (accorLang() === 'fr');
-  var _LABEL_OFFERS = {
-    'DINING_SPA_WITH_STAY':            _xfr ? 'Crédits restauration & spa' : 'Dining & spa credits with stay',
-    'DIGITAL_WELCOME_DRINK_REDEEMABLE':_xfr ? 'Boisson de bienvenue offerte' : 'Welcome drink offered',
-    'WELCOME_DRINK':                   _xfr ? 'Boisson de bienvenue offerte' : 'Welcome drink offered',
-    'SUITE_NIGHT_UPGRADE':             _xfr ? 'Surclassements suite' : 'Suite night upgrades',
-    'COMPLIMENTARY_BREAKFAST':         _xfr ? 'Petit-déjeuner offert' : 'Complimentary breakfast',
-    'DINING_OFFER':                    _xfr ? 'Offres restauration' : 'Dining offers for guests',
-    'BEST_PRICE_GUARANTEE':            _xfr ? 'Meilleur prix garanti' : 'Best price guarantee'
-  };
-  var _offerItems = _restList.slice();
-  if (_xt && Array.isArray(_xt.labels)) {
-    _xt.labels.forEach(function (L) {
-      var lbl = _LABEL_OFFERS[String(L || '').toUpperCase()];
-      if (lbl && _offerItems.indexOf(lbl) === -1) _offerItems.push(lbl);
-    });
-  }
-  var _offerChips = _chipList(_dedupe(_offerItems).slice(0, 5), 'ax7-amen-dine');
-  // The hotel's OWN words (managerMessage) or the enhanced marketing copy —
-  // prose the card never used.
-  var _hotelWords = _xt ? (_xt.managerMessage || _xt.enhancedDescription || '') : '';
-  var _hotelWordsHtml = _hotelWords
-    ? '<p class="ax7-blurb ax7-hotel-words">“' + esc(_hotelWords) + '”</p>'
-    : '';
-  // Check-in / check-out hours
-  var _ciCo = (_xt && (_xt.checkIn || _xt.checkOut))
-    ? '<div class="ax7-cico">'
-      + (_xt.checkIn  ? (_xfr ? 'Arrivée '  : 'Check-in ')  + esc(_xt.checkIn)  : '')
-      + (_xt.checkIn && _xt.checkOut ? ' <span class="axr-sep">·</span> ' : '')
-      + (_xt.checkOut ? (_xfr ? 'Départ '   : 'Check-out ') + esc(_xt.checkOut) : '')
-      + '</div>'
-    : '';
-  var _hasP3 = _hasRests || _rooms.length > 0 || _offerItems.length > 0 || !!_hotelWords;
-  var _pageBodies = [];
-  // P1 — THE PROPERTY: name, stars + score + reviews, address, distances
-  _pageBodies.push({ photo: _ph0, body:
-      (showName ? '<h1 class="ax7-name axr-one-line">'+esc(displayName)+'</h1>' : '')
-    + _starsScoreRow + _addrLineHtml
-    + (_locLineHtml ? '<div class="ax7-loc">'+_locLineHtml+'</div>' : '') });
-  // P2 — amenity pills + blurb; carries the QR close when no page 3 follows
-  _pageBodies.push({ photo: _ph1, body:
-      _chipList(_amenList)
-    + (_blurb ? '<p class="ax7-blurb">'+esc(_blurb)+'</p>' : '')
-    + (_hasP3 ? '' : '<div class="ax7-close-row">' + _qr7 + '</div>') });
-  // ROOM PAGES (Nick: '2 to 3 different room options, show 10 seconds
-  // maybe, and description and amenities and pictures') — each room class
-  // gets its OWN page: its photo full-bleed, its name, its own amenities
-  // and description. The rotator turns pages every ~10s, so each room gets
-  // its ten seconds. Offers/hotel-words/check-in ride the final page with
-  // the score + QR close.
-  var _roomPages = _rooms.slice(0, 3).filter(function (r) { return r.name; });
-  _roomPages.forEach(function (r) {
-    // Room description ends on a COMPLETE sentence, never a mid-word chop
-    // (Nick: 'the description is cut off').
-    var _rd = String(r.desc || '');
-    if (_rd.length > 150) {
-      var _rc = _rd.slice(0, 190);
-      var _pe = Math.max(_rc.lastIndexOf('. '), _rc.lastIndexOf('! '), _rc.lastIndexOf('? '),
-                         /[.!?]$/.test(_rc) ? _rc.length - 1 : -1);
-      _rd = (_pe > 40) ? _rc.slice(0, _pe + 1) : _rd.slice(0, 145).replace(/\s+\S*$/, '');
-    }
-    _pageBodies.push({ photo: r.photo || _ph2, body:
-        '<div class="ax7-ctx axr-one-line">' + esc(r.name) + '</div>'
-      + (r.amen && r.amen.length ? _chipList(r.amen) : '')
-      + (_rd ? '<p class="ax7-blurb">' + esc(_rd) + '</p>' : '') });
-  });
-  // CLOSING page — restaurants (when the key returns them), offers, the
-  // hotel's own words, check-in/out, score + QR. Its own page so room pages
-  // stay clean and the deck always ends on the invitation.
-  if (_hasP3) {
-    _pageBodies.push({ photo: _ph2, body:
-        _restCards + _offerChips + _hotelWordsHtml + _ciCo
-      + '<div class="ax7-close-row">' + _scoreBlock + _qr7 + '</div>' });
-  }
-  function _dotsN(active, total) {
-    if (total < 2) return '';
-    var d = '';
-    for (var i = 0; i < total; i++) d += '<span class="'+(i===active?'ax7-dot ax7-dot-on':'ax7-dot')+'"></span>';
-    return '<div class="ax7-dots">'+d+'</div>';
-  }
-  var _pagesHtml = _pageBodies.map(function (p, i) {
-    return '<div class="axr-page'+(i===0?' axr-page-on':'')+' ax7-page">'
-      + _photoSide(p.photo) + _brandBar
-      + '<div class="ax7-tier">' + p.body + '</div>'
-      + _dotsN(i, _pageBodies.length) + '</div>';
-  }).join('');
+  // Page 1 — LOCATION: logo, name, address, distance, stars
+  var _page1 = '<div class="axr-page axr-page-on">'
+    + _heroImg(_ph0) + '<div class="axr-hero-grad"></div>'
+    + '<div class="axr-hotel">' + logoHtml
+    +   (showName ? '<h1 class="axr-name">'+esc(displayName)+'</h1>' : '')
+    +   _addrLineHtml + _locLineHtml + _starsRow
+    + '</div></div>';
+  // Page 2 — THE HOTEL: amenities + facilities + short blurb
+  var _page2 = '<div class="axr-page">'
+    + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
+    + '<div class="axr-hotel">'
+    +   '<div class="axr-page-kicker">'+esc(_kHotel)+'</div>' + _ctxName
+    +   _list(_amenList) + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
+    + '</div></div>';
+  // Page 3 — DINING & REVIEWS: restaurants + guest rating + QR
+  var _page3 = '<div class="axr-page">'
+    + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'
+    + bubbleHtml
+    + '<div class="axr-hotel">'
+    +   '<div class="axr-page-kicker">'+esc(_kDining)+'</div>' + _ctxName
+    +   _list(_restList) + _ratingRow
+    + '</div></div>';
+
+  // ROOM PAGES (Nick: '2 to 3 different room options, show 10 seconds maybe,
+  // and description and amenities and pictures') — each room class gets its
+  // own page in the same design grammar: its photo as the hero, its name as
+  // the page heading, its own amenities and description.
+  var _roomsHtml = '';
+  try {
+    var _rooms = (_detail && Array.isArray(_detail.rooms)) ? _detail.rooms.filter(function (r) { return r && r.name; }) : [];
+    _roomsHtml = _rooms.slice(0, 3).map(function (r) {
+      var _rd = String(r.desc || '');
+      if (_rd.length > 150) {
+        var _rc2 = _rd.slice(0, 190);
+        var _pe2 = Math.max(_rc2.lastIndexOf('. '), _rc2.lastIndexOf('! '), _rc2.lastIndexOf('? '),
+                            /[.!?]$/.test(_rc2) ? _rc2.length - 1 : -1);
+        _rd = (_pe2 > 40) ? _rc2.slice(0, _pe2 + 1) : _rd.slice(0, 145).replace(/\s+\S*$/, '');
+      }
+      return '<div class="axr-page">'
+        + _heroImg(r.photo || _ph1) + '<div class="axr-hero-grad"></div>'
+        + '<div class="axr-hotel">'
+        +   '<div class="axr-page-ctx">' + esc(r.name) + '</div>'
+        +   _list((r.amen || []).slice(0, 4))
+        +   (_rd ? '<p class="axr-blurb">' + esc(_rd) + '</p>' : '')
+        + '</div></div>';
+    }).join('');
+  } catch (e) { _roomsHtml = ''; }
 
   // Footer — just the ALL mark, centered (per Nick: "ALL only, centered").
   var _footerHtml = '<footer class="axr-all axr-all-simple">'
@@ -22358,9 +22190,9 @@ function buildAccorAdOnlyV6(ad) {
     + '</footer>';
 
   return ''
-    + '<article class="axr ax7 axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" data-hotel-id="'+esc(String(ad.hotelId||_fullName||''))+'" style="--axr-tint:'+tint+'">'
-    +   '<section class="axr-hero axr-pages ax7-pages">'
-    +     _pagesHtml
+    + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" data-hotel-id="'+esc(String(ad.hotelId||_fullName||''))+'" style="--axr-tint:'+tint+'">'
+    +   '<section class="axr-hero axr-pages">'
+    +     _page1 + _page2 + _page3 + _roomsHtml
     +   '</section>'
     +   _footerHtml
     + '</article>';
