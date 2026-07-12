@@ -21753,10 +21753,24 @@ function buildAccorAdOnlyV6(ad) {
   // then they fall back to list-level data so no page is ever empty.
   var _detail = (typeof _hpDetail !== 'undefined' && _hpDetail) ? _hpDetail : null;
   function _dedupe(arr){ var seen={}, out=[]; (arr||[]).forEach(function(x){ var k=String(x||'').toLowerCase().trim(); if (x && !seen[k]) { seen[k]=1; out.push(x); } }); return out; }
-  var _amenList = _dedupe([].concat(
+  // Curate, don't just take the first six: the room-level feed leads with
+  // fixtures nobody chooses a hotel for (Nick: the card was selling 'Iron' and
+  // 'Direct dial telephone'). Rank sellable amenities (pool/spa/dining/gym/…)
+  // first, neutral ones next, room fixtures last — used only as filler.
+  var _amenSellRx = /pool|piscine|spa\b|sauna|hammam|jacuzzi|massage|fitness|gym|restaurant|resto|\bbar\b|lounge|breakfast|d[ée]jeuner|rooftop|terrace|terrasse|view|vue\b|parking|shuttle|navette|airport transfer|pet|animaux|kids|famille|family|beach|plage|golf|concierge|room service|service aux chambres|24[\/ -]?(h|hour|heures)|business cent|meeting|ev charg|borne|wi-?fi|internet/i;
+  var _amenDullRx = /\biron(ing)?\b|fer [àa] repasser|telephone|t[ée]l[ée]phone|hair ?dry|s[èe]che-cheveux|kettle|bouilloire|coffee maker|minibar|mini-bar|\btv\b|television|t[ée]l[ée]vision|radio|\bdesk\b|bureau|bathrobe|peignoir|\bsafe\b|coffre|wardrobe|armoire|blackout|rideaux|toiletries|wake-?up|r[ée]veil|air condition|climatisation|heating|chauffage|carpet|moquette/i;
+  var _amenAll = _dedupe([].concat(
       (_detail && _detail.topAmenities && _detail.topAmenities.length) ? _detail.topAmenities : amenities,
       (_detail && _detail.facilities) ? _detail.facilities : []
-  )).slice(0, 6);
+  ));
+  var _amenSell = [], _amenMid = [], _amenDull = [];
+  _amenAll.forEach(function (a) {
+    var s = String(a || '');
+    if (_amenSellRx.test(s)) _amenSell.push(a);
+    else if (_amenDullRx.test(s)) _amenDull.push(a);
+    else _amenMid.push(a);
+  });
+  var _amenList = _amenSell.concat(_amenMid, _amenDull).slice(0, 6);
   // REAL hotel dining (Nick: page 3 was showing in-room kettles/fridges):
   // prose 'advantages' that mention dining first, then hotel-level dining
   // amenities and program labels. In-room food&bev only as a last resort.
@@ -21788,8 +21802,17 @@ function buildAccorAdOnlyV6(ad) {
       // past the cap for the sentence end; if the text has no sentence break
       // at all, drop the blurb rather than show a fragment.
       var _cut = _blurb.slice(0, Math.min(_blurb.length, _blMax + 60));
-      var _sentEnd = Math.max(_cut.lastIndexOf('. '), _cut.lastIndexOf('! '), _cut.lastIndexOf('? '));
-      if (/[.!?]$/.test(_cut)) _sentEnd = Math.max(_sentEnd, _cut.length - 1);
+      // A period after an abbreviation is NOT a sentence end — 'steps away
+      // from the St. Lawrence Market' was being cut to '…from the St.' (Nick).
+      var _abbrRx = /(\b(?:St|Ste|Mt|Dr|Mr|Mrs|Ms|Ave|Blvd|Rd|Hwy|No|Nos|vs|etc|approx|Ft|Pt)|\b[A-Z])$/;
+      function _validSentEnd(str, idx) {
+        return idx > 0 && !_abbrRx.test(str.slice(0, idx));
+      }
+      var _sentEnd = -1;
+      for (var _si = _cut.length - 2; _si > 0; _si--) {
+        if ('.!?'.indexOf(_cut[_si]) !== -1 && _cut[_si + 1] === ' ' && _validSentEnd(_cut, _si)) { _sentEnd = _si; break; }
+      }
+      if (/[.!?]$/.test(_cut) && _validSentEnd(_cut, _cut.length - 1)) _sentEnd = Math.max(_sentEnd, _cut.length - 1);
       _blurb = (_sentEnd > 0) ? _cut.slice(0, _sentEnd + 1).trim() : '';
     }
   }
@@ -22106,10 +22129,25 @@ function renderGateAd(index) {
           + ' allow="autoplay; encrypted-media" allowfullscreen></iframe>';
       }
     } else if (item.type === 'video' && item.url) {
-      customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
-        + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + fit + ';object-position:' + posStr + ';transform:scale(' + zoom + ');background:#000;"></video>';
+      // Letterbox bars: an accent-tinted vignette instead of flat black (Nick:
+      // 'a lot of black'). NOT a blurred video copy — a second decoding <video>
+      // would double the decode load and OOM the small stream box.
+      customHtml = '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#101725 0%,#05070d 100%);"></div>'
+        + '<div style="position:absolute;inset:0;background:var(--airline-accent,#1c2a44);opacity:.22;"></div>'
+        + '<video src="' + item.url + '" autoplay muted loop playsinline'
+        + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:' + fit + ';object-position:' + posStr + ';transform:scale(' + zoom + ');"></video>';
     } else if (item.type === 'image' && item.url) {
-      customHtml = '<div style="position:absolute;inset:0;background:#000;background-image:url(\'' + item.url
+      // Blur-fill (Nick: kill the black bars): when the ad doesn't fill the
+      // panel ('contain'), back it with a blown-up blurred copy of ITSELF so
+      // every ad reads as designed-for-the-screen. inset:-48px + extra scale
+      // hide the blur's soft edges. 'cover' fills the panel, no backdrop needed.
+      var _blurBack = (fit === 'contain')
+        ? '<div style="position:absolute;inset:-48px;background-image:url(\'' + item.url
+          + '\');background-size:cover;background-position:center;background-repeat:no-repeat;'
+          + 'filter:blur(30px) brightness(.55) saturate(1.15);transform:scale(1.12);"></div>'
+        : '';
+      customHtml = _blurBack
+        + '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
         + '\');background-size:' + (fit === 'cover' ? 'cover' : 'contain') + ';background-position:' + posStr + ';background-repeat:no-repeat;transform:scale(' + zoom + ');"></div>';
     }
     // include framing controls in the dedupe key so adjustments re-render live
