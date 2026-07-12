@@ -908,3 +908,87 @@
 /* Hotel brand logo a touch smaller (per Nick) — name/info sizes unchanged
    since they derive from the VAR, not the rendered logo. */
 .axr-logo{ height: calc(var(--axr-logo) * 0.85); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   v7 RELOOK — MAGAZINE SPLIT (Nick: 'relook the Accor ads').
+   Photo owns the left ~58% with a slow Ken Burns drift; the right panel
+   carries the brand colour and the data: logo, name, stars + review score,
+   address + distances, icon amenity chips, dining, blurb, QR, page dots.
+   Scoped to .ax7-* on top of the .axr root (brand palettes cascade via the
+   CSS vars set by the per-brand blocks above). Rotator classes unchanged.
+   ════════════════════════════════════════════════════════════════════════ */
+.ax7 .axr-page.ax7-page{ display:grid; grid-template-columns: 58% 42%; }
+
+/* Photo side — full-bleed, slow drift, seam blends into the panel colour */
+.ax7-photo{ position:relative; overflow:hidden; background:#10121a; }
+.ax7-photo-img{ position:absolute; inset:0; background-size:cover; background-position:center;
+  animation:ax7kb 38s ease-in-out infinite alternate; will-change:transform; }
+@keyframes ax7kb{ from{ transform:scale(1) translate(0,0); } to{ transform:scale(1.08) translate(-1.6%,-1%); } }
+.ax7-photo-noimg{ background:linear-gradient(135deg,var(--axr-tint),var(--all-blue)); animation:none; }
+.ax7-photo-grad{ position:absolute; inset:0;
+  background:linear-gradient(90deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 62%, var(--all-blue) 100%); }
+
+/* Panel side — brand colour, gold hairline at the seam, content centred */
+.ax7-panel{ position:relative; display:flex; flex-direction:column; min-width:0;
+  background:linear-gradient(168deg, color-mix(in srgb, var(--all-blue) 90%, #ffffff 7%) 0%, var(--all-blue) 58%);
+  border-left:2px solid color-mix(in srgb, var(--all-gold) 65%, transparent);
+  padding:clamp(18px,3vh,34px) clamp(18px,2vw,34px) clamp(14px,2vh,22px); }
+.ax7-panel-main{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
+  justify-content:center; gap:clamp(8px,1.5vh,16px); overflow:hidden; }
+
+/* Logo — real presence in the panel (the tiny hero-overlay size reads lost
+   here). Beats the per-brand .axr[data-brand-code=…] .axr-logo heights. */
+.axr.ax7[data-brand-code] .axr-logo{ height:clamp(44px,7.2vh,84px); }
+.axr.ax7[data-brand-code] .axr-logo img,
+.axr.ax7[data-brand-code] .axr-logo svg{ max-width:min(92%,420px); max-height:100%; }
+
+.ax7-name{ margin:0; font-weight:800; font-size:clamp(24px,3.5vh,40px); line-height:1.04;
+  letter-spacing:-.01em; display:block; white-space:nowrap; overflow:hidden; max-width:100%; }
+.ax7-ctx{ font-weight:800; font-size:clamp(20px,3vh,34px); line-height:1.05; max-width:100%; }
+.ax7-kicker{ color:var(--all-gold); font-weight:700; letter-spacing:.2em;
+  font-size:clamp(11px,1.6vh,16px); }
+.ax7-stars-row{ display:flex; align-items:baseline; gap:clamp(8px,1vw,14px);
+  font-size:clamp(15px,2.2vh,22px); }
+.ax7 .axr-addr-line{ font-size:clamp(13px,1.9vh,19px); opacity:.92; font-weight:500; }
+.ax7-loc{ display:flex; flex-direction:column; gap:clamp(2px,0.5vh,6px); }
+.ax7 .axr-loc-line{ font-size:clamp(13px,1.9vh,19px); opacity:.92; }
+.ax7 .axr-loc-line .axr-loc-pin{ color:var(--all-gold); margin-right:.5em; }
+
+/* Amenity / dining chips — icon + label, one per line */
+.ax7-amen{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column;
+  gap:clamp(5px,0.9vh,10px); }
+.ax7-amen li{ display:flex; align-items:center; gap:.65em; min-width:0;
+  font-size:clamp(14px,2.1vh,21px); font-weight:600; line-height:1.2;
+  padding:.42em .7em; border-radius:10px; background:rgba(255,255,255,.08); }
+.ax7-amen li span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.ax7-amen li svg{ width:1.15em; height:1.15em; flex:0 0 auto; color:var(--all-gold); }
+
+.ax7-blurb{ margin:clamp(4px,0.8vh,10px) 0 0; font-size:clamp(13px,1.9vh,19px); font-weight:400;
+  line-height:1.45; opacity:.9; display:-webkit-box; -webkit-line-clamp:4;
+  -webkit-box-orient:vertical; overflow:hidden; }
+.ax7-amen-dine li{ align-items:flex-start; }
+.ax7-amen-dine li svg{ margin-top:.12em; }
+.ax7-amen-dine li span{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2;
+  -webkit-box-orient:vertical; line-height:1.25; }
+
+/* Review score block — the number is the hero */
+.ax7-review{ display:flex; align-items:center; gap:clamp(10px,1.2vw,18px);
+  padding:clamp(8px,1.2vh,14px) clamp(10px,1.2vw,16px); border-radius:12px;
+  background:rgba(255,255,255,.08); }
+.ax7-review-num{ font-weight:800; font-size:clamp(30px,4.6vh,52px); line-height:1; color:var(--all-gold); }
+.ax7-review-num small{ font-size:.42em; font-weight:600; opacity:.85; }
+.ax7-review-side{ display:flex; flex-direction:column; gap:2px; font-size:clamp(14px,2vh,20px); }
+.ax7-review-count{ font-size:.8em; opacity:.85; font-weight:500; }
+
+/* QR invite */
+.ax7-scan{ display:flex; align-items:center; gap:clamp(10px,1.2vw,16px); margin-top:clamp(4px,0.8vh,10px); }
+.ax7-qr{ flex:0 0 auto; width:clamp(70px,10.5vh,110px); aspect-ratio:1; background:#fff;
+  border-radius:10px; padding:6px; display:flex; align-items:center; justify-content:center; }
+.ax7-qr svg, .ax7-qr img{ width:100%; height:100%; display:block; }
+.ax7-scan-copy{ min-width:0; font-size:clamp(13px,1.9vh,19px); line-height:1.3; font-weight:500; opacity:.94; }
+.ax7-scan-copy b{ font-weight:800; display:block; max-width:100%; }
+
+/* Page dots — baked per page (page N ships its own row), zero JS */
+.ax7-dots{ flex:0 0 auto; display:flex; gap:9px; justify-content:center; padding-top:clamp(6px,1vh,12px); }
+.ax7-dot{ width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.28); }
+.ax7-dot-on{ background:var(--all-gold); }
