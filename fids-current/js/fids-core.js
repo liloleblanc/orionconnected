@@ -6690,7 +6690,9 @@ function uxgGateHtml(ctx) {
   } else if (inbDelayed) {
     r3Left = TL('inbDelayed');
   } else if (showBoarding) {
-    r3Left = TL('nowBoardMsg') + ' ' + gateVal + '.';
+    // Boarding takeover carries the welcome strip + info row — the 'Now
+    // boarding. Please proceed to gate X.' strip is redundant (Nick).
+    r3Left = '';
   } else if (showCountdown) {
     r3Left = TL('boardApprox') + ' ' + minsToBoard + ' ' + (minsToBoard!==1?TL('minutes').toLowerCase():TL('minute').toLowerCase()) + '.';
   } else if (minsToDep <= (boardLeadMins + 55) && minsToDep > (boardLeadMins + 25)) {
@@ -13478,7 +13480,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22179';
+var FIDS_BUILD_TAG = 'v22180';
 (function(){
   try {
     function _addTag(){
