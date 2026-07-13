@@ -13480,7 +13480,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22180';
+var FIDS_BUILD_TAG = 'v22181';
 (function(){
   try {
     function _addTag(){
@@ -24089,7 +24089,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       el.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(el).fontSize) || 16;
       var size = base, guard = 12;
-      while (el.scrollWidth > el.clientWidth + 1 && size > base * 0.5 && guard-- > 0) {
+      while (el.scrollWidth > el.clientWidth && size > base * 0.35 && guard-- > 0) {
         size -= Math.max(1, size * 0.07);
         el.style.setProperty('font-size', size + 'px', 'important');
       }

@@ -2361,7 +2361,7 @@ html .g8-bir-cell {
   display: flex;
   align-items: center;
   gap: clamp(10px, 1vw, 20px);
-  padding: clamp(10px, 1.6vh, 22px) clamp(12px, 1.2vw, 24px);
+  padding: clamp(10px, 1.6vh, 22px) clamp(8px, 0.8vw, 16px);
   background: transparent;
   border-right: 2px solid rgba(15, 34, 56, 0.18);
 }
@@ -2389,7 +2389,7 @@ html .g8-bir-badge::after {
   background: linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(255,255,255,0.05));
   pointer-events: none;
 }
-html .g8-bir-text { min-width: 0; display: flex; flex-direction: column; }
+html .g8-bir-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 html .g8-bir-title {
   font-size: clamp(14px, 2vh, 24px);
   font-weight: 800;
@@ -2403,7 +2403,7 @@ html .g8-bir-title {
 }
 html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 html .g8-bir-val {
-  font-size: clamp(30px, 4.8vh, 66px);
+  font-size: clamp(40px, 6.8vh, 100px);
   font-weight: 900;
   color: #0f2238;
   line-height: 1.02;
@@ -2415,14 +2415,36 @@ html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.68e
 html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }
 html .g8-bir-val .g8-r2-revised { color: #b45309; }
-/* the STATUS cell carries the longest bilingual values — size to fit */
-html .g8-bir-cell:last-child .g8-bir-val { font-size: clamp(24px, 3.8vh, 52px); }
+/* the STATUS cell carries the longest bilingual values — stack the EN/FR
+   pair on two lines instead of clipping one long line */
+html .g8-bir-cell:last-child .g8-bir-val {
+  font-size: clamp(28px, 4.6vh, 66px);
+  white-space: normal;
+  line-height: 1.06;
+  text-overflow: clip;
+}
+html .g8-bir-cell:last-child .g8-bir-val .g8-bir-sep { display: none; }
 
-/* ── Boarding panel colors follow the AIRLINE (Nick) — the NEXT side was a
-   generic green; the signage pairs the airline accent with its dark tone
-   (AC: red 'now' + black 'next', like the physical zone signs). ── */
-html .g8-board-hdr-next { border-bottom-color: var(--banner-bg, #0f172a) !important; }
-html .g8-board-col.next .g8-board-grp-num { color: var(--banner-bg, #0f172a) !important; }
+/* ── Boarding zone panels EXACTLY like the physical gate sign (Nick: 'look
+   at the sign — black and red background, white lettering'): each side is a
+   solid colored slab — the airline's dark tone on the left, its accent on
+   the right — with every label, numeral and arrow in WHITE on top. ── */
+html .g8-board-hdr-now,
+html .g8-board-hdr-next {
+  color: #ffffff !important;
+  border-bottom: none !important;
+}
+html .g8-board-hdr-now, html .g8-board-col.now { background: var(--banner-bg, #0b0f16) !important; }
+html .g8-board-hdr-next, html .g8-board-col.next { background: var(--airline-accent, #D82F2E) !important; }
+html .g8-board-col.next { border-left: none !important; }
+html .g8-board-col .g8-board-grp-label,
+html .g8-board-col .g8-board-grp-num,
+html .g8-board-col .g8-board-arrow,
+html .g8-board-col .g8-board-lane {
+  color: #ffffff !important;
+}
+html .g8-board-col .g8-board-grp-label { opacity: 0.88; }
+html .g8-board-col .g8-board-lane { opacity: 0.82; }
 
 /* Lane-direction arrows beside the zone numerals, like the physical signage
    (Nick: 'no arrows either — those should be available'). */
@@ -2432,8 +2454,6 @@ html .g8-board-arrow {
   font-weight: 900;
   line-height: 1;
 }
-html .g8-board-col.now .g8-board-arrow { color: var(--airline-accent, #D82F2E); }
-html .g8-board-col.next .g8-board-arrow { color: var(--banner-bg, #0f172a); }
 
 /* ── Boarding takeover WELCOME strip: rondelle · Welcome | Bienvenue ·
    alliance lockup, like the physical gate sign header (Nick). ── */
@@ -2459,11 +2479,20 @@ html .g8-bw-text {
   white-space: nowrap;
 }
 html .g8-bw-text .g8-bw-sep { opacity: 0.55; }
-html .g8-board-welcome .g8-bw-star img,
+/* Specificity must beat the logoslot-scoped `html body .g8-wrap .g8-r1-star`
+   sizing rule, or the strip's copy inherits the banner constraints. The
+   height must be DEFINITE: the lockup SVG is viewBox-only (no intrinsic
+   width/height), so `height:auto` computes to 0×0 and the mark vanishes. */
+html body .g8-wrap .g8-board-welcome .g8-bw-star img,
+html body .g8-wrap .g8-board-welcome .g8-r1-star,
 html .g8-board-welcome .g8-r1-star {
-  height: auto !important;
-  max-height: clamp(44px, 6.4vh, 80px) !important;
-  max-width: min(17vw, 300px) !important;
+  display: block !important;
+  height: clamp(44px, 6.4vh, 80px) !important;
+  max-height: none !important;
+  min-height: 0 !important;
   width: auto !important;
+  max-width: min(17vw, 300px) !important;
+  margin-left: 0 !important;
   opacity: 1 !important;
+  object-fit: contain !important;
 }
