@@ -2410,3 +2410,14 @@ html .g8-bir-cell:last-child .g8-bir-val { font-size: clamp(24px, 3.8vh, 52px); 
    (AC: red 'now' + black 'next', like the physical zone signs). ── */
 html .g8-board-hdr-next { border-bottom-color: var(--banner-bg, #0f172a) !important; }
 html .g8-board-col.next .g8-board-grp-num { color: var(--banner-bg, #0f172a) !important; }
+
+/* Lane-direction arrows beside the zone numerals, like the physical signage
+   (Nick: 'no arrows either — those should be available'). */
+html .g8-board-grp-wrap { display: flex; align-items: center; justify-content: center; gap: clamp(10px, 2vw, 36px); }
+html .g8-board-arrow {
+  font-size: clamp(64px, 9vw, 120px);
+  font-weight: 900;
+  line-height: 1;
+}
+html .g8-board-col.now .g8-board-arrow { color: var(--airline-accent, #D82F2E); }
+html .g8-board-col.next .g8-board-arrow { color: var(--banner-bg, #0f172a); }
