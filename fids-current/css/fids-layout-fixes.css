@@ -2240,8 +2240,8 @@ html .g8-wrap .g8-r1-star {
   opacity: 0.95 !important;
 }
 
-/* Final/closed panel surfaces follow the darkened lane accent so light
-   brand colours (Flair lime) don't wash out the takeover. */
+/* Final-call surfaces follow the darkened lane accent so light brand
+   colours (Flair lime) don't wash out the takeover. */
 html .g8-final-hdr {
   background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important;
   color: #ffffff;
@@ -2249,6 +2249,10 @@ html .g8-final-hdr {
 html .g8-final-body {
   background: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #D82F2E)) 52%, #10141b) !important;
 }
+/* GATE CLOSED is an alarm state, not a brand moment — deep red for every
+   airline (a green 'closed' screen reads as GO, Nick's Flair shot). */
+html .g8-final-closed .g8-final-hdr { background: #B91C1C !important; }
+html .g8-final-closed .g8-final-body { background: color-mix(in srgb, #B91C1C 38%, #0f1116) !important; }
 
 /* ── Final-call / gate-closed takeover: WHITE text on the deep-red panel
    (the navy ink was near-black on red — unreadable, Nick's YHZ shot),
@@ -2392,6 +2396,12 @@ html .g8-bir-badge {
   overflow: hidden;
 }
 html .g8-bir-badge .ac-ico { font-size: clamp(24px, 3.4vh, 44px); line-height: 1; }
+/* Glyphs take the BADGE's ink — font.css paints .ac-ico white directly,
+   which stomped per-airline badge inks (Flair's green, Nick). */
+html .g8-bir-badge .ac-ico,
+html .v2-fi-icon-wrap .ac-ico {
+  color: inherit;
+}
 html .g8-bir-badge::after {
   content: "";
   position: absolute;

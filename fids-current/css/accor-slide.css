@@ -106,7 +106,7 @@
 .axr-logo{ height:var(--axr-logo); display:flex; align-items:flex-end; }
 .axr-logo img, .axr-logo svg{ height:100%; width:auto; max-width:min(60%,400px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
-.axr-logo svg{ max-width:min(54%,360px) !important; }
+.axr-logo svg{ max-width:min(54%,360px) !important; max-height:clamp(96px,17vh,168px); }
 .axr-logo img{ height:100%; width:auto; max-width:min(58%,360px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
 .axr-logo-text{ font-family:var(--axr-display); font-weight:700; font-size:var(--axr-logo); line-height:1;
