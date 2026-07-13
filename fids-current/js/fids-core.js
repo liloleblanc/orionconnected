@@ -7518,16 +7518,10 @@ function uxgGateHtml(ctx) {
     _bannerUsedWordmark = true;
     _bannerWmFromBase = true;         // wordmark FILE in use — ink comp applies
   }
-  // Fallback for carriers with a square tile but no wordmark (e.g. BoA→BOV):
-  // colored brand badge instead of an ugly force-whitened external lockup.
-  var _bannerTileIcao = (typeof IATA_TO_TILE_ICAO !== 'undefined')
-    ? (IATA_TO_TILE_ICAO[_bannerBrandCode] || IATA_TO_TILE_ICAO[airlineCode]) : null;
-  if (!_useOverrideFile && _bannerTileIcao) {
-    r1LogoSrc = '/logos/airline-tiles/' + _bannerTileIcao + '.svg';
-    _useOverrideFile = true;          // keep brand colors — skip the white filter
-    _sz = { h: 112, w: 112 };         // square brand badge
-    _bannerUsedTile = true;
-  }
+  // Square tile fallback REMOVED (Nick: 'get rid of these icons and start
+  // using proper wordmarks'). Carriers without a curated lockup now fall
+  // through to the external full-lockup logo, force-whitened by the CSS —
+  // the airline's real wordmark, not a badge.
   var _onPlate = _bannerUsedTile || _bannerPlateForced;
   // HARD CAP the logo height so it can NEVER exceed the banner band (which is
   // overflow:hidden and a fixed height). 76px in the 112px band leaves real
@@ -24205,6 +24199,27 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       while (el.scrollWidth > el.clientWidth && size > base * 0.35 && guard-- > 0) {
         size -= Math.max(1, size * 0.07);
         el.style.setProperty('font-size', size + 'px', 'important');
+      }
+      // GROW pass for the boarding info row values (Nick: the data must
+      // TAKE UP the cell, not float in it). Status cell excluded — its
+      // two-line stack sets its own size.
+      if (el.classList.contains('g8-bir-val')) {
+        var _gCell = el.closest ? el.closest('.g8-bir-cell') : null;
+        var _gRow = el.closest ? el.closest('.g8-board-info-row') : null;
+        var _gIsStatus = !!(_gCell && !_gCell.nextElementSibling);
+        if (_gRow && !_gIsStatus) {
+          var _gCap = Math.max(40, _gRow.clientHeight * 0.56);
+          var g = size, gGuard = 20;
+          while (el.scrollWidth <= el.clientWidth * 0.94 && g < _gCap && gGuard-- > 0) {
+            g = Math.min(_gCap, g + Math.max(1, g * 0.06));
+            el.style.setProperty('font-size', g + 'px', 'important');
+          }
+          var gBack = 8;
+          while (el.scrollWidth > el.clientWidth && g > 24 && gBack-- > 0) {
+            g -= Math.max(1, g * 0.05);
+            el.style.setProperty('font-size', g + 'px', 'important');
+          }
+        }
       }
       el.dataset.fitW = _fp;
     }
