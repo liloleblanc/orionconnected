@@ -6905,17 +6905,33 @@ function uxgGateHtml(ctx) {
   // Build boarding panel HTML
   var boardHtml = '';
   if (boardActive) {
-    var zones = getZoneCount(airlineCode, equipRaw);
     var lateBoarding = minsToDep <= 18;
-    var nowGrp, nextGrp;
-    if (lateBoarding) { nowGrp = zones - 1; nextGrp = zones; }
-    else { nowGrp = 1; nextGrp = 2; }
+    var _grpLbl = TL('groupLabel');
+    var nowVal, nextVal;
+    if (airlineCode === 'PD') {
+      // Porter boards by ROW NUMBER, back to front (Nick). Row count by
+      // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
+      var _pdRows = /DH4|DH8|Q400|DASH/i.test(String(equipRaw || '')) ? 20 : 29;
+      var _pdBand = Math.ceil(_pdRows / 3);
+      _grpLbl = 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
+      if (lateBoarding) {
+        nowVal = '1\u2013' + _pdBand;
+        nextVal = '\u2014';
+      } else {
+        nowVal = (_pdRows - _pdBand + 1) + '\u2013' + _pdRows;
+        nextVal = (_pdRows - 2 * _pdBand + 1) + '\u2013' + (_pdRows - _pdBand);
+      }
+    } else {
+      var zones = getZoneCount(airlineCode, equipRaw);
+      if (lateBoarding) { nowVal = zones - 1; nextVal = zones; }
+      else { nowVal = 1; nextVal = 2; }
+    }
     boardHtml = '<div class="g8-board active">'
       + _boardInfoRowHtml('boarding')
       + '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>'
       + '<div class="g8-board-body">'
-      + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + TL('groupLabel') + '</div><div class="g8-board-grp-num">' + nowGrp + '</div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-      + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + TL('groupLabel') + '</div><div class="g8-board-grp-num">' + nextGrp + '</div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+      + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _grpLbl + '</div><div class="g8-board-grp-num">' + nowVal + '</div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+      + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _grpLbl + '</div><div class="g8-board-grp-num">' + nextVal + '</div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
       + '</div></div>';
   }
 
@@ -13392,7 +13408,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22172';
+var FIDS_BUILD_TAG = 'v22173';
 (function(){
   try {
     function _addTag(){
@@ -23984,6 +24000,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // setProperty('important') because the gate fields' sizes are pinned with
     // !important in CSS — a plain inline style would lose the cascade.
     var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
+      + ' .g8-bir-val, .g8-bir-title,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-dest,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-status-val,'
       + ' .gad-map-col-v2 .v2-rc-acb-actype,'
