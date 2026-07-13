@@ -2850,7 +2850,7 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
       out.brandName = 'Fairmont';
       out.logo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
       out._customLogo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
-      out._propertyLockup = '/logos/hotels/fairmont-pacific-rim.svg';
+      out._propertyLockup = '/logos/hotels/accor-luxury/fairmont/outlined_svg_white/017_Fairmont_Pacific_Rim.svg';
       out._forceProperty = true;
       return Object.assign({}, ad || {}, out);
     }
@@ -2863,7 +2863,7 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
       out.brandName = 'Fairmont';
       out.logo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
       out._customLogo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
-      out._propertyLockup = '/logos/hotels/fairmont-pacific-rim.svg';
+      out._propertyLockup = '/logos/hotels/accor-luxury/fairmont/outlined_svg_white/017_Fairmont_Pacific_Rim.svg';
       out._forceProperty = true;
       return Object.assign({}, ad || {}, out);
     }
@@ -3233,6 +3233,24 @@ var FAIRMONT_PROPERTY_LOCKUPS = {
 //
 // Path data extracted from /logos/fairmont.svg (the wordmark itself).
 var _FAIRMONT_WORDMARK_D = 'm18.225 2.61c0.9746-0.82412 2.207-1.28109 3.4833-1.29167l0.0084 0.00834c3.4916 0 3.0783 3.10833 0 3.10833-1.1426 0-2.6476-0.67372-3.3676-0.99601-0.1013-0.04533-0.1871-0.08375-0.2541-0.11232-1.235 1.11-2.6 3.86666-3.145 5.2 0.2295 0.05455 0.4641 0.08471 0.7 0.09 0.4288 0 0.7241-0.3047 1.0097-0.59928 0.2671-0.27563 0.5257-0.54239 0.877-0.54239 0.3716 0 0.5933 0.515-0.1117 0.82-0.3455 0.14021-0.6611 0.34497-0.93 0.60333-0.2993 0.32022-0.4919 0.62136-0.6313 0.83938-0.1276 0.19955-0.2107 0.32949-0.2904 0.34059-0.2333 0.0334 0.2167-0.8533 0.3834-1.1083-0.2334 0.065-0.85-0.02333-1.1667-0.07833-0.8833 2.01503-1.9317 4.08833-3.6233 5.66663-1.53837 1.4417-3.3117 2.6084-6.07503 2.6084-3.43834 0-5.09167-2.2767-5.09167-4.57 0-2.3367 1.69167-4.69503 4.95-4.7017 2.60167 0 3.71 1.67333 3.69 3.3917-0.02333 1.81-1.29667 3.6666-3.4 3.6666-3.29 0-2.93833-3.9733-1.43833-3.9733 0.15971 0 0.12947 0.0515 0.03343 0.2151-0.1495 0.2545-0.45843 0.7806-0.45843 1.8066 0 0.82 0.29166 1.6666 1.66666 1.6666 1.205-0.01 2.66667-1.12 2.66667-3.235 0-5.1583-6.67667-3.7783-6.67667 1.2534 0 2.98 1.92 4.1966 3.81167 4.1966 3.42 0 6.4983-2.8716 8.8467-7.54997 1.7166-3.41 2.9033-5.02666 4.01-6.22666-0.3904-0.17225-0.8141-0.38202-1.2623-0.60391-1.5553-0.77005-3.4056-1.686093-5.1794-1.686093-4.17167 0-5.71667 6.673333-1.935 6.655003 1.64-0.00834 2.9733-1.42667 2.9733-2.13-0.0033-0.06834 0.085-0.075 0.145-0.03334 0.1038 0.12862 0.1587 0.2898 0.155 0.455 0.0084 0.22667-0.3716 2.06-2.9383 2.06-1.73167 0-3.28833-1.21666-3.28833-3.03833 0-2.20667 2.07-4.285 5.33333-4.285 2.1914 0 4.2538 1.01286 5.6353 1.69133 0.3385 0.16624 0.6361 0.3124 0.8847 0.41867zm3.6617 1.25667c-1.0273 0-2.0682-0.49182-2.8225-0.84821-0.1563-0.07382-0.3002-0.14183-0.4292-0.19846 0.8217-0.70333 1.935-1.22833 3.02-1.23167 2.5883 0 2.6967 2.27834 0.2317 2.27834zm-15.43504 12.07163c2.06-0.9033 5.19004-5.8333 5.82004-7.1933-0.37 0-2.0584 0.05666-2.0584 1.63-0.27664 0-0.54664-0.3333-0.53164-0.71 0-0.62667 0.64164-1.26834 2.80164-1.26834 0.91-1.48666 2.3334-3.45499 3.2867-4.11999 0.4017-0.27667 0.41-0.215 0.1667 0.07-0.305 0.41999-0.75 1.06499-1.2284 1.87-0.4013 0.65452-0.8133 1.43098-1.2565 2.26614-0.4144 0.78107-0.8561 1.61349-1.3418 2.44549-0.8596 1.4159-1.9277 2.6942-3.16834 3.7917-1.02667 0.8333-2.065 1.3633-2.69667 1.5-0.27833 0.0567-0.23833-0.1383 0.20667-0.285v0.0033zm17.34164-6.75663c1e-3 -0.33321-0.2684-0.60408-0.6016-0.605s-0.6041 0.26845-0.605 0.60167c-1e-3 0.33321 0.2684 0.60407 0.6016 0.60499h0.0017c0.3323 9.2e-4 0.6024-0.2677 0.6033-0.59999v-0.00167zm13.27 5.48833c0.365 0.2483 1.2717-0.4333 1.9667-1.4667 0.6967-1.0333 0.995-2.135 0.63-2.385s-1.255 0.445-1.9517 1.4817c-0.6966 1.0367-1.01 2.1217-0.645 2.37zm-21.7833-0.0333c-1.3433 0 1.1133-3.7567 2.2383-3.7567 1.41 0-1 3.7567-2.2383 3.7567zm36.0033-5.7367h2.7167v0.20833l-2.91 0.095s-0.9983 1.42667-1.8833 2.77337c-0.1184 0.1666-1.1034 1.7583-1.4267 2.3333-0.5367 0.9533-0.4917 1.5333 0.4283 1.5333 0.0236 0 0.0542-2e-3 0.0877-0.0043 0.1845-0.0124 0.4611-0.031 0.189 0.251-0.1817 0.1883-0.5683 0.2517-0.8183 0.2517-2.175 0-1.0484-1.8117-0.1267-3.1084-0.033 0.0357-0.0767 0.0862-0.1298 0.1476-0.4129 0.4771-1.3968 1.6141-2.4069 1.6141-0.585 0-0.9183-0.3633-0.9183-0.82 0-0.6533 0.6159-1.4879 1.1147-2.1636 0.5077-0.688 0.894-1.2114 0.3853-1.2114-0.16 0-0.4117 0.1433-0.7167 0.3333-0.7056 0.4516-1.3165 1.0364-1.7983 1.7217-0.755 1.01-1.4767 2.09-1.4767 2.09h-1.1216l2.0566-3.095c-0.4983 0.435-1.5483 0.76-2.0483 0.1417-0.1033 1.175-1.73 3.0933-3.04 3.0933-1.12 0-1.4033-1.1283-1.1083-2-0.85 1.085-1.7017 1.8717-2.525 1.8717-0.0236 2e-4 -0.0472-6e-4 -0.0707-0.0024-0.471-0.035-0.8243-0.4451-0.7893-0.916 0-0.5186 0.5055-1.1919 0.9597-1.7968 0.3705-0.4936 0.7069-0.9416 0.7069-1.2232 0-0.09-0.0383-0.23-0.1883-0.23-0.3133 0-0.6817 0.1934-1.0967 0.5267-0.7683 0.657-1.1066 1.173-1.6549 2.0093-0.0595 0.0907-0.1215 0.1852-0.1867 0.284-0.0938 0.1434-0.1547 0.2407-0.2162 0.3387-0.1242 0.1984-0.2507 0.4003-0.6555 0.9947h-1.125s2.0433-3.0734 2.2217-3.345c0.0063-0.0096 0.013-0.0196 0.0199-0.0301 0.1703-0.2559 0.5222-0.7849 0.0867-0.7849-0.7 0-1.9166 1.0716-2.9166 2.42-0.3884 0.5733-1.1667 1.74-1.1667 1.74h-1.1217l2.0534-3.0917c-0.318 0.1447-0.6585 0.2332-1.0067 0.2617-0.3283-0.0017-0.6333-0.16-0.6333-0.62 0.0129-0.3612 0.2573-0.6729 0.605-0.7717-0.9867 0.0417-2.36 1.34-3.705 3.3483-0.3534 0.5284-0.5934 0.8934-0.5934 0.8934h-1.12s0.5067-0.7367 1.0884-1.61c-9e-3 0.0078-0.0338 0.0337-0.0719 0.0735-0.3096 0.3232-1.4988 1.5648-2.2615 1.5648-0.7333 0-0.9466-0.7933-0.82-1.46 0 0-1.0183 1.4533-1.9733 1.4533-0.7333 0-1.0183-0.735-0.9583-1.3333-0.0042-0.0084-0.0084-0.0062-0.0138-0.0035-0.0032 0.0016-0.0069 0.0035-0.0112 0.0035-0.1317 0.2317-0.965 1.345-1.965 1.3333-2.285 0-0.5967-4.43 2.0483-4.43 0.695 0 1.04 0.275 1.04 0.86 0.1817-0.2816 0.5517-0.8333 0.5517-0.8333h1.1233s-1.1333 1.6967-1.7133 2.5867c-0.41 0.6233-0.68 1.5-0.11 1.5 0.9155 0 1.8198-1.3838 2.5518-2.5038 0.0155-0.0239 0.0311-0.0476 0.0465-0.0712 0.55-0.8367 1.0267-1.5334 1.0267-1.5334h1.125s-1.06 1.5984-1.8 2.7284c-0.5884 0.8166-0.53 1.3716-0.1417 1.3716 0.785 0 2.585-1.8016 3.5-3.2016 0.3517-0.5384 0.5917-0.8967 0.5917-0.8967h1.1183l-0.7933 1.1667 0.01 0.0116c0.8333-0.805 1.6916-1.2716 2.1666-1.2716 0.9917 0 0.9034 1.045 0.4034 1.3783l0.0129-0.0026c0.2567-0.0526 0.7806-0.16 1.0837-0.6024l0.4484-0.68h1.15l-0.7284 1.0817c0.89-0.88 1.5984-1.1084 2.0567-1.1084 1.1333 0 0.6433 1.1117 0.6333 1.1117 0.1517-0.2 0.9634-1.1117 1.9284-1.1117 0.5833 0 0.8233 0.2734 0.8233 0.7334 0.0055 0.5064-0.3586 1.0834-0.902 1.9443-0.1092 0.1732-0.2258 0.3578-0.348 0.5557-0.0124 0.0201-0.0253 0.0409-0.0387 0.0624-0.2022 0.3257-0.4901 0.7892-0.093 0.7892 0.9645 0 2.6527-2.3769 2.9096-2.7385 0.0179-0.0253 0.0288-0.0407 0.0321-0.0448 0.6683-0.8617 1.4633-1.43 2.49-1.43 0.58 0 0.9267 0.46 1.0583 0.9433 0.5234 1.5567 2.1484 0.305 2.6667-0.4433 0.0457-0.0672 0.0899-0.1349 0.1325-0.2002 0.0335-0.0514 0.066-0.1012 0.0975-0.1481h1.125l-0.7667 1.1433c0.0159-0.0135 0.0418-0.038 0.0766-0.071 0.2833-0.2683 1.157-1.0957 2.0268-1.0957 0.6183 0 0.7366 0.4484 0.7366 0.8084 0 0.5583-0.4463 1.2333-0.8443 1.8352-0.1806 0.2731-0.3512 0.5312-0.4657 0.7564-0.3666 0.7217-0.0516 0.925 0.7267 0.4 0.99-0.6666 1.9133-1.8333 2.9883-3.3683 0.3834-0.5467 0.85-1.21334 1.205-1.74834-1.0983 0.015-10.08 0.21334-10.08 0.21334l-0.5-0.5 10.7934-0.02667s0.9766-1.64667 1.7883-1.64667c0.1583 0 0.13 0.08 0.0717 0.16667l-0.9834 1.47667z';
+
+// ── LOCKUP NAME CLASSIFIER ─────────────────────────────────────────────
+// TRUE only for logo artwork that GENUINELY bakes the property name into
+// the file: Fairmont brand-team per-property packs, the legacy one-off
+// per-property SVGs, the Rimrock lockup, and the runtime-generated
+// Fairmont/Emblems data-URI lockups (which always <text> the name in).
+// Generic brand wordmarks (novotel/ibis/pullman/fairmont-monochrome-white,
+// sofitel-wordmark-white, ...) carry NO property name and must return
+// false — the renderer then prints the name exactly once as text.
+function accorLockupCarriesName(p) {
+  p = String(p || '');
+  if (!p) return false;
+  if (/^data:image\/svg\+xml/i.test(p)) return true;                                  // runtime-generated lockup (name baked in)
+  if (/\/fairmont\/(outlined|editable)_svg_(white|black|gray)\//i.test(p)) return true; // brand-team per-property packs
+  if (/\/rimrock-banff\.svg(?:[?#]|$)/i.test(p)) return true;                          // Emblems per-property file
+  if (/\/fairmont-(?!monochrome\b|full\b)[a-z0-9-]+\.svg(?:[?#]|$)/i.test(p)) return true; // legacy one-off per-property lockups
+  return false;
+}
 
 function makeFairmontLockupSvgDataUri(propertyName) {
   if (!propertyName) return null;
@@ -13585,7 +13603,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22184';
+var FIDS_BUILD_TAG = 'v22185';
 (function(){
   try {
     function _addTag(){
@@ -18667,7 +18685,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
     } catch(e) { /* fallback to setView above */ }
   }
-  try{var arc=null; if(_gateMapShowOverlay('route')){ arc=L.Polyline.Arc(o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap);} }catch(e){if(_gateMapShowOverlay('route')){var arc=L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);}}L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -18737,14 +18755,8 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // (The old single ideal arc left any real-world deviation looking
   // 'off course' with the plane floating beside the route.)
   var _pp = [planeLat, planeLng];
-  try{
-    L.Polyline.Arc(o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap);
-    L.Polyline.Arc(_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap);
-  }
-  catch(e){
-    L.polyline([o,_pp],{color:'#60a5fa',weight:4,opacity:0.9}).addTo(gateMap);
-    L.polyline([_pp,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);
-  }
+  _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
+  _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   // Actual flown track over the assigned route: GREEN where it follows the
@@ -21812,8 +21824,13 @@ function buildGateAdHtml(ad) {
     var _isPropertyLockup = false;
     if (_stripLogoPath) {
       var _lpLc = _stripLogoPath.toLowerCase();
-      _isPropertyLockup = !!(ad._propertyLockup)
-        || /\/(fairmont|sofitel|raffles|swissotel|pullman|emblems)-[a-z0-9-]+-[a-z0-9-]+\.(svg|png)$/i.test(_lpLc);
+      // Only artwork that genuinely contains the property name may suppress
+      // the separate name line. The old filename regex also matched generic
+      // brand wordmarks (sofitel-wordmark-white.svg,
+      // pullman-monochrome-white.svg, ...), silently erasing those hotels'
+      // names.
+      _isPropertyLockup = accorLockupCarriesName(ad._propertyLockup)
+        || accorLockupCarriesName(_lpLc);
     }
 
     // Brand slug — extracted from the logo filename so we can apply
@@ -22401,7 +22418,12 @@ function buildAccorAdOnlyV6(ad) {
   // brand-team file) already bake the property name INTO the logo artwork, so
   // printing the name again below it is a duplicate. Suppress the text name
   // whenever a property lockup is in use.
-  var lockupHasName=!!ad._propertyLockup;
+  // Suppress the separate name line ONLY when the resolved logo artwork
+  // genuinely contains the property name (per-property lockup). Keying off
+  // ad._propertyLockup alone misfired both ways: per-property lockup files
+  // arriving via ad.logo (non-FAI brand codes) printed the name twice, and
+  // a _propertyLockup pointing at art without the name erased it entirely.
+  var lockupHasName = accorLockupCarriesName(logo);
   var showName=!!displayName && !lockupHasName;
 
   var amenities=[];
@@ -25169,6 +25191,33 @@ function _renderWxCard(el) {
 
 
 // ── Verbatim mini-map clones for the BIG takeover (auto-substituted) ──
+// Antimeridian-safe great-circle drawer. leaflet-arc's dateline handling
+// only supports EASTWARD crossings (it offsets each split geometry by +360):
+// a WESTWARD crossing — e.g. outbound YYZ→HKG over the pole — comes back
+// with a lng jump of -180 → +540 that renders as a horizontal dashed streak
+// across the whole top of the map. Fix: unwrap the sampled points into one
+// continuous line (each lng within 180° of the previous), draw it, and when
+// the route crossed the dateline also draw a ±360°-shifted copy so the far
+// endpoint's pin connects on the primary world copy (tiles repeat, so both
+// copies land on basemap). Returns the continuous polyline — getLatLngs()
+// stays a flat array, so plane-position/bearing indexing works unchanged.
+function _gcAddArc(map, from, to, opts) {
+  var a;
+  try { a = L.Polyline.Arc(from, to, opts); }
+  catch (e) { return L.polyline([from, to], opts).addTo(map); }
+  var ll = a.getLatLngs();
+  for (var i = 1; i < ll.length; i++) {
+    while (ll[i].lng - ll[i - 1].lng >  180) ll[i].lng -= 360;
+    while (ll[i].lng - ll[i - 1].lng < -180) ll[i].lng += 360;
+  }
+  a.setLatLngs(ll).addTo(map);
+  var endLng = ll.length ? ll[ll.length - 1].lng : 0;
+  if (endLng > 180 || endLng < -180) {
+    var k = endLng > 180 ? -360 : 360;
+    L.polyline(ll.map(function (q) { return [q.lat, q.lng + k]; }), opts).addTo(map);
+  }
+  return a;
+}
 function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('bigCraftMap');if(!mb)return;
   // Resolve airport coords. If either is unknown, kick off async lookup
   // and retry — the map will populate as soon as both coords arrive.
@@ -25237,7 +25286,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       window._bigCraftMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
     } catch(e) { /* fallback to setView above */ }
   }
-  try{var arc=null; if(_gateMapShowOverlay('route')){ arc=L.Polyline.Arc(o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap);} }catch(e){if(_gateMapShowOverlay('route')){var arc=L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(window._bigCraftMap);}}L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -25296,14 +25345,8 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // (The old single ideal arc left any real-world deviation looking
   // 'off course' with the plane floating beside the route.)
   var _pp = [planeLat, planeLng];
-  try{
-    L.Polyline.Arc(o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap);
-    L.Polyline.Arc(_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap);
-  }
-  catch(e){
-    L.polyline([o,_pp],{color:'#60a5fa',weight:4,opacity:0.9}).addTo(window._bigCraftMap);
-    L.polyline([_pp,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(window._bigCraftMap);
-  }
+  _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
+  _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   // Actual flown track over the assigned route: GREEN where it follows the
