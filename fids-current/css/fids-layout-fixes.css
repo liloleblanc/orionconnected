@@ -2309,3 +2309,92 @@ html .wxcard-wrap > .wxc-globe {
   z-index: 0;
 }
 html .wxcard-wrap > *:not(.wxc-globe) { position: relative; z-index: 1; }
+
+/* ── BOARDING INFO ROW (Nick: old-config row, built from the rail's up-down
+   shelf grammar — icons, titles, metal look — smaller and horizontal).
+   Shown at the top of the boarding and final-call takeovers. ── */
+html .g8-board-info-row {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(8px, 0.9vw, 18px);
+  width: 100%;
+  margin-bottom: clamp(12px, 2vh, 26px);
+}
+html .g8-bir-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 0.8vw, 16px);
+  padding: clamp(8px, 1.2vh, 16px) clamp(10px, 1vw, 18px);
+  border-radius: 12px;
+  border-bottom: clamp(4px, 0.55vh, 7px) solid var(--banner-bg, #003A5D);
+  /* the rail's brushed-metal recipe, unchanged */
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%);
+  background-image:
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.34) 47%, rgba(255,255,255,0.10) 55%,
+      rgba(255,255,255,0) 82%),
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px, rgba(0,0,0,0.055) 2px),
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px, rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%);
+  box-shadow: 0 3px 10px rgba(5, 15, 30, 0.30);
+}
+html .g8-bir-badge {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(34px, 4.6vh, 56px);
+  height: clamp(34px, 4.6vh, 56px);
+  border-radius: 50%;
+  background: var(--airline-accent, #D82F2E);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(5, 15, 30, 0.35);
+  overflow: hidden;
+}
+html .g8-bir-badge .ac-ico { font-size: clamp(16px, 2.2vh, 27px); line-height: 1; }
+/* the rail badges' glass highlight */
+html .g8-bir-badge::after {
+  content: "";
+  position: absolute;
+  left: 13%; right: 13%; top: 6%; height: 42%;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(255,255,255,0.05));
+  pointer-events: none;
+}
+html .g8-bir-text { min-width: 0; display: flex; flex-direction: column; }
+html .g8-bir-title {
+  font-size: clamp(11px, 1.5vh, 17px);
+  font-weight: 800;
+  color: #0f2238;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: clamp(2px, 0.3vh, 4px) solid var(--airline-accent, #D82F2E);
+  padding-bottom: 2px;
+  margin-bottom: clamp(2px, 0.4vh, 5px);
+}
+html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
+html .g8-bir-val {
+  font-size: clamp(18px, 2.9vh, 38px);
+  font-weight: 900;
+  color: #0f2238;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.72em; }
+html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
+html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.8em; }
+html .g8-bir-val .g8-r2-revised { color: #b45309; }

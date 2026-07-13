@@ -6876,6 +6876,32 @@ function uxgGateHtml(ctx) {
     }
   }
 
+  // FLIGHT INFO ROW for the boarding-state takeovers (Nick: 'flight info
+  // all in a row, like the old configuration — copy what exists in the
+  // up-down configuration including icons, smaller, with the metal look').
+  // Each cell is a mini rail shelf: brushed-metal card, round accent icon
+  // badge, bilingual title with accent underline, big navy value.
+  function _boardInfoRowHtml(statusKey) {
+    var _bDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
+    var _stP = (typeof SS !== 'undefined' && SS[statusKey]) ? SS[statusKey] : null;
+    var _stTxt = _stP ? (_stP.en + ' <span class="g8-bir-sep">|</span> ' + _stP.fr) : '';
+    function _cell(icon, en, fr, val) {
+      return '<div class="g8-bir-cell">'
+        + '<div class="g8-bir-badge"><span class="ac-ico ' + icon + '"></span></div>'
+        + '<div class="g8-bir-text">'
+        +   '<div class="g8-bir-title">' + en + (fr && fr !== en ? ' <span class="g8-bir-sep">|</span> ' + fr : '') + '</div>'
+        +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
+        + '</div></div>';
+    }
+    return '<div class="g8-board-info-row">'
+      + _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || '')
+      + _cell('ac-ico-dest', 'Destination', '', _bDest + (locIata ? ' <span class="g8-bir-code">(' + locIata + ')</span>' : ''))
+      + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', boardTimeHtml)
+      + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', depTimeHtml)
+      + _cell('ac-ico-status', 'Status', 'Statut', _stTxt)
+      + '</div>';
+  }
+
   // Build boarding panel HTML
   var boardHtml = '';
   if (boardActive) {
@@ -6885,6 +6911,7 @@ function uxgGateHtml(ctx) {
     if (lateBoarding) { nowGrp = zones - 1; nextGrp = zones; }
     else { nowGrp = 1; nextGrp = 2; }
     boardHtml = '<div class="g8-board active">'
+      + _boardInfoRowHtml('boarding')
       + '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>'
       + '<div class="g8-board-body">'
       + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + TL('groupLabel') + '</div><div class="g8-board-grp-num">' + nowGrp + '</div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
@@ -6899,19 +6926,10 @@ function uxgGateHtml(ctx) {
     var finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
     var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
     var finalSub = isGateClosed ? '' : TL('proceedGate');
-    // Flight identity ON the takeover (Nick: 'why is there no flight info
-    // here') — the panel replaces the whole centre, so it must say WHICH
-    // flight it's calling.
-    var _fcDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
-    var _fcTime = currentFlight.upd || currentFlight.time || '';
-    var _fcInfo = '<div class="g8-final-flight">'
-      + (currentFlight.flight || '')
-      + (_fcDest ? ' <span class="g8-final-sep">·</span> ' + _fcDest + (locIata ? ' (' + locIata + ')' : '') : '')
-      + (_fcTime ? ' <span class="g8-final-sep">·</span> ' + _fcTime : '')
-      + '</div>';
     finalHtml = '<div class="g8-final active">'
+      + _boardInfoRowHtml(isGateClosed ? 'gateclosed' : 'final')
       + '<div class="g8-final-hdr">' + finalHdr + '</div>'
-      + '<div class="g8-final-body"><div class="g8-final-text">' + _fcInfo + '<div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
+      + '<div class="g8-final-body"><div class="g8-final-text"><div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
       + '</div>';
   }
 
@@ -13374,7 +13392,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22171';
+var FIDS_BUILD_TAG = 'v22172';
 (function(){
   try {
     function _addTag(){
