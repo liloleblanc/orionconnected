@@ -2319,7 +2319,7 @@ html .g8-board-info-row {
   gap: 0;
   width: 100%;
   margin-bottom: clamp(12px, 2vh, 26px);
-  min-height: clamp(140px, 19vh, 240px);
+  min-height: clamp(104px, 14vh, 176px);
   border-radius: 0;
   overflow: hidden;
   border-bottom: clamp(5px, 0.7vh, 9px) solid var(--banner-bg, #003A5D);
@@ -2356,8 +2356,8 @@ html .g8-bir-cell:last-child { border-right: 0; }
 html .g8-bir-badge {
   position: relative;
   flex: 0 0 auto;
-  width: clamp(64px, 9vh, 112px);
-  height: clamp(64px, 9vh, 112px);
+  width: clamp(52px, 7vh, 88px);
+  height: clamp(52px, 7vh, 88px);
   border-radius: 50%;
   background: var(--airline-accent, #D82F2E);
   display: inline-flex;
@@ -2367,7 +2367,7 @@ html .g8-bir-badge {
   box-shadow: 0 2px 8px rgba(5, 15, 30, 0.35);
   overflow: hidden;
 }
-html .g8-bir-badge .ac-ico { font-size: clamp(30px, 4.4vh, 56px); line-height: 1; }
+html .g8-bir-badge .ac-ico { font-size: clamp(24px, 3.4vh, 44px); line-height: 1; }
 html .g8-bir-badge::after {
   content: "";
   position: absolute;
@@ -2378,7 +2378,7 @@ html .g8-bir-badge::after {
 }
 html .g8-bir-text { min-width: 0; display: flex; flex-direction: column; }
 html .g8-bir-title {
-  font-size: clamp(17px, 2.5vh, 30px);
+  font-size: clamp(14px, 2vh, 24px);
   font-weight: 800;
   color: #0f2238;
   white-space: nowrap;
@@ -2390,7 +2390,7 @@ html .g8-bir-title {
 }
 html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 html .g8-bir-val {
-  font-size: clamp(42px, 6.8vh, 96px);
+  font-size: clamp(30px, 4.8vh, 66px);
   font-weight: 900;
   color: #0f2238;
   line-height: 1.02;
@@ -2403,4 +2403,4 @@ html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }
 html .g8-bir-val .g8-r2-revised { color: #b45309; }
 /* the STATUS cell carries the longest bilingual values — size to fit */
-html .g8-bir-cell:last-child .g8-bir-val { font-size: clamp(30px, 4.8vh, 68px); }
+html .g8-bir-cell:last-child .g8-bir-val { font-size: clamp(24px, 3.8vh, 52px); }

@@ -6908,7 +6908,28 @@ function uxgGateHtml(ctx) {
     var lateBoarding = minsToDep <= 18;
     var _grpLbl = TL('groupLabel');
     var nowVal, nextVal;
-    if (airlineCode === 'PD') {
+    if (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK') {
+      // Air Canada family boards by ZONE (Nick, per AC's published policy):
+      // priority Zones 1•2 first, then general boarding Zone 3, then Zones
+      // 4•5•6 on Mainline/Rouge — Express (Jazz/PAL) tops out at Zone 4.
+      // NOTE: the local _opCode/_opName vars are declared later in this
+      // function — read the flight object directly, plus the contractual
+      // AC-Express flight-number ranges (AC7000-8999 = Jazz/PAL).
+      var _acExpress = (airlineCode === 'QK')
+        || currentFlight._opCode === 'QK' || currentFlight._opCode === 'PB'
+        || (function () {
+             var m = String(currentFlight.flight || '').match(/(\d+)/);
+             return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
+           })();
+      _grpLbl = 'Zone';
+      if (lateBoarding) {
+        nowVal = '3';
+        nextVal = _acExpress ? '4' : '4 \u2022 5 \u2022 6';
+      } else {
+        nowVal = '1 \u2022 2';
+        nextVal = '3';
+      }
+    } else if (airlineCode === 'PD') {
       // Porter boards by ROW NUMBER, back to front (Nick). Row count by
       // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
       var _pdRows = /DH4|DH8|Q400|DASH/i.test(String(equipRaw || '')) ? 20 : 29;
@@ -13408,7 +13429,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22173';
+var FIDS_BUILD_TAG = 'v22174';
 (function(){
   try {
     function _addTag(){
