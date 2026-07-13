@@ -6929,6 +6929,18 @@ function uxgGateHtml(ctx) {
         nowVal = '1 \u2022 2';
         nextVal = '3';
       }
+    } else if (airlineCode === 'WS' || airlineCode === 'WR') {
+      // WestJet boards by ZONE (Nick, per WestJet's published system and the
+      // gate signage): Zone 1 premium / top tier, Zone 2 Extended Comfort,
+      // Zones 3-8 general back-to-front, Zone 9 UltraBasic last.
+      _grpLbl = 'Zone';
+      if (lateBoarding) {
+        nowVal = '3 \u2013 8';
+        nextVal = '9';
+      } else {
+        nowVal = '1 \u2022 2';
+        nextVal = '3 \u2013 8';
+      }
     } else if (airlineCode === 'PD') {
       // Porter boards by ROW NUMBER, back to front (Nick). Row count by
       // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
@@ -13429,7 +13441,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22174';
+var FIDS_BUILD_TAG = 'v22175';
 (function(){
   try {
     function _addTag(){
