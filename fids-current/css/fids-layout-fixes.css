@@ -2260,16 +2260,29 @@ html .g8-final .g8-final-flight .g8-final-sep { opacity: .55; font-weight: 400; 
 
 /* ── Star Alliance mark: PROPORTIONATE beside the wordmark (Nick vetoed the
    104px square blob) — small, centered, subtle, like real airline lockups. ── */
+/* The logo zone ends where the Time tab begins — constrain it so the
+   alliance lockup SHRINKS to fit instead of running under the tab and
+   getting clipped (Nick's circle, YYZ). */
+html body .g8-wrap .g8-r1-logoslot {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  max-width: calc(100vw - var(--gate-rcw, 25%) - 2 * var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;
+  overflow: hidden !important;
+}
+html body .g8-wrap .g8-r1-logoslot > img:first-child { flex: 0 1 auto; min-width: 0; }
 html body .g8-wrap .g8-r1-star {
   width: auto !important;
   min-width: 0 !important;
-  height: clamp(54px, 7.6vh, 88px) !important;
+  height: auto !important;
   min-height: 0 !important;
-  max-width: none !important;
-  max-height: clamp(54px, 7.6vh, 88px) !important;
+  max-width: min(15vw, 300px) !important;
+  max-height: clamp(48px, 7vh, 82px) !important;
   margin-left: 26px !important;
   opacity: 1 !important;
   align-self: center !important;
+  flex: 0 1 auto !important;
+  object-fit: contain !important;
 }
 
 /* ── YQM main/baggage boards: the Acadian flag lives in the banner tabs too
