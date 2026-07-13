@@ -3762,7 +3762,12 @@ function g8LogoFail(img) {
 
 // Operating carrier for regional flights
 function getAirlineAccent(code) {
-  return AIRLINE_ACCENT[code] || AIRLINE_ACCENT[(code||'').substring(0,2)] || '#0033A1';
+  var c = String(code || '').toUpperCase();
+  // AIRLINE_BRAND carries accents for carriers the accent map never got
+  // (Caribbean etc.) — falling straight to navy painted their icons wrong.
+  return AIRLINE_ACCENT[c] || AIRLINE_ACCENT[c.substring(0, 2)]
+    || (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent)
+    || '#0033A1';
 }
 
 // ── AIR CANADA EXPRESS CODE-PAIRING MATRIX (enforced) ────────────────────
@@ -5457,6 +5462,10 @@ function _buildV2AircraftCol(ctx, vars) {
       // shape gets a white filter applied and sits on the red CSS circle,
       // same treatment as the other icon badges. No more PNG-with-own-bg.
       function _emblemImg(code) {
+        // Flair's mark IS the green dot — render exactly that, nothing inside.
+        if (code === 'F8') {
+          return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;background:#7AFF94;"></div>';
+        }
         var path = AIRLINE_EMBLEM_FILES[code];
         // v218.99.69 — Airlines whose emblem files are full-color tiles
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
@@ -5529,7 +5538,11 @@ function _buildV2AircraftCol(ctx, vars) {
 
       // v218.99.32 — Inline-style every badge so the cascade can't lie.
       // Single source of truth for what a flight-info badge looks like.
-      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,#D82F2E);color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // Flair (Nick): black badges with the green glyph inside; the airline
+      // badge itself is the plain green dot (handled in _emblemImg).
+      var _railBadgeBg = (_alCodeEmb === 'F8') ? '#141414' : 'var(--airline-accent,#D82F2E)';
+      var _railBadgeInk = (_alCodeEmb === 'F8') ? '#7AFF94' : '#fff';
+      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _railBadgeBg + ';color:' + _railBadgeInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       function _badge(svg) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
       }
@@ -6983,10 +6996,16 @@ function uxgGateHtml(ctx) {
   function _boardInfoRowHtml(statusKey) {
     var _bDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
     var _stP = (typeof SS !== 'undefined' && SS[statusKey]) ? SS[statusKey] : null;
-    var _stTxt = _stP ? (_stP.en + ' <span class="g8-bir-sep">|</span> ' + _stP.fr) : '';
+    // EN and FR each get their OWN line — free wrapping let 'Gate closed |
+    // Porte fermée' break into four giant lines and balloon the whole row.
+    var _stTxt = _stP ? ('<span class="g8-bir-st2">' + _stP.en + '</span><span class="g8-bir-st2">' + _stP.fr + '</span>') : '';
+    // Flair brand palette (Nick): airline icon = the plain green dot; every
+    // other badge is BLACK with the green glyph inside.
+    var _birF8 = (airlineCode === 'F8');
+    var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"' : '';
     function _cell(icon, en, fr, val) {
       return '<div class="g8-bir-cell">'
-        + '<div class="g8-bir-badge"><span class="ac-ico ' + icon + '"></span></div>'
+        + '<div class="g8-bir-badge"' + _birBadgeStyle + '><span class="ac-ico ' + icon + '"></span></div>'
         + '<div class="g8-bir-text">'
         +   '<div class="g8-bir-title">' + en + (fr && fr !== en ? ' <span class="g8-bir-sep">|</span> ' + fr : '') + '</div>'
         +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
@@ -6998,10 +7017,14 @@ function uxgGateHtml(ctx) {
     var _birFlightIcon = _birEmblemPath
       ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);padding:14%;box-sizing:border-box;">'
       : null;
+    // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
+    var _birFlightBadge = _birF8
+      ? '<div class="g8-bir-badge" style="background:#7AFF94;"></div>'
+      : (_birFlightIcon ? '<div class="g8-bir-badge">' + _birFlightIcon + '</div>' : null);
     return '<div class="g8-board-info-row">'
-      + (_birFlightIcon
+      + (_birFlightBadge
           ? '<div class="g8-bir-cell">'
-            + '<div class="g8-bir-badge">' + _birFlightIcon + '</div>'
+            + _birFlightBadge
             + '<div class="g8-bir-text">'
             +   '<div class="g8-bir-title">Flight <span class="g8-bir-sep">|</span> Vol</div>'
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
@@ -7707,6 +7730,9 @@ function uxgGateHtml(ctx) {
        // wordmarks on the left.
        + ' style="--g8-tab-w:clamp(240px,17.5vw,420px)'
        + ';--airline-accent:' + accent
+       // Lane/takeover surfaces need white lettering — pre-darken accents
+       // that are too light for it (Flair lime, Southwest yellow).
+       + ';--accent-lane:' + (_hexIsLight(accent) ? 'color-mix(in srgb, ' + accent + ' 55%, #141a14)' : accent)
        // 3rd brand colour (airline-colors.js r3) — distinct accent for the
        // secondary line etc. Falls back to the main accent when not defined.
        + ';--airline-accent3:' + ((_bannerSpec && _bannerSpec.r3) ? _bannerSpec.r3 : accent)
@@ -13553,7 +13579,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22182';
+var FIDS_BUILD_TAG = 'v22183';
 (function(){
   try {
     function _addTag(){

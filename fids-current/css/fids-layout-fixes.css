@@ -2240,6 +2240,16 @@ html .g8-wrap .g8-r1-star {
   opacity: 0.95 !important;
 }
 
+/* Final/closed panel surfaces follow the darkened lane accent so light
+   brand colours (Flair lime) don't wash out the takeover. */
+html .g8-final-hdr {
+  background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important;
+  color: #ffffff;
+}
+html .g8-final-body {
+  background: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #D82F2E)) 52%, #10141b) !important;
+}
+
 /* ── Final-call / gate-closed takeover: WHITE text on the deep-red panel
    (the navy ink was near-black on red — unreadable, Nick's YHZ shot),
    plus the new flight-identity line. ── */
@@ -2332,7 +2342,8 @@ html .g8-board-info-row {
   gap: 0;
   width: 100%;
   margin-bottom: clamp(12px, 2vh, 26px);
-  min-height: clamp(118px, 16.5vh, 210px);
+  min-height: clamp(106px, 14.5vh, 184px);
+  max-height: clamp(126px, 17vh, 216px);
   border-radius: 0;
   overflow: hidden;
   border-bottom: clamp(5px, 0.7vh, 9px) solid var(--banner-bg, #003A5D);
@@ -2415,14 +2426,18 @@ html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.68e
 html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }
 html .g8-bir-val .g8-r2-revised { color: #b45309; }
-/* the STATUS cell carries the longest bilingual values — stack the EN/FR
-   pair on two lines instead of clipping one long line */
+/* the STATUS cell stacks EN over FR — exactly two lines, each nowrap.
+   Free wrapping let 'Gate closed | Porte fermée' become four giant lines
+   and balloon the whole row (Nick: 'why is it so thick'). */
 html .g8-bir-cell:last-child .g8-bir-val {
-  font-size: clamp(32px, 5.6vh, 82px);
-  white-space: normal;
-  line-height: 1.06;
+  font-size: clamp(24px, 4.2vh, 60px);
+  display: flex;
+  flex-direction: column;
+  line-height: 1.08;
+  white-space: nowrap;
   text-overflow: clip;
 }
+html .g8-bir-cell:last-child .g8-bir-val .g8-bir-st2 { display: block; }
 html .g8-bir-cell:last-child .g8-bir-val .g8-bir-sep { display: none; }
 
 /* ── Boarding zone panels EXACTLY like the physical gate sign (Nick: 'look
@@ -2435,7 +2450,9 @@ html .g8-board-hdr-next {
   border-bottom: none !important;
 }
 html .g8-board-hdr-now, html .g8-board-col.now { background: var(--banner-bg, #0b0f16) !important; }
-html .g8-board-hdr-next, html .g8-board-col.next { background: var(--airline-accent, #D82F2E) !important; }
+/* --accent-lane = the accent, pre-darkened by JS when the brand colour is
+   too light for white lettering (Flair lime, Southwest yellow). */
+html .g8-board-hdr-next, html .g8-board-col.next { background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important; }
 html .g8-board-col.next { border-left: none !important; }
 html .g8-board-col .g8-board-grp-label,
 html .g8-board-col .g8-board-grp-num,
