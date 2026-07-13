@@ -2332,7 +2332,7 @@ html .g8-board-info-row {
   gap: 0;
   width: 100%;
   margin-bottom: clamp(12px, 2vh, 26px);
-  min-height: clamp(104px, 14vh, 176px);
+  min-height: clamp(118px, 16.5vh, 210px);
   border-radius: 0;
   overflow: hidden;
   border-bottom: clamp(5px, 0.7vh, 9px) solid var(--banner-bg, #003A5D);
@@ -2403,7 +2403,7 @@ html .g8-bir-title {
 }
 html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 html .g8-bir-val {
-  font-size: clamp(40px, 6.8vh, 100px);
+  font-size: clamp(46px, 8.6vh, 128px);
   font-weight: 900;
   color: #0f2238;
   line-height: 1.02;
@@ -2418,7 +2418,7 @@ html .g8-bir-val .g8-r2-revised { color: #b45309; }
 /* the STATUS cell carries the longest bilingual values — stack the EN/FR
    pair on two lines instead of clipping one long line */
 html .g8-bir-cell:last-child .g8-bir-val {
-  font-size: clamp(28px, 4.6vh, 66px);
+  font-size: clamp(32px, 5.6vh, 82px);
   white-space: normal;
   line-height: 1.06;
   text-overflow: clip;
@@ -2447,10 +2447,35 @@ html .g8-board-col .g8-board-grp-label { opacity: 0.88; }
 html .g8-board-col .g8-board-lane { opacity: 0.82; }
 
 /* Lane-direction arrows beside the zone numerals, like the physical signage
-   (Nick: 'no arrows either — those should be available'). */
-html .g8-board-grp-wrap { display: flex; align-items: center; justify-content: center; gap: clamp(10px, 2vw, 36px); }
-html .g8-board-arrow {
+   (Nick: 'no arrows either — those should be available'). The font-size
+   lives on the WRAP and both the numeral and arrow track it at 1em, so the
+   shrink-to-fit scanner can scale the whole group when a multi-zone value
+   ('4 • 5 • 6') is too wide for the column — Nick's YYZ shot had it
+   wrapping onto a second line and blowing out of the panel. */
+/* Columns must stay 50/50 — flex min-width:auto let a long zone list
+   ('2 • 3 • 4 • 5 • 6') push the red column wide and starve the black one,
+   and the fit scanner never saw overflow because the column just grew. */
+html .g8-board-col {
+  min-width: 0;
+  overflow: hidden;
+}
+html .g8-board-grp-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 36px);
   font-size: clamp(120px, 18vw, 220px);
+  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+html .g8-board-grp-num {
+  font-size: 1em !important;
+  white-space: nowrap;
+}
+html .g8-board-arrow {
+  font-size: 1em !important;
   font-weight: 900;
   line-height: 1;
 }
@@ -2462,9 +2487,9 @@ html .g8-board-welcome {
   align-items: center;
   justify-content: center;
   gap: clamp(16px, 1.8vw, 34px);
-  background: #0b0f16;
+  background: #ffffff;
   padding: clamp(12px, 1.9vh, 26px) clamp(14px, 1.4vw, 28px);
-  margin-bottom: clamp(10px, 1.6vh, 22px);
+  margin-bottom: 0;
 }
 html .g8-board-welcome .g8-bw-emblem {
   height: clamp(44px, 6.4vh, 80px);
@@ -2472,13 +2497,50 @@ html .g8-board-welcome .g8-bw-emblem {
   object-fit: contain;
 }
 html .g8-bw-text {
-  color: #ffffff;
+  color: #10151d;
   font-weight: 800;
   font-size: clamp(32px, 4.8vh, 66px);
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
 html .g8-bw-text .g8-bw-sep { opacity: 0.55; }
+/* SkyTeam only ships as a white png — darken it so it survives the white
+   strip (AF/KL edge case). */
+html .g8-board-welcome .g8-bw-star img[src*="skyteam-white"] {
+  filter: invert(1) brightness(0.4);
+}
+
+/* Vertical rail badges get the exact same glass finish as the boarding
+   row's orbs (Nick: red icons vertically too — one badge language). */
+html .v2-fi-icon-badge {
+  position: relative;
+  box-shadow: 0 2px 8px rgba(5, 15, 30, 0.35);
+}
+html .v2-fi-icon-badge::after {
+  content: "";
+  position: absolute;
+  left: 13%; right: 13%; top: 6%; height: 42%;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(255,255,255,0.05));
+  pointer-events: none;
+}
+
+/* Countdown takeover carries the same info-row + welcome shell as
+   boarding/final; the counter itself centers in the remaining space. */
+html .g8-countdown {
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: 0 !important;
+  text-align: center;
+}
+html .g8-cd-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
 /* Specificity must beat the logoslot-scoped `html body .g8-wrap .g8-r1-star`
    sizing rule, or the strip's copy inherits the banner constraints. The
    height must be DEFINITE: the lockup SVG is viewBox-only (no intrinsic

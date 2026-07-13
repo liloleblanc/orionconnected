@@ -2106,11 +2106,41 @@ function requestGateRebuild() {
     _gateKeyResetTimer = null;
   }, 300); // Wait 300ms to batch multiple data updates
 }
+// ── Codeshare guard for GATE screens (Nick: a Qantas codeshare number must
+// never brand an American flight). The same physical departure can appear
+// under several marketing numbers; keep the row whose marketing carrier
+// matches the OPERATING carrier's family, and rebrand a lone foreign-
+// codeshare row to the operator's mainline.
+var _CS_REGIONAL_FAM = { 'QK':'AC','RV':'AC','ZX':'AC','9M':'AC','PB':'AC','WR':'WS','P3':'PD','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','OO':'UA','YV':'UA','G7':'UA','YX':'UA','QX':'AS' };
+function _gateCsPick(list) {
+  function fam(c) { return _CS_REGIONAL_FAM[c] || c || ''; }
+  function foreign(f) { return !!(f._opCode && fam(f._opCode) !== fam(f.airline)); }
+  var out = [];
+  (list || []).forEach(function (f) {
+    var i = -1;
+    for (var j = 0; j < out.length; j++) {
+      var k = out[j];
+      if ((k._locIata || k.dest) === (f._locIata || f.dest)
+          && Math.abs((k._sortTs || 0) - (f._sortTs || 0)) <= 5 * 60000) { i = j; break; }
+    }
+    if (i === -1) { out.push(f); return; }
+    if (foreign(out[i]) && !foreign(f)) out[i] = f;   // operator's own row wins
+  });
+  out.forEach(function (f) {
+    if (foreign(f)) {
+      var fm = fam(f._opCode);
+      f._csRebrandFrom = f._csRebrandFrom || f.airline;
+      f.airline = fm;
+      if (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[fm]) f._airlineName = AIRLINE_NAME[fm];
+    }
+  });
+  return out;
+}
 function getDedicatedRenderKey() {
   const iata = document.getElementById('apSel').value;
   if (screenType === 'gate') {
     const _nowMs2 = Date.now();
-    const gateFlights = (data.dep || [])
+    const gateFlights = _gateCsPick((data.dep || [])
       .filter(f => {
         if (f.gate !== subScreenVal && f.flight !== subScreenVal) return false;
         if (f.status === 'cancelled' || f.status === 'departed') return false;
@@ -2118,7 +2148,7 @@ function getDedicatedRenderKey() {
         if (_effDep && (_nowMs2 - _effDep) > 10 * 60000) return false;
         return true;
       })
-      .sort((a,b) => a._sortTs - b._sortTs);
+      .sort((a,b) => a._sortTs - b._sortTs));
     const first = gateFlights[0];
     const second = gateFlights[1];
     return JSON.stringify({
@@ -2162,7 +2192,7 @@ function updateDedicatedTimeOnly() {
   // Update boarding countdown
   if (screenType === 'gate') {
     const _nowMs3 = Date.now();
-    const gateFlights = (data.dep || [])
+    const gateFlights = _gateCsPick((data.dep || [])
       .filter(f => {
         if (f.gate !== subScreenVal && f.flight !== subScreenVal) return false;
         if (f.status === 'cancelled' || f.status === 'departed') return false;
@@ -2170,7 +2200,7 @@ function updateDedicatedTimeOnly() {
         if (_effDep && (_nowMs3 - _effDep) > 10 * 60000) return false;
         return true;
       })
-      .sort((a,b) => a._sortTs - b._sortTs);
+      .sort((a,b) => a._sortTs - b._sortTs));
     const cf = gateFlights[0];
     const cdEl = document.querySelector('.gate-countdown-big .gate-countdown-val');
     if (cf && cdEl) {
@@ -5596,7 +5626,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fnNumber || _fiFlightNo || '—'), 'v2-fi-dest')
+        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || _fnNumber || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
@@ -6934,10 +6964,14 @@ function uxgGateHtml(ctx) {
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
   function _boardWelcomeStripHtml() {
     var _bwEmb = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    // The strip is WHITE like the printed sign, so the Star Alliance mark
+    // must be the original dark-lettered lockup, not the brightened one
+    // made for the black banner.
+    var _bwStar = starHtml ? starHtml.replace('StarGray-bright-text.svg', 'StarGray.svg') : '';
     return '<div class="g8-board-welcome">'
       + (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
       + '<div class="g8-bw-text">Welcome <span class="g8-bw-sep">\u00b7</span> Bienvenue</div>'
-      + (starHtml ? '<span class="g8-bw-star">' + starHtml + '</span>' : '')
+      + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
       + '</div>';
   }
 
@@ -7000,12 +7034,14 @@ function uxgGateHtml(ctx) {
              return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
            })();
       _grpLbl = 'Zone';
+      // Lane model per the physical AC gate signs (Nick): BLACK lane 1 is
+      // Zone 1, RED lane 2 is everyone else. Zones 1 and 2 board at all
+      // times; 3-6 are called by number as boarding progresses.
+      nowVal = '1';
       if (lateBoarding) {
-        nowVal = '3';
-        nextVal = _acExpress ? '4' : '4 \u2022 5 \u2022 6';
+        nextVal = _acExpress ? '2 \u2022 3 \u2022 4' : '2 \u2022 3 \u2022 4 \u2022 5 \u2022 6';
       } else {
-        nowVal = '1 \u2022 2';
-        nextVal = '3';
+        nextVal = '2 \u2022 3';
       }
     } else if (airlineCode === 'WS' || airlineCode === 'WR') {
       // WestJet boards by ZONE (Nick, per WestJet's published system and the
@@ -7037,13 +7073,20 @@ function uxgGateHtml(ctx) {
       if (lateBoarding) { nowVal = zones - 1; nextVal = zones; }
       else { nowVal = 1; nextVal = 2; }
     }
+    // AC-family lane mode mirrors the printed sign exactly: no now/next
+    // header row, no label over the black "1", and the red side titled
+    // "Zones" (Nick's design picture).
+    var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK');
+    var _nowLbl = _acLanes ? '' : _grpLbl;
+    var _nextLbl = _acLanes ? 'Zones' : _grpLbl;
+    var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>';
     boardHtml = '<div class="g8-board active">'
-      + _boardWelcomeStripHtml()
       + _boardInfoRowHtml('boarding')
-      + '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>'
+      + _boardWelcomeStripHtml()
+      + _bHdr
       + '<div class="g8-board-body">'
-      + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _grpLbl + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-      + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _grpLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+      + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+      + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
       + '</div></div>';
   }
 
@@ -7054,23 +7097,53 @@ function uxgGateHtml(ctx) {
     var finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
     var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
     var finalSub = isGateClosed ? '' : TL('proceedGate');
-    finalHtml = '<div class="g8-final active">'
-      + _boardWelcomeStripHtml()
-      + _boardInfoRowHtml(isGateClosed ? 'gateclosed' : 'final')
-      + '<div class="g8-final-hdr">' + finalHdr + '</div>'
-      + '<div class="g8-final-body"><div class="g8-final-text"><div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
-      + '</div>';
+    if (isGateClosed) {
+      // Closed gate: no 'Welcome' strip (Nick) — just the facts.
+      finalHtml = '<div class="g8-final active">'
+        + _boardInfoRowHtml('gateclosed')
+        + '<div class="g8-final-hdr">' + finalHdr + '</div>'
+        + '<div class="g8-final-body"><div class="g8-final-text"><div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
+        + '</div>';
+    } else {
+      // FINAL CALL: same lane-panel format as boarding (Nick: 'the ALL
+      // zones needs the same format with arrows') — every group called.
+      var _fcAcFam = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK');
+      var _fcExpress = (airlineCode === 'QK')
+        || currentFlight._opCode === 'QK' || currentFlight._opCode === 'PB'
+        || (function () {
+             var m = String(currentFlight.flight || '').match(/(\d+)/);
+             return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
+           })();
+      var _fcNext, _fcNextLbl = 'Zones';
+      if (_fcAcFam) _fcNext = _fcExpress ? '2 • 3 • 4' : '2 • 3 • 4 • 5 • 6';
+      else if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
+      else if (airlineCode === 'PD') { _fcNextLbl = 'Rows <span class="g8-bir-sep">|</span> Rangées'; _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes'; }
+      else _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes';
+      finalHtml = '<div class="g8-final active">'
+        + _boardInfoRowHtml('final')
+        + _boardWelcomeStripHtml()
+        + '<div class="g8-final-hdr">' + finalHdr + '</div>'
+        + '<div class="g8-board-body">'
+        + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+        + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+        + '</div></div>';
+    }
   }
 
   // Build countdown panel
   var countdownHtml = '';
   if (showCountdown) {
+    // Same shell as boarding/final (Nick: 'this applies to all') — flight
+    // info row + welcome strip on every takeover, countdown included.
     countdownHtml = '<div class="g8-countdown">'
+      + _boardInfoRowHtml(stKey)
+      + _boardWelcomeStripHtml()
+      + '<div class="g8-cd-body">'
       + '<div class="g8-cd-label">' + TL('boardBegins') + '</div>'
       + '<div class="g8-cd-value">' + minsToBoard + '</div>'
       + '<div class="g8-cd-unit">' + TL('minutes') + '</div>'
       + '<div class="g8-cd-sub">' + TL('remainSeated') + '</div>'
-      + '</div>';
+      + '</div></div>';
   }
 
   // Determine which row4 content to show
@@ -8375,7 +8448,7 @@ const gView = document.getElementById('gateView');
     bView.style.display = 'none';
 
     const _nowMs = Date.now();
-    const gateFlights = (data.dep || [])
+    const gateFlights = _gateCsPick((data.dep || [])
       .filter(f => {
         if (f.gate !== subScreenVal && f.flight !== subScreenVal) return false;
         if (f.status === 'cancelled') return false;
@@ -8386,7 +8459,7 @@ const gView = document.getElementById('gateView');
         if (_effDep && (_nowMs - _effDep) > 10 * 60000) return false;
         return true;
       })
-      .sort((a,b) => a._sortTs - b._sortTs);
+      .sort((a,b) => a._sortTs - b._sortTs));
     const currentFlight = gateFlights[0];
     const nextFlight = gateFlights[1];
 
@@ -13480,7 +13553,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22181';
+var FIDS_BUILD_TAG = 'v22182';
 (function(){
   try {
     function _addTag(){
@@ -19978,7 +20051,10 @@ var GATE_ADS_BY_AIRLINE = {
     { bg:'linear-gradient(135deg,#003876 0%,#002a5c 100%)', headline:'TrueBlue', sub:'Earn points on every JetBlue flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/jetblue.svg' },
   ],
   'LH': [
-    { bg:'linear-gradient(135deg,#05164D 0%,#0a2470 100%)', headline:'Miles & More', sub:'Earn award miles with Lufthansa \u00b7 Star Alliance', logo:'/logos/airlines/european/lufthansa.svg' },
+    // lufthansa.svg has a baked-in white background rect \u2014 under the
+    // white-invert filter it rendered as a solid white square (Nick). The
+    // monochrome lockup is transparent-background and filters cleanly.
+    { bg:'linear-gradient(135deg,#05164D 0%,#0a2470 100%)', headline:'Miles & More', sub:'Earn award miles with Lufthansa \u00b7 Star Alliance', logo:'/logos/airlines/european/Lufthansa_Logo_2018-monochrome-white.svg' },
   ],
   'AF': [
     { bg:'linear-gradient(135deg,#002157 0%,#003380 100%)', headline:'Flying Blue', sub:'Earn miles with Air France \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/air-france.svg' },
@@ -23384,11 +23460,22 @@ function _buildGateAdSlideList() {
     deck.push(accorSlides[0]);
   }
 
-  // ── 5. Graceful fallback — never all-Accor, never blank.
+  // ── 5. Graceful fallback — never all-Accor, never blank. Airlines with
+  // no house ads (EK, QR…) get a BRANDED welcome slide — their gradient,
+  // emblem and name — instead of the bare grey placeholder Nick flagged.
   if (!deck.length) {
     if (accorSlides.length) deck = [accorSlides[0]];          // at most ONE Accor
     else if (airlineAdSlides.length) deck = airlineAdSlides;  // airline ads
-    else deck = [{ type: 'ad', data: { bg: 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)', headline: 'Welcome aboard', sub: 'Gate information display' } }];
+    else {
+      var _fb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[code]) || null;
+      var _fbLogo = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[code]) || null;
+      deck = [{ type: 'ad', data: {
+        bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
+        headline: 'Welcome aboard · Bienvenue à bord',
+        sub: (_fb && _fb.name) ? _fb.name : '',
+        logo: _fbLogo
+      } }];
+    }
   }
 
   // ── 6. YOUR AIRCRAFT — BIG (Nick, Jul 2026): the 3D map is RETIRED.
@@ -24072,7 +24159,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // setProperty('important') because the gate fields' sizes are pinned with
     // !important in CSS — a plain inline style would lose the cascade.
     var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
-      + ' .g8-bir-val, .g8-bir-title,'
+      + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-dest,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-status-val,'
       + ' .gad-map-col-v2 .v2-rc-acb-actype,'
@@ -24088,7 +24175,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (el.dataset.fitW === _fp || !el.clientWidth) continue;
       el.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(el).fontSize) || 16;
-      var size = base, guard = 12;
+      var size = base, guard = 16;
       while (el.scrollWidth > el.clientWidth && size > base * 0.35 && guard-- > 0) {
         size -= Math.max(1, size * 0.07);
         el.style.setProperty('font-size', size + 'px', 'important');
@@ -24102,6 +24189,15 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   setTimeout(_scanAndUpgrade, 1500);
   // Continuous: every 2s catches re-rendered slides
   setInterval(_scanAndUpgrade, 2000);
+  // Refit once webfonts land — the early passes measure with the fallback
+  // font, and the width+text fingerprint then blocks the refit forever,
+  // leaving values ellipsized ('AC6…') after the real font widens them.
+  try {
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () {
+      document.querySelectorAll('[data-fit-w]').forEach(function (el) { delete el.dataset.fitW; });
+      _scanAndUpgrade();
+    });
+  } catch (e) {}
 })();
 
 
