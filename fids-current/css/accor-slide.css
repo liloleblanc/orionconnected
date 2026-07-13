@@ -50,13 +50,9 @@
 .axr-list li{ position:relative; padding-left:1.65em; font-size:calc(var(--axr-info) * 1.18); font-weight:400;
   line-height:1.3; max-width:92%; letter-spacing:.005em; }
 .axr-list li::before{ content:"\203A"; position:absolute; left:0; color:var(--all-gold); font-weight:700; }
-/* AC icon bullets: page 2 (the hotel) = circled check; page 3 (dining) = fork & knife */
-.axr-page:nth-child(2) .axr-list li::before,
-.axr-page:nth-child(3) .axr-list li::before{
-  font-family:'ac-icons' !important; font-weight:normal; font-style:normal;
-  font-size:.92em; top:.14em; }
-.axr-page:nth-child(2) .axr-list li::before{ content:'\e972'; }
-.axr-page:nth-child(3) .axr-list li::before{ content:'\e965'; }
+/* All pages use the gold chevron bullet. The old per-page icon-font glyphs
+   (\e972/\e965) rendered as red ✕ marks on the amenity lists — they read
+   as "not available" (Nick's ibis shot). */
 .axr-blurb{ margin:calc(var(--axr-info) * 0.6) 0 0; font-size:calc(var(--axr-info) * 1.02); font-weight:300;
   line-height:1.46; opacity:.94; max-width:88%; letter-spacing:.01em;
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
@@ -110,7 +106,7 @@
 .axr-logo{ height:var(--axr-logo); display:flex; align-items:flex-end; }
 .axr-logo img, .axr-logo svg{ height:100%; width:auto; max-width:min(60%,400px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
-.axr-logo svg{ max-width:min(54%,360px) !important; }
+.axr-logo svg{ max-width:min(54%,360px) !important; max-height:clamp(96px,17vh,168px); }
 .axr-logo img{ height:100%; width:auto; max-width:min(58%,360px); object-fit:contain;
   object-position:left center; filter:drop-shadow(0 2px 8px rgba(0,0,0,.55)); }
 .axr-logo-text{ font-family:var(--axr-display); font-weight:700; font-size:var(--axr-logo); line-height:1;

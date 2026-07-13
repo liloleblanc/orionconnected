@@ -2240,6 +2240,20 @@ html .g8-wrap .g8-r1-star {
   opacity: 0.95 !important;
 }
 
+/* Final-call surfaces follow the darkened lane accent so light brand
+   colours (Flair lime) don't wash out the takeover. */
+html .g8-final-hdr {
+  background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important;
+  color: #ffffff;
+}
+html .g8-final-body {
+  background: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #D82F2E)) 52%, #10141b) !important;
+}
+/* GATE CLOSED is an alarm state, not a brand moment — deep red for every
+   airline (a green 'closed' screen reads as GO, Nick's Flair shot). */
+html .g8-final-closed .g8-final-hdr { background: #B91C1C !important; }
+html .g8-final-closed .g8-final-body { background: color-mix(in srgb, #B91C1C 38%, #0f1116) !important; }
+
 /* ── Final-call / gate-closed takeover: WHITE text on the deep-red panel
    (the navy ink was near-black on red — unreadable, Nick's YHZ shot),
    plus the new flight-identity line. ── */
@@ -2260,16 +2274,29 @@ html .g8-final .g8-final-flight .g8-final-sep { opacity: .55; font-weight: 400; 
 
 /* ── Star Alliance mark: PROPORTIONATE beside the wordmark (Nick vetoed the
    104px square blob) — small, centered, subtle, like real airline lockups. ── */
+/* The logo zone ends where the Time tab begins — constrain it so the
+   alliance lockup SHRINKS to fit instead of running under the tab and
+   getting clipped (Nick's circle, YYZ). */
+html body .g8-wrap .g8-r1-logoslot {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  max-width: calc(100vw - var(--gate-rcw, 25%) - 2 * var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;
+  overflow: hidden !important;
+}
+html body .g8-wrap .g8-r1-logoslot > img:first-child { flex: 0 1 auto; min-width: 0; }
 html body .g8-wrap .g8-r1-star {
   width: auto !important;
   min-width: 0 !important;
-  height: clamp(54px, 7.6vh, 88px) !important;
+  height: auto !important;
   min-height: 0 !important;
-  max-width: none !important;
-  max-height: clamp(54px, 7.6vh, 88px) !important;
+  max-width: min(15vw, 300px) !important;
+  max-height: clamp(48px, 7vh, 82px) !important;
   margin-left: 26px !important;
   opacity: 1 !important;
   align-self: center !important;
+  flex: 0 1 auto !important;
+  object-fit: contain !important;
 }
 
 /* ── YQM main/baggage boards: the Acadian flag lives in the banner tabs too
@@ -2309,3 +2336,252 @@ html .wxcard-wrap > .wxc-globe {
   z-index: 0;
 }
 html .wxcard-wrap > *:not(.wxc-globe) { position: relative; z-index: 1; }
+
+/* ── BOARDING INFO ROW (Nick: ONE continuous row, not separate cards —
+   flight number and data bigger, same icons, thicker row). A single
+   full-width brushed-metal bar; segments divided by thin rules. ── */
+html .g8-board-info-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  margin-bottom: clamp(12px, 2vh, 26px);
+  min-height: clamp(106px, 14.5vh, 184px);
+  max-height: clamp(126px, 17vh, 216px);
+  border-radius: 0;
+  overflow: hidden;
+  border-bottom: clamp(5px, 0.7vh, 9px) solid var(--banner-bg, #003A5D);
+  /* the rail's brushed-metal recipe — one bar, whole row */
+  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%);
+  background-image:
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.34) 47%, rgba(255,255,255,0.10) 55%,
+      rgba(255,255,255,0) 82%),
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px, rgba(0,0,0,0.055) 2px),
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px, rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%);
+  box-shadow: 0 4px 14px rgba(5, 15, 30, 0.32);
+}
+html .g8-bir-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1vw, 20px);
+  padding: clamp(10px, 1.6vh, 22px) clamp(8px, 0.8vw, 16px);
+  background: transparent;
+  border-right: 2px solid rgba(15, 34, 56, 0.18);
+}
+html .g8-bir-cell:last-child { border-right: 0; }
+html .g8-bir-badge {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(52px, 7vh, 88px);
+  height: clamp(52px, 7vh, 88px);
+  border-radius: 50%;
+  background: var(--airline-accent, #D82F2E);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(5, 15, 30, 0.35);
+  overflow: hidden;
+}
+html .g8-bir-badge .ac-ico { font-size: clamp(24px, 3.4vh, 44px); line-height: 1; }
+/* Glyphs take the BADGE's ink — font.css paints .ac-ico white directly,
+   which stomped per-airline badge inks (Flair's green, Nick). */
+html .g8-bir-badge .ac-ico,
+html .v2-fi-icon-wrap .ac-ico {
+  color: inherit;
+}
+html .g8-bir-badge::after {
+  content: "";
+  position: absolute;
+  left: 13%; right: 13%; top: 6%; height: 42%;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(255,255,255,0.05));
+  pointer-events: none;
+}
+html .g8-bir-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+html .g8-bir-title {
+  font-size: clamp(14px, 2vh, 24px);
+  font-weight: 800;
+  color: #0f2238;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: clamp(2px, 0.35vh, 5px) solid var(--airline-accent, #D82F2E);
+  padding-bottom: 3px;
+  margin-bottom: clamp(3px, 0.6vh, 8px);
+}
+html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
+html .g8-bir-val {
+  font-size: clamp(46px, 8.6vh, 128px);
+  font-weight: 900;
+  color: #0f2238;
+  line-height: 1.02;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.68em; }
+html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
+html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }
+html .g8-bir-val .g8-r2-revised { color: #b45309; }
+/* the STATUS cell stacks EN over FR — exactly two lines, each nowrap.
+   Free wrapping let 'Gate closed | Porte fermée' become four giant lines
+   and balloon the whole row (Nick: 'why is it so thick'). */
+html .g8-bir-cell:last-child .g8-bir-val {
+  font-size: clamp(24px, 4.2vh, 60px);
+  display: flex;
+  flex-direction: column;
+  line-height: 1.08;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+html .g8-bir-cell:last-child .g8-bir-val .g8-bir-st2 { display: block; }
+html .g8-bir-cell:last-child .g8-bir-val .g8-bir-sep { display: none; }
+
+/* ── Boarding zone panels EXACTLY like the physical gate sign (Nick: 'look
+   at the sign — black and red background, white lettering'): each side is a
+   solid colored slab — the airline's dark tone on the left, its accent on
+   the right — with every label, numeral and arrow in WHITE on top. ── */
+html .g8-board-hdr-now,
+html .g8-board-hdr-next {
+  color: #ffffff !important;
+  border-bottom: none !important;
+}
+html .g8-board-hdr-now, html .g8-board-col.now { background: var(--banner-bg, #0b0f16) !important; }
+/* --accent-lane = the accent, pre-darkened by JS when the brand colour is
+   too light for white lettering (Flair lime, Southwest yellow). */
+html .g8-board-hdr-next, html .g8-board-col.next { background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important; }
+html .g8-board-col.next { border-left: none !important; }
+html .g8-board-col .g8-board-grp-label,
+html .g8-board-col .g8-board-grp-num,
+html .g8-board-col .g8-board-arrow,
+html .g8-board-col .g8-board-lane {
+  color: #ffffff !important;
+}
+html .g8-board-col .g8-board-grp-label { opacity: 0.88; }
+html .g8-board-col .g8-board-lane { opacity: 0.82; }
+
+/* Lane-direction arrows beside the zone numerals, like the physical signage
+   (Nick: 'no arrows either — those should be available'). The font-size
+   lives on the WRAP and both the numeral and arrow track it at 1em, so the
+   shrink-to-fit scanner can scale the whole group when a multi-zone value
+   ('4 • 5 • 6') is too wide for the column — Nick's YYZ shot had it
+   wrapping onto a second line and blowing out of the panel. */
+/* Columns must stay 50/50 — flex min-width:auto let a long zone list
+   ('2 • 3 • 4 • 5 • 6') push the red column wide and starve the black one,
+   and the fit scanner never saw overflow because the column just grew. */
+html .g8-board-col {
+  min-width: 0;
+  overflow: hidden;
+}
+html .g8-board-grp-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 36px);
+  font-size: clamp(120px, 18vw, 220px);
+  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+html .g8-board-grp-num {
+  font-size: 1em !important;
+  white-space: nowrap;
+}
+html .g8-board-arrow {
+  font-size: 1em !important;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* ── Boarding takeover WELCOME strip: rondelle · Welcome | Bienvenue ·
+   alliance lockup, like the physical gate sign header (Nick). ── */
+html .g8-board-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 1.8vw, 34px);
+  background: #ffffff;
+  padding: clamp(12px, 1.9vh, 26px) clamp(14px, 1.4vw, 28px);
+  margin-bottom: 0;
+}
+html .g8-board-welcome .g8-bw-emblem {
+  height: clamp(44px, 6.4vh, 80px);
+  width: auto;
+  object-fit: contain;
+}
+html .g8-bw-text {
+  color: #10151d;
+  font-weight: 800;
+  font-size: clamp(32px, 4.8vh, 66px);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+html .g8-bw-text .g8-bw-sep { opacity: 0.55; }
+/* SkyTeam only ships as a white png — darken it so it survives the white
+   strip (AF/KL edge case). */
+html .g8-board-welcome .g8-bw-star img[src*="skyteam-white"] {
+  filter: invert(1) brightness(0.4);
+}
+
+/* Vertical rail badges get the exact same glass finish as the boarding
+   row's orbs (Nick: red icons vertically too — one badge language). */
+html .v2-fi-icon-badge {
+  position: relative;
+  box-shadow: 0 2px 8px rgba(5, 15, 30, 0.35);
+}
+html .v2-fi-icon-badge::after {
+  content: "";
+  position: absolute;
+  left: 13%; right: 13%; top: 6%; height: 42%;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(255,255,255,0.05));
+  pointer-events: none;
+}
+
+/* Countdown takeover carries the same info-row + welcome shell as
+   boarding/final; the counter itself centers in the remaining space. */
+html .g8-countdown {
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: 0 !important;
+  text-align: center;
+}
+html .g8-cd-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+/* Specificity must beat the logoslot-scoped `html body .g8-wrap .g8-r1-star`
+   sizing rule, or the strip's copy inherits the banner constraints. The
+   height must be DEFINITE: the lockup SVG is viewBox-only (no intrinsic
+   width/height), so `height:auto` computes to 0×0 and the mark vanishes. */
+html body .g8-wrap .g8-board-welcome .g8-bw-star img,
+html body .g8-wrap .g8-board-welcome .g8-r1-star,
+html .g8-board-welcome .g8-r1-star {
+  display: block !important;
+  height: clamp(44px, 6.4vh, 80px) !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  width: auto !important;
+  max-width: min(17vw, 300px) !important;
+  margin-left: 0 !important;
+  opacity: 1 !important;
+  object-fit: contain !important;
+}

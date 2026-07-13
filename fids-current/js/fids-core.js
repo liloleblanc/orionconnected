@@ -2106,11 +2106,41 @@ function requestGateRebuild() {
     _gateKeyResetTimer = null;
   }, 300); // Wait 300ms to batch multiple data updates
 }
+// ── Codeshare guard for GATE screens (Nick: a Qantas codeshare number must
+// never brand an American flight). The same physical departure can appear
+// under several marketing numbers; keep the row whose marketing carrier
+// matches the OPERATING carrier's family, and rebrand a lone foreign-
+// codeshare row to the operator's mainline.
+var _CS_REGIONAL_FAM = { 'QK':'AC','RV':'AC','ZX':'AC','9M':'AC','PB':'AC','WR':'WS','P3':'PD','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','OO':'UA','YV':'UA','G7':'UA','YX':'UA','QX':'AS' };
+function _gateCsPick(list) {
+  function fam(c) { return _CS_REGIONAL_FAM[c] || c || ''; }
+  function foreign(f) { return !!(f._opCode && fam(f._opCode) !== fam(f.airline)); }
+  var out = [];
+  (list || []).forEach(function (f) {
+    var i = -1;
+    for (var j = 0; j < out.length; j++) {
+      var k = out[j];
+      if ((k._locIata || k.dest) === (f._locIata || f.dest)
+          && Math.abs((k._sortTs || 0) - (f._sortTs || 0)) <= 5 * 60000) { i = j; break; }
+    }
+    if (i === -1) { out.push(f); return; }
+    if (foreign(out[i]) && !foreign(f)) out[i] = f;   // operator's own row wins
+  });
+  out.forEach(function (f) {
+    if (foreign(f)) {
+      var fm = fam(f._opCode);
+      f._csRebrandFrom = f._csRebrandFrom || f.airline;
+      f.airline = fm;
+      if (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[fm]) f._airlineName = AIRLINE_NAME[fm];
+    }
+  });
+  return out;
+}
 function getDedicatedRenderKey() {
   const iata = document.getElementById('apSel').value;
   if (screenType === 'gate') {
     const _nowMs2 = Date.now();
-    const gateFlights = (data.dep || [])
+    const gateFlights = _gateCsPick((data.dep || [])
       .filter(f => {
         if (f.gate !== subScreenVal && f.flight !== subScreenVal) return false;
         if (f.status === 'cancelled' || f.status === 'departed') return false;
@@ -2118,7 +2148,7 @@ function getDedicatedRenderKey() {
         if (_effDep && (_nowMs2 - _effDep) > 10 * 60000) return false;
         return true;
       })
-      .sort((a,b) => a._sortTs - b._sortTs);
+      .sort((a,b) => a._sortTs - b._sortTs));
     const first = gateFlights[0];
     const second = gateFlights[1];
     return JSON.stringify({
@@ -2162,7 +2192,7 @@ function updateDedicatedTimeOnly() {
   // Update boarding countdown
   if (screenType === 'gate') {
     const _nowMs3 = Date.now();
-    const gateFlights = (data.dep || [])
+    const gateFlights = _gateCsPick((data.dep || [])
       .filter(f => {
         if (f.gate !== subScreenVal && f.flight !== subScreenVal) return false;
         if (f.status === 'cancelled' || f.status === 'departed') return false;
@@ -2170,7 +2200,7 @@ function updateDedicatedTimeOnly() {
         if (_effDep && (_nowMs3 - _effDep) > 10 * 60000) return false;
         return true;
       })
-      .sort((a,b) => a._sortTs - b._sortTs);
+      .sort((a,b) => a._sortTs - b._sortTs));
     const cf = gateFlights[0];
     const cdEl = document.querySelector('.gate-countdown-big .gate-countdown-val');
     if (cf && cdEl) {
@@ -2820,7 +2850,7 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
       out.brandName = 'Fairmont';
       out.logo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
       out._customLogo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
-      out._propertyLockup = '/logos/hotels/fairmont-pacific-rim.svg';
+      out._propertyLockup = '/logos/hotels/accor-luxury/fairmont/outlined_svg_white/017_Fairmont_Pacific_Rim.svg';
       out._forceProperty = true;
       return Object.assign({}, ad || {}, out);
     }
@@ -2833,7 +2863,7 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
       out.brandName = 'Fairmont';
       out.logo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
       out._customLogo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
-      out._propertyLockup = '/logos/hotels/fairmont-pacific-rim.svg';
+      out._propertyLockup = '/logos/hotels/accor-luxury/fairmont/outlined_svg_white/017_Fairmont_Pacific_Rim.svg';
       out._forceProperty = true;
       return Object.assign({}, ad || {}, out);
     }
@@ -3203,6 +3233,24 @@ var FAIRMONT_PROPERTY_LOCKUPS = {
 //
 // Path data extracted from /logos/fairmont.svg (the wordmark itself).
 var _FAIRMONT_WORDMARK_D = 'm18.225 2.61c0.9746-0.82412 2.207-1.28109 3.4833-1.29167l0.0084 0.00834c3.4916 0 3.0783 3.10833 0 3.10833-1.1426 0-2.6476-0.67372-3.3676-0.99601-0.1013-0.04533-0.1871-0.08375-0.2541-0.11232-1.235 1.11-2.6 3.86666-3.145 5.2 0.2295 0.05455 0.4641 0.08471 0.7 0.09 0.4288 0 0.7241-0.3047 1.0097-0.59928 0.2671-0.27563 0.5257-0.54239 0.877-0.54239 0.3716 0 0.5933 0.515-0.1117 0.82-0.3455 0.14021-0.6611 0.34497-0.93 0.60333-0.2993 0.32022-0.4919 0.62136-0.6313 0.83938-0.1276 0.19955-0.2107 0.32949-0.2904 0.34059-0.2333 0.0334 0.2167-0.8533 0.3834-1.1083-0.2334 0.065-0.85-0.02333-1.1667-0.07833-0.8833 2.01503-1.9317 4.08833-3.6233 5.66663-1.53837 1.4417-3.3117 2.6084-6.07503 2.6084-3.43834 0-5.09167-2.2767-5.09167-4.57 0-2.3367 1.69167-4.69503 4.95-4.7017 2.60167 0 3.71 1.67333 3.69 3.3917-0.02333 1.81-1.29667 3.6666-3.4 3.6666-3.29 0-2.93833-3.9733-1.43833-3.9733 0.15971 0 0.12947 0.0515 0.03343 0.2151-0.1495 0.2545-0.45843 0.7806-0.45843 1.8066 0 0.82 0.29166 1.6666 1.66666 1.6666 1.205-0.01 2.66667-1.12 2.66667-3.235 0-5.1583-6.67667-3.7783-6.67667 1.2534 0 2.98 1.92 4.1966 3.81167 4.1966 3.42 0 6.4983-2.8716 8.8467-7.54997 1.7166-3.41 2.9033-5.02666 4.01-6.22666-0.3904-0.17225-0.8141-0.38202-1.2623-0.60391-1.5553-0.77005-3.4056-1.686093-5.1794-1.686093-4.17167 0-5.71667 6.673333-1.935 6.655003 1.64-0.00834 2.9733-1.42667 2.9733-2.13-0.0033-0.06834 0.085-0.075 0.145-0.03334 0.1038 0.12862 0.1587 0.2898 0.155 0.455 0.0084 0.22667-0.3716 2.06-2.9383 2.06-1.73167 0-3.28833-1.21666-3.28833-3.03833 0-2.20667 2.07-4.285 5.33333-4.285 2.1914 0 4.2538 1.01286 5.6353 1.69133 0.3385 0.16624 0.6361 0.3124 0.8847 0.41867zm3.6617 1.25667c-1.0273 0-2.0682-0.49182-2.8225-0.84821-0.1563-0.07382-0.3002-0.14183-0.4292-0.19846 0.8217-0.70333 1.935-1.22833 3.02-1.23167 2.5883 0 2.6967 2.27834 0.2317 2.27834zm-15.43504 12.07163c2.06-0.9033 5.19004-5.8333 5.82004-7.1933-0.37 0-2.0584 0.05666-2.0584 1.63-0.27664 0-0.54664-0.3333-0.53164-0.71 0-0.62667 0.64164-1.26834 2.80164-1.26834 0.91-1.48666 2.3334-3.45499 3.2867-4.11999 0.4017-0.27667 0.41-0.215 0.1667 0.07-0.305 0.41999-0.75 1.06499-1.2284 1.87-0.4013 0.65452-0.8133 1.43098-1.2565 2.26614-0.4144 0.78107-0.8561 1.61349-1.3418 2.44549-0.8596 1.4159-1.9277 2.6942-3.16834 3.7917-1.02667 0.8333-2.065 1.3633-2.69667 1.5-0.27833 0.0567-0.23833-0.1383 0.20667-0.285v0.0033zm17.34164-6.75663c1e-3 -0.33321-0.2684-0.60408-0.6016-0.605s-0.6041 0.26845-0.605 0.60167c-1e-3 0.33321 0.2684 0.60407 0.6016 0.60499h0.0017c0.3323 9.2e-4 0.6024-0.2677 0.6033-0.59999v-0.00167zm13.27 5.48833c0.365 0.2483 1.2717-0.4333 1.9667-1.4667 0.6967-1.0333 0.995-2.135 0.63-2.385s-1.255 0.445-1.9517 1.4817c-0.6966 1.0367-1.01 2.1217-0.645 2.37zm-21.7833-0.0333c-1.3433 0 1.1133-3.7567 2.2383-3.7567 1.41 0-1 3.7567-2.2383 3.7567zm36.0033-5.7367h2.7167v0.20833l-2.91 0.095s-0.9983 1.42667-1.8833 2.77337c-0.1184 0.1666-1.1034 1.7583-1.4267 2.3333-0.5367 0.9533-0.4917 1.5333 0.4283 1.5333 0.0236 0 0.0542-2e-3 0.0877-0.0043 0.1845-0.0124 0.4611-0.031 0.189 0.251-0.1817 0.1883-0.5683 0.2517-0.8183 0.2517-2.175 0-1.0484-1.8117-0.1267-3.1084-0.033 0.0357-0.0767 0.0862-0.1298 0.1476-0.4129 0.4771-1.3968 1.6141-2.4069 1.6141-0.585 0-0.9183-0.3633-0.9183-0.82 0-0.6533 0.6159-1.4879 1.1147-2.1636 0.5077-0.688 0.894-1.2114 0.3853-1.2114-0.16 0-0.4117 0.1433-0.7167 0.3333-0.7056 0.4516-1.3165 1.0364-1.7983 1.7217-0.755 1.01-1.4767 2.09-1.4767 2.09h-1.1216l2.0566-3.095c-0.4983 0.435-1.5483 0.76-2.0483 0.1417-0.1033 1.175-1.73 3.0933-3.04 3.0933-1.12 0-1.4033-1.1283-1.1083-2-0.85 1.085-1.7017 1.8717-2.525 1.8717-0.0236 2e-4 -0.0472-6e-4 -0.0707-0.0024-0.471-0.035-0.8243-0.4451-0.7893-0.916 0-0.5186 0.5055-1.1919 0.9597-1.7968 0.3705-0.4936 0.7069-0.9416 0.7069-1.2232 0-0.09-0.0383-0.23-0.1883-0.23-0.3133 0-0.6817 0.1934-1.0967 0.5267-0.7683 0.657-1.1066 1.173-1.6549 2.0093-0.0595 0.0907-0.1215 0.1852-0.1867 0.284-0.0938 0.1434-0.1547 0.2407-0.2162 0.3387-0.1242 0.1984-0.2507 0.4003-0.6555 0.9947h-1.125s2.0433-3.0734 2.2217-3.345c0.0063-0.0096 0.013-0.0196 0.0199-0.0301 0.1703-0.2559 0.5222-0.7849 0.0867-0.7849-0.7 0-1.9166 1.0716-2.9166 2.42-0.3884 0.5733-1.1667 1.74-1.1667 1.74h-1.1217l2.0534-3.0917c-0.318 0.1447-0.6585 0.2332-1.0067 0.2617-0.3283-0.0017-0.6333-0.16-0.6333-0.62 0.0129-0.3612 0.2573-0.6729 0.605-0.7717-0.9867 0.0417-2.36 1.34-3.705 3.3483-0.3534 0.5284-0.5934 0.8934-0.5934 0.8934h-1.12s0.5067-0.7367 1.0884-1.61c-9e-3 0.0078-0.0338 0.0337-0.0719 0.0735-0.3096 0.3232-1.4988 1.5648-2.2615 1.5648-0.7333 0-0.9466-0.7933-0.82-1.46 0 0-1.0183 1.4533-1.9733 1.4533-0.7333 0-1.0183-0.735-0.9583-1.3333-0.0042-0.0084-0.0084-0.0062-0.0138-0.0035-0.0032 0.0016-0.0069 0.0035-0.0112 0.0035-0.1317 0.2317-0.965 1.345-1.965 1.3333-2.285 0-0.5967-4.43 2.0483-4.43 0.695 0 1.04 0.275 1.04 0.86 0.1817-0.2816 0.5517-0.8333 0.5517-0.8333h1.1233s-1.1333 1.6967-1.7133 2.5867c-0.41 0.6233-0.68 1.5-0.11 1.5 0.9155 0 1.8198-1.3838 2.5518-2.5038 0.0155-0.0239 0.0311-0.0476 0.0465-0.0712 0.55-0.8367 1.0267-1.5334 1.0267-1.5334h1.125s-1.06 1.5984-1.8 2.7284c-0.5884 0.8166-0.53 1.3716-0.1417 1.3716 0.785 0 2.585-1.8016 3.5-3.2016 0.3517-0.5384 0.5917-0.8967 0.5917-0.8967h1.1183l-0.7933 1.1667 0.01 0.0116c0.8333-0.805 1.6916-1.2716 2.1666-1.2716 0.9917 0 0.9034 1.045 0.4034 1.3783l0.0129-0.0026c0.2567-0.0526 0.7806-0.16 1.0837-0.6024l0.4484-0.68h1.15l-0.7284 1.0817c0.89-0.88 1.5984-1.1084 2.0567-1.1084 1.1333 0 0.6433 1.1117 0.6333 1.1117 0.1517-0.2 0.9634-1.1117 1.9284-1.1117 0.5833 0 0.8233 0.2734 0.8233 0.7334 0.0055 0.5064-0.3586 1.0834-0.902 1.9443-0.1092 0.1732-0.2258 0.3578-0.348 0.5557-0.0124 0.0201-0.0253 0.0409-0.0387 0.0624-0.2022 0.3257-0.4901 0.7892-0.093 0.7892 0.9645 0 2.6527-2.3769 2.9096-2.7385 0.0179-0.0253 0.0288-0.0407 0.0321-0.0448 0.6683-0.8617 1.4633-1.43 2.49-1.43 0.58 0 0.9267 0.46 1.0583 0.9433 0.5234 1.5567 2.1484 0.305 2.6667-0.4433 0.0457-0.0672 0.0899-0.1349 0.1325-0.2002 0.0335-0.0514 0.066-0.1012 0.0975-0.1481h1.125l-0.7667 1.1433c0.0159-0.0135 0.0418-0.038 0.0766-0.071 0.2833-0.2683 1.157-1.0957 2.0268-1.0957 0.6183 0 0.7366 0.4484 0.7366 0.8084 0 0.5583-0.4463 1.2333-0.8443 1.8352-0.1806 0.2731-0.3512 0.5312-0.4657 0.7564-0.3666 0.7217-0.0516 0.925 0.7267 0.4 0.99-0.6666 1.9133-1.8333 2.9883-3.3683 0.3834-0.5467 0.85-1.21334 1.205-1.74834-1.0983 0.015-10.08 0.21334-10.08 0.21334l-0.5-0.5 10.7934-0.02667s0.9766-1.64667 1.7883-1.64667c0.1583 0 0.13 0.08 0.0717 0.16667l-0.9834 1.47667z';
+
+// ── LOCKUP NAME CLASSIFIER ─────────────────────────────────────────────
+// TRUE only for logo artwork that GENUINELY bakes the property name into
+// the file: Fairmont brand-team per-property packs, the legacy one-off
+// per-property SVGs, the Rimrock lockup, and the runtime-generated
+// Fairmont/Emblems data-URI lockups (which always <text> the name in).
+// Generic brand wordmarks (novotel/ibis/pullman/fairmont-monochrome-white,
+// sofitel-wordmark-white, ...) carry NO property name and must return
+// false — the renderer then prints the name exactly once as text.
+function accorLockupCarriesName(p) {
+  p = String(p || '');
+  if (!p) return false;
+  if (/^data:image\/svg\+xml/i.test(p)) return true;                                  // runtime-generated lockup (name baked in)
+  if (/\/fairmont\/(outlined|editable)_svg_(white|black|gray)\//i.test(p)) return true; // brand-team per-property packs
+  if (/\/rimrock-banff\.svg(?:[?#]|$)/i.test(p)) return true;                          // Emblems per-property file
+  if (/\/fairmont-(?!monochrome\b|full\b)[a-z0-9-]+\.svg(?:[?#]|$)/i.test(p)) return true; // legacy one-off per-property lockups
+  return false;
+}
 
 function makeFairmontLockupSvgDataUri(propertyName) {
   if (!propertyName) return null;
@@ -3732,7 +3780,12 @@ function g8LogoFail(img) {
 
 // Operating carrier for regional flights
 function getAirlineAccent(code) {
-  return AIRLINE_ACCENT[code] || AIRLINE_ACCENT[(code||'').substring(0,2)] || '#0033A1';
+  var c = String(code || '').toUpperCase();
+  // AIRLINE_BRAND carries accents for carriers the accent map never got
+  // (Caribbean etc.) — falling straight to navy painted their icons wrong.
+  return AIRLINE_ACCENT[c] || AIRLINE_ACCENT[c.substring(0, 2)]
+    || (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent)
+    || '#0033A1';
 }
 
 // ── AIR CANADA EXPRESS CODE-PAIRING MATRIX (enforced) ────────────────────
@@ -4356,7 +4409,11 @@ function aircraftCodeToIata(raw) {
                  // v218.99.48 — Nick noted API sometimes returns bare '757' instead of 752/753.
                  // 757-200 is far more common than -300; default to that. Specific "757-200"
                  // and "757-300" full strings are matched by regex below and override this.
-                 '757':'752' };
+                 '757':'752',
+                 // A350 family: 'A35K' is the ICAO code for the A350-1000 (e.g. B-LXA);
+                 // bare '350'/'A35' (feed shorthand or upstream truncation) default to the
+                 // -900 image — there is no aircraft/A35.png or 350.png, only 359/351.
+                 '350':'359', 'A35':'359', 'A35K':'351' };
   if (_REMAP[s]) return _REMAP[s];
   // Try without hyphens: "DHC-3" → "DHC3" → REMAP
   var sNoH = s.replace(/-/g, '');
@@ -4472,6 +4529,7 @@ function aircraftCodeToIata(raw) {
   if (/A[\s-]*340[\s-]*600/i.test(s)) return '346';
   if (/A[\s-]*350[\s-]*900|A359/i.test(s)) return '359';
   if (/A[\s-]*350[\s-]*1000|A351/i.test(s)) return '351';
+  if (/A[\s-]*350/i.test(s)) return '359'; // generic A350 (no series) → -900 most common
   if (/A[\s-]*380/i.test(s)) return '388';
 
   // ── Embraer E2 family (newer generation — Porter, Azul, Helvetic) ──
@@ -4585,9 +4643,16 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     onerror = _markMiss
       + "var fbs=" + fbJson + ";var i=parseInt(this.dataset.fbi||'0',10);"
       + "if(i<fbs.length){this.dataset.fbi=String(i+1);this.src=fbs[i]+'" + _imgCacheBuster + "';}"
-      + "else{this.style.display='none';}";
+      // Terminal: try the generic white plane once, then hide with PRIORITY
+      // 'important' — the stylesheet's `display:block !important` on
+      // .g8-aircraft-img beats a plain inline hide, which is how the
+      // broken-image icon (alt "A35") leaked onto the panel.
+      + "else if(!this.dataset.gfb){this.dataset.gfb='1';this.src='aircraft/320.png" + _imgCacheBuster + "';}"
+      + "else{this.style.setProperty('display','none','important');}";
   } else {
-    onerror = _markMiss + "this.style.display='none';";
+    onerror = _markMiss
+      + "if(!this.dataset.gfb){this.dataset.gfb='1';this.src='aircraft/320.png" + _imgCacheBuster + "';}"
+      + "else{this.style.setProperty('display','none','important');}";
   }
   var onload = "try{window._detectPlaneFacing&&window._detectPlaneFacing(this);}catch(e){}";
   return '<img class="' + cls + '" src="' + srcWithBust + '" alt="' + eq + '"' + (style ? ' style="' + style + '"' : '') + ' onload="' + onload + '" onerror="' + onerror + '">';
@@ -5150,6 +5215,33 @@ function buildV2GateLayout(ctx, vars) {
 // ─── V2 AIRCRAFT COLUMN BUILDER ───────────────────────────────────────────
 // Class-based markup matching gids-v218.78.css.
 // Structure: header > livery > 3-row data > inbound panel.
+var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
+        // Canadian carriers
+        'AC':  '/logos/airlines/canadian/AC.TO.svg',
+        'AC1': '/logos/airlines/canadian/AC.TO.svg',
+        'QK':  '/logos/airlines/canadian/AC.TO.svg',
+        'RV':  '/logos/airlines/canadian/AC.TO.svg',
+        'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
+        'WR':  '/logos/symbols/airlines-mono/WS.svg',
+        'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
+        'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
+        'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
+        // US majors — symbol-only emblems (rendered white on the accent badge)
+        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // United globe (white path only, padded to sit inside the round badge)
+        'DL':  '/logos/airlines/us-major/delta-widget.svg',
+        'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
+        'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
+        'F9':  '/logos/airlines/us-major/frontier-emblem.svg',
+        '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
+        'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
+        // International
+        'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
+        'AF':  '/logos/airlines/european/air-france-emblem.svg?v=2',   // rebuilt Jul 2026 — official accent path, centered (old file was a clipped sliver)
+        'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
+        'BW':  '/logos/airlines/asian-other/caribbean-emblem.png',     // official hummingbird (airline's own brand art)
+        '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg'
+};
+
 function _buildV2AircraftCol(ctx, vars) {
   var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
   var iata = vars.iata, tz = vars.tz, locIata = vars.locIata;
@@ -5399,33 +5491,11 @@ function _buildV2AircraftCol(ctx, vars) {
       // v218.99.33 — Airline emblem using REAL symbol-only SVGs. The leaf
       // shape gets a white filter applied and sits on the red CSS circle,
       // same treatment as the other icon badges. No more PNG-with-own-bg.
-      var AIRLINE_EMBLEM_FILES = {
-        // Canadian carriers
-        'AC':  '/logos/airlines/canadian/AC.TO.svg',
-        'AC1': '/logos/airlines/canadian/AC.TO.svg',
-        'QK':  '/logos/airlines/canadian/AC.TO.svg',
-        'RV':  '/logos/airlines/canadian/AC.TO.svg',
-        'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
-        'WR':  '/logos/symbols/airlines-mono/WS.svg',
-        'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
-        'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
-        'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
-        // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // United globe (white path only, padded to sit inside the round badge)
-        'DL':  '/logos/airlines/us-major/delta-widget.svg',
-        'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
-        'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
-        'F9':  '/logos/airlines/us-major/frontier-emblem.svg',
-        '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
-        'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
-        // International
-        'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
-        'AF':  '/logos/airlines/european/air-france-emblem.svg?v=2',   // rebuilt Jul 2026 — official accent path, centered (old file was a clipped sliver)
-        'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
-        'BW':  '/logos/airlines/asian-other/caribbean-emblem.png',     // official hummingbird (airline's own brand art)
-        '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg'
-      };
       function _emblemImg(code) {
+        // Flair's mark IS the green dot — render exactly that, nothing inside.
+        if (code === 'F8') {
+          return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;background:#7AFF94;"></div>';
+        }
         var path = AIRLINE_EMBLEM_FILES[code];
         // v218.99.69 — Airlines whose emblem files are full-color tiles
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
@@ -5498,7 +5568,11 @@ function _buildV2AircraftCol(ctx, vars) {
 
       // v218.99.32 — Inline-style every badge so the cascade can't lie.
       // Single source of truth for what a flight-info badge looks like.
-      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,#D82F2E);color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // Flair (Nick): black badges with the green glyph inside; the airline
+      // badge itself is the plain green dot (handled in _emblemImg).
+      var _railBadgeBg = (_alCodeEmb === 'F8') ? '#141414' : 'var(--airline-accent,#D82F2E)';
+      var _railBadgeInk = (_alCodeEmb === 'F8') ? '#7AFF94' : '#fff';
+      var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _railBadgeBg + ';color:' + _railBadgeInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       function _badge(svg) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
       }
@@ -5595,7 +5669,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fnNumber || _fiFlightNo || '—'), 'v2-fi-dest')
+        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || _fnNumber || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
@@ -6689,7 +6763,9 @@ function uxgGateHtml(ctx) {
   } else if (inbDelayed) {
     r3Left = TL('inbDelayed');
   } else if (showBoarding) {
-    r3Left = TL('nowBoardMsg') + ' ' + gateVal + '.';
+    // Boarding takeover carries the welcome strip + info row — the 'Now
+    // boarding. Please proceed to gate X.' strip is redundant (Nick).
+    r3Left = '';
   } else if (showCountdown) {
     r3Left = TL('boardApprox') + ' ' + minsToBoard + ' ' + (minsToBoard!==1?TL('minutes').toLowerCase():TL('minute').toLowerCase()) + '.';
   } else if (minsToDep <= (boardLeadMins + 55) && minsToDep > (boardLeadMins + 25)) {
@@ -6876,78 +6952,6 @@ function uxgGateHtml(ctx) {
     }
   }
 
-  // Build boarding panel HTML
-  var boardHtml = '';
-  if (boardActive) {
-    var zones = getZoneCount(airlineCode, equipRaw);
-    var lateBoarding = minsToDep <= 18;
-    var nowGrp, nextGrp;
-    if (lateBoarding) { nowGrp = zones - 1; nextGrp = zones; }
-    else { nowGrp = 1; nextGrp = 2; }
-    boardHtml = '<div class="g8-board active">'
-      + '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>'
-      + '<div class="g8-board-body">'
-      + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + TL('groupLabel') + '</div><div class="g8-board-grp-num">' + nowGrp + '</div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-      + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + TL('groupLabel') + '</div><div class="g8-board-grp-num">' + nextGrp + '</div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
-      + '</div></div>';
-  }
-
-  // Build final call HTML
-  var finalHtml = '';
-  if (finalActive) {
-    var isGateClosed = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed');
-    var finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
-    var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
-    var finalSub = isGateClosed ? '' : TL('proceedGate');
-    // Flight identity ON the takeover (Nick: 'why is there no flight info
-    // here') — the panel replaces the whole centre, so it must say WHICH
-    // flight it's calling.
-    var _fcDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
-    var _fcTime = currentFlight.upd || currentFlight.time || '';
-    var _fcInfo = '<div class="g8-final-flight">'
-      + (currentFlight.flight || '')
-      + (_fcDest ? ' <span class="g8-final-sep">·</span> ' + _fcDest + (locIata ? ' (' + locIata + ')' : '') : '')
-      + (_fcTime ? ' <span class="g8-final-sep">·</span> ' + _fcTime : '')
-      + '</div>';
-    finalHtml = '<div class="g8-final active">'
-      + '<div class="g8-final-hdr">' + finalHdr + '</div>'
-      + '<div class="g8-final-body"><div class="g8-final-text">' + _fcInfo + '<div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
-      + '</div>';
-  }
-
-  // Build countdown panel
-  var countdownHtml = '';
-  if (showCountdown) {
-    countdownHtml = '<div class="g8-countdown">'
-      + '<div class="g8-cd-label">' + TL('boardBegins') + '</div>'
-      + '<div class="g8-cd-value">' + minsToBoard + '</div>'
-      + '<div class="g8-cd-unit">' + TL('minutes') + '</div>'
-      + '<div class="g8-cd-sub">' + TL('remainSeated') + '</div>'
-      + '</div>';
-  }
-
-  // Determine which row4 content to show
-  if (finalActive) {
-    row4Html = finalHtml;
-  } else if (boardActive) {
-    row4Html = boardHtml;
-  } else if (showCountdown) {
-    row4Html = countdownHtml;
-  } else {
-    row4Html = inbPanelHtml;
-  }
-
-  // ── Next flight for footer
-  var nextHtml = '';
-  if (nextFlight) {
-    var nLoc = tc(nextFlight.dest || '—');
-    // v218.99.55 — Force IATA codes in parens to uppercase: "(yhz)" → "(YHZ)"
-    nLoc = nLoc.replace(/\(([a-z]{3})\)/gi, function(m, code) { return '(' + code.toUpperCase() + ')'; });
-    var nDelay = '';
-    if (nextFlight.upd && nextFlight.status === 'delayed') nDelay = ' → Now ' + nextFlight.upd;
-    nextHtml = '<span class="g8-r5-next">' + TL('nextDep') + ': ' + nLoc + ' · ' + nextFlight.flight + ' · ' + nextFlight.time + nDelay + '</span>';
-  }
-
   // Alliance check — Star Alliance, Oneworld, SkyTeam
   var ALLIANCE_MAP = {
     // Star Alliance members
@@ -6989,6 +6993,234 @@ function uxgGateHtml(ctx) {
     // rest of the session.
     starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
   }
+
+  // Clean diagonal lane arrow (plain stroke SVG — the unicode arrows render
+  // as circled emoji on some platforms, per Nick).
+  function _birArrowSvg(mirror) {
+    return '<svg viewBox="0 0 24 24" style="width:1em;height:1em;display:block;'
+      + (mirror ? 'transform:scaleX(-1);' : '')
+      + '" aria-hidden="true"><path d="M18 6 L7 17 M7 17 L7 10 M7 17 L14 17" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+
+  // WELCOME STRIP for the boarding takeovers (Nick: 'the Welcome Bienvenue
+  // and the rondelle and Star') — like the physical AC gate sign's header:
+  // airline rondelle · Welcome | Bienvenue · alliance lockup.
+  function _boardWelcomeStripHtml() {
+    var _bwEmb = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    // The strip is WHITE like the printed sign, so the Star Alliance mark
+    // must be the original dark-lettered lockup, not the brightened one
+    // made for the black banner.
+    var _bwStar = starHtml ? starHtml.replace('StarGray-bright-text.svg', 'StarGray.svg') : '';
+    return '<div class="g8-board-welcome">'
+      + (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
+      + '<div class="g8-bw-text">Welcome <span class="g8-bw-sep">\u00b7</span> Bienvenue</div>'
+      + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
+      + '</div>';
+  }
+
+  // FLIGHT INFO ROW for the boarding-state takeovers (Nick: 'flight info
+  // all in a row, like the old configuration — copy what exists in the
+  // up-down configuration including icons, smaller, with the metal look').
+  // Each cell is a mini rail shelf: brushed-metal card, round accent icon
+  // badge, bilingual title with accent underline, big navy value.
+  function _boardInfoRowHtml(statusKey) {
+    var _bDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
+    var _stP = (typeof SS !== 'undefined' && SS[statusKey]) ? SS[statusKey] : null;
+    // EN and FR each get their OWN line — free wrapping let 'Gate closed |
+    // Porte fermée' break into four giant lines and balloon the whole row.
+    var _stTxt = _stP ? ('<span class="g8-bir-st2">' + _stP.en + '</span><span class="g8-bir-st2">' + _stP.fr + '</span>') : '';
+    // Flair brand palette (Nick): airline icon = the plain green dot; every
+    // other badge is BLACK with the green glyph inside.
+    var _birF8 = (airlineCode === 'F8');
+    var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"' : '';
+    function _cell(icon, en, fr, val) {
+      return '<div class="g8-bir-cell">'
+        + '<div class="g8-bir-badge"' + _birBadgeStyle + '><span class="ac-ico ' + icon + '"></span></div>'
+        + '<div class="g8-bir-text">'
+        +   '<div class="g8-bir-title">' + en + (fr && fr !== en ? ' <span class="g8-bir-sep">|</span> ' + fr : '') + '</div>'
+        +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
+        + '</div></div>';
+    }
+    // Flight cell carries the airline RONDELLE (same emblem set as the
+    // rail) instead of the generic glyph (Nick).
+    var _birEmblemPath = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    var _birFlightIcon = _birEmblemPath
+      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);padding:14%;box-sizing:border-box;">'
+      : null;
+    // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
+    var _birFlightBadge = _birF8
+      ? '<div class="g8-bir-badge" style="background:#7AFF94;"></div>'
+      : (_birFlightIcon ? '<div class="g8-bir-badge">' + _birFlightIcon + '</div>' : null);
+    return '<div class="g8-board-info-row">'
+      + (_birFlightBadge
+          ? '<div class="g8-bir-cell">'
+            + _birFlightBadge
+            + '<div class="g8-bir-text">'
+            +   '<div class="g8-bir-title">Flight <span class="g8-bir-sep">|</span> Vol</div>'
+            +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
+            + '</div></div>'
+          : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
+      + _cell('ac-ico-dest', 'Destination', '', _bDest + (locIata ? ' <span class="g8-bir-code">(' + locIata + ')</span>' : ''))
+      + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', boardTimeHtml)
+      + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', depTimeHtml)
+      + _cell('ac-ico-status', 'Status', 'Statut', _stTxt)
+      + '</div>';
+  }
+
+  // Build boarding panel HTML
+  var boardHtml = '';
+  if (boardActive) {
+    var lateBoarding = minsToDep <= 18;
+    var _grpLbl = TL('groupLabel');
+    var nowVal, nextVal;
+    if (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK') {
+      // Air Canada family boards by ZONE (Nick, per AC's published policy):
+      // priority Zones 1•2 first, then general boarding Zone 3, then Zones
+      // 4•5•6 on Mainline/Rouge — Express (Jazz/PAL) tops out at Zone 4.
+      // NOTE: the local _opCode/_opName vars are declared later in this
+      // function — read the flight object directly, plus the contractual
+      // AC-Express flight-number ranges (AC7000-8999 = Jazz/PAL).
+      var _acExpress = (airlineCode === 'QK')
+        || currentFlight._opCode === 'QK' || currentFlight._opCode === 'PB'
+        || (function () {
+             var m = String(currentFlight.flight || '').match(/(\d+)/);
+             return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
+           })();
+      _grpLbl = 'Zone';
+      // Lane model per the physical AC gate signs (Nick): BLACK lane 1 is
+      // Zone 1, RED lane 2 is everyone else. Zones 1 and 2 board at all
+      // times; 3-6 are called by number as boarding progresses.
+      nowVal = '1';
+      if (lateBoarding) {
+        nextVal = _acExpress ? '2 \u2022 3 \u2022 4' : '2 \u2022 3 \u2022 4 \u2022 5 \u2022 6';
+      } else {
+        nextVal = '2 \u2022 3';
+      }
+    } else if (airlineCode === 'WS' || airlineCode === 'WR') {
+      // WestJet boards by ZONE (Nick, per WestJet's published system and the
+      // gate signage): Zone 1 premium / top tier, Zone 2 Extended Comfort,
+      // Zones 3-8 general back-to-front, Zone 9 UltraBasic last.
+      _grpLbl = 'Zone';
+      if (lateBoarding) {
+        nowVal = '3 \u2013 8';
+        nextVal = '9';
+      } else {
+        nowVal = '1 \u2022 2';
+        nextVal = '3 \u2013 8';
+      }
+    } else if (airlineCode === 'PD') {
+      // Porter boards by ROW NUMBER, back to front (Nick). Row count by
+      // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
+      var _pdRows = /DH4|DH8|Q400|DASH/i.test(String(equipRaw || '')) ? 20 : 29;
+      var _pdBand = Math.ceil(_pdRows / 3);
+      _grpLbl = 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
+      if (lateBoarding) {
+        nowVal = '1\u2013' + _pdBand;
+        nextVal = '\u2014';
+      } else {
+        nowVal = (_pdRows - _pdBand + 1) + '\u2013' + _pdRows;
+        nextVal = (_pdRows - 2 * _pdBand + 1) + '\u2013' + (_pdRows - _pdBand);
+      }
+    } else {
+      var zones = getZoneCount(airlineCode, equipRaw);
+      if (lateBoarding) { nowVal = zones - 1; nextVal = zones; }
+      else { nowVal = 1; nextVal = 2; }
+    }
+    // AC-family lane mode mirrors the printed sign exactly: no now/next
+    // header row, no label over the black "1", and the red side titled
+    // "Zones" (Nick's design picture).
+    var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK');
+    var _nowLbl = _acLanes ? '' : _grpLbl;
+    var _nextLbl = _acLanes ? 'Zones' : _grpLbl;
+    var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>';
+    boardHtml = '<div class="g8-board active">'
+      + _boardInfoRowHtml('boarding')
+      + _boardWelcomeStripHtml()
+      + _bHdr
+      + '<div class="g8-board-body">'
+      + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+      + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+      + '</div></div>';
+  }
+
+  // Build final call HTML
+  var finalHtml = '';
+  if (finalActive) {
+    var isGateClosed = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed');
+    var finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
+    var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
+    var finalSub = isGateClosed ? '' : TL('proceedGate');
+    if (isGateClosed) {
+      // Closed gate: no 'Welcome' strip (Nick) — just the facts.
+      finalHtml = '<div class="g8-final active g8-final-closed">'
+        + _boardInfoRowHtml('gateclosed')
+        + '<div class="g8-final-hdr">' + finalHdr + '</div>'
+        + '<div class="g8-final-body"><div class="g8-final-text"><div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
+        + '</div>';
+    } else {
+      // FINAL CALL: same lane-panel format as boarding (Nick: 'the ALL
+      // zones needs the same format with arrows') — every group called.
+      var _fcAcFam = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK');
+      var _fcExpress = (airlineCode === 'QK')
+        || currentFlight._opCode === 'QK' || currentFlight._opCode === 'PB'
+        || (function () {
+             var m = String(currentFlight.flight || '').match(/(\d+)/);
+             return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
+           })();
+      var _fcNext, _fcNextLbl = 'Zones';
+      if (_fcAcFam) _fcNext = _fcExpress ? '2 • 3 • 4' : '2 • 3 • 4 • 5 • 6';
+      else if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
+      else if (airlineCode === 'PD') { _fcNextLbl = 'Rows <span class="g8-bir-sep">|</span> Rangées'; _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes'; }
+      else _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes';
+      finalHtml = '<div class="g8-final active">'
+        + _boardInfoRowHtml('final')
+        + _boardWelcomeStripHtml()
+        + '<div class="g8-final-hdr">' + finalHdr + '</div>'
+        + '<div class="g8-board-body">'
+        + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+        + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+        + '</div></div>';
+    }
+  }
+
+  // Build countdown panel
+  var countdownHtml = '';
+  if (showCountdown) {
+    // Same shell as boarding/final (Nick: 'this applies to all') — flight
+    // info row + welcome strip on every takeover, countdown included.
+    countdownHtml = '<div class="g8-countdown">'
+      + _boardInfoRowHtml(stKey)
+      + _boardWelcomeStripHtml()
+      + '<div class="g8-cd-body">'
+      + '<div class="g8-cd-label">' + TL('boardBegins') + '</div>'
+      + '<div class="g8-cd-value">' + minsToBoard + '</div>'
+      + '<div class="g8-cd-unit">' + TL('minutes') + '</div>'
+      + '<div class="g8-cd-sub">' + TL('remainSeated') + '</div>'
+      + '</div></div>';
+  }
+
+  // Determine which row4 content to show
+  if (finalActive) {
+    row4Html = finalHtml;
+  } else if (boardActive) {
+    row4Html = boardHtml;
+  } else if (showCountdown) {
+    row4Html = countdownHtml;
+  } else {
+    row4Html = inbPanelHtml;
+  }
+
+  // ── Next flight for footer
+  var nextHtml = '';
+  if (nextFlight) {
+    var nLoc = tc(nextFlight.dest || '—');
+    // v218.99.55 — Force IATA codes in parens to uppercase: "(yhz)" → "(YHZ)"
+    nLoc = nLoc.replace(/\(([a-z]{3})\)/gi, function(m, code) { return '(' + code.toUpperCase() + ')'; });
+    var nDelay = '';
+    if (nextFlight.upd && nextFlight.status === 'delayed') nDelay = ' → Now ' + nextFlight.upd;
+    nextHtml = '<span class="g8-r5-next">' + TL('nextDep') + ': ' + nLoc + ' · ' + nextFlight.flight + ' · ' + nextFlight.time + nDelay + '</span>';
+  }
+
 
   // Operator info (used by equipment panel; top banner no longer shows this line)
   var _opCode = currentFlight._opCode || null;
@@ -7316,16 +7548,10 @@ function uxgGateHtml(ctx) {
     _bannerUsedWordmark = true;
     _bannerWmFromBase = true;         // wordmark FILE in use — ink comp applies
   }
-  // Fallback for carriers with a square tile but no wordmark (e.g. BoA→BOV):
-  // colored brand badge instead of an ugly force-whitened external lockup.
-  var _bannerTileIcao = (typeof IATA_TO_TILE_ICAO !== 'undefined')
-    ? (IATA_TO_TILE_ICAO[_bannerBrandCode] || IATA_TO_TILE_ICAO[airlineCode]) : null;
-  if (!_useOverrideFile && _bannerTileIcao) {
-    r1LogoSrc = '/logos/airline-tiles/' + _bannerTileIcao + '.svg';
-    _useOverrideFile = true;          // keep brand colors — skip the white filter
-    _sz = { h: 112, w: 112 };         // square brand badge
-    _bannerUsedTile = true;
-  }
+  // Square tile fallback REMOVED (Nick: 'get rid of these icons and start
+  // using proper wordmarks'). Carriers without a curated lockup now fall
+  // through to the external full-lockup logo, force-whitened by the CSS —
+  // the airline's real wordmark, not a badge.
   var _onPlate = _bannerUsedTile || _bannerPlateForced;
   // HARD CAP the logo height so it can NEVER exceed the banner band (which is
   // overflow:hidden and a fixed height). 76px in the 112px band leaves real
@@ -7528,6 +7754,9 @@ function uxgGateHtml(ctx) {
        // wordmarks on the left.
        + ' style="--g8-tab-w:clamp(240px,17.5vw,420px)'
        + ';--airline-accent:' + accent
+       // Lane/takeover surfaces need white lettering — pre-darken accents
+       // that are too light for it (Flair lime, Southwest yellow).
+       + ';--accent-lane:' + (_hexIsLight(accent) ? 'color-mix(in srgb, ' + accent + ' 55%, #141a14)' : accent)
        // 3rd brand colour (airline-colors.js r3) — distinct accent for the
        // secondary line etc. Falls back to the main accent when not defined.
        + ';--airline-accent3:' + ((_bannerSpec && _bannerSpec.r3) ? _bannerSpec.r3 : accent)
@@ -8269,7 +8498,7 @@ const gView = document.getElementById('gateView');
     bView.style.display = 'none';
 
     const _nowMs = Date.now();
-    const gateFlights = (data.dep || [])
+    const gateFlights = _gateCsPick((data.dep || [])
       .filter(f => {
         if (f.gate !== subScreenVal && f.flight !== subScreenVal) return false;
         if (f.status === 'cancelled') return false;
@@ -8280,7 +8509,7 @@ const gView = document.getElementById('gateView');
         if (_effDep && (_nowMs - _effDep) > 10 * 60000) return false;
         return true;
       })
-      .sort((a,b) => a._sortTs - b._sortTs);
+      .sort((a,b) => a._sortTs - b._sortTs));
     const currentFlight = gateFlights[0];
     const nextFlight = gateFlights[1];
 
@@ -12041,7 +12270,7 @@ async function fetchTomorrowWeather(iata) {
     const rtData = await rtRes.json();
     const current = rtData.data?.values || {};
 
-    if (current.temperature === undefined) {
+    if (current.temperature == null) {
       console.warn('[TIO] No temperature in response for', iata);
       return cached || null;
     }
@@ -13374,7 +13603,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22171';
+var FIDS_BUILD_TAG = 'v22185';
 (function(){
   try {
     function _addTag(){
@@ -18270,7 +18499,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 var gateMap=null;
-var GATE_AP={YQM:[46.11,-64.68],YUL:[45.47,-73.74],YYZ:[43.68,-79.62],YTZ:[43.63,-79.40],YOW:[45.32,-75.67],YHZ:[44.88,-63.51],YQB:[46.79,-71.39],YYC:[51.12,-114.01],YVR:[49.19,-123.18],YEG:[53.31,-113.58],YWG:[49.91,-97.24],YFC:[45.87,-66.54],YSJ:[45.32,-65.89],YYT:[47.62,-52.75],YDF:[49.21,-57.39],YQX:[48.94,-54.57],YYR:[53.32,-60.43],YYY:[48.61,-68.21],YYG:[46.29,-63.12],YZV:[50.22,-66.27],YCH:[47.01,-65.45],YQY:[46.16,-60.05],YGP:[48.78,-64.48],YBG:[48.33,-71.00],YVO:[48.05,-77.78],YXU:[43.04,-81.15],YKF:[43.46,-80.38],YAM:[46.49,-84.51],YXJ:[56.24,-120.74],YPR:[54.29,-130.44],YXS:[53.89,-122.68],YKA:[50.70,-120.44],YLW:[49.96,-119.38],YCD:[49.05,-123.87],YYJ:[48.65,-123.43],YXX:[49.03,-122.36],YXT:[54.47,-128.58],YZP:[53.25,-131.81],YDQ:[55.74,-120.18],YXC:[49.61,-115.78],YQQ:[49.71,-124.89],YCG:[49.30,-117.63],YQR:[50.43,-104.67],YXE:[52.17,-106.70],YQT:[48.37,-89.32],YMM:[56.65,-111.22],YXY:[60.71,-135.07],YHM:[43.17,-79.93],YSB:[46.62,-80.80],YTS:[48.57,-81.38],YQL:[49.63,-112.80],YPA:[53.21,-105.67],YQG:[42.28,-82.96],YWK:[52.92,-66.86],YTH:[55.80,-97.86],YZF:[62.46,-114.44],YFB:[63.76,-68.56],YRT:[62.81,-92.12],YCB:[69.11,-105.14],YHY:[60.84,-115.78],YFS:[61.76,-121.24],YDA:[64.04,-139.13],YSM:[60.02,-111.96],YEV:[68.30,-133.48],YOJ:[58.62,-117.16],YPE:[56.23,-117.45],YBL:[49.95,-125.27],YKZ:[43.86,-79.37],YHU:[45.52,-73.42],YMT:[49.78,-74.53],YGL:[50.28,-63.61],YGW:[55.28,-77.77],YVP:[58.10,-68.43],YPX:[60.05,-77.29],YKL:[54.80,-66.81],YNA:[50.19,-61.79],YMO:[51.29,-80.61],YQI:[43.83,-66.09],YBR:[49.91,-99.95],YQU:[50.27,-108.76],YMJ:[50.33,-105.56],YLL:[53.31,-110.07],YOC:[67.57,-139.84],YEK:[61.09,-94.07],JFK:[40.64,-73.78],LAX:[33.94,-118.41],ORD:[41.97,-87.91],ATL:[33.64,-84.43],SFO:[37.62,-122.38],SEA:[47.45,-122.31],MIA:[25.80,-80.29],BOS:[42.37,-71.01],EWR:[40.69,-74.17],MCO:[28.43,-81.31],FLL:[26.07,-80.15],DEN:[39.86,-104.67],DFW:[32.90,-97.04],IAD:[38.95,-77.46],CLE:[41.41,-81.85],SBA:[34.43,-119.84],LHR:[51.47,-.45],CDG:[49.01,2.55],FRA:[50.04,8.56],DXB:[25.25,55.36],CUN:[21.04,-86.88],PUJ:[18.57,-68.36],MBJ:[18.50,-77.91],BNA:[36.13,-86.68],PHL:[39.87,-75.24],SJD:[23.15,-109.72],GDL:[20.52,-103.31],CZM:[20.52,-86.93],PVR:[20.68,-105.25],ZIH:[17.60,-101.46],HUX:[15.78,-96.26],MTY:[25.78,-100.11],TIJ:[32.54,-116.97],CLT:[35.21,-80.94],DTW:[42.21,-83.35],MSP:[44.88,-93.22],SLC:[40.79,-111.98],PHX:[33.43,-112.01],SAN:[32.73,-117.19],PDX:[45.59,-122.60],ANC:[61.17,-149.99],HNL:[21.32,-157.92],LAS:[36.08,-115.15],IAH:[29.98,-95.34],MSY:[29.99,-90.26],RDU:[35.88,-78.79],BUF:[42.94,-78.73],PIT:[40.49,-80.23],IND:[39.72,-86.29],CMH:[39.99,-82.89],MKE:[42.95,-87.90],STL:[38.75,-90.37],RSW:[26.54,-81.76],JAX:[30.49,-81.69],BDL:[41.94,-72.68],RIC:[37.51,-77.32],SAV:[32.13,-81.20],BHM:[33.56,-86.75],TPA:[27.98,-82.53],ABQ:[35.04,-106.61],OAK:[37.72,-122.22],SJC:[37.36,-121.93],SMF:[38.70,-121.59],ONT:[34.06,-117.60],BUR:[34.20,-118.36],AUS:[30.19,-97.67],SAT:[29.53,-98.47],OKC:[35.39,-97.60],TUL:[36.20,-95.89],OMA:[41.30,-95.89],DSM:[41.53,-93.66],RNO:[39.50,-119.77],BOI:[43.56,-116.22],GEG:[47.62,-117.53],PSP:[33.83,-116.51],SNA:[33.68,-117.87],CHS:[32.90,-80.04],SAW:[40.90,29.31],IST:[41.26,28.74],AMS:[52.31,4.76],BCN:[41.30,2.08],MAD:[40.47,-3.57],FCO:[41.80,12.25],MXP:[45.63,8.72],ZRH:[47.46,8.55],MUC:[48.35,11.79],VIE:[48.11,16.57],CPH:[55.62,12.66],ARN:[59.65,17.94],HEL:[60.32,24.96],BRU:[50.90,4.48],LIS:[38.77,-9.13],ATH:[37.94,23.94],DOH:[25.27,51.61],AUH:[24.44,54.65],DEL:[28.56,77.10],BOM:[19.09,72.87],SIN:[1.35,103.99],HKG:[22.31,113.91],NRT:[35.77,140.39],ICN:[37.46,126.44],PEK:[40.08,116.58],SYD:[-33.95,151.18],MEL:[-37.67,144.84],AKL:[-37.01,174.79],GRU:[-23.43,-46.47],EZE:[-34.82,-58.54],SCL:[-33.39,-70.79],LIM:[-12.02,-77.11],LPB:[-16.51,-68.19],VVI:[-17.64,-63.14],CBB:[-17.42,-66.18],SRZ:[-17.81,-63.17],UYU:[-20.45,-66.85],TJA:[-21.56,-64.70],SRE:[-19.24,-65.15],POI:[-19.54,-65.72],TDD:[-14.82,-64.92],CIJ:[-11.04,-68.78],RIB:[-10.96,-66.10],GYA:[-10.82,-65.35],BVL:[-13.95,-65.46],CUZ:[-13.54,-71.94],BOG:[4.70,-74.15],PTY:[9.07,-79.38],GUA:[14.58,-90.53],SJO:[9.99,-84.21],KIN:[17.94,-76.78],HAV:[22.99,-82.41],OGG:[20.90,-156.43],KOA:[19.74,-156.05],ITO:[19.72,-155.05],LIH:[21.98,-159.34],MKK:[21.15,-157.10],LNY:[20.79,-156.95],BZN:[45.78,-111.16],MSO:[46.92,-114.09],BIL:[45.81,-108.54],FAR:[46.92,-96.82],FSD:[43.58,-96.74],RAP:[44.05,-103.06],GTF:[47.48,-111.37],HLN:[46.61,-112.00],MEM:[35.04,-89.98],MOB:[30.69,-88.24],PNS:[30.47,-87.19],SDF:[38.17,-85.74],LEX:[38.04,-84.61],ROC:[43.12,-77.67],SYR:[43.11,-76.11],ALB:[42.75,-73.80],PWM:[43.65,-70.31],BTV:[44.47,-73.15],MHT:[42.93,-71.43],PVD:[41.73,-71.43],ELP:[31.81,-106.38],TUS:[32.12,-110.94],COS:[38.81,-104.70],GJT:[39.12,-108.53],MFR:[42.37,-122.87],EUG:[44.12,-123.21],RDM:[44.25,-121.15],GUM:[13.48,144.80],SPN:[15.12,145.73],PPG:[-14.33,-170.71],TPE:[25.08,121.23],KIX:[34.43,135.24],ITM:[34.79,135.43],HND:[35.55,139.78],KUL:[2.74,101.71],BKK:[13.69,100.75],HKT:[8.11,98.31],MNL:[14.51,121.00],CGK:[-6.13,106.66],DPS:[-8.75,115.17],SGN:[10.82,106.66],HAN:[21.22,105.81],PVG:[31.14,121.81],CAN:[23.39,113.31],SHA:[31.20,121.34],TSN:[39.13,117.35],KMG:[25.10,102.93],TAO:[36.27,120.37],SZX:[22.64,113.81],XIY:[34.45,108.75],HGH:[30.23,120.43],NKG:[31.74,118.86],FOC:[25.93,119.66],XMN:[24.54,118.13],CKG:[29.72,106.64],CTU:[30.58,103.95],DLC:[38.97,121.55],SHE:[41.64,123.48],HRB:[45.62,126.25],CGO:[34.52,113.84],BAH:[26.27,50.63],KWI:[29.23,47.97],RUH:[24.96,46.69],JED:[21.68,39.16],MED:[24.55,39.71],DMM:[26.47,49.80],MCT:[23.59,58.28],SAH:[15.48,44.21],BGW:[33.26,44.23],EBL:[36.24,43.96],BSR:[30.55,47.66],TLV:[32.01,34.89],AMM:[31.72,35.99],BEY:[33.82,35.49],DAM:[33.41,36.51],ALP:[36.18,37.22],CAI:[30.11,31.41],HRG:[27.18,33.80],SSH:[27.98,34.39],LXR:[25.67,32.71],ASW:[23.96,32.82],ADD:[8.98,38.80],NBO:[-1.32,36.93],MBA:[-4.03,39.59],DAR:[-6.88,39.20],KGL:[-1.97,30.13],EBB:[0.04,32.45],JNB:[-26.13,28.24],CPT:[-33.97,18.60],DUR:[-29.61,31.12],HRE:[-17.92,31.09],GBE:[-24.55,25.92],LUN:[-15.33,28.45],MPM:[-25.92,32.57],TNR:[-18.79,47.48],RUN:[-20.89,55.51],MRU:[-20.43,57.68],SEZ:[-4.67,55.52],ZNZ:[-6.22,39.22],LAD:[-8.86,13.23],GIG:[-22.81,-43.25],GRU:[-23.43,-46.47],BSB:[-15.87,-47.92],CGH:[-23.63,-46.66],POA:[-29.99,-51.17],REC:[-8.13,-34.92],FOR:[-3.78,-38.53],SSA:[-12.91,-38.32],BEL:[-1.38,-48.48],MAO:[-3.04,-60.05],CWB:[-25.53,-49.18],FLN:[-27.67,-48.55],VCP:[-23.01,-47.13],BSB:[-15.87,-47.92],CCS:[10.60,-66.99],UIO:[-0.13,-78.36],GYE:[-2.16,-79.88],MDE:[6.16,-75.42],CTG:[10.44,-75.51],ADZ:[12.58,-81.71],SDQ:[18.43,-69.67],STI:[19.41,-70.60],POP:[19.76,-70.57],BGI:[13.07,-59.49],POS:[10.59,-61.34],UVF:[13.73,-60.95],GND:[12.00,-61.79],FDF:[14.59,-61.00],PTP:[16.27,-61.53],SXM:[18.04,-63.11],SDR:[18.45,-66.10],SJU:[18.44,-66.00],BQN:[18.49,-67.13],STT:[18.34,-64.97],STX:[17.70,-64.80],EIS:[18.44,-64.54],PLS:[21.77,-72.27],GCM:[19.29,-81.36],MEX:[19.44,-99.07],MID:[20.94,-89.66],ACA:[16.76,-99.75],BJX:[20.99,-101.48],OAX:[17.00,-96.73],CJS:[31.64,-106.43],HMO:[29.10,-111.05],MZT:[23.16,-106.27],CUL:[24.76,-107.47],TLC:[19.34,-99.57],PXM:[15.88,-97.09],VER:[19.15,-96.19],PVR:[20.68,-105.25],LIH:[21.98,-159.34],LGW:[51.15,-0.18],STN:[51.88,0.24],LCY:[51.51,0.05],MAN:[53.35,-2.27],EDI:[55.95,-3.37],GLA:[55.87,-4.43],BFS:[54.66,-6.22],DUB:[53.42,-6.27],ORK:[51.84,-8.49],SNN:[52.70,-8.92],KEF:[63.99,-22.62],BGO:[60.29,5.22],SVG:[58.88,5.64],OSL:[60.19,11.10],TRD:[63.46,10.92],GOT:[57.66,11.99],BMA:[59.35,17.94],MMX:[55.54,13.37],RIX:[56.92,23.97],TLL:[59.41,24.83],VNO:[54.63,25.29],WAW:[52.17,20.97],KRK:[50.07,19.78],GDN:[54.38,18.47],PRG:[50.10,14.26],BUD:[47.43,19.26],OTP:[44.57,26.10],SOF:[42.69,23.41],BEG:[44.82,20.31],ZAG:[45.74,16.07],SPU:[43.54,16.30],DBV:[42.56,18.27],SKG:[40.52,22.97],HER:[35.34,25.18],RHO:[36.41,28.09],CFU:[39.60,19.91],TSF:[45.65,12.19],VCE:[45.51,12.35],BLQ:[44.54,11.29],PSA:[43.69,10.39],NAP:[40.89,14.29],BRI:[41.14,16.76],CAG:[39.25,9.06],PMO:[38.18,13.10],CTA:[37.47,15.06],FLR:[43.81,11.20],LJU:[46.22,14.46],SZG:[47.79,13.00],INN:[47.26,11.34],GVA:[46.24,6.11],BSL:[47.59,7.53],BER:[52.36,13.50],HAM:[53.63,9.99],DUS:[51.28,6.77],STR:[48.69,9.22],CGN:[50.87,7.14],HAJ:[52.46,9.69],NUE:[49.50,11.08],LEJ:[51.42,12.24],DRS:[51.13,13.77],FMM:[47.99,10.24],FKB:[48.79,8.08],TLS:[43.63,1.36],NCE:[43.66,7.21],MRS:[43.44,5.21],LYS:[45.72,5.08],BOD:[44.83,-0.71],NTE:[47.16,-1.61],TLN:[43.09,6.15],MPL:[43.58,3.96],BIQ:[43.46,-1.53],EBM:[42.81,-1.65],LEI:[36.84,-2.37],ALC:[38.28,-0.55],VLC:[39.49,-0.48],BIO:[43.30,-2.91],SCQ:[42.90,-8.41],OPO:[41.24,-8.68],FAO:[37.01,-7.97],MAH:[39.86,4.22],PMI:[39.55,2.74],IBZ:[38.87,1.37],TCI:[28.04,-16.57],TFS:[28.04,-16.57],LPA:[27.93,-15.39],ACE:[28.95,-13.60],FUE:[28.45,-13.86],MLA:[35.86,14.48],LCA:[34.88,33.62],PFO:[34.71,32.49],TIA:[41.41,19.72],TGD:[42.36,19.25],TIV:[42.40,18.72],SJJ:[43.82,18.33],SKP:[41.96,21.62],PRN:[42.57,21.04],TSV:[-19.25,146.77],BNE:[-27.38,153.12],OOL:[-28.16,153.51],PER:[-31.94,115.97],ADL:[-34.95,138.53],HBA:[-42.84,147.51],CNS:[-16.88,145.75],DRW:[-12.41,130.87],CHC:[-43.49,172.53],ZQN:[-45.02,168.74],WLG:[-41.33,174.81],BNK:[-29.14,167.94],NAN:[-17.75,177.45],PPT:[-17.55,-149.61],NOU:[-22.01,166.21],POM:[-9.44,147.22]};
+var GATE_AP={GEO:[6.50,-58.25],YQM:[46.11,-64.68],YUL:[45.47,-73.74],YYZ:[43.68,-79.62],YTZ:[43.63,-79.40],YOW:[45.32,-75.67],YHZ:[44.88,-63.51],YQB:[46.79,-71.39],YYC:[51.12,-114.01],YVR:[49.19,-123.18],YEG:[53.31,-113.58],YWG:[49.91,-97.24],YFC:[45.87,-66.54],YSJ:[45.32,-65.89],YYT:[47.62,-52.75],YDF:[49.21,-57.39],YQX:[48.94,-54.57],YYR:[53.32,-60.43],YYY:[48.61,-68.21],YYG:[46.29,-63.12],YZV:[50.22,-66.27],YCH:[47.01,-65.45],YQY:[46.16,-60.05],YGP:[48.78,-64.48],YBG:[48.33,-71.00],YVO:[48.05,-77.78],YXU:[43.04,-81.15],YKF:[43.46,-80.38],YAM:[46.49,-84.51],YXJ:[56.24,-120.74],YPR:[54.29,-130.44],YXS:[53.89,-122.68],YKA:[50.70,-120.44],YLW:[49.96,-119.38],YCD:[49.05,-123.87],YYJ:[48.65,-123.43],YXX:[49.03,-122.36],YXT:[54.47,-128.58],YZP:[53.25,-131.81],YDQ:[55.74,-120.18],YXC:[49.61,-115.78],YQQ:[49.71,-124.89],YCG:[49.30,-117.63],YQR:[50.43,-104.67],YXE:[52.17,-106.70],YQT:[48.37,-89.32],YMM:[56.65,-111.22],YXY:[60.71,-135.07],YHM:[43.17,-79.93],YSB:[46.62,-80.80],YTS:[48.57,-81.38],YQL:[49.63,-112.80],YPA:[53.21,-105.67],YQG:[42.28,-82.96],YWK:[52.92,-66.86],YTH:[55.80,-97.86],YZF:[62.46,-114.44],YFB:[63.76,-68.56],YRT:[62.81,-92.12],YCB:[69.11,-105.14],YHY:[60.84,-115.78],YFS:[61.76,-121.24],YDA:[64.04,-139.13],YSM:[60.02,-111.96],YEV:[68.30,-133.48],YOJ:[58.62,-117.16],YPE:[56.23,-117.45],YBL:[49.95,-125.27],YKZ:[43.86,-79.37],YHU:[45.52,-73.42],YMT:[49.78,-74.53],YGL:[50.28,-63.61],YGW:[55.28,-77.77],YVP:[58.10,-68.43],YPX:[60.05,-77.29],YKL:[54.80,-66.81],YNA:[50.19,-61.79],YMO:[51.29,-80.61],YQI:[43.83,-66.09],YBR:[49.91,-99.95],YQU:[50.27,-108.76],YMJ:[50.33,-105.56],YLL:[53.31,-110.07],YOC:[67.57,-139.84],YEK:[61.09,-94.07],JFK:[40.64,-73.78],LAX:[33.94,-118.41],ORD:[41.97,-87.91],ATL:[33.64,-84.43],SFO:[37.62,-122.38],SEA:[47.45,-122.31],MIA:[25.80,-80.29],BOS:[42.37,-71.01],EWR:[40.69,-74.17],MCO:[28.43,-81.31],FLL:[26.07,-80.15],DEN:[39.86,-104.67],DFW:[32.90,-97.04],IAD:[38.95,-77.46],CLE:[41.41,-81.85],SBA:[34.43,-119.84],LHR:[51.47,-.45],CDG:[49.01,2.55],FRA:[50.04,8.56],DXB:[25.25,55.36],CUN:[21.04,-86.88],PUJ:[18.57,-68.36],MBJ:[18.50,-77.91],BNA:[36.13,-86.68],PHL:[39.87,-75.24],SJD:[23.15,-109.72],GDL:[20.52,-103.31],CZM:[20.52,-86.93],PVR:[20.68,-105.25],ZIH:[17.60,-101.46],HUX:[15.78,-96.26],MTY:[25.78,-100.11],TIJ:[32.54,-116.97],CLT:[35.21,-80.94],DTW:[42.21,-83.35],MSP:[44.88,-93.22],SLC:[40.79,-111.98],PHX:[33.43,-112.01],SAN:[32.73,-117.19],PDX:[45.59,-122.60],ANC:[61.17,-149.99],HNL:[21.32,-157.92],LAS:[36.08,-115.15],IAH:[29.98,-95.34],MSY:[29.99,-90.26],RDU:[35.88,-78.79],BUF:[42.94,-78.73],PIT:[40.49,-80.23],IND:[39.72,-86.29],CMH:[39.99,-82.89],MKE:[42.95,-87.90],STL:[38.75,-90.37],RSW:[26.54,-81.76],JAX:[30.49,-81.69],BDL:[41.94,-72.68],RIC:[37.51,-77.32],SAV:[32.13,-81.20],BHM:[33.56,-86.75],TPA:[27.98,-82.53],ABQ:[35.04,-106.61],OAK:[37.72,-122.22],SJC:[37.36,-121.93],SMF:[38.70,-121.59],ONT:[34.06,-117.60],BUR:[34.20,-118.36],AUS:[30.19,-97.67],SAT:[29.53,-98.47],OKC:[35.39,-97.60],TUL:[36.20,-95.89],OMA:[41.30,-95.89],DSM:[41.53,-93.66],RNO:[39.50,-119.77],BOI:[43.56,-116.22],GEG:[47.62,-117.53],PSP:[33.83,-116.51],SNA:[33.68,-117.87],CHS:[32.90,-80.04],SAW:[40.90,29.31],IST:[41.26,28.74],AMS:[52.31,4.76],BCN:[41.30,2.08],MAD:[40.47,-3.57],FCO:[41.80,12.25],MXP:[45.63,8.72],ZRH:[47.46,8.55],MUC:[48.35,11.79],VIE:[48.11,16.57],CPH:[55.62,12.66],ARN:[59.65,17.94],HEL:[60.32,24.96],BRU:[50.90,4.48],LIS:[38.77,-9.13],ATH:[37.94,23.94],DOH:[25.27,51.61],AUH:[24.44,54.65],DEL:[28.56,77.10],BOM:[19.09,72.87],SIN:[1.35,103.99],HKG:[22.31,113.91],NRT:[35.77,140.39],ICN:[37.46,126.44],PEK:[40.08,116.58],SYD:[-33.95,151.18],MEL:[-37.67,144.84],AKL:[-37.01,174.79],GRU:[-23.43,-46.47],EZE:[-34.82,-58.54],SCL:[-33.39,-70.79],LIM:[-12.02,-77.11],LPB:[-16.51,-68.19],VVI:[-17.64,-63.14],CBB:[-17.42,-66.18],SRZ:[-17.81,-63.17],UYU:[-20.45,-66.85],TJA:[-21.56,-64.70],SRE:[-19.24,-65.15],POI:[-19.54,-65.72],TDD:[-14.82,-64.92],CIJ:[-11.04,-68.78],RIB:[-10.96,-66.10],GYA:[-10.82,-65.35],BVL:[-13.95,-65.46],CUZ:[-13.54,-71.94],BOG:[4.70,-74.15],PTY:[9.07,-79.38],GUA:[14.58,-90.53],SJO:[9.99,-84.21],KIN:[17.94,-76.78],HAV:[22.99,-82.41],OGG:[20.90,-156.43],KOA:[19.74,-156.05],ITO:[19.72,-155.05],LIH:[21.98,-159.34],MKK:[21.15,-157.10],LNY:[20.79,-156.95],BZN:[45.78,-111.16],MSO:[46.92,-114.09],BIL:[45.81,-108.54],FAR:[46.92,-96.82],FSD:[43.58,-96.74],RAP:[44.05,-103.06],GTF:[47.48,-111.37],HLN:[46.61,-112.00],MEM:[35.04,-89.98],MOB:[30.69,-88.24],PNS:[30.47,-87.19],SDF:[38.17,-85.74],LEX:[38.04,-84.61],ROC:[43.12,-77.67],SYR:[43.11,-76.11],ALB:[42.75,-73.80],PWM:[43.65,-70.31],BTV:[44.47,-73.15],MHT:[42.93,-71.43],PVD:[41.73,-71.43],ELP:[31.81,-106.38],TUS:[32.12,-110.94],COS:[38.81,-104.70],GJT:[39.12,-108.53],MFR:[42.37,-122.87],EUG:[44.12,-123.21],RDM:[44.25,-121.15],GUM:[13.48,144.80],SPN:[15.12,145.73],PPG:[-14.33,-170.71],TPE:[25.08,121.23],KIX:[34.43,135.24],ITM:[34.79,135.43],HND:[35.55,139.78],KUL:[2.74,101.71],BKK:[13.69,100.75],HKT:[8.11,98.31],MNL:[14.51,121.00],CGK:[-6.13,106.66],DPS:[-8.75,115.17],SGN:[10.82,106.66],HAN:[21.22,105.81],PVG:[31.14,121.81],CAN:[23.39,113.31],SHA:[31.20,121.34],TSN:[39.13,117.35],KMG:[25.10,102.93],TAO:[36.27,120.37],SZX:[22.64,113.81],XIY:[34.45,108.75],HGH:[30.23,120.43],NKG:[31.74,118.86],FOC:[25.93,119.66],XMN:[24.54,118.13],CKG:[29.72,106.64],CTU:[30.58,103.95],DLC:[38.97,121.55],SHE:[41.64,123.48],HRB:[45.62,126.25],CGO:[34.52,113.84],BAH:[26.27,50.63],KWI:[29.23,47.97],RUH:[24.96,46.69],JED:[21.68,39.16],MED:[24.55,39.71],DMM:[26.47,49.80],MCT:[23.59,58.28],SAH:[15.48,44.21],BGW:[33.26,44.23],EBL:[36.24,43.96],BSR:[30.55,47.66],TLV:[32.01,34.89],AMM:[31.72,35.99],BEY:[33.82,35.49],DAM:[33.41,36.51],ALP:[36.18,37.22],CAI:[30.11,31.41],HRG:[27.18,33.80],SSH:[27.98,34.39],LXR:[25.67,32.71],ASW:[23.96,32.82],ADD:[8.98,38.80],NBO:[-1.32,36.93],MBA:[-4.03,39.59],DAR:[-6.88,39.20],KGL:[-1.97,30.13],EBB:[0.04,32.45],JNB:[-26.13,28.24],CPT:[-33.97,18.60],DUR:[-29.61,31.12],HRE:[-17.92,31.09],GBE:[-24.55,25.92],LUN:[-15.33,28.45],MPM:[-25.92,32.57],TNR:[-18.79,47.48],RUN:[-20.89,55.51],MRU:[-20.43,57.68],SEZ:[-4.67,55.52],ZNZ:[-6.22,39.22],LAD:[-8.86,13.23],GIG:[-22.81,-43.25],GRU:[-23.43,-46.47],BSB:[-15.87,-47.92],CGH:[-23.63,-46.66],POA:[-29.99,-51.17],REC:[-8.13,-34.92],FOR:[-3.78,-38.53],SSA:[-12.91,-38.32],BEL:[-1.38,-48.48],MAO:[-3.04,-60.05],CWB:[-25.53,-49.18],FLN:[-27.67,-48.55],VCP:[-23.01,-47.13],BSB:[-15.87,-47.92],CCS:[10.60,-66.99],UIO:[-0.13,-78.36],GYE:[-2.16,-79.88],MDE:[6.16,-75.42],CTG:[10.44,-75.51],ADZ:[12.58,-81.71],SDQ:[18.43,-69.67],STI:[19.41,-70.60],POP:[19.76,-70.57],BGI:[13.07,-59.49],POS:[10.59,-61.34],UVF:[13.73,-60.95],GND:[12.00,-61.79],FDF:[14.59,-61.00],PTP:[16.27,-61.53],SXM:[18.04,-63.11],SDR:[18.45,-66.10],SJU:[18.44,-66.00],BQN:[18.49,-67.13],STT:[18.34,-64.97],STX:[17.70,-64.80],EIS:[18.44,-64.54],PLS:[21.77,-72.27],GCM:[19.29,-81.36],MEX:[19.44,-99.07],MID:[20.94,-89.66],ACA:[16.76,-99.75],BJX:[20.99,-101.48],OAX:[17.00,-96.73],CJS:[31.64,-106.43],HMO:[29.10,-111.05],MZT:[23.16,-106.27],CUL:[24.76,-107.47],TLC:[19.34,-99.57],PXM:[15.88,-97.09],VER:[19.15,-96.19],PVR:[20.68,-105.25],LIH:[21.98,-159.34],LGW:[51.15,-0.18],STN:[51.88,0.24],LCY:[51.51,0.05],MAN:[53.35,-2.27],EDI:[55.95,-3.37],GLA:[55.87,-4.43],BFS:[54.66,-6.22],DUB:[53.42,-6.27],ORK:[51.84,-8.49],SNN:[52.70,-8.92],KEF:[63.99,-22.62],BGO:[60.29,5.22],SVG:[58.88,5.64],OSL:[60.19,11.10],TRD:[63.46,10.92],GOT:[57.66,11.99],BMA:[59.35,17.94],MMX:[55.54,13.37],RIX:[56.92,23.97],TLL:[59.41,24.83],VNO:[54.63,25.29],WAW:[52.17,20.97],KRK:[50.07,19.78],GDN:[54.38,18.47],PRG:[50.10,14.26],BUD:[47.43,19.26],OTP:[44.57,26.10],SOF:[42.69,23.41],BEG:[44.82,20.31],ZAG:[45.74,16.07],SPU:[43.54,16.30],DBV:[42.56,18.27],SKG:[40.52,22.97],HER:[35.34,25.18],RHO:[36.41,28.09],CFU:[39.60,19.91],TSF:[45.65,12.19],VCE:[45.51,12.35],BLQ:[44.54,11.29],PSA:[43.69,10.39],NAP:[40.89,14.29],BRI:[41.14,16.76],CAG:[39.25,9.06],PMO:[38.18,13.10],CTA:[37.47,15.06],FLR:[43.81,11.20],LJU:[46.22,14.46],SZG:[47.79,13.00],INN:[47.26,11.34],GVA:[46.24,6.11],BSL:[47.59,7.53],BER:[52.36,13.50],HAM:[53.63,9.99],DUS:[51.28,6.77],STR:[48.69,9.22],CGN:[50.87,7.14],HAJ:[52.46,9.69],NUE:[49.50,11.08],LEJ:[51.42,12.24],DRS:[51.13,13.77],FMM:[47.99,10.24],FKB:[48.79,8.08],TLS:[43.63,1.36],NCE:[43.66,7.21],MRS:[43.44,5.21],LYS:[45.72,5.08],BOD:[44.83,-0.71],NTE:[47.16,-1.61],TLN:[43.09,6.15],MPL:[43.58,3.96],BIQ:[43.46,-1.53],EBM:[42.81,-1.65],LEI:[36.84,-2.37],ALC:[38.28,-0.55],VLC:[39.49,-0.48],BIO:[43.30,-2.91],SCQ:[42.90,-8.41],OPO:[41.24,-8.68],FAO:[37.01,-7.97],MAH:[39.86,4.22],PMI:[39.55,2.74],IBZ:[38.87,1.37],TCI:[28.04,-16.57],TFS:[28.04,-16.57],LPA:[27.93,-15.39],ACE:[28.95,-13.60],FUE:[28.45,-13.86],MLA:[35.86,14.48],LCA:[34.88,33.62],PFO:[34.71,32.49],TIA:[41.41,19.72],TGD:[42.36,19.25],TIV:[42.40,18.72],SJJ:[43.82,18.33],SKP:[41.96,21.62],PRN:[42.57,21.04],TSV:[-19.25,146.77],BNE:[-27.38,153.12],OOL:[-28.16,153.51],PER:[-31.94,115.97],ADL:[-34.95,138.53],HBA:[-42.84,147.51],CNS:[-16.88,145.75],DRW:[-12.41,130.87],CHC:[-43.49,172.53],ZQN:[-45.02,168.74],WLG:[-41.33,174.81],BNK:[-29.14,167.94],NAN:[-17.75,177.45],PPT:[-17.55,-149.61],NOU:[-22.01,166.21],POM:[-9.44,147.22]};
 
 // ───────────────────────────────────────────────────────────────────────
 // AIRPORT COORDINATE LOOKUP
@@ -18328,7 +18557,10 @@ function _fetchAirportCoords(iata) {
   // PRIMARY: AeroDataBox airport endpoint via our OWN proxy — same domain the
   // app already uses for live flight data, so it works even when the display
   // network blocks public CDNs / GitHub. Returns { location: { lat, lon } }.
-  _airportFetchInFlight[code] = fetch(FIDS_API_BASE + '/api/adb/airports/iata/' + encodeURIComponent(code))
+  // /proxy/* is the worker's NO-AUTH AeroDataBox passthrough — the /api/*
+  // route 401s unauthenticated kiosks, which left unknown airports (GEO)
+  // permanently unresolvable and the mini map a blank grey box.
+  _airportFetchInFlight[code] = fetch(FIDS_API_BASE + '/proxy/airports/iata/' + encodeURIComponent(code))
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(d) {
       var loc = d ? (d.location || d) : null;
@@ -18385,9 +18617,22 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       if (_lookupAirport(org) && _lookupAirport(dst)) {
         initGateMap(org, dst, prog);
       } else {
-        // Could not resolve — leave the box empty rather than gray squares
-        try { if (gateMap) { gateMap.remove(); gateMap = null; } } catch(e){}
-        if (mb) mb.innerHTML = '';
+        // Could not resolve every endpoint — fall back to a WORLD view with
+        // whatever pin we DO know (an unresolvable exotic code used to blank
+        // the panel into an empty grey rectangle, e.g. GEO long-haul).
+        var _oK = _lookupAirport(org), _dK = _lookupAirport(dst);
+        try { if (gateMap) { gateMap.remove(); } } catch(e){}
+        gateMap = null;
+        if (mb && (_oK || _dK)) {
+          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+          _gateMapTileLayer().addTo(gateMap);
+          var _kC = _oK || _dK, _kL = _oK ? org : dst, _kCol = _oK ? '#60a5fa' : '#ef4444';
+          gateMap.setView([20, _kC[1]], 1);
+          L.circleMarker(_kC,{radius:6,color:_kCol,fillColor:_kCol,fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_kL,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+          setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300);
+        } else if (mb) {
+          mb.innerHTML = '';
+        }
       }
     });
     return;
@@ -18440,7 +18685,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
     } catch(e) { /* fallback to setView above */ }
   }
-  try{var arc=null; if(_gateMapShowOverlay('route')){ arc=L.Polyline.Arc(o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap);} }catch(e){if(_gateMapShowOverlay('route')){var arc=L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);}}L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -18469,8 +18714,20 @@ function initGateMapLive(org,dst,planeLat,planeLng){
       if (_lookupAirport(org) && _lookupAirport(dst)) {
         initGateMapLive(org, dst, planeLat, planeLng);
       } else {
-        try { if (gateMap) { gateMap.remove(); gateMap = null; } } catch(e){}
-        if (mb) mb.innerHTML = '';
+        // Same world-view fallback as initGateMap — never a blank grey box.
+        var _oK2 = _lookupAirport(org), _dK2 = _lookupAirport(dst);
+        try { if (gateMap) { gateMap.remove(); } } catch(e){}
+        gateMap = null;
+        if (mb && (_oK2 || _dK2)) {
+          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+          _gateMapTileLayer().addTo(gateMap);
+          var _kC2 = _oK2 || _dK2, _kL2 = _oK2 ? org : dst, _kCol2 = _oK2 ? '#60a5fa' : '#ef4444';
+          gateMap.setView([20, _kC2[1]], 1);
+          L.circleMarker(_kC2,{radius:6,color:_kCol2,fillColor:_kCol2,fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_kL2,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+          setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300);
+        } else if (mb) {
+          mb.innerHTML = '';
+        }
       }
     });
     return;
@@ -18498,14 +18755,8 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // (The old single ideal arc left any real-world deviation looking
   // 'off course' with the plane floating beside the route.)
   var _pp = [planeLat, planeLng];
-  try{
-    L.Polyline.Arc(o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap);
-    L.Polyline.Arc(_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap);
-  }
-  catch(e){
-    L.polyline([o,_pp],{color:'#60a5fa',weight:4,opacity:0.9}).addTo(gateMap);
-    L.polyline([_pp,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(gateMap);
-  }
+  _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
+  _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   // Actual flown track over the assigned route: GREEN where it follows the
@@ -19872,7 +20123,10 @@ var GATE_ADS_BY_AIRLINE = {
     { bg:'linear-gradient(135deg,#003876 0%,#002a5c 100%)', headline:'TrueBlue', sub:'Earn points on every JetBlue flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/jetblue.svg' },
   ],
   'LH': [
-    { bg:'linear-gradient(135deg,#05164D 0%,#0a2470 100%)', headline:'Miles & More', sub:'Earn award miles with Lufthansa \u00b7 Star Alliance', logo:'/logos/airlines/european/lufthansa.svg' },
+    // lufthansa.svg has a baked-in white background rect \u2014 under the
+    // white-invert filter it rendered as a solid white square (Nick). The
+    // monochrome lockup is transparent-background and filters cleanly.
+    { bg:'linear-gradient(135deg,#05164D 0%,#0a2470 100%)', headline:'Miles & More', sub:'Earn award miles with Lufthansa \u00b7 Star Alliance', logo:'/logos/airlines/european/Lufthansa_Logo_2018-monochrome-white.svg' },
   ],
   'AF': [
     { bg:'linear-gradient(135deg,#002157 0%,#003380 100%)', headline:'Flying Blue', sub:'Earn miles with Air France \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/air-france.svg' },
@@ -21570,8 +21824,13 @@ function buildGateAdHtml(ad) {
     var _isPropertyLockup = false;
     if (_stripLogoPath) {
       var _lpLc = _stripLogoPath.toLowerCase();
-      _isPropertyLockup = !!(ad._propertyLockup)
-        || /\/(fairmont|sofitel|raffles|swissotel|pullman|emblems)-[a-z0-9-]+-[a-z0-9-]+\.(svg|png)$/i.test(_lpLc);
+      // Only artwork that genuinely contains the property name may suppress
+      // the separate name line. The old filename regex also matched generic
+      // brand wordmarks (sofitel-wordmark-white.svg,
+      // pullman-monochrome-white.svg, ...), silently erasing those hotels'
+      // names.
+      _isPropertyLockup = accorLockupCarriesName(ad._propertyLockup)
+        || accorLockupCarriesName(_lpLc);
     }
 
     // Brand slug — extracted from the logo filename so we can apply
@@ -22159,7 +22418,12 @@ function buildAccorAdOnlyV6(ad) {
   // brand-team file) already bake the property name INTO the logo artwork, so
   // printing the name again below it is a duplicate. Suppress the text name
   // whenever a property lockup is in use.
-  var lockupHasName=!!ad._propertyLockup;
+  // Suppress the separate name line ONLY when the resolved logo artwork
+  // genuinely contains the property name (per-property lockup). Keying off
+  // ad._propertyLockup alone misfired both ways: per-property lockup files
+  // arriving via ad.logo (non-FAI brand codes) printed the name twice, and
+  // a _propertyLockup pointing at art without the name erased it entirely.
+  var lockupHasName = accorLockupCarriesName(logo);
   var showName=!!displayName && !lockupHasName;
 
   var amenities=[];
@@ -22695,14 +22959,24 @@ function renderGateAd(index) {
       _renderBigCraft(el, _bcCtx);
       return;
     }
-    slide = slides[(slot + 1) % totalSlots] || slide; // nothing to show — next slide
+    // Nothing to show — SKIP the dead takeover slide and sync the rotation
+    // index, otherwise the next tick lands on the very slide we substitute
+    // here and shows it twice back-to-back (WS "WestJet Rewards" x2 bug).
+    slot = (slot + 1) % totalSlots;
+    _gateAdIndex = slot;
+    slide = slides[slot] || slide;
   }
   // Any non-bigcraft slide: tear the takeover down (overlay + map + class).
   try { if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown(); } catch (e) {}
   // ARRIVAL WEATHER scene (destination card + outlook).
   if (slide && slide.type === 'wxcard') {
     if (typeof _renderWxCard === 'function' && _renderWxCard(el)) return;
-    slide = slides[(slot + 1) % totalSlots] || slide; // no data — next slide
+    // No data — SKIP the dead weather slide and sync the rotation index so
+    // the next tick advances past the substituted slide instead of
+    // repeating it (this wrap-around duplicated deck[0] every cycle).
+    slot = (slot + 1) % totalSlots;
+    _gateAdIndex = slot;
+    slide = slides[slot] || slide;
   }
   if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
     try { window.GateMap3D.destroy(); } catch (e) {} // another slide takes the slot
@@ -23278,11 +23552,22 @@ function _buildGateAdSlideList() {
     deck.push(accorSlides[0]);
   }
 
-  // ── 5. Graceful fallback — never all-Accor, never blank.
+  // ── 5. Graceful fallback — never all-Accor, never blank. Airlines with
+  // no house ads (EK, QR…) get a BRANDED welcome slide — their gradient,
+  // emblem and name — instead of the bare grey placeholder Nick flagged.
   if (!deck.length) {
     if (accorSlides.length) deck = [accorSlides[0]];          // at most ONE Accor
     else if (airlineAdSlides.length) deck = airlineAdSlides;  // airline ads
-    else deck = [{ type: 'ad', data: { bg: 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)', headline: 'Welcome aboard', sub: 'Gate information display' } }];
+    else {
+      var _fb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[code]) || null;
+      var _fbLogo = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[code]) || null;
+      deck = [{ type: 'ad', data: {
+        bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
+        headline: 'Welcome aboard · Bienvenue à bord',
+        sub: (_fb && _fb.name) ? _fb.name : '',
+        logo: _fbLogo
+      } }];
+    }
   }
 
   // ── 6. YOUR AIRCRAFT — BIG (Nick, Jul 2026): the 3D map is RETIRED.
@@ -23300,7 +23585,8 @@ function _buildGateAdSlideList() {
   try {
     var _wxD = window._gateCurrentFlight && window._gateCurrentFlight._locIata;
     if (_wxD && typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[String(_wxD).toUpperCase()]
-        && TOMORROW_WX[String(_wxD).toUpperCase()].current) {
+        && TOMORROW_WX[String(_wxD).toUpperCase()].current
+        && typeof TOMORROW_WX[String(_wxD).toUpperCase()].current.temp === 'number') {
       deck.splice(Math.min(3, deck.length), 0, { type: 'wxcard' });
     }
   } catch (e) {}
@@ -23966,6 +24252,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // setProperty('important') because the gate fields' sizes are pinned with
     // !important in CSS — a plain inline style would lose the cascade.
     var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
+      + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-dest,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-status-val,'
       + ' .gad-map-col-v2 .v2-rc-acb-actype,'
@@ -23981,10 +24268,31 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (el.dataset.fitW === _fp || !el.clientWidth) continue;
       el.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(el).fontSize) || 16;
-      var size = base, guard = 12;
-      while (el.scrollWidth > el.clientWidth + 1 && size > base * 0.5 && guard-- > 0) {
+      var size = base, guard = 16;
+      while (el.scrollWidth > el.clientWidth && size > base * 0.35 && guard-- > 0) {
         size -= Math.max(1, size * 0.07);
         el.style.setProperty('font-size', size + 'px', 'important');
+      }
+      // GROW pass for the boarding info row values (Nick: the data must
+      // TAKE UP the cell, not float in it). Status cell excluded — its
+      // two-line stack sets its own size.
+      if (el.classList.contains('g8-bir-val')) {
+        var _gCell = el.closest ? el.closest('.g8-bir-cell') : null;
+        var _gRow = el.closest ? el.closest('.g8-board-info-row') : null;
+        var _gIsStatus = !!(_gCell && !_gCell.nextElementSibling);
+        if (_gRow && !_gIsStatus) {
+          var _gCap = Math.max(40, _gRow.clientHeight * 0.56);
+          var g = size, gGuard = 20;
+          while (el.scrollWidth <= el.clientWidth * 0.94 && g < _gCap && gGuard-- > 0) {
+            g = Math.min(_gCap, g + Math.max(1, g * 0.06));
+            el.style.setProperty('font-size', g + 'px', 'important');
+          }
+          var gBack = 8;
+          while (el.scrollWidth > el.clientWidth && g > 24 && gBack-- > 0) {
+            g -= Math.max(1, g * 0.05);
+            el.style.setProperty('font-size', g + 'px', 'important');
+          }
+        }
       }
       el.dataset.fitW = _fp;
     }
@@ -23995,6 +24303,15 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   setTimeout(_scanAndUpgrade, 1500);
   // Continuous: every 2s catches re-rendered slides
   setInterval(_scanAndUpgrade, 2000);
+  // Refit once webfonts land — the early passes measure with the fallback
+  // font, and the width+text fingerprint then blocks the refit forever,
+  // leaving values ellipsized ('AC6…') after the real font widens them.
+  try {
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () {
+      document.querySelectorAll('[data-fit-w]').forEach(function (el) { delete el.dataset.fitW; });
+      _scanAndUpgrade();
+    });
+  } catch (e) {}
 })();
 
 
@@ -24874,6 +25191,33 @@ function _renderWxCard(el) {
 
 
 // ── Verbatim mini-map clones for the BIG takeover (auto-substituted) ──
+// Antimeridian-safe great-circle drawer. leaflet-arc's dateline handling
+// only supports EASTWARD crossings (it offsets each split geometry by +360):
+// a WESTWARD crossing — e.g. outbound YYZ→HKG over the pole — comes back
+// with a lng jump of -180 → +540 that renders as a horizontal dashed streak
+// across the whole top of the map. Fix: unwrap the sampled points into one
+// continuous line (each lng within 180° of the previous), draw it, and when
+// the route crossed the dateline also draw a ±360°-shifted copy so the far
+// endpoint's pin connects on the primary world copy (tiles repeat, so both
+// copies land on basemap). Returns the continuous polyline — getLatLngs()
+// stays a flat array, so plane-position/bearing indexing works unchanged.
+function _gcAddArc(map, from, to, opts) {
+  var a;
+  try { a = L.Polyline.Arc(from, to, opts); }
+  catch (e) { return L.polyline([from, to], opts).addTo(map); }
+  var ll = a.getLatLngs();
+  for (var i = 1; i < ll.length; i++) {
+    while (ll[i].lng - ll[i - 1].lng >  180) ll[i].lng -= 360;
+    while (ll[i].lng - ll[i - 1].lng < -180) ll[i].lng += 360;
+  }
+  a.setLatLngs(ll).addTo(map);
+  var endLng = ll.length ? ll[ll.length - 1].lng : 0;
+  if (endLng > 180 || endLng < -180) {
+    var k = endLng > 180 ? -360 : 360;
+    L.polyline(ll.map(function (q) { return [q.lat, q.lng + k]; }), opts).addTo(map);
+  }
+  return a;
+}
 function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('bigCraftMap');if(!mb)return;
   // Resolve airport coords. If either is unknown, kick off async lookup
   // and retry — the map will populate as soon as both coords arrive.
@@ -24942,7 +25286,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       window._bigCraftMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
     } catch(e) { /* fallback to setView above */ }
   }
-  try{var arc=null; if(_gateMapShowOverlay('route')){ arc=L.Polyline.Arc(o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap);} }catch(e){if(_gateMapShowOverlay('route')){var arc=L.polyline([o,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(window._bigCraftMap);}}L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -25001,14 +25345,8 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // (The old single ideal arc left any real-world deviation looking
   // 'off course' with the plane floating beside the route.)
   var _pp = [planeLat, planeLng];
-  try{
-    L.Polyline.Arc(o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap);
-    L.Polyline.Arc(_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap);
-  }
-  catch(e){
-    L.polyline([o,_pp],{color:'#60a5fa',weight:4,opacity:0.9}).addTo(window._bigCraftMap);
-    L.polyline([_pp,d],{color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6'}).addTo(window._bigCraftMap);
-  }
+  _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
+  _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   // Actual flown track over the assigned route: GREEN where it follows the
