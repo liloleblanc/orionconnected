@@ -5150,6 +5150,33 @@ function buildV2GateLayout(ctx, vars) {
 // ─── V2 AIRCRAFT COLUMN BUILDER ───────────────────────────────────────────
 // Class-based markup matching gids-v218.78.css.
 // Structure: header > livery > 3-row data > inbound panel.
+var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
+        // Canadian carriers
+        'AC':  '/logos/airlines/canadian/AC.TO.svg',
+        'AC1': '/logos/airlines/canadian/AC.TO.svg',
+        'QK':  '/logos/airlines/canadian/AC.TO.svg',
+        'RV':  '/logos/airlines/canadian/AC.TO.svg',
+        'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
+        'WR':  '/logos/symbols/airlines-mono/WS.svg',
+        'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
+        'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
+        'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
+        // US majors — symbol-only emblems (rendered white on the accent badge)
+        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // United globe (white path only, padded to sit inside the round badge)
+        'DL':  '/logos/airlines/us-major/delta-widget.svg',
+        'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
+        'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
+        'F9':  '/logos/airlines/us-major/frontier-emblem.svg',
+        '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
+        'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
+        // International
+        'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
+        'AF':  '/logos/airlines/european/air-france-emblem.svg?v=2',   // rebuilt Jul 2026 — official accent path, centered (old file was a clipped sliver)
+        'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
+        'BW':  '/logos/airlines/asian-other/caribbean-emblem.png',     // official hummingbird (airline's own brand art)
+        '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg'
+};
+
 function _buildV2AircraftCol(ctx, vars) {
   var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
   var iata = vars.iata, tz = vars.tz, locIata = vars.locIata;
@@ -5399,32 +5426,6 @@ function _buildV2AircraftCol(ctx, vars) {
       // v218.99.33 — Airline emblem using REAL symbol-only SVGs. The leaf
       // shape gets a white filter applied and sits on the red CSS circle,
       // same treatment as the other icon badges. No more PNG-with-own-bg.
-      var AIRLINE_EMBLEM_FILES = {
-        // Canadian carriers
-        'AC':  '/logos/airlines/canadian/AC.TO.svg',
-        'AC1': '/logos/airlines/canadian/AC.TO.svg',
-        'QK':  '/logos/airlines/canadian/AC.TO.svg',
-        'RV':  '/logos/airlines/canadian/AC.TO.svg',
-        'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
-        'WR':  '/logos/symbols/airlines-mono/WS.svg',
-        'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
-        'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
-        'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
-        // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // United globe (white path only, padded to sit inside the round badge)
-        'DL':  '/logos/airlines/us-major/delta-widget.svg',
-        'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
-        'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
-        'F9':  '/logos/airlines/us-major/frontier-emblem.svg',
-        '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
-        'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
-        // International
-        'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
-        'AF':  '/logos/airlines/european/air-france-emblem.svg?v=2',   // rebuilt Jul 2026 — official accent path, centered (old file was a clipped sliver)
-        'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
-        'BW':  '/logos/airlines/asian-other/caribbean-emblem.png',     // official hummingbird (airline's own brand art)
-        '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg'
-      };
       function _emblemImg(code) {
         var path = AIRLINE_EMBLEM_FILES[code];
         // v218.99.69 — Airlines whose emblem files are full-color tiles
@@ -6876,6 +6877,68 @@ function uxgGateHtml(ctx) {
     }
   }
 
+  // Alliance check — Star Alliance, Oneworld, SkyTeam
+  var ALLIANCE_MAP = {
+    // Star Alliance members
+    'AC':'star','LH':'star','UA':'star','SQ':'star','NH':'star','TK':'star',
+    'SK':'star','OS':'star','LX':'star','AY':'star','TP':'star','SN':'star',
+    'LO':'star','MS':'star','ET':'star','SA':'star','A3':'star','OZ':'star',
+    'TG':'star','CA':'star','ZH':'star','AI':'star','JP':'star','OU':'star',
+    'HR':'star','NZ':'star','CM':'star','EW':'star',
+    // AC family inherits Star
+    'QK':'star','RV':'star','RJ':'star','ZX':'star','9M':'star','9L':'star',
+    // Oneworld members
+    'AA':'oneworld','BA':'oneworld','CX':'oneworld','QF':'oneworld','JL':'oneworld',
+    'IB':'oneworld','AY':'oneworld','QR':'oneworld','RJ':'oneworld','S7':'oneworld',
+    'MH':'oneworld','UL':'oneworld','AT':'oneworld','AS':'oneworld','WY':'oneworld',
+    'FJ':'oneworld','OL':'oneworld','LA':'oneworld','HA':'oneworld',
+    // SkyTeam members
+    'DL':'skyteam','AF':'skyteam','KL':'skyteam','AZ':'skyteam','KE':'skyteam',
+    'CI':'skyteam','MU':'skyteam','SU':'skyteam','VN':'skyteam','GA':'skyteam',
+    'AM':'skyteam','RO':'skyteam','SV':'skyteam','ME':'skyteam','VS':'skyteam',
+    'KQ':'skyteam','UX':'skyteam','OK':'skyteam','XK':'skyteam'
+  };
+  // Dark-banner-safe variants — the colored lockups (black Star Alliance
+  // wordmark, navy oneworld) were invisible on the black R1 band, which is
+  // why alliance logos never appeared to show.
+  var ALLIANCE_LOGOS = {
+    'star':     '/logos/airlines/alliances/StarGray-bright-text.svg',  // Nick's lockup, lettering brightened for the black band
+    'oneworld': '/logos/airlines/alliances/Oneworld.svg',
+    'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
+  };
+  var starHtml = '';
+  // These carriers' banner wordmark IS the official combined
+  // airline+alliance lockup — a separate mark would show the alliance twice.
+  var _COMBINED_ALLIANCE_LOCKUP = { 'UA': 1, 'KL': 1 };
+  var _allianceKey = ALLIANCE_MAP[airlineCode];
+  if (_allianceKey && !_COMBINED_ALLIANCE_LOCKUP[airlineCode]) {
+    var _allianceCls = 'g8-r1-star g8-r1-alliance-' + _allianceKey;
+    // onerror hides only THIS img — the old window._allianceFailed flag was a
+    // global kill switch: one transient 404 disabled alliance logos for the
+    // rest of the session.
+    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
+  }
+
+  // Clean diagonal lane arrow (plain stroke SVG — the unicode arrows render
+  // as circled emoji on some platforms, per Nick).
+  function _birArrowSvg(mirror) {
+    return '<svg viewBox="0 0 24 24" style="width:1em;height:1em;display:block;'
+      + (mirror ? 'transform:scaleX(-1);' : '')
+      + '" aria-hidden="true"><path d="M18 6 L7 17 M7 17 L7 10 M7 17 L14 17" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+
+  // WELCOME STRIP for the boarding takeovers (Nick: 'the Welcome Bienvenue
+  // and the rondelle and Star') — like the physical AC gate sign's header:
+  // airline rondelle · Welcome | Bienvenue · alliance lockup.
+  function _boardWelcomeStripHtml() {
+    var _bwEmb = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    return '<div class="g8-board-welcome">'
+      + (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
+      + '<div class="g8-bw-text">Welcome <span class="g8-bw-sep">\u00b7</span> Bienvenue</div>'
+      + (starHtml ? '<span class="g8-bw-star">' + starHtml + '</span>' : '')
+      + '</div>';
+  }
+
   // FLIGHT INFO ROW for the boarding-state takeovers (Nick: 'flight info
   // all in a row, like the old configuration — copy what exists in the
   // up-down configuration including icons, smaller, with the metal look').
@@ -6893,8 +6956,21 @@ function uxgGateHtml(ctx) {
         +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
+    // Flight cell carries the airline RONDELLE (same emblem set as the
+    // rail) instead of the generic glyph (Nick).
+    var _birEmblemPath = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    var _birFlightIcon = _birEmblemPath
+      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);padding:14%;box-sizing:border-box;">'
+      : null;
     return '<div class="g8-board-info-row">'
-      + _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || '')
+      + (_birFlightIcon
+          ? '<div class="g8-bir-cell">'
+            + '<div class="g8-bir-badge">' + _birFlightIcon + '</div>'
+            + '<div class="g8-bir-text">'
+            +   '<div class="g8-bir-title">Flight <span class="g8-bir-sep">|</span> Vol</div>'
+            +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
+            + '</div></div>'
+          : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
       + _cell('ac-ico-dest', 'Destination', '', _bDest + (locIata ? ' <span class="g8-bir-code">(' + locIata + ')</span>' : ''))
       + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', boardTimeHtml)
       + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', depTimeHtml)
@@ -6960,11 +7036,12 @@ function uxgGateHtml(ctx) {
       else { nowVal = 1; nextVal = 2; }
     }
     boardHtml = '<div class="g8-board active">'
+      + _boardWelcomeStripHtml()
       + _boardInfoRowHtml('boarding')
       + '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>'
       + '<div class="g8-board-body">'
-      + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _grpLbl + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">\u2199</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-      + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _grpLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">\u2198</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+      + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _grpLbl + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+      + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _grpLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
       + '</div></div>';
   }
 
@@ -6976,6 +7053,7 @@ function uxgGateHtml(ctx) {
     var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
     var finalSub = isGateClosed ? '' : TL('proceedGate');
     finalHtml = '<div class="g8-final active">'
+      + _boardWelcomeStripHtml()
       + _boardInfoRowHtml(isGateClosed ? 'gateclosed' : 'final')
       + '<div class="g8-final-hdr">' + finalHdr + '</div>'
       + '<div class="g8-final-body"><div class="g8-final-text"><div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
@@ -7015,47 +7093,6 @@ function uxgGateHtml(ctx) {
     nextHtml = '<span class="g8-r5-next">' + TL('nextDep') + ': ' + nLoc + ' · ' + nextFlight.flight + ' · ' + nextFlight.time + nDelay + '</span>';
   }
 
-  // Alliance check — Star Alliance, Oneworld, SkyTeam
-  var ALLIANCE_MAP = {
-    // Star Alliance members
-    'AC':'star','LH':'star','UA':'star','SQ':'star','NH':'star','TK':'star',
-    'SK':'star','OS':'star','LX':'star','AY':'star','TP':'star','SN':'star',
-    'LO':'star','MS':'star','ET':'star','SA':'star','A3':'star','OZ':'star',
-    'TG':'star','CA':'star','ZH':'star','AI':'star','JP':'star','OU':'star',
-    'HR':'star','NZ':'star','CM':'star','EW':'star',
-    // AC family inherits Star
-    'QK':'star','RV':'star','RJ':'star','ZX':'star','9M':'star','9L':'star',
-    // Oneworld members
-    'AA':'oneworld','BA':'oneworld','CX':'oneworld','QF':'oneworld','JL':'oneworld',
-    'IB':'oneworld','AY':'oneworld','QR':'oneworld','RJ':'oneworld','S7':'oneworld',
-    'MH':'oneworld','UL':'oneworld','AT':'oneworld','AS':'oneworld','WY':'oneworld',
-    'FJ':'oneworld','OL':'oneworld','LA':'oneworld','HA':'oneworld',
-    // SkyTeam members
-    'DL':'skyteam','AF':'skyteam','KL':'skyteam','AZ':'skyteam','KE':'skyteam',
-    'CI':'skyteam','MU':'skyteam','SU':'skyteam','VN':'skyteam','GA':'skyteam',
-    'AM':'skyteam','RO':'skyteam','SV':'skyteam','ME':'skyteam','VS':'skyteam',
-    'KQ':'skyteam','UX':'skyteam','OK':'skyteam','XK':'skyteam'
-  };
-  // Dark-banner-safe variants — the colored lockups (black Star Alliance
-  // wordmark, navy oneworld) were invisible on the black R1 band, which is
-  // why alliance logos never appeared to show.
-  var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/StarGray-bright-text.svg',  // Nick's lockup, lettering brightened for the black band
-    'oneworld': '/logos/airlines/alliances/Oneworld.svg',
-    'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
-  };
-  var starHtml = '';
-  // These carriers' banner wordmark IS the official combined
-  // airline+alliance lockup — a separate mark would show the alliance twice.
-  var _COMBINED_ALLIANCE_LOCKUP = { 'UA': 1, 'KL': 1 };
-  var _allianceKey = ALLIANCE_MAP[airlineCode];
-  if (_allianceKey && !_COMBINED_ALLIANCE_LOCKUP[airlineCode]) {
-    var _allianceCls = 'g8-r1-star g8-r1-alliance-' + _allianceKey;
-    // onerror hides only THIS img — the old window._allianceFailed flag was a
-    // global kill switch: one transient 404 disabled alliance logos for the
-    // rest of the session.
-    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
-  }
 
   // Operator info (used by equipment panel; top banner no longer shows this line)
   var _opCode = currentFlight._opCode || null;
@@ -13441,7 +13478,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22178';
+var FIDS_BUILD_TAG = 'v22179';
 (function(){
   try {
     function _addTag(){

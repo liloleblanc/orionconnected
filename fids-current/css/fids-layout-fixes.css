@@ -2356,7 +2356,7 @@ html .g8-board-info-row {
   box-shadow: 0 4px 14px rgba(5, 15, 30, 0.32);
 }
 html .g8-bir-cell {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -2434,3 +2434,36 @@ html .g8-board-arrow {
 }
 html .g8-board-col.now .g8-board-arrow { color: var(--airline-accent, #D82F2E); }
 html .g8-board-col.next .g8-board-arrow { color: var(--banner-bg, #0f172a); }
+
+/* ── Boarding takeover WELCOME strip: rondelle · Welcome | Bienvenue ·
+   alliance lockup, like the physical gate sign header (Nick). ── */
+html .g8-board-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 1.8vw, 34px);
+  background: #0b0f16;
+  padding: clamp(8px, 1.3vh, 18px) clamp(14px, 1.4vw, 28px);
+  margin-bottom: clamp(10px, 1.6vh, 22px);
+}
+html .g8-board-welcome .g8-bw-emblem {
+  height: clamp(32px, 4.6vh, 58px);
+  width: auto;
+  object-fit: contain;
+}
+html .g8-bw-text {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: clamp(22px, 3.2vh, 44px);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+html .g8-bw-text .g8-bw-sep { opacity: 0.55; }
+html .g8-board-welcome .g8-bw-star img,
+html .g8-board-welcome .g8-r1-star {
+  height: auto !important;
+  max-height: clamp(32px, 4.6vh, 58px) !important;
+  max-width: min(14vw, 240px) !important;
+  width: auto !important;
+  opacity: 1 !important;
+}
