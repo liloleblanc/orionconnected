@@ -2404,3 +2404,9 @@ html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; ma
 html .g8-bir-val .g8-r2-revised { color: #b45309; }
 /* the STATUS cell carries the longest bilingual values — size to fit */
 html .g8-bir-cell:last-child .g8-bir-val { font-size: clamp(24px, 3.8vh, 52px); }
+
+/* ── Boarding panel colors follow the AIRLINE (Nick) — the NEXT side was a
+   generic green; the signage pairs the airline accent with its dark tone
+   (AC: red 'now' + black 'next', like the physical zone signs). ── */
+html .g8-board-hdr-next { border-bottom-color: var(--banner-bg, #0f172a) !important; }
+html .g8-board-col.next .g8-board-grp-num { color: var(--banner-bg, #0f172a) !important; }
