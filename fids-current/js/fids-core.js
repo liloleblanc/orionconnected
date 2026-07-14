@@ -3784,6 +3784,12 @@ function g8LogoFail(img) {
 }
 
 // Operating carrier for regional flights
+// Québec-province airports show FRENCH FIRST on every bilingual pair
+// (Nick — OQLF convention: 'anything in Quebec, French first then English').
+function frFirstAirport(iata) {
+  return /^(YUL|YQB|YHU|YMX|YMY|YBG|YVO|YZV|YUY|YGP|YGL|YGW|YKQ|YPX|YVP|YHR|YNA|YBC|YTF|AKV|YIK|YZG|YQC|YHA|YKG|XGR)$/.test(String(iata || '').toUpperCase());
+}
+
 function getAirlineAccent(code) {
   var c = String(code || '').toUpperCase();
   // AIRLINE_BRAND carries accents for carriers the accent map never got
@@ -5248,6 +5254,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
 };
 
 function _buildV2AircraftCol(ctx, vars) {
+  var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
   var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
   var iata = vars.iata, tz = vars.tz, locIata = vars.locIata;
   var _inbOperating = vars._inbOperating;
@@ -5590,13 +5597,16 @@ function _buildV2AircraftCol(ctx, vars) {
       function _shelf(icon, en, second, val, valCls) {
         // v223 — Nick's exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
-        var _sec = (second && second !== en)
-          ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + second + '</span>'
+        // Québec airports: French first on every pair (Nick).
+        var _p1 = en, _p2 = second;
+        if (_frF && second && second !== en) { _p1 = second; _p2 = en; }
+        var _sec = (_p2 && _p2 !== _p1)
+          ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
         return '<div class="v2-fi-row">'
           + '<div class="v2-fi-iconcol">' + icon + '</div>'
           + '<div class="v2-fi-textcol">'
-          +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '</div>'
+          +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
           + '</div>'
           + '</div>';
@@ -5667,7 +5677,9 @@ function _buildV2AircraftCol(ctx, vars) {
         if (_ss) {
           var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
           // Status STACKED — EN over FR (per Nick).
-          _stBiling = '<span class="v2-fi-st2">' + _enTC + '</span><span class="v2-fi-st2">' + _ss.fr + '</span>';
+          _stBiling = _frF
+            ? '<span class="v2-fi-st2">' + _ss.fr + '</span><span class="v2-fi-st2">' + _enTC + '</span>'
+            : '<span class="v2-fi-st2">' + _enTC + '</span><span class="v2-fi-st2">' + _ss.fr + '</span>';
         }
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
@@ -5718,6 +5730,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
 // ─── V2 MAP COLUMN BUILDER ────────────────────────────────────────────────
 function _buildV2MapCol(ctx, vars) {
+  var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
   // Live telemetry (window cache, scoped to current airport)
   var _liveSpd = null, _liveAlt = null;
   try {
@@ -6044,22 +6057,22 @@ function _buildV2MapCol(ctx, vars) {
         }
         _ibArrRowHtml =
             '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-          +   '<div class="v2-rc-fi-tlbl"><span>' + _ibArrLblEn + '</span><span>' + _ibArrLblFr + '</span></div>'
+          +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
           +   '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>'
           + '</div>';
       }
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table' + (_ibArrRowHtml ? ' v2-rc-fi-t4' : '') + '">'
         +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Flight</span><span>Vol</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>From</span><span>De</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow' + (_ibArrRowHtml ? '' : ' v2-rc-fi-trow-last') + '">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Status</span><span>Statut</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +   '</div>'
         +   _ibArrRowHtml
@@ -6161,15 +6174,15 @@ function _buildV2MapCol(ctx, vars) {
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table">'
         +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Flight</span><span>Vol</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Destination</span><span>À</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'À' : 'Destination') + '</span><span>' + (_frF ? 'Destination' : 'À') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Status</span><span>Statut</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
         +   '</div>'
         + '</div></div>';
@@ -6512,7 +6525,7 @@ function _buildV2MapCol(ctx, vars) {
       '<div class="v2-rc-shelf v2-rc-shelf-map">'
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
-    +     '<div class="v2-rc-maptitle">Your Aircraft <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">Votre Avion</span></div>'
+    +     '<div class="v2-rc-maptitle">' + (_frF ? 'Votre Avion' : 'Your Aircraft') + ' <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">' + (_frF ? 'Your Aircraft' : 'Votre Avion') + '</span></div>'
     +     _telemBar
     +   '</div>'
     + '</div>';
@@ -6559,6 +6572,8 @@ function uxgGateHtml(ctx) {
   const _hdr2nd = (typeof boardLangsFor === 'function' ? (boardLangsFor(iata)[1] || 'fr') : 'fr');
   const _flightLbl2 = ({fr:'Vol', es:'Vuelo', en:'Flight', de:'Flug', it:'Volo', pt:'Voo'})[_hdr2nd] || 'Vol';
   const _gateLbl2 = ({fr:'Porte', es:'Puerta', en:'Gate', de:'Gate', it:'Uscita', pt:'Porta'})[_hdr2nd] || 'Porte';
+  // Québec airports: French first on every bilingual pair (Nick).
+  const _frF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
   const _flightNumDisp = (String(currentFlight.flight || '').replace(/^[A-Za-z]+\s*/, '').trim()) || String(currentFlight.flight || '');
   const locale = uxgLocaleCode();
   // Short display names for the top banner — long names (NEW YORK KENNEDY) get
@@ -7020,7 +7035,7 @@ function uxgGateHtml(ctx) {
     var _bwStar = starHtml ? starHtml.replace('StarGray-bright-text.svg', 'StarGray.svg') : '';
     return '<div class="g8-board-welcome">'
       + (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="g8-bw-text">Welcome <span class="g8-bw-sep">\u00b7</span> Bienvenue</div>'
+      + '<div class="g8-bw-text">' + (_frF ? 'Bienvenue' : 'Welcome') + ' <span class="g8-bw-sep">\u00b7</span> ' + (_frF ? 'Welcome' : 'Bienvenue') + '</div>'
       + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
       + '</div>';
   }
@@ -7044,16 +7059,22 @@ function uxgGateHtml(ctx) {
       : /ontime|early|scheduled/.test(_stK) ? ' g8-bir-st-ok' : '';
     // EN and FR each get their OWN line — free wrapping let 'Gate closed |
     // Porte fermée' break into four giant lines and balloon the whole row.
-    var _stTxt = _stP ? ('<span class="g8-bir-st2">' + _stP.en + '</span><span class="g8-bir-st2">' + _stP.fr + '</span>') : '';
+    var _stTxt = _stP
+      ? (_frF
+          ? '<span class="g8-bir-st2">' + _stP.fr + '</span><span class="g8-bir-st2">' + _stP.en + '</span>'
+          : '<span class="g8-bir-st2">' + _stP.en + '</span><span class="g8-bir-st2">' + _stP.fr + '</span>')
+      : '';
     // Flair brand palette (Nick): airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
     var _birF8 = (airlineCode === 'F8');
     var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"' : '';
-    function _cell(icon, en, fr, val) {
+    function _cell(icon, en, fr, val, noswap) {
+      var _t1 = en, _t2 = fr;
+      if (_frF && !noswap && fr && fr !== en) { _t1 = fr; _t2 = en; }
       return '<div class="g8-bir-cell">'
         + '<div class="g8-bir-badge"' + _birBadgeStyle + '><span class="ac-ico ' + icon + '"></span></div>'
         + '<div class="g8-bir-text">'
-        +   '<div class="g8-bir-title">' + en + (fr && fr !== en ? ' <span class="g8-bir-sep">|</span> ' + fr : '') + '</div>'
+        +   '<div class="g8-bir-title">' + _t1 + (_t2 && _t2 !== _t1 ? ' <span class="g8-bir-sep">|</span> ' + _t2 : '') + '</div>'
         +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
@@ -7072,11 +7093,11 @@ function uxgGateHtml(ctx) {
           ? '<div class="g8-bir-cell">'
             + _birFlightBadge
             + '<div class="g8-bir-text">'
-            +   '<div class="g8-bir-title">Flight <span class="g8-bir-sep">|</span> Vol</div>'
+            +   '<div class="g8-bir-title">' + (_frF ? 'Vol' : 'Flight') + ' <span class="g8-bir-sep">|</span> ' + (_frF ? 'Flight' : 'Vol') + '</div>'
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
           : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
-      + _cell('ac-ico-dest', 'Destination', (locIata ? '<span class="g8-bir-code-t">' + locIata + '</span>' : ''), _bDest)
+      + _cell('ac-ico-dest', 'Destination', (locIata ? '<span class="g8-bir-code-t">' + locIata + '</span>' : ''), _bDest, true)
       + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', boardTimeHtml)
       + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', depTimeHtml)
       + _cell('ac-ico-status', 'Status', 'Statut', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
@@ -7146,7 +7167,7 @@ function uxgGateHtml(ctx) {
       // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
       var _pdRows = /DH4|DH8|Q400|DASH/i.test(String(equipRaw || '')) ? 20 : 29;
       var _pdBand = Math.ceil(_pdRows / 3);
-      _grpLbl = 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
+      _grpLbl = _frF ? 'Rang\u00e9es <span class="g8-bir-sep">|</span> Rows' : 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
       if (lateBoarding) {
         nowVal = '1\u2013' + _pdBand;
         nextVal = '\u2014';
@@ -7205,11 +7226,12 @@ function uxgGateHtml(ctx) {
            })();
       var _fcNext, _fcNextLbl = 'Zones';
       if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
-      else if (airlineCode === 'PD') { _fcNextLbl = 'Rows <span class="g8-bir-sep">|</span> Rangées'; _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes'; }
-      else _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes';
+      else if (airlineCode === 'PD') { _fcNextLbl = _frF ? 'Rang\u00e9es <span class="g8-bir-sep">|</span> Rows' : 'Rows <span class="g8-bir-sep">|</span> Rangées'; _fcNext = (_frF ? 'Toutes <span class="g8-bir-sep">|</span> All' : 'All <span class="g8-bir-sep">|</span> Toutes'); }
+      else _fcNext = (_frF ? 'Toutes <span class="g8-bir-sep">|</span> All' : 'All <span class="g8-bir-sep">|</span> Toutes');
+      // FINAL CALL replaces the Welcome strip (Nick) — one call-out where
+      // the welcome sat, more room for the lane panels below.
       finalHtml = '<div class="g8-final active">'
         + _boardInfoRowHtml('final')
-        + _boardWelcomeStripHtml()
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
         + (_fcAcFam
           ? _acLanesBodyHtml(_fcExpress ? '3 • 4' : '3 • 4 • 5 • 6')
@@ -7856,7 +7878,7 @@ function uxgGateHtml(ctx) {
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
             +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
             +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
-            +     'Time <span style="opacity:.6">|</span> Heure</span>'
+            +     (_frF ? 'Heure <span style="opacity:.6">|</span> Time' : 'Time <span style="opacity:.6">|</span> Heure') + '</span>'
             +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(36px,5.4vh,76px);font-weight:900;color:#fff;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
@@ -7867,7 +7889,7 @@ function uxgGateHtml(ctx) {
     // right screen edge so its skewed top-right corner can never expose a gap;
     // inner spans counter-skew +24° to stay upright.
     +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:' + (String(iata).toUpperCase() === 'YQM' ? '#D21034' : 'var(--airline-accent,#1aa)') + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
-    +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
+    +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
     +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
     +   '</div>'
     + '</div>'
@@ -13657,7 +13679,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22192';
+var FIDS_BUILD_TAG = 'v22193';
 (function(){
   try {
     function _addTag(){
