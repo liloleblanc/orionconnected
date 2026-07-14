@@ -13757,7 +13757,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22202';
+var FIDS_BUILD_TAG = 'v22203';
 (function(){
   try {
     function _addTag(){
@@ -18835,6 +18835,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     return;
   }
   try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(gateMap);
+  _gateMapWatchResize(mb);
   // Calculate total route distance for zoom scaling
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
   // Base cruise zoom depends on route length (short=7, medium=6, long=5, transcon=4)
@@ -18899,6 +18900,24 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       }
   }setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},500);}
 
+// The rail grid re-tracks when the 4-row flight-info panel arrives late
+// (reg lookup, v22198) — the MAP ROW then resizes under an already-
+// initialized Leaflet, which keeps stale pixel math and shows an off-
+// centre, wrongly-zoomed crop with the plane at the frame edge (Nick:
+// 'not sure what's happening to the map'). Watch the box and re-measure:
+// invalidateSize() keeps the true centre through any late resize.
+function _gateMapWatchResize(mb) {
+  try {
+    if (window._gateMapRO) { try { window._gateMapRO.disconnect(); } catch (e2) {} }
+    if (typeof ResizeObserver === 'function') {
+      window._gateMapRO = new ResizeObserver(function () {
+        try { if (gateMap) gateMap.invalidateSize(); } catch (e3) {}
+      });
+      window._gateMapRO.observe(mb);
+    }
+  } catch (e) {}
+}
+
 function initGateMapLive(org,dst,planeLat,planeLng){
   if(typeof L==='undefined'||typeof L.map!=='function')return;
   var mb=document.getElementById('gateMapBox');if(!mb)return;
@@ -18932,6 +18951,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
   gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
   _gateMapTileLayer().addTo(gateMap);
+  _gateMapWatchResize(mb);
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
   var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
