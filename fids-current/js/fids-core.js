@@ -6188,7 +6188,7 @@ function _buildV2MapCol(ctx, vars) {
         ? (_dDestCity + (_dDest ? ' (' + _dDest + ')' : ''))
         : (_dDest || '—');
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table">'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t4">'
         +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
@@ -6196,6 +6196,12 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'À' : 'Destination') + '</span><span>' + (_frF ? 'Destination' : 'À') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
+        +   '</div>'
+        // Departure TIME restored (Nick: 'who told you to remove the time') —
+        // the card dropped it 'because it's on the left', but Nick wants it here.
+        +   '<div class="v2-rc-fi-trow">'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
+        +     '<div class="v2-rc-fi-tval">' + (_dDepStr || '—') + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
@@ -13824,7 +13830,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22229';
+var FIDS_BUILD_TAG = 'v22230';
 (function(){
   try {
     function _addTag(){
@@ -23509,22 +23515,15 @@ function renderGateAd(index) {
   var html = '';
   if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorAdOnlyV6 === 'function') {
     try {
-      // Deterministic language alternation (Nick: 'I still don't see English
-      // ads'): every Accor appearance flips EN <-> FR instead of trusting
-      // the board rotation, which can sit on one language for long spells
-      // (or be configured single-language).
-      // Flip ONLY when the slide instance actually changes — flipping on
-      // every render call meant any re-paint of the SAME on-screen slide
-      // (media-config events, post-rebuild repaints) produced different
-      // HTML, busted the _lastKey cache below, and rebuilt the whole slide:
-      // photo restart + language swap mid-display (Nick: the Accor ads
-      // blink 'same as the weather').
-      var _axFlipKey = slot + '|' + ((slide.data && (slide.data.hotelId || slide.data.name)) || '');
-      if (window._accorAdLastFlipKey !== _axFlipKey) {
-        window._accorAdForcedLang = (window._accorAdForcedLang === 'en') ? 'fr' : 'en';
-        window._accorAdLastFlipKey = _axFlipKey;
-      }
-      window._adDiag = 'accor:' + window._accorAdForcedLang;
+      // ONE consistent language — the board's own language (Nick: 'the Accor
+      // ads seriously go from one french then english, it's all over the
+      // place'). The old code FLIPPED EN<->FR on every Accor appearance, so the
+      // ads alternated language on screen. This display is either an EN board
+      // or an FR board (Canada runs paired EN/FR screens), so following the
+      // board language keeps each screen consistent while both languages still
+      // appear across the pair. No per-slide flip.
+      window._accorAdForcedLang = null;
+      window._adDiag = 'accor:board';
       html = buildAccorAdOnlyV6(slide.data);
     } catch (e) {
       console.error('[ACCOR-AD6-FAILED]', e);
