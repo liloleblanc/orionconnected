@@ -1484,57 +1484,34 @@ html .g8-wrap.g8-airline-AC .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-QK .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-RV .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-F8 .gad-map-col-v2::before,
-html .g8-wrap.g8-airline-PB .gad-map-col-v2::before,
-/* LEFT flight-info column gets the SAME dotted-globe backdrop as the right
-   column (Nick: 'the left shelves should match the right shelves with that
-   pattern'). Same asset, same treatment — the sphere breathes behind both. */
-html .gad-aircraft-col::before,
-html .g8-wrap .gad-aircraft-col::before {
+html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-image: url('/logos/3d_globe_desktop.svg?v=2') !important; /* v2 = route arcs + pins removed (Nick) */
   background-size: 100% 100% !important;
   background-position: center center !important;
   background-repeat: no-repeat !important;
-  /* B&W per Nick; 0.42 made the white sphere vanish into the light panel
-     ('dont see it') — more presence + contrast so the continents read. */
   opacity: 0.8 !important;
   filter: grayscale(1) contrast(1.25) !important;
   mix-blend-mode: normal !important;
   transform: none !important;
 }
-/* Left column: base ::before layer (span the whole stack, behind shelves) +
-   keep content above it. Mirrors .gad-map-col-v2::before / '> * z-index:1'. */
+/* LEFT rail dotted-sphere — Nick: 'the left shelves should match the right
+   shelves with that pattern' and 'this is for ALL gates'. The faint
+   behind-the-metal globe read as nothing, especially on dark airline themes.
+   A soft-light overlay across the whole rail blends the dots INTO the shelves
+   on EVERY theme: soft-light lightens dark panels (Qatar maroon) and darkens
+   light ones (Air Canada metal), so the sphere reads either way, under the
+   big bold values (which stay legible — the dots are a gentle texture). */
 html .g8-wrap .gad-aircraft-col { position: relative !important; }
-/* Match the RIGHT column's globe geometry exactly (gids-v218.78 line ~3481):
-   bottom-anchored, 62% tall — a concentrated sphere in the lower shelves, not
-   a faint full-height stretch. */
-html .g8-wrap .gad-aircraft-col::before {
+html .g8-wrap .gad-aircraft-col::after {
   content: "" !important;
-  position: absolute !important; left: 0 !important; right: 0 !important;
-  top: auto !important; bottom: 0 !important; height: 62% !important;
-  pointer-events: none !important; z-index: 0 !important;
+  position: absolute !important; inset: 0 !important; z-index: 3 !important;
+  background-image: url('/logos/dots-sphere.svg?v=1') !important;
+  background-size: 116% auto !important; background-position: center 54% !important;
+  background-repeat: no-repeat !important;
+  mix-blend-mode: soft-light !important;
+  opacity: 0.82 !important;
+  pointer-events: none !important;
 }
-html .g8-wrap .gad-aircraft-col > * { position: relative !important; z-index: 1 !important; }
-/* Shelf brushed-metal made translucent so the globe reads THROUGH it — the
-   EXACT recipe the right column's Right 4-6 shelves use (gids-v218.78 ~4174),
-   which is proven to let the column ::before globe show. The key is that the
-   tonal falloff layer carries alpha (…/0.62) instead of the opaque original,
-   so the sphere breathes through the metal. */
-html .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
-  background-color: color-mix(in srgb, color-mix(in srgb, var(--body-bg,#e6eaef) 82%, var(--airline-accent,#8a8f96) 18%) 66%, transparent) !important;
-  background-image:
-    linear-gradient(122deg,
-      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
-      rgba(255,255,255,0.30) 47%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0) 82%),
-    repeating-linear-gradient(0deg,
-      rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px,
-      rgba(0,0,0,0.05) 1px,      rgba(0,0,0,0.05) 2px),
-    linear-gradient(180deg,
-      color-mix(in srgb, color-mix(in srgb, #eef2f6 50%, #ffffff 50%) 62%, transparent) 0%,
-      color-mix(in srgb, color-mix(in srgb, #e6ebf0 78%, var(--airline-accent,#8a8f96) 22%) 55%, transparent) 52%,
-      color-mix(in srgb, color-mix(in srgb, #dde2e8 70%, #000000 15%) 62%, transparent) 100%) !important;
-}
-/* The flight-info block itself must not paint an opaque fill over the globe. */
-html .g8-wrap .gad-aircraft-col .v2-flightinfo-block { background: transparent !important; }
 
 /* No white sliver between the gate block and the Your Aircraft panel
    (Nick): the gate tab spans the banner's full inner height and covers
@@ -1650,8 +1627,26 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   background-size: 48% auto !important; background-position: 24% 46% !important;
   background-repeat: no-repeat !important;
 }
-.bigcraft-mapcol { position: relative !important; min-width: 0 !important; min-height: 0 !important; }
+.bigcraft-mapcol {
+  position: relative !important; min-width: 0 !important; min-height: 0 !important;
+  /* Border like the other shelves (Nick: 'the map maybe a border like the
+     others') — same navy divider colour + weight the rail uses. */
+  border: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;
+  box-sizing: border-box !important; overflow: hidden !important;
+}
 .bigcraft-map { position: absolute !important; inset: 0 !important; }
+/* The dot-sphere carried faintly INTO the map too (Nick: 'kind of bring it in
+   the map, blend it') so the map and the info metal read as one panel, not two
+   boxes. Soft-light + low opacity keeps the route/labels perfectly clear. */
+.bigcraft-mapcol::after {
+  content: "" !important;
+  position: absolute !important; inset: 0 !important; z-index: 401 !important;
+  background-image: url('/logos/dots-sphere.svg?v=1') !important;
+  background-size: 66% auto !important; background-position: center 44% !important;
+  background-repeat: no-repeat !important;
+  mix-blend-mode: soft-light !important; opacity: 0.34 !important;
+  pointer-events: none !important;
+}
 .bigcraft-est {
   position: absolute !important; left: 14px !important; bottom: 12px !important; z-index: 500 !important;
   background: rgba(5,10,20,0.78) !important; color: rgba(255,255,255,0.85) !important;
@@ -1692,7 +1687,10 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   background-image: url('/logos/dots-sphere.svg?v=1') !important;
   background-size: 122% auto !important; background-position: center 44% !important;
   background-repeat: no-repeat !important;
-  opacity: 0.85 !important;
+  /* Lightened (Nick: 'can we lighten the pattern') + blended into the metal so
+     it reads as texture, not a decal. */
+  opacity: 0.5 !important;
+  mix-blend-mode: soft-light !important;
   pointer-events: none !important;
 }
 .bigcraft-side > * { position: relative !important; z-index: 1 !important; }
