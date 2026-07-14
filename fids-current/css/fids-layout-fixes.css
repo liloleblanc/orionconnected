@@ -306,11 +306,12 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
    at 56px no matter the tier. Re-defining on body (where the density
    tier sets --fids-row-h) makes the slots actually follow the pick. */
 body[data-fids-logo-size] {
-  /* Tiles NEARLY FULL row height (Nick: 'the emblems should be bigger') —
-     the -8px slimming read too small; art tracks the tile, not a fixed px. */
-  --fids-brand-slot-h: calc(var(--fids-row-h, 52px) - 4px);
-  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 4px);
-  --fids-logo-inner-size: calc(var(--fids-row-h, 52px) - 8px);
+  /* Tiles NEARLY FULL row height (Nick, twice: 'the emblems should be
+     bigger', 'icons emblems on fids too small') — 2px breathing room only,
+     and the art fills the tile minus a hairline. */
+  --fids-brand-slot-h: calc(var(--fids-row-h, 52px) - 2px);
+  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 2px);
+  --fids-logo-inner-size: calc(var(--fids-row-h, 52px) - 6px);
   --fids-wordmark-slot-w: 218px;
   --fids-wordmark-slot-pad-x: 10px;
   --fids-wordmark-optical-h: 25px; /* Nick: the +13% pass was too big — original calibration restored */
@@ -327,7 +328,7 @@ body[data-fids-logo-size] {
   max-width: var(--fids-logo-tile-size) !important;
   min-height: var(--fids-logo-tile-size) !important;
   max-height: var(--fids-logo-tile-size) !important;
-  padding: 2px !important;
+  padding: 1px !important; /* art fills the tile (Nick: emblems too small) */
   box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
@@ -406,11 +407,13 @@ body[data-fids-logo-size] {
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LA"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PB"] { --wm-h: 24px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AA"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="UP"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="VS"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { --wm-h: 23px; }
+/* UNITED and DELTA: wide-tracked all-caps marks read LOUDER than their ink
+   height suggests (Nick: 'United and Delta way too big') — one notch down. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"] { --wm-h: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="9X"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LO"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="MX"] { --wm-h: 22px; }
@@ -1933,18 +1936,22 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
    shelves yield proportionally. Class is stamped by the renderer — :has()
    is silently dropped on the older kiosk browsers. */
 html .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi.v2-rc-shelf-fi4 { flex: 1.4 1 0 !important; }
+/* v22200 — the tiny type below was sized to squeeze 4 rows into the OLD
+   1/6 track; with the fi4 shelf now 40% taller each row has as much room
+   as the 3-row layout, so the tightened sizes just read tiny (Nick: 'the
+   incoming flight info is way too small'). Restore the base type. */
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl {
-  font-size: clamp(9px, 1.2vh, 13px) !important;
-  line-height: 1.05 !important;
+  font-size: clamp(10px, 1.35vh, 15px) !important;
+  line-height: 1.1 !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tval {
-  font-size: clamp(14px, 2.05vh, 24px) !important;
-  line-height: 1.15 !important;
+  font-size: clamp(15px, 2.35vh, 28px) !important;
+  line-height: 1.2 !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-trow > .v2-rc-fi-tval {
-  padding-top: clamp(1px, 0.18vh, 2px) !important;
-  padding-bottom: clamp(1px, 0.18vh, 2px) !important;
+  padding-top: clamp(1px, 0.25vh, 4px) !important;
+  padding-bottom: clamp(1px, 0.25vh, 4px) !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl span:first-child {
   padding-bottom: 1px !important;

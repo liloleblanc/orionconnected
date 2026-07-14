@@ -13696,7 +13696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22199';
+var FIDS_BUILD_TAG = 'v22200';
 (function(){
   try {
     function _addTag(){
@@ -14060,6 +14060,34 @@ let _renderBlocked = false;
 function blockRender() { _renderBlocked = true; clearTimeout(_renderBlockTimer); _renderBlockTimer = setTimeout(() => { _renderBlocked = false; render(); }, 3000); }
 let _renderBlockTimer = null;
 
+// Vertical space actually available for BOARD ROWS, from real geometry:
+// the table's own top (absorbs whatever is above it right now — banner
+// shown or hidden, slim thead, menubar) down to the ticker's real top.
+// The old `content-area height - thead height` estimate overcounted when
+// the chrome above the table shifted, and the last row rendered half-cut
+// behind the ticker (Nick: 'big no no it cuts at the end'). Used by BOTH
+// render() and getPageCount() so paging and painting always agree.
+function _fidsRowsAvail() {
+  var _fallback = (document.querySelector('.content-area')?.offsetHeight || 600)
+                - (document.querySelector('thead')?.offsetHeight || 30);
+  try {
+    var tbl = document.getElementById('fidsTable');
+    if (!tbl || !tbl.getBoundingClientRect) return _fallback;
+    var top = tbl.getBoundingClientRect().top;
+    var theadH = document.querySelector('#fidsTable thead')?.offsetHeight || 30;
+    var bottom;
+    var tk = document.querySelector('.ticker');
+    if (tk && tk.offsetHeight && getComputedStyle(tk).display !== 'none') {
+      bottom = tk.getBoundingClientRect().top;
+    } else {
+      var ca = document.querySelector('.content-area');
+      bottom = ca ? ca.getBoundingClientRect().bottom : window.innerHeight;
+    }
+    var avail = bottom - top - theadH - 2; // 2px slack — never split a row
+    return (avail > 100) ? avail : _fallback;
+  } catch (e) { return _fallback; }
+}
+
 function render() {
   if (_renderBlocked) return;
   // Reset diagnostic flag so we get fresh hidePrefix log each render
@@ -14216,16 +14244,15 @@ function render() {
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
   } catch (e) {}
 
-  const contentH = document.querySelector('.content-area')?.offsetHeight || 600;
-  const theadH   = document.querySelector('thead')?.offsetHeight || 30;
   // Measure the real rendered row height — themes vary it (58-66px). The old
   // hardcoded 56 overcounted rows per page, clipping the last row mid-height.
   // A row must NEVER be cut: prefer the measured height, else the theme var,
-  // else a conservative 62.
+  // else a conservative 62. (Available height comes from _fidsRowsAvail() —
+  // real table-to-ticker geometry.)
   const _measuredRowH = document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
   const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
-  const available = contentH - theadH;
+  const available = _fidsRowsAvail();
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   const totalPages = Math.ceil(allFiltered.length / rowsPerPage);
 
@@ -17385,8 +17412,6 @@ function getPageCount(modeKey) {
     return (f._sortTs - nowTs) <= LOOKAHEAD_HRS * 3600000;
   });
   const flights = applySearch([...departed, ...upcoming]);
-  const contentH = document.querySelector('.content-area')?.offsetHeight || 600;
-  const theadH   = document.querySelector('thead')?.offsetHeight || 30;
   // Measure the real rendered row height — themes vary it (58-66px). The old
   // hardcoded 56 overcounted rows per page, clipping the last row mid-height.
   // A row must NEVER be cut: prefer the measured height, else the theme var,
@@ -17394,7 +17419,7 @@ function getPageCount(modeKey) {
   const _measuredRowH = document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
   const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
-  const available = contentH - theadH;
+  const available = _fidsRowsAvail();
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   return Math.max(1, Math.ceil(flights.length / rowsPerPage));
 }
