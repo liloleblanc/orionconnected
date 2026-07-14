@@ -2440,6 +2440,18 @@ html body #fidsTable tbody tr td.td-status.st-longtext * {
   letter-spacing: 0.2px !important;
 }
 
+/* Statuses in SENTENCE CASE (Nick: 'since when do we have ALL CAPS, I
+   don't like that') — the per-theme blocks (tus-teal, cream, navy-board)
+   force uppercase on status cells; the source strings are proper
+   sentence case ('Prévu', 'Dernier appel'), so killing the transform
+   restores them everywhere. */
+html body #fidsTable tbody tr td.td-status,
+html body #fidsTable tbody tr td.td-status *,
+html body[data-fids-theme] #fidsTable tbody tr td.td-status,
+html body[data-fids-theme] #fidsTable tbody tr td.td-status * {
+  text-transform: none !important;
+}
+
 /* Column-header band LESS TALL (Nick circled it, v22202) — every theme
    (navy-board, cream, …) sets its own 18px thead padding with !important;
    this later, more-specific cap beats them all without touching colors. */

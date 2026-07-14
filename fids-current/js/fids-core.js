@@ -13757,7 +13757,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22206';
+var FIDS_BUILD_TAG = 'v22207';
 (function(){
   try {
     function _addTag(){
@@ -14588,7 +14588,7 @@ function render() {
     // INLINE font-size with !important: the stylesheet route kept losing to
     // late vw-sized theme rules and the word still clipped ('DERNIER AP…',
     // Nick, twice). Inline+important cannot be out-cascaded.
-    var _stLongAttrs = _stPlainLen >= 12
+    var _stLongAttrs = _stPlainLen >= 15
       ? ' st-longtext" style="font-size:18px !important;letter-spacing:0.2px !important;'
       : '';
     const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '')
