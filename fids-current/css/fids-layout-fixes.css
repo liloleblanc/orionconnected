@@ -1734,6 +1734,10 @@ html .wxanim-host { display: block !important; }
    screenshot). Highest specificity, both palettes, end of cascade. ── */
 html body.fids-light-board .bidsv2-flight-row.bidsv2-row-delayed:nth-child(n),
 html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-delayed:nth-child(n) { background: #EDBB00 !important; }
+/* Two-yellow striping on the bags board too (Nick) — consecutive delayed
+   rows alternate like the regular striping instead of fusing into a slab. */
+html body.fids-light-board .bidsv2-flight-row.bidsv2-row-delayed:nth-child(even),
+html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-delayed:nth-child(even) { background: #F9D44C !important; }
 html body .bidsv2-flight-row.bidsv2-row-delayed, html body .bidsv2-flight-row.bidsv2-row-delayed * { color: #102437 !important; }
 html body.fids-light-board .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n),
 html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n) { background: #C8102E !important; }
@@ -2361,6 +2365,21 @@ html .wxcard-wrap > *:not(.wxc-globe) { position: relative; z-index: 1; }
    logos are all different sizes'). The 'TAP Air Portuga' clip it aimed at
    was the TEXT fallback (fixed below); the Air Inuit crush is fixed by
    its own lockup --wm-h in the calibration table. */
+
+/* v22196 — the slot's FIXED width (218px) overflowed its minmax(0,…) grid
+   track once the density-attr default activated this geometry on every
+   board, riding the wordmark over the flight number ('AIR CANADAC875').
+   The fixed widths become maxima: the real column always wins, and wide
+   marks contain-scale down instead of overlapping. Calibrated heights
+   (--wm-h) are untouched. */
+html #fidsTable .td-airline .fids-airline-wordmark-slot {
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+html #fidsTable .td-airline .fids-airline-wordmark,
+html #fidsTable .td-airline .fids-airline-name {
+  max-width: 100% !important;
+}
 
 /* Inline-block so the shrink-to-fit scanner can measure the span — as a
    plain inline its clientWidth is 0 and 'TAP Air Portuga' clipped. */

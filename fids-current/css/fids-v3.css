@@ -3894,6 +3894,13 @@ body #fidsTable tbody tr.row-delayed:nth-child(n),
 body #fidsTable tbody tr.row-delayed:nth-child(n) td,
 body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n),
 body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n) td { background: #EDBB00 !important; }
+/* TWO-YELLOW striping (Nick: a run of delays was one unreadable yellow
+   slab — 'it should be 2 different yellows like the regular colors').
+   Even rows go a lighter yellow, mirroring the board's teal striping. */
+body #fidsTable tbody tr.row-delayed:nth-child(even),
+body #fidsTable tbody tr.row-delayed:nth-child(even) td,
+body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(even),
+body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(even) td { background: #F9D44C !important; }
 body #fidsTable tbody tr.row-delayed td, body #fidsTable tbody tr.row-delayed td *,
 body.fids-light-board #fidsTable tbody tr.row-delayed td, body.fids-light-board #fidsTable tbody tr.row-delayed td * { color: #102437 !important; }
 
