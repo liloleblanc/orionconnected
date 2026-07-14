@@ -1744,8 +1744,11 @@ html .wxcard-col .wxc-hero img, html .wxcard-col .wxc-hero .wxanim-host {
   width: clamp(130px, 24vh, 270px) !important; height: clamp(130px, 24vh, 270px) !important;
 }
 html .wxcard-col .wxc-title { font-size: clamp(13px, 1.9vh, 23px) !important; }
-html .wxcard-col .wxc-d { font-size: clamp(14px, 2vh, 24px) !important; line-height: 1.1 !important; }
-html .wxcard-col .wxc-d2 { display: block !important; font-size: 0.74em !important; font-weight: 700 !important; opacity: 0.55 !important; }
+/* Full day names, both languages equally legible. v22210's second line was
+   0.74em @ 0.55 opacity — Nick: 'english so much smaller and gray … it needs
+   to be … clear'. Both lines now white, bold, one line each, no wrap. */
+html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-height: 1.14 !important; font-weight: 800 !important; color: #ffffff !important; white-space: nowrap !important; }
+html .wxcard-col .wxc-d2 { display: block !important; font-size: 0.86em !important; font-weight: 700 !important; opacity: 0.9 !important; color: #ffffff !important; white-space: nowrap !important; letter-spacing: 0.1px !important; }
 html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
   width: clamp(64px, 11.5vh, 128px) !important; height: clamp(64px, 11.5vh, 128px) !important;
 }

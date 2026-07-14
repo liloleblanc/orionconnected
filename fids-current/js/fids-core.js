@@ -8974,7 +8974,13 @@ const gView = document.getElementById('gateView');
         // — preserving it flashed "previous airline's ad, then the current one"
         // on the rotating gate. On a carrier change, drop it so the slot
         // rebuilds fresh for the new airline (renderGateAd re-fills it below).
-        var _gateAdAirlineSame = (window._gateCurrentAirline === (currentFlight.airline || ''));
+        // Only a REAL carrier change (a new, non-blank airline that differs)
+        // drops the live carousel. A momentarily-blank airline field on a data
+        // refresh must NOT: skipping preservation rebuilt the slot empty, and
+        // the empty-slot refill then coerced the index to the bigcraft map —
+        // the 'ad flips to the map and back' storm Nick filmed near departure.
+        var _newGateAirline = (currentFlight.airline || '');
+        var _gateAdAirlineSame = (!_newGateAirline || window._gateCurrentAirline === _newGateAirline);
         var _savedAd = document.getElementById('gateAdCarousel');
         var _savedAdLogo = document.getElementById('gateAdLogo');
         if (_gateAdAirlineSame && _savedAd && _savedAd.firstChild) { _savedAd.remove(); }
@@ -9117,7 +9123,7 @@ const gView = document.getElementById('gateView');
         // Carrier changed (gate cycle) — the ad slot was rebuilt fresh above;
         // fill it immediately from slide 0 so the new airline's advert shows at
         // once instead of a blank slot until the next carousel tick.
-        try { _gateAdIndex = 0; if (typeof renderGateAd === 'function') renderGateAd(0); } catch(e) {}
+        try { _gateAdIndex = 0; window._gateAdAuthChange = true; if (typeof renderGateAd === 'function') renderGateAd(0); window._gateAdAuthChange = false; } catch(e) { window._gateAdAuthChange = false; }
       }
 
       // Fetch Tomorrow.io weather for departure airport + destination (non-blocking)
@@ -13772,7 +13778,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22211';
+var FIDS_BUILD_TAG = 'v22212';
 (function(){
   try {
     function _addTag(){
@@ -23257,6 +23263,24 @@ function renderGateAd(index) {
   var totalSlots = slides.length;
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
   var slide = slides[slot];
+
+  // ── SLIDE LOCK (v22212) ────────────────────────────────────────────────
+  // Only the rotation tick may CHANGE which slide is on screen. Every other
+  // caller (board rebuild refill, media-ready events, the hotel-photo
+  // callback, a coerced index) may repaint the SAME slide but must never
+  // swap to a different one. Near departure the gate rebuilds on every
+  // status tick (boarding → final call → gate closed); each rebuild that
+  // lost the live slot repainted a DIFFERENT slide — the bigcraft map —
+  // and the center flipped 'ad → map → ad' several times a second, getting
+  // worse as the updates sped up (Nick filmed exactly this). The lock makes
+  // those stray calls no-ops unless they target the slide already showing.
+  if (!window._gateAdAuthChange
+      && el.firstChild
+      && typeof window._gateAdCurrentIdx === 'number'
+      && slot !== window._gateAdCurrentIdx) {
+    return;
+  }
+
   // Record what the carousel is ACTUALLY showing. Async repaint callbacks
   // (hotel-photo fetches) read this; before it was stamped they fell back
   // to slide 0 and hijacked the carousel mid-ad (Nick: 'it starts the ad
@@ -24005,7 +24029,11 @@ function _restartGateAdsTimer() {
         }
       } catch (e) { _old = null; }
       _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
+      // The rotation tick is the ONE authority allowed to change the slide —
+      // announce it so the slide lock in renderGateAd lets this swap through.
+      window._gateAdAuthChange = true;
       try { renderGateAd(_gateAdIndex); } catch (e) {}
+      window._gateAdAuthChange = false;
       el3.style.transition = 'none';
       el3.style.opacity = '1';
       if (_old) {
@@ -24038,18 +24066,35 @@ function _restartGateAdsTimer() {
   _gateAdTimer = setTimeout(_tick, initDwell);
 }
 
+// First deck slot that is a REAL advert (not the bigcraft map / weather
+// takeover). Refilling an empty slot used to hardcode index 1, which is the
+// bigcraft map — so a rebuild that lost the live ad repainted the MAP and the
+// center flipped ad↔map (Nick's 'ad starts then flips to the previous' storm).
+function _firstRealAdIndex() {
+  try {
+    var slides = _buildGateAdSlideList();
+    for (var i = 0; i < slides.length; i++) {
+      var t = slides[i] && slides[i].type;
+      if (t === 'ad' || t === 'custom') return i;
+    }
+  } catch (e) {}
+  return 0;
+}
+
 function startGateAds() {
   var el = document.getElementById('gateAdCarousel');
   if (!el) return;
-  // After DOM rebuild, always render a real ad first. The old order rendered
-  // index 0 before resetting to 1, which made the carousel appear blank or
-  // stuck on amenities until the timer eventually advanced.
-  if (!_gateAdIndex) _gateAdIndex = 1;
+  // After DOM rebuild, always render a real ad first — the FIRST real advert
+  // slot, never a blind index 1 (that is the bigcraft map takeover).
+  if (!_gateAdIndex) _gateAdIndex = _firstRealAdIndex();
   // Only paint when the carousel is EMPTY (fresh element after a board
   // rebuild). Unconditional repaints on every refresh cut ads off mid-dwell
-  // and restarted the Accor 3-page slideshow / videos ("ads clash").
+  // and restarted the Accor 3-page slideshow / videos ("ads clash"). This is
+  // an authorized slide set (fresh/empty slot), so bypass the slide lock.
   if (!el.firstChild) {
-    renderGateAd(_gateAdIndex);
+    window._gateAdAuthChange = true;
+    try { renderGateAd(_gateAdIndex); } catch (e) {}
+    window._gateAdAuthChange = false;
     el.style.opacity = '1';
   }
   if (_gateAdTimer) return;
@@ -24061,12 +24106,12 @@ function startGateAds() {
 try {
   window.addEventListener('fids-media-config-ready', function(){
     if (document.getElementById('gateAdCarousel')) {
-      try { renderGateAd(_gateAdIndex || 1); } catch(e) {}
+      try { renderGateAd(_gateAdIndex || _firstRealAdIndex()); } catch(e) {}
     }
   });
   window.addEventListener('fids-media-assignments-ready', function(){
     if (document.getElementById('gateAdCarousel')) {
-      try { renderGateAd(_gateAdIndex || 1); } catch(e) {}
+      try { renderGateAd(_gateAdIndex || _firstRealAdIndex()); } catch(e) {}
     }
   });
 } catch(e) {}
@@ -25476,8 +25521,10 @@ function _renderWxCard(el) {
     // Day names BILINGUAL like everything else on the board (Nick: 'it's
     // not bilingual, such as days — it's terrible'). FR first at the
     // Québec/French-first airports, same rule the rest of the gate uses.
-    var _dEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    var _dFr = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    // FULL day names, both languages (Nick: 'it needs to be full words … and
+    // clear' — the abbreviated + tiny-grey second line read badly).
+    var _dEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var _dFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     var _wxFrF = false;
     try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
     var _dayLbl = function (dow) {
