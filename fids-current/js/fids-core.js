@@ -9978,6 +9978,7 @@ const CITY = {
   YLC:'KIMMIRUT',       YVP:'KUUJJUAQ',       YWB:'KANGIQSUJUAQ', YKU:'CHISASIBI',
   YGL:'LA GRANDE',      YPX:'PUVIRNITUQ',     YUD:'UMIUJAQ',      YMX:'MIRABEL',
   YSY:'SACHS HARBOUR',  YKQ:'WASKAGANISH',    YNS:'NEMISCAU',     YQK:'KENORA',
+  YAG:'FORT FRANCES',
   YXL:'SIOUX LOOKOUT',
   PWM:'PORTLAND',       BGR:'BANGOR',         BTV:'BURLINGTON',
   JFK:'NEW YORK',   LGA:'NEW YORK',   EWR:'NEWARK',       BOS:'BOSTON',
@@ -10773,6 +10774,7 @@ const CITY_FR = {
   YGR:'ÎLES-DE-LA-MADELEINE', YBC:'BAIE-COMEAU',    YRI:'RIVIÈRE-DU-LOUP',
   YTZ:'TORONTO',    YHM:'HAMILTON',           YKF:'KITCHENER',
   YGK:'KINGSTON',          YPQ:'PETERBOROUGH',       YQK:'KENORA',
+  YAG:'FORT FRANCES',
   YXL:'SIOUX LOOKOUT',
   YNS:'NEMISCAU',          YKQ:'WASKAGANISH',        YSY:'SACHS HARBOUR',
   YQC:'QUAQTAQ',           YPH:'INUKJUAK',           YLC:'KIMMIRUT',
@@ -11565,6 +11567,7 @@ const CITY_FR = {
 // ── AIRPORT COORDINATES ─────────────────────────────
 const COORDS = {
   YXL:[50.11,-91.91], YQK:[49.79,-94.36],   // Sioux Lookout, Kenora (weather)
+  YAG:[48.65,-93.44],   // Fort Frances (Ontario, Central Time)
   YYZ:[43.68,-79.63], YUL:[45.47,-73.74], YVR:[49.19,-123.18], YYC:[51.11,-114.02],
   YEG:[53.31,-113.58], YOW:[45.32,-75.67], YQM:[46.11,-64.68], YHZ:[44.88,-63.51],
   YQB:[46.79,-71.39], YWG:[49.91,-97.24], YXE:[52.17,-106.70], YYJ:[48.65,-123.43],
@@ -13796,7 +13799,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22216';
+var FIDS_BUILD_TAG = 'v22217';
 (function(){
   try {
     function _addTag(){
