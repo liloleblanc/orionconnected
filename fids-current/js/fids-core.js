@@ -9978,7 +9978,7 @@ const CITY = {
   YLC:'KIMMIRUT',       YVP:'KUUJJUAQ',       YWB:'KANGIQSUJUAQ', YKU:'CHISASIBI',
   YGL:'LA GRANDE',      YPX:'PUVIRNITUQ',     YUD:'UMIUJAQ',      YMX:'MIRABEL',
   YSY:'SACHS HARBOUR',  YKQ:'WASKAGANISH',    YNS:'NEMISCAU',     YQK:'KENORA',
-  YAG:'FORT FRANCES',
+  YAG:'FORT FRANCES',   YMU:'MUSSELWHITE',   KM8:'MUSSELWHITE',
   YXL:'SIOUX LOOKOUT',
   PWM:'PORTLAND',       BGR:'BANGOR',         BTV:'BURLINGTON',
   JFK:'NEW YORK',   LGA:'NEW YORK',   EWR:'NEWARK',       BOS:'BOSTON',
@@ -10774,7 +10774,7 @@ const CITY_FR = {
   YGR:'ÎLES-DE-LA-MADELEINE', YBC:'BAIE-COMEAU',    YRI:'RIVIÈRE-DU-LOUP',
   YTZ:'TORONTO',    YHM:'HAMILTON',           YKF:'KITCHENER',
   YGK:'KINGSTON',          YPQ:'PETERBOROUGH',       YQK:'KENORA',
-  YAG:'FORT FRANCES',
+  YAG:'FORT FRANCES',      YMU:'MUSSELWHITE',      KM8:'MUSSELWHITE',
   YXL:'SIOUX LOOKOUT',
   YNS:'NEMISCAU',          YKQ:'WASKAGANISH',        YSY:'SACHS HARBOUR',
   YQC:'QUAQTAQ',           YPH:'INUKJUAK',           YLC:'KIMMIRUT',
@@ -11568,6 +11568,8 @@ const CITY_FR = {
 const COORDS = {
   YXL:[50.11,-91.91], YQK:[49.79,-94.36],   // Sioux Lookout, Kenora (weather)
   YAG:[48.65,-93.44],   // Fort Frances (Ontario, Central Time)
+  YMU:[52.60,-90.37],   // Musselwhite Mine aerodrome (Wasaya; no IATA — matched by name)
+  KM8:[52.60,-90.37],   // Musselwhite — code KM8 as it appears in the feed (Nick)
   YYZ:[43.68,-79.63], YUL:[45.47,-73.74], YVR:[49.19,-123.18], YYC:[51.11,-114.02],
   YEG:[53.31,-113.58], YOW:[45.32,-75.67], YQM:[46.11,-64.68], YHZ:[44.88,-63.51],
   YQB:[46.79,-71.39], YWG:[49.91,-97.24], YXE:[52.17,-106.70], YYJ:[48.65,-123.43],
@@ -13799,7 +13801,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22217';
+var FIDS_BUILD_TAG = 'v22218';
 (function(){
   try {
     function _addTag(){
@@ -16863,7 +16865,7 @@ function mapADB(raw, mode) {
             'YYZ','YTZ','YUL','YVR','YYC','YEG','YOW','YQM','YHZ','YQB','YWG',
             'YYJ','YSJ','YYT','YFC','YYG','YQT','YQY','YDF','YQX','YYR','YYY',
             'YXE','YXS','YXU','YZF','YZR','YHM','YKF','YAM','YSB','YYB','YPQ',
-            'YZT','YYF','YXT','YPR','YYD','YDQ','YKA'
+            'YZT','YYF','YXT','YPR','YYD','YDQ','YKA','KM8'
           ]);
           // Canadian airport IATA codes are ~all Y-prefixed; treat any 3-char
           // Y-code as domestic so a Canadian origin missing from CITY_TYPE / the
