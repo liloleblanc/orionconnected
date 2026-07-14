@@ -7136,6 +7136,19 @@ function uxgGateHtml(ctx) {
       + '</div>';
   }
 
+  // Porter lane sign (Nick: 'lane 1 and 2 is priority, lane 3 and 4 is the
+  // rest' + 'Porter Reserve is priority'). LEFT half = the Porter Reserve
+  // priority queue on Lanes 1\u20222 (always shown while boarding); RIGHT half =
+  // the row band being called for everyone else on Lanes 3\u20224.
+  function _pdLanesBodyHtml(rowsVal) {
+    var _prioT = _frF ? 'Priorit\u00e9 <span class="g8-bir-sep">|</span> Priority' : 'Priority <span class="g8-bir-sep">|</span> Priorit\u00e9';
+    var _rowsLbl = _frF ? 'Rang\u00e9es <span class="g8-bir-sep">|</span> Rows' : 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
+    return '<div class="g8-board-body g8-lanes-pd">'
+      + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">Porter Reserve</div></div><div class="g8-board-lane">' + TL('useLanes') + ' 1 \u2022 2</div></div>'
+      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
+      + '</div>';
+  }
+
   // Build boarding panel HTML
   var boardHtml = '';
   if (boardActive) {
@@ -7221,6 +7234,8 @@ function uxgGateHtml(ctx) {
       + _boardWelcomeStripHtml()
       + (_acLanes
           ? _acLanesBodyHtml(_acZonesVal)
+          : airlineCode === 'PD'
+          ? _pdLanesBodyHtml(nowVal)
           : _bHdr
             + '<div class="g8-board-body">'
             + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
@@ -7237,11 +7252,14 @@ function uxgGateHtml(ctx) {
     var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
     var finalSub = isGateClosed ? '' : TL('proceedGate');
     if (isGateClosed) {
-      // Closed gate: no 'Welcome' strip (Nick) — just the facts.
+      // Closed gate: no 'Welcome' strip (Nick) — just the facts. ONE
+      // statement only: the big 'GATE CLOSED' header IS the message —
+      // the 'This gate is now closed' sub-line said the exact same thing a
+      // second time (and the info-row status cell a third), so it's dropped
+      // (Nick: 'why do you keep putting things twice… GATE CLOSED').
       finalHtml = '<div class="g8-final active g8-final-closed">'
         + _boardInfoRowHtml('gateclosed')
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
-        + '<div class="g8-final-body"><div class="g8-final-text"><div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
         + '</div>';
     } else {
       // FINAL CALL: same lane-panel format as boarding (Nick: 'the ALL
@@ -7264,6 +7282,8 @@ function uxgGateHtml(ctx) {
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
         + (_fcAcFam
           ? _acLanesBodyHtml(_fcExpress ? '3 • 4' : '3 • 4 • 5 • 6')
+          : airlineCode === 'PD'
+          ? _pdLanesBodyHtml(_frF ? 'Toutes <span class="g8-bir-sep">|</span> All' : 'All <span class="g8-bir-sep">|</span> Toutes')
           : '<div class="g8-board-body">'
             + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
             + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
@@ -13804,7 +13824,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22225';
+var FIDS_BUILD_TAG = 'v22226';
 (function(){
   try {
     function _addTag(){
@@ -25640,6 +25660,13 @@ function _renderWxCard(el) {
       var a = _wxFrF ? _dFr[dow] : _dEn[dow], b = _wxFrF ? _dEn[dow] : _dFr[dow];
       return a + '<span class="wxc-d2">' + b + '</span>';
     };
+    // Meta labels bilingual like the rest of the card (Nick: 'half french half
+    // not' — Feels like/Wind/Humidity were English-only under a bilingual
+    // condition line). FR first at the French-first airports.
+    var _mlbl = function (en, fr) {
+      return _wxFrF ? (fr + ' <span class="v2-rc-fi-sep">|</span> ' + en)
+                    : (en + ' <span class="v2-rc-fi-sep">|</span> ' + fr);
+    };
 
     // 7-DAY outlook: prefer the daily route; fall back to 48h hourly rollup.
     var tiles = '', nDays = 0;
@@ -25702,9 +25729,9 @@ function _renderWxCard(el) {
       +     '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
       +     '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
       +     '<div class="wxc-meta">'
-      +       (typeof cur.feelsLike === 'number' ? '<span>Feels like <b>' + dT(cur.feelsLike) + '</b></span>' : '')
-      +       (typeof cur.windSpeed === 'number' ? '<span>Wind <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
-      +       (typeof cur.humidity === 'number' ? '<span>Humidity <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
+      +       (typeof cur.feelsLike === 'number' ? '<span>' + _mlbl('Feels like', 'Ressenti') + ' <b>' + dT(cur.feelsLike) + '</b></span>' : '')
+      +       (typeof cur.windSpeed === 'number' ? '<span>' + _mlbl('Wind', 'Vent') + ' <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
+      +       (typeof cur.humidity === 'number' ? '<span>' + _mlbl('Humidity', 'Humidité') + ' <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
       +     '</div></div>'
       +   '</div>'
       + '</div>';

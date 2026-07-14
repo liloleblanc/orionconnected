@@ -1630,33 +1630,20 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   position: relative !important;
   background-color: #0b1322 !important;
 }
-/* ONE large globe over the whole enlarged panel — anchored on the RIGHT,
-   flowing LEFT and enlarged (Nick: 'the background should start on the right,
-   make its way left, enlarge it, it doesn't have to be a circle'). MULTIPLY so
-   it reads clearly over the light map tiles AND the info metal — soft-light was
-   invisible ('no globe') — while staying safe over text and the route. Sits
-   above the map. */
-.bigcraft-wrap::after {
-  content: "" !important;
-  position: absolute !important; inset: 0 !important;
-  /* Above Leaflet's own panes (which reach ~700) so the globe actually shows
-     over the map tiles — at z-40 it sat under the map and read as 'nothing'
-     (Nick). Multiply keeps the route/labels legible underneath. */
-  z-index: 720 !important;
-  background-image: url('/logos/3d_globe_desktop.svg?v=2') !important;
-  background-size: 150% auto !important;
-  background-position: right -14% center !important;
-  background-repeat: no-repeat !important;
-  mix-blend-mode: multiply !important; opacity: 0.6 !important;
-  filter: grayscale(1) contrast(1.2) !important;
-  pointer-events: none !important;
-}
+/* The dotted pattern belongs on the RIGHT info panel BEHIND the text (Nick:
+   'im asking for the globe to start on the right with the text', 'the text and
+   icons goes on top of the dot background') — NOT smeared over the map. It is
+   carried by .bigcraft-side::before below; the map stays clean. */
 .bigcraft-mapcol {
   position: relative !important; min-width: 0 !important; min-height: 0 !important;
-  /* Frame like the other shelves (Nick: 'the map maybe a border like the
-     others' / 'no frame'): a clearly-visible navy border on all four sides,
-     a touch thicker so it reads on the light map. */
-  border: clamp(4px,0.7vh,8px) solid var(--banner-bg, #042354) !important;
+  /* FRAME like the ad cards (Nick: 'still no frame like the ads for the map').
+     A bold white inset ring + navy outer edge so it reads unmistakably over
+     the light map tiles — the thin navy-on-navy border before was invisible. */
+  border: clamp(5px,0.8vh,10px) solid #ffffff !important;
+  outline: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;
+  outline-offset: 0 !important;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35) !important;
+  border-radius: 10px !important;
   box-sizing: border-box !important; overflow: hidden !important;
 }
 .bigcraft-map { position: absolute !important; inset: 0 !important; }
@@ -1694,8 +1681,21 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   overflow: hidden !important;
   --banner-bg: #14181E;
 }
-/* (the info-side pattern is carried by the single .bigcraft-wrap::after globe
-   that flows in from the right — no separate ::before here) */
+/* THE dotted sphere lives HERE — on the info panel, BEHIND the text (Nick:
+   'the globe to start on the RIGHT with the text', 'text and icons goes on top
+   of the dot background', 'youre not even using the right glube' → the halftone
+   dots-sphere, not the continents globe). It STARTS at the right edge and
+   flows LEFT, enlarged. Multiply keeps it a soft grey behind the dark ink. */
+.bigcraft-side::before {
+  content: "" !important;
+  position: absolute !important; inset: 0 !important;
+  background-image: url('/logos/dots-sphere.svg') !important;
+  background-size: 165% auto !important;
+  background-position: right -22% center !important;
+  background-repeat: no-repeat !important;
+  mix-blend-mode: multiply !important; opacity: 0.5 !important;
+  pointer-events: none !important; z-index: 0 !important;
+}
 .bigcraft-side > * { position: relative !important; z-index: 1 !important; }
 .bigcraft-title {
   font-size: clamp(15px, 2vh, 24px) !important; font-weight: 900 !important;
@@ -1827,8 +1827,11 @@ html .wxcard-col .wxc-title { font-size: clamp(13px, 1.9vh, 23px) !important; }
 /* Full day names, both languages equally legible. v22210's second line was
    0.74em @ 0.55 opacity — Nick: 'english so much smaller and gray … it needs
    to be … clear'. Both lines now white, bold, one line each, no wrap. */
-html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-height: 1.14 !important; font-weight: 800 !important; color: #ffffff !important; white-space: nowrap !important; }
-html .wxcard-col .wxc-d2 { display: block !important; font-size: 0.86em !important; font-weight: 700 !important; opacity: 0.9 !important; color: #ffffff !important; white-space: nowrap !important; letter-spacing: 0.1px !important; }
+html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-height: 1.16 !important; font-weight: 800 !important; color: #ffffff !important; white-space: nowrap !important; }
+/* BOTH languages the SAME size (Nick, 5th mention: 'days of the week still
+   different sizes'). The second line was 0.86em — visibly smaller than the
+   first. Now identical size, weight and colour; one clean two-line label. */
+html .wxcard-col .wxc-d2 { display: block !important; font-size: 1em !important; font-weight: 800 !important; opacity: 1 !important; color: #ffffff !important; white-space: nowrap !important; letter-spacing: 0.1px !important; }
 html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
   width: clamp(64px, 11.5vh, 128px) !important; height: clamp(64px, 11.5vh, 128px) !important;
 }
@@ -2382,6 +2385,17 @@ html .g8-final-hdr {
   background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important;
   color: #ffffff;
 }
+/* FINAL CALL / GATE CLOSED header must READ from across the concourse (Nick:
+   'Final Call is white and tiny, chance you can even see it'). Big, heavy,
+   white on the darkened accent slab. */
+html .g8-final .g8-final-hdr {
+  font-size: clamp(34px, 6.2vh, 92px) !important;
+  font-weight: 900 !important;
+  letter-spacing: .02em !important;
+  line-height: 1.04 !important;
+  padding: clamp(10px, 1.7vh, 28px) clamp(12px, 1.4vw, 30px) !important;
+  text-align: center !important;
+}
 html .g8-final-body {
   background: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #D82F2E)) 52%, #10141b) !important;
 }
@@ -2389,6 +2403,22 @@ html .g8-final-body {
    airline (a green 'closed' screen reads as GO, Nick's Flair shot). */
 html .g8-final-closed .g8-final-hdr { background: #B91C1C !important; }
 html .g8-final-closed .g8-final-body { background: color-mix(in srgb, #B91C1C 38%, #0f1116) !important; }
+/* GATE CLOSED is ONE statement, CENTERED in the middle of the takeover (Nick:
+   'centered … I have asked a million times', and 'why do you keep putting
+   things twice' — the 'This gate is now closed' sub-line said the same thing
+   again and is gone). The header fills the space under the info row and
+   centres the words dead-middle. */
+html .g8-final.g8-final-closed {
+  display: flex !important;
+  flex-direction: column !important;
+}
+html .g8-final.g8-final-closed .g8-final-hdr {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
 
 /* ── Final-call / gate-closed takeover: WHITE text on the deep-red panel
    (the navy ink was near-black on red — unreadable, Nick's YHZ shot),
@@ -2757,6 +2787,37 @@ html .g8-lanes3 .g8-board-col.next.g8-zones {
   flex: 2 2 0;
   /* !important beats the generic `.g8-board-col.next { border-left:none }` */
   border-left: 4px solid rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ── Porter lane sign (Nick: 'lane 1 and 2 is priority, lane 3 and 4 is the
+   rest' + 'Porter Reserve is priority'). Two equal halves: LEFT = the Porter
+   Reserve priority queue (Lanes 1•2), RIGHT = the row band called for everyone
+   else (Lanes 3•4). Replaces the old now/next split whose 'next' went to a
+   lone '—' late in boarding (Nick: 'boarding next no one?'). ── */
+html .g8-lanes-pd .g8-board-col { flex: 1 1 0; }
+html .g8-lanes-pd .g8-board-col.next.g8-pd-rows {
+  border-left: 4px solid rgba(255, 255, 255, 0.45) !important;
+}
+/* 'Porter Reserve' is words, not a numeral — the 120px numeral scale would run
+   clear off the panel. Size it to read big but fit the priority half. */
+html .g8-board-grp-num.g8-grp-txt {
+  font-size: clamp(40px, 5.4vw, 96px) !important;
+  line-height: 1.02;
+  white-space: normal;
+  text-align: center;
+  letter-spacing: .005em;
+}
+
+/* Boarding-header labels ('Boarding now'/'Embarquement en cours', 'Boarding
+   next') were tiny — Nick: 'like you need a magnifying glass'. Read them from
+   across the gate. (Porter now uses the lane sign above, which drops this
+   header entirely; this keeps the other airlines legible.) */
+html .g8-board-hdr-now,
+html .g8-board-hdr-next {
+  font-size: clamp(22px, 2.9vh, 40px) !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em !important;
+  padding: clamp(6px, 1vh, 15px) clamp(8px, 1vw, 18px) !important;
 }
 
 /* Lane-direction arrows beside the zone numerals, like the physical signage
