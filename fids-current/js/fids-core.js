@@ -13801,7 +13801,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22222';
+var FIDS_BUILD_TAG = 'v22223';
 (function(){
   try {
     function _addTag(){
@@ -25547,6 +25547,11 @@ function _wxFetchDaily(iata, onReady) {
     if (hit && hit.pending) return hit.data || null;
     if (hit && (Date.now() - hit.ts) < 1800000) return hit.data;
     var _prev = hit ? hit.data : null;
+    // A FAILED daily fetch must NOT cache 'no data' for the full 30 min — that
+    // stuck the card on the 2-day hourly rollup after one transient failure
+    // (Nick: 'back to 2 days'). Mark failures stale in ~90s so they retry,
+    // while _prev keeps showing meanwhile.
+    var _failTs = function () { return Date.now() - 1800000 + 90000; };
     window._wxDaily[iata] = { pending: true, ts: 0, data: _prev };
     // Primary: the site worker's keyless /wxdaily proxy. Fallback: Open-Meteo
     // DIRECT (same keyless API the FIDS weather column already calls) — the
@@ -25568,9 +25573,9 @@ function _wxFetchDaily(iata, onReady) {
         if (d && d.daily && d.daily.time) {
           window._wxDaily[iata] = { data: d.daily, ts: Date.now() };
           if (typeof onReady === 'function') onReady();
-        } else { window._wxDaily[iata] = { data: _prev, ts: Date.now() }; }
+        } else { window._wxDaily[iata] = { data: _prev, ts: _failTs() }; if (typeof onReady === 'function') onReady(); }
       })
-      .catch(function () { window._wxDaily[iata] = { data: _prev, ts: Date.now() }; });
+      .catch(function () { window._wxDaily[iata] = { data: _prev, ts: _failTs() }; });
     return _prev;
   } catch (e) { return null; }
 }
