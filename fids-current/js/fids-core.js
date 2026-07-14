@@ -13830,7 +13830,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22231';
+var FIDS_BUILD_TAG = 'v22232';
 (function(){
   try {
     function _addTag(){
@@ -18919,9 +18919,13 @@ function _fetchAirportCoords(iata) {
 // Satellite = Esri World Imagery
 // All free for fair use; no API key needed.
 function _gateMapTileLayer() {
-  // v218.99.9 — was theme-driven; theme system removed. Default to light Voyager.
-  return L.tileLayer('/maptiles/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19, subdomains: 'abcd', attribution: ''
+  // Nick (Jul 2026) wants a DIFFERENT map — the satellite/aerial look from his
+  // reference (Esri World Imagery + 3D buildings). Switched from CARTO Voyager
+  // to Esri World Imagery, served same-origin through the worker's /tiles/
+  // provider route (axes reordered for Esri) so it still works on locked-down
+  // display networks. The blue route line + plane read clearly over imagery.
+  return L.tileLayer('/tiles/satellite/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: ''
   });
 }
 
