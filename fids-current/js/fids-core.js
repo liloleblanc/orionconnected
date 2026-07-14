@@ -13760,7 +13760,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22208';
+var FIDS_BUILD_TAG = 'v22209';
 (function(){
   try {
     function _addTag(){
@@ -14023,11 +14023,10 @@ function setTheme(name) {
     .td-wx .fids-cell-weather span:not(.fids-wx-cell) {
       color: ${t.rowText} !important;
     }
-    /* Statuses: base = plain row ink; ON TIME and EARLY get the rich
-       green. (Nick, revised: green Prévu 'is clashing with early' — only
-       the affirmative states stay green, Scheduled reads neutral.) */
+    /* Statuses: base = plain row ink; EARLY ALONE gets the rich green so
+       it stands out (Nick, twice revised: Scheduled and On time both read
+       neutral — 'On Time is still green'). */
     .td-status { color: ${t.rowText} !important; }
-    .td-status.fids-status-ontime,
     .td-status.fids-status-early { color: ${t.lightRows ? '#15803D' : '#2FD467'} !important; }
     /* Faded statuses (Arrived/Departed/Gate closed) — slightly muted vs
        the active rows but still readable on whichever theme is picked. */

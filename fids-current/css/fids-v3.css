@@ -3700,15 +3700,9 @@ body.fids-light-board #fidsTable tbody tr td.td-status,
 body.fids-light-board #fidsTable tbody tr td.td-status *,
 body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status,
 body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status * { color: #16283C !important; }
-/* ON TIME: affirmative green (same shape so it wins by cascade order). */
-body #fidsTable tbody tr td.td-status.fids-status-ontime,
-body #fidsTable tbody tr td.td-status.fids-status-ontime *,
-body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-ontime,
-body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-ontime * { color: #2FD467 !important; }
-body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-ontime,
-body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-ontime *,
-body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-ontime,
-body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-ontime * { color: #157A43 !important; }
+/* ON TIME: plain row ink like Scheduled (Nick: 'On Time is still green')
+   — EARLY alone keeps the green so it stands out. (The base rule above
+   already covers on-time; no override needed.) */
 
 /* Same tbody-tr + [data-fids-theme] shape as the base green above so these
    STATE colors stay ahead of it in the cascade on every theme. */
