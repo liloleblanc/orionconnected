@@ -1743,7 +1743,10 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   animation: bigcraftGrow 650ms cubic-bezier(0.22, 0.9, 0.3, 1) both !important;
 }
 @keyframes bigcraftGrow {
-  from { transform: scale(0.34); opacity: 0.25; }
+  /* Start larger + more opaque so the panel reads as a solid card sliding in
+     over the previous ad (which now stays visible underneath), not a faint
+     thing growing out of a dark gap. */
+  from { transform: scale(0.62); opacity: 0.55; }
   to   { transform: scale(1);    opacity: 1; }
 }
 .g8-bigcraft-active .gad-map-col-v2 { visibility: hidden !important; }

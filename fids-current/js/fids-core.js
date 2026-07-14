@@ -13801,7 +13801,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22223';
+var FIDS_BUILD_TAG = 'v22224';
 (function(){
   try {
     function _addTag(){
@@ -25399,7 +25399,10 @@ function _renderBigCraft(el, ctx) {
   _bcOv.style.top = Math.round(_bcTop - _bcWrapR.top) + 'px';
   _bcOv.style.width = Math.round(_bcRightEdge - _bcElR.left) + 'px';
   _bcOv.style.height = Math.round(_bcBottom - _bcTop) + 'px';
-  el.innerHTML = '';
+  // DON'T blank the carousel before the panel grows in — that emptied the
+  // center to dark and read as an abrupt CUT (Nick: 'abruptly cuts out …
+  // terrible transition'). Keep the previous ad visible UNDER the growing
+  // overlay; clear it only once the opaque overlay has fully covered it.
   _bcOv.innerHTML =
       '<div class="bigcraft-wrap">'
     +   '<div class="bigcraft-mapcol">'
@@ -25430,6 +25433,14 @@ function _renderBigCraft(el, ctx) {
   _bcWrapEl.appendChild(_bcOv);
   _bcWrapEl.classList.add('g8-bigcraft-active');
   window._bigCraftOverlay = _bcOv;
+  // Free the old carousel content AFTER the grow finishes (overlay now opaque
+  // over it) — no dark gap, and no stale video decoding behind the panel.
+  try {
+    var _bcPrevEl = el;
+    (window._bigCraftTimers = window._bigCraftTimers || []).push(setTimeout(function () {
+      try { if (window._bigCraftOverlay === _bcOv) _bcPrevEl.innerHTML = ''; } catch (e) {}
+    }, 720));
+  } catch (e) {}
   // THE SAME MAP AS THE MINI, ENLARGED (Nick: 'literally the same as now
   // except enlarged'): verbatim clones of the mini-map builders rendering
   // into the big container — same tiles, phase zoom, labels, plane icon.
