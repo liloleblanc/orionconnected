@@ -3625,7 +3625,12 @@ body, body.gids-page, body.gate-page{
 .g8-airline-F8 .g8-r1-right .g8-bilbl,
 .g8-airline-F8 .g8-r1-right .g8-r1-gate { color: #1C1C1C !important; }
 .g8-airline-F8 .gad-aircraft-col .v2-fi-row .v2-fi-svg { fill: #1C1C1C !important; }
-.g8-airline-F8 .gad-aircraft-col .v2-fi-icon-wrap { color: #1C1C1C !important; }
+/* The rail icon badges are BLACK (#141414, set inline by the renderer), NOT
+   lime — so the glyph must be the brand GREEN, not brand black. Forcing #1C1C1C
+   here painted a dark glyph on the dark badge = invisible (Nick: 'flair has
+   black icons with nothing in it'). The Flair EMBLEM badge (green dot) has no
+   glyph and is unaffected. */
+.g8-airline-F8 .gad-aircraft-col .v2-fi-icon-wrap { color: #7AFF94 !important; }
 /* Flair emblem is the brand GREEN dot — keep its native color, never blacken it. */
 .g8-airline-F8 .v2-fi-emblem-img { filter: none !important; }
 

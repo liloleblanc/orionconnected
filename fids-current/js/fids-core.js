@@ -13824,7 +13824,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22227';
+var FIDS_BUILD_TAG = 'v22228';
 (function(){
   try {
     function _addTag(){
@@ -22623,9 +22623,9 @@ function buildGateAdHtml(ad) {
   var _adLightBg = !!ad.fg;
   var _stdLogoFilter = _adLightBg ? '' : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
   var _stdLogoHtml = ad.logo
-    ? '<div style="flex-shrink:0;margin-bottom:18px;height:64px;display:flex;align-items:center;justify-content:center;">'
+    ? '<div style="flex-shrink:0;margin-bottom:clamp(20px,3vh,40px);height:clamp(96px,16vh,190px);display:flex;align-items:center;justify-content:center;">'
       + '<img src="' + ad.logo + '" alt="" '
-      + 'style="max-height:100%;max-width:360px;width:auto;height:auto;object-fit:contain;display:block;' + _stdLogoFilter + '" '
+      + 'style="max-height:100%;max-width:min(72%,640px);width:auto;height:auto;object-fit:contain;display:block;' + _stdLogoFilter + '" '
       + 'onerror="this.style.display=\'none\';">'
       + '</div>'
     : '';
@@ -22648,8 +22648,8 @@ function buildGateAdHtml(ad) {
     + (iconHtml ? '<div style="flex-shrink:0;opacity:0.9;margin-bottom:6px;">' + iconHtml + '</div>' : '')
     + _stdLogoHtml
     + '<div style="flex-shrink:0;text-align:center;max-width:100%;overflow:hidden;">'
-    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:' + _stdFg + ';line-height:1.1;max-width:100%;">' + _stdHeadline + '</div>'
-    + '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:' + _stdSubFg + ';margin-top:14px;line-height:1.3;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
+    + '<div style="font-size:clamp(44px,5.2vw,78px);font-weight:800;color:' + _stdFg + ';line-height:1.08;max-width:100%;">' + _stdHeadline + '</div>'
+    + '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
     + '</div></div>'
   );
 }
