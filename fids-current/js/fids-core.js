@@ -7284,7 +7284,7 @@ function uxgGateHtml(ctx) {
       + '<div class="g8-cd-label">' + TL('boardBegins') + '</div>'
       + '<div class="g8-cd-value">' + minsToBoard + '</div>'
       + '<div class="g8-cd-unit">' + TL('minutes') + '</div>'
-      + '<div class="g8-cd-sub">' + TL('remainSeated') + '</div>'
+      // 'Please remain seated until your zone is called' REMOVED (Nick).
       + '</div></div>';
   }
 
@@ -7943,9 +7943,12 @@ function uxgGateHtml(ctx) {
     + '</div>'
     // ROW 3+4 — CONDITIONAL: boarding/final/countdown = FULL WIDTH, else split layout
     + (boardActive || finalActive || showCountdown
-      // ═══ BOARDING MODE: solid message strip + full takeover (no ads, no aircraft, just the message) ═══
-      ? (r3Left ? '<div class="g8-r3" style="background:rgba(0,0,0,0.85);">' + r3Left + '</div>' : '')
-      + '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
+      // ═══ BOARDING MODE: the takeover fills the screen; the delay/status
+      // message bar sits at the VERY BOTTOM (Nick, ~5 times: 'put the delayed
+      // banner below the flight number and times … actually at the very
+      // bottom'), NOT between the banner and the info row. ═══
+      ? '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
+      + (r3Left ? '<div class="g8-r3 g8-r3-bottom" style="background:rgba(0,0,0,0.85);border-top:2px solid ' + (accent || '#eab308') + ';flex-shrink:0;">' + r3Left + '</div>' : '')
       // ═══ IDLE MODE: layout depends on GATE_LAYOUT_V2 flag ═══
       : (window.GATE_LAYOUT_V2
           // ╔═══ V2 LAYOUT: 3-column (aircraft | media | map) with growable message strip ═══╗
@@ -13801,7 +13804,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22224';
+var FIDS_BUILD_TAG = 'v22225';
 (function(){
   try {
     function _addTag(){
