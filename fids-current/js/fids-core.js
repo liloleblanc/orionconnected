@@ -13173,6 +13173,24 @@ function wordmarkSrc(base, forceVariant) {
   return logoPath(fname) + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
 }
 
+// WCAG relative luminance of a #hex colour (0 = black … 1 = white). Used to
+// decide whether a carrier's brand accent is legible as the TEXT name on the
+// dark board — a deep maroon/navy (Qatar #5c0931, Emirates crimson) reads as
+// an unreadable smudge or an alarm state, not a brand (Nick: 'Qatar', earlier
+// 'Emirates shouldn't be red').
+function _hexLum(hex) {
+  try {
+    hex = String(hex).replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(function (c) { return c + c; }).join('');
+    if (hex.length < 6) return 1;
+    var toLin = function (v) { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    var r = toLin(parseInt(hex.slice(0, 2), 16));
+    var g = toLin(parseInt(hex.slice(2, 4), 16));
+    var b = toLin(parseInt(hex.slice(4, 6), 16));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  } catch (e) { return 1; }
+}
+
 // IATA → emblem-only icon URL. Used by mkLogo() to populate the emblem
 // slot for carriers whose primary symbol is an icon/illustration (not a
 // solid tile). Distinct from IATA_TO_TILE_ICAO (square-tile carriers like
@@ -13778,7 +13796,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22212';
+var FIDS_BUILD_TAG = 'v22213';
 (function(){
   try {
     function _addTag(){
@@ -14482,8 +14500,16 @@ function render() {
     // green accent — the text fallback stays the default row colour.
     // EK (Emirates): red accent reads as an ALARM state on the board, not a
     // brand (Nick: 'Emirates stands out, shouldn't be red') — row ink instead.
-    const _brandColor = (_airlineCodeForLogo === 'F8' || _airlineCodeForLogo === 'EK') ? ''
+    let _brandColor = (_airlineCodeForLogo === 'F8' || _airlineCodeForLogo === 'EK') ? ''
       : (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
+    // Legibility guard: on the DARK board a deep brand accent (Qatar's maroon
+    // #5c0931, any dark navy/burgundy) is an unreadable smudge in the name
+    // slot — fall back to row ink. wordmarkVariant() is 'light' when the board
+    // is dark (light-ink artwork). Only gates the TEXT name; wordmark IMAGES
+    // are unaffected.
+    try {
+      if (_brandColor && wordmarkVariant() === 'light' && _hexLum(_brandColor) < 0.30) _brandColor = '';
+    } catch (e) {}
     // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
     // brand colours clash there (TAP green/red on yellow, Nick) and the
     // inline !important would beat any stylesheet fix.
