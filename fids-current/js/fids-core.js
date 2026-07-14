@@ -13757,7 +13757,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22204';
+var FIDS_BUILD_TAG = 'v22205';
 (function(){
   try {
     function _addTag(){
@@ -14571,7 +14571,13 @@ function render() {
     // Long statuses (French: DERNIER APPEL, EMBARQUEMENT) ellipsized in the
     // fixed column (Nick: 'not fully read') — flag them so CSS steps the
     // type down instead of cutting the word.
-    var _stPlainLen = String(stCellHtml).replace(/<[^>]*>/g, '').trim().length;
+    // Tag-strip to a FIXPOINT (CodeQL: single-pass replace can leave
+    // '<script' behind on crafted input). The result is only ever used for
+    // its LENGTH, never inserted into HTML — but loop anyway so the
+    // sanitizer is complete on its own terms.
+    var _stPlain = String(stCellHtml), _stPrev;
+    do { _stPrev = _stPlain; _stPlain = _stPlain.replace(/<[^>]*>/g, ''); } while (_stPlain !== _stPrev);
+    var _stPlainLen = _stPlain.trim().length;
     const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '')
       + (_stPlainLen >= 12 ? ' st-longtext' : '') + '">' + stCellHtml + '</td>';
 
