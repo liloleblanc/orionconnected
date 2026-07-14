@@ -6767,7 +6767,9 @@ function uxgGateHtml(ctx) {
     // boarding. Please proceed to gate X.' strip is redundant (Nick).
     r3Left = '';
   } else if (showCountdown) {
-    r3Left = TL('boardApprox') + ' ' + minsToBoard + ' ' + (minsToBoard!==1?TL('minutes').toLowerCase():TL('minute').toLowerCase()) + '.';
+    // Countdown takeover already shows the big timer — the 'will board in
+    // approximately X minutes' strip duplicated it (Nick).
+    r3Left = '';
   } else if (minsToDep <= (boardLeadMins + 55) && minsToDep > (boardLeadMins + 25)) {
     r3Left = TL('willBoardIn') + ' ' + minsToBoard + ' ' + (minsToBoard!==1?TL('minutes').toLowerCase():TL('minute').toLowerCase()) + '.';
   }
@@ -7060,10 +7062,22 @@ function uxgGateHtml(ctx) {
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
           : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
-      + _cell('ac-ico-dest', 'Destination', '', _bDest + (locIata ? ' <span class="g8-bir-code">(' + locIata + ')</span>' : ''))
+      + _cell('ac-ico-dest', 'Destination', (locIata || ''), _bDest)
       + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', boardTimeHtml)
       + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', depTimeHtml)
       + _cell('ac-ico-status', 'Status', 'Statut', _stTxt)
+      + '</div>';
+  }
+
+  // AC-family lane board per the printed signs (Nick): quarter BLACK
+  // (Zone 1 \u2192 Lane 1), quarter RED (Zone 2 \u2192 Lane 2) \u2014 priority, shown
+  // at ALL times \u2014 and the right HALF as the called-zones sign ("Zones"
+  // 3 \u2022 4 \u2022 5 \u2022 6, also Lane 2).
+  function _acLanesBodyHtml(zonesVal) {
+    return '<div class="g8-board-body g8-lanes3">'
+      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">Zones</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + zonesVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
       + '</div>';
   }
 
@@ -7072,7 +7086,7 @@ function uxgGateHtml(ctx) {
   if (boardActive) {
     var lateBoarding = minsToDep <= 18;
     var _grpLbl = TL('groupLabel');
-    var nowVal, nextVal;
+    var nowVal, nextVal, _acZonesVal = '';
     if (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK') {
       // Air Canada family boards by ZONE (Nick, per AC's published policy):
       // priority Zones 1•2 first, then general boarding Zone 3, then Zones
@@ -7087,15 +7101,14 @@ function uxgGateHtml(ctx) {
              return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
            })();
       _grpLbl = 'Zone';
-      // Lane model per the physical AC gate signs (Nick): BLACK lane 1 is
-      // Zone 1, RED lane 2 is everyone else. Zones 1 and 2 board at all
-      // times; 3-6 are called by number as boarding progresses.
-      nowVal = '1';
-      if (lateBoarding) {
-        nextVal = _acExpress ? '2 \u2022 3 \u2022 4' : '2 \u2022 3 \u2022 4 \u2022 5 \u2022 6';
-      } else {
-        nextVal = '2 \u2022 3';
-      }
+      // Lane model per the physical AC gate signs (Nick): priority Zones 1
+      // (black, Lane 1) and 2 (red, Lane 2) get their own quarter panels AT
+      // ALL TIMES; the right half is the called-zones sign (3, then up to
+      // 4 \u2022 5 \u2022 6 \u2014 Express tops out at 4).
+      nowVal = '1'; nextVal = '2';
+      _acZonesVal = lateBoarding
+        ? (_acExpress ? '3 \u2022 4' : '3 \u2022 4 \u2022 5 \u2022 6')
+        : '3';
     } else if (airlineCode === 'WS' || airlineCode === 'WR') {
       // WestJet boards by ZONE (Nick, per WestJet's published system and the
       // gate signage): Zone 1 premium / top tier, Zone 2 Extended Comfort,
@@ -7136,11 +7149,14 @@ function uxgGateHtml(ctx) {
     boardHtml = '<div class="g8-board active">'
       + _boardInfoRowHtml('boarding')
       + _boardWelcomeStripHtml()
-      + _bHdr
-      + '<div class="g8-board-body">'
-      + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-      + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
-      + '</div></div>';
+      + (_acLanes
+          ? _acLanesBodyHtml(_acZonesVal)
+          : _bHdr
+            + '<div class="g8-board-body">'
+            + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+            + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+            + '</div>')
+      + '</div>';
   }
 
   // Build final call HTML
@@ -7168,18 +7184,20 @@ function uxgGateHtml(ctx) {
              return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
            })();
       var _fcNext, _fcNextLbl = 'Zones';
-      if (_fcAcFam) _fcNext = _fcExpress ? '2 • 3 • 4' : '2 • 3 • 4 • 5 • 6';
-      else if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
+      if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
       else if (airlineCode === 'PD') { _fcNextLbl = 'Rows <span class="g8-bir-sep">|</span> Rangées'; _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes'; }
       else _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes';
       finalHtml = '<div class="g8-final active">'
         + _boardInfoRowHtml('final')
         + _boardWelcomeStripHtml()
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
-        + '<div class="g8-board-body">'
-        + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-        + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
-        + '</div></div>';
+        + (_fcAcFam
+          ? _acLanesBodyHtml(_fcExpress ? '3 • 4' : '3 • 4 • 5 • 6')
+          : '<div class="g8-board-body">'
+            + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+            + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+            + '</div>')
+        + '</div>';
     }
   }
 
@@ -13603,7 +13621,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22186';
+var FIDS_BUILD_TAG = 'v22187';
 (function(){
   try {
     function _addTag(){

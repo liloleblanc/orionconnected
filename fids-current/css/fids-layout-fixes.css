@@ -2473,6 +2473,18 @@ html .g8-board-col .g8-board-lane {
 html .g8-board-col .g8-board-grp-label { opacity: 0.88; }
 html .g8-board-col .g8-board-lane { opacity: 0.82; }
 
+/* ── AC lane board (Nick's sign picture): quarter BLACK (Zone 1 → Lane 1)
+   + quarter RED (Zone 2 → Lane 2), priority shown at ALL times, and the
+   right HALF as the called-zones sign. ── */
+html .g8-lanes3 .g8-board-col.g8-q1 { flex: 1 1 0; }
+html .g8-lanes3 .g8-board-col.g8-q2 { flex: 1 1 0; }
+html .g8-lanes3 .g8-board-col.g8-zones,
+html .g8-lanes3 .g8-board-col.next.g8-zones {
+  flex: 2 2 0;
+  /* !important beats the generic `.g8-board-col.next { border-left:none }` */
+  border-left: 4px solid rgba(255, 255, 255, 0.45) !important;
+}
+
 /* Lane-direction arrows beside the zone numerals, like the physical signage
    (Nick: 'no arrows either — those should be available'). The font-size
    lives on the WRAP and both the numeral and arrow track it at 1em, so the
