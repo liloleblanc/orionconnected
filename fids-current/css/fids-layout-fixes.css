@@ -2488,6 +2488,14 @@ html .g8-bir-title {
   margin-bottom: clamp(3px, 0.6vh, 8px);
 }
 html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
+/* Destination IATA in the title styled like the vertical rail's
+   'Destination | YYZ' — accent, bigger, heavy (Nick). */
+html .g8-bir-title .g8-bir-code-t {
+  color: var(--airline-accent, #D82F2E);
+  font-size: 1.3em;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
 html .g8-bir-val {
   font-size: clamp(46px, 8.6vh, 128px);
   font-weight: 900;
@@ -2513,6 +2521,13 @@ html .g8-bir-cell:last-child .g8-bir-val {
   text-overflow: clip;
 }
 html .g8-bir-cell:last-child .g8-bir-val .g8-bir-st2 { display: block; }
+/* Status state colours — matches the vertical rail's coding. */
+html .g8-bir-val .g8-bir-stwrap { display: contents; }
+html .g8-bir-val .g8-bir-st-ok .g8-bir-st2 { color: #15803d; }
+html .g8-bir-val .g8-bir-st-boarding .g8-bir-st2 { color: #b45309; }
+html .g8-bir-val .g8-bir-st-delayed .g8-bir-st2 { color: #c2410c; }
+html .g8-bir-val .g8-bir-st-cancelled .g8-bir-st2,
+html .g8-bir-val .g8-bir-st-final .g8-bir-st2 { color: #b91c1c; }
 html .g8-bir-cell:last-child .g8-bir-val .g8-bir-sep { display: none; }
 
 /* ── Boarding zone panels EXACTLY like the physical gate sign (Nick: 'look

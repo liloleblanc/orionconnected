@@ -4566,17 +4566,8 @@ body, body.gids-page, body.gate-page{
    Per Nick — AC's real look: black sphere, red maple/symbols. Override the
    accent-coloured badge to black, stop whitening the maple (its source fill is
    #f01428), and colour the functional icons red. AC-scoped only. */
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
-  background: #0a0a0c !important;
-}
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-emblem-img {
-  filter: none !important;            /* keep the maple its native red, not white */
-}
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-svg { fill: #f01428 !important; }
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-icon-wrap { color: #f01428 !important; }
-/* AC flights — AC icon-font glyphs in brand red */
-.g8-wrap.g8-airline-AC .gad-aircraft-col .ac-ico { color:#f01428 !important; }
+/* (Black-sphere AC treatment RETIRED — Nick now wants AC's vertical
+   badges RED like every other carrier's accent badges.) */
 /* Flight-orb airline emblem a touch smaller so it fits the orb */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-img { width: 74% !important; height: 74% !important; margin: auto !important; }
 

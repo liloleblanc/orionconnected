@@ -5484,7 +5484,7 @@ function _buildV2AircraftCol(ctx, vars) {
     if (_fiFlightNo || _fiDep || _fiArr || _fiBrd || _fiStLbl) {
       var _svgClock = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
       var _svgDepart = '<span class=\"ac-ico ac-ico-depart"></span>';
-      var _svgArrive = '<span class=\"ac-ico ac-ico-time"></span>';
+      var _svgArrive = '<span class=\"ac-ico ac-ico-landing"></span>'; // landing plane, not a clock (Nick)
       // v222 — new left-rail panel icons (Nick's 6-panel spec).
       var _svgPlane = '<span class=\"ac-ico ac-ico-flight"></span>';
       var _svgGlobe = '<span class=\"ac-ico ac-ico-dest"></span>';
@@ -7033,6 +7033,15 @@ function uxgGateHtml(ctx) {
   function _boardInfoRowHtml(statusKey) {
     var _bDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
     var _stP = (typeof SS !== 'undefined' && SS[statusKey]) ? SS[statusKey] : null;
+    // Status VALUE carries its state colour like the vertical rail
+    // (green on-time, orange delayed... — Nick: 'the horizontal status
+    // doesn't change').
+    var _stK = String(statusKey || '').toLowerCase();
+    var _stCls = /delay/.test(_stK) ? ' g8-bir-st-delayed'
+      : /cancel/.test(_stK) ? ' g8-bir-st-cancelled'
+      : /final|closed|depart/.test(_stK) ? ' g8-bir-st-final'
+      : /board/.test(_stK) ? ' g8-bir-st-boarding'
+      : /ontime|early|scheduled/.test(_stK) ? ' g8-bir-st-ok' : '';
     // EN and FR each get their OWN line — free wrapping let 'Gate closed |
     // Porte fermée' break into four giant lines and balloon the whole row.
     var _stTxt = _stP ? ('<span class="g8-bir-st2">' + _stP.en + '</span><span class="g8-bir-st2">' + _stP.fr + '</span>') : '';
@@ -7067,10 +7076,10 @@ function uxgGateHtml(ctx) {
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
           : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
-      + _cell('ac-ico-dest', 'Destination', (locIata || ''), _bDest)
+      + _cell('ac-ico-dest', 'Destination', (locIata ? '<span class="g8-bir-code-t">' + locIata + '</span>' : ''), _bDest)
       + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', boardTimeHtml)
       + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', depTimeHtml)
-      + _cell('ac-ico-status', 'Status', 'Statut', _stTxt)
+      + _cell('ac-ico-status', 'Status', 'Statut', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
       + '</div>';
   }
 
@@ -13648,7 +13657,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22191';
+var FIDS_BUILD_TAG = 'v22192';
 (function(){
   try {
     function _addTag(){
