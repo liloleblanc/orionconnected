@@ -13679,7 +13679,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22194';
+var FIDS_BUILD_TAG = 'v22195';
 (function(){
   try {
     function _addTag(){
@@ -14327,7 +14327,9 @@ function render() {
     // inline override also needs !important to win.
     // F8 (Flair): brand policy forbids their name/logo ever rendering in the
     // green accent — the text fallback stays the default row colour.
-    const _brandColor = (_airlineCodeForLogo === 'F8') ? ''
+    // EK (Emirates): red accent reads as an ALARM state on the board, not a
+    // brand (Nick: 'Emirates stands out, shouldn't be red') — row ink instead.
+    const _brandColor = (_airlineCodeForLogo === 'F8' || _airlineCodeForLogo === 'EK') ? ''
       : (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
     // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
     // brand colours clash there (TAP green/red on yellow, Nick) and the
@@ -16687,7 +16689,12 @@ function mapADB(raw, mode) {
           }
         }
       } else {
-        _belt = '1';
+        // No belt in the feed. At multi-terminal airports NEVER fabricate
+        // Carousel 1 (Nick: 'Montreal has more than 1 carousel') — an
+        // honest '—' beats sending a traveler to the wrong belt. Small
+        // single-terminal airports keep the '1' default (YQM precedent:
+        // synthesized beats blank there).
+        _belt = _MULTI_TERMINAL_AIRPORTS.has(_apForBelt) ? null : '1';
       }
     }
     const _checkIn = f.departure?.checkInDesk || null;

@@ -299,16 +299,18 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
    Goal: all FIDS row airline marks share the same left edge, visual baseline,
    and approximate optical size while preserving each carrier's real artwork. */
 :root {
-  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 8px); /* follows the density tier */
+  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 4px); /* follows the density tier */
 }
 /* Custom-property var() substitution happens at the DEFINING element —
    on :root the row var is still the 64px default, so the tile size froze
    at 56px no matter the tier. Re-defining on body (where the density
    tier sets --fids-row-h) makes the slots actually follow the pick. */
 body[data-fids-logo-size] {
-  --fids-brand-slot-h: calc(var(--fids-row-h, 52px) - 8px);
-  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 8px);
-  --fids-logo-inner-size: 54px;
+  /* Tiles NEARLY FULL row height (Nick: 'the emblems should be bigger') —
+     the -8px slimming read too small; art tracks the tile, not a fixed px. */
+  --fids-brand-slot-h: calc(var(--fids-row-h, 52px) - 4px);
+  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 4px);
+  --fids-logo-inner-size: calc(var(--fids-row-h, 52px) - 8px);
   --fids-wordmark-slot-w: 218px;
   --fids-wordmark-slot-pad-x: 10px;
   --fids-wordmark-optical-h: 25px; /* Nick: the +13% pass was too big — original calibration restored */
@@ -382,6 +384,9 @@ body[data-fids-logo-size] {
    empirically against the WestJet 30px reference; slot is 58px so both fit. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WT"] { --wm-h: 44px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="NSA"] { --wm-h: 50px; }
+/* Air Inuit is a stacked lockup too (syllabics over the word, 480x320
+   art box) — at the flat-mark 17px the lettering was unreadable. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"] { --wm-h: 40px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { --wm-h: 32px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { --wm-h: 30px; }
@@ -417,7 +422,6 @@ body[data-fids-logo-size] {
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AF"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { --wm-h: 20px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PT"] { --wm-h: 18px; }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AC"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="RV"] { --wm-h: 17px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="OB"],
@@ -2351,20 +2355,12 @@ html .wxcard-wrap > *:not(.wxc-globe) { position: relative; z-index: 1; }
 /* DELAYED / FINAL rows are light tinted blocks — brand-coloured airline
    names (TAP green/red) clash and wash out there; force the navy ink the
    rest of the row already uses (Nick: 'colors'). */
-/* Wordmark IMAGES must shrink to their slot, never clip mid-word
-   ('TAP Air Portuga', Nick). Contained with both axes capped, the image
-   keeps its ratio and scales down instead of being cut. */
-html #fidsTable .td-airline img.fids-airline-wordmark[data-code] {
-  /* Beats the per-code --wm-h/--wm-w boxes, which forced sizes that clip
-     ('TAP Air Portuga') or crush stacked lockups (Air Inuit at 17px). */
-  width: auto !important;
-  max-width: calc(var(--fids-wordmark-slot-w, 260px) - 12px) !important;
-  height: auto !important;
-  max-height: calc(var(--fids-row-h, 52px) - 18px) !important;
-  min-height: 0 !important;
-  object-fit: contain !important;
-  object-position: left center !important;
-}
+/* NOTE (v22195): a blanket `height:auto` on every wordmark img lived here
+   briefly — it killed the per-carrier optical calibration (--wm-h table
+   above), so UNITED/DELTA ballooned while Air Inuit shrank (Nick: 'the
+   logos are all different sizes'). The 'TAP Air Portuga' clip it aimed at
+   was the TEXT fallback (fixed below); the Air Inuit crush is fixed by
+   its own lockup --wm-h in the calibration table. */
 
 /* Inline-block so the shrink-to-fit scanner can measure the span — as a
    plain inline its clientWidth is 0 and 'TAP Air Portuga' clipped. */
