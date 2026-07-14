@@ -13696,7 +13696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22198';
+var FIDS_BUILD_TAG = 'v22199';
 (function(){
   try {
     function _addTag(){
@@ -23218,7 +23218,17 @@ function renderGateAd(index) {
       // ads'): every Accor appearance flips EN <-> FR instead of trusting
       // the board rotation, which can sit on one language for long spells
       // (or be configured single-language).
-      window._accorAdForcedLang = (window._accorAdForcedLang === 'en') ? 'fr' : 'en';
+      // Flip ONLY when the slide instance actually changes — flipping on
+      // every render call meant any re-paint of the SAME on-screen slide
+      // (media-config events, post-rebuild repaints) produced different
+      // HTML, busted the _lastKey cache below, and rebuilt the whole slide:
+      // photo restart + language swap mid-display (Nick: the Accor ads
+      // blink 'same as the weather').
+      var _axFlipKey = slot + '|' + ((slide.data && (slide.data.hotelId || slide.data.name)) || '');
+      if (window._accorAdLastFlipKey !== _axFlipKey) {
+        window._accorAdForcedLang = (window._accorAdForcedLang === 'en') ? 'fr' : 'en';
+        window._accorAdLastFlipKey = _axFlipKey;
+      }
       window._adDiag = 'accor:' + window._accorAdForcedLang;
       html = buildAccorAdOnlyV6(slide.data);
     } catch (e) {
@@ -25317,9 +25327,24 @@ function _renderWxCard(el) {
       if (!_wxAcc && typeof getAirlineAccent === 'function') _wxAcc = getAirlineAccent((cf && cf.airline) || '');
       if (_wxAcc && typeof accentTint === 'function') _wxBg = accentTint(_wxAcc, 0.42);
     } catch (e) {}
-    var _wxSig = _wxHtml + '||' + _wxBg;
-    if (el._wxLastHtml === _wxSig && el.querySelector && el.querySelector('.wxcard-wrap')) return true;
+    // v22199 — the accent used to be part of the rebuild signature, but it's
+    // read from a LIVE computed var that is briefly empty right after a gate
+    // rebuild: the signature oscillated between two values and every flip
+    // re-set innerHTML, reloading every animated SVG (Nick: 'the weather had
+    // finally stopped blinking, it's doing it again'). A background-only
+    // change now retints the existing card IN PLACE — markup is rebuilt only
+    // when the weather content itself changed.
+    var _wxSig = _wxHtml;
+    if (el._wxLastHtml === _wxSig && el.querySelector && el.querySelector('.wxcard-wrap')) {
+      if (el._wxLastBg !== _wxBg) {
+        var _wxWrapT = el.querySelector('.wxcard-wrap');
+        if (_wxWrapT) _wxWrapT.style.setProperty('background', _wxBg, 'important');
+        el._wxLastBg = _wxBg;
+      }
+      return true;
+    }
     el._wxLastHtml = _wxSig;
+    el._wxLastBg = _wxBg;
     el.innerHTML = _wxHtml;
     var _wxWrap = el.querySelector('.wxcard-wrap');
     if (_wxWrap) _wxWrap.style.setProperty('background', _wxBg, 'important');
