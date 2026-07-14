@@ -13801,7 +13801,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22219';
+var FIDS_BUILD_TAG = 'v22220';
 (function(){
   try {
     function _addTag(){
@@ -20835,6 +20835,11 @@ function fetchAccorHotelDetail(hotelId) {
         }
       });
       var topAmenities = Object.keys(topCount)
+        // NEVER carry a breakfast amenity downstream — the API asserts it for
+        // hotels that don't include it (Fairmont), and this list feeds every
+        // ad builder. Stripped at the source so no card can show it (Nick,
+        // repeatedly: 'it's false advertisement, remove it').
+        .filter(function(a) { return !/breakfast|d[ée]jeuner/i.test(a); })
         .sort(function(a, b) { return topCount[b] - topCount[a]; })
         .slice(0, 6);
 
@@ -22064,14 +22069,21 @@ function buildGateAdHtml(ad) {
     // are intentionally NOT used as a fallback — truncated to bullet size
     // they read as broken word-salad. Better to render nothing until the
     // detail endpoint loads clean topAmenities.
-    if (_detail && Array.isArray(_detail.topAmenities) && _detail.topAmenities.length) {
-      _topics.push({ title: TL('amenities'), items: _detail.topAmenities.slice(0, 5) });
+    // Strip any breakfast claim from EVERY topic list — the detail endpoint is
+    // a separate source from the list aggregation and still returns it for
+    // hotels that don't include it (Fairmont). No card advertises breakfast.
+    var _noBkfst = function (arr) { return (arr || []).filter(function (x) { return !/breakfast|d[ée]jeuner/i.test(String(x)); }); };
+    var _detAmen = _detail ? _noBkfst(_detail.topAmenities) : [];
+    if (_detAmen.length) {
+      _topics.push({ title: TL('amenities'), items: _detAmen.slice(0, 5) });
     }
-    if (_detail && _detail.restaurants && _detail.restaurants.length) {
-      _topics.push({ title: TL('restaurants') || 'Restaurants', items: _detail.restaurants });
+    var _detResto = _detail ? _noBkfst(_detail.restaurants) : [];
+    if (_detResto.length) {
+      _topics.push({ title: TL('restaurants') || 'Restaurants', items: _detResto });
     }
-    if (_detail && _detail.facilities && _detail.facilities.length) {
-      _topics.push({ title: TL('facilities') || 'Facilities', items: _detail.facilities });
+    var _detFac = _detail ? _noBkfst(_detail.facilities) : [];
+    if (_detFac.length) {
+      _topics.push({ title: TL('facilities') || 'Facilities', items: _detFac });
     }
     // Long-form description / destinationDescription INTENTIONALLY NOT
     // added as a bullet topic — they're marketing paragraphs that read
@@ -22864,10 +22876,16 @@ function buildAccorAdOnlyV6(ad) {
   // first, neutral ones next, room fixtures last — used only as filler.
   var _amenSellRx = /pool|piscine|spa\b|sauna|hammam|jacuzzi|massage|fitness|gym|restaurant|resto|\bbar\b|lounge|breakfast|d[ée]jeuner|rooftop|terrace|terrasse|view|vue\b|parking|shuttle|navette|airport transfer|pet|animaux|kids|famille|family|beach|plage|golf|concierge|room service|service aux chambres|24[\/ -]?(h|hour|heures)|business cent|meeting|ev charg|borne|wi-?fi|internet/i;
   var _amenDullRx = /\biron(ing)?\b|fer [àa] repasser|telephone|t[ée]l[ée]phone|hair ?dry|s[èe]che-cheveux|kettle|bouilloire|coffee maker|minibar|mini-bar|\btv\b|television|t[ée]l[ée]vision|radio|\bdesk\b|bureau|bathrobe|peignoir|\bsafe\b|coffre|wardrobe|armoire|blackout|rideaux|toiletries|wake-?up|r[ée]veil|air condition|climatisation|heating|chauffage|carpet|moquette/i;
+  // NEVER surface a breakfast claim. The hotel API returns COMPLIMENTARY_
+  // BREAKFAST / 'breakfast' for properties that do NOT include it (Fairmont —
+  // Nick, repeatedly: 'it's false advertisement, it needs removed'). The data
+  // can't be trusted for this, so breakfast is stripped from every amenity /
+  // dining / prose surface of the ad.
+  var _isBreakfast = function (a) { return /breakfast|d[ée]jeuner/i.test(String(a || '')); };
   var _amenAll = _dedupe([].concat(
       (_detail && _detail.topAmenities && _detail.topAmenities.length) ? _detail.topAmenities : amenities,
       (_detail && _detail.facilities) ? _detail.facilities : []
-  ));
+  )).filter(function (a) { return !_isBreakfast(a); });
   var _amenSell = [], _amenMid = [], _amenDull = [];
   _amenAll.forEach(function (a) {
     var s = String(a || '');
@@ -22880,15 +22898,15 @@ function buildAccorAdOnlyV6(ad) {
   // prose 'advantages' that mention dining first, then hotel-level dining
   // amenities and program labels. In-room food&bev only as a last resort.
   var _dineRx = /restaurant|resto|\bbar\b|dining|breakfast|d[ée]jeuner|cuisine|lounge|caf[ée]|terrasse|patio|buffet/i;
-  var _dineAdv = (Array.isArray(ad.advantages) ? ad.advantages : []).filter(function (a) { return _dineRx.test(String(a)); });
+  var _dineAdv = (Array.isArray(ad.advantages) ? ad.advantages : []).filter(function (a) { return _dineRx.test(String(a)) && !_isBreakfast(a); });
   var _amenFree = Array.isArray(ad.amenityFree) ? ad.amenityFree : [];
   var _lblsAd = Array.isArray(ad.labels) ? ad.labels : [];
   var _dfr = accorLang() === 'fr';
   var _dineAmen = [];
   if (_amenFree.indexOf('restaurant') !== -1) _dineAmen.push(_dfr ? 'Restaurant sur place' : 'On-site restaurant');
   if (_amenFree.indexOf('bar') !== -1) _dineAmen.push(_dfr ? 'Bar-salon' : 'Bar & lounge');
-  if (_lblsAd.indexOf('COMPLIMENTARY_BREAKFAST') !== -1) _dineAmen.push(_dfr ? 'Petit-déjeuner offert' : 'Complimentary breakfast');
-  else if (_amenFree.indexOf('breakfast') !== -1) _dineAmen.push(_dfr ? 'Petit-déjeuner' : 'Breakfast available');
+  // Breakfast claims REMOVED — the API asserts COMPLIMENTARY_BREAKFAST /
+  // 'breakfast' for hotels that don't include it (Fairmont). No breakfast line.
   if (_amenFree.indexOf('room_service') !== -1) _dineAmen.push(_dfr ? 'Service aux chambres' : 'Room service');
   if (_lblsAd.indexOf('DINING_OFFER') !== -1) _dineAmen.push(_dfr ? 'Offres restauration pour les clients' : 'Dining offers for guests');
   var _restList = _dedupe(_dineAdv.concat(_dineAmen)).slice(0, 5);
