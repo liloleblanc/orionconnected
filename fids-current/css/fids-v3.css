@@ -2093,7 +2093,7 @@ body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
 #fidsTable colgroup col.col-gate      { width: clamp(100px, 7vw, 134px) !important; }
 #fidsTable colgroup col.col-time      { width: clamp(146px, 10vw, 178px) !important; }
 #fidsTable colgroup col.col-time-rev  { width: clamp(146px, 10vw, 178px) !important; }
-#fidsTable colgroup col.col-status    { width: clamp(160px, 12.2vw, 235px) !important; }
+#fidsTable colgroup col.col-status    { width: clamp(210px, 13vw, 250px) !important; }
 
 /* Emblem-only mode: shrink airline column further */
 body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
@@ -3688,24 +3688,45 @@ body[data-fids-theme="mist"] .fids-banner-board .fids-icon-arr {
    Final call & Gate closed AMBER, Departed muted. Never white-on-white.
    Rows: Delayed = WHOLE ROW amber. Cancelled/Diverted = WHOLE ROW red.
    Appended last so it out-cascades every per-theme rule above. */
+/* The [data-fids-theme] variants out-specify per-theme white overrides
+   (tus-teal set td.td-status white !important and silently beat this base
+   green — Nick: 'prévu and scheduled should be green'). */
 body #fidsTable tbody tr td.td-status,
-body #fidsTable tbody tr td.td-status * { color: #7FE7A6 !important; }
+body #fidsTable tbody tr td.td-status *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status,
+body[data-fids-theme] #fidsTable tbody tr td.td-status * { color: #2FD467 !important; }
 body.fids-light-board #fidsTable tbody tr td.td-status,
-body.fids-light-board #fidsTable tbody tr td.td-status * { color: #157A43 !important; }
+body.fids-light-board #fidsTable tbody tr td.td-status *,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status * { color: #157A43 !important; }
 
-body #fidsTable td.td-status.fids-status-final,
-body #fidsTable td.td-status.fids-status-final *,
-body #fidsTable td.td-status.fids-status-gate-closed,
-body #fidsTable td.td-status.fids-status-gate-closed * { color: #FAC120 !important; }
-body.fids-light-board #fidsTable td.td-status.fids-status-final,
-body.fids-light-board #fidsTable td.td-status.fids-status-final *,
-body.fids-light-board #fidsTable td.td-status.fids-status-gate-closed,
-body.fids-light-board #fidsTable td.td-status.fids-status-gate-closed * { color: #A66F00 !important; }
+/* Same tbody-tr + [data-fids-theme] shape as the base green above so these
+   STATE colors stay ahead of it in the cascade on every theme. */
+body #fidsTable tbody tr td.td-status.fids-status-final,
+body #fidsTable tbody tr td.td-status.fids-status-final *,
+body #fidsTable tbody tr td.td-status.fids-status-gate-closed,
+body #fidsTable tbody tr td.td-status.fids-status-gate-closed *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-final,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-final *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-gate-closed,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-gate-closed * { color: #FAC120 !important; }
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-final,
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-final *,
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-gate-closed,
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-gate-closed *,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-final,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-final *,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-gate-closed,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-gate-closed * { color: #A66F00 !important; }
 
-body #fidsTable td.td-status.fids-status-departed,
-body #fidsTable td.td-status.fids-status-departed * { color: rgba(255,255,255,0.55) !important; }
-body.fids-light-board #fidsTable td.td-status.fids-status-departed,
-body.fids-light-board #fidsTable td.td-status.fids-status-departed * { color: rgba(22,40,60,0.48) !important; }
+body #fidsTable tbody tr td.td-status.fids-status-departed,
+body #fidsTable tbody tr td.td-status.fids-status-departed *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-departed,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-departed * { color: rgba(255,255,255,0.55) !important; }
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-departed,
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-departed *,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-departed,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-departed * { color: rgba(22,40,60,0.48) !important; }
 
 /* DELAYED — the whole row goes amber, dark lettering for contrast */
 body #fidsTable tbody tr.row-delayed,
@@ -3793,7 +3814,7 @@ body #fidsTable tbody tr.row-diverted td.td-time-sched.is-revised { opacity: 1 !
    The revised time on an EARLY flight goes green with the word; the amber
    revised color stays for everything else. */
 body #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev,
-body #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev * { color: #7FE7A6 !important; }
+body #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev * { color: #2FD467 !important; }
 body.fids-light-board #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev,
 body.fids-light-board #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev * { color: #157A43 !important; }
 
@@ -3825,22 +3846,37 @@ body.fids-light-board #fidsTable tbody tr td.td-status,
 body.fids-light-board #fidsTable tbody tr td.td-status * { color: #16283C !important; }
 /* Early: plain green */
 body #fidsTable td.td-status.fids-status-early,
-body #fidsTable td.td-status.fids-status-early * { color: #7FE7A6 !important; }
+body #fidsTable td.td-status.fids-status-early * { color: #2FD467 !important; }
 body.fids-light-board #fidsTable td.td-status.fids-status-early,
 body.fids-light-board #fidsTable td.td-status.fids-status-early * { color: #157A43 !important; }
-/* Boarding / Final call: plain amber */
-body #fidsTable td.td-status.fids-status-boarding,
-body #fidsTable td.td-status.fids-status-boarding *,
-body #fidsTable td.td-status.fids-status-final,
-body #fidsTable td.td-status.fids-status-final * { color: #FFB000 !important; }
-body.fids-light-board #fidsTable td.td-status.fids-status-boarding,
-body.fids-light-board #fidsTable td.td-status.fids-status-boarding *,
-body.fids-light-board #fidsTable td.td-status.fids-status-final,
-body.fids-light-board #fidsTable td.td-status.fids-status-final * { color: #A66F00 !important; }
+/* Boarding / Final call: plain amber.
+   Selector shape matches the base green (tbody tr + [data-fids-theme]
+   variants) so these state colors stay ahead of it by cascade ORDER —
+   the base green's specificity bump (needed to beat tus-teal's white)
+   was silently swallowing the amber (v22206). */
+body #fidsTable tbody tr td.td-status.fids-status-boarding,
+body #fidsTable tbody tr td.td-status.fids-status-boarding *,
+body #fidsTable tbody tr td.td-status.fids-status-final,
+body #fidsTable tbody tr td.td-status.fids-status-final *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-boarding,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-boarding *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-final,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-final * { color: #FFB000 !important; }
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-boarding,
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-boarding *,
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-final,
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-final *,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-boarding,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-boarding *,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-final,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-final * { color: #A66F00 !important; }
 /* History (Departed / Arrived / Gate closed): dim grey word, whole row fades */
-body #fidsTable td.td-status.fids-status-departed, body #fidsTable td.td-status.fids-status-departed *,
-body #fidsTable td.td-status.fids-status-arrived, body #fidsTable td.td-status.fids-status-arrived *,
-body #fidsTable td.td-status.fids-status-gate-closed, body #fidsTable td.td-status.fids-status-gate-closed * { color: rgba(160,170,182,0.9) !important; }
+body #fidsTable tbody tr td.td-status.fids-status-departed, body #fidsTable tbody tr td.td-status.fids-status-departed *,
+body #fidsTable tbody tr td.td-status.fids-status-arrived, body #fidsTable tbody tr td.td-status.fids-status-arrived *,
+body #fidsTable tbody tr td.td-status.fids-status-gate-closed, body #fidsTable tbody tr td.td-status.fids-status-gate-closed *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-departed, body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-departed *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-arrived, body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-arrived *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-gate-closed, body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-gate-closed * { color: rgba(160,170,182,0.9) !important; }
 body #fidsTable tbody tr:has(td.fids-status-departed),
 body #fidsTable tbody tr:has(td.fids-status-arrived),
 body #fidsTable tbody tr:has(td.fids-status-gate-closed) { opacity: 0.55; }
@@ -3950,7 +3986,7 @@ body.fids-light-board #fidsTable tbody tr.row-gate-closed:nth-child(n),
 body.fids-light-board #fidsTable tbody tr.row-gate-closed:nth-child(n) td { background: #AEB7C1 !important; }
 /* Early: the revised (earlier) time goes green with the status word */
 body #fidsTable tbody tr.row-early td.td-time-rev.has-rev,
-body #fidsTable tbody tr.row-early td.td-time-rev.has-rev * { color: #7FE7A6 !important; }
+body #fidsTable tbody tr.row-early td.td-time-rev.has-rev * { color: #2FD467 !important; }
 body.fids-light-board #fidsTable tbody tr.row-early td.td-time-rev.has-rev,
 body.fids-light-board #fidsTable tbody tr.row-early td.td-time-rev.has-rev * { color: #157A43 !important; }
 body .bidsv2-clock { color: #ffffff !important; opacity: 1 !important; font-weight: 800 !important; }

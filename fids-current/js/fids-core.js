@@ -13757,7 +13757,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22205';
+var FIDS_BUILD_TAG = 'v22206';
 (function(){
   try {
     function _addTag(){
@@ -14014,12 +14014,19 @@ function setTheme(name) {
     tbody tr:nth-child(odd) { background: ${t.rowOdd} !important; }
     tbody tr:nth-child(even) { background: ${t.rowEven} !important; }
     .td-date, .td-time, .td-dest, .td-flight { color: ${t.rowText} !important; }
-    /* v2 cells — airline name, gate, status, weather temp all use rowText
+    /* v2 cells — airline name, gate, weather temp all use rowText
        so dark themes get light text and light themes get dark text. */
-    .td-airline, .fids-airline-name, .td-gate, .td-status,
+    .td-airline, .fids-airline-name, .td-gate,
     .td-wx .fids-cell-weather span:not(.fids-wx-cell) {
       color: ${t.rowText} !important;
     }
+    /* Good-state statuses (Scheduled/On time/Boarding/Prévu/Early): GREEN
+       on every theme (Nick: 'prévu and scheduled should be green') — and a
+       RICHER green than the old Flair-ish mint (Nick: 'should be greener').
+       This runtime sheet is appended LAST, so rowText here was silently
+       beating the semantic-green block in fids-v3. The state-specific
+       rules below (muted/amber) still override per status. */
+    .td-status { color: ${t.lightRows ? '#15803D' : '#2FD467'} !important; }
     /* Faded statuses (Arrived/Departed/Gate closed) — slightly muted vs
        the active rows but still readable on whichever theme is picked. */
     .td-status.fids-status-departed,
@@ -14578,8 +14585,14 @@ function render() {
     var _stPlain = String(stCellHtml), _stPrev;
     do { _stPrev = _stPlain; _stPlain = _stPlain.replace(/<[^>]*>/g, ''); } while (_stPlain !== _stPrev);
     var _stPlainLen = _stPlain.trim().length;
+    // INLINE font-size with !important: the stylesheet route kept losing to
+    // late vw-sized theme rules and the word still clipped ('DERNIER AP…',
+    // Nick, twice). Inline+important cannot be out-cascaded.
+    var _stLongAttrs = _stPlainLen >= 12
+      ? ' st-longtext" style="font-size:18px !important;letter-spacing:0.2px !important;'
+      : '';
     const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '')
-      + (_stPlainLen >= 12 ? ' st-longtext' : '') + '">' + stCellHtml + '</td>';
+      + _stLongAttrs + '">' + stCellHtml + '</td>';
 
     let cells;
     if (isDep) {
@@ -23909,15 +23922,14 @@ function _restartGateAdsTimer() {
       _gateAdTimer = setTimeout(_tick, 1000);
       return;
     }
-    // v22204 — tighter transition. The old 0.6s fade + 0.7s dark hold +
-    // 0.6s fade-in put ~1.3s of near-black between EVERY pair of ads; with
-    // a light slide on one side it read as two separate jumps (Nick: 'the
-    // ads still do a double skip', video-confirmed: the "skip" is the
-    // transition gap, not a double advance). Now ~0.4s total dip.
-    el2.style.transition = 'opacity 0.25s ease';
-    el2.style.opacity = '0';
+    // v22206 — TRUE CROSSFADE (Nick, after two rounds of tightening the
+    // fade: 'nope it's still jumping in GIDS'; 'before it was smooth').
+    // Any fade-through-dark reads as a double jump. Now the OUTGOING slide
+    // is lifted into an overlay, the next slide renders at FULL opacity
+    // underneath, and the overlay dissolves over it — one smooth change,
+    // zero dark gap, exactly like the pre-July-7 switch but softened.
     _gateAdFadeTimer = setTimeout(function() {
-      if (gen !== _gateAdGen) return; // superseded mid-fade — abandon
+      if (gen !== _gateAdGen) return; // superseded — abandon
       var el3 = document.getElementById('gateAdCurrentCarousel') || document.getElementById('gateAdCarousel');
       if (!el3) {
         _gateAdTimer = setTimeout(_tick, 1000);
@@ -23925,10 +23937,33 @@ function _restartGateAdsTimer() {
       }
       var totalSlots = 1;
       try { totalSlots = _getGateAdTotalSlots(); } catch (e) { totalSlots = ((getGateAds() || []).length + 1); }
+      // Lift the current slide's DOM into a fading overlay. Moving (not
+      // cloning) keeps playing videos playing while they dissolve.
+      var _old = null;
+      try {
+        if (el3.firstChild) {
+          _old = document.createElement('div');
+          _old.style.cssText = 'position:absolute;left:0;top:0;right:0;bottom:0;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.6s ease;overflow:hidden;';
+          while (el3.firstChild) _old.appendChild(el3.firstChild);
+          // The children moved out — bust the per-slide DOM caches so a
+          // same-content render can't early-return into an empty carousel.
+          el3._lastKey = null;
+          el3._wxLastHtml = null;
+        }
+      } catch (e) { _old = null; }
       _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
       try { renderGateAd(_gateAdIndex); } catch (e) {}
-      el3.style.transition = 'opacity 0.25s ease';
+      el3.style.transition = 'none';
       el3.style.opacity = '1';
+      if (_old) {
+        try {
+          if (!el3.style.position) el3.style.position = 'relative';
+          el3.appendChild(_old);
+          void _old.offsetWidth; // commit at opacity 1, then dissolve
+          _old.style.opacity = '0';
+          setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 700);
+        } catch (e) { try { if (_old.parentNode) _old.remove(); } catch (e2) {} }
+      }
       // Schedule the NEXT tick using the dwell of the slide we just
       // showed. Falls back to 15s if anything goes wrong.
       var dwell = 15000;
@@ -23938,7 +23973,7 @@ function _restartGateAdsTimer() {
       } catch (e) {}
       dwell = Math.max(22000, dwell);   // Nick: slides were flicking by every 5-10s — hold each ≥22s
       _gateAdTimer = setTimeout(_tick, dwell);
-    }, 280);
+    }, 10);
   };
   // Kick off — use the dwell of the FIRST slide on initial run.
   var initDwell = 15000;

@@ -2430,6 +2430,16 @@ html #fidsTable .td-airline .fids-airline-logo img[data-logo-set="wordmark"] {
 /* Text fallback in the SQUARE slot clips to fragments ('IR CREEBE') — the
    label slot already carries the name, so never show it twice. */
 html #fidsTable .td-airline .fids-airline-logo .logo-fallback { display: none; }
+/* Long statuses (>=12 chars, flagged by the renderer as .st-longtext) step
+   the type down so the full word ALWAYS reads ('DERNIER AP…', Nick twice).
+   Lives HERE (last static sheet, html-prefixed) because the equivalent
+   fids-v3 rule lost to later clamp-based sizing. */
+html body #fidsTable tbody tr td.td-status.st-longtext,
+html body #fidsTable tbody tr td.td-status.st-longtext * {
+  font-size: 18px !important;
+  letter-spacing: 0.2px !important;
+}
+
 /* Column-header band LESS TALL (Nick circled it, v22202) — every theme
    (navy-board, cream, …) sets its own 18px thead padding with !important;
    this later, more-specific cap beats them all without touching colors. */
