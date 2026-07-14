@@ -1300,6 +1300,11 @@ if (!LIVE_MODE) {
 let screenType = 'main';
 let subScreenVal = '';
 
+// Default row/logo density: without a saved pref the body attribute was
+// never set, the row-height cap never applied, and fresh boards rendered
+// ~90px rows (Nick: 'rows are much bigger than they used to be').
+try { if (document.body && !document.body.dataset.fidsLogoSize) document.body.dataset.fidsLogoSize = 'medium'; } catch (e) {}
+
 let gateControlsHideTimer = null;
 function scheduleGateControlsAutoHide() {
   if (gateControlsHideTimer) clearTimeout(gateControlsHideTimer);
@@ -12561,6 +12566,12 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
+  // Regionals/internationals the map lacked — without an entry here the
+  // prefix-first branding can't recognize the code and a feed row marked
+  // AC carrying 3H802 branded as Air Canada (Nick).
+  '3H':'Air Inuit', 'YN':'Air Creebec', 'S4':'Azores Airlines',
+  'JV':'Bearskin Airlines', 'WT':'Wasaya Airways', 'YP':'Perimeter Aviation',
+  'MO':'Calm Air', '5T':'Canadian North', '4N':'Air North', 'BQ':'Pascan',
   'AC':'AIR CANADA',  'WS':'WESTJET', 'WG':'SUNWING',     'PD':'PORTER',      'F8':'FLAIR',
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
@@ -12745,7 +12756,9 @@ const IATA_TO_WORDMARK = {
   'F8':'flair',    // Flair — proper wordmark (their logo must NEVER render green, per brand policy)
   'QK':'jazz',     // Air Canada Jazz
   'RV':'air-canada',  // Air Canada Rouge → use AC wordmark
-  '3H':'air-canada',  // Air Inuit branded as AC for some routes
+  '3H':'airinuit',    // Air Inuit — its own brand; the old 'branded as
+                      // AC' alias painted real Air Inuit flights as Air
+                      // Canada (Nick: 'not sure thats an air canada flight')
   // US carriers
   'AA':'american',  'UA':'united',  'DL':'delta',
   'WN':'southwest',  'B6':'jetblue',
@@ -13007,6 +13020,10 @@ const COLOR_WORDMARKS = {
 // brand PNGs — no public vector anywhere). Same variant semantics: 'light'
 // = white art for dark boards, 'dark' = colored art for light boards.
 const WORDMARK_RASTER = {
+  'airinuit': { light: '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg',
+                // NB: the '-black' file on disk is actually white fill — use
+                // the colour original for light rows.
+                dark:  '/logos/airlines/canadian-regional/airinuit.svg' },
   'caribbean': { light: '/logos/airlines/asian-other/caribbean-wordmark-light.png',
                  dark:  '/logos/airlines/asian-other/caribbean-wordmark-color.png' }
 };
@@ -13621,7 +13638,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22187';
+var FIDS_BUILD_TAG = 'v22188';
 (function(){
   try {
     function _addTag(){
@@ -16430,9 +16447,16 @@ function mapADB(raw, mode) {
     const csStatus = String(f.codeshareStatus || '').toLowerCase();
     if (csStatus === 'iscodeshared') return null;
     let flight=(f.number||'—').trim().toUpperCase().replace(/\s+/g,'');
-    const fp=flight.replace(/[0-9].*/,'').trim();
+    // Digit-leading IATA codes (3H, 4N, 5T, 9M...) broke the old
+    // strip-from-first-digit parse — '3H802' yielded an empty prefix, so
+    // prefix-first branding never saw Air Inuit.
+    const _fpm = flight.match(/^([A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])(?=\d)/);
+    const fp = _fpm ? _fpm[0] : flight.replace(/[0-9].*/,'').trim();
     if(FILTER_OUT.has(fp))return null;
-    const airline=PARENT[code]||PARENT[fp]||code||fp;
+    // Brand by the flight-number PREFIX first — it's what passengers see.
+    // A feed row marked AC carrying number 3H802 (Air Inuit) must not
+    // brand as Air Canada (Nick). Affiliates still collapse via PARENT.
+    const airline = PARENT[fp] || (fp && AIRLINE_NAME[fp] ? fp : '') || PARENT[code] || code || fp;
     if(PARENT[fp])flight=flight.replace(fp,PARENT[fp]);
     // v194: Prefer our local AIRLINE_NAME mapping over the API's name field.
     // AeroDataBox often returns stale or incorrect names — for example, IATA
@@ -16440,7 +16464,7 @@ function mapADB(raw, mode) {
     // Discover Airlines in 2023. The API still sometimes returns "Yute Air".
     // Local map is authoritative; fall back to API only if we have no entry.
     const _apiName = (f.airline?.name||'').trim().toUpperCase();
-    const _localName = AIRLINE_NAME[code] || AIRLINE_NAME[fp] || '';
+    const _localName = AIRLINE_NAME[airline] || AIRLINE_NAME[code] || AIRLINE_NAME[fp] || '';
     const faAirlineName = _localName || _apiName;
     // Extract ACTUAL operating carrier from leg data (FIDS endpoint with withLeg=true)
     // f.departure.airline or f.arrival.airline = who physically operates it
@@ -24298,6 +24322,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // !important in CSS — a plain inline style would lose the cascade.
     var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
+      + ' #fidsTable td.fids-cell-flight,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-dest,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-status-val,'
       + ' .gad-map-col-v2 .v2-rc-acb-actype,'

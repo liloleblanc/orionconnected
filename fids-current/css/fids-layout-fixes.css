@@ -2159,7 +2159,7 @@ html.fids-stream .ac-ico::after {
    more' + 'plane up and down icons close together'). Show the up
    (departures) AND down (arrivals) plane in one rounded white badge instead
    of swapping one out, and pull the badge close to the title. */
-html .fids-banner .fids-board-label { font-size: 64px !important; min-width: 360px !important; text-align: left !important; }
+html .fids-banner .fids-board-label { font-size: 54px !important; min-width: 360px !important; text-align: left !important; }
 /* ONE plane badge that swaps with the board mode, drawn from the AC icon
    font: takeoff (departures) / landing (arrivals). The built-in SVGs are
    hidden and replaced by the glyph. */
@@ -2336,6 +2336,27 @@ html .wxcard-wrap > .wxc-globe {
   z-index: 0;
 }
 html .wxcard-wrap > *:not(.wxc-globe) { position: relative; z-index: 1; }
+
+/* Wordmark-class logos in the airline cell: hide the duplicate name and
+   render the lockup at row height instead of squeezing it into the 54px
+   square (Air Creebec / SATA tiny-mark bug — these rules lived in the
+   retired fids-v2.css and never made it into v3). */
+html #fidsTable .td-airline .fids-cell-airline:has(img[data-logo-set="wordmark"]) .fids-airline-name { display: none; }
+html #fidsTable .td-airline .fids-airline-logo:has(img[data-logo-set="wordmark"]) {
+  width: auto !important;
+  max-width: 220px !important;
+  height: 54px !important;
+}
+html #fidsTable .td-airline .fids-airline-logo img[data-logo-set="wordmark"] {
+  width: auto !important;
+  max-width: 220px !important;
+  height: 44px !important;
+  object-fit: contain;
+  object-position: left center;
+}
+/* Text fallback in the SQUARE slot clips to fragments ('IR CREEBE') — the
+   label slot already carries the name, so never show it twice. */
+html #fidsTable .td-airline .fids-airline-logo .logo-fallback { display: none; }
 
 /* ── BOARDING INFO ROW (Nick: ONE continuous row, not separate cards —
    flight number and data bigger, same icons, thicker row). A single

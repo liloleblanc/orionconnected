@@ -79,7 +79,8 @@ html, body {
      card and the right-side board block have EQUAL margin to their
      respective viewport edges. The settings cog (position:fixed) floats
      over the banner and doesn't need flex space reserved for it. */
-  height: 160px;
+  /* v223 — 160px ate too much board (Nick: shrink the top sections). */
+  height: 128px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -87,7 +88,7 @@ html, body {
   gap: 32px;
 }
 @media (max-width: 1100px) {
-  .fids-banner { height: 130px; padding: 0 48px; }
+  .fids-banner { height: 112px; padding: 0 48px; }
   .fids-airport-pill { height: 100px; }
   .fids-airport-logo-img { height: 80px; }
 }
@@ -319,7 +320,7 @@ body[data-fids-layout="right"] .fids-banner-time-block {
 }
 .fids-table thead th {
   text-align: left;
-  padding: 18px var(--fids-pad-x);
+  padding: 10px var(--fids-pad-x);
   color: var(--fids-header-tint);
   /* 16px → 22px per Nick: the column headers read too small on the boards. */
   font-size: 22px;
@@ -889,7 +890,7 @@ body {
   letter-spacing: 0.3px !important;
   text-transform: none !important;
   text-align: left !important;
-  padding: 14px 18px !important;
+  padding: 10px 18px !important;
   white-space: nowrap;
 }
 #fidsTable thead th.col-status {
@@ -2186,9 +2187,9 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wo
    navy-board redefine --fids-row-h, breaking consistency. Force
    the user-picked logo size via body[data-fids-logo-size=...].
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-body[data-fids-logo-size="small"]  { --fids-logo-size: 48px !important; --fids-row-h: 56px !important; }
-body[data-fids-logo-size="medium"] { --fids-logo-size: 56px !important; --fids-row-h: 64px !important; }
-body[data-fids-logo-size="large"]  { --fids-logo-size: 64px !important; --fids-row-h: 72px !important; }
+body[data-fids-logo-size="small"]  { --fids-logo-size: 40px !important; --fids-row-h: 48px !important; }
+body[data-fids-logo-size="medium"] { --fids-logo-size: 48px !important; --fids-row-h: 58px !important; }
+body[data-fids-logo-size="large"]  { --fids-logo-size: 56px !important; --fids-row-h: 66px !important; }
 
 /* Beat ALL theme-specific row height overrides (cream, navy-board, etc.) */
 body[data-fids-logo-size] #fidsTable tbody tr,
