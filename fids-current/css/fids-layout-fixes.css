@@ -1636,14 +1636,16 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
    carried by .bigcraft-side::before below; the map stays clean. */
 .bigcraft-mapcol {
   position: relative !important; min-width: 0 !important; min-height: 0 !important;
-  /* FRAME like the ad cards (Nick: 'still no frame like the ads for the map').
-     A bold white inset ring + navy outer edge so it reads unmistakably over
-     the light map tiles — the thin navy-on-navy border before was invisible. */
-  border: clamp(5px,0.8vh,10px) solid #ffffff !important;
-  outline: clamp(3px,0.5vh,6px) solid var(--banner-bg, #042354) !important;
-  outline-offset: 0 !important;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35) !important;
-  border-radius: 10px !important;
+  /* FRAME like the ad cards (Nick: 'still no frame like the ads for the map' /
+     'atrocious still no frame'). The white border was invisible against the
+     light metal rail (left) and light info panel (right). THICK DARK frame —
+     reads on every surface — with a brand-accent inner ring (the ad-card look)
+     and a drop shadow to lift the map off the background. */
+  border: clamp(8px,1.4vh,18px) solid var(--banner-bg, #042354) !important;
+  box-shadow:
+    inset 0 0 0 clamp(3px,0.5vh,6px) var(--airline-accent, #38bdf8),
+    0 14px 44px rgba(5,10,20,0.5) !important;
+  border-radius: 20px !important;
   box-sizing: border-box !important; overflow: hidden !important;
 }
 .bigcraft-map { position: absolute !important; inset: 0 !important; }
@@ -1693,10 +1695,22 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   background-size: 165% auto !important;
   background-position: right -22% center !important;
   background-repeat: no-repeat !important;
-  mix-blend-mode: multiply !important; opacity: 0.5 !important;
+  /* SUBTLE — the dots are a BACKGROUND; text and icons sit clearly IN FRONT
+     (Nick: 'I also asked for the text and icons to be in front of the pattern').
+     Low opacity so the ink dominates. */
+  mix-blend-mode: multiply !important; opacity: 0.28 !important;
   pointer-events: none !important; z-index: 0 !important;
 }
-.bigcraft-side > * { position: relative !important; z-index: 1 !important; }
+/* Everything — title, table rows, values, plane — sits ABOVE the dot layer.
+   position+z-index on the rows themselves (not just direct children) so nothing
+   can fall behind the pattern. */
+.bigcraft-side > * { position: relative !important; z-index: 2 !important; }
+.bigcraft-side .v2-rc-fi-trow,
+.bigcraft-side .v2-rc-fi-tval,
+.bigcraft-side .v2-rc-fi-tlbl,
+.bigcraft-side .bigcraft-title,
+.bigcraft-side .bigcraft-table,
+.bigcraft-side .bigcraft-plane { position: relative !important; z-index: 2 !important; }
 .bigcraft-title {
   font-size: clamp(15px, 2vh, 24px) !important; font-weight: 900 !important;
   color: #14181E !important; letter-spacing: 0.2px !important;

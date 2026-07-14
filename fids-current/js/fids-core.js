@@ -13824,7 +13824,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22228';
+var FIDS_BUILD_TAG = 'v22229';
 (function(){
   try {
     function _addTag(){
@@ -22623,9 +22623,13 @@ function buildGateAdHtml(ad) {
   var _adLightBg = !!ad.fg;
   var _stdLogoFilter = _adLightBg ? '' : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
   var _stdLogoHtml = ad.logo
-    ? '<div style="flex-shrink:0;margin-bottom:clamp(20px,3vh,40px);height:clamp(96px,16vh,190px);display:flex;align-items:center;justify-content:center;">'
+    ? '<div style="flex-shrink:0;width:100%;margin-bottom:clamp(20px,3vh,40px);height:clamp(120px,20vh,230px);display:flex;align-items:center;justify-content:center;">'
+      // Height-driven: the logo fills the tall box. Width is a VIEWPORT cap
+      // (min(720px,80vw)) — a % max-width resolves against this shrink-wrapped
+      // flex child and collapses the logo to ~80px (Nick: 'why is the logo even
+      // smaller'). object-fit keeps aspect.
       + '<img src="' + ad.logo + '" alt="" '
-      + 'style="max-height:100%;max-width:min(72%,640px);width:auto;height:auto;object-fit:contain;display:block;' + _stdLogoFilter + '" '
+      + 'style="height:100%;width:auto;max-width:min(720px,80vw);object-fit:contain;display:block;' + _stdLogoFilter + '" '
       + 'onerror="this.style.display=\'none\';">'
       + '</div>'
     : '';
@@ -24106,16 +24110,32 @@ function _restartGateAdsTimer() {
       try { totalSlots = _getGateAdTotalSlots(); } catch (e) { totalSlots = ((getGateAds() || []).length + 1); }
       // Lift the current slide's DOM into a fading overlay. Moving (not
       // cloning) keeps playing videos playing while they dissolve.
+      //
+      // v22229 — the overlay is parked in el3's PARENT, exactly over el3, and
+      // put on screen BEFORE the new slide renders. Previously _old was slapped
+      // on only AFTER renderGateAd painted the new slide, so for one frame the
+      // NEW slide was visible bare, then the old covered it, then dissolved back
+      // to new — a visible new->old->new 'double take' (Nick: 'transitions are
+      // still pitiful it double takes' / 'atrocious'). Covering FIRST means the
+      // new slide only ever appears as the old DISSOLVES over it — one clean
+      // crossfade, no flash.
       var _old = null;
       try {
         if (el3.firstChild) {
-          _old = document.createElement('div');
-          _old.style.cssText = 'position:absolute;left:0;top:0;right:0;bottom:0;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.6s ease;overflow:hidden;';
-          while (el3.firstChild) _old.appendChild(el3.firstChild);
-          // The children moved out — bust the per-slide DOM caches so a
-          // same-content render can't early-return into an empty carousel.
-          el3._lastKey = null;
-          el3._wxLastHtml = null;
+          var _pr = el3.parentNode;
+          if (_pr) {
+            try { if (getComputedStyle(_pr).position === 'static') _pr.style.position = 'relative'; } catch (ep) {}
+            var _er = el3.getBoundingClientRect(), _prr = _pr.getBoundingClientRect();
+            _old = document.createElement('div');
+            _old.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
+              + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.6s ease;overflow:hidden;';
+            while (el3.firstChild) _old.appendChild(el3.firstChild);
+            // The children moved out — bust the per-slide DOM caches so a
+            // same-content render can't early-return into an empty carousel.
+            el3._lastKey = null;
+            el3._wxLastHtml = null;
+            _pr.appendChild(_old); // cover NOW, before the new slide paints
+          }
         }
       } catch (e) { _old = null; }
       _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
@@ -24128,9 +24148,7 @@ function _restartGateAdsTimer() {
       el3.style.opacity = '1';
       if (_old) {
         try {
-          if (!el3.style.position) el3.style.position = 'relative';
-          el3.appendChild(_old);
-          void _old.offsetWidth; // commit at opacity 1, then dissolve
+          void _old.offsetWidth; // new is painted UNDER the cover; now dissolve
           _old.style.opacity = '0';
           setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 700);
         } catch (e) { try { if (_old.parentNode) _old.remove(); } catch (e2) {} }
