@@ -3,7 +3,10 @@
    across FIDS, BIDS, and GIDS without relying on per-logo lucky sizing. */
 
 :root {
-  --fids-brand-slot-h: 58px; /* airline tiles nearly full row height (62px rows) per Nick */
+  /* Follows the user's Small/Medium/Large density pick — the hardcoded
+     58px propped every row open regardless of the tier (Nick: 'I don't
+     see any changes for row size'). 8px slimmer than the row. */
+  --fids-brand-slot-h: calc(var(--fids-row-h, 52px) - 8px);
   --fids-wordmark-h: 30px;
   --fids-wordmark-w: 245px;
   --gate-logo-slot-w: clamp(150px, 16vw, 300px);
@@ -296,8 +299,19 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
    Goal: all FIDS row airline marks share the same left edge, visual baseline,
    and approximate optical size while preserving each carrier's real artwork. */
 :root {
-  --fids-logo-tile-size: 58px; /* tiles nearly full row height per Nick */
-  --fids-logo-inner-size: 54px;
+  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 4px); /* follows the density tier */
+}
+/* Custom-property var() substitution happens at the DEFINING element —
+   on :root the row var is still the 64px default, so the tile size froze
+   at 56px no matter the tier. Re-defining on body (where the density
+   tier sets --fids-row-h) makes the slots actually follow the pick. */
+body[data-fids-logo-size] {
+  /* Tiles NEARLY FULL row height (Nick, twice: 'the emblems should be
+     bigger', 'icons emblems on fids too small') — 2px breathing room only,
+     and the art fills the tile minus a hairline. */
+  --fids-brand-slot-h: calc(var(--fids-row-h, 52px) - 2px);
+  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 2px);
+  --fids-logo-inner-size: calc(var(--fids-row-h, 52px) - 6px);
   --fids-wordmark-slot-w: 218px;
   --fids-wordmark-slot-pad-x: 10px;
   --fids-wordmark-optical-h: 25px; /* Nick: the +13% pass was too big — original calibration restored */
@@ -314,7 +328,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
   max-width: var(--fids-logo-tile-size) !important;
   min-height: var(--fids-logo-tile-size) !important;
   max-height: var(--fids-logo-tile-size) !important;
-  padding: 2px !important;
+  padding: 1px !important; /* art fills the tile (Nick: emblems too small) */
   box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
@@ -371,6 +385,9 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
    empirically against the WestJet 30px reference; slot is 58px so both fit. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WT"] { --wm-h: 44px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="NSA"] { --wm-h: 50px; }
+/* Air Inuit is a stacked lockup too (syllabics over the word, 480x320
+   art box) — at the flat-mark 17px the lettering was unreadable. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"] { --wm-h: 40px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { --wm-h: 32px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { --wm-h: 30px; }
@@ -390,11 +407,13 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LA"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PB"] { --wm-h: 24px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AA"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="UP"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="VS"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { --wm-h: 23px; }
+/* UNITED and DELTA: wide-tracked all-caps marks read LOUDER than their ink
+   height suggests (Nick: 'United and Delta way too big') — one notch down. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="DL"],
+#fidsTable .td-airline .fids-airline-wordmark[data-code="UA"] { --wm-h: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="9X"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LO"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="MX"] { --wm-h: 22px; }
@@ -406,7 +425,6 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AF"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { --wm-h: 20px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PT"] { --wm-h: 18px; }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AC"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="RV"] { --wm-h: 17px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="OB"],
@@ -1719,6 +1737,10 @@ html .wxanim-host { display: block !important; }
    screenshot). Highest specificity, both palettes, end of cascade. ── */
 html body.fids-light-board .bidsv2-flight-row.bidsv2-row-delayed:nth-child(n),
 html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-delayed:nth-child(n) { background: #EDBB00 !important; }
+/* Two-yellow striping on the bags board too (Nick) — consecutive delayed
+   rows alternate like the regular striping instead of fusing into a slab. */
+html body.fids-light-board .bidsv2-flight-row.bidsv2-row-delayed:nth-child(even),
+html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-delayed:nth-child(even) { background: #F9D44C !important; }
 html body .bidsv2-flight-row.bidsv2-row-delayed, html body .bidsv2-flight-row.bidsv2-row-delayed * { color: #102437 !important; }
 html body.fids-light-board .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n),
 html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n) { background: #C8102E !important; }
@@ -1907,18 +1929,29 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
 /* 4-row variant — the restored Arrival row overflowed the 3-row shelf and the
    rows collided (Nick: 'see how tight that is'). Tighter type + rhythm so all
    four rows breathe inside the same shelf. */
+/* The shelf itself is flex-locked to 1/6 of the rail (the 6-row grid: map 3 /
+   fi 1 / aircraft 2) — enough for 3 rows, but at 4 rows the top row's cap
+   clipped behind the shelf edge (Nick: 'capped out… can't even see it').
+   With 4 rows the shelf takes a ~40% bigger share; the map and aircraft
+   shelves yield proportionally. Class is stamped by the renderer — :has()
+   is silently dropped on the older kiosk browsers. */
+html .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi.v2-rc-shelf-fi4 { flex: 1.4 1 0 !important; }
+/* v22200 — the tiny type below was sized to squeeze 4 rows into the OLD
+   1/6 track; with the fi4 shelf now 40% taller each row has as much room
+   as the 3-row layout, so the tightened sizes just read tiny (Nick: 'the
+   incoming flight info is way too small'). Restore the base type. */
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl {
-  font-size: clamp(9px, 1.2vh, 13px) !important;
-  line-height: 1.05 !important;
+  font-size: clamp(10px, 1.35vh, 15px) !important;
+  line-height: 1.1 !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tval {
-  font-size: clamp(14px, 2.05vh, 24px) !important;
-  line-height: 1.15 !important;
+  font-size: clamp(15px, 2.35vh, 28px) !important;
+  line-height: 1.2 !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-trow > .v2-rc-fi-tval {
-  padding-top: clamp(1px, 0.18vh, 2px) !important;
-  padding-bottom: clamp(1px, 0.18vh, 2px) !important;
+  padding-top: clamp(1px, 0.25vh, 4px) !important;
+  padding-bottom: clamp(1px, 0.25vh, 4px) !important;
 }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl span:first-child {
   padding-bottom: 1px !important;
@@ -2159,7 +2192,7 @@ html.fids-stream .ac-ico::after {
    more' + 'plane up and down icons close together'). Show the up
    (departures) AND down (arrivals) plane in one rounded white badge instead
    of swapping one out, and pull the badge close to the title. */
-html .fids-banner .fids-board-label { font-size: 64px !important; min-width: 360px !important; text-align: left !important; }
+html .fids-banner .fids-board-label { font-size: 54px !important; min-width: 360px !important; text-align: left !important; }
 /* ONE plane badge that swaps with the board mode, drawn from the AC icon
    font: takeoff (departures) / landing (arrivals). The built-in SVGs are
    hidden and replaced by the glyph. */
@@ -2337,6 +2370,67 @@ html .wxcard-wrap > .wxc-globe {
 }
 html .wxcard-wrap > *:not(.wxc-globe) { position: relative; z-index: 1; }
 
+/* DELAYED / FINAL rows are light tinted blocks — brand-coloured airline
+   names (TAP green/red) clash and wash out there; force the navy ink the
+   rest of the row already uses (Nick: 'colors'). */
+/* NOTE (v22195): a blanket `height:auto` on every wordmark img lived here
+   briefly — it killed the per-carrier optical calibration (--wm-h table
+   above), so UNITED/DELTA ballooned while Air Inuit shrank (Nick: 'the
+   logos are all different sizes'). The 'TAP Air Portuga' clip it aimed at
+   was the TEXT fallback (fixed below); the Air Inuit crush is fixed by
+   its own lockup --wm-h in the calibration table. */
+
+/* v22196 — the slot's FIXED width (218px) overflowed its minmax(0,…) grid
+   track once the density-attr default activated this geometry on every
+   board, riding the wordmark over the flight number ('AIR CANADAC875').
+   The fixed widths become maxima: the real column always wins, and wide
+   marks contain-scale down instead of overlapping. Calibrated heights
+   (--wm-h) are untouched. */
+html #fidsTable .td-airline .fids-airline-wordmark-slot {
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+html #fidsTable .td-airline .fids-airline-wordmark,
+html #fidsTable .td-airline .fids-airline-name {
+  max-width: 100% !important;
+}
+
+/* Inline-block so the shrink-to-fit scanner can measure the span — as a
+   plain inline its clientWidth is 0 and 'TAP Air Portuga' clipped. */
+html #fidsTable .fids-airline-name {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+html #fidsTable tbody tr.row-delayed .fids-airline-name,
+html #fidsTable tbody tr.row-final .fids-airline-name,
+html #fidsTable tbody tr.row-delayed .logo-fallback,
+html #fidsTable tbody tr.row-final .logo-fallback {
+  color: #14263f !important;
+}
+
+/* Wordmark-class logos in the airline cell: hide the duplicate name and
+   render the lockup at row height instead of squeezing it into the 54px
+   square (Air Creebec / SATA tiny-mark bug — these rules lived in the
+   retired fids-v2.css and never made it into v3). */
+html #fidsTable .td-airline .fids-cell-airline:has(img[data-logo-set="wordmark"]) .fids-airline-name { display: none; }
+html #fidsTable .td-airline .fids-airline-logo:has(img[data-logo-set="wordmark"]) {
+  width: auto !important;
+  max-width: 220px !important;
+  height: 54px !important;
+}
+html #fidsTable .td-airline .fids-airline-logo img[data-logo-set="wordmark"] {
+  width: auto !important;
+  max-width: 220px !important;
+  height: 44px !important;
+  object-fit: contain;
+  object-position: left center;
+}
+/* Text fallback in the SQUARE slot clips to fragments ('IR CREEBE') — the
+   label slot already carries the name, so never show it twice. */
+html #fidsTable .td-airline .fids-airline-logo .logo-fallback { display: none; }
+
 /* ── BOARDING INFO ROW (Nick: ONE continuous row, not separate cards —
    flight number and data bigger, same icons, thicker row). A single
    full-width brushed-metal bar; segments divided by thin rules. ── */
@@ -2423,6 +2517,14 @@ html .g8-bir-title {
   margin-bottom: clamp(3px, 0.6vh, 8px);
 }
 html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
+/* Destination IATA in the title styled like the vertical rail's
+   'Destination | YYZ' — accent, bigger, heavy (Nick). */
+html .g8-bir-title .g8-bir-code-t {
+  color: var(--airline-accent, #D82F2E);
+  font-size: 1.3em;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
 html .g8-bir-val {
   font-size: clamp(46px, 8.6vh, 128px);
   font-weight: 900;
@@ -2448,6 +2550,13 @@ html .g8-bir-cell:last-child .g8-bir-val {
   text-overflow: clip;
 }
 html .g8-bir-cell:last-child .g8-bir-val .g8-bir-st2 { display: block; }
+/* Status state colours — matches the vertical rail's coding. */
+html .g8-bir-val .g8-bir-stwrap { display: contents; }
+html .g8-bir-val .g8-bir-st-ok .g8-bir-st2 { color: #15803d; }
+html .g8-bir-val .g8-bir-st-boarding .g8-bir-st2 { color: #b45309; }
+html .g8-bir-val .g8-bir-st-delayed .g8-bir-st2 { color: #c2410c; }
+html .g8-bir-val .g8-bir-st-cancelled .g8-bir-st2,
+html .g8-bir-val .g8-bir-st-final .g8-bir-st2 { color: #b91c1c; }
 html .g8-bir-cell:last-child .g8-bir-val .g8-bir-sep { display: none; }
 
 /* ── Boarding zone panels EXACTLY like the physical gate sign (Nick: 'look
@@ -2472,6 +2581,18 @@ html .g8-board-col .g8-board-lane {
 }
 html .g8-board-col .g8-board-grp-label { opacity: 0.88; }
 html .g8-board-col .g8-board-lane { opacity: 0.82; }
+
+/* ── AC lane board (Nick's sign picture): quarter BLACK (Zone 1 → Lane 1)
+   + quarter RED (Zone 2 → Lane 2), priority shown at ALL times, and the
+   right HALF as the called-zones sign. ── */
+html .g8-lanes3 .g8-board-col.g8-q1 { flex: 1 1 0; }
+html .g8-lanes3 .g8-board-col.g8-q2 { flex: 1 1 0; }
+html .g8-lanes3 .g8-board-col.g8-zones,
+html .g8-lanes3 .g8-board-col.next.g8-zones {
+  flex: 2 2 0;
+  /* !important beats the generic `.g8-board-col.next { border-left:none }` */
+  border-left: 4px solid rgba(255, 255, 255, 0.45) !important;
+}
 
 /* Lane-direction arrows beside the zone numerals, like the physical signage
    (Nick: 'no arrows either — those should be available'). The font-size

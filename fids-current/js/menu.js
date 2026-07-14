@@ -2002,11 +2002,12 @@ function cuSetSize(size) {
 }
 
 function _applyLogoSize(size) {
-  var px = 56; // medium default
-  if (size === 'small') px = 48;
-  else if (size === 'large') px = 64;
+  // Slimmer tiers (Nick: rows got much bigger than they used to be).
+  var px = 44, row = 52; // medium default
+  if (size === 'small') { px = 36; row = 44; }
+  else if (size === 'large') { px = 50; row = 60; }
   document.documentElement.style.setProperty('--fids-logo-size', px + 'px');
-  document.documentElement.style.setProperty('--fids-row-h', (px + 8) + 'px');
+  document.documentElement.style.setProperty('--fids-row-h', row + 'px');
   document.body.dataset.fidsLogoSize = size || 'medium';
 }
 
@@ -2041,7 +2042,9 @@ if (_origPaintForm) {
       var raw = localStorage.getItem('fids_customize_' + code);
       if (raw) {
         var p = JSON.parse(raw);
-        if (p && p.logoSize) _applyLogoSize(p.logoSize);
+        // No saved pref = MEDIUM — without a default the row-height cap
+        // never applied and fresh boards rendered ~90px rows (Nick).
+        _applyLogoSize((p && p.logoSize) || 'medium');
       }
     } catch (e) {}
   }, 600);

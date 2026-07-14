@@ -95,11 +95,12 @@
 .ac-ico-boarding::before { content:'\e996'; }  /* boarding pass */
 .ac-ico-depart::before   { content:'\e934'; }  /* takeoff */
 .ac-ico-time::before     { content:'\e941'; }  /* clock */
+.ac-ico-landing::before  { content:'\e933'; }  /* plane landing (arrival) */
 .ac-ico-baggage::before  { content:'\e9a8'; }  /* solid suitcase (bids title tab) */
 /* Beat the global "*::before { font-family !important }" override so the icon
    glyphs actually render in the AC icon font (class specificity > universal). */
 .ac-ico::before, .ac-ico-flight::before, .ac-ico-dest::before, .ac-ico-status::before,
-.ac-ico-boarding::before, .ac-ico-depart::before, .ac-ico-time::before {
+.ac-ico-boarding::before, .ac-ico-depart::before, .ac-ico-time::before, .ac-ico-landing::before {
   font-family:'ac-icons' !important; font-style:normal !important; font-weight:normal !important;
 }
 /* Per-glyph size tuning — normalized so every flight-info badge glyph renders the

@@ -41,12 +41,16 @@
       + '.mbar-panel.mbar-wide{width:470px;max-width:min(94vw,540px);max-height:74vh;overflow-y:auto;overscroll-behavior:contain;}'
       + '.mbar-panel.mbar-wide .sm-tab-content{display:block !important;position:static !important;max-height:none !important;overflow:visible !important;padding:0 !important;}'
       + '@media (min-width:701px){#overlayMenu{display:none !important;}}'
-      + '.ctrl{transition:transform .3s ease, opacity .3s ease;}'
+      // Slim bar (Nick: 'the gray menu bar is way too tall') — the board
+      // should own the screen; the admin bar is a visitor.
+      + '.ctrl{transition:transform .3s ease, opacity .3s ease;padding:3px 14px !important;'
+      +   'min-height:34px !important;gap:3px 10px !important;border-bottom-width:1px !important;}'
+      + '.ctrl .search-wrap{padding:2px 8px !important;}'
       + 'body.mbar-hidden .ctrl{transform:translateY(-115%);opacity:0;pointer-events:none;}'
       + '#mbarHotzone{position:fixed;top:0;left:0;right:0;height:14px;z-index:99998;background:transparent;}'
       + '.mbar-group{position:relative;display:inline-flex;}'
       + '.mbar-title{background:transparent;border:none;color:#e6e9ee;font-weight:700;font-size:13px;'
-      +   'letter-spacing:.6px;padding:7px 13px;cursor:pointer;border-radius:7px;font-family:inherit;white-space:nowrap;}'
+      +   'letter-spacing:.6px;padding:4px 11px;cursor:pointer;border-radius:7px;font-family:inherit;white-space:nowrap;}'
       + '.mbar-title:hover{background:rgba(255,255,255,.1);}'
       + '.mbar-group.open .mbar-title{background:rgba(255,255,255,.14);color:#fff;}'
       + '.mbar-title .car{opacity:.55;font-size:10px;margin-left:5px;}'

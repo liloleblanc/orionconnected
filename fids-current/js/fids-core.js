@@ -1300,6 +1300,11 @@ if (!LIVE_MODE) {
 let screenType = 'main';
 let subScreenVal = '';
 
+// Default row/logo density: without a saved pref the body attribute was
+// never set, the row-height cap never applied, and fresh boards rendered
+// ~90px rows (Nick: 'rows are much bigger than they used to be').
+try { if (document.body && !document.body.dataset.fidsLogoSize) document.body.dataset.fidsLogoSize = 'medium'; } catch (e) {}
+
 let gateControlsHideTimer = null;
 function scheduleGateControlsAutoHide() {
   if (gateControlsHideTimer) clearTimeout(gateControlsHideTimer);
@@ -3779,6 +3784,12 @@ function g8LogoFail(img) {
 }
 
 // Operating carrier for regional flights
+// Québec-province airports show FRENCH FIRST on every bilingual pair
+// (Nick — OQLF convention: 'anything in Quebec, French first then English').
+function frFirstAirport(iata) {
+  return /^(YUL|YQB|YHU|YMX|YMY|YBG|YVO|YZV|YUY|YGP|YGL|YGW|YKQ|YPX|YVP|YHR|YNA|YBC|YTF|AKV|YIK|YZG|YQC|YHA|YKG|XGR)$/.test(String(iata || '').toUpperCase());
+}
+
 function getAirlineAccent(code) {
   var c = String(code || '').toUpperCase();
   // AIRLINE_BRAND carries accents for carriers the accent map never got
@@ -5243,6 +5254,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
 };
 
 function _buildV2AircraftCol(ctx, vars) {
+  var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
   var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
   var iata = vars.iata, tz = vars.tz, locIata = vars.locIata;
   var _inbOperating = vars._inbOperating;
@@ -5479,7 +5491,7 @@ function _buildV2AircraftCol(ctx, vars) {
     if (_fiFlightNo || _fiDep || _fiArr || _fiBrd || _fiStLbl) {
       var _svgClock = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
       var _svgDepart = '<span class=\"ac-ico ac-ico-depart"></span>';
-      var _svgArrive = '<span class=\"ac-ico ac-ico-time"></span>';
+      var _svgArrive = '<span class=\"ac-ico ac-ico-landing"></span>'; // landing plane, not a clock (Nick)
       // v222 — new left-rail panel icons (Nick's 6-panel spec).
       var _svgPlane = '<span class=\"ac-ico ac-ico-flight"></span>';
       var _svgGlobe = '<span class=\"ac-ico ac-ico-dest"></span>';
@@ -5585,13 +5597,16 @@ function _buildV2AircraftCol(ctx, vars) {
       function _shelf(icon, en, second, val, valCls) {
         // v223 — Nick's exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
-        var _sec = (second && second !== en)
-          ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + second + '</span>'
+        // Québec airports: French first on every pair (Nick).
+        var _p1 = en, _p2 = second;
+        if (_frF && second && second !== en) { _p1 = second; _p2 = en; }
+        var _sec = (_p2 && _p2 !== _p1)
+          ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
         return '<div class="v2-fi-row">'
           + '<div class="v2-fi-iconcol">' + icon + '</div>'
           + '<div class="v2-fi-textcol">'
-          +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + en + '</span>' + _sec + '</div>'
+          +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
           + '</div>'
           + '</div>';
@@ -5662,7 +5677,9 @@ function _buildV2AircraftCol(ctx, vars) {
         if (_ss) {
           var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
           // Status STACKED — EN over FR (per Nick).
-          _stBiling = '<span class="v2-fi-st2">' + _enTC + '</span><span class="v2-fi-st2">' + _ss.fr + '</span>';
+          _stBiling = _frF
+            ? '<span class="v2-fi-st2">' + _ss.fr + '</span><span class="v2-fi-st2">' + _enTC + '</span>'
+            : '<span class="v2-fi-st2">' + _enTC + '</span><span class="v2-fi-st2">' + _ss.fr + '</span>';
         }
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
@@ -5713,6 +5730,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
 // ─── V2 MAP COLUMN BUILDER ────────────────────────────────────────────────
 function _buildV2MapCol(ctx, vars) {
+  var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
   // Live telemetry (window cache, scoped to current airport)
   var _liveSpd = null, _liveAlt = null;
   try {
@@ -6039,22 +6057,26 @@ function _buildV2MapCol(ctx, vars) {
         }
         _ibArrRowHtml =
             '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-          +   '<div class="v2-rc-fi-tlbl"><span>' + _ibArrLblEn + '</span><span>' + _ibArrLblFr + '</span></div>'
+          +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
           +   '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>'
           + '</div>';
       }
+      // Shelf-level t4 marker too: the shelf is flex-locked to 1/6 of the
+      // rail (sized for 3 rows) and :has() is unusable on the older kiosk
+      // browsers, so CSS needs the class ON the shelf to widen its share
+      // when the Arrival row makes it 4 rows (Nick: 'capped out').
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table' + (_ibArrRowHtml ? ' v2-rc-fi-t4' : '') + '">'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table' + (_ibArrRowHtml ? ' v2-rc-fi-t4' : '') + '">'
         +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Flight</span><span>Vol</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>From</span><span>De</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow' + (_ibArrRowHtml ? '' : ' v2-rc-fi-trow-last') + '">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Status</span><span>Statut</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +   '</div>'
         +   _ibArrRowHtml
@@ -6156,15 +6178,15 @@ function _buildV2MapCol(ctx, vars) {
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table">'
         +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Flight</span><span>Vol</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Destination</span><span>À</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'À' : 'Destination') + '</span><span>' + (_frF ? 'Destination' : 'À') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Status</span><span>Statut</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
         +   '</div>'
         + '</div></div>';
@@ -6507,7 +6529,7 @@ function _buildV2MapCol(ctx, vars) {
       '<div class="v2-rc-shelf v2-rc-shelf-map">'
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
-    +     '<div class="v2-rc-maptitle">Your Aircraft <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">Votre Avion</span></div>'
+    +     '<div class="v2-rc-maptitle">' + (_frF ? 'Votre Avion' : 'Your Aircraft') + ' <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">' + (_frF ? 'Your Aircraft' : 'Votre Avion') + '</span></div>'
     +     _telemBar
     +   '</div>'
     + '</div>';
@@ -6540,8 +6562,12 @@ function _buildV2MapCol(ctx, vars) {
   var _rcHtml = '';
   _rcOrderToUse.forEach(function(id) { _rcHtml += (_rcBlockMap[id] || ''); });
 
+  // fi4 marker on the CONTAINER too: the rail is a locked 6-equal-row grid
+  // and row 4 (flight info) needs a bigger track when the Arrival row makes
+  // the table 4 rows — :has() is silently dropped on the kiosk browsers.
+  var _railFi4 = _rcHtml.indexOf('v2-rc-shelf-fi4') >= 0 ? ' gad-map-col-fi4' : '';
   return ''
-    + '<div class="gad-map-col-v2" style="display:flex;flex-direction:column;flex:0 0 25%;min-width:0;">'
+    + '<div class="gad-map-col-v2' + _railFi4 + '" style="display:flex;flex-direction:column;flex:0 0 25%;min-width:0;">'
     +   _rcHtml
     + '</div>';
 }
@@ -6554,6 +6580,8 @@ function uxgGateHtml(ctx) {
   const _hdr2nd = (typeof boardLangsFor === 'function' ? (boardLangsFor(iata)[1] || 'fr') : 'fr');
   const _flightLbl2 = ({fr:'Vol', es:'Vuelo', en:'Flight', de:'Flug', it:'Volo', pt:'Voo'})[_hdr2nd] || 'Vol';
   const _gateLbl2 = ({fr:'Porte', es:'Puerta', en:'Gate', de:'Gate', it:'Uscita', pt:'Porta'})[_hdr2nd] || 'Porte';
+  // Québec airports: French first on every bilingual pair (Nick).
+  const _frF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
   const _flightNumDisp = (String(currentFlight.flight || '').replace(/^[A-Za-z]+\s*/, '').trim()) || String(currentFlight.flight || '');
   const locale = uxgLocaleCode();
   // Short display names for the top banner — long names (NEW YORK KENNEDY) get
@@ -6767,7 +6795,9 @@ function uxgGateHtml(ctx) {
     // boarding. Please proceed to gate X.' strip is redundant (Nick).
     r3Left = '';
   } else if (showCountdown) {
-    r3Left = TL('boardApprox') + ' ' + minsToBoard + ' ' + (minsToBoard!==1?TL('minutes').toLowerCase():TL('minute').toLowerCase()) + '.';
+    // Countdown takeover already shows the big timer — the 'will board in
+    // approximately X minutes' strip duplicated it (Nick).
+    r3Left = '';
   } else if (minsToDep <= (boardLeadMins + 55) && minsToDep > (boardLeadMins + 25)) {
     r3Left = TL('willBoardIn') + ' ' + minsToBoard + ' ' + (minsToBoard!==1?TL('minutes').toLowerCase():TL('minute').toLowerCase()) + '.';
   }
@@ -7013,7 +7043,7 @@ function uxgGateHtml(ctx) {
     var _bwStar = starHtml ? starHtml.replace('StarGray-bright-text.svg', 'StarGray.svg') : '';
     return '<div class="g8-board-welcome">'
       + (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="g8-bw-text">Welcome <span class="g8-bw-sep">\u00b7</span> Bienvenue</div>'
+      + '<div class="g8-bw-text">' + (_frF ? 'Bienvenue' : 'Welcome') + ' <span class="g8-bw-sep">\u00b7</span> ' + (_frF ? 'Welcome' : 'Bienvenue') + '</div>'
       + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
       + '</div>';
   }
@@ -7026,18 +7056,33 @@ function uxgGateHtml(ctx) {
   function _boardInfoRowHtml(statusKey) {
     var _bDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
     var _stP = (typeof SS !== 'undefined' && SS[statusKey]) ? SS[statusKey] : null;
+    // Status VALUE carries its state colour like the vertical rail
+    // (green on-time, orange delayed... — Nick: 'the horizontal status
+    // doesn't change').
+    var _stK = String(statusKey || '').toLowerCase();
+    var _stCls = /delay/.test(_stK) ? ' g8-bir-st-delayed'
+      : /cancel/.test(_stK) ? ' g8-bir-st-cancelled'
+      : /final|closed|depart/.test(_stK) ? ' g8-bir-st-final'
+      : /board/.test(_stK) ? ' g8-bir-st-boarding'
+      : /ontime|early|scheduled/.test(_stK) ? ' g8-bir-st-ok' : '';
     // EN and FR each get their OWN line — free wrapping let 'Gate closed |
     // Porte fermée' break into four giant lines and balloon the whole row.
-    var _stTxt = _stP ? ('<span class="g8-bir-st2">' + _stP.en + '</span><span class="g8-bir-st2">' + _stP.fr + '</span>') : '';
+    var _stTxt = _stP
+      ? (_frF
+          ? '<span class="g8-bir-st2">' + _stP.fr + '</span><span class="g8-bir-st2">' + _stP.en + '</span>'
+          : '<span class="g8-bir-st2">' + _stP.en + '</span><span class="g8-bir-st2">' + _stP.fr + '</span>')
+      : '';
     // Flair brand palette (Nick): airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
     var _birF8 = (airlineCode === 'F8');
     var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"' : '';
-    function _cell(icon, en, fr, val) {
+    function _cell(icon, en, fr, val, noswap) {
+      var _t1 = en, _t2 = fr;
+      if (_frF && !noswap && fr && fr !== en) { _t1 = fr; _t2 = en; }
       return '<div class="g8-bir-cell">'
         + '<div class="g8-bir-badge"' + _birBadgeStyle + '><span class="ac-ico ' + icon + '"></span></div>'
         + '<div class="g8-bir-text">'
-        +   '<div class="g8-bir-title">' + en + (fr && fr !== en ? ' <span class="g8-bir-sep">|</span> ' + fr : '') + '</div>'
+        +   '<div class="g8-bir-title">' + _t1 + (_t2 && _t2 !== _t1 ? ' <span class="g8-bir-sep">|</span> ' + _t2 : '') + '</div>'
         +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
@@ -7056,14 +7101,26 @@ function uxgGateHtml(ctx) {
           ? '<div class="g8-bir-cell">'
             + _birFlightBadge
             + '<div class="g8-bir-text">'
-            +   '<div class="g8-bir-title">Flight <span class="g8-bir-sep">|</span> Vol</div>'
+            +   '<div class="g8-bir-title">' + (_frF ? 'Vol' : 'Flight') + ' <span class="g8-bir-sep">|</span> ' + (_frF ? 'Flight' : 'Vol') + '</div>'
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
           : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
-      + _cell('ac-ico-dest', 'Destination', '', _bDest + (locIata ? ' <span class="g8-bir-code">(' + locIata + ')</span>' : ''))
+      + _cell('ac-ico-dest', 'Destination', (locIata ? '<span class="g8-bir-code-t">' + locIata + '</span>' : ''), _bDest, true)
       + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', boardTimeHtml)
       + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', depTimeHtml)
-      + _cell('ac-ico-status', 'Status', 'Statut', _stTxt)
+      + _cell('ac-ico-status', 'Status', 'Statut', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
+      + '</div>';
+  }
+
+  // AC-family lane board per the printed signs (Nick): quarter BLACK
+  // (Zone 1 \u2192 Lane 1), quarter RED (Zone 2 \u2192 Lane 2) \u2014 priority, shown
+  // at ALL times \u2014 and the right HALF as the called-zones sign ("Zones"
+  // 3 \u2022 4 \u2022 5 \u2022 6, also Lane 2).
+  function _acLanesBodyHtml(zonesVal) {
+    return '<div class="g8-board-body g8-lanes3">'
+      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">Zones</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
       + '</div>';
   }
 
@@ -7072,7 +7129,7 @@ function uxgGateHtml(ctx) {
   if (boardActive) {
     var lateBoarding = minsToDep <= 18;
     var _grpLbl = TL('groupLabel');
-    var nowVal, nextVal;
+    var nowVal, nextVal, _acZonesVal = '';
     if (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK') {
       // Air Canada family boards by ZONE (Nick, per AC's published policy):
       // priority Zones 1•2 first, then general boarding Zone 3, then Zones
@@ -7087,33 +7144,44 @@ function uxgGateHtml(ctx) {
              return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
            })();
       _grpLbl = 'Zone';
-      // Lane model per the physical AC gate signs (Nick): BLACK lane 1 is
-      // Zone 1, RED lane 2 is everyone else. Zones 1 and 2 board at all
-      // times; 3-6 are called by number as boarding progresses.
-      nowVal = '1';
-      if (lateBoarding) {
-        nextVal = _acExpress ? '2 \u2022 3 \u2022 4' : '2 \u2022 3 \u2022 4 \u2022 5 \u2022 6';
-      } else {
-        nextVal = '2 \u2022 3';
-      }
+      // Lane model per the physical AC gate signs (Nick): priority Zones 1
+      // (black, Lane 1) and 2 (red, Lane 2) get their own quarter panels AT
+      // ALL TIMES; the right half is the called-zones sign (3, then up to
+      // 4 \u2022 5 \u2022 6 \u2014 Express tops out at 4).
+      nowVal = '1'; nextVal = '2';
+      // Zones are called ONE AT A TIME — 3, then 4, then 5, then 6 as
+      // departure approaches (Nick). Express tops out at Zone 4.
+      var _zStep;
+      if (minsToDep > 18) _zStep = 3;
+      else if (_acExpress) _zStep = 4;
+      else if (minsToDep > 13) _zStep = 4;
+      else if (minsToDep > 8) _zStep = 5;
+      else _zStep = 6;
+      _acZonesVal = String(_zStep);
     } else if (airlineCode === 'WS' || airlineCode === 'WR') {
-      // WestJet boards by ZONE (Nick, per WestJet's published system and the
-      // gate signage): Zone 1 premium / top tier, Zone 2 Extended Comfort,
-      // Zones 3-8 general back-to-front, Zone 9 UltraBasic last.
+      // WestJet \u2014 SAME lane-sign model as the AC gate sign (Nick, more than
+      // once: 'zones 1 and 2 is 2 lanes ALL THE TIME, it's priority; zones
+      // 3 to 8 is also 2 lanes, by number'). Priority Zones 1 (Lane 1) and
+      // 2 (Lane 2) hold their quarter panels for the whole boarding \u2014 they
+      // are never a now/next step. The right half calls Zones 3-8 ONE AT A
+      // TIME through Lanes 3\u20224 as departure approaches. Zone 9 (UltraBasic)
+      // rides the final call, not the zones sign.
       _grpLbl = 'Zone';
-      if (lateBoarding) {
-        nowVal = '3 \u2013 8';
-        nextVal = '9';
-      } else {
-        nowVal = '1 \u2022 2';
-        nextVal = '3 \u2013 8';
-      }
+      nowVal = '1'; nextVal = '2';
+      var _wzStep;
+      if (minsToDep > 18) _wzStep = 3;
+      else if (minsToDep > 15) _wzStep = 4;
+      else if (minsToDep > 12) _wzStep = 5;
+      else if (minsToDep > 10) _wzStep = 6;
+      else if (minsToDep > 8) _wzStep = 7;
+      else _wzStep = 8;
+      _acZonesVal = String(_wzStep);
     } else if (airlineCode === 'PD') {
       // Porter boards by ROW NUMBER, back to front (Nick). Row count by
       // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
       var _pdRows = /DH4|DH8|Q400|DASH/i.test(String(equipRaw || '')) ? 20 : 29;
       var _pdBand = Math.ceil(_pdRows / 3);
-      _grpLbl = 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
+      _grpLbl = _frF ? 'Rang\u00e9es <span class="g8-bir-sep">|</span> Rows' : 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
       if (lateBoarding) {
         nowVal = '1\u2013' + _pdBand;
         nextVal = '\u2014';
@@ -7126,21 +7194,27 @@ function uxgGateHtml(ctx) {
       if (lateBoarding) { nowVal = zones - 1; nextVal = zones; }
       else { nowVal = 1; nextVal = 2; }
     }
-    // AC-family lane mode mirrors the printed sign exactly: no now/next
-    // header row, no label over the black "1", and the red side titled
-    // "Zones" (Nick's design picture).
-    var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK');
+    // Lane-sign mode mirrors the printed sign exactly: no now/next
+    // header row, no label over the "1" quarter, and the right side titled
+    // "Zones" (Nick's design picture). WestJet uses the same sign model
+    // (confirmed by Nick), inheriting its own brand colours via the
+    // banner-bg/accent vars.
+    var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK'
+                    || airlineCode === 'WS' || airlineCode === 'WR');
     var _nowLbl = _acLanes ? '' : _grpLbl;
     var _nextLbl = _acLanes ? 'Zones' : _grpLbl;
     var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>';
     boardHtml = '<div class="g8-board active">'
       + _boardInfoRowHtml('boarding')
       + _boardWelcomeStripHtml()
-      + _bHdr
-      + '<div class="g8-board-body">'
-      + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-      + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
-      + '</div></div>';
+      + (_acLanes
+          ? _acLanesBodyHtml(_acZonesVal)
+          : _bHdr
+            + '<div class="g8-board-body">'
+            + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+            + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+            + '</div>')
+      + '</div>';
   }
 
   // Build final call HTML
@@ -7168,18 +7242,21 @@ function uxgGateHtml(ctx) {
              return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
            })();
       var _fcNext, _fcNextLbl = 'Zones';
-      if (_fcAcFam) _fcNext = _fcExpress ? '2 • 3 • 4' : '2 • 3 • 4 • 5 • 6';
-      else if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
-      else if (airlineCode === 'PD') { _fcNextLbl = 'Rows <span class="g8-bir-sep">|</span> Rangées'; _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes'; }
-      else _fcNext = 'All <span class="g8-bir-sep">|</span> Toutes';
+      if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
+      else if (airlineCode === 'PD') { _fcNextLbl = _frF ? 'Rang\u00e9es <span class="g8-bir-sep">|</span> Rows' : 'Rows <span class="g8-bir-sep">|</span> Rangées'; _fcNext = (_frF ? 'Toutes <span class="g8-bir-sep">|</span> All' : 'All <span class="g8-bir-sep">|</span> Toutes'); }
+      else _fcNext = (_frF ? 'Toutes <span class="g8-bir-sep">|</span> All' : 'All <span class="g8-bir-sep">|</span> Toutes');
+      // FINAL CALL replaces the Welcome strip (Nick) — one call-out where
+      // the welcome sat, more room for the lane panels below.
       finalHtml = '<div class="g8-final active">'
         + _boardInfoRowHtml('final')
-        + _boardWelcomeStripHtml()
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
-        + '<div class="g8-board-body">'
-        + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-        + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
-        + '</div></div>';
+        + (_fcAcFam
+          ? _acLanesBodyHtml(_fcExpress ? '3 • 4' : '3 • 4 • 5 • 6')
+          : '<div class="g8-board-body">'
+            + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+            + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+            + '</div>')
+        + '</div>';
     }
   }
 
@@ -7818,7 +7895,7 @@ function uxgGateHtml(ctx) {
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
             +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
             +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
-            +     'Time <span style="opacity:.6">|</span> Heure</span>'
+            +     (_frF ? 'Heure <span style="opacity:.6">|</span> Time' : 'Time <span style="opacity:.6">|</span> Heure') + '</span>'
             +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(36px,5.4vh,76px);font-weight:900;color:#fff;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
@@ -7829,7 +7906,7 @@ function uxgGateHtml(ctx) {
     // right screen edge so its skewed top-right corner can never expose a gap;
     // inner spans counter-skew +24° to stay upright.
     +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:' + (String(iata).toUpperCase() === 'YQM' ? '#D21034' : 'var(--airline-accent,#1aa)') + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
-    +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">Gate</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + _gateLbl2 + '</span></span>'
+    +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
     +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
     +   '</div>'
     + '</div>'
@@ -12543,6 +12620,12 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
+  // Regionals/internationals the map lacked — without an entry here the
+  // prefix-first branding can't recognize the code and a feed row marked
+  // AC carrying 3H802 branded as Air Canada (Nick).
+  '3H':'Air Inuit', 'YN':'Air Creebec', 'S4':'Azores Airlines',
+  'JV':'Bearskin Airlines', 'WT':'Wasaya Airways', 'YP':'Perimeter Aviation',
+  'MO':'Calm Air', '5T':'Canadian North', '4N':'Air North', 'BQ':'Pascan',
   'AC':'AIR CANADA',  'WS':'WESTJET', 'WG':'SUNWING',     'PD':'PORTER',      'F8':'FLAIR',
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
@@ -12673,6 +12756,7 @@ if (typeof window !== 'undefined') window.WORDMARK_OVERRIDE = WORDMARK_OVERRIDE;
 // Special case: PB (PAL Airlines, Newfoundland) uses Nick's custom design,
 // NOT PAL.svg from the pack (PAL.svg is Philippine Airlines).
 const IATA_TO_TILE_ICAO = {
+  'BF':'FBU',   // French Bee — tile on file but was never mapped (tiny external mark, Nick)
   // Canadian carriers
   'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // AC tile is the BLACK variant — Nick: 'its black normally' (red swap was a misread, reverted)
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
@@ -12727,7 +12811,9 @@ const IATA_TO_WORDMARK = {
   'F8':'flair',    // Flair — proper wordmark (their logo must NEVER render green, per brand policy)
   'QK':'jazz',     // Air Canada Jazz
   'RV':'air-canada',  // Air Canada Rouge → use AC wordmark
-  '3H':'air-canada',  // Air Inuit branded as AC for some routes
+  '3H':'airinuit',    // Air Inuit — its own brand; the old 'branded as
+                      // AC' alias painted real Air Inuit flights as Air
+                      // Canada (Nick: 'not sure thats an air canada flight')
   // US carriers
   'AA':'american',  'UA':'united',  'DL':'delta',
   'WN':'southwest',  'B6':'jetblue',
@@ -12746,7 +12832,9 @@ const IATA_TO_WORDMARK = {
   'BW':'caribbean',        // official raster brand art (no public vector) — served via WORDMARK_RASTER
   'LO':'lot',              // LOT Polish Airlines
   'VS':'virgin-atlantic',  // Virgin Atlantic
-  'TP':'tap-portugal',     // TAP Air Portugal
+  // 'TP' wordmark REMOVED — all three tap-portugal-wordmark-*.svg files
+  // use live <text> that overflows its canvas ('TAP Air Portuga', clipped
+  // mid-word on every machine without the font). Tile + text name instead.
   '4Y':'discover-airlines', // Discover Airlines (Lufthansa Group, IATA 4Y / ICAO OCN, ex-Eurowings Discover)
   // North America other
   'MX':'breeze-airways', // Breeze Airways (David Neeleman's airline, ICAO MXY)
@@ -12989,6 +13077,10 @@ const COLOR_WORDMARKS = {
 // brand PNGs — no public vector anywhere). Same variant semantics: 'light'
 // = white art for dark boards, 'dark' = colored art for light boards.
 const WORDMARK_RASTER = {
+  'airinuit': { light: '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg',
+                // NB: the '-black' file on disk is actually white fill — use
+                // the colour original for light rows.
+                dark:  '/logos/airlines/canadian-regional/airinuit.svg' },
   'caribbean': { light: '/logos/airlines/asian-other/caribbean-wordmark-light.png',
                  dark:  '/logos/airlines/asian-other/caribbean-wordmark-color.png' }
 };
@@ -13176,6 +13268,7 @@ const LS = {
   boardNow:  { en:'Boarding now',fr:'Embarquement en cours',es:'Embarcando ahora',de:'Jetzt Boarding',it:'Imbarco in corso',pt:'Embarque agora',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
   boardNext: { en:'Boarding next',fr:'Prochain embarquement',es:'Próximo embarque',de:'Nächstes Boarding',it:'Prossimo imbarco',pt:'Próximo embarque',ja:'次の搭乗',zh:'下一组登机',ar:'الصعود التالي' },
   group:     { en:'Group',fr:'Groupe',es:'Grupo',de:'Gruppe',it:'Gruppo',pt:'Grupo',ja:'グループ',zh:'组',ar:'المجموعة' },
+  useLanes:  { en:'Use Lanes',fr:'Utilisez les voies',es:'Use carriles',de:'Spuren nutzen',it:'Usa corsie',pt:'Use faixas',ja:'\u30ec\u30fc\u30f3',zh:'\u901a\u9053',ar:'\u0645\u0645\u0631\u0627\u062a' },
   useLane:   { en:'Use Lane',fr:'Utilisez la voie',es:'Use carril',de:'Spur nutzen',it:'Usa corsia',pt:'Use faixa',ja:'レーン',zh:'通道',ar:'استخدم الممر' },
   boardBegins:{ en:'Boarding begins in',fr:"L'embarquement commence dans",es:'El embarque comienza en',de:'Boarding beginnt in',it:"L'imbarco inizia tra",pt:'Embarque começa em',ja:'搭乗開始まで',zh:'登机开始倒计时',ar:'يبدأ الصعود خلال' },
   remainSeated:{ en:'Please remain seated until your zone is called',fr:'Veuillez rester assis jusqu\'à l\'appel de votre zone',es:'Por favor permanezca sentado hasta que llamen su zona',de:'Bitte bleiben Sie sitzen bis Ihre Zone aufgerufen wird',it:'Si prega di restare seduti fino alla chiamata della zona',pt:'Por favor permaneça sentado até sua zona ser chamada',ja:'ゾーンが呼ばれるまでお待ちください',zh:'请在座位上等待登机区域呼叫',ar:'يرجى البقاء جالساً حتى يتم استدعاء منطقتك' },
@@ -13603,7 +13696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22185';
+var FIDS_BUILD_TAG = 'v22200';
 (function(){
   try {
     function _addTag(){
@@ -13967,6 +14060,34 @@ let _renderBlocked = false;
 function blockRender() { _renderBlocked = true; clearTimeout(_renderBlockTimer); _renderBlockTimer = setTimeout(() => { _renderBlocked = false; render(); }, 3000); }
 let _renderBlockTimer = null;
 
+// Vertical space actually available for BOARD ROWS, from real geometry:
+// the table's own top (absorbs whatever is above it right now — banner
+// shown or hidden, slim thead, menubar) down to the ticker's real top.
+// The old `content-area height - thead height` estimate overcounted when
+// the chrome above the table shifted, and the last row rendered half-cut
+// behind the ticker (Nick: 'big no no it cuts at the end'). Used by BOTH
+// render() and getPageCount() so paging and painting always agree.
+function _fidsRowsAvail() {
+  var _fallback = (document.querySelector('.content-area')?.offsetHeight || 600)
+                - (document.querySelector('thead')?.offsetHeight || 30);
+  try {
+    var tbl = document.getElementById('fidsTable');
+    if (!tbl || !tbl.getBoundingClientRect) return _fallback;
+    var top = tbl.getBoundingClientRect().top;
+    var theadH = document.querySelector('#fidsTable thead')?.offsetHeight || 30;
+    var bottom;
+    var tk = document.querySelector('.ticker');
+    if (tk && tk.offsetHeight && getComputedStyle(tk).display !== 'none') {
+      bottom = tk.getBoundingClientRect().top;
+    } else {
+      var ca = document.querySelector('.content-area');
+      bottom = ca ? ca.getBoundingClientRect().bottom : window.innerHeight;
+    }
+    var avail = bottom - top - theadH - 2; // 2px slack — never split a row
+    return (avail > 100) ? avail : _fallback;
+  } catch (e) { return _fallback; }
+}
+
 function render() {
   if (_renderBlocked) return;
   // Reset diagnostic flag so we get fresh hidePrefix log each render
@@ -14123,16 +14244,15 @@ function render() {
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
   } catch (e) {}
 
-  const contentH = document.querySelector('.content-area')?.offsetHeight || 600;
-  const theadH   = document.querySelector('thead')?.offsetHeight || 30;
   // Measure the real rendered row height — themes vary it (58-66px). The old
   // hardcoded 56 overcounted rows per page, clipping the last row mid-height.
   // A row must NEVER be cut: prefer the measured height, else the theme var,
-  // else a conservative 62.
+  // else a conservative 62. (Available height comes from _fidsRowsAvail() —
+  // real table-to-ticker geometry.)
   const _measuredRowH = document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
   const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
-  const available = contentH - theadH;
+  const available = _fidsRowsAvail();
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   const totalPages = Math.ceil(allFiltered.length / rowsPerPage);
 
@@ -14251,9 +14371,15 @@ function render() {
     // inline override also needs !important to win.
     // F8 (Flair): brand policy forbids their name/logo ever rendering in the
     // green accent — the text fallback stays the default row colour.
-    const _brandColor = (_airlineCodeForLogo === 'F8') ? ''
+    // EK (Emirates): red accent reads as an ALARM state on the board, not a
+    // brand (Nick: 'Emirates stands out, shouldn't be red') — row ink instead.
+    const _brandColor = (_airlineCodeForLogo === 'F8' || _airlineCodeForLogo === 'EK') ? ''
       : (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
-    const _nameStyle = _brandColor ? ` style="color:${_brandColor} !important;"` : '';
+    // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
+    // brand colours clash there (TAP green/red on yellow, Nick) and the
+    // inline !important would beat any stylesheet fix.
+    const _brandInkOk = !(isDelayed || stKey === 'final-call');
+    const _nameStyle = (_brandColor && _brandInkOk) ? ` style="color:${_brandColor} !important;"` : '';
     // onerror: RETRY once with a unique cache-buster before falling back to the
     // text name — a transient asset hiccup (or a stale cached 404) must not
     // permanently demote the wordmark to lettering on a display.
@@ -16412,9 +16538,16 @@ function mapADB(raw, mode) {
     const csStatus = String(f.codeshareStatus || '').toLowerCase();
     if (csStatus === 'iscodeshared') return null;
     let flight=(f.number||'—').trim().toUpperCase().replace(/\s+/g,'');
-    const fp=flight.replace(/[0-9].*/,'').trim();
+    // Digit-leading IATA codes (3H, 4N, 5T, 9M...) broke the old
+    // strip-from-first-digit parse — '3H802' yielded an empty prefix, so
+    // prefix-first branding never saw Air Inuit.
+    const _fpm = flight.match(/^([A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])(?=\d)/);
+    const fp = _fpm ? _fpm[0] : flight.replace(/[0-9].*/,'').trim();
     if(FILTER_OUT.has(fp))return null;
-    const airline=PARENT[code]||PARENT[fp]||code||fp;
+    // Brand by the flight-number PREFIX first — it's what passengers see.
+    // A feed row marked AC carrying number 3H802 (Air Inuit) must not
+    // brand as Air Canada (Nick). Affiliates still collapse via PARENT.
+    const airline = PARENT[fp] || (fp && AIRLINE_NAME[fp] ? fp : '') || PARENT[code] || code || fp;
     if(PARENT[fp])flight=flight.replace(fp,PARENT[fp]);
     // v194: Prefer our local AIRLINE_NAME mapping over the API's name field.
     // AeroDataBox often returns stale or incorrect names — for example, IATA
@@ -16422,7 +16555,7 @@ function mapADB(raw, mode) {
     // Discover Airlines in 2023. The API still sometimes returns "Yute Air".
     // Local map is authoritative; fall back to API only if we have no entry.
     const _apiName = (f.airline?.name||'').trim().toUpperCase();
-    const _localName = AIRLINE_NAME[code] || AIRLINE_NAME[fp] || '';
+    const _localName = AIRLINE_NAME[airline] || AIRLINE_NAME[code] || AIRLINE_NAME[fp] || '';
     const faAirlineName = _localName || _apiName;
     // Extract ACTUAL operating carrier from leg data (FIDS endpoint with withLeg=true)
     // f.departure.airline or f.arrival.airline = who physically operates it
@@ -16600,7 +16733,12 @@ function mapADB(raw, mode) {
           }
         }
       } else {
-        _belt = '1';
+        // No belt in the feed. At multi-terminal airports NEVER fabricate
+        // Carousel 1 (Nick: 'Montreal has more than 1 carousel') — an
+        // honest '—' beats sending a traveler to the wrong belt. Small
+        // single-terminal airports keep the '1' default (YQM precedent:
+        // synthesized beats blank there).
+        _belt = _MULTI_TERMINAL_AIRPORTS.has(_apForBelt) ? null : '1';
       }
     }
     const _checkIn = f.departure?.checkInDesk || null;
@@ -17274,8 +17412,6 @@ function getPageCount(modeKey) {
     return (f._sortTs - nowTs) <= LOOKAHEAD_HRS * 3600000;
   });
   const flights = applySearch([...departed, ...upcoming]);
-  const contentH = document.querySelector('.content-area')?.offsetHeight || 600;
-  const theadH   = document.querySelector('thead')?.offsetHeight || 30;
   // Measure the real rendered row height — themes vary it (58-66px). The old
   // hardcoded 56 overcounted rows per page, clipping the last row mid-height.
   // A row must NEVER be cut: prefer the measured height, else the theme var,
@@ -17283,7 +17419,7 @@ function getPageCount(modeKey) {
   const _measuredRowH = document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
   const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
-  const available = contentH - theadH;
+  const available = _fidsRowsAvail();
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   return Math.max(1, Math.ceil(flights.length / rowsPerPage));
 }
@@ -20091,7 +20227,9 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#080C14', adLayout:'left-scrim', headline:'Fast, free Wi-Fi', sub:'for Aeroplan Members', _customLogoVideo:'/logos/Backgrounds/AC/wifi-ac.mp4' },
   ],
   'WS': [
-    { bg:'linear-gradient(135deg,#00313c 0%,#00505c 100%)', headline:'WestJet Rewards', sub:'Earn WestJet dollars on every flight', logo:'/logos/airlines/canadian/westjet-2025/WestJet-Rewards-logo-colour.png' },
+    // NO headline — the logo IS the "WestJet Rewards" lockup; repeating it
+    // in type printed the name twice (Nick).
+    { bg:'linear-gradient(135deg,#00313c 0%,#00505c 100%)', headline:'', sub:'Earn WestJet dollars on every flight', logo:'/logos/airlines/canadian/westjet-2025/WestJet-Rewards-logo-colour.png' },
     { bg:'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 100%)', headline:'Free Starlink Wi-Fi', sub:'Stream & browse \u00b7 Powered by Starlink', logo:'/logos/symbols-utility/starlink.svg' },
   ],
   'PD': [
@@ -20100,13 +20238,13 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'Porter Reserve', sub:'Extra legroom \u00b7 Priority services on select fares', logo:'/logos/airlines/canadian/porter.svg' },
   ],
   'UA': [
-    { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn miles with United \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
+    { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn award miles \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
     { bg:'linear-gradient(135deg,#002244 0%,#003366 100%)', headline:'United Club', sub:'Relax before your flight \u00b7 Complimentary snacks & beverages', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
     { bg:'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 100%)', headline:'Free Wi-Fi', sub:'Stay connected with free Starlink Wi-Fi on every flight', logo:'/logos/symbols-utility/starlink.svg' },
     { bg:'linear-gradient(135deg,#003580 0%,#0057b8 100%)', headline:'United App', sub:'Mobile boarding pass \u00b7 Real-time flight updates', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
   ],
   'DL': [
-    { bg:'linear-gradient(135deg,#003366 0%,#00274d 100%)', headline:'SkyMiles', sub:'Earn miles on Delta \u00b7 Free Wi-Fi on every flight', logo:'/logos/airlines/us-major/delta.svg' },
+    { bg:'linear-gradient(135deg,#003366 0%,#00274d 100%)', headline:'SkyMiles', sub:'Earn miles on every flight \u00b7 Free Wi-Fi on board', logo:'/logos/airlines/us-major/delta.svg' },
   ],
   'AA': [
     // Finished creative \u2014 americanbackground.png is a complete ad (branding +
@@ -20114,34 +20252,38 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#ffffff', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'center', bgFit:'contain', imageOnly:true },
   ],
   'WN': [
-    { bg:'linear-gradient(135deg,#c8102e 0%,#a00d1a 100%)', headline:'Rapid Rewards', sub:'Earn points on every Southwest flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/southwest.svg' },
+    { bg:'linear-gradient(135deg,#c8102e 0%,#a00d1a 100%)', headline:'Rapid Rewards', sub:'Earn points on every flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/southwest.svg' },
   ],
   'AS': [
-    { bg:'linear-gradient(135deg,#01426A 0%,#003d5c 100%)', headline:'Mileage Plan', sub:'Earn miles with Alaska Airlines \u00b7 Oneworld Alliance', logo:'/logos/airlines/us-major/alaska-airlines.svg' },
+    { bg:'linear-gradient(135deg,#01426A 0%,#003d5c 100%)', headline:'Mileage Plan', sub:'Earn miles on every flight \u00b7 Oneworld Alliance', logo:'/logos/airlines/us-major/alaska-airlines.svg' },
   ],
   'B6': [
-    { bg:'linear-gradient(135deg,#003876 0%,#002a5c 100%)', headline:'TrueBlue', sub:'Earn points on every JetBlue flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/jetblue.svg' },
+    { bg:'linear-gradient(135deg,#003876 0%,#002a5c 100%)', headline:'TrueBlue', sub:'Earn points on every flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/jetblue.svg' },
   ],
   'LH': [
     // lufthansa.svg has a baked-in white background rect \u2014 under the
     // white-invert filter it rendered as a solid white square (Nick). The
     // monochrome lockup is transparent-background and filters cleanly.
-    { bg:'linear-gradient(135deg,#05164D 0%,#0a2470 100%)', headline:'Miles & More', sub:'Earn award miles with Lufthansa \u00b7 Star Alliance', logo:'/logos/airlines/european/Lufthansa_Logo_2018-monochrome-white.svg' },
+    { bg:'linear-gradient(135deg,#05164D 0%,#0a2470 100%)', headline:'Miles & More', sub:'Earn award miles \u00b7 Star Alliance', logo:'/logos/airlines/european/Lufthansa_Logo_2018-monochrome-white.svg' },
   ],
   'AF': [
-    { bg:'linear-gradient(135deg,#002157 0%,#003380 100%)', headline:'Flying Blue', sub:'Earn miles with Air France \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/air-france.svg' },
+    { bg:'linear-gradient(135deg,#002157 0%,#003380 100%)', headline:'Flying Blue', sub:'Earn award miles \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/air-france.svg' },
   ],
   'BA': [
-    { bg:'linear-gradient(135deg,#2E5DA4 0%,#1a4a8a 100%)', headline:'Executive Club', sub:'Earn Avios points with British Airways \u00b7 Oneworld', logo:'/logos/airlines/european/british-airways-wordmark-light.svg' },
+    { bg:'linear-gradient(135deg,#2E5DA4 0%,#1a4a8a 100%)', headline:'Executive Club', sub:'Earn Avios points \u00b7 Oneworld Alliance', logo:'/logos/airlines/european/british-airways-wordmark-light.svg' },
   ],
   'FI': [
-    { bg:'linear-gradient(135deg,#001B71 0%,#0a2f9e 100%)', headline:'Saga Club', sub:'Earn Saga Points with Icelandair', logo:'/logos/airlines/european/icelandair-wordmark-light.svg' },
+    { bg:'linear-gradient(135deg,#001B71 0%,#0a2f9e 100%)', headline:'Saga Club', sub:'Earn Saga Points on every flight', logo:'/logos/airlines/european/icelandair-wordmark-light.svg' },
   ],
   'BW': [
-    { bg:'linear-gradient(135deg,#5E2554 0%,#AA4399 100%)', headline:'Caribbean Miles', sub:'Earn miles with Caribbean Airlines', logo:'/logos/airlines/asian-other/caribbean-wordmark-light.png' },
+    // Sub must not repeat "Caribbean Airlines" — the wordmark logo above
+    // already says it (Nick: name shown twice).
+    { bg:'linear-gradient(135deg,#5E2554 0%,#AA4399 100%)', headline:'Caribbean Miles', sub:'Earn miles on every flight', logo:'/logos/airlines/asian-other/caribbean-wordmark-light.png' },
   ],
   'TS': [
-    { bg:'linear-gradient(135deg,#002868 0%,#004090 100%)', headline:'Air Transat', sub:'Your vacation starts the moment you board', logo:'/logos/airlines/canadian/transat.svg' },
+    // NO headline — the logo is the "Air transat" wordmark; the headline
+    // duplicated the airline name under it (Nick).
+    { bg:'linear-gradient(135deg,#002868 0%,#004090 100%)', headline:'', sub:'Your vacation starts the moment you board', logo:'/logos/airlines/canadian/transat.svg' },
   ],
   'F8': [
     // Brand-true: black lockup on Flair lime. NO text headline — the lockup
@@ -20150,13 +20292,13 @@ var GATE_ADS_BY_AIRLINE = {
   ],
   // NK (Spirit) ad block removed — ceased operations May 2 2026
   'HA': [
-    { bg:'linear-gradient(135deg,#4B2D89 0%,#CE0C88 100%)', headline:'HawaiianMiles', sub:'Earn miles to paradise \u00b7 Hawaiian Airlines', logo:'/logos/airlines/us-major/Hawaiian.svg' },
+    { bg:'linear-gradient(135deg,#4B2D89 0%,#CE0C88 100%)', headline:'HawaiianMiles', sub:'Earn miles to paradise', logo:'/logos/airlines/us-major/Hawaiian.svg' },
   ],
   'KL': [
-    { bg:'linear-gradient(135deg,#00A1DE 0%,#0077b3 100%)', headline:'Flying Blue', sub:'Earn miles with KLM \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/klm.png' },
+    { bg:'linear-gradient(135deg,#00A1DE 0%,#0077b3 100%)', headline:'Flying Blue', sub:'Earn award miles \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/klm.png' },
   ],
   'QF': [
-    { bg:'linear-gradient(135deg,#BE0000 0%,#8a0000 100%)', headline:'Qantas Frequent Flyer', sub:'Earn points with Qantas \u00b7 Oneworld Alliance', logo:'/logos/airlines/asian-other/qantas.png' },
+    { bg:'linear-gradient(135deg,#BE0000 0%,#8a0000 100%)', headline:'Frequent Flyer', sub:'Earn points on every flight \u00b7 Oneworld Alliance', logo:'/logos/airlines/asian-other/qantas.png' },
   ],
   '_default': []
 };
@@ -21152,6 +21294,17 @@ var AD_I18N = {
 
   // ── QF ──
   'Earn points with Qantas \u00b7 Oneworld Alliance': { fr:'Points Qantas · Alliance Oneworld', es:'Puntos con Qantas · Alianza Oneworld', de:'Punkte mit Qantas · Oneworld-Allianz', it:'Punti con Qantas · Alleanza Oneworld', pt:'Pontos com a Qantas · Aliança Oneworld', ja:'Qantasでポイント · ワンワールド', zh:'Qantas 累积积分 · 寰宇一家', ar:'نقاط مع Qantas · تحالف وان وورلد' },
+
+  // ── De-duplicated house-ad subs (logo carries the airline name) ──
+  'Earn award miles \u00b7 Star Alliance': { fr:'Milles primes \u00b7 Star Alliance', es:'Millas premio \u00b7 Star Alliance', de:'Pr\u00e4mienmeilen \u00b7 Star Alliance', it:'Miglia premio \u00b7 Star Alliance', pt:'Milhas-pr\u00eamio \u00b7 Star Alliance', ja:'\u7279\u5178\u30de\u30a4\u30eb \u00b7 \u30b9\u30bf\u30fc\u30a2\u30e9\u30a4\u30a2\u30f3\u30b9', zh:'\u5956\u52b1\u91cc\u7a0b \u00b7 \u661f\u7a7a\u8054\u76df', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0643\u0627\u0641\u0622\u062a \u00b7 \u0633\u062a\u0627\u0631 \u0623\u0644\u064a\u0627\u0646\u0633' },
+  'Earn award miles \u00b7 SkyTeam Alliance': { fr:'Milles primes \u00b7 SkyTeam', es:'Millas premio \u00b7 SkyTeam', de:'Pr\u00e4mienmeilen \u00b7 SkyTeam', it:'Miglia premio \u00b7 SkyTeam', pt:'Milhas-pr\u00eamio \u00b7 SkyTeam', ja:'\u7279\u5178\u30de\u30a4\u30eb \u00b7 \u30b9\u30ab\u30a4\u30c1\u30fc\u30e0', zh:'\u5956\u52b1\u91cc\u7a0b \u00b7 \u5929\u5408\u8054\u76df', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0643\u0627\u0641\u0622\u062a \u00b7 \u0633\u0643\u0627\u064a \u062a\u064a\u0645' },
+  'Earn points on every flight \u00b7 No blackout dates': { fr:"Points \u00e0 chaque vol \u00b7 Sans dates d'exclusion", es:'Puntos en cada vuelo \u00b7 Sin fechas restringidas', de:'Punkte bei jedem Flug \u00b7 Keine Sperrtermine', it:'Punti ad ogni volo \u00b7 Nessuna data di blackout', pt:'Pontos em cada voo \u00b7 Sem datas restritas', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30dd\u30a4\u30f3\u30c8 \u00b7 \u30d6\u30e9\u30c3\u30af\u30a2\u30a6\u30c8\u306a\u3057', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u79ef\u5206 \u00b7 \u65e0\u7981\u7528\u65e5\u671f', ar:'\u0646\u0642\u0627\u0637 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629 \u00b7 \u0628\u062f\u0648\u0646 \u062a\u0648\u0627\u0631\u064a\u062e \u0645\u062d\u0638\u0648\u0631\u0629' },
+  'Earn miles on every flight \u00b7 Oneworld Alliance': { fr:'Milles \u00e0 chaque vol \u00b7 Alliance Oneworld', es:'Millas en cada vuelo \u00b7 Alianza Oneworld', de:'Meilen bei jedem Flug \u00b7 Oneworld-Allianz', it:'Miglia ad ogni volo \u00b7 Alleanza Oneworld', pt:'Milhas em cada voo \u00b7 Alian\u00e7a Oneworld', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30de\u30a4\u30eb \u00b7 \u30ef\u30f3\u30ef\u30fc\u30eb\u30c9', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u91cc\u7a0b \u00b7 \u5bf0\u5b87\u4e00\u5bb6', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629 \u00b7 \u0648\u0627\u0646 \u0648\u0648\u0631\u0644\u062f' },
+  'Earn points on every flight \u00b7 Oneworld Alliance': { fr:'Points \u00e0 chaque vol \u00b7 Alliance Oneworld', es:'Puntos en cada vuelo \u00b7 Alianza Oneworld', de:'Punkte bei jedem Flug \u00b7 Oneworld-Allianz', it:'Punti ad ogni volo \u00b7 Alleanza Oneworld', pt:'Pontos em cada voo \u00b7 Alian\u00e7a Oneworld', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30dd\u30a4\u30f3\u30c8 \u00b7 \u30ef\u30f3\u30ef\u30fc\u30eb\u30c9', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u79ef\u5206 \u00b7 \u5bf0\u5b87\u4e00\u5bb6', ar:'\u0646\u0642\u0627\u0637 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629 \u00b7 \u0648\u0627\u0646 \u0648\u0648\u0631\u0644\u062f' },
+  'Earn miles on every flight \u00b7 Free Wi-Fi on board': { fr:'Milles \u00e0 chaque vol \u00b7 Wi-Fi gratuit \u00e0 bord', es:'Millas en cada vuelo \u00b7 Wi-Fi gratis a bordo', de:'Meilen bei jedem Flug \u00b7 Kostenloses WLAN an Bord', it:'Miglia ad ogni volo \u00b7 Wi-Fi gratuito a bordo', pt:'Milhas em cada voo \u00b7 Wi-Fi gr\u00e1tis a bordo', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30de\u30a4\u30eb \u00b7 \u6a5f\u5185\u7121\u6599Wi-Fi', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u91cc\u7a0b \u00b7 \u673a\u4e0a\u514d\u8d39Wi-Fi', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629 \u00b7 \u0648\u0627\u064a \u0641\u0627\u064a \u0645\u062c\u0627\u0646\u064a' },
+  'Earn miles on every flight': { fr:'Milles \u00e0 chaque vol', es:'Millas en cada vuelo', de:'Meilen bei jedem Flug', it:'Miglia ad ogni volo', pt:'Milhas em cada voo', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30de\u30a4\u30eb', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u91cc\u7a0b', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629' },
+  'Earn Saga Points on every flight': { fr:'Points Saga \u00e0 chaque vol', es:'Puntos Saga en cada vuelo', de:'Saga-Punkte bei jedem Flug', it:'Punti Saga ad ogni volo', pt:'Pontos Saga em cada voo', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067Saga\u30dd\u30a4\u30f3\u30c8', zh:'\u6bcf\u6b21\u98de\u884c\u8d5aSaga\u79ef\u5206', ar:'\u0646\u0642\u0627\u0637 Saga \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629' },
+  'Earn miles to paradise': { fr:'Milles vers le paradis', es:'Millas al para\u00edso', de:'Meilen ins Paradies', it:'Miglia per il paradiso', pt:'Milhas para o para\u00edso', ja:'\u697d\u5712\u3078\u306e\u30de\u30a4\u30eb', zh:'\u98de\u5f80\u5929\u5802\u7684\u91cc\u7a0b', ar:'\u0623\u0645\u064a\u0627\u0644 \u0625\u0644\u0649 \u0627\u0644\u062c\u0646\u0629' },
 
   // ── Generic city-aware ads ──
   'Book your hotel in {CITY}':        { fr:'Réservez votre hôtel à {CITY}', es:'Reserve su hotel en {CITY}', de:'Hotel in {CITY} buchen', it:'Prenota il tuo hotel a {CITY}', pt:'Reserve seu hotel em {CITY}', ja:'{CITY}のホテル予約', zh:'预订{CITY}的酒店', ar:'احجز فندقك في {CITY}' },
@@ -22263,12 +22416,22 @@ function buildGateAdHtml(ad) {
   // need dark copy; default stays white-on-dark.
   var _stdFg = ad.fg || '#fff';
   var _stdSubFg = ad.subFg || 'rgba(255,255,255,0.88)';
+  // The headline never repeats what the logo lockup already says — same
+  // guard as the scrim renderer (Nick: the name shown twice on one ad).
+  var _stdHeadline = ad.headline || '';
+  try {
+    if (ad.logo && _stdHeadline) {
+      var _nsH = _stdHeadline.toLowerCase().replace(/[^a-z0-9]/g, '');
+      var _nsL = String(ad.logo).split('/').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (_nsH && _nsL.indexOf(_nsH) !== -1) _stdHeadline = '';
+    }
+  } catch (e) {}
   return _adWrap(
     '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 36px;gap:6px;background:' + bgStyle + ';box-sizing:border-box;">'
     + (iconHtml ? '<div style="flex-shrink:0;opacity:0.9;margin-bottom:6px;">' + iconHtml + '</div>' : '')
     + _stdLogoHtml
     + '<div style="flex-shrink:0;text-align:center;max-width:100%;overflow:hidden;">'
-    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:' + _stdFg + ';line-height:1.1;max-width:100%;">' + (ad.headline || '') + '</div>'
+    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:' + _stdFg + ';line-height:1.1;max-width:100%;">' + _stdHeadline + '</div>'
     + '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:' + _stdSubFg + ';margin-top:14px;line-height:1.3;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
     + '</div></div>'
   );
@@ -23080,7 +23243,17 @@ function renderGateAd(index) {
       // ads'): every Accor appearance flips EN <-> FR instead of trusting
       // the board rotation, which can sit on one language for long spells
       // (or be configured single-language).
-      window._accorAdForcedLang = (window._accorAdForcedLang === 'en') ? 'fr' : 'en';
+      // Flip ONLY when the slide instance actually changes — flipping on
+      // every render call meant any re-paint of the SAME on-screen slide
+      // (media-config events, post-rebuild repaints) produced different
+      // HTML, busted the _lastKey cache below, and rebuilt the whole slide:
+      // photo restart + language swap mid-display (Nick: the Accor ads
+      // blink 'same as the weather').
+      var _axFlipKey = slot + '|' + ((slide.data && (slide.data.hotelId || slide.data.name)) || '');
+      if (window._accorAdLastFlipKey !== _axFlipKey) {
+        window._accorAdForcedLang = (window._accorAdForcedLang === 'en') ? 'fr' : 'en';
+        window._accorAdLastFlipKey = _axFlipKey;
+      }
       window._adDiag = 'accor:' + window._accorAdForcedLang;
       html = buildAccorAdOnlyV6(slide.data);
     } catch (e) {
@@ -24253,6 +24426,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // !important in CSS — a plain inline style would lose the cascade.
     var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
+      + ' #fidsTable td.fids-cell-flight, #fidsTable .fids-airline-name,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-dest,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-status-val,'
       + ' .gad-map-col-v2 .v2-rc-acb-actype,'
@@ -25178,9 +25352,24 @@ function _renderWxCard(el) {
       if (!_wxAcc && typeof getAirlineAccent === 'function') _wxAcc = getAirlineAccent((cf && cf.airline) || '');
       if (_wxAcc && typeof accentTint === 'function') _wxBg = accentTint(_wxAcc, 0.42);
     } catch (e) {}
-    var _wxSig = _wxHtml + '||' + _wxBg;
-    if (el._wxLastHtml === _wxSig && el.querySelector && el.querySelector('.wxcard-wrap')) return true;
+    // v22199 — the accent used to be part of the rebuild signature, but it's
+    // read from a LIVE computed var that is briefly empty right after a gate
+    // rebuild: the signature oscillated between two values and every flip
+    // re-set innerHTML, reloading every animated SVG (Nick: 'the weather had
+    // finally stopped blinking, it's doing it again'). A background-only
+    // change now retints the existing card IN PLACE — markup is rebuilt only
+    // when the weather content itself changed.
+    var _wxSig = _wxHtml;
+    if (el._wxLastHtml === _wxSig && el.querySelector && el.querySelector('.wxcard-wrap')) {
+      if (el._wxLastBg !== _wxBg) {
+        var _wxWrapT = el.querySelector('.wxcard-wrap');
+        if (_wxWrapT) _wxWrapT.style.setProperty('background', _wxBg, 'important');
+        el._wxLastBg = _wxBg;
+      }
+      return true;
+    }
     el._wxLastHtml = _wxSig;
+    el._wxLastBg = _wxBg;
     el.innerHTML = _wxHtml;
     var _wxWrap = el.querySelector('.wxcard-wrap');
     if (_wxWrap) _wxWrap.style.setProperty('background', _wxBg, 'important');

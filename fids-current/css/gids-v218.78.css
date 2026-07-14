@@ -4424,6 +4424,13 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: 4 / 5 !important; flex: none !important; min-height: 0 !important; }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: 5 / 6 !important; flex: none !important; min-height: 0 !important; height: auto !important; }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: 6 / 7 !important; flex: none !important; min-height: 0 !important; }
+/* 4-row flight-info variant (Arrival row present): row 4 takes a ~45% bigger
+   track so the first row's caps don't clip behind the shelf edge (Nick:
+   'capped out… can't even see it'). The map row gives up the difference;
+   the class is stamped by the renderer since :has() dies on kiosk browsers. */
+.g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
+  grid-template-rows: repeat(3, minmax(0, 0.85fr)) minmax(0, 1.45fr) repeat(2, minmax(0, 1fr)) !important;
+}
 
 /* ── v218.99 — FLIGHT NUMBER / VALUE CLIP FIX. The text column is a grid cell
    with the default min-width:auto, so a long value (e.g. "AC1983") grew the
@@ -4566,17 +4573,8 @@ body, body.gids-page, body.gate-page{
    Per Nick — AC's real look: black sphere, red maple/symbols. Override the
    accent-coloured badge to black, stop whitening the maple (its source fill is
    #f01428), and colour the functional icons red. AC-scoped only. */
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge,
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-emblem-wrap {
-  background: #0a0a0c !important;
-}
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-emblem-img {
-  filter: none !important;            /* keep the maple its native red, not white */
-}
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-svg { fill: #f01428 !important; }
-.g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-icon-wrap { color: #f01428 !important; }
-/* AC flights — AC icon-font glyphs in brand red */
-.g8-wrap.g8-airline-AC .gad-aircraft-col .ac-ico { color:#f01428 !important; }
+/* (Black-sphere AC treatment RETIRED — Nick now wants AC's vertical
+   badges RED like every other carrier's accent badges.) */
 /* Flight-orb airline emblem a touch smaller so it fits the orb */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-emblem-img { width: 74% !important; height: 74% !important; margin: auto !important; }
 

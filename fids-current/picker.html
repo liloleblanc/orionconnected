@@ -176,6 +176,12 @@
     // Store the selection
     sessionStorage.setItem('fids_screen', screen);
 
+    // A deliberate pick is a FRESH START — drop any remembered screen type
+    // (gate/baggage) left by an earlier session, or clicking FIDS lands on
+    // a Gate view (Nick). Kiosk deploy-reloads never pass through the
+    // picker, so their saved state still survives.
+    try { localStorage.removeItem('fids_screen_state'); } catch (e) {}
+
     // Fade out picker
     const picker = document.getElementById('pickerScreen');
     picker.classList.add('fade-out');
