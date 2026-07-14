@@ -1732,6 +1732,26 @@ html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
 }
 html .wxanim-host { display: block !important; }
 
+/* v22210 — BIGGER weather card (Nick: 'it's tiny on GIDS… it needs fixed
+   now'). The 'Next hours' strip is retired in the renderer, so the hero
+   and the 7-day week own the card; type and icons scale up to match. */
+html .wxcard-col .wxc-city { font-size: clamp(28px, 4.6vh, 58px) !important; }
+html .wxcard-col .wxc-kicker { font-size: clamp(13px, 1.8vh, 22px) !important; }
+html .wxcard-col .wxc-temp { font-size: clamp(56px, 10.5vh, 132px) !important; }
+html .wxcard-col .wxc-cond { font-size: clamp(17px, 2.7vh, 34px) !important; }
+html .wxcard-col .wxc-meta { font-size: clamp(14px, 2.1vh, 26px) !important; }
+html .wxcard-col .wxc-hero img, html .wxcard-col .wxc-hero .wxanim-host {
+  width: clamp(130px, 24vh, 270px) !important; height: clamp(130px, 24vh, 270px) !important;
+}
+html .wxcard-col .wxc-title { font-size: clamp(13px, 1.9vh, 23px) !important; }
+html .wxcard-col .wxc-d { font-size: clamp(14px, 2vh, 24px) !important; line-height: 1.1 !important; }
+html .wxcard-col .wxc-d2 { display: block !important; font-size: 0.74em !important; font-weight: 700 !important; opacity: 0.55 !important; }
+html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
+  width: clamp(64px, 11.5vh, 128px) !important; height: clamp(64px, 11.5vh, 128px) !important;
+}
+html .wxcard-col .wxc-hi { font-size: clamp(18px, 2.9vh, 36px) !important; }
+html .wxcard-col .wxc-lo { font-size: clamp(14px, 2.2vh, 27px) !important; }
+
 /* ── Baggage: state blocks BEAT the light-board zebra (the odd-row light rule
    tied specificity and, being later, killed the yellow on odd rows — Nick's
    screenshot). Highest specificity, both palettes, end of cascade. ── */

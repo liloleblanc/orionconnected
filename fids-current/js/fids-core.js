@@ -13760,7 +13760,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22209';
+var FIDS_BUILD_TAG = 'v22210';
 (function(){
   try {
     function _addTag(){
@@ -25420,7 +25420,17 @@ function _renderWxCard(el) {
     var _lblPair = _WXLBL[ic] || ['', ''];
     var cond = _lblPair[0] + (_lblPair[1] && _lblPair[1] !== _lblPair[0] ? ' <span class="v2-rc-fi-sep">|</span> ' + _lblPair[1] : '');
     var dT = function (v) { return (typeof displayTemp === 'function') ? displayTemp(Math.round(v)) : Math.round(v) + '°C'; };
-    var names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    // Day names BILINGUAL like everything else on the board (Nick: 'it's
+    // not bilingual, such as days — it's terrible'). FR first at the
+    // Québec/French-first airports, same rule the rest of the gate uses.
+    var _dEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var _dFr = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    var _wxFrF = false;
+    try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
+    var _dayLbl = function (dow) {
+      var a = _wxFrF ? _dFr[dow] : _dEn[dow], b = _wxFrF ? _dEn[dow] : _dFr[dow];
+      return a + '<span class="wxc-d2">' + b + '</span>';
+    };
 
     // 7-DAY outlook: prefer the daily route; fall back to 48h hourly rollup.
     var tiles = '', nDays = 0;
@@ -25432,7 +25442,7 @@ function _renderWxCard(el) {
       for (var i = 0; i < Math.min(7, daily.time.length); i++) {
         var dt = new Date(daily.time[i] + 'T12:00:00');
         var icd = _wmoAnimIcon(daily.weather_code[i]);
-        tiles += '<div class="wxc-day"><div class="wxc-d">' + names[dt.getDay()] + '</div>'
+        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt.getDay()) + '</div>'
           + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
           + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
           + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
@@ -25454,27 +25464,17 @@ function _renderWxCard(el) {
         var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
         var dt2 = new Date(k + 'T12:00:00');
         var ich = _wxAnimIcon(code, false);
-        tiles += '<div class="wxc-day"><div class="wxc-d">' + names[dt2.getDay()] + '</div>'
+        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt2.getDay()) + '</div>'
           + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
           + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
         nDays++;
       });
     }
 
-    // Next hours: 6 upcoming entries from the cached hourly forecast.
+    // 'Next hours' strip RETIRED (Nick: the three-section card read TINY,
+    // and the hourly entries changed every hour = another jump source).
+    // The card is hero + 7-day outlook only, both bigger.
     var hoursHtml = '';
-    try {
-      var nowTs = Date.now(), shown = 0;
-      (wx.hourly || []).forEach(function (h) {
-        if (shown >= 6 || !h || typeof h.temp !== 'number' || !h.ts || h.ts < nowTs) return;
-        var ich = _wxAnimIcon(h.code, night);
-        var hLbl = new Date(h.ts).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).toLowerCase().replace(' ', '');
-        hoursHtml += '<div class="wxc-hour"><div class="wxc-hr">' + hLbl + '</div>'
-          + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
-          + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';
-        shown++;
-      });
-    } catch (eH) {}
     // Split MAIN (globe + head + hero) from the STRIPS (hours + outlook):
     // the 7-day data usually lands a beat AFTER the first paint, and
     // rebuilding the whole card for it reloaded the big hero icon — the
@@ -25484,7 +25484,9 @@ function _renderWxCard(el) {
         '<div class="wxc-globe" aria-hidden="true"></div>'
       + '<div class="wxcard-main">'
       +   '<div class="wxc-head">'
-      +     '<div><div class="wxc-kicker">Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée</div>'
+      +     '<div><div class="wxc-kicker">' + (_wxFrF
+                ? 'Météo à l\'arrivée <span class="v2-rc-fi-sep">|</span> Arrival Weather'
+                : 'Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée') + '</div>'
       +     '<div class="wxc-city">' + city + ' (' + dest + ')</div></div>'
       +   '</div>'
       +   '<div class="wxc-hero">'
@@ -25499,7 +25501,9 @@ function _renderWxCard(el) {
       + '</div>';
     var _wxStripsHtml =
         (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">Next hours <span class="v2-rc-fi-sep">|</span> Prochaines heures</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
-      + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
+      + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + (_wxFrF
+            ? 'PRÉVISIONS ' + nDays + ' JOURS <span class="v2-rc-fi-sep">|</span> ' + nDays + '-DAY'
+            : nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS') + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
     var _wxHtml = '<div class="wxcard-wrap wxcard-col">' + _wxMainHtml + _wxStripsHtml + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
