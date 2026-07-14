@@ -13824,7 +13824,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22226';
+var FIDS_BUILD_TAG = 'v22227';
 (function(){
   try {
     function _addTag(){
@@ -25654,6 +25654,11 @@ function _renderWxCard(el) {
     // clear' — the abbreviated + tiny-grey second line read badly).
     var _dEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     var _dFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    // Actual DATE under the day name (Nick: 'it should have days too, hard to
+    // tell what day they're talking about') — day-of-month + short month.
+    var _moEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var _moFr = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
+    var _dateLbl = function (d) { return d.getDate() + ' ' + (_wxFrF ? _moFr : _moEn)[d.getMonth()]; };
     var _wxFrF = false;
     try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
     var _dayLbl = function (dow) {
@@ -25679,6 +25684,7 @@ function _renderWxCard(el) {
         var dt = new Date(daily.time[i] + 'T12:00:00');
         var icd = _wmoAnimIcon(daily.weather_code[i]);
         tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt.getDay()) + '</div>'
+          + '<div class="wxc-dt">' + _dateLbl(dt) + '</div>'
           + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
           + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
           + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
@@ -25701,6 +25707,7 @@ function _renderWxCard(el) {
         var dt2 = new Date(k + 'T12:00:00');
         var ich = _wxAnimIcon(code, false);
         tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt2.getDay()) + '</div>'
+          + '<div class="wxc-dt">' + _dateLbl(dt2) + '</div>'
           + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
           + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
         nDays++;

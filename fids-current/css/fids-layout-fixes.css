@@ -1832,6 +1832,9 @@ html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-h
    different sizes'). The second line was 0.86em — visibly smaller than the
    first. Now identical size, weight and colour; one clean two-line label. */
 html .wxcard-col .wxc-d2 { display: block !important; font-size: 1em !important; font-weight: 800 !important; opacity: 1 !important; color: #ffffff !important; white-space: nowrap !important; letter-spacing: 0.1px !important; }
+/* Actual date under the day name so it's clear WHICH day (Nick: 'hard to tell
+   what day they're talking about'). */
+html .wxcard-col .wxc-dt { display: block !important; font-size: clamp(11px, 1.5vh, 18px) !important; font-weight: 700 !important; color: rgba(255,255,255,.72) !important; white-space: nowrap !important; margin-top: 1px !important; }
 html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
   width: clamp(64px, 11.5vh, 128px) !important; height: clamp(64px, 11.5vh, 128px) !important;
 }
