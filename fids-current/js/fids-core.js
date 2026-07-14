@@ -13696,7 +13696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22200';
+var FIDS_BUILD_TAG = 'v22201';
 (function(){
   try {
     function _addTag(){
@@ -23761,6 +23761,10 @@ function _buildGateAdSlideList() {
         && TOMORROW_WX[String(_wxD).toUpperCase()].current
         && typeof TOMORROW_WX[String(_wxD).toUpperCase()].current.temp === 'number') {
       deck.splice(Math.min(3, deck.length), 0, { type: 'wxcard' });
+      // PRE-WARM the 7-day forecast now, while other slides are showing —
+      // so the outlook is already cached when the weather slide appears
+      // and it paints ONCE (the cold fetch was the second 'bump', Nick).
+      try { _wxFetchDaily(String(_wxD).toUpperCase(), null); } catch (e2) {}
     }
   } catch (e) {}
 
@@ -25311,27 +25315,32 @@ function _renderWxCard(el) {
         shown++;
       });
     } catch (eH) {}
-    var _wxHtml =
-        '<div class="wxcard-wrap wxcard-col">'
-      +   '<div class="wxc-globe" aria-hidden="true"></div>'
-      +   '<div class="wxcard-main">'
-      +     '<div class="wxc-head">'
-      +       '<div><div class="wxc-kicker">Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée</div>'
-      +       '<div class="wxc-city">' + city + ' (' + dest + ')</div></div>'
-      +     '</div>'
-      +     '<div class="wxc-hero">'
-      +       '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
-      +       '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
-      +       '<div class="wxc-meta">'
-      +         (typeof cur.feelsLike === 'number' ? '<span>Feels like <b>' + dT(cur.feelsLike) + '</b></span>' : '')
-      +         (typeof cur.windSpeed === 'number' ? '<span>Wind <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
-      +         (typeof cur.humidity === 'number' ? '<span>Humidity <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
-      +       '</div></div>'
-      +     '</div>'
+    // Split MAIN (globe + head + hero) from the STRIPS (hours + outlook):
+    // the 7-day data usually lands a beat AFTER the first paint, and
+    // rebuilding the whole card for it reloaded the big hero icon — the
+    // 'bump di bump, almost twice at the beginning' (Nick). With the split,
+    // late strip data swaps in UNDER the untouched hero.
+    var _wxMainHtml =
+        '<div class="wxc-globe" aria-hidden="true"></div>'
+      + '<div class="wxcard-main">'
+      +   '<div class="wxc-head">'
+      +     '<div><div class="wxc-kicker">Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée</div>'
+      +     '<div class="wxc-city">' + city + ' (' + dest + ')</div></div>'
       +   '</div>'
-      +   (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">Next hours <span class="v2-rc-fi-sep">|</span> Prochaines heures</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
-      +   (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '')
+      +   '<div class="wxc-hero">'
+      +     '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
+      +     '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
+      +     '<div class="wxc-meta">'
+      +       (typeof cur.feelsLike === 'number' ? '<span>Feels like <b>' + dT(cur.feelsLike) + '</b></span>' : '')
+      +       (typeof cur.windSpeed === 'number' ? '<span>Wind <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
+      +       (typeof cur.humidity === 'number' ? '<span>Humidity <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
+      +     '</div></div>'
+      +   '</div>'
       + '</div>';
+    var _wxStripsHtml =
+        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">Next hours <span class="v2-rc-fi-sep">|</span> Prochaines heures</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
+      + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col">' + _wxMainHtml + _wxStripsHtml + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually
@@ -25368,7 +25377,23 @@ function _renderWxCard(el) {
       }
       return true;
     }
+    // Strips-only change (late-arriving 7-day/hourly data): swap the strips
+    // under the SAME hero — no innerHTML reset, no hero icon reload, no bump.
+    // _wxHydrateSvgs is safe on the wrap: hydrated icons are spans and are
+    // skipped; only the freshly inserted strip imgs hydrate.
+    var _wxWrapP = el.querySelector ? el.querySelector('.wxcard-wrap') : null;
+    if (_wxWrapP && el._wxMainHtml === _wxMainHtml) {
+      try {
+        _wxWrapP.querySelectorAll(':scope > .wxc-strip').forEach(function (n) { n.remove(); });
+        _wxWrapP.insertAdjacentHTML('beforeend', _wxStripsHtml);
+        el._wxLastHtml = _wxSig;
+        if (el._wxLastBg !== _wxBg) { _wxWrapP.style.setProperty('background', _wxBg, 'important'); el._wxLastBg = _wxBg; }
+        _wxHydrateSvgs(_wxWrapP);
+        return true;
+      } catch (e) {}
+    }
     el._wxLastHtml = _wxSig;
+    el._wxMainHtml = _wxMainHtml;
     el._wxLastBg = _wxBg;
     el.innerHTML = _wxHtml;
     var _wxWrap = el.querySelector('.wxcard-wrap');

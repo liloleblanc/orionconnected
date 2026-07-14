@@ -55,7 +55,7 @@
 <style type="text/css">
 	.st0{fill:none;}
 
-	path,polygon,polyline,circle,ellipse,rect:not(.st0){fill:#FFFFFF !important;stroke:#FFFFFF !important;}
+	path,polygon,polyline,circle,ellipse,rect:not(.st0){fill:#FFFFFF !important;stroke:none;}
 	</style>
 <rect x="0" y="0" class="st0" width="396.02" height="195.44"/>
 <g>
