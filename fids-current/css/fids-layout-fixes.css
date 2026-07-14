@@ -2416,10 +2416,12 @@ html .g8-final .g8-final-hdr {
 html .g8-final-body {
   background: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #D82F2E)) 52%, #10141b) !important;
 }
-/* GATE CLOSED is an alarm state, not a brand moment — deep red for every
-   airline (a green 'closed' screen reads as GO, Nick's Flair shot). */
-html .g8-final-closed .g8-final-hdr { background: #B91C1C !important; }
-html .g8-final-closed .g8-final-body { background: color-mix(in srgb, #B91C1C 38%, #0f1116) !important; }
+/* GATE CLOSED is informational, not an alarm — a calm neutral SLATE, not the
+   angry red (Nick: 'I don't like the red background gate closed, it's so
+   angry'). Still airline-neutral (a green 'closed' screen reads as GO), just
+   not aggressive. */
+html .g8-final-closed .g8-final-hdr { background: #475569 !important; }
+html .g8-final-closed .g8-final-body { background: color-mix(in srgb, #475569 42%, #0f1116) !important; }
 /* GATE CLOSED is ONE statement, CENTERED in the middle of the takeover (Nick:
    'centered … I have asked a million times', and 'why do you keep putting
    things twice' — the 'This gate is now closed' sub-line said the same thing
