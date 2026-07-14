@@ -7082,7 +7082,7 @@ function uxgGateHtml(ctx) {
     return '<div class="g8-board-body g8-lanes3">'
       + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
       + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
-      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">Zones</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + zonesVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">Zones</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + zonesVal + '</div></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
       + '</div>';
   }
 
@@ -13220,6 +13220,7 @@ const LS = {
   boardNow:  { en:'Boarding now',fr:'Embarquement en cours',es:'Embarcando ahora',de:'Jetzt Boarding',it:'Imbarco in corso',pt:'Embarque agora',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
   boardNext: { en:'Boarding next',fr:'Prochain embarquement',es:'Próximo embarque',de:'Nächstes Boarding',it:'Prossimo imbarco',pt:'Próximo embarque',ja:'次の搭乗',zh:'下一组登机',ar:'الصعود التالي' },
   group:     { en:'Group',fr:'Groupe',es:'Grupo',de:'Gruppe',it:'Gruppo',pt:'Grupo',ja:'グループ',zh:'组',ar:'المجموعة' },
+  useLanes:  { en:'Use Lanes',fr:'Utilisez les voies',es:'Use carriles',de:'Spuren nutzen',it:'Usa corsie',pt:'Use faixas',ja:'\u30ec\u30fc\u30f3',zh:'\u901a\u9053',ar:'\u0645\u0645\u0631\u0627\u062a' },
   useLane:   { en:'Use Lane',fr:'Utilisez la voie',es:'Use carril',de:'Spur nutzen',it:'Usa corsia',pt:'Use faixa',ja:'レーン',zh:'通道',ar:'استخدم الممر' },
   boardBegins:{ en:'Boarding begins in',fr:"L'embarquement commence dans",es:'El embarque comienza en',de:'Boarding beginnt in',it:"L'imbarco inizia tra",pt:'Embarque começa em',ja:'搭乗開始まで',zh:'登机开始倒计时',ar:'يبدأ الصعود خلال' },
   remainSeated:{ en:'Please remain seated until your zone is called',fr:'Veuillez rester assis jusqu\'à l\'appel de votre zone',es:'Por favor permanezca sentado hasta que llamen su zona',de:'Bitte bleiben Sie sitzen bis Ihre Zone aufgerufen wird',it:'Si prega di restare seduti fino alla chiamata della zona',pt:'Por favor permaneça sentado até sua zona ser chamada',ja:'ゾーンが呼ばれるまでお待ちください',zh:'请在座位上等待登机区域呼叫',ar:'يرجى البقاء جالساً حتى يتم استدعاء منطقتك' },
@@ -13647,7 +13648,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22190';
+var FIDS_BUILD_TAG = 'v22191';
 (function(){
   try {
     function _addTag(){
