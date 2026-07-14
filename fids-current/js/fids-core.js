@@ -13796,7 +13796,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22214';
+var FIDS_BUILD_TAG = 'v22216';
 (function(){
   try {
     function _addTag(){
@@ -25445,9 +25445,32 @@ function _wxHydrateSvgs(root) {
   try {
     root.querySelectorAll('img.wxanim[data-wx]').forEach(function (img) {
       var name = img.getAttribute('data-wx');
-      function inject(txt) {
+      function inject(rawTxt) {
         try {
           if (!img.parentNode) return;
+          // Uniquify the SVG's internal IDs per instance. Animated Meteocons
+          // carry <defs> gradients / clipPaths / <animate> targets referenced
+          // by url(#id) and href="#id". Inlining the SAME icon more than once
+          // (e.g. several sunny days in the 7-day outlook, plus the hero) made
+          // those duplicate IDs collide — the browser resolves #id to the
+          // FIRST copy, so every repeat rendered blank (Nick: 'why is there
+          // days missing icons'). A per-instance suffix keeps each copy's
+          // references pointing at its own defs.
+          var txt = rawTxt;
+          try {
+            var uid = '_wx' + (window._wxSvgUid = (window._wxSvgUid || 0) + 1);
+            var ids = [], mm;
+            var re = /\bid="([^"]+)"/g;
+            while ((mm = re.exec(rawTxt))) ids.push(mm[1]);
+            ids.forEach(function (id) {
+              var esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              txt = txt
+                .replace(new RegExp('id="' + esc + '"', 'g'), 'id="' + id + uid + '"')
+                .replace(new RegExp('url\\(#' + esc + '\\)', 'g'), 'url(#' + id + uid + ')')
+                .replace(new RegExp('href="#' + esc + '"', 'g'), 'href="#' + id + uid + '"')
+                .replace(new RegExp('(begin|end)="' + esc + '\\.', 'g'), '$1="' + id + uid + '.');
+            });
+          } catch (eU) { txt = rawTxt; }
           var span = document.createElement('span');
           span.className = 'wxanim-host ' + (img.className || '');
           span.style.cssText = img.getAttribute('style') || '';

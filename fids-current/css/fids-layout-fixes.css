@@ -1643,11 +1643,11 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   display: grid !important;
   grid-template-columns: 1fr clamp(280px, 34%, 460px) !important;
   width: 100% !important; height: 100% !important;
-  /* Dotted-globe over the dark base so the enlarged panel carries the pattern
-     in the gaps/corners (the map tiles sit on top of the map column). */
+  /* NEW halftone dot-sphere over the dark base so the enlarged panel carries
+     the pattern in the gaps/corners (the map tiles sit on top of the map). */
   background-color: #0b1322 !important;
-  background-image: url('/logos/3d_globe_desktop.svg?v=2') !important;
-  background-size: 46% auto !important; background-position: 22% 46% !important;
+  background-image: url('/logos/dots-sphere.svg?v=1') !important;
+  background-size: 48% auto !important; background-position: 24% 46% !important;
   background-repeat: no-repeat !important;
 }
 .bigcraft-mapcol { position: relative !important; min-width: 0 !important; min-height: 0 !important; }
@@ -1684,15 +1684,15 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   overflow: hidden !important;
   --banner-bg: #14181E;
 }
-/* Dotted-globe backdrop behind the info metal (Nick: 'use this pattern on the
-   enlarged screen map and info'). Same sphere asset as the gate columns. */
+/* NEW halftone dot-sphere in the enlarged panel (Nick: 'the new pattern in the
+   middle' — the old continents-globe was 'the wrong pattern' here). */
 .bigcraft-side::before {
   content: "" !important;
   position: absolute !important; inset: 0 !important; z-index: 0 !important;
-  background-image: url('/logos/3d_globe_desktop.svg?v=2') !important;
-  background-size: 118% auto !important; background-position: center 42% !important;
+  background-image: url('/logos/dots-sphere.svg?v=1') !important;
+  background-size: 122% auto !important; background-position: center 44% !important;
   background-repeat: no-repeat !important;
-  opacity: 0.5 !important; filter: grayscale(1) contrast(1.25) !important;
+  opacity: 0.85 !important;
   pointer-events: none !important;
 }
 .bigcraft-side > * { position: relative !important; z-index: 1 !important; }
@@ -2429,6 +2429,19 @@ html body .g8-wrap .g8-r1-star {
   align-self: center !important;
   flex: 0 1 auto !important;
   object-fit: contain !important;
+}
+/* oneworld is a WIDE horizontal lockup, so it hit the width cap above and read
+   small (Nick: 'make the oneworld logo larger — it needs to be much larger').
+   Give it far more width and height headroom. Extra class = higher specificity
+   than the general .g8-r1-star rule, so this wins. */
+html body .g8-wrap .g8-r1-star.g8-r1-alliance-oneworld,
+html body .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-oneworld {
+  /* ~2x the old ~50px cap — fills the 110px banner without overflowing it. */
+  height: clamp(88px, 14vh, 104px) !important;
+  max-height: clamp(88px, 14vh, 104px) !important;
+  max-width: min(32vw, 660px) !important;
+  min-height: 0 !important;
+  align-self: center !important;
 }
 
 /* ── YQM main/baggage boards: the Acadian flag lives in the banner tabs too
