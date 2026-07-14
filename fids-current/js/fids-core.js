@@ -13757,7 +13757,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22203';
+var FIDS_BUILD_TAG = 'v22204';
 (function(){
   try {
     function _addTag(){
@@ -14568,7 +14568,12 @@ function render() {
     // Legacy single time cell (kept so anywhere else that references it still works,
     // though no longer placed in the row template below).
     const timeCell2Html = '<td class="td-time fids-cell-time">' + timeCellHtml + '</td>';
-    const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '') + '">' + stCellHtml + '</td>';
+    // Long statuses (French: DERNIER APPEL, EMBARQUEMENT) ellipsized in the
+    // fixed column (Nick: 'not fully read') — flag them so CSS steps the
+    // type down instead of cutting the word.
+    var _stPlainLen = String(stCellHtml).replace(/<[^>]*>/g, '').trim().length;
+    const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '')
+      + (_stPlainLen >= 12 ? ' st-longtext' : '') + '">' + stCellHtml + '</td>';
 
     let cells;
     if (isDep) {
@@ -16819,6 +16824,11 @@ function mapADB(raw, mode) {
     }
     // Cargo/private filter
     if (f.isCargo===true) return null;
+    // No resolvable place: no IATA/ICAO and the feed's airport name is empty
+    // or literally 'Unknown' — repositioning/ferry/private legs. A public
+    // board row reading 'Unknown' helps no traveler (Nick: 'why is there
+    // unknown places for a flight, that can't be').
+    if (!locIata && (!cityName || /^unknown$/i.test(String(cityName).trim()))) return null;
     return mode==='dep'
       ?{time,upd,dateTag,flight,dest:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
       :{time,upd,dateTag,flight,origin:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
@@ -23893,7 +23903,12 @@ function _restartGateAdsTimer() {
       _gateAdTimer = setTimeout(_tick, 1000);
       return;
     }
-    el2.style.transition = 'opacity 0.6s ease';
+    // v22204 — tighter transition. The old 0.6s fade + 0.7s dark hold +
+    // 0.6s fade-in put ~1.3s of near-black between EVERY pair of ads; with
+    // a light slide on one side it read as two separate jumps (Nick: 'the
+    // ads still do a double skip', video-confirmed: the "skip" is the
+    // transition gap, not a double advance). Now ~0.4s total dip.
+    el2.style.transition = 'opacity 0.25s ease';
     el2.style.opacity = '0';
     _gateAdFadeTimer = setTimeout(function() {
       if (gen !== _gateAdGen) return; // superseded mid-fade — abandon
@@ -23906,7 +23921,7 @@ function _restartGateAdsTimer() {
       try { totalSlots = _getGateAdTotalSlots(); } catch (e) { totalSlots = ((getGateAds() || []).length + 1); }
       _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
       try { renderGateAd(_gateAdIndex); } catch (e) {}
-      el3.style.transition = 'opacity 0.6s ease';
+      el3.style.transition = 'opacity 0.25s ease';
       el3.style.opacity = '1';
       // Schedule the NEXT tick using the dwell of the slide we just
       // showed. Falls back to 15s if anything goes wrong.
@@ -23917,7 +23932,7 @@ function _restartGateAdsTimer() {
       } catch (e) {}
       dwell = Math.max(22000, dwell);   // Nick: slides were flicking by every 5-10s — hold each ≥22s
       _gateAdTimer = setTimeout(_tick, dwell);
-    }, 700);
+    }, 280);
   };
   // Kick off — use the dwell of the FIRST slide on initial run.
   var initDwell = 15000;

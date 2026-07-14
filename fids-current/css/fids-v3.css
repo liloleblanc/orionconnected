@@ -1979,8 +1979,14 @@ body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed td.td-status * {
 #fidsTable colgroup col.col-gate      { width: 110px !important; }
 #fidsTable colgroup col.col-time      { width: 130px !important; }
 #fidsTable colgroup col.col-time-rev  { width: 130px !important; }
-#fidsTable colgroup col.col-status    { width: 180px !important; }
+/* v22204 — 180px cut the French statuses ('DERNIER AP…', Nick: 'not fully
+   read'); the destination column is auto and absorbs the difference. */
+#fidsTable colgroup col.col-status    { width: 215px !important; }
 #fidsTable colgroup col.col-dest      { width: auto !important; }
+/* Long statuses (>=12 chars, flagged by the renderer) step the type down
+   one notch so the full word always reads. */
+#fidsTable td.td-status.st-longtext,
+#fidsTable td.td-status.st-longtext * { font-size: 19px !important; letter-spacing: 0.2px !important; }
 
 /* Airline column — never let names truncate */
 #fidsTable td.td-airline,
