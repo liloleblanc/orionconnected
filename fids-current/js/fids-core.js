@@ -7112,7 +7112,7 @@ function uxgGateHtml(ctx) {
     return '<div class="g8-board-body g8-lanes3">'
       + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
       + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
-      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">Zones</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + zonesVal + '</div></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
+      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">Zones</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
       + '</div>';
   }
 
@@ -13679,7 +13679,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22193';
+var FIDS_BUILD_TAG = 'v22194';
 (function(){
   try {
     function _addTag(){
