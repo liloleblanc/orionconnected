@@ -1730,29 +1730,41 @@ async function fetchAICityBg(locIata) {
 // Uses the same FLUX worker pattern as city backgrounds, with a hotel-
 // specific prompt server-side. Cached client-side by hotel name + city.
 var _aiHotelBgCache = {}; // key: "hotelName|city" -> blob URL
+var _aiHotelBgPending = {}; // key -> in-flight Promise (dedup)
 
 async function fetchAIHotelBg(hotelName, city) {
   if (!hotelName) return null;
   var key = (hotelName + '|' + (city || '')).toLowerCase();
   if (_aiHotelBgCache[key]) return _aiHotelBgCache[key];
   if (_aiHotelBgCache[key] === false) return null; // negative cache
-  try {
-    var url = FIDS_PROXY + '/ai/hotelbg?name=' + encodeURIComponent(hotelName)
-            + '&city=' + encodeURIComponent(city || '');
-    var resp = await fetch(url);
-    if (!resp.ok) { _aiHotelBgCache[key] = false; return null; }
-    var ct = (resp.headers.get('Content-Type') || '').toLowerCase();
-    if (!ct.startsWith('image/')) { _aiHotelBgCache[key] = false; return null; }
-    var blob = await resp.blob();
-    if (blob.size < 1000) { _aiHotelBgCache[key] = false; return null; }
-    var blobUrl = URL.createObjectURL(blob);
-    _aiHotelBgCache[key] = blobUrl;
-    return blobUrl;
-  } catch (e) {
-    console.log('[FIDS-HOTEL-BG] AI fetch failed for ' + hotelName + ':', e.message);
-    _aiHotelBgCache[key] = false;
-    return null;
-  }
+  // The slide deck is rebuilt several times per rotation tick, and each
+  // build re-requested any photo-less hotel: dozens of parallel fetches,
+  // each of whose .then re-painted the carousel. One in-flight promise per
+  // hotel, shared by every caller.
+  if (_aiHotelBgPending[key]) return _aiHotelBgPending[key];
+  var p = (async function () {
+    try {
+      var url = FIDS_PROXY + '/ai/hotelbg?name=' + encodeURIComponent(hotelName)
+              + '&city=' + encodeURIComponent(city || '');
+      var resp = await fetch(url);
+      if (!resp.ok) { _aiHotelBgCache[key] = false; return null; }
+      var ct = (resp.headers.get('Content-Type') || '').toLowerCase();
+      if (!ct.startsWith('image/')) { _aiHotelBgCache[key] = false; return null; }
+      var blob = await resp.blob();
+      if (blob.size < 1000) { _aiHotelBgCache[key] = false; return null; }
+      var blobUrl = URL.createObjectURL(blob);
+      _aiHotelBgCache[key] = blobUrl;
+      return blobUrl;
+    } catch (e) {
+      console.log('[FIDS-HOTEL-BG] AI fetch failed for ' + hotelName + ':', e.message);
+      _aiHotelBgCache[key] = false;
+      return null;
+    } finally {
+      delete _aiHotelBgPending[key];
+    }
+  })();
+  _aiHotelBgPending[key] = p;
+  return p;
 }
 
 async function fetchOpenversePhoto(cityName) {
@@ -13760,7 +13772,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22210';
+var FIDS_BUILD_TAG = 'v22211';
 (function(){
   try {
     function _addTag(){
@@ -23245,6 +23257,11 @@ function renderGateAd(index) {
   var totalSlots = slides.length;
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
   var slide = slides[slot];
+  // Record what the carousel is ACTUALLY showing. Async repaint callbacks
+  // (hotel-photo fetches) read this; before it was stamped they fell back
+  // to slide 0 and hijacked the carousel mid-ad (Nick: 'it starts the ad
+  // and fades back to the previous then back to the new').
+  window._gateAdCurrentIdx = slot;
 
   // ── YOUR AIRCRAFT — BIG (Nick, Jul 2026). The 3D map is RETIRED; once
   // per cycle the center enlarges the right column's Your Aircraft view:
@@ -23260,6 +23277,7 @@ function renderGateAd(index) {
     // here and shows it twice back-to-back (WS "WestJet Rewards" x2 bug).
     slot = (slot + 1) % totalSlots;
     _gateAdIndex = slot;
+    window._gateAdCurrentIdx = slot;
     slide = slides[slot] || slide;
   }
   // Any non-bigcraft slide: tear the takeover down (overlay + map + class).
@@ -23272,6 +23290,7 @@ function renderGateAd(index) {
     // repeating it (this wrap-around duplicated deck[0] every cycle).
     slot = (slot + 1) % totalSlots;
     _gateAdIndex = slot;
+    window._gateAdCurrentIdx = slot;
     slide = slides[slot] || slide;
   }
   if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
@@ -23529,11 +23548,22 @@ function _buildDestHotelAdObj(info, cityName) {
     } else if (_aiHotelBgCache[_hotelKey] !== false) {
       // Kick off the AI fetch in the background — next render will pick it up
       fetchAIHotelBg(h.name, cityName).then(function(url) {
-        if (url) {
-          // Force a re-render of the carousel so the new photo shows up
-          var idx = (window._gateAdCurrentIdx || 0);
-          try { renderGateAd(idx); } catch (e) {}
-        }
+        if (!url) return;
+        // Repaint ONLY when a hotel ad is what's on screen right now — and
+        // repaint the CURRENT slot, never a hardcoded one. This callback
+        // used to call renderGateAd(_gateAdCurrentIdx || 0) with an index
+        // nothing ever assigned, so every resolved photo yanked the
+        // carousel back to slide 0 in the middle of whatever ad had just
+        // started (Nick: 'it starts the ad and fades back to the previous
+        // then back to the new'). If another slide is showing, the cached
+        // photo is simply picked up the next time this hotel renders.
+        var idx = window._gateAdCurrentIdx;
+        if (typeof idx !== 'number') return;
+        try {
+          var _curSlide = _getGateAdSlideAt(idx);
+          if (!_curSlide || _curSlide.type !== 'ad' || !_curSlide.data || !_curSlide.data.isAccorHotel) return;
+          renderGateAd(idx);
+        } catch (e) {}
       });
     }
   }
@@ -25368,22 +25398,45 @@ function _wxHydrateSvgs(root) {
 window._wxDaily = window._wxDaily || {};
 function _wxFetchDaily(iata, onReady) {
   try {
+    // COORDS is a curated subset — fall back to the gate map's airport
+    // table + cached lookups so regional destinations get a real 7-day
+    // outlook instead of silently degrading to the 48h/2-day rollup
+    // (Nick: 'what happened to the 7 day forecast?').
     var C = (typeof COORDS !== 'undefined' && COORDS[iata]) || null;
+    if (!C) { try { C = (typeof _lookupAirport === 'function') ? _lookupAirport(iata) : null; } catch (eL) {} }
     if (!C) return null;
     var hit = window._wxDaily[iata];
+    // Serve STALE data while a refresh is in flight — returning null here
+    // dropped the on-screen card back to the 2-day rollup for a beat every
+    // 30 minutes (another visible jump).
+    if (hit && hit.pending) return hit.data || null;
     if (hit && (Date.now() - hit.ts) < 1800000) return hit.data;
-    if (hit && hit.pending) return null;
-    window._wxDaily[iata] = { pending: true, ts: 0, data: null };
+    var _prev = hit ? hit.data : null;
+    window._wxDaily[iata] = { pending: true, ts: 0, data: _prev };
+    // Primary: the site worker's keyless /wxdaily proxy. Fallback: Open-Meteo
+    // DIRECT (same keyless API the FIDS weather column already calls) — the
+    // proxy route only exists on workers that carry worker-entry.js, and any
+    // deploy where it's missing must not cost the card its week.
+    var _omDaily = 'https://api.open-meteo.com/v1/forecast?latitude=' + C[0]
+      + '&longitude=' + C[1]
+      + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
+      + '&timezone=auto&forecast_days=7';
+    var _omFb = function () {
+      return fetch(_omDaily)
+        .then(function (r2) { return r2.ok ? r2.json() : null; })
+        .catch(function () { return null; });
+    };
     fetch('/wxdaily?location=' + C[0] + ',' + C[1])
-      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (r) { return r.ok ? r.json() : _omFb(); })
+      .catch(function () { return _omFb(); })
       .then(function (d) {
         if (d && d.daily && d.daily.time) {
           window._wxDaily[iata] = { data: d.daily, ts: Date.now() };
           if (typeof onReady === 'function') onReady();
-        } else { window._wxDaily[iata] = { data: null, ts: Date.now() }; }
+        } else { window._wxDaily[iata] = { data: _prev, ts: Date.now() }; }
       })
-      .catch(function () { window._wxDaily[iata] = { data: null, ts: Date.now() }; });
-    return null;
+      .catch(function () { window._wxDaily[iata] = { data: _prev, ts: Date.now() }; });
+    return _prev;
   } catch (e) { return null; }
 }
 // Labels keyed by the ICON actually shown — icon and wording can never
