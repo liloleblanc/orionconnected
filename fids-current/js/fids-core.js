@@ -12316,15 +12316,56 @@ function tioLabel(weatherCode) {
   return '';
 }
 
+// ── Open-Meteo fallback (keyless, no quota) ────────────────────────────
+// Tomorrow.io's free quota can die mid-day and the whole WEATHER column
+// went '—' until it reset (Nick: 'weather doesn't work actually, on FIDS').
+// Open-Meteo returns WMO codes, which TIO_ICON already maps natively; the
+// worker's /wxdaily route set the precedent for leaning on it.
+async function _fetchOpenMeteoWx(iata) {
+  try {
+    if (!COORDS[iata]) return null;
+    var lat = COORDS[iata][0], lon = COORDS[iata][1];
+    var r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon
+      + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'
+      + '&hourly=temperature_2m,weather_code&forecast_days=2&timezone=UTC');
+    if (!r.ok) return null;
+    var d = await r.json();
+    if (!d || !d.current || typeof d.current.temperature_2m !== 'number') return null;
+    var hourly = [];
+    try {
+      var ht = (d.hourly && d.hourly.time) || [];
+      for (var i = 0; i < ht.length; i++) {
+        hourly.push({ time: ht[i], ts: new Date(ht[i] + ':00Z').getTime(),
+                      temp: d.hourly.temperature_2m[i], code: d.hourly.weather_code[i] });
+      }
+    } catch (e2) {}
+    TOMORROW_WX[iata] = {
+      current: {
+        temp: d.current.temperature_2m,
+        feelsLike: d.current.apparent_temperature,
+        code: d.current.weather_code,
+        windSpeed: d.current.wind_speed_10m,
+        humidity: d.current.relative_humidity_2m,
+      },
+      hourly: hourly,
+      ts: Date.now(),
+      _src: 'open-meteo',
+    };
+    console.log('[WX-OM] ✓ Open-Meteo fallback for', iata, Math.round(d.current.temperature_2m) + '°C');
+    return TOMORROW_WX[iata];
+  } catch (e) { return null; }
+}
+
 async function fetchTomorrowWeather(iata) {
   if (!COORDS[iata]) { console.warn('[TIO] No coords for', iata); return null; }
   const now = Date.now();
   const cached = TOMORROW_WX[iata];
   if (cached && (now - cached.ts < TOMORROW_TTL)) return cached;
 
-  // Rate limit backoff — if we got 429'd, wait 5 minutes before trying again
+  // Rate limit backoff — if we got 429'd, go straight to the keyless
+  // fallback for 5 minutes instead of showing '—'.
   if (window._tioRateLimited && (now - window._tioRateLimited < 5 * 60000)) {
-    return cached || null;
+    return (await _fetchOpenMeteoWx(iata)) || cached || null;
   }
 
   try {
@@ -12333,15 +12374,15 @@ async function fetchTomorrowWeather(iata) {
     const rtRes = await fetch(`https://fids-proxy.n-leblanc1984.workers.dev/weather/realtime?location=${lat},${lon}&units=metric`);
 
     if (rtRes.status === 429) {
-      console.warn('[TIO] Rate limited (429) — backing off 5 minutes');
+      console.warn('[TIO] Rate limited (429) — backing off 5 minutes, using Open-Meteo');
       window._tioRateLimited = now;
-      return cached || null;
+      return (await _fetchOpenMeteoWx(iata)) || cached || null;
     }
 
     if (!rtRes.ok) {
       const errText = await rtRes.text().catch(() => '');
       console.warn('[TIO] HTTP', rtRes.status, 'for', iata, errText.substring(0, 200));
-      return cached || null;
+      return (await _fetchOpenMeteoWx(iata)) || cached || null;
     }
 
     const rtData = await rtRes.json();
@@ -12349,7 +12390,7 @@ async function fetchTomorrowWeather(iata) {
 
     if (current.temperature == null) {
       console.warn('[TIO] No temperature in response for', iata);
-      return cached || null;
+      return (await _fetchOpenMeteoWx(iata)) || cached || null;
     }
 
     TOMORROW_WX[iata] = {
@@ -12411,7 +12452,7 @@ async function fetchTomorrowWeather(iata) {
     return TOMORROW_WX[iata];
   } catch(e) {
     console.warn('[TIO] Fetch error for', iata, ':', e.message);
-    return cached || null;
+    return (await _fetchOpenMeteoWx(iata)) || cached || null;
   }
 }
 
@@ -12720,9 +12761,13 @@ function logoFallback(img) {
     img.dataset.logoSet = 'tile';
     img.src = '/logos/icao-icons/' + IATA_TO_TILE_ICAO[c] + '.svg';
   } else {
-    // All sources exhausted — show the airline name as text
+    // All sources exhausted — MONOGRAM tile, not bare text (Nick: text/
+    // wordmark in the emblem slot 'doesn't work'). Cache so later renders
+    // go straight to the monogram without re-chasing dead URLs.
     if (c) _logoFailCache[c] = true;
-    img.outerHTML = `<span class="logo-fallback">${name}</span>`;
+    img.outerHTML = (typeof _monogramTile === 'function')
+      ? _monogramTile(c, name)
+      : `<span class="logo-fallback">${name}</span>`;
   }
 }
 
@@ -12758,6 +12803,7 @@ if (typeof window !== 'undefined') window.WORDMARK_OVERRIDE = WORDMARK_OVERRIDE;
 const IATA_TO_TILE_ICAO = {
   'BF':'FBU',   // French Bee — tile on file but was never mapped (tiny external mark, Nick)
   // Canadian carriers
+  '3H':'AIE',   // Air Inuit — brand-vermilion square + white lockup (Nick: 'should have an emblem as well'; wordmark-as-emblem doesn't work)
   'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // AC tile is the BLACK variant — Nick: 'its black normally' (red swap was a misread, reverted)
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
   'PB':'PB',   // ← Nick's custom PAL Airlines logo (Newfoundland)
@@ -13136,13 +13182,28 @@ const IATA_TO_EMBLEM = {
    B6 gets the navy JBU tile back, AS the ASA tile. Keep the mechanism. */
 var TILE_SKIP_WORDMARK_ONLY = new Set([]);
 
+// Monogram tile — LAST-RESORT emblem for carriers with no artwork anywhere
+// (Nick: a bare wordmark/text in the emblem slot 'doesn't work'). A brand-
+// accent square with the carrier code keeps the board's tile rhythm.
+function _monogramTile(code, name) {
+  var c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  var acc = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent) || '';
+  if (!acc) {
+    // Deterministic muted hue from the code — same carrier, same colour, every render.
+    var h = 0; for (var i = 0; i < c.length; i++) h = (h * 31 + c.charCodeAt(i)) % 360;
+    acc = 'hsl(' + h + ',45%,32%)';
+  }
+  var txt = (c || String(name || '?').replace(/[^A-Za-z0-9]/g, '')).slice(0, 2).toUpperCase() || '?';
+  return '<div class="full-logo logo-monogram" data-code="' + c + '" style="background:' + acc + ';">' + txt + '</div>';
+}
+
 function mkLogo(code, faName) {
   const c = (code || '').trim().toUpperCase();
   const displayName = AIRLINE_NAME[c] || faName || c;
-  
+
   // Skip img entirely if all sources already failed for this airline
   if (_logoFailCache[c]) {
-    return `<span class="logo-fallback">${displayName}</span>`;
+    return _monogramTile(c, displayName);
   }
   
   // If we have a local wordmark for this carrier, the right-hand wordmark
@@ -13200,7 +13261,7 @@ function mkLogo(code, faName) {
   // discover them: 4Y (Yute Air → Discover Airlines, 2017→2023).
   const STALE_WWAY = new Set(['4Y']);
   if (STALE_WWAY.has(c)) {
-    return `<span class="logo-fallback">${displayName}</span>`;
+    return _monogramTile(c, displayName);
   }
   const src = 'https://img.wway.io/pics/root/' + logoCode(c) + '@svg';
   return `<img class="full-logo" data-code="${c}"${_invertAttr} data-logo-set="wordmark" alt="${displayName}" src="${src}" onerror="logoFallback(this)">`;
@@ -13696,7 +13757,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22201';
+var FIDS_BUILD_TAG = 'v22202';
 (function(){
   try {
     function _addTag(){

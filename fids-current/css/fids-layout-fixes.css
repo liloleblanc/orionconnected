@@ -2430,6 +2430,33 @@ html #fidsTable .td-airline .fids-airline-logo img[data-logo-set="wordmark"] {
 /* Text fallback in the SQUARE slot clips to fragments ('IR CREEBE') — the
    label slot already carries the name, so never show it twice. */
 html #fidsTable .td-airline .fids-airline-logo .logo-fallback { display: none; }
+/* Column-header band LESS TALL (Nick circled it, v22202) — every theme
+   (navy-board, cream, …) sets its own 18px thead padding with !important;
+   this later, more-specific cap beats them all without touching colors. */
+html body #fidsTable thead th,
+html body[data-fids-theme] #fidsTable thead th {
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+  /* fids.css pins height:50px ('prevent layout shift') — with fixed padding
+     and single-line nowrap labels the height is stable anyway. */
+  height: auto !important;
+}
+
+/* Monogram tile — last-resort emblem when a carrier has no artwork at all:
+   brand-accent square with the carrier code, keeping the tile rhythm
+   (Nick: bare wordmarks/text in the emblem slot 'don't work'). */
+html #fidsTable .td-airline .fids-airline-logo .logo-monogram {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: calc(var(--fids-logo-tile-size, 48px) * 0.42) !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1 !important;
+}
 
 /* ── BOARDING INFO ROW (Nick: ONE continuous row, not separate cards —
    flight number and data bigger, same icons, thicker row). A single
