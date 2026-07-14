@@ -2003,9 +2003,9 @@ function cuSetSize(size) {
 
 function _applyLogoSize(size) {
   // Slimmer tiers (Nick: rows got much bigger than they used to be).
-  var px = 48, row = 58; // medium default
-  if (size === 'small') { px = 40; row = 48; }
-  else if (size === 'large') { px = 56; row = 66; }
+  var px = 44, row = 52; // medium default
+  if (size === 'small') { px = 36; row = 44; }
+  else if (size === 'large') { px = 50; row = 60; }
   document.documentElement.style.setProperty('--fids-logo-size', px + 'px');
   document.documentElement.style.setProperty('--fids-row-h', row + 'px');
   document.body.dataset.fidsLogoSize = size || 'medium';

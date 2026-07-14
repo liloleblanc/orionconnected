@@ -7111,9 +7111,15 @@ function uxgGateHtml(ctx) {
       // ALL TIMES; the right half is the called-zones sign (3, then up to
       // 4 \u2022 5 \u2022 6 \u2014 Express tops out at 4).
       nowVal = '1'; nextVal = '2';
-      _acZonesVal = lateBoarding
-        ? (_acExpress ? '3 \u2022 4' : '3 \u2022 4 \u2022 5 \u2022 6')
-        : '3';
+      // Zones are called ONE AT A TIME — 3, then 4, then 5, then 6 as
+      // departure approaches (Nick). Express tops out at Zone 4.
+      var _zStep;
+      if (minsToDep > 18) _zStep = 3;
+      else if (_acExpress) _zStep = 4;
+      else if (minsToDep > 13) _zStep = 4;
+      else if (minsToDep > 8) _zStep = 5;
+      else _zStep = 6;
+      _acZonesVal = String(_zStep);
     } else if (airlineCode === 'WS' || airlineCode === 'WR') {
       // WestJet boards by ZONE (Nick, per WestJet's published system and the
       // gate signage): Zone 1 premium / top tier, Zone 2 Extended Comfort,
@@ -12702,6 +12708,7 @@ if (typeof window !== 'undefined') window.WORDMARK_OVERRIDE = WORDMARK_OVERRIDE;
 // Special case: PB (PAL Airlines, Newfoundland) uses Nick's custom design,
 // NOT PAL.svg from the pack (PAL.svg is Philippine Airlines).
 const IATA_TO_TILE_ICAO = {
+  'BF':'FBU',   // French Bee — tile on file but was never mapped (tiny external mark, Nick)
   // Canadian carriers
   'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // AC tile is the BLACK variant — Nick: 'its black normally' (red swap was a misread, reverted)
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
@@ -12777,7 +12784,9 @@ const IATA_TO_WORDMARK = {
   'BW':'caribbean',        // official raster brand art (no public vector) — served via WORDMARK_RASTER
   'LO':'lot',              // LOT Polish Airlines
   'VS':'virgin-atlantic',  // Virgin Atlantic
-  'TP':'tap-portugal',     // TAP Air Portugal
+  // 'TP' wordmark REMOVED — all three tap-portugal-wordmark-*.svg files
+  // use live <text> that overflows its canvas ('TAP Air Portuga', clipped
+  // mid-word on every machine without the font). Tile + text name instead.
   '4Y':'discover-airlines', // Discover Airlines (Lufthansa Group, IATA 4Y / ICAO OCN, ex-Eurowings Discover)
   // North America other
   'MX':'breeze-airways', // Breeze Airways (David Neeleman's airline, ICAO MXY)
@@ -13638,7 +13647,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22188';
+var FIDS_BUILD_TAG = 'v22189';
 (function(){
   try {
     function _addTag(){
@@ -14288,7 +14297,11 @@ function render() {
     // green accent — the text fallback stays the default row colour.
     const _brandColor = (_airlineCodeForLogo === 'F8') ? ''
       : (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
-    const _nameStyle = _brandColor ? ` style="color:${_brandColor} !important;"` : '';
+    // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
+    // brand colours clash there (TAP green/red on yellow, Nick) and the
+    // inline !important would beat any stylesheet fix.
+    const _brandInkOk = !(isDelayed || stKey === 'final-call');
+    const _nameStyle = (_brandColor && _brandInkOk) ? ` style="color:${_brandColor} !important;"` : '';
     // onerror: RETRY once with a unique cache-buster before falling back to the
     // text name — a transient asset hiccup (or a stale cached 404) must not
     // permanently demote the wordmark to lettering on a display.
@@ -24322,7 +24335,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // !important in CSS — a plain inline style would lose the cascade.
     var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
-      + ' #fidsTable td.fids-cell-flight,'
+      + ' #fidsTable td.fids-cell-flight, #fidsTable .fids-airline-name,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-dest,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-status-val,'
       + ' .gad-map-col-v2 .v2-rc-acb-actype,'

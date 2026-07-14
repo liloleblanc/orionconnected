@@ -3,7 +3,10 @@
    across FIDS, BIDS, and GIDS without relying on per-logo lucky sizing. */
 
 :root {
-  --fids-brand-slot-h: 58px; /* airline tiles nearly full row height (62px rows) per Nick */
+  /* Follows the user's Small/Medium/Large density pick — the hardcoded
+     58px propped every row open regardless of the tier (Nick: 'I don't
+     see any changes for row size'). 8px slimmer than the row. */
+  --fids-brand-slot-h: calc(var(--fids-row-h, 52px) - 8px);
   --fids-wordmark-h: 30px;
   --fids-wordmark-w: 245px;
   --gate-logo-slot-w: clamp(150px, 16vw, 300px);
@@ -296,7 +299,15 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
    Goal: all FIDS row airline marks share the same left edge, visual baseline,
    and approximate optical size while preserving each carrier's real artwork. */
 :root {
-  --fids-logo-tile-size: 58px; /* tiles nearly full row height per Nick */
+  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 8px); /* follows the density tier */
+}
+/* Custom-property var() substitution happens at the DEFINING element —
+   on :root the row var is still the 64px default, so the tile size froze
+   at 56px no matter the tier. Re-defining on body (where the density
+   tier sets --fids-row-h) makes the slots actually follow the pick. */
+body[data-fids-logo-size] {
+  --fids-brand-slot-h: calc(var(--fids-row-h, 52px) - 8px);
+  --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 8px);
   --fids-logo-inner-size: 54px;
   --fids-wordmark-slot-w: 218px;
   --fids-wordmark-slot-pad-x: 10px;
@@ -2336,6 +2347,39 @@ html .wxcard-wrap > .wxc-globe {
   z-index: 0;
 }
 html .wxcard-wrap > *:not(.wxc-globe) { position: relative; z-index: 1; }
+
+/* DELAYED / FINAL rows are light tinted blocks — brand-coloured airline
+   names (TAP green/red) clash and wash out there; force the navy ink the
+   rest of the row already uses (Nick: 'colors'). */
+/* Wordmark IMAGES must shrink to their slot, never clip mid-word
+   ('TAP Air Portuga', Nick). Contained with both axes capped, the image
+   keeps its ratio and scales down instead of being cut. */
+html #fidsTable .td-airline img.fids-airline-wordmark[data-code] {
+  /* Beats the per-code --wm-h/--wm-w boxes, which forced sizes that clip
+     ('TAP Air Portuga') or crush stacked lockups (Air Inuit at 17px). */
+  width: auto !important;
+  max-width: calc(var(--fids-wordmark-slot-w, 260px) - 12px) !important;
+  height: auto !important;
+  max-height: calc(var(--fids-row-h, 52px) - 18px) !important;
+  min-height: 0 !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+}
+
+/* Inline-block so the shrink-to-fit scanner can measure the span — as a
+   plain inline its clientWidth is 0 and 'TAP Air Portuga' clipped. */
+html #fidsTable .fids-airline-name {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+html #fidsTable tbody tr.row-delayed .fids-airline-name,
+html #fidsTable tbody tr.row-final .fids-airline-name,
+html #fidsTable tbody tr.row-delayed .logo-fallback,
+html #fidsTable tbody tr.row-final .logo-fallback {
+  color: #14263f !important;
+}
 
 /* Wordmark-class logos in the airline cell: hide the duplicate name and
    render the lockup at row height instead of squeezing it into the 54px
