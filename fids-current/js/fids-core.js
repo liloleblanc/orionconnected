@@ -13603,7 +13603,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22185';
+var FIDS_BUILD_TAG = 'v22186';
 (function(){
   try {
     function _addTag(){
@@ -20091,7 +20091,9 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#080C14', adLayout:'left-scrim', headline:'Fast, free Wi-Fi', sub:'for Aeroplan Members', _customLogoVideo:'/logos/Backgrounds/AC/wifi-ac.mp4' },
   ],
   'WS': [
-    { bg:'linear-gradient(135deg,#00313c 0%,#00505c 100%)', headline:'WestJet Rewards', sub:'Earn WestJet dollars on every flight', logo:'/logos/airlines/canadian/westjet-2025/WestJet-Rewards-logo-colour.png' },
+    // NO headline — the logo IS the "WestJet Rewards" lockup; repeating it
+    // in type printed the name twice (Nick).
+    { bg:'linear-gradient(135deg,#00313c 0%,#00505c 100%)', headline:'', sub:'Earn WestJet dollars on every flight', logo:'/logos/airlines/canadian/westjet-2025/WestJet-Rewards-logo-colour.png' },
     { bg:'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 100%)', headline:'Free Starlink Wi-Fi', sub:'Stream & browse \u00b7 Powered by Starlink', logo:'/logos/symbols-utility/starlink.svg' },
   ],
   'PD': [
@@ -20100,13 +20102,13 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'Porter Reserve', sub:'Extra legroom \u00b7 Priority services on select fares', logo:'/logos/airlines/canadian/porter.svg' },
   ],
   'UA': [
-    { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn miles with United \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
+    { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn award miles \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
     { bg:'linear-gradient(135deg,#002244 0%,#003366 100%)', headline:'United Club', sub:'Relax before your flight \u00b7 Complimentary snacks & beverages', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
     { bg:'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 100%)', headline:'Free Wi-Fi', sub:'Stay connected with free Starlink Wi-Fi on every flight', logo:'/logos/symbols-utility/starlink.svg' },
     { bg:'linear-gradient(135deg,#003580 0%,#0057b8 100%)', headline:'United App', sub:'Mobile boarding pass \u00b7 Real-time flight updates', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
   ],
   'DL': [
-    { bg:'linear-gradient(135deg,#003366 0%,#00274d 100%)', headline:'SkyMiles', sub:'Earn miles on Delta \u00b7 Free Wi-Fi on every flight', logo:'/logos/airlines/us-major/delta.svg' },
+    { bg:'linear-gradient(135deg,#003366 0%,#00274d 100%)', headline:'SkyMiles', sub:'Earn miles on every flight \u00b7 Free Wi-Fi on board', logo:'/logos/airlines/us-major/delta.svg' },
   ],
   'AA': [
     // Finished creative \u2014 americanbackground.png is a complete ad (branding +
@@ -20114,34 +20116,38 @@ var GATE_ADS_BY_AIRLINE = {
     { bgColor:'#ffffff', bgImage:'/logos/Backgrounds/AA/americanbackground.png', bgPosition:'center', bgFit:'contain', imageOnly:true },
   ],
   'WN': [
-    { bg:'linear-gradient(135deg,#c8102e 0%,#a00d1a 100%)', headline:'Rapid Rewards', sub:'Earn points on every Southwest flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/southwest.svg' },
+    { bg:'linear-gradient(135deg,#c8102e 0%,#a00d1a 100%)', headline:'Rapid Rewards', sub:'Earn points on every flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/southwest.svg' },
   ],
   'AS': [
-    { bg:'linear-gradient(135deg,#01426A 0%,#003d5c 100%)', headline:'Mileage Plan', sub:'Earn miles with Alaska Airlines \u00b7 Oneworld Alliance', logo:'/logos/airlines/us-major/alaska-airlines.svg' },
+    { bg:'linear-gradient(135deg,#01426A 0%,#003d5c 100%)', headline:'Mileage Plan', sub:'Earn miles on every flight \u00b7 Oneworld Alliance', logo:'/logos/airlines/us-major/alaska-airlines.svg' },
   ],
   'B6': [
-    { bg:'linear-gradient(135deg,#003876 0%,#002a5c 100%)', headline:'TrueBlue', sub:'Earn points on every JetBlue flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/jetblue.svg' },
+    { bg:'linear-gradient(135deg,#003876 0%,#002a5c 100%)', headline:'TrueBlue', sub:'Earn points on every flight \u00b7 No blackout dates', logo:'/logos/airlines/us-major/jetblue.svg' },
   ],
   'LH': [
     // lufthansa.svg has a baked-in white background rect \u2014 under the
     // white-invert filter it rendered as a solid white square (Nick). The
     // monochrome lockup is transparent-background and filters cleanly.
-    { bg:'linear-gradient(135deg,#05164D 0%,#0a2470 100%)', headline:'Miles & More', sub:'Earn award miles with Lufthansa \u00b7 Star Alliance', logo:'/logos/airlines/european/Lufthansa_Logo_2018-monochrome-white.svg' },
+    { bg:'linear-gradient(135deg,#05164D 0%,#0a2470 100%)', headline:'Miles & More', sub:'Earn award miles \u00b7 Star Alliance', logo:'/logos/airlines/european/Lufthansa_Logo_2018-monochrome-white.svg' },
   ],
   'AF': [
-    { bg:'linear-gradient(135deg,#002157 0%,#003380 100%)', headline:'Flying Blue', sub:'Earn miles with Air France \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/air-france.svg' },
+    { bg:'linear-gradient(135deg,#002157 0%,#003380 100%)', headline:'Flying Blue', sub:'Earn award miles \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/air-france.svg' },
   ],
   'BA': [
-    { bg:'linear-gradient(135deg,#2E5DA4 0%,#1a4a8a 100%)', headline:'Executive Club', sub:'Earn Avios points with British Airways \u00b7 Oneworld', logo:'/logos/airlines/european/british-airways-wordmark-light.svg' },
+    { bg:'linear-gradient(135deg,#2E5DA4 0%,#1a4a8a 100%)', headline:'Executive Club', sub:'Earn Avios points \u00b7 Oneworld Alliance', logo:'/logos/airlines/european/british-airways-wordmark-light.svg' },
   ],
   'FI': [
-    { bg:'linear-gradient(135deg,#001B71 0%,#0a2f9e 100%)', headline:'Saga Club', sub:'Earn Saga Points with Icelandair', logo:'/logos/airlines/european/icelandair-wordmark-light.svg' },
+    { bg:'linear-gradient(135deg,#001B71 0%,#0a2f9e 100%)', headline:'Saga Club', sub:'Earn Saga Points on every flight', logo:'/logos/airlines/european/icelandair-wordmark-light.svg' },
   ],
   'BW': [
-    { bg:'linear-gradient(135deg,#5E2554 0%,#AA4399 100%)', headline:'Caribbean Miles', sub:'Earn miles with Caribbean Airlines', logo:'/logos/airlines/asian-other/caribbean-wordmark-light.png' },
+    // Sub must not repeat "Caribbean Airlines" — the wordmark logo above
+    // already says it (Nick: name shown twice).
+    { bg:'linear-gradient(135deg,#5E2554 0%,#AA4399 100%)', headline:'Caribbean Miles', sub:'Earn miles on every flight', logo:'/logos/airlines/asian-other/caribbean-wordmark-light.png' },
   ],
   'TS': [
-    { bg:'linear-gradient(135deg,#002868 0%,#004090 100%)', headline:'Air Transat', sub:'Your vacation starts the moment you board', logo:'/logos/airlines/canadian/transat.svg' },
+    // NO headline — the logo is the "Air transat" wordmark; the headline
+    // duplicated the airline name under it (Nick).
+    { bg:'linear-gradient(135deg,#002868 0%,#004090 100%)', headline:'', sub:'Your vacation starts the moment you board', logo:'/logos/airlines/canadian/transat.svg' },
   ],
   'F8': [
     // Brand-true: black lockup on Flair lime. NO text headline — the lockup
@@ -20150,13 +20156,13 @@ var GATE_ADS_BY_AIRLINE = {
   ],
   // NK (Spirit) ad block removed — ceased operations May 2 2026
   'HA': [
-    { bg:'linear-gradient(135deg,#4B2D89 0%,#CE0C88 100%)', headline:'HawaiianMiles', sub:'Earn miles to paradise \u00b7 Hawaiian Airlines', logo:'/logos/airlines/us-major/Hawaiian.svg' },
+    { bg:'linear-gradient(135deg,#4B2D89 0%,#CE0C88 100%)', headline:'HawaiianMiles', sub:'Earn miles to paradise', logo:'/logos/airlines/us-major/Hawaiian.svg' },
   ],
   'KL': [
-    { bg:'linear-gradient(135deg,#00A1DE 0%,#0077b3 100%)', headline:'Flying Blue', sub:'Earn miles with KLM \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/klm.png' },
+    { bg:'linear-gradient(135deg,#00A1DE 0%,#0077b3 100%)', headline:'Flying Blue', sub:'Earn award miles \u00b7 SkyTeam Alliance', logo:'/logos/airlines/european/klm.png' },
   ],
   'QF': [
-    { bg:'linear-gradient(135deg,#BE0000 0%,#8a0000 100%)', headline:'Qantas Frequent Flyer', sub:'Earn points with Qantas \u00b7 Oneworld Alliance', logo:'/logos/airlines/asian-other/qantas.png' },
+    { bg:'linear-gradient(135deg,#BE0000 0%,#8a0000 100%)', headline:'Frequent Flyer', sub:'Earn points on every flight \u00b7 Oneworld Alliance', logo:'/logos/airlines/asian-other/qantas.png' },
   ],
   '_default': []
 };
@@ -21152,6 +21158,17 @@ var AD_I18N = {
 
   // ── QF ──
   'Earn points with Qantas \u00b7 Oneworld Alliance': { fr:'Points Qantas · Alliance Oneworld', es:'Puntos con Qantas · Alianza Oneworld', de:'Punkte mit Qantas · Oneworld-Allianz', it:'Punti con Qantas · Alleanza Oneworld', pt:'Pontos com a Qantas · Aliança Oneworld', ja:'Qantasでポイント · ワンワールド', zh:'Qantas 累积积分 · 寰宇一家', ar:'نقاط مع Qantas · تحالف وان وورلد' },
+
+  // ── De-duplicated house-ad subs (logo carries the airline name) ──
+  'Earn award miles \u00b7 Star Alliance': { fr:'Milles primes \u00b7 Star Alliance', es:'Millas premio \u00b7 Star Alliance', de:'Pr\u00e4mienmeilen \u00b7 Star Alliance', it:'Miglia premio \u00b7 Star Alliance', pt:'Milhas-pr\u00eamio \u00b7 Star Alliance', ja:'\u7279\u5178\u30de\u30a4\u30eb \u00b7 \u30b9\u30bf\u30fc\u30a2\u30e9\u30a4\u30a2\u30f3\u30b9', zh:'\u5956\u52b1\u91cc\u7a0b \u00b7 \u661f\u7a7a\u8054\u76df', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0643\u0627\u0641\u0622\u062a \u00b7 \u0633\u062a\u0627\u0631 \u0623\u0644\u064a\u0627\u0646\u0633' },
+  'Earn award miles \u00b7 SkyTeam Alliance': { fr:'Milles primes \u00b7 SkyTeam', es:'Millas premio \u00b7 SkyTeam', de:'Pr\u00e4mienmeilen \u00b7 SkyTeam', it:'Miglia premio \u00b7 SkyTeam', pt:'Milhas-pr\u00eamio \u00b7 SkyTeam', ja:'\u7279\u5178\u30de\u30a4\u30eb \u00b7 \u30b9\u30ab\u30a4\u30c1\u30fc\u30e0', zh:'\u5956\u52b1\u91cc\u7a0b \u00b7 \u5929\u5408\u8054\u76df', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0643\u0627\u0641\u0622\u062a \u00b7 \u0633\u0643\u0627\u064a \u062a\u064a\u0645' },
+  'Earn points on every flight \u00b7 No blackout dates': { fr:"Points \u00e0 chaque vol \u00b7 Sans dates d'exclusion", es:'Puntos en cada vuelo \u00b7 Sin fechas restringidas', de:'Punkte bei jedem Flug \u00b7 Keine Sperrtermine', it:'Punti ad ogni volo \u00b7 Nessuna data di blackout', pt:'Pontos em cada voo \u00b7 Sem datas restritas', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30dd\u30a4\u30f3\u30c8 \u00b7 \u30d6\u30e9\u30c3\u30af\u30a2\u30a6\u30c8\u306a\u3057', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u79ef\u5206 \u00b7 \u65e0\u7981\u7528\u65e5\u671f', ar:'\u0646\u0642\u0627\u0637 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629 \u00b7 \u0628\u062f\u0648\u0646 \u062a\u0648\u0627\u0631\u064a\u062e \u0645\u062d\u0638\u0648\u0631\u0629' },
+  'Earn miles on every flight \u00b7 Oneworld Alliance': { fr:'Milles \u00e0 chaque vol \u00b7 Alliance Oneworld', es:'Millas en cada vuelo \u00b7 Alianza Oneworld', de:'Meilen bei jedem Flug \u00b7 Oneworld-Allianz', it:'Miglia ad ogni volo \u00b7 Alleanza Oneworld', pt:'Milhas em cada voo \u00b7 Alian\u00e7a Oneworld', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30de\u30a4\u30eb \u00b7 \u30ef\u30f3\u30ef\u30fc\u30eb\u30c9', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u91cc\u7a0b \u00b7 \u5bf0\u5b87\u4e00\u5bb6', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629 \u00b7 \u0648\u0627\u0646 \u0648\u0648\u0631\u0644\u062f' },
+  'Earn points on every flight \u00b7 Oneworld Alliance': { fr:'Points \u00e0 chaque vol \u00b7 Alliance Oneworld', es:'Puntos en cada vuelo \u00b7 Alianza Oneworld', de:'Punkte bei jedem Flug \u00b7 Oneworld-Allianz', it:'Punti ad ogni volo \u00b7 Alleanza Oneworld', pt:'Pontos em cada voo \u00b7 Alian\u00e7a Oneworld', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30dd\u30a4\u30f3\u30c8 \u00b7 \u30ef\u30f3\u30ef\u30fc\u30eb\u30c9', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u79ef\u5206 \u00b7 \u5bf0\u5b87\u4e00\u5bb6', ar:'\u0646\u0642\u0627\u0637 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629 \u00b7 \u0648\u0627\u0646 \u0648\u0648\u0631\u0644\u062f' },
+  'Earn miles on every flight \u00b7 Free Wi-Fi on board': { fr:'Milles \u00e0 chaque vol \u00b7 Wi-Fi gratuit \u00e0 bord', es:'Millas en cada vuelo \u00b7 Wi-Fi gratis a bordo', de:'Meilen bei jedem Flug \u00b7 Kostenloses WLAN an Bord', it:'Miglia ad ogni volo \u00b7 Wi-Fi gratuito a bordo', pt:'Milhas em cada voo \u00b7 Wi-Fi gr\u00e1tis a bordo', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30de\u30a4\u30eb \u00b7 \u6a5f\u5185\u7121\u6599Wi-Fi', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u91cc\u7a0b \u00b7 \u673a\u4e0a\u514d\u8d39Wi-Fi', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629 \u00b7 \u0648\u0627\u064a \u0641\u0627\u064a \u0645\u062c\u0627\u0646\u064a' },
+  'Earn miles on every flight': { fr:'Milles \u00e0 chaque vol', es:'Millas en cada vuelo', de:'Meilen bei jedem Flug', it:'Miglia ad ogni volo', pt:'Milhas em cada voo', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067\u30de\u30a4\u30eb', zh:'\u6bcf\u6b21\u98de\u884c\u8d5a\u91cc\u7a0b', ar:'\u0623\u0645\u064a\u0627\u0644 \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629' },
+  'Earn Saga Points on every flight': { fr:'Points Saga \u00e0 chaque vol', es:'Puntos Saga en cada vuelo', de:'Saga-Punkte bei jedem Flug', it:'Punti Saga ad ogni volo', pt:'Pontos Saga em cada voo', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067Saga\u30dd\u30a4\u30f3\u30c8', zh:'\u6bcf\u6b21\u98de\u884c\u8d5aSaga\u79ef\u5206', ar:'\u0646\u0642\u0627\u0637 Saga \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629' },
+  'Earn miles to paradise': { fr:'Milles vers le paradis', es:'Millas al para\u00edso', de:'Meilen ins Paradies', it:'Miglia per il paradiso', pt:'Milhas para o para\u00edso', ja:'\u697d\u5712\u3078\u306e\u30de\u30a4\u30eb', zh:'\u98de\u5f80\u5929\u5802\u7684\u91cc\u7a0b', ar:'\u0623\u0645\u064a\u0627\u0644 \u0625\u0644\u0649 \u0627\u0644\u062c\u0646\u0629' },
 
   // ── Generic city-aware ads ──
   'Book your hotel in {CITY}':        { fr:'Réservez votre hôtel à {CITY}', es:'Reserve su hotel en {CITY}', de:'Hotel in {CITY} buchen', it:'Prenota il tuo hotel a {CITY}', pt:'Reserve seu hotel em {CITY}', ja:'{CITY}のホテル予約', zh:'预订{CITY}的酒店', ar:'احجز فندقك في {CITY}' },
@@ -22263,12 +22280,22 @@ function buildGateAdHtml(ad) {
   // need dark copy; default stays white-on-dark.
   var _stdFg = ad.fg || '#fff';
   var _stdSubFg = ad.subFg || 'rgba(255,255,255,0.88)';
+  // The headline never repeats what the logo lockup already says — same
+  // guard as the scrim renderer (Nick: the name shown twice on one ad).
+  var _stdHeadline = ad.headline || '';
+  try {
+    if (ad.logo && _stdHeadline) {
+      var _nsH = _stdHeadline.toLowerCase().replace(/[^a-z0-9]/g, '');
+      var _nsL = String(ad.logo).split('/').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (_nsH && _nsL.indexOf(_nsH) !== -1) _stdHeadline = '';
+    }
+  } catch (e) {}
   return _adWrap(
     '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 36px;gap:6px;background:' + bgStyle + ';box-sizing:border-box;">'
     + (iconHtml ? '<div style="flex-shrink:0;opacity:0.9;margin-bottom:6px;">' + iconHtml + '</div>' : '')
     + _stdLogoHtml
     + '<div style="flex-shrink:0;text-align:center;max-width:100%;overflow:hidden;">'
-    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:' + _stdFg + ';line-height:1.1;max-width:100%;">' + (ad.headline || '') + '</div>'
+    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:' + _stdFg + ';line-height:1.1;max-width:100%;">' + _stdHeadline + '</div>'
     + '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:' + _stdSubFg + ';margin-top:14px;line-height:1.3;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
     + '</div></div>'
   );
