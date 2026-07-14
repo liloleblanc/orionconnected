@@ -1484,7 +1484,12 @@ html .g8-wrap.g8-airline-AC .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-QK .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-RV .gad-map-col-v2::before,
 html .g8-wrap.g8-airline-F8 .gad-map-col-v2::before,
-html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
+html .g8-wrap.g8-airline-PB .gad-map-col-v2::before,
+/* LEFT flight-info column gets the SAME dotted-globe backdrop as the right
+   column (Nick: 'the left shelves should match the right shelves with that
+   pattern'). Same asset, same treatment — the sphere breathes behind both. */
+html .gad-aircraft-col::before,
+html .g8-wrap .gad-aircraft-col::before {
   background-image: url('/logos/3d_globe_desktop.svg?v=2') !important; /* v2 = route arcs + pins removed (Nick) */
   background-size: 100% 100% !important;
   background-position: center center !important;
@@ -1496,6 +1501,40 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   mix-blend-mode: normal !important;
   transform: none !important;
 }
+/* Left column: base ::before layer (span the whole stack, behind shelves) +
+   keep content above it. Mirrors .gad-map-col-v2::before / '> * z-index:1'. */
+html .g8-wrap .gad-aircraft-col { position: relative !important; }
+/* Match the RIGHT column's globe geometry exactly (gids-v218.78 line ~3481):
+   bottom-anchored, 62% tall — a concentrated sphere in the lower shelves, not
+   a faint full-height stretch. */
+html .g8-wrap .gad-aircraft-col::before {
+  content: "" !important;
+  position: absolute !important; left: 0 !important; right: 0 !important;
+  top: auto !important; bottom: 0 !important; height: 62% !important;
+  pointer-events: none !important; z-index: 0 !important;
+}
+html .g8-wrap .gad-aircraft-col > * { position: relative !important; z-index: 1 !important; }
+/* Shelf brushed-metal made translucent so the globe reads THROUGH it — the
+   EXACT recipe the right column's Right 4-6 shelves use (gids-v218.78 ~4174),
+   which is proven to let the column ::before globe show. The key is that the
+   tonal falloff layer carries alpha (…/0.62) instead of the opaque original,
+   so the sphere breathes through the metal. */
+html .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  background-color: color-mix(in srgb, color-mix(in srgb, var(--body-bg,#e6eaef) 82%, var(--airline-accent,#8a8f96) 18%) 66%, transparent) !important;
+  background-image:
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.30) 47%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0) 82%),
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px,
+      rgba(0,0,0,0.05) 1px,      rgba(0,0,0,0.05) 2px),
+    linear-gradient(180deg,
+      color-mix(in srgb, color-mix(in srgb, #eef2f6 50%, #ffffff 50%) 62%, transparent) 0%,
+      color-mix(in srgb, color-mix(in srgb, #e6ebf0 78%, var(--airline-accent,#8a8f96) 22%) 55%, transparent) 52%,
+      color-mix(in srgb, color-mix(in srgb, #dde2e8 70%, #000000 15%) 62%, transparent) 100%) !important;
+}
+/* The flight-info block itself must not paint an opaque fill over the globe. */
+html .g8-wrap .gad-aircraft-col .v2-flightinfo-block { background: transparent !important; }
 
 /* No white sliver between the gate block and the Your Aircraft panel
    (Nick): the gate tab spans the banner's full inner height and covers
@@ -1604,7 +1643,12 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   display: grid !important;
   grid-template-columns: 1fr clamp(280px, 34%, 460px) !important;
   width: 100% !important; height: 100% !important;
-  background: #0b1322 !important;
+  /* Dotted-globe over the dark base so the enlarged panel carries the pattern
+     in the gaps/corners (the map tiles sit on top of the map column). */
+  background-color: #0b1322 !important;
+  background-image: url('/logos/3d_globe_desktop.svg?v=2') !important;
+  background-size: 46% auto !important; background-position: 22% 46% !important;
+  background-repeat: no-repeat !important;
 }
 .bigcraft-mapcol { position: relative !important; min-width: 0 !important; min-height: 0 !important; }
 .bigcraft-map { position: absolute !important; inset: 0 !important; }
@@ -1616,10 +1660,42 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
 }
 .bigcraft-side {
   display: flex !important; flex-direction: column !important; min-width: 0 !important;
-  background: #eef1f6 !important; padding: clamp(12px, 1.8vh, 24px) clamp(14px, 1.4vw, 26px) !important;
+  position: relative !important;
+  /* METAL LOOK on the info section (Nick) — the SAME brushed-metal recipe as
+     the gate rail shelves: translucent tinted base + specular sweep + fine
+     brushed grain + tonal falloff, so the globe ::before reads through. */
+  background-color: color-mix(in srgb, color-mix(in srgb, #e6eaef 82%, var(--airline-accent,#8a8f96) 18%) 74%, transparent) !important;
+  background-image:
+    linear-gradient(122deg,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
+      rgba(255,255,255,0.34) 47%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0) 82%),
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      rgba(0,0,0,0.055) 1px,     rgba(0,0,0,0.055) 2px),
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.022) 0px,      rgba(0,0,0,0.022) 3px,
+      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
+    linear-gradient(180deg,
+      color-mix(in srgb, #eef2f6 50%, #ffffff 50%) 0%,
+      color-mix(in srgb, #e6ebf0 78%, var(--airline-accent,#8a8f96) 22%) 52%,
+      color-mix(in srgb, #dde2e8 70%, #000000 15%) 100%) !important;
+  padding: clamp(12px, 1.8vh, 24px) clamp(14px, 1.4vw, 26px) !important;
   gap: clamp(8px, 1.2vh, 18px) !important;
+  overflow: hidden !important;
   --banner-bg: #14181E;
 }
+/* Dotted-globe backdrop behind the info metal (Nick: 'use this pattern on the
+   enlarged screen map and info'). Same sphere asset as the gate columns. */
+.bigcraft-side::before {
+  content: "" !important;
+  position: absolute !important; inset: 0 !important; z-index: 0 !important;
+  background-image: url('/logos/3d_globe_desktop.svg?v=2') !important;
+  background-size: 118% auto !important; background-position: center 42% !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.5 !important; filter: grayscale(1) contrast(1.25) !important;
+  pointer-events: none !important;
+}
+.bigcraft-side > * { position: relative !important; z-index: 1 !important; }
 .bigcraft-title {
   font-size: clamp(15px, 2vh, 24px) !important; font-weight: 900 !important;
   color: #14181E !important; letter-spacing: 0.2px !important;
