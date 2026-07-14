@@ -3688,17 +3688,27 @@ body[data-fids-theme="mist"] .fids-banner-board .fids-icon-arr {
    Final call & Gate closed AMBER, Departed muted. Never white-on-white.
    Rows: Delayed = WHOLE ROW amber. Cancelled/Diverted = WHOLE ROW red.
    Appended last so it out-cascades every per-theme rule above. */
-/* The [data-fids-theme] variants out-specify per-theme white overrides
-   (tus-teal set td.td-status white !important and silently beat this base
-   green — Nick: 'prévu and scheduled should be green'). */
+/* The [data-fids-theme] variants out-specify per-theme overrides. Base
+   statuses (Scheduled/Prévu, unknowns) read in PLAIN ROW INK — Nick,
+   revised: green Prévu 'is clashing with early'. Only the affirmative
+   states (On time / Early, rules below) stay green. */
 body #fidsTable tbody tr td.td-status,
 body #fidsTable tbody tr td.td-status *,
 body[data-fids-theme] #fidsTable tbody tr td.td-status,
-body[data-fids-theme] #fidsTable tbody tr td.td-status * { color: #2FD467 !important; }
+body[data-fids-theme] #fidsTable tbody tr td.td-status * { color: var(--fids-text, #ffffff) !important; }
 body.fids-light-board #fidsTable tbody tr td.td-status,
 body.fids-light-board #fidsTable tbody tr td.td-status *,
 body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status,
-body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status * { color: #157A43 !important; }
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status * { color: #16283C !important; }
+/* ON TIME: affirmative green (same shape so it wins by cascade order). */
+body #fidsTable tbody tr td.td-status.fids-status-ontime,
+body #fidsTable tbody tr td.td-status.fids-status-ontime *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-ontime,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-ontime * { color: #2FD467 !important; }
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-ontime,
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-ontime *,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-ontime,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-ontime * { color: #157A43 !important; }
 
 /* Same tbody-tr + [data-fids-theme] shape as the base green above so these
    STATE colors stay ahead of it in the cascade on every theme. */
@@ -3845,10 +3855,14 @@ body #fidsTable tbody tr td.td-status * { color: #ffffff !important; }
 body.fids-light-board #fidsTable tbody tr td.td-status,
 body.fids-light-board #fidsTable tbody tr td.td-status * { color: #16283C !important; }
 /* Early: plain green */
-body #fidsTable td.td-status.fids-status-early,
-body #fidsTable td.td-status.fids-status-early * { color: #2FD467 !important; }
-body.fids-light-board #fidsTable td.td-status.fids-status-early,
-body.fids-light-board #fidsTable td.td-status.fids-status-early * { color: #157A43 !important; }
+body #fidsTable tbody tr td.td-status.fids-status-early,
+body #fidsTable tbody tr td.td-status.fids-status-early *,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-early,
+body[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-early * { color: #2FD467 !important; }
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-early,
+body.fids-light-board #fidsTable tbody tr td.td-status.fids-status-early *,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-early,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status.fids-status-early * { color: #157A43 !important; }
 /* Boarding / Final call: plain amber.
    Selector shape matches the base green (tbody tr + [data-fids-theme]
    variants) so these state colors stay ahead of it by cascade ORDER —
@@ -3999,10 +4013,21 @@ body #fidsTable tbody tr.row-final:nth-child(n),
 body #fidsTable tbody tr.row-final:nth-child(n) td,
 body.fids-light-board #fidsTable tbody tr.row-final:nth-child(n),
 body.fids-light-board #fidsTable tbody tr.row-final:nth-child(n) td { background: #F28C00 !important; }
+/* The .fids-status-final / [data-fids-theme] variants keep this row ink
+   AHEAD of the bumped amber status rules — amber-on-orange was invisible
+   (Nick: 'the final call, you can't see it'). */
 body #fidsTable tbody tr.row-final td,
 body #fidsTable tbody tr.row-final td *,
+body #fidsTable tbody tr.row-final td.td-status.fids-status-final,
+body #fidsTable tbody tr.row-final td.td-status.fids-status-final *,
+body[data-fids-theme] #fidsTable tbody tr.row-final td.td-status,
+body[data-fids-theme] #fidsTable tbody tr.row-final td.td-status *,
+body[data-fids-theme] #fidsTable tbody tr.row-final td.td-status.fids-status-final,
+body[data-fids-theme] #fidsTable tbody tr.row-final td.td-status.fids-status-final *,
 body.fids-light-board #fidsTable tbody tr.row-final td,
-body.fids-light-board #fidsTable tbody tr.row-final td * { color: #102437 !important; }
+body.fids-light-board #fidsTable tbody tr.row-final td *,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr.row-final td.td-status,
+body.fids-light-board[data-fids-theme] #fidsTable tbody tr.row-final td.td-status * { color: #102437 !important; }
 body #fidsTable tbody tr.row-final td.td-status.fids-status-final { background: transparent !important; }
 /* no highlight boxes or faded struck times inside the orange block */
 body #fidsTable tbody tr.row-final td.td-time *,

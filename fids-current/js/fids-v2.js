@@ -86,7 +86,12 @@
       'boarding':    'fids-status-boarding',
       'departed':    'fids-status-departed',
       'arrived':     'fids-status-arrived',
-      'early':       'fids-status-early'
+      'early':       'fids-status-early',
+      // Explicit classes so CSS can treat these two differently: On time
+      // stays green, Scheduled reverts to the plain row ink (Nick: the
+      // green Prévu 'is clashing with early').
+      'on-time':     'fids-status-ontime',
+      'scheduled':   'fids-status-scheduled'
     };
     return {
       html: T('st-' + st, lang),

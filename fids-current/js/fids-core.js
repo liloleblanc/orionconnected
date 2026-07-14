@@ -12164,6 +12164,9 @@ const COORDS = {
   ZHA:[21.48,110.59], ZHY:[37.57,105.15], ZIH:[17.6,-101.46], ZLO:[19.14,-104.56],
   ZNE:[-23.42,119.8], ZOS:[-40.61,-73.06], ZQN:[-45.02,168.75], ZQZ:[40.74,114.93],
   ZSA:[24.06,-74.52], ZTH:[37.75,20.88], ZUH:[22.01,113.38], ZYI:[27.81,107.25],
+  // North Africa / West Africa — YUL destinations that had NO coords, so
+  // the weather column stayed '—' for them (Nick: 'Algiers has no weather').
+  ALG:[36.69,3.22], ORN:[35.62,-0.62], CZL:[36.28,6.62], TUN:[36.85,10.23], ACC:[5.61,-0.17],
 
 };
 
@@ -13757,7 +13760,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22207';
+var FIDS_BUILD_TAG = 'v22208';
 (function(){
   try {
     function _addTag(){
@@ -14020,13 +14023,12 @@ function setTheme(name) {
     .td-wx .fids-cell-weather span:not(.fids-wx-cell) {
       color: ${t.rowText} !important;
     }
-    /* Good-state statuses (Scheduled/On time/Boarding/Prévu/Early): GREEN
-       on every theme (Nick: 'prévu and scheduled should be green') — and a
-       RICHER green than the old Flair-ish mint (Nick: 'should be greener').
-       This runtime sheet is appended LAST, so rowText here was silently
-       beating the semantic-green block in fids-v3. The state-specific
-       rules below (muted/amber) still override per status. */
-    .td-status { color: ${t.lightRows ? '#15803D' : '#2FD467'} !important; }
+    /* Statuses: base = plain row ink; ON TIME and EARLY get the rich
+       green. (Nick, revised: green Prévu 'is clashing with early' — only
+       the affirmative states stay green, Scheduled reads neutral.) */
+    .td-status { color: ${t.rowText} !important; }
+    .td-status.fids-status-ontime,
+    .td-status.fids-status-early { color: ${t.lightRows ? '#15803D' : '#2FD467'} !important; }
     /* Faded statuses (Arrived/Departed/Gate closed) — slightly muted vs
        the active rows but still readable on whichever theme is picked. */
     .td-status.fids-status-departed,
@@ -14155,6 +14157,28 @@ function _fidsRowsAvail() {
     return (avail > 100) ? avail : _fallback;
   } catch (e) { return _fallback; }
 }
+
+// The chrome around the table can change size AFTER a render — the ticker
+// is 0px until its messages load, then grows to ~58px and swallows the
+// bottom half of the last row (Nick: 'this is happening again'); the
+// banner appearing late squishes the same way. Watch both and re-count
+// rows whenever they move. render() never resizes the ticker/banner, so
+// this cannot loop.
+try {
+  if (typeof ResizeObserver === 'function' && !window._fidsChromeRO) {
+    var _fidsChromeRoT = null;
+    window._fidsChromeRO = new ResizeObserver(function () {
+      clearTimeout(_fidsChromeRoT);
+      _fidsChromeRoT = setTimeout(function () {
+        try { if (typeof render === 'function') render(); } catch (e) {}
+      }, 250);
+    });
+    var _fidsTkEl = document.querySelector('.ticker');
+    if (_fidsTkEl) window._fidsChromeRO.observe(_fidsTkEl);
+    var _fidsBnEl = document.getElementById('fidsBanner');
+    if (_fidsBnEl) window._fidsChromeRO.observe(_fidsBnEl);
+  }
+} catch (e) {}
 
 function render() {
   if (_renderBlocked) return;
