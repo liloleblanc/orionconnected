@@ -13801,7 +13801,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22221';
+var FIDS_BUILD_TAG = 'v22222';
 (function(){
   try {
     function _addTag(){
@@ -22688,8 +22688,26 @@ function buildAccorAdOnlyV6(ad) {
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function first(){ for(var i=0;i<arguments.length;i++){ var a=arguments[i]; if(a!==undefined&&a!==null&&String(a).trim()!=='') return a; } return ''; }
   function lower(v){ return String(v==null?'':v).toLowerCase(); }
-  function safeTL(k,f){ try{ return (typeof TL==='function'&&TL(k))||f; }catch(e){ return f; } }
-  function accorLang(){ return (typeof lang!=='undefined'&&lang)?lang:'en'; }
+  // Resolve labels in the AD's language (accorLang → the forced EN/FR the deck
+  // chose for this slide), NOT the global board `lang` — TL() reads the board
+  // lang, which is what split the card into half-French/half-English labels vs
+  // content (Nick, Novotel). Same source as the content now.
+  function safeTL(k,f){
+    try {
+      var o = (typeof LS !== 'undefined' && LS[k]) ? LS[k] : null;
+      if (o) { var l = accorLang(); return o[l] || o.en || f; }
+    } catch(e){}
+    return f;
+  }
+  // Use the SAME language the ad deck forced for this slide (_accorLangNow),
+  // not the raw board language. The deck flips EN/FR per slide via
+  // _accorAdForcedLang; this builder used to read the board `lang` instead, so
+  // the forced-language LABELS and the board-language CONTENT disagreed and the
+  // card came out half-French/half-English (Nick, Novotel). One source now.
+  function accorLang(){
+    try { if (typeof _accorLangNow === 'function') return _accorLangNow(); } catch(e){}
+    return (typeof lang!=='undefined'&&lang)?lang:'en';
+  }
   function localized(obj,base){ var l=accorLang(); return first(obj[base+'_'+l],obj[base+l.toUpperCase()],obj[base+'-'+l],obj[base],''); }
   function bgUrl(bg){ var m=String(bg||'').match(/url\((['"]?)(.*?)\1\)/i); return (m&&m[2])?m[2]:''; }
 
