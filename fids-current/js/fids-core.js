@@ -7151,17 +7151,23 @@ function uxgGateHtml(ctx) {
       else _zStep = 6;
       _acZonesVal = String(_zStep);
     } else if (airlineCode === 'WS' || airlineCode === 'WR') {
-      // WestJet boards by ZONE (Nick, per WestJet's published system and the
-      // gate signage): Zone 1 premium / top tier, Zone 2 Extended Comfort,
-      // Zones 3-8 general back-to-front, Zone 9 UltraBasic last.
+      // WestJet \u2014 SAME lane-sign model as the AC gate sign (Nick, more than
+      // once: 'zones 1 and 2 is 2 lanes ALL THE TIME, it's priority; zones
+      // 3 to 8 is also 2 lanes, by number'). Priority Zones 1 (Lane 1) and
+      // 2 (Lane 2) hold their quarter panels for the whole boarding \u2014 they
+      // are never a now/next step. The right half calls Zones 3-8 ONE AT A
+      // TIME through Lanes 3\u20224 as departure approaches. Zone 9 (UltraBasic)
+      // rides the final call, not the zones sign.
       _grpLbl = 'Zone';
-      if (lateBoarding) {
-        nowVal = '3 \u2013 8';
-        nextVal = '9';
-      } else {
-        nowVal = '1 \u2022 2';
-        nextVal = '3 \u2013 8';
-      }
+      nowVal = '1'; nextVal = '2';
+      var _wzStep;
+      if (minsToDep > 18) _wzStep = 3;
+      else if (minsToDep > 15) _wzStep = 4;
+      else if (minsToDep > 12) _wzStep = 5;
+      else if (minsToDep > 10) _wzStep = 6;
+      else if (minsToDep > 8) _wzStep = 7;
+      else _wzStep = 8;
+      _acZonesVal = String(_wzStep);
     } else if (airlineCode === 'PD') {
       // Porter boards by ROW NUMBER, back to front (Nick). Row count by
       // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
@@ -7180,10 +7186,13 @@ function uxgGateHtml(ctx) {
       if (lateBoarding) { nowVal = zones - 1; nextVal = zones; }
       else { nowVal = 1; nextVal = 2; }
     }
-    // AC-family lane mode mirrors the printed sign exactly: no now/next
-    // header row, no label over the black "1", and the red side titled
-    // "Zones" (Nick's design picture).
-    var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK');
+    // Lane-sign mode mirrors the printed sign exactly: no now/next
+    // header row, no label over the "1" quarter, and the right side titled
+    // "Zones" (Nick's design picture). WestJet uses the same sign model
+    // (confirmed by Nick), inheriting its own brand colours via the
+    // banner-bg/accent vars.
+    var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK'
+                    || airlineCode === 'WS' || airlineCode === 'WR');
     var _nowLbl = _acLanes ? '' : _grpLbl;
     var _nextLbl = _acLanes ? 'Zones' : _grpLbl;
     var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>';
@@ -13679,7 +13688,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22196';
+var FIDS_BUILD_TAG = 'v22197';
 (function(){
   try {
     function _addTag(){
