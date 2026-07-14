@@ -4424,6 +4424,13 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: 4 / 5 !important; flex: none !important; min-height: 0 !important; }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: 5 / 6 !important; flex: none !important; min-height: 0 !important; height: auto !important; }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: 6 / 7 !important; flex: none !important; min-height: 0 !important; }
+/* 4-row flight-info variant (Arrival row present): row 4 takes a ~45% bigger
+   track so the first row's caps don't clip behind the shelf edge (Nick:
+   'capped out… can't even see it'). The map row gives up the difference;
+   the class is stamped by the renderer since :has() dies on kiosk browsers. */
+.g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
+  grid-template-rows: repeat(3, minmax(0, 0.85fr)) minmax(0, 1.45fr) repeat(2, minmax(0, 1fr)) !important;
+}
 
 /* ── v218.99 — FLIGHT NUMBER / VALUE CLIP FIX. The text column is a grid cell
    with the default min-width:auto, so a long value (e.g. "AC1983") grew the

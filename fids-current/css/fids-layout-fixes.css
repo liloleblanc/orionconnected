@@ -1926,6 +1926,13 @@ html .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
 /* 4-row variant — the restored Arrival row overflowed the 3-row shelf and the
    rows collided (Nick: 'see how tight that is'). Tighter type + rhythm so all
    four rows breathe inside the same shelf. */
+/* The shelf itself is flex-locked to 1/6 of the rail (the 6-row grid: map 3 /
+   fi 1 / aircraft 2) — enough for 3 rows, but at 4 rows the top row's cap
+   clipped behind the shelf edge (Nick: 'capped out… can't even see it').
+   With 4 rows the shelf takes a ~40% bigger share; the map and aircraft
+   shelves yield proportionally. Class is stamped by the renderer — :has()
+   is silently dropped on the older kiosk browsers. */
+html .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi.v2-rc-shelf-fi4 { flex: 1.4 1 0 !important; }
 html .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 .v2-rc-fi-tlbl {
   font-size: clamp(9px, 1.2vh, 13px) !important;
   line-height: 1.05 !important;

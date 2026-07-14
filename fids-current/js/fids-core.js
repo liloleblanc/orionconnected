@@ -6061,8 +6061,12 @@ function _buildV2MapCol(ctx, vars) {
           +   '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>'
           + '</div>';
       }
+      // Shelf-level t4 marker too: the shelf is flex-locked to 1/6 of the
+      // rail (sized for 3 rows) and :has() is unusable on the older kiosk
+      // browsers, so CSS needs the class ON the shelf to widen its share
+      // when the Arrival row makes it 4 rows (Nick: 'capped out').
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table' + (_ibArrRowHtml ? ' v2-rc-fi-t4' : '') + '">'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table' + (_ibArrRowHtml ? ' v2-rc-fi-t4' : '') + '">'
         +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
@@ -6558,8 +6562,12 @@ function _buildV2MapCol(ctx, vars) {
   var _rcHtml = '';
   _rcOrderToUse.forEach(function(id) { _rcHtml += (_rcBlockMap[id] || ''); });
 
+  // fi4 marker on the CONTAINER too: the rail is a locked 6-equal-row grid
+  // and row 4 (flight info) needs a bigger track when the Arrival row makes
+  // the table 4 rows — :has() is silently dropped on the kiosk browsers.
+  var _railFi4 = _rcHtml.indexOf('v2-rc-shelf-fi4') >= 0 ? ' gad-map-col-fi4' : '';
   return ''
-    + '<div class="gad-map-col-v2" style="display:flex;flex-direction:column;flex:0 0 25%;min-width:0;">'
+    + '<div class="gad-map-col-v2' + _railFi4 + '" style="display:flex;flex-direction:column;flex:0 0 25%;min-width:0;">'
     +   _rcHtml
     + '</div>';
 }
@@ -13688,7 +13696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22197';
+var FIDS_BUILD_TAG = 'v22198';
 (function(){
   try {
     function _addTag(){
