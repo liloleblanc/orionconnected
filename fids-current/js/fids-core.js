@@ -4082,7 +4082,7 @@ const AIRLINE_AMENITIES = {
 const IATA_AIRCRAFT = {
   '319':'Airbus A319','320':'Airbus A320','321':'Airbus A321',
   '32N':'Airbus A320neo','21N':'Airbus A321neo','223':'Airbus A220-300',
-  '318':'Airbus A318','32A':'Airbus A319','32B':'Airbus A320',
+  '318':'Airbus A318','32A':'Airbus A320 (Sharklets)','32B':'Airbus A321-200 (Sharklets)','32C':'Airbus A318 (Sharklets)','32D':'Airbus A319 (Sharklets)',
   '32Q':'Airbus A321neo','32R':'Airbus A321neo','31N':'Airbus A319neo',
   '32S':'Airbus A320',
   '330':'Airbus A330','332':'Airbus A330-200','333':'Airbus A330-300',
@@ -4428,7 +4428,7 @@ function aircraftCodeToIata(raw) {
   // Already a shipped 3-char IATA code? Return as-is — UNLESS it's a code we want to remap
   // to match our actual file naming (e.g. BCS→223, CS1→221 because our AC folder uses 221/223)
   var _REMAP = { 'BCS':'223', 'CS1':'221', 'CS3':'223', 'DHC3':'DH3', 'DHC':'DH3', 'DH8A':'DH1', 'DH8B':'DH2', 'DH8C':'DH3', 'DH8D':'DH4',
-                 '32A':'319', '32B':'320', '32S':'320',
+                 '32A':'320', '32B':'321', '32C':'318', '32D':'319', '32S':'320',
                  // v218.99.48 — Nick noted API sometimes returns bare '757' instead of 752/753.
                  // 757-200 is far more common than -300; default to that. Specific "757-200"
                  // and "757-300" full strings are matched by regex below and override this.
@@ -6389,17 +6389,6 @@ function _buildV2MapCol(ctx, vars) {
         _equipCd = '32Q';
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('32Q') : 'Airbus A321neo';
       }
-    }
-    // Air Canada's (ex-Rouge) sharklet A321-200s arrive as equipment code 32B
-    // (Nick) — which otherwise renders as an A320. For AC / Rouge / Jazz, treat
-    // 32B as the sharklet A321: fix the label here, and the '(Sharklets)' in the
-    // name drives the sharklet livery image in aircraftImgTag (which falls back
-    // to the plain 321 until an AC/321s.png sharklet render is added). Scoped to
-    // the AC family so other carriers' 32B is untouched.
-    if (['AC', 'RV', 'QK'].indexOf(String(vars.airlineCode || '').toUpperCase()) !== -1
-        && String(_equipCd || '').toUpperCase().trim() === '32B') {
-      _equipCd = '321';
-      _equipNm = 'Airbus A321-200 (Sharklets)';
     }
     var _liveryEq = _equipCd;
     if (_opCode === 'RV' && _liveryEq && /^[A-Z0-9]{3}$/i.test(_liveryEq)) _liveryEq = _liveryEq + 'r';
@@ -13905,7 +13894,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22257';
+var FIDS_BUILD_TAG = 'v22258';
 (function(){
   try {
     function _addTag(){
