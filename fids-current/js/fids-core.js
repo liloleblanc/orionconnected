@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22244';
+var FIDS_BUILD_TAG = 'v22245';
 (function(){
   try {
     function _addTag(){
@@ -25282,6 +25282,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       enabled = (window.self !== window.top) ||
                 q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
     }
+    // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
+    // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
+    // numbers were rotating from flight to flight … is it the time?' — the 60s
+    // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
+    // (raw set) can still request a walk on a pinned display.
+    if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
     if (!enabled) return;
 
     // Advance to a FRESH gate — random, never an immediate repeat — among the
@@ -25360,6 +25366,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       enabled = (window.self !== window.top) ||
                 q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
     }
+    // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
+    // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
+    // numbers were rotating from flight to flight … is it the time?' — the 60s
+    // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
+    // (raw set) can still request a walk on a pinned display.
+    if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
     if (!enabled) return;
     function bagBelts() {
       try {
