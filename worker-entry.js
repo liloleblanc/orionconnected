@@ -48,9 +48,14 @@ const TILE_PROVIDERS = {
   positron:  'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   topo:      'https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
-  // Transparent place-name + boundary labels (halo'd for imagery) — overlaid
-  // on satellite to make a hybrid "satellite with names" view.
-  labels:    'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  // Transparent place-name labels ONLY — overlaid on satellite for a
+  // "satellite with names" view. Uses CARTO's labels-only tiles: city/town
+  // text, NO boundary lines. (The old `labels` provider was Esri
+  // Boundaries_and_Places, whose bold white country borders read like flight
+  // paths on the route map — Nick: 'but the line??'.) New key so the edge
+  // cache serves fresh tiles instead of the day-cached bordered ones. Standard
+  // XYZ axes.
+  citylabels: 'https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png',
 };
 
 const DAY = 86400;

@@ -1730,29 +1730,41 @@ async function fetchAICityBg(locIata) {
 // Uses the same FLUX worker pattern as city backgrounds, with a hotel-
 // specific prompt server-side. Cached client-side by hotel name + city.
 var _aiHotelBgCache = {}; // key: "hotelName|city" -> blob URL
+var _aiHotelBgPending = {}; // key -> in-flight Promise (dedup)
 
 async function fetchAIHotelBg(hotelName, city) {
   if (!hotelName) return null;
   var key = (hotelName + '|' + (city || '')).toLowerCase();
   if (_aiHotelBgCache[key]) return _aiHotelBgCache[key];
   if (_aiHotelBgCache[key] === false) return null; // negative cache
-  try {
-    var url = FIDS_PROXY + '/ai/hotelbg?name=' + encodeURIComponent(hotelName)
-            + '&city=' + encodeURIComponent(city || '');
-    var resp = await fetch(url);
-    if (!resp.ok) { _aiHotelBgCache[key] = false; return null; }
-    var ct = (resp.headers.get('Content-Type') || '').toLowerCase();
-    if (!ct.startsWith('image/')) { _aiHotelBgCache[key] = false; return null; }
-    var blob = await resp.blob();
-    if (blob.size < 1000) { _aiHotelBgCache[key] = false; return null; }
-    var blobUrl = URL.createObjectURL(blob);
-    _aiHotelBgCache[key] = blobUrl;
-    return blobUrl;
-  } catch (e) {
-    console.log('[FIDS-HOTEL-BG] AI fetch failed for ' + hotelName + ':', e.message);
-    _aiHotelBgCache[key] = false;
-    return null;
-  }
+  // The slide deck is rebuilt several times per rotation tick, and each
+  // build re-requested any photo-less hotel: dozens of parallel fetches,
+  // each of whose .then re-painted the carousel. One in-flight promise per
+  // hotel, shared by every caller.
+  if (_aiHotelBgPending[key]) return _aiHotelBgPending[key];
+  var p = (async function () {
+    try {
+      var url = FIDS_PROXY + '/ai/hotelbg?name=' + encodeURIComponent(hotelName)
+              + '&city=' + encodeURIComponent(city || '');
+      var resp = await fetch(url);
+      if (!resp.ok) { _aiHotelBgCache[key] = false; return null; }
+      var ct = (resp.headers.get('Content-Type') || '').toLowerCase();
+      if (!ct.startsWith('image/')) { _aiHotelBgCache[key] = false; return null; }
+      var blob = await resp.blob();
+      if (blob.size < 1000) { _aiHotelBgCache[key] = false; return null; }
+      var blobUrl = URL.createObjectURL(blob);
+      _aiHotelBgCache[key] = blobUrl;
+      return blobUrl;
+    } catch (e) {
+      console.log('[FIDS-HOTEL-BG] AI fetch failed for ' + hotelName + ':', e.message);
+      _aiHotelBgCache[key] = false;
+      return null;
+    } finally {
+      delete _aiHotelBgPending[key];
+    }
+  })();
+  _aiHotelBgPending[key] = p;
+  return p;
 }
 
 async function fetchOpenversePhoto(cityName) {
@@ -6055,8 +6067,11 @@ function _buildV2MapCol(ctx, vars) {
         } else {
           _ibArrVal = _ibArrSchedStr;
         }
+        // NOT trow-last: the Status row now always renders LAST (below this),
+        // so the time-vs-status order matches the departure card (Nick: 'one
+        // gate has time on line 3, status on 4, the other's the opposite').
         _ibArrRowHtml =
-            '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+            '<div class="v2-rc-fi-trow">'
           +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
           +   '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>'
           + '</div>';
@@ -6075,11 +6090,11 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-trow' + (_ibArrRowHtml ? '' : ' v2-rc-fi-trow-last') + '">'
+        +   _ibArrRowHtml
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +   '</div>'
-        +   _ibArrRowHtml
         + '</div></div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
@@ -6129,12 +6144,35 @@ function _buildV2MapCol(ctx, vars) {
       // Strip markup to plain text. Loop until stable (a single pass can leave
       // a reassembled tag, per CodeQL), then drop any stray angle brackets.
       function _dStrip(h){
-        var s = String(h || ''), prev;
-        do { prev = s; s = s.replace(/<[^>]*>/g, ''); } while (s !== prev);
-        return s.replace(/[<>]/g, '').trim();
+        var s = String(h || '');
+        if (s.indexOf('<') === -1) return s.trim();
+        // Delayed times arrive as '<span class=g8-r2-strike>OLD</span><span
+        // class=g8-r2-revised>NEW</span>'. Keep ONLY the revised value — else
+        // the tags-stripped text reads 'OLDNEW' mashed together (Nick: '5:30
+        // AM5:49 AM'). Done with a plain CHARACTER SCAN — no HTML-matching
+        // regex (CodeQL js/bad-tag-filter) and no innerHTML — so markup is
+        // never mis-parsed or re-injected.
+        var rev = s.indexOf('g8-r2-revised');
+        if (rev !== -1) {
+          var gt = s.indexOf('>', rev);
+          var lt = (gt !== -1) ? s.indexOf('<', gt + 1) : -1;
+          if (gt !== -1 && lt !== -1) return s.slice(gt + 1, lt).trim();
+        }
+        // No revised marker: strip every tag by scanning, not regex.
+        var out = '', depth = 0;
+        for (var i = 0; i < s.length; i++) {
+          var c = s.charAt(i);
+          if (c === '<') depth++;
+          else if (c === '>') { if (depth > 0) depth--; }
+          else if (depth === 0) out += c;
+        }
+        return out.trim();
       }
       var _dDepStr = _dStrip(vars.depTimeHtml) || (_dDepTs ? _dFmtT(_dDepTs) : '');
       var _dArrStr = _dStrip(vars.arrHtml);
+      // A revised (delayed) departure carries the g8-r2-revised marker — colour
+      // that time ORANGE on this card to match the delayed status (Nick).
+      var _dDepDelayed = String(vars.depTimeHtml || '').indexOf('g8-r2-revised') !== -1;
 
       // "Departing in" countdown
       var _dMins = _dDepTs ? Math.round((_dDepTs - Date.now()) / 60000) : 0;
@@ -6170,13 +6208,23 @@ function _buildV2MapCol(ctx, vars) {
       } catch (e) {}
       var _dStShow = (_dStFr && _dStFr !== _dStEn)
         ? (_dStEn + ' <span class="v2-rc-fi-sep">|</span> ' + _dStFr) : (_dStEn || _dStLabel || '—');
+      // The raw API status can still read 'scheduled' after a delay, so the card
+      // showed 'Scheduled' in an orange (delayed) pill next to a bumped time
+      // (Nick: 'Scheduled should be delayed for that flight'). Whenever the
+      // flight IS delayed — by status class OR by a revised departure time —
+      // force the label AND class to Delayed so the card is self-consistent and
+      // matches the left rail.
+      if (_dStCls === 'delayed' || _dDepDelayed) {
+        _dStShow = 'Delayed <span class="v2-rc-fi-sep">|</span> En retard';
+        _dStCls = 'delayed';
+      }
       // Flight·To + Status only (no departing-in row — it's on the left).
       // Same 3-row LABEL | VALUE table as the inbound card (Nick, Jul 2026).
       var _dCityCode = _dDestCity
         ? (_dDestCity + (_dDest ? ' (' + _dDest + ')' : ''))
         : (_dDest || '—');
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table">'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t4">'
         +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
@@ -6184,6 +6232,12 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'À' : 'Destination') + '</span><span>' + (_frF ? 'Destination' : 'À') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
+        +   '</div>'
+        // Departure TIME restored (Nick: 'who told you to remove the time') —
+        // the card dropped it 'because it's on the left', but Nick wants it here.
+        +   '<div class="v2-rc-fi-trow">'
+        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
+        +     '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
@@ -7124,6 +7178,19 @@ function uxgGateHtml(ctx) {
       + '</div>';
   }
 
+  // Porter lane sign (Nick: 'lane 1 and 2 is priority, lane 3 and 4 is the
+  // rest' + 'Porter Reserve is priority'). LEFT half = the Porter Reserve
+  // priority queue on Lanes 1\u20222 (always shown while boarding); RIGHT half =
+  // the row band being called for everyone else on Lanes 3\u20224.
+  function _pdLanesBodyHtml(rowsVal) {
+    var _prioT = _frF ? 'Priorit\u00e9 <span class="g8-bir-sep">|</span> Priority' : 'Priority <span class="g8-bir-sep">|</span> Priorit\u00e9';
+    var _rowsLbl = _frF ? 'Rang\u00e9es <span class="g8-bir-sep">|</span> Rows' : 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
+    return '<div class="g8-board-body g8-lanes-pd">'
+      + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">Porter Reserve</div></div><div class="g8-board-lane">' + TL('useLanes') + ' 1 \u2022 2</div></div>'
+      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
+      + '</div>';
+  }
+
   // Build boarding panel HTML
   var boardHtml = '';
   if (boardActive) {
@@ -7209,6 +7276,8 @@ function uxgGateHtml(ctx) {
       + _boardWelcomeStripHtml()
       + (_acLanes
           ? _acLanesBodyHtml(_acZonesVal)
+          : airlineCode === 'PD'
+          ? _pdLanesBodyHtml(nowVal)
           : _bHdr
             + '<div class="g8-board-body">'
             + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
@@ -7225,11 +7294,14 @@ function uxgGateHtml(ctx) {
     var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
     var finalSub = isGateClosed ? '' : TL('proceedGate');
     if (isGateClosed) {
-      // Closed gate: no 'Welcome' strip (Nick) — just the facts.
+      // Closed gate: no 'Welcome' strip (Nick) — just the facts. ONE
+      // statement only: the big 'GATE CLOSED' header IS the message —
+      // the 'This gate is now closed' sub-line said the exact same thing a
+      // second time (and the info-row status cell a third), so it's dropped
+      // (Nick: 'why do you keep putting things twice… GATE CLOSED').
       finalHtml = '<div class="g8-final active g8-final-closed">'
         + _boardInfoRowHtml('gateclosed')
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
-        + '<div class="g8-final-body"><div class="g8-final-text"><div class="g8-final-allgrp">' + finalMsg + '</div>' + (finalSub ? '<div class="g8-final-sub">' + finalSub + '</div>' : '') + '</div></div>'
         + '</div>';
     } else {
       // FINAL CALL: same lane-panel format as boarding (Nick: 'the ALL
@@ -7252,6 +7324,8 @@ function uxgGateHtml(ctx) {
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
         + (_fcAcFam
           ? _acLanesBodyHtml(_fcExpress ? '3 • 4' : '3 • 4 • 5 • 6')
+          : airlineCode === 'PD'
+          ? _pdLanesBodyHtml(_frF ? 'Toutes <span class="g8-bir-sep">|</span> All' : 'All <span class="g8-bir-sep">|</span> Toutes')
           : '<div class="g8-board-body">'
             + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
             + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
@@ -7272,7 +7346,7 @@ function uxgGateHtml(ctx) {
       + '<div class="g8-cd-label">' + TL('boardBegins') + '</div>'
       + '<div class="g8-cd-value">' + minsToBoard + '</div>'
       + '<div class="g8-cd-unit">' + TL('minutes') + '</div>'
-      + '<div class="g8-cd-sub">' + TL('remainSeated') + '</div>'
+      // 'Please remain seated until your zone is called' REMOVED (Nick).
       + '</div></div>';
   }
 
@@ -7931,9 +8005,12 @@ function uxgGateHtml(ctx) {
     + '</div>'
     // ROW 3+4 — CONDITIONAL: boarding/final/countdown = FULL WIDTH, else split layout
     + (boardActive || finalActive || showCountdown
-      // ═══ BOARDING MODE: solid message strip + full takeover (no ads, no aircraft, just the message) ═══
-      ? (r3Left ? '<div class="g8-r3" style="background:rgba(0,0,0,0.85);">' + r3Left + '</div>' : '')
-      + '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
+      // ═══ BOARDING MODE: the takeover fills the screen; the delay/status
+      // message bar sits at the VERY BOTTOM (Nick, ~5 times: 'put the delayed
+      // banner below the flight number and times … actually at the very
+      // bottom'), NOT between the banner and the info row. ═══
+      ? '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
+      + (r3Left ? '<div class="g8-r3 g8-r3-bottom" style="background:rgba(0,0,0,0.85);border-top:2px solid ' + (accent || '#eab308') + ';flex-shrink:0;">' + r3Left + '</div>' : '')
       // ═══ IDLE MODE: layout depends on GATE_LAYOUT_V2 flag ═══
       : (window.GATE_LAYOUT_V2
           // ╔═══ V2 LAYOUT: 3-column (aircraft | media | map) with growable message strip ═══╗
@@ -8515,6 +8592,20 @@ function gateAutofit(root) {
         var er = el.getBoundingClientRect();
         var pr = parent.getBoundingClientRect();
         if (er.right > (pr.right - padR) + 0.5 || er.left < (pr.left + padL) - 0.5) return true;
+        // 3) Test against the VISIBLE RAIL COLUMN, not just the immediate cell.
+        //    The value's cell (v2-fi-textcol / v2-fi-copy) can grow wider than
+        //    the rail, which clips — so a long city ('Toronto') read as
+        //    'fitting' its cell while it was actually cut off by the column
+        //    (Nick: 'still see Toron…'). Measuring the element's edges against
+        //    the rail's content box catches that and lets the shrink fire.
+        var col = (el.closest && el.closest('.gad-aircraft-col')) || null;
+        if (col) {
+          var cr = col.getBoundingClientRect();
+          var ccs = window.getComputedStyle(col);
+          var cpl = parseFloat(ccs.paddingLeft) || 0;
+          var cpr = parseFloat(ccs.paddingRight) || 0;
+          if (er.right > (cr.right - cpr) + 0.5 || er.left < (cr.left + cpl) - 0.5) return true;
+        }
         return false;
       }
       var guard = 0;
@@ -8962,15 +9053,26 @@ const gView = document.getElementById('gateView');
         // — preserving it flashed "previous airline's ad, then the current one"
         // on the rotating gate. On a carrier change, drop it so the slot
         // rebuilds fresh for the new airline (renderGateAd re-fills it below).
-        var _gateAdAirlineSame = (window._gateCurrentAirline === (currentFlight.airline || ''));
+        // Only a REAL carrier change (a new, non-blank airline that differs)
+        // drops the live carousel. A momentarily-blank airline field on a data
+        // refresh must NOT: skipping preservation rebuilt the slot empty, and
+        // the empty-slot refill then coerced the index to the bigcraft map —
+        // the 'ad flips to the map and back' storm Nick filmed near departure.
+        var _newGateAirline = (currentFlight.airline || '');
+        var _gateAdAirlineSame = (!_newGateAirline || window._gateCurrentAirline === _newGateAirline);
         var _savedAd = document.getElementById('gateAdCarousel');
         var _savedAdLogo = document.getElementById('gateAdLogo');
         if (_gateAdAirlineSame && _savedAd && _savedAd.firstChild) { _savedAd.remove(); }
         else { _savedAd = null; _savedAdLogo = null; }
         if (_savedAdLogo) { _savedAdLogo.remove(); }
-        // Smooth transition: fade out, rebuild, fade in
-        gView.style.transition = 'opacity 0.15s ease';
-        gView.style.opacity = '0.7';
+        // NO opacity dip on rebuild (Nick: 'the whole thing is still glitching
+        // in and out'). Every data-key change (inbound poll, status/upd tick)
+        // rebuilds the gate view, and the old fade-to-0.7-and-back made the
+        // WHOLE screen pulse each time. The map and ad carousel are already
+        // preserved across the rebuild, so the swap is seamless — keep it at
+        // full opacity, no flash.
+        gView.style.transition = 'none';
+        gView.style.opacity = '1';
         // Mobile: render a clean phone-friendly gate view; desktop: use full TV layout
         var _isMobileGate = (window.innerWidth || document.documentElement.clientWidth) < 700;
         if (_isMobileGate) {
@@ -9105,7 +9207,7 @@ const gView = document.getElementById('gateView');
         // Carrier changed (gate cycle) — the ad slot was rebuilt fresh above;
         // fill it immediately from slide 0 so the new airline's advert shows at
         // once instead of a blank slot until the next carousel tick.
-        try { _gateAdIndex = 0; if (typeof renderGateAd === 'function') renderGateAd(0); } catch(e) {}
+        try { _gateAdIndex = 0; window._gateAdAuthChange = true; if (typeof renderGateAd === 'function') renderGateAd(0); window._gateAdAuthChange = false; } catch(e) { window._gateAdAuthChange = false; }
       }
 
       // Fetch Tomorrow.io weather for departure airport + destination (non-blocking)
@@ -9960,6 +10062,7 @@ const CITY = {
   YLC:'KIMMIRUT',       YVP:'KUUJJUAQ',       YWB:'KANGIQSUJUAQ', YKU:'CHISASIBI',
   YGL:'LA GRANDE',      YPX:'PUVIRNITUQ',     YUD:'UMIUJAQ',      YMX:'MIRABEL',
   YSY:'SACHS HARBOUR',  YKQ:'WASKAGANISH',    YNS:'NEMISCAU',     YQK:'KENORA',
+  YAG:'FORT FRANCES',   YMU:'MUSSELWHITE',   KM8:'MUSSELWHITE',
   YXL:'SIOUX LOOKOUT',
   PWM:'PORTLAND',       BGR:'BANGOR',         BTV:'BURLINGTON',
   JFK:'NEW YORK',   LGA:'NEW YORK',   EWR:'NEWARK',       BOS:'BOSTON',
@@ -10755,6 +10858,7 @@ const CITY_FR = {
   YGR:'ÎLES-DE-LA-MADELEINE', YBC:'BAIE-COMEAU',    YRI:'RIVIÈRE-DU-LOUP',
   YTZ:'TORONTO',    YHM:'HAMILTON',           YKF:'KITCHENER',
   YGK:'KINGSTON',          YPQ:'PETERBOROUGH',       YQK:'KENORA',
+  YAG:'FORT FRANCES',      YMU:'MUSSELWHITE',      KM8:'MUSSELWHITE',
   YXL:'SIOUX LOOKOUT',
   YNS:'NEMISCAU',          YKQ:'WASKAGANISH',        YSY:'SACHS HARBOUR',
   YQC:'QUAQTAQ',           YPH:'INUKJUAK',           YLC:'KIMMIRUT',
@@ -11547,6 +11651,9 @@ const CITY_FR = {
 // ── AIRPORT COORDINATES ─────────────────────────────
 const COORDS = {
   YXL:[50.11,-91.91], YQK:[49.79,-94.36],   // Sioux Lookout, Kenora (weather)
+  YAG:[48.65,-93.44],   // Fort Frances (Ontario, Central Time)
+  YMU:[52.60,-90.37],   // Musselwhite Mine aerodrome (Wasaya; no IATA — matched by name)
+  KM8:[52.60,-90.37],   // Musselwhite — code KM8 as it appears in the feed (Nick)
   YYZ:[43.68,-79.63], YUL:[45.47,-73.74], YVR:[49.19,-123.18], YYC:[51.11,-114.02],
   YEG:[53.31,-113.58], YOW:[45.32,-75.67], YQM:[46.11,-64.68], YHZ:[44.88,-63.51],
   YQB:[46.79,-71.39], YWG:[49.91,-97.24], YXE:[52.17,-106.70], YYJ:[48.65,-123.43],
@@ -12164,6 +12271,9 @@ const COORDS = {
   ZHA:[21.48,110.59], ZHY:[37.57,105.15], ZIH:[17.6,-101.46], ZLO:[19.14,-104.56],
   ZNE:[-23.42,119.8], ZOS:[-40.61,-73.06], ZQN:[-45.02,168.75], ZQZ:[40.74,114.93],
   ZSA:[24.06,-74.52], ZTH:[37.75,20.88], ZUH:[22.01,113.38], ZYI:[27.81,107.25],
+  // North Africa / West Africa — YUL destinations that had NO coords, so
+  // the weather column stayed '—' for them (Nick: 'Algiers has no weather').
+  ALG:[36.69,3.22], ORN:[35.62,-0.62], CZL:[36.28,6.62], TUN:[36.85,10.23], ACC:[5.61,-0.17],
 
 };
 
@@ -12316,15 +12426,56 @@ function tioLabel(weatherCode) {
   return '';
 }
 
+// ── Open-Meteo fallback (keyless, no quota) ────────────────────────────
+// Tomorrow.io's free quota can die mid-day and the whole WEATHER column
+// went '—' until it reset (Nick: 'weather doesn't work actually, on FIDS').
+// Open-Meteo returns WMO codes, which TIO_ICON already maps natively; the
+// worker's /wxdaily route set the precedent for leaning on it.
+async function _fetchOpenMeteoWx(iata) {
+  try {
+    if (!COORDS[iata]) return null;
+    var lat = COORDS[iata][0], lon = COORDS[iata][1];
+    var r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon
+      + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'
+      + '&hourly=temperature_2m,weather_code&forecast_days=2&timezone=UTC');
+    if (!r.ok) return null;
+    var d = await r.json();
+    if (!d || !d.current || typeof d.current.temperature_2m !== 'number') return null;
+    var hourly = [];
+    try {
+      var ht = (d.hourly && d.hourly.time) || [];
+      for (var i = 0; i < ht.length; i++) {
+        hourly.push({ time: ht[i], ts: new Date(ht[i] + ':00Z').getTime(),
+                      temp: d.hourly.temperature_2m[i], code: d.hourly.weather_code[i] });
+      }
+    } catch (e2) {}
+    TOMORROW_WX[iata] = {
+      current: {
+        temp: d.current.temperature_2m,
+        feelsLike: d.current.apparent_temperature,
+        code: d.current.weather_code,
+        windSpeed: d.current.wind_speed_10m,
+        humidity: d.current.relative_humidity_2m,
+      },
+      hourly: hourly,
+      ts: Date.now(),
+      _src: 'open-meteo',
+    };
+    console.log('[WX-OM] ✓ Open-Meteo fallback for', iata, Math.round(d.current.temperature_2m) + '°C');
+    return TOMORROW_WX[iata];
+  } catch (e) { return null; }
+}
+
 async function fetchTomorrowWeather(iata) {
   if (!COORDS[iata]) { console.warn('[TIO] No coords for', iata); return null; }
   const now = Date.now();
   const cached = TOMORROW_WX[iata];
   if (cached && (now - cached.ts < TOMORROW_TTL)) return cached;
 
-  // Rate limit backoff — if we got 429'd, wait 5 minutes before trying again
+  // Rate limit backoff — if we got 429'd, go straight to the keyless
+  // fallback for 5 minutes instead of showing '—'.
   if (window._tioRateLimited && (now - window._tioRateLimited < 5 * 60000)) {
-    return cached || null;
+    return (await _fetchOpenMeteoWx(iata)) || cached || null;
   }
 
   try {
@@ -12333,15 +12484,15 @@ async function fetchTomorrowWeather(iata) {
     const rtRes = await fetch(`https://fids-proxy.n-leblanc1984.workers.dev/weather/realtime?location=${lat},${lon}&units=metric`);
 
     if (rtRes.status === 429) {
-      console.warn('[TIO] Rate limited (429) — backing off 5 minutes');
+      console.warn('[TIO] Rate limited (429) — backing off 5 minutes, using Open-Meteo');
       window._tioRateLimited = now;
-      return cached || null;
+      return (await _fetchOpenMeteoWx(iata)) || cached || null;
     }
 
     if (!rtRes.ok) {
       const errText = await rtRes.text().catch(() => '');
       console.warn('[TIO] HTTP', rtRes.status, 'for', iata, errText.substring(0, 200));
-      return cached || null;
+      return (await _fetchOpenMeteoWx(iata)) || cached || null;
     }
 
     const rtData = await rtRes.json();
@@ -12349,7 +12500,7 @@ async function fetchTomorrowWeather(iata) {
 
     if (current.temperature == null) {
       console.warn('[TIO] No temperature in response for', iata);
-      return cached || null;
+      return (await _fetchOpenMeteoWx(iata)) || cached || null;
     }
 
     TOMORROW_WX[iata] = {
@@ -12411,7 +12562,7 @@ async function fetchTomorrowWeather(iata) {
     return TOMORROW_WX[iata];
   } catch(e) {
     console.warn('[TIO] Fetch error for', iata, ':', e.message);
-    return cached || null;
+    return (await _fetchOpenMeteoWx(iata)) || cached || null;
   }
 }
 
@@ -12720,9 +12871,13 @@ function logoFallback(img) {
     img.dataset.logoSet = 'tile';
     img.src = '/logos/icao-icons/' + IATA_TO_TILE_ICAO[c] + '.svg';
   } else {
-    // All sources exhausted — show the airline name as text
+    // All sources exhausted — MONOGRAM tile, not bare text (Nick: text/
+    // wordmark in the emblem slot 'doesn't work'). Cache so later renders
+    // go straight to the monogram without re-chasing dead URLs.
     if (c) _logoFailCache[c] = true;
-    img.outerHTML = `<span class="logo-fallback">${name}</span>`;
+    img.outerHTML = (typeof _monogramTile === 'function')
+      ? _monogramTile(c, name)
+      : `<span class="logo-fallback">${name}</span>`;
   }
 }
 
@@ -12758,6 +12913,7 @@ if (typeof window !== 'undefined') window.WORDMARK_OVERRIDE = WORDMARK_OVERRIDE;
 const IATA_TO_TILE_ICAO = {
   'BF':'FBU',   // French Bee — tile on file but was never mapped (tiny external mark, Nick)
   // Canadian carriers
+  '3H':'AIE',   // Air Inuit — brand-vermilion square + white lockup (Nick: 'should have an emblem as well'; wordmark-as-emblem doesn't work)
   'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // AC tile is the BLACK variant — Nick: 'its black normally' (red swap was a misread, reverted)
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
   'PB':'PB',   // ← Nick's custom PAL Airlines logo (Newfoundland)
@@ -13106,6 +13262,24 @@ function wordmarkSrc(base, forceVariant) {
   return logoPath(fname) + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
 }
 
+// WCAG relative luminance of a #hex colour (0 = black … 1 = white). Used to
+// decide whether a carrier's brand accent is legible as the TEXT name on the
+// dark board — a deep maroon/navy (Qatar #5c0931, Emirates crimson) reads as
+// an unreadable smudge or an alarm state, not a brand (Nick: 'Qatar', earlier
+// 'Emirates shouldn't be red').
+function _hexLum(hex) {
+  try {
+    hex = String(hex).replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(function (c) { return c + c; }).join('');
+    if (hex.length < 6) return 1;
+    var toLin = function (v) { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    var r = toLin(parseInt(hex.slice(0, 2), 16));
+    var g = toLin(parseInt(hex.slice(2, 4), 16));
+    var b = toLin(parseInt(hex.slice(4, 6), 16));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  } catch (e) { return 1; }
+}
+
 // IATA → emblem-only icon URL. Used by mkLogo() to populate the emblem
 // slot for carriers whose primary symbol is an icon/illustration (not a
 // solid tile). Distinct from IATA_TO_TILE_ICAO (square-tile carriers like
@@ -13136,13 +13310,28 @@ const IATA_TO_EMBLEM = {
    B6 gets the navy JBU tile back, AS the ASA tile. Keep the mechanism. */
 var TILE_SKIP_WORDMARK_ONLY = new Set([]);
 
+// Monogram tile — LAST-RESORT emblem for carriers with no artwork anywhere
+// (Nick: a bare wordmark/text in the emblem slot 'doesn't work'). A brand-
+// accent square with the carrier code keeps the board's tile rhythm.
+function _monogramTile(code, name) {
+  var c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  var acc = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent) || '';
+  if (!acc) {
+    // Deterministic muted hue from the code — same carrier, same colour, every render.
+    var h = 0; for (var i = 0; i < c.length; i++) h = (h * 31 + c.charCodeAt(i)) % 360;
+    acc = 'hsl(' + h + ',45%,32%)';
+  }
+  var txt = (c || String(name || '?').replace(/[^A-Za-z0-9]/g, '')).slice(0, 2).toUpperCase() || '?';
+  return '<div class="full-logo logo-monogram" data-code="' + c + '" style="background:' + acc + ';">' + txt + '</div>';
+}
+
 function mkLogo(code, faName) {
   const c = (code || '').trim().toUpperCase();
   const displayName = AIRLINE_NAME[c] || faName || c;
-  
+
   // Skip img entirely if all sources already failed for this airline
   if (_logoFailCache[c]) {
-    return `<span class="logo-fallback">${displayName}</span>`;
+    return _monogramTile(c, displayName);
   }
   
   // If we have a local wordmark for this carrier, the right-hand wordmark
@@ -13200,7 +13389,7 @@ function mkLogo(code, faName) {
   // discover them: 4Y (Yute Air → Discover Airlines, 2017→2023).
   const STALE_WWAY = new Set(['4Y']);
   if (STALE_WWAY.has(c)) {
-    return `<span class="logo-fallback">${displayName}</span>`;
+    return _monogramTile(c, displayName);
   }
   const src = 'https://img.wway.io/pics/root/' + logoCode(c) + '@svg';
   return `<img class="full-logo" data-code="${c}"${_invertAttr} data-logo-set="wordmark" alt="${displayName}" src="${src}" onerror="logoFallback(this)">`;
@@ -13696,7 +13885,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22200';
+var FIDS_BUILD_TAG = 'v22254';
 (function(){
   try {
     function _addTag(){
@@ -13953,12 +14142,17 @@ function setTheme(name) {
     tbody tr:nth-child(odd) { background: ${t.rowOdd} !important; }
     tbody tr:nth-child(even) { background: ${t.rowEven} !important; }
     .td-date, .td-time, .td-dest, .td-flight { color: ${t.rowText} !important; }
-    /* v2 cells — airline name, gate, status, weather temp all use rowText
+    /* v2 cells — airline name, gate, weather temp all use rowText
        so dark themes get light text and light themes get dark text. */
-    .td-airline, .fids-airline-name, .td-gate, .td-status,
+    .td-airline, .fids-airline-name, .td-gate,
     .td-wx .fids-cell-weather span:not(.fids-wx-cell) {
       color: ${t.rowText} !important;
     }
+    /* Statuses: base = plain row ink; EARLY ALONE gets the rich green so
+       it stands out (Nick, twice revised: Scheduled and On time both read
+       neutral — 'On Time is still green'). */
+    .td-status { color: ${t.rowText} !important; }
+    .td-status.fids-status-early { color: ${t.lightRows ? '#15803D' : '#2FD467'} !important; }
     /* Faded statuses (Arrived/Departed/Gate closed) — slightly muted vs
        the active rows but still readable on whichever theme is picked. */
     .td-status.fids-status-departed,
@@ -14087,6 +14281,28 @@ function _fidsRowsAvail() {
     return (avail > 100) ? avail : _fallback;
   } catch (e) { return _fallback; }
 }
+
+// The chrome around the table can change size AFTER a render — the ticker
+// is 0px until its messages load, then grows to ~58px and swallows the
+// bottom half of the last row (Nick: 'this is happening again'); the
+// banner appearing late squishes the same way. Watch both and re-count
+// rows whenever they move. render() never resizes the ticker/banner, so
+// this cannot loop.
+try {
+  if (typeof ResizeObserver === 'function' && !window._fidsChromeRO) {
+    var _fidsChromeRoT = null;
+    window._fidsChromeRO = new ResizeObserver(function () {
+      clearTimeout(_fidsChromeRoT);
+      _fidsChromeRoT = setTimeout(function () {
+        try { if (typeof render === 'function') render(); } catch (e) {}
+      }, 250);
+    });
+    var _fidsTkEl = document.querySelector('.ticker');
+    if (_fidsTkEl) window._fidsChromeRO.observe(_fidsTkEl);
+    var _fidsBnEl = document.getElementById('fidsBanner');
+    if (_fidsBnEl) window._fidsChromeRO.observe(_fidsBnEl);
+  }
+} catch (e) {}
 
 function render() {
   if (_renderBlocked) return;
@@ -14373,8 +14589,16 @@ function render() {
     // green accent — the text fallback stays the default row colour.
     // EK (Emirates): red accent reads as an ALARM state on the board, not a
     // brand (Nick: 'Emirates stands out, shouldn't be red') — row ink instead.
-    const _brandColor = (_airlineCodeForLogo === 'F8' || _airlineCodeForLogo === 'EK') ? ''
+    let _brandColor = (_airlineCodeForLogo === 'F8' || _airlineCodeForLogo === 'EK') ? ''
       : (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
+    // Legibility guard: on the DARK board a deep brand accent (Qatar's maroon
+    // #5c0931, any dark navy/burgundy) is an unreadable smudge in the name
+    // slot — fall back to row ink. wordmarkVariant() is 'light' when the board
+    // is dark (light-ink artwork). Only gates the TEXT name; wordmark IMAGES
+    // are unaffected.
+    try {
+      if (_brandColor && wordmarkVariant() === 'light' && _hexLum(_brandColor) < 0.30) _brandColor = '';
+    } catch (e) {}
     // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
     // brand colours clash there (TAP green/red on yellow, Nick) and the
     // inline !important would beat any stylesheet fix.
@@ -14507,7 +14731,24 @@ function render() {
     // Legacy single time cell (kept so anywhere else that references it still works,
     // though no longer placed in the row template below).
     const timeCell2Html = '<td class="td-time fids-cell-time">' + timeCellHtml + '</td>';
-    const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '') + '">' + stCellHtml + '</td>';
+    // Long statuses (French: DERNIER APPEL, EMBARQUEMENT) ellipsized in the
+    // fixed column (Nick: 'not fully read') — flag them so CSS steps the
+    // type down instead of cutting the word.
+    // Tag-strip to a FIXPOINT (CodeQL: single-pass replace can leave
+    // '<script' behind on crafted input). The result is only ever used for
+    // its LENGTH, never inserted into HTML — but loop anyway so the
+    // sanitizer is complete on its own terms.
+    var _stPlain = String(stCellHtml), _stPrev;
+    do { _stPrev = _stPlain; _stPlain = _stPlain.replace(/<[^>]*>/g, ''); } while (_stPlain !== _stPrev);
+    var _stPlainLen = _stPlain.trim().length;
+    // INLINE font-size with !important: the stylesheet route kept losing to
+    // late vw-sized theme rules and the word still clipped ('DERNIER AP…',
+    // Nick, twice). Inline+important cannot be out-cascaded.
+    var _stLongAttrs = _stPlainLen >= 15
+      ? ' st-longtext" style="font-size:18px !important;letter-spacing:0.2px !important;'
+      : '';
+    const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '')
+      + _stLongAttrs + '">' + stCellHtml + '</td>';
 
     let cells;
     if (isDep) {
@@ -16708,7 +16949,7 @@ function mapADB(raw, mode) {
             'YYZ','YTZ','YUL','YVR','YYC','YEG','YOW','YQM','YHZ','YQB','YWG',
             'YYJ','YSJ','YYT','YFC','YYG','YQT','YQY','YDF','YQX','YYR','YYY',
             'YXE','YXS','YXU','YZF','YZR','YHM','YKF','YAM','YSB','YYB','YPQ',
-            'YZT','YYF','YXT','YPR','YYD','YDQ','YKA'
+            'YZT','YYF','YXT','YPR','YYD','YDQ','YKA','KM8'
           ]);
           // Canadian airport IATA codes are ~all Y-prefixed; treat any 3-char
           // Y-code as domestic so a Canadian origin missing from CITY_TYPE / the
@@ -16758,6 +16999,11 @@ function mapADB(raw, mode) {
     }
     // Cargo/private filter
     if (f.isCargo===true) return null;
+    // No resolvable place: no IATA/ICAO and the feed's airport name is empty
+    // or literally 'Unknown' — repositioning/ferry/private legs. A public
+    // board row reading 'Unknown' helps no traveler (Nick: 'why is there
+    // unknown places for a flight, that can't be').
+    if (!locIata && (!cityName || /^unknown$/i.test(String(cityName).trim()))) return null;
     return mode==='dep'
       ?{time,upd,dateTag,flight,dest:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
       :{time,upd,dateTag,flight,origin:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
@@ -16778,8 +17024,15 @@ async function oagFetch(iata, dir) {
 
 async function fetchLive() {
   const iata = document.getElementById('apSel').value;
-  document.getElementById('fidsTable').style.display = 'none';
-  setState('loading', true);
+  // Only show the loading splash on the FIRST load. The 5-minute auto-refresh
+  // was re-showing it EVERY time, dropping the live gate/board to the '99%'
+  // splash for ~10s on every refresh — the recurring 'glitch' Nick filmed
+  // (NOT a reload). Background refreshes now update silently behind the live
+  // screen; the loader only covers the genuine cold start.
+  if (window._initialFetchDone !== true) {
+    document.getElementById('fidsTable').style.display = 'none';
+    setState('loading', true);
+  }
   document.getElementById('liveLabel').textContent = 'LIVE';
 
   try {
@@ -16864,13 +17117,23 @@ async function fetchLive() {
 
   } catch(e) {
     setState('loading', false);
-    const p = document.getElementById('panelError');
-    // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
-    // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
-    p.innerHTML = 'LIVE DATA ERROR<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
-    var _pSub = p.querySelector('.sub');
-    if (_pSub) _pSub.textContent = String((e && e.message) || '');
-    p.style.display = 'block';
+    // Only take over the screen with the error panel on a COLD start. A failed
+    // 5-min background refresh must NOT flash the error over a live gate/board
+    // (part of the recurring 'glitch' — a transient network blip covered the
+    // screen). Keep the last good screen; just log it and try again next cycle.
+    if (window._initialFetchDone !== true) {
+      const p = document.getElementById('panelError');
+      // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
+      // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
+      p.innerHTML = 'LIVE DATA ERROR<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
+      var _pSub = p.querySelector('.sub');
+      if (_pSub) _pSub.textContent = String((e && e.message) || '');
+      p.style.display = 'block';
+    }
+    // On a background refresh failure, keep the auto-refresh alive so it recovers.
+    if (window._initialFetchDone === true && !autoRefreshTimer) {
+      autoRefreshTimer = setInterval(fetchLive, 5 * 60 * 1000);
+    }
     console.error('ADB error:', e.message);
   }
 }
@@ -18728,10 +18991,16 @@ function _fetchAirportCoords(iata) {
 // Satellite = Esri World Imagery
 // All free for fair use; no API key needed.
 function _gateMapTileLayer() {
-  // v218.99.9 — was theme-driven; theme system removed. Default to light Voyager.
-  return L.tileLayer('/maptiles/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19, subdomains: 'abcd', attribution: ''
-  });
+  // Nick (Jul 2026) wants a DIFFERENT map — the satellite/aerial look from his
+  // reference (Esri World Imagery). Served same-origin through the worker's
+  // /tiles/ provider route (axes reordered for Esri) so it still works on
+  // locked-down display networks. A transparent Esri place-names layer sits ON
+  // TOP so the imagery still shows city/town names (Nick: 'does that map have
+  // city names') — a 'satellite + names' hybrid. Both under the route/plane,
+  // which live in the SVG overlay pane.
+  var _sat = L.tileLayer('/tiles/satellite/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
+  var _labels = L.tileLayer('/tiles/citylabels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 2 });
+  return L.layerGroup([_sat, _labels]);
 }
 
 // v218.99.9 — overlay flags previously came from gate-theme; system removed.
@@ -18740,7 +19009,7 @@ function _gateMapShowOverlay(name) {
   return name !== 'weather';
 }
 
-function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('gateMapBox');if(!mb)return;
+function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;try{if(typeof _stopGateMapGlide==='function')_stopGateMapGlide();}catch(e){}var mb=document.getElementById('gateMapBox');if(!mb)return;
   // Resolve airport coords. If either is unknown, kick off async lookup
   // and retry — the map will populate as soon as both coords arrive.
   var o=_lookupAirport(org), d=_lookupAirport(dst);
@@ -18774,6 +19043,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     return;
   }
   try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(gateMap);
+  _gateMapWatchResize(mb);
   // Calculate total route distance for zoom scaling
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
   // Base cruise zoom depends on route length (short=7, medium=6, long=5, transcon=4)
@@ -18838,6 +19108,24 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       }
   }setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},500);}
 
+// The rail grid re-tracks when the 4-row flight-info panel arrives late
+// (reg lookup, v22198) — the MAP ROW then resizes under an already-
+// initialized Leaflet, which keeps stale pixel math and shows an off-
+// centre, wrongly-zoomed crop with the plane at the frame edge (Nick:
+// 'not sure what's happening to the map'). Watch the box and re-measure:
+// invalidateSize() keeps the true centre through any late resize.
+function _gateMapWatchResize(mb) {
+  try {
+    if (window._gateMapRO) { try { window._gateMapRO.disconnect(); } catch (e2) {} }
+    if (typeof ResizeObserver === 'function') {
+      window._gateMapRO = new ResizeObserver(function () {
+        try { if (gateMap) gateMap.invalidateSize(); } catch (e3) {}
+      });
+      window._gateMapRO.observe(mb);
+    }
+  } catch (e) {}
+}
+
 function initGateMapLive(org,dst,planeLat,planeLng){
   if(typeof L==='undefined'||typeof L.map!=='function')return;
   var mb=document.getElementById('gateMapBox');if(!mb)return;
@@ -18868,53 +19156,190 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     });
     return;
   }
-  try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
-  gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
-  _gateMapTileLayer().addTo(gateMap);
+  // ── Geometry + progressive zoom, computed BEFORE any redraw so we can bail
+  //    out when nothing meaningful changed. ──
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
   var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
-  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
+  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2)) || 1;
   var cruiseZoom = totalDist < 5 ? 7 : totalDist < 15 ? 6 : totalDist < 30 ? 5 : 4;
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
   var zoom;
-  if (nearOrg < 0.05) zoom = 10;
-  else if (nearOrg < 0.10) zoom = 8;
-  else if (nearOrg < 0.20) zoom = cruiseZoom + 1;
-  else if (nearDst < 0.05) zoom = 10;
-  else if (nearDst < 0.10) zoom = 8;
-  else if (nearDst < 0.20) zoom = cruiseZoom + 1;
+  // Progressive zoom (Nick: 'ground when it leaves, then zooms out eventually …
+  // autozoom then zoom out'). On the ground at the origin → street/ground level
+  // (z15); as it climbs away the zoom eases out step by step (13 → 11 → 9) to
+  // the wide cruise view; then it tightens back to ground on the destination
+  // approach. Distance-from-airport IS flight progress, so this reads as a
+  // smooth take-off-zoom-out / descend-zoom-in.
+  if (nearOrg < 0.006) zoom = 15;
+  else if (nearOrg < 0.02) zoom = 13;
+  else if (nearOrg < 0.06) zoom = 11;
+  else if (nearOrg < 0.14) zoom = 9;
+  else if (nearDst < 0.006) zoom = 15;
+  else if (nearDst < 0.02) zoom = 13;
+  else if (nearDst < 0.06) zoom = 11;
+  else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
+
+  // REUSE the map when the route is unchanged — tearing it down reloaded the
+  // heavy satellite tiles each time (Nick: 'restarting/glitchy').
+  var _liveRouteKey = 'live|' + String(org).toUpperCase() + '>' + String(dst).toUpperCase();
+  var _liveReuse = false;
+  try {
+    _liveReuse = !!(gateMap && gateMap._fidsRouteKey === _liveRouteKey
+      && gateMap.getContainer && gateMap.getContainer() && gateMap.getContainer().isConnected);
+  } catch (e) { _liveReuse = false; }
+  // ANTI-JITTER (Nick: 'the map's going crazy'): on the SAME live map, HOLD the
+  // previous zoom when the plane has barely moved — otherwise ADS-B jitter near
+  // a zoom-tier boundary flips the zoom in and out on every 10s tick. And if
+  // essentially nothing changed, SKIP the whole redraw (no overlay clear, no
+  // setView) so the map sits still instead of thrashing.
+  if (_liveReuse && gateMap._fidsLastView) {
+    var _lv = gateMap._fidsLastView;
+    var _dLat = Math.abs(_lv.lat - planeLat), _dLng = Math.abs(_lv.lng - planeLng);
+    if (_dLat < 0.05 && _dLng < 0.05) zoom = _lv.zoom;                 // hold zoom, no flap
+    if (_dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return;   // nothing changed → skip
+  }
+  if (_liveReuse) {
+    try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
+    gateMap._fidsOverlays = [];
+  } else {
+    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
+    gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+    _gateMapTileLayer().addTo(gateMap);
+    gateMap._fidsRouteKey = _liveRouteKey;
+    gateMap._fidsOverlays = [];
+    _gateMapWatchResize(mb);
+  }
+  gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
   gateMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
   // (The old single ideal arc left any real-world deviation looking
   // 'off course' with the plane floating beside the route.)
   var _pp = [planeLat, planeLng];
-  _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
-  _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
-  L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  // Actual flown track over the assigned route: GREEN where it follows the
-  // assigned o→d line, AMBER where it deviates beyond ~30 km (reroute/hold —
-  // fine, just flagged so it's visible at a glance). Built from recorded fixes.
-  try {
-    var _tp = (_gateTrack && _gateTrack.key && _gateTrack.points && _gateTrack.points.length >= 2) ? _gateTrack.points : null;
-    if (_tp) {
-      for (var _ti = 1; _ti < _tp.length; _ti++) {
-        var _ta = _tp[_ti - 1], _tb = _tp[_ti];
-        L.polyline([[_ta.lat, _ta.lng], [_tb.lat, _tb.lng]], { color: '#60a5fa', weight: 4, opacity: 0.95 }).addTo(gateMap);
-      }
-    }
-  } catch (e) {}
+  // Track every overlay so a REUSE pass can wipe exactly these (and not the
+  // tile layers) — otherwise reused arcs/markers/planes would pile up.
+  var _ov = (gateMap._fidsOverlays = gateMap._fidsOverlays || []);
+  var _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
+  var _a2 = _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(_a2)_ov.push(_a2);
+  _ov.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
+  _ov.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
   var planePos=L.latLng(planeLat,planeLng);
   var dLng=(d[1]-planeLng)*Math.PI/180;
   var lat1=planeLat*Math.PI/180,lat2=d[0]*Math.PI/180;
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+  var _planeMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+  _ov.push(_planeMk);
+  // Feed the live glide: move the plane along the route at its own ground
+  // speed between real ADS-B fixes; this call re-seeds it to the true spot.
+  var _glSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
+             : (window._gateMapFix && typeof window._gateMapFix.speed === 'number' ? window._gateMapFix.speed : 0);
+  _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd);
   setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
+}
+
+// ── MOVING AIRCRAFT — dead-reckoning glide between real ADS-B fixes ─────────
+// Nick: 'make the aircraft move slowly according to the speed it's going …
+// it should be able to calculate approx, then adjust with the pings.' Real
+// position fixes only land every few minutes, so between them the plane sat
+// still. This advances the marker along the great-circle route at the live
+// ground speed (distance = speed × time); when the NEXT real fix arrives,
+// initGateMapLive re-seeds it to the true position — a gentle correction, not
+// a jump. It ONLY nudges the marker + the two route arcs; it never re-inits,
+// re-centres, or re-renders the map, so it can't reintroduce the map thrash.
+var _gateGlide = { timer: null };
+
+function _stopGateMapGlide() {
+  try { if (_gateGlide.timer) clearInterval(_gateGlide.timer); } catch (e) {}
+  _gateGlide.timer = null;
+}
+
+// Great-circle path org→dst as plain [lat,lng] points (antimeridian-normalised),
+// with a straight-line fallback if the arc plugin is unavailable.
+function _gcFullRoute(o, d, n) {
+  var pts = null;
+  try {
+    var a = L.Polyline.Arc(o, d, { vertices: n });
+    var ll = a.getLatLngs();
+    for (var i = 1; i < ll.length; i++) {
+      while (ll[i].lng - ll[i - 1].lng >  180) ll[i].lng -= 360;
+      while (ll[i].lng - ll[i - 1].lng < -180) ll[i].lng += 360;
+    }
+    pts = ll.map(function (q) { return [q.lat, q.lng]; });
+  } catch (e) { pts = null; }
+  if (!pts || pts.length < 2) {
+    pts = [];
+    for (var k = 0; k <= n; k++) { var f = k / n; pts.push([o[0] + (d[0] - o[0]) * f, o[1] + (d[1] - o[1]) * f]); }
+  }
+  return pts;
+}
+
+// Great-circle distance in nautical miles.
+function _gcNm(a, b) {
+  var R = 3440.065;
+  var la1 = a[0] * Math.PI / 180, la2 = b[0] * Math.PI / 180;
+  var dla = (b[0] - a[0]) * Math.PI / 180, dlo = (b[1] - a[1]) * Math.PI / 180;
+  var h = Math.sin(dla / 2) * Math.sin(dla / 2) + Math.cos(la1) * Math.cos(la2) * Math.sin(dlo / 2) * Math.sin(dlo / 2);
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts) {
+  _stopGateMapGlide();
+  if (!map || !marker || typeof L === 'undefined') return;
+  if (!(speedKts > 0)) return;                 // no live speed → nothing to reckon
+  var route = _gcFullRoute(o, d, 120);
+  var n = route.length;
+  if (n < 2) return;
+  var totalNm = _gcNm(o, d);
+  if (!(totalNm > 0)) return;
+  // Seed progress from the real fix: the nearest route vertex.
+  var best = 0, bestDsq = Infinity;
+  for (var i = 0; i < n; i++) {
+    var dLat = route[i][0] - planeLat, dLng = route[i][1] - planeLng;
+    var dsq = dLat * dLat + dLng * dLng;
+    if (dsq < bestDsq) { bestDsq = dsq; best = i; }
+  }
+  var p = best / (n - 1);
+  var lastTs = Date.now();
+  function bearingAt(idx) {
+    var i2 = Math.min(idx + 1, n - 1), i1 = Math.max(0, i2 - 1);
+    var A = route[i1], B = route[i2];
+    var dLng = (B[1] - A[1]) * Math.PI / 180;
+    var lat1 = A[0] * Math.PI / 180, lat2 = B[0] * Math.PI / 180;
+    var y = Math.sin(dLng) * Math.cos(lat2);
+    var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    return Math.atan2(y, x) * 180 / Math.PI;
+  }
+  _gateGlide.timer = setInterval(function () {
+    try {
+      if (!marker._map) { _stopGateMapGlide(); return; }   // map/marker torn down
+      var now = Date.now();
+      var dtH = (now - lastTs) / 3600000;
+      lastTs = now;
+      // The MOTION model adjusts its ASSUMED speed by flight phase so the plane
+      // eases along a realistic profile — accelerating off the origin and
+      // bleeding speed down the glideslope into the destination instead of
+      // sailing in at cruise (Nick: 'it should read what we get, don't change
+      // that — it may just need to adjust speed/altitude for glideslope'). The
+      // Ground Speed / Altitude NUMBERS are untouched: they stay the real feed.
+      var factor = 1;
+      if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
+      else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
+      var effSpeed = speedKts * Math.max(0.2, factor);
+      p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
+      var idx = Math.min(n - 1, Math.max(0, Math.floor(p * (n - 1))));
+      marker.setLatLng(route[idx]);
+      try {
+        var div = (marker._icon && marker._icon.querySelector) ? marker._icon.querySelector('div') : null;
+        if (div) div.style.transform = 'rotate(' + bearingAt(idx) + 'deg)';
+      } catch (er) {}
+      try { if (a1 && a1.setLatLngs) a1.setLatLngs(route.slice(0, idx + 1)); } catch (er) {}
+      try { if (a2 && a2.setLatLngs) a2.setLatLngs(route.slice(idx)); } catch (er) {}
+    } catch (e) { _stopGateMapGlide(); }
+  }, 1000);
 }
 // ──────────────────────────────────────────────────────────────────────
 // CINEMATIC MAP CAMERA  (tracks aircraft by REGISTRATION)
@@ -20653,6 +21078,11 @@ function fetchAccorHotelDetail(hotelId) {
         }
       });
       var topAmenities = Object.keys(topCount)
+        // NEVER carry a breakfast amenity downstream — the API asserts it for
+        // hotels that don't include it (Fairmont), and this list feeds every
+        // ad builder. Stripped at the source so no card can show it (Nick,
+        // repeatedly: 'it's false advertisement, remove it').
+        .filter(function(a) { return !/breakfast|d[ée]jeuner/i.test(a); })
         .sort(function(a, b) { return topCount[b] - topCount[a]; })
         .slice(0, 6);
 
@@ -21882,14 +22312,21 @@ function buildGateAdHtml(ad) {
     // are intentionally NOT used as a fallback — truncated to bullet size
     // they read as broken word-salad. Better to render nothing until the
     // detail endpoint loads clean topAmenities.
-    if (_detail && Array.isArray(_detail.topAmenities) && _detail.topAmenities.length) {
-      _topics.push({ title: TL('amenities'), items: _detail.topAmenities.slice(0, 5) });
+    // Strip any breakfast claim from EVERY topic list — the detail endpoint is
+    // a separate source from the list aggregation and still returns it for
+    // hotels that don't include it (Fairmont). No card advertises breakfast.
+    var _noBkfst = function (arr) { return (arr || []).filter(function (x) { return !/breakfast|d[ée]jeuner/i.test(String(x)); }); };
+    var _detAmen = _detail ? _noBkfst(_detail.topAmenities) : [];
+    if (_detAmen.length) {
+      _topics.push({ title: TL('amenities'), items: _detAmen.slice(0, 5) });
     }
-    if (_detail && _detail.restaurants && _detail.restaurants.length) {
-      _topics.push({ title: TL('restaurants') || 'Restaurants', items: _detail.restaurants });
+    var _detResto = _detail ? _noBkfst(_detail.restaurants) : [];
+    if (_detResto.length) {
+      _topics.push({ title: TL('restaurants') || 'Restaurants', items: _detResto });
     }
-    if (_detail && _detail.facilities && _detail.facilities.length) {
-      _topics.push({ title: TL('facilities') || 'Facilities', items: _detail.facilities });
+    var _detFac = _detail ? _noBkfst(_detail.facilities) : [];
+    if (_detFac.length) {
+      _topics.push({ title: TL('facilities') || 'Facilities', items: _detFac });
     }
     // Long-form description / destinationDescription INTENTIONALLY NOT
     // added as a bullet topic — they're marketing paragraphs that read
@@ -22406,9 +22843,13 @@ function buildGateAdHtml(ad) {
   var _adLightBg = !!ad.fg;
   var _stdLogoFilter = _adLightBg ? '' : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
   var _stdLogoHtml = ad.logo
-    ? '<div style="flex-shrink:0;margin-bottom:18px;height:64px;display:flex;align-items:center;justify-content:center;">'
+    ? '<div style="flex-shrink:0;width:100%;margin-bottom:clamp(20px,3vh,40px);height:clamp(120px,20vh,230px);display:flex;align-items:center;justify-content:center;">'
+      // Height-driven: the logo fills the tall box. Width is a VIEWPORT cap
+      // (min(720px,80vw)) — a % max-width resolves against this shrink-wrapped
+      // flex child and collapses the logo to ~80px (Nick: 'why is the logo even
+      // smaller'). object-fit keeps aspect.
       + '<img src="' + ad.logo + '" alt="" '
-      + 'style="max-height:100%;max-width:360px;width:auto;height:auto;object-fit:contain;display:block;' + _stdLogoFilter + '" '
+      + 'style="height:100%;width:auto;max-width:min(720px,80vw);object-fit:contain;display:block;' + _stdLogoFilter + '" '
       + 'onerror="this.style.display=\'none\';">'
       + '</div>'
     : '';
@@ -22431,8 +22872,8 @@ function buildGateAdHtml(ad) {
     + (iconHtml ? '<div style="flex-shrink:0;opacity:0.9;margin-bottom:6px;">' + iconHtml + '</div>' : '')
     + _stdLogoHtml
     + '<div style="flex-shrink:0;text-align:center;max-width:100%;overflow:hidden;">'
-    + '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:' + _stdFg + ';line-height:1.1;max-width:100%;">' + _stdHeadline + '</div>'
-    + '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:' + _stdSubFg + ';margin-top:14px;line-height:1.3;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
+    + '<div style="font-size:clamp(44px,5.2vw,78px);font-weight:800;color:' + _stdFg + ';line-height:1.08;max-width:100%;">' + _stdHeadline + '</div>'
+    + '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
     + '</div></div>'
   );
 }
@@ -22494,8 +22935,26 @@ function buildAccorAdOnlyV6(ad) {
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function first(){ for(var i=0;i<arguments.length;i++){ var a=arguments[i]; if(a!==undefined&&a!==null&&String(a).trim()!=='') return a; } return ''; }
   function lower(v){ return String(v==null?'':v).toLowerCase(); }
-  function safeTL(k,f){ try{ return (typeof TL==='function'&&TL(k))||f; }catch(e){ return f; } }
-  function accorLang(){ return (typeof lang!=='undefined'&&lang)?lang:'en'; }
+  // Resolve labels in the AD's language (accorLang → the forced EN/FR the deck
+  // chose for this slide), NOT the global board `lang` — TL() reads the board
+  // lang, which is what split the card into half-French/half-English labels vs
+  // content (Nick, Novotel). Same source as the content now.
+  function safeTL(k,f){
+    try {
+      var o = (typeof LS !== 'undefined' && LS[k]) ? LS[k] : null;
+      if (o) { var l = accorLang(); return o[l] || o.en || f; }
+    } catch(e){}
+    return f;
+  }
+  // Use the SAME language the ad deck forced for this slide (_accorLangNow),
+  // not the raw board language. The deck flips EN/FR per slide via
+  // _accorAdForcedLang; this builder used to read the board `lang` instead, so
+  // the forced-language LABELS and the board-language CONTENT disagreed and the
+  // card came out half-French/half-English (Nick, Novotel). One source now.
+  function accorLang(){
+    try { if (typeof _accorLangNow === 'function') return _accorLangNow(); } catch(e){}
+    return (typeof lang!=='undefined'&&lang)?lang:'en';
+  }
   function localized(obj,base){ var l=accorLang(); return first(obj[base+'_'+l],obj[base+l.toUpperCase()],obj[base+'-'+l],obj[base],''); }
   function bgUrl(bg){ var m=String(bg||'').match(/url\((['"]?)(.*?)\1\)/i); return (m&&m[2])?m[2]:''; }
 
@@ -22682,10 +23141,16 @@ function buildAccorAdOnlyV6(ad) {
   // first, neutral ones next, room fixtures last — used only as filler.
   var _amenSellRx = /pool|piscine|spa\b|sauna|hammam|jacuzzi|massage|fitness|gym|restaurant|resto|\bbar\b|lounge|breakfast|d[ée]jeuner|rooftop|terrace|terrasse|view|vue\b|parking|shuttle|navette|airport transfer|pet|animaux|kids|famille|family|beach|plage|golf|concierge|room service|service aux chambres|24[\/ -]?(h|hour|heures)|business cent|meeting|ev charg|borne|wi-?fi|internet/i;
   var _amenDullRx = /\biron(ing)?\b|fer [àa] repasser|telephone|t[ée]l[ée]phone|hair ?dry|s[èe]che-cheveux|kettle|bouilloire|coffee maker|minibar|mini-bar|\btv\b|television|t[ée]l[ée]vision|radio|\bdesk\b|bureau|bathrobe|peignoir|\bsafe\b|coffre|wardrobe|armoire|blackout|rideaux|toiletries|wake-?up|r[ée]veil|air condition|climatisation|heating|chauffage|carpet|moquette/i;
+  // NEVER surface a breakfast claim. The hotel API returns COMPLIMENTARY_
+  // BREAKFAST / 'breakfast' for properties that do NOT include it (Fairmont —
+  // Nick, repeatedly: 'it's false advertisement, it needs removed'). The data
+  // can't be trusted for this, so breakfast is stripped from every amenity /
+  // dining / prose surface of the ad.
+  var _isBreakfast = function (a) { return /breakfast|d[ée]jeuner/i.test(String(a || '')); };
   var _amenAll = _dedupe([].concat(
       (_detail && _detail.topAmenities && _detail.topAmenities.length) ? _detail.topAmenities : amenities,
       (_detail && _detail.facilities) ? _detail.facilities : []
-  ));
+  )).filter(function (a) { return !_isBreakfast(a); });
   var _amenSell = [], _amenMid = [], _amenDull = [];
   _amenAll.forEach(function (a) {
     var s = String(a || '');
@@ -22698,15 +23163,15 @@ function buildAccorAdOnlyV6(ad) {
   // prose 'advantages' that mention dining first, then hotel-level dining
   // amenities and program labels. In-room food&bev only as a last resort.
   var _dineRx = /restaurant|resto|\bbar\b|dining|breakfast|d[ée]jeuner|cuisine|lounge|caf[ée]|terrasse|patio|buffet/i;
-  var _dineAdv = (Array.isArray(ad.advantages) ? ad.advantages : []).filter(function (a) { return _dineRx.test(String(a)); });
+  var _dineAdv = (Array.isArray(ad.advantages) ? ad.advantages : []).filter(function (a) { return _dineRx.test(String(a)) && !_isBreakfast(a); });
   var _amenFree = Array.isArray(ad.amenityFree) ? ad.amenityFree : [];
   var _lblsAd = Array.isArray(ad.labels) ? ad.labels : [];
   var _dfr = accorLang() === 'fr';
   var _dineAmen = [];
   if (_amenFree.indexOf('restaurant') !== -1) _dineAmen.push(_dfr ? 'Restaurant sur place' : 'On-site restaurant');
   if (_amenFree.indexOf('bar') !== -1) _dineAmen.push(_dfr ? 'Bar-salon' : 'Bar & lounge');
-  if (_lblsAd.indexOf('COMPLIMENTARY_BREAKFAST') !== -1) _dineAmen.push(_dfr ? 'Petit-déjeuner offert' : 'Complimentary breakfast');
-  else if (_amenFree.indexOf('breakfast') !== -1) _dineAmen.push(_dfr ? 'Petit-déjeuner' : 'Breakfast available');
+  // Breakfast claims REMOVED — the API asserts COMPLIMENTARY_BREAKFAST /
+  // 'breakfast' for hotels that don't include it (Fairmont). No breakfast line.
   if (_amenFree.indexOf('room_service') !== -1) _dineAmen.push(_dfr ? 'Service aux chambres' : 'Room service');
   if (_lblsAd.indexOf('DINING_OFFER') !== -1) _dineAmen.push(_dfr ? 'Offres restauration pour les clients' : 'Dining offers for guests');
   var _restList = _dedupe(_dineAdv.concat(_dineAmen)).slice(0, 5);
@@ -23113,6 +23578,29 @@ function renderGateAd(index) {
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
   var slide = slides[slot];
 
+  // ── SLIDE LOCK (v22212) ────────────────────────────────────────────────
+  // Only the rotation tick may CHANGE which slide is on screen. Every other
+  // caller (board rebuild refill, media-ready events, the hotel-photo
+  // callback, a coerced index) may repaint the SAME slide but must never
+  // swap to a different one. Near departure the gate rebuilds on every
+  // status tick (boarding → final call → gate closed); each rebuild that
+  // lost the live slot repainted a DIFFERENT slide — the bigcraft map —
+  // and the center flipped 'ad → map → ad' several times a second, getting
+  // worse as the updates sped up (Nick filmed exactly this). The lock makes
+  // those stray calls no-ops unless they target the slide already showing.
+  if (!window._gateAdAuthChange
+      && el.firstChild
+      && typeof window._gateAdCurrentIdx === 'number'
+      && slot !== window._gateAdCurrentIdx) {
+    return;
+  }
+
+  // Record what the carousel is ACTUALLY showing. Async repaint callbacks
+  // (hotel-photo fetches) read this; before it was stamped they fell back
+  // to slide 0 and hijacked the carousel mid-ad (Nick: 'it starts the ad
+  // and fades back to the previous then back to the new').
+  window._gateAdCurrentIdx = slot;
+
   // ── YOUR AIRCRAFT — BIG (Nick, Jul 2026). The 3D map is RETIRED; once
   // per cycle the center enlarges the right column's Your Aircraft view:
   // big flat route map + all the flight info + the aircraft.
@@ -23127,6 +23615,7 @@ function renderGateAd(index) {
     // here and shows it twice back-to-back (WS "WestJet Rewards" x2 bug).
     slot = (slot + 1) % totalSlots;
     _gateAdIndex = slot;
+    window._gateAdCurrentIdx = slot;
     slide = slides[slot] || slide;
   }
   // Any non-bigcraft slide: tear the takeover down (overlay + map + class).
@@ -23139,6 +23628,7 @@ function renderGateAd(index) {
     // repeating it (this wrap-around duplicated deck[0] every cycle).
     slot = (slot + 1) % totalSlots;
     _gateAdIndex = slot;
+    window._gateAdCurrentIdx = slot;
     slide = slides[slot] || slide;
   }
   if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
@@ -23239,22 +23729,15 @@ function renderGateAd(index) {
   var html = '';
   if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorAdOnlyV6 === 'function') {
     try {
-      // Deterministic language alternation (Nick: 'I still don't see English
-      // ads'): every Accor appearance flips EN <-> FR instead of trusting
-      // the board rotation, which can sit on one language for long spells
-      // (or be configured single-language).
-      // Flip ONLY when the slide instance actually changes — flipping on
-      // every render call meant any re-paint of the SAME on-screen slide
-      // (media-config events, post-rebuild repaints) produced different
-      // HTML, busted the _lastKey cache below, and rebuilt the whole slide:
-      // photo restart + language swap mid-display (Nick: the Accor ads
-      // blink 'same as the weather').
-      var _axFlipKey = slot + '|' + ((slide.data && (slide.data.hotelId || slide.data.name)) || '');
-      if (window._accorAdLastFlipKey !== _axFlipKey) {
-        window._accorAdForcedLang = (window._accorAdForcedLang === 'en') ? 'fr' : 'en';
-        window._accorAdLastFlipKey = _axFlipKey;
-      }
-      window._adDiag = 'accor:' + window._accorAdForcedLang;
+      // ONE consistent language — the board's own language (Nick: 'the Accor
+      // ads seriously go from one french then english, it's all over the
+      // place'). The old code FLIPPED EN<->FR on every Accor appearance, so the
+      // ads alternated language on screen. This display is either an EN board
+      // or an FR board (Canada runs paired EN/FR screens), so following the
+      // board language keeps each screen consistent while both languages still
+      // appear across the pair. No per-slide flip.
+      window._accorAdForcedLang = null;
+      window._adDiag = 'accor:board';
       html = buildAccorAdOnlyV6(slide.data);
     } catch (e) {
       console.error('[ACCOR-AD6-FAILED]', e);
@@ -23396,11 +23879,22 @@ function _buildDestHotelAdObj(info, cityName) {
     } else if (_aiHotelBgCache[_hotelKey] !== false) {
       // Kick off the AI fetch in the background — next render will pick it up
       fetchAIHotelBg(h.name, cityName).then(function(url) {
-        if (url) {
-          // Force a re-render of the carousel so the new photo shows up
-          var idx = (window._gateAdCurrentIdx || 0);
-          try { renderGateAd(idx); } catch (e) {}
-        }
+        if (!url) return;
+        // Repaint ONLY when a hotel ad is what's on screen right now — and
+        // repaint the CURRENT slot, never a hardcoded one. This callback
+        // used to call renderGateAd(_gateAdCurrentIdx || 0) with an index
+        // nothing ever assigned, so every resolved photo yanked the
+        // carousel back to slide 0 in the middle of whatever ad had just
+        // started (Nick: 'it starts the ad and fades back to the previous
+        // then back to the new'). If another slide is showing, the cached
+        // photo is simply picked up the next time this hotel renders.
+        var idx = window._gateAdCurrentIdx;
+        if (typeof idx !== 'number') return;
+        try {
+          var _curSlide = _getGateAdSlideAt(idx);
+          if (!_curSlide || _curSlide.type !== 'ad' || !_curSlide.data || !_curSlide.data.isAccorHotel) return;
+          renderGateAd(idx);
+        } catch (e) {}
       });
     }
   }
@@ -23761,6 +24255,10 @@ function _buildGateAdSlideList() {
         && TOMORROW_WX[String(_wxD).toUpperCase()].current
         && typeof TOMORROW_WX[String(_wxD).toUpperCase()].current.temp === 'number') {
       deck.splice(Math.min(3, deck.length), 0, { type: 'wxcard' });
+      // PRE-WARM the 7-day forecast now, while other slides are showing —
+      // so the outlook is already cached when the weather slide appears
+      // and it paints ONCE (the cold fetch was the second 'bump', Nick).
+      try { _wxFetchDaily(String(_wxD).toUpperCase(), null); } catch (e2) {}
     }
   } catch (e) {}
 
@@ -23777,6 +24275,50 @@ function _getGateAdSlideAt(index) {
   var totalSlots = Math.max(1, slides.length);
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
   return slides.length ? (slides[slot] || null) : null;
+}
+
+// ── AD MEDIA PRE-WARM ──────────────────────────────────────────────────────
+// The crossfade paints the incoming slide UNDER the dissolving overlay, but a
+// fresh slide's background media (promo video / photo) still has to fetch +
+// decode — so it popped in a beat AFTER the text/solid colour (Nick: 'the
+// aircanada wifi ad came on and the background came in late'), and settling
+// that media could nudge the layout ('it still bumps once in a while'). Warm
+// the NEXT slide's media while the current one is still on screen so, by the
+// time it rotates in, the browser already has it decoded and it appears in the
+// SAME frame as everything else. Pure prefetch — no layout, timing, or which-
+// ad-shows change.
+function _preloadGateAdMediaForSlide(slide) {
+  try {
+    if (!slide) return;
+    window._gateAdPreloaded = window._gateAdPreloaded || {};
+    var seen = window._gateAdPreloaded;
+    var jobs = [];
+    if (slide.type === 'custom' && slide.item && slide.item.url) {
+      jobs.push({ u: slide.item.url, v: (slide.item.type === 'video') });
+    }
+    var d = slide.data;
+    if (d) {
+      if (d.bgImage)          jobs.push({ u: d.bgImage, v: false });
+      if (d._customLogoVideo) jobs.push({ u: d._customLogoVideo, v: true });
+      if (d.videoSrc)         jobs.push({ u: d.videoSrc, v: true });
+      if (d.logo)             jobs.push({ u: d.logo, v: false });
+    }
+    jobs.forEach(function (o) {
+      if (!o.u || seen[o.u]) return;
+      seen[o.u] = true;
+      if (o.v) {
+        // Warm the HTTP cache + start decode on a detached, muted element so
+        // the visible <video autoplay> starts near-instantly on swap.
+        var vid = document.createElement('video');
+        vid.muted = true; vid.preload = 'auto'; vid.playsInline = true;
+        vid.src = o.u;
+        try { vid.load(); } catch (e) {}
+      } else {
+        var im = new Image();
+        im.src = o.u;
+      }
+    });
+  } catch (e) {}
 }
 
 function _restartGateAdsTimer() {
@@ -23808,10 +24350,14 @@ function _restartGateAdsTimer() {
       _gateAdTimer = setTimeout(_tick, 1000);
       return;
     }
-    el2.style.transition = 'opacity 0.6s ease';
-    el2.style.opacity = '0';
+    // v22206 — TRUE CROSSFADE (Nick, after two rounds of tightening the
+    // fade: 'nope it's still jumping in GIDS'; 'before it was smooth').
+    // Any fade-through-dark reads as a double jump. Now the OUTGOING slide
+    // is lifted into an overlay, the next slide renders at FULL opacity
+    // underneath, and the overlay dissolves over it — one smooth change,
+    // zero dark gap, exactly like the pre-July-7 switch but softened.
     _gateAdFadeTimer = setTimeout(function() {
-      if (gen !== _gateAdGen) return; // superseded mid-fade — abandon
+      if (gen !== _gateAdGen) return; // superseded — abandon
       var el3 = document.getElementById('gateAdCurrentCarousel') || document.getElementById('gateAdCarousel');
       if (!el3) {
         _gateAdTimer = setTimeout(_tick, 1000);
@@ -23819,10 +24365,51 @@ function _restartGateAdsTimer() {
       }
       var totalSlots = 1;
       try { totalSlots = _getGateAdTotalSlots(); } catch (e) { totalSlots = ((getGateAds() || []).length + 1); }
+      // Lift the current slide's DOM into a fading overlay. Moving (not
+      // cloning) keeps playing videos playing while they dissolve.
+      //
+      // v22229 — the overlay is parked in el3's PARENT, exactly over el3, and
+      // put on screen BEFORE the new slide renders. Previously _old was slapped
+      // on only AFTER renderGateAd painted the new slide, so for one frame the
+      // NEW slide was visible bare, then the old covered it, then dissolved back
+      // to new — a visible new->old->new 'double take' (Nick: 'transitions are
+      // still pitiful it double takes' / 'atrocious'). Covering FIRST means the
+      // new slide only ever appears as the old DISSOLVES over it — one clean
+      // crossfade, no flash.
+      var _old = null;
+      try {
+        if (el3.firstChild) {
+          var _pr = el3.parentNode;
+          if (_pr) {
+            try { if (getComputedStyle(_pr).position === 'static') _pr.style.position = 'relative'; } catch (ep) {}
+            var _er = el3.getBoundingClientRect(), _prr = _pr.getBoundingClientRect();
+            _old = document.createElement('div');
+            _old.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
+              + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.95s ease-in-out;overflow:hidden;';
+            while (el3.firstChild) _old.appendChild(el3.firstChild);
+            // The children moved out — bust the per-slide DOM caches so a
+            // same-content render can't early-return into an empty carousel.
+            el3._lastKey = null;
+            el3._wxLastHtml = null;
+            _pr.appendChild(_old); // cover NOW, before the new slide paints
+          }
+        }
+      } catch (e) { _old = null; }
       _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
+      // The rotation tick is the ONE authority allowed to change the slide —
+      // announce it so the slide lock in renderGateAd lets this swap through.
+      window._gateAdAuthChange = true;
       try { renderGateAd(_gateAdIndex); } catch (e) {}
-      el3.style.transition = 'opacity 0.6s ease';
+      window._gateAdAuthChange = false;
+      el3.style.transition = 'none';
       el3.style.opacity = '1';
+      if (_old) {
+        try {
+          void _old.offsetWidth; // new is painted UNDER the cover; now dissolve
+          _old.style.opacity = '0';
+          setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 1050);
+        } catch (e) { try { if (_old.parentNode) _old.remove(); } catch (e2) {} }
+      }
       // Schedule the NEXT tick using the dwell of the slide we just
       // showed. Falls back to 15s if anything goes wrong.
       var dwell = 15000;
@@ -23831,8 +24418,11 @@ function _restartGateAdsTimer() {
         dwell = _getGateAdDwellMs(nowSlide);
       } catch (e) {}
       dwell = Math.max(22000, dwell);   // Nick: slides were flicking by every 5-10s — hold each ≥22s
+      // Pre-warm the media for the slide that comes NEXT, during this slide's
+      // dwell, so its background lands in sync (no late-pop, no load bump).
+      try { _preloadGateAdMediaForSlide(_getGateAdSlideAt((_gateAdIndex + 1) % totalSlots)); } catch (e) {}
       _gateAdTimer = setTimeout(_tick, dwell);
-    }, 700);
+    }, 10);
   };
   // Kick off — use the dwell of the FIRST slide on initial run.
   var initDwell = 15000;
@@ -23841,21 +24431,45 @@ function _restartGateAdsTimer() {
     initDwell = _getGateAdDwellMs(firstSlide);
   } catch (e) {}
   initDwell = Math.max(22000, initDwell);   // ≥22s per slide (Nick — no more 5-10s flicker)
+  // Warm the FIRST slide's media (and the one after) before the opening tick,
+  // so the very first rotation is already in sync.
+  try {
+    var _tot0 = _getGateAdTotalSlots();
+    _preloadGateAdMediaForSlide(_getGateAdSlideAt(_gateAdIndex));
+    _preloadGateAdMediaForSlide(_getGateAdSlideAt((_gateAdIndex + 1) % _tot0));
+  } catch (e) {}
   _gateAdTimer = setTimeout(_tick, initDwell);
+}
+
+// First deck slot that is a REAL advert (not the bigcraft map / weather
+// takeover). Refilling an empty slot used to hardcode index 1, which is the
+// bigcraft map — so a rebuild that lost the live ad repainted the MAP and the
+// center flipped ad↔map (Nick's 'ad starts then flips to the previous' storm).
+function _firstRealAdIndex() {
+  try {
+    var slides = _buildGateAdSlideList();
+    for (var i = 0; i < slides.length; i++) {
+      var t = slides[i] && slides[i].type;
+      if (t === 'ad' || t === 'custom') return i;
+    }
+  } catch (e) {}
+  return 0;
 }
 
 function startGateAds() {
   var el = document.getElementById('gateAdCarousel');
   if (!el) return;
-  // After DOM rebuild, always render a real ad first. The old order rendered
-  // index 0 before resetting to 1, which made the carousel appear blank or
-  // stuck on amenities until the timer eventually advanced.
-  if (!_gateAdIndex) _gateAdIndex = 1;
+  // After DOM rebuild, always render a real ad first — the FIRST real advert
+  // slot, never a blind index 1 (that is the bigcraft map takeover).
+  if (!_gateAdIndex) _gateAdIndex = _firstRealAdIndex();
   // Only paint when the carousel is EMPTY (fresh element after a board
   // rebuild). Unconditional repaints on every refresh cut ads off mid-dwell
-  // and restarted the Accor 3-page slideshow / videos ("ads clash").
+  // and restarted the Accor 3-page slideshow / videos ("ads clash"). This is
+  // an authorized slide set (fresh/empty slot), so bypass the slide lock.
   if (!el.firstChild) {
-    renderGateAd(_gateAdIndex);
+    window._gateAdAuthChange = true;
+    try { renderGateAd(_gateAdIndex); } catch (e) {}
+    window._gateAdAuthChange = false;
     el.style.opacity = '1';
   }
   if (_gateAdTimer) return;
@@ -23867,12 +24481,12 @@ function startGateAds() {
 try {
   window.addEventListener('fids-media-config-ready', function(){
     if (document.getElementById('gateAdCarousel')) {
-      try { renderGateAd(_gateAdIndex || 1); } catch(e) {}
+      try { renderGateAd(_gateAdIndex || _firstRealAdIndex()); } catch(e) {}
     }
   });
   window.addEventListener('fids-media-assignments-ready', function(){
     if (document.getElementById('gateAdCarousel')) {
-      try { renderGateAd(_gateAdIndex || 1); } catch(e) {}
+      try { renderGateAd(_gateAdIndex || _firstRealAdIndex()); } catch(e) {}
     }
   });
 } catch(e) {}
@@ -24834,11 +25448,23 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   if (!_running) return;
   setInterval(function () {
     try {
-      fetch(location.pathname + location.search, { cache: 'no-store' })
+      // Cache-buster so a filtering proxy can't hand back a stale page.
+      var _q = location.search + (location.search ? '&' : '?') + '_su=' + (+new Date());
+      fetch(location.pathname + _q, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.text() : null; })
         .then(function (html) {
           var t = _tok(html);
-          if (t && t !== _running) location.reload();
+          if (!t || t === _running) return;
+          // LOOP GUARD (Nick: the screen 'keeps restarting'): only reload ONCE
+          // per new token. If we already reloaded for token t but came back
+          // still running the old one — a proxy (Zscaler) is pinning the stale
+          // HTML — do NOT reload again, or it restarts forever. sessionStorage
+          // clears on tab close, so a genuine later deploy still updates once.
+          var _tried = null;
+          try { _tried = sessionStorage.getItem('fids_su_tried'); } catch (e) {}
+          if (t === _tried) return;
+          try { sessionStorage.setItem('fids_su_tried', t); } catch (e) {}
+          location.reload();
         }).catch(function () {});
     } catch (e) {}
   }, 5 * 60000);
@@ -24864,10 +25490,21 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (raw === '0' || n === 0) { enabled = false; }
       else { enabled = true; if (n >= 3) secs = n; }
     } else {
-      enabled = (window.self !== window.top) ||
-                q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
+      // Auto-cycle is OFF unless EXPLICITLY requested with ?gatecycle=N (>0) /
+      // ?bagcycle=N. NOTHING else turns it on — not the stream/yt layout flag,
+      // not being in an iframe. A gate/baggage screen ALWAYS stays pinned by
+      // default (Nick: it kept swapping the whole screen 'from flight to
+      // flight', even in the clean stream layout). The YouTube/lobby board that
+      // WANTS to walk opts in explicitly with ?gatecycle=60.
+      enabled = false;
     }
-    if (!enabled) return;
+    // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
+    // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
+    // numbers were rotating from flight to flight … is it the time?' — the 60s
+    // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
+    // (raw set) can still request a walk on a pinned display.
+    if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
+    return; // AUTO-CYCLE DELETED (Nick) — gate/baggage screens NEVER walk, ever. void enabled;
 
     // Advance to a FRESH gate — random, never an immediate repeat — among the
     // gates that currently have a live, upcoming departure.
@@ -24942,10 +25579,21 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (raw === '0' || n === 0) { enabled = false; }
       else { enabled = true; if (n >= 3) secs = n; }
     } else {
-      enabled = (window.self !== window.top) ||
-                q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
+      // Auto-cycle is OFF unless EXPLICITLY requested with ?gatecycle=N (>0) /
+      // ?bagcycle=N. NOTHING else turns it on — not the stream/yt layout flag,
+      // not being in an iframe. A gate/baggage screen ALWAYS stays pinned by
+      // default (Nick: it kept swapping the whole screen 'from flight to
+      // flight', even in the clean stream layout). The YouTube/lobby board that
+      // WANTS to walk opts in explicitly with ?gatecycle=60.
+      enabled = false;
     }
-    if (!enabled) return;
+    // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
+    // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
+    // numbers were rotating from flight to flight … is it the time?' — the 60s
+    // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
+    // (raw set) can still request a walk on a pinned display.
+    if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
+    return; // AUTO-CYCLE DELETED (Nick) — gate/baggage screens NEVER walk, ever. void enabled;
     function bagBelts() {
       try {
         var ap = document.getElementById('apSel');
@@ -25066,6 +25714,12 @@ function _renderBigCraft(el, ctx) {
   // the departing flight, not the (absent) inbound.
   var inb = (ctx && ctx.out) ? (window._gateCurrentFlight || {}) : (window._gateInbound || {});
   var stKey = String(inb.status || '').toLowerCase().replace(/[\s_-]/g, '');
+  // Same delay rule as the left rail / small card: a revised time (revTs later
+  // than the scheduled sortTs) means DELAYED even if the raw status still reads
+  // 'scheduled' — otherwise the big screen showed 'Scheduled' on a bumped
+  // flight (Nick: 'the big screen is inconsistent as well').
+  var _bcDelayed = !!(inb._revTs && inb._sortTs && inb._revTs > inb._sortTs);
+  if (_bcDelayed && (stKey === 'scheduled' || stKey === 'ontime' || stKey === '')) stKey = 'delayed';
   var ss = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
   var stShow = ss ? (ss.en.replace(/\b\w/g, function (c) { return c.toUpperCase(); }) + ' <span class="v2-rc-fi-sep">|</span> ' + ss.fr) : (inb.status || '—');
   var stCls = /delay|retard/i.test(stKey) ? 'delayed' : (/cancel/i.test(stKey) ? 'cancelled' : 'scheduled');
@@ -25093,7 +25747,10 @@ function _renderBigCraft(el, ctx) {
   _bcOv.style.top = Math.round(_bcTop - _bcWrapR.top) + 'px';
   _bcOv.style.width = Math.round(_bcRightEdge - _bcElR.left) + 'px';
   _bcOv.style.height = Math.round(_bcBottom - _bcTop) + 'px';
-  el.innerHTML = '';
+  // DON'T blank the carousel before the panel grows in — that emptied the
+  // center to dark and read as an abrupt CUT (Nick: 'abruptly cuts out …
+  // terrible transition'). Keep the previous ad visible UNDER the growing
+  // overlay; clear it only once the opaque overlay has fully covered it.
   _bcOv.innerHTML =
       '<div class="bigcraft-wrap">'
     +   '<div class="bigcraft-mapcol">'
@@ -25124,6 +25781,14 @@ function _renderBigCraft(el, ctx) {
   _bcWrapEl.appendChild(_bcOv);
   _bcWrapEl.classList.add('g8-bigcraft-active');
   window._bigCraftOverlay = _bcOv;
+  // Free the old carousel content AFTER the grow finishes (overlay now opaque
+  // over it) — no dark gap, and no stale video decoding behind the panel.
+  try {
+    var _bcPrevEl = el;
+    (window._bigCraftTimers = window._bigCraftTimers || []).push(setTimeout(function () {
+      try { if (window._bigCraftOverlay === _bcOv) _bcPrevEl.innerHTML = ''; } catch (e) {}
+    }, 720));
+  } catch (e) {}
   // THE SAME MAP AS THE MINI, ENLARGED (Nick: 'literally the same as now
   // except enlarged'): verbatim clones of the mini-map builders rendering
   // into the big container — same tiles, phase zoom, labels, plane icon.
@@ -25180,9 +25845,32 @@ function _wxHydrateSvgs(root) {
   try {
     root.querySelectorAll('img.wxanim[data-wx]').forEach(function (img) {
       var name = img.getAttribute('data-wx');
-      function inject(txt) {
+      function inject(rawTxt) {
         try {
           if (!img.parentNode) return;
+          // Uniquify the SVG's internal IDs per instance. Animated Meteocons
+          // carry <defs> gradients / clipPaths / <animate> targets referenced
+          // by url(#id) and href="#id". Inlining the SAME icon more than once
+          // (e.g. several sunny days in the 7-day outlook, plus the hero) made
+          // those duplicate IDs collide — the browser resolves #id to the
+          // FIRST copy, so every repeat rendered blank (Nick: 'why is there
+          // days missing icons'). A per-instance suffix keeps each copy's
+          // references pointing at its own defs.
+          var txt = rawTxt;
+          try {
+            var uid = '_wx' + (window._wxSvgUid = (window._wxSvgUid || 0) + 1);
+            var ids = [], mm;
+            var re = /\bid="([^"]+)"/g;
+            while ((mm = re.exec(rawTxt))) ids.push(mm[1]);
+            ids.forEach(function (id) {
+              var esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              txt = txt
+                .replace(new RegExp('id="' + esc + '"', 'g'), 'id="' + id + uid + '"')
+                .replace(new RegExp('url\\(#' + esc + '\\)', 'g'), 'url(#' + id + uid + ')')
+                .replace(new RegExp('href="#' + esc + '"', 'g'), 'href="#' + id + uid + '"')
+                .replace(new RegExp('(begin|end)="' + esc + '\\.', 'g'), '$1="' + id + uid + '.');
+            });
+          } catch (eU) { txt = rawTxt; }
           var span = document.createElement('span');
           span.className = 'wxanim-host ' + (img.className || '');
           span.style.cssText = img.getAttribute('style') || '';
@@ -25204,22 +25892,50 @@ function _wxHydrateSvgs(root) {
 window._wxDaily = window._wxDaily || {};
 function _wxFetchDaily(iata, onReady) {
   try {
+    // COORDS is a curated subset — fall back to the gate map's airport
+    // table + cached lookups so regional destinations get a real 7-day
+    // outlook instead of silently degrading to the 48h/2-day rollup
+    // (Nick: 'what happened to the 7 day forecast?').
     var C = (typeof COORDS !== 'undefined' && COORDS[iata]) || null;
+    if (!C) { try { C = (typeof _lookupAirport === 'function') ? _lookupAirport(iata) : null; } catch (eL) {} }
     if (!C) return null;
     var hit = window._wxDaily[iata];
+    // Serve STALE data while a refresh is in flight — returning null here
+    // dropped the on-screen card back to the 2-day rollup for a beat every
+    // 30 minutes (another visible jump).
+    if (hit && hit.pending) return hit.data || null;
     if (hit && (Date.now() - hit.ts) < 1800000) return hit.data;
-    if (hit && hit.pending) return null;
-    window._wxDaily[iata] = { pending: true, ts: 0, data: null };
+    var _prev = hit ? hit.data : null;
+    // A FAILED daily fetch must NOT cache 'no data' for the full 30 min — that
+    // stuck the card on the 2-day hourly rollup after one transient failure
+    // (Nick: 'back to 2 days'). Mark failures stale in ~90s so they retry,
+    // while _prev keeps showing meanwhile.
+    var _failTs = function () { return Date.now() - 1800000 + 90000; };
+    window._wxDaily[iata] = { pending: true, ts: 0, data: _prev };
+    // Primary: the site worker's keyless /wxdaily proxy. Fallback: Open-Meteo
+    // DIRECT (same keyless API the FIDS weather column already calls) — the
+    // proxy route only exists on workers that carry worker-entry.js, and any
+    // deploy where it's missing must not cost the card its week.
+    var _omDaily = 'https://api.open-meteo.com/v1/forecast?latitude=' + C[0]
+      + '&longitude=' + C[1]
+      + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
+      + '&timezone=auto&forecast_days=7';
+    var _omFb = function () {
+      return fetch(_omDaily)
+        .then(function (r2) { return r2.ok ? r2.json() : null; })
+        .catch(function () { return null; });
+    };
     fetch('/wxdaily?location=' + C[0] + ',' + C[1])
-      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (r) { return r.ok ? r.json() : _omFb(); })
+      .catch(function () { return _omFb(); })
       .then(function (d) {
         if (d && d.daily && d.daily.time) {
           window._wxDaily[iata] = { data: d.daily, ts: Date.now() };
           if (typeof onReady === 'function') onReady();
-        } else { window._wxDaily[iata] = { data: null, ts: Date.now() }; }
+        } else { window._wxDaily[iata] = { data: _prev, ts: _failTs() }; if (typeof onReady === 'function') onReady(); }
       })
-      .catch(function () { window._wxDaily[iata] = { data: null, ts: Date.now() }; });
-    return null;
+      .catch(function () { window._wxDaily[iata] = { data: _prev, ts: _failTs() }; });
+    return _prev;
   } catch (e) { return null; }
 }
 // Labels keyed by the ICON actually shown — icon and wording can never
@@ -25256,7 +25972,31 @@ function _renderWxCard(el) {
     var _lblPair = _WXLBL[ic] || ['', ''];
     var cond = _lblPair[0] + (_lblPair[1] && _lblPair[1] !== _lblPair[0] ? ' <span class="v2-rc-fi-sep">|</span> ' + _lblPair[1] : '');
     var dT = function (v) { return (typeof displayTemp === 'function') ? displayTemp(Math.round(v)) : Math.round(v) + '°C'; };
-    var names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    // Day names BILINGUAL like everything else on the board (Nick: 'it's
+    // not bilingual, such as days — it's terrible'). FR first at the
+    // Québec/French-first airports, same rule the rest of the gate uses.
+    // FULL day names, both languages (Nick: 'it needs to be full words … and
+    // clear' — the abbreviated + tiny-grey second line read badly).
+    var _dEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var _dFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    // Actual DATE under the day name (Nick: 'it should have days too, hard to
+    // tell what day they're talking about') — day-of-month + short month.
+    var _moEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var _moFr = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
+    var _dateLbl = function (d) { return d.getDate() + ' ' + (_wxFrF ? _moFr : _moEn)[d.getMonth()]; };
+    var _wxFrF = false;
+    try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
+    var _dayLbl = function (dow) {
+      var a = _wxFrF ? _dFr[dow] : _dEn[dow], b = _wxFrF ? _dEn[dow] : _dFr[dow];
+      return a + '<span class="wxc-d2">' + b + '</span>';
+    };
+    // Meta labels bilingual like the rest of the card (Nick: 'half french half
+    // not' — Feels like/Wind/Humidity were English-only under a bilingual
+    // condition line). FR first at the French-first airports.
+    var _mlbl = function (en, fr) {
+      return _wxFrF ? (fr + ' <span class="v2-rc-fi-sep">|</span> ' + en)
+                    : (en + ' <span class="v2-rc-fi-sep">|</span> ' + fr);
+    };
 
     // 7-DAY outlook: prefer the daily route; fall back to 48h hourly rollup.
     var tiles = '', nDays = 0;
@@ -25268,7 +26008,8 @@ function _renderWxCard(el) {
       for (var i = 0; i < Math.min(7, daily.time.length); i++) {
         var dt = new Date(daily.time[i] + 'T12:00:00');
         var icd = _wmoAnimIcon(daily.weather_code[i]);
-        tiles += '<div class="wxc-day"><div class="wxc-d">' + names[dt.getDay()] + '</div>'
+        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt.getDay()) + '</div>'
+          + '<div class="wxc-dt">' + _dateLbl(dt) + '</div>'
           + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
           + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
           + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
@@ -25290,48 +26031,48 @@ function _renderWxCard(el) {
         var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
         var dt2 = new Date(k + 'T12:00:00');
         var ich = _wxAnimIcon(code, false);
-        tiles += '<div class="wxc-day"><div class="wxc-d">' + names[dt2.getDay()] + '</div>'
+        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt2.getDay()) + '</div>'
+          + '<div class="wxc-dt">' + _dateLbl(dt2) + '</div>'
           + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
           + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
         nDays++;
       });
     }
 
-    // Next hours: 6 upcoming entries from the cached hourly forecast.
+    // 'Next hours' strip RETIRED (Nick: the three-section card read TINY,
+    // and the hourly entries changed every hour = another jump source).
+    // The card is hero + 7-day outlook only, both bigger.
     var hoursHtml = '';
-    try {
-      var nowTs = Date.now(), shown = 0;
-      (wx.hourly || []).forEach(function (h) {
-        if (shown >= 6 || !h || typeof h.temp !== 'number' || !h.ts || h.ts < nowTs) return;
-        var ich = _wxAnimIcon(h.code, night);
-        var hLbl = new Date(h.ts).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).toLowerCase().replace(' ', '');
-        hoursHtml += '<div class="wxc-hour"><div class="wxc-hr">' + hLbl + '</div>'
-          + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
-          + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';
-        shown++;
-      });
-    } catch (eH) {}
-    var _wxHtml =
-        '<div class="wxcard-wrap wxcard-col">'
-      +   '<div class="wxc-globe" aria-hidden="true"></div>'
-      +   '<div class="wxcard-main">'
-      +     '<div class="wxc-head">'
-      +       '<div><div class="wxc-kicker">Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée</div>'
-      +       '<div class="wxc-city">' + city + ' (' + dest + ')</div></div>'
-      +     '</div>'
-      +     '<div class="wxc-hero">'
-      +       '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
-      +       '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
-      +       '<div class="wxc-meta">'
-      +         (typeof cur.feelsLike === 'number' ? '<span>Feels like <b>' + dT(cur.feelsLike) + '</b></span>' : '')
-      +         (typeof cur.windSpeed === 'number' ? '<span>Wind <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
-      +         (typeof cur.humidity === 'number' ? '<span>Humidity <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
-      +       '</div></div>'
-      +     '</div>'
+    // Split MAIN (globe + head + hero) from the STRIPS (hours + outlook):
+    // the 7-day data usually lands a beat AFTER the first paint, and
+    // rebuilding the whole card for it reloaded the big hero icon — the
+    // 'bump di bump, almost twice at the beginning' (Nick). With the split,
+    // late strip data swaps in UNDER the untouched hero.
+    var _wxMainHtml =
+        '<div class="wxc-globe" aria-hidden="true"></div>'
+      + '<div class="wxcard-main">'
+      +   '<div class="wxc-head">'
+      +     '<div><div class="wxc-kicker">' + (_wxFrF
+                ? 'Météo à l\'arrivée <span class="v2-rc-fi-sep">|</span> Arrival Weather'
+                : 'Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée') + '</div>'
+      +     '<div class="wxc-city">' + city + ' (' + dest + ')</div></div>'
       +   '</div>'
-      +   (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">Next hours <span class="v2-rc-fi-sep">|</span> Prochaines heures</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
-      +   (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '')
+      +   '<div class="wxc-hero">'
+      +     '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
+      +     '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
+      +     '<div class="wxc-meta">'
+      +       (typeof cur.feelsLike === 'number' ? '<span>' + _mlbl('Feels like', 'Ressenti') + ' <b>' + dT(cur.feelsLike) + '</b></span>' : '')
+      +       (typeof cur.windSpeed === 'number' ? '<span>' + _mlbl('Wind', 'Vent') + ' <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
+      +       (typeof cur.humidity === 'number' ? '<span>' + _mlbl('Humidity', 'Humidité') + ' <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
+      +     '</div></div>'
+      +   '</div>'
       + '</div>';
+    var _wxStripsHtml =
+        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">Next hours <span class="v2-rc-fi-sep">|</span> Prochaines heures</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
+      + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + (_wxFrF
+            ? 'PRÉVISIONS ' + nDays + ' JOURS <span class="v2-rc-fi-sep">|</span> ' + nDays + '-DAY'
+            : nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS') + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col">' + _wxMainHtml + _wxStripsHtml + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually
@@ -25368,7 +26109,23 @@ function _renderWxCard(el) {
       }
       return true;
     }
+    // Strips-only change (late-arriving 7-day/hourly data): swap the strips
+    // under the SAME hero — no innerHTML reset, no hero icon reload, no bump.
+    // _wxHydrateSvgs is safe on the wrap: hydrated icons are spans and are
+    // skipped; only the freshly inserted strip imgs hydrate.
+    var _wxWrapP = el.querySelector ? el.querySelector('.wxcard-wrap') : null;
+    if (_wxWrapP && el._wxMainHtml === _wxMainHtml) {
+      try {
+        _wxWrapP.querySelectorAll(':scope > .wxc-strip').forEach(function (n) { n.remove(); });
+        _wxWrapP.insertAdjacentHTML('beforeend', _wxStripsHtml);
+        el._wxLastHtml = _wxSig;
+        if (el._wxLastBg !== _wxBg) { _wxWrapP.style.setProperty('background', _wxBg, 'important'); el._wxLastBg = _wxBg; }
+        _wxHydrateSvgs(_wxWrapP);
+        return true;
+      } catch (e) {}
+    }
     el._wxLastHtml = _wxSig;
+    el._wxMainHtml = _wxMainHtml;
     el._wxLastBg = _wxBg;
     el.innerHTML = _wxHtml;
     var _wxWrap = el.querySelector('.wxcard-wrap');
@@ -25521,12 +26278,20 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
   var zoom;
-  if (nearOrg < 0.05) zoom = 10;
-  else if (nearOrg < 0.10) zoom = 8;
-  else if (nearOrg < 0.20) zoom = cruiseZoom + 1;
-  else if (nearDst < 0.05) zoom = 10;
-  else if (nearDst < 0.10) zoom = 8;
-  else if (nearDst < 0.20) zoom = cruiseZoom + 1;
+  // Progressive zoom (Nick: 'ground when it leaves, then zooms out eventually …
+  // autozoom then zoom out'). On the ground at the origin → street/ground level
+  // (z15); as it climbs away the zoom eases out step by step (13 → 11 → 9) to
+  // the wide cruise view; then it tightens back to ground on the destination
+  // approach. Distance-from-airport IS flight progress, so this reads as a
+  // smooth take-off-zoom-out / descend-zoom-in.
+  if (nearOrg < 0.006) zoom = 15;
+  else if (nearOrg < 0.02) zoom = 13;
+  else if (nearOrg < 0.06) zoom = 11;
+  else if (nearOrg < 0.14) zoom = 9;
+  else if (nearDst < 0.006) zoom = 15;
+  else if (nearDst < 0.02) zoom = 13;
+  else if (nearDst < 0.06) zoom = 11;
+  else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
   window._bigCraftMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
@@ -25538,18 +26303,11 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  // Actual flown track over the assigned route: GREEN where it follows the
-  // assigned o→d line, AMBER where it deviates beyond ~30 km (reroute/hold —
-  // fine, just flagged so it's visible at a glance). Built from recorded fixes.
-  try {
-    var _tp = (_gateTrack && _gateTrack.key && _gateTrack.points && _gateTrack.points.length >= 2) ? _gateTrack.points : null;
-    if (_tp) {
-      for (var _ti = 1; _ti < _tp.length; _ti++) {
-        var _ta = _tp[_ti - 1], _tb = _tp[_ti];
-        L.polyline([[_ta.lat, _ta.lng], [_tb.lat, _tb.lng]], { color: '#60a5fa', weight: 4, opacity: 0.95 }).addTo(window._bigCraftMap);
-      }
-    }
-  } catch (e) {}
+  // (Removed the separate 'actual flown track' polyline — it was the SAME blue
+  // as the assigned route arc above, so wherever the real path differed from
+  // the great-circle it drew a second parallel line = the 'double line for the
+  // trajectory' Nick flagged. The route-through-the-plane arc, solid behind +
+  // dashed ahead, is the single trajectory.)
   var planePos=L.latLng(planeLat,planeLng);
   var dLng=(d[1]-planeLng)*Math.PI/180;
   var lat1=planeLat*Math.PI/180,lat2=d[0]*Math.PI/180;
