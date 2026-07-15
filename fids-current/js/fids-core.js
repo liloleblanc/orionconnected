@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22236';
+var FIDS_BUILD_TAG = 'v22237';
 (function(){
   try {
     function _addTag(){
@@ -18932,7 +18932,7 @@ function _gateMapTileLayer() {
   // city names') — a 'satellite + names' hybrid. Both under the route/plane,
   // which live in the SVG overlay pane.
   var _sat = L.tileLayer('/tiles/satellite/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
-  var _labels = L.tileLayer('/tiles/labels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 2 });
+  var _labels = L.tileLayer('/tiles/citylabels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 2 });
   return L.layerGroup([_sat, _labels]);
 }
 
@@ -19117,11 +19117,11 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  // Actual flown track over the assigned route: GREEN where it follows the
-  // assigned o→d line, AMBER where it deviates beyond ~30 km (reroute/hold —
-  // fine, just flagged so it's visible at a glance). Built from recorded fixes.
+  // (Removed the separate 'actual flown track' polyline — SAME blue as the
+  // route arc above, so it drew a second parallel line wherever the real path
+  // left the great-circle = the 'double line for the trajectory' Nick flagged.)
   try {
-    var _tp = (_gateTrack && _gateTrack.key && _gateTrack.points && _gateTrack.points.length >= 2) ? _gateTrack.points : null;
+    var _tp = null;
     if (_tp) {
       for (var _ti = 1; _ti < _tp.length; _ti++) {
         var _ta = _tp[_ti - 1], _tb = _tp[_ti];
@@ -25998,18 +25998,11 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  // Actual flown track over the assigned route: GREEN where it follows the
-  // assigned o→d line, AMBER where it deviates beyond ~30 km (reroute/hold —
-  // fine, just flagged so it's visible at a glance). Built from recorded fixes.
-  try {
-    var _tp = (_gateTrack && _gateTrack.key && _gateTrack.points && _gateTrack.points.length >= 2) ? _gateTrack.points : null;
-    if (_tp) {
-      for (var _ti = 1; _ti < _tp.length; _ti++) {
-        var _ta = _tp[_ti - 1], _tb = _tp[_ti];
-        L.polyline([[_ta.lat, _ta.lng], [_tb.lat, _tb.lng]], { color: '#60a5fa', weight: 4, opacity: 0.95 }).addTo(window._bigCraftMap);
-      }
-    }
-  } catch (e) {}
+  // (Removed the separate 'actual flown track' polyline — it was the SAME blue
+  // as the assigned route arc above, so wherever the real path differed from
+  // the great-circle it drew a second parallel line = the 'double line for the
+  // trajectory' Nick flagged. The route-through-the-plane arc, solid behind +
+  // dashed ahead, is the single trajectory.)
   var planePos=L.latLng(planeLat,planeLng);
   var dLng=(d[1]-planeLng)*Math.PI/180;
   var lat1=planeLat*Math.PI/180,lat2=d[0]*Math.PI/180;
