@@ -8556,6 +8556,20 @@ function gateAutofit(root) {
         var er = el.getBoundingClientRect();
         var pr = parent.getBoundingClientRect();
         if (er.right > (pr.right - padR) + 0.5 || er.left < (pr.left + padL) - 0.5) return true;
+        // 3) Test against the VISIBLE RAIL COLUMN, not just the immediate cell.
+        //    The value's cell (v2-fi-textcol / v2-fi-copy) can grow wider than
+        //    the rail, which clips — so a long city ('Toronto') read as
+        //    'fitting' its cell while it was actually cut off by the column
+        //    (Nick: 'still see Toron…'). Measuring the element's edges against
+        //    the rail's content box catches that and lets the shrink fire.
+        var col = (el.closest && el.closest('.gad-aircraft-col')) || null;
+        if (col) {
+          var cr = col.getBoundingClientRect();
+          var ccs = window.getComputedStyle(col);
+          var cpl = parseFloat(ccs.paddingLeft) || 0;
+          var cpr = parseFloat(ccs.paddingRight) || 0;
+          if (er.right > (cr.right - cpr) + 0.5 || er.left < (cr.left + cpl) - 0.5) return true;
+        }
         return false;
       }
       var guard = 0;
@@ -13835,7 +13849,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22250';
+var FIDS_BUILD_TAG = 'v22251';
 (function(){
   try {
     function _addTag(){
