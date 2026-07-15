@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22238';
+var FIDS_BUILD_TAG = 'v22239';
 (function(){
   try {
     function _addTag(){
@@ -19118,12 +19118,15 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
   var zoom;
-  if (nearOrg < 0.05) zoom = 10;
-  else if (nearOrg < 0.10) zoom = 8;
-  else if (nearOrg < 0.20) zoom = cruiseZoom + 1;
-  else if (nearDst < 0.05) zoom = 10;
-  else if (nearDst < 0.10) zoom = 8;
-  else if (nearDst < 0.20) zoom = cruiseZoom + 1;
+  // Zoom in TIGHT near the airport (Nick: 'it's not zoomed in though' — wants
+  // the departure/arrival close-up, airport-and-streets level). ~2 levels
+  // tighter than before at every band near origin/dest; cruise stays wide.
+  if (nearOrg < 0.02) zoom = 14;
+  else if (nearOrg < 0.06) zoom = 12;
+  else if (nearOrg < 0.14) zoom = 10;
+  else if (nearDst < 0.02) zoom = 14;
+  else if (nearDst < 0.06) zoom = 12;
+  else if (nearDst < 0.14) zoom = 10;
   else zoom = cruiseZoom;
   gateMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
@@ -25990,12 +25993,15 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
   var zoom;
-  if (nearOrg < 0.05) zoom = 10;
-  else if (nearOrg < 0.10) zoom = 8;
-  else if (nearOrg < 0.20) zoom = cruiseZoom + 1;
-  else if (nearDst < 0.05) zoom = 10;
-  else if (nearDst < 0.10) zoom = 8;
-  else if (nearDst < 0.20) zoom = cruiseZoom + 1;
+  // Zoom in TIGHT near the airport (Nick: 'it's not zoomed in though' — wants
+  // the departure/arrival close-up, airport-and-streets level). ~2 levels
+  // tighter than before at every band near origin/dest; cruise stays wide.
+  if (nearOrg < 0.02) zoom = 14;
+  else if (nearOrg < 0.06) zoom = 12;
+  else if (nearOrg < 0.14) zoom = 10;
+  else if (nearDst < 0.02) zoom = 14;
+  else if (nearDst < 0.06) zoom = 12;
+  else if (nearDst < 0.14) zoom = 10;
   else zoom = cruiseZoom;
   window._bigCraftMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
