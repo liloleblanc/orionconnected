@@ -1519,6 +1519,17 @@ html .g8-wrap .gad-aircraft-col::after {
   filter: grayscale(1) contrast(1.25) !important;
   pointer-events: none !important; z-index: 6 !important;
 }
+/* Shelf CONTENT sits ABOVE the pattern so the icons and text read clearly IN
+   FRONT of it (Nick: 'the icons I asked to be in front of the pattern on the
+   left, same for text — it's not done'). mix-blend-mode:multiply only blends
+   the globe with what's BELOW it, so raising the rows above z-index 6 means the
+   dots darken only the bare metal behind them, never the badges or the ink. */
+html .g8-wrap .gad-aircraft-col .v2-fi-row,
+html .g8-wrap .gad-aircraft-col .v2-rc-shelf,
+html .g8-wrap .gad-aircraft-col .v2-fi-iconcol,
+html .g8-wrap .gad-aircraft-col .v2-fi-textcol {
+  position: relative !important; z-index: 7 !important;
+}
 
 /* No white sliver between the gate block and the Your Aircraft panel
    (Nick): the gate tab spans the banner's full inner height and covers

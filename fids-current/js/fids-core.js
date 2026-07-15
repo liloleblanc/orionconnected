@@ -9015,9 +9015,14 @@ const gView = document.getElementById('gateView');
         if (_gateAdAirlineSame && _savedAd && _savedAd.firstChild) { _savedAd.remove(); }
         else { _savedAd = null; _savedAdLogo = null; }
         if (_savedAdLogo) { _savedAdLogo.remove(); }
-        // Smooth transition: fade out, rebuild, fade in
-        gView.style.transition = 'opacity 0.15s ease';
-        gView.style.opacity = '0.7';
+        // NO opacity dip on rebuild (Nick: 'the whole thing is still glitching
+        // in and out'). Every data-key change (inbound poll, status/upd tick)
+        // rebuilds the gate view, and the old fade-to-0.7-and-back made the
+        // WHOLE screen pulse each time. The map and ad carousel are already
+        // preserved across the rebuild, so the swap is seamless — keep it at
+        // full opacity, no flash.
+        gView.style.transition = 'none';
+        gView.style.opacity = '1';
         // Mobile: render a clean phone-friendly gate view; desktop: use full TV layout
         var _isMobileGate = (window.innerWidth || document.documentElement.clientWidth) < 700;
         if (_isMobileGate) {
@@ -13830,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22234';
+var FIDS_BUILD_TAG = 'v22235';
 (function(){
   try {
     function _addTag(){
