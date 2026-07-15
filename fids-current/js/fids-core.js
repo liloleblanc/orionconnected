@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22243';
+var FIDS_BUILD_TAG = 'v22244';
 (function(){
   try {
     function _addTag(){
@@ -19106,31 +19106,11 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     });
     return;
   }
-  // REUSE the map when the route is unchanged (Nick: 'it keeps restarting …
-  // very very glitchy'). Tearing the map down and recreating it on every
-  // position update dumped Leaflet's tile cache, so the heavy satellite tiles
-  // reloaded each time = a visible restart/flash. Now: same route → keep the
-  // map and its tiles, wipe only the route/plane overlays and re-draw them.
-  var _liveRouteKey = 'live|' + String(org).toUpperCase() + '>' + String(dst).toUpperCase();
-  var _liveReuse = false;
-  try {
-    _liveReuse = !!(gateMap && gateMap._fidsRouteKey === _liveRouteKey
-      && gateMap.getContainer && gateMap.getContainer() && gateMap.getContainer().isConnected);
-  } catch (e) { _liveReuse = false; }
-  if (_liveReuse) {
-    try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
-    gateMap._fidsOverlays = [];
-  } else {
-    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
-    gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
-    _gateMapTileLayer().addTo(gateMap);
-    gateMap._fidsRouteKey = _liveRouteKey;
-    gateMap._fidsOverlays = [];
-    _gateMapWatchResize(mb);
-  }
+  // ── Geometry + progressive zoom, computed BEFORE any redraw so we can bail
+  //    out when nothing meaningful changed. ──
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
   var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
-  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
+  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2)) || 1;
   var cruiseZoom = totalDist < 5 ? 7 : totalDist < 15 ? 6 : totalDist < 30 ? 5 : 4;
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
@@ -19150,6 +19130,38 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   else if (nearDst < 0.06) zoom = 11;
   else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
+
+  // REUSE the map when the route is unchanged — tearing it down reloaded the
+  // heavy satellite tiles each time (Nick: 'restarting/glitchy').
+  var _liveRouteKey = 'live|' + String(org).toUpperCase() + '>' + String(dst).toUpperCase();
+  var _liveReuse = false;
+  try {
+    _liveReuse = !!(gateMap && gateMap._fidsRouteKey === _liveRouteKey
+      && gateMap.getContainer && gateMap.getContainer() && gateMap.getContainer().isConnected);
+  } catch (e) { _liveReuse = false; }
+  // ANTI-JITTER (Nick: 'the map's going crazy'): on the SAME live map, HOLD the
+  // previous zoom when the plane has barely moved — otherwise ADS-B jitter near
+  // a zoom-tier boundary flips the zoom in and out on every 10s tick. And if
+  // essentially nothing changed, SKIP the whole redraw (no overlay clear, no
+  // setView) so the map sits still instead of thrashing.
+  if (_liveReuse && gateMap._fidsLastView) {
+    var _lv = gateMap._fidsLastView;
+    var _dLat = Math.abs(_lv.lat - planeLat), _dLng = Math.abs(_lv.lng - planeLng);
+    if (_dLat < 0.05 && _dLng < 0.05) zoom = _lv.zoom;                 // hold zoom, no flap
+    if (_dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return;   // nothing changed → skip
+  }
+  if (_liveReuse) {
+    try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
+    gateMap._fidsOverlays = [];
+  } else {
+    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
+    gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+    _gateMapTileLayer().addTo(gateMap);
+    gateMap._fidsRouteKey = _liveRouteKey;
+    gateMap._fidsOverlays = [];
+    _gateMapWatchResize(mb);
+  }
+  gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
   gateMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
