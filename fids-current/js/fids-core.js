@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22237';
+var FIDS_BUILD_TAG = 'v22238';
 (function(){
   try {
     function _addTag(){
@@ -19089,10 +19089,28 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     });
     return;
   }
-  try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
-  gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
-  _gateMapTileLayer().addTo(gateMap);
-  _gateMapWatchResize(mb);
+  // REUSE the map when the route is unchanged (Nick: 'it keeps restarting …
+  // very very glitchy'). Tearing the map down and recreating it on every
+  // position update dumped Leaflet's tile cache, so the heavy satellite tiles
+  // reloaded each time = a visible restart/flash. Now: same route → keep the
+  // map and its tiles, wipe only the route/plane overlays and re-draw them.
+  var _liveRouteKey = 'live|' + String(org).toUpperCase() + '>' + String(dst).toUpperCase();
+  var _liveReuse = false;
+  try {
+    _liveReuse = !!(gateMap && gateMap._fidsRouteKey === _liveRouteKey
+      && gateMap.getContainer && gateMap.getContainer() && gateMap.getContainer().isConnected);
+  } catch (e) { _liveReuse = false; }
+  if (_liveReuse) {
+    try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
+    gateMap._fidsOverlays = [];
+  } else {
+    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
+    gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+    _gateMapTileLayer().addTo(gateMap);
+    gateMap._fidsRouteKey = _liveRouteKey;
+    gateMap._fidsOverlays = [];
+    _gateMapWatchResize(mb);
+  }
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
   var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
@@ -19113,29 +19131,20 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // (The old single ideal arc left any real-world deviation looking
   // 'off course' with the plane floating beside the route.)
   var _pp = [planeLat, planeLng];
-  _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
-  _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
-  L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  // (Removed the separate 'actual flown track' polyline — SAME blue as the
-  // route arc above, so it drew a second parallel line wherever the real path
-  // left the great-circle = the 'double line for the trajectory' Nick flagged.)
-  try {
-    var _tp = null;
-    if (_tp) {
-      for (var _ti = 1; _ti < _tp.length; _ti++) {
-        var _ta = _tp[_ti - 1], _tb = _tp[_ti];
-        L.polyline([[_ta.lat, _ta.lng], [_tb.lat, _tb.lng]], { color: '#60a5fa', weight: 4, opacity: 0.95 }).addTo(gateMap);
-      }
-    }
-  } catch (e) {}
+  // Track every overlay so a REUSE pass can wipe exactly these (and not the
+  // tile layers) — otherwise reused arcs/markers/planes would pile up.
+  var _ov = (gateMap._fidsOverlays = gateMap._fidsOverlays || []);
+  var _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
+  var _a2 = _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(_a2)_ov.push(_a2);
+  _ov.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
+  _ov.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
   var planePos=L.latLng(planeLat,planeLng);
   var dLng=(d[1]-planeLng)*Math.PI/180;
   var lat1=planeLat*Math.PI/180,lat2=d[0]*Math.PI/180;
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+  _ov.push(L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
   setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
 }
 // ──────────────────────────────────────────────────────────────────────
