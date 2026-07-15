@@ -6142,17 +6142,34 @@ function _buildV2MapCol(ctx, vars) {
       // a reassembled tag, per CodeQL), then drop any stray angle brackets.
       function _dStrip(h){
         var s = String(h || '');
-        // Drop the struck-through SCHEDULED time first — otherwise a revised
-        // (delayed) value like '<strike>5:30 AM</strike><revised>5:49 AM</revised>'
-        // stripped of tags reads '5:30 AM5:49 AM' mashed together on this card
-        // (Nick). Keep only the revised time, exactly like the left rail does.
-        s = s.replace(/<[^>]*g8-r2-strike[^>]*>[\s\S]*?<\/[^>]+>/g, '');
-        var prev;
-        do { prev = s; s = s.replace(/<[^>]*>/g, ''); } while (s !== prev);
-        return s.replace(/[<>]/g, '').trim();
+        if (s.indexOf('<') === -1) return s.trim();
+        // Delayed times arrive as '<span class=g8-r2-strike>OLD</span><span
+        // class=g8-r2-revised>NEW</span>'. Keep ONLY the revised value — else
+        // the tags-stripped text reads 'OLDNEW' mashed together (Nick: '5:30
+        // AM5:49 AM'). Done with a plain CHARACTER SCAN — no HTML-matching
+        // regex (CodeQL js/bad-tag-filter) and no innerHTML — so markup is
+        // never mis-parsed or re-injected.
+        var rev = s.indexOf('g8-r2-revised');
+        if (rev !== -1) {
+          var gt = s.indexOf('>', rev);
+          var lt = (gt !== -1) ? s.indexOf('<', gt + 1) : -1;
+          if (gt !== -1 && lt !== -1) return s.slice(gt + 1, lt).trim();
+        }
+        // No revised marker: strip every tag by scanning, not regex.
+        var out = '', depth = 0;
+        for (var i = 0; i < s.length; i++) {
+          var c = s.charAt(i);
+          if (c === '<') depth++;
+          else if (c === '>') { if (depth > 0) depth--; }
+          else if (depth === 0) out += c;
+        }
+        return out.trim();
       }
       var _dDepStr = _dStrip(vars.depTimeHtml) || (_dDepTs ? _dFmtT(_dDepTs) : '');
       var _dArrStr = _dStrip(vars.arrHtml);
+      // A revised (delayed) departure carries the g8-r2-revised marker — colour
+      // that time ORANGE on this card to match the delayed status (Nick).
+      var _dDepDelayed = String(vars.depTimeHtml || '').indexOf('g8-r2-revised') !== -1;
 
       // "Departing in" countdown
       var _dMins = _dDepTs ? Math.round((_dDepTs - Date.now()) / 60000) : 0;
@@ -6207,7 +6224,7 @@ function _buildV2MapCol(ctx, vars) {
         // the card dropped it 'because it's on the left', but Nick wants it here.
         +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval">' + (_dDepStr || '—') + '</div>'
+        +     '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
@@ -13855,7 +13872,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22252';
+var FIDS_BUILD_TAG = 'v22253';
 (function(){
   try {
     function _addTag(){

@@ -1521,8 +1521,8 @@ html .g8-wrap .gad-aircraft-col::after {
      shelves cover it completely ('all the pattern is gone', Nick) — so the
      content is NOT z-raised; multiply over the dark navy ink stays dark and
      legible anyway. Lower opacity so it's a whisper, not a blanket. */
-  mix-blend-mode: multiply !important; opacity: 0.5 !important;
-  filter: grayscale(1) contrast(1.3) !important;
+  mix-blend-mode: multiply !important; opacity: 0.78 !important;
+  filter: grayscale(1) contrast(1.7) brightness(0.82) !important;
   pointer-events: none !important; z-index: 6 !important;
 }
 
