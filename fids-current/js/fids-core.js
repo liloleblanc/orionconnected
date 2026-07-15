@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22245';
+var FIDS_BUILD_TAG = 'v22246';
 (function(){
   try {
     function _addTag(){
@@ -25279,8 +25279,13 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (raw === '0' || n === 0) { enabled = false; }
       else { enabled = true; if (n >= 3) secs = n; }
     } else {
-      enabled = (window.self !== window.top) ||
-                q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
+      // OPT-IN ONLY (Nick: 'this is not ideal, like all the time?'). A directly
+      // opened gate/baggage display must NEVER auto-cycle by default — it stays
+      // on its gate/belt with no flag needed. Only the stream/kiosk layout
+      // (?stream / ?yt / ?compact) walks automatically; anyone else asks for it
+      // explicitly with ?gatecycle=N / ?bagcycle=N. (The old bare in-an-iframe
+      // trigger was too eager and cycled normal pinned displays.)
+      enabled = q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
     }
     // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
     // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
@@ -25363,8 +25368,13 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (raw === '0' || n === 0) { enabled = false; }
       else { enabled = true; if (n >= 3) secs = n; }
     } else {
-      enabled = (window.self !== window.top) ||
-                q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
+      // OPT-IN ONLY (Nick: 'this is not ideal, like all the time?'). A directly
+      // opened gate/baggage display must NEVER auto-cycle by default — it stays
+      // on its gate/belt with no flag needed. Only the stream/kiosk layout
+      // (?stream / ?yt / ?compact) walks automatically; anyone else asks for it
+      // explicitly with ?gatecycle=N / ?bagcycle=N. (The old bare in-an-iframe
+      // trigger was too eager and cycled normal pinned displays.)
+      enabled = q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
     }
     // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
     // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
