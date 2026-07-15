@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22246';
+var FIDS_BUILD_TAG = 'v22247';
 (function(){
   try {
     function _addTag(){
@@ -25279,13 +25279,13 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (raw === '0' || n === 0) { enabled = false; }
       else { enabled = true; if (n >= 3) secs = n; }
     } else {
-      // OPT-IN ONLY (Nick: 'this is not ideal, like all the time?'). A directly
-      // opened gate/baggage display must NEVER auto-cycle by default — it stays
-      // on its gate/belt with no flag needed. Only the stream/kiosk layout
-      // (?stream / ?yt / ?compact) walks automatically; anyone else asks for it
-      // explicitly with ?gatecycle=N / ?bagcycle=N. (The old bare in-an-iframe
-      // trigger was too eager and cycled normal pinned displays.)
-      enabled = q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
+      // Auto-cycle is OFF unless EXPLICITLY requested with ?gatecycle=N (>0) /
+      // ?bagcycle=N. NOTHING else turns it on — not the stream/yt layout flag,
+      // not being in an iframe. A gate/baggage screen ALWAYS stays pinned by
+      // default (Nick: it kept swapping the whole screen 'from flight to
+      // flight', even in the clean stream layout). The YouTube/lobby board that
+      // WANTS to walk opts in explicitly with ?gatecycle=60.
+      enabled = false;
     }
     // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
     // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
@@ -25368,13 +25368,13 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (raw === '0' || n === 0) { enabled = false; }
       else { enabled = true; if (n >= 3) secs = n; }
     } else {
-      // OPT-IN ONLY (Nick: 'this is not ideal, like all the time?'). A directly
-      // opened gate/baggage display must NEVER auto-cycle by default — it stays
-      // on its gate/belt with no flag needed. Only the stream/kiosk layout
-      // (?stream / ?yt / ?compact) walks automatically; anyone else asks for it
-      // explicitly with ?gatecycle=N / ?bagcycle=N. (The old bare in-an-iframe
-      // trigger was too eager and cycled normal pinned displays.)
-      enabled = q.get('stream') === '1' || q.get('yt') === '1' || q.get('compact') === '1';
+      // Auto-cycle is OFF unless EXPLICITLY requested with ?gatecycle=N (>0) /
+      // ?bagcycle=N. NOTHING else turns it on — not the stream/yt layout flag,
+      // not being in an iframe. A gate/baggage screen ALWAYS stays pinned by
+      // default (Nick: it kept swapping the whole screen 'from flight to
+      // flight', even in the clean stream layout). The YouTube/lobby board that
+      // WANTS to walk opts in explicitly with ?gatecycle=60.
+      enabled = false;
     }
     // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
     // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
