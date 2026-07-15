@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22242';
+var FIDS_BUILD_TAG = 'v22243';
 (function(){
   try {
     function _addTag(){
@@ -16974,8 +16974,15 @@ async function oagFetch(iata, dir) {
 
 async function fetchLive() {
   const iata = document.getElementById('apSel').value;
-  document.getElementById('fidsTable').style.display = 'none';
-  setState('loading', true);
+  // Only show the loading splash on the FIRST load. The 5-minute auto-refresh
+  // was re-showing it EVERY time, dropping the live gate/board to the '99%'
+  // splash for ~10s on every refresh — the recurring 'glitch' Nick filmed
+  // (NOT a reload). Background refreshes now update silently behind the live
+  // screen; the loader only covers the genuine cold start.
+  if (window._initialFetchDone !== true) {
+    document.getElementById('fidsTable').style.display = 'none';
+    setState('loading', true);
+  }
   document.getElementById('liveLabel').textContent = 'LIVE';
 
   try {
@@ -17060,13 +17067,23 @@ async function fetchLive() {
 
   } catch(e) {
     setState('loading', false);
-    const p = document.getElementById('panelError');
-    // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
-    // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
-    p.innerHTML = 'LIVE DATA ERROR<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
-    var _pSub = p.querySelector('.sub');
-    if (_pSub) _pSub.textContent = String((e && e.message) || '');
-    p.style.display = 'block';
+    // Only take over the screen with the error panel on a COLD start. A failed
+    // 5-min background refresh must NOT flash the error over a live gate/board
+    // (part of the recurring 'glitch' — a transient network blip covered the
+    // screen). Keep the last good screen; just log it and try again next cycle.
+    if (window._initialFetchDone !== true) {
+      const p = document.getElementById('panelError');
+      // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
+      // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
+      p.innerHTML = 'LIVE DATA ERROR<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
+      var _pSub = p.querySelector('.sub');
+      if (_pSub) _pSub.textContent = String((e && e.message) || '');
+      p.style.display = 'block';
+    }
+    // On a background refresh failure, keep the auto-refresh alive so it recovers.
+    if (window._initialFetchDone === true && !autoRefreshTimer) {
+      autoRefreshTimer = setInterval(fetchLive, 5 * 60 * 1000);
+    }
     console.error('ADB error:', e.message);
   }
 }
