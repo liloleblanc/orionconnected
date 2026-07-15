@@ -4626,13 +4626,22 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     '32N':['320','319'], '32Q':['321'], '321':['32N','320'], '319':['320','32N'], '320':['319','32N']
   };
   var _variants = [eq].concat(FAMILY_SIBLINGS[eq] || []);
+  // Sharklet A321-200 (Nick): the plain fence-wingtip and the newer sharklet
+  // A321-200 share the SAME type code (321). Only the model NAME distinguishes
+  // them — it carries '(Sharklets)'. When present on a 321, prefer a dedicated
+  // sharklet livery file ('321s') and fall back to plain '321' via the chain
+  // below if that asset isn't shipped yet — so nothing breaks before the file
+  // is added. (The XLR/neo already routes to its own 32Q file.)
+  var _sharkA321 = (eq === '321') && /sharklet/i.test(rawModel);
   // Try variant-specific → exact → siblings, ALL in the airline's livery folder
   // first, then the same chain on the generic (liveryless) images.
   var paths = [];
   if (LIVERY_FOLDERS[al]) {
+    if (_sharkA321) paths.push('aircraft/' + al + '/321s.png');
     if (engineCode) paths.push('aircraft/' + al + '/' + eq + '-' + engineCode + '.png');
     for (var _vi = 0; _vi < _variants.length; _vi++) paths.push('aircraft/' + al + '/' + _variants[_vi] + '.png');
   }
+  if (_sharkA321) paths.push('aircraft/321s.png');
   if (engineCode) paths.push('aircraft/' + eq + '-' + engineCode + '.png');
   for (var _vg = 0; _vg < _variants.length; _vg++) paths.push('aircraft/' + _variants[_vg] + '.png');
 
@@ -6380,6 +6389,17 @@ function _buildV2MapCol(ctx, vars) {
         _equipCd = '32Q';
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('32Q') : 'Airbus A321neo';
       }
+    }
+    // Air Canada's (ex-Rouge) sharklet A321-200s arrive as equipment code 32B
+    // (Nick) — which otherwise renders as an A320. For AC / Rouge / Jazz, treat
+    // 32B as the sharklet A321: fix the label here, and the '(Sharklets)' in the
+    // name drives the sharklet livery image in aircraftImgTag (which falls back
+    // to the plain 321 until an AC/321s.png sharklet render is added). Scoped to
+    // the AC family so other carriers' 32B is untouched.
+    if (['AC', 'RV', 'QK'].indexOf(String(vars.airlineCode || '').toUpperCase()) !== -1
+        && String(_equipCd || '').toUpperCase().trim() === '32B') {
+      _equipCd = '321';
+      _equipNm = 'Airbus A321-200 (Sharklets)';
     }
     var _liveryEq = _equipCd;
     if (_opCode === 'RV' && _liveryEq && /^[A-Z0-9]{3}$/i.test(_liveryEq)) _liveryEq = _liveryEq + 'r';
@@ -13885,7 +13905,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22256';
+var FIDS_BUILD_TAG = 'v22257';
 (function(){
   try {
     function _addTag(){
