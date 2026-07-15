@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22248';
+var FIDS_BUILD_TAG = 'v22249';
 (function(){
   try {
     function _addTag(){
@@ -24120,6 +24120,50 @@ function _getGateAdSlideAt(index) {
   return slides.length ? (slides[slot] || null) : null;
 }
 
+// ── AD MEDIA PRE-WARM ──────────────────────────────────────────────────────
+// The crossfade paints the incoming slide UNDER the dissolving overlay, but a
+// fresh slide's background media (promo video / photo) still has to fetch +
+// decode — so it popped in a beat AFTER the text/solid colour (Nick: 'the
+// aircanada wifi ad came on and the background came in late'), and settling
+// that media could nudge the layout ('it still bumps once in a while'). Warm
+// the NEXT slide's media while the current one is still on screen so, by the
+// time it rotates in, the browser already has it decoded and it appears in the
+// SAME frame as everything else. Pure prefetch — no layout, timing, or which-
+// ad-shows change.
+function _preloadGateAdMediaForSlide(slide) {
+  try {
+    if (!slide) return;
+    window._gateAdPreloaded = window._gateAdPreloaded || {};
+    var seen = window._gateAdPreloaded;
+    var jobs = [];
+    if (slide.type === 'custom' && slide.item && slide.item.url) {
+      jobs.push({ u: slide.item.url, v: (slide.item.type === 'video') });
+    }
+    var d = slide.data;
+    if (d) {
+      if (d.bgImage)          jobs.push({ u: d.bgImage, v: false });
+      if (d._customLogoVideo) jobs.push({ u: d._customLogoVideo, v: true });
+      if (d.videoSrc)         jobs.push({ u: d.videoSrc, v: true });
+      if (d.logo)             jobs.push({ u: d.logo, v: false });
+    }
+    jobs.forEach(function (o) {
+      if (!o.u || seen[o.u]) return;
+      seen[o.u] = true;
+      if (o.v) {
+        // Warm the HTTP cache + start decode on a detached, muted element so
+        // the visible <video autoplay> starts near-instantly on swap.
+        var vid = document.createElement('video');
+        vid.muted = true; vid.preload = 'auto'; vid.playsInline = true;
+        vid.src = o.u;
+        try { vid.load(); } catch (e) {}
+      } else {
+        var im = new Image();
+        im.src = o.u;
+      }
+    });
+  } catch (e) {}
+}
+
 function _restartGateAdsTimer() {
   if (_gateAdTimer) return;
   // Variable per-slide dwell — switched from setInterval (fixed 15s) to
@@ -24217,6 +24261,9 @@ function _restartGateAdsTimer() {
         dwell = _getGateAdDwellMs(nowSlide);
       } catch (e) {}
       dwell = Math.max(22000, dwell);   // Nick: slides were flicking by every 5-10s — hold each ≥22s
+      // Pre-warm the media for the slide that comes NEXT, during this slide's
+      // dwell, so its background lands in sync (no late-pop, no load bump).
+      try { _preloadGateAdMediaForSlide(_getGateAdSlideAt((_gateAdIndex + 1) % totalSlots)); } catch (e) {}
       _gateAdTimer = setTimeout(_tick, dwell);
     }, 10);
   };
@@ -24227,6 +24274,13 @@ function _restartGateAdsTimer() {
     initDwell = _getGateAdDwellMs(firstSlide);
   } catch (e) {}
   initDwell = Math.max(22000, initDwell);   // ≥22s per slide (Nick — no more 5-10s flicker)
+  // Warm the FIRST slide's media (and the one after) before the opening tick,
+  // so the very first rotation is already in sync.
+  try {
+    var _tot0 = _getGateAdTotalSlots();
+    _preloadGateAdMediaForSlide(_getGateAdSlideAt(_gateAdIndex));
+    _preloadGateAdMediaForSlide(_getGateAdSlideAt((_gateAdIndex + 1) % _tot0));
+  } catch (e) {}
   _gateAdTimer = setTimeout(_tick, initDwell);
 }
 

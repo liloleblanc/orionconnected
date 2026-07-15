@@ -1526,6 +1526,24 @@ html .g8-wrap .gad-aircraft-col::after {
   pointer-events: none !important; z-index: 6 !important;
 }
 
+/* Nick (Jul 2026): 'make the background a bit darker on the left shelves and
+   bring the icon and numbers to the front of it.' Two parts:
+   1. The rail metal steps a touch darker (#eef1f6 -> #dce2eb) so the shelves
+      read heavier while the multiply dot-globe still shows on the metal.
+   2. The readout is pulled clearly IN FRONT of that watermark. ONLY the leaf
+      elements are z-raised — the icon, the icon wrap, and the text column
+      (label + big value) — never a shelf/row WRAPPER. Raising a wrapper is
+      what buried the pattern before ('all the pattern is gone'); these leaves
+      are transparent, so the dots still read in the space around them while
+      the numbers sit crisply on top instead of under the dots. */
+html .g8-wrap .gad-aircraft-col { background: #dce2eb !important; }
+html .g8-wrap .gad-aircraft-col .v2-fi-icon-wrap,
+html .g8-wrap .gad-aircraft-col .v2-fi-icon,
+html .g8-wrap .gad-aircraft-col .v2-fi-textcol {
+  position: relative !important;
+  z-index: 8 !important;
+}
+
 /* No white sliver between the gate block and the Your Aircraft panel
    (Nick): the gate tab spans the banner's full inner height and covers
    the white band's bottom edge. min-height wins over WHATEVER sets the
