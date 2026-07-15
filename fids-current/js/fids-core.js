@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22249';
+var FIDS_BUILD_TAG = 'v22250';
 (function(){
   try {
     function _addTag(){
@@ -18959,7 +18959,7 @@ function _gateMapShowOverlay(name) {
   return name !== 'weather';
 }
 
-function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('gateMapBox');if(!mb)return;
+function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;try{if(typeof _stopGateMapGlide==='function')_stopGateMapGlide();}catch(e){}var mb=document.getElementById('gateMapBox');if(!mb)return;
   // Resolve airport coords. If either is unknown, kick off async lookup
   // and retry — the map will populate as soon as both coords arrive.
   var o=_lookupAirport(org), d=_lookupAirport(dst);
@@ -19181,8 +19181,115 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  _ov.push(L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
+  var _planeMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+  _ov.push(_planeMk);
+  // Feed the live glide: move the plane along the route at its own ground
+  // speed between real ADS-B fixes; this call re-seeds it to the true spot.
+  var _glSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
+             : (window._gateMapFix && typeof window._gateMapFix.speed === 'number' ? window._gateMapFix.speed : 0);
+  _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd);
   setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
+}
+
+// ── MOVING AIRCRAFT — dead-reckoning glide between real ADS-B fixes ─────────
+// Nick: 'make the aircraft move slowly according to the speed it's going …
+// it should be able to calculate approx, then adjust with the pings.' Real
+// position fixes only land every few minutes, so between them the plane sat
+// still. This advances the marker along the great-circle route at the live
+// ground speed (distance = speed × time); when the NEXT real fix arrives,
+// initGateMapLive re-seeds it to the true position — a gentle correction, not
+// a jump. It ONLY nudges the marker + the two route arcs; it never re-inits,
+// re-centres, or re-renders the map, so it can't reintroduce the map thrash.
+var _gateGlide = { timer: null };
+
+function _stopGateMapGlide() {
+  try { if (_gateGlide.timer) clearInterval(_gateGlide.timer); } catch (e) {}
+  _gateGlide.timer = null;
+}
+
+// Great-circle path org→dst as plain [lat,lng] points (antimeridian-normalised),
+// with a straight-line fallback if the arc plugin is unavailable.
+function _gcFullRoute(o, d, n) {
+  var pts = null;
+  try {
+    var a = L.Polyline.Arc(o, d, { vertices: n });
+    var ll = a.getLatLngs();
+    for (var i = 1; i < ll.length; i++) {
+      while (ll[i].lng - ll[i - 1].lng >  180) ll[i].lng -= 360;
+      while (ll[i].lng - ll[i - 1].lng < -180) ll[i].lng += 360;
+    }
+    pts = ll.map(function (q) { return [q.lat, q.lng]; });
+  } catch (e) { pts = null; }
+  if (!pts || pts.length < 2) {
+    pts = [];
+    for (var k = 0; k <= n; k++) { var f = k / n; pts.push([o[0] + (d[0] - o[0]) * f, o[1] + (d[1] - o[1]) * f]); }
+  }
+  return pts;
+}
+
+// Great-circle distance in nautical miles.
+function _gcNm(a, b) {
+  var R = 3440.065;
+  var la1 = a[0] * Math.PI / 180, la2 = b[0] * Math.PI / 180;
+  var dla = (b[0] - a[0]) * Math.PI / 180, dlo = (b[1] - a[1]) * Math.PI / 180;
+  var h = Math.sin(dla / 2) * Math.sin(dla / 2) + Math.cos(la1) * Math.cos(la2) * Math.sin(dlo / 2) * Math.sin(dlo / 2);
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts) {
+  _stopGateMapGlide();
+  if (!map || !marker || typeof L === 'undefined') return;
+  if (!(speedKts > 0)) return;                 // no live speed → nothing to reckon
+  var route = _gcFullRoute(o, d, 120);
+  var n = route.length;
+  if (n < 2) return;
+  var totalNm = _gcNm(o, d);
+  if (!(totalNm > 0)) return;
+  // Seed progress from the real fix: the nearest route vertex.
+  var best = 0, bestDsq = Infinity;
+  for (var i = 0; i < n; i++) {
+    var dLat = route[i][0] - planeLat, dLng = route[i][1] - planeLng;
+    var dsq = dLat * dLat + dLng * dLng;
+    if (dsq < bestDsq) { bestDsq = dsq; best = i; }
+  }
+  var p = best / (n - 1);
+  var lastTs = Date.now();
+  function bearingAt(idx) {
+    var i2 = Math.min(idx + 1, n - 1), i1 = Math.max(0, i2 - 1);
+    var A = route[i1], B = route[i2];
+    var dLng = (B[1] - A[1]) * Math.PI / 180;
+    var lat1 = A[0] * Math.PI / 180, lat2 = B[0] * Math.PI / 180;
+    var y = Math.sin(dLng) * Math.cos(lat2);
+    var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    return Math.atan2(y, x) * 180 / Math.PI;
+  }
+  _gateGlide.timer = setInterval(function () {
+    try {
+      if (!marker._map) { _stopGateMapGlide(); return; }   // map/marker torn down
+      var now = Date.now();
+      var dtH = (now - lastTs) / 3600000;
+      lastTs = now;
+      // The MOTION model adjusts its ASSUMED speed by flight phase so the plane
+      // eases along a realistic profile — accelerating off the origin and
+      // bleeding speed down the glideslope into the destination instead of
+      // sailing in at cruise (Nick: 'it should read what we get, don't change
+      // that — it may just need to adjust speed/altitude for glideslope'). The
+      // Ground Speed / Altitude NUMBERS are untouched: they stay the real feed.
+      var factor = 1;
+      if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
+      else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
+      var effSpeed = speedKts * Math.max(0.2, factor);
+      p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
+      var idx = Math.min(n - 1, Math.max(0, Math.floor(p * (n - 1))));
+      marker.setLatLng(route[idx]);
+      try {
+        var div = (marker._icon && marker._icon.querySelector) ? marker._icon.querySelector('div') : null;
+        if (div) div.style.transform = 'rotate(' + bearingAt(idx) + 'deg)';
+      } catch (er) {}
+      try { if (a1 && a1.setLatLngs) a1.setLatLngs(route.slice(0, idx + 1)); } catch (er) {}
+      try { if (a2 && a2.setLatLngs) a2.setLatLngs(route.slice(idx)); } catch (er) {}
+    } catch (e) { _stopGateMapGlide(); }
+  }, 1000);
 }
 // ──────────────────────────────────────────────────────────────────────
 // CINEMATIC MAP CAMERA  (tracks aircraft by REGISTRATION)
