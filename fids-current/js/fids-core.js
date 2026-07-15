@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22240';
+var FIDS_BUILD_TAG = 'v22241';
 (function(){
   try {
     function _addTag(){
@@ -25208,11 +25208,23 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   if (!_running) return;
   setInterval(function () {
     try {
-      fetch(location.pathname + location.search, { cache: 'no-store' })
+      // Cache-buster so a filtering proxy can't hand back a stale page.
+      var _q = location.search + (location.search ? '&' : '?') + '_su=' + (+new Date());
+      fetch(location.pathname + _q, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.text() : null; })
         .then(function (html) {
           var t = _tok(html);
-          if (t && t !== _running) location.reload();
+          if (!t || t === _running) return;
+          // LOOP GUARD (Nick: the screen 'keeps restarting'): only reload ONCE
+          // per new token. If we already reloaded for token t but came back
+          // still running the old one — a proxy (Zscaler) is pinning the stale
+          // HTML — do NOT reload again, or it restarts forever. sessionStorage
+          // clears on tab close, so a genuine later deploy still updates once.
+          var _tried = null;
+          try { _tried = sessionStorage.getItem('fids_su_tried'); } catch (e) {}
+          if (t === _tried) return;
+          try { sessionStorage.setItem('fids_su_tried', t); } catch (e) {}
+          location.reload();
         }).catch(function () {});
     } catch (e) {}
   }, 5 * 60000);
