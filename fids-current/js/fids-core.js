@@ -13894,7 +13894,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22258';
+var FIDS_BUILD_TAG = 'v22259';
 (function(){
   try {
     function _addTag(){
@@ -19381,6 +19381,49 @@ var _gateMapCamera = {
   nextFlybackAt: 0        // ts: when to next start a flyback during cruise
 };
 
+// ── ML FLIGHT TIME (gap-fill for the map) ───────────────────────────────────
+// Nick (Option A): the map's plane position comes from real scheduled dep/arr
+// times; when the feed gives NO departure time it falls back to a flat 2-hour
+// guess. Fill THAT gap with AeroDataBox's ML flight-time model (route + aircraft
+// type, which we now resolve correctly). Real schedule is always preferred —
+// this only covers the holes. Cached per route+type; async + non-blocking, so
+// the first tick still uses the flat guess and the next tick picks up the ML
+// value. Fails safe: any error/garbage leaves the flat fallback in place.
+var _mlFtCache = {};
+function _parseFlightTimeMs(j) {
+  if (!j) return null;
+  var t = (j.approxFlightTime != null) ? j.approxFlightTime
+        : (j.flightTime != null) ? j.flightTime : null;
+  if (t == null) return null;
+  if (typeof t === 'number') return t > 0 ? t * 60000 : null;      // minutes
+  var s = String(t).trim();
+  var iso = s.match(/^P?T?(?:(\d+)H)?(?:(\d+)M)?$/i);              // "PT1H10M" / "1H10M"
+  if (iso && (iso[1] || iso[2])) return ((iso[1] ? +iso[1] : 0) * 60 + (iso[2] ? +iso[2] : 0)) * 60000;
+  var hm = s.match(/^(\d{1,2}):(\d{2})$/);                        // "01:10"
+  if (hm) return (+hm[1] * 60 + +hm[2]) * 60000;
+  return null;
+}
+function _mlFlightTimeMs(origin, dest, aircraftName) {
+  try {
+    origin = String(origin || '').toUpperCase(); dest = String(dest || '').toUpperCase();
+    if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(dest) || origin === dest) return null;
+    if (typeof FIDS_PROXY !== 'string' || !FIDS_PROXY) return null;
+    var key = origin + '>' + dest + '|' + (aircraftName || '');
+    var c = _mlFtCache[key];
+    if (c) return (typeof c.ms === 'number') ? c.ms : null;        // resolved (ms) or pending/failed (null)
+    _mlFtCache[key] = { pending: true };
+    var url = FIDS_PROXY + '/airports/iata/' + origin + '/distance-time/' + dest
+            + '?flightTimeModel=ML01' + (aircraftName ? '&aircraftName=' + encodeURIComponent(aircraftName) : '');
+    fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      var ms = _parseFlightTimeMs(j);
+      // Sanity clamp: only accept 20 min – 20 h; anything else is garbage.
+      if (ms && ms >= 20 * 60000 && ms <= 20 * 3600000) _mlFtCache[key] = { ms: ms };
+      else _mlFtCache[key] = { failed: true };
+    }).catch(function () { _mlFtCache[key] = { failed: true }; });
+    return null;
+  } catch (e) { return null; }
+}
+
 function _gateMapTick() {
   var mb = document.getElementById('gateMapBox');
   if (!mb || mb.offsetHeight < 10) return; // not rendered yet
@@ -19405,7 +19448,13 @@ function _gateMapTick() {
     // Compute progress along the inbound route
     var aTs = inb._revTs || inb._sortTs;
     if (aTs) {
-      depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : (aTs - 7200000);
+      // Real scheduled departure wins (Option A, Nick). Only when the feed has
+      // none do we fill the gap with the ML flight-time estimate (route +
+      // aircraft type) instead of the old flat 2h guess; falls back to 2h until
+      // the async ML value lands or if it fails.
+      depTs = inb._depSchedLocal
+        ? adbTs(inb._depSchedLocal)
+        : (aTs - (_mlFlightTimeMs(inb._locIata, apIata, inb._aircraft || inb._aircraftName || '') || 7200000));
       var tot = aTs - depTs;
       if (tot > 0) prog = (now - depTs) / tot;
     }
