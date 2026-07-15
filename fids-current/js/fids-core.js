@@ -6141,7 +6141,13 @@ function _buildV2MapCol(ctx, vars) {
       // Strip markup to plain text. Loop until stable (a single pass can leave
       // a reassembled tag, per CodeQL), then drop any stray angle brackets.
       function _dStrip(h){
-        var s = String(h || ''), prev;
+        var s = String(h || '');
+        // Drop the struck-through SCHEDULED time first — otherwise a revised
+        // (delayed) value like '<strike>5:30 AM</strike><revised>5:49 AM</revised>'
+        // stripped of tags reads '5:30 AM5:49 AM' mashed together on this card
+        // (Nick). Keep only the revised time, exactly like the left rail does.
+        s = s.replace(/<[^>]*g8-r2-strike[^>]*>[\s\S]*?<\/[^>]+>/g, '');
+        var prev;
         do { prev = s; s = s.replace(/<[^>]*>/g, ''); } while (s !== prev);
         return s.replace(/[<>]/g, '').trim();
       }
@@ -13849,7 +13855,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22251';
+var FIDS_BUILD_TAG = 'v22252';
 (function(){
   try {
     function _addTag(){
@@ -24349,7 +24355,7 @@ function _restartGateAdsTimer() {
             var _er = el3.getBoundingClientRect(), _prr = _pr.getBoundingClientRect();
             _old = document.createElement('div');
             _old.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
-              + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.6s ease;overflow:hidden;';
+              + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.95s ease-in-out;overflow:hidden;';
             while (el3.firstChild) _old.appendChild(el3.firstChild);
             // The children moved out — bust the per-slide DOM caches so a
             // same-content render can't early-return into an empty carousel.
@@ -24371,7 +24377,7 @@ function _restartGateAdsTimer() {
         try {
           void _old.offsetWidth; // new is painted UNDER the cover; now dissolve
           _old.style.opacity = '0';
-          setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 700);
+          setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 1050);
         } catch (e) { try { if (_old.parentNode) _old.remove(); } catch (e2) {} }
       }
       // Schedule the NEXT tick using the dwell of the slide we just

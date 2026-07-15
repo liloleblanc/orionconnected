@@ -1521,8 +1521,8 @@ html .g8-wrap .gad-aircraft-col::after {
      shelves cover it completely ('all the pattern is gone', Nick) — so the
      content is NOT z-raised; multiply over the dark navy ink stays dark and
      legible anyway. Lower opacity so it's a whisper, not a blanket. */
-  mix-blend-mode: multiply !important; opacity: 0.32 !important;
-  filter: grayscale(1) contrast(1.2) !important;
+  mix-blend-mode: multiply !important; opacity: 0.5 !important;
+  filter: grayscale(1) contrast(1.3) !important;
   pointer-events: none !important; z-index: 6 !important;
 }
 
@@ -1542,6 +1542,16 @@ html .g8-wrap .gad-aircraft-col .v2-fi-icon,
 html .g8-wrap .gad-aircraft-col .v2-fi-textcol {
   position: relative !important;
   z-index: 8 !important;
+}
+/* Destination city must show WHOLE (Nick: 'still see Toron…'). The value is
+   one line (nowrap) inside an overflow:hidden text column, and the JS
+   auto-shrink can't see the clip (it happens at an outer wrapper it doesn't
+   measure). Rather than chase that blind, cap the font DETERMINISTICALLY at a
+   size that fits even long Atlantic-Canada names (Fredericton, Charlottetown)
+   in the rail column, so the whole word always renders. Wins over the stacked
+   gids clamps via html + 4-class specificity. */
+html .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest {
+  font-size: clamp(24px, 3.8vh, 52px) !important;
 }
 
 /* No white sliver between the gate block and the Your Aircraft panel
