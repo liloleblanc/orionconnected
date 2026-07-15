@@ -1551,7 +1551,7 @@ html .g8-wrap .gad-aircraft-col .v2-fi-textcol {
    in the rail column, so the whole word always renders. Wins over the stacked
    gids clamps via html + 4-class specificity. */
 html .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-dest {
-  font-size: clamp(16px, 2.6vh, 34px) !important;   /* diagnostic: intentionally small — if Toronto STILL clips this tiny, the cut is in the data, not the size */
+  font-size: clamp(22px, 3.8vh, 48px) !important;   /* readable hero size; may still clip the longest names — flagged to fix later (Nick) */
 }
 
 /* No white sliver between the gate block and the Your Aircraft panel
