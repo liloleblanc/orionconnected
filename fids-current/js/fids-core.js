@@ -13885,7 +13885,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22254';
+var FIDS_BUILD_TAG = 'v22255';
 (function(){
   try {
     function _addTag(){
@@ -25504,7 +25504,14 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
     // (raw set) can still request a walk on a pinned display.
     if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
-    return; // AUTO-CYCLE DELETED (Nick) — gate/baggage screens NEVER walk, ever. void enabled;
+    // Walk ONLY when explicitly opted in (?gatecycle=N / ?bagcycle=N). By
+    // DEFAULT a gate/baggage screen stays pinned — no walk, no glitch (that was
+    // Nick's original complaint). But the ROTATOR / lobby board opts in with
+    // ?gatecycle=60 to cycle through every gate, so the YouTube reaches them
+    // all. The earlier fix blanket-returned here, which also killed the opt-in
+    // and froze the rotation on gate 1 — this gate on `enabled` restores it
+    // while keeping default screens pinned.
+    if (!enabled) return;
 
     // Advance to a FRESH gate — random, never an immediate repeat — among the
     // gates that currently have a live, upcoming departure.
@@ -25593,7 +25600,14 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
     // (raw set) can still request a walk on a pinned display.
     if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
-    return; // AUTO-CYCLE DELETED (Nick) — gate/baggage screens NEVER walk, ever. void enabled;
+    // Walk ONLY when explicitly opted in (?gatecycle=N / ?bagcycle=N). By
+    // DEFAULT a gate/baggage screen stays pinned — no walk, no glitch (that was
+    // Nick's original complaint). But the ROTATOR / lobby board opts in with
+    // ?gatecycle=60 to cycle through every gate, so the YouTube reaches them
+    // all. The earlier fix blanket-returned here, which also killed the opt-in
+    // and froze the rotation on gate 1 — this gate on `enabled` restores it
+    // while keeping default screens pinned.
+    if (!enabled) return;
     function bagBelts() {
       try {
         var ap = document.getElementById('apSel');
