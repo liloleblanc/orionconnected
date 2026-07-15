@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22239';
+var FIDS_BUILD_TAG = 'v22240';
 (function(){
   try {
     function _addTag(){
@@ -19118,15 +19118,20 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
   var zoom;
-  // Zoom in TIGHT near the airport (Nick: 'it's not zoomed in though' — wants
-  // the departure/arrival close-up, airport-and-streets level). ~2 levels
-  // tighter than before at every band near origin/dest; cruise stays wide.
-  if (nearOrg < 0.02) zoom = 14;
-  else if (nearOrg < 0.06) zoom = 12;
-  else if (nearOrg < 0.14) zoom = 10;
-  else if (nearDst < 0.02) zoom = 14;
-  else if (nearDst < 0.06) zoom = 12;
-  else if (nearDst < 0.14) zoom = 10;
+  // Progressive zoom (Nick: 'ground when it leaves, then zooms out eventually …
+  // autozoom then zoom out'). On the ground at the origin → street/ground level
+  // (z15); as it climbs away the zoom eases out step by step (13 → 11 → 9) to
+  // the wide cruise view; then it tightens back to ground on the destination
+  // approach. Distance-from-airport IS flight progress, so this reads as a
+  // smooth take-off-zoom-out / descend-zoom-in.
+  if (nearOrg < 0.006) zoom = 15;
+  else if (nearOrg < 0.02) zoom = 13;
+  else if (nearOrg < 0.06) zoom = 11;
+  else if (nearOrg < 0.14) zoom = 9;
+  else if (nearDst < 0.006) zoom = 15;
+  else if (nearDst < 0.02) zoom = 13;
+  else if (nearDst < 0.06) zoom = 11;
+  else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
   gateMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
@@ -25993,15 +25998,20 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
   var zoom;
-  // Zoom in TIGHT near the airport (Nick: 'it's not zoomed in though' — wants
-  // the departure/arrival close-up, airport-and-streets level). ~2 levels
-  // tighter than before at every band near origin/dest; cruise stays wide.
-  if (nearOrg < 0.02) zoom = 14;
-  else if (nearOrg < 0.06) zoom = 12;
-  else if (nearOrg < 0.14) zoom = 10;
-  else if (nearDst < 0.02) zoom = 14;
-  else if (nearDst < 0.06) zoom = 12;
-  else if (nearDst < 0.14) zoom = 10;
+  // Progressive zoom (Nick: 'ground when it leaves, then zooms out eventually …
+  // autozoom then zoom out'). On the ground at the origin → street/ground level
+  // (z15); as it climbs away the zoom eases out step by step (13 → 11 → 9) to
+  // the wide cruise view; then it tightens back to ground on the destination
+  // approach. Distance-from-airport IS flight progress, so this reads as a
+  // smooth take-off-zoom-out / descend-zoom-in.
+  if (nearOrg < 0.006) zoom = 15;
+  else if (nearOrg < 0.02) zoom = 13;
+  else if (nearOrg < 0.06) zoom = 11;
+  else if (nearOrg < 0.14) zoom = 9;
+  else if (nearDst < 0.006) zoom = 15;
+  else if (nearDst < 0.02) zoom = 13;
+  else if (nearDst < 0.06) zoom = 11;
+  else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
   window._bigCraftMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
