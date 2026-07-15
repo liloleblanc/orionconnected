@@ -6067,8 +6067,11 @@ function _buildV2MapCol(ctx, vars) {
         } else {
           _ibArrVal = _ibArrSchedStr;
         }
+        // NOT trow-last: the Status row now always renders LAST (below this),
+        // so the time-vs-status order matches the departure card (Nick: 'one
+        // gate has time on line 3, status on 4, the other's the opposite').
         _ibArrRowHtml =
-            '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+            '<div class="v2-rc-fi-trow">'
           +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
           +   '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>'
           + '</div>';
@@ -6087,11 +6090,11 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-trow' + (_ibArrRowHtml ? '' : ' v2-rc-fi-trow-last') + '">'
+        +   _ibArrRowHtml
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +   '</div>'
-        +   _ibArrRowHtml
         + '</div></div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
@@ -6205,6 +6208,16 @@ function _buildV2MapCol(ctx, vars) {
       } catch (e) {}
       var _dStShow = (_dStFr && _dStFr !== _dStEn)
         ? (_dStEn + ' <span class="v2-rc-fi-sep">|</span> ' + _dStFr) : (_dStEn || _dStLabel || '—');
+      // The raw API status can still read 'scheduled' after a delay, so the card
+      // showed 'Scheduled' in an orange (delayed) pill next to a bumped time
+      // (Nick: 'Scheduled should be delayed for that flight'). Whenever the
+      // flight IS delayed — by status class OR by a revised departure time —
+      // force the label AND class to Delayed so the card is self-consistent and
+      // matches the left rail.
+      if (_dStCls === 'delayed' || _dDepDelayed) {
+        _dStShow = 'Delayed <span class="v2-rc-fi-sep">|</span> En retard';
+        _dStCls = 'delayed';
+      }
       // Flight·To + Status only (no departing-in row — it's on the left).
       // Same 3-row LABEL | VALUE table as the inbound card (Nick, Jul 2026).
       var _dCityCode = _dDestCity
@@ -13872,7 +13885,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22253';
+var FIDS_BUILD_TAG = 'v22254';
 (function(){
   try {
     function _addTag(){
@@ -25701,6 +25714,12 @@ function _renderBigCraft(el, ctx) {
   // the departing flight, not the (absent) inbound.
   var inb = (ctx && ctx.out) ? (window._gateCurrentFlight || {}) : (window._gateInbound || {});
   var stKey = String(inb.status || '').toLowerCase().replace(/[\s_-]/g, '');
+  // Same delay rule as the left rail / small card: a revised time (revTs later
+  // than the scheduled sortTs) means DELAYED even if the raw status still reads
+  // 'scheduled' — otherwise the big screen showed 'Scheduled' on a bumped
+  // flight (Nick: 'the big screen is inconsistent as well').
+  var _bcDelayed = !!(inb._revTs && inb._sortTs && inb._revTs > inb._sortTs);
+  if (_bcDelayed && (stKey === 'scheduled' || stKey === 'ontime' || stKey === '')) stKey = 'delayed';
   var ss = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
   var stShow = ss ? (ss.en.replace(/\b\w/g, function (c) { return c.toUpperCase(); }) + ' <span class="v2-rc-fi-sep">|</span> ' + ss.fr) : (inb.status || '—');
   var stCls = /delay|retard/i.test(stKey) ? 'delayed' : (/cancel/i.test(stKey) ? 'cancelled' : 'scheduled');
