@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22247';
+var FIDS_BUILD_TAG = 'v22248';
 (function(){
   try {
     function _addTag(){
@@ -25293,7 +25293,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
     // (raw set) can still request a walk on a pinned display.
     if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
-    if (!enabled) return;
+    return; // AUTO-CYCLE DELETED (Nick) — gate/baggage screens NEVER walk, ever. void enabled;
 
     // Advance to a FRESH gate — random, never an immediate repeat — among the
     // gates that currently have a live, upcoming departure.
@@ -25382,7 +25382,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
     // (raw set) can still request a walk on a pinned display.
     if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
-    if (!enabled) return;
+    return; // AUTO-CYCLE DELETED (Nick) — gate/baggage screens NEVER walk, ever. void enabled;
     function bagBelts() {
       try {
         var ap = document.getElementById('apSel');
