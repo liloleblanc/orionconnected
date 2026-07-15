@@ -13885,7 +13885,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22255';
+var FIDS_BUILD_TAG = 'v22256';
 (function(){
   try {
     function _addTag(){
@@ -25490,13 +25490,14 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (raw === '0' || n === 0) { enabled = false; }
       else { enabled = true; if (n >= 3) secs = n; }
     } else {
-      // Auto-cycle is OFF unless EXPLICITLY requested with ?gatecycle=N (>0) /
-      // ?bagcycle=N. NOTHING else turns it on — not the stream/yt layout flag,
-      // not being in an iframe. A gate/baggage screen ALWAYS stays pinned by
-      // default (Nick: it kept swapping the whole screen 'from flight to
-      // flight', even in the clean stream layout). The YouTube/lobby board that
-      // WANTS to walk opts in explicitly with ?gatecycle=60.
-      enabled = false;
+      // Auto-cycle turns on ONLY inside the ROTATOR: rotate.html loads each
+      // board in an IFRAME, so window.self !== window.top. That's how the lobby
+      // / YouTube-streamed rotation walks every gate with NO manual flag — the
+      // way it worked before it got over-disabled. A STANDALONE display (top
+      // window) — even one using the ?stream/?yt/?compact clean layout — stays
+      // PINNED, so those never swap 'flight to flight' (Nick's original glitch).
+      // An explicit ?gatecycle=N / ?bagcycle=N still forces a walk regardless.
+      enabled = (window.self !== window.top);
     }
     // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
     // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
@@ -25586,13 +25587,14 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if (raw === '0' || n === 0) { enabled = false; }
       else { enabled = true; if (n >= 3) secs = n; }
     } else {
-      // Auto-cycle is OFF unless EXPLICITLY requested with ?gatecycle=N (>0) /
-      // ?bagcycle=N. NOTHING else turns it on — not the stream/yt layout flag,
-      // not being in an iframe. A gate/baggage screen ALWAYS stays pinned by
-      // default (Nick: it kept swapping the whole screen 'from flight to
-      // flight', even in the clean stream layout). The YouTube/lobby board that
-      // WANTS to walk opts in explicitly with ?gatecycle=60.
-      enabled = false;
+      // Auto-cycle turns on ONLY inside the ROTATOR: rotate.html loads each
+      // board in an IFRAME, so window.self !== window.top. That's how the lobby
+      // / YouTube-streamed rotation walks every gate with NO manual flag — the
+      // way it worked before it got over-disabled. A STANDALONE display (top
+      // window) — even one using the ?stream/?yt/?compact clean layout — stays
+      // PINNED, so those never swap 'flight to flight' (Nick's original glitch).
+      // An explicit ?gatecycle=N / ?bagcycle=N still forces a walk regardless.
+      enabled = (window.self !== window.top);
     }
     // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
     // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
