@@ -13894,7 +13894,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22259';
+var FIDS_BUILD_TAG = 'v22260';
 (function(){
   try {
     function _addTag(){
@@ -19110,7 +19110,12 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+      var _gmPlane = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+      // Continuous slow creep even WITHOUT live telemetry (Nick: 'is it not
+      // supposed to move slowly'): glide the plane along the static route using
+      // the flight's total duration, so it always moves — not just on live-
+      // tracked flights. speed 0 → the glide uses the time-based rate.
+      try { _startGateMapGlide(gateMap, o, d, planePos.lat, planePos.lng, _gmPlane, null, null, 0); } catch (e) {}
       // Center on plane during cruise
       if (p >= 0.12 && p <= 0.88) {
         gateMap.setView(planePos, zoom);
@@ -19298,7 +19303,12 @@ function _gcNm(a, b) {
 function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts) {
   _stopGateMapGlide();
   if (!map || !marker || typeof L === 'undefined') return;
-  if (!(speedKts > 0)) return;                 // no live speed → nothing to reckon
+  // Advance EITHER from a live ground speed (dead-reckoning), OR — when there's
+  // no live speed — from the flight's total duration, so the plane still creeps
+  // continuously on EVERY airborne flight (Nick: 'is it not supposed to move
+  // slowly'). Only bail if we have neither.
+  var _timeTotalMs = (typeof window !== 'undefined' && typeof window._gateFlightTotalMs === 'number' && window._gateFlightTotalMs > 0) ? window._gateFlightTotalMs : 0;
+  if (!(speedKts > 0) && !(_timeTotalMs > 0)) return;
   var route = _gcFullRoute(o, d, 120);
   var n = route.length;
   if (n < 2) return;
@@ -19334,11 +19344,19 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // sailing in at cruise (Nick: 'it should read what we get, don't change
       // that — it may just need to adjust speed/altitude for glideslope'). The
       // Ground Speed / Altitude NUMBERS are untouched: they stay the real feed.
-      var factor = 1;
-      if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
-      else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
-      var effSpeed = speedKts * Math.max(0.2, factor);
-      p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
+      if (speedKts > 0 && totalNm > 0) {
+        var factor = 1;
+        if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
+        else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
+        var effSpeed = speedKts * Math.max(0.2, factor);
+        p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
+      } else {
+        // No live speed: creep along the timeline (elapsed ÷ total flight time)
+        // so the plane matches the clock. Re-read the total each tick in case
+        // the ML/schedule estimate refined.
+        var _tt = (typeof window._gateFlightTotalMs === 'number' && window._gateFlightTotalMs > 0) ? window._gateFlightTotalMs : _timeTotalMs;
+        if (_tt > 0) p = Math.min(0.995, p + (dtH * 3600000) / _tt);
+      }
       var idx = Math.min(n - 1, Math.max(0, Math.floor(p * (n - 1))));
       marker.setLatLng(route[idx]);
       try {
@@ -19457,6 +19475,9 @@ function _gateMapTick() {
         : (aTs - (_mlFlightTimeMs(inb._locIata, apIata, inb._aircraft || inb._aircraftName || '') || 7200000));
       var tot = aTs - depTs;
       if (tot > 0) prog = (now - depTs) / tot;
+      // Publish the total flight time so the map glide can creep the plane along
+      // the route at the right rate even when there's no live ground speed.
+      try { window._gateFlightTotalMs = (tot > 0 ? tot : 0); } catch (e) {}
     }
     // Aircraft is airborne if departure time has passed and we haven't
     // arrived yet. Note: we used to also require status !== 'scheduled',
