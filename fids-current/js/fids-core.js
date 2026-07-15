@@ -13835,7 +13835,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22235';
+var FIDS_BUILD_TAG = 'v22236';
 (function(){
   try {
     function _addTag(){
@@ -19034,7 +19034,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #fff) drop-shadow(0 2px 5px rgba(0,0,0,0.9));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
       // Center on plane during cruise
       if (p >= 0.12 && p <= 0.88) {
         gateMap.setView(planePos, zoom);
@@ -19135,7 +19135,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #fff) drop-shadow(0 2px 5px rgba(0,0,0,0.9));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+  L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
   setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
 }
 // ──────────────────────────────────────────────────────────────────────
@@ -25945,7 +25945,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #fff) drop-shadow(0 2px 5px rgba(0,0,0,0.9));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
       // Center on plane during cruise
       if (p >= 0.12 && p <= 0.88) {
         window._bigCraftMap.setView(planePos, zoom);
@@ -26016,7 +26016,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #fff) drop-shadow(0 2px 5px rgba(0,0,0,0.9));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+  L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
   setTimeout(function(){if(window._bigCraftMap)window._bigCraftMap.invalidateSize();},500);
 }
 // ──────────────────────────────────────────────────────────────────────
