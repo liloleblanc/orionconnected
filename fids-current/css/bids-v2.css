@@ -55,7 +55,12 @@ body[data-fids-theme="paper"] .bidsv2-carousel-number,
 body[data-fids-theme="sky"] .bidsv2-carousel-label,
 body[data-fids-theme="sky"] .bidsv2-carousel-number,
 body[data-fids-theme="slate"] .bidsv2-carousel-label,
-body[data-fids-theme="slate"] .bidsv2-carousel-number {
+body[data-fids-theme="slate"] .bidsv2-carousel-number,
+body[data-fids-theme="cream"] .bidsv2-carousel-terminal,
+body[data-fids-theme="light"] .bidsv2-carousel-terminal,
+body[data-fids-theme="paper"] .bidsv2-carousel-terminal,
+body[data-fids-theme="sky"] .bidsv2-carousel-terminal,
+body[data-fids-theme="slate"] .bidsv2-carousel-terminal {
   color: #ffffff !important;
 }
 
@@ -290,7 +295,7 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-size: clamp(30px, 3.2vw, 58px);
   font-weight: 900;
   letter-spacing: 3px;
-  color: var(--fids-bg, #050033);
+  color: #0b1f3a !important;   /* solid dark navy — readable on the light panel */
   opacity: 1;
   text-align: center;
   margin-top: 4px;
