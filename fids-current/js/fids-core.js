@@ -15802,6 +15802,49 @@ async function adbFetch(iata, direction) {
           const letter = /^[ABC]$/.test(raw) ? raw : mcoTerminal(side.gate);
           side.terminal = letter || (raw || null);
         }
+        // ── Enrich with AeroDataBox (USE BOTH SERVICES) ────────────────────
+        // The GOAA feed carries the real gates/terminal/belt but NO aircraft
+        // type, registration or live position — so gate screens came up blank.
+        // Pull those from the matching ADB flight while keeping the feed's
+        // gate data authoritative. Best-effort: if ADB is empty/rate-limited
+        // for MCO the feed still shows on its own. (Flights neither service
+        // has aircraft for — some smaller carriers — stay blank; unavoidable.)
+        try {
+          const _tz = (AP[iata] || {}).tz || null;
+          const _now = new Date();
+          const _past  = new Date(_now.getTime() - 2 * 3600000);
+          const _mid   = new Date(_now.getTime() + 10 * 3600000);
+          const _ahead = new Date(_now.getTime() + 22 * 3600000);
+          const _a1 = await adbFetchWindow(iata, direction, fmt12(_past, _tz), fmt12(_mid, _tz));
+          await new Promise(r => setTimeout(r, 1200));
+          const _a2 = await adbFetchWindow(iata, direction, fmt12(_mid, _tz), fmt12(_ahead, _tz));
+          const _adbList = [
+            ...(direction === 'Departure' ? (_a1.departures || []) : (_a1.arrivals || [])),
+            ...(direction === 'Departure' ? (_a2.departures || []) : (_a2.arrivals || []))
+          ];
+          // Match on flight number + scheduled time to the minute.
+          const _mcoKey = (f) => {
+            const num = String(f.number || '').replace(/\s+/g, '').toUpperCase();
+            const s = direction === 'Departure' ? f.departure : f.arrival;
+            const utc = (s && s.scheduledTime && (s.scheduledTime.utc || s.scheduledTime.local)) || '';
+            return num ? (num + '|' + String(utc).slice(0, 16)) : '';
+          };
+          const _adbByKey = {};
+          for (const af of _adbList) { const k = _mcoKey(af); if (k && !_adbByKey[k]) _adbByKey[k] = af; }
+          let _enriched = 0;
+          for (const ff of list) {
+            const af = _adbByKey[_mcoKey(ff)];
+            if (!af) continue;
+            if (af.aircraft && !ff.aircraft) ff.aircraft = af.aircraft;
+            if (af.reg && !ff.reg) ff.reg = af.reg;
+            if (af.callSign && !ff.callSign) ff.callSign = af.callSign;
+            if (af.location && !ff.location) ff.location = af.location;
+            _enriched++;
+          }
+          console.log(`[FIDS] MCO ADB enrich ${direction}: ${_enriched}/${list.length} flights got aircraft/position`);
+        } catch (e) {
+          console.warn(`[FIDS] MCO ADB enrich ${direction}: ${e.message} — feed shows without aircraft/position`);
+        }
         console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
         return direction === 'Departure' ? { departures: list } : { arrivals: list };
       }
