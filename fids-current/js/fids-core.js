@@ -15705,6 +15705,29 @@ async function adbFetchWindow(iata, direction, fromStr, toStr) {
   throw new Error(lastErr || `Failed after 3 attempts for ${iata} ${direction}`);
 }
 async function adbFetch(iata, direction) {
+  // ── MCO: native GOAA feed instead of the ADB scrape ─────────────────
+  // Orlando isn't an ADB airport for us — the worker proxies MCO's own
+  // flights API (api.goaa.aero) at /flights/mco and returns it in the
+  // exact ADB-native shape this function otherwise produces, so the rest
+  // of the pipeline is unchanged. Carries real gate/terminal/belt data.
+  if (iata === 'MCO') {
+    const dir = direction === 'Departure' ? 'dep' : 'arr';
+    const mcoUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/mco?direction=${dir}`;
+    try {
+      const r = await fetch(mcoUrl);
+      if (r.ok) {
+        const json = await r.json();
+        const list = direction === 'Departure' ? (json.departures || []) : (json.arrivals || []);
+        console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights`);
+        return direction === 'Departure' ? { departures: list } : { arrivals: list };
+      }
+      // 503 (key not set) / any non-OK — log and fall through to the ADB
+      // scrape so the board still shows *something* rather than going blank.
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: HTTP ${r.status} — falling back to ADB scrape`);
+    } catch (e) {
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: ${e.message} — falling back to ADB scrape`);
+    }
+  }
   // ── ADB SCRAPE: source of truth for the flight LIST ─────────────────
   // The airport scrape gives us the complete schedule for the lookahead
   // window. We always do this — cache cannot replace it because webhooks
