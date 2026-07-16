@@ -15737,21 +15737,32 @@ async function adbFetch(iata, direction) {
         const json = await r.json();
         let list = direction === 'Departure' ? (json.departures || []) : (json.arrivals || []);
         const homeKey = direction === 'Departure' ? 'departure' : 'arrival';
-        // ── Collapse multi-leg "via" rows ──────────────────────────────────
+        // ── Collapse multi-leg "via" rows into one, reconstruct routing ────
         // A through-flight (MCO→LAS→SMF) comes back as one row per downstream
         // leg — same flight number, same departure time — which reads as a
-        // duplicate on the board. Keep ONE row per physical MCO movement
-        // (number + scheduled time), preferring the earliest leg (lowest via
-        // sequence = the plane's next stop out of MCO).
-        const byKey = {};
+        // duplicate on the board. Group by physical MCO movement (number +
+        // scheduled time), then from the via chain (each leg carries its stop
+        // + sequence) show the FINAL destination with the intermediate stop
+        // noted: "SMF (via LAS)". Departures only; arrivals just de-dupe.
+        const groups = {};
         for (const f of list) {
           const side = f[homeKey] || {};
           const t = (side.scheduledTime && (side.scheduledTime.utc || side.scheduledTime.local)) || '';
           const k = (f.number || '') + '|' + t;
-          const seq = (typeof f._mcoViaSeq === 'number') ? f._mcoViaSeq : 0;
-          if (!byKey[k] || seq < byKey[k]._mcoSeqKept) { f._mcoSeqKept = seq; byKey[k] = f; }
+          (groups[k] = groups[k] || []).push(f);
         }
-        list = Object.keys(byKey).map(k => byKey[k]);
+        list = Object.keys(groups).map(k => {
+          const legs = groups[k].slice().sort((a, b) => ((a._mcoViaSeq || 0) - (b._mcoViaSeq || 0)));
+          const rep = legs[0];  // all legs share the MCO gate/terminal/time
+          if (direction === 'Departure' && legs.length > 1) {
+            const stops = legs.map(l => l._mcoVia).filter(Boolean);   // sorted by seq
+            const finalDest = stops[stops.length - 1];                // last stop = destination
+            const vias = stops.slice(0, -1);                          // earlier = intermediate
+            if (finalDest && rep.arrival && rep.arrival.airport) rep.arrival.airport.iata = finalDest;
+            if (vias.length) rep._mcoViaStop = vias.join(', ');
+          }
+          return rep;
+        });
         // ── Fill the Terminal column with MCO's concourse (Airside / Term C) ─
         // The GOAA feed leaves `terminal` blank on most rows, but the gate
         // number maps to a concourse. Derive it so the Terminal column isn't
@@ -16925,7 +16936,10 @@ function mapADB(raw, mode) {
         }
       }
     }
-    const locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
+    let locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
+    // MCO multi-leg: append the intermediate stop to the destination, e.g.
+    // "Sacramento via LAS". Only set on MCO through-departures (see adbFetch).
+    if (f._mcoViaStop) locName = `${locName} via ${f._mcoViaStop}`;
     const terminal=(mode==='dep'?f.departure?.terminal:f.arrival?.terminal)||'—';
     const gate=(mode==='dep'?f.departure?.gate:f.arrival?.gate)||'—';
     const belt=(mode==='arr'?f.arrival?.baggageBelt:null)||null;
