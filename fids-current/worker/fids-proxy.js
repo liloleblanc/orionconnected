@@ -85,6 +85,7 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Origin": origin || "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Vary": "Origin",
     "Access-Control-Max-Age": "86400"
   };
 }
@@ -695,7 +696,6 @@ async function handleDeleteAirlineOverride(env, payload, origin, airport, airlin
   return jsonResponse({ success: true }, 200, origin);
 }
 __name(handleDeleteAirlineOverride, "handleDeleteAirlineOverride");
-
 // ════════════════════════════════════════════════════════════════════
 // MCO (Orlando International) — native vendor FIDS feed normalizer
 // ════════════════════════════════════════════════════════════════════
@@ -949,9 +949,9 @@ var fids_proxy_default = {
       return handleLogin(request, env, origin);
     }
     if (path === "/") {
-      return jsonResponse({ 
-        status: "online", 
-        message: "FIDS Proxy API is running. Please use specific endpoints." 
+      return jsonResponse({
+        status: "online",
+        message: "FIDS Proxy API is running. Please use specific endpoints."
       }, 200, origin);
     }
 
@@ -1368,7 +1368,9 @@ IMPORTANT RULES:
         }
         return jsonResponse(parsed, 200, origin);
       } catch (e) {
-        return jsonResponse({ error: "AI text generation failed", details: e.message }, 500, origin);
+        console.error("destination-info", { iata, city, lang, error: e?.message || String(e) });
+return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "unavailable" }, 200, origin);
+
       }
     }
     if (path === "/admin/clear-cache" && request.method === "GET") {
@@ -1901,12 +1903,17 @@ IMPORTANT RULES:
     if (path.startsWith("/accor/")) {
       const accorPath = path.replace("/accor", "");
       const accorUrl = `https://api.accor.com${accorPath}${url.search}`;
+      // Forward the caller's Accept-Language so Accor returns localized
+      // (e.g. French) descriptions/amenities. Without this it always
+      // defaults to English — Canada requires both languages equally.
+      const acceptLang = request.headers.get("Accept-Language") || "en";
       try {
         const response = await fetch(accorUrl, {
           headers: {
             "apikey": env.ACCOR_KEY,
             "clientId": "all.accor",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "Accept-Language": acceptLang
           }
         });
         const data = await response.text();
@@ -1914,6 +1921,8 @@ IMPORTANT RULES:
           status: response.status,
           headers: {
             "Content-Type": response.headers.get("Content-Type") || "application/json",
+            // Vary so caches keep the EN and FR responses separate.
+            "Vary": "Accept-Language",
             "Cache-Control": "public, max-age=3600",
             ...corsHeaders(origin)
           }
