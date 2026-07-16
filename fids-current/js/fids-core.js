@@ -15769,9 +15769,12 @@ async function adbFetch(iata, direction) {
         for (const f of list) {
           const side = f[homeKey];
           if (!side) continue;
+          // Emit the plain terminal LETTER (A/B/C). NOT "Terminal A" — the
+          // downstream belt synthesis strips a leading "T" (T1→1), which would
+          // mangle "Terminal A" into "erminal A" and corrupt the carousel.
           const raw = (side.terminal == null ? '' : String(side.terminal)).trim().toUpperCase();
           const letter = /^[ABC]$/.test(raw) ? raw : mcoTerminal(side.gate);
-          side.terminal = letter ? ('Terminal ' + letter) : (raw || null);
+          side.terminal = letter || (raw || null);
         }
         console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
         return direction === 'Departure' ? { departures: list } : { arrivals: list };
