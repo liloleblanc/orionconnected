@@ -19145,16 +19145,13 @@ function _fetchAirportCoords(iata) {
 // Satellite = Esri World Imagery
 // All free for fair use; no API key needed.
 function _gateMapTileLayer() {
-  // Nick (Jul 2026) wants a DIFFERENT map — the satellite/aerial look from his
-  // reference (Esri World Imagery). Served same-origin through the worker's
-  // /tiles/ provider route (axes reordered for Esri) so it still works on
-  // locked-down display networks. A transparent Esri place-names layer sits ON
-  // TOP so the imagery still shows city/town names (Nick: 'does that map have
-  // city names') — a 'satellite + names' hybrid. Both under the route/plane,
-  // which live in the SVG overlay pane.
-  var _sat = L.tileLayer('/tiles/satellite/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
-  var _labels = L.tileLayer('/tiles/citylabels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 2 });
-  return L.layerGroup([_sat, _labels]);
+  // Nick (Jul 2026) wants the classic OpenStreetMap street map. Served
+  // same-origin through the worker's /tiles/osm route (which sends the
+  // User-Agent OSM's tile policy requires) so it still works on locked-down
+  // display networks. OSM already bakes in city/town/street names, so a
+  // single layer is enough — no separate labels overlay. The route line +
+  // plane live in the SVG overlay pane on top.
+  return L.tileLayer('/tiles/osm/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
 }
 
 // v218.99.9 — overlay flags previously came from gate-theme; system removed.
