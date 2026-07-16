@@ -15704,22 +15704,21 @@ async function adbFetchWindow(iata, direction, fromStr, toStr) {
   }
   throw new Error(lastErr || `Failed after 3 attempts for ${iata} ${direction}`);
 }
-// ── MCO gate → concourse ("Airside") ──────────────────────────────────
-// Orlando's GOAA feed usually leaves `terminal` blank, but the gate number
-// maps to a concourse, which is what passengers actually navigate by. C-
-// prefixed gates are the walkable South Terminal C; numeric gates belong to
-// the North Terminal's four shuttle-served airsides. Mapping is MCO's
-// published gate ranges — verify against the live board before relying on it.
-function mcoConcourse(gate) {
+// ── MCO terminal (A / B / C) ──────────────────────────────────────────
+// The Terminal column should show the landside terminal (A/B/C) — where
+// check-in and baggage claim live — NOT the airside concourse. The GOAA
+// feed's own `terminal` letter is authoritative and preferred; this is only
+// a fallback for rows the feed leaves blank, derived from MCO's published
+// gate ranges. NOTE: gate→terminal ranges below are unverified — confirm
+// against the live board.
+function mcoTerminal(gate) {
   if (!gate) return null;
   const g = String(gate).trim().toUpperCase();
-  if (g.charAt(0) === 'C') return 'Terminal C';       // South Terminal (C2xx, walkable)
+  if (g.charAt(0) === 'C') return 'C';                 // South Terminal (C-gates)
   const n = parseInt(g, 10);
   if (isNaN(n)) return null;
-  if (n >= 1   && n <= 29)  return 'Airside 1';        // Terminal A
-  if (n >= 100 && n <= 129) return 'Airside 2';        // Terminal A
-  if (n >= 30  && n <= 59)  return 'Airside 3';        // Terminal B
-  if (n >= 60  && n <= 99)  return 'Airside 4';        // Terminal B
+  if ((n >= 1  && n <= 29) || (n >= 100 && n <= 129)) return 'A';  // Airsides 1 & 2
+  if ((n >= 30 && n <= 59) || (n >= 60  && n <= 99))  return 'B';  // Airsides 3 & 4
   return null;
 }
 async function adbFetch(iata, direction) {
@@ -15763,16 +15762,16 @@ async function adbFetch(iata, direction) {
           }
           return rep;
         });
-        // ── Fill the Terminal column with MCO's concourse (Airside / Term C) ─
-        // The GOAA feed leaves `terminal` blank on most rows, but the gate
-        // number maps to a concourse. Derive it so the Terminal column isn't
-        // empty. (Mapping is MCO's published gate ranges — see mcoConcourse.)
+        // ── Fill the Terminal column with the terminal LETTER (A/B/C) ──────
+        // Prefer the feed's own terminal letter (authoritative — that's where
+        // check-in / baggage claim is). Only when the feed leaves it blank do
+        // we derive it from the gate number as a fallback.
         for (const f of list) {
           const side = f[homeKey];
-          if (side) {
-            const c = mcoConcourse(side.gate);
-            if (c) side.terminal = c;
-          }
+          if (!side) continue;
+          const raw = (side.terminal == null ? '' : String(side.terminal)).trim().toUpperCase();
+          const letter = /^[ABC]$/.test(raw) ? raw : mcoTerminal(side.gate);
+          side.terminal = letter ? ('Terminal ' + letter) : (raw || null);
         }
         console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
         return direction === 'Departure' ? { departures: list } : { arrivals: list };
