@@ -696,6 +696,232 @@ async function handleDeleteAirlineOverride(env, payload, origin, airport, airlin
 }
 __name(handleDeleteAirlineOverride, "handleDeleteAirlineOverride");
 
+// ════════════════════════════════════════════════════════════════════
+// MCO (Orlando International) — native vendor FIDS feed normalizer
+// ════════════════════════════════════════════════════════════════════
+// MCO isn't an AeroDataBox airport for us — instead the airport publishes
+// its own flights feed (the same JSON that powers flymco.com/flights/).
+// That feed carries the real gate / terminal / baggage-belt data ADB
+// doesn't give us, so we fetch it here and RE-SHAPE each vendor flight
+// into the exact AeroDataBox-native object the boards already parse
+// (see adbFetchWindow / the normalizer in fids-core.js). Result: the
+// boards read MCO with ZERO frontend rendering changes — the frontend
+// just needs to point its flight fetch for MCO at /flights/mco.
+//
+// ┌───────────────────────────────────────────────────────────────────┐
+// │  ⇩⇩⇩  DROP THE LIVE FEED URL HERE (the ONE blank to fill in)  ⇩⇩⇩ │
+// └───────────────────────────────────────────────────────────────────┘
+// This is the XHR the flymco.com/flights/ page makes to get the flight
+// list — the JSON that looks like { "data": { "flights": [ ... ] } }.
+// It is NOT any *.js chunk and NOT the Contentful (news) URL. Paste the
+// exact Request URL from DevTools → Network → Fetch/XHR. If that request
+// needs an api-key / host / referer header, add it to MCO_FEED_HEADERS
+// below (do NOT paste the key into chat — put it in a worker secret and
+// read it via env.MCO_FEED_KEY).
+const MCO_FLIGHTS_FEED_URL = "";                 // ← fill this in
+const MCO_FEED_HEADERS = (env) => ({
+  "Accept": "application/json",
+  "Referer": "https://flymco.com/flights/",
+  // e.g. if the feed needs a key:  "x-api-key": env.MCO_FEED_KEY,
+});
+
+// Build an AeroDataBox-style { local, utc } time object from a unix
+// timestamp (seconds). `.local` is rendered in MCO's tz (US Eastern);
+// the boards prefer `.local` and fall back to `.utc`. Returns null for
+// missing/zero timestamps so downstream `?.` chains stay clean.
+function mcoTimeObj(tsSeconds) {
+  if (!tsSeconds || typeof tsSeconds !== "number") return null;
+  const d = new Date(tsSeconds * 1000);
+  if (isNaN(d.getTime())) return null;
+  // UTC string in the "YYYY-MM-DD HH:MM:SS+00:00" form ADB emits (the
+  // frontend's adbTs() does str.replace(' ','T') then new Date()).
+  const iso = d.toISOString();                        // 2026-07-16T14:30:00.000Z
+  const utc = iso.slice(0, 19).replace("T", " ") + "+00:00";
+  let local = utc;
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/New_York",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hour12: false, timeZoneName: "shortOffset"
+    }).formatToParts(d);
+    const g = (t) => (parts.find((p) => p.type === t) || {}).value || "";
+    let hh = g("hour"); if (hh === "24") hh = "00";
+    // shortOffset gives e.g. "GMT-4" → normalize to "-04:00"
+    const tzName = g("timeZoneName");
+    let off = "+00:00";
+    const m = tzName.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
+    if (m) off = `${m[1]}${m[2].padStart(2, "0")}:${(m[3] || "00")}`;
+    local = `${g("year")}-${g("month")}-${g("day")} ${hh}:${g("minute")}:${g("second")}${off}`;
+  } catch (e) { /* fall back to utc string */ }
+  return { local, utc };
+}
+__name(mcoTimeObj, "mcoTimeObj");
+
+// Map MCO's two-letter originalStatus (plus the isDelayed flag) onto the
+// lowercase British status strings the rest of the codebase keys on
+// (see _STATUS_ENUM in fids-core.js — 'cancelled' not 'Canceled', etc.).
+function mcoStatus(f) {
+  const os = String(f.originalStatus || "").toUpperCase();
+  switch (os) {
+    case "AR": return "arrived";     // Landed
+    case "DP": return "departed";    // Departed
+    case "CX": return "cancelled";   // Canceled
+    case "DL": return "delayed";     // Delayed
+    case "ON": return "scheduled";   // On time
+  }
+  if (f.isDelayed) return "delayed";
+  // Fall back to the wordy status field if originalStatus is unfamiliar.
+  const s = String(f.status || "").toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("land") || s.includes("arriv")) return "arrived";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("delay")) return "delayed";
+  return "scheduled";
+}
+__name(mcoStatus, "mcoStatus");
+
+// Turn one MCO vendor flight row into an AeroDataBox-native flight object.
+// `homeIsArrival` mirrors the feed's `arrival` bool: when true the flight
+// LANDS at MCO (home gate/terminal/belt live under `arrival`, the origin
+// under `departure.airport`); when false it DEPARTS MCO (home data under
+// `departure`, the destination under `arrival.airport`). This matches how
+// the frontend normalizer reads terminal/gate/belt per direction.
+function mcoToAdbFlight(f) {
+  const homeIsArrival = !!f.arrival;
+  // Prefer the operating airline + operating flight number for the board's
+  // primary number (the ADB scrape is fetched withCodeshared=false, so the
+  // board expects the operator's number and treats the row as the operator).
+  const opIata = (f.iataOperatingAirline || "").toUpperCase().trim();
+  const opIcao = (f.icaoOperatingAirline || "").toUpperCase().trim();
+  const opNum = (f.operatingAirlineFlightNumber || "").toString().trim();
+  const csIata = (f.iataCodeShareAirline || "").toUpperCase().trim();
+  const csNum = (f.codeShareFlightNumber || "").toString().trim();
+  // Display number: "WN2183" style. Prefer the pre-joined iata field the
+  // feed supplies, else stitch iata + number ourselves.
+  const number =
+    (f.iataOperatingAirlineFlightNumber || "").toString().trim() ||
+    (opIata && opNum ? `${opIata}${opNum}` : "") ||
+    (f.icaoOperatingAirlineFlightNumber || "").toString().trim() ||
+    (csIata && csNum ? `${csIata}${csNum}` : "");
+
+  const sched = mcoTimeObj(f.scheduledTimestamp);
+  // bestKnownTimestamp is the estimated/actual time — surface it as
+  // revisedTime only when it actually differs from scheduled (so an
+  // on-time flight doesn't render a redundant "revised" time).
+  const best = f.bestKnownTimestamp && f.bestKnownTimestamp !== f.scheduledTimestamp
+    ? mcoTimeObj(f.bestKnownTimestamp) : null;
+
+  const belt = Array.isArray(f.baggageBelt) && f.baggageBelt.length
+    ? f.baggageBelt.join(", ") : null;
+
+  const airlineObj = {
+    iata: opIata || null,
+    icao: opIcao || null,
+    name: null                    // frontend resolves the display name itself
+  };
+  const homeAirport = { iata: (f.baseAirport || "MCO").toUpperCase(), icao: null, name: null };
+  // The "other" airport — origin for an arrival, destination for a departure.
+  const otherCode = homeIsArrival
+    ? (f.departureAirport || "").toUpperCase()
+    : (f.arrivalAirport || "").toUpperCase();
+  const otherAirport = { iata: otherCode || null, icao: null, name: null };
+
+  const homeSide = {
+    airport: homeAirport,
+    terminal: f.terminal || null,
+    gate: f.gate || null,
+    ...(homeIsArrival && belt ? { baggageBelt: belt } : {}),
+    scheduledTime: sched,
+    ...(best ? { revisedTime: best } : {}),
+    airline: airlineObj,
+    quality: ["Live"]
+  };
+  const otherSide = {
+    airport: otherAirport,
+    scheduledTime: sched,
+    airline: airlineObj,
+    quality: ["Live"]
+  };
+
+  return {
+    number,
+    callSign: null,
+    status: mcoStatus(f),
+    codeshareStatus: "IsOperator",
+    isCargo: false,
+    // Home side carries the gate/terminal/belt; other side just the airport.
+    departure: homeIsArrival ? otherSide : homeSide,
+    arrival: homeIsArrival ? homeSide : otherSide,
+    // Preserve the multi-leg hint so distinct legs of the same number stay
+    // distinct when we de-dupe (via stops share a number but differ here).
+    _mcoVia: f.viaAirport || null,
+    _mcoViaSeq: (typeof f.viaSequencePosition === "number") ? f.viaSequencePosition : null
+  };
+}
+__name(mcoToAdbFlight, "mcoToAdbFlight");
+
+// GET /flights/mco?direction=dep|arr  (or Departure|Arrival)
+// Fetches the MCO vendor feed, filters to visible/non-deleted flights for
+// the requested direction, normalizes each into ADB-native shape, and
+// returns { departures:[...] } or { arrivals:[...] } — a drop-in for the
+// frontend's adbFetchWindow(). Returns 503 (not 500) with a clear note
+// until the feed URL is filled in, so callers can fall back gracefully.
+async function handleMcoFids(request, env, origin, direction) {
+  if (!MCO_FLIGHTS_FEED_URL) {
+    return jsonResponse({
+      error: "MCO feed URL not configured",
+      note: "Set MCO_FLIGHTS_FEED_URL in worker/fids-proxy.js to the flymco.com flights XHR endpoint."
+    }, 503, origin);
+  }
+  const wantArrivals = /^arr/i.test(direction || "");
+  let feed;
+  try {
+    const r = await fetch(MCO_FLIGHTS_FEED_URL, { headers: MCO_FEED_HEADERS(env) });
+    if (!r.ok) {
+      const body = await r.text().catch(() => "");
+      return jsonResponse({ error: "MCO feed fetch failed", status: r.status, body: body.slice(0, 300) }, 502, origin);
+    }
+    feed = await r.json();
+  } catch (e) {
+    return jsonResponse({ error: "MCO feed fetch error", details: e.message }, 502, origin);
+  }
+  const rows = (feed && feed.data && Array.isArray(feed.data.flights)) ? feed.data.flights
+    : (Array.isArray(feed && feed.flights) ? feed.flights : []);
+  const seen = new Set();
+  const out = [];
+  for (const f of rows) {
+    if (!f || typeof f !== "object") continue;
+    if (f.isDeleted === true) continue;
+    if (f.isVisible === false) continue;
+    // `arrival` bool selects the direction this row belongs to.
+    const isArr = !!f.arrival;
+    if (isArr !== wantArrivals) continue;
+    const adb = mcoToAdbFlight(f);
+    if (!adb.number) continue;
+    // De-dupe on number + scheduled time + the "other" airport + via leg,
+    // so genuine duplicate pushes collapse while distinct multi-leg rows
+    // (same number, different via/destination) each survive as their own row.
+    const otherCode = isArr
+      ? (adb.departure.airport.iata || "")
+      : (adb.arrival.airport.iata || "");
+    const schedKey = (isArr ? adb.arrival : adb.departure)?.scheduledTime?.utc || f.scheduledTimestamp || "";
+    const dedupeKey = `${adb.number}|${schedKey}|${otherCode}|${adb._mcoVia || ""}|${adb._mcoViaSeq ?? ""}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    out.push(adb);
+  }
+  return new Response(JSON.stringify(wantArrivals ? { arrivals: out } : { departures: out }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=30",
+      ...corsHeaders(origin)
+    }
+  });
+}
+__name(handleMcoFids, "handleMcoFids");
+
 var fids_proxy_default = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -1527,6 +1753,15 @@ IMPORTANT RULES:
       } catch (e) {
         return jsonResponse({ error: "Cached read failed", details: e.message }, 502, origin);
       }
+    }
+
+    // ── MCO native FIDS feed ───────────────────────────────────────────────
+    // GET /flights/mco?direction=dep|arr — normalized vendor feed in
+    // ADB-native shape. Must be matched BEFORE the generic /flights/ ADB
+    // passthrough below (otherwise "mco" would be proxied to AeroDataBox).
+    if (path === "/flights/mco") {
+      const direction = url.searchParams.get("direction") || "dep";
+      return handleMcoFids(request, env, origin, direction);
     }
 
     if (path.startsWith("/airports/") || path.startsWith("/flights/") || path.startsWith("/aircrafts/")) {
