@@ -15704,6 +15704,24 @@ async function adbFetchWindow(iata, direction, fromStr, toStr) {
   }
   throw new Error(lastErr || `Failed after 3 attempts for ${iata} ${direction}`);
 }
+// ── MCO gate → concourse ("Airside") ──────────────────────────────────
+// Orlando's GOAA feed usually leaves `terminal` blank, but the gate number
+// maps to a concourse, which is what passengers actually navigate by. C-
+// prefixed gates are the walkable South Terminal C; numeric gates belong to
+// the North Terminal's four shuttle-served airsides. Mapping is MCO's
+// published gate ranges — verify against the live board before relying on it.
+function mcoConcourse(gate) {
+  if (!gate) return null;
+  const g = String(gate).trim().toUpperCase();
+  if (g.charAt(0) === 'C') return 'Terminal C';       // South Terminal (C2xx, walkable)
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n >= 1   && n <= 29)  return 'Airside 1';        // Terminal A
+  if (n >= 100 && n <= 129) return 'Airside 2';        // Terminal A
+  if (n >= 30  && n <= 59)  return 'Airside 3';        // Terminal B
+  if (n >= 60  && n <= 99)  return 'Airside 4';        // Terminal B
+  return null;
+}
 async function adbFetch(iata, direction) {
   // ── MCO: native GOAA feed instead of the ADB scrape ─────────────────
   // Orlando isn't an ADB airport for us — the worker proxies MCO's own
@@ -15717,8 +15735,35 @@ async function adbFetch(iata, direction) {
       const r = await fetch(mcoUrl);
       if (r.ok) {
         const json = await r.json();
-        const list = direction === 'Departure' ? (json.departures || []) : (json.arrivals || []);
-        console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights`);
+        let list = direction === 'Departure' ? (json.departures || []) : (json.arrivals || []);
+        const homeKey = direction === 'Departure' ? 'departure' : 'arrival';
+        // ── Collapse multi-leg "via" rows ──────────────────────────────────
+        // A through-flight (MCO→LAS→SMF) comes back as one row per downstream
+        // leg — same flight number, same departure time — which reads as a
+        // duplicate on the board. Keep ONE row per physical MCO movement
+        // (number + scheduled time), preferring the earliest leg (lowest via
+        // sequence = the plane's next stop out of MCO).
+        const byKey = {};
+        for (const f of list) {
+          const side = f[homeKey] || {};
+          const t = (side.scheduledTime && (side.scheduledTime.utc || side.scheduledTime.local)) || '';
+          const k = (f.number || '') + '|' + t;
+          const seq = (typeof f._mcoViaSeq === 'number') ? f._mcoViaSeq : 0;
+          if (!byKey[k] || seq < byKey[k]._mcoSeqKept) { f._mcoSeqKept = seq; byKey[k] = f; }
+        }
+        list = Object.keys(byKey).map(k => byKey[k]);
+        // ── Fill the Terminal column with MCO's concourse (Airside / Term C) ─
+        // The GOAA feed leaves `terminal` blank on most rows, but the gate
+        // number maps to a concourse. Derive it so the Terminal column isn't
+        // empty. (Mapping is MCO's published gate ranges — see mcoConcourse.)
+        for (const f of list) {
+          const side = f[homeKey];
+          if (side) {
+            const c = mcoConcourse(side.gate);
+            if (c) side.terminal = c;
+          }
+        }
+        console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
         return direction === 'Departure' ? { departures: list } : { arrivals: list };
       }
       // 503 (key not set) / any non-OK — log and fall through to the ADB
