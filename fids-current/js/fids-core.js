@@ -14323,6 +14323,9 @@ function render() {
   // v2 banner: set body[data-fids-mode] so the plane icon flips down for
   // arrivals (CSS rotates the SVG 180deg when data-fids-mode="arr").
   document.body.dataset.fidsMode = mode;
+  // MCO gets a dedicated Terminal (A/B/C) column; every other airport keeps
+  // the existing compact layout with no Terminal column.
+  const _isMcoBoard = (((document.getElementById('apSel') || {}).value) || '').toUpperCase() === 'MCO';
   const _theadRow = document.querySelector('#fidsTable thead tr');
   if (_theadRow) {
     const _T = (k) => (typeof window.fidsT === 'function') ? window.fidsT(k, lang) : TL(k);
@@ -14331,6 +14334,7 @@ function render() {
       { cls: 'col-flight',   txt: _T('flight')   },
       { cls: 'col-wx',       txt: _T('weather')  },
       { cls: 'col-dest',     txt: _T('to')       },
+      ...(_isMcoBoard ? [{ cls: 'col-term', txt: 'Terminal' }] : []),
       { cls: 'col-gate',     txt: _T('gate')     },
       { cls: 'col-time',     txt: _T('time')     },
       { cls: 'col-time-rev', txt: 'Revised'      },
@@ -14340,6 +14344,7 @@ function render() {
       { cls: 'col-airline',  txt: _T('airline')  },
       { cls: 'col-flight',   txt: _T('flight')   },
       { cls: 'col-dest',     txt: _T('from')     },
+      ...(_isMcoBoard ? [{ cls: 'col-term', txt: 'Terminal' }] : []),
       { cls: 'col-gate',     txt: _T('carousel') },
       { cls: 'col-time',     txt: _T('time')     },
       { cls: 'col-time-rev', txt: 'Revised'      },
@@ -14358,8 +14363,8 @@ function render() {
   // legacy CSS still selects on .col-* classes).
   const _colGroup = document.querySelector('#fidsTable colgroup');
   if (_colGroup) {
-    const _depCols = ['col-airline','col-flight','col-wx','col-dest','col-gate','col-time','col-time-rev','col-status'];
-    const _arrCols = ['col-airline','col-flight','col-dest','col-gate','col-time','col-time-rev','col-status'];
+    const _depCols = ['col-airline','col-flight','col-wx','col-dest',...(_isMcoBoard?['col-term']:[]),'col-gate','col-time','col-time-rev','col-status'];
+    const _arrCols = ['col-airline','col-flight','col-dest',...(_isMcoBoard?['col-term']:[]),'col-gate','col-time','col-time-rev','col-status'];
     const _activeCols = isDep ? _depCols : _arrCols;
     const _colHtml = _activeCols.map(c => '<col class="' + c + '">').join('');
     if (_colGroup.dataset.lastCols !== _colHtml) {
@@ -14720,6 +14725,11 @@ function render() {
     var _arrBeltM = f._belt ? String(f._belt).match(/^(\w+)-(.+)$/) : null;
     var _arrBeltVal = _arrBeltM ? _arrBeltM[2] : (f._belt || '');
     const carouselCellHtml = '<td class="td-gate">' + (_arrBeltVal && _arrBeltVal !== '—' ? _arrBeltVal : '—') + '</td>';
+    // MCO-only Terminal (A/B/C) cell; empty string on every other board so
+    // their column layout is unchanged.
+    const _termCellHtml = ((((document.getElementById('apSel') || {}).value) || '').toUpperCase() === 'MCO')
+      ? '<td class="td-term">' + ((f.terminal && f.terminal !== '—') ? f.terminal : '—') + '</td>'
+      : '';
     // Phase 4: Sched + Revised as separate columns.
     // Scheduled cell: original time, strikethrough when revised, otherwise normal.
     // Revised cell: shows the revised time in accent color, or empty/dash when none.
@@ -14752,9 +14762,9 @@ function render() {
 
     let cells;
     if (isDep) {
-      cells = airlineCellHtml + flightCellHtml + wxHtml + destCellHtml + gateCellHtml + schedCellHtml + revCellHtml + statusCellHtml;
+      cells = airlineCellHtml + flightCellHtml + wxHtml + destCellHtml + _termCellHtml + gateCellHtml + schedCellHtml + revCellHtml + statusCellHtml;
     } else {
-      cells = airlineCellHtml + flightCellHtml + destCellHtml + carouselCellHtml + schedCellHtml + revCellHtml + statusCellHtml;
+      cells = airlineCellHtml + flightCellHtml + destCellHtml + _termCellHtml + carouselCellHtml + schedCellHtml + revCellHtml + statusCellHtml;
     }
 
     // Phase 4: clickable row — go to gate (dep) or carousel (arr) on click
@@ -17013,7 +17023,8 @@ function mapADB(raw, mode) {
       'LHR',  // London Heathrow T2, T3, T4, T5
       'ORD',  // Chicago O'Hare T1, T2, T3, T5
       'LAX',  // Los Angeles TBIT + multiple
-      'CDG'   // Paris CDG T1, T2, T3
+      'CDG',  // Paris CDG T1, T2, T3
+      'MCO'   // Orlando Terminals A / B / C — never fabricate a carousel
     ]);
 
     let _belt = f.arrival?.baggageBelt || null;
