@@ -276,7 +276,7 @@ table {
 .col-dest   { width: 20%; }
 .col-logo   { width: 14%; }
 .col-flight { width: 10%; }
-.col-term   { width: 5%; }
+.col-term   { width: 7%; }
 .col-gate   { width: 6%; }
 .col-status { width: 18%; }
 /* AIRLINE and REVISED had no width, so on the 8-col Departures board they each
@@ -384,7 +384,7 @@ thead th { height: 50px; }
 /* FLIGHT & GATE */
 .td-flight { font-size: 30px; font-weight: 700; color: #18181b; letter-spacing: 0px; text-align: left; }
 .td-aircraft { font-size: 17px; font-weight: 600; color: #71717a; letter-spacing: 0px; display: block; margin-top: 2px; }
-.td-term { text-align: center; vertical-align: middle; }
+.td-term { text-align: left; vertical-align: middle; padding-left: 18px; }
 .td-term span { display: inline-block; background: #3b5998; color: #fff; font-size: 22px; font-weight: 800; letter-spacing: 1px; padding: 5px 12px; border-radius: 6px; min-width: 40px; }
 .td-gate { text-align: center; vertical-align: middle; }
 .td-gate span { display: inline-block; background: #1e6f50; color: #fff; font-size: 24px; font-weight: 800; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 6px; min-width: 40px; }

@@ -85,6 +85,7 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Origin": origin || "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Vary": "Origin",
     "Access-Control-Max-Age": "86400"
   };
 }
@@ -695,6 +696,245 @@ async function handleDeleteAirlineOverride(env, payload, origin, airport, airlin
   return jsonResponse({ success: true }, 200, origin);
 }
 __name(handleDeleteAirlineOverride, "handleDeleteAirlineOverride");
+// ════════════════════════════════════════════════════════════════════
+// MCO (Orlando International) — native vendor FIDS feed normalizer
+// ════════════════════════════════════════════════════════════════════
+// MCO isn't an AeroDataBox airport for us — instead the airport publishes
+// its own flights feed (the same JSON that powers flymco.com/flights/).
+// That feed carries the real gate / terminal / baggage-belt data ADB
+// doesn't give us, so we fetch it here and RE-SHAPE each vendor flight
+// into the exact AeroDataBox-native object the boards already parse
+// (see adbFetchWindow / the normalizer in fids-core.js). Result: the
+// boards read MCO with ZERO frontend rendering changes — the frontend
+// just needs to point its flight fetch for MCO at /flights/mco.
+//
+// The live feed is the Greater Orlando Aviation Authority (GOAA) flights
+// API — the XHR behind flymco.com/flights/. It returns
+// { "data": { "flights": [ ... ] } } and takes a scheduledTimestamp
+// RANGE ("from..to" in unix seconds), so we build the window per request
+// rather than hardcode a date. The request needs three headers:
+//   Api-Key      — GOAA API key. NOT hardcoded — read from a worker secret
+//                  (env.MCO_FEED_KEY). Set it via the Cloudflare dashboard
+//                  or `wrangler secret put MCO_FEED_KEY`.
+//   Api-Version  — pinned to the version the site sends.
+//   Origin/Referer — the API allows the flymco.com origin.
+const MCO_FEED_BASE = "https://api.goaa.aero/flights";
+const MCO_FEED_API_VERSION = "150";
+const MCO_FEED_HEADERS = (env) => ({
+  "Accept": "application/json, text/plain, */*",
+  "Api-Key": env.MCO_FEED_KEY || "",
+  "Api-Version": MCO_FEED_API_VERSION,
+  "Origin": "https://flymco.com",
+  "Referer": "https://flymco.com/"
+});
+
+// Build the windowed feed URL. The API filters by scheduledTimestamp range;
+// we look back a few hours and ahead ~30h to cover the board's lookahead
+// plus overnight flights.
+function mcoFeedUrl() {
+  const nowSec = Math.floor(Date.now() / 1e3);
+  const from = nowSec - 6 * 3600;
+  const to = nowSec + 30 * 3600;
+  return `${MCO_FEED_BASE}?scheduledTimestamp=${from}..${to}`;
+}
+__name(mcoFeedUrl, "mcoFeedUrl");
+
+// Build an AeroDataBox-style { local, utc } time object from a unix
+// timestamp (seconds). `.local` is rendered in MCO's tz (US Eastern);
+// the boards prefer `.local` and fall back to `.utc`. Returns null for
+// missing/zero timestamps so downstream `?.` chains stay clean.
+function mcoTimeObj(tsSeconds) {
+  if (!tsSeconds || typeof tsSeconds !== "number") return null;
+  const d = new Date(tsSeconds * 1000);
+  if (isNaN(d.getTime())) return null;
+  // UTC string in the "YYYY-MM-DD HH:MM:SS+00:00" form ADB emits (the
+  // frontend's adbTs() does str.replace(' ','T') then new Date()).
+  const iso = d.toISOString();                        // 2026-07-16T14:30:00.000Z
+  const utc = iso.slice(0, 19).replace("T", " ") + "+00:00";
+  let local = utc;
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/New_York",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hour12: false, timeZoneName: "shortOffset"
+    }).formatToParts(d);
+    const g = (t) => (parts.find((p) => p.type === t) || {}).value || "";
+    let hh = g("hour"); if (hh === "24") hh = "00";
+    // shortOffset gives e.g. "GMT-4" → normalize to "-04:00"
+    const tzName = g("timeZoneName");
+    let off = "+00:00";
+    const m = tzName.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
+    if (m) off = `${m[1]}${m[2].padStart(2, "0")}:${(m[3] || "00")}`;
+    local = `${g("year")}-${g("month")}-${g("day")} ${hh}:${g("minute")}:${g("second")}${off}`;
+  } catch (e) { /* fall back to utc string */ }
+  return { local, utc };
+}
+__name(mcoTimeObj, "mcoTimeObj");
+
+// Map MCO's two-letter originalStatus (plus the isDelayed flag) onto the
+// lowercase British status strings the rest of the codebase keys on
+// (see _STATUS_ENUM in fids-core.js — 'cancelled' not 'Canceled', etc.).
+function mcoStatus(f) {
+  const os = String(f.originalStatus || "").toUpperCase();
+  switch (os) {
+    case "AR": return "arrived";     // Landed
+    case "DP": return "departed";    // Departed
+    case "CX": return "cancelled";   // Canceled
+    case "DL": return "delayed";     // Delayed
+    case "ON": return "scheduled";   // On time
+  }
+  if (f.isDelayed) return "delayed";
+  // Fall back to the wordy status field if originalStatus is unfamiliar.
+  const s = String(f.status || "").toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("land") || s.includes("arriv")) return "arrived";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("delay")) return "delayed";
+  return "scheduled";
+}
+__name(mcoStatus, "mcoStatus");
+
+// Turn one MCO vendor flight row into an AeroDataBox-native flight object.
+// `homeIsArrival` mirrors the feed's `arrival` bool: when true the flight
+// LANDS at MCO (home gate/terminal/belt live under `arrival`, the origin
+// under `departure.airport`); when false it DEPARTS MCO (home data under
+// `departure`, the destination under `arrival.airport`). This matches how
+// the frontend normalizer reads terminal/gate/belt per direction.
+function mcoToAdbFlight(f) {
+  const homeIsArrival = !!f.arrival;
+  // Prefer the operating airline + operating flight number for the board's
+  // primary number (the ADB scrape is fetched withCodeshared=false, so the
+  // board expects the operator's number and treats the row as the operator).
+  const opIata = (f.iataOperatingAirline || "").toUpperCase().trim();
+  const opIcao = (f.icaoOperatingAirline || "").toUpperCase().trim();
+  const opNum = (f.operatingAirlineFlightNumber || "").toString().trim();
+  const csIata = (f.iataCodeShareAirline || "").toUpperCase().trim();
+  const csNum = (f.codeShareFlightNumber || "").toString().trim();
+  // Display number: "WN2183" style. Prefer the pre-joined iata field the
+  // feed supplies, else stitch iata + number ourselves.
+  const number =
+    (f.iataOperatingAirlineFlightNumber || "").toString().trim() ||
+    (opIata && opNum ? `${opIata}${opNum}` : "") ||
+    (f.icaoOperatingAirlineFlightNumber || "").toString().trim() ||
+    (csIata && csNum ? `${csIata}${csNum}` : "");
+
+  const sched = mcoTimeObj(f.scheduledTimestamp);
+  // bestKnownTimestamp is the estimated/actual time — surface it as
+  // revisedTime only when it actually differs from scheduled (so an
+  // on-time flight doesn't render a redundant "revised" time).
+  const best = f.bestKnownTimestamp && f.bestKnownTimestamp !== f.scheduledTimestamp
+    ? mcoTimeObj(f.bestKnownTimestamp) : null;
+
+  const belt = Array.isArray(f.baggageBelt) && f.baggageBelt.length
+    ? f.baggageBelt.join(", ") : null;
+
+  const airlineObj = {
+    iata: opIata || null,
+    icao: opIcao || null,
+    name: null                    // frontend resolves the display name itself
+  };
+  const homeAirport = { iata: (f.baseAirport || "MCO").toUpperCase(), icao: null, name: null };
+  // The "other" airport — origin for an arrival, destination for a departure.
+  const otherCode = homeIsArrival
+    ? (f.departureAirport || "").toUpperCase()
+    : (f.arrivalAirport || "").toUpperCase();
+  const otherAirport = { iata: otherCode || null, icao: null, name: null };
+
+  const homeSide = {
+    airport: homeAirport,
+    terminal: f.terminal || null,
+    gate: f.gate || null,
+    ...(homeIsArrival && belt ? { baggageBelt: belt } : {}),
+    scheduledTime: sched,
+    ...(best ? { revisedTime: best } : {}),
+    airline: airlineObj,
+    quality: ["Live"]
+  };
+  const otherSide = {
+    airport: otherAirport,
+    scheduledTime: sched,
+    airline: airlineObj,
+    quality: ["Live"]
+  };
+
+  return {
+    number,
+    callSign: null,
+    status: mcoStatus(f),
+    codeshareStatus: "IsOperator",
+    isCargo: false,
+    // Home side carries the gate/terminal/belt; other side just the airport.
+    departure: homeIsArrival ? otherSide : homeSide,
+    arrival: homeIsArrival ? homeSide : otherSide,
+    // Preserve the multi-leg hint so distinct legs of the same number stay
+    // distinct when we de-dupe (via stops share a number but differ here).
+    _mcoVia: f.viaAirport || null,
+    _mcoViaSeq: (typeof f.viaSequencePosition === "number") ? f.viaSequencePosition : null
+  };
+}
+__name(mcoToAdbFlight, "mcoToAdbFlight");
+
+// GET /flights/mco?direction=dep|arr  (or Departure|Arrival)
+// Fetches the MCO vendor feed, filters to visible/non-deleted flights for
+// the requested direction, normalizes each into ADB-native shape, and
+// returns { departures:[...] } or { arrivals:[...] } — a drop-in for the
+// frontend's adbFetchWindow(). Returns 503 (not 500) with a clear note
+// until the feed URL is filled in, so callers can fall back gracefully.
+async function handleMcoFids(request, env, origin, direction) {
+  if (!env.MCO_FEED_KEY) {
+    return jsonResponse({
+      error: "MCO feed key not configured",
+      note: "Set the MCO_FEED_KEY worker secret to the GOAA Api-Key value (Cloudflare dashboard → Settings → Variables and Secrets, or `wrangler secret put MCO_FEED_KEY`)."
+    }, 503, origin);
+  }
+  const wantArrivals = /^arr/i.test(direction || "");
+  let feed;
+  try {
+    const r = await fetch(mcoFeedUrl(), { headers: MCO_FEED_HEADERS(env) });
+    if (!r.ok) {
+      const body = await r.text().catch(() => "");
+      return jsonResponse({ error: "MCO feed fetch failed", status: r.status, body: body.slice(0, 300) }, 502, origin);
+    }
+    feed = await r.json();
+  } catch (e) {
+    return jsonResponse({ error: "MCO feed fetch error", details: e.message }, 502, origin);
+  }
+  const rows = (feed && feed.data && Array.isArray(feed.data.flights)) ? feed.data.flights
+    : (Array.isArray(feed && feed.flights) ? feed.flights : []);
+  const seen = new Set();
+  const out = [];
+  for (const f of rows) {
+    if (!f || typeof f !== "object") continue;
+    if (f.isDeleted === true) continue;
+    if (f.isVisible === false) continue;
+    // `arrival` bool selects the direction this row belongs to.
+    const isArr = !!f.arrival;
+    if (isArr !== wantArrivals) continue;
+    const adb = mcoToAdbFlight(f);
+    if (!adb.number) continue;
+    // De-dupe on number + scheduled time + the "other" airport + via leg,
+    // so genuine duplicate pushes collapse while distinct multi-leg rows
+    // (same number, different via/destination) each survive as their own row.
+    const otherCode = isArr
+      ? (adb.departure.airport.iata || "")
+      : (adb.arrival.airport.iata || "");
+    const schedKey = (isArr ? adb.arrival : adb.departure)?.scheduledTime?.utc || f.scheduledTimestamp || "";
+    const dedupeKey = `${adb.number}|${schedKey}|${otherCode}|${adb._mcoVia || ""}|${adb._mcoViaSeq ?? ""}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    out.push(adb);
+  }
+  return new Response(JSON.stringify(wantArrivals ? { arrivals: out } : { departures: out }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=30",
+      ...corsHeaders(origin)
+    }
+  });
+}
+__name(handleMcoFids, "handleMcoFids");
 
 var fids_proxy_default = {
   async fetch(request, env, ctx) {
@@ -709,9 +949,9 @@ var fids_proxy_default = {
       return handleLogin(request, env, origin);
     }
     if (path === "/") {
-      return jsonResponse({ 
-        status: "online", 
-        message: "FIDS Proxy API is running. Please use specific endpoints." 
+      return jsonResponse({
+        status: "online",
+        message: "FIDS Proxy API is running. Please use specific endpoints."
       }, 200, origin);
     }
 
@@ -1128,7 +1368,9 @@ IMPORTANT RULES:
         }
         return jsonResponse(parsed, 200, origin);
       } catch (e) {
-        return jsonResponse({ error: "AI text generation failed", details: e.message }, 500, origin);
+        console.error("destination-info", { iata, city, lang, error: e?.message || String(e) });
+return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "unavailable" }, 200, origin);
+
       }
     }
     if (path === "/admin/clear-cache" && request.method === "GET") {
@@ -1529,6 +1771,15 @@ IMPORTANT RULES:
       }
     }
 
+    // ── MCO native FIDS feed ───────────────────────────────────────────────
+    // GET /flights/mco?direction=dep|arr — normalized vendor feed in
+    // ADB-native shape. Must be matched BEFORE the generic /flights/ ADB
+    // passthrough below (otherwise "mco" would be proxied to AeroDataBox).
+    if (path === "/flights/mco") {
+      const direction = url.searchParams.get("direction") || "dep";
+      return handleMcoFids(request, env, origin, direction);
+    }
+
     if (path.startsWith("/airports/") || path.startsWith("/flights/") || path.startsWith("/aircrafts/")) {
       const adbUrl = `https://aerodatabox.p.rapidapi.com${path}${url.search}`;
       try {
@@ -1652,12 +1903,17 @@ IMPORTANT RULES:
     if (path.startsWith("/accor/")) {
       const accorPath = path.replace("/accor", "");
       const accorUrl = `https://api.accor.com${accorPath}${url.search}`;
+      // Forward the caller's Accept-Language so Accor returns localized
+      // (e.g. French) descriptions/amenities. Without this it always
+      // defaults to English — Canada requires both languages equally.
+      const acceptLang = request.headers.get("Accept-Language") || "en";
       try {
         const response = await fetch(accorUrl, {
           headers: {
             "apikey": env.ACCOR_KEY,
             "clientId": "all.accor",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "Accept-Language": acceptLang
           }
         });
         const data = await response.text();
@@ -1665,6 +1921,8 @@ IMPORTANT RULES:
           status: response.status,
           headers: {
             "Content-Type": response.headers.get("Content-Type") || "application/json",
+            // Vary so caches keep the EN and FR responses separate.
+            "Vary": "Accept-Language",
             "Cache-Control": "public, max-age=3600",
             ...corsHeaders(origin)
           }

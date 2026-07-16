@@ -2395,6 +2395,9 @@ html .fids-banner .fids-banner-board { gap: 16px !important; }
 html body .bidsv2-fids-banner .fids-board-icon::before { content: "" !important; display: none !important; }
 html .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage { font-size: 56px !important; color: #14263f !important; }
 html .bidsv2-fids-banner .fids-board-label { font-size: 54px !important; min-width: 560px !important; }
+/* Baggage banner: nudge the whole title block toward the right edge and tuck
+   the suitcase closer to the words (Nick). */
+html .bidsv2-fids-banner .fids-banner-board { margin-right: 110px !important; gap: 10px !important; }
 
 /* Baggage screen on the MIST theme — make it fully light AND readable,
    independent of the fids-light-board flag (that flag is decided by measuring

@@ -7981,7 +7981,7 @@ function uxgGateHtml(ctx) {
     // inner spans counter-skew +24° to stay upright.
     +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:' + (String(iata).toUpperCase() === 'YQM' ? '#D21034' : 'var(--airline-accent,#1aa)') + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
     +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
-    +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
+    +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;font-size:' + (function(g){var n=String(g||'').length; return n>=5?'52px':(n===4?'64px':'84px');})(gateVal) + ' !important;">' + gateVal + '</span>'
     +   '</div>'
     + '</div>'
     // ROW 2 - flight number + fields (full width)
@@ -9741,6 +9741,17 @@ const gView = document.getElementById('gateView');
       var b = String(o[l2] || '').replace(/\s*#\s*$/, '');
       return (b && b !== a) ? (a + ' <span class="bidsv2-hsep">|</span> ' + b) : a;
     }
+    // MCO: remind travellers which terminal this carousel sits in. The belt
+    // key is "A-9"-style, so the prefix is the terminal letter; fall back to
+    // a flight's terminal field.
+    const _mcoBagTerm = (iata === 'MCO') ? (function(){
+      const _m = String(subScreenVal || '').match(/^([A-C])-/i);
+      let t = _m ? _m[1].toUpperCase() : '';
+      if (!t && arrFlights[0] && arrFlights[0].terminal) {
+        t = String(arrFlights[0].terminal).replace(/^Terminal\s+/i, '').trim().toUpperCase();
+      }
+      return /^[A-C]$/.test(t) ? t : '';
+    })() : '';
     bView.innerHTML = `
       <div class="bidsv2-screen">
 
@@ -9787,6 +9798,7 @@ const gView = document.getElementById('gateView');
               const _m = String(subScreenVal || '').match(/^(\w+)-(.+)$/);
               return _m ? _m[2] : (subScreenVal || '—');
             })()}</div>
+            ${_mcoBagTerm ? `<div class="bidsv2-carousel-terminal">Terminal ${_mcoBagTerm}</div>` : ''}
           </div>
 
           <div class="bidsv2-flight-list">
@@ -14323,6 +14335,9 @@ function render() {
   // v2 banner: set body[data-fids-mode] so the plane icon flips down for
   // arrivals (CSS rotates the SVG 180deg when data-fids-mode="arr").
   document.body.dataset.fidsMode = mode;
+  // MCO gets a dedicated Terminal (A/B/C) column; every other airport keeps
+  // the existing compact layout with no Terminal column.
+  const _isMcoBoard = (((document.getElementById('apSel') || {}).value) || '').toUpperCase() === 'MCO';
   const _theadRow = document.querySelector('#fidsTable thead tr');
   if (_theadRow) {
     const _T = (k) => (typeof window.fidsT === 'function') ? window.fidsT(k, lang) : TL(k);
@@ -14331,6 +14346,7 @@ function render() {
       { cls: 'col-flight',   txt: _T('flight')   },
       { cls: 'col-wx',       txt: _T('weather')  },
       { cls: 'col-dest',     txt: _T('to')       },
+      ...(_isMcoBoard ? [{ cls: 'col-term', txt: 'Terminal' }] : []),
       { cls: 'col-gate',     txt: _T('gate')     },
       { cls: 'col-time',     txt: _T('time')     },
       { cls: 'col-time-rev', txt: 'Revised'      },
@@ -14340,6 +14356,7 @@ function render() {
       { cls: 'col-airline',  txt: _T('airline')  },
       { cls: 'col-flight',   txt: _T('flight')   },
       { cls: 'col-dest',     txt: _T('from')     },
+      ...(_isMcoBoard ? [{ cls: 'col-term', txt: 'Terminal' }] : []),
       { cls: 'col-gate',     txt: _T('carousel') },
       { cls: 'col-time',     txt: _T('time')     },
       { cls: 'col-time-rev', txt: 'Revised'      },
@@ -14358,8 +14375,8 @@ function render() {
   // legacy CSS still selects on .col-* classes).
   const _colGroup = document.querySelector('#fidsTable colgroup');
   if (_colGroup) {
-    const _depCols = ['col-airline','col-flight','col-wx','col-dest','col-gate','col-time','col-time-rev','col-status'];
-    const _arrCols = ['col-airline','col-flight','col-dest','col-gate','col-time','col-time-rev','col-status'];
+    const _depCols = ['col-airline','col-flight','col-wx','col-dest',...(_isMcoBoard?['col-term']:[]),'col-gate','col-time','col-time-rev','col-status'];
+    const _arrCols = ['col-airline','col-flight','col-dest',...(_isMcoBoard?['col-term']:[]),'col-gate','col-time','col-time-rev','col-status'];
     const _activeCols = isDep ? _depCols : _arrCols;
     const _colHtml = _activeCols.map(c => '<col class="' + c + '">').join('');
     if (_colGroup.dataset.lastCols !== _colHtml) {
@@ -14708,7 +14725,11 @@ function render() {
       const _ge = _gh && _gh[f.flight];
       if (_ge && _ge.changedAt && (Date.now() - _ge.changedAt) < 15 * 60000 && _ge.previousGate) _gateChanged = true;
     } catch (e) {}
-    const _gateVal2 = (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—'));
+    const _isMcoRow = ((((document.getElementById('apSel') || {}).value) || '').toUpperCase() === 'MCO');
+    let _gateVal2 = (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—'));
+    // MCO: the Terminal column already shows A/B/C, so drop a redundant
+    // leading terminal letter from the gate itself (C243 -> 243, C252A -> 252A).
+    if (_isMcoRow) _gateVal2 = String(_gateVal2).replace(/^[ABC](?=\d)/, '');
     const gateCellHtml = '<td class="td-gate">'
       + (_gateChanged ? '<span class="gate-changed-badge">' + _gateVal2 + '</span>' : _gateVal2)
       + '</td>';
@@ -14720,6 +14741,11 @@ function render() {
     var _arrBeltM = f._belt ? String(f._belt).match(/^(\w+)-(.+)$/) : null;
     var _arrBeltVal = _arrBeltM ? _arrBeltM[2] : (f._belt || '');
     const carouselCellHtml = '<td class="td-gate">' + (_arrBeltVal && _arrBeltVal !== '—' ? _arrBeltVal : '—') + '</td>';
+    // MCO-only Terminal (A/B/C) cell; empty string on every other board so
+    // their column layout is unchanged.
+    const _termCellHtml = ((((document.getElementById('apSel') || {}).value) || '').toUpperCase() === 'MCO')
+      ? '<td class="td-term">' + ((f.terminal && f.terminal !== '—') ? f.terminal : '—') + '</td>'
+      : '';
     // Phase 4: Sched + Revised as separate columns.
     // Scheduled cell: original time, strikethrough when revised, otherwise normal.
     // Revised cell: shows the revised time in accent color, or empty/dash when none.
@@ -14752,9 +14778,9 @@ function render() {
 
     let cells;
     if (isDep) {
-      cells = airlineCellHtml + flightCellHtml + wxHtml + destCellHtml + gateCellHtml + schedCellHtml + revCellHtml + statusCellHtml;
+      cells = airlineCellHtml + flightCellHtml + wxHtml + destCellHtml + _termCellHtml + gateCellHtml + schedCellHtml + revCellHtml + statusCellHtml;
     } else {
-      cells = airlineCellHtml + flightCellHtml + destCellHtml + carouselCellHtml + schedCellHtml + revCellHtml + statusCellHtml;
+      cells = airlineCellHtml + flightCellHtml + destCellHtml + _termCellHtml + carouselCellHtml + schedCellHtml + revCellHtml + statusCellHtml;
     }
 
     // Phase 4: clickable row — go to gate (dep) or carousel (arr) on click
@@ -15704,7 +15730,131 @@ async function adbFetchWindow(iata, direction, fromStr, toStr) {
   }
   throw new Error(lastErr || `Failed after 3 attempts for ${iata} ${direction}`);
 }
+// ── MCO terminal (A / B / C) ──────────────────────────────────────────
+// The Terminal column should show the landside terminal (A/B/C) — where
+// check-in and baggage claim live — NOT the airside concourse. The GOAA
+// feed's own `terminal` letter is authoritative and preferred; this is only
+// a fallback for rows the feed leaves blank, derived from MCO's published
+// gate ranges. NOTE: gate→terminal ranges below are unverified — confirm
+// against the live board.
+function mcoTerminal(gate) {
+  if (!gate) return null;
+  const g = String(gate).trim().toUpperCase();
+  if (g.charAt(0) === 'C') return 'C';                 // South Terminal (C-gates)
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if ((n >= 1  && n <= 29) || (n >= 100 && n <= 129)) return 'A';  // Airsides 1 & 2
+  if ((n >= 30 && n <= 59) || (n >= 60  && n <= 99))  return 'B';  // Airsides 3 & 4
+  return null;
+}
 async function adbFetch(iata, direction) {
+  // ── MCO: native GOAA feed instead of the ADB scrape ─────────────────
+  // Orlando isn't an ADB airport for us — the worker proxies MCO's own
+  // flights API (api.goaa.aero) at /flights/mco and returns it in the
+  // exact ADB-native shape this function otherwise produces, so the rest
+  // of the pipeline is unchanged. Carries real gate/terminal/belt data.
+  if (iata === 'MCO') {
+    const dir = direction === 'Departure' ? 'dep' : 'arr';
+    const mcoUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/mco?direction=${dir}`;
+    try {
+      const r = await fetch(mcoUrl);
+      if (r.ok) {
+        const json = await r.json();
+        let list = direction === 'Departure' ? (json.departures || []) : (json.arrivals || []);
+        const homeKey = direction === 'Departure' ? 'departure' : 'arrival';
+        // ── Collapse multi-leg "via" rows into one, reconstruct routing ────
+        // A through-flight (MCO→LAS→SMF) comes back as one row per downstream
+        // leg — same flight number, same departure time — which reads as a
+        // duplicate on the board. Group by physical MCO movement (number +
+        // scheduled time), then from the via chain (each leg carries its stop
+        // + sequence) show the FINAL destination with the intermediate stop
+        // noted: "SMF (via LAS)". Departures only; arrivals just de-dupe.
+        const groups = {};
+        for (const f of list) {
+          const side = f[homeKey] || {};
+          const t = (side.scheduledTime && (side.scheduledTime.utc || side.scheduledTime.local)) || '';
+          const k = (f.number || '') + '|' + t;
+          (groups[k] = groups[k] || []).push(f);
+        }
+        list = Object.keys(groups).map(k => {
+          const legs = groups[k].slice().sort((a, b) => ((a._mcoViaSeq || 0) - (b._mcoViaSeq || 0)));
+          const rep = legs[0];  // all legs share the MCO gate/terminal/time
+          if (direction === 'Departure' && legs.length > 1) {
+            const stops = legs.map(l => l._mcoVia).filter(Boolean);   // sorted by seq
+            const finalDest = stops[stops.length - 1];                // last stop = destination
+            const vias = stops.slice(0, -1);                          // earlier = intermediate
+            if (finalDest && rep.arrival && rep.arrival.airport) rep.arrival.airport.iata = finalDest;
+            if (vias.length) rep._mcoViaStop = vias.join(', ');
+          }
+          return rep;
+        });
+        // ── Fill the Terminal column with the terminal LETTER (A/B/C) ──────
+        // Prefer the feed's own terminal letter (authoritative — that's where
+        // check-in / baggage claim is). Only when the feed leaves it blank do
+        // we derive it from the gate number as a fallback.
+        for (const f of list) {
+          const side = f[homeKey];
+          if (!side) continue;
+          // Emit the plain terminal LETTER (A/B/C). NOT "Terminal A" — the
+          // downstream belt synthesis strips a leading "T" (T1→1), which would
+          // mangle "Terminal A" into "erminal A" and corrupt the carousel.
+          const raw = (side.terminal == null ? '' : String(side.terminal)).trim().toUpperCase();
+          const letter = /^[ABC]$/.test(raw) ? raw : mcoTerminal(side.gate);
+          side.terminal = letter || (raw || null);
+        }
+        // ── Enrich with AeroDataBox (USE BOTH SERVICES) ────────────────────
+        // The GOAA feed carries the real gates/terminal/belt but NO aircraft
+        // type, registration or live position — so gate screens came up blank.
+        // Pull those from the matching ADB flight while keeping the feed's
+        // gate data authoritative. Best-effort: if ADB is empty/rate-limited
+        // for MCO the feed still shows on its own. (Flights neither service
+        // has aircraft for — some smaller carriers — stay blank; unavoidable.)
+        try {
+          const _tz = (AP[iata] || {}).tz || null;
+          const _now = new Date();
+          const _past  = new Date(_now.getTime() - 2 * 3600000);
+          const _mid   = new Date(_now.getTime() + 10 * 3600000);
+          const _ahead = new Date(_now.getTime() + 22 * 3600000);
+          const _a1 = await adbFetchWindow(iata, direction, fmt12(_past, _tz), fmt12(_mid, _tz));
+          await new Promise(r => setTimeout(r, 1200));
+          const _a2 = await adbFetchWindow(iata, direction, fmt12(_mid, _tz), fmt12(_ahead, _tz));
+          const _adbList = [
+            ...(direction === 'Departure' ? (_a1.departures || []) : (_a1.arrivals || [])),
+            ...(direction === 'Departure' ? (_a2.departures || []) : (_a2.arrivals || []))
+          ];
+          // Match on flight number + scheduled time to the minute.
+          const _mcoKey = (f) => {
+            const num = String(f.number || '').replace(/\s+/g, '').toUpperCase();
+            const s = direction === 'Departure' ? f.departure : f.arrival;
+            const utc = (s && s.scheduledTime && (s.scheduledTime.utc || s.scheduledTime.local)) || '';
+            return num ? (num + '|' + String(utc).slice(0, 16)) : '';
+          };
+          const _adbByKey = {};
+          for (const af of _adbList) { const k = _mcoKey(af); if (k && !_adbByKey[k]) _adbByKey[k] = af; }
+          let _enriched = 0;
+          for (const ff of list) {
+            const af = _adbByKey[_mcoKey(ff)];
+            if (!af) continue;
+            if (af.aircraft && !ff.aircraft) ff.aircraft = af.aircraft;
+            if (af.reg && !ff.reg) ff.reg = af.reg;
+            if (af.callSign && !ff.callSign) ff.callSign = af.callSign;
+            if (af.location && !ff.location) ff.location = af.location;
+            _enriched++;
+          }
+          console.log(`[FIDS] MCO ADB enrich ${direction}: ${_enriched}/${list.length} flights got aircraft/position`);
+        } catch (e) {
+          console.warn(`[FIDS] MCO ADB enrich ${direction}: ${e.message} — feed shows without aircraft/position`);
+        }
+        console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
+        return direction === 'Departure' ? { departures: list } : { arrivals: list };
+      }
+      // 503 (key not set) / any non-OK — log and fall through to the ADB
+      // scrape so the board still shows *something* rather than going blank.
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: HTTP ${r.status} — falling back to ADB scrape`);
+    } catch (e) {
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: ${e.message} — falling back to ADB scrape`);
+    }
+  }
   // ── ADB SCRAPE: source of truth for the flight LIST ─────────────────
   // The airport scrape gives us the complete schedule for the lookahead
   // window. We always do this — cache cannot replace it because webhooks
@@ -16857,7 +17007,10 @@ function mapADB(raw, mode) {
         }
       }
     }
-    const locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
+    let locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
+    // MCO multi-leg: append the intermediate stop to the destination, e.g.
+    // "Sacramento via LAS". Only set on MCO through-departures (see adbFetch).
+    if (f._mcoViaStop) locName = `${locName} via ${f._mcoViaStop}`;
     const terminal=(mode==='dep'?f.departure?.terminal:f.arrival?.terminal)||'—';
     const gate=(mode==='dep'?f.departure?.gate:f.arrival?.gate)||'—';
     const belt=(mode==='arr'?f.arrival?.baggageBelt:null)||null;
@@ -16929,7 +17082,8 @@ function mapADB(raw, mode) {
       'LHR',  // London Heathrow T2, T3, T4, T5
       'ORD',  // Chicago O'Hare T1, T2, T3, T5
       'LAX',  // Los Angeles TBIT + multiple
-      'CDG'   // Paris CDG T1, T2, T3
+      'CDG',  // Paris CDG T1, T2, T3
+      'MCO'   // Orlando Terminals A / B / C — never fabricate a carousel
     ]);
 
     let _belt = f.arrival?.baggageBelt || null;
@@ -18991,16 +19145,13 @@ function _fetchAirportCoords(iata) {
 // Satellite = Esri World Imagery
 // All free for fair use; no API key needed.
 function _gateMapTileLayer() {
-  // Nick (Jul 2026) wants a DIFFERENT map — the satellite/aerial look from his
-  // reference (Esri World Imagery). Served same-origin through the worker's
-  // /tiles/ provider route (axes reordered for Esri) so it still works on
-  // locked-down display networks. A transparent Esri place-names layer sits ON
-  // TOP so the imagery still shows city/town names (Nick: 'does that map have
-  // city names') — a 'satellite + names' hybrid. Both under the route/plane,
-  // which live in the SVG overlay pane.
-  var _sat = L.tileLayer('/tiles/satellite/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
-  var _labels = L.tileLayer('/tiles/citylabels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 2 });
-  return L.layerGroup([_sat, _labels]);
+  // Nick (Jul 2026) wants the classic OpenStreetMap street map. Served
+  // same-origin through the worker's /tiles/osm route (which sends the
+  // User-Agent OSM's tile policy requires) so it still works on locked-down
+  // display networks. OSM already bakes in city/town/street names, so a
+  // single layer is enough — no separate labels overlay. The route line +
+  // plane live in the SVG overlay pane on top.
+  return L.tileLayer('/tiles/osm/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
 }
 
 // v218.99.9 — overlay flags previously came from gate-theme; system removed.

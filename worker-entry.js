@@ -48,6 +48,9 @@ const TILE_PROVIDERS = {
   positron:  'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   topo:      'https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
+  // Classic OpenStreetMap street cartography (no API key). OSM's tile policy
+  // requires a valid User-Agent — set on the proxy fetch below.
+  osm:       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   // Transparent place-name labels ONLY — overlaid on satellite for a
   // "satellite with names" view. Uses CARTO's labels-only tiles: city/town
   // text, NO boundary lines. (The old `labels` provider was Esri
@@ -170,7 +173,12 @@ export default {
       if (!tpl) return new Response('Unknown provider', { status: 404 });
       const upstream = tpl.replace('{z}', m[2]).replace('{x}', m[3]).replace('{y}', m[4]);
       try {
-        const r = await fetch(upstream, { cf: { cacheEverything: true, cacheTtl: DAY } });
+        // OSM (and some others) reject requests without a descriptive
+        // User-Agent per their tile-usage policy — always send one.
+        const r = await fetch(upstream, {
+          cf: { cacheEverything: true, cacheTtl: DAY },
+          headers: { 'User-Agent': 'OrionConnectedFIDS/1.0 (airport display board; +https://flymco.com)' }
+        });
         return new Response(r.body, {
           status: r.status,
           headers: {
