@@ -708,22 +708,36 @@ __name(handleDeleteAirlineOverride, "handleDeleteAirlineOverride");
 // boards read MCO with ZERO frontend rendering changes — the frontend
 // just needs to point its flight fetch for MCO at /flights/mco.
 //
-// ┌───────────────────────────────────────────────────────────────────┐
-// │  ⇩⇩⇩  DROP THE LIVE FEED URL HERE (the ONE blank to fill in)  ⇩⇩⇩ │
-// └───────────────────────────────────────────────────────────────────┘
-// This is the XHR the flymco.com/flights/ page makes to get the flight
-// list — the JSON that looks like { "data": { "flights": [ ... ] } }.
-// It is NOT any *.js chunk and NOT the Contentful (news) URL. Paste the
-// exact Request URL from DevTools → Network → Fetch/XHR. If that request
-// needs an api-key / host / referer header, add it to MCO_FEED_HEADERS
-// below (do NOT paste the key into chat — put it in a worker secret and
-// read it via env.MCO_FEED_KEY).
-const MCO_FLIGHTS_FEED_URL = "";                 // ← fill this in
+// The live feed is the Greater Orlando Aviation Authority (GOAA) flights
+// API — the XHR behind flymco.com/flights/. It returns
+// { "data": { "flights": [ ... ] } } and takes a scheduledTimestamp
+// RANGE ("from..to" in unix seconds), so we build the window per request
+// rather than hardcode a date. The request needs three headers:
+//   Api-Key      — GOAA API key. NOT hardcoded — read from a worker secret
+//                  (env.MCO_FEED_KEY). Set it via the Cloudflare dashboard
+//                  or `wrangler secret put MCO_FEED_KEY`.
+//   Api-Version  — pinned to the version the site sends.
+//   Origin/Referer — the API allows the flymco.com origin.
+const MCO_FEED_BASE = "https://api.goaa.aero/flights";
+const MCO_FEED_API_VERSION = "150";
 const MCO_FEED_HEADERS = (env) => ({
-  "Accept": "application/json",
-  "Referer": "https://flymco.com/flights/",
-  // e.g. if the feed needs a key:  "x-api-key": env.MCO_FEED_KEY,
+  "Accept": "application/json, text/plain, */*",
+  "Api-Key": env.MCO_FEED_KEY || "",
+  "Api-Version": MCO_FEED_API_VERSION,
+  "Origin": "https://flymco.com",
+  "Referer": "https://flymco.com/"
 });
+
+// Build the windowed feed URL. The API filters by scheduledTimestamp range;
+// we look back a few hours and ahead ~30h to cover the board's lookahead
+// plus overnight flights.
+function mcoFeedUrl() {
+  const nowSec = Math.floor(Date.now() / 1e3);
+  const from = nowSec - 6 * 3600;
+  const to = nowSec + 30 * 3600;
+  return `${MCO_FEED_BASE}?scheduledTimestamp=${from}..${to}`;
+}
+__name(mcoFeedUrl, "mcoFeedUrl");
 
 // Build an AeroDataBox-style { local, utc } time object from a unix
 // timestamp (seconds). `.local` is rendered in MCO's tz (US Eastern);
@@ -868,16 +882,16 @@ __name(mcoToAdbFlight, "mcoToAdbFlight");
 // frontend's adbFetchWindow(). Returns 503 (not 500) with a clear note
 // until the feed URL is filled in, so callers can fall back gracefully.
 async function handleMcoFids(request, env, origin, direction) {
-  if (!MCO_FLIGHTS_FEED_URL) {
+  if (!env.MCO_FEED_KEY) {
     return jsonResponse({
-      error: "MCO feed URL not configured",
-      note: "Set MCO_FLIGHTS_FEED_URL in worker/fids-proxy.js to the flymco.com flights XHR endpoint."
+      error: "MCO feed key not configured",
+      note: "Set the MCO_FEED_KEY worker secret to the GOAA Api-Key value (Cloudflare dashboard → Settings → Variables and Secrets, or `wrangler secret put MCO_FEED_KEY`)."
     }, 503, origin);
   }
   const wantArrivals = /^arr/i.test(direction || "");
   let feed;
   try {
-    const r = await fetch(MCO_FLIGHTS_FEED_URL, { headers: MCO_FEED_HEADERS(env) });
+    const r = await fetch(mcoFeedUrl(), { headers: MCO_FEED_HEADERS(env) });
     if (!r.ok) {
       const body = await r.text().catch(() => "");
       return jsonResponse({ error: "MCO feed fetch failed", status: r.status, body: body.slice(0, 300) }, 502, origin);
