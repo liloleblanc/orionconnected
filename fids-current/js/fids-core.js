@@ -9741,6 +9741,17 @@ const gView = document.getElementById('gateView');
       var b = String(o[l2] || '').replace(/\s*#\s*$/, '');
       return (b && b !== a) ? (a + ' <span class="bidsv2-hsep">|</span> ' + b) : a;
     }
+    // MCO: remind travellers which terminal this carousel sits in. The belt
+    // key is "A-9"-style, so the prefix is the terminal letter; fall back to
+    // a flight's terminal field.
+    const _mcoBagTerm = (iata === 'MCO') ? (function(){
+      const _m = String(subScreenVal || '').match(/^([A-C])-/i);
+      let t = _m ? _m[1].toUpperCase() : '';
+      if (!t && arrFlights[0] && arrFlights[0].terminal) {
+        t = String(arrFlights[0].terminal).replace(/^Terminal\s+/i, '').trim().toUpperCase();
+      }
+      return /^[A-C]$/.test(t) ? t : '';
+    })() : '';
     bView.innerHTML = `
       <div class="bidsv2-screen">
 
@@ -9787,6 +9798,7 @@ const gView = document.getElementById('gateView');
               const _m = String(subScreenVal || '').match(/^(\w+)-(.+)$/);
               return _m ? _m[2] : (subScreenVal || '—');
             })()}</div>
+            ${_mcoBagTerm ? `<div class="bidsv2-carousel-terminal">Terminal ${_mcoBagTerm}</div>` : ''}
           </div>
 
           <div class="bidsv2-flight-list">
