@@ -140,7 +140,7 @@ body[data-fids-logo-size="small"] .bidsv2-airline-name { font-size: 15px; }
 body[data-fids-logo-size="small"] .bidsv2-flight-num { font-size: 20px; }
 body[data-fids-logo-size="small"] .bidsv2-col-from { font-size: 24px; }
 body[data-fids-logo-size="small"] .bidsv2-col-time { font-size: 22px; }
-body[data-fids-logo-size="small"] .bidsv2-col-status { font-size: 20px; }
+body[data-fids-logo-size="small"] .bidsv2-col-status { font-size: 22px; }
 body[data-fids-logo-size="small"] .bidsv2-flight-row { padding: 12px 24px; }
 
 body[data-fids-logo-size="large"] .bidsv2-airline-block { width: 80px; height: 80px; }
@@ -148,7 +148,7 @@ body[data-fids-logo-size="large"] .bidsv2-airline-name { font-size: 22px; }
 body[data-fids-logo-size="large"] .bidsv2-flight-num { font-size: 30px; }
 body[data-fids-logo-size="large"] .bidsv2-col-from { font-size: 34px; }
 body[data-fids-logo-size="large"] .bidsv2-col-time { font-size: 30px; }
-body[data-fids-logo-size="large"] .bidsv2-col-status { font-size: 28px; }
+body[data-fids-logo-size="large"] .bidsv2-col-status { font-size: 30px; }
 body[data-fids-logo-size="large"] .bidsv2-flight-row { padding: 22px 24px; }
 
 /* ─── Logo position (responds to body[data-fids-logo-position]) ──── */
@@ -287,12 +287,13 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
 }
 /* MCO terminal reminder under the carousel number */
 .bidsv2-carousel-terminal {
-  font-size: clamp(24px, 2.6vw, 48px);
-  font-weight: 800;
+  font-size: clamp(30px, 3.2vw, 58px);
+  font-weight: 900;
   letter-spacing: 3px;
   color: var(--fids-bg, #050033);
+  opacity: 1;
   text-align: center;
-  margin-top: 6px;
+  margin-top: 4px;
   text-transform: uppercase;
 }
 
@@ -419,9 +420,9 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
 
 /* Status column */
 .bidsv2-col-status {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
 }
 .bidsv2-status-arrived {
   color: #10b981;

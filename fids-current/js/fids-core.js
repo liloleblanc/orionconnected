@@ -7981,7 +7981,7 @@ function uxgGateHtml(ctx) {
     // inner spans counter-skew +24° to stay upright.
     +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:' + (String(iata).toUpperCase() === 'YQM' ? '#D21034' : 'var(--airline-accent,#1aa)') + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
     +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
-    +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;">' + gateVal + '</span>'
+    +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;font-size:' + (function(g){var n=String(g||'').length; return n>=5?'52px':(n===4?'64px':'84px');})(gateVal) + ' !important;">' + gateVal + '</span>'
     +   '</div>'
     + '</div>'
     // ROW 2 - flight number + fields (full width)
@@ -14725,7 +14725,11 @@ function render() {
       const _ge = _gh && _gh[f.flight];
       if (_ge && _ge.changedAt && (Date.now() - _ge.changedAt) < 15 * 60000 && _ge.previousGate) _gateChanged = true;
     } catch (e) {}
-    const _gateVal2 = (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—'));
+    const _isMcoRow = ((((document.getElementById('apSel') || {}).value) || '').toUpperCase() === 'MCO');
+    let _gateVal2 = (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—'));
+    // MCO: the Terminal column already shows A/B/C, so drop a redundant
+    // leading terminal letter from the gate itself (C243 -> 243, C252A -> 252A).
+    if (_isMcoRow) _gateVal2 = String(_gateVal2).replace(/^[ABC](?=\d)/, '');
     const gateCellHtml = '<td class="td-gate">'
       + (_gateChanged ? '<span class="gate-changed-badge">' + _gateVal2 + '</span>' : _gateVal2)
       + '</td>';
