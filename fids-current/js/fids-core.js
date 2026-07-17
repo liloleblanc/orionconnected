@@ -14000,7 +14000,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22265';
+var FIDS_BUILD_TAG = 'v22266';
 (function(){
   try {
     function _addTag(){
@@ -19807,7 +19807,14 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
   var _glSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
-             : (window._gateMapFix && typeof window._gateMapFix.speed === 'number' ? window._gateMapFix.speed : 0);
+             : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
+             // Fall back to the same live speed the info panel resolved (the
+             // separate _gateInboundLivePos cache is often empty even when the
+             // panel shows a speed — that left the glide seeded at 0 and the
+             // plane sat still while the numbers ticked). Last resort: a nominal
+             // cruise so an airborne plane always drifts rather than freezing.
+             : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
+             : 0;
   _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd);
   setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
 }
