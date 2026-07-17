@@ -7207,13 +7207,20 @@ function uxgGateHtml(ctx) {
   // (UA removed Jul 2026 — Nick wants United's globe+wordmark alone with the
   // Star Alliance mark shown SEPARATELY, like every other Star carrier.)
   var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1 };
+  // Per-carrier alliance-mark override (Nick supplied official assets). United
+  // uses the official 2011 Star Alliance lockup (star + STAR ALLIANCE), with
+  // its black backing removed so the white mark floats on the navy banner.
+  // Air Canada is intentionally NOT here — its Star Alliance mark gets the
+  // brushed-metal treatment separately (task #29).
+  var _ALLIANCE_MARK_OVERRIDE = { 'UA': '/logos/airlines/alliances/star-alliance-2011-white.svg' };
   var _allianceKey = ALLIANCE_MAP[airlineCode];
   if (_allianceKey && !_COMBINED_ALLIANCE_LOCKUP[airlineCode]) {
     var _allianceCls = 'g8-r1-star g8-r1-alliance-' + _allianceKey;
+    var _allianceSrc = _ALLIANCE_MARK_OVERRIDE[airlineCode] || ALLIANCE_LOGOS[_allianceKey];
     // onerror hides only THIS img — the old window._allianceFailed flag was a
     // global kill switch: one transient 404 disabled alliance logos for the
     // rest of the session.
-    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
+    starHtml = '<img class="' + _allianceCls + '" src="' + _allianceSrc + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
   }
 
   // Clean diagonal lane arrow (plain stroke SVG — the unicode arrows render
@@ -14045,7 +14052,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22278';
+var FIDS_BUILD_TAG = 'v22279';
 (function(){
   try {
     function _addTag(){
