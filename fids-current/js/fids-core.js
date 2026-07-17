@@ -2220,30 +2220,17 @@ function _gateTelemSetReal(spdKt, altFt) {
   T.realSecToArr = (arrTs && arrTs > now) ? (arrTs - now) / 1000 : null;
 }
 
-// Modeled target for right now, from the last real anchor + elapsed time.
+// Target for right now = the last REAL reading. No fabrication.
+// A prior version modeled a descent (altitude bled toward 0 across the padded
+// scheduled arrival) — it "dragged time" and held a plane at 1,800 ft for 10
+// minutes, and it never handled a climb (altitude sat flat while climbing).
+// We never invent motion now: the numbers ARE the real feed. Movement comes
+// from real readings refreshing (the fast poll below) — a climbing plane's
+// altitude rises because the aircraft's real altitude rose — smoothly eased.
 function _gateTelemModel() {
   var T = window._gateTelemAnim;
   if (T.realAlt === null && T.realSpd === null) return null;
-  var now = Date.now();
-  var inb = window._gateInbound;
-  var arrTs = inb && (inb._revTs || inb._sortTs);
-  var secToArr = (arrTs && arrTs > now) ? (arrTs - now) / 1000 : null;
-  var tgtAlt = T.realAlt, tgtSpd = T.realSpd;
-  // DESCENT — within ~20 min of arrival: bleed altitude toward 0 at touchdown
-  // and speed toward a ~140 kt approach, in step with the clock. Scaled off the
-  // anchor's altitude by (time remaining / time remaining when anchored) so it
-  // reads as a straight, believable glide down.
-  if (secToArr !== null && secToArr < 1200 && T.realAlt !== null && T.realSecToArr) {
-    var frac = Math.max(0, Math.min(1, secToArr / T.realSecToArr));
-    tgtAlt = T.realAlt * frac;
-    if (T.realSpd !== null) tgtSpd = 140 + (T.realSpd - 140) * frac;
-  } else if (T.realSpd !== null) {
-    // CRUISE/CLIMB — hold altitude; let ground speed wander a few kt like real
-    // ADS-B so the panel reads live instead of frozen.
-    T.shimmerPh += 0.03;
-    tgtSpd = T.realSpd + Math.sin(T.shimmerPh) * 4;
-  }
-  return { spd: tgtSpd, alt: tgtAlt };
+  return { spd: T.realSpd, alt: T.realAlt };
 }
 
 // Write the current modeled numbers into every on-screen telemetry span.
@@ -2273,6 +2260,46 @@ function _animateGateTelem() {
   if (m.alt !== null && m.alt !== undefined) T.alt = (T.alt === null) ? m.alt : T.alt + (m.alt - T.alt) * 0.18;
   _writeGateTelemDom();
 }
+
+// ── FAST NUMBERS-ONLY POLL ─────────────────────────────────────────────────
+// So the speed/altitude reflect real movement (a climb actually rising, etc.)
+// without waiting for the 5-min board cycle. This ONLY feeds the numbers: it
+// updates the inbound object's live speed/altitude and re-anchors the telemetry
+// animator. It deliberately does NOT touch window._gateInboundLivePos or the
+// map — the map stays exactly as it is, so nothing can get jumpy. loadFlight
+// caches 60s, so a 90s cadence always gets a fresh reading.
+var _gateNumPollBusy = false;
+async function _gateNumbersPoll() {
+  try {
+    if (_gateNumPollBusy) return;
+    if (typeof screenType !== 'undefined' && screenType !== 'gate') return;
+    var inb = window._gateInbound;
+    var flt = inb && inb.flight;
+    if (!flt) return;
+    if (/cancel|arriv|land/i.test(String(inb.status || ''))) return;   // on the ground → stop
+    var iata = '';
+    try { iata = (document.getElementById('apSel') || {}).value || ''; } catch (e) {}
+    iata = String(iata || window._gateIata || '').toUpperCase();
+    if (!iata) return;
+    _gateNumPollBusy = true;
+    var today = new Date().toISOString().slice(0, 10);
+    var inbData = await loadFlight(flt, today, inb._locIata || iata);
+    _gateNumPollBusy = false;
+    if (!inbData) return;
+    if (!window._gateInbound || window._gateInbound.flight !== flt) return;   // gate changed mid-fetch
+    var _lp = inbData.livePosition || {};
+    var _spd = (typeof _lp.speed === 'number') ? _lp.speed : null;
+    var _alt = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
+    if (_spd === null && _alt === null) return;
+    var liveSpd = (_spd !== null) ? Math.round(_spd) : null;
+    var liveAlt = (_alt !== null) ? Math.round(_alt) : null;
+    if (liveSpd !== null) inb._liveSpd = liveSpd;   // the panel reads _ib._liveSpd
+    if (liveAlt !== null) inb._liveAlt = liveAlt;
+    try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
+    try { console.log('[NUMPOLL]', flt, '→ spd', liveSpd, 'alt', liveAlt); } catch (e) {}
+  } catch (e) { _gateNumPollBusy = false; }
+}
+try { setInterval(_gateNumbersPoll, 90000); setTimeout(_gateNumbersPoll, 5000); } catch (e) {}
 
 function updateDedicatedTimeOnly() {
   try { _animateGateTelem(); } catch (e) {}   // glide the live speed/altitude
@@ -14000,7 +14027,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22269';
+var FIDS_BUILD_TAG = 'v22270';
 (function(){
   try {
     function _addTag(){
