@@ -1479,7 +1479,10 @@ body.g8-header-is-light .g8-city-code,
    so Air Canada's mark is untouched (it gets the metal treatment separately). */
 .g8-wrap.g8-airline-UA .g8-r1-star {
   opacity: 1 !important;
-  height: clamp(34px, 4.6vh, 58px) !important;
+  height: clamp(52px, 7.5vh, 92px) !important;
+  max-width: none !important;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.45)) !important;
+  margin-left: clamp(10px, 1vw, 22px) !important;
 }
 
 /* Right-column shelves (below the mini map): the 3D globe artwork replaces

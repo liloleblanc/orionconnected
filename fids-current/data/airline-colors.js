@@ -36,7 +36,7 @@ window.AIRLINE_BRAND_COLORS = {
   /* ── United States ──────────────────────────────────────────────────── */
   'DL': { r1:'#003366', r1Text:'#FFFFFF', r2:'#C01933', body:'#F4F6F9', bodyText:'#003366' }, // Delta (official)
   'AA': { r1:'#101820', r1Text:'#FFFFFF', r2:'#0078D2', body:'#E8EAEC', bodyText:'#0F172A' }, // American
-  'UA': { r1:'#051966', r1Text:'#FFFFFF', r2:'#0c39ed', r3:'#2a08b5', body:'#EAEDF2', bodyText:'#051966' }, // United — Nick's palette (deep navy #051966 → bright blue #0c39ed, indigo #2a08b5)
+  'UA': { r1:'#0c39ed', r1Text:'#FFFFFF', r2:'#3960fb', r3:'#2a08b5', body:'#EAEDF2', bodyText:'#0c39ed' }, // United — Nick's palette: VIVID United blue bar #0c39ed → #3960fb accent, indigo #2a08b5 (was too-dark navy)
   'AS': { r1:'#01426A', r1Text:'#FFFFFF', r2:'#2774AE', body:'#EDF2F6', bodyText:'#01426A' }, // Alaska (official)
   'WN': { r1:'#304CB2', r1Text:'#FFFFFF', r2:'#F9B612', body:'#EAEDF7', bodyText:'#304CB2' }, // Southwest
   'B6': { r1:'#003876', r1Text:'#FFFFFF', r2:'#00A1DE', body:'#EAF0F7', bodyText:'#003876' }, // JetBlue
