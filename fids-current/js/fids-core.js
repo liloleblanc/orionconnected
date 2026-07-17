@@ -13897,7 +13897,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22259';
+var FIDS_BUILD_TAG = 'v22260';
 (function(){
   try {
     function _addTag(){
@@ -14339,7 +14339,7 @@ function render() {
   // A/B/C, Tampa Airsides A/C/E/F); every other airport keeps the compact
   // layout with no such column.
   const _apUpBoard = (((document.getElementById('apSel') || {}).value) || '').toUpperCase();
-  const _isMcoBoard = _apUpBoard === 'MCO' || _apUpBoard === 'TPA';
+  const _isMcoBoard = _apUpBoard === 'MCO' || _apUpBoard === 'TPA' || _apUpBoard === 'YYZ';
   const _airsideLabel = _apUpBoard === 'TPA' ? 'Airside' : 'Terminal';
   const _theadRow = document.querySelector('#fidsTable thead tr');
   if (_theadRow) {
@@ -14730,6 +14730,9 @@ function render() {
     } catch (e) {}
     const _apUpRow = (((document.getElementById('apSel') || {}).value) || '').toUpperCase();
     const _isAirsideRow = _apUpRow === 'MCO' || _apUpRow === 'TPA';
+    // YYZ also shows a Terminal column (T1/T3), but its gate names (B2C, D34…)
+    // are real and must NOT be letter-stripped like MCO/TPA concourse gates.
+    const _showTermCol = _isAirsideRow || _apUpRow === 'YYZ';
     let _gateVal2 = (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—'));
     // MCO/TPA: the airside column already shows the concourse letter, so drop
     // a redundant leading letter from the gate itself (C243 -> 243, E71 -> 71).
@@ -14747,7 +14750,7 @@ function render() {
     const carouselCellHtml = '<td class="td-gate">' + (_arrBeltVal && _arrBeltVal !== '—' ? _arrBeltVal : '—') + '</td>';
     // MCO/TPA airside cell (concourse letter); empty string on every other
     // board so their column layout is unchanged.
-    const _termCellHtml = _isAirsideRow
+    const _termCellHtml = _showTermCol
       ? '<td class="td-term">' + ((f.terminal && f.terminal !== '—') ? f.terminal : '—') + '</td>'
       : '';
     // Phase 4: Sched + Revised as separate columns.
@@ -15914,7 +15917,104 @@ function tpaToAdbFlight(f) {
     arrival: isDep ? otherSide : homeSide
   };
 }
+// ── YYZ (Toronto Pearson) native feed — torontopearson.com/api/flightsapidata ──
+// One list per direction (type=DEP / type=ARR), a full-day snapshot. Times are
+// ISO-8601 with the Eastern offset baked in (schTime scheduled, latestTm
+// estimated), so adbTs/adbHHMM read them directly — no custom tz handling.
+// routes[] lists any via-stops then the final endpoint (destination for DEP,
+// origin for ARR). carousel = baggage belt on arrivals. term = T1 / T3.
+// Toronto nests every codeshare inside one operating row's `ids[]`, so there
+// are NO duplicate codeshare rows to filter — each row is the operator.
+function yyzIataFromId2(id2) {
+  // id2 is the IATA flight id: "AA1111", "F81600", "2T604", "G36616", "AC7884".
+  const m = String(id2 || '').match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])/);
+  return m ? m[0] : '';
+}
+function yyzStatus(code) {
+  const c = String(code || '').toUpperCase();
+  if (c === 'CAN') return 'cancelled';
+  if (c === 'DIV') return 'diverted';
+  if (c === 'DEL') return 'delayed';
+  if (c === 'DEP') return 'departed';
+  if (c === 'BRD' || c === 'BOR' || c === 'BOA' || c === 'GTO' || c === 'GTC' || c === 'FBO') return 'boarding';
+  if (c === 'ARR' || c === 'LDD' || c === 'LND' || c === 'BAG' || c === 'ONB') return 'arrived';
+  // ONT = on time, SKD/ETD = scheduled/estimated → treat as scheduled
+  return 'scheduled';
+}
+function yyzToAdbFlight(f) {
+  if (!f || typeof f !== 'object') return null;
+  const isDep = String(f.type || '').toUpperCase() === 'DEP';
+  const number = String(f.id2 || f.id || '').trim().toUpperCase();
+  if (!number) return null;
+  const iata = yyzIataFromId2(number);
+  const airline = { iata: iata || null, icao: (f.alCode || '').toUpperCase() || null, name: f.al || null };
+  const sched = f.schTime ? { local: f.schTime, utc: f.schTime } : null;
+  if (!sched) return null;
+  const revised = (f.latestTm && f.latestTm !== f.schTime) ? { local: f.latestTm, utc: f.latestTm } : null;
+  const routes = Array.isArray(f.routes) ? f.routes : [];
+  // DEP: destination = last route (final), via = earlier stops.
+  // ARR: origin = first route, via = later stops.
+  let otherR, viaR;
+  if (isDep) { otherR = routes[routes.length - 1]; viaR = routes.slice(0, -1); }
+  else       { otherR = routes[0];                 viaR = routes.slice(1); }
+  const other = otherR
+    ? { iata: (otherR.code || '').toUpperCase() || null, icao: null, name: otherR.name || otherR.city || null }
+    : { iata: null, icao: null, name: null };
+  const home = { iata: 'YYZ', icao: 'CYYZ', name: 'Toronto Pearson' };
+  const term = (f.term || '').toUpperCase() || null;          // T1 / T3
+  const carousel = (f.carousel != null && f.carousel !== '') ? String(f.carousel) : '';
+  const homeSide = {
+    airport: home,
+    terminal: term,
+    gate: (f.gate || '') || null,
+    ...(!isDep && carousel ? { baggageBelt: carousel } : {}),  // real belt on arrivals
+    scheduledTime: sched,
+    ...(revised ? { revisedTime: revised } : {}),
+    airline, quality: ['Live']
+  };
+  const otherSide = { airport: other, scheduledTime: sched, ...(revised ? { revisedTime: revised } : {}), airline, quality: ['Live'] };
+  const out = {
+    number, callSign: (f.id || null),
+    status: yyzStatus(f.status),
+    codeshareStatus: 'IsOperator', isCargo: false,
+    departure: isDep ? homeSide : otherSide,
+    arrival: isDep ? otherSide : homeSide
+  };
+  // Via routing (intermediate stop) — reuse the generic "via <city>" label.
+  if (viaR.length) {
+    const viaCity = viaR.map(r => (r && (r.city || r.code) || '')).filter(Boolean).join(', ');
+    if (viaCity) out._mcoViaStop = viaCity;
+  }
+  return out;
+}
 async function adbFetch(iata, direction) {
+  // ── YYZ: Toronto Pearson's own feed instead of AeroDataBox ──────────
+  if (iata === 'YYZ') {
+    const wantDep = direction === 'Departure';
+    const seg = wantDep ? 'DEP' : 'ARR';
+    // Pull today + tomorrow so the lookahead window still has flights across
+    // the midnight boundary (the feed is bucketed per calendar day).
+    const urls = ['today', 'tomorrow'].map(d =>
+      `https://www.torontopearson.com/api/flightsapidata/getflightlist?type=${seg}&day=${d}&useScheduleTimeOnly=false`);
+    try {
+      const lists = await Promise.all(urls.map(async (u) => {
+        try {
+          const r = await fetch(u, { headers: { 'Accept': 'application/json' } });
+          if (r.ok) { const j = await r.json(); return Array.isArray(j && j.list) ? j.list : []; }
+        } catch (e) {}
+        return [];
+      }));
+      const rows = lists.flat();
+      const list = rows
+        .filter(f => (String(f.type || '').toUpperCase() === 'DEP') === wantDep)
+        .map(yyzToAdbFlight).filter(Boolean);
+      console.log(`[FIDS] YYZ feed ${direction}: ${list.length} flights`);
+      if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+      console.warn('[FIDS] YYZ feed empty — falling back to ADB scrape');
+    } catch (e) {
+      console.warn(`[FIDS] YYZ feed: ${e.message} — falling back to ADB scrape`);
+    }
+  }
   // ── TPA: Tampa's own flight-status feed instead of AeroDataBox ──────
   if (iata === 'TPA') {
     const wantDep = direction === 'Departure';
