@@ -1459,8 +1459,10 @@ body.g8-header-is-light .g8-city-code,
    Flair re-cut to the word 'flair' alone (aspect 2.5) and Hawaiian to
    'Hawaiian' alone (aspect 7.0) — heights recomputed by the same
    visual-weight rule. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { --wm-h: 28px; }
+/* jetBlue is a long lowercase word, so at the all-caps height it read too
+   wide/big (Nick). Bring it down well under the peers. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="B6"] { --wm-h: 20px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { --wm-h: 22px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PD"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] { --wm-h: 30px; }
