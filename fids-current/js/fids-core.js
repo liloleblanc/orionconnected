@@ -15747,7 +15747,117 @@ function mcoTerminal(gate) {
   if ((n >= 30 && n <= 59) || (n >= 60  && n <= 99))  return 'B';  // Airsides 3 & 4
   return null;
 }
+// ── YQM (Moncton) native feed — cyqm.ca WordPress REST ────────────────
+// The airport publishes its own flight list at
+// /wp-json/ch-flight-data/v1/flights/{departures|arrivals}. No key, real
+// unix timestamps, gate + human status strings. We fetch it straight from
+// the board (a real browser sails past the site's Imperva CDN, and WP REST
+// echoes CORS), map it into the ADB-native shape the rest of the pipeline
+// expects, and skip AeroDataBox entirely for YQM.
+function yqmTimeObj(tsSeconds) {
+  if (!tsSeconds || typeof tsSeconds !== 'number') return null;
+  const d = new Date(tsSeconds * 1000);
+  if (isNaN(d.getTime())) return null;
+  // cyqm.ca's localTimestamp is the Moncton WALL-CLOCK time encoded as a UTC
+  // epoch (5:20 PM local == 17:20 "UTC" here). So read the epoch's UTC parts
+  // directly — those already ARE the local clock — and stamp Moncton's offset.
+  // Do NOT timezone-convert (that would shift the displayed time wrongly).
+  const Y = d.getUTCFullYear(), Mo = String(d.getUTCMonth() + 1).padStart(2, '0'), Da = String(d.getUTCDate()).padStart(2, '0');
+  const H = String(d.getUTCHours()).padStart(2, '0'), Mi = String(d.getUTCMinutes()).padStart(2, '0'), S = String(d.getUTCSeconds()).padStart(2, '0');
+  let off = '-04:00';
+  try {
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Moncton', timeZoneName: 'shortOffset' }).formatToParts(d);
+    const tz = (p.find((x) => x.type === 'timeZoneName') || {}).value || '';
+    const m = tz.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
+    if (m) off = `${m[1]}${m[2].padStart(2, '0')}:${(m[3] || '00')}`;
+  } catch (e) {}
+  const local = `${Y}-${Mo}-${Da} ${H}:${Mi}:${S}${off}`;
+  let utc = local;
+  try { utc = new Date(`${Y}-${Mo}-${Da}T${H}:${Mi}:${S}${off}`).toISOString().slice(0, 19).replace('T', ' ') + '+00:00'; } catch (e) {}
+  return { local, utc };
+}
+// "5:20 PM" -> minutes since midnight (for computing the revised delta).
+function yqmClockToMin(s) {
+  const m = String(s || '').match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10); const min = parseInt(m[2], 10);
+  const ap = (m[3] || '').toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
+}
+// Map the human status string ("Departed at 8:20 PM", "On Time", …) onto
+// the lowercase keywords the board keys on.
+function yqmStatus(s) {
+  const t = String(s || '').toLowerCase();
+  if (t.includes('cancel')) return 'cancelled';
+  if (t.includes('divert')) return 'diverted';
+  if (t.includes('gate closed')) return 'gateclosed';
+  if (t.includes('final call') || t.includes('last call') || t.includes('board')) return 'boarding';
+  if (t.includes('depart')) return 'departed';
+  if (t.includes('arriv') || t.includes('land')) return 'arrived';
+  if (t.includes('delay')) return 'delayed';
+  return 'scheduled';   // "On Time", "Expected", "Scheduled", ""
+}
+function yqmToAdbFlight(f, direction) {
+  if (!f || typeof f !== 'object') return null;
+  const isDep = direction === 'Departure';
+  const number = String(f.flightId || ((f.airlineCode || '') + (f.flightNumber || ''))).trim();
+  if (!number) return null;
+  const sched = yqmTimeObj(f.localTimestamp);
+  // Revised time: derive from the actualTime string when it differs from
+  // scheduled (delta in minutes off the scheduled unix ts).
+  let revised = null;
+  const schedMin = yqmClockToMin(f.scheduledTime);
+  const actMin = yqmClockToMin(f.actualTime);
+  if (sched && f.localTimestamp && schedMin != null && actMin != null && actMin !== schedMin) {
+    let delta = actMin - schedMin;
+    if (delta < -720) delta += 1440;   // rolled past midnight
+    revised = yqmTimeObj(f.localTimestamp + delta * 60);
+  }
+  const airline = { iata: (f.airlineCode || '').toUpperCase() || null, icao: null, name: f.airlineName || null };
+  const home = { iata: 'YQM', icao: 'CYQM', name: 'Moncton' };
+  const other = { iata: (f.airportCode || '').toUpperCase() || null, icao: null, name: f.airportCity || null };
+  const homeSide = {
+    airport: home,
+    terminal: f.terminal || null,
+    gate: f.gate || null,
+    scheduledTime: sched,
+    ...(revised ? { revisedTime: revised } : {}),
+    airline, quality: ['Live']
+  };
+  const otherSide = { airport: other, scheduledTime: sched, airline, quality: ['Live'] };
+  return {
+    number,
+    callSign: null,
+    status: yqmStatus(f.status),
+    codeshareStatus: 'IsOperator',
+    isCargo: false,
+    departure: isDep ? homeSide : otherSide,
+    arrival: isDep ? otherSide : homeSide
+  };
+}
 async function adbFetch(iata, direction) {
+  // ── YQM: Moncton's own cyqm.ca feed instead of AeroDataBox ──────────
+  if (iata === 'YQM') {
+    const seg = direction === 'Departure' ? 'departures' : 'arrivals';
+    const yqmUrl = `https://www.cyqm.ca/wp-json/ch-flight-data/v1/flights/${seg}`;
+    try {
+      const r = await fetch(yqmUrl, { headers: { 'Accept': 'application/json' } });
+      if (r.ok) {
+        const raw = await r.json();
+        const rows = Array.isArray(raw) ? raw : (Array.isArray(raw && raw.flights) ? raw.flights : []);
+        const list = rows.map(f => yqmToAdbFlight(f, direction)).filter(Boolean);
+        console.log(`[FIDS] YQM cyqm.ca feed ${direction}: ${list.length} flights`);
+        if (list.length) return direction === 'Departure' ? { departures: list } : { arrivals: list };
+        console.warn('[FIDS] YQM cyqm.ca feed empty — falling back to ADB scrape');
+      } else {
+        console.warn(`[FIDS] YQM cyqm.ca feed HTTP ${r.status} — falling back to ADB scrape`);
+      }
+    } catch (e) {
+      console.warn(`[FIDS] YQM cyqm.ca feed: ${e.message} — falling back to ADB scrape`);
+    }
+  }
   // ── MCO: native GOAA feed instead of the ADB scrape ─────────────────
   // Orlando isn't an ADB airport for us — the worker proxies MCO's own
   // flights API (api.goaa.aero) at /flights/mco and returns it in the
