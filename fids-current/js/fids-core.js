@@ -8050,6 +8050,31 @@ function uxgGateHtml(ctx) {
       + '</div>'
     : '';
 
+  // Stash the computed schedule for the BIG "Your Aircraft" takeover, so its
+  // panel can show the full row set (Boarding/Departure/Arrival + aircraft)
+  // for a pre-departure flight that has no live position yet (Nick: the
+  // takeover panel came up nearly empty on such flights).
+  try {
+    function _bcPlainT(h) {
+      var s = String(h || '');
+      var r = s.indexOf('g8-r2-revised');
+      if (r !== -1) { var g = s.indexOf('>', r), l = (g !== -1) ? s.indexOf('<', g + 1) : -1; if (g !== -1 && l !== -1) return s.slice(g + 1, l).trim(); }
+      return s.replace(/<[^>]+>/g, '').trim();
+    }
+    var _ssBc = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
+    window._gateRailInfo = {
+      flight: String(currentFlight.flight || ''),
+      destCity: String(displayLoc || ''), destIata: String(locIata || ''),
+      boarding: _bcPlainT(typeof boardTimeHtml !== 'undefined' ? boardTimeHtml : ''),
+      departure: _bcPlainT(typeof depTimeHtml !== 'undefined' ? depTimeHtml : ''),
+      arrival: _bcPlainT(typeof arrHtml !== 'undefined' ? arrHtml : ''),
+      statusEn: _ssBc ? _ssBc.en.replace(/\b\w/g, function (c) { return c.toUpperCase(); }) : String(currentFlight.status || ''),
+      statusFr: _ssBc ? _ssBc.fr : '',
+      statusCls: /delay|retard/i.test(stKey) ? 'delayed' : (/cancel/i.test(stKey) ? 'cancelled' : 'scheduled'),
+      equip: String(equipName || ''), reg: String(currentFlight._reg || '')
+    };
+  } catch (e) {}
+
   return '<div class="g8-wrap'
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
        + (_bannerSpec && _bannerSpec.r1 === '#FFFFFF' ? ' g8-banner-light' : '')
@@ -14058,7 +14083,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22285';
+var FIDS_BUILD_TAG = 'v22286';
 (function(){
   try {
     function _addTag(){
@@ -26610,19 +26635,39 @@ function _renderBigCraft(el, ctx) {
       +   ' <span class="v2-rc-ms-unit">ft</span></div><div class="v2-rc-ms-lbl2">Altitude</div></div>'
       + '</div>'
     : '';
+  // Rich fallback rows built from the gate render's stashed schedule (Nick:
+  // the takeover panel must not come up near-empty on a pre-departure flight
+  // with no live position). Adds Boarding/Departure/Arrival — the same times
+  // the left rail shows — so the panel is full whether or not the aircraft is
+  // airborne.
+  var _ri = window._gateRailInfo || {};
+  var _statusVal = stShow;
+  if ((stShow === '—' || !stShow) && _ri.statusEn) {
+    _statusVal = _ri.statusEn + (_ri.statusFr && _ri.statusFr !== _ri.statusEn ? ' <span class="v2-rc-fi-sep">|</span> ' + _ri.statusFr : '');
+  }
+  var _statusCls = (stCls && stCls !== 'scheduled') ? stCls : (_ri.statusCls || stCls);
   var _bcFiFallback =
         '<div class="v2-rc-fi-table">'
-      +   row('Flight', 'Vol', ctx.fl || '—')
+      +   row('Flight', 'Vol', ctx.fl || _ri.flight || '—')
       +   (ctx.out
-            ? row('To', 'Vers', (ctx.dCity || ctx.dc || '—') + (ctx.dc ? ' (' + ctx.dc + ')' : ''))
+            ? row('To', 'Vers', (ctx.dCity || ctx.dc || _ri.destCity || '—') + (ctx.dc ? ' (' + ctx.dc + ')' : (_ri.destIata ? ' (' + _ri.destIata + ')' : '')))
             : row('From', 'De', (ctx.oCity || ctx.oc || '—') + (ctx.oc ? ' (' + ctx.oc + ')' : '')))
+      +   (_ri.boarding ? row('Boarding', 'Embarquement', _ri.boarding) : '')
+      +   (_ri.departure ? row('Departure', 'Départ', _ri.departure) : '')
+      +   (_ri.arrival ? row('Arrival', 'Arrivée', _ri.arrival) : '')
       +   (ctx.etaStr ? row('Arrives in', 'Arrive dans', ctx.etaStr) : '')
-      +   row('Status', 'Statut', stShow, 'v2-rc-status-' + stCls)
+      +   row('Status', 'Statut', _statusVal, 'v2-rc-status-' + _statusCls)
       + '</div>';
-  var _bcTypeFallback = (ctx.acType || reg)
-    ? '<div class="v2-rc-acb"><div class="v2-rc-acb-actype v2-rc-actype-val">' + (ctx.acType || '—') + reg + '</div></div>'
+  // Aircraft type/reg — prefer ctx, fall back to the gate's resolved equipment.
+  var _acTypeStr = ctx.acType || _ri.equip || '';
+  var _acRegStr = reg || (_ri.reg ? '  |  ' + String(_ri.reg).toUpperCase() : '');
+  var _bcTypeFallback = (_acTypeStr || _acRegStr)
+    ? '<div class="v2-rc-acb"><div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeStr || '—') + _acRegStr + '</div></div>'
     : '';
   var _bcTelemHtml = _bcTelem || _bcTelemFallback;
+  // Departures: the small panel's inbound fi-table clone is thin (or absent),
+  // so use the rich rail-built rows. Arrivals keep the cloned inbound card.
+  var _bcFiHtml = (ctx.out || !_bcFiTable) ? _bcFiFallback : _bcFiTable;
   var _bcTypeHtml  = _bcType || _bcTypeFallback;
   _bcOv.innerHTML =
       '<div class="bigcraft-wrap">'
@@ -26633,7 +26678,7 @@ function _renderBigCraft(el, ctx) {
     +   '<div class="bigcraft-side">'
     +     '<div class="bigcraft-title">Your Aircraft <span class="v2-rc-fi-sep">|</span> Votre Avion</div>'
     +     (_bcTelemHtml ? '<div class="bigcraft-telem">' + _bcTelemHtml + '</div>' : '')
-    +     '<div class="bigcraft-table">' + (_bcFiTable || _bcFiFallback) + '</div>'
+    +     '<div class="bigcraft-table">' + _bcFiHtml + '</div>'
     +     (acImg ? '<div class="bigcraft-plane"><img src="' + acImg + '" alt=""></div>' : '')
     +     (_bcTypeHtml ? '<div class="bigcraft-actype">' + _bcTypeHtml + '</div>' : '')
     +   '</div>'
