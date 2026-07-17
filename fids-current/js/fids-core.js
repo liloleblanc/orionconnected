@@ -4551,7 +4551,9 @@ function aircraftCodeToIata(raw) {
                  // v218.99.48 — Nick noted API sometimes returns bare '757' instead of 752/753.
                  // 757-200 is far more common than -300; default to that. Specific "757-200"
                  // and "757-300" full strings are matched by regex below and override this.
-                 '757':'752',
+                 // '75W' is the 757-200 winglet code (Delta's 757s carry it) — no
+                 // aircraft/**/75W.png livery exists, so map it to 752 like the others.
+                 '757':'752', '75W':'752', '75T':'752',
                  // A350 family: 'A35K' is the ICAO code for the A350-1000 (e.g. B-LXA);
                  // bare '350'/'A35' (feed shorthand or upstream truncation) default to the
                  // -900 image — there is no aircraft/A35.png or 350.png, only 359/351.
@@ -14027,7 +14029,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22271';
+var FIDS_BUILD_TAG = 'v22272';
 (function(){
   try {
     function _addTag(){
