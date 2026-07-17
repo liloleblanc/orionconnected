@@ -13897,7 +13897,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22262';
+var FIDS_BUILD_TAG = 'v22263';
 (function(){
   try {
     function _addTag(){
@@ -19718,11 +19718,13 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 // initGateMapLive re-seeds it to the true position — a gentle correction, not
 // a jump. It ONLY nudges the marker + the two route arcs; it never re-inits,
 // re-centres, or re-renders the map, so it can't reintroduce the map thrash.
-var _gateGlide = { timer: null };
+var _gateGlide = { timer: null, raf: null };
 
 function _stopGateMapGlide() {
   try { if (_gateGlide.timer) clearInterval(_gateGlide.timer); } catch (e) {}
+  try { if (_gateGlide.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(_gateGlide.raf); } catch (e) {}
   _gateGlide.timer = null;
+  _gateGlide.raf = null;
 }
 
 // Great-circle path org→dst as plain [lat,lng] points (antimeridian-normalised),
@@ -19771,43 +19773,69 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     if (dsq < bestDsq) { bestDsq = dsq; best = i; }
   }
   var p = best / (n - 1);
-  var lastTs = Date.now();
-  function bearingAt(idx) {
-    var i2 = Math.min(idx + 1, n - 1), i1 = Math.max(0, i2 - 1);
-    var A = route[i1], B = route[i2];
+  var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
+  var lastTs = _nowFn();
+  var lastArcIdx = -1;
+  function bearingBetween(A, B) {
     var dLng = (B[1] - A[1]) * Math.PI / 180;
     var lat1 = A[0] * Math.PI / 180, lat2 = B[0] * Math.PI / 180;
     var y = Math.sin(dLng) * Math.cos(lat2);
     var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
     return Math.atan2(y, x) * 180 / Math.PI;
   }
-  _gateGlide.timer = setInterval(function () {
+  // Continuous animation-frame glide: the plane advances smoothly EVERY frame,
+  // interpolating BETWEEN route vertices (no 1-second stepping / vertex snap),
+  // so it reads as a real gliding aircraft. When the next real ADS-B fix lands,
+  // initGateMapLive re-seeds this to the true spot — a gentle correction.
+  function frame() {
     try {
       if (!marker._map) { _stopGateMapGlide(); return; }   // map/marker torn down
-      var now = Date.now();
-      var dtH = (now - lastTs) / 3600000;
+      var now = _nowFn();
+      var dtMs = now - lastTs;
       lastTs = now;
+      // Clamp dt so a backgrounded tab (rAF paused) doesn't teleport the plane
+      // on return — cap each step at 2s of travel.
+      if (dtMs > 2000) dtMs = 2000;
+      if (dtMs < 0) dtMs = 0;
+      var dtH = dtMs / 3600000;
       // The MOTION model adjusts its ASSUMED speed by flight phase so the plane
       // eases along a realistic profile — accelerating off the origin and
       // bleeding speed down the glideslope into the destination instead of
-      // sailing in at cruise (Nick: 'it should read what we get, don't change
-      // that — it may just need to adjust speed/altitude for glideslope'). The
-      // Ground Speed / Altitude NUMBERS are untouched: they stay the real feed.
+      // sailing in at cruise. The Ground Speed / Altitude NUMBERS are untouched:
+      // they stay the real feed.
       var factor = 1;
       if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
       else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
       var effSpeed = speedKts * Math.max(0.2, factor);
       p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
-      var idx = Math.min(n - 1, Math.max(0, Math.floor(p * (n - 1))));
-      marker.setLatLng(route[idx]);
+      // Fractional position along the polyline → smooth sub-vertex motion.
+      var fi = p * (n - 1);
+      var i0 = Math.min(n - 2, Math.max(0, Math.floor(fi)));
+      var i1 = i0 + 1;
+      var frac = fi - i0;
+      var A = route[i0], B = route[i1];
+      var lat = A[0] + (B[0] - A[0]) * frac;
+      var lng = A[1] + (B[1] - A[1]) * frac;
+      marker.setLatLng([lat, lng]);
       try {
         var div = (marker._icon && marker._icon.querySelector) ? marker._icon.querySelector('div') : null;
-        if (div) div.style.transform = 'rotate(' + bearingAt(idx) + 'deg)';
+        if (div) div.style.transform = 'rotate(' + bearingBetween(A, B) + 'deg)';
       } catch (er) {}
-      try { if (a1 && a1.setLatLngs) a1.setLatLngs(route.slice(0, idx + 1)); } catch (er) {}
-      try { if (a2 && a2.setLatLngs) a2.setLatLngs(route.slice(idx)); } catch (er) {}
+      // Redraw the solid-behind / dashed-ahead split only when we cross a vertex
+      // (cheap) — the marker itself glides every frame.
+      if (i0 !== lastArcIdx) {
+        lastArcIdx = i0;
+        try { if (a1 && a1.setLatLngs) a1.setLatLngs(route.slice(0, i1)); } catch (er) {}
+        try { if (a2 && a2.setLatLngs) a2.setLatLngs(route.slice(i0)); } catch (er) {}
+      }
+      if (typeof requestAnimationFrame === 'function') _gateGlide.raf = requestAnimationFrame(frame);
     } catch (e) { _stopGateMapGlide(); }
-  }, 1000);
+  }
+  if (typeof requestAnimationFrame === 'function') {
+    _gateGlide.raf = requestAnimationFrame(frame);
+  } else {
+    _gateGlide.timer = setInterval(frame, 250);  // fallback for no-rAF environments
+  }
 }
 // ──────────────────────────────────────────────────────────────────────
 // CINEMATIC MAP CAMERA  (tracks aircraft by REGISTRATION)
@@ -19928,20 +19956,15 @@ function _gateMapTick() {
     _gateMapCamera.nextFlybackAt = now + 60000; // first flyback ~60s in
   }
 
-  // Cruise flyback timing — only when actively cruising
-  var inCruise = (phase === 'airborne' && prog >= 0.25 && prog <= 0.75);
+  // Flyback REMOVED (Nick: 'plane totally disappears comes back'). The old
+  // every-60s whole-route zoom-out hid the live plane for 10s each minute —
+  // reading as the aircraft vanishing. The plane now stays on screen the
+  // whole time, gliding continuously between real fixes.
   var flybackActive = false;
-  if (inCruise) {
-    if (now >= _gateMapCamera.nextFlybackAt && now > _gateMapCamera.flybackUntil) {
-      _gateMapCamera.flybackUntil = now + 10000;          // 10s flyback
-      _gateMapCamera.nextFlybackAt = now + 60000;          // next in 60s
-    }
-    flybackActive = (now < _gateMapCamera.flybackUntil);
-  }
 
-  // Build a stable key — only rebuild if a phase boundary crosses or flyback toggles
+  // Build a stable key — only rebuild if a phase boundary crosses
   var progBucket = (prog < 0) ? 'pre' : Math.round(prog * 50);
-  var progKey = phase + '|' + progBucket + (flybackActive ? '|fb' : '');
+  var progKey = phase + '|' + progBucket;
   if (progKey === _gateMapCamera.lastProgKey && !subjectChanged) return;
   _gateMapCamera.lastProgKey = progKey;
 
