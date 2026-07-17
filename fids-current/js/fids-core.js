@@ -2414,7 +2414,7 @@ const AIRLINE_BRAND = {
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
   'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
-  'UA': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#1414D2', name:'United' },
+  'UA': { bg1:'#0c39ed', bg2:'#051966', bg3:'#2a08b5', accent:'#3960fb', name:'United' },
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
   'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#7AFF94', name:'Flair' },
@@ -3833,7 +3833,7 @@ function wwayUrl(code, w, h) {
 
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
-  'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
+  'DL':'#003366','AA':'#0078D2','UA':'#3960fb','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
@@ -7922,7 +7922,7 @@ function uxgGateHtml(ctx) {
     // Hawaiian — WHITE banner / plumeria purple / cream body (white fuselage with silver lei)
     'HA': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#582C83', body: '#FBF7F2', bodyText: '#523090' },
     // United — black / United Blue / Runway Gray (matching the actual livery)
-    'UA': { r1: '#002244', r1Text: '#FFFFFF', r2: '#003399', body: '#EAEDF2', bodyText: '#002244' },
+    'UA': { r1: '#051966', r1Text: '#FFFFFF', r2: '#0c39ed', body: '#EAEDF2', bodyText: '#051966' },
     // WestJet — WHITE banner / teal swoosh / white body (matches their white fuselage)
     'WS': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
@@ -14037,7 +14037,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22276';
+var FIDS_BUILD_TAG = 'v22277';
 (function(){
   try {
     function _addTag(){
