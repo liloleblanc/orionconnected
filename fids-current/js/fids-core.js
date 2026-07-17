@@ -7895,8 +7895,12 @@ function uxgGateHtml(ctx) {
       else if (_embT) _bannerEmblemSrc = '/logos/airline-tiles/' + _embT + '.svg';
     } catch (e) {}
   }
+  // Per-carrier emblem size — United's colour globe is shown 2x (Nick: 'the
+  // emblem needs to be twice the size'); the ~130px banner band fits it.
+  var _EMBLEM_SIZE = { 'UA': 128 };
+  var _embPx = _EMBLEM_SIZE[_bannerBrandCode] || _EMBLEM_SIZE[airlineCode] || 64;
   var _bannerEmblemHtml = _bannerEmblemSrc
-    ? '<img class="g8-r1-emblem" src="' + _bannerEmblemSrc + '" alt="" style="width:64px;height:64px;min-width:64px;border-radius:12px;object-fit:contain;flex:0 0 auto;display:block;" onerror="this.remove()">'
+    ? '<img class="g8-r1-emblem" src="' + _bannerEmblemSrc + '" alt="" style="width:' + _embPx + 'px;height:' + _embPx + 'px;min-width:' + _embPx + 'px;border-radius:12px;object-fit:contain;flex:0 0 auto;display:block;" onerror="this.remove()">'
     : '';
   var r1LogoHtml = '';
   if (_g8LogoCache[airlineCode] === 'text') {
@@ -13468,7 +13472,7 @@ const IATA_TO_EMBLEM = {
   'DL': '/logos/airlines/us-major/delta-widget.svg',           // Delta red/blue widget
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
   'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
-  'UA': '/logos/airlines/us-major/united-globe-clean.svg',     // United globe (white path — reads on the dark navy banner)
+  'UA': '/logos/airlines/us-major/united-globe-only.svg',      // United globe — full colour (white + United blue), per Nick
 };
 
 
@@ -14052,7 +14056,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22279';
+var FIDS_BUILD_TAG = 'v22280';
 (function(){
   try {
     function _addTag(){
