@@ -4657,6 +4657,10 @@ function aircraftCodeToIata(raw) {
   if (/767[\s-]*400/i.test(s)) return '764';
   if (/757[\s-]*200/i.test(s)) return '752';
   if (/757[\s-]*300/i.test(s)) return '753';
+  // Bare "Boeing 757" / "757" with NO variant (what the ADB reg lookup returns
+  // for Delta's 757s, e.g. N819DX) — default to the 757-200 image so it doesn't
+  // fall through to the generic A320 white plane (Nick).
+  if (/\b757\b/.test(s)) return '752';
 
   // ── 747 ──
   if (/747[\s-]*400/i.test(s)) return '744';
@@ -14029,7 +14033,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22272';
+var FIDS_BUILD_TAG = 'v22273';
 (function(){
   try {
     function _addTag(){
