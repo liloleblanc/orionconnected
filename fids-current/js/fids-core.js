@@ -8059,7 +8059,17 @@ function uxgGateHtml(ctx) {
       var s = String(h || '');
       var r = s.indexOf('g8-r2-revised');
       if (r !== -1) { var g = s.indexOf('>', r), l = (g !== -1) ? s.indexOf('<', g + 1) : -1; if (g !== -1 && l !== -1) return s.slice(g + 1, l).trim(); }
-      return s.replace(/<[^>]+>/g, '').trim();
+      // Strip tags by a CHARACTER SCAN (depth counter), NOT a regex — a single
+      // regex pass is defeatable by malformed tags (CodeQL js/incomplete-multi-
+      // character-sanitization). Same safe approach as _dStrip above.
+      var out = '', depth = 0;
+      for (var i = 0; i < s.length; i++) {
+        var c = s.charAt(i);
+        if (c === '<') depth++;
+        else if (c === '>') { if (depth > 0) depth--; }
+        else if (depth === 0) out += c;
+      }
+      return out.trim();
     }
     var _ssBc = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
     window._gateRailInfo = {
@@ -14083,7 +14093,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22286';
+var FIDS_BUILD_TAG = 'v22287';
 (function(){
   try {
     function _addTag(){
