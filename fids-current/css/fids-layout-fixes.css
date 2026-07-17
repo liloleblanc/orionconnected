@@ -1779,6 +1779,47 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   object-fit: contain !important; display: block !important;
 }
 
+/* ── The small "Your Aircraft" panel, ENLARGED on the big takeover ──────────
+   The Speed/Altitude box and the model|reg line are CLONED from the live
+   right-column panel (see _renderBigCraft). Those clones carry the panel's
+   .v2-rc-* classes but sit OUTSIDE .gad-map-col-v2, so the panel's own CSS
+   (which is scoped to that column) doesn't reach them — restyle them here at
+   big-takeover scale so the two surfaces read identically. */
+.bigcraft-side > * { z-index: 2 !important; }
+.bigcraft-telem, .bigcraft-actype { flex: 0 0 auto !important; position: relative !important; z-index: 2 !important; }
+/* Speed/Altitude — a solid dark box at the TOP of the side (in the panel it's
+   absolutely pinned to the map bottom; here it's a normal stacked block). */
+.bigcraft-side .v2-rc-mapstats {
+  position: relative !important; inset: auto !important;
+  display: flex !important; gap: clamp(8px,1vw,18px) !important;
+  padding: clamp(8px,1.2vh,16px) clamp(12px,1vw,20px) !important;
+  background: rgba(15,34,56,0.92) !important; border-radius: 12px !important;
+  box-shadow: 0 4px 14px rgba(5,10,20,0.35) !important;
+}
+.bigcraft-side .v2-rc-mstat { flex: 1 1 0 !important; text-align: center !important; }
+.bigcraft-side .v2-rc-mstat:first-child { text-align: left !important; }
+.bigcraft-side .v2-rc-mstat:last-child { text-align: right !important; }
+.bigcraft-side .v2-rc-ms-lbl  { font-size: clamp(14px,1.9vh,26px) !important; font-weight: 700 !important; color: #fff !important; line-height: 1.05 !important; }
+.bigcraft-side .v2-rc-ms-lbl2 { font-size: clamp(11px,1.3vh,17px) !important; font-weight: 600 !important; color: rgba(255,255,255,0.82) !important; }
+.bigcraft-side .v2-rc-ms-val  { font-size: clamp(24px,3.4vh,50px) !important; font-weight: 900 !important; color: #fff !important; line-height: 1.0 !important; }
+.bigcraft-side .v2-rc-ms-unit { font-size: 0.6em !important; font-weight: 700 !important; color: rgba(255,255,255,0.82) !important; }
+/* Aircraft model | reg line UNDER the plane image. */
+.bigcraft-actype { text-align: center !important; padding-top: clamp(4px,0.8vh,10px) !important; }
+.bigcraft-side .v2-rc-acb {
+  display: flex !important; flex-direction: column !important; align-items: center !important;
+  gap: clamp(4px,0.8vh,10px) !important; width: 100% !important;
+}
+.bigcraft-side .v2-rc-acb-actype,
+.bigcraft-side .v2-rc-actype-val {
+  font-size: clamp(22px,3.2vh,46px) !important; font-weight: 900 !important; color: #0f2238 !important;
+  line-height: 1.05 !important; text-align: center !important; white-space: normal !important;
+}
+.bigcraft-side .v2-rc-acb-opby { display: flex !important; align-items: center !important; justify-content: center !important; gap: clamp(8px,1vw,16px) !important; }
+.bigcraft-side .v2-rc-acb-opby-lbl { font-size: clamp(13px,1.8vh,20px) !important; font-weight: 700 !important; color: #14181E !important; white-space: nowrap !important; }
+.bigcraft-side .v2-rc-acb-opby-logo img,
+.bigcraft-side .v2-rc-opby-logo { height: clamp(26px,4.5vh,52px) !important; width: auto !important; max-width: 100% !important; object-fit: contain !important; }
+.bigcraft-side .v2-rc-reg-expected { font-size: 0.6em !important; font-weight: 700 !important; opacity: 0.72 !important; white-space: nowrap !important; }
+
 /* ── Takeover mechanics: the panel GROWS out of the right column and covers
    center + right; the right column hides beneath so nothing shows twice. ── */
 .bigcraft-overlay {

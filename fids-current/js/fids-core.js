@@ -14033,7 +14033,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22274';
+var FIDS_BUILD_TAG = 'v22275';
 (function(){
   try {
     function _addTag(){
@@ -26431,6 +26431,52 @@ function _renderBigCraft(el, ctx) {
   // center to dark and read as an abrupt CUT (Nick: 'abruptly cuts out …
   // terrible transition'). Keep the previous ad visible UNDER the growing
   // overlay; clear it only once the opaque overlay has fully covered it.
+  // THE SMALL PANEL, ENLARGED (Nick: 'I took the small panel, copied + pasted
+  // it onto the big one'). Clone the live "Your Aircraft" panel blocks — the
+  // dark Speed/Altitude box, the Flight/From/Arrival/Status rows (with their
+  // already-computed revised times + status colour), and the model | reg line
+  // — so the big takeover is literally that panel and the two can never
+  // disagree. Strip ids so clones don't collide with the live panel's ids.
+  function _bcClone(sel) {
+    try {
+      var n = document.querySelector('.gad-map-col-v2 ' + sel);
+      if (!n) return '';
+      var c = n.cloneNode(true);
+      c.removeAttribute('id');
+      var kids = c.querySelectorAll('[id]');
+      for (var i = 0; i < kids.length; i++) kids[i].removeAttribute('id');
+      return c.outerHTML;
+    } catch (e) { return ''; }
+  }
+  var _bcTelem   = _bcClone('.v2-rc-mapstats');                 // Speed/Altitude box
+  var _bcFiTable = _bcClone('.v2-rc-shelf-fi .v2-rc-fi-table'); // Flight/From/Arrival/Status
+  var _bcType    = _bcClone('.v2-rc-shelf-type .v2-rc-acb');    // model | reg | operated-by
+  // Hand-built fallbacks — used only when the small panel isn't in the DOM yet
+  // (a cold first slide), so the takeover never comes up blank.
+  var _bcTelemFallback = (ctx.pos && (ctx.speedKph || ctx.altFt))
+    ? '<div class="v2-rc-mapstats">'
+      + '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div><div class="v2-rc-ms-val">'
+      +   (ctx.speedKph ? '<span data-gtelem="spd-kph">' + ctx.speedKph.toLocaleString() + '</span>' : '—')
+      +   ' <span class="v2-rc-ms-unit">kph</span></div><div class="v2-rc-ms-lbl2">Vitesse</div></div>'
+      + '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div><div class="v2-rc-ms-val">'
+      +   (ctx.altFt ? '<span data-gtelem="alt-ft">' + ctx.altFt.toLocaleString() + '</span>' : '—')
+      +   ' <span class="v2-rc-ms-unit">ft</span></div><div class="v2-rc-ms-lbl2">Altitude</div></div>'
+      + '</div>'
+    : '';
+  var _bcFiFallback =
+        '<div class="v2-rc-fi-table">'
+      +   row('Flight', 'Vol', ctx.fl || '—')
+      +   (ctx.out
+            ? row('To', 'Vers', (ctx.dCity || ctx.dc || '—') + (ctx.dc ? ' (' + ctx.dc + ')' : ''))
+            : row('From', 'De', (ctx.oCity || ctx.oc || '—') + (ctx.oc ? ' (' + ctx.oc + ')' : '')))
+      +   (ctx.etaStr ? row('Arrives in', 'Arrive dans', ctx.etaStr) : '')
+      +   row('Status', 'Statut', stShow, 'v2-rc-status-' + stCls)
+      + '</div>';
+  var _bcTypeFallback = (ctx.acType || reg)
+    ? '<div class="v2-rc-acb"><div class="v2-rc-acb-actype v2-rc-actype-val">' + (ctx.acType || '—') + reg + '</div></div>'
+    : '';
+  var _bcTelemHtml = _bcTelem || _bcTelemFallback;
+  var _bcTypeHtml  = _bcType || _bcTypeFallback;
   _bcOv.innerHTML =
       '<div class="bigcraft-wrap">'
     +   '<div class="bigcraft-mapcol">'
@@ -26439,23 +26485,10 @@ function _renderBigCraft(el, ctx) {
     +   '</div>'
     +   '<div class="bigcraft-side">'
     +     '<div class="bigcraft-title">Your Aircraft <span class="v2-rc-fi-sep">|</span> Votre Avion</div>'
-    +     '<div class="v2-rc-fi-table bigcraft-table">'
-    +       row('Flight', 'Vol', ctx.fl || '—')
-    +       (ctx.out
-              ? row('To', 'Vers', (ctx.dCity || ctx.dc || '—') + (ctx.dc ? ' (' + ctx.dc + ')' : ''))
-              : row('From', 'De', (ctx.oCity || ctx.oc || '—') + (ctx.oc ? ' (' + ctx.oc + ')' : '')))
-    +       row('Status', 'Statut', stShow, 'v2-rc-status-' + stCls)
-    // Live telemetry — same numbers as the mini map's Speed/Altitude bar
-    // (Nick: 'All this and more needs to be on the big map'). Honest by
-    // construction: rows only exist with a REAL live fix (ctx.pos), never
-    // at time-progress/estimated.
-    +       ((ctx.pos && ctx.speedKph) ? row('Speed', 'Vitesse', '<span data-gtelem="spd-kph">' + ctx.speedKph.toLocaleString() + '</span> kph') : '')
-    +       ((ctx.pos && ctx.altFt) ? row('Altitude', 'Altitude', '<span data-gtelem="alt-ft">' + ctx.altFt.toLocaleString() + '</span> ft <span class="v2-rc-fi-sep">|</span> pieds') : '')
-    +       (ctx.etaStr ? row('Arrives in', 'Arrive dans', ctx.etaStr) : '')
-    +       (ctx.destWx ? row('Weather', 'Météo', ctx.destWx) : '')
-    +       ((ctx.acType || reg) ? row('Aircraft', 'Avion', (ctx.acType || '—') + reg) : '')
-    +     '</div>'
+    +     (_bcTelemHtml ? '<div class="bigcraft-telem">' + _bcTelemHtml + '</div>' : '')
+    +     '<div class="bigcraft-table">' + (_bcFiTable || _bcFiFallback) + '</div>'
     +     (acImg ? '<div class="bigcraft-plane"><img src="' + acImg + '" alt=""></div>' : '')
+    +     (_bcTypeHtml ? '<div class="bigcraft-actype">' + _bcTypeHtml + '</div>' : '')
     +   '</div>'
     + '</div>';
   _bcWrapEl.appendChild(_bcOv);
