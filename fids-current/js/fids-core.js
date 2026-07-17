@@ -2414,6 +2414,9 @@ const AIRLINE_BRAND = {
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
   'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
+  // United official palette (Nick, Jul 2026):
+  //   #6583fd (101,131,253) · #3960fb (57,96,251) · #0c39ed (12,57,237)
+  //   #2a08b5 (42,8,181)     · #051966 (5,25,102 — deep navy)
   'UA': { bg1:'#0c39ed', bg2:'#051966', bg3:'#2a08b5', accent:'#3960fb', name:'United' },
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
@@ -7201,7 +7204,9 @@ function uxgGateHtml(ctx) {
   var starHtml = '';
   // These carriers' banner wordmark IS the official combined
   // airline+alliance lockup — a separate mark would show the alliance twice.
-  var _COMBINED_ALLIANCE_LOCKUP = { 'UA': 1, 'KL': 1 };
+  // (UA removed Jul 2026 — Nick wants United's globe+wordmark alone with the
+  // Star Alliance mark shown SEPARATELY, like every other Star carrier.)
+  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1 };
   var _allianceKey = ALLIANCE_MAP[airlineCode];
   if (_allianceKey && !_COMBINED_ALLIANCE_LOCKUP[airlineCode]) {
     var _allianceCls = 'g8-r1-star g8-r1-alliance-' + _allianceKey;
@@ -7687,7 +7692,10 @@ function uxgGateHtml(ctx) {
     // Official COMBINED airline+alliance lockups (Nick: 'there are multiple
     // logos for alliance partners — use them'). Carriers with a combined
     // lockup skip the separate alliance mark (see _COMBINED_ALLIANCE_LOCKUP).
-    'UA': '/logos/airlines/us-major/United_Airlines_Logo_2019_full_Star_Alliance-monochrome-white.svg',
+    // UA override REMOVED Jul 2026 (Nick: 'united globe only + white wordmark
+    // alone, Star Alliance separate') — United now flows through the
+    // emblem+wordmark path (globe-clean beside the white UNITED wordmark) and
+    // gets the Star Alliance mark as its own separate logo.
     'KL': '/logos/airlines/european/KLM_Logo_2011_SkyTeam-monochrome-white.svg',
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
     'WG': '/logos/airlines/canadian/sunwing/Sunwing-Logo-White.png',             // Sunwing official white (Dec 2025 pack) for the dark banner
@@ -13453,7 +13461,7 @@ const IATA_TO_EMBLEM = {
   'DL': '/logos/airlines/us-major/delta-widget.svg',           // Delta red/blue widget
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
   'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
-  'UA': '/logos/airlines/us-major/united-globe-only.svg',      // United globe
+  'UA': '/logos/airlines/us-major/united-globe-clean.svg',     // United globe (white path — reads on the dark navy banner)
 };
 
 
@@ -14037,7 +14045,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22277';
+var FIDS_BUILD_TAG = 'v22278';
 (function(){
   try {
     function _addTag(){
