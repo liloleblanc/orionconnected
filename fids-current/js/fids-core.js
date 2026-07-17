@@ -13897,7 +13897,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22257';
+var FIDS_BUILD_TAG = 'v22258';
 (function(){
   try {
     function _addTag(){
@@ -15918,9 +15918,15 @@ async function adbFetch(iata, direction) {
   // ── TPA: Tampa's own flight-status feed instead of AeroDataBox ──────
   if (iata === 'TPA') {
     const wantDep = direction === 'Departure';
-    const url = 'https://tampaairportwebprod.prod.acquia-sites.com/api/flight-status';
+    // Tampa's Acquia edge caches this endpoint hard, keyed on the `cache=`
+    // query token. Their own site rotates that token every visit so it always
+    // gets a fresh origin response; a fixed token replays a days-old snapshot
+    // (we saw the feed stuck ~9 days stale). Generate a novel token per fetch
+    // — a cache MISS forces Acquia to regenerate from live data.
+    const _cb = Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+    const url = 'https://tampaairportwebprod.prod.acquia-sites.com/api/flight-status?cache=' + _cb;
     try {
-      const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      const r = await fetch(url, { cache: 'no-store', headers: { 'Accept': 'application/json' } });
       if (r.ok) {
         const j = await r.json();
         const rows = Array.isArray(j && j.data) ? j.data : (Array.isArray(j) ? j : []);
