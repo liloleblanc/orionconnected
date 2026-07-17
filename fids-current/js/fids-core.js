@@ -14000,7 +14000,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22264';
+var FIDS_BUILD_TAG = 'v22265';
 (function(){
   try {
     function _addTag(){
@@ -19931,6 +19931,22 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         try { if (a1 && a1.setLatLngs) a1.setLatLngs(route.slice(0, i1)); } catch (er) {}
         try { if (a2 && a2.setLatLngs) a2.setLatLngs(route.slice(i0)); } catch (er) {}
       }
+      // FOLLOW THE PLANE — keep it in view. At a tight approach/departure zoom
+      // the plane otherwise glides straight off the little map window and
+      // 'disappears' (Nick), because the view stays centred on the last real
+      // fix from minutes ago. Re-centre (no animation, so no tile thrash) only
+      // once it drifts past ~38% from centre, so it still visibly moves across
+      // the map between recentres instead of being pinned dead-centre.
+      try {
+        if (map.getSize && map.latLngToContainerPoint && map.getZoom) {
+          var _sz = map.getSize();
+          var _pt = map.latLngToContainerPoint([lat, lng]);
+          if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.38 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.38) {
+            map.setView([lat, lng], map.getZoom(), { animate: false });
+            gateMap._fidsLastView = { lat: lat, lng: lng, zoom: map.getZoom() };
+          }
+        }
+      } catch (er) {}
       if (typeof requestAnimationFrame === 'function') _gateGlide.raf = requestAnimationFrame(frame);
     } catch (e) { _stopGateMapGlide(); }
   }
