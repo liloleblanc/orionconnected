@@ -14027,7 +14027,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22270';
+var FIDS_BUILD_TAG = 'v22271';
 (function(){
   try {
     function _addTag(){
@@ -26429,8 +26429,8 @@ function _renderBigCraft(el, ctx) {
     // (Nick: 'All this and more needs to be on the big map'). Honest by
     // construction: rows only exist with a REAL live fix (ctx.pos), never
     // at time-progress/estimated.
-    +       ((ctx.pos && ctx.speedKph) ? row('Speed', 'Vitesse', ctx.speedKph.toLocaleString() + ' kph') : '')
-    +       ((ctx.pos && ctx.altFt) ? row('Altitude', 'Altitude', ctx.altFt.toLocaleString() + ' ft <span class="v2-rc-fi-sep">|</span> pieds') : '')
+    +       ((ctx.pos && ctx.speedKph) ? row('Speed', 'Vitesse', '<span data-gtelem="spd-kph">' + ctx.speedKph.toLocaleString() + '</span> kph') : '')
+    +       ((ctx.pos && ctx.altFt) ? row('Altitude', 'Altitude', '<span data-gtelem="alt-ft">' + ctx.altFt.toLocaleString() + '</span> ft <span class="v2-rc-fi-sep">|</span> pieds') : '')
     +       (ctx.etaStr ? row('Arrives in', 'Arrive dans', ctx.etaStr) : '')
     +       (ctx.destWx ? row('Weather', 'Météo', ctx.destWx) : '')
     +       ((ctx.acType || reg) ? row('Aircraft', 'Avion', (ctx.acType || '—') + reg) : '')
