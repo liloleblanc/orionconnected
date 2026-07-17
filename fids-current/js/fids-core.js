@@ -13897,7 +13897,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22260';
+var FIDS_BUILD_TAG = 'v22261';
 (function(){
   try {
     function _addTag(){
@@ -15997,11 +15997,26 @@ async function adbFetch(iata, direction) {
     const urls = ['today', 'tomorrow'].map(d =>
       `https://www.torontopearson.com/api/flightsapidata/getflightlist?type=${seg}&day=${d}&useScheduleTimeOnly=false`);
     try {
-      const lists = await Promise.all(urls.map(async (u) => {
+      const lists = await Promise.all(urls.map(async (u, i) => {
+        const _day = i === 0 ? 'today' : 'tomorrow';
         try {
           const r = await fetch(u, { headers: { 'Accept': 'application/json' } });
-          if (r.ok) { const j = await r.json(); return Array.isArray(j && j.list) ? j.list : []; }
-        } catch (e) {}
+          const _ct = r.headers.get('content-type') || '';
+          if (r.ok) {
+            const txt = await r.text();
+            let j = null;
+            try { j = JSON.parse(txt); } catch (pe) {
+              console.warn(`[YYZ DIAG] ${_day}: HTTP ${r.status} ct=${_ct} but body not JSON (len=${txt.length}) head="${txt.slice(0, 120).replace(/\s+/g, ' ')}"`);
+              return [];
+            }
+            const n = Array.isArray(j && j.list) ? j.list.length : -1;
+            console.log(`[YYZ DIAG] ${_day}: HTTP ${r.status} ct=${_ct} list=${n} keys=${j ? Object.keys(j).join(',') : 'n/a'}`);
+            return Array.isArray(j && j.list) ? j.list : [];
+          }
+          console.warn(`[YYZ DIAG] ${_day}: HTTP ${r.status} ct=${_ct} (not ok)`);
+        } catch (e) {
+          console.warn(`[YYZ DIAG] ${_day}: fetch threw — ${e && e.name}: ${e && e.message}`);
+        }
         return [];
       }));
       const rows = lists.flat();
