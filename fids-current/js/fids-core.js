@@ -1,5 +1,5 @@
 // ── FIDS BUILD ID — check this in DevTools console to confirm which version is live
-const FIDS_BUILD = 'v218.84';
+const FIDS_BUILD = 'v218.85';
 console.log('%c[FIDS BUILD ' + FIDS_BUILD + '] loaded ' + new Date().toISOString(), 'background:#0a0; color:#fff; font-weight:bold; padding:3px 8px; font-size:13px;');
 
 // ── FEATURE FLAGS ────────────────────────────────────────────────────────
@@ -14058,7 +14058,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22281';
+var FIDS_BUILD_TAG = 'v22282';
 (function(){
   try {
     function _addTag(){
