@@ -2183,7 +2183,99 @@ function getDedicatedRenderKey() {
   return JSON.stringify({screenType:'main'});
 }
 
+// ── LIVE TELEMETRY ANIMATOR ────────────────────────────────────────────────
+// The inbound's real speed/altitude only refresh every few minutes. Nick wants
+// them to read live between fixes. This holds a modeled speed (kt) / altitude
+// (ft) that drifts by flight phase — steady w/ a gentle shimmer at cruise, and
+// gliding down toward touchdown on descent — eases toward each new REAL reading,
+// and writes the numbers into the on-screen telemetry spans in place (no full
+// re-render). The REAL feed is still the source of truth: on every new fix the
+// model re-anchors to it, so the displayed numbers can never wander far.
+window._gateTelemAnim = window._gateTelemAnim || {
+  spd: null, alt: null,            // displayed (modeled) values
+  realSpd: null, realAlt: null,    // last real anchor
+  realTs: 0, realSecToArr: null,   // when the anchor landed + its time-to-arrival
+  shimmerPh: 0
+};
+
+// Re-anchor to a fresh real reading. Called each render with the resolved
+// _liveSpd/_liveAlt; no-ops when the values haven't changed (so the descent
+// time-base isn't reset every re-render), and clears everything when the plane
+// isn't airborne.
+function _gateTelemSetReal(spdKt, altFt) {
+  var T = window._gateTelemAnim;
+  var sp = (typeof spdKt === 'number') ? spdKt : null;
+  var al = (typeof altFt === 'number') ? altFt : null;
+  if (sp === null && al === null) {
+    T.spd = null; T.alt = null; T.realSpd = null; T.realAlt = null; T.realSecToArr = null;
+    return;
+  }
+  if (sp === T.realSpd && al === T.realAlt) return;   // unchanged fix → keep drifting
+  var now = Date.now();
+  T.realSpd = sp; T.realAlt = al; T.realTs = now;
+  if (T.spd === null && sp !== null) T.spd = sp;
+  if (T.alt === null && al !== null) T.alt = al;
+  var inb = window._gateInbound;
+  var arrTs = inb && (inb._revTs || inb._sortTs);
+  T.realSecToArr = (arrTs && arrTs > now) ? (arrTs - now) / 1000 : null;
+}
+
+// Modeled target for right now, from the last real anchor + elapsed time.
+function _gateTelemModel() {
+  var T = window._gateTelemAnim;
+  if (T.realAlt === null && T.realSpd === null) return null;
+  var now = Date.now();
+  var inb = window._gateInbound;
+  var arrTs = inb && (inb._revTs || inb._sortTs);
+  var secToArr = (arrTs && arrTs > now) ? (arrTs - now) / 1000 : null;
+  var tgtAlt = T.realAlt, tgtSpd = T.realSpd;
+  // DESCENT — within ~20 min of arrival: bleed altitude toward 0 at touchdown
+  // and speed toward a ~140 kt approach, in step with the clock. Scaled off the
+  // anchor's altitude by (time remaining / time remaining when anchored) so it
+  // reads as a straight, believable glide down.
+  if (secToArr !== null && secToArr < 1200 && T.realAlt !== null && T.realSecToArr) {
+    var frac = Math.max(0, Math.min(1, secToArr / T.realSecToArr));
+    tgtAlt = T.realAlt * frac;
+    if (T.realSpd !== null) tgtSpd = 140 + (T.realSpd - 140) * frac;
+  } else if (T.realSpd !== null) {
+    // CRUISE/CLIMB — hold altitude; let ground speed wander a few kt like real
+    // ADS-B so the panel reads live instead of frozen.
+    T.shimmerPh += 0.03;
+    tgtSpd = T.realSpd + Math.sin(T.shimmerPh) * 4;
+  }
+  return { spd: tgtSpd, alt: tgtAlt };
+}
+
+// Write the current modeled numbers into every on-screen telemetry span.
+function _writeGateTelemDom() {
+  var T = window._gateTelemAnim;
+  var els = document.querySelectorAll('[data-gtelem]');
+  if (!els || !els.length) return;
+  var spdKt = (T.spd !== null) ? Math.max(0, Math.round(T.spd)) : null;
+  var altFt = (T.alt !== null) ? Math.max(0, Math.round(T.alt)) : null;
+  var spdKph = (spdKt !== null) ? Math.round(spdKt * 1.852) : null;
+  for (var i = 0; i < els.length; i++) {
+    var kind = els[i].getAttribute('data-gtelem'), v = null;
+    if (kind === 'spd-kt') v = spdKt;
+    else if (kind === 'spd-kph') v = spdKph;
+    else if (kind === 'alt-ft') v = altFt;
+    if (v !== null) els[i].textContent = v.toLocaleString();
+  }
+}
+
+// One animation step (called every second from updateDedicatedTimeOnly). Eases
+// the displayed values toward the modeled target so new real readings glide in.
+function _animateGateTelem() {
+  var T = window._gateTelemAnim;
+  var m = _gateTelemModel();
+  if (!m) return;
+  if (m.spd !== null && m.spd !== undefined) T.spd = (T.spd === null) ? m.spd : T.spd + (m.spd - T.spd) * 0.18;
+  if (m.alt !== null && m.alt !== undefined) T.alt = (T.alt === null) ? m.alt : T.alt + (m.alt - T.alt) * 0.18;
+  _writeGateTelemDom();
+}
+
 function updateDedicatedTimeOnly() {
+  try { _animateGateTelem(); } catch (e) {}   // glide the live speed/altitude
   if (screenType === 'main') return;
   const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
@@ -5835,6 +5927,14 @@ function _buildV2MapCol(ctx, vars) {
       // Speed and altitude appear together or not at all — never one without a
       // genuine airborne altitude (that produced "141 kph at 0 ft").
       if (_liveAlt === null || _liveAlt <= 0) { _liveAlt = null; _liveSpd = null; }
+      // Feed the real reading to the live-telemetry animator and DISPLAY its
+      // current modeled value, so numbers glide between fixes and a full
+      // re-render doesn't snap them back to the last raw fix (see
+      // _gateTelemSetReal / _animateGateTelem).
+      try { _gateTelemSetReal(_liveSpd, _liveAlt); } catch (e) {}
+      var _tAnim = window._gateTelemAnim || {};
+      var _liveSpdD = (_liveSpd !== null && _tAnim.spd != null) ? Math.max(0, Math.round(_tAnim.spd)) : _liveSpd;
+      var _liveAltD = (_liveAlt !== null && _tAnim.alt != null) ? Math.max(0, Math.round(_tAnim.alt)) : _liveAlt;
       var _tz = vars.tz || 'UTC';
       var _destIata = (vars.iata || '').toString().toUpperCase();
       var _origIata = (_ib._locIata || '').toString().toUpperCase();
@@ -5925,8 +6025,8 @@ function _buildV2MapCol(ctx, vars) {
       var _telem = '';
       if (_liveSpd !== null || _liveAlt !== null) {
         var _telemBits = [];
-        if (_showSpd && _liveSpd !== null) _telemBits.push('<span class="v2-rc-telem-k">SPD</span> <span class="v2-rc-telem-v">' + _liveSpd + '</span>');
-        if (_showAlt && _liveAlt !== null) _telemBits.push('<span class="v2-rc-telem-k">ALT</span> <span class="v2-rc-telem-v">' + _liveAlt.toLocaleString() + '</span>');
+        if (_showSpd && _liveSpd !== null) _telemBits.push('<span class="v2-rc-telem-k">SPD</span> <span class="v2-rc-telem-v" data-gtelem="spd-kt">' + _liveSpdD + '</span>');
+        if (_showAlt && _liveAlt !== null) _telemBits.push('<span class="v2-rc-telem-k">ALT</span> <span class="v2-rc-telem-v" data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>');
         if (_telemBits.length) _telem = '<div class="v2-rc-telem">' + _telemBits.join('<span class="v2-rc-telem-sep">·</span>') + '</div>';
       }
 
@@ -5941,11 +6041,11 @@ function _buildV2MapCol(ctx, vars) {
             '<div class="v2-rc-keystats">'
           +   '<div class="v2-rc-keystat">'
           +     '<div class="v2-rc-keystat-lbl">' + _spdLbl + '</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_liveSpd !== null ? (_liveSpd.toLocaleString() + ' kt') : '—') + '</div>'
+          +     '<div class="v2-rc-keystat-val">' + (_liveSpd !== null ? ('<span data-gtelem="spd-kt">' + _liveSpdD.toLocaleString() + '</span> kt') : '—') + '</div>'
           +   '</div>'
           +   '<div class="v2-rc-keystat">'
           +     '<div class="v2-rc-keystat-lbl">' + _altLbl + '</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_liveAlt !== null ? (_liveAlt.toLocaleString() + ' ft') : '—') + '</div>'
+          +     '<div class="v2-rc-keystat-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span> ft') : '—') + '</div>'
           +   '</div>'
           + '</div>';
 
@@ -5982,7 +6082,7 @@ function _buildV2MapCol(ctx, vars) {
       // REAL telemetry only. Speed/altitude come from live ADS-B (via the board
       // feed or the by-number fetch). When there is no live fix, we show "—" —
       // we do NOT fabricate a value. No estimates.
-      var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpd * 1.852) : null;
+      var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpdD * 1.852) : null;
       var _altUnit = ({en:'ft',fr:'pieds',es:'pies',de:'ft',it:'piedi',pt:'pés',ja:'ft',zh:'英尺',ar:'قدم'})[_ibLang] || 'ft';
       var _spdUnit = ({en:'kph',fr:'kph',es:'km/h',de:'kph',it:'kph',pt:'kph',ja:'kph',zh:'kph',ar:'kph'})[_ibLang] || 'kph';
       var _ICO_SPD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4.5-5.5"/></svg>';
@@ -6103,10 +6203,10 @@ function _buildV2MapCol(ctx, vars) {
         _telemBar =
             '<div class="v2-rc-mapstats">'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div>'
-          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? _spdKph.toLocaleString() : '—') + ' <span class="v2-rc-ms-unit">' + _spdUnit + '</span></div>'
+          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + _spdKph.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">' + _spdUnit + '</span></div>'
           +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Vitesse',es:'Velocidad'}[_lang2] || 'Vitesse') + '</div></div>'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div>'
-          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? _liveAlt.toLocaleString() : '—') + ' <span class="v2-rc-ms-unit">' + _altUnit + '</span></div>'
+          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">' + _altUnit + '</span></div>'
           +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Altitude',es:'Altitud'}[_lang2] || 'Altitude') + '</div></div>'
           + '</div>';
       }
@@ -9176,6 +9276,9 @@ const gView = document.getElementById('gateView');
         window._gateAircraftImg = null;
         window._gateInbound = null;
         window._gateInboundLivePos = null;
+        // New flight → wipe the live-telemetry animator so the previous plane's
+        // gliding speed/altitude don't bleed into the new one.
+        window._gateTelemAnim = { spd:null, alt:null, realSpd:null, realAlt:null, realTs:0, realSecToArr:null, shimmerPh:0 };
         window._gateLastFlightKey = currentFlight.flight;
         // The ad carousel is preserved across gate rebuilds (videos must not
         // restart) — but a mounted flight-map slide belongs to the PREVIOUS
@@ -13897,7 +14000,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22263';
+var FIDS_BUILD_TAG = 'v22264';
 (function(){
   try {
     function _addTag(){
