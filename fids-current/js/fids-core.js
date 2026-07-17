@@ -7895,9 +7895,11 @@ function uxgGateHtml(ctx) {
       else if (_embT) _bannerEmblemSrc = '/logos/airline-tiles/' + _embT + '.svg';
     } catch (e) {}
   }
-  // Per-carrier emblem size — United's colour globe is shown 2x (Nick: 'the
-  // emblem needs to be twice the size'); the ~130px banner band fits it.
-  var _EMBLEM_SIZE = { 'UA': 128 };
+  // Per-carrier emblem size. United's colour globe is sized to the WORDMARK
+  // height (88px, the banner logo height) so it sits beside "UNITED" at the
+  // same scale as the official MileagePlus lockup — big, but never clipped by
+  // the band (Nick: 128px was cut off; match the wordmark like the ad).
+  var _EMBLEM_SIZE = { 'UA': 88 };
   var _embPx = _EMBLEM_SIZE[_bannerBrandCode] || _EMBLEM_SIZE[airlineCode] || 64;
   var _bannerEmblemHtml = _bannerEmblemSrc
     ? '<img class="g8-r1-emblem" src="' + _bannerEmblemSrc + '" alt="" style="width:' + _embPx + 'px;height:' + _embPx + 'px;min-width:' + _embPx + 'px;border-radius:12px;object-fit:contain;flex:0 0 auto;display:block;" onerror="this.remove()">'
@@ -14056,7 +14058,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22280';
+var FIDS_BUILD_TAG = 'v22281';
 (function(){
   try {
     function _addTag(){
