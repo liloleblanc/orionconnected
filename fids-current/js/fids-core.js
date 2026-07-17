@@ -14335,9 +14335,12 @@ function render() {
   // v2 banner: set body[data-fids-mode] so the plane icon flips down for
   // arrivals (CSS rotates the SVG 180deg when data-fids-mode="arr").
   document.body.dataset.fidsMode = mode;
-  // MCO gets a dedicated Terminal (A/B/C) column; every other airport keeps
-  // the existing compact layout with no Terminal column.
-  const _isMcoBoard = (((document.getElementById('apSel') || {}).value) || '').toUpperCase() === 'MCO';
+  // MCO and TPA get a dedicated airside/terminal column (MCO Terminals
+  // A/B/C, Tampa Airsides A/C/E/F); every other airport keeps the compact
+  // layout with no such column.
+  const _apUpBoard = (((document.getElementById('apSel') || {}).value) || '').toUpperCase();
+  const _isMcoBoard = _apUpBoard === 'MCO' || _apUpBoard === 'TPA';
+  const _airsideLabel = _apUpBoard === 'TPA' ? 'Airside' : 'Terminal';
   const _theadRow = document.querySelector('#fidsTable thead tr');
   if (_theadRow) {
     const _T = (k) => (typeof window.fidsT === 'function') ? window.fidsT(k, lang) : TL(k);
@@ -14346,7 +14349,7 @@ function render() {
       { cls: 'col-flight',   txt: _T('flight')   },
       { cls: 'col-wx',       txt: _T('weather')  },
       { cls: 'col-dest',     txt: _T('to')       },
-      ...(_isMcoBoard ? [{ cls: 'col-term', txt: 'Terminal' }] : []),
+      ...(_isMcoBoard ? [{ cls: 'col-term', txt: _airsideLabel }] : []),
       { cls: 'col-gate',     txt: _T('gate')     },
       { cls: 'col-time',     txt: _T('time')     },
       { cls: 'col-time-rev', txt: 'Revised'      },
@@ -14356,7 +14359,7 @@ function render() {
       { cls: 'col-airline',  txt: _T('airline')  },
       { cls: 'col-flight',   txt: _T('flight')   },
       { cls: 'col-dest',     txt: _T('from')     },
-      ...(_isMcoBoard ? [{ cls: 'col-term', txt: 'Terminal' }] : []),
+      ...(_isMcoBoard ? [{ cls: 'col-term', txt: _airsideLabel }] : []),
       { cls: 'col-gate',     txt: _T('carousel') },
       { cls: 'col-time',     txt: _T('time')     },
       { cls: 'col-time-rev', txt: 'Revised'      },
@@ -14725,11 +14728,12 @@ function render() {
       const _ge = _gh && _gh[f.flight];
       if (_ge && _ge.changedAt && (Date.now() - _ge.changedAt) < 15 * 60000 && _ge.previousGate) _gateChanged = true;
     } catch (e) {}
-    const _isMcoRow = ((((document.getElementById('apSel') || {}).value) || '').toUpperCase() === 'MCO');
+    const _apUpRow = (((document.getElementById('apSel') || {}).value) || '').toUpperCase();
+    const _isAirsideRow = _apUpRow === 'MCO' || _apUpRow === 'TPA';
     let _gateVal2 = (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—'));
-    // MCO: the Terminal column already shows A/B/C, so drop a redundant
-    // leading terminal letter from the gate itself (C243 -> 243, C252A -> 252A).
-    if (_isMcoRow) _gateVal2 = String(_gateVal2).replace(/^[ABC](?=\d)/, '');
+    // MCO/TPA: the airside column already shows the concourse letter, so drop
+    // a redundant leading letter from the gate itself (C243 -> 243, E71 -> 71).
+    if (_isAirsideRow) _gateVal2 = String(_gateVal2).replace(/^[A-F](?=\d)/, '');
     const gateCellHtml = '<td class="td-gate">'
       + (_gateChanged ? '<span class="gate-changed-badge">' + _gateVal2 + '</span>' : _gateVal2)
       + '</td>';
@@ -14741,9 +14745,9 @@ function render() {
     var _arrBeltM = f._belt ? String(f._belt).match(/^(\w+)-(.+)$/) : null;
     var _arrBeltVal = _arrBeltM ? _arrBeltM[2] : (f._belt || '');
     const carouselCellHtml = '<td class="td-gate">' + (_arrBeltVal && _arrBeltVal !== '—' ? _arrBeltVal : '—') + '</td>';
-    // MCO-only Terminal (A/B/C) cell; empty string on every other board so
-    // their column layout is unchanged.
-    const _termCellHtml = ((((document.getElementById('apSel') || {}).value) || '').toUpperCase() === 'MCO')
+    // MCO/TPA airside cell (concourse letter); empty string on every other
+    // board so their column layout is unchanged.
+    const _termCellHtml = _isAirsideRow
       ? '<td class="td-term">' + ((f.terminal && f.terminal !== '—') ? f.terminal : '—') + '</td>'
       : '';
     // Phase 4: Sched + Revised as separate columns.
@@ -15837,7 +15841,102 @@ function yqmToAdbFlight(f, direction) {
     arrival: isDep ? otherSide : homeSide
   };
 }
+// ── TPA (Tampa) native feed — tampaairport.../api/flight-status ────────
+// One endpoint returns BOTH directions (adi: "D"/"A"), with airside
+// (A/C/E/F concourses) and real baggage-claim numbers. Times are ISO local
+// (Eastern) strings with no offset.
+function tpaTimeObj(isoLocal) {
+  const m = String(isoLocal || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) return null;
+  const Y = m[1], Mo = m[2], Da = m[3], H = m[4], Mi = m[5], S = m[6] || '00';
+  // The string is the Tampa wall clock; stamp the Eastern offset for that date.
+  const ref = new Date(`${Y}-${Mo}-${Da}T${H}:${Mi}:${S}Z`);
+  let off = '-05:00';
+  try {
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(ref);
+    const tz = (p.find((x) => x.type === 'timeZoneName') || {}).value || '';
+    const mm = tz.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
+    if (mm) off = `${mm[1]}${mm[2].padStart(2, '0')}:${(mm[3] || '00')}`;
+  } catch (e) {}
+  const local = `${Y}-${Mo}-${Da} ${H}:${Mi}:${S}${off}`;
+  let utc = local;
+  try { utc = new Date(`${Y}-${Mo}-${Da}T${H}:${Mi}:${S}${off}`).toISOString().slice(0, 19).replace('T', ' ') + '+00:00'; } catch (e) {}
+  return { local, utc };
+}
+function tpaStatus(code, content) {
+  const c = String(code || '').toUpperCase();
+  if (c === 'CX') return 'cancelled';
+  if (c === 'DV') return 'diverted';
+  if (c === 'DP') return 'departed';
+  if (c === 'AR' || c === 'AB' || c === 'AN' || c === 'OB' || c === 'BC') return 'arrived';
+  if (c === 'DL') return 'delayed';
+  if (c === 'BO' || c === 'GC') return 'boarding';
+  const t = String(content || '').replace(/&nbsp;/g, ' ').toLowerCase();
+  if (t.includes('cancel')) return 'cancelled';
+  if (t.includes('divert')) return 'diverted';
+  if (t.includes('depart')) return 'departed';
+  if (t.includes('bag') || t.includes('arriv') || t.includes('land')) return 'arrived';
+  if (t.includes('delay')) return 'delayed';
+  if (t.includes('board')) return 'boarding';
+  return 'scheduled';
+}
+function tpaToAdbFlight(f) {
+  if (!f || typeof f !== 'object') return null;
+  const isDep = String(f.adi || '').toUpperCase() === 'D';
+  const _c = (o) => (o && o.content != null ? String(o.content).trim() : '');
+  const code = _c(f.linecode).toUpperCase();
+  const num = _c(f.number);
+  const number = (code + num) || num;
+  if (!number) return null;
+  const sched = tpaTimeObj(f.schedule && f.schedule.original);
+  const actualIso = f.actual && f.actual.original;
+  const revised = (actualIso && f.schedule && actualIso !== f.schedule.original) ? tpaTimeObj(actualIso) : null;
+  const airline = { iata: code || null, icao: null, name: _c(f.line) || null };
+  const home = { iata: 'TPA', icao: 'KTPA', name: 'Tampa' };
+  const cityCode = (f.city && f.city.code ? String(f.city.code).toUpperCase() : '') || null;
+  const other = { iata: cityCode, icao: null, name: (f.city && f.city.content) || null };
+  const claim = _c(f.claim);
+  const homeSide = {
+    airport: home,
+    terminal: (f.airside || '').toUpperCase() || null,     // A/C/E/F concourse
+    gate: _c(f.gate) || null,
+    ...(!isDep && claim ? { baggageBelt: claim } : {}),     // real carousel # on arrivals
+    scheduledTime: sched,
+    ...(revised ? { revisedTime: revised } : {}),
+    airline, quality: ['Live']
+  };
+  const otherSide = { airport: other, scheduledTime: sched, airline, quality: ['Live'] };
+  return {
+    number, callSign: null,
+    status: tpaStatus(f.status && f.status.code, f.status && f.status.content),
+    codeshareStatus: 'IsOperator', isCargo: false,
+    departure: isDep ? homeSide : otherSide,
+    arrival: isDep ? otherSide : homeSide
+  };
+}
 async function adbFetch(iata, direction) {
+  // ── TPA: Tampa's own flight-status feed instead of AeroDataBox ──────
+  if (iata === 'TPA') {
+    const wantDep = direction === 'Departure';
+    const url = 'https://tampaairportwebprod.prod.acquia-sites.com/api/flight-status';
+    try {
+      const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (r.ok) {
+        const j = await r.json();
+        const rows = Array.isArray(j && j.data) ? j.data : (Array.isArray(j) ? j : []);
+        const list = rows
+          .filter(f => (String(f.adi || '').toUpperCase() === 'D') === wantDep)
+          .map(tpaToAdbFlight).filter(Boolean);
+        console.log(`[FIDS] TPA feed ${direction}: ${list.length} flights`);
+        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+        console.warn('[FIDS] TPA feed empty — falling back to ADB scrape');
+      } else {
+        console.warn(`[FIDS] TPA feed HTTP ${r.status} — falling back to ADB scrape`);
+      }
+    } catch (e) {
+      console.warn(`[FIDS] TPA feed: ${e.message} — falling back to ADB scrape`);
+    }
+  }
   // ── YQM: Moncton's own cyqm.ca feed instead of AeroDataBox ──────────
   if (iata === 'YQM') {
     const seg = direction === 'Departure' ? 'departures' : 'arrivals';
@@ -17193,7 +17292,8 @@ function mapADB(raw, mode) {
       'ORD',  // Chicago O'Hare T1, T2, T3, T5
       'LAX',  // Los Angeles TBIT + multiple
       'CDG',  // Paris CDG T1, T2, T3
-      'MCO'   // Orlando Terminals A / B / C — never fabricate a carousel
+      'MCO',  // Orlando Terminals A / B / C — never fabricate a carousel
+      'TPA'   // Tampa Airsides A/C/E/F — real claim # comes from the feed
     ]);
 
     let _belt = f.arrival?.baggageBelt || null;
