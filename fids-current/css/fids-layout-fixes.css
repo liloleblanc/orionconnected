@@ -1472,6 +1472,16 @@ body.g8-header-is-light .g8-city-code,
 #fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { --wm-h: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { --wm-h: 21px; }
 
+/* United — show the Star Alliance mark PROPERLY on the gate banner (Nick:
+   'still waiting for the star alliance logo on it'). The shared alliance mark
+   is a faded 0.65 watermark; for United make it full-opacity and larger so the
+   official STAR ALLIANCE logo reads clearly beside the wordmark. Scoped to UA
+   so Air Canada's mark is untouched (it gets the metal treatment separately). */
+.g8-wrap.g8-airline-UA .g8-r1-star {
+  opacity: 1 !important;
+  height: clamp(34px, 4.6vh, 58px) !important;
+}
+
 /* Right-column shelves (below the mini map): the 3D globe artwork replaces
    the faded airline-logo watermark (Nick, Jul 2026). ONE globe, always:
    the legacy per-airline watermark rules TILED the band (Porter repeat at
