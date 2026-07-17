@@ -13897,7 +13897,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22258';
+var FIDS_BUILD_TAG = 'v22259';
 (function(){
   try {
     function _addTag(){
@@ -17437,42 +17437,6 @@ async function fetchLive() {
       depRaw = await adbFetch(iata, 'Departure');
       await new Promise(r => setTimeout(r, 1500));
       arrRaw = await adbFetch(iata, 'Arrival');
-    }
-    // ── Native-feed window diagnostic (TPA/YQM/MCO) ────────────────────
-    // These airports come from their OWN full-day feeds, not AeroDataBox's
-    // rolling window. If mapADB drops everything, this one line reveals why:
-    // whether the scheduled times parse (NaN?) and how they sit relative to
-    // the [now-DEPART_TRAIL_HRS, now+LOOKAHEAD_HRS] window.
-    if (iata === 'TPA' || iata === 'YQM' || iata === 'MCO') {
-      try {
-        const _nowD = Date.now();
-        const _diag = (rawL, m) => {
-          const _l = m === 'dep' ? (rawL.departures || []) : (rawL.arrivals || []);
-          let nan = 0, past = 0, future = 0, inwin = 0, nulls = 0;
-          let minH = Infinity, maxH = -Infinity;
-          for (const f of _l) {
-            const s = m === 'dep'
-              ? (f.departure && f.departure.scheduledTime && (f.departure.scheduledTime.local || f.departure.scheduledTime.utc))
-              : (f.arrival && f.arrival.scheduledTime && (f.arrival.scheduledTime.local || f.arrival.scheduledTime.utc));
-            if (!s) { nulls++; continue; }
-            const ts = adbTs(s);
-            if (!ts || isNaN(ts)) { nan++; continue; }
-            const h = (ts - _nowD) / 3600000;
-            if (h < minH) minH = h;
-            if (h > maxH) maxH = h;
-            if (_nowD - ts > DEPART_TRAIL_HRS * 3600000) past++;
-            else if (ts - _nowD > LOOKAHEAD_HRS * 3600000) future++;
-            else inwin++;
-          }
-          const _ex = _l[0];
-          const _exS = _ex && (m === 'dep'
-            ? (_ex.departure && _ex.departure.scheduledTime && _ex.departure.scheduledTime.local)
-            : (_ex.arrival && _ex.arrival.scheduledTime && _ex.arrival.scheduledTime.local));
-          console.log(`[FEED DIAG] ${iata} ${m}: total=${_l.length} inWindow=${inwin} past=${past} future=${future} NaN=${nan} noSched=${nulls} | rangeH=[${minH === Infinity ? 'n/a' : minH.toFixed(1)}..${maxH === -Infinity ? 'n/a' : maxH.toFixed(1)}] trail=${DEPART_TRAIL_HRS}h look=${LOOKAHEAD_HRS}h | ex.sched=${_exS} -> ts=${_exS ? adbTs(_exS) : 'n/a'} now=${_nowD}`);
-        };
-        _diag(depRaw, 'dep');
-        _diag(arrRaw, 'arr');
-      } catch (e) { console.warn('[FEED DIAG] failed:', e && e.message); }
     }
     data.dep = mapADB(depRaw, 'dep');
     data.arr = mapADB(arrRaw, 'arr');
