@@ -936,6 +936,62 @@ async function handleMcoFids(request, env, origin, direction) {
 }
 __name(handleMcoFids, "handleMcoFids");
 
+// ════════════════════════════════════════════════════════════════════
+// YYZ (Toronto Pearson) — native feed CORS proxy
+// ════════════════════════════════════════════════════════════════════
+// Toronto publishes its own flight list, but — unlike Moncton/Tampa — the
+// endpoint sends NO CORS header, so the board can't read it directly from
+// the browser (fetch throws "Failed to fetch"). It also sits behind Imperva.
+// This route fetches it SERVER-SIDE (no browser CORS restriction), merging
+// today + tomorrow for the direction, and returns the raw { list:[...] } to
+// the board — which already maps each row via yyzToAdbFlight(). We send
+// browser-ish headers (User-Agent / Referer / Accept) to look like the
+// airport's own site and give Imperva the best chance of letting us through.
+const YYZ_FEED_BASE = "https://www.torontopearson.com/api/flightsapidata/getflightlist";
+const YYZ_FEED_HEADERS = {
+  "Accept": "application/json, text/plain, */*",
+  "Accept-Language": "en-CA,en;q=0.9",
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+  "Referer": "https://www.torontopearson.com/en/departures",
+  "Origin": "https://www.torontopearson.com"
+};
+
+// GET /flights/yyz?direction=dep|arr  (or Departure|Arrival)
+// Returns { list:[...] } (today + tomorrow merged) with CORS headers, or a
+// 502 with the upstream status/body so the board can log why and fall back.
+async function handleYyzFids(request, env, origin, direction) {
+  const seg = /^arr/i.test(direction || "") ? "ARR" : "DEP";
+  const days = ["today", "tomorrow"];
+  const merged = [];
+  let firstErr = null;
+  for (const day of days) {
+    const feedUrl = `${YYZ_FEED_BASE}?type=${seg}&day=${day}&useScheduleTimeOnly=false`;
+    try {
+      const r = await fetch(feedUrl, { headers: YYZ_FEED_HEADERS, cf: { cacheTtl: 30, cacheEverything: true } });
+      if (!r.ok) {
+        if (!firstErr) firstErr = { day, status: r.status, body: (await r.text().catch(() => "")).slice(0, 200) };
+        continue;
+      }
+      const j = await r.json().catch(() => null);
+      if (j && Array.isArray(j.list)) merged.push(...j.list);
+    } catch (e) {
+      if (!firstErr) firstErr = { day, error: e && e.message };
+    }
+  }
+  if (!merged.length && firstErr) {
+    return jsonResponse({ error: "YYZ feed fetch failed", ...firstErr }, 502, origin);
+  }
+  return new Response(JSON.stringify({ list: merged }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=30",
+      ...corsHeaders(origin)
+    }
+  });
+}
+__name(handleYyzFids, "handleYyzFids");
+
 var fids_proxy_default = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -1778,6 +1834,16 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     if (path === "/flights/mco") {
       const direction = url.searchParams.get("direction") || "dep";
       return handleMcoFids(request, env, origin, direction);
+    }
+
+    // ── YYZ native feed CORS proxy ─────────────────────────────────────────
+    // GET /flights/yyz?direction=dep|arr — server-side fetch of Toronto's own
+    // feed (no CORS header of its own), returned as { list:[...] } with CORS
+    // so the browser board can read it. Must precede the generic /flights/
+    // ADB passthrough below.
+    if (path === "/flights/yyz") {
+      const direction = url.searchParams.get("direction") || "dep";
+      return handleYyzFids(request, env, origin, direction);
     }
 
     if (path.startsWith("/airports/") || path.startsWith("/flights/") || path.startsWith("/aircrafts/")) {

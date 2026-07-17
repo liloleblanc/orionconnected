@@ -13897,7 +13897,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22261';
+var FIDS_BUILD_TAG = 'v22262';
 (function(){
   try {
     function _addTag(){
@@ -15988,44 +15988,30 @@ function yyzToAdbFlight(f) {
   return out;
 }
 async function adbFetch(iata, direction) {
-  // ── YYZ: Toronto Pearson's own feed instead of AeroDataBox ──────────
+  // ── YYZ: Toronto Pearson's own feed via the worker proxy ────────────
+  // Toronto's feed sends no CORS header, so the browser can't read it
+  // directly ("Failed to fetch"). The fids-proxy worker fetches it
+  // server-side (today + tomorrow merged) and returns { list:[...] } with
+  // CORS, which we map here with yyzToAdbFlight().
   if (iata === 'YYZ') {
     const wantDep = direction === 'Departure';
-    const seg = wantDep ? 'DEP' : 'ARR';
-    // Pull today + tomorrow so the lookahead window still has flights across
-    // the midnight boundary (the feed is bucketed per calendar day).
-    const urls = ['today', 'tomorrow'].map(d =>
-      `https://www.torontopearson.com/api/flightsapidata/getflightlist?type=${seg}&day=${d}&useScheduleTimeOnly=false`);
+    const dir = wantDep ? 'dep' : 'arr';
+    const yyzUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/yyz?direction=${dir}`;
     try {
-      const lists = await Promise.all(urls.map(async (u, i) => {
-        const _day = i === 0 ? 'today' : 'tomorrow';
-        try {
-          const r = await fetch(u, { headers: { 'Accept': 'application/json' } });
-          const _ct = r.headers.get('content-type') || '';
-          if (r.ok) {
-            const txt = await r.text();
-            let j = null;
-            try { j = JSON.parse(txt); } catch (pe) {
-              console.warn(`[YYZ DIAG] ${_day}: HTTP ${r.status} ct=${_ct} but body not JSON (len=${txt.length}) head="${txt.slice(0, 120).replace(/\s+/g, ' ')}"`);
-              return [];
-            }
-            const n = Array.isArray(j && j.list) ? j.list.length : -1;
-            console.log(`[YYZ DIAG] ${_day}: HTTP ${r.status} ct=${_ct} list=${n} keys=${j ? Object.keys(j).join(',') : 'n/a'}`);
-            return Array.isArray(j && j.list) ? j.list : [];
-          }
-          console.warn(`[YYZ DIAG] ${_day}: HTTP ${r.status} ct=${_ct} (not ok)`);
-        } catch (e) {
-          console.warn(`[YYZ DIAG] ${_day}: fetch threw — ${e && e.name}: ${e && e.message}`);
-        }
-        return [];
-      }));
-      const rows = lists.flat();
-      const list = rows
-        .filter(f => (String(f.type || '').toUpperCase() === 'DEP') === wantDep)
-        .map(yyzToAdbFlight).filter(Boolean);
-      console.log(`[FIDS] YYZ feed ${direction}: ${list.length} flights`);
-      if (list.length) return wantDep ? { departures: list } : { arrivals: list };
-      console.warn('[FIDS] YYZ feed empty — falling back to ADB scrape');
+      const r = await fetch(yyzUrl, { headers: { 'Accept': 'application/json' } });
+      if (r.ok) {
+        const j = await r.json();
+        const rows = Array.isArray(j && j.list) ? j.list : [];
+        const list = rows
+          .filter(f => (String(f.type || '').toUpperCase() === 'DEP') === wantDep)
+          .map(yyzToAdbFlight).filter(Boolean);
+        console.log(`[FIDS] YYZ feed ${direction}: ${list.length} flights`);
+        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+        console.warn('[FIDS] YYZ feed empty — falling back to ADB scrape');
+      } else {
+        const _b = await r.text().catch(() => '');
+        console.warn(`[FIDS] YYZ proxy HTTP ${r.status} — ${_b.slice(0, 200)} — falling back to ADB scrape`);
+      }
     } catch (e) {
       console.warn(`[FIDS] YYZ feed: ${e.message} — falling back to ADB scrape`);
     }
