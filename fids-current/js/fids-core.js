@@ -14033,7 +14033,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22273';
+var FIDS_BUILD_TAG = 'v22274';
 (function(){
   try {
     function _addTag(){
@@ -16298,13 +16298,27 @@ async function adbFetch(iata, direction) {
           console.warn(`[FIDS] MCO ADB enrich ${direction}: ${e.message} — feed shows without aircraft/position`);
         }
         console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
-        return direction === 'Departure' ? { departures: list } : { arrivals: list };
+        // Cache this good GOAA result so a transient blip on the next poll
+        // returns the last-known GOAA list instead of swapping the whole board
+        // to ADB's conflicting gate assignments (that was the Delta↔Frontier
+        // flip-flop on gate 71). GOAA is the ONLY source for the flight list;
+        // ADB is enrichment only.
+        const _mcoOut = direction === 'Departure' ? { departures: list } : { arrivals: list };
+        window._mcoLastGood = window._mcoLastGood || {};
+        window._mcoLastGood[dir] = _mcoOut;
+        return _mcoOut;
       }
-      // 503 (key not set) / any non-OK — log and fall through to the ADB
-      // scrape so the board still shows *something* rather than going blank.
-      console.warn(`[FIDS] MCO feed ${iata} ${direction}: HTTP ${r.status} — falling back to ADB scrape`);
+      // Non-OK (503 key-not-set, 5xx, etc.). Do NOT fall through to the ADB
+      // scrape — ADB's gate assignments differ from GOAA's and swapping the
+      // whole list mid-session flip-flops the gate. Return the last-good GOAA
+      // list if we have one; only fall through on a genuine cold start.
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: HTTP ${r.status} — using last-good GOAA`);
+      if (window._mcoLastGood && window._mcoLastGood[dir]) return window._mcoLastGood[dir];
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: no cached GOAA yet — cold-start ADB fallback`);
     } catch (e) {
-      console.warn(`[FIDS] MCO feed ${iata} ${direction}: ${e.message} — falling back to ADB scrape`);
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: ${e.message} — using last-good GOAA`);
+      if (window._mcoLastGood && window._mcoLastGood[dir]) return window._mcoLastGood[dir];
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: no cached GOAA yet — cold-start ADB fallback`);
     }
   }
   // ── ADB SCRAPE: source of truth for the flight LIST ─────────────────
