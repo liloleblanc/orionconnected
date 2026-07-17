@@ -7467,9 +7467,12 @@ function uxgGateHtml(ctx) {
     }
   }
 
-  // Build countdown panel
+  // Build countdown panel. Operator may switch the pre-boarding countdown OFF
+  // (Nick) — then the takeover shows the inbound-aircraft panel in its place.
+  var _cdOff = false; try { _cdOff = _gateCenterCfg().countdownOff; } catch (e) {}
+  var _showCd = showCountdown && !_cdOff;
   var countdownHtml = '';
-  if (showCountdown) {
+  if (_showCd) {
     // Same shell as boarding/final (Nick: 'this applies to all') — flight
     // info row + welcome strip on every takeover, countdown included.
     countdownHtml = '<div class="g8-countdown">'
@@ -7488,7 +7491,7 @@ function uxgGateHtml(ctx) {
     row4Html = finalHtml;
   } else if (boardActive) {
     row4Html = boardHtml;
-  } else if (showCountdown) {
+  } else if (_showCd) {
     row4Html = countdownHtml;
   } else {
     row4Html = inbPanelHtml;
@@ -9087,9 +9090,10 @@ const gView = document.getElementById('gateView');
         arrLineHtml = `<div class="gate-arr-line">✈ ${arrLbl} ${arrTimeStr} ${arrTzAbbr}${durationPart}</div>`;
       }
 
-      // ── BOARDING COUNTDOWN — big and prominent ──
+      // ── BOARDING COUNTDOWN — big and prominent (operator may switch OFF) ──
+      let _cdOff2 = false; try { _cdOff2 = _gateCenterCfg().countdownOff; } catch (e) {}
       let countdownHtml = '';
-      if (countdownStr) {
+      if (countdownStr && !_cdOff2) {
         countdownHtml = `<div class="gate-countdown-big"><div class="gate-countdown-val">${countdownStr}</div></div>`;
       }
 
@@ -14033,7 +14037,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22275';
+var FIDS_BUILD_TAG = 'v22276';
 (function(){
   try {
     function _addTag(){
@@ -24748,6 +24752,16 @@ function buildAdLogoPanelHtml(ad) {
 // than text-only Wi-Fi ads or Did You Know facts. Returns ms.
 function _getGateAdDwellMs(slide) {
   if (!slide) return 15000;
+  // Operator overrides (Nick): an explicit dwell wins for every slide; and the
+  // single-content modes (map-only / weather-only) hold long so the center
+  // isn't torn down and rebuilt every few seconds. A full re-render still
+  // happens each dwell, which refreshes the map to the plane's latest position.
+  try {
+    var _cc = _gateCenterCfg();
+    if (_cc.dwellMs) return _cc.dwellMs;
+    if (_cc.mode === 'map' && slide.type === 'bigcraft') return 60000;
+    if (_cc.mode === 'weather' && slide.type === 'wxcard') return 300000;
+  } catch (e) {}
   // 3D flight map holds the slot for about a minute (per Nick) —
   // four camera views ~15s each inside GateMap3D's sequence.
   if (slide.type === 'map3d') return 60000;
@@ -24823,6 +24837,96 @@ function _getGateAdDwellMs(slide) {
 // hotel slide (the "1"), at 3 non-Accor : 1 Accor. Airline-media-if-set-else
 // -global. Never goes all-Accor; degrades gracefully when a source is empty.
 // ════════════════════════════════════════════════════════════════════════
+// ── GATE CENTER MODE (Nick, Jul 2026) ──────────────────────────────────────
+// Operator control over what the gate CENTER shows before boarding, instead of
+// the fixed ad↔map↔weather rotation. Resolved from the URL first (kiosk screens
+// are URL-driven), then localStorage (set live from the settings menu):
+//   center = rotate | map | weather | noads   (what plays)
+//   dwell  = <seconds>                          (how long each slide holds)
+//   countdown = off                             (hide the boarding countdown)
+// All of this applies BEFORE boarding only — once the flight is boarding the
+// boarding screen takes over regardless (that switch lives elsewhere).
+function _gateCenterCfg() {
+  var mode = 'rotate', dwellMs = 0, countdownOff = false;
+  function _norm(v) {
+    v = String(v || '').toLowerCase().trim();
+    if (v === 'map' || v === 'mapinfo' || v === 'maponly') return 'map';
+    if (v === 'weather' || v === 'wx' || v === 'wxonly') return 'weather';
+    if (v === 'noads' || v === 'adsoff' || v === 'noad') return 'noads';
+    if (v === 'rotate' || v === 'all' || v === 'default') return 'rotate';
+    return '';
+  }
+  try {
+    var qs = new URLSearchParams(window.location.search || '');
+    var qc = _norm(qs.get('center'));
+    if (qc) mode = qc;
+    var qd = parseInt(qs.get('dwell'), 10);
+    if (isFinite(qd) && qd > 0) dwellMs = Math.max(2000, Math.min(600000, qd * 1000));
+    if (String(qs.get('countdown') || '').toLowerCase() === 'off') countdownOff = true;
+  } catch (e) {}
+  // localStorage only fills in what the URL did NOT set (URL wins per screen).
+  try {
+    if (mode === 'rotate') { var lc = _norm(localStorage.getItem('fids_gate_center')); if (lc) mode = lc; }
+    if (!dwellMs) { var ld = parseInt(localStorage.getItem('fids_gate_dwell'), 10);
+      if (isFinite(ld) && ld > 0) dwellMs = Math.max(2000, Math.min(600000, ld * 1000)); }
+    if (!countdownOff && localStorage.getItem('fids_gate_countdown') === 'off') countdownOff = true;
+  } catch (e) {}
+  return { mode: mode, dwellMs: dwellMs, countdownOff: countdownOff };
+}
+
+// Rebuild the center for a new mode/dwell: reset the rotation index, restart
+// the timer (so the new dwell takes effect) and repaint immediately. Safe to
+// call off a gate screen — startGateAds no-ops when the carousel is absent.
+function _gateCenterApply() {
+  try {
+    _gateAdIndex = 0; window._gateAdCurrentIdx = undefined;
+    if (typeof stopGateAds === 'function') stopGateAds();
+    var el = document.getElementById('gateAdCarousel');
+    if (el) el.innerHTML = '';
+    if (typeof startGateAds === 'function') startGateAds();
+  } catch (e) {}
+}
+// Reflect the resolved config back onto the menu pills/inputs (URL or storage).
+function _gateCenterSyncMenu() {
+  try {
+    var cfg = _gateCenterCfg();
+    ['rotate', 'map', 'weather', 'noads'].forEach(function (m) {
+      var b = document.getElementById('smGC_' + m);
+      if (b) b.classList.toggle('active', cfg.mode === m);
+    });
+    var on = document.getElementById('smGCcd_on'), off = document.getElementById('smGCcd_off');
+    if (on) on.classList.toggle('active', !cfg.countdownOff);
+    if (off) off.classList.toggle('active', cfg.countdownOff);
+    var dw = document.getElementById('smGCDwell');
+    if (dw && document.activeElement !== dw) {
+      var ld = null; try { ld = localStorage.getItem('fids_gate_dwell'); } catch (e) {}
+      dw.value = ld || '';
+    }
+  } catch (e) {}
+}
+function setGateCenterMode(v) {
+  try { localStorage.setItem('fids_gate_center', String(v || 'rotate')); } catch (e) {}
+  _gateCenterSyncMenu();
+  _gateCenterApply();
+}
+function setGateCenterDwell(v) {
+  var n = parseInt(v, 10);
+  try {
+    if (isFinite(n) && n > 0) localStorage.setItem('fids_gate_dwell', String(n));
+    else localStorage.removeItem('fids_gate_dwell');
+  } catch (e) {}
+  _gateCenterApply();
+}
+function setGateCenterCountdown(v) {
+  try {
+    if (String(v).toLowerCase() === 'off') localStorage.setItem('fids_gate_countdown', 'off');
+    else localStorage.removeItem('fids_gate_countdown');
+  } catch (e) {}
+  _gateCenterSyncMenu();
+  _gateCenterApply();
+}
+try { window.addEventListener('DOMContentLoaded', function () { try { _gateCenterSyncMenu(); } catch (e) {} }); } catch (e) {}
+
 function _buildGateAdSlideList() {
   var code = (window._gateCurrentAirline || '').toUpperCase();
 
@@ -24923,6 +25027,28 @@ function _buildGateAdSlideList() {
       // so the outlook is already cached when the weather slide appears
       // and it paints ONCE (the cold fetch was the second 'bump', Nick).
       try { _wxFetchDaily(String(_wxD).toUpperCase(), null); } catch (e2) {}
+    }
+  } catch (e) {}
+
+  // ── 8. GATE CENTER MODE — operator override of the rotation (Nick). Filter
+  // the assembled deck down to the chosen mode. Each mode degrades gracefully:
+  // if the map/weather it wants isn't available right now it keeps the full
+  // deck rather than showing a blank center.
+  try {
+    var _cm = _gateCenterCfg().mode;
+    if (_cm && _cm !== 'rotate') {
+      var _hasBigcraft = deck.some(function (s) { return s.type === 'bigcraft'; });
+      var _hasWx = deck.some(function (s) { return s.type === 'wxcard'; });
+      if (_cm === 'map' && _hasBigcraft) {
+        deck = [{ type: 'bigcraft' }];
+      } else if (_cm === 'weather' && _hasWx) {
+        deck = [{ type: 'wxcard' }];
+      } else if (_cm === 'noads') {
+        // Drop paid/house ads + uploaded media; keep the map + weather so the
+        // center still rotates through the flight's own content, never blank.
+        var _kept = deck.filter(function (s) { return s.type === 'bigcraft' || s.type === 'wxcard'; });
+        if (_kept.length) deck = _kept;
+      }
     }
   } catch (e) {}
 

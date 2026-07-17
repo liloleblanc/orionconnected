@@ -427,6 +427,26 @@
       </div>
       <div style="margin-bottom:14px;"></div>
 
+      <!-- ─── 6. GATE CENTER (pre-boarding) ─── -->
+      <div class="sm-label" data-sec="display-opts">Gate Center (before boarding)</div>
+      <div class="sm-pills" style="margin-bottom:8px;">
+        <button class="sm-pill active" id="smGC_rotate"  onclick="if(typeof setGateCenterMode==='function')setGateCenterMode('rotate')">Rotate</button>
+        <button class="sm-pill" id="smGC_map"     onclick="if(typeof setGateCenterMode==='function')setGateCenterMode('map')">Map only</button>
+        <button class="sm-pill" id="smGC_weather" onclick="if(typeof setGateCenterMode==='function')setGateCenterMode('weather')">Weather only</button>
+        <button class="sm-pill" id="smGC_noads"   onclick="if(typeof setGateCenterMode==='function')setGateCenterMode('noads')">No ads</button>
+      </div>
+      <div class="sm-row" style="align-items:center;gap:10px;margin-bottom:10px;">
+        <label style="font-size:12px;color:#9ca3af;flex:0 0 auto;">Slide time (sec)</label>
+        <input class="sm-input" id="smGCDwell" type="number" min="2" max="600" placeholder="auto"
+               style="width:88px;" onchange="if(typeof setGateCenterDwell==='function')setGateCenterDwell(this.value)">
+        <span style="font-size:11px;color:#6b7280;">blank = default</span>
+      </div>
+      <div class="sm-row" style="align-items:center;gap:10px;margin-bottom:14px;">
+        <label style="font-size:12px;color:#9ca3af;flex:1 1 auto;">Boarding countdown</label>
+        <button class="sm-pill active" id="smGCcd_on"  onclick="if(typeof setGateCenterCountdown==='function')setGateCenterCountdown('on')">On</button>
+        <button class="sm-pill" id="smGCcd_off" onclick="if(typeof setGateCenterCountdown==='function')setGateCenterCountdown('off')">Off</button>
+      </div>
+
       <!-- (Legacy "Manage Video Collections" widget removed in v113 — videos are now managed in the Media tab Library/Assignments) -->
 
       <!-- ─── 7. RESET ─── -->
