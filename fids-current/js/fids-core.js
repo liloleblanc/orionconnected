@@ -14000,7 +14000,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22266';
+var FIDS_BUILD_TAG = 'v22267';
 (function(){
   try {
     function _addTag(){
@@ -20102,12 +20102,30 @@ function _gateMapTick() {
   // gate flipped between the live "flight view" and the simulated "full
   // map" (fast on load, then every ~10s). Yielding to the live fix here
   // makes both paths render identically → no more flip.
-  if (phase === 'airborne' && !flybackActive) {
+  // Draw the LIVE gliding plane whenever we have a real airborne fix — from
+  // ANY of the sources the panel trusts. Previously this only checked
+  // window._gateInboundLivePos, which is frequently empty even when the
+  // inbound object itself carries live coords (_liveLat/_liveLng) — so the
+  // telemetry numbers moved while the map fell back to a static time-based
+  // schematic ('displaying the numbers but not moving', Nick). Also trust the
+  // fix over the time-based phase: if the aircraft reports a position it's up,
+  // even if the schedule math still says 'pre'. Only skip once it's at our gate.
+  if (phase !== 'at-gate' && !flybackActive) {
     var _lp = window._gateInboundLivePos;
-    var _lf = (_lp && typeof _lp.lat === 'number' && typeof _lp.lng === 'number')
-                ? _lp
-                : (window._gateMapFix && typeof window._gateMapFix.lat === 'number' ? window._gateMapFix : null);
-    if (_lf) { initGateMapLive(routeOrg, routeDst, _lf.lat, _lf.lng); return; }
+    var _inbLF = window._gateInbound;
+    var _lf = (_lp && typeof _lp.lat === 'number' && typeof _lp.lng === 'number') ? _lp
+            : (window._gateMapFix && typeof window._gateMapFix.lat === 'number') ? window._gateMapFix
+            : (_inbLF && typeof _inbLF._liveLat === 'number' && typeof _inbLF._liveLng === 'number'
+                ? { lat: _inbLF._liveLat, lng: _inbLF._liveLng, speed: _inbLF._liveSpd, altitude: _inbLF._liveAlt } : null);
+    // A live fix only means "airborne" with a genuine altitude — a ground/taxi
+    // fix (or a stale one) shouldn't hijack a 'pre' schematic.
+    var _fixAirborne = _lf && (typeof _lf.altitude !== 'number' || _lf.altitude > 0)
+                     && !(_inbLF && _inbLF._liveOnGround === true)
+                     && !(_inbLF && /arriv|land/i.test(String(_inbLF.status || '')));
+    if (_lf && (phase === 'airborne' || _fixAirborne)) {
+      initGateMapLive(routeOrg, routeDst, _lf.lat, _lf.lng);
+      return;
+    }
   }
   initGateMap(routeOrg, routeDst, renderProg);
 }
