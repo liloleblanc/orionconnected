@@ -3,13 +3,10 @@
   <!-- jetBlue wordmark — dark variant (navy on transparent) for light backgrounds.
        v203: rebuilt to match the clean white -light variant.
        Brand color #00205B (JetBlue navy). -->
-  <!-- textLength pins the advance so the final "e" never clips (font-metric
-       independent) — same fix as the -light variant. -->
-  <text x="0" y="78"
-        fill="#00205B"
-        font-family="Helvetica, Arial, sans-serif"
-        font-size="92"
+  <text x="0" y="78" 
+        fill="#00205B" 
+        font-family="Helvetica, Arial, sans-serif" 
+        font-size="92" 
         font-weight="900"
-        letter-spacing="-2"
-        textLength="284" lengthAdjust="spacingAndGlyphs">jet<tspan font-weight="900">B</tspan>lue</text>
+        letter-spacing="-2">jet<tspan font-weight="900">B</tspan>lue</text>
 </svg>
