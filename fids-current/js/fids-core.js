@@ -2306,16 +2306,22 @@ function _gateTelemModel() {
     var age = (now - (T.realTs || 0)) / 1000;
     if (T.prevTs && T.realTs && T.realTs > T.prevTs && age > 0 && age < 120) {
       var span = (T.realTs - T.prevTs) / 1000;
+      // DAMPED: two pings can differ by a wind/ADS-B noise blip, and running
+      // that rate for a whole minute doubles the blip into a fake surge
+      // (Nick: '757kph to 867 climbing in less than a minute'). Tight rate
+      // caps, and the extrapolation runs at most 45 s then HOLDS until the
+      // next real ping corrects it — visible motion, never a runaway.
+      var effAge = Math.min(age, 45);
       if (span >= 20 && span <= 300) {
         if (typeof T.prevAlt === 'number' && typeof alt === 'number') {
           var altRate = (alt - T.prevAlt) / span;                     // ft/s
-          altRate = Math.max(-50, Math.min(50, altRate));             // ≤3000 fpm
-          alt = Math.max(0, alt + altRate * age);
+          altRate = Math.max(-30, Math.min(30, altRate));             // ≤1800 fpm
+          alt = Math.max(0, alt + altRate * effAge);
         }
         if (typeof T.prevSpd === 'number' && typeof spd === 'number') {
           var spdRate = (spd - T.prevSpd) / span;                     // kt/s
-          spdRate = Math.max(-1.5, Math.min(1.5, spdRate));
-          spd = Math.max(0, spd + spdRate * age);
+          spdRate = Math.max(-0.5, Math.min(0.5, spdRate));           // ≤~55 km/h per bridge
+          spd = Math.max(0, spd + spdRate * effAge);
         }
       }
     }
@@ -6813,6 +6819,15 @@ function _buildV2MapCol(ctx, vars) {
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_mxGate.eq) : _mxGate.eq;
       }
     }
+    // Porter with NO readable equipment at all: show the fleet's honest
+    // answer instead of an empty panel (Nick: 'this is clearly an E95
+    // Porter flight ... but no aircraft'). Porter's jet routes are all
+    // E195-E2; the Dash 8-400 flies only the YTZ short-haul network, which
+    // the YTZ pin above already enforces.
+    if ((String(vars.airlineCode || '').toUpperCase() === 'PD' || _opCode === 'PD') && !_equipCd && !_equipNm) {
+      _equipCd = 'E95';
+      _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('E95') : 'Embraer E195-E2';
+    }
     // Air Transat flies only the A321neo, but ADB scatters the SAME aircraft
     // across 320 / 321 / 32N. Pin the TS narrowbody to 32Q (neo) HERE, at
     // render, so BOTH the type label and the image are correct every time —
@@ -10058,16 +10073,28 @@ const gView = document.getElementById('gateView');
               var _opC = (_mktC === 'AC' && !isNaN(_fnRv) && _fnRv >= 1600 && _fnRv <= 1999)
                 ? 'RV' : String(_eq.opCode || '').toUpperCase();
               var _eqAcStr = String(_eq.aircraftCode || '') + ' ' + String(_eq.aircraft || '');
-              if (!_equipSaneForCarrier(_mktC, _opC, _eq.reg, _eqAcStr)) {
-                var _rejReg = _eq.reg || '', _rejAc = _eq.aircraft || '', _rejCd = _eq.aircraftCode || '';
+              // Judge the REG and the TYPE separately — nulling the whole
+              // record for a bad tail also erased a perfectly sane type and
+              // left the panel empty (Nick: 'clearly an E95 Porter flight
+              // ... but no aircraft'). Only the offending field is dropped.
+              var _regBad = !!_eq.reg && !_equipSaneForCarrier(_mktC, _opC, _eq.reg, '');
+              var _typeBad = !!_eqAcStr.trim() && !_equipSaneForCarrier(_mktC, _opC, '', _eqAcStr);
+              if (_regBad || _typeBad) {
+                var _rejReg = _regBad ? (_eq.reg || '') : '';
+                var _rejAc = _typeBad ? (_eq.aircraft || '') : '';
+                var _rejCd = _typeBad ? (_eq.aircraftCode || '') : '';
                 console.log('[FIDS] Carrier sanity: rejecting impossible history equipment for',
-                            currentFlight.flight, '(' + (_opC || _mktC) + ') →', _rejAc || _rejCd || '?', _rejReg || 'no-reg');
+                            currentFlight.flight, '(' + (_opC || _mktC) + ') →',
+                            _typeBad ? (_rejAc || _rejCd || '?') : '(type ok)',
+                            _regBad ? (_rejReg || '?') : '(reg ok)');
                 // Strip any earlier application of the same stale values so the
                 // panel actually falls back to Pending instead of keeping them.
                 if (_rejReg && currentFlight._reg === _rejReg) { currentFlight._reg = ''; currentFlight._regSource = ''; changed = true; }
                 if (_rejAc && currentFlight._aircraft === _rejAc) { currentFlight._aircraft = ''; changed = true; }
                 if (_rejCd && currentFlight._aircraftCode === _rejCd) { currentFlight._aircraftCode = ''; changed = true; }
-                _eq = { key: _eq.key };   // apply nothing from the lock this round
+                _eq = Object.assign({}, _eq);
+                if (_regBad) { _eq.reg = ''; _eq.regSource = ''; }
+                if (_typeBad) { _eq.aircraft = ''; _eq.aircraftCode = ''; }
               }
             }
           } catch (e) {}
@@ -14514,7 +14541,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22320';
+var FIDS_BUILD_TAG = 'v22321';
 (function(){
   try {
     function _addTag(){
