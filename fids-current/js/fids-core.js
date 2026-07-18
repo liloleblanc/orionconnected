@@ -6899,6 +6899,11 @@ function _buildV2MapCol(ctx, vars) {
       // to 'Boeing 737-700 | C-FWSI' contradicts itself (Nick). When the
       // reg-true type is known, resolve the livery image from IT.
       var _regTrueImg = (typeof _regTrueType === 'function' && _acReg) ? _regTrueType(_acReg) : '';
+      // Same AC 737NG→MAX normalization for the IMAGE the reg-true type picks.
+      if (String(vars.airlineCode || '').toUpperCase() === 'AC'
+          && /737/.test(String(_regTrueImg || '')) && !/MAX/i.test(String(_regTrueImg || ''))) {
+        _regTrueImg = 'Boeing 737 MAX 8';
+      }
       if (_regTrueImg && _opCode === 'RV') {
         // Rouge: keep the Rouge paint but on the TRUE airframe — normalise the
         // reg-true type to a code and re-apply the 'r' suffix (C-FZUG is an
@@ -7026,6 +7031,15 @@ function _buildV2MapCol(ctx, vars) {
       try {
         var _regTrue = (_acReg && typeof _regTrueType === 'function') ? _regTrueType(_acReg) : '';
         if (_regTrue) _acModel = _regTrue;
+        // FINAL-SAY normalization: ADB's aircraft REGISTRY also mislabels AC
+        // MAXes as '737-800', and this reg-true override runs AFTER the
+        // equipment pin — which is why the pin alone didn't hold on
+        // production (Nick: 'Ran however it did not work'). Air Canada flies
+        // no 737NG, ever: the last word on any AC 737 label is MAX 8.
+        if (String(vars.airlineCode || '').toUpperCase() === 'AC'
+            && /737/.test(String(_acModel || '')) && !/MAX/i.test(String(_acModel || ''))) {
+          _acModel = 'Boeing 737 MAX 8';
+        }
         if (typeof window !== 'undefined') window._gateAcRegShown = _acReg || '';
       } catch (e) {}
       // A history-sourced tail is a real prior observation, not today's
@@ -13642,6 +13656,7 @@ const IATA_TO_TILE_ICAO = {
   // NK (Spirit) — ceased operations May 2 2026
   'B6':'JBU',  'AS':'ASA',  'F9':'FFT',  'G4':'AAY',  'HA':'HAL',
   'SY':'SCX',  'OO':'SKW',  'YV':'ASH',
+  'MX':'MXY',   // Breeze — MXY.svg tile existed but the map never learned it (Nick: 'still missing the breeze Emblem icon')
   // Europe
   'LH':'DLH',  'BA':'BAW',  'AF':'AFR',  'KL':'KLM',  'VS':'VIR',
   'AZ':'AZA',  'SN':'BEL',  'LX':'SWR',  'OS':'AUA',  'SK':'SAS',
@@ -14603,7 +14618,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22324';
+var FIDS_BUILD_TAG = 'v22325';
 (function(){
   try {
     function _addTag(){
