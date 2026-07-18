@@ -5256,6 +5256,21 @@ function renderMobileGateHtml(ctx) {
       else if (_minsToArr > 0 && _minsToArr < 1440)
         _etaStr = _minsToArr >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(_minsToArr/60) + 'h ' + (_minsToArr%60) + 'm') : (TL('arrivesIn') + ' ' + _minsToArr + ' min');
       var _fromDisplay = _fromCity ? (_fromCity + (_fromIata ? ' (' + _fromIata + ')' : '')) : (_fromIata || (_inb.flight || ''));
+      // MOBILE = SAME PROGRAMMING (Nick: 'you did not connect mobile'):
+      // the live route MAP (same #gateMapBox the shared map engine + 10 s
+      // tick target) and the live Speed/Altitude line (same data-gtelem spans
+      // the shared animator writes every second). Telemetry renders only with
+      // a REAL fix — same honesty rule as the big screens.
+      var _mTelem = '';
+      if (typeof _inb._liveSpd === 'number' || typeof _inb._liveAlt === 'number') {
+        var _mSpdKph = (typeof _inb._liveSpd === 'number') ? Math.round(_inb._liveSpd * 1.852) : null;
+        var _mAltFt = (typeof _inb._liveAlt === 'number') ? Math.round(_inb._liveAlt) : null;
+        _mTelem =
+            '<div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px;">'
+          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mSpdKph !== null ? ('<span data-gtelem="spd-kph">' + _mSpdKph.toLocaleString() + '</span> kph') : '—') + '</span>'
+          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mAltFt !== null ? ('<span data-gtelem="alt-ft">' + _mAltFt.toLocaleString() + '</span> ft') : '—') + '</span>'
+          + '</div>';
+      }
       _inbBlock =
           '<div style="' + _dot + 'margin:0 20px;"></div>'
         + '<div style="background:' + T.panel + ';padding:16px 20px;">'
@@ -5265,6 +5280,8 @@ function renderMobileGateHtml(ctx) {
         +     '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_inb.flight || '') + '</span>'
         +     (_etaStr ? '<span style="' + FS.body + 'color:' + (_onStand ? (_lt ? '#0e7c4a' : '#1bbf74') : T.accent) + ';">' + _etaStr + '</span>' : '')
         +   '</div>'
+        +   _mTelem
+        +   '<div class="g8-inb-map" id="gateMapBox" style="height:220px;margin-top:12px;border-radius:10px;overflow:hidden;"></div>'
         + '</div>';
     }
   } catch (e) { _inbBlock = ''; }
@@ -14209,7 +14226,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22305';
+var FIDS_BUILD_TAG = 'v22306';
 (function(){
   try {
     function _addTag(){
