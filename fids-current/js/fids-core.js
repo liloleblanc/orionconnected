@@ -2256,8 +2256,13 @@ function _animateGateTelem() {
   var T = window._gateTelemAnim;
   var m = _gateTelemModel();
   if (!m) return;
-  if (m.spd !== null && m.spd !== undefined) T.spd = (T.spd === null) ? m.spd : T.spd + (m.spd - T.spd) * 0.18;
-  if (m.alt !== null && m.alt !== undefined) T.alt = (T.alt === null) ? m.alt : T.alt + (m.alt - T.alt) * 0.18;
+  // SLOW ease (Nick: 'nothing is moving'): 0.18/s converged in ~15 s and then
+  // sat frozen for the rest of the 90 s window. 0.027/s spreads the approach
+  // across the whole inter-fix window, so the digits keep visibly ticking from
+  // the previous REAL fix to the new one — bridging two observations, never
+  // inventing a profile.
+  if (m.spd !== null && m.spd !== undefined) T.spd = (T.spd === null) ? m.spd : T.spd + (m.spd - T.spd) * 0.027;
+  if (m.alt !== null && m.alt !== undefined) T.alt = (T.alt === null) ? m.alt : T.alt + (m.alt - T.alt) * 0.027;
   _writeGateTelemDom();
 }
 
@@ -2391,8 +2396,19 @@ async function _gateNumbersPoll() {
     var liveAlt = (_alt !== null) ? Math.round(_alt) : null;
     if (liveSpd !== null) inb._liveSpd = liveSpd;   // the panel reads _ib._liveSpd
     if (liveAlt !== null) inb._liveAlt = liveAlt;
+    // Feed the MAP too (Nick: 'nothing is moving' — this poll fed only the
+    // numbers, so the mini map could sit on the full-route view with no
+    // plane). window._gateInboundLivePos is the map tick's EXISTING input:
+    // a fresh fix here makes the camera follow the plane and re-seeds the
+    // glide every 90 s.
+    var _lpLat = (typeof _lp.lat === 'number') ? _lp.lat : null;
+    var _lpLng = (typeof _lp.lng === 'number') ? _lp.lng : null;
+    if (_lpLat !== null && _lpLng !== null) {
+      inb._liveLat = _lpLat; inb._liveLng = _lpLng;
+      window._gateInboundLivePos = { lat: _lpLat, lng: _lpLng, speed: liveSpd, altitude: liveAlt };
+    }
     try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
-    try { console.log('[NUMPOLL]', flt, '→ spd', liveSpd, 'alt', liveAlt); } catch (e) {}
+    try { console.log('[NUMPOLL]', flt, '→ spd', liveSpd, 'alt', liveAlt, 'pos', _lpLat, _lpLng); } catch (e) {}
   } catch (e) { _gateNumPollBusy = false; }
 }
 try { setInterval(_gateNumbersPoll, 90000); setTimeout(_gateNumbersPoll, 5000); } catch (e) {}
@@ -14169,7 +14185,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22303';
+var FIDS_BUILD_TAG = 'v22304';
 (function(){
   try {
     function _addTag(){
