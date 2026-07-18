@@ -9842,8 +9842,21 @@ const gView = document.getElementById('gateView');
         var _enrichIata = iata;
         var _todayStr = new Date().toISOString().slice(0,10);
 
+        var _enrichFlight = currentFlight.flight;
         loadFlight(currentFlight.flight, _todayStr, _enrichIata).then(function(data) {
           if (!data || !currentFlight) return;
+          // GATE-SWITCH GUARD (Nick: 'using the same aircraft multiple
+          // flights', 'ottawa is showing thunder bay'): this callback
+          // publishes to WINDOW globals — the equipment lock, the inbound,
+          // the live position. If the display moved to another gate while
+          // this fetch was in flight, those writes branded the NEW gate with
+          // the OLD gate's airframe and inbound route. Apply only while our
+          // flight still owns the screen; the late answer is simply dropped
+          // (the owning gate runs its own enrichment).
+          try {
+            var _ownFl = window._gateCurrentFlight && window._gateCurrentFlight.flight;
+            if (_ownFl && _ownFl !== _enrichFlight) return;
+          } catch (e) {}
           var changed = false;
 
           // ── REAL SCHEDULED ARRIVAL (Nick: 'thats not the arrival time
@@ -14364,7 +14377,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22313';
+var FIDS_BUILD_TAG = 'v22314';
 (function(){
   try {
     function _addTag(){
