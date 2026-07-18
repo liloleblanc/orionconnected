@@ -2360,7 +2360,10 @@ function fidsMlFlightTimeMins(o, d) {
 function _fidsMlFetch(o, d, k) {
   if (window['_mlftF_' + k]) return;
   window['_mlftF_' + k] = true;
-  var url = 'https://fids-proxy.n-leblanc1984.workers.dev/api/adb/airports/iata/' + o + '/distance-time/' + d + '?flightTimeModel=ML01';
+  // /proxy/ passthrough — NOT /api/adb/, which sits inside the worker's
+  // JWT-authenticated block and 401s every unauthenticated board call
+  // (silently: ML times fell back to the km-guess, plans never loaded).
+  var url = 'https://fids-proxy.n-leblanc1984.workers.dev/proxy/airports/iata/' + o + '/distance-time/' + d + '?flightTimeModel=ML01';
   fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
     var t = j && j.approxFlightTime;                       // "HH:MM:SS" date-span
     var m = t ? String(t).match(/(\d+):(\d{2})/) : null;
@@ -2396,7 +2399,8 @@ function fidsFlightPlan(flightNo, dateStr) {
     }
     if (window['_fpF_' + k]) return null;
     window['_fpF_' + k] = true;
-    var url = 'https://fids-proxy.n-leblanc1984.workers.dev/api/adb/flights/number/' + encodeURIComponent(fl) + '/' + dateStr + '?withFlightPlan=true';
+    // /proxy/ passthrough — /api/adb/ requires a JWT (admin block) and 401s.
+    var url = 'https://fids-proxy.n-leblanc1984.workers.dev/proxy/flights/number/' + encodeURIComponent(fl) + '/' + dateStr + '?withFlightPlan=true';
     fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       var arr = Array.isArray(j) ? j : (j ? [j] : []);
       var fp = null;
@@ -14292,7 +14296,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22309';
+var FIDS_BUILD_TAG = 'v22310';
 (function(){
   try {
     function _addTag(){
@@ -16784,7 +16788,12 @@ async function fetchInboundByReg(reg, airportIata) {
     var proxyUrl = 'https://fids-proxy.n-leblanc1984.workers.dev' + path;
     console.log('[FIDS] Looking up inbound by reg:', cleanReg, 'at', airportIata);
     var r = await fetch(proxyUrl);
-    if (!r.ok) { console.warn('[FIDS] Inbound by reg failed:', r.status); _inboundByRegCache[cacheKey] = null; return null; }
+    if (!r.ok) {
+      var _rbSnip = ''; try { _rbSnip = (await r.text()).slice(0, 200); } catch (e2) {}
+      window._adbHealth = { failStatus: r.status, failPath: path, failBody: _rbSnip, failTs: Date.now() };
+      console.warn('[ADB-HEALTH] reg lookup FAILED', r.status, cleanReg, _rbSnip || '(no body)');
+      _inboundByRegCache[cacheKey] = null; return null;
+    }
     var flights = await r.json();
     if (!Array.isArray(flights) || !flights.length) { _inboundByRegCache[cacheKey] = null; return null; }
     
@@ -17128,7 +17137,16 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
       // for airborne legs; without it the gate's SPD/ALT were always empty.
       var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + dateStr + '?withLocation=true';
       var r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev' + path);
-      if (!r.ok) { console.warn('[loadFlight] Flight lookup failed:', r.status, flightNumber); return null; }
+      if (!r.ok) {
+        // Surface WHY live tracking is dark (quota, key, upstream) instead of
+        // failing silently — 'no plane / not tracking' is undiagnosable
+        // without this. Read window._adbHealth in the console.
+        var _bodySnip = ''; try { _bodySnip = (await r.text()).slice(0, 200); } catch (e2) {}
+        window._adbHealth = { failStatus: r.status, failPath: path, failBody: _bodySnip, failTs: Date.now() };
+        console.warn('[ADB-HEALTH] live lookup FAILED', r.status, flightNumber, _bodySnip || '(no body)');
+        return null;
+      }
+      window._adbHealth = { okTs: Date.now(), okPath: path };
       var flights = await r.json();
       if (!Array.isArray(flights) || !flights.length) return null;
 
