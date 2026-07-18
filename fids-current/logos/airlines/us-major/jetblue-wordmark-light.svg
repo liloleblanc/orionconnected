@@ -5,14 +5,10 @@
        text with a black backdrop that rendered nearly invisible on dark navy bg.
        Brand style: lowercase "jet" + uppercase "B" + lowercase "lue".
        Bold rounded sans-serif. -->
-  <!-- textLength pins the total advance to 284 (viewBox usable width is ~293)
-       so the final "e" can never spill past the right edge and clip to
-       "jetBlu" — the width no longer depends on the kiosk's font metrics. -->
-  <text x="0" y="78"
-        fill="#FFFFFF"
-        font-family="Helvetica, Arial, sans-serif"
-        font-size="92"
+  <text x="0" y="78" 
+        fill="#FFFFFF" 
+        font-family="Helvetica, Arial, sans-serif" 
+        font-size="92" 
         font-weight="900"
-        letter-spacing="-2"
-        textLength="284" lengthAdjust="spacingAndGlyphs">jet<tspan font-weight="900">B</tspan>lue</text>
+        letter-spacing="-2">jet<tspan font-weight="900">B</tspan>lue</text>
 </svg>

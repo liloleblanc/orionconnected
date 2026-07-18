@@ -3462,12 +3462,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
      angled gaps between them so each section reads as its own tab. */
   .fids-banner {
     background: #0b0f16 !important;
-    /* BOTH top corners rounded to the same 30px — the top-right (gold
-       Departures tab) was left square while the top-left (navy) was rounded,
-       so the header read 'rounded one side, square-cut the other' (Nick).
-       overflow:hidden clips the off-screen-bleeding gold tab to this radius. */
     border-top-left-radius: 30px !important;
-    border-top-right-radius: 30px !important;
   }
   .fids-banner .fids-banner-chevrons { display: none !important; }
 
