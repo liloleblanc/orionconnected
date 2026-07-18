@@ -6858,6 +6858,17 @@ function _buildV2MapCol(ctx, vars) {
       _equipCd = 'E95';
       _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('E95') : 'Embraer E195-E2';
     }
+    // Air Canada flies NO 737NG — its only 737s are MAX 8s. ADB frequently
+    // codes the MAX as '738' / 'Boeing 737-800' (Nick caught 'Boeing 737-800
+    // | C-GMIW' on the AC1096 inbound). Pin AC 737s to the MAX 8 label and
+    // image. WestJet's REAL 737-800s are untouched — this is AC-only.
+    if (String(vars.airlineCode || '').toUpperCase() === 'AC') {
+      var _ac737 = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      if (/73[38H]|737/.test(_ac737) && !/MAX|7M8|7M9/.test(_ac737)) {
+        _equipCd = '7M8';
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('7M8') : 'Boeing 737 MAX 8';
+      }
+    }
     // Air Transat flies only the A321neo, but ADB scatters the SAME aircraft
     // across 320 / 321 / 32N. Pin the TS narrowbody to 32Q (neo) HERE, at
     // render, so BOTH the type label and the image are correct every time —
@@ -14592,7 +14603,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22323';
+var FIDS_BUILD_TAG = 'v22324';
 (function(){
   try {
     function _addTag(){
