@@ -2598,6 +2598,35 @@ function getTimeInTz(ts, tz) {
   } catch(e) { return ''; }
 }
 
+// ── IS THIS INBOUND AIRBORNE? — the spec's own signals, one answer for every
+// consumer (Nick: 'did you read the instructions thats number one'). The
+// AeroDataBox docs define exactly how to read a record; the mini map, the
+// big takeover and the telemetry all ask THIS function now instead of each
+// keeping its own regex guess (which disagreed — the glyph popped in/out as
+// record ownership flipped). Signal order, strongest first:
+//  1. FlightStatus enum: EnRoute / Approaching / Departed = airborne;
+//     Arrived / Landed / Cancelled / Diverted = not.
+//  2. departure.runwayTime (our _actualDepTime): actual/estimated WHEELS-UP
+//     in the past = the airplane took off — the spec's definitive signal.
+//  3. Live altitude present (withLocation) = airborne.
+//  4. revisedTime evidence: an ETA revised EARLIER than schedule only
+//     happens from real flight progress; early/on-time WITH a revision =
+//     the feed is actively tracking.
+function fidsInboundAirborne(inb) {
+  if (!inb) return false;
+  var st = String(inb.status || '').toLowerCase();
+  if (/arriv|land|cancel|divert/.test(st)) return false;
+  if (/active|en-?route|departed|approaching/.test(st)) return true;
+  try {
+    var _up = inb._actualDepTime ? adbTs(inb._actualDepTime) : 0;
+    if (_up && _up < Date.now()) return true;
+  } catch (e) {}
+  if (typeof inb._liveAlt === 'number' && inb._liveAlt > 0) return true;
+  if (inb._revTs && inb._sortTs && inb._revTs < inb._sortTs) return true;
+  if (/early|on-?time|ontime/.test(st) && !!(inb._revTs || inb.upd)) return true;
+  return false;
+}
+
 // Can this airframe belong to this carrier at all? Used to reject
 // history/guessed equipment that is impossible for the operator — a
 // US-registered SkyWest CRJ on a Porter flight, a mainline A220 tagged
@@ -9786,18 +9815,10 @@ const gView = document.getElementById('gateView');
               // OUTBOUND leg when that global isn't set yet, which made the
               // glyph never appear here (Nick: 'map doesn't work still').
               try {
-                var _stAirMini = /active|en-?route|departed|approaching/i.test(String(inb.status || ''))
-                  // revision evidence lives in _revTs OR the .upd string
-                  // depending on which enrichment built this object
-                  || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!(inb._revTs || inb.upd))
-                  // An ETA revised EARLIER than schedule only happens from real
-                  // flight progress — airlines never predict early before
-                  // wheels-up. This holds regardless of the status word, so the
-                  // schedule record ('early') and the reg-lookup record (ADB
-                  // vocabulary) AGREE and the glyph stops popping in and out
-                  // when ownership flips (Nick: 'thats 2 systems battling').
-                  || (inb._revTs && inb._sortTs && inb._revTs < inb._sortTs)
-                  || (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
+                // ONE airborne answer for every consumer — the spec-signal
+                // interpreter (status enum, wheels-up runwayTime, live
+                // altitude, revision evidence). See fidsInboundAirborne.
+                var _stAirMini = fidsInboundAirborne(inb);
                 var _arrTMini = inb._revTs || inb._sortTs || 0;
                 // STICKY airborne: once this flight has qualified, keep the
                 // glyph through polls whose object momentarily lacks the
@@ -14493,7 +14514,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22319';
+var FIDS_BUILD_TAG = 'v22320';
 (function(){
   try {
     function _addTag(){
@@ -17067,6 +17088,10 @@ async function fetchInboundByReg(reg, airportIata) {
       _liveAlt: _adbAltFt(best.location),
       _liveSpd: _adbSpdKt(best.location),
       _liveOnGround: _adbOnGround(best.location),
+      // departure.runwayTime = actual/estimated WHEELS-UP (the spec's
+      // definitive take-off signal) — feeds fidsInboundAirborne.
+      _actualDepTime: (best.departure && best.departure.runwayTime
+        && (best.departure.runwayTime.local || best.departure.runwayTime.utc)) || null,
       _inboundSource: 'reg-lookup' // flag for debugging
     };
     
@@ -24598,18 +24623,9 @@ function _map3dFlightCtx(allowEstimated) {
     // flying (or with real altitude). A clock alone must never launch a plane
     // that is still at the origin gate — that was the original phantom bug.
     if (!_legOut && !fixOk && prog > 0) {
-      var _stAirborne = /active|en-?route|departed|approaching/i.test(String(inb.status || ''))
-        // Early / On time WITH a live-revised ETA = the feed is actively
-        // tracking the flight (WS790 'Early, 6:03 PM' had no phase word but
-        // was unambiguously airborne, Nick). A bare punctuality word without
-        // a revision stays grounded — it can be assigned pre-departure.
-        || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!inb._revTs)
-        // Revised-EARLIER ETA = real flight progress, whatever the status
-        // word — keeps this test in agreement with the mini map's (same
-        // programming, Nick) so the big and small glyphs never disagree.
-        || (inb._revTs && inb._sortTs && inb._revTs < inb._sortTs);
-      var _altAirborne = (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
-      if (!_stAirborne && !_altAirborne) prog = 0;
+      // Same single spec-signal interpreter the mini map uses — big and
+      // small glyphs can never disagree again (same programming, Nick).
+      if (!fidsInboundAirborne(inb)) prog = 0;
     }
     // Landed / at the gate → nothing to plot; the slide skips itself.
     if (prog >= 0.99 || inb.status === 'arrived' || inb.status === 'landed') return null;
