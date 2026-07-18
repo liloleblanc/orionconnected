@@ -10056,13 +10056,28 @@ const gView = document.getElementById('gateView');
           // confirmed one; the strict !currentFlight._reg guard blocked that
           // upgrade on same-object retries. Manual overrides (set before
           // enrichment) differ from _eq.reg and are left alone.
-          if (_eq.reg && !currentFlight._reg) {
+          // POLICY (Nick: 'its a patch on a patch on a patch') — a
+          // REGISTRATION is displayed ONLY when observed on THIS flight
+          // TODAY. History-majority and latest-observation tails are guesses
+          // about a DIFFERENT airplane, and they produced every phantom
+          // airframe this week ('C-GNAM' A220 on Rouge, SkyWest 'N632SK' on
+          // Porter). History may still suggest the aircraft TYPE — shown
+          // with the 'expected' qualifier — but it never names a tail.
+          var _regTrustworthy = _eq.reg && !/^history/.test(String(_eq.regSource || ''));
+          if (_regTrustworthy && !currentFlight._reg) {
             currentFlight._reg = _eq.reg;
             changed = true;
-          } else if (_eq.reg && currentFlight._reg
+          } else if (_regTrustworthy && currentFlight._reg
                      && /^history/.test(String(currentFlight._regSource || ''))
                      && currentFlight._reg !== _eq.reg) {
             currentFlight._reg = _eq.reg;
+            changed = true;
+          } else if (!_regTrustworthy && currentFlight._reg
+                     && /^history/.test(String(currentFlight._regSource || ''))) {
+            // A history tail already painted on the row (earlier build /
+            // earlier round) is stripped under the same policy.
+            currentFlight._reg = '';
+            currentFlight._regSource = '';
             changed = true;
           }
 
@@ -14478,7 +14493,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22318';
+var FIDS_BUILD_TAG = 'v22319';
 (function(){
   try {
     function _addTag(){
