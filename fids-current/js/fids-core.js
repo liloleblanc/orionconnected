@@ -5760,10 +5760,14 @@ function _buildV2AircraftCol(ctx, vars) {
       function _fidsFirstLegCity(s) {
         return String(s || '').split(',')[0].split(/\s+[-–]\s+/)[0].trim();
       }
-      // The code chip shows ONLY a real 3-letter IATA — when _locIata is
-      // absent (TPA through-flights) the raw dest string was being dumped
-      // into the chip as "HOUSTON - INT…" (Nick: 'LOOK AT THE DESTINATION').
+      // The code chip stays in Nick's format — "Destination | IAH" — with a
+      // REAL 3-letter IATA only. When _locIata is absent (TPA through-flights
+      // dumped the raw dest string into the chip as "HOUSTON - INT…"),
+      // RESOLVE the code from the city string instead of hiding the chip.
       var _destIataRaw = String(locIata || '').toUpperCase().trim();
+      if (!/^[A-Z]{3}$/.test(_destIataRaw) && typeof fidsResolveDestIata === 'function') {
+        _destIataRaw = String(fidsResolveDestIata((currentFlight && currentFlight.dest) || '') || '').toUpperCase();
+      }
       var _destIataDisp = /^[A-Z]{3}$/.test(_destIataRaw) ? _destIataRaw : '';
       var _destCityName = '';
       try {
@@ -6775,6 +6779,42 @@ function _buildV2MapCol(ctx, vars) {
     + '<div class="gad-map-col-v2' + _railFi4 + '" style="display:flex;flex-direction:column;flex:0 0 25%;min-width:0;">'
     +   _rcHtml
     + '</div>';
+}
+
+// Resolve a destination IATA from a feed CITY STRING when the row carries no
+// code (TPA through-flights: "Houston - Intercontinental, San Diego" arrives
+// with _locIata EMPTY — so the gate lost its code chip AND its route map).
+// First leg only. Qualifier words disambiguate multi-airport cities; then a
+// unique reverse-lookup of our own city tables. Returns '' when unknown —
+// never a guess between two airports.
+function fidsResolveDestIata(destStr) {
+  try {
+    var first = String(destStr || '').split(',')[0].trim();
+    if (!first) return '';
+    var q = first.toLowerCase();
+    var QUAL = { 'intercontinental':'IAH', 'hobby':'HOU', 'kennedy':'JFK', 'jfk':'JFK',
+      'laguardia':'LGA', 'la guardia':'LGA', 'newark':'EWR', "o'hare":'ORD', 'ohare':'ORD',
+      'midway':'MDW', 'dulles':'IAD', 'reagan':'DCA', 'love field':'DAL',
+      'heathrow':'LHR', 'gatwick':'LGW', 'pearson':'YYZ', 'trudeau':'YUL' };
+    for (var k in QUAL) if (q.indexOf(k) !== -1) return QUAL[k];
+    var cityPart = first.split(/\s+[-–]\s+/)[0].trim().toLowerCase();
+    if (!cityPart) return '';
+    var hit = '', hits = 0, c;
+    if (typeof CITY !== 'undefined') {
+      for (c in CITY) {
+        var v = String(CITY[c] || '').toLowerCase();
+        if (v === cityPart || v === q) { if (hit !== c) { hit = c; hits++; } if (hits > 1) break; }
+      }
+    }
+    if (hits === 1) return hit;
+    hit = ''; hits = 0;
+    if (typeof AP !== 'undefined') {
+      for (c in AP) {
+        if (String((AP[c] || {}).city || '').toLowerCase() === cityPart) { if (hit !== c) { hit = c; hits++; } if (hits > 1) break; }
+      }
+    }
+    return hits === 1 ? hit : '';
+  } catch (e) { return ''; }
 }
 
 function uxgGateHtml(ctx) {
@@ -8914,7 +8954,14 @@ const gView = document.getElementById('gateView');
     if (currentFlight) {
       const stKey = currentFlight.status || 'scheduled';
       const stEn = (SS[stKey] || {}).en || stKey.toUpperCase();
-      const locIata = currentFlight._locIata || '';
+      // Resolve a missing destination code from the city string (Nick:
+      // 'there's no MAP' — with _locIata empty the outbound route had no
+      // destination to draw, and the code chip vanished). The resolved code
+      // feeds the chip, the right panel AND the map.
+      let locIata = currentFlight._locIata || '';
+      if (!/^[A-Za-z]{3}$/.test(locIata) && typeof fidsResolveDestIata === 'function') {
+        locIata = fidsResolveDestIata(currentFlight.dest) || locIata;
+      }
       // Prefer CITY lookup, then dest field, then locIata code.
       // THROUGH-FLIGHT legs are stripped for display (Nick: 'Destination is
       // tiny — remove those connecting thru flights'): the feed sends
@@ -14142,7 +14189,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22295';
+var FIDS_BUILD_TAG = 'v22296';
 (function(){
   try {
     function _addTag(){
