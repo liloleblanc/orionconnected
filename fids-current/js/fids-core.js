@@ -2412,6 +2412,22 @@ async function _gateNumbersPoll() {
   } catch (e) { _gateNumPollBusy = false; }
 }
 try { setInterval(_gateNumbersPoll, 90000); setTimeout(_gateNumbersPoll, 5000); } catch (e) {}
+// MAP TICK — re-evaluates the gate map every 10 s against the latest state
+// (late-identified inbound, fresh 90 s fix). The posKey/progKey guards inside
+// tryInitMap make unchanged states a no-op, so this can't cause jumpiness;
+// it CAN swing a wrong first view (Nick's video: EWR outbound pins while the
+// panel tracked the DEN inbound) to the right one within 10 s.
+try {
+  setInterval(function () {
+    try {
+      if (typeof screenType !== 'undefined' && screenType === 'gate'
+          && typeof window._gateMapRetry === 'function'
+          && document.getElementById('gateMapBox')) {
+        window._gateMapRetry();
+      }
+    } catch (e) {}
+  }, 10000);
+} catch (e) {}
 
 function updateDedicatedTimeOnly() {
   try { _animateGateTelem(); } catch (e) {}   // glide the live speed/altitude
@@ -9654,6 +9670,14 @@ const gView = document.getElementById('gateView');
       setTimeout(function() { if (!gateMap) tryInitMap(); else gateMap.invalidateSize(); }, 1500);
       setTimeout(function() { if (!gateMap) tryInitMap(); else gateMap.invalidateSize(); }, 3000);
       setTimeout(function() { if (gateMap) gateMap.invalidateSize(); }, 5000);
+      // MAP TICK (Nick's first-load video: the map came up on the OUTBOUND
+      // view — EWR pin — before the inbound was identified, and nothing ever
+      // re-evaluated it until a full re-render). Expose this render's
+      // tryInitMap; a global 10 s interval re-runs it. The posKey/progKey
+      // guards inside make unchanged states a no-op — no jumpiness — while a
+      // fresh fix (the 90 s poll now feeds positions) or a late-arriving
+      // inbound swings the map to the right view within 10 s.
+      window._gateMapRetry = tryInitMap;
       scheduleGateControlsAutoHide();
 
       // Load city photo with JS fallback
@@ -14185,7 +14209,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22304';
+var FIDS_BUILD_TAG = 'v22305';
 (function(){
   try {
     function _addTag(){
@@ -16458,19 +16482,33 @@ async function adbFetch(iata, direction) {
         const _mcoOut = direction === 'Departure' ? { departures: list } : { arrivals: list };
         window._mcoLastGood = window._mcoLastGood || {};
         window._mcoLastGood[dir] = _mcoOut;
+        // Persist across page loads: a fresh load with GOAA momentarily down
+        // must serve GOAA's OWN recent list, never a different source.
+        try { localStorage.setItem('fids_mco_lastgood_' + dir, JSON.stringify({ ts: Date.now(), out: _mcoOut })); } catch (e) {}
         return _mcoOut;
       }
-      // Non-OK (503 key-not-set, 5xx, etc.). Do NOT fall through to the ADB
-      // scrape — ADB's gate assignments differ from GOAA's and swapping the
-      // whole list mid-session flip-flops the gate. Return the last-good GOAA
-      // list if we have one; only fall through on a genuine cold start.
-      console.warn(`[FIDS] MCO feed ${iata} ${direction}: HTTP ${r.status} — using last-good GOAA`);
-      if (window._mcoLastGood && window._mcoLastGood[dir]) return window._mcoLastGood[dir];
-      console.warn(`[FIDS] MCO feed ${iata} ${direction}: no cached GOAA yet — cold-start ADB fallback`);
+      // Non-OK — NEVER fall through to the ADB scrape (Nick: 'the two systems
+      // are fighting — Orlando vs ADB'; the gate flipped American↔United on
+      // load). Order: this session's last-good → localStorage last-good
+      // (≤15 min) → EMPTY list. An empty cycle self-heals on the next poll;
+      // a wrong-airline gate does not.
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: HTTP ${r.status} — GOAA-only fallback chain`);
+      return _mcoFallback(direction, dir);
     } catch (e) {
-      console.warn(`[FIDS] MCO feed ${iata} ${direction}: ${e.message} — using last-good GOAA`);
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: ${e.message} — GOAA-only fallback chain`);
+      return _mcoFallback(direction, dir);
+    }
+    function _mcoFallback(direction, dir) {
       if (window._mcoLastGood && window._mcoLastGood[dir]) return window._mcoLastGood[dir];
-      console.warn(`[FIDS] MCO feed ${iata} ${direction}: no cached GOAA yet — cold-start ADB fallback`);
+      try {
+        var _ls = JSON.parse(localStorage.getItem('fids_mco_lastgood_' + dir) || 'null');
+        if (_ls && _ls.out && (Date.now() - _ls.ts) < 15 * 60000) {
+          console.warn('[FIDS] MCO: GOAA down — serving localStorage last-good (' + Math.round((Date.now() - _ls.ts) / 1000) + 's old)');
+          return _ls.out;
+        }
+      } catch (e2) {}
+      console.warn('[FIDS] MCO: GOAA down, no usable cache — EMPTY list this cycle (never ADB for the list)');
+      return direction === 'Departure' ? { departures: [] } : { arrivals: [] };
     }
   }
   // ── ADB SCRAPE: source of truth for the flight LIST ─────────────────
