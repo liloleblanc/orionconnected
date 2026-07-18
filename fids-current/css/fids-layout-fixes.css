@@ -1479,8 +1479,11 @@ body.g8-header-is-light .g8-city-code,
    so Air Canada's mark is untouched (it gets the metal treatment separately). */
 .g8-wrap.g8-airline-UA .g8-r1-star {
   opacity: 1 !important;
-  height: clamp(52px, 7.5vh, 92px) !important;
+  height: clamp(40px, 5.5vh, 64px) !important;
   max-width: none !important;
+  /* flex items shrink by default — the giant wordmark was crushing the mark
+     to an invisible sliver. Never let the alliance mark give up its space. */
+  flex-shrink: 0 !important;
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.45)) !important;
   margin-left: clamp(10px, 1vw, 22px) !important;
 }

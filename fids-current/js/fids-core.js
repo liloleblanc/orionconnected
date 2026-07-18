@@ -2414,10 +2414,10 @@ const AIRLINE_BRAND = {
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
   'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
-  // United official palette (Nick, Jul 2026):
-  //   #6583fd (101,131,253) · #3960fb (57,96,251) · #0c39ed (12,57,237)
-  //   #2a08b5 (42,8,181)     · #051966 (5,25,102 — deep navy)
-  'UA': { bg1:'#0c39ed', bg2:'#051966', bg3:'#2a08b5', accent:'#3960fb', name:'United' },
+  // United OFFICIAL brand palette (Nick, from the brand-guide swatches):
+  //   Rhapsody Blue #0C2340 (dark) · United Blue #0033A0 · Sky Blue #69B3E7
+  //   Pacific Blue (teal) · Runway Gray #D0D0CE
+  'UA': { bg1:'#0C2340', bg2:'#071A33', bg3:'#0033A0', accent:'#0033A0', name:'United' },
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
   'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#7AFF94', name:'Flair' },
@@ -3836,7 +3836,7 @@ function wwayUrl(code, w, h) {
 
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
-  'DL':'#003366','AA':'#0078D2','UA':'#3960fb','WN':'#F9A01B',
+  'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
@@ -7873,6 +7873,15 @@ function uxgGateHtml(ctx) {
       && _BANNER_INK_COMP[_bannerWordmarkBase]) {
     _logoH = Math.round(_logoH * _BANNER_INK_COMP[_bannerWordmarkBase]);
   }
+  // Per-carrier banner-wordmark cap (Nick: UNITED rendered enormous — it ate
+  // the whole banner and crushed the Star Alliance mark beside it to nothing).
+  // Height AND width capped; the freed space lets the alliance mark breathe.
+  var _WM_BANNER_CAP = { 'UA': { h: 52, w: 300 } };
+  var _wmCap = _WM_BANNER_CAP[_bannerBrandCode] || _WM_BANNER_CAP[airlineCode];
+  if (_wmCap && _bannerWmFromBase) {
+    _logoH = Math.min(_logoH, _wmCap.h);
+    _sz = { h: _sz.h, w: Math.min(_sz.w || 480, _wmCap.w) };
+  }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
                  + (_useOverrideFile
@@ -7943,7 +7952,7 @@ function uxgGateHtml(ctx) {
     // Hawaiian — WHITE banner / plumeria purple / cream body (white fuselage with silver lei)
     'HA': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#582C83', body: '#FBF7F2', bodyText: '#523090' },
     // United — black / United Blue / Runway Gray (matching the actual livery)
-    'UA': { r1: '#051966', r1Text: '#FFFFFF', r2: '#0c39ed', body: '#EAEDF2', bodyText: '#051966' },
+    'UA': { r1: '#0C2340', r1Text: '#FFFFFF', r2: '#0033A0', body: '#E9EBEE', bodyText: '#0C2340' },
     // WestJet — WHITE banner / teal swoosh / white body (matches their white fuselage)
     'WS': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
@@ -14093,7 +14102,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22289';
+var FIDS_BUILD_TAG = 'v22290';
 (function(){
   try {
     function _addTag(){
@@ -25086,24 +25095,31 @@ function _buildGateAdSlideList() {
     }
   } catch (e) {}
 
-  // ── 8. GATE CENTER MODE — operator override of the rotation (Nick). Filter
-  // the assembled deck down to the chosen mode. Each mode degrades gracefully:
-  // if the map/weather it wants isn't available right now it keeps the full
-  // deck rather than showing a blank center.
+  // ── 8. GATE CENTER MODE — operator override of the rotation (Nick). The
+  // operator's choice is HONORED even when the wanted content isn't available
+  // right now: silently reverting to the ad deck made the control look dead
+  // (Nick: 'the advert — it's not working'). When the map/weather is missing,
+  // fall back to the BRANDED WELCOME slide — never to ads. Ads only ever play
+  // in 'rotate'.
   try {
     var _cm = _gateCenterCfg().mode;
     if (_cm && _cm !== 'rotate') {
       var _hasBigcraft = deck.some(function (s) { return s.type === 'bigcraft'; });
       var _hasWx = deck.some(function (s) { return s.type === 'wxcard'; });
-      if (_cm === 'map' && _hasBigcraft) {
-        deck = [{ type: 'bigcraft' }];
-      } else if (_cm === 'weather' && _hasWx) {
-        deck = [{ type: 'wxcard' }];
+      var _fbB = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[code]) || null;
+      var _welcome = { type: 'ad', data: {
+        bg: _fbB ? 'linear-gradient(135deg,' + _fbB.bg1 + ' 0%,' + _fbB.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
+        headline: 'Welcome aboard · Bienvenue à bord',
+        sub: (_fbB && _fbB.name) ? _fbB.name : '',
+        logo: (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[code]) || null
+      } };
+      if (_cm === 'map') {
+        deck = _hasBigcraft ? [{ type: 'bigcraft' }] : [_welcome];
+      } else if (_cm === 'weather') {
+        deck = _hasWx ? [{ type: 'wxcard' }] : [_welcome];
       } else if (_cm === 'noads') {
-        // Drop paid/house ads + uploaded media; keep the map + weather so the
-        // center still rotates through the flight's own content, never blank.
         var _kept = deck.filter(function (s) { return s.type === 'bigcraft' || s.type === 'wxcard'; });
-        if (_kept.length) deck = _kept;
+        deck = _kept.length ? _kept : [_welcome];
       }
     }
   } catch (e) {}
