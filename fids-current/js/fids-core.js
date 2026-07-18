@@ -9142,7 +9142,16 @@ const gView = document.getElementById('gateView');
       // Use AeroDataBox scheduled arrival time if available, else estimate
       let arrTimeStr = '';
       let durationStr = '';
-      if (currentFlight._arrSchedLocal) {
+      // SANITY GUARD (Nick: 'Why is the departure time and arrival time the
+      // same?'): some feed records carry the DEPARTURE time in the arrival
+      // slot — every YQM gate showed e.g. 'Departure 6:15pm / Arrival 6:15pm'.
+      // No real flight takes under 20 minutes, so a scheduled arrival that
+      // close to (or before) the scheduled departure is bogus data → fall
+      // through to the distance/ML estimate, which is timezone-correct.
+      var _arrChkTs = currentFlight._arrSchedLocal ? adbTs(currentFlight._arrSchedLocal) : 0;
+      var _arrChkMins = (_arrChkTs && currentFlight._sortTs) ? Math.round((_arrChkTs - currentFlight._sortTs) / 60000) : null;
+      var _arrBogus = (_arrChkMins !== null && _arrChkMins < 20);
+      if (currentFlight._arrSchedLocal && !_arrBogus) {
         const _arrLocal = currentFlight._arrSchedLocal;
         arrTimeStr = adbHHMM(_arrLocal) || '';
         // Check if arrival is next day vs departure (compare in LOCAL timezones, not UTC)
@@ -9164,7 +9173,12 @@ const gView = document.getElementById('gateView');
         const arrTs = adbTs(currentFlight._arrSchedLocal);
         if (origDepTs && arrTs) durationStr = formatDuration(Math.round((arrTs - origDepTs) / 60000));
       } else {
-        const flightMins = estimateFlightDuration(iata, locIata);
+        let flightMins = estimateFlightDuration(iata, locIata);
+        // ADB ML01 realistic route time beats the distance guess when cached.
+        try {
+          var _mlArrMins = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(iata, locIata) : null;
+          if (_mlArrMins) flightMins = _mlArrMins;
+        } catch (e) {}
         durationStr = formatDuration(flightMins);
         const depTs = currentFlight._revTs || currentFlight._sortTs;
         const arrivalTs = depTs && flightMins ? depTs + flightMins * 60000 : null;
@@ -9691,10 +9705,17 @@ const gView = document.getElementById('gateView');
               // OUTBOUND leg when that global isn't set yet, which made the
               // glyph never appear here (Nick: 'map doesn't work still').
               try {
-                var _stAirMini = /active|en-?route|departed/i.test(String(inb.status || ''))
+                var _stAirMini = /active|en-?route|departed|approaching/i.test(String(inb.status || ''))
                   // revision evidence lives in _revTs OR the .upd string
                   // depending on which enrichment built this object
                   || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!(inb._revTs || inb.upd))
+                  // An ETA revised EARLIER than schedule only happens from real
+                  // flight progress — airlines never predict early before
+                  // wheels-up. This holds regardless of the status word, so the
+                  // schedule record ('early') and the reg-lookup record (ADB
+                  // vocabulary) AGREE and the glyph stops popping in and out
+                  // when ownership flips (Nick: 'thats 2 systems battling').
+                  || (inb._revTs && inb._sortTs && inb._revTs < inb._sortTs)
                   || (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
                 var _arrTMini = inb._revTs || inb._sortTs || 0;
                 // STICKY airborne: once this flight has qualified, keep the
@@ -14296,7 +14317,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22310';
+var FIDS_BUILD_TAG = 'v22311';
 (function(){
   try {
     function _addTag(){
@@ -16833,8 +16854,9 @@ async function fetchInboundByReg(reg, airportIata) {
     var arrSchedTime = (best.arrival.scheduledTime || {});
     var arrRevTime = (best.arrival.revisedTime || {});
     var st = (best.status || '').toLowerCase();
-    // Map ADB status strings
-    if (st === 'departed' || st === 'enroute') st = 'active';
+    // Map ADB status strings (spec vocabulary: EnRoute / Approaching /
+    // Departed are the airborne phases; Landed → arrived)
+    if (st === 'departed' || st === 'enroute' || st === 'approaching') st = 'active';
     if (st === 'landed') st = 'arrived';
     
     // Calculate timestamps
@@ -24398,12 +24420,16 @@ function _map3dFlightCtx(allowEstimated) {
     // flying (or with real altitude). A clock alone must never launch a plane
     // that is still at the origin gate — that was the original phantom bug.
     if (!_legOut && !fixOk && prog > 0) {
-      var _stAirborne = /active|en-?route|departed/i.test(String(inb.status || ''))
+      var _stAirborne = /active|en-?route|departed|approaching/i.test(String(inb.status || ''))
         // Early / On time WITH a live-revised ETA = the feed is actively
         // tracking the flight (WS790 'Early, 6:03 PM' had no phase word but
         // was unambiguously airborne, Nick). A bare punctuality word without
         // a revision stays grounded — it can be assigned pre-departure.
-        || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!inb._revTs);
+        || (/early|on-?time|ontime/i.test(String(inb.status || '')) && !!inb._revTs)
+        // Revised-EARLIER ETA = real flight progress, whatever the status
+        // word — keeps this test in agreement with the mini map's (same
+        // programming, Nick) so the big and small glyphs never disagree.
+        || (inb._revTs && inb._sortTs && inb._revTs < inb._sortTs);
       var _altAirborne = (typeof inb._liveAlt === 'number' && inb._liveAlt > 0);
       if (!_stAirborne && !_altAirborne) prog = 0;
     }
