@@ -1797,7 +1797,31 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
   from { transform: scale(0.62); opacity: 0.55; }
   to   { transform: scale(1);    opacity: 1; }
 }
-.g8-bigcraft-active .gad-map-col-v2 { visibility: hidden !important; }
+/* NICK'S MOCKUP: the takeover covers ONLY the center; the right column stays
+   LIVE — the real small "Your Aircraft" panel beside the big map. Its own
+   mini-map collapses (the big map replaces it) so the column reads: title,
+   Speed/Altitude box, flight rows, aircraft image, model — exactly the small
+   panel, because it IS the small panel. */
+.g8-bigcraft-active .gad-map-col-v2 .g8-inb-map { display: none !important; }
+.g8-bigcraft-active .gad-map-col-v2 .v2-rc-shelf-map { flex: 0 0 auto !important; min-height: 0 !important; }
+.g8-bigcraft-active .gad-map-col-v2 .v2-map-area {
+  position: static !important; height: auto !important; min-height: 0 !important;
+  display: flex !important; flex-direction: column !important;
+}
+.g8-bigcraft-active .gad-map-col-v2 .v2-rc-maptitle {
+  position: static !important; transform: none !important;
+  width: 100% !important; box-sizing: border-box !important;
+}
+.g8-bigcraft-active .gad-map-col-v2 .v2-rc-mapstats { position: static !important; inset: auto !important; }
+/* Map-only takeover: single column, no side panel. */
+.bigcraft-wrap--maponly { grid-template-columns: 1fr !important; }
+/* Nick's mockup shows the big map FLAT — edge-to-edge with a thin dark
+   border, not the thick navy ad-card frame + accent ring. */
+.bigcraft-wrap--maponly .bigcraft-mapcol {
+  border: 2px solid #0b1322 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+}
 
 /* Takeover life: soft pulse on the aircraft glyph. */
 .bigcraft-plane-pulse { animation: bigcraftPulse 2.6s ease-in-out infinite !important; }
@@ -3001,4 +3025,15 @@ html .g8-board-welcome .g8-r1-star {
   margin-left: 0 !important;
   opacity: 1 !important;
   object-fit: contain !important;
+}
+
+/* United — the Star Alliance mark reads CLEARLY beside the wordmark
+   (Nick-approved banner). flex-shrink:0 stops the wordmark crushing it. */
+.g8-wrap.g8-airline-UA .g8-r1-star {
+  opacity: 1 !important;
+  height: clamp(40px, 5.5vh, 64px) !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.45)) !important;
+  margin-left: clamp(10px, 1vw, 22px) !important;
 }

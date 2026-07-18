@@ -876,6 +876,20 @@ async function load(){
     hint.textContent=FLIGHTS.length?('Live '+word+' · reconnecting…'):'Reconnecting…';
   }
   render();
+  // Deep link: a board handoff carrying ?gate=95 opens that gate's next
+  // departure automatically. Loose match (case/space/dash) like the boards.
+  // One-shot — cleared after the first render with real flights, so closing
+  // the detail doesn't get re-opened by the 3-minute refresh.
+  if(BOOT_GATE&&DIR==='dep'&&RENDERED.length){
+    try{
+      const g=BOOT_GATE.toUpperCase().replace(/[\s-]/g,'');
+      for(let i=0;i<RENDERED.length;i++){
+        const fg=String(RENDERED[i].gate||'').toUpperCase().replace(/[\s-]/g,'');
+        if(fg&&fg===g){openFlight(i);break;}
+      }
+    }catch(e){}
+    BOOT_GATE='';
+  }
 }
 function setDir(dir){
   if(DIR===dir)return;
@@ -926,8 +940,24 @@ async function loadBrand(code){
       else{el.textContent=code;}}
   }catch(e){document.getElementById('apLogo').textContent=code;}
 }
-function setAirport(code){
+function setAirport(code,_boot){
   AP=code;
+  // Same-system state: share the tab key the boards use (fids_airport) plus a
+  // durable app key, and keep ?ap= in the URL so the address bar is always a
+  // shareable link to exactly this view — any device opening it lands here.
+  try{sessionStorage.setItem('fids_airport',code);}catch(e){}
+  try{localStorage.setItem('app_airport',code);}catch(e){}
+  try{
+    const u=new URL(location.href);
+    u.searchParams.set('ap',code);
+    if(!_boot){
+      // Manual airport switch: the gate/screen the link carried belonged to
+      // the OLD airport — drop them so a re-shared link isn't stale.
+      ['gate','belt','carousel','sub','screen','flight'].forEach(k=>u.searchParams.delete(k));
+      BOOT_GATE='';
+    }
+    history.replaceState(null,'',u);
+  }catch(e){}
   document.getElementById('apName').textContent=AP_NAME[code]||code;
   document.getElementById('apIata').textContent=code;
   document.getElementById('apSelect').value=code;
@@ -1055,7 +1085,30 @@ function buildAirportOptions(){
   sel.innerHTML=html;
 }
 buildAirportOptions();
-setAirport('YQM');
+// ── CONNECTED BOOT (Nick: "They need to be connected to the same devices…
+// the same system"). The app joins the same URL state the boards write:
+//   ?ap=MCO                  → that airport (else the tab's fids_airport,
+//                              else the app's last airport, else YQM)
+//   ?screen=baggage / ?belt= → open the Baggage tab
+//   ?gate=95                 → auto-open that gate's next departure
+// Board links opened on a phone land here (fids-core hands off to app.html)
+// with their query intact — same link, same screen, phone gets the app.
+let BOOT_GATE='';
+(function(){
+  let ap='';
+  try{
+    const q=new URLSearchParams(location.search);
+    const uAp=(q.get('ap')||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    let ss='',ls='';
+    try{ss=(sessionStorage.getItem('fids_airport')||'').toUpperCase();}catch(e){}
+    try{ls=(localStorage.getItem('app_airport')||'').toUpperCase();}catch(e){}
+    ap=[uAp,ss,ls,'YQM'].find(c=>c&&AIRPORTS[c])||'YQM';
+    BOOT_GATE=(q.get('gate')||'').trim();
+    const scr=(q.get('screen')||'').toLowerCase();
+    if(scr==='baggage'||q.get('belt')||q.get('carousel'))setTimeout(()=>{go('bag');},0);
+  }catch(e){ap='YQM';}
+  setAirport(ap||'YQM',true);
+})();
 // Refresh whichever view is showing (every 3 min).
 setInterval(()=>{ if(curView==='bag')loadBags(); else load(); },180000);
 rotateBanner();
