@@ -1313,6 +1313,27 @@ function scheduleGateControlsAutoHide() {
   }, 1800);
 }
 
+// ── PHONE HANDOFF → app.html (Nick: "Wrong app opens should be the app one")
+// A PHONE opening any board link (fids/gids/bids) gets the Airport Companion
+// app instead, with the URL state carried over — app.html reads ?ap= /
+// ?screen= / ?gate= / ?belt= and lands on the same airport, tab and gate.
+// Guards keep every DISPLAY on the board: rotator iframes, stream/yt/compact
+// layouts, and the ?nomobile=1 escape hatch (same as index.html's router).
+// Bare 'Android' without 'Mobile' is NOT a phone — Android TVs carry it. No
+// width test either, so a narrow desktop window keeps the board.
+(function () {
+  try {
+    if (window.self !== window.top) return;
+    if (document.documentElement.classList.contains('fids-stream')) return;
+    var _hq = location.search || '';
+    if (/[?&](nomobile|stream|yt|compact)([=&]|$)/.test(_hq)) return;
+    var _hua = navigator.userAgent || '';
+    var _hPhone = /iPhone|iPod|iPad|Windows Phone/i.test(_hua) || (/Android/i.test(_hua) && /Mobile/i.test(_hua));
+    if (!_hPhone) return;
+    location.replace('app.html' + _hq + location.hash);
+  } catch (e) {}
+})();
+
 // ── CROSS-DEVICE SCREEN STATE (Nick: "They need to be connected to the same
 // devices … I'm not connecting in the same system whatsoever") ──────────────
 // The URL always mirrors the full screen state: ?ap= is kept in sync by
@@ -14264,7 +14285,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22307';
+var FIDS_BUILD_TAG = 'v22308';
 (function(){
   try {
     function _addTag(){
