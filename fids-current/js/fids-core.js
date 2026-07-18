@@ -2556,6 +2556,20 @@ function getTimeInTz(ts, tz) {
   } catch(e) { return ''; }
 }
 
+// Rouge flies ONLY the A319/A320/A321 family. The 16xx-19xx flight-number
+// range is a scheduling convention, not a guarantee — AC regularly upgauges
+// those numbers to mainline metal (AC1960 on a mainline A220-300). Tagging
+// such a flight 'RV' fabricates the operator badge AND breaks the aircraft
+// image: the livery lookup asks for '223r', which rightly doesn't exist, and
+// falls back to a generic white plane (Nick: 'its not even an air canada
+// aircraft its a 320 generic'). When equipment is KNOWN and outside Rouge's
+// fleet, the Rouge tag must not be applied. Unknown equipment → tag allowed.
+function _rougePossible(equipCode, equipName) {
+  var s = (String(equipCode || '') + ' ' + String(equipName || '')).toUpperCase();
+  if (!s.trim()) return true;
+  return /319|320|321|32N|32Q|32S|32A|32B/.test(s);
+}
+
 function estimateFlightDuration(fromIata, toIata) {
   const c1 = COORDS[fromIata], c2 = COORDS[toIata];
   if (!c1 || !c2) return null;
@@ -5179,7 +5193,7 @@ function renderMobileGateHtml(ctx) {
       var _mxm = (typeof acExpressMatrix === 'function') ? acExpressMatrix(_fn) : null;
       if (_mxm) _opCode = _mxm.op;
       else if ((_fn >= 7600 && _fn <= 7699) || (_fn >= 2200 && _fn <= 2299)) _opCode = 'PB';
-      else if (_fn >= 1600 && _fn <= 1999) _opCode = 'RV';
+      else if (_fn >= 1600 && _fn <= 1999 && _rougePossible(equipRaw, currentFlight._aircraft)) _opCode = 'RV';
     } else if (airline === 'WS' && _fn >= 3000 && _fn <= 3999) {
       _opCode = 'WR';
     }
@@ -6655,7 +6669,7 @@ function _buildV2MapCol(ctx, vars) {
     if (_mktIsAC && !isNaN(_acFlNum)) {
       if (_mxGate) _opCode = _mxGate.op;
       else if ((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299)) _opCode = 'PB';
-      else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
+      else if (_acFlNum >= 1600 && _acFlNum <= 1999 && _rougePossible(_equipCd, _equipNm)) _opCode = 'RV';
     }
     // Air Canada Express Dash 8-400s are flown by BOTH Jazz AND PAL Airlines.
     // The two are told apart by REGISTRATION: PAL uses its distinctive "P" series
@@ -14377,7 +14391,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22314';
+var FIDS_BUILD_TAG = 'v22315';
 (function(){
   try {
     function _addTag(){
@@ -17802,7 +17816,8 @@ function mapADB(raw, mode) {
     // range covers virtually all Rouge departures in 2026.
     if (!_opCode && airline === 'AC') {
       var _fnum = parseInt(flight.replace(/\D/g, ''));
-      if (_fnum >= 1600 && _fnum <= 2099) {
+      if (_fnum >= 1600 && _fnum <= 2099
+          && _rougePossible((f.aircraft && (f.aircraft.iataCodeShort || '')) || '', (f.aircraft && (f.aircraft.model || '')) || '')) {
         _opCode = 'RV';
         _opName = 'Air Canada Rouge';
       }
