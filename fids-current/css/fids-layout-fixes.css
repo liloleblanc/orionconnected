@@ -3026,3 +3026,14 @@ html .g8-board-welcome .g8-r1-star {
   opacity: 1 !important;
   object-fit: contain !important;
 }
+
+/* United — the Star Alliance mark reads CLEARLY beside the wordmark
+   (Nick-approved banner). flex-shrink:0 stops the wordmark crushing it. */
+.g8-wrap.g8-airline-UA .g8-r1-star {
+  opacity: 1 !important;
+  height: clamp(40px, 5.5vh, 64px) !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.45)) !important;
+  margin-left: clamp(10px, 1vw, 22px) !important;
+}

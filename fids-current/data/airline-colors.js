@@ -36,7 +36,7 @@ window.AIRLINE_BRAND_COLORS = {
   /* ── United States ──────────────────────────────────────────────────── */
   'DL': { r1:'#003366', r1Text:'#FFFFFF', r2:'#C01933', body:'#F4F6F9', bodyText:'#003366' }, // Delta (official)
   'AA': { r1:'#101820', r1Text:'#FFFFFF', r2:'#0078D2', body:'#E8EAEC', bodyText:'#0F172A' }, // American
-  'UA': { r1:'#002244', r1Text:'#FFFFFF', r2:'#003399', body:'#EAEDF2', bodyText:'#002244' }, // United (official)
+  'UA': { r1:'#0C2340', r1Text:'#FFFFFF', r2:'#0033A0', r3:'#69B3E7', body:'#E9EBEE', bodyText:'#0C2340' }, // United — OFFICIAL: Rhapsody Blue #0C2340 (dark) / United Blue #0033A0 / Sky Blue accent (Nick-approved)
   'AS': { r1:'#01426A', r1Text:'#FFFFFF', r2:'#2774AE', body:'#EDF2F6', bodyText:'#01426A' }, // Alaska (official)
   'WN': { r1:'#304CB2', r1Text:'#FFFFFF', r2:'#F9B612', body:'#EAEDF7', bodyText:'#304CB2' }, // Southwest
   'B6': { r1:'#003876', r1Text:'#FFFFFF', r2:'#00A1DE', body:'#EAF0F7', bodyText:'#003876' }, // JetBlue

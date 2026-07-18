@@ -2510,7 +2510,7 @@ const AIRLINE_BRAND = {
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
   'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
-  'UA': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#1414D2', name:'United' },
+  'UA': { bg1:'#0C2340', bg2:'#071A33', bg3:'#0033A0', accent:'#0033A0', name:'United' },  // official Rhapsody/United Blue (Nick)
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
   'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#7AFF94', name:'Flair' },
@@ -3929,7 +3929,7 @@ function wwayUrl(code, w, h) {
 
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
-  'DL':'#003366','AA':'#0078D2','UA':'#1414D2','WN':'#F9A01B',
+  'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
@@ -7305,14 +7305,21 @@ function uxgGateHtml(ctx) {
   var starHtml = '';
   // These carriers' banner wordmark IS the official combined
   // airline+alliance lockup — a separate mark would show the alliance twice.
-  var _COMBINED_ALLIANCE_LOCKUP = { 'UA': 1, 'KL': 1 };
+  // (UA removed — Nick wants United's globe+wordmark with the Star Alliance
+  // mark shown SEPARATELY, like every other Star carrier.)
+  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1 };
+  // Per-carrier alliance-mark override (Nick's official asset): United uses
+  // the official 2011 Star Alliance lockup, black backing stripped so the
+  // white mark floats on the banner.
+  var _ALLIANCE_MARK_OVERRIDE = { 'UA': '/logos/airlines/alliances/star-alliance-2011-white.svg' };
   var _allianceKey = ALLIANCE_MAP[airlineCode];
   if (_allianceKey && !_COMBINED_ALLIANCE_LOCKUP[airlineCode]) {
     var _allianceCls = 'g8-r1-star g8-r1-alliance-' + _allianceKey;
     // onerror hides only THIS img — the old window._allianceFailed flag was a
     // global kill switch: one transient 404 disabled alliance logos for the
     // rest of the session.
-    starHtml = '<img class="' + _allianceCls + '" src="' + ALLIANCE_LOGOS[_allianceKey] + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
+    var _allianceSrc = _ALLIANCE_MARK_OVERRIDE[airlineCode] || ALLIANCE_LOGOS[_allianceKey];
+    starHtml = '<img class="' + _allianceCls + '" src="' + _allianceSrc + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
   }
 
   // Clean diagonal lane arrow (plain stroke SVG — the unicode arrows render
@@ -7788,7 +7795,8 @@ function uxgGateHtml(ctx) {
     // Official COMBINED airline+alliance lockups (Nick: 'there are multiple
     // logos for alliance partners — use them'). Carriers with a combined
     // lockup skip the separate alliance mark (see _COMBINED_ALLIANCE_LOCKUP).
-    'UA': '/logos/airlines/us-major/United_Airlines_Logo_2019_full_Star_Alliance-monochrome-white.svg',
+    // UA override REMOVED (Nick-approved banner: colour globe + white UNITED
+    // wordmark via the emblem+wordmark path, Star Alliance as a SEPARATE mark).
     'KL': '/logos/airlines/european/KLM_Logo_2011_SkyTeam-monochrome-white.svg',
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
     'WG': '/logos/airlines/canadian/sunwing/Sunwing-Logo-White.png',             // Sunwing official white (Dec 2025 pack) for the dark banner
@@ -7959,6 +7967,14 @@ function uxgGateHtml(ctx) {
       && _BANNER_INK_COMP[_bannerWordmarkBase]) {
     _logoH = Math.round(_logoH * _BANNER_INK_COMP[_bannerWordmarkBase]);
   }
+  // Per-carrier banner-wordmark cap (Nick-approved United banner: UNITED at
+  // 52px beside the 88px globe, leaving room for the Star Alliance mark).
+  var _WM_BANNER_CAP = { 'UA': { h: 52, w: 300 } };
+  var _wmCap = _WM_BANNER_CAP[_bannerBrandCode] || _WM_BANNER_CAP[airlineCode];
+  if (_wmCap && typeof _bannerWmFromBase !== 'undefined' && _bannerWmFromBase) {
+    _logoH = Math.min(_logoH, _wmCap.h);
+    _sz = { h: _sz.h, w: Math.min(_sz.w || 480, _wmCap.w) };
+  }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + _sz.w + 'px !important;object-fit:contain;'
                  + (_useOverrideFile
@@ -7982,7 +7998,13 @@ function uxgGateHtml(ctx) {
     } catch (e) {}
   }
   var _bannerEmblemHtml = _bannerEmblemSrc
-    ? '<img class="g8-r1-emblem" src="' + _bannerEmblemSrc + '" alt="" style="width:64px;height:64px;min-width:64px;border-radius:12px;object-fit:contain;flex:0 0 auto;display:block;" onerror="this.remove()">'
+    ? (function () {
+        // Per-carrier emblem size — United's colour globe renders at the
+        // wordmark height (Nick-approved: like the MileagePlus lockup).
+        var _EMBLEM_SIZE = { 'UA': 88 };
+        var _embPx = _EMBLEM_SIZE[_bannerBrandCode] || _EMBLEM_SIZE[airlineCode] || 64;
+        return '<img class="g8-r1-emblem" src="' + _bannerEmblemSrc + '" alt="" style="width:' + _embPx + 'px;height:' + _embPx + 'px;min-width:' + _embPx + 'px;border-radius:12px;object-fit:contain;flex:0 0 auto;display:block;" onerror="this.remove()">';
+      })()
     : '';
   var r1LogoHtml = '';
   if (_g8LogoCache[airlineCode] === 'text') {
@@ -8023,7 +8045,7 @@ function uxgGateHtml(ctx) {
     // Hawaiian — WHITE banner / plumeria purple / cream body (white fuselage with silver lei)
     'HA': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#582C83', body: '#FBF7F2', bodyText: '#523090' },
     // United — black / United Blue / Runway Gray (matching the actual livery)
-    'UA': { r1: '#002244', r1Text: '#FFFFFF', r2: '#003399', body: '#EAEDF2', bodyText: '#002244' },
+    'UA': { r1: '#0C2340', r1Text: '#FFFFFF', r2: '#0033A0', body: '#E9EBEE', bodyText: '#0C2340' },
     // WestJet — WHITE banner / teal swoosh / white body (matches their white fuselage)
     'WS': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
@@ -8181,9 +8203,16 @@ function uxgGateHtml(ctx) {
     // ticking.
     +   (function () {
           var _tbYQM = String(iata).toUpperCase() === 'YQM';
-          // Non-YQM: a fixed deep slate — accent3 could match the gate accent
-          // (AC red next to red gate = 'red and red', per Nick at YHZ).
-          var _tbBg = _tbYQM ? '#003DA5' : '#1F2C44';
+          // Per-carrier time-tab colours (Nick's United banner: navy wordmark
+          // → RUNWAY GRAY time → white airport → blue gate). Light tabs flip
+          // to dark ink.
+          var _TB_SPEC = { 'UA': { bg: '#D0D0CE', ink: '#0C2340', inkSoft: 'rgba(12,35,64,0.82)' } };
+          var _tbSpec = _TB_SPEC[(typeof airlineCode !== 'undefined' ? airlineCode : '')] || null;
+          // Non-YQM default: a fixed deep slate — accent3 could match the gate
+          // accent (AC red next to red gate = 'red and red', per Nick at YHZ).
+          var _tbBg = _tbSpec ? _tbSpec.bg : (_tbYQM ? '#003DA5' : '#1F2C44');
+          var _tbInk = _tbSpec ? _tbSpec.ink : '#fff';
+          var _tbInkSoft = _tbSpec ? _tbSpec.inkSoft : 'rgba(255,255,255,0.88)';
           var _tbTz = (AP[iata] || {}).tz || '';
           var _tbNow = '';
           try {
@@ -8204,10 +8233,10 @@ function uxgGateHtml(ctx) {
             : 'calc(var(--gate-rcw, 25%) - 30px)';
           return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
-            +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
+            +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">'
             +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
             +     (_frF ? 'Heure <span style="opacity:.6">|</span> Time' : 'Time <span style="opacity:.6">|</span> Heure') + '</span>'
-            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(36px,5.4vh,76px);font-weight:900;color:#fff;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
+            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
         })()
@@ -14140,7 +14169,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22301';
+var FIDS_BUILD_TAG = 'v22302';
 (function(){
   try {
     function _addTag(){
