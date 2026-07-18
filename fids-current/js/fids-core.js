@@ -9182,7 +9182,21 @@ const gView = document.getElementById('gateView');
         durationStr = formatDuration(flightMins);
         const depTs = currentFlight._revTs || currentFlight._sortTs;
         const arrivalTs = depTs && flightMins ? depTs + flightMins * 60000 : null;
-        arrTimeStr = arrivalTs ? getTimeInTz(arrivalTs, arrTz) : '';
+        // 24-HOUR output, same shape as adbHHMM on the primary path. The old
+        // getTimeInTz here emitted '08:15 PM' and the downstream 12-hour
+        // formatters re-parsed the '08:15' as morning — Moncton 6:15 PM
+        // 'arrived' in Calgary at 8:15 AM (Nick).
+        arrTimeStr = arrivalTs
+          ? new Date(arrivalTs).toLocaleTimeString('en-GB', { timeZone: arrTz, hour: '2-digit', minute: '2-digit', hour12: false })
+          : '';
+        // Overnight estimate → same +1 day marker the primary path shows.
+        if (arrivalTs && depTs) {
+          try {
+            const _dD2 = new Date(depTs).toLocaleDateString('en-CA', { timeZone: depTz });
+            const _aD2 = new Date(arrivalTs).toLocaleDateString('en-CA', { timeZone: arrTz });
+            if (_dD2 !== _aD2) arrTimeStr += ' <span style="font-size:14px;color:#eab308;font-weight:700;">+1</span>';
+          } catch (e) {}
+        }
       }
       // Use revised time for boarding countdown when delayed
       const effectiveDepTs = currentFlight._revTs || currentFlight._sortTs;
@@ -9831,6 +9845,29 @@ const gView = document.getElementById('gateView');
         loadFlight(currentFlight.flight, _todayStr, _enrichIata).then(function(data) {
           if (!data || !currentFlight) return;
           var changed = false;
+
+          // ── REAL SCHEDULED ARRIVAL (Nick: 'thats not the arrival time
+          // regardless') ─────────────────────────────────────────────────
+          // The board feed row often lacks the arrival time or carries the
+          // departure time in that slot. THIS record is the flight's own ADB
+          // status — data.leg.arrival.scheduledTime is the airline's actual
+          // scheduled arrival. Backfill it whenever the row's value is
+          // missing or bogus, so the rail shows the REAL time; the distance
+          // estimate stays only as a last-resort fallback.
+          try {
+            var _legArrSt = data.leg && data.leg.arrival && data.leg.arrival.scheduledTime;
+            var _legArrLocal = _legArrSt && (_legArrSt.local || _legArrSt.utc);
+            if (_legArrLocal) {
+              var _legArrTs = adbTs(_legArrLocal);
+              var _legSane = _legArrTs && currentFlight._sortTs && (_legArrTs - currentFlight._sortTs) >= 20 * 60000;
+              var _rowArrTs = currentFlight._arrSchedLocal ? adbTs(currentFlight._arrSchedLocal) : 0;
+              var _rowBogus = !_rowArrTs || (currentFlight._sortTs && (_rowArrTs - currentFlight._sortTs) < 20 * 60000);
+              if (_legSane && _rowBogus) {
+                currentFlight._arrSchedLocal = _legArrLocal;
+                changed = true;
+              }
+            }
+          } catch (e) {}
 
           // ── EQUIPMENT LOCK ───────────────────────────────────────────────
           // currentFlight is rebuilt from the board feed on every refresh, so
@@ -14317,7 +14354,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22311';
+var FIDS_BUILD_TAG = 'v22312';
 (function(){
   try {
     function _addTag(){
