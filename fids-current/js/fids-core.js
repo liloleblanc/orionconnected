@@ -9950,6 +9950,35 @@ const gView = document.getElementById('gateView');
                            '· offered:', _eqIncoming.aircraft || '?', _eqIncoming.reg || 'no-reg', ')');
           var _eq = window._gateEquipLock;
 
+          // ROUGE-NUMBER EQUIPMENT SANITY (Nick: 'its a rouge number its not
+          // a 220 it may be a 320 it cant read it'). AC 16xx-19xx flights are
+          // Rouge, and Rouge flies only the A319/320/321 family. When today's
+          // data has NO confirmed tail and the lock offers a HISTORY/guessed
+          // airframe OUTSIDE that family (the stale 'Airbus A220-300 |
+          // C-GNAM' painted on AC1960), REJECT it — the Rouge badge stays,
+          // the aircraft shows its honest Pending state until the real jet
+          // is readable. Confirmed same-day telemetry (strength 3) is never
+          // rejected — a genuine upgauge shows as what it is.
+          try {
+            var _fnRv = parseInt(String(currentFlight.flight || '').replace(/\D/g, ''), 10);
+            var _isRougeNum = String(currentFlight.airline || '').toUpperCase() === 'AC'
+              && !isNaN(_fnRv) && _fnRv >= 1600 && _fnRv <= 1999;
+            if (_isRougeNum && _eq && _eqStrength(_eq) < 3) {
+              var _eqFam = (String(_eq.aircraftCode || '') + ' ' + String(_eq.aircraft || '')).toUpperCase();
+              if (_eqFam.trim() && !/319|320|321|32N|32Q|32S|32A|32B/.test(_eqFam)) {
+                var _rejReg = _eq.reg || '', _rejAc = _eq.aircraft || '', _rejCd = _eq.aircraftCode || '';
+                console.log('[FIDS] Rouge-number sanity: rejecting non-Rouge-fleet history equipment for',
+                            currentFlight.flight, '→', _rejAc || _rejCd || '?', _rejReg || 'no-reg');
+                // Strip any earlier application of the same stale values so the
+                // panel actually falls back to Pending instead of keeping them.
+                if (_rejReg && currentFlight._reg === _rejReg) { currentFlight._reg = ''; currentFlight._regSource = ''; changed = true; }
+                if (_rejAc && currentFlight._aircraft === _rejAc) { currentFlight._aircraft = ''; changed = true; }
+                if (_rejCd && currentFlight._aircraftCode === _rejCd) { currentFlight._aircraftCode = ''; changed = true; }
+                _eq = { key: _eq.key };   // apply nothing from the lock this round
+              }
+            }
+          } catch (e) {}
+
           // Registration — mirror the lock. The lock is monotonic (never
           // downgrades), so this can only upgrade a history tail to today's
           // confirmed one; the strict !currentFlight._reg guard blocked that
@@ -14377,7 +14406,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22314';
+var FIDS_BUILD_TAG = 'v22316';
 (function(){
   try {
     function _addTag(){
