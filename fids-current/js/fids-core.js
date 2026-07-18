@@ -6770,6 +6770,21 @@ function _buildV2MapCol(ctx, vars) {
       var _PAL_REGS = { 'CFPAL':1, 'CFPQI':1, 'CGPAO':1, 'CGPIX':1, 'CFPVJ':1, 'CGPFI':1 };
       if (_PAL_REGS[_regUp] || /^C[FG]P[A-Z][A-Z]$/.test(_regUp)) _opCode = 'PB';
     }
+    // GHOST-TAIL PURGE (harness-proven): a foreign tail carried in once by a
+    // stale cross-gate inbound was then RESURRECTED for up to 6 h by the
+    // sticky shelf above — 'Canadair CRJ-701ER | N632SK' stalking Porter and
+    // WestJet gates alike. Any reg that cannot belong to this carrier is
+    // dropped AND its sticky entry killed so it can never come back.
+    if (_acReg && typeof _equipSaneForCarrier === 'function'
+        && !_equipSaneForCarrier(vars.airlineCode, _opCode, _acReg, '')) {
+      _acReg = '';
+      try {
+        if (window._gateRegSticky && window._gateRegSticky.reg
+            && !_equipSaneForCarrier(vars.airlineCode, _opCode, window._gateRegSticky.reg, '')) {
+          window._gateRegSticky = null;
+        }
+      } catch (e) {}
+    }
     // PAL flies the Dash 8-400 only — keep the equipment consistent with the badge.
     if (_opCode === 'PB' && (_equipCd || _equipNm)) {
       var _pbEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
@@ -9386,7 +9401,12 @@ const gView = document.getElementById('gateView');
       // PRIMARY SOURCE: reg-based inbound from loadFlight. If present, use it.
       // FALLBACK: gate-match (only while reg lookup is pending). Once the reg
       //   result publishes to window._gateInbound, it will override on re-render.
-      const _regBasedInbound = (window._gateInbound && window._gateInbound._inboundSource === 'reg-lookup') ? window._gateInbound : null;
+      // Ownership check here too — the panel is BUILT from this value before
+      // the cleanup section below runs, so an un-owned stale inbound painted
+      // one full render (harness case: stale CRJ model on the fresh gate).
+      const _regBasedInbound = (window._gateInbound
+        && window._gateInbound._inboundSource === 'reg-lookup'
+        && window._gateInbound._forOutbound === currentFlight.flight) ? window._gateInbound : null;
       const inboundFlight = _regBasedInbound || _gateMatchFallback;
 
       if (inboundFlight) {
@@ -9716,7 +9736,18 @@ const gView = document.getElementById('gateView');
       // don't already have a reg-based result (which is more reliable).
       // Also: don't overwrite a real cached value with null — that causes
       // the panel to flicker between "Pending" and the real aircraft.
-      if (!(window._gateInbound && window._gateInbound._inboundSource === 'reg-lookup')) {
+      // Preserve a reg-lookup inbound ONLY while its own outbound owns this
+      // screen. Without the ownership check, a previous gate's reg-lookup
+      // inbound blocked the new gate's data and painted its airframe there
+      // (harness-proven leak: 'N632SK' following the gates around).
+      var _keepRegInb = window._gateInbound
+        && window._gateInbound._inboundSource === 'reg-lookup'
+        && window._gateInbound._forOutbound === currentFlight.flight;
+      if (!_keepRegInb) {
+        if (window._gateInbound && window._gateInbound._inboundSource === 'reg-lookup'
+            && window._gateInbound._forOutbound !== currentFlight.flight) {
+          window._gateInbound = null;   // foreign gate's airframe — never keep
+        }
         if (inboundFlight) {
           // Real new data — accept it
           window._gateInbound = inboundFlight;
@@ -9724,7 +9755,7 @@ const gView = document.getElementById('gateView');
           // No previous data either — set to null is fine (initial state)
           window._gateInbound = null;
         }
-        // else: keep the last known inbound, don't clear it
+        // else: keep the last known (non-reg-lookup) inbound, don't clear it
       }
       var _inbChanged = (_prevInbId !== _newInbId);
       window._gateInboundId = _newInbId;
@@ -10176,6 +10207,11 @@ const gView = document.getElementById('gateView');
           var _inbOk = data.inbound && (_eqAccepted || !window._gateInbound ||
                        (data.reg && _eq.reg && data.reg === _eq.reg));
           if (_inbOk) {
+            // Ownership tag — the preserve-guard in the render must only keep
+            // this reg-lookup inbound while ITS outbound owns the screen
+            // (harness-proven: an untagged one crossed gates and dragged its
+            // tail onto other flights' panels).
+            data.inbound._forOutbound = _enrichFlight;
             window._gateInbound = data.inbound;
             // Merge — don't let the board's (often altitude-less) telemetry blank
             // out a real altitude a previous update already wrote for this same
@@ -14556,7 +14592,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22322';
+var FIDS_BUILD_TAG = 'v22323';
 (function(){
   try {
     function _addTag(){
