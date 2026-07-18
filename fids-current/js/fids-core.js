@@ -9864,7 +9864,17 @@ const gView = document.getElementById('gateView');
               var _rowBogus = !_rowArrTs || (currentFlight._sortTs && (_rowArrTs - currentFlight._sortTs) < 20 * 60000);
               if (_legSane && _rowBogus) {
                 currentFlight._arrSchedLocal = _legArrLocal;
-                changed = true;
+                // Rebuild only the FIRST time this arrival lands. The row is
+                // rebuilt from the feed (bogus again) every refresh, so this
+                // backfill re-fires each time — flagging 'changed' every time
+                // forced a full gate rebuild per refresh, which wiped the
+                // stashed live speed/altitude until the next 90 s poll
+                // (Nick: 'had data and no longer shows a speed an altitude').
+                var _bfKey = String(currentFlight.flight) + '|' + _todayStr + '|' + _legArrLocal;
+                if (window._gateArrBackfilled !== _bfKey) {
+                  window._gateArrBackfilled = _bfKey;
+                  changed = true;
+                }
               }
             }
           } catch (e) {}
@@ -14354,7 +14364,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22312';
+var FIDS_BUILD_TAG = 'v22313';
 (function(){
   try {
     function _addTag(){
