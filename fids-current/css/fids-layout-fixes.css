@@ -1815,6 +1815,13 @@ html .g8-wrap .v2-rc-aircraft-op-inline img[src*="pal-airlines"] {
 .g8-bigcraft-active .gad-map-col-v2 .v2-rc-mapstats { position: static !important; inset: auto !important; }
 /* Map-only takeover: single column, no side panel. */
 .bigcraft-wrap--maponly { grid-template-columns: 1fr !important; }
+/* Nick's mockup shows the big map FLAT — edge-to-edge with a thin dark
+   border, not the thick navy ad-card frame + accent ring. */
+.bigcraft-wrap--maponly .bigcraft-mapcol {
+  border: 2px solid #0b1322 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+}
 
 /* Takeover life: soft pulse on the aircraft glyph. */
 .bigcraft-plane-pulse { animation: bigcraftPulse 2.6s ease-in-out infinite !important; }
