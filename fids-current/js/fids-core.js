@@ -6792,6 +6792,21 @@ function _buildV2MapCol(ctx, vars) {
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('DH4') : 'De Havilland Dash 8-400';
       }
     }
+    // Porter flies ONLY the Dash 8-400 and the E195-E2 — never a 737 or any
+    // mainline Boeing/Airbus. A mainline frame on a PD flight is
+    // cross-contaminated feed data (PD655 to Las Vegas showed 'Boeing
+    // 737-800 | C-FRWA' — a Flair tail — straight from the airport feed,
+    // bypassing the enrichment sanity gate). Trust the flight: show the
+    // E195-E2 (Porter's jet network; the YTZ pin above owns the Dash 8
+    // side) and DROP the foreign registration with it.
+    if ((String(vars.airlineCode || '').toUpperCase() === 'PD' || _opCode === 'PD') && (_equipCd || _equipNm)) {
+      var _pdEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
+      if (!/DH8|DH4|DHC|DASH|Q400|E19|195|E29|290|EMBRAER/.test(_pdEqUp)) {
+        _equipCd = 'E95';
+        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('E95') : 'Embraer E195';
+        _acReg = '';
+      }
+    }
     // Jazz only flies regional metal (CRJ-900 / Dash 8-400 / E175) — never a
     // mainline Airbus or Boeing. If the feed handed us a mainline frame on a
     // Jazz flight number the attribution is internally inconsistent; trust the
@@ -14541,7 +14556,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22321';
+var FIDS_BUILD_TAG = 'v22322';
 (function(){
   try {
     function _addTag(){
