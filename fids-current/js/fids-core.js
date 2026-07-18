@@ -2183,7 +2183,126 @@ function getDedicatedRenderKey() {
   return JSON.stringify({screenType:'main'});
 }
 
+// ── LIVE TELEMETRY ANIMATOR ────────────────────────────────────────────────
+// The inbound's real speed/altitude only refresh every few minutes. Nick wants
+// them to read live between fixes. This holds a modeled speed (kt) / altitude
+// (ft) that drifts by flight phase — steady w/ a gentle shimmer at cruise, and
+// gliding down toward touchdown on descent — eases toward each new REAL reading,
+// and writes the numbers into the on-screen telemetry spans in place (no full
+// re-render). The REAL feed is still the source of truth: on every new fix the
+// model re-anchors to it, so the displayed numbers can never wander far.
+window._gateTelemAnim = window._gateTelemAnim || {
+  spd: null, alt: null,            // displayed (modeled) values
+  realSpd: null, realAlt: null,    // last real anchor
+  realTs: 0, realSecToArr: null,   // when the anchor landed + its time-to-arrival
+  shimmerPh: 0
+};
+
+// Re-anchor to a fresh real reading. Called each render with the resolved
+// _liveSpd/_liveAlt; no-ops when the values haven't changed (so the descent
+// time-base isn't reset every re-render), and clears everything when the plane
+// isn't airborne.
+function _gateTelemSetReal(spdKt, altFt) {
+  var T = window._gateTelemAnim;
+  var sp = (typeof spdKt === 'number') ? spdKt : null;
+  var al = (typeof altFt === 'number') ? altFt : null;
+  if (sp === null && al === null) {
+    T.spd = null; T.alt = null; T.realSpd = null; T.realAlt = null; T.realSecToArr = null;
+    return;
+  }
+  if (sp === T.realSpd && al === T.realAlt) return;   // unchanged fix → keep drifting
+  var now = Date.now();
+  T.realSpd = sp; T.realAlt = al; T.realTs = now;
+  if (T.spd === null && sp !== null) T.spd = sp;
+  if (T.alt === null && al !== null) T.alt = al;
+  var inb = window._gateInbound;
+  var arrTs = inb && (inb._revTs || inb._sortTs);
+  T.realSecToArr = (arrTs && arrTs > now) ? (arrTs - now) / 1000 : null;
+}
+
+// Target for right now = the last REAL reading. No fabrication.
+// A prior version modeled a descent (altitude bled toward 0 across the padded
+// scheduled arrival) — it "dragged time" and held a plane at 1,800 ft for 10
+// minutes, and it never handled a climb (altitude sat flat while climbing).
+// We never invent motion now: the numbers ARE the real feed. Movement comes
+// from real readings refreshing (the fast poll below) — a climbing plane's
+// altitude rises because the aircraft's real altitude rose — smoothly eased.
+function _gateTelemModel() {
+  var T = window._gateTelemAnim;
+  if (T.realAlt === null && T.realSpd === null) return null;
+  return { spd: T.realSpd, alt: T.realAlt };
+}
+
+// Write the current modeled numbers into every on-screen telemetry span.
+function _writeGateTelemDom() {
+  var T = window._gateTelemAnim;
+  var els = document.querySelectorAll('[data-gtelem]');
+  if (!els || !els.length) return;
+  var spdKt = (T.spd !== null) ? Math.max(0, Math.round(T.spd)) : null;
+  var altFt = (T.alt !== null) ? Math.max(0, Math.round(T.alt)) : null;
+  var spdKph = (spdKt !== null) ? Math.round(spdKt * 1.852) : null;
+  for (var i = 0; i < els.length; i++) {
+    var kind = els[i].getAttribute('data-gtelem'), v = null;
+    if (kind === 'spd-kt') v = spdKt;
+    else if (kind === 'spd-kph') v = spdKph;
+    else if (kind === 'alt-ft') v = altFt;
+    if (v !== null) els[i].textContent = v.toLocaleString();
+  }
+}
+
+// One animation step (called every second from updateDedicatedTimeOnly). Eases
+// the displayed values toward the modeled target so new real readings glide in.
+function _animateGateTelem() {
+  var T = window._gateTelemAnim;
+  var m = _gateTelemModel();
+  if (!m) return;
+  if (m.spd !== null && m.spd !== undefined) T.spd = (T.spd === null) ? m.spd : T.spd + (m.spd - T.spd) * 0.18;
+  if (m.alt !== null && m.alt !== undefined) T.alt = (T.alt === null) ? m.alt : T.alt + (m.alt - T.alt) * 0.18;
+  _writeGateTelemDom();
+}
+
+// ── FAST NUMBERS-ONLY POLL ─────────────────────────────────────────────────
+// So the speed/altitude reflect real movement (a climb actually rising, etc.)
+// without waiting for the 5-min board cycle. This ONLY feeds the numbers: it
+// updates the inbound object's live speed/altitude and re-anchors the telemetry
+// animator. It deliberately does NOT touch window._gateInboundLivePos or the
+// map — the map stays exactly as it is, so nothing can get jumpy. loadFlight
+// caches 60s, so a 90s cadence always gets a fresh reading.
+var _gateNumPollBusy = false;
+async function _gateNumbersPoll() {
+  try {
+    if (_gateNumPollBusy) return;
+    if (typeof screenType !== 'undefined' && screenType !== 'gate') return;
+    var inb = window._gateInbound;
+    var flt = inb && inb.flight;
+    if (!flt) return;
+    if (/cancel|arriv|land/i.test(String(inb.status || ''))) return;   // on the ground → stop
+    var iata = '';
+    try { iata = (document.getElementById('apSel') || {}).value || ''; } catch (e) {}
+    iata = String(iata || window._gateIata || '').toUpperCase();
+    if (!iata) return;
+    _gateNumPollBusy = true;
+    var today = new Date().toISOString().slice(0, 10);
+    var inbData = await loadFlight(flt, today, inb._locIata || iata);
+    _gateNumPollBusy = false;
+    if (!inbData) return;
+    if (!window._gateInbound || window._gateInbound.flight !== flt) return;   // gate changed mid-fetch
+    var _lp = inbData.livePosition || {};
+    var _spd = (typeof _lp.speed === 'number') ? _lp.speed : null;
+    var _alt = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
+    if (_spd === null && _alt === null) return;
+    var liveSpd = (_spd !== null) ? Math.round(_spd) : null;
+    var liveAlt = (_alt !== null) ? Math.round(_alt) : null;
+    if (liveSpd !== null) inb._liveSpd = liveSpd;   // the panel reads _ib._liveSpd
+    if (liveAlt !== null) inb._liveAlt = liveAlt;
+    try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
+    try { console.log('[NUMPOLL]', flt, '→ spd', liveSpd, 'alt', liveAlt); } catch (e) {}
+  } catch (e) { _gateNumPollBusy = false; }
+}
+try { setInterval(_gateNumbersPoll, 90000); setTimeout(_gateNumbersPoll, 5000); } catch (e) {}
+
 function updateDedicatedTimeOnly() {
+  try { _animateGateTelem(); } catch (e) {}   // glide the live speed/altitude
   if (screenType === 'main') return;
   const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
@@ -4432,7 +4551,9 @@ function aircraftCodeToIata(raw) {
                  // v218.99.48 — Nick noted API sometimes returns bare '757' instead of 752/753.
                  // 757-200 is far more common than -300; default to that. Specific "757-200"
                  // and "757-300" full strings are matched by regex below and override this.
-                 '757':'752',
+                 // '75W' is the 757-200 winglet code (Delta's 757s carry it) — no
+                 // aircraft/**/75W.png livery exists, so map it to 752 like the others.
+                 '757':'752', '75W':'752', '75T':'752',
                  // A350 family: 'A35K' is the ICAO code for the A350-1000 (e.g. B-LXA);
                  // bare '350'/'A35' (feed shorthand or upstream truncation) default to the
                  // -900 image — there is no aircraft/A35.png or 350.png, only 359/351.
@@ -4536,6 +4657,10 @@ function aircraftCodeToIata(raw) {
   if (/767[\s-]*400/i.test(s)) return '764';
   if (/757[\s-]*200/i.test(s)) return '752';
   if (/757[\s-]*300/i.test(s)) return '753';
+  // Bare "Boeing 757" / "757" with NO variant (what the ADB reg lookup returns
+  // for Delta's 757s, e.g. N819DX) — default to the 757-200 image so it doesn't
+  // fall through to the generic A320 white plane (Nick).
+  if (/\b757\b/.test(s)) return '752';
 
   // ── 747 ──
   if (/747[\s-]*400/i.test(s)) return '744';
@@ -5835,6 +5960,14 @@ function _buildV2MapCol(ctx, vars) {
       // Speed and altitude appear together or not at all — never one without a
       // genuine airborne altitude (that produced "141 kph at 0 ft").
       if (_liveAlt === null || _liveAlt <= 0) { _liveAlt = null; _liveSpd = null; }
+      // Feed the real reading to the live-telemetry animator and DISPLAY its
+      // current modeled value, so numbers glide between fixes and a full
+      // re-render doesn't snap them back to the last raw fix (see
+      // _gateTelemSetReal / _animateGateTelem).
+      try { _gateTelemSetReal(_liveSpd, _liveAlt); } catch (e) {}
+      var _tAnim = window._gateTelemAnim || {};
+      var _liveSpdD = (_liveSpd !== null && _tAnim.spd != null) ? Math.max(0, Math.round(_tAnim.spd)) : _liveSpd;
+      var _liveAltD = (_liveAlt !== null && _tAnim.alt != null) ? Math.max(0, Math.round(_tAnim.alt)) : _liveAlt;
       var _tz = vars.tz || 'UTC';
       var _destIata = (vars.iata || '').toString().toUpperCase();
       var _origIata = (_ib._locIata || '').toString().toUpperCase();
@@ -5925,8 +6058,8 @@ function _buildV2MapCol(ctx, vars) {
       var _telem = '';
       if (_liveSpd !== null || _liveAlt !== null) {
         var _telemBits = [];
-        if (_showSpd && _liveSpd !== null) _telemBits.push('<span class="v2-rc-telem-k">SPD</span> <span class="v2-rc-telem-v">' + _liveSpd + '</span>');
-        if (_showAlt && _liveAlt !== null) _telemBits.push('<span class="v2-rc-telem-k">ALT</span> <span class="v2-rc-telem-v">' + _liveAlt.toLocaleString() + '</span>');
+        if (_showSpd && _liveSpd !== null) _telemBits.push('<span class="v2-rc-telem-k">SPD</span> <span class="v2-rc-telem-v" data-gtelem="spd-kt">' + _liveSpdD + '</span>');
+        if (_showAlt && _liveAlt !== null) _telemBits.push('<span class="v2-rc-telem-k">ALT</span> <span class="v2-rc-telem-v" data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>');
         if (_telemBits.length) _telem = '<div class="v2-rc-telem">' + _telemBits.join('<span class="v2-rc-telem-sep">·</span>') + '</div>';
       }
 
@@ -5941,11 +6074,11 @@ function _buildV2MapCol(ctx, vars) {
             '<div class="v2-rc-keystats">'
           +   '<div class="v2-rc-keystat">'
           +     '<div class="v2-rc-keystat-lbl">' + _spdLbl + '</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_liveSpd !== null ? (_liveSpd.toLocaleString() + ' kt') : '—') + '</div>'
+          +     '<div class="v2-rc-keystat-val">' + (_liveSpd !== null ? ('<span data-gtelem="spd-kt">' + _liveSpdD.toLocaleString() + '</span> kt') : '—') + '</div>'
           +   '</div>'
           +   '<div class="v2-rc-keystat">'
           +     '<div class="v2-rc-keystat-lbl">' + _altLbl + '</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_liveAlt !== null ? (_liveAlt.toLocaleString() + ' ft') : '—') + '</div>'
+          +     '<div class="v2-rc-keystat-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span> ft') : '—') + '</div>'
           +   '</div>'
           + '</div>';
 
@@ -5982,7 +6115,7 @@ function _buildV2MapCol(ctx, vars) {
       // REAL telemetry only. Speed/altitude come from live ADS-B (via the board
       // feed or the by-number fetch). When there is no live fix, we show "—" —
       // we do NOT fabricate a value. No estimates.
-      var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpd * 1.852) : null;
+      var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpdD * 1.852) : null;
       var _altUnit = ({en:'ft',fr:'pieds',es:'pies',de:'ft',it:'piedi',pt:'pés',ja:'ft',zh:'英尺',ar:'قدم'})[_ibLang] || 'ft';
       var _spdUnit = ({en:'kph',fr:'kph',es:'km/h',de:'kph',it:'kph',pt:'kph',ja:'kph',zh:'kph',ar:'kph'})[_ibLang] || 'kph';
       var _ICO_SPD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4.5-5.5"/></svg>';
@@ -6103,10 +6236,10 @@ function _buildV2MapCol(ctx, vars) {
         _telemBar =
             '<div class="v2-rc-mapstats">'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div>'
-          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? _spdKph.toLocaleString() : '—') + ' <span class="v2-rc-ms-unit">' + _spdUnit + '</span></div>'
+          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + _spdKph.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">' + _spdUnit + '</span></div>'
           +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Vitesse',es:'Velocidad'}[_lang2] || 'Vitesse') + '</div></div>'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div>'
-          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? _liveAlt.toLocaleString() : '—') + ' <span class="v2-rc-ms-unit">' + _altUnit + '</span></div>'
+          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">' + _altUnit + '</span></div>'
           +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Altitude',es:'Altitud'}[_lang2] || 'Altitude') + '</div></div>'
           + '</div>';
       }
@@ -9176,6 +9309,9 @@ const gView = document.getElementById('gateView');
         window._gateAircraftImg = null;
         window._gateInbound = null;
         window._gateInboundLivePos = null;
+        // New flight → wipe the live-telemetry animator so the previous plane's
+        // gliding speed/altitude don't bleed into the new one.
+        window._gateTelemAnim = { spd:null, alt:null, realSpd:null, realAlt:null, realTs:0, realSecToArr:null, shimmerPh:0 };
         window._gateLastFlightKey = currentFlight.flight;
         // The ad carousel is preserved across gate rebuilds (videos must not
         // restart) — but a mounted flight-map slide belongs to the PREVIOUS
@@ -13897,7 +14033,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22298';
+var FIDS_BUILD_TAG = 'v22274';
 (function(){
   try {
     function _addTag(){
@@ -16162,13 +16298,27 @@ async function adbFetch(iata, direction) {
           console.warn(`[FIDS] MCO ADB enrich ${direction}: ${e.message} — feed shows without aircraft/position`);
         }
         console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
-        return direction === 'Departure' ? { departures: list } : { arrivals: list };
+        // Cache this good GOAA result so a transient blip on the next poll
+        // returns the last-known GOAA list instead of swapping the whole board
+        // to ADB's conflicting gate assignments (that was the Delta↔Frontier
+        // flip-flop on gate 71). GOAA is the ONLY source for the flight list;
+        // ADB is enrichment only.
+        const _mcoOut = direction === 'Departure' ? { departures: list } : { arrivals: list };
+        window._mcoLastGood = window._mcoLastGood || {};
+        window._mcoLastGood[dir] = _mcoOut;
+        return _mcoOut;
       }
-      // 503 (key not set) / any non-OK — log and fall through to the ADB
-      // scrape so the board still shows *something* rather than going blank.
-      console.warn(`[FIDS] MCO feed ${iata} ${direction}: HTTP ${r.status} — falling back to ADB scrape`);
+      // Non-OK (503 key-not-set, 5xx, etc.). Do NOT fall through to the ADB
+      // scrape — ADB's gate assignments differ from GOAA's and swapping the
+      // whole list mid-session flip-flops the gate. Return the last-good GOAA
+      // list if we have one; only fall through on a genuine cold start.
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: HTTP ${r.status} — using last-good GOAA`);
+      if (window._mcoLastGood && window._mcoLastGood[dir]) return window._mcoLastGood[dir];
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: no cached GOAA yet — cold-start ADB fallback`);
     } catch (e) {
-      console.warn(`[FIDS] MCO feed ${iata} ${direction}: ${e.message} — falling back to ADB scrape`);
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: ${e.message} — using last-good GOAA`);
+      if (window._mcoLastGood && window._mcoLastGood[dir]) return window._mcoLastGood[dir];
+      console.warn(`[FIDS] MCO feed ${iata} ${direction}: no cached GOAA yet — cold-start ADB fallback`);
     }
   }
   // ── ADB SCRAPE: source of truth for the flight LIST ─────────────────
@@ -19704,7 +19854,14 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
   var _glSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
-             : (window._gateMapFix && typeof window._gateMapFix.speed === 'number' ? window._gateMapFix.speed : 0);
+             : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
+             // Fall back to the same live speed the info panel resolved (the
+             // separate _gateInboundLivePos cache is often empty even when the
+             // panel shows a speed — that left the glide seeded at 0 and the
+             // plane sat still while the numbers ticked). Last resort: a nominal
+             // cruise so an airborne plane always drifts rather than freezing.
+             : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
+             : 0;
   _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd);
   setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
 }
@@ -19718,11 +19875,13 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 // initGateMapLive re-seeds it to the true position — a gentle correction, not
 // a jump. It ONLY nudges the marker + the two route arcs; it never re-inits,
 // re-centres, or re-renders the map, so it can't reintroduce the map thrash.
-var _gateGlide = { timer: null };
+var _gateGlide = { timer: null, raf: null };
 
 function _stopGateMapGlide() {
   try { if (_gateGlide.timer) clearInterval(_gateGlide.timer); } catch (e) {}
+  try { if (_gateGlide.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(_gateGlide.raf); } catch (e) {}
   _gateGlide.timer = null;
+  _gateGlide.raf = null;
 }
 
 // Great-circle path org→dst as plain [lat,lng] points (antimeridian-normalised),
@@ -19771,43 +19930,85 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     if (dsq < bestDsq) { bestDsq = dsq; best = i; }
   }
   var p = best / (n - 1);
-  var lastTs = Date.now();
-  function bearingAt(idx) {
-    var i2 = Math.min(idx + 1, n - 1), i1 = Math.max(0, i2 - 1);
-    var A = route[i1], B = route[i2];
+  var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
+  var lastTs = _nowFn();
+  var lastArcIdx = -1;
+  function bearingBetween(A, B) {
     var dLng = (B[1] - A[1]) * Math.PI / 180;
     var lat1 = A[0] * Math.PI / 180, lat2 = B[0] * Math.PI / 180;
     var y = Math.sin(dLng) * Math.cos(lat2);
     var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
     return Math.atan2(y, x) * 180 / Math.PI;
   }
-  _gateGlide.timer = setInterval(function () {
+  // Continuous animation-frame glide: the plane advances smoothly EVERY frame,
+  // interpolating BETWEEN route vertices (no 1-second stepping / vertex snap),
+  // so it reads as a real gliding aircraft. When the next real ADS-B fix lands,
+  // initGateMapLive re-seeds this to the true spot — a gentle correction.
+  function frame() {
     try {
       if (!marker._map) { _stopGateMapGlide(); return; }   // map/marker torn down
-      var now = Date.now();
-      var dtH = (now - lastTs) / 3600000;
+      var now = _nowFn();
+      var dtMs = now - lastTs;
       lastTs = now;
+      // Clamp dt so a backgrounded tab (rAF paused) doesn't teleport the plane
+      // on return — cap each step at 2s of travel.
+      if (dtMs > 2000) dtMs = 2000;
+      if (dtMs < 0) dtMs = 0;
+      var dtH = dtMs / 3600000;
       // The MOTION model adjusts its ASSUMED speed by flight phase so the plane
       // eases along a realistic profile — accelerating off the origin and
       // bleeding speed down the glideslope into the destination instead of
-      // sailing in at cruise (Nick: 'it should read what we get, don't change
-      // that — it may just need to adjust speed/altitude for glideslope'). The
-      // Ground Speed / Altitude NUMBERS are untouched: they stay the real feed.
+      // sailing in at cruise. The Ground Speed / Altitude NUMBERS are untouched:
+      // they stay the real feed.
       var factor = 1;
       if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
       else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
       var effSpeed = speedKts * Math.max(0.2, factor);
       p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
-      var idx = Math.min(n - 1, Math.max(0, Math.floor(p * (n - 1))));
-      marker.setLatLng(route[idx]);
+      // Fractional position along the polyline → smooth sub-vertex motion.
+      var fi = p * (n - 1);
+      var i0 = Math.min(n - 2, Math.max(0, Math.floor(fi)));
+      var i1 = i0 + 1;
+      var frac = fi - i0;
+      var A = route[i0], B = route[i1];
+      var lat = A[0] + (B[0] - A[0]) * frac;
+      var lng = A[1] + (B[1] - A[1]) * frac;
+      marker.setLatLng([lat, lng]);
       try {
         var div = (marker._icon && marker._icon.querySelector) ? marker._icon.querySelector('div') : null;
-        if (div) div.style.transform = 'rotate(' + bearingAt(idx) + 'deg)';
+        if (div) div.style.transform = 'rotate(' + bearingBetween(A, B) + 'deg)';
       } catch (er) {}
-      try { if (a1 && a1.setLatLngs) a1.setLatLngs(route.slice(0, idx + 1)); } catch (er) {}
-      try { if (a2 && a2.setLatLngs) a2.setLatLngs(route.slice(idx)); } catch (er) {}
+      // Redraw the solid-behind / dashed-ahead split only when we cross a vertex
+      // (cheap) — the marker itself glides every frame.
+      if (i0 !== lastArcIdx) {
+        lastArcIdx = i0;
+        try { if (a1 && a1.setLatLngs) a1.setLatLngs(route.slice(0, i1)); } catch (er) {}
+        try { if (a2 && a2.setLatLngs) a2.setLatLngs(route.slice(i0)); } catch (er) {}
+      }
+      // FOLLOW THE PLANE — keep it in view. At a tight approach/departure zoom
+      // the plane otherwise glides straight off the little map window and
+      // 'disappears' (Nick), because the view stays centred on the last real
+      // fix from minutes ago. Re-centre (no animation, so no tile thrash) only
+      // once it drifts past ~38% from centre, so it still visibly moves across
+      // the map between recentres instead of being pinned dead-centre.
+      try {
+        if (map.getSize && map.latLngToContainerPoint && map.getZoom) {
+          var _sz = map.getSize();
+          var _pt = map.latLngToContainerPoint([lat, lng]);
+          if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.38 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.38) {
+            map.setView([lat, lng], map.getZoom(), { animate: false });
+            gateMap._fidsLastView = { lat: lat, lng: lng, zoom: map.getZoom() };
+          }
+        }
+      } catch (er) {}
+      if (typeof requestAnimationFrame === 'function') _gateGlide.raf = requestAnimationFrame(frame);
     } catch (e) { _stopGateMapGlide(); }
-  }, 1000);
+  }
+  if (typeof requestAnimationFrame === 'function') {
+    _gateGlide.raf = requestAnimationFrame(frame);
+  } else {
+    _gateGlide.timer = setInterval(frame, 250);  // fallback for no-rAF environments
+  }
 }
 // ──────────────────────────────────────────────────────────────────────
 // CINEMATIC MAP CAMERA  (tracks aircraft by REGISTRATION)
@@ -19928,20 +20129,15 @@ function _gateMapTick() {
     _gateMapCamera.nextFlybackAt = now + 60000; // first flyback ~60s in
   }
 
-  // Cruise flyback timing — only when actively cruising
-  var inCruise = (phase === 'airborne' && prog >= 0.25 && prog <= 0.75);
+  // Flyback REMOVED (Nick: 'plane totally disappears comes back'). The old
+  // every-60s whole-route zoom-out hid the live plane for 10s each minute —
+  // reading as the aircraft vanishing. The plane now stays on screen the
+  // whole time, gliding continuously between real fixes.
   var flybackActive = false;
-  if (inCruise) {
-    if (now >= _gateMapCamera.nextFlybackAt && now > _gateMapCamera.flybackUntil) {
-      _gateMapCamera.flybackUntil = now + 10000;          // 10s flyback
-      _gateMapCamera.nextFlybackAt = now + 60000;          // next in 60s
-    }
-    flybackActive = (now < _gateMapCamera.flybackUntil);
-  }
 
-  // Build a stable key — only rebuild if a phase boundary crosses or flyback toggles
+  // Build a stable key — only rebuild if a phase boundary crosses
   var progBucket = (prog < 0) ? 'pre' : Math.round(prog * 50);
-  var progKey = phase + '|' + progBucket + (flybackActive ? '|fb' : '');
+  var progKey = phase + '|' + progBucket;
   if (progKey === _gateMapCamera.lastProgKey && !subjectChanged) return;
   _gateMapCamera.lastProgKey = progKey;
 
@@ -26253,8 +26449,8 @@ function _renderBigCraft(el, ctx) {
     // (Nick: 'All this and more needs to be on the big map'). Honest by
     // construction: rows only exist with a REAL live fix (ctx.pos), never
     // at time-progress/estimated.
-    +       ((ctx.pos && ctx.speedKph) ? row('Speed', 'Vitesse', ctx.speedKph.toLocaleString() + ' kph') : '')
-    +       ((ctx.pos && ctx.altFt) ? row('Altitude', 'Altitude', ctx.altFt.toLocaleString() + ' ft <span class="v2-rc-fi-sep">|</span> pieds') : '')
+    +       ((ctx.pos && ctx.speedKph) ? row('Speed', 'Vitesse', '<span data-gtelem="spd-kph">' + ctx.speedKph.toLocaleString() + '</span> kph') : '')
+    +       ((ctx.pos && ctx.altFt) ? row('Altitude', 'Altitude', '<span data-gtelem="alt-ft">' + ctx.altFt.toLocaleString() + '</span> ft <span class="v2-rc-fi-sep">|</span> pieds') : '')
     +       (ctx.etaStr ? row('Arrives in', 'Arrive dans', ctx.etaStr) : '')
     +       (ctx.destWx ? row('Weather', 'Météo', ctx.destWx) : '')
     +       ((ctx.acType || reg) ? row('Aircraft', 'Avion', (ctx.acType || '—') + reg) : '')
