@@ -1313,6 +1313,39 @@ function scheduleGateControlsAutoHide() {
   }, 1800);
 }
 
+// ── CROSS-DEVICE SCREEN STATE (Nick: "They need to be connected to the same
+// devices … I'm not connecting in the same system whatsoever") ──────────────
+// The URL always mirrors the full screen state: ?ap= is kept in sync by
+// onApChange, and ?screen= + ?gate=/?belt= are kept in sync here. Copy the
+// address bar onto ANY device — phone, TV, laptop — and it lands on the SAME
+// airport, screen type and gate/belt. localStorage stays the per-display
+// memory across reloads; the URL is the cross-device carrier and WINS on
+// load (see SCREEN-STATE RESTORE near the end of this file).
+function _fidsSyncUrl(t, s) {
+  try {
+    if (window.self !== window.top) return;   // rotator iframe — leave frame URLs alone
+    if (document.documentElement.classList.contains('fids-stream')) return;
+    var q = new URLSearchParams(window.location.search);
+    if (document.body && document.body.getAttribute('data-page')) {
+      // Dedicated gids/bids pages carry their gate/belt natively (?gate= /
+      // ?belt=) and auto-pick one when absent. Only REFRESH a param the URL
+      // already has — a plain gids.html (auto-pick, walking lobby screen)
+      // keeps its URL clean so reloads keep auto-picking.
+      var keyD = (t === 'baggage') ? 'belt' : 'gate';
+      if (!q.get(keyD) || !s) return;
+      q.set(keyD, s);
+    } else {
+      q.delete('screen'); q.delete('sub'); q.delete('gate'); q.delete('belt'); q.delete('carousel');
+      if (t && t !== 'main') {
+        q.set('screen', t);
+        if (s) q.set((t === 'baggage') ? 'belt' : 'gate', s);
+      }
+    }
+    var qs = q.toString();
+    history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+  } catch (e) {}
+}
+
 function changeScreenType(val) {
   screenType = val;
   // Survive the self-update reloads: a screen put into gate/baggage mode via
@@ -1350,6 +1383,10 @@ function changeScreenType(val) {
     render();
     if (val === 'gate') scheduleGateControlsAutoHide();
   }
+  // URL sync AFTER updateSubScreens — it settles subScreenVal for the new
+  // type (kept when still valid, else first available), so the URL never
+  // carries a gate number from the previous screen type.
+  _fidsSyncUrl(val, (val === 'main') ? '' : (typeof subScreenVal !== 'undefined' ? subScreenVal : ''));
 }
 
 function changeSubScreen(val) {
@@ -1358,6 +1395,7 @@ function changeSubScreen(val) {
   // "DOM text reinterpreted as HTML" source) before it flows into the gate
   // innerHTML. Gates/belts are alphanumeric — strip anything else (incl. < > & ").
   subScreenVal = String(val == null ? '' : val).replace(/[^A-Za-z0-9 ./\-]/g, '');
+  _fidsSyncUrl((typeof screenType !== 'undefined' ? screenType : 'main'), subScreenVal);
   render();
 }
 
@@ -14226,7 +14264,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22306';
+var FIDS_BUILD_TAG = 'v22307';
 (function(){
   try {
     function _addTag(){
@@ -26551,9 +26589,29 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // the departures screen came up as a GATE ("no FIDS screen" on the stream).
     // Only the top-level, non-stream board page honours a saved screen type.
     if (window.self !== window.top || document.documentElement.classList.contains('fids-stream')) return;
-    var raw = localStorage.getItem('fids_screen_state');
-    if (!raw) return;
-    var st = JSON.parse(raw);
+    // CROSS-DEVICE (Nick: "They need to be connected to the same devices"):
+    // the URL is the shareable carrier of screen state and BEATS this
+    // display's own localStorage. ?screen=gate&gate=95 (aliases ?sub= /
+    // ?carousel=; a bare ?gate= or ?belt= implies its screen type) lands ANY
+    // device on that exact screen — same link, same screen, every device.
+    // An explicit ?screen=main forces the departures board even when this
+    // display last remembered a gate. Both sources feed the SAME apply path
+    // below — one engine, not two.
+    var st = null;
+    try {
+      var q = new URLSearchParams(window.location.search);
+      var uT = (q.get('screen') || '').trim().toLowerCase();
+      var uS = q.get('sub') || q.get('gate') || q.get('belt') || q.get('carousel') || '';
+      if (!uT && q.get('gate')) uT = 'gate';
+      if (!uT && (q.get('belt') || q.get('carousel'))) uT = 'baggage';
+      if (uT === 'gate' || uT === 'baggage') st = { t: uT, s: uS };
+      else if (uT === 'main') return;          // explicit main — never restore over it
+    } catch (e) {}
+    if (!st) {
+      var raw = localStorage.getItem('fids_screen_state');
+      if (!raw) return;
+      st = JSON.parse(raw);
+    }
     if (!st || !st.t || st.t === 'main') return;
     var tries = 0;
     var iv = setInterval(function () {
@@ -26572,9 +26630,18 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
           setTimeout(function () {
             try {
               var sub = document.getElementById('subScreenSel');
-              if (sub && Array.prototype.some.call(sub.options, function (o) { return o.value === st.s; })) {
-                sub.value = st.s;
-                if (typeof changeSubScreen === 'function') changeSubScreen(st.s);
+              if (!sub) return;
+              // Loose match like gids.html: exact first, then case/space/dash
+              // insensitive — so ?gate=d2 still finds gate "D2".
+              var want = String(st.s).toUpperCase().replace(/[\s-]/g, '');
+              var hit = null;
+              for (var i = 0; i < sub.options.length; i++) {
+                var ov = String(sub.options[i].value);
+                if (ov === st.s || ov.toUpperCase().replace(/[\s-]/g, '') === want) { hit = ov; break; }
+              }
+              if (hit != null) {
+                sub.value = hit;
+                if (typeof changeSubScreen === 'function') changeSubScreen(hit);
               }
             } catch (e) {}
           }, 1200);
