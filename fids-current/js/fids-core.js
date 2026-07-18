@@ -2271,6 +2271,10 @@ function _gateTelemSetReal(spdKt, altFt) {
   }
   if (sp === T.realSpd && al === T.realAlt) return;   // unchanged fix → keep drifting
   var now = Date.now();
+  // Remember the PREVIOUS real fix — the pair (prev, real) measures the
+  // actual climb/descent/accel rate, which the model below continues
+  // between pings (Nick's glide rule, applied to the digits).
+  if (T.realTs) { T.prevSpd = T.realSpd; T.prevAlt = T.realAlt; T.prevTs = T.realTs; }
   T.realSpd = sp; T.realAlt = al; T.realTs = now;
   if (T.spd === null && sp !== null) T.spd = sp;
   if (T.alt === null && al !== null) T.alt = al;
@@ -2289,7 +2293,34 @@ function _gateTelemSetReal(spdKt, altFt) {
 function _gateTelemModel() {
   var T = window._gateTelemAnim;
   if (T.realAlt === null && T.realSpd === null) return null;
-  return { spd: T.realSpd, alt: T.realAlt };
+  var spd = T.realSpd, alt = T.realAlt;
+  // TREND BRIDGE — the map glide's rule applied to the digits (Nick:
+  // 'calculate approx, then adjust with the pings'). Between real fixes,
+  // continue the RATE measured between the last two fixes, so a plane on
+  // final keeps visibly descending instead of freezing at the last ping
+  // for 90 s (video: locked at 230 kph / 825 ft through the approach).
+  // This is measured motion carried forward, not an invented profile:
+  // clamped to sane rates, trusted max 120 s, re-anchored by every ping.
+  try {
+    var now = Date.now();
+    var age = (now - (T.realTs || 0)) / 1000;
+    if (T.prevTs && T.realTs && T.realTs > T.prevTs && age > 0 && age < 120) {
+      var span = (T.realTs - T.prevTs) / 1000;
+      if (span >= 20 && span <= 300) {
+        if (typeof T.prevAlt === 'number' && typeof alt === 'number') {
+          var altRate = (alt - T.prevAlt) / span;                     // ft/s
+          altRate = Math.max(-50, Math.min(50, altRate));             // ≤3000 fpm
+          alt = Math.max(0, alt + altRate * age);
+        }
+        if (typeof T.prevSpd === 'number' && typeof spd === 'number') {
+          var spdRate = (spd - T.prevSpd) / span;                     // kt/s
+          spdRate = Math.max(-1.5, Math.min(1.5, spdRate));
+          spd = Math.max(0, spd + spdRate * age);
+        }
+      }
+    }
+  } catch (e) {}
+  return { spd: spd, alt: alt };
 }
 
 // Write the current modeled numbers into every on-screen telemetry span.
@@ -2486,6 +2517,17 @@ try {
       if (typeof screenType !== 'undefined' && screenType === 'gate'
           && typeof window._gateMapRetry === 'function'
           && document.getElementById('gateMapBox')) {
+        // MARKER WATCHDOG (Nick's approach video: street-zoom map with NO
+        // plane on it): a LIVE map whose plane marker is gone — teardown
+        // race, hidden-container rebuild — must not sit empty. Reset the
+        // pos/prog guards so this very tick rebuilds it plane-and-all.
+        try {
+          if (typeof gateMap !== 'undefined' && gateMap && gateMap._fidsRouteKey
+              && (!window._gatePlaneMk || !window._gatePlaneMk._map)) {
+            console.log('[MAP-WATCHDOG] live map lost its plane marker — forcing rebuild');
+            window._lastMapPosKey = null; window._lastMapProgKey = null;
+          }
+        } catch (e2) {}
         window._gateMapRetry();
       }
     } catch (e) {}
@@ -14406,7 +14448,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22316';
+var FIDS_BUILD_TAG = 'v22317';
 (function(){
   try {
     function _addTag(){
@@ -20121,7 +20163,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
       // Center on plane during cruise
       if (p >= 0.12 && p <= 0.88) {
         gateMap.setView(planePos, zoom);
@@ -20251,7 +20293,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  var _planeMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+  var _planeMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
   _ov.push(_planeMk);
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
@@ -20264,6 +20306,8 @@ function initGateMapLive(org,dst,planeLat,planeLng){
              // cruise so an airborne plane always drifts rather than freezing.
              : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
              : 0;
+  window._gatePlaneMk = _planeMk;
+  try { console.log('[MAP-LIVE] plane @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'z' + zoom, 'glideKts', _glSpd); } catch (e) {}
   _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd);
   setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
 }
@@ -20318,7 +20362,7 @@ function _gcNm(a, b) {
 function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts) {
   _stopGateMapGlide();
   if (!map || !marker || typeof L === 'undefined') return;
-  if (!(speedKts > 0)) return;                 // no live speed → nothing to reckon
+  if (!(speedKts > 0)) { try { console.log('[GLIDE] not started — no live speed (marker stays put)'); } catch (e) {} return; }
   var route = _gcFullRoute(o, d, 120);
   var n = route.length;
   if (n < 2) return;
@@ -27341,7 +27385,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
       // Center on plane during cruise
       if (p >= 0.12 && p <= 0.88) {
         window._bigCraftMap.setView(planePos, zoom);
@@ -27413,7 +27457,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  var _bcPlaneMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+  var _bcPlaneMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
   // SAME PROGRAMMING as the mini map (Nick: 'big screen and little screen need
   // same programming — it's not separate'): the identical glide engine now
   // dead-reckons the plane along the route on the BIG map too. The big plane
