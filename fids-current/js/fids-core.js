@@ -14102,7 +14102,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22291';
+var FIDS_BUILD_TAG = 'v22292';
 (function(){
   try {
     function _addTag(){
@@ -22570,23 +22570,6 @@ function getGateAds() {
   if (accorCache && accorCache.hotels) {
     accorAds = accorCache.hotels;
   }
-  // ── ALL fallback (Nick: 'I meant Accor — the advert is not working') ────
-  // Many US destinations have ZERO Accor properties in radius (Houston,
-  // Atlanta, Nashville…), so the Accor slot silently vanished from US gates.
-  // Guarantee an Accor presence: when the destination list is empty (or the
-  // fetch failed / is still in flight), fill the slot with the corporate
-  // ALL — Accor Live Limitless house ad. Real hotels replace it on the next
-  // deck rebuild once the fetch lands.
-  if (!accorAds.length) {
-    var _allLang = (typeof _accorLangNow === 'function') ? _accorLangNow() : 'en';
-    accorAds = [{
-      isAccorCorp: true,
-      bg: 'linear-gradient(135deg,#050033 0%,#1B1B5E 55%,#050033 100%)',
-      logo: '/logos/hotels/accor-corporate/all-lockup-' + (_allLang === 'fr' ? 'fr' : 'en') + '.svg',
-      headline: _allLang === 'fr' ? 'ALL · Accor Live Limitless' : 'ALL · Accor Live Limitless',
-      sub: _allLang === 'fr' ? 'Réservez sur all.accor.com' : 'Book at all.accor.com'
-    }];
-  }
 
   var generic = GATE_ADS_GENERIC.map(function(ad) {
     return {
@@ -25047,9 +25030,7 @@ function _buildGateAdSlideList() {
   var accorSlides = [];
   ads.forEach(function (a) {
     if (_noVideo && a && a.adLayout === 'video-bg') return; // no video ads on the stream
-    // isAccorCorp = the corporate ALL house ad that fills the Accor slot when
-    // the destination has no Accor properties — same 3:1 slot as hotel ads.
-    if (a && (a.isAccorHotel || a.isAccorCorp)) accorSlides.push({ type: 'ad', data: a });
+    if (a && a.isAccorHotel) accorSlides.push({ type: 'ad', data: a });
     else airlineAdSlides.push({ type: 'ad', data: a });
   });
 
