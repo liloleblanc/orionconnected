@@ -9526,25 +9526,15 @@ const gView = document.getElementById('gateView');
       // Only rebuild inbound panel if flight changed
       var _prevInbId = window._gateInboundId || '';
       var _newInbId = inboundFlight ? (inboundFlight.flight + inboundFlight.status) : 'none';
-      // Only overwrite window._gateInbound with the gate-match fallback when we
-      // don't already have a reg-based result (which is more reliable).
-      // Also: don't overwrite a real cached value with null — that causes
-      // the panel to flicker between "Pending" and the real aircraft.
-      if (!(window._gateInbound && window._gateInbound._inboundSource === 'reg-lookup')) {
-        if (inboundFlight) {
-          // Real new data — accept it
-          window._gateInbound = inboundFlight;
-        } else if (!window._gateInbound) {
-          // No previous data either — set to null is fine (initial state)
-          window._gateInbound = null;
-        }
-        // else: keep the last known inbound, don't clear it
-      }
-      var _inbChanged = (_prevInbId !== _newInbId);
-      window._gateInboundId = _newInbId;
-      if (_inbChanged && gateMap) { try { gateMap.remove(); } catch(e){} gateMap = null; }
-      // When the flight changes, clear stale reg-based inbound so it gets
-      // re-fetched fresh for the new flight.
+      // When the flight changes, clear the PREVIOUS flight's stale inbound /
+      // live data BEFORE assigning this render's inbound. This block used to
+      // run AFTER the assignment below, which nulled the freshly-matched
+      // inbound on the FIRST render of every flight — and because this whole
+      // section is _gateKey-guarded, no later render re-assigned it. The map
+      // then sat on the departure-route fallback (Porter gate 3 drew YHU
+      // while the panel said 'From Ottawa (YOW)') with no plane glyph, and
+      // the 90 s numbers poll (which needs window._gateInbound.flight) never
+      // ran — Nick: 'the route airplane there is none its not tracking it'.
       if (window._gateLastFlightKey !== currentFlight.flight) {
         window._gateAircraftSpecs = null;
         window._gateAircraftImg = null;
@@ -9564,6 +9554,23 @@ const gView = document.getElementById('gateView');
           }
         } catch (e) {}
       }
+      // Only overwrite window._gateInbound with the gate-match fallback when we
+      // don't already have a reg-based result (which is more reliable).
+      // Also: don't overwrite a real cached value with null — that causes
+      // the panel to flicker between "Pending" and the real aircraft.
+      if (!(window._gateInbound && window._gateInbound._inboundSource === 'reg-lookup')) {
+        if (inboundFlight) {
+          // Real new data — accept it
+          window._gateInbound = inboundFlight;
+        } else if (!window._gateInbound) {
+          // No previous data either — set to null is fine (initial state)
+          window._gateInbound = null;
+        }
+        // else: keep the last known inbound, don't clear it
+      }
+      var _inbChanged = (_prevInbId !== _newInbId);
+      window._gateInboundId = _newInbId;
+      if (_inbChanged && gateMap) { try { gateMap.remove(); } catch(e){} gateMap = null; }
       window._gateCurrentFlight = currentFlight;
       // Defensive: nuke any stranded floating "DESTINATION City" label from
       // older deploys / interrupted video playback. This element used to be
@@ -14285,7 +14292,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22308';
+var FIDS_BUILD_TAG = 'v22309';
 (function(){
   try {
     function _addTag(){
