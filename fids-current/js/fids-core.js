@@ -6004,6 +6004,13 @@ function _buildV2MapCol(ctx, vars) {
       var _swArrTs = (_ibSw._revTs && _ibSw._revTs > _ibSw._sortTs) ? _ibSw._revTs : (_ibSw._sortTs || 0);
       // Switch once 5 min have elapsed past the (revised) arrival time.
       if (_swArrTs && (Date.now() - _swArrTs) >= 5 * 60000) _arrivedSwitch = true;
+    } else {
+      // NO inbound tracked at all (early-morning departures, feeds without
+      // aircraft rotation): the panel used to render near-EMPTY — no card,
+      // no aircraft info (Nick: 'theres no aircraft info'). Show the same
+      // DEPARTURE card that already takes over post-arrival: this flight,
+      // destination, times, status — with the aircraft block below it.
+      _arrivedSwitch = true;
     }
   } catch (e) {}
   try {
@@ -14133,7 +14140,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22299';
+var FIDS_BUILD_TAG = 'v22300';
 (function(){
   try {
     function _addTag(){
