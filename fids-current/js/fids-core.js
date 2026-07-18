@@ -8145,9 +8145,16 @@ function uxgGateHtml(ctx) {
     // ticking.
     +   (function () {
           var _tbYQM = String(iata).toUpperCase() === 'YQM';
-          // Non-YQM: a fixed deep slate — accent3 could match the gate accent
-          // (AC red next to red gate = 'red and red', per Nick at YHZ).
-          var _tbBg = _tbYQM ? '#003DA5' : '#1F2C44';
+          // Per-carrier time-tab colors (Nick's United spec: navy wordmark →
+          // RUNWAY GRAY time → white airport → United Blue gate; the all-blue
+          // banner read as 'too many same colors'). Light tabs flip to dark ink.
+          var _TB_SPEC = { 'UA': { bg: '#D0D0CE', ink: '#0C2340', inkSoft: 'rgba(12,35,64,0.82)' } };
+          var _tbSpec = _TB_SPEC[(typeof airlineCode !== 'undefined' ? airlineCode : '')] || null;
+          // Non-YQM default: a fixed deep slate — accent3 could match the gate
+          // accent (AC red next to red gate = 'red and red', per Nick at YHZ).
+          var _tbBg = _tbSpec ? _tbSpec.bg : (_tbYQM ? '#003DA5' : '#1F2C44');
+          var _tbInk = _tbSpec ? _tbSpec.ink : '#fff';
+          var _tbInkSoft = _tbSpec ? _tbSpec.inkSoft : 'rgba(255,255,255,0.88)';
           var _tbTz = (AP[iata] || {}).tz || '';
           var _tbNow = '';
           try {
@@ -8168,10 +8175,10 @@ function uxgGateHtml(ctx) {
             : 'calc(var(--gate-rcw, 25%) - 30px)';
           return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
-            +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:rgba(255,255,255,0.88);letter-spacing:.04em;white-space:nowrap;">'
+            +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">'
             +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
             +     (_frF ? 'Heure <span style="opacity:.6">|</span> Time' : 'Time <span style="opacity:.6">|</span> Heure') + '</span>'
-            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(36px,5.4vh,76px);font-weight:900;color:#fff;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
+            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(36px,5.4vh,76px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
         })()
@@ -14102,7 +14109,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22292';
+var FIDS_BUILD_TAG = 'v22293';
 (function(){
   try {
     function _addTag(){
