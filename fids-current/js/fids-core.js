@@ -14133,7 +14133,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22274';
+var FIDS_BUILD_TAG = 'v22299';
 (function(){
   try {
     function _addTag(){
@@ -26516,51 +26516,30 @@ function _renderBigCraft(el, ctx) {
     return '<div class="v2-rc-fi-trow"><div class="v2-rc-fi-tlbl"><span>' + l1 + '</span><span>' + l2 + '</span></div>'
          + '<div class="v2-rc-fi-tval' + (cls ? ' ' + cls : '') + '">' + val + '</div></div>';
   }
+  // NICK'S MOCKUP (his patched screenshot): the takeover covers ONLY the
+  // CENTER column — the big route map where the ads run. The right column is
+  // NOT covered and NOT rebuilt: the REAL small "Your Aircraft" panel stays
+  // live beside the big map (its own mini-map collapses via CSS while
+  // g8-bigcraft-active is on the wrap), so the info can never disagree with
+  // the panel — it IS the panel.
   var _bcWrapEl = el.closest ? (el.closest('.g8-wrap') || document.body) : document.body;
-  var _bcRight = document.querySelector('.gad-map-col-v2');
   var _bcElR = el.getBoundingClientRect(), _bcWrapR = _bcWrapEl.getBoundingClientRect();
-  var _bcRightR = _bcRight ? _bcRight.getBoundingClientRect() : _bcElR;
-  // Robust union: if the right column measures empty (hidden/mid-render),
-  // extend to the wrap's right edge so the takeover always reaches it.
-  var _bcRightUsable = _bcRightR.width > 10 && _bcRightR.height > 10;
-  var _bcRightEdge = _bcRightUsable ? Math.max(_bcElR.right, _bcRightR.right) : (_bcWrapR.right - 8);
-  var _bcTop = _bcRightUsable ? Math.min(_bcElR.top, _bcRightR.top) : _bcElR.top;
-  var _bcBottom = _bcRightUsable ? Math.max(_bcElR.bottom, _bcRightR.bottom) : _bcElR.bottom;
   var _bcOv = document.createElement('div');
   _bcOv.className = 'bigcraft-overlay';
   _bcOv.style.left = Math.round(_bcElR.left - _bcWrapR.left) + 'px';
-  _bcOv.style.top = Math.round(_bcTop - _bcWrapR.top) + 'px';
-  _bcOv.style.width = Math.round(_bcRightEdge - _bcElR.left) + 'px';
-  _bcOv.style.height = Math.round(_bcBottom - _bcTop) + 'px';
+  _bcOv.style.top = Math.round(_bcElR.top - _bcWrapR.top) + 'px';
+  _bcOv.style.width = Math.round(_bcElR.width) + 'px';
+  _bcOv.style.height = Math.round(_bcElR.height) + 'px';
   // DON'T blank the carousel before the panel grows in — that emptied the
   // center to dark and read as an abrupt CUT (Nick: 'abruptly cuts out …
   // terrible transition'). Keep the previous ad visible UNDER the growing
   // overlay; clear it only once the opaque overlay has fully covered it.
+  // Map only — the info lives in the REAL right-column panel beside it.
   _bcOv.innerHTML =
-      '<div class="bigcraft-wrap">'
+      '<div class="bigcraft-wrap bigcraft-wrap--maponly">'
     +   '<div class="bigcraft-mapcol">'
     +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
     +     (ctx.estimated ? '<div class="bigcraft-est">Estimated position · Position estimée</div>' : '')
-    +   '</div>'
-    +   '<div class="bigcraft-side">'
-    +     '<div class="bigcraft-title">Your Aircraft <span class="v2-rc-fi-sep">|</span> Votre Avion</div>'
-    +     '<div class="v2-rc-fi-table bigcraft-table">'
-    +       row('Flight', 'Vol', ctx.fl || '—')
-    +       (ctx.out
-              ? row('To', 'Vers', (ctx.dCity || ctx.dc || '—') + (ctx.dc ? ' (' + ctx.dc + ')' : ''))
-              : row('From', 'De', (ctx.oCity || ctx.oc || '—') + (ctx.oc ? ' (' + ctx.oc + ')' : '')))
-    +       row('Status', 'Statut', stShow, 'v2-rc-status-' + stCls)
-    // Live telemetry — same numbers as the mini map's Speed/Altitude bar
-    // (Nick: 'All this and more needs to be on the big map'). Honest by
-    // construction: rows only exist with a REAL live fix (ctx.pos), never
-    // at time-progress/estimated.
-    +       ((ctx.pos && ctx.speedKph) ? row('Speed', 'Vitesse', '<span data-gtelem="spd-kph">' + ctx.speedKph.toLocaleString() + '</span> kph') : '')
-    +       ((ctx.pos && ctx.altFt) ? row('Altitude', 'Altitude', '<span data-gtelem="alt-ft">' + ctx.altFt.toLocaleString() + '</span> ft <span class="v2-rc-fi-sep">|</span> pieds') : '')
-    +       (ctx.etaStr ? row('Arrives in', 'Arrive dans', ctx.etaStr) : '')
-    +       (ctx.destWx ? row('Weather', 'Météo', ctx.destWx) : '')
-    +       ((ctx.acType || reg) ? row('Aircraft', 'Avion', (ctx.acType || '—') + reg) : '')
-    +     '</div>'
-    +     (acImg ? '<div class="bigcraft-plane"><img src="' + acImg + '" alt=""></div>' : '')
     +   '</div>'
     + '</div>';
   _bcWrapEl.appendChild(_bcOv);
