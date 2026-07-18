@@ -8178,7 +8178,7 @@ function uxgGateHtml(ctx) {
             +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">'
             +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
             +     (_frF ? 'Heure <span style="opacity:.6">|</span> Time' : 'Time <span style="opacity:.6">|</span> Heure') + '</span>'
-            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(36px,5.4vh,76px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
+            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
         })()
@@ -8900,10 +8900,15 @@ const gView = document.getElementById('gateView');
       const stKey = currentFlight.status || 'scheduled';
       const stEn = (SS[stKey] || {}).en || stKey.toUpperCase();
       const locIata = currentFlight._locIata || '';
-      // Prefer CITY lookup, then dest field, then locIata code
-      const _rawDest = currentFlight.dest || '';
+      // Prefer CITY lookup, then dest field, then locIata code.
+      // THROUGH-FLIGHT legs are stripped for display (Nick: 'Destination is
+      // tiny — remove those connecting thru flights'): the feed sends
+      // multi-city strings ("San Francisco, Las Vegas") for through-flights,
+      // which shrank the destination to fit. Show the FIRST destination only —
+      // the leg this gate actually boards.
+      const _rawDest = String(currentFlight.dest || '').split(',')[0].trim();
       const _cityFromLookup = locIata ? cityCode(locIata) : '';
-      const loc = _cityFromLookup || tc(_rawDest || locIata || '—');
+      const loc = String(_cityFromLookup || tc(_rawDest || locIata || '—')).split(',')[0].trim();
 
       let timeDisplay = currentFlight.time;
       let updHtml = '';
@@ -9457,6 +9462,19 @@ const gView = document.getElementById('gateView');
         if (mb.offsetHeight < 10) {
           mb.style.minHeight = '250px';
         }
+        // STALE-MAP GUARD (Nick: 'I got no map right now, nothing'): a board
+        // rebuild can replace #gateMapBox while the `gateMap` var still points
+        // at the DETACHED old container — every later `!gateMap` check then
+        // no-ops and the panel sits empty gray forever. Detect the mismatch,
+        // tear the dead map down and let this pass rebuild into the live box.
+        try {
+          if (gateMap && typeof gateMap.getContainer === 'function' && gateMap.getContainer() !== mb) {
+            try { gateMap.remove(); } catch (e2) {}
+            gateMap = null;
+            window._lastMapPosKey = null;
+            window._lastMapProgKey = null;
+          }
+        } catch (e2) {}
         var inb = window._gateInbound;
         var apIata = window._gateIata || 'YQM';
         var dstIata = (currentFlight && currentFlight._locIata) || '';
@@ -14109,7 +14127,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22293';
+var FIDS_BUILD_TAG = 'v22294';
 (function(){
   try {
     function _addTag(){
@@ -26658,16 +26676,20 @@ function _renderBigCraft(el, ctx) {
   var _bcType    = _bcClone('.v2-rc-shelf-type .v2-rc-acb');    // model | reg | operated-by
   // Hand-built fallbacks — used only when the small panel isn't in the DOM yet
   // (a cold first slide), so the takeover never comes up blank.
-  var _bcTelemFallback = (ctx.pos && (ctx.speedKph || ctx.altFt))
-    ? '<div class="v2-rc-mapstats">'
-      + '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div><div class="v2-rc-ms-val">'
-      +   (ctx.speedKph ? '<span data-gtelem="spd-kph">' + ctx.speedKph.toLocaleString() + '</span>' : '—')
-      +   ' <span class="v2-rc-ms-unit">kph</span></div><div class="v2-rc-ms-lbl2">Vitesse</div></div>'
-      + '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div><div class="v2-rc-ms-val">'
-      +   (ctx.altFt ? '<span data-gtelem="alt-ft">' + ctx.altFt.toLocaleString() + '</span>' : '—')
-      +   ' <span class="v2-rc-ms-unit">ft</span></div><div class="v2-rc-ms-lbl2">Altitude</div></div>'
-      + '</div>'
-    : '';
+  // ALWAYS render the Speed/Altitude box — Nick's mockup structure holds for
+  // every flight: live numbers when airborne, honest dashes when not. The box
+  // never disappears, so the enlarged panel always mirrors the small one.
+  var _bcHasSpd = !!(ctx.pos && ctx.speedKph);
+  var _bcHasAlt = !!(ctx.pos && ctx.altFt);
+  var _bcTelemFallback =
+      '<div class="v2-rc-mapstats">'
+    + '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div><div class="v2-rc-ms-val">'
+    +   (_bcHasSpd ? '<span data-gtelem="spd-kph">' + ctx.speedKph.toLocaleString() + '</span>' : '—')
+    +   ' <span class="v2-rc-ms-unit">kph</span></div><div class="v2-rc-ms-lbl2">Vitesse</div></div>'
+    + '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div><div class="v2-rc-ms-val">'
+    +   (_bcHasAlt ? '<span data-gtelem="alt-ft">' + ctx.altFt.toLocaleString() + '</span>' : '—')
+    +   ' <span class="v2-rc-ms-unit">ft</span></div><div class="v2-rc-ms-lbl2">Altitude</div></div>'
+    + '</div>';
   // Rich fallback rows built from the gate render's stashed schedule (Nick:
   // the takeover panel must not come up near-empty on a pre-departure flight
   // with no live position). Adds Boarding/Departure/Arrival — the same times
