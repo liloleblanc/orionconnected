@@ -2598,6 +2598,31 @@ function getTimeInTz(ts, tz) {
   } catch(e) { return ''; }
 }
 
+// Can this airframe belong to this carrier at all? Used to reject
+// history/guessed equipment that is impossible for the operator — a
+// US-registered SkyWest CRJ on a Porter flight, a mainline A220 tagged
+// Rouge. Registry check: Canadian carriers fly C- tails, US carriers N-.
+// Fleet check: carriers whose fleet is a known limited family. Unknown
+// carrier or empty fields → sane (never over-reject).
+function _equipSaneForCarrier(mktCode, opCode, reg, acStr) {
+  try {
+    var c = String(opCode || mktCode || '').toUpperCase();
+    var r = String(reg || '').toUpperCase().replace(/[\s-]/g, '');
+    var CA = { AC:1, RV:1, QK:1, ZX:1, '9M':1, PD:1, P3:1, WS:1, WR:1, TS:1, PB:1, SP:1, F8:1, WG:1, JV:1, WT:1 };
+    var US = { AA:1, DL:1, UA:1, WN:1, B6:1, F9:1, NK:1, AS:1, MX:1, G4:1, SY:1 };
+    if (r) {
+      if (CA[c] && !/^C[FGI]/.test(r)) return false;
+      if (US[c] && !/^N/.test(r)) return false;
+    }
+    var s = String(acStr || '').toUpperCase();
+    if (s.trim()) {
+      if (c === 'RV' && !/319|320|321|32N|32Q|32S|32A|32B/.test(s)) return false;
+      if ((c === 'PD' || c === 'P3') && !/DH8|DH4|DHC|DASH|Q400|E19|195|E29|290|EMBRAER/.test(s)) return false;
+    }
+    return true;
+  } catch (e) { return true; }
+}
+
 function estimateFlightDuration(fromIata, toIata) {
   const c1 = COORDS[fromIata], c2 = COORDS[toIata];
   if (!c1 || !c2) return null;
@@ -9992,25 +10017,30 @@ const gView = document.getElementById('gateView');
                            '· offered:', _eqIncoming.aircraft || '?', _eqIncoming.reg || 'no-reg', ')');
           var _eq = window._gateEquipLock;
 
-          // ROUGE-NUMBER EQUIPMENT SANITY (Nick: 'its a rouge number its not
-          // a 220 it may be a 320 it cant read it'). AC 16xx-19xx flights are
-          // Rouge, and Rouge flies only the A319/320/321 family. When today's
-          // data has NO confirmed tail and the lock offers a HISTORY/guessed
-          // airframe OUTSIDE that family (the stale 'Airbus A220-300 |
-          // C-GNAM' painted on AC1960), REJECT it — the Rouge badge stays,
-          // the aircraft shows its honest Pending state until the real jet
-          // is readable. Confirmed same-day telemetry (strength 3) is never
-          // rejected — a genuine upgauge shows as what it is.
+          // CARRIER EQUIPMENT SANITY. Generalized after the same failure hit
+          // Porter (PD365 showed 'Canadair CRJ-701ER | N632SK' — a
+          // US-registered SkyWest airframe on a Porter flight) right after
+          // the Rouge case (AC1960 'A220-300 | C-GNAM'). Below-strength-3
+          // (history/guessed) equipment is REJECTED when it cannot belong to
+          // the carrier:
+          //   1. REGISTRY — Canadian carriers fly C- tails, US carriers N-.
+          //   2. FLEET — carriers with a known limited fleet (Rouge:
+          //      A319/320/321; Porter: Dash 8-400 / E195-E2).
+          // The operator badge stays; the aircraft shows its honest Pending
+          // state until the real airframe is readable. Confirmed same-day
+          // telemetry (strength 3) is never rejected — a genuine
+          // substitution shows as what it is.
           try {
-            var _fnRv = parseInt(String(currentFlight.flight || '').replace(/\D/g, ''), 10);
-            var _isRougeNum = String(currentFlight.airline || '').toUpperCase() === 'AC'
-              && !isNaN(_fnRv) && _fnRv >= 1600 && _fnRv <= 1999;
-            if (_isRougeNum && _eq && _eqStrength(_eq) < 3) {
-              var _eqFam = (String(_eq.aircraftCode || '') + ' ' + String(_eq.aircraft || '')).toUpperCase();
-              if (_eqFam.trim() && !/319|320|321|32N|32Q|32S|32A|32B/.test(_eqFam)) {
+            if (_eq && _eqStrength(_eq) < 3) {
+              var _mktC = String(currentFlight.airline || '').toUpperCase();
+              var _fnRv = parseInt(String(currentFlight.flight || '').replace(/\D/g, ''), 10);
+              var _opC = (_mktC === 'AC' && !isNaN(_fnRv) && _fnRv >= 1600 && _fnRv <= 1999)
+                ? 'RV' : String(_eq.opCode || '').toUpperCase();
+              var _eqAcStr = String(_eq.aircraftCode || '') + ' ' + String(_eq.aircraft || '');
+              if (!_equipSaneForCarrier(_mktC, _opC, _eq.reg, _eqAcStr)) {
                 var _rejReg = _eq.reg || '', _rejAc = _eq.aircraft || '', _rejCd = _eq.aircraftCode || '';
-                console.log('[FIDS] Rouge-number sanity: rejecting non-Rouge-fleet history equipment for',
-                            currentFlight.flight, '→', _rejAc || _rejCd || '?', _rejReg || 'no-reg');
+                console.log('[FIDS] Carrier sanity: rejecting impossible history equipment for',
+                            currentFlight.flight, '(' + (_opC || _mktC) + ') →', _rejAc || _rejCd || '?', _rejReg || 'no-reg');
                 // Strip any earlier application of the same stale values so the
                 // panel actually falls back to Pending instead of keeping them.
                 if (_rejReg && currentFlight._reg === _rejReg) { currentFlight._reg = ''; currentFlight._regSource = ''; changed = true; }
@@ -10026,13 +10056,28 @@ const gView = document.getElementById('gateView');
           // confirmed one; the strict !currentFlight._reg guard blocked that
           // upgrade on same-object retries. Manual overrides (set before
           // enrichment) differ from _eq.reg and are left alone.
-          if (_eq.reg && !currentFlight._reg) {
+          // POLICY (Nick: 'its a patch on a patch on a patch') — a
+          // REGISTRATION is displayed ONLY when observed on THIS flight
+          // TODAY. History-majority and latest-observation tails are guesses
+          // about a DIFFERENT airplane, and they produced every phantom
+          // airframe this week ('C-GNAM' A220 on Rouge, SkyWest 'N632SK' on
+          // Porter). History may still suggest the aircraft TYPE — shown
+          // with the 'expected' qualifier — but it never names a tail.
+          var _regTrustworthy = _eq.reg && !/^history/.test(String(_eq.regSource || ''));
+          if (_regTrustworthy && !currentFlight._reg) {
             currentFlight._reg = _eq.reg;
             changed = true;
-          } else if (_eq.reg && currentFlight._reg
+          } else if (_regTrustworthy && currentFlight._reg
                      && /^history/.test(String(currentFlight._regSource || ''))
                      && currentFlight._reg !== _eq.reg) {
             currentFlight._reg = _eq.reg;
+            changed = true;
+          } else if (!_regTrustworthy && currentFlight._reg
+                     && /^history/.test(String(currentFlight._regSource || ''))) {
+            // A history tail already painted on the row (earlier build /
+            // earlier round) is stripped under the same policy.
+            currentFlight._reg = '';
+            currentFlight._regSource = '';
             changed = true;
           }
 
@@ -14448,7 +14493,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22317';
+var FIDS_BUILD_TAG = 'v22319';
 (function(){
   try {
     function _addTag(){
