@@ -2269,6 +2269,96 @@ function _animateGateTelem() {
 // map — the map stays exactly as it is, so nothing can get jumpy. loadFlight
 // caches 60s, so a 90s cadence always gets a fresh reading.
 var _gateNumPollBusy = false;
+// ── ADB ML FLIGHT TIME (Nick, from the ADB spec: /airports/.../distance-time,
+// flightTimeModel=ML01). Replaces the crude "great-circle ÷ 780 km/h + 25 min"
+// guess wherever the board estimates a route duration it wasn't told. Cached
+// 14 days per airport pair (Tier 2 → one call per pair per kiosk fortnight),
+// through the already-deployed worker's generic /api/adb proxy.
+var _mlftMem = {};
+function fidsMlFlightTimeMins(o, d) {
+  try {
+    o = String(o || '').toUpperCase(); d = String(d || '').toUpperCase();
+    if (!/^[A-Z]{3}$/.test(o) || !/^[A-Z]{3}$/.test(d) || o === d) return null;
+    var k = o + '_' + d;
+    if (_mlftMem[k] != null) return _mlftMem[k] || null;   // 0 = known-failed
+    var raw = null;
+    try { raw = localStorage.getItem('fids_mlft_' + k); } catch (e) {}
+    if (raw) {
+      try {
+        var obj = JSON.parse(raw);
+        if (obj && obj.mins > 0 && (Date.now() - obj.ts) < 14 * 86400000) { _mlftMem[k] = obj.mins; return obj.mins; }
+      } catch (e) {}
+    }
+    _fidsMlFetch(o, d, k);
+    return null;
+  } catch (e) { return null; }
+}
+function _fidsMlFetch(o, d, k) {
+  if (window['_mlftF_' + k]) return;
+  window['_mlftF_' + k] = true;
+  var url = 'https://fids-proxy.n-leblanc1984.workers.dev/api/adb/airports/iata/' + o + '/distance-time/' + d + '?flightTimeModel=ML01';
+  fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    var t = j && j.approxFlightTime;                       // "HH:MM:SS" date-span
+    var m = t ? String(t).match(/(\d+):(\d{2})/) : null;
+    var mins = m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : 0;
+    _mlftMem[k] = mins > 0 ? mins : 0;
+    if (mins > 0) {
+      try { localStorage.setItem('fids_mlft_' + k, JSON.stringify({ mins: mins, ts: Date.now() })); } catch (e) {}
+      try { console.log('[MLFT] ' + o + '→' + d + ': ' + mins + ' min (ML01)'); } catch (e) {}
+    }
+  }).catch(function () { _mlftMem[k] = 0; });
+}
+
+// ── ADB FLIGHT PLAN ACCESS (Nick: 'FlightPlan access'). The ATC-FILED plan
+// (?withFlightPlan=true): route string + filed/assigned altitude & airspeed.
+// Fetched ONCE per flight (3 h cache) — NEVER on the 90 s poll, since a found
+// plan bills 2x per the spec. Filed numbers surface only where no live
+// telemetry exists yet, clearly labelled as filed — sourced data, not
+// fabrication.
+var _fpMem = {};
+function fidsFlightPlan(flightNo, dateStr) {
+  try {
+    var fl = String(flightNo || '').replace(/\s+/g, '').toUpperCase();
+    if (!fl || !dateStr) return null;
+    var k = fl + '_' + dateStr;
+    if (_fpMem[k] !== undefined) return _fpMem[k];
+    var raw = null;
+    try { raw = localStorage.getItem('fids_fp_' + k); } catch (e) {}
+    if (raw) {
+      try {
+        var obj = JSON.parse(raw);
+        if (obj && (Date.now() - obj.ts) < 3 * 3600000) { _fpMem[k] = obj.fp || null; return _fpMem[k]; }
+      } catch (e) {}
+    }
+    if (window['_fpF_' + k]) return null;
+    window['_fpF_' + k] = true;
+    var url = 'https://fids-proxy.n-leblanc1984.workers.dev/api/adb/flights/number/' + encodeURIComponent(fl) + '/' + dateStr + '?withFlightPlan=true';
+    fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      var arr = Array.isArray(j) ? j : (j ? [j] : []);
+      var fp = null;
+      for (var i = 0; i < arr.length; i++) {
+        var p = arr[i] && arr[i].flightPlan;
+        if (p && p.route) {
+          var altU = p.altitude || {}, spdU = p.airspeed || {};
+          var altO = altU.assigned || altU.requested || null;   // assigned beats requested
+          var spdO = spdU.assigned || spdU.requested || null;
+          fp = {
+            route: String(p.route || ''),
+            status: String(p.status || ''),
+            altFt: (altO && typeof altO.feet === 'number') ? Math.round(altO.feet) : null,
+            spdKt: (spdO && typeof spdO.kt === 'number') ? Math.round(spdO.kt) : null
+          };
+          break;
+        }
+      }
+      _fpMem[k] = fp;
+      try { localStorage.setItem('fids_fp_' + k, JSON.stringify({ fp: fp, ts: Date.now() })); } catch (e) {}
+      if (fp) try { console.log('[FPLAN] ' + fl + ': filed alt ' + (fp.altFt || '?') + ' ft, spd ' + (fp.spdKt || '?') + ' kt, ' + fp.status); } catch (e) {}
+    }).catch(function () { _fpMem[k] = null; });
+    return null;
+  } catch (e) { return null; }
+}
+
 async function _gateNumbersPoll() {
   try {
     if (_gateNumPollBusy) return;
@@ -2283,6 +2373,12 @@ async function _gateNumbersPoll() {
     if (!iata) return;
     _gateNumPollBusy = true;
     var today = new Date().toISOString().slice(0, 10);
+    // Filed flight plan — cached one-shot (see fidsFlightPlan); stashes the
+    // filed altitude/airspeed for the labelled pre-live display.
+    try {
+      var _fpGot = fidsFlightPlan(flt, today);
+      if (_fpGot) { inb._fpAltFt = _fpGot.altFt; inb._fpSpdKt = _fpGot.spdKt; inb._fpRoute = _fpGot.route; }
+    } catch (e) {}
     var inbData = await loadFlight(flt, today, inb._locIata || iata);
     _gateNumPollBusy = false;
     if (!inbData) return;
@@ -5965,7 +6061,8 @@ function _buildV2MapCol(ctx, vars) {
       try {
         var _lwArr = (_ib._revTs && _ib._revTs > _ib._sortTs) ? _ib._revTs : (_ib._sortTs || 0);
         if (_lwArr) {
-          var _lwSpan = ((_ib._durationMins || 240) + 25) * 60000;
+          var _lwDurMl = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(_ib._locIata, vars.iata) : null;
+          var _lwSpan = ((_ib._durationMins || _lwDurMl || 240) + 25) * 60000;
           var _lwNow = Date.now();
           if (_lwNow < _lwArr - _lwSpan || _lwNow > _lwArr + 8 * 60000) {
             _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
@@ -9621,6 +9718,9 @@ const gView = document.getElementById('gateView');
                           + Math.cos(_ocMini[0] * _toR) * Math.cos(_dcMini[0] * _toR) * Math.sin(_dlo / 2) * Math.sin(_dlo / 2);
                   var _kmMini = 6371 * 2 * Math.atan2(Math.sqrt(_hv), Math.sqrt(1 - _hv));
                   var _durMini = Math.max(3600000, (_kmMini / 13 + 25) * 60000);   // ~780 km/h + 25 min
+                  // ADB ML01 realistic route time beats the guess when cached.
+                  var _mlMini = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(inb._locIata, apIata) : null;
+                  if (_mlMini) _durMini = _mlMini * 60000;
                   var _pMini = (Date.now() - (_arrTMini - _durMini)) / _durMini;
                   if (_pMini >= 0.02 && _pMini <= 0.98) _estProg = _pMini;
                   try { console.log('[MINIMAP-EST]', { st: inb.status, revTs: !!inb._revTs, upd: inb.upd || '', air: _stAirMini, p: +(_pMini || 0).toFixed(3) }); } catch (e) {}
@@ -14189,7 +14289,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22296';
+var FIDS_BUILD_TAG = 'v22297';
 (function(){
   try {
     function _addTag(){
@@ -24248,7 +24348,12 @@ function _map3dFlightCtx(allowEstimated) {
       // 0 for its first 3 hours — glyph hidden under the origin pin, so the
       // big map showed 'just dotted lines' (Nick).
       var _estDurMs = 0;
-      try { _estDurMs = (_hav(oC, dC) / 13 + 25) * 60000; } catch (e) {}
+      try {
+        _estDurMs = (_hav(oC, dC) / 13 + 25) * 60000;
+        // ADB ML01 realistic route time beats the 780 km/h guess when cached.
+        var _mlDur = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(oI, dI) : null;
+        if (_mlDur) _estDurMs = _mlDur * 60000;
+      } catch (e) {}
       var depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal)
                 : (arrTs ? arrTs - Math.max(3600000, _estDurMs || 7200000) : 0);
       if (depTs && arrTs > depTs) prog = Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
@@ -26743,14 +26848,21 @@ function _renderBigCraft(el, ctx) {
   // never disappears, so the enlarged panel always mirrors the small one.
   var _bcHasSpd = !!(ctx.pos && ctx.speedKph);
   var _bcHasAlt = !!(ctx.pos && ctx.altFt);
+  // Filed flight-plan values (ADB withFlightPlan) stand in — clearly labelled
+  // "filed | déposé" — when there's no live fix yet. Sourced, never invented.
+  var _bcFpSpdKph = (!_bcHasSpd && inb && inb._fpSpdKt) ? Math.round(inb._fpSpdKt * 1.852) : null;
+  var _bcFpAltFt = (!_bcHasAlt && inb && inb._fpAltFt) ? inb._fpAltFt : null;
+  var _bcFpTag = ' <span style="font-size:0.5em;font-weight:700;opacity:0.7;letter-spacing:0.02em;">filed · déposé</span>';
   var _bcTelemFallback =
       '<div class="v2-rc-mapstats">'
     + '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div><div class="v2-rc-ms-val">'
-    +   (_bcHasSpd ? '<span data-gtelem="spd-kph">' + ctx.speedKph.toLocaleString() + '</span>' : '—')
-    +   ' <span class="v2-rc-ms-unit">kph</span></div><div class="v2-rc-ms-lbl2">Vitesse</div></div>'
+    +   (_bcHasSpd ? '<span data-gtelem="spd-kph">' + ctx.speedKph.toLocaleString() + '</span>'
+        : (_bcFpSpdKph ? _bcFpSpdKph.toLocaleString() : '—'))
+    +   ' <span class="v2-rc-ms-unit">kph</span>' + (_bcFpSpdKph ? _bcFpTag : '') + '</div><div class="v2-rc-ms-lbl2">Vitesse</div></div>'
     + '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div><div class="v2-rc-ms-val">'
-    +   (_bcHasAlt ? '<span data-gtelem="alt-ft">' + ctx.altFt.toLocaleString() + '</span>' : '—')
-    +   ' <span class="v2-rc-ms-unit">ft</span></div><div class="v2-rc-ms-lbl2">Altitude</div></div>'
+    +   (_bcHasAlt ? '<span data-gtelem="alt-ft">' + ctx.altFt.toLocaleString() + '</span>'
+        : (_bcFpAltFt ? _bcFpAltFt.toLocaleString() : '—'))
+    +   ' <span class="v2-rc-ms-unit">ft</span>' + (_bcFpAltFt ? _bcFpTag : '') + '</div><div class="v2-rc-ms-lbl2">Altitude</div></div>'
     + '</div>';
   // Rich fallback rows built from the gate render's stashed schedule (Nick:
   // the takeover panel must not come up near-empty on a pre-departure flight
