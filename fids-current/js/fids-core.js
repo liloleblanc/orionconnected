@@ -5752,13 +5752,27 @@ function _buildV2AircraftCol(ctx, vars) {
           + '</div>';
       }
       // Destination city (was in the header; now the first shelf).
+      // FIRST-LEG ONLY (Nick: 'Destination is tiny — remove those connecting
+      // thru flights'): the feed hands through-flight strings like
+      // "Houston - Intercontinental, San Diego". Legs after the comma are the
+      // aircraft's onward routing, and the " - Airport" qualifier is noise at
+      // shelf size — both stripped so the shelf reads "Houston", full size.
+      function _fidsFirstLegCity(s) {
+        return String(s || '').split(',')[0].split(/\s+[-–]\s+/)[0].trim();
+      }
+      // The code chip shows ONLY a real 3-letter IATA — when _locIata is
+      // absent (TPA through-flights) the raw dest string was being dumped
+      // into the chip as "HOUSTON - INT…" (Nick: 'LOOK AT THE DESTINATION').
+      var _destIataRaw = String(locIata || '').toUpperCase().trim();
+      var _destIataDisp = /^[A-Z]{3}$/.test(_destIataRaw) ? _destIataRaw : '';
       var _destCityName = '';
       try {
-        var _dIata = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
-        if (typeof CITY !== 'undefined' && CITY[_dIata]) _destCityName = CITY[_dIata];
-        else if (typeof AP !== 'undefined' && AP[_dIata] && AP[_dIata].city) _destCityName = AP[_dIata].city;
-        else _destCityName = _dIata;
+        var _dIata = _destIataDisp;
+        if (_dIata && typeof CITY !== 'undefined' && CITY[_dIata]) _destCityName = CITY[_dIata];
+        else if (_dIata && typeof AP !== 'undefined' && AP[_dIata] && AP[_dIata].city) _destCityName = AP[_dIata].city;
+        if (!_destCityName) _destCityName = _fidsFirstLegCity((currentFlight && currentFlight.dest) || '') || _dIata;
         if (typeof normalizeDisplayCity === 'function') _destCityName = normalizeDisplayCity(_destCityName, _dIata);
+        _destCityName = _fidsFirstLegCity(_destCityName);
       } catch (e) {}
 
       var _depRev = !!(_fiDep && String(_fiDep).indexOf('g8-r2-revised') !== -1);
@@ -5777,9 +5791,10 @@ function _buildV2AircraftCol(ctx, vars) {
       //   Flight·Vol | Destination | Status·Statut | Boarding·Embarquement
       //   | Departure·Départ | Flight Time·Temps Vol
       // Short bilingual labels (revised-aware for the time panels).
-      var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
       // Per Nick: "Destination | YYZ" — code on the label line, accent-coloured
-      // (same size, not bigger); the value is the city alone.
+      // (same size, not bigger); the value is the FIRST-LEG city alone.
+      // (_destIataDisp computed above — real 3-letter IATA or blank, never the
+      // raw multi-city dest string.)
       var _destLabel = 'Destination' + (_destIataDisp ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destIataDisp + '</span>' : '');
       var _destValue = _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
@@ -8906,9 +8921,9 @@ const gView = document.getElementById('gateView');
       // multi-city strings ("San Francisco, Las Vegas") for through-flights,
       // which shrank the destination to fit. Show the FIRST destination only —
       // the leg this gate actually boards.
-      const _rawDest = String(currentFlight.dest || '').split(',')[0].trim();
+      const _rawDest = String(currentFlight.dest || '').split(',')[0].split(/\s+[-–]\s+/)[0].trim();
       const _cityFromLookup = locIata ? cityCode(locIata) : '';
-      const loc = String(_cityFromLookup || tc(_rawDest || locIata || '—')).split(',')[0].trim();
+      const loc = String(_cityFromLookup || tc(_rawDest || locIata || '—')).split(',')[0].split(/\s+[-–]\s+/)[0].trim();
 
       let timeDisplay = currentFlight.time;
       let updHtml = '';
@@ -14127,7 +14142,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22294';
+var FIDS_BUILD_TAG = 'v22295';
 (function(){
   try {
     function _addTag(){
