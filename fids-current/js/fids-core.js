@@ -9305,6 +9305,32 @@ function gateAutofit(root) {
       }
     });
   });
+  // UNIFORM SIZE for the big shelf values — per-element fitting left them at
+  // DIFFERENT sizes (one long word shrank only its own shelf while the rest
+  // stayed huge; Nick: 'protect the words from shrinking'). Every value now
+  // gets the size of the WORST fitter, floored at 62% of the design size so
+  // nothing can turn tiny — an extreme value ellipsizes instead of dragging
+  // the whole rail microscopic. The bilingual status value is excluded (its
+  // two stacked lines fit smaller by design and would drag the group down).
+  try {
+    var _vals = Array.prototype.slice.call(root.querySelectorAll('.v2-fi-value'))
+      .filter(function (el) { return !/v2-fi-status-val/.test(el.className); });
+    if (_vals.length > 1) {
+      var _minPx = Infinity, _maxOrig = 0;
+      _vals.forEach(function (el) {
+        var s2 = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+        var o2 = parseFloat(el.dataset._origSize) || s2;
+        if (s2 > 0) _minPx = Math.min(_minPx, s2);
+        _maxOrig = Math.max(_maxOrig, o2);
+      });
+      if (isFinite(_minPx) && _maxOrig > 0) {
+        var _uni = Math.max(_minPx, Math.round(_maxOrig * 0.62));
+        _vals.forEach(function (el) {
+          el.style.setProperty('font-size', _uni + 'px', 'important');
+        });
+      }
+    }
+  } catch (e) {}
 }
 
 function renderDedicatedScreen() {
@@ -14810,7 +14836,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22343';
+var FIDS_BUILD_TAG = 'v22344';
 (function(){
   try {
     function _addTag(){
