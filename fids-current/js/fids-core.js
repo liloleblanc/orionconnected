@@ -9874,6 +9874,7 @@ const gView = document.getElementById('gateView');
         try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); } catch(e){}
         try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 450); } catch(e){}
         try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 1300); } catch(e){}
+        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 3200); } catch(e){} // late refit: fonts/skins settle after 1.3s (Nick: AC19... Toron...)
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
         if (_savedMap && gateMap && _newMapSlot) {
@@ -14796,7 +14797,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22340';
+var FIDS_BUILD_TAG = 'v22341';
 (function(){
   try {
     function _addTag(){
