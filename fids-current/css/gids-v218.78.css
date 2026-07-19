@@ -4787,22 +4787,26 @@ body, body.gids-page, body.gate-page{
   font-size:13px; letter-spacing:0.6px; text-align:center; line-height:1.6;
 }
 
-/* ══ AIR CANADA BRUSHED GRAPHITE GATE SKIN (Nick supplied the reference
-   texture, Jul 19 2026: 'use something like this for AC along with similar
-   matching tones'). Drawn in pure CSS — fine horizontal striations over a
-   silver-to-black vertical fade — so it renders razor sharp at any panel
-   size (no raster to pixelate). AC red accent stays on the accent pieces. */
-body[data-gate-airline="AC"] #gateView {
+/* ══ AIR CANADA BRUSHED GRAPHITE — ON THE SHELVES (Nick: 'I meant for
+   the shelves'). Each left-rail shelf wears his reference fade: silver top
+   into dark graphite, fine striations, pure CSS (sharp at any size).
+   Lettering goes white/silver for the dark zone; status keeps its
+   semantic colours. AC gates only via body[data-gate-airline]. */
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   background:
     repeating-linear-gradient(180deg,
-      rgba(255,255,255,0.030) 0px, rgba(255,255,255,0.030) 1px,
-      rgba(0,0,0,0.035) 1px,     rgba(0,0,0,0.035) 2px),
+      rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px,
+      rgba(0,0,0,0.04) 1px,      rgba(0,0,0,0.04) 2px),
     linear-gradient(180deg,
-      #e8e9ec 0%, #b9bcc2 10%, #7c8087 24%,
-      #45484e 42%, #232529 62%, #101113 82%, #070708 100%) !important;
+      #dfe1e5 0%, #a9adb4 20%, #5d6167 48%, #26282c 78%, #101113 100%) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
 }
-/* Panels sit on translucent graphite so the brushed fade reads through. */
-body[data-gate-airline="AC"] .gad-media-col,
-body[data-gate-airline="AC"] .gad-aircraft-col {
-  background: rgba(10, 11, 13, 0.42) !important;
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title,
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title * {
+  color: #16181c !important;
+}
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-value:not(.v2-fi-status-val),
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-value:not(.v2-fi-status-val) * {
+  color: #f4f6f8 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
 }
