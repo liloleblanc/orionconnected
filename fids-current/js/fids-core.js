@@ -5926,20 +5926,22 @@ function _buildV2AircraftCol(ctx, vars) {
   // equipment, so everything here rides on the ADB lookup — surface that
   // lookup's last outcome (window._adbHealth, written by loadFlight) so a
   // photo of the screen diagnoses it. Honest states only, never a guess.
-  var _bareStatusBlock = '';
+  // The status goes INTO the column's ::after filler via data-baremsg —
+  // rendering it as an extra element displaced the filler and collapsed
+  // the left rail's shape (Nick: 'all lopsided').
+  var _bareAttr = '';
   if (!_hasAnyOptional) {
     try {
       var _ah = window._adbHealth || null;
       var _bsSub = '';
       if (_ah && _ah.failStatus && (!_ah.okTs || (_ah.failTs || 0) > _ah.okTs)) {
         _bsSub = (_ah.failStatus === 429)
-          ? 'Data service busy — retrying | Service de données occupé — nouvel essai'
-          : 'Data service unavailable (' + _ah.failStatus + ') | Service de données indisponible';
+          ? ' · Data service busy — retrying | Service occupé'
+          : ' · Data service unavailable (' + _ah.failStatus + ') | Service indisponible';
       }
-      _bareStatusBlock = '<div class="v2-bare-status">'
-        + 'Aircraft details pending | Détails de l’appareil à venir'
-        + (_bsSub ? '<div class="v2-bare-sub">' + _bsSub + '</div>' : '')
-        + '</div>';
+      var _bmsg = ('Aircraft details pending | Détails de l’appareil à venir' + _bsSub)
+        .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      _bareAttr = ' data-baremsg="' + _bmsg + '"';
     } catch (e) {}
   }
 
@@ -6292,7 +6294,7 @@ function _buildV2AircraftCol(ctx, vars) {
   var _orderedHtml = '';
   _orderToUse.forEach(function(id) { _orderedHtml += (_blockMap[id] || ''); });
 
-  return '<div class="gad-aircraft-col' + _bareCls + '">' + _orderedHtml + _bareStatusBlock + '</div>';
+  return '<div class="gad-aircraft-col' + _bareCls + '"' + _bareAttr + '>' + _orderedHtml + '</div>';
 }
 
 // ─── V2 MAP COLUMN BUILDER ────────────────────────────────────────────────
@@ -14791,7 +14793,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22335';
+var FIDS_BUILD_TAG = 'v22336';
 (function(){
   try {
     function _addTag(){
@@ -15536,7 +15538,7 @@ function render() {
     // (Operated-by label lives on the GATE screen only — Nick doesn't want it
     // on the main board; the enforced Express matrix still drives the gate.)
     const airlineCellHtml = '<td class="td-airline"><div class="fids-cell-airline">'
-      +   '<div class="fids-airline-logo">' + mkLogo(_airlineCodeForLogo, f._airlineName) + '</div>'
+      +   '<div class="fids-airline-logo' + (_airlineCodeForLogo === 'UA' ? ' ua-orb' : '') + '">' + mkLogo(_airlineCodeForLogo, f._airlineName) + '</div>'
       +   '<div class="fids-airline-wordmark-slot">' + _airlineLabelHtml + '</div>'
       + '</div></td>';
 
