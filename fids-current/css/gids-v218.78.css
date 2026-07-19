@@ -4794,16 +4794,13 @@ body, body.gids-page, body.gate-page{
    semantic colours. AC gates only via body[data-gate-airline]. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   background:
-    repeating-linear-gradient(180deg,
-      rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px,
-      rgba(0,0,0,0.04) 1px,      rgba(0,0,0,0.04) 2px),
-    linear-gradient(180deg,
-      #dfe1e5 0%, #a9adb4 20%, #5d6167 48%, #26282c 78%, #101113 100%) !important;
-  border: 1px solid rgba(255,255,255,0.14) !important;
+    linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.38) 100%),
+    url('/textures/ac-wood-dark.jpg?v=22340') center / cover no-repeat !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title,
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title * {
-  color: #16181c !important;
+  color: #e7e2da !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-value:not(.v2-fi-status-val),
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-value:not(.v2-fi-status-val) * {
@@ -4828,10 +4825,8 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
 /* Right column: same brushed steel, lighter run so navy text keeps reading */
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
   background:
-    repeating-linear-gradient(180deg,
-      rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px,
-      rgba(0,0,0,0.04) 1px,      rgba(0,0,0,0.04) 2px),
-    linear-gradient(180deg, #eceef1 0%, #d4d8de 40%, #b4bac2 78%, #9aa1aa 100%) !important;
+    linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(0,0,0,0.10) 100%),
+    url('/textures/ac-wood-brown.jpg?v=22340') center / cover no-repeat !important;
 }
 /* Dot-globe on the graphite left rail: screen-blend so it shows on dark */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col::after {
