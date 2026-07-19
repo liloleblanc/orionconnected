@@ -6946,8 +6946,13 @@ function _buildV2MapCol(ctx, vars) {
     if ((String(vars.airlineCode || '').toUpperCase() === 'PD' || _opCode === 'PD') && (_equipCd || _equipNm)) {
       var _pdEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
       if (!/DH8|DH4|DHC|DASH|Q400|E19|195|E29|290|EMBRAER/.test(_pdEqUp)) {
-        _equipCd = 'E95';
-        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('E95') : 'Embraer E195';
+        // Impossible mainline frame on a Porter flight = cross-contaminated
+        // feed data. Porter flies TWO types (Dash 8-400 AND E195-E2), so
+        // substituting either one is a GUESS — PD2382 to St-Hubert showed
+        // 'Embraer E195' on a Dash 8 route (Nick: 'wrong aircraft').
+        // Honest Pending until real data names the airframe.
+        _equipCd = '';
+        _equipNm = '';
         _acReg = '';
       }
     }
@@ -6960,9 +6965,11 @@ function _buildV2MapCol(ctx, vars) {
       var _qkEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
       var _qkRegional = /CRJ|\bCR[0-9]\b|DASH|DH[0-9]|DHC|Q400|\bE1[79]0\b|\bE175\b|\bE75\b|EMBRAER/.test(_qkEqUp);
       if (!_qkRegional) {
-        var _jzType = ['CR9', 'DH4', 'E75'][Math.abs(isNaN(_acFlNum) ? 0 : _acFlNum) % 3];
-        _equipCd = _jzType;
-        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_jzType) : _jzType;
+        // Jazz flies THREE types — picking a 'representative' one by flight
+        // number was a fabrication (same sin as the Porter E95 pin). Drop
+        // the impossible mainline frame and show honest Pending.
+        _equipCd = '';
+        _equipNm = '';
       }
     }
     // Express matrix fills the SCHEDULED type in only when the feed has no
@@ -6978,15 +6985,10 @@ function _buildV2MapCol(ctx, vars) {
         _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_mxGate.eq) : _mxGate.eq;
       }
     }
-    // Porter with NO readable equipment at all: show the fleet's honest
-    // answer instead of an empty panel (Nick: 'this is clearly an E95
-    // Porter flight ... but no aircraft'). Porter's jet routes are all
-    // E195-E2; the Dash 8-400 flies only the YTZ short-haul network, which
-    // the YTZ pin above already enforces.
-    if ((String(vars.airlineCode || '').toUpperCase() === 'PD' || _opCode === 'PD') && !_equipCd && !_equipNm) {
-      _equipCd = 'E95';
-      _equipNm = (typeof formatAircraft === 'function') ? formatAircraft('E95') : 'Embraer E195-E2';
-    }
+    // (The old 'Porter with no equipment → E195' pin is GONE: Porter flies
+    // two types, so it was a guess — PD2382 to St-Hubert is a Dash 8 route
+    // and the screen said E195 (Nick: 'wrong aircraft'). No data → Pending;
+    // the bare-status line explains the wait.)
     // Air Canada flies NO 737NG — its only 737s are MAX 8s. ADB frequently
     // codes the MAX as '738' / 'Boeing 737-800' (Nick caught 'Boeing 737-800
     // | C-GMIW' on the AC1096 inbound). Pin AC 737s to the MAX 8 label and
@@ -9460,6 +9462,25 @@ const gView = document.getElementById('gateView');
       if (currentFlight._arrSchedLocal && !_arrBogus) {
         const _arrLocal = currentFlight._arrSchedLocal;
         arrTimeStr = adbHHMM(_arrLocal) || '';
+        // A revised (later) departure makes the ORIGINAL arrival impossible —
+        // the airplane still needs the same block time (Nick's gate 4: dep
+        // revised to 6:20pm Moncton while arrival still read 6:20pm Montréal,
+        // i.e. landing the minute it takes off). Until the feed revises the
+        // arrival itself, shift the displayed arrival by the same delay.
+        try {
+          var _dlyMs = (currentFlight._revTs && currentFlight._sortTs && currentFlight._revTs > currentFlight._sortTs)
+            ? (currentFlight._revTs - currentFlight._sortTs) : 0;
+          if (_dlyMs > 5 * 60000) {
+            // Pure wall-clock arithmetic on the feed's own local string —
+            // routing through Date + timeZone re-parses the local time in
+            // the BROWSER zone and skews hours (the '8:15 AM Calgary' bug).
+            var _hm = String(_arrLocal).match(/(\d{2}):(\d{2})/);
+            if (_hm) {
+              var _tot = ((+_hm[1] * 60 + +_hm[2]) + Math.round(_dlyMs / 60000)) % 1440;
+              arrTimeStr = String(Math.floor(_tot / 60)).padStart(2, '0') + ':' + String(_tot % 60).padStart(2, '0');
+            }
+          }
+        } catch (e) {}
         // Check if arrival is next day vs departure (compare in LOCAL timezones, not UTC)
         if (_arrLocal && currentFlight._sortTs) {
           const _arrTs = adbTs(_arrLocal);
@@ -14759,7 +14780,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22333';
+var FIDS_BUILD_TAG = 'v22334';
 (function(){
   try {
     function _addTag(){
