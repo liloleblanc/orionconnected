@@ -9949,6 +9949,9 @@ const gView = document.getElementById('gateView');
       window._gateInboundId = _newInbId;
       if (_inbChanged && gateMap) { try { gateMap.remove(); } catch(e){} gateMap = null; }
       window._gateCurrentFlight = currentFlight;
+      // Per-airline gate skin hook (Nick's brushed-metal AC): CSS keys off
+      // body[data-gate-airline="XX"], refreshed every gate render.
+      try { document.body.setAttribute('data-gate-airline', String(currentFlight.airline || '').toUpperCase()); } catch (e) {}
       // Defensive: nuke any stranded floating "DESTINATION City" label from
       // older deploys / interrupted video playback. This element used to be
       // appended to document.body and could survive across renders.
@@ -14793,7 +14796,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22336';
+var FIDS_BUILD_TAG = 'v22337';
 (function(){
   try {
     function _addTag(){
