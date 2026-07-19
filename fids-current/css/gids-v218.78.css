@@ -4778,18 +4778,11 @@ body, body.gids-page, body.gate-page{
   min-height: 0 !important;
 }
 
-/* Bare aircraft column: honest lookup-state line (JS .v2-bare-status)
-   replaces the anonymous 'AIRCRAFT DETAILS' watermark, which told a bare
-   TPA gate nothing (Nick: 'no aircraft at all'). */
-.gad-aircraft-col.is-bare .v2-bare-status{
-  margin:18px 28px 24px; padding-top:16px;
-  border-top:1px solid rgba(255,255,255,0.08);
-  font-size:14px; font-weight:800; letter-spacing:0.6px;
-  color:rgba(226,232,240,0.55); text-align:center; line-height:1.5;
+/* Bare aircraft column: the ::after watermark IS the column's flex filler
+   (flex:1 + margin-top:auto) — hiding it collapsed the left rail's shape
+   (Nick: 'all lopsided'). Keep the filler, swap its TEXT for the honest
+   lookup state the JS writes into data-baremsg. */
+.gad-aircraft-col.is-bare[data-baremsg]::after{
+  content: attr(data-baremsg);
+  font-size:13px; letter-spacing:0.6px; text-align:center; line-height:1.6;
 }
-.gad-aircraft-col.is-bare .v2-bare-status .v2-bare-sub{
-  margin-top:6px; font-size:12px; font-weight:700;
-  color:rgba(255,193,7,0.75);
-}
-/* the old watermark would double up under the status line */
-.gad-aircraft-col.is-bare::after{ display:none; }
