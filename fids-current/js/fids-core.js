@@ -10077,9 +10077,20 @@ const gView = document.getElementById('gateView');
                   if (_stAirMini) window._miniAirSticky[_fkMini] = Date.now();
                   else if (window._miniAirSticky[_fkMini] && _arrTMini && Date.now() < _arrTMini + 15 * 60000) _stAirMini = true;
                 } catch (e) {}
+                // AIRPORT_COORDS ships in a SEPARATE file (airport-coords.js)
+                // — a display with a poisoned cache of it (transient 404 kept
+                // forever, the wordmark-token failure class) silently loses
+                // the estimator and shows pins-only, no plane (Nick's WS813
+                // gate: 'its under way its early... no aircraft'). Fall back
+                // to the engine's own tables so ONE stale file can't kill it.
                 var _apcMini = window.AIRPORT_COORDS || {};
-                var _ocMini = _apcMini[String(inb._locIata).toUpperCase()];
-                var _dcMini = _apcMini[String(apIata).toUpperCase()];
+                var _upO = String(inb._locIata).toUpperCase(), _upD = String(apIata).toUpperCase();
+                var _ocMini = _apcMini[_upO]
+                  || (typeof COORDS !== 'undefined' && COORDS[_upO])
+                  || (typeof GATE_AP !== 'undefined' && GATE_AP[_upO]) || null;
+                var _dcMini = _apcMini[_upD]
+                  || (typeof COORDS !== 'undefined' && COORDS[_upD])
+                  || (typeof GATE_AP !== 'undefined' && GATE_AP[_upD]) || null;
                 if (_stAirMini && _arrTMini && _ocMini && _dcMini) {
                   var _toR = Math.PI / 180;
                   var _dla = (_dcMini[0] - _ocMini[0]) * _toR, _dlo = (_dcMini[1] - _ocMini[1]) * _toR;
@@ -14780,7 +14791,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22334';
+var FIDS_BUILD_TAG = 'v22335';
 (function(){
   try {
     function _addTag(){
