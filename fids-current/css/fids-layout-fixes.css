@@ -3065,19 +3065,10 @@ html body.fids-light-board #fidsTable tbody tr.row-cancelled td * { color: #ffff
 html body #fidsTable tbody tr.row-cancelled td,
 html body #fidsTable tbody tr.row-cancelled td *,
 html body #fidsTable tbody tr.row-cancelled td.td-time-sched.is-revised { text-decoration: none !important; opacity: 1 !important; }
-/* Airline wordmarks go WHITE on the red rows on EVERY theme (Nick's TPA
-   screenshot: navy DELTA / green FRONTIER art stayed brand-colored on the
-   light board). SVG art only — brightness(0) invert(1) turns any ink into a
-   clean white silhouette, but it would turn an opaque raster PNG into a
-   white slab (the Breeze white-square lesson), so PNGs keep their tile box
-   instead. White-ink dark-board SVGs pass through unchanged (still white). */
-html body #fidsTable tbody tr.row-cancelled .td-airline img.fids-airline-wordmark[src*=".svg"] {
-  filter: brightness(0) invert(1) !important;
-  background: transparent !important;
-}
-html body .bidsv2-flight-row.bidsv2-row-cancelled img[src*="wordmark"][src*=".svg"] {
-  filter: brightness(0) invert(1) !important;
-}
+/* Airline art on cancelled/diverted rows is handled at the SOURCE: the row
+   builder forces the white-ink wordmark variant (fids-core _rowWmVariant),
+   the same mechanism delayed/final rows use for dark ink. No filters here —
+   filters wreck raster art (the Breeze white-square lesson). */
 /* Baggage-hall rows: same two-red striping (delayed already stripes). */
 html body.fids-light-board .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n),
 html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n) { background: #A50D24 !important; }
