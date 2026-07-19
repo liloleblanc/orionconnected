@@ -9875,6 +9875,19 @@ const gView = document.getElementById('gateView');
         try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 450); } catch(e){}
         try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 1300); } catch(e){}
         try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 3200); } catch(e){} // late refit: fonts/skins settle after 1.3s (Nick: AC19... Toron...)
+        // STANDING refit heartbeat — production kiosks kept ellipsizing the
+        // big values after every one-shot pass (late fonts / ad reflows we
+        // cannot reproduce). Re-fit every 5 s while a gate view is up; the
+        // pass is measure-only and no-ops when nothing overflows.
+        try {
+          if (window._gateFitTick) clearInterval(window._gateFitTick);
+          window._gateFitTick = setInterval(function(){
+            try {
+              var gv2 = document.getElementById('gateView');
+              if (gv2 && typeof screenType !== 'undefined' && screenType === 'gate' && typeof gateAutofit === 'function') gateAutofit(gv2);
+            } catch (e2) {}
+          }, 5000);
+        } catch(e){}
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
         if (_savedMap && gateMap && _newMapSlot) {
@@ -14797,7 +14810,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22342';
+var FIDS_BUILD_TAG = 'v22343';
 (function(){
   try {
     function _addTag(){

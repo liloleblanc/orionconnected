@@ -4827,23 +4827,30 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
   font-size: 0.95em !important;
 }
 /* Right column: same brushed steel, lighter run so navy text keeps reading */
-/* (right column back to its standard look — wood removed per Nick) */
-/* Dot-globe on the graphite left rail: screen-blend so it shows on dark */
-html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col::after {
-  mix-blend-mode: screen !important;
-  filter: grayscale(1) contrast(1.25) brightness(1.6) !important;
-  opacity: 0.26 !important;
+html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
+  background:
+    repeating-linear-gradient(180deg,
+      rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px,
+      rgba(0,0,0,0.04) 1px,      rgba(0,0,0,0.04) 2px),
+    linear-gradient(180deg,
+      #26221f 0%, #4e4843 14%, #8b837c 28%, #6a635d 40%,
+      #3b3733 58%, #26221f 78%, #171412 100%) !important;
+}
+/* Left-rail globe REMOVED for AC (Nick: 'remove the globe') — the bronze
+   metal stands alone. The is-bare pending filler is untouched. */
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col:not(.is-bare)::after {
+  display: none !important;
 }
 /* Dot-globe on the right column too (same asset, multiply on the light steel) */
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 { position: relative !important; }
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2::after {
   content: "" !important;
   position: absolute !important; left: 0 !important; right: 0 !important;
-  top: auto !important; bottom: 0 !important; height: 66% !important;
+  top: 0 !important; bottom: auto !important; height: 55% !important;
   background-image: url('/logos/3d_globe_desktop.svg?v=2') !important;
   background-size: 300% auto !important; background-position: center bottom !important;
   background-repeat: no-repeat !important;
-  mix-blend-mode: multiply !important; opacity: 0.45 !important;
-  filter: grayscale(1) contrast(1.5) brightness(0.9) !important;
+  mix-blend-mode: screen !important; opacity: 0.22 !important;
+  filter: grayscale(1) contrast(1.2) brightness(1.7) !important;
   pointer-events: none !important; z-index: 6 !important;
 }
