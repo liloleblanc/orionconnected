@@ -6189,7 +6189,11 @@ function _buildV2AircraftCol(ctx, vars) {
       //   Flight·Vol | Destination | Status·Statut | Boarding·Embarquement
       //   | Departure·Départ | Flight Time·Temps Vol
       // Short bilingual labels (revised-aware for the time panels).
-      var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
+      // Code slot shows CODES only. The dest-string fallback painted the
+      // whole city list into the label ('Destination | DENVER, RENO' above
+      // 'Denver, Reno' — Nick's gate A6 screenshot). No code → no chip.
+      var _destIataDisp = String(locIata || '').toUpperCase();
+      if (!/^[A-Z]{3,4}$/.test(_destIataDisp)) _destIataDisp = '';
       // Per Nick: "Destination | YYZ" — code on the label line, accent-coloured
       // (same size, not bigger); the value is the city alone.
       // MULTI-CITY through-flights FLIP city-by-city (chip flips in lockstep).
@@ -6199,7 +6203,10 @@ function _buildV2AircraftCol(ctx, vars) {
         ? currentFlight._stops : null;
       var _dfCity = _dfStops ? _destFlipStops(_dfStops, 'c') : null;
       var _dfChip = _dfStops ? _destFlipStops(_dfStops, 'ia', 'v2-fi-code-flip') : null;
-      var _destChipHtml = _dfChip || _destIataDisp;
+      // A flipping value with a frozen chip disagrees half the time
+      // ('DEN' beside 'Reno') — if the city flips and the chip can't flip
+      // with it, drop the chip entirely.
+      var _destChipHtml = _dfChip || (_dfCity ? '' : _destIataDisp);
       var _destLabel = 'Destination' + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
@@ -14752,7 +14759,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22332';
+var FIDS_BUILD_TAG = 'v22333';
 (function(){
   try {
     function _addTag(){
@@ -15485,7 +15492,12 @@ function render() {
     // DELAYED (yellow) and FINAL CALL (orange) rows are light blocks even on
     // dark boards — use the brand-color/dark-ink artwork there; the crimson
     // and blue blocks keep the white artwork (matches the approved preview).
-    const _rowWmVariant = (isDelayed || stKey === 'final-call') ? 'dark' : undefined;
+    // CANCELLED / DIVERTED are dark crimson/blue blocks on EVERY theme, so
+    // they must force the white-ink artwork — on light boards the default
+    // variant is dark ink, which read as black-on-red (Nick, three times:
+    // 'airlines in general all white on red').
+    const _rowWmVariant = (isDelayed || stKey === 'final-call') ? 'dark'
+      : (isCanc || isDiv) ? 'light' : undefined;
     const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
       ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase, _rowWmVariant)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
       : `<span class="fids-airline-name"${_nameStyle}>${_airlineDisplay}</span>`);
@@ -16804,10 +16816,11 @@ function tpaToAdbFlight(f) {
   const _cityCodesRaw = (f.city && f.city.code != null) ? f.city.code : '';
   const _cityCodes = (Array.isArray(_cityCodesRaw) ? _cityCodesRaw : String(_cityCodesRaw).split(','))
     .map((x) => String(x == null ? '' : x).trim().toUpperCase()).filter(Boolean);
-  // City NAMES are a list ONLY when the feed sends an actual array —
-  // splitting a name string on commas fabricated stops out of single
-  // cities like 'Houston, TX'. (Codes may split: codes can't contain commas.)
-  const _cityNames = Array.isArray(f.city && f.city.content) ? _toks(f.city) : [_c(f.city)].filter(Boolean);
+  // TPA's own list convention (production-proven: 'Denver, Reno',
+  // 'Richmond, Las Vegas'): commas separate STOPS; qualifiers use ' - '
+  // ('Houston - Intercontinental'). So a comma in city content IS a stop
+  // list, array or string alike.
+  const _cityNames = _toks(f.city);
   const cityCode = _cityCodes[0] || null;
   // Airport identity = the FIRST stop only. Its name (not a joined list)
   // feeds the ingest's existing reverse-lookup when the feed omits the
