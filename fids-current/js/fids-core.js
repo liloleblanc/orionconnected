@@ -14715,7 +14715,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22328';
+var FIDS_BUILD_TAG = 'v22329';
 (function(){
   try {
     function _addTag(){
@@ -15460,6 +15460,23 @@ function render() {
       + '</div></td>';
 
     const destCellHtml = (() => {
+      // Multi-stop rows (comma city list) FLIP leg by leg on the main board
+      // too — worldwide, any feed (Nick: 'I hope you understood that these
+      // changes were for worldwide'). The city normalizers below collapse
+      // the list to the first stop, so branch BEFORE them using the raw
+      // dest/origin. City text and IATA chip share the global lockstep tick.
+      const _rawLoc = String((isDep ? f.dest : f.origin) || '');
+      if (_rawLoc.indexOf(',') >= 0) {
+        const _titled = _rawLoc.split(',').map(s => s.trim()).filter(Boolean)
+          .map(s => s.toLowerCase().replace(/(^|[\s\-'])[a-z]/g, c => c.toUpperCase()))
+          .join(', ');
+        const _fc = _destFlipSpan(_titled, 'c');
+        const _fi = _destFlipSpan(_titled, 'ia');
+        if (_fc) {
+          return '<td class="td-dest">' + _fc
+            + (_fi ? ' <span class="dest-iata">(' + _fi + ')</span>' : '') + '</td>';
+        }
+      }
       // v218.14: cityCode() now returns "City (IATA)" format directly,
       // so cityDisp typically already contains the parens. We detect the
       // trailing " (XXX)" pattern and wrap just the IATA portion in the
@@ -18233,9 +18250,18 @@ function mapADB(raw, mode) {
       const _stops = String(cityName).split(',').map(s => s.trim()).filter(Boolean);
       if (_stops.length > 1) locName = _stops.map(s => s.toUpperCase()).join(', ');
     }
-    // MCO multi-leg: append the intermediate stop to the destination, e.g.
-    // "Sacramento via LAS". Only set on MCO through-departures (see adbFetch).
-    if (f._mcoViaStop) locName = `${locName} via ${f._mcoViaStop}`;
+    // Connecting flights (MCO/YYZ via-rows) join the SAME flip pipeline as
+    // every other multi-stop row instead of the old static "Albany via RDU"
+    // label (Nick: 'Orlando has the connecting issues as well'). _mcoViaStop
+    // is IATA codes (MCO) or city names (YYZ); resolve codes to city names
+    // and list the route in flying order, final stop last, comma-joined so
+    // the board flips leg by leg.
+    if (f._mcoViaStop) {
+      const _finalCity = String(locName).replace(/\s*\([A-Z]{2,4}\)\s*$/, '');
+      const _viaCities = String(f._mcoViaStop).split(',').map(s => s.trim()).filter(Boolean)
+        .map(v => (/^[A-Z]{3}$/.test(v) && typeof CITY !== 'undefined' && CITY[v]) ? CITY[v] : v);
+      locName = _viaCities.concat(_finalCity).map(s => String(s).toUpperCase()).join(', ');
+    }
     const terminal=(mode==='dep'?f.departure?.terminal:f.arrival?.terminal)||'—';
     const gate=(mode==='dep'?f.departure?.gate:f.arrival?.gate)||'—';
     const belt=(mode==='arr'?f.arrival?.baggageBelt:null)||null;
