@@ -2630,6 +2630,36 @@ function _destCityToIata(city) {
   }
   return _destIataRev[k] || '';
 }
+function _destFlipFromItems(items, kind, cls) {
+  if (!items || items.length < 2) return null;
+  // IATA chip is all-or-nothing: a leg without a code would echo its city
+  // name into the code slot. No chip beats a wrong-looking chip.
+  if (kind === 'ia' && items.some(function (it) { return !it.ia; })) return null;
+  var first = (kind === 'ia') ? items[0].ia : items[0].c;
+  return '<span class="' + (cls || 'dest-flip') + '" data-destflip="' + encodeURIComponent(JSON.stringify(items))
+    + '" data-dfk="' + (kind || 'c') + '">' + first + '</span>';
+}
+// ROOT PATH (Nick: 'they all do that... dont do another patch'): the feeds
+// TELL us every stop's airport code (TPA city.code list, YYZ routes[].code,
+// MCO via-leg codes). Rows carry them as _stops = [{iata, city}] and every
+// leg renders through the SAME naming machinery a single-stop destination
+// uses — no reverse-guessing codes from display strings, no per-leg drift.
+function _destFlipStops(stops, kind, cls) {
+  try {
+    if (!Array.isArray(stops) || stops.length < 2) return null;
+    var items = stops.map(function (s) {
+      var ia = String((s && s.iata) || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+      var name = '';
+      try { name = airportCityNameSafe_v21877(ia) || ''; } catch (e) {}
+      if (!name) name = String((s && s.city) || '') || ia;
+      try { if (typeof normalizeDisplayCity === 'function') name = normalizeDisplayCity(name, ia); } catch (e) {}
+      try { if (typeof tc === 'function' && name === name.toUpperCase()) name = tc(name); } catch (e) {}
+      return { c: name, ia: ia };
+    });
+    return _destFlipFromItems(items, kind, cls);
+  } catch (e) { return null; }
+}
+// Legacy fallback for rows without _stops (string dest with commas).
 function _destFlipSpan(destStr, kind, cls) {
   try {
     var parts = String(destStr || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -2639,9 +2669,7 @@ function _destFlipSpan(destStr, kind, cls) {
       try { ia = _destCityToIata(c) || ''; } catch (e) {}
       return { c: c, ia: ia };
     });
-    var first = (kind === 'ia') ? (items[0].ia || items[0].c) : items[0].c;
-    return '<span class="' + (cls || 'dest-flip') + '" data-destflip="' + encodeURIComponent(JSON.stringify(items))
-      + '" data-dfk="' + (kind || 'c') + '">' + first + '</span>';
+    return _destFlipFromItems(items, kind, cls);
   } catch (e) { return null; }
 }
 try {
@@ -2654,7 +2682,7 @@ try {
         var items = JSON.parse(decodeURIComponent(els[i].getAttribute('data-destflip')));
         var it = items[window._dfIdx % items.length];
         var kind = els[i].getAttribute('data-dfk') || 'c';
-        var v = (kind === 'ia') ? (it.ia || it.c) : it.c;
+        var v = (kind === 'ia') ? (it.ia || '') : it.c;
         if (els[i].textContent !== v) els[i].textContent = v;
       } catch (e) {}
     }
@@ -5907,6 +5935,27 @@ function _buildV2AircraftCol(ctx, vars) {
   // empty lower half instead of leaving a dead navy slab.
   var _hasAnyOptional = !!(_regBlock || (_hasInb && _inbLine && _inbLine.indexOf('visibility:hidden') === -1) || _liveryBlock || _eqBlock);
   var _bareCls = _hasAnyOptional ? '' : ' is-bare';
+  // When the column is bare, SAY WHY on screen (Nick at TPA: 'no aircraft at
+  // all / very rare to see an aircraft'). TPA's own feed carries zero
+  // equipment, so everything here rides on the ADB lookup — surface that
+  // lookup's last outcome (window._adbHealth, written by loadFlight) so a
+  // photo of the screen diagnoses it. Honest states only, never a guess.
+  var _bareStatusBlock = '';
+  if (!_hasAnyOptional) {
+    try {
+      var _ah = window._adbHealth || null;
+      var _bsSub = '';
+      if (_ah && _ah.failStatus && (!_ah.okTs || (_ah.failTs || 0) > _ah.okTs)) {
+        _bsSub = (_ah.failStatus === 429)
+          ? 'Data service busy — retrying | Service de données occupé — nouvel essai'
+          : 'Data service unavailable (' + _ah.failStatus + ') | Service de données indisponible';
+      }
+      _bareStatusBlock = '<div class="v2-bare-status">'
+        + 'Aircraft details pending | Détails de l’appareil à venir'
+        + (_bsSub ? '<div class="v2-bare-sub">' + _bsSub + '</div>' : '')
+        + '</div>';
+    } catch (e) {}
+  }
 
   // ── v218.96: Optional themed blocks (weather at destination, gate info) ──
   // These render only when the gate theme enables them via the blocks list.
@@ -6161,8 +6210,10 @@ function _buildV2AircraftCol(ctx, vars) {
       // Source is the RAW feed dest — the display name was already reduced
       // to the first leg by the through-flight split, so it never has commas.
       var _dfRawDest = String((currentFlight && currentFlight.dest) || _destCityName || '');
-      var _dfCity = _destFlipSpan(_dfRawDest, 'c');
-      var _dfChip = _destFlipSpan(_dfRawDest, 'ia', 'v2-fi-code-flip');
+      var _dfStops = (currentFlight && Array.isArray(currentFlight._stops) && currentFlight._stops.length > 1)
+        ? currentFlight._stops : null;
+      var _dfCity = _dfStops ? _destFlipStops(_dfStops, 'c') : _destFlipSpan(_dfRawDest, 'c');
+      var _dfChip = _dfStops ? _destFlipStops(_dfStops, 'ia', 'v2-fi-code-flip') : _destFlipSpan(_dfRawDest, 'ia', 'v2-fi-code-flip');
       var _destChipHtml = _dfChip || _destIataDisp;
       var _destLabel = 'Destination' + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
@@ -6249,7 +6300,7 @@ function _buildV2AircraftCol(ctx, vars) {
   var _orderedHtml = '';
   _orderToUse.forEach(function(id) { _orderedHtml += (_blockMap[id] || ''); });
 
-  return '<div class="gad-aircraft-col' + _bareCls + '">' + _orderedHtml + '</div>';
+  return '<div class="gad-aircraft-col' + _bareCls + '">' + _orderedHtml + _bareStatusBlock + '</div>';
 }
 
 // ─── V2 MAP COLUMN BUILDER ────────────────────────────────────────────────
@@ -6755,8 +6806,10 @@ function _buildV2MapCol(ctx, vars) {
       // Raw feed dest — the display city was already first-leg-reduced.
       (function () {
         var _dfRawRow = String((vars.currentFlight && vars.currentFlight.dest) || _dDestCity || '');
-        var _dfRow = _destFlipSpan(_dfRawRow, 'c');
-        var _dfRowIa = _destFlipSpan(_dfRawRow, 'ia');
+        var _dfRowStops = (vars.currentFlight && Array.isArray(vars.currentFlight._stops) && vars.currentFlight._stops.length > 1)
+          ? vars.currentFlight._stops : null;
+        var _dfRow = _dfRowStops ? _destFlipStops(_dfRowStops, 'c') : _destFlipSpan(_dfRawRow, 'c');
+        var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : _destFlipSpan(_dfRawRow, 'ia');
         if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' (' + _dfRowIa + ')' : '');
       })();
       _inboundCard =
@@ -14715,7 +14768,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22329';
+var FIDS_BUILD_TAG = 'v22330';
 (function(){
   try {
     function _addTag(){
@@ -15465,13 +15518,20 @@ function render() {
       // changes were for worldwide'). The city normalizers below collapse
       // the list to the first stop, so branch BEFORE them using the raw
       // dest/origin. City text and IATA chip share the global lockstep tick.
+      const _rowStops = (Array.isArray(f._stops) && f._stops.length > 1) ? f._stops : null;
       const _rawLoc = String((isDep ? f.dest : f.origin) || '');
-      if (_rawLoc.indexOf(',') >= 0) {
-        const _titled = _rawLoc.split(',').map(s => s.trim()).filter(Boolean)
-          .map(s => s.toLowerCase().replace(/(^|[\s\-'])[a-z]/g, c => c.toUpperCase()))
-          .join(', ');
-        const _fc = _destFlipSpan(_titled, 'c');
-        const _fi = _destFlipSpan(_titled, 'ia');
+      if (_rowStops || _rawLoc.indexOf(',') >= 0) {
+        let _fc, _fi;
+        if (_rowStops) {
+          _fc = _destFlipStops(_rowStops, 'c');
+          _fi = _destFlipStops(_rowStops, 'ia');
+        } else {
+          const _titled = _rawLoc.split(',').map(s => s.trim()).filter(Boolean)
+            .map(s => s.toLowerCase().replace(/(^|[\s\-'])[a-z]/g, c => c.toUpperCase()))
+            .join(', ');
+          _fc = _destFlipSpan(_titled, 'c');
+          _fi = _destFlipSpan(_titled, 'ia');
+        }
         if (_fc) {
           return '<td class="td-dest">' + _fc
             + (_fi ? ' <span class="dest-iata">(' + _fi + ')</span>' : '') + '</td>';
@@ -16770,6 +16830,11 @@ function tpaToAdbFlight(f) {
   const _cityNames = _toks(f.city);
   const cityCode = _cityCodes[0] || null;
   const other = { iata: cityCode, icao: null, name: _cityNames.join(', ') || null };
+  // Every leg's code, in route order — the board flips from THESE, never
+  // from re-parsed display text.
+  const _stopsList = (_cityCodes.length > 1)
+    ? _cityCodes.map((c, i) => ({ iata: c, city: _cityNames[i] || '' }))
+    : null;
   const claim = _c(f.claim);
   const homeSide = {
     airport: home,
@@ -16786,7 +16851,8 @@ function tpaToAdbFlight(f) {
     status: tpaStatus(f.status && f.status.code, f.status && f.status.content),
     codeshareStatus: 'IsOperator', isCargo: false,
     departure: isDep ? homeSide : otherSide,
-    arrival: isDep ? otherSide : homeSide
+    arrival: isDep ? otherSide : homeSide,
+    ...(_stopsList ? { _stops: _stopsList } : {})
   };
 }
 // ── YYZ (Toronto Pearson) native feed — torontopearson.com/api/flightsapidata ──
@@ -16856,6 +16922,11 @@ function yyzToAdbFlight(f) {
   if (viaR.length) {
     const viaCity = viaR.map(r => (r && (r.city || r.code) || '')).filter(Boolean).join(', ');
     if (viaCity) out._mcoViaStop = viaCity;
+    // Feed-code stop list (route order) for the leg-by-leg flip.
+    const _yyzStops = routes
+      .map(r => ({ iata: String((r && r.code) || '').toUpperCase(), city: (r && (r.city || r.name)) || '' }))
+      .filter(s => s.iata || s.city);
+    if (_yyzStops.length > 1) out._stops = _yyzStops;
   }
   return out;
 }
@@ -16973,6 +17044,8 @@ async function adbFetch(iata, direction) {
             const vias = stops.slice(0, -1);                          // earlier = intermediate
             if (finalDest && rep.arrival && rep.arrival.airport) rep.arrival.airport.iata = finalDest;
             if (vias.length) rep._mcoViaStop = vias.join(', ');
+            // Feed-code stop list (route order, final last) for the flip.
+            if (stops.length > 1) rep._stops = stops.map(c => ({ iata: c, city: '' }));
           }
           return rep;
         });
@@ -18247,8 +18320,10 @@ function mapADB(raw, mode) {
     // cityName. Keep the WHOLE list on the board — CITY[locIata] collapses it
     // to the first stop, and the destination flip needs every leg to cycle.
     if (cityName && String(cityName).indexOf(',') >= 0) {
+      // Keep the feed's own casing — forcing caps made the gate rail shout
+      // 'SAN DIEGO' while single-stop rows read 'San Diego' (Nick).
       const _stops = String(cityName).split(',').map(s => s.trim()).filter(Boolean);
-      if (_stops.length > 1) locName = _stops.map(s => s.toUpperCase()).join(', ');
+      if (_stops.length > 1) locName = _stops.join(', ');
     }
     // Connecting flights (MCO/YYZ via-rows) join the SAME flip pipeline as
     // every other multi-stop row instead of the old static "Albany via RDU"
@@ -18260,7 +18335,11 @@ function mapADB(raw, mode) {
       const _finalCity = String(locName).replace(/\s*\([A-Z]{2,4}\)\s*$/, '');
       const _viaCities = String(f._mcoViaStop).split(',').map(s => s.trim()).filter(Boolean)
         .map(v => (/^[A-Z]{3}$/.test(v) && typeof CITY !== 'undefined' && CITY[v]) ? CITY[v] : v);
-      locName = _viaCities.concat(_finalCity).map(s => String(s).toUpperCase()).join(', ');
+      // Title-case ALL-CAPS entries (CITY values shout) so the gate rail
+      // reads 'Raleigh', matching single-stop rows; mixed-case names pass.
+      const _tcCity = s => { s = String(s); return (s === s.toUpperCase())
+        ? s.toLowerCase().replace(/(^|[\s\-'\/(])[a-z]/g, c => c.toUpperCase()) : s; };
+      locName = _viaCities.concat(_finalCity).map(_tcCity).join(', ');
     }
     const terminal=(mode==='dep'?f.departure?.terminal:f.arrival?.terminal)||'—';
     const gate=(mode==='dep'?f.departure?.gate:f.arrival?.gate)||'—';
@@ -18411,8 +18490,8 @@ function mapADB(raw, mode) {
     // unknown places for a flight, that can't be').
     if (!locIata && (!cityName || /^unknown$/i.test(String(cityName).trim()))) return null;
     return mode==='dep'
-      ?{time,upd,dateTag,flight,dest:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
-      :{time,upd,dateTag,flight,origin:locName,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
+      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
+      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs);
 }
 
