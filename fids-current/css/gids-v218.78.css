@@ -4798,12 +4798,13 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-bloc
       rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px,
       rgba(0,0,0,0.04) 1px,      rgba(0,0,0,0.04) 2px),
     linear-gradient(180deg,
-      #dfe1e5 0%, #a9adb4 20%, #5d6167 48%, #26282c 78%, #101113 100%) !important;
-  border: 1px solid rgba(255,255,255,0.14) !important;
+      #26221f 0%, #4e4843 14%, #8b837c 28%, #6a635d 40%,
+      #3b3733 58%, #26221f 78%, #171412 100%) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title,
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title * {
-  color: #16181c !important;
+  color: #e9e4de !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-value:not(.v2-fi-status-val),
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-value:not(.v2-fi-status-val) * {
