@@ -5029,19 +5029,20 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // livery folder first. e.g. Canadian North gets a feed "73H" (a 737-800 they
   // don't even fly); there's no 5T/73H.png, so we slide to their real 5T/733
   // (737-300) livery instead of breaking to a "?".
+  // STRICT same-aircraft aliases ONLY (Nick: 'it shouldnt say airbus 321 and
+  // show a 320 … wires are crossed / the root of this needs to be fixed').
+  // The old table deliberately slid to DIFFERENT types (321→320, MAX 8→738),
+  // so the picture could contradict the label whenever a livery file was
+  // missing. Now the chain may only try codes that mean the SAME aircraft
+  // (73H and 738 are both the 737-800); anything else falls to the exact
+  // type's generic image or hides. Every common type has its own generic
+  // file (7M8/32Q/32N/223/E95/DH4/CR9… all present), so this costs almost
+  // nothing visually and label/image can never disagree again.
   var FAMILY_SIBLINGS = {
-    // 737 family — try the other 737s
-    '73H':['738','737','73G','733','734','73C'], '738':['73H','737','73G','733','734'],
-    '739':['73J','73H','737','738'], '737':['738','73H','73G','733'],
-    '733':['734','73C','737','738'], '734':['733','73C','737'], '73C':['733','734','737'],
-    '73G':['737','738','73H'], '73J':['739','73H','737'],
-    '7M8':['738','73H','737','73G'], '7M9':['739','73J','7M8'], '7M7':['737','73G','7M8'],
-    // 777 / 747 / 767 / 757 / 787 / A320 families
-    '772':['777','77W','773'], '773':['777','77W','772'], '77W':['777','773','772'], '77L':['777','772','77W'], '77X':['777','77W','773'],
-    '777':['77W','773','772','77L'],
-    '744':['747'], '748':['747','744'], '764':['763'], '753':['752'],
-    '789':['788'], '78X':['788'], '781':['788'], '788':['789'],
-    '32N':['320','319'], '32Q':['321'], '321':['32N','320'], '319':['320','32N'], '320':['319','32N']
+    '73H':['738'], '738':['73H'],
+    '739':['73J'], '73J':['739'],
+    '733':['73C'], '73C':['733'],
+    '77L':['772']
   };
   var _variants = [eq].concat(FAMILY_SIBLINGS[eq] || []);
   // Try variant-specific → exact → siblings, ALL in the airline's livery folder
@@ -5088,11 +5089,22 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
       // 'important' — the stylesheet's `display:block !important` on
       // .g8-aircraft-img beats a plain inline hide, which is how the
       // broken-image icon (alt "A35") leaked onto the panel.
-      + "else if(!this.dataset.gfb){this.dataset.gfb='1';this.src='aircraft/320.png" + _imgCacheBuster + "';}"
+      // Terminal: step down to the SAME TYPE's generic image (strip the
+      // livery suffix), else hide. NEVER a different aircraft — the old
+      // hardcoded 320.png fallback put an A320 picture under an 'Airbus
+      // A321' label (Nick: 'it shouldnt say airbus 321 and show a 320 …
+      // wires are crossed').
+      + "else if(!this.dataset.gfb){this.dataset.gfb='1';"
+      +   "var _g=_p.replace(/-[a-z]{2,4}\\.png$/i,'.png');"
+      +   "if(_g!==_p){this.src=_g+'" + _imgCacheBuster + "';}"
+      +   "else{this.style.setProperty('display','none','important');}}"
       + "else{this.style.setProperty('display','none','important');}";
   } else {
     onerror = _markMiss
-      + "if(!this.dataset.gfb){this.dataset.gfb='1';this.src='aircraft/320.png" + _imgCacheBuster + "';}"
+      + "if(!this.dataset.gfb){this.dataset.gfb='1';"
+      +   "var _g=_p.replace(/-[a-z]{2,4}\\.png$/i,'.png');"
+      +   "if(_g!==_p){this.src=_g+'" + _imgCacheBuster + "';}"
+      +   "else{this.style.setProperty('display','none','important');}}"
       + "else{this.style.setProperty('display','none','important');}";
   }
   var onload = "try{window._detectPlaneFacing&&window._detectPlaneFacing(this);}catch(e){}";
@@ -14629,7 +14641,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22326';
+var FIDS_BUILD_TAG = 'v22327';
 (function(){
   try {
     function _addTag(){
