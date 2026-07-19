@@ -2604,6 +2604,63 @@ function getTimeInTz(ts, tz) {
   } catch(e) { return ''; }
 }
 
+// ── MULTI-CITY DESTINATION FLIP (Nick: 'the board should flip so first
+// city then second city etc'). Through-flights like UA611 TPA→SFO→LAS
+// crammed 'San Francisco, Las Vegas' into one shelf and truncated the
+// chip. Any [data-destflip] span carries its city list; ONE shared ticker
+// advances them ALL in lockstep every 4 s, so the big city text and the
+// IATA chip always show the SAME leg.
+var _destIataRev = null;
+function _destCityToIata(city) {
+  // Reverse CITY lookup ("SAN FRANCISCO" → SFO) for the flip chip. Built
+  // once, first writer wins — the primary CITY table lists the majors
+  // before the small-field dupes, so DENVER stays DEN. Returns '' rather
+  // than guessing when the name isn't in the table.
+  var k = String(city || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+  if (!k) return '';
+  if (!_destIataRev) {
+    try {
+      var rev = {};
+      for (var code in CITY) {
+        var n = String(CITY[code]).toUpperCase();
+        if (!(n in rev)) rev[n] = code;
+      }
+      _destIataRev = rev;
+    } catch (e) { return ''; }
+  }
+  return _destIataRev[k] || '';
+}
+function _destFlipSpan(destStr, kind, cls) {
+  try {
+    var parts = String(destStr || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length < 2) return null;
+    var items = parts.map(function (c) {
+      var ia = '';
+      try { ia = _destCityToIata(c) || ''; } catch (e) {}
+      return { c: c, ia: ia };
+    });
+    var first = (kind === 'ia') ? (items[0].ia || items[0].c) : items[0].c;
+    return '<span class="' + (cls || 'dest-flip') + '" data-destflip="' + encodeURIComponent(JSON.stringify(items))
+      + '" data-dfk="' + (kind || 'c') + '">' + first + '</span>';
+  } catch (e) { return null; }
+}
+try {
+  setInterval(function () {
+    var els = document.querySelectorAll('[data-destflip]');
+    if (!els.length) return;
+    window._dfIdx = (window._dfIdx || 0) + 1;
+    for (var i = 0; i < els.length; i++) {
+      try {
+        var items = JSON.parse(decodeURIComponent(els[i].getAttribute('data-destflip')));
+        var it = items[window._dfIdx % items.length];
+        var kind = els[i].getAttribute('data-dfk') || 'c';
+        var v = (kind === 'ia') ? (it.ia || it.c) : it.c;
+        if (els[i].textContent !== v) els[i].textContent = v;
+      } catch (e) {}
+    }
+  }, 4000);
+} catch (e) {}
+
 // ── IS THIS INBOUND AIRBORNE? — the spec's own signals, one answer for every
 // consumer (Nick: 'did you read the instructions thats number one'). The
 // AeroDataBox docs define exactly how to read a record; the mini map, the
@@ -2644,7 +2701,7 @@ function _equipSaneForCarrier(mktCode, opCode, reg, acStr) {
     var c = String(opCode || mktCode || '').toUpperCase();
     var r = String(reg || '').toUpperCase().replace(/[\s-]/g, '');
     var CA = { AC:1, RV:1, QK:1, ZX:1, '9M':1, PD:1, P3:1, WS:1, WR:1, TS:1, PB:1, SP:1, F8:1, WG:1, JV:1, WT:1 };
-    var US = { AA:1, DL:1, UA:1, WN:1, B6:1, F9:1, NK:1, AS:1, MX:1, G4:1, SY:1 };
+    var US = { AA:1, DL:1, UA:1, WN:1, B6:1, F9:1, NK:1, AS:1, MX:1, G4:1, SY:1, XP:1 };
     if (r) {
       if (CA[c] && !/^C[FGI]/.test(r)) return false;
       if (US[c] && !/^N/.test(r)) return false;
@@ -4128,7 +4185,7 @@ const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
-  'HA':'#582C83',
+  'HA':'#582C83','XP':'#492C92',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
@@ -4144,6 +4201,7 @@ var AIRLINE_DOMAIN = {
   'UA':'united.com','DL':'delta.com','AA':'aa.com','WN':'southwest.com',
   'B6':'jetblue.com','AS':'alaskaair.com','F9':'flyfrontier.com',
   'G4':'allegiantair.com','HA':'hawaiianairlines.com','SY':'suncountry.com',
+  'XP':'aveloair.com',
   'LH':'lufthansa.com','BA':'britishairways.com','AF':'airfrance.com','KL':'klm.com',
   'VS':'virginatlantic.com','LX':'swiss.com','OS':'austrian.com','SK':'flysas.com',
   'AY':'finnair.com','IB':'iberia.com','TP':'flytap.com','EI':'aerlingus.com',
@@ -6099,8 +6157,15 @@ function _buildV2AircraftCol(ctx, vars) {
       var _destIataDisp = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
       // Per Nick: "Destination | YYZ" — code on the label line, accent-coloured
       // (same size, not bigger); the value is the city alone.
-      var _destLabel = 'Destination' + (_destIataDisp ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destIataDisp + '</span>' : '');
-      var _destValue = _destCityName || _destIataDisp;
+      // MULTI-CITY through-flights FLIP city-by-city (chip flips in lockstep).
+      // Source is the RAW feed dest — the display name was already reduced
+      // to the first leg by the through-flight split, so it never has commas.
+      var _dfRawDest = String((currentFlight && currentFlight.dest) || _destCityName || '');
+      var _dfCity = _destFlipSpan(_dfRawDest, 'c');
+      var _dfChip = _destFlipSpan(_dfRawDest, 'ia', 'v2-fi-code-flip');
+      var _destChipHtml = _dfChip || _destIataDisp;
+      var _destLabel = 'Destination' + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
+      var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
       // "Revised -" to BOTH languages overflows the shelf. (Same rule as Departure.)
@@ -6686,6 +6751,14 @@ function _buildV2MapCol(ctx, vars) {
       var _dCityCode = _dDestCity
         ? (_dDestCity + (_dDest ? ' (' + _dDest + ')' : ''))
         : (_dDest || '—');
+      // Multi-city through-flight → flip the panel row city-by-city too.
+      // Raw feed dest — the display city was already first-leg-reduced.
+      (function () {
+        var _dfRawRow = String((vars.currentFlight && vars.currentFlight.dest) || _dDestCity || '');
+        var _dfRow = _destFlipSpan(_dfRawRow, 'c');
+        var _dfRowIa = _destFlipSpan(_dfRawRow, 'ia');
+        if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' (' + _dfRowIa + ')' : '');
+      })();
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t4">'
         +   '<div class="v2-rc-fi-trow">'
@@ -13542,7 +13615,8 @@ const AIRLINE_NAME = {
   'UA':'UNITED',      'DL':'DELTA',       'AA':'AMERICAN',    'WN':'SOUTHWEST',
   'B6':'JETBLUE',     'AS':'ALASKA',      'F9':'FRONTIER',
   // NK (Spirit) — ceased operations May 2 2026
-  'G4':'ALLEGIANT',   'HA':'HAWAIIAN',    'SY':'SUN COUNTRY',
+  'G4':'ALLEGIANT',   'HA':'HAWAIIAN',    'SY':'SUN COUNTRY', 'XP':'AVELO',
+  'WL':'WORLD ATLANTIC',
   '9E':'DELTA',       '9K':'CAPE AIR',    'MQ':'AMERICAN',    'OH':'AMERICAN',    'OO':'SKYWEST',
   'YV':'MESA',        'G7':'GOJET',       'YX':'REPUBLIC',    'PT':'AMERICAN',    'ZW':'AIR WISCONSIN',
   'CP':'COMPASS',     'RP':'CHAUTAUQUA',  'S5':'SHUTTLE AM.', 'QX':'HORIZON',
@@ -14641,7 +14715,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22327';
+var FIDS_BUILD_TAG = 'v22328';
 (function(){
   try {
     function _addTag(){
@@ -16631,17 +16705,54 @@ function tpaToAdbFlight(f) {
   if (!f || typeof f !== 'object') return null;
   const isDep = String(f.adi || '').toUpperCase() === 'D';
   const _c = (o) => (o && o.content != null ? String(o.content).trim() : '');
-  const code = _c(f.linecode).toUpperCase();
-  const num = _c(f.number);
+  // Codeshare rows pack linecode/number/line as LISTS (arrays or comma-joined
+  // strings). Blind String() concatenation shipped flights like ",KL2385,7157"
+  // to the board — no recognizable carrier, broken logo, dead branding (Nick's
+  // TPA Belt 6 screenshot). Tokenize every multi-value field and pick ONE
+  // primary flight instead.
+  const _toks = (o) => {
+    if (!o || o.content == null) return [];
+    const raw = Array.isArray(o.content) ? o.content : String(o.content).split(',');
+    return raw.map((x) => String(x == null ? '' : x).trim()).filter(Boolean);
+  };
+  const _codes = _toks(f.linecode).map((c) => c.toUpperCase().replace(/\s+/g, ''));
+  const _numToks = _toks(f.number).map((n) => n.toUpperCase().replace(/\s+/g, ''));
+  const _names = _toks(f.line);
+  // "KL2385" carries its own carrier; a bare "358"/"7157" borrows the linecode
+  // at its position (or the row's only linecode). Primary = the first token
+  // that resolves to carrier+number, preferring the row's lead linecode so the
+  // operator brands the row, not a codeshare partner.
+  const _cands = [];
+  for (let _i = 0; _i < _numToks.length; _i++) {
+    const _m = _numToks[_i].match(/^([A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])?(\d+[A-Z]?)$/);
+    if (!_m || !_m[2]) continue;
+    const _cc = _m[1] || _codes[_i] || (_codes.length === 1 ? _codes[0] : '');
+    _cands.push({ code: _cc, num: _m[2], name: _names[_i] || _names[0] || '' });
+  }
+  const _lead = _codes[0] || '';
+  const _pick = (_lead && _cands.find((p) => p.code === _lead))
+    || _cands.find((p) => p.code)
+    || _cands[0] || null;
+  const code = _pick ? _pick.code : _lead;
+  const num = _pick ? _pick.num : (_numToks[0] || '');
   const number = (code + num) || num;
   if (!number) return null;
   const sched = tpaTimeObj(f.schedule && f.schedule.original);
   const actualIso = f.actual && f.actual.original;
   const revised = (actualIso && f.schedule && actualIso !== f.schedule.original) ? tpaTimeObj(actualIso) : null;
-  const airline = { iata: code || null, icao: null, name: _c(f.line) || null };
+  const airline = { iata: code || null, icao: null, name: (_pick && _pick.name) || _names[0] || null };
   const home = { iata: 'TPA', icao: 'KTPA', name: 'Tampa' };
-  const cityCode = (f.city && f.city.code ? String(f.city.code).toUpperCase() : '') || null;
-  const other = { iata: cityCode, icao: null, name: (f.city && f.city.content) || null };
+  // Through-flights list EVERY stop in city (code AND content can be lists).
+  // The airport code must be the FIRST stop only — "SFO,LAS" resolved to no
+  // airport at all, which killed the weather column and the IATA chip on
+  // multi-stop rows (Nick: 'weather does not work'). The display name keeps
+  // the full comma list so the destination flip can cycle leg by leg.
+  const _cityCodesRaw = (f.city && f.city.code != null) ? f.city.code : '';
+  const _cityCodes = (Array.isArray(_cityCodesRaw) ? _cityCodesRaw : String(_cityCodesRaw).split(','))
+    .map((x) => String(x == null ? '' : x).trim().toUpperCase()).filter(Boolean);
+  const _cityNames = _toks(f.city);
+  const cityCode = _cityCodes[0] || null;
+  const other = { iata: cityCode, icao: null, name: _cityNames.join(', ') || null };
   const claim = _c(f.claim);
   const homeSide = {
     airport: home,
@@ -18115,6 +18226,13 @@ function mapADB(raw, mode) {
       }
     }
     let locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
+    // Multi-stop rows (TPA through-flights) carry a comma list of cities in
+    // cityName. Keep the WHOLE list on the board — CITY[locIata] collapses it
+    // to the first stop, and the destination flip needs every leg to cycle.
+    if (cityName && String(cityName).indexOf(',') >= 0) {
+      const _stops = String(cityName).split(',').map(s => s.trim()).filter(Boolean);
+      if (_stops.length > 1) locName = _stops.map(s => s.toUpperCase()).join(', ');
+    }
     // MCO multi-leg: append the intermediate stop to the destination, e.g.
     // "Sacramento via LAS". Only set on MCO through-departures (see adbFetch).
     if (f._mcoViaStop) locName = `${locName} via ${f._mcoViaStop}`;

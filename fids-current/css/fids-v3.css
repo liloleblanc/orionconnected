@@ -1614,10 +1614,11 @@ body[data-fids-theme="cream"] #fidsTable td.td-time-rev:empty::before {
   background: transparent !important;
   color: #ffffff !important;
 }
-/* Strikethrough every text cell except the status pill */
-#fidsTable tbody tr.row-cancelled td:not(.td-status):not(.td-airline):not(.td-wx) {
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
+/* No strikethrough on cancelled rows — the red row IS the signal, and the
+   struck lettering was unreadable (Nick: 'dont cross out names you neeed to
+   be able to read the cancelation'). */
+#fidsTable tbody tr.row-cancelled td {
+  text-decoration: none !important;
 }
 #fidsTable tbody tr.row-cancelled td.td-status {
   color: #ffffff !important;
