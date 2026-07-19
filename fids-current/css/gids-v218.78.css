@@ -4786,3 +4786,23 @@ body, body.gids-page, body.gate-page{
   content: attr(data-baremsg);
   font-size:13px; letter-spacing:0.6px; text-align:center; line-height:1.6;
 }
+
+/* ══ AIR CANADA BRUSHED GRAPHITE GATE SKIN (Nick supplied the reference
+   texture, Jul 19 2026: 'use something like this for AC along with similar
+   matching tones'). Drawn in pure CSS — fine horizontal striations over a
+   silver-to-black vertical fade — so it renders razor sharp at any panel
+   size (no raster to pixelate). AC red accent stays on the accent pieces. */
+body[data-gate-airline="AC"] #gateView {
+  background:
+    repeating-linear-gradient(180deg,
+      rgba(255,255,255,0.030) 0px, rgba(255,255,255,0.030) 1px,
+      rgba(0,0,0,0.035) 1px,     rgba(0,0,0,0.035) 2px),
+    linear-gradient(180deg,
+      #e8e9ec 0%, #b9bcc2 10%, #7c8087 24%,
+      #45484e 42%, #232529 62%, #101113 82%, #070708 100%) !important;
+}
+/* Panels sit on translucent graphite so the brushed fade reads through. */
+body[data-gate-airline="AC"] .gad-media-col,
+body[data-gate-airline="AC"] .gad-aircraft-col {
+  background: rgba(10, 11, 13, 0.42) !important;
+}
