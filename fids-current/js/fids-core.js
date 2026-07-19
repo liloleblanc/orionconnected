@@ -14752,7 +14752,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22331';
+var FIDS_BUILD_TAG = 'v22332';
 (function(){
   try {
     function _addTag(){
@@ -16804,13 +16804,21 @@ function tpaToAdbFlight(f) {
   const _cityCodesRaw = (f.city && f.city.code != null) ? f.city.code : '';
   const _cityCodes = (Array.isArray(_cityCodesRaw) ? _cityCodesRaw : String(_cityCodesRaw).split(','))
     .map((x) => String(x == null ? '' : x).trim().toUpperCase()).filter(Boolean);
-  const _cityNames = _toks(f.city);
+  // City NAMES are a list ONLY when the feed sends an actual array —
+  // splitting a name string on commas fabricated stops out of single
+  // cities like 'Houston, TX'. (Codes may split: codes can't contain commas.)
+  const _cityNames = Array.isArray(f.city && f.city.content) ? _toks(f.city) : [_c(f.city)].filter(Boolean);
   const cityCode = _cityCodes[0] || null;
-  const other = { iata: cityCode, icao: null, name: _cityNames.join(', ') || null };
-  // Every leg's code, in route order — the board flips from THESE, never
-  // from re-parsed display text.
-  const _stopsList = (_cityCodes.length > 1)
-    ? _cityCodes.map((c, i) => ({ iata: c, city: _cityNames[i] || '' }))
+  // Airport identity = the FIRST stop only. Its name (not a joined list)
+  // feeds the ingest's existing reverse-lookup when the feed omits the
+  // code, which is what weather, the arrival estimate and the map key on.
+  const other = { iata: cityCode, icao: null, name: _cityNames[0] || null };
+  // Route list = the feed's own array (codes when it has them, names
+  // always) — the flip renders from THIS, never from re-parsed display
+  // text. Chip stays off for legs whose code the feed didn't provide.
+  const _stopCount = Math.max(_cityCodes.length, _cityNames.length);
+  const _stopsList = (_stopCount > 1)
+    ? Array.from({ length: _stopCount }, (_, i) => ({ iata: _cityCodes[i] || '', city: _cityNames[i] || '' }))
     : null;
   const claim = _c(f.claim);
   const homeSide = {
@@ -18296,13 +18304,9 @@ function mapADB(raw, mode) {
     // Multi-stop rows (TPA through-flights) carry a comma list of cities in
     // cityName. Keep the WHOLE list on the board — CITY[locIata] collapses it
     // to the first stop, and the destination flip needs every leg to cycle.
-    if (Array.isArray(f._stops) && f._stops.length > 1 && cityName && String(cityName).indexOf(',') >= 0) {
-      // Real multi-stop row (feed-code list) — keep the full city list, the
-      // flip consumes _stops. A single city whose NAME contains a comma
-      // ('Houston, TX') has no _stops and renders normally.
-      const _stopNames = String(cityName).split(',').map(s => s.trim()).filter(Boolean);
-      if (_stopNames.length > 1) locName = _stopNames.join(', ');
-    }
+    // (Multi-stop rows carry their route in _stops; locName is the first
+    // stop's canonical city like any single-stop row — the flip renderers
+    // read _stops directly, static surfaces show the first stop.)
     // Connecting flights (MCO/YYZ via-rows) join the SAME flip pipeline as
     // every other multi-stop row instead of the old static "Albany via RDU"
     // label (Nick: 'Orlando has the connecting issues as well'). _mcoViaStop
