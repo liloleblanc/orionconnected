@@ -3037,3 +3037,45 @@ html .g8-board-welcome .g8-r1-star {
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.45)) !important;
   margin-left: clamp(10px, 1vw, 22px) !important;
 }
+
+/* ══ CANCELLED = TWO SHADES OF RED, NO STRIKE, ALL-WHITE LETTERING ══════════
+   (Nick, Jul 19 2026: 'the cancelled flight need 2 colors same as delayed
+   its hard to see so 2 shades of red / dont cross out names / airlines in
+   general all white on red'.) A cancellation wave turned the board into one
+   flat red slab — consecutive rows now alternate a deep and a lighter red
+   exactly like the delayed rows' two yellows, every glyph (times, city,
+   airline NAME, status word) is white, and nothing is struck through. */
+/* FIDS board rows */
+html body #fidsTable tbody tr.row-cancelled:nth-child(n),
+html body #fidsTable tbody tr.row-cancelled:nth-child(n) td,
+html body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(n),
+html body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(n) td { background: #A50D24 !important; }
+html body #fidsTable tbody tr.row-cancelled:nth-child(even),
+html body #fidsTable tbody tr.row-cancelled:nth-child(even) td,
+html body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(even),
+html body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(even) td { background: #D42341 !important; }
+html body #fidsTable tbody tr.row-cancelled td,
+html body #fidsTable tbody tr.row-cancelled td *,
+html body #fidsTable tbody tr.row-cancelled .fids-airline-name,
+html body #fidsTable tbody tr.row-cancelled .logo-fallback,
+html body #fidsTable tbody tr.row-cancelled td.td-status,
+html body #fidsTable tbody tr.row-cancelled td.td-status *,
+html body.fids-light-board #fidsTable tbody tr.row-cancelled td,
+html body.fids-light-board #fidsTable tbody tr.row-cancelled td * { color: #ffffff !important; }
+html body #fidsTable tbody tr.row-cancelled td,
+html body #fidsTable tbody tr.row-cancelled td *,
+html body #fidsTable tbody tr.row-cancelled td.td-time-sched.is-revised { text-decoration: none !important; opacity: 1 !important; }
+/* The airline wordmark on dark boards is the LIGHT (white-ink) SVG — it is
+   already the 'all white on red' Nick asked for. No chip, no filter behind
+   it: a white chip blanked the white-ink art (same failure class as the
+   Breeze white square), and filters would wreck raster art. */
+html body #fidsTable tbody tr.row-cancelled .td-airline img.fids-airline-wordmark {
+  background: transparent !important;
+}
+/* Baggage-hall rows: same two-red striping (delayed already stripes). */
+html body.fids-light-board .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n),
+html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n) { background: #A50D24 !important; }
+html body.fids-light-board .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(even),
+html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(even) { background: #D42341 !important; }
+html body .bidsv2-flight-row.bidsv2-row-cancelled,
+html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important; text-decoration: none !important; }
