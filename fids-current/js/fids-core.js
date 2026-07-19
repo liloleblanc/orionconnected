@@ -2610,26 +2610,6 @@ function getTimeInTz(ts, tz) {
 // chip. Any [data-destflip] span carries its city list; ONE shared ticker
 // advances them ALL in lockstep every 4 s, so the big city text and the
 // IATA chip always show the SAME leg.
-var _destIataRev = null;
-function _destCityToIata(city) {
-  // Reverse CITY lookup ("SAN FRANCISCO" → SFO) for the flip chip. Built
-  // once, first writer wins — the primary CITY table lists the majors
-  // before the small-field dupes, so DENVER stays DEN. Returns '' rather
-  // than guessing when the name isn't in the table.
-  var k = String(city || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
-  if (!k) return '';
-  if (!_destIataRev) {
-    try {
-      var rev = {};
-      for (var code in CITY) {
-        var n = String(CITY[code]).toUpperCase();
-        if (!(n in rev)) rev[n] = code;
-      }
-      _destIataRev = rev;
-    } catch (e) { return ''; }
-  }
-  return _destIataRev[k] || '';
-}
 function _destFlipFromItems(items, kind, cls) {
   if (!items || items.length < 2) return null;
   // IATA chip is all-or-nothing: a leg without a code would echo its city
@@ -2659,34 +2639,40 @@ function _destFlipStops(stops, kind, cls) {
     return _destFlipFromItems(items, kind, cls);
   } catch (e) { return null; }
 }
-// Legacy fallback for rows without _stops (string dest with commas).
-function _destFlipSpan(destStr, kind, cls) {
-  try {
-    var parts = String(destStr || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-    if (parts.length < 2) return null;
-    var items = parts.map(function (c) {
-      var ia = '';
-      try { ia = _destCityToIata(c) || ''; } catch (e) {}
-      return { c: c, ia: ia };
-    });
-    return _destFlipFromItems(items, kind, cls);
-  } catch (e) { return null; }
-}
+// NOTE: there is deliberately NO string-based fallback. Splitting display
+// text on commas fabricated multi-city flips out of single names
+// ('Houston, TX') — rows without a feed-code _stops list simply don't flip.
 try {
+  // 7 s per leg — the 4 s swap read as a cheap strobe (Nick: 'too fast...
+  // looks like a bad effect'). Soft crossfade instead of a raw text pop,
+  // and gate text re-fits after every swap so both legs render at ONE size.
   setInterval(function () {
     var els = document.querySelectorAll('[data-destflip]');
     if (!els.length) return;
     window._dfIdx = (window._dfIdx || 0) + 1;
     for (var i = 0; i < els.length; i++) {
       try {
-        var items = JSON.parse(decodeURIComponent(els[i].getAttribute('data-destflip')));
+        var el = els[i];
+        var items = JSON.parse(decodeURIComponent(el.getAttribute('data-destflip')));
         var it = items[window._dfIdx % items.length];
-        var kind = els[i].getAttribute('data-dfk') || 'c';
+        var kind = el.getAttribute('data-dfk') || 'c';
         var v = (kind === 'ia') ? (it.ia || '') : it.c;
-        if (els[i].textContent !== v) els[i].textContent = v;
+        if (el.textContent === v) continue;
+        el.style.transition = 'opacity 0.35s ease';
+        el.style.opacity = '0';
+        (function (el2, v2) {
+          setTimeout(function () {
+            el2.textContent = v2;
+            try {
+              var gv = document.getElementById('gateView');
+              if (gv && gv.contains(el2) && typeof gateAutofit === 'function') gateAutofit(gv);
+            } catch (e) {}
+            el2.style.opacity = '1';
+          }, 370);
+        })(el, v);
       } catch (e) {}
     }
-  }, 4000);
+  }, 7000);
 } catch (e) {}
 
 // ── IS THIS INBOUND AIRBORNE? — the spec's own signals, one answer for every
@@ -6209,11 +6195,10 @@ function _buildV2AircraftCol(ctx, vars) {
       // MULTI-CITY through-flights FLIP city-by-city (chip flips in lockstep).
       // Source is the RAW feed dest — the display name was already reduced
       // to the first leg by the through-flight split, so it never has commas.
-      var _dfRawDest = String((currentFlight && currentFlight.dest) || _destCityName || '');
       var _dfStops = (currentFlight && Array.isArray(currentFlight._stops) && currentFlight._stops.length > 1)
         ? currentFlight._stops : null;
-      var _dfCity = _dfStops ? _destFlipStops(_dfStops, 'c') : _destFlipSpan(_dfRawDest, 'c');
-      var _dfChip = _dfStops ? _destFlipStops(_dfStops, 'ia', 'v2-fi-code-flip') : _destFlipSpan(_dfRawDest, 'ia', 'v2-fi-code-flip');
+      var _dfCity = _dfStops ? _destFlipStops(_dfStops, 'c') : null;
+      var _dfChip = _dfStops ? _destFlipStops(_dfStops, 'ia', 'v2-fi-code-flip') : null;
       var _destChipHtml = _dfChip || _destIataDisp;
       var _destLabel = 'Destination' + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
@@ -6805,11 +6790,10 @@ function _buildV2MapCol(ctx, vars) {
       // Multi-city through-flight → flip the panel row city-by-city too.
       // Raw feed dest — the display city was already first-leg-reduced.
       (function () {
-        var _dfRawRow = String((vars.currentFlight && vars.currentFlight.dest) || _dDestCity || '');
         var _dfRowStops = (vars.currentFlight && Array.isArray(vars.currentFlight._stops) && vars.currentFlight._stops.length > 1)
           ? vars.currentFlight._stops : null;
-        var _dfRow = _dfRowStops ? _destFlipStops(_dfRowStops, 'c') : _destFlipSpan(_dfRawRow, 'c');
-        var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : _destFlipSpan(_dfRawRow, 'ia');
+        var _dfRow = _dfRowStops ? _destFlipStops(_dfRowStops, 'c') : null;
+        var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
         if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' (' + _dfRowIa + ')' : '');
       })();
       _inboundCard =
@@ -14768,7 +14752,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22330';
+var FIDS_BUILD_TAG = 'v22331';
 (function(){
   try {
     function _addTag(){
@@ -15518,20 +15502,13 @@ function render() {
       // changes were for worldwide'). The city normalizers below collapse
       // the list to the first stop, so branch BEFORE them using the raw
       // dest/origin. City text and IATA chip share the global lockstep tick.
+      // Flip ONLY from the feed's stop-code list. Splitting display text on
+      // commas fabricated multi-city out of single names ('Houston, TX' —
+      // Nick: 'multi city on one name') and is gone for good.
       const _rowStops = (Array.isArray(f._stops) && f._stops.length > 1) ? f._stops : null;
-      const _rawLoc = String((isDep ? f.dest : f.origin) || '');
-      if (_rowStops || _rawLoc.indexOf(',') >= 0) {
-        let _fc, _fi;
-        if (_rowStops) {
-          _fc = _destFlipStops(_rowStops, 'c');
-          _fi = _destFlipStops(_rowStops, 'ia');
-        } else {
-          const _titled = _rawLoc.split(',').map(s => s.trim()).filter(Boolean)
-            .map(s => s.toLowerCase().replace(/(^|[\s\-'])[a-z]/g, c => c.toUpperCase()))
-            .join(', ');
-          _fc = _destFlipSpan(_titled, 'c');
-          _fi = _destFlipSpan(_titled, 'ia');
-        }
+      if (_rowStops) {
+        const _fc = _destFlipStops(_rowStops, 'c');
+        const _fi = _destFlipStops(_rowStops, 'ia');
         if (_fc) {
           return '<td class="td-dest">' + _fc
             + (_fi ? ' <span class="dest-iata">(' + _fi + ')</span>' : '') + '</td>';
@@ -18319,11 +18296,12 @@ function mapADB(raw, mode) {
     // Multi-stop rows (TPA through-flights) carry a comma list of cities in
     // cityName. Keep the WHOLE list on the board — CITY[locIata] collapses it
     // to the first stop, and the destination flip needs every leg to cycle.
-    if (cityName && String(cityName).indexOf(',') >= 0) {
-      // Keep the feed's own casing — forcing caps made the gate rail shout
-      // 'SAN DIEGO' while single-stop rows read 'San Diego' (Nick).
-      const _stops = String(cityName).split(',').map(s => s.trim()).filter(Boolean);
-      if (_stops.length > 1) locName = _stops.join(', ');
+    if (Array.isArray(f._stops) && f._stops.length > 1 && cityName && String(cityName).indexOf(',') >= 0) {
+      // Real multi-stop row (feed-code list) — keep the full city list, the
+      // flip consumes _stops. A single city whose NAME contains a comma
+      // ('Houston, TX') has no _stops and renders normally.
+      const _stopNames = String(cityName).split(',').map(s => s.trim()).filter(Boolean);
+      if (_stopNames.length > 1) locName = _stopNames.join(', ');
     }
     // Connecting flights (MCO/YYZ via-rows) join the SAME flip pipeline as
     // every other multi-stop row instead of the old static "Albany via RDU"
