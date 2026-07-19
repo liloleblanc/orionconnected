@@ -7050,7 +7050,18 @@ function _buildV2MapCol(ctx, vars) {
         ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> '
           + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
         : '';
-      var _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg + _acRegTag : '');
+      // TYPE WITHOUT A TAIL IS A PLAN, NOT A FACT (Nick: 'this is a 320
+      // showing 321' — a Delta flight 10 h out with no assigned airframe).
+      // Airlines swap A320/A321 on these routes right up to assignment, so
+      // with no confirmed tail the scheduled/history type carries the same
+      // honest 'expected' qualifier the tails do.
+      var _acTypeVal;
+      if (_acModel && !_acReg) {
+        _acTypeVal = _acModel + ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> '
+          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>';
+      } else {
+        _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg + _acRegTag : '');
+      }
       // Shorter label per Nick: "Aircraft / Appareil" (was "Aircraft type").
       var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
       // Operated by — when the operating carrier differs from the marketing
@@ -14618,7 +14629,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22325';
+var FIDS_BUILD_TAG = 'v22326';
 (function(){
   try {
     function _addTag(){
