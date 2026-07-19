@@ -4810,3 +4810,45 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-bloc
   color: #f4f6f8 !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.55);
 }
+
+/* ══ AC SHELF SKIN — Nick's verdict pass (Jul 19): code chip in AC red,
+   status colours brighter, value clip fixed, the SAME brushed steel on the
+   right column (lighter fade so its dark lettering stays readable), and
+   the dot-globe watermark visible on BOTH sides. */
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
+  color: #e8112d !important;
+}
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-status-val {
+  filter: brightness(1.35) saturate(1.25) !important;
+}
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
+  letter-spacing: -0.3px !important;
+  font-size: 0.95em !important;
+}
+/* Right column: same brushed steel, lighter run so navy text keeps reading */
+html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
+  background:
+    repeating-linear-gradient(180deg,
+      rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px,
+      rgba(0,0,0,0.04) 1px,      rgba(0,0,0,0.04) 2px),
+    linear-gradient(180deg, #eceef1 0%, #d4d8de 40%, #b4bac2 78%, #9aa1aa 100%) !important;
+}
+/* Dot-globe on the graphite left rail: screen-blend so it shows on dark */
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col::after {
+  mix-blend-mode: screen !important;
+  filter: grayscale(1) contrast(1.25) brightness(1.6) !important;
+  opacity: 0.26 !important;
+}
+/* Dot-globe on the right column too (same asset, multiply on the light steel) */
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 { position: relative !important; }
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2::after {
+  content: "" !important;
+  position: absolute !important; left: 0 !important; right: 0 !important;
+  top: auto !important; bottom: 0 !important; height: 66% !important;
+  background-image: url('/logos/3d_globe_desktop.svg?v=2') !important;
+  background-size: 300% auto !important; background-position: center bottom !important;
+  background-repeat: no-repeat !important;
+  mix-blend-mode: multiply !important; opacity: 0.45 !important;
+  filter: grayscale(1) contrast(1.5) brightness(0.9) !important;
+  pointer-events: none !important; z-index: 6 !important;
+}
