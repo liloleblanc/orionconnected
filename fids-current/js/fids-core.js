@@ -2246,10 +2246,9 @@ function getDedicatedRenderKey() {
 // The inbound's real speed/altitude only refresh every few minutes. Nick wants
 // them to read live between fixes. This holds a modeled speed (kt) / altitude
 // (ft) that drifts by flight phase — steady w/ a gentle shimmer at cruise, and
-// gliding down toward touchdown on descent — eases toward each new REAL reading,
-// and writes the numbers into the on-screen telemetry spans in place (no full
-// re-render). The REAL feed is still the source of truth: on every new fix the
-// model re-anchors to it, so the displayed numbers can never wander far.
+// continuing only the bounded rate measured between real fixes. A new REAL reading
+// snaps the digits to that anchor immediately and writes them in place (no full
+// re-render). The REAL feed remains the source of truth.
 window._gateTelemAnim = window._gateTelemAnim || {
   spd: null, alt: null,            // displayed (modeled) values
   realSpd: null, realAlt: null,    // last real anchor
@@ -2301,7 +2300,7 @@ function _gateTelemModel() {
   // 'calculate approx, then adjust with the pings'). Between real fixes,
   // continue the RATE measured between the last two fixes, so a plane on
   // final keeps visibly descending instead of freezing at the last ping
-  // for 90 s (video: locked at 230 kph / 825 ft through the approach).
+  // for 60 s (video: locked at 230 kph / 825 ft through the approach).
   // This is measured motion carried forward, not an invented profile:
   // clamped to sane rates, trusted max 120 s, re-anchored by every ping.
   try {
@@ -2349,17 +2348,12 @@ function _writeGateTelemDom() {
   }
 }
 
-// One animation step (called every second from updateDedicatedTimeOnly). Eases
-// the displayed values toward the modeled target so new real readings glide in.
+// One telemetry step (called every second from updateDedicatedTimeOnly).
+// It evaluates the bounded measured trend directly.
 function _animateGateTelem() {
   var T = window._gateTelemAnim;
   var m = _gateTelemModel();
   if (!m) return;
-  // SLOW ease (Nick: 'nothing is moving'): 0.18/s converged in ~15 s and then
-  // sat frozen for the rest of the 90 s window. 0.027/s spreads the approach
-  // across the whole inter-fix window, so the digits keep visibly ticking from
-  // the previous REAL fix to the new one — bridging two observations, never
-  // inventing a profile.
   // The model is a bounded continuation of the rate measured between the last
   // two real fixes. Recalculate it directly each second; a new real fix snaps
   // the anchor back to reality in _gateTelemSetReal().
@@ -2374,7 +2368,7 @@ function _animateGateTelem() {
 // updates the inbound object's live speed/altitude and re-anchors the telemetry
 // animator. It deliberately does NOT touch window._gateInboundLivePos or the
 // map — the map stays exactly as it is, so nothing can get jumpy. loadFlight
-// caches 60s, so a 90s cadence always gets a fresh reading.
+// caches 45s, so a 60s cadence always gets a fresh reading.
 var _gateNumPollBusy = false;
 // ── ADB ML FLIGHT TIME (Nick, from the ADB spec: /airports/.../distance-time,
 // flightTimeModel=ML01). Replaces the crude "great-circle ÷ 780 km/h + 25 min"
@@ -2452,7 +2446,7 @@ function _fidsMlFetch(o, d, k, aircraftName) {
 
 // ── ADB FLIGHT PLAN ACCESS (Nick: 'FlightPlan access'). The ATC-FILED plan
 // (?withFlightPlan=true): route string + filed/assigned altitude & airspeed.
-// Fetched ONCE per flight (3 h cache) — NEVER on the 90 s poll, since a found
+// Fetched ONCE per flight (3 h cache) — NEVER on the 60 s poll, since a found
 // plan bills 2x per the spec. Filed numbers surface only where no live
 // telemetry exists yet, clearly labelled as filed — sourced data, not
 // fabrication.
@@ -2538,7 +2532,7 @@ async function _gateNumbersPoll() {
     // numbers, so the mini map could sit on the full-route view with no
     // plane). window._gateInboundLivePos is the map tick's EXISTING input:
     // a fresh fix here makes the camera follow the plane and re-seeds the
-    // glide every 90 s.
+    // glide every 60 s.
     var _lpLat = (typeof _lp.lat === 'number') ? _lp.lat : null;
     var _lpLng = (typeof _lp.lng === 'number') ? _lp.lng : null;
     if (_lpLat !== null && _lpLng !== null) {
@@ -2551,7 +2545,7 @@ async function _gateNumbersPoll() {
 }
 try { setInterval(_gateNumbersPoll, 60000); setTimeout(_gateNumbersPoll, 2000); } catch (e) {}
 // MAP TICK — re-evaluates the gate map every 10 s against the latest state
-// (late-identified inbound, fresh 90 s fix). The posKey/progKey guards inside
+// (late-identified inbound, fresh 60 s fix). The posKey/progKey guards inside
 // tryInitMap make unchanged states a no-op, so this can't cause jumpiness;
 // it CAN swing a wrong first view (Nick's video: EWR outbound pins while the
 // panel tracked the DEN inbound) to the right one within 10 s.
@@ -10068,7 +10062,7 @@ const gView = document.getElementById('gateView');
       // section is _gateKey-guarded, no later render re-assigned it. The map
       // then sat on the departure-route fallback (Porter gate 3 drew YHU
       // while the panel said 'From Ottawa (YOW)') with no plane glyph, and
-      // the 90 s numbers poll (which needs window._gateInbound.flight) never
+      // the 60 s numbers poll (which needs window._gateInbound.flight) never
       // ran — Nick: 'the route airplane there is none its not tracking it'.
       if (window._gateLastFlightKey !== currentFlight.flight) {
         window._gateAircraftSpecs = null;
@@ -10321,7 +10315,7 @@ const gView = document.getElementById('gateView');
       // re-evaluated it until a full re-render). Expose this render's
       // tryInitMap; a global 10 s interval re-runs it. The posKey/progKey
       // guards inside make unchanged states a no-op — no jumpiness — while a
-      // fresh fix (the 90 s poll now feeds positions) or a late-arriving
+      // fresh fix (the 60 s poll now feeds positions) or a late-arriving
       // inbound swings the map to the right view within 10 s.
       window._gateMapRetry = tryInitMap;
       scheduleGateControlsAutoHide();
@@ -10405,7 +10399,7 @@ const gView = document.getElementById('gateView');
                 // rebuilt from the feed (bogus again) every refresh, so this
                 // backfill re-fires each time — flagging 'changed' every time
                 // forced a full gate rebuild per refresh, which wiped the
-                // stashed live speed/altitude until the next 90 s poll
+                // stashed live speed/altitude until the next 60 s poll
                 // (Nick: 'had data and no longer shows a speed an altitude').
                 var _bfKey = String(currentFlight.flight) + '|' + _todayStr + '|' + _legArrLocal;
                 if (window._gateArrBackfilled !== _bfKey) {
