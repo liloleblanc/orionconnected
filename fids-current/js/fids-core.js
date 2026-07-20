@@ -7947,9 +7947,15 @@ function uxgGateHtml(ctx) {
     }
     // Flight cell carries the airline RONDELLE (same emblem set as the
     // rail) instead of the generic glyph (Nick).
-    var _birEmblemPath = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    // The horizontal (boarding) badge is a gate flight badge — it wears the
+    // gate-round override art when one exists (Nick: 'we changed the icon
+    // for united but it wasnt changed on the horizontal display'), in its
+    // NATIVE colors (white-inverting the glossy orb made a white blob).
+    var _birRound = (typeof GATE_TOP_ROUND_EMBLEM_FILES !== 'undefined' && GATE_TOP_ROUND_EMBLEM_FILES[airlineCode]) || null;
+    var _birEmblemPath = _birRound || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    var _birFilter = _birRound ? '' : 'filter:brightness(0) invert(1);';
     var _birFlightIcon = _birEmblemPath
-      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);padding:14%;box-sizing:border-box;">'
+      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:14%;box-sizing:border-box;">'
       : null;
     // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
     var _birFlightBadge = _birF8
@@ -9479,6 +9485,10 @@ function gateAutofit(root) {
   // box, strict (the browser ellipsizes on 1px of overflow), 1px slack.
   function _boxAssign(el, availW, availH, colR, skipH) {
     if (availH < 12 || availW < 30) return;
+    // HYSTERESIS (Nick: 'fighting with itself'): the 5 s heartbeats
+    // re-derive the size each pass; a result within 1px of what's already
+    // applied must not repaint, or the type visibly ticks.
+    var _curPx = parseFloat(el.style.fontSize) || 0;
     function fits(px) {
       el.style.setProperty('font-size', px + 'px', 'important');
       if (el.scrollWidth > el.clientWidth) return false;
@@ -9494,7 +9504,9 @@ function gateAutofit(root) {
         if (fits(mid)) lo = mid; else hi = mid - 1;
       }
     } else { lo = hi; }
-    fits(Math.max(12, lo - 1));
+    var _finPx = Math.max(12, lo - 1);
+    if (_curPx && Math.abs(_curPx - _finPx) <= 1) _finPx = _curPx;
+    fits(_finPx);
   }
   try {
     // LEFT RAIL titles first ('so much space is wasted') — each label line
@@ -9590,32 +9602,48 @@ function gateAutofit(root) {
 //      one size, not ragged per-row type.
 // The airline brand cell keeps its calibrated wordmark artwork sizes.
 function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
-  var colSize = 999;
+  var colSize = 999, themeFloor = 0;
   cells.forEach(function (el) {
-    if (!(el.textContent || '').trim()) return;
-    var host = el.parentElement; if (!host) return;
-    var rowH = fixedRowH || (el.closest('tr') || el.closest('.bidsv2-flight-row') || host).clientHeight;
-    var availH = Math.floor(rowH * (capRatio || 0.72));
-    if (el.clientWidth < 24 || availH < 12) return;
-    // Single-line fit by default: the width check is the honest one;
-    // wrapping would sneak past it and stack lines into the row. Columns
-    // that pass allowWrap (BAGS 'From' cities in their narrow lane) may
-    // break to two lines — the height check governs them.
-    el.style.setProperty('white-space', allowWrap ? 'normal' : 'nowrap', 'important');
-    function fits(px) {
-      el.style.setProperty('font-size', px + 'px', 'important');
-      if (el.scrollWidth > el.clientWidth) return false;
-      if (el.scrollHeight > rowH) return false;
-      return true;
-    }
-    var lo = 12, hi = Math.min(96, availH);
-    if (!fits(hi)) { while (lo < hi) { var mid = Math.ceil((lo + hi) / 2); if (fits(mid)) lo = mid; else hi = mid - 1; } }
-    else lo = hi;
-    if (lo < colSize) colSize = lo;
+    try {
+      if (!(el.textContent || '').trim()) return;
+      var host = el.parentElement; if (!host) return;
+      var rowH = fixedRowH || (el.closest('tr') || el.closest('.bidsv2-flight-row') || host).clientHeight;
+      var availH = Math.floor(rowH * (capRatio || 0.72));
+      if (el.clientWidth < 24 || availH < 12) return;
+      // The THEME's own designed size is the floor: the fit may only take a
+      // column BELOW it when that size genuinely clips somewhere ('getting
+      // worse' = whole boards quietly rendering under the design size).
+      el.style.removeProperty('font-size');
+      var basePx = parseFloat(getComputedStyle(el).fontSize) || 0;
+      // Single-line fit by default: the width check is the honest one;
+      // wrapping would sneak past it and stack lines into the row. Columns
+      // that pass allowWrap may break to two lines — height governs them.
+      el.style.setProperty('white-space', allowWrap ? 'normal' : 'nowrap', 'important');
+      function fits(px) {
+        el.style.setProperty('font-size', px + 'px', 'important');
+        if (el.scrollWidth > el.clientWidth) return false;
+        if (el.scrollHeight > rowH) return false;
+        return true;
+      }
+      var lo = 12, hi = Math.min(96, availH);
+      if (!fits(hi)) { while (lo < hi) { var mid = Math.ceil((lo + hi) / 2); if (fits(mid)) lo = mid; else hi = mid - 1; } }
+      else lo = hi;
+      // Track the strongest theme floor that actually FITS its cell.
+      if (basePx && lo >= basePx && basePx > themeFloor) themeFloor = basePx;
+      if (lo < colSize) colSize = lo;
+    } catch (e) {}
   });
   if (colSize < 999) {
-    var fin = Math.max(12, colSize - 1) + 'px';
-    cells.forEach(function (el) { el.style.setProperty('font-size', fin, 'important'); });
+    // colSize is already >= the theme size whenever the theme size fits
+    // every cell, so the -1 render slack is the only deliberate deviation.
+    var finPx = Math.max(12, colSize - 1);
+    // HYSTERESIS (Nick: 'fighting with itself') at COLUMN level: if the
+    // whole column already wears one size within 1px of the target, leave
+    // it — per-cell hysteresis left mixed sizes inside a column.
+    var curCol = parseFloat(cells[0] && cells[0].style.fontSize) || 0;
+    var allSame = curCol && cells.every(function (el) { return (parseFloat(el.style.fontSize) || 0) === curCol; });
+    if (allSame && Math.abs(curCol - finPx) <= 1) return;
+    cells.forEach(function (el) { el.style.setProperty('font-size', finPx + 'px', 'important'); });
   }
 }
 function boardAutofit() {
@@ -15351,7 +15379,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22367';
+var FIDS_BUILD_TAG = 'v22368';
 (function(){
   try {
     function _addTag(){
