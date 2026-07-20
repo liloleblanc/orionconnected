@@ -5803,13 +5803,36 @@ function _buildV2AircraftCol(ctx, vars) {
 
   var _hasInb = !!(inboundFlight && _inbOperating);
   var _anyInb = !!inboundFlight;
-  var _outEquipCd = equipRaw || '';
-  var _outEquipNm = equipName || '';
-  var _inbEquipCd = _anyInb ? (inboundFlight._aircraftCode || '') : '';
-  var _inbEquipNm = _anyInb ? (inboundFlight._aircraft || (inboundFlight._aircraftCode ? formatAircraft(inboundFlight._aircraftCode) : '')) : '';
-  var _equipCd = _outEquipCd || _inbEquipCd;
-  var _equipNm = _outEquipNm || _inbEquipNm;
-  var _reg = currentFlight._reg || (_anyInb ? (inboundFlight._reg || '') : '');
+  // Aircraft truth is source-ordered, never flight-number guessed:
+  // confirmed registration > current inbound/live equipment > today's schedule.
+  // History observations are not an assignment and cannot choose a type/image.
+  var _outCdHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftCodeSource) || ''));
+  var _outNmHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftSource) || ''));
+  var _inbCdHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftCodeSource || ''));
+  var _inbNmHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftSource || ''));
+  var _outEquipCd = _outCdHistorical ? '' : (equipRaw || '');
+  var _outEquipNm = _outNmHistorical ? '' : (equipName || '');
+  var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (inboundFlight._aircraftCode || '') : '';
+  var _inbEquipNm = (_anyInb && !_inbNmHistorical)
+    ? (inboundFlight._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
+  var _equipCd = _inbEquipCd || _outEquipCd;
+  var _equipNm = _inbEquipNm || _outEquipNm;
+  if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
+
+  var _currentRegSource = String((currentFlight && currentFlight._regSource) || '');
+  var _inboundRegSource = String((_anyInb && inboundFlight && inboundFlight._regSource) || '');
+  var _currentReg = /^history/i.test(_currentRegSource) ? '' : ((currentFlight && currentFlight._reg) || '');
+  var _inboundReg = /^history/i.test(_inboundRegSource) ? '' : ((_anyInb && inboundFlight && inboundFlight._reg) || '');
+  var _reg = _currentReg || _inboundReg;
+  try {
+    var _confirmedType = (_reg && typeof _regTrueType === 'function') ? _regTrueType(_reg) : '';
+    if (_confirmedType) {
+      _equipNm = _confirmedType;
+      var _confirmedCode = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_confirmedType) : '';
+      if (_confirmedCode) _equipCd = _confirmedCode;
+    }
+    if (typeof window !== 'undefined' && _reg) window._gateAcRegShown = _reg;
+  } catch (e) {}
 
   // Operating carrier. Keep marketing airline and true operator separate.
   // Same-carrier flights get a clean airline brand block; different operators
@@ -6631,11 +6654,13 @@ function _buildV2MapCol(ctx, vars) {
       var _ibArrSchedStr = _ibArrTs ? _ibFmtT(_ibArrTs) : '';
       var _ibArrRevStr = (_ibRevTs && Math.abs(_ibRevTs - _ibArrTs) >= 60000) ? _ibFmtT(_ibRevTs) : '';
       var _ibArrRowHtml = '';
+      var _ibArrRevised = false;
       if (_ibArrSchedStr) {
         var _ibArrLblEn = (_stKey === 'arrived') ? 'Arrived' : 'Arrival';
         var _ibArrLblFr = (_stKey === 'arrived') ? 'Arrivé' : 'Arrivée';
         var _ibArrVal;
         if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
+          _ibArrRevised = true;
           // Revised time + a small 'revised | révisé' tag, ALL in the status
           // colour (green when earlier — Nick: 'revised beside it and all
           // green'). Mirrors the reg row's 'expected | prévu' treatment.
@@ -6655,7 +6680,7 @@ function _buildV2MapCol(ctx, vars) {
         _ibArrRowHtml =
             '<div class="v2-rc-fi-trow">'
           +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
-          +   '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>'
+          +   '<div class="v2-rc-fi-tval' + (_ibArrRevised ? ' v2-rc-fi-tval-revised' : '') + '">' + _ibArrVal + '</div>'
           + '</div>';
       }
       // Shelf-level t4 marker too: the shelf is flex-locked to 1/6 of the
@@ -6845,45 +6870,45 @@ function _buildV2MapCol(ctx, vars) {
   try {
     var _cf = vars.currentFlight || {};
     var _ib2 = vars.inboundFlight || null;
-    var _outEquipCd = vars.equipRaw || '';
-    var _outEquipNm = vars.equipName || '';
     var _anyInb = !!_ib2;
-    var _inbEquipCd = _anyInb ? (_ib2._aircraftCode || '') : '';
-    var _inbEquipNm = _anyInb ? (_ib2._aircraft || (_ib2._aircraftCode ? formatAircraft(_ib2._aircraftCode) : '')) : '';
     // Aircraft truth priority:
-    //   1) a registration-backed registry type (applied below) is confirmation;
-    //   2) an inbound/live equipment update describes the physical turn;
-    //   3) today's scheduled outbound equipment is the minimum fallback.
-    // AC7995 therefore follows inbound AC7992's CR9 update instead of the
-    // scheduled DH4 assumption, while a later registration can still overrule it.
+    //   1) a confirmed registration-backed registry type (applied below);
+    //   2) non-history inbound/live equipment for the physical turn;
+    //   3) non-history scheduled outbound equipment as the minimum fallback.
+    var _outCdHistorical = /^history/i.test(String((_cf && _cf._aircraftCodeSource) || ''));
+    var _outNmHistorical = /^history/i.test(String((_cf && _cf._aircraftSource) || ''));
+    var _inbCdHistorical = _anyInb && /^history/i.test(String((_ib2 && _ib2._aircraftCodeSource) || ''));
+    var _inbNmHistorical = _anyInb && /^history/i.test(String((_ib2 && _ib2._aircraftSource) || ''));
+    var _outEquipCd = _outCdHistorical ? '' : (vars.equipRaw || '');
+    var _outEquipNm = _outNmHistorical ? '' : (vars.equipName || '');
+    var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (_ib2._aircraftCode || '') : '';
+    var _inbEquipNm = (_anyInb && !_inbNmHistorical)
+      ? (_ib2._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
     var _equipCd = _inbEquipCd || _outEquipCd;
     var _equipNm = _inbEquipNm || _outEquipNm;
     if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
-    // History tails are prior observations, not today's assigned airframe.
-    // They may remain available to the text/history subsystem, but they must
-    // never choose the aircraft picture or model in this physical-aircraft shelf.
-    var _currentRegSource = String((vars.currentFlight && vars.currentFlight._regSource) || '');
-    var _currentReg = (vars.currentFlight && vars.currentFlight._reg) || '';
-    if (/^history/.test(_currentRegSource)) _currentReg = '';
+
+    // History tails are observations from another day, not a current assignment.
+    var _currentRegSource = String((_cf && _cf._regSource) || '');
+    var _inboundRegSource = String((_anyInb && _ib2 && _ib2._regSource) || '');
+    var _currentReg = /^history/i.test(_currentRegSource) ? '' : ((_cf && _cf._reg) || '');
+    var _inboundReg = /^history/i.test(_inboundRegSource) ? '' : ((_anyInb && _ib2 && _ib2._reg) || '');
     // v218.99.32 — Registration folded into aircraft block (two-column)
-    var _acReg = _currentReg || (_anyInb && _ib2 && _ib2._reg) || '';
-    // STICKY expected tail (Nick: 'that aircraft loves to change wow'): the
-    // history-based 'expected' reg flaps between candidate tails poll to
-    // poll, dragging the type + photo with it. Once a tail is shown for this
-    // flight, HOLD it — only a CONFIRMED (non-history) reg or a new flight
-    // may replace it; a blank poll never blanks the shelf.
+    var _acReg = _currentReg || _inboundReg;
+    // Keep a confirmed tail through a thin provider poll, but never preserve a
+    // history-derived guess. Old sticky objects did not carry this provenance,
+    // so they are deliberately ignored.
     try {
-      var _regSrcSt = String((vars.currentFlight && vars.currentFlight._regSource) || '');
-      var _fltKeySt = String((vars.currentFlight && (vars.currentFlight.flight || '')) || '') + '|' + String(vars.iata || '');
+      var _fltKeySt = String((_cf && _cf.flight) || '') + '|' + String(vars.iata || '');
       var _stickSt = window._gateRegSticky;
-      var _sameKeySt = _stickSt && _stickSt.k === _fltKeySt && (Date.now() - _stickSt.ts) < 6 * 3600000;
-      if (_acReg && !/^history/.test(_regSrcSt)) {
-        window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now() };
-      } else if (_acReg) {
-        if (_sameKeySt && _stickSt.reg) _acReg = _stickSt.reg;
-        else window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now() };
+      var _sameKeySt = _stickSt && _stickSt.k === _fltKeySt
+        && _stickSt.confirmed === true && (Date.now() - _stickSt.ts) < 6 * 3600000;
+      if (_acReg) {
+        window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now(), confirmed: true };
       } else if (_sameKeySt && _stickSt.reg) {
         _acReg = _stickSt.reg;
+      } else if (_stickSt && _stickSt.k === _fltKeySt && _stickSt.confirmed !== true) {
+        window._gateRegSticky = null;
       }
     } catch (e) {}
 
@@ -6996,19 +7021,9 @@ function _buildV2MapCol(ctx, vars) {
         _equipNm = '';
       }
     }
-    // Express matrix fills the SCHEDULED type in only when the feed has no
-    // credible regional equipment. When the feed reports a real regional
-    // airframe (E175 on a nominal Dash range, etc.) the REAL aircraft wins —
-    // live telemetry must never contradict the label (Nick: a 'Q400' showing
-    // 31,400 ft was the matrix overwriting an actual E175).
-    if (_mxGate) {
-      var _mxEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
-      var _mxRealRegional = /CRJ|\bCR[0-9JK]\b|DASH|DH[0-9C]|Q400|E1[79][05]|\bE7[05W]\b|EMBRAER/.test(_mxEqUp);
-      if (!_mxRealRegional && !_mxGate.eqTest.test(_mxEqUp)) {
-        _equipCd = _mxGate.eq;
-        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_mxGate.eq) : _mxGate.eq;
-      }
-    }
+    // The Express matrix may identify an operator, but it must never invent an
+    // aircraft type. With no registration/live/scheduled equipment, Pending is
+    // more accurate than a route-range guess (the former AC7995 DH4 error).
     // (The old 'Porter with no equipment → E195' pin is GONE: Porter flies
     // two types, so it was a guess — PD2382 to St-Hubert is a Dash 8 route
     // and the screen said E195 (Nick: 'wrong aircraft'). No data → Pending;
@@ -8792,20 +8807,36 @@ function uxgGateHtml(ctx) {
         // RIGHT COLUMN — Aircraft Arrival Data panels (~60%) + Flight Path map (~40%)
         +     (function() {
                 var _hasInb = !!(inboundFlight && _inbOperating);
-                // Equipment data — prefer outbound (the plane that's actually flying out),
-                // fall back to ANY known inbound (even arrived) since once it lands it
-                // becomes the outbound's aircraft. This is separate from _hasInb which
-                // controls the "incoming flight" panel visibility.
+                // Legacy layout uses the same truth order as V2:
+                // confirmed registration > inbound/live update > today's schedule.
                 var _airline = airlineCode;
-                var _outEquipCd = equipRaw || '';
-                var _outEquipNm = equipName || '';
                 var _anyInb = !!inboundFlight;  // any inbound we know about, arrived or not
-                var _inbEquipCd = _anyInb ? (inboundFlight._aircraftCode || '') : '';
-                var _inbEquipNm = _anyInb ? (inboundFlight._aircraft || (inboundFlight._aircraftCode ? formatAircraft(inboundFlight._aircraftCode) : '')) : '';
-                var _equipCd = _outEquipCd || _inbEquipCd;
-                var _equipNm = _outEquipNm || _inbEquipNm;
-                // Registration: prefer outbound's reg; fall back to any inbound reg
-                var _reg = currentFlight._reg || (_anyInb ? (inboundFlight._reg || '') : '');
+                var _outCdHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftCodeSource) || ''));
+                var _outNmHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftSource) || ''));
+                var _inbCdHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftCodeSource || ''));
+                var _inbNmHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftSource || ''));
+                var _outEquipCd = _outCdHistorical ? '' : (equipRaw || '');
+                var _outEquipNm = _outNmHistorical ? '' : (equipName || '');
+                var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (inboundFlight._aircraftCode || '') : '';
+                var _inbEquipNm = (_anyInb && !_inbNmHistorical)
+                  ? (inboundFlight._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
+                var _equipCd = _inbEquipCd || _outEquipCd;
+                var _equipNm = _inbEquipNm || _outEquipNm;
+                if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
+                var _curRegSource = String((currentFlight && currentFlight._regSource) || '');
+                var _inbRegSource = String((_anyInb && inboundFlight && inboundFlight._regSource) || '');
+                var _curReg = /^history/i.test(_curRegSource) ? '' : ((currentFlight && currentFlight._reg) || '');
+                var _inbReg = /^history/i.test(_inbRegSource) ? '' : ((_anyInb && inboundFlight && inboundFlight._reg) || '');
+                var _reg = _curReg || _inbReg;
+                try {
+                  var _legacyRegType = (_reg && typeof _regTrueType === 'function') ? _regTrueType(_reg) : '';
+                  if (_legacyRegType) {
+                    _equipNm = _legacyRegType;
+                    var _legacyRegCode = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_legacyRegType) : '';
+                    if (_legacyRegCode) _equipCd = _legacyRegCode;
+                  }
+                  if (typeof window !== 'undefined' && _reg) window._gateAcRegShown = _reg;
+                } catch (e) {}
 
                 var _fromCity = '', _fromIata = '';
                 var _schedDepStr = '--', _schedArrStr = '--';
