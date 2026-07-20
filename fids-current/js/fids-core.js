@@ -4331,20 +4331,16 @@ function getAirlineAccent(code) {
     || '#0033A1';
 }
 
-// ── AIR CANADA EXPRESS CODE-PAIRING MATRIX (enforced) ────────────────────
-// Marketing AC flight-number ranges → operating carrier + scheduled aircraft.
-// The pairing is contractual, so it trumps whatever operator/equipment the
-// feed pre-tagged for these ranges:
-//   AC7000–7299 → PB PAL Airlines    DH4 De Havilland Dash 8-400
-//   AC7950–8249 → QK Jazz Aviation   DH4 De Havilland Dash 8-400
-//   AC8250–8549 → QK Jazz Aviation   E75 Embraer E175
-//   AC8550–8999 → QK Jazz Aviation   CR9 Mitsubishi CRJ-900
+// ── AIR CANADA EXPRESS OPERATOR MATRIX ───────────────────────────────────
+// Marketing AC flight-number ranges may identify the operating partner for
+// branding/boarding rules. They NEVER identify equipment: AC7992/AC7995 are a
+// concrete counterexample to the old range-based DH4 assumption. Aircraft
+// comes only from today's registration/live/scheduled truth chain.
 function acExpressMatrix(fn) {
   if (isNaN(fn)) return null;
-  if (fn >= 7000 && fn <= 7299) return { op:'PB', opName:'PAL Airlines',  eq:'DH4', eqTest:/DH8|DH4|DHC|DASH|Q400/ };
-  if (fn >= 7950 && fn <= 8249) return { op:'QK', opName:'Jazz Aviation', eq:'DH4', eqTest:/DH8|DH4|DHC|DASH|Q400/ };
-  if (fn >= 8250 && fn <= 8549) return { op:'QK', opName:'Jazz Aviation', eq:'E75', eqTest:/\bE75\b|E175|\bE7W\b/ };
-  if (fn >= 8550 && fn <= 8999) return { op:'QK', opName:'Jazz Aviation', eq:'CR9', eqTest:/\bCR9\b|CRJ[- ]?9/ };
+  if (fn >= 7000 && fn <= 7299) return { op:'PB', opName:'PAL Airlines' };
+  if (fn >= 7950 && fn <= 8249) return { op:'QK', opName:'Jazz Aviation' };
+  if (fn >= 8250 && fn <= 8999) return { op:'QK', opName:'Jazz Aviation' };
   return null;
 }
 
