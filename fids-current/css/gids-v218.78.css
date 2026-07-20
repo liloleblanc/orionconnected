@@ -5070,8 +5070,8 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow 
 .g8-wrap .v2-rc-map-life-emblem {
   position: relative;
   z-index: 2;
-  width: min(46%,220px);
-  height: min(46%,220px);
+  width: min(74%,360px);
+  height: min(74%,360px);
   object-fit: contain;
   filter: drop-shadow(0 12px 22px rgba(0,0,0,.42));
 }
