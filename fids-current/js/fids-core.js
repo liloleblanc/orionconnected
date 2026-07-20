@@ -15076,7 +15076,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22362';
+var FIDS_BUILD_TAG = 'v22363';
 (function(){
   try {
     function _addTag(){
@@ -15117,30 +15117,39 @@ var FIDS_BUILD_TAG = 'v22362';
 // have their caches cleared by hand — they have to self-heal.
 (function () {
   try {
-    var _tries = 0;
-    function _cssAlive() {
+    // Every guarded stylesheet carries a sentinel rule at its very END with a
+    // unique probe height, so a cached bad/truncated copy of ANY of them
+    // self-heals — the jetBlue clip was fids-layout-fixes.css gone stale on
+    // one browser, the exact disease v22358 fixed for the gate stylesheet.
+    var GUARDS = [
+      { href: 'gids-v218.78.css',     cls: 'g8-css-sentinel',   h: 7, tries: 0 },
+      { href: 'fids-layout-fixes.css', cls: 'fids-css-sentinel', h: 9, tries: 0 }
+    ];
+    function _cssAlive(g) {
       if (!document.body) return true; // can't probe yet — don't re-fetch blind
       var p = document.createElement('div');
-      p.className = 'g8-css-sentinel';
+      p.className = g.cls;
       p.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;';
       document.body.appendChild(p);
       var h = p.offsetHeight;
       p.parentNode.removeChild(p);
-      return h === 7;
+      return h === g.h;
     }
     function _check() {
-      var link = document.querySelector('link[href*="gids-v218.78.css"]');
-      if (!link) return;            // page doesn't use the gate stylesheet
-      if (_cssAlive()) return;      // sheet is live — nothing to do
-      if (_tries >= 3) return;      // give up after 3 recoveries (network down)
-      _tries++;
-      console.warn('[FIDS] gate stylesheet not applied — re-fetching (attempt ' + _tries + ')');
-      var fresh = document.createElement('link');
-      fresh.rel = 'stylesheet';
-      fresh.href = link.getAttribute('href').split('?')[0] + '?v=cssguard-' + Date.now();
-      fresh.onload = function () { setTimeout(_check, 1500); };
-      fresh.onerror = function () { setTimeout(_check, 8000); };
-      link.parentNode.insertBefore(fresh, link.nextSibling);
+      GUARDS.forEach(function (g) {
+        var link = document.querySelector('link[href*="' + g.href + '"]');
+        if (!link) return;            // page doesn't use this stylesheet
+        if (_cssAlive(g)) return;     // sheet is live — nothing to do
+        if (g.tries >= 3) return;     // give up after 3 recoveries (network down)
+        g.tries++;
+        console.warn('[FIDS] stylesheet not applied — re-fetching ' + g.href + ' (attempt ' + g.tries + ')');
+        var fresh = document.createElement('link');
+        fresh.rel = 'stylesheet';
+        fresh.href = link.getAttribute('href').split('?')[0] + '?v=cssguard-' + Date.now();
+        fresh.onload = function () { setTimeout(_check, 1500); };
+        fresh.onerror = function () { setTimeout(_check, 8000); };
+        link.parentNode.insertBefore(fresh, link.nextSibling);
+      });
     }
     if (document.readyState === 'complete') setTimeout(_check, 3000);
     else window.addEventListener('load', function () { setTimeout(_check, 3000); });
@@ -15862,7 +15871,7 @@ function render() {
     // (Operated-by label lives on the GATE screen only — Nick doesn't want it
     // on the main board; the enforced Express matrix still drives the gate.)
     const airlineCellHtml = '<td class="td-airline"><div class="fids-cell-airline">'
-      +   '<div class="fids-airline-logo' + (_airlineCodeForLogo === 'UA' ? ' ua-orb' : '') + '">' + mkLogo(_airlineCodeForLogo, f._airlineName) + '</div>'
+      +   '<div class="fids-airline-logo">' + mkLogo(_airlineCodeForLogo, f._airlineName) + '</div>'
       +   '<div class="fids-airline-wordmark-slot">' + _airlineLabelHtml + '</div>'
       + '</div></td>';
 

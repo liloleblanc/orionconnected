@@ -3077,23 +3077,13 @@ html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-cancelled:nth-chi
 html body .bidsv2-flight-row.bidsv2-row-cancelled,
 html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important; text-decoration: none !important; }
 
-/* ══ UNITED SHINY ORB EMBLEM (Nick supplied the globe art, Jul 19 2026:
-   'adjust this into a icon shiny this is the design from the begining i
-   wanted'). The UA tile becomes a round glossy orb: spherical highlight
-   top-left, soft inner shade at the base, gentle drop. Pure CSS over the
-   existing globe artwork — no repainted brand art. */
-html #fidsTable .fids-airline-logo.ua-orb {
-  border-radius: 50% !important;
-  overflow: hidden !important;
-  background:
-    radial-gradient(circle at 32% 26%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 38%),
-    radial-gradient(circle at 50% 120%, rgba(13,36,84,0.28) 0%, rgba(13,36,84,0) 55%),
-    linear-gradient(180deg, #ffffff 0%, #e9eef7 60%, #d6deeb 100%) !important;
-  box-shadow:
-    inset 0 3px 5px rgba(255,255,255,0.9),
-    inset 0 -5px 9px rgba(13,36,84,0.22),
-    0 2px 6px rgba(0,0,0,0.28) !important;
-}
-html #fidsTable .fids-airline-logo.ua-orb img {
-  border-radius: 50% !important;
-}
+/* (v22363) The United shiny-orb treatment is retired from the FIDS rows —
+   Nick: 'I would need the United airlines back to a square on ths FIDS'.
+   The glossy globe remains at the gates via its own artwork file. */
+
+/* v22363 — stylesheet-alive sentinel (same protection as the gate stylesheet
+   got in v22358). LAST rule on purpose: it only applies if this whole file
+   fetched and parsed. fids-core probes it and re-fetches this file under a
+   fresh URL when missing — a cached bad response otherwise wears retired
+   layout/calibration (e.g. oversized clipped wordmarks) forever. */
+.fids-css-sentinel { height: 9px !important; }
