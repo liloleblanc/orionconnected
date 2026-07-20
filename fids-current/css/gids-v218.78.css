@@ -5295,13 +5295,17 @@ html body .g8-wrap .gad-aircraft-col .v2-fi-textcol
   overflow: visible !important;
 }
 
-/* Revised arrival has two times plus its bilingual qualifier. Give that one
-   row a compact, aligned line instead of letting it collide and clip. */
+/* Revised arrival has two times plus its bilingual qualifier. Stack them as
+   TWO lines (struck original above, revised below) so the box-fit can give
+   each line real size instead of cramming four chunks into one 13px line. */
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-fi-tval-revised {
-  justify-content: flex-start !important;
-  gap: clamp(4px,.35vw,7px) !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 0 !important;
   font-size: clamp(13px,1.55vh,18px) !important;
   letter-spacing: -.02em !important;
+  line-height: 1.1 !important;
   overflow: visible !important;
 }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-fi-tval-revised > span {
