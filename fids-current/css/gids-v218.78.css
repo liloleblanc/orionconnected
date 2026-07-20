@@ -4793,7 +4793,7 @@ body, body.gids-page, body.gate-page{
    Lettering goes white/silver for the dark zone; status keeps its
    semantic colours. AC gates only via body[data-gate-airline]. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
-  background: url('/textures/ac-bronze-dark.jpg?v=22347') center / cover no-repeat !important;
+  background: url('/textures/ac-metal-dark.jpg?v=22348') center / cover no-repeat !important;
   border: 1px solid rgba(255,255,255,0.10) !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title,
@@ -4822,7 +4822,7 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
 }
 /* Right column: same brushed steel, lighter run so navy text keeps reading */
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
-  background: url('/textures/ac-copper.jpg?v=22347') center / cover no-repeat !important;
+  background: url('/textures/ac-metal-dark.jpg?v=22348') center / cover no-repeat !important;
 }
 /* Left-rail globe REMOVED for AC (Nick: 'remove the globe') — the bronze
    metal stands alone. The is-bare pending filler is untouched. */
