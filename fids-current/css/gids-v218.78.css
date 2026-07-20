@@ -4793,13 +4793,7 @@ body, body.gids-page, body.gate-page{
    Lettering goes white/silver for the dark zone; status keeps its
    semantic colours. AC gates only via body[data-gate-airline]. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
-  background:
-    repeating-linear-gradient(180deg,
-      rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px,
-      rgba(0,0,0,0.04) 1px,      rgba(0,0,0,0.04) 2px),
-    linear-gradient(180deg,
-      #26221f 0%, #4e4843 14%, #8b837c 28%, #6a635d 40%,
-      #3b3733 58%, #26221f 78%, #171412 100%) !important;
+  background: url('/textures/ac-bronze-dark.jpg?v=22347') center / cover no-repeat !important;
   border: 1px solid rgba(255,255,255,0.10) !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title,
@@ -4828,11 +4822,7 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
 }
 /* Right column: same brushed steel, lighter run so navy text keeps reading */
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
-  background:
-    repeating-linear-gradient(180deg,
-      rgba(255,244,230,0.045) 0px, rgba(255,244,230,0.045) 1px,
-      rgba(40,28,18,0.05) 1px,   rgba(40,28,18,0.05) 2px),
-    linear-gradient(180deg, #97816b 0%, #8a7460 32%, #7b6753 64%, #675545 100%) !important;
+  background: url('/textures/ac-copper.jpg?v=22347') center / cover no-repeat !important;
 }
 /* Left-rail globe REMOVED for AC (Nick: 'remove the globe') — the bronze
    metal stands alone. The is-bare pending filler is untouched. */
