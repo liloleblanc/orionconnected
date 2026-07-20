@@ -81,14 +81,26 @@
 
   function markGeneratedSurroundLayers(media) {
     var host = media && media.parentElement;
-    if (!host) return;
-    setSafeZone(host, media);
+    if (!host || !media.classList.contains('ad-tech-media')) return;
+    var wrapper = null;
     Array.prototype.forEach.call(host.children, function (child) {
-      if (child === media || child.classList.contains('ad-tech-frame')) return;
-      if (child.tagName !== 'DIV') return;
-      var cs = window.getComputedStyle(child);
-      if (cs.position === 'absolute') child.classList.add('g8-ad-surround-layer');
+      if (child.classList && child.classList.contains('g8-ad-surround-wrapper')) wrapper = child;
     });
+    if (!wrapper) {
+      var layers = [];
+      Array.prototype.forEach.call(host.children, function (child) {
+        if (child === media || child.classList.contains('ad-tech-frame')) return;
+        if (child.tagName !== 'DIV') return;
+        if (window.getComputedStyle(child).position === 'absolute') layers.push(child);
+      });
+      if (layers.length) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'g8-ad-surround-wrapper';
+        host.insertBefore(wrapper, layers[0]);
+        layers.forEach(function (layer) { wrapper.appendChild(layer); });
+      }
+    }
+    if (wrapper) setSafeZone(wrapper, media);
   }
 
   function updateAdvertSafeZones() {
