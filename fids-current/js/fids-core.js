@@ -9625,28 +9625,43 @@ function boardAutofit() {
     // the icon, single line — same law as everything else.
     document.querySelectorAll('.fids-banner-board').forEach(function (bb) {
       var lbl = bb.querySelector('.fids-board-label'); if (!lbl) return;
-      var icon = bb.querySelector('.fids-board-icon');
-      var bcs = getComputedStyle(bb);
-      var w = bb.clientWidth - (parseFloat(bcs.paddingLeft) || 0) - (parseFloat(bcs.paddingRight) || 0)
-            - (icon ? icon.offsetWidth + 14 : 0);
-      var h = bb.clientHeight;
-      if (w < 40 || h < 20) return;
+      // SHRINK-ONLY: the theme's designed size stands ('Departures' at its
+      // clamp — the first cut of this fit shrank it to caption size).
+      // Intervene only while a long title (FR 'Retrait des bagages')
+      // actually escapes the visible gold block.
+      lbl.style.removeProperty('font-size');
       lbl.style.setProperty('white-space', 'nowrap', 'important');
-      function _lfits(px) { lbl.style.setProperty('font-size', px + 'px', 'important'); return lbl.scrollWidth <= w && lbl.offsetHeight <= h; }
-      var lo = 14, hi = Math.max(15, Math.min(72, Math.floor(h * 0.62)));
-      if (!_lfits(hi)) { while (lo < hi) { var mid = Math.ceil((lo + hi) / 2); if (_lfits(mid)) lo = mid; else hi = mid - 1; } }
-      _lfits(Math.max(14, lo - 1));
+      function _bbOver() {
+        if (lbl.scrollWidth > lbl.clientWidth + 1) return true;
+        var br = bb.getBoundingClientRect(), lr = lbl.getBoundingClientRect();
+        var visR = Math.min(br.right, window.innerWidth) - 10;
+        return lr.right > visR || lr.left < br.left + 20;
+      }
+      var px = parseFloat(getComputedStyle(lbl).fontSize) || 40;
+      var guard = 24;
+      while (_bbOver() && px > 14 && guard-- > 0) {
+        px -= 2;
+        lbl.style.setProperty('font-size', px + 'px', 'important');
+      }
     });
     var tbl = document.getElementById('fidsTable');
     if (tbl && tbl.offsetParent) {
       var rows = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr'));
       if (rows.length) {
-        // 1 — the ROW IS THE FIXED OBJECT (Nick: 'they are the fixed
-        // object that does not change — the text and surroundings conform
-        // to it'). The small/medium/large density setting owns the height;
-        // no stretching. Base height is still recorded for the page math.
-        rows.forEach(function (r) { r.style.removeProperty('height'); });
-        tbl.dataset.fidsBaseRowH = rows[0].offsetHeight || 60;
+        // 1 — the ROW IS THE FIXED OBJECT (Nick: 'they should never ever
+        // move'). The AUTHORITATIVE height is the density setting's theme
+        // value — NEVER a measurement of a row our own text may have grown
+        // (measuring after a fit recorded inflated heights and the rows
+        // crept). Rows are PINNED to it; the text conforms.
+        var _rowAuthH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
+        if (!_rowAuthH) {
+          // No theme var: record the natural height ONCE, before any fit.
+          if (!tbl.dataset.fidsBaseRowH) tbl.dataset.fidsBaseRowH = rows[0].offsetHeight || 60;
+          _rowAuthH = parseFloat(tbl.dataset.fidsBaseRowH) || 60;
+        } else {
+          tbl.dataset.fidsBaseRowH = _rowAuthH;
+        }
+        rows.forEach(function (r) { r.style.setProperty('height', _rowAuthH + 'px', 'important'); });
         // 2 — COLUMN WIDTHS, then text fit. The flight column was 100px —
         // 'WN4038' overflows it at 14px, so no font could ever fill the row
         // ('B65…'). Measure what each text column's content actually needs
@@ -9683,7 +9698,7 @@ function boardAutofit() {
               // needs at that same size — the whole board then fits at one
               // big, uniform scale instead of starving short columns (gate
               // dropped to 16px when probed at caption size).
-              var _probePx = Math.max(18, Math.round((rows[0].clientHeight || 60) * 0.5));
+              var _probePx = Math.max(18, Math.round((_rowAuthH || rows[0].clientHeight || 60) * 0.5));
               var maxW = 0, padW = 0;
               tbl.querySelectorAll('tbody tr').forEach(function (r) {
                 var td = r.children[i]; if (!td) return;
@@ -9759,7 +9774,7 @@ function boardAutofit() {
           }
         } catch (e) {}
         TEXTCOLS.forEach(function (c) {
-          _boardFitCol(Array.prototype.slice.call(tbl.querySelectorAll('tbody td.' + c)), 0.72);
+          _boardFitCol(Array.prototype.slice.call(tbl.querySelectorAll('tbody td.' + c)), 0.72, false, _rowAuthH);
         });
       }
     }
@@ -15336,7 +15351,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22366';
+var FIDS_BUILD_TAG = 'v22367';
 (function(){
   try {
     function _addTag(){
