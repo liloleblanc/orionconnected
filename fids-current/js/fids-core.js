@@ -1,5 +1,9 @@
 // ── FIDS BUILD ID — check this in DevTools console to confirm which version is live
-const FIDS_BUILD = 'v218.84';
+const FIDS_BUILD = 'v218.84'; // legacy label for the console banner ONLY.
+// CACHE TOKENS MUST USE FIDS_BUILD_TAG: this constant froze at v218.84 months
+// ago, so every 'build-tied' wordmark URL was IDENTICAL across hundreds of
+// deploys — a browser that cached one bad response (deploy-window 404) kept
+// it forever and fell back to the clipped text name (the immortal 'jetBlu').
 console.log('%c[FIDS BUILD ' + FIDS_BUILD + '] loaded ' + new Date().toISOString(), 'background:#0a0; color:#fff; font-weight:bold; padding:3px 8px; font-size:13px;');
 
 // ── FEATURE FLAGS ────────────────────────────────────────────────────────
@@ -14742,10 +14746,10 @@ function wordmarkSrc(base, forceVariant) {
   const _variant = forceVariant || wordmarkVariant();
   if (WORDMARK_RASTER[base]) {
     return WORDMARK_RASTER[base][_variant === 'dark' ? 'dark' : 'light']
-      + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
+      + '?v=' + (typeof FIDS_BUILD_TAG !== 'undefined' ? encodeURIComponent(FIDS_BUILD_TAG) : (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1'));
   }
   if (_variant === 'dark' && COLOR_WORDMARKS[base]) {
-    return COLOR_WORDMARKS[base] + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
+    return COLOR_WORDMARKS[base] + '?v=' + (typeof FIDS_BUILD_TAG !== 'undefined' ? encodeURIComponent(FIDS_BUILD_TAG) : (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1'));
   }
   const fname = base + '-wordmark-' + _variant + '.svg';
   // Cache token: un-versioned wordmark URLs let a transient 404 (e.g. a brief
@@ -14753,7 +14757,7 @@ function wordmarkSrc(base, forceVariant) {
   // fires onerror and shows the text-name fallback instead of the wordmark,
   // and kiosk displays can't be hard-refreshed. A build-tied token makes every
   // deploy mint fresh URLs, so poisoned caches self-heal.
-  return logoPath(fname) + '?v=' + (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1');
+  return logoPath(fname) + '?v=' + (typeof FIDS_BUILD_TAG !== 'undefined' ? encodeURIComponent(FIDS_BUILD_TAG) : (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1'));
 }
 
 // WCAG relative luminance of a #hex colour (0 = black … 1 = white). Used to
@@ -15379,7 +15383,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22369';
+var FIDS_BUILD_TAG = 'v22370';
 (function(){
   try {
     function _addTag(){
