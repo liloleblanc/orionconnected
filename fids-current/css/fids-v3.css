@@ -3508,7 +3508,10 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
     justify-content: center !important; gap: 20px !important;
     padding: 0 40px !important;
     padding-right: calc((100vw - 60px) / 3 + 54px) !important;
-    background: rgba(248, 250, 252, 0.97) !important;
+    /* v22367 — OPAQUE. At 0.97 the banner's accent chevrons and gradient
+       tails ghosted through the band as visible color patches (Nick: 'in
+       the white there is something happening where its different colors'). */
+    background: rgb(248, 250, 252) !important;
     transform: skewX(-24deg) !important; transform-origin: bottom right !important;
     border-radius: 30px 0 0 0 !important;
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16) !important;
