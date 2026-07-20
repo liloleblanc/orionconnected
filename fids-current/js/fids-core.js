@@ -6255,7 +6255,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || _fnNumber || '—'), 'v2-fi-dest')
+        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || _fnNumber || '—'), 'v2-fi-dest v2-fi-flight-number')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
@@ -7263,6 +7263,12 @@ function _buildV2MapCol(ctx, vars) {
       '<div class="v2-rc-shelf v2-rc-shelf-map">'
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
+    +     '<div class="v2-rc-map-life" aria-hidden="true">'
+    +       '<span class="v2-rc-life-orbit v2-rc-life-orbit-a"></span>'
+    +       '<span class="v2-rc-life-orbit v2-rc-life-orbit-b"></span>'
+    +       '<span class="v2-rc-life-route"><span class="v2-rc-life-plane">&#9992;</span></span>'
+    +       '<span class="v2-rc-life-caption">Route view expanded <b>|</b> Vue de route agrandie</span>'
+    +     '</div>'
     +     '<div class="v2-rc-maptitle">' + (_frF ? 'Votre Avion' : 'Your Aircraft') + ' <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">' + (_frF ? 'Your Aircraft' : 'Votre Avion') + '</span></div>'
     +     _telemBar
     +   '</div>'
@@ -9259,7 +9265,7 @@ function gateAutofit(root) {
   // clamp in CSS instead.
   var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value', '.v2-fi-textcol .v2-fi-title',
               '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val',
-              '.v2-rc-fi-val', '.v2-rc-acb-actype'];
+              '.v2-rc-fi-val', '.v2-rc-fi-tval', '.v2-rc-acb-actype'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
     els.forEach(function(el) {
@@ -9326,17 +9332,15 @@ function gateAutofit(root) {
       }
     });
   });
-  // UNIFORM SIZE for the big shelf values — per-element fitting left them at
-  // DIFFERENT sizes (one long word shrank only its own shelf while the rest
-  // stayed huge; Nick: 'protect the words from shrinking'). Every value now
-  // gets the size of the WORST fitter. Do not re-enlarge that fitted size:
-  // the former 62% floor put long city/flight values back into overflow after
-  // they had already fitted correctly, producing clipped words. The bilingual
-  // status value is excluded (its two stacked lines fit smaller by design).
+  // UNIFORM SIZE by category. A destination word such as "Fredericton" must
+  // not force the four high-value numeric rows (flight number + three times)
+  // down to the same tiny font. Fit every element honestly first, then share
+  // the worst fitted size only inside its category. Status remains separate
+  // because its bilingual two-line stack intentionally uses a smaller scale.
   try {
-    var _vals = Array.prototype.slice.call(root.querySelectorAll('.v2-fi-value'))
-      .filter(function (el) { return !/v2-fi-status-val/.test(el.className); });
-    if (_vals.length > 1) {
+    function _uniformGateValues(selector) {
+      var _vals = Array.prototype.slice.call(root.querySelectorAll(selector));
+      if (_vals.length < 2) return;
       var _minPx = Infinity, _maxOrig = 0;
       _vals.forEach(function (el) {
         var s2 = parseFloat(window.getComputedStyle(el).fontSize) || 0;
@@ -9351,6 +9355,7 @@ function gateAutofit(root) {
         });
       }
     }
+    _uniformGateValues('.v2-fi-value.v2-fi-flight-number, .v2-fi-value.v2-fi-time');
   } catch (e) {}
 }
 
@@ -25262,6 +25267,19 @@ function _adVisibleRect() {
   } catch (e) { return null; }
 }
 
+// Decorative treatment for a contained, single-page ad only. Keeping this as
+// state on the media column lets CSS add life around a static composition
+// without touching Accor layouts, videos, cover/full-screen media, weather,
+// or the enlarged aircraft-map takeover.
+function _setGateStaticAdArt(el, enabled) {
+  try {
+    var col = (el && el.closest) ? el.closest('.gad-media-col') : document.querySelector('.gad-media-col');
+    if (!col) return;
+    if (enabled) col.classList.add('g8-static-page-ad');
+    else col.classList.remove('g8-static-page-ad');
+  } catch (e) {}
+}
+
 function renderGateAd(index) {
   var el = document.getElementById('gateAdCarousel');
   if (!el) return;
@@ -25297,6 +25315,10 @@ function renderGateAd(index) {
   // to slide 0 and hijacked the carousel mid-ad (Nick: 'it starts the ad
   // and fades back to the previous then back to the new').
   window._gateAdCurrentIdx = slot;
+  // Every special/full-motion scene starts clean; the eligible static paths
+  // below opt back in explicitly. This prevents a class from the prior slide
+  // leaking onto a map, video, weather, or hotel layout.
+  _setGateStaticAdArt(el, false);
 
   // ── YOUR AIRCRAFT — BIG (Nick, Jul 2026). The 3D map is RETIRED; once
   // per cycle the center enlarges the right column's Your Aircraft view:
@@ -25349,6 +25371,7 @@ function renderGateAd(index) {
     var posX = (typeof item.posX === 'number') ? item.posX : 50;
     var posY = (typeof item.posY === 'number') ? item.posY : 50;
     var posStr = posX + '% ' + posY + '%';
+    _setGateStaticAdArt(el, item.type === 'image' && fit === 'contain');
     var customHtml = '';
     if (item.type === 'video' && item.source === 'youtube') {
       // YouTube embed — looped, muted, no controls. Single-video only;
@@ -25424,6 +25447,8 @@ function renderGateAd(index) {
 
   // ── Standard ad slide ─────────────────────────────────────────────
   var html = '';
+  var _isAccorSlide = !!(slide && slide.data && slide.data.isAccorHotel);
+  _setGateStaticAdArt(el, !!(slide && slide.data && !_isAccorSlide));
   if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorAdOnlyV6 === 'function') {
     try {
       // ONE consistent language — the board's own language (Nick: 'the Accor
