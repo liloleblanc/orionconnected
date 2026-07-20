@@ -6704,30 +6704,31 @@ function _buildV2MapCol(ctx, vars) {
       if (_ibArrSchedStr) {
         var _ibArrLblEn = (_stKey === 'arrived') ? 'Arrived' : 'Arrival';
         var _ibArrLblFr = (_stKey === 'arrived') ? 'Arrivé' : 'Arrivée';
-        var _ibArrVal;
         if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
           _ibArrRevised = true;
-          // Revised time + a small 'revised | révisé' tag, ALL in the status
-          // colour (green when earlier — Nick: 'revised beside it and all
-          // green'). Mirrors the reg row's 'expected | prévu' treatment.
-          // Colour INLINE: the status-colour CSS targets the row value element
-          // itself, not spans inside it — the class alone left this navy and
-          // tiny (Nick: 'its not green'). Green earlier / amber later.
-          var _ibRevHex = (_ibRevTs < _ibArrTs) ? '#16a34a' : '#d97706';
-          _ibArrVal = '<span style="text-decoration:line-through;opacity:.5;margin-right:.45em;">' + _ibArrSchedStr + '</span>'
-                    + '<span style="color:' + _ibRevHex + ';font-weight:900;">' + _ibArrRevStr
-                    + ' <span style="font-size:.74em;font-weight:800;letter-spacing:.02em;">revised <span class="v2-rc-fi-sep" style="opacity:.55;">|</span> révisé</span></span>';
+          // Nick's sketch, verbatim: 'Arrival 5:28PM    Revised: 5:27PM' —
+          // ONE row, TWO label|value pairs, each time at full row height
+          // (the old single stacked cell crammed everything small). The
+          // revised time wears the status palette classes (green earlier /
+          // amber later) so every skin inks it correctly — the old inline
+          // hex was a dark green that vanished on AC's dark wood.
+          var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-early' : 'v2-rc-status-delayed';
+          _ibArrRowHtml =
+              '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
+            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
+            +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _ibArrSchedStr + '</span></div>'
+            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Révisé' : 'Revised') + '</span><span>' + (_frF ? 'Revised' : 'Révisé') + '</span></div>'
+            +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _ibArrRevStr + '</div>'
+            + '</div>';
         } else {
-          _ibArrVal = _ibArrSchedStr;
+          // NOT trow-last: the Status row now always renders LAST (below
+          // this), so the time-vs-status order matches the departure card.
+          _ibArrRowHtml =
+              '<div class="v2-rc-fi-trow">'
+            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
+            +   '<div class="v2-rc-fi-tval">' + _ibArrSchedStr + '</div>'
+            + '</div>';
         }
-        // NOT trow-last: the Status row now always renders LAST (below this),
-        // so the time-vs-status order matches the departure card (Nick: 'one
-        // gate has time on line 3, status on 4, the other's the opposite').
-        _ibArrRowHtml =
-            '<div class="v2-rc-fi-trow">'
-          +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
-          +   '<div class="v2-rc-fi-tval' + (_ibArrRevised ? ' v2-rc-fi-tval-revised' : '') + '">' + _ibArrVal + '</div>'
-          + '</div>';
       }
       // Shelf-level t4 marker too: the shelf is flex-locked to 1/6 of the
       // rail (sized for 3 rows) and :has() is unusable on the older kiosk
@@ -9491,19 +9492,17 @@ function gateAutofit(root) {
     // the box IS the budget: width = the cell's own box (text-overflow
     // catches width), height cap = a single-line fraction of the cell.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-fi-trow').forEach(function (row) {
-      var val = row.querySelector('.v2-rc-fi-tval');
-      // Revised cells stack their two times as two lines (CSS column flex),
-      // so the per-line cap is half the row — two big lines instead of four
-      // chunks crammed into one 13px line.
-      if (val) {
-        var _rev = /v2-rc-fi-tval-revised/.test(val.className);
-        _boxAssign(val, val.clientWidth, Math.floor((row.clientHeight - 6) * (_rev ? 0.42 : 0.8)), null, true);
-      }
-      // The label cell too ('all spaces accounted for') — two stacked
+      // ALL value cells in the row — the revised row is two label|value
+      // pairs on one line (Nick's sketch), each time at full row height.
+      row.querySelectorAll('.v2-rc-fi-tval').forEach(function (val) {
+        _boxAssign(val, val.clientWidth, Math.floor((row.clientHeight - 6) * 0.8), null, true);
+      });
+      // The label cells too ('all spaces accounted for') — two stacked
       // bilingual lines, so each gets roughly a 0.44-row line box; the
       // narrow cell's width does the real limiting.
-      var lbl = row.querySelector('.v2-rc-fi-tlbl');
-      if (lbl) _boxAssign(lbl, lbl.clientWidth, Math.floor((row.clientHeight - 6) * 0.44), null, true);
+      row.querySelectorAll('.v2-rc-fi-tlbl').forEach(function (lbl) {
+        _boxAssign(lbl, lbl.clientWidth, Math.floor((row.clientHeight - 6) * 0.44), null, true);
+      });
     });
     // BANNER TABS — the time tab's label+clock and the gate tab's number
     // take the largest sizes their measured tab box fits. client boxes are
@@ -15077,7 +15076,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22361';
+var FIDS_BUILD_TAG = 'v22362';
 (function(){
   try {
     function _addTag(){
@@ -27081,14 +27080,15 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // destination city, status pair, and the aircraft type+registration line.
     // setProperty('important') because the gate fields' sizes are pinned with
     // !important in CSS — a plain inline style would lose the cascade.
+    // NOTE: the gate rail values (.v2-fi-value) and right-card cells
+    // (.v2-rc-fi-tval / .v2-rc-acb-actype) are NOT in this list anymore —
+    // gateAutofit's box-measure owns them now. This legacy shrinker strips
+    // font-size and re-shrinks from the CSS base, so having both meant the
+    // two fitters fought and the type+reg line kept collapsing back small
+    // (Nick: 'can you also fit this one line? Boeing 737 MAX 8 | C-GMJI').
     var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable td.fids-cell-flight, #fidsTable .fids-airline-name,'
-      + ' .gad-aircraft-col .v2-fi-value.v2-fi-flight-number,'
-      + ' .gad-aircraft-col .v2-fi-value.v2-fi-dest,'
-      + ' .gad-aircraft-col .v2-fi-value.v2-fi-status-val,'
-      + ' .gad-map-col-v2 .v2-rc-acb-actype,'
-      + ' .gad-map-col-v2 .v2-rc-fi-tval,'
       + ' .bigcraft-side .v2-rc-fi-tval');
     for (var j = 0; j < ones.length; j++) {
       var el = ones[j];

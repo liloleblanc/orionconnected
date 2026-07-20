@@ -2465,7 +2465,7 @@ body, body.gids-page, body.gate-page{
   color: #fff !important;
   text-align: left !important;
 }
-.gad-aircraft-col .v2-fi-status-val.ontime    { color: #2dd47a !important; }
+.gad-aircraft-col .v2-fi-status-val.ontime    { color: #22c55e !important; }
 .gad-aircraft-col .v2-fi-status-val.scheduled { color: #fff !important;    }
 .gad-aircraft-col .v2-fi-status-val.boarding  { color: #60a5fa !important; }
 .gad-aircraft-col .v2-fi-status-val.delayed   { color: #fbbf24 !important; }
@@ -4845,9 +4845,9 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-bloc
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
   color: #e8112d !important;
 }
-html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-status-val {
-  filter: brightness(1.35) saturate(1.25) !important;
-}
+/* (v22362) The brightness/saturate filter that used to sit here washed the
+   status colours into an off-neon tint (Nick: 'that green is off') — the
+   palette below sets the exact inks, so no filter. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
   letter-spacing: -0.3px !important;
 }
@@ -5207,7 +5207,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
    spans, and the white rules target spans directly), both panels. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col :is(.v2-fi-status-val.ontime, .v2-fi-status-val.ontime span, .v2-fi-status-val.early, .v2-fi-status-val.early span, .v2-fi-status-val.enroute, .v2-fi-status-val.enroute span, .v2-fi-status-val.arrived, .v2-fi-status-val.arrived span),
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(.v2-rc-status-ontime, .v2-rc-status-ontime span, .v2-rc-status-early, .v2-rc-status-early span, .v2-rc-status-enroute, .v2-rc-status-enroute span, .v2-rc-status-arrived, .v2-rc-status-arrived span) {
-  color: #2dd47a !important;
+  color: #22c55e !important;
   text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
 }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col :is(.v2-fi-status-val.boarding, .v2-fi-status-val.boarding span),
@@ -5345,22 +5345,27 @@ html body .g8-wrap .gad-aircraft-col .v2-fi-textcol
   overflow: visible !important;
 }
 
-/* Revised arrival has two times plus its bilingual qualifier. Stack them as
-   TWO lines (struck original above, revised below) so the box-fit can give
-   each line real size instead of cramming four chunks into one 13px line. */
-html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-fi-tval-revised {
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  justify-content: center !important;
-  gap: 0 !important;
-  font-size: clamp(13px,1.55vh,18px) !important;
-  letter-spacing: -.02em !important;
-  line-height: 1.1 !important;
-  overflow: visible !important;
+/* v22362 — revised arrival per Nick's sketch: ONE row, TWO label|value
+   pairs — 'Arrival  5:28PM    Revised  5:27PM' — each time at full row
+   height (the box-fit sizes every cell like any other row). The old
+   stacked/single-cell treatments are gone. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow.v2-rc-fi-trow-rev2 {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-fi-tval-revised > span {
-  flex: 0 1 auto !important;
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-rev2 > .v2-rc-fi-tlbl {
+  flex: 0 0 auto !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-rev2 > .v2-rc-fi-tval {
+  flex: 1 1 0 !important;
   min-width: 0 !important;
+  white-space: nowrap !important;
+}
+/* The superseded original time: struck but full-size and readable. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-tval-old {
+  text-decoration: line-through !important;
+  opacity: .72 !important;
 }
 
 /* v22358 — stylesheet-alive sentinel. Deliberately the LAST rule in the
