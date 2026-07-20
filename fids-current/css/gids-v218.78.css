@@ -5141,7 +5141,8 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
    paint across the creative itself. */
 .g8-wrap .gad-media-col.g8-static-page-ad::before,
 .g8-wrap .gad-media-col.g8-static-page-ad::after {
-  display: none !important;
+  display: block !important;
+  z-index: 0 !important;
 }
 .g8-wrap .gad-media-col.g8-static-page-ad > #gateAdCarousel {
   z-index: 2 !important;
@@ -5183,4 +5184,27 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed {
   color: #f59e0b !important;
   text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
+}
+
+
+/* v22353 — RESTORE AD SURROUND ART
+   Decorative gradients and abstract lines remain visible at z-index 0.
+   The carousel is z-index 2 and the creative itself z-index 3, so none of
+   this treatment can paint in front of the advert. */
+.g8-wrap .gad-media-col.g8-static-page-ad {
+  isolation: isolate !important;
+  overflow: hidden !important;
+}
+.g8-wrap .gad-media-col.g8-static-page-ad::before,
+.g8-wrap .gad-media-col.g8-static-page-ad::after {
+  display: block !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+.g8-wrap .gad-media-col.g8-static-page-ad > #gateAdCarousel {
+  position: absolute !important;
+  z-index: 2 !important;
+}
+.g8-wrap .gad-media-col.g8-static-page-ad #gateAdCarousel .ad-tech-media {
+  z-index: 3 !important;
 }
