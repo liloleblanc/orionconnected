@@ -6850,13 +6850,14 @@ function _buildV2MapCol(ctx, vars) {
     var _anyInb = !!_ib2;
     var _inbEquipCd = _anyInb ? (_ib2._aircraftCode || '') : '';
     var _inbEquipNm = _anyInb ? (_ib2._aircraft || (_ib2._aircraftCode ? formatAircraft(_ib2._aircraftCode) : '')) : '';
-    // The right shelf is explicitly “Your Aircraft”: when an inbound flight
-    // is present, its equipment is the physical aircraft turning at this gate.
-    // Never let the outbound flight-number matrix replace that record (AC7995
-    // previously invented a DH4 even though inbound AC7992 reported a CR9).
-    // If the inbound row has no equipment, show Pending instead of guessing.
-    var _equipCd = _anyInb ? _inbEquipCd : _outEquipCd;
-    var _equipNm = _anyInb ? _inbEquipNm : _outEquipNm;
+    // Aircraft truth priority:
+    //   1) a registration-backed registry type (applied below) is confirmation;
+    //   2) an inbound/live equipment update describes the physical turn;
+    //   3) today's scheduled outbound equipment is the minimum fallback.
+    // AC7995 therefore follows inbound AC7992's CR9 update instead of the
+    // scheduled DH4 assumption, while a later registration can still overrule it.
+    var _equipCd = _inbEquipCd || _outEquipCd;
+    var _equipNm = _inbEquipNm || _outEquipNm;
     if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
     // History tails are prior observations, not today's assigned airframe.
     // They may remain available to the text/history subsystem, but they must
@@ -7000,7 +7001,7 @@ function _buildV2MapCol(ctx, vars) {
     // airframe (E175 on a nominal Dash range, etc.) the REAL aircraft wins —
     // live telemetry must never contradict the label (Nick: a 'Q400' showing
     // 31,400 ft was the matrix overwriting an actual E175).
-    if (_mxGate && !_anyInb) {
+    if (_mxGate) {
       var _mxEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
       var _mxRealRegional = /CRJ|\bCR[0-9JK]\b|DASH|DH[0-9C]|Q400|E1[79][05]|\bE7[05W]\b|EMBRAER/.test(_mxEqUp);
       if (!_mxRealRegional && !_mxGate.eqTest.test(_mxEqUp)) {
@@ -25059,6 +25060,16 @@ function _regTrueType(reg) {
         if (t) {
           window._regTypeCache[r] = t;
           try { store[r] = t; localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch (e) {}
+          // Registration is the confirmed source of truth. Rebuild once when
+          // its type arrives so the label and livery update immediately rather
+          // than waiting for the next multi-minute flight poll.
+          try {
+            if (window._gateAcRegShown === r && typeof renderDedicatedScreen === 'function') {
+              window.setTimeout(function () {
+                try { renderDedicatedScreen(); } catch (e) {}
+              }, 0);
+            }
+          } catch (e) {}
         }
         try { console.log('[REGTYPE]', r, '→', t || '(no type in response — will retry)'); } catch (e) {}
       })
