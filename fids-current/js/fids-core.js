@@ -9459,6 +9459,14 @@ function gateAutofit(root) {
     fits(Math.max(12, lo - 1));
   }
   try {
+    // LEFT RAIL titles first ('so much space is wasted') — each label line
+    // fits its shelf width under a 0.2-row height cap, THEN the value fit
+    // below reads the title's grown offsetHeight, so the two never collide.
+    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title').forEach(function (el) {
+      var row = el.closest('.v2-fi-row'); if (!row) return;
+      var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
+      _boxAssign(el, tc.clientWidth, Math.floor(row.clientHeight * 0.2), null, false);
+    });
     // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper).
     // Status value included since v22359 — its two stacked bilingual lines
     // are handled by the height check (offsetHeight measures both lines).
@@ -9481,7 +9489,13 @@ function gateAutofit(root) {
     // catches width), height cap = a single-line fraction of the cell.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-fi-trow').forEach(function (row) {
       var val = row.querySelector('.v2-rc-fi-tval');
-      if (val) _boxAssign(val, val.clientWidth, Math.floor((row.clientHeight - 6) * 0.8), null, true);
+      // Revised cells stack their two times as two lines (CSS column flex),
+      // so the per-line cap is half the row — two big lines instead of four
+      // chunks crammed into one 13px line.
+      if (val) {
+        var _rev = /v2-rc-fi-tval-revised/.test(val.className);
+        _boxAssign(val, val.clientWidth, Math.floor((row.clientHeight - 6) * (_rev ? 0.42 : 0.8)), null, true);
+      }
       // The label cell too ('all spaces accounted for') — two stacked
       // bilingual lines, so each gets roughly a 0.44-row line box; the
       // narrow cell's width does the real limiting.
@@ -15060,7 +15074,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22359';
+var FIDS_BUILD_TAG = 'v22360';
 (function(){
   try {
     function _addTag(){
