@@ -5186,6 +5186,56 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
 }
 
+/* v22361 — BASE right-card status colours for ALL carriers (light shelves,
+   dark ink). The AC-skin block below re-inks them bright for its dark wood.
+   Every state the status key can produce has a colour — the class now always
+   matches the shown word (enroute, arrived, early included). */
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-early,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-enroute,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived { color: #0e7c4a !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding { color: #1d4ed8 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed,
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-diverted { color: #d97706 !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled { color: #b91c1c !important; }
+.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-gateclosed { color: #4b5563 !important; }
+
+/* v22361 — FULL STATUS PALETTE on the AC skin (Nick: 'make sure we do
+   colored status'). v22352 restored only Delayed; every other state was
+   still steamrolled white by the shelf-copy rules above. Each state colour
+   is applied to the value AND its descendant spans (the bilingual lines are
+   spans, and the white rules target spans directly), both panels. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col :is(.v2-fi-status-val.ontime, .v2-fi-status-val.ontime span, .v2-fi-status-val.early, .v2-fi-status-val.early span, .v2-fi-status-val.enroute, .v2-fi-status-val.enroute span, .v2-fi-status-val.arrived, .v2-fi-status-val.arrived span),
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(.v2-rc-status-ontime, .v2-rc-status-ontime span, .v2-rc-status-early, .v2-rc-status-early span, .v2-rc-status-enroute, .v2-rc-status-enroute span, .v2-rc-status-arrived, .v2-rc-status-arrived span) {
+  color: #2dd47a !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col :is(.v2-fi-status-val.boarding, .v2-fi-status-val.boarding span),
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(.v2-rc-status-boarding, .v2-rc-status-boarding span) {
+  color: #60a5fa !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col :is(.v2-fi-status-val.delayed, .v2-fi-status-val.delayed span, .v2-fi-status-val.diverted, .v2-fi-status-val.diverted span),
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(.v2-rc-status-delayed, .v2-rc-status-delayed span, .v2-rc-status-diverted, .v2-rc-status-diverted span) {
+  color: #f59e0b !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col :is(.v2-fi-status-val.cancelled, .v2-fi-status-val.cancelled span),
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(.v2-rc-status-cancelled, .v2-rc-status-cancelled span) {
+  color: #f87171 !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col :is(.v2-fi-status-val.final, .v2-fi-status-val.final span),
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(.v2-rc-status-final, .v2-rc-status-final span) {
+  color: #fb7185 !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col :is(.v2-fi-status-val.gateclosed, .v2-fi-status-val.gateclosed span),
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(.v2-rc-status-gateclosed, .v2-rc-status-gateclosed span) {
+  color: #9ca3af !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
+}
+
 
 /* v22353 — RESTORE AD SURROUND ART
    Decorative gradients and abstract lines remain visible at z-index 0.
