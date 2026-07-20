@@ -4825,7 +4825,7 @@ body, body.gids-page, body.gate-page{
    uses Nick's dark brown-smooth texture; the three right shelves below the map
    use the lighter 935 texture, with the cloud layer preserved over row 5. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
-  background: url('/textures/ac-metal-dark.jpg?v=22349') center / cover no-repeat !important;
+  background: url('/textures/ac-left-brown-smooth.jpg?v=22350') center / cover no-repeat !important;
   border: 1px solid rgba(255,255,255,0.10) !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title,
@@ -4856,6 +4856,25 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
   background: url('/textures/ac-shelf-935.jpg?v=22349') center / cover no-repeat !important;
 }
+/* AC's supplied 935 surface is dark enough that the old navy copy loses
+   contrast. Use white for labels and ordinary values on these right shelves;
+   keep semantic status colours visible and airline-red divider accents. */
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl,
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:not([class*="v2-rc-status-"]),
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype,
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-acb-lbl,
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-acb-val,
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl {
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.72) !important;
+}
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span + span {
+  color: rgba(255,255,255,.78) !important;
+  opacity: 1 !important;
+}
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow {
+  border-bottom-color: rgba(232,17,45,.82) !important;
+}
 /* Left-rail globe remains removed for AC so the brown-smooth material stands
    on its own. The is-bare pending filler is untouched. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col:not(.is-bare)::after {
@@ -4866,7 +4885,7 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 { position: relative 
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2::after { display: none !important; }
 
 /* ════════════════════════════════════════════════════════════════════════
-   v22349 — STATIC AD ART + DATA-DENSITY PASS (Nick, Jul 19 2026)
+   v22350 — UNOBSTRUCTED AD ART + AIRLINE EMBLEM HOLD (Nick, Jul 20 2026)
    ════════════════════════════════════════════════════════════════════════ */
 
 /* Non-Accor, contained single-page ads get a restrained abstract frame. The
@@ -4878,32 +4897,37 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2::after { display: non
   content: "";
   position: absolute;
   pointer-events: none;
-  z-index: 8;
+  z-index: 0;
+}
+.g8-wrap .gad-media-col.g8-static-page-ad > #gateAdCarousel {
+  position: absolute !important;
+  z-index: 1 !important;
 }
 .g8-wrap .gad-media-col.g8-static-page-ad::before {
-  inset: clamp(10px,1.15vw,22px);
-  border: 1px solid color-mix(in srgb, var(--airline-accent,#d82f2e) 58%, rgba(255,255,255,.72));
-  border-radius: clamp(12px,1.4vw,24px);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.16),
-    0 0 28px color-mix(in srgb, var(--airline-accent,#d82f2e) 16%, transparent);
-  opacity: .82;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--airline-accent,#d82f2e) 24%, transparent), transparent 32%),
+    radial-gradient(circle at 84% 86%, color-mix(in srgb, var(--airline-accent3,#f4c542) 16%, transparent), transparent 30%);
+  opacity: .9;
 }
 .g8-wrap .gad-media-col.g8-static-page-ad::after {
   inset: 0;
-  opacity: .62;
+  opacity: .72;
   background:
     linear-gradient(118deg, transparent 46.8%, color-mix(in srgb, var(--airline-accent,#d82f2e) 78%, #fff) 47.2%, transparent 47.8%) left top / 42% 39% no-repeat,
-    linear-gradient(118deg, transparent 56.0%, rgba(255,255,255,.60) 56.4%, transparent 57.0%) left top / 52% 48% no-repeat,
-    linear-gradient(118deg, transparent 66.0%, color-mix(in srgb, var(--airline-accent3,#f4c542) 72%, #fff) 66.4%, transparent 67.0%) left top / 58% 56% no-repeat,
+    linear-gradient(118deg, transparent 54.0%, rgba(255,255,255,.62) 54.35%, transparent 54.8%) left top / 49% 46% no-repeat,
+    linear-gradient(118deg, transparent 61.2%, color-mix(in srgb, var(--airline-accent3,#f4c542) 72%, #fff) 61.55%, transparent 62.0%) left top / 55% 52% no-repeat,
+    linear-gradient(118deg, transparent 68.0%, rgba(255,255,255,.42) 68.25%, transparent 68.65%) left top / 61% 58% no-repeat,
     linear-gradient(-62deg, transparent 45.8%, color-mix(in srgb, var(--airline-accent,#d82f2e) 76%, #fff) 46.2%, transparent 46.8%) right bottom / 42% 39% no-repeat,
-    linear-gradient(-62deg, transparent 55.2%, rgba(255,255,255,.54) 55.6%, transparent 56.2%) right bottom / 52% 48% no-repeat,
-    linear-gradient(-62deg, transparent 65.2%, color-mix(in srgb, var(--airline-accent3,#f4c542) 66%, #fff) 65.6%, transparent 66.2%) right bottom / 58% 56% no-repeat;
+    linear-gradient(-62deg, transparent 53.4%, rgba(255,255,255,.56) 53.75%, transparent 54.2%) right bottom / 49% 46% no-repeat,
+    linear-gradient(-62deg, transparent 61.0%, color-mix(in srgb, var(--airline-accent3,#f4c542) 66%, #fff) 61.35%, transparent 61.8%) right bottom / 55% 52% no-repeat,
+    linear-gradient(-62deg, transparent 68.2%, rgba(255,255,255,.38) 68.45%, transparent 68.85%) right bottom / 61% 58% no-repeat;
 }
 
 /* Left rail: put more width into the data column and let numeric content use
-   it. gateAutofit still shrinks a genuinely long flight number/time, but the
-   destination no longer drags every number down to its own fitted size. */
+   it. Stable CSS sizes prevent the pre-layout autofit pass from collapsing
+   normal values; the visible-box fitter only steps in for genuinely long
+   flight, destination and status strings. */
 .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   grid-template-columns: 25% 75% !important;
 }
@@ -4913,10 +4937,22 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2::after { display: non
 }
 html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-flight-number,
 html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-time {
-  font-size: clamp(48px,9.8vh,108px) !important;
+  font-size: clamp(42px,4.2vw,72px) !important;
   line-height: 1.02 !important;
   font-variant-numeric: tabular-nums lining-nums;
   letter-spacing: -0.035em !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-dest:not(.v2-fi-flight-number) {
+  font-size: clamp(34px,3.4vw,58px) !important;
+  line-height: 1.02 !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-val {
+  font-size: clamp(24px,2.25vw,38px) !important;
+  line-height: 1.04 !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title {
+  font-size: clamp(16px,1.25vw,22px) !important;
+  line-height: 1.08 !important;
 }
 
 /* The live markup already used a purpose-built four-row table but had no CSS
@@ -5000,9 +5036,9 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow 
   line-height: 1.04 !important;
 }
 
-/* When the mini-map grows into the centre, its old right-column map slot stays
-   alive as a lightweight branded motion panel. It is decorative and carries
-   no competing position/data; the real telemetry and title remain on top. */
+/* When the mini-map grows into the centre, its old right-column map slot holds
+   one quiet airline emblem. No spinner, orbit, caption or motion: the real
+   route map is already doing the work in the enlarged centre panel. */
 .g8-wrap .v2-rc-map-life { display: none; }
 .g8-wrap.g8-bigcraft-active .gad-map-col-v2 > .v2-rc-shelf-map {
   position: relative !important;
@@ -5020,77 +5056,41 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow 
   display: block !important;
 }
 .g8-wrap.g8-bigcraft-active .gad-map-col-v2 .v2-rc-map-life {
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   position: absolute !important;
   inset: 0 !important;
   z-index: 2 !important;
   overflow: hidden !important;
-  background-image:
-    linear-gradient(112deg, transparent 0 28%, rgba(255,255,255,.045) 28.2% 28.7%, transparent 28.9% 100%),
-    repeating-linear-gradient(0deg, transparent 0 31px, rgba(255,255,255,.035) 32px),
-    repeating-linear-gradient(90deg, transparent 0 31px, rgba(255,255,255,.03) 32px);
+  background:
+    radial-gradient(circle at 50% 52%, rgba(255,255,255,.12), transparent 42%),
+    linear-gradient(145deg, color-mix(in srgb, var(--banner-bg,#071426) 82%, #fff 4%) 0%, #07101d 100%) !important;
 }
-.g8-wrap.g8-bigcraft-active .gad-map-col-v2 .v2-rc-map-life::before {
-  content: "";
-  position: absolute;
-  width: 78%;
+.g8-wrap .v2-rc-map-life-emblem {
+  position: relative;
+  z-index: 2;
+  width: min(46%,220px);
+  height: min(46%,220px);
+  object-fit: contain;
+  filter: drop-shadow(0 12px 22px rgba(0,0,0,.42));
+}
+.g8-wrap .v2-rc-map-life-code {
+  display: flex;
+  position: relative;
+  z-index: 2;
+  align-items: center;
+  justify-content: center;
+  width: min(42%,180px);
   aspect-ratio: 1;
-  right: -20%;
-  top: -26%;
   border-radius: 50%;
-  background: url('/logos/dots-sphere.svg') center / contain no-repeat;
-  opacity: .20;
-  animation: g8MapLifeDrift 12s ease-in-out infinite alternate;
-}
-.g8-wrap .v2-rc-life-orbit {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  border: 1px solid color-mix(in srgb, var(--airline-accent,#d82f2e) 64%, rgba(255,255,255,.68));
-  border-radius: 50%;
-  transform: translate(-50%,-50%);
-  opacity: .55;
-  animation: g8MapLifePulse 3.2s ease-in-out infinite;
-}
-.g8-wrap .v2-rc-life-orbit-a { width: 46%; aspect-ratio: 1; }
-.g8-wrap .v2-rc-life-orbit-b { width: 67%; aspect-ratio: 1; animation-delay: -1.6s; opacity: .32; }
-.g8-wrap .v2-rc-life-route {
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 53%;
-  height: 2px;
-  border-radius: 2px;
-  transform: rotate(-12deg);
-  transform-origin: center;
-  background: linear-gradient(90deg, transparent, var(--airline-accent3,#f4c542) 18% 82%, transparent);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--airline-accent3,#f4c542) 52%, transparent);
-}
-.g8-wrap .v2-rc-life-plane {
-  position: absolute;
-  left: 0;
-  top: 50%;
+  background: var(--airline-accent,#d82f2e);
   color: #fff;
-  font-size: clamp(18px,2.6vh,30px);
-  line-height: 1;
-  text-shadow: 0 0 12px var(--airline-accent,#d82f2e);
-  transform: translateY(-52%) rotate(12deg);
-  animation: g8MapLifeFly 7.5s ease-in-out infinite;
+  font-size: clamp(28px,5.2vh,58px);
+  font-weight: 900;
+  letter-spacing: -.04em;
+  box-shadow: 0 12px 22px rgba(0,0,0,.42);
 }
-.g8-wrap .v2-rc-life-caption {
-  position: absolute;
-  left: 50%;
-  bottom: clamp(46px,6.8vh,76px);
-  transform: translateX(-50%);
-  width: 86%;
-  color: rgba(255,255,255,.72);
-  font-size: clamp(9px,1.15vh,13px);
-  font-weight: 750;
-  letter-spacing: .05em;
-  text-align: center;
-  white-space: nowrap;
-}
-.g8-wrap .v2-rc-life-caption b { color: var(--airline-accent3,#f4c542); padding: 0 .32em; }
 .g8-wrap.g8-bigcraft-active .gad-map-col-v2 .v2-rc-maptitle {
   position: absolute !important;
   z-index: 5 !important;
@@ -5105,23 +5105,4 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow 
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-}
-@keyframes g8MapLifePulse {
-  0%,100% { transform: translate(-50%,-50%) scale(.92); opacity: .20; }
-  50% { transform: translate(-50%,-50%) scale(1.08); opacity: .68; }
-}
-@keyframes g8MapLifeFly {
-  0% { left: 0; opacity: 0; }
-  12% { opacity: 1; }
-  88% { opacity: 1; }
-  100% { left: calc(100% - 28px); opacity: 0; }
-}
-@keyframes g8MapLifeDrift {
-  from { transform: translate3d(-2%,1%,0) rotate(-4deg); }
-  to { transform: translate3d(5%,4%,0) rotate(5deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .g8-wrap .v2-rc-life-orbit,
-  .g8-wrap .v2-rc-life-plane,
-  .g8-wrap.g8-bigcraft-active .gad-map-col-v2 .v2-rc-map-life::before { animation: none !important; }
 }

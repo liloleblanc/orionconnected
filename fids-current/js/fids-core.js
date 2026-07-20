@@ -5769,7 +5769,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airline-tiles/UA-globe-glossy.png?v=22349',      // Nick's supplied glossy United globe; native-colour, full-bleed first shelf orb
+        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // Standard emblem used outside the one gate-flight badge override below
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
@@ -5782,6 +5782,15 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
         'BW':  '/logos/airlines/asian-other/caribbean-emblem.png',     // official hummingbird (airline's own brand art)
         '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg'
+};
+
+// Gate-only artwork overrides. Keep these separate from AIRLINE_EMBLEM_FILES:
+// that shared set also feeds the expanded-map hold, boarding scenes and other
+// branded gate surfaces. Nick's supplied glossy United globe belongs ONLY in
+// the first/top round Flight icon on the gate display — never in the main FIDS
+// all-flights airline cell (which has its own IATA_TO_* logo system).
+var GATE_TOP_ROUND_EMBLEM_FILES = {
+  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350'
 };
 
 function _buildV2AircraftCol(ctx, vars) {
@@ -6062,7 +6071,7 @@ function _buildV2AircraftCol(ctx, vars) {
         if (code === 'F8') {
           return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;background:#7AFF94;"></div>';
         }
-        var path = AIRLINE_EMBLEM_FILES[code];
+        var path = GATE_TOP_ROUND_EMBLEM_FILES[code] || AIRLINE_EMBLEM_FILES[code];
         // v218.99.69 — Airlines whose emblem files are full-color tiles
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
@@ -6255,7 +6264,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || _fnNumber || '—'), 'v2-fi-dest v2-fi-flight-number')
+        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
@@ -7258,17 +7267,20 @@ function _buildV2MapCol(ctx, vars) {
 
   // Map area — now the TOP half of the right column, with the "Your Aircraft"
   // title overlaid at the top and the speed/altitude telemetry at the bottom
-  // (both INSIDE the map, per Nick — not separate shelves).
+  // (both INSIDE the map, per Nick — not separate shelves). While that map is
+  // enlarged into the centre, leave the carrier's own static emblem in this
+  // temporarily vacant shelf — a brand hold, not another loading animation.
+  var _mapLifeCode = String((vars && vars.airlineCode) || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  var _mapLifeSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
+  var _mapLifeHtml = _mapLifeSrc
+    ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
+      + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
+    : '<span class="v2-rc-map-life-code">' + (_mapLifeCode || '&#9992;') + '</span>';
   var _mapBox =
       '<div class="v2-rc-shelf v2-rc-shelf-map">'
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
-    +     '<div class="v2-rc-map-life" aria-hidden="true">'
-    +       '<span class="v2-rc-life-orbit v2-rc-life-orbit-a"></span>'
-    +       '<span class="v2-rc-life-orbit v2-rc-life-orbit-b"></span>'
-    +       '<span class="v2-rc-life-route"><span class="v2-rc-life-plane">&#9992;</span></span>'
-    +       '<span class="v2-rc-life-caption">Route view expanded <b>|</b> Vue de route agrandie</span>'
-    +     '</div>'
+    +     '<div class="v2-rc-map-life" aria-hidden="true">' + _mapLifeHtml + '</div>'
     +     '<div class="v2-rc-maptitle">' + (_frF ? 'Votre Avion' : 'Your Aircraft') + ' <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">' + (_frF ? 'Your Aircraft' : 'Votre Avion') + '</span></div>'
     +     _telemBar
     +   '</div>'
@@ -9259,11 +9271,13 @@ function uxgActivateRotator() {
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
   if (!root) return;
-  // NOTE: left-column values (.v2-fi-dest/.v2-fi-status-val) are NOT autofit —
-  // autofit shrinks each element independently, which makes them DIFFERENT
-  // sizes. Nick wants one uniform size per category, so they use a fixed
-  // clamp in CSS instead.
-  var sels = ['.g8-welcome-city', '.g8-r1-dest', '.v2-fi-value', '.v2-fi-textcol .v2-fi-title',
+  // Left-rail values/titles deliberately stay out of this generic pass. This
+  // function is invoked synchronously during a gate rebuild, when those new
+  // shelves can still report a zero-width box; treating that as overflow
+  // shrank every value and label to the 12px floor before first paint. Their
+  // normal sizes now come from CSS, with the later visible-box one-line fitter
+  // handling only genuinely long flight/destination/status strings.
+  var sels = ['.g8-welcome-city', '.g8-r1-dest',
               '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val',
               '.v2-rc-fi-val', '.v2-rc-fi-tval', '.v2-rc-acb-actype'];
   sels.forEach(function(sel) {
@@ -9271,6 +9285,9 @@ function gateAutofit(root) {
     els.forEach(function(el) {
       var parent = el.parentElement;
       if (!parent) return;
+      // Never fit a detached/hidden/not-yet-laid-out box. A later rAF/font-
+      // ready/heartbeat pass will measure it once real geometry exists.
+      if (!el.isConnected || el.clientWidth <= 1 || parent.clientWidth <= 1) return;
       // Reset any previously applied shrink. NOTE: the CSS font-size uses
       // !important, so an inline value is ignored unless we ALSO mark it
       // !important — otherwise the shrink does nothing (text just clips).
@@ -9324,39 +9341,16 @@ function gateAutofit(root) {
         return false;
       }
       var guard = 0;
-      // Reduce in 1px steps until it fits the available width, floor 12px.
-      while (overflowing() && size > 12 && guard < 110) {
+      // Right-rail values still need a readable safety floor even if a kiosk
+      // briefly reports unstable geometry during the map takeover.
+      var _fitFloor = (el.closest && el.closest('.gad-map-col-v2')) ? 18 : 12;
+      while (overflowing() && size > _fitFloor && guard < 110) {
         size -= 1;
         el.style.setProperty('font-size', size + 'px', 'important');
         guard++;
       }
     });
   });
-  // UNIFORM SIZE by category. A destination word such as "Fredericton" must
-  // not force the four high-value numeric rows (flight number + three times)
-  // down to the same tiny font. Fit every element honestly first, then share
-  // the worst fitted size only inside its category. Status remains separate
-  // because its bilingual two-line stack intentionally uses a smaller scale.
-  try {
-    function _uniformGateValues(selector) {
-      var _vals = Array.prototype.slice.call(root.querySelectorAll(selector));
-      if (_vals.length < 2) return;
-      var _minPx = Infinity, _maxOrig = 0;
-      _vals.forEach(function (el) {
-        var s2 = parseFloat(window.getComputedStyle(el).fontSize) || 0;
-        var o2 = parseFloat(el.dataset._origSize) || s2;
-        if (s2 > 0) _minPx = Math.min(_minPx, s2);
-        _maxOrig = Math.max(_maxOrig, o2);
-      });
-      if (isFinite(_minPx) && _maxOrig > 0) {
-        var _uni = _minPx;
-        _vals.forEach(function (el) {
-          el.style.setProperty('font-size', _uni + 'px', 'important');
-        });
-      }
-    }
-    _uniformGateValues('.v2-fi-value.v2-fi-flight-number, .v2-fi-value.v2-fi-time');
-  } catch (e) {}
 }
 
 function renderDedicatedScreen() {
@@ -14862,7 +14856,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22349';
+var FIDS_BUILD_TAG = 'v22350';
 (function(){
   try {
     function _addTag(){
@@ -25219,13 +25213,17 @@ function _adBackdropHtml(blurUrl) {
     + 'opacity:.42;filter:grayscale(1) brightness(1.85);mix-blend-mode:screen;pointer-events:none;"></div>';
   // Diagonal slat set (Nick: 'maybe more diagonal lines?') — the two thick
   // edge handles plus echoing thinner slats stepping inward on both sides.
+  // These nodes are emitted BEFORE the media's z-index:1 layer, so every line
+  // stays behind/around the creative and never crosses the advert itself.
   function _slat(side, off, w, op) {
-    return '<div style="position:absolute;top:-8%;bottom:-8%;' + side + ':' + off + ';width:' + w + ';'
+    return '<div style="position:absolute;z-index:0;top:-8%;bottom:-8%;' + side + ':' + off + ';width:' + w + ';'
       + 'background:var(--airline-accent,#D82F2E);opacity:' + op + ';transform:skewX(-14deg);pointer-events:none;"></div>';
   }
   var handles = _slat('left', '-3.5%', '6%', '.9') + _slat('right', '-3.5%', '6%', '.9')
     + _slat('left', '3.6%', '1.1%', '.55') + _slat('right', '3.6%', '1.1%', '.55')
-    + _slat('left', '5.9%', '0.45%', '.35') + _slat('right', '5.9%', '0.45%', '.35');
+    + _slat('left', '5.9%', '0.45%', '.35') + _slat('right', '5.9%', '0.45%', '.35')
+    + _slat('left', '8.0%', '0.32%', '.28') + _slat('right', '8.0%', '0.32%', '.28')
+    + _slat('left', '10.0%', '0.20%', '.20') + _slat('right', '10.0%', '0.20%', '.20');
   return base + dots + handles;
 }
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
@@ -26763,6 +26761,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable td.fids-cell-flight, #fidsTable .fids-airline-name,'
+      + ' .gad-aircraft-col .v2-fi-value.v2-fi-flight-number,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-dest,'
       + ' .gad-aircraft-col .v2-fi-value.v2-fi-status-val,'
       + ' .gad-map-col-v2 .v2-rc-acb-actype,'
@@ -26779,8 +26778,14 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       el.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(el).fontSize) || 16;
       var size = base, guard = 16;
-      while (el.scrollWidth > el.clientWidth && size > base * 0.35 && guard-- > 0) {
-        size -= Math.max(1, size * 0.07);
+      var _fitMin = base * 0.35;
+      // Gate-rail data must never collapse to label-size. These floors cover
+      // the longest realistic values while keeping ordinary data prominent.
+      if (el.matches('.gad-aircraft-col .v2-fi-value.v2-fi-flight-number')) _fitMin = Math.min(base, 36);
+      else if (el.matches('.gad-aircraft-col .v2-fi-value.v2-fi-dest')) _fitMin = Math.min(base, 28);
+      else if (el.matches('.gad-aircraft-col .v2-fi-value.v2-fi-status-val')) _fitMin = Math.min(base, 24);
+      while (el.scrollWidth > el.clientWidth && size > _fitMin && guard-- > 0) {
+        size = Math.max(_fitMin, size - Math.max(1, size * 0.07));
         el.style.setProperty('font-size', size + 'px', 'important');
       }
       // GROW pass for the boarding info row values (Nick: the data must
