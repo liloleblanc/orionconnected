@@ -8671,7 +8671,7 @@ function uxgGateHtml(ctx) {
   // read Acadian blue | white | red, the flag across the top).
   var _apBandTop = _apLogoTop
     ? '<div class="g8-r1-apband" style="position:absolute;right:0;top:0;bottom:0;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
-      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:48px;max-height:66%;max-width:100%;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
+      + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:76%;max-height:82%;max-width:100%;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
 
@@ -9459,9 +9459,10 @@ function gateAutofit(root) {
     fits(Math.max(12, lo - 1));
   }
   try {
-    // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper)
+    // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper).
+    // Status value included since v22359 — its two stacked bilingual lines
+    // are handled by the height check (offsetHeight measures both lines).
     root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-value').forEach(function (el) {
-      if (/v2-fi-status-val/.test(el.className)) return;
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var title = row.querySelector('.v2-fi-title');
@@ -9480,9 +9481,50 @@ function gateAutofit(root) {
     // catches width), height cap = a single-line fraction of the cell.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-fi-trow').forEach(function (row) {
       var val = row.querySelector('.v2-rc-fi-tval');
-      if (!val) return;
-      var cap = Math.floor((row.clientHeight - 6) * 0.72);
-      _boxAssign(val, val.clientWidth, cap, null, true);
+      if (val) _boxAssign(val, val.clientWidth, Math.floor((row.clientHeight - 6) * 0.8), null, true);
+      // The label cell too ('all spaces accounted for') — two stacked
+      // bilingual lines, so each gets roughly a 0.44-row line box; the
+      // narrow cell's width does the real limiting.
+      var lbl = row.querySelector('.v2-rc-fi-tlbl');
+      if (lbl) _boxAssign(lbl, lbl.clientWidth, Math.floor((row.clientHeight - 6) * 0.44), null, true);
+    });
+    // BANNER TABS — the time tab's label+clock and the gate tab's number
+    // take the largest sizes their measured tab box fits. client boxes are
+    // pre-transform, so the skew never distorts the measurement.
+    root.querySelectorAll('.g8-r1-timebox').forEach(function (box) {
+      var inner = box.firstElementChild; if (!inner) return;
+      var lbl = inner.children[0] || null, val = inner.children[1] || null;
+      // Budget = tab width minus its 26px side paddings AND the 30px right
+      // underlap that sits hidden beneath the next tab — text that "fit" the
+      // full client box was sliding under the gate tab.
+      var w = box.clientWidth - 52 - 30;
+      var h = box.clientHeight;
+      if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.24), null, false);
+      if (val) _boxAssign(val, w, Math.floor(h * 0.66), null, false);
+    });
+    root.querySelectorAll('.g8-r1-right').forEach(function (box) {
+      var num = box.querySelector('.g8-r1-gate'); if (!num) return;
+      var bil = box.querySelector('.g8-bilbl');
+      var w = box.clientWidth - 128; // 24px left + 104px right padding
+      var bw = bil ? (bil.offsetWidth + 16) : 0;
+      _boxAssign(num, Math.max(40, w - bw), Math.floor(box.clientHeight * 0.86), null, false);
+    });
+    // RIGHT CARD type shelf ('Aircraft details pending' clipped mid-word on
+    // production): wrap allowed, then the largest size whose wrapped lines
+    // fit the shelf. Shares the shelf with the Operated-By row when present.
+    root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach(function (el) {
+      var shelf = el.closest('.v2-rc-shelf-type'); if (!shelf) return;
+      el.style.setProperty('white-space', 'normal', 'important');
+      var scs = window.getComputedStyle(shelf);
+      var w = shelf.clientWidth - (parseFloat(scs.paddingLeft) || 0) - (parseFloat(scs.paddingRight) || 0);
+      var h = shelf.clientHeight - (parseFloat(scs.paddingTop) || 0) - (parseFloat(scs.paddingBottom) || 0);
+      var op = shelf.querySelector('.v2-rc-acb-opby');
+      _boxAssign(el, w, Math.floor(h * (op ? 0.48 : 0.92)), null, false);
+    });
+    // Image-pending pill fills its cloud shelf instead of whispering.
+    root.querySelectorAll('.gad-map-col-v2 .v2-rc-aircraft-pending').forEach(function (el) {
+      var shelf = el.closest('.v2-rc-shelf-illus'); if (!shelf) return;
+      _boxAssign(el, Math.floor(shelf.clientWidth * 0.88), Math.floor(shelf.clientHeight * 0.7), null, false);
     });
   } catch (e) {}
 }
@@ -15018,7 +15060,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22358';
+var FIDS_BUILD_TAG = 'v22359';
 (function(){
   try {
     function _addTag(){
@@ -17678,8 +17720,15 @@ function adbPacedFetch(url, opts) {
   });
 }
 
+var _regNegTs = {}; // flight → when a "no reg" answer was cached
 async function fetchFlightReg(flightNumber) {
   if (!flightNumber) return null;
+  // A negative answer expires after 10 min — regs get assigned hours before
+  // departure, so "none yet" must never mean "none for the whole session".
+  if (_regCache[flightNumber] === null
+      && Date.now() - (_regNegTs[flightNumber] || 0) > 600000) {
+    delete _regCache[flightNumber];
+  }
   if (_regCache[flightNumber] !== undefined) return _regCache[flightNumber];
   if (_regFetching[flightNumber]) return null; // Already fetching
   _regFetching[flightNumber] = true;
@@ -17690,7 +17739,14 @@ async function fetchFlightReg(flightNumber) {
     var url = ADB_BASE + path;
     console.log('[FIDS] Fetching flight reg for:', flightNumber);
     var r = await adbPacedFetch(url.replace(ADB_BASE, 'https://fids-proxy.n-leblanc1984.workers.dev'));
-    if (!r.ok) { console.warn('[FIDS] Flight reg fetch failed:', r.status); return null; }
+    // NOTE: the early return must release the in-flight guard, or one bad
+    // response poisons this flight number for the whole session ("Already
+    // fetching" forever). Same for the catch below — both go through it.
+    if (!r.ok) {
+      console.warn('[FIDS] Flight reg fetch failed:', r.status);
+      delete _regFetching[flightNumber];
+      return null;
+    }
     var data = await r.json();
     if (Array.isArray(data)) {
       for (var i = 0; i < data.length; i++) {
@@ -17721,6 +17777,7 @@ async function fetchFlightReg(flightNumber) {
     }
     console.log('[FIDS] ✗ No reg found for', flightNumber);
     _regCache[flightNumber] = null;
+    _regNegTs[flightNumber] = Date.now();
     delete _regFetching[flightNumber];
     return null;
   } catch(e) {
