@@ -17486,6 +17486,35 @@ function fidsAdbStatusKey(value) {
 
 // ── AIRCRAFT LOOKUP BY REGISTRATION ──────────────────────────────
 var _aircraftCache = {};
+var _aircraftByModeSCache = {};
+
+// FlightAircraftContract can expose modeS even before it exposes reg. Resolve
+// that ICAO-24 address through the documented aircraft endpoint so the current
+// active registration can still become the authoritative identity.
+async function fidsAircraftByModeS(modeS) {
+  var hex = String(modeS || '').replace(/[^A-F0-9]/gi, '').toUpperCase();
+  if (!/^[A-F0-9]{6}$/.test(hex)) return null;
+  if (_aircraftByModeSCache[hex] !== undefined) return _aircraftByModeSCache[hex];
+  try {
+    var resp = await adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev/aircrafts/icao24/'
+      + encodeURIComponent(hex) + '?withImage=false&withRegistrations=false');
+    if (!resp.ok) return null;
+    var ac = await resp.json();
+    if (!ac || ac.active === false) { _aircraftByModeSCache[hex] = null; return null; }
+    var out = {
+      id: ac.id || null,
+      reg: String(ac.reg || '').trim().toUpperCase(),
+      modeS: String(ac.hexIcao || hex).trim().toUpperCase(),
+      aircraft: String(ac.typeName || ac.model || ac.productionLine || '').trim(),
+      aircraftCode: String(ac.iataCodeShort || ac.iataType || ac.icaoCode || ac.modelCode || '').trim(),
+      verified: ac.verified === true
+    };
+    _aircraftByModeSCache[hex] = out;
+    return out;
+  } catch (e) {
+    return null;
+  }
+}
 
 // ── AIRLINE FLEET CACHE ─────────────────────────────────────────────────────
 var _fleetCache = {};  // keyed by airline IATA code
@@ -18036,6 +18065,7 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         _cachedAt: Date.now(),
         _source: 'loadFlight',
         reg: (ac.reg || ac.registration || '').trim(),
+        modeS: (ac.modeS || ac.hexIcao || '').trim().toUpperCase(),
         aircraft: formatAircraft(ac.model || ac.typeName || ''),
         aircraftCode: (ac.iataCodeShort || ac.iataCode || '').trim(),
         aircraftModel: ac.model || ac.typeName || '',
@@ -18048,6 +18078,22 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         leg: primaryLeg,
         status: fidsAdbStatusKey(primaryLeg.status)
       };
+
+      // A Mode-S address is also a current aircraft identifier. If the flight
+      // payload has it but omits reg, resolve the active registry record before
+      // inbound linking; this uses the API's documented Icao24 search option.
+      if (!result.reg && result.modeS) {
+        try {
+          var _modeIdent = await fidsAircraftByModeS(result.modeS);
+          if (_modeIdent && _modeIdent.reg) {
+            result.reg = _modeIdent.reg;
+            result._regSource = 'icao24';
+            if (!result.aircraft && _modeIdent.aircraft) result.aircraft = formatAircraft(_modeIdent.aircraft);
+            if (!result.aircraftCode && _modeIdent.aircraftCode) result.aircraftCode = _modeIdent.aircraftCode;
+            if (!result.aircraftModel && _modeIdent.aircraft) result.aircraftModel = _modeIdent.aircraft;
+          }
+        } catch (e) {}
+      }
 
       // Step 3: Resolve marketing vs operating carrier.
       // leg.airline = marketing carrier. leg.departure.airline = operating carrier.
