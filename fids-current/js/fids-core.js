@@ -9421,6 +9421,51 @@ function gateAutofit(root) {
       }
     });
   });
+
+  // ── MEASURE THE BOX, THEN ASSIGN THE TEXT (Nick's spec, verbatim) ──────
+  // Each left-rail shelf value takes the LARGEST size that fits its
+  // measured box — the text column's width and the row's free height.
+  // Grow-to-fit from the measurement, not shrink-from-a-CSS-guess, so a
+  // short value (a time) genuinely fills its shelf. Runs last and is
+  // deterministic from geometry, so the 5s heartbeat converges instead of
+  // dancing. Status value excluded (two stacked bilingual lines).
+  try {
+    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-value').forEach(function (el) {
+      if (/v2-fi-status-val/.test(el.className)) return;
+      var row = el.closest('.v2-fi-row'); if (!row) return;
+      var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
+      var title = row.querySelector('.v2-fi-title');
+      var availH = row.clientHeight - (title ? title.offsetHeight : 0) - 6;
+      var availW = tc.clientWidth;
+      if (availH < 14 || availW < 40) return;
+      var col = el.closest('.gad-aircraft-col');
+      var colR = Infinity;
+      if (col) {
+        var ccs2 = window.getComputedStyle(col);
+        colR = col.getBoundingClientRect().right - (parseFloat(ccs2.paddingRight) || 0);
+      }
+      function fits(px) {
+        el.style.setProperty('font-size', px + 'px', 'important');
+        // STRICT: the browser ellipsizes on even 1px of overflow ('Toron…'
+        // at scrollWidth 262 vs box 261) — no tolerances here.
+        if (el.scrollWidth > el.clientWidth) return false;
+        if (el.scrollWidth > availW) return false;
+        if (el.offsetHeight > availH) return false;
+        if (el.getBoundingClientRect().right > colR) return false;
+        return true;
+      }
+      var lo = 14, hi = Math.min(140, Math.floor(availH));
+      if (!fits(hi)) {
+        while (lo < hi) {
+          var mid = Math.ceil((lo + hi) / 2);
+          if (fits(mid)) lo = mid; else hi = mid - 1;
+        }
+      } else { lo = hi; }
+      // one px of slack under the found maximum — sub-pixel layout can round
+      // against us between heartbeats
+      fits(Math.max(14, lo - 1));
+    });
+  } catch (e) {}
 }
 
 function renderDedicatedScreen() {
@@ -14954,7 +14999,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22354';
+var FIDS_BUILD_TAG = 'v22355';
 (function(){
   try {
     function _addTag(){
