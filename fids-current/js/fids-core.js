@@ -2246,10 +2246,9 @@ function getDedicatedRenderKey() {
 // The inbound's real speed/altitude only refresh every few minutes. Nick wants
 // them to read live between fixes. This holds a modeled speed (kt) / altitude
 // (ft) that drifts by flight phase — steady w/ a gentle shimmer at cruise, and
-// gliding down toward touchdown on descent — eases toward each new REAL reading,
-// and writes the numbers into the on-screen telemetry spans in place (no full
-// re-render). The REAL feed is still the source of truth: on every new fix the
-// model re-anchors to it, so the displayed numbers can never wander far.
+// continuing only the bounded rate measured between real fixes. A new REAL reading
+// snaps the digits to that anchor immediately and writes them in place (no full
+// re-render). The REAL feed remains the source of truth.
 window._gateTelemAnim = window._gateTelemAnim || {
   spd: null, alt: null,            // displayed (modeled) values
   realSpd: null, realAlt: null,    // last real anchor
@@ -2276,8 +2275,11 @@ function _gateTelemSetReal(spdKt, altFt) {
   // between pings (Nick's glide rule, applied to the digits).
   if (T.realTs) { T.prevSpd = T.realSpd; T.prevAlt = T.realAlt; T.prevTs = T.realTs; }
   T.realSpd = sp; T.realAlt = al; T.realTs = now;
-  if (T.spd === null && sp !== null) T.spd = sp;
-  if (T.alt === null && al !== null) T.alt = al;
+  // A fresh provider reading is the new physical truth: show it immediately.
+  // Do not spend the next minute easing toward a value that is already known.
+  if (sp !== null) T.spd = sp;
+  if (al !== null) T.alt = al;
+  _writeGateTelemDom();
   var inb = window._gateInbound;
   var arrTs = inb && (inb._revTs || inb._sortTs);
   T.realSecToArr = (arrTs && arrTs > now) ? (arrTs - now) / 1000 : null;
@@ -2298,7 +2300,7 @@ function _gateTelemModel() {
   // 'calculate approx, then adjust with the pings'). Between real fixes,
   // continue the RATE measured between the last two fixes, so a plane on
   // final keeps visibly descending instead of freezing at the last ping
-  // for 90 s (video: locked at 230 kph / 825 ft through the approach).
+  // for 60 s (video: locked at 230 kph / 825 ft through the approach).
   // This is measured motion carried forward, not an invented profile:
   // clamped to sane rates, trusted max 120 s, re-anchored by every ping.
   try {
@@ -2346,19 +2348,17 @@ function _writeGateTelemDom() {
   }
 }
 
-// One animation step (called every second from updateDedicatedTimeOnly). Eases
-// the displayed values toward the modeled target so new real readings glide in.
+// One telemetry step (called every second from updateDedicatedTimeOnly).
+// It evaluates the bounded measured trend directly.
 function _animateGateTelem() {
   var T = window._gateTelemAnim;
   var m = _gateTelemModel();
   if (!m) return;
-  // SLOW ease (Nick: 'nothing is moving'): 0.18/s converged in ~15 s and then
-  // sat frozen for the rest of the 90 s window. 0.027/s spreads the approach
-  // across the whole inter-fix window, so the digits keep visibly ticking from
-  // the previous REAL fix to the new one — bridging two observations, never
-  // inventing a profile.
-  if (m.spd !== null && m.spd !== undefined) T.spd = (T.spd === null) ? m.spd : T.spd + (m.spd - T.spd) * 0.027;
-  if (m.alt !== null && m.alt !== undefined) T.alt = (T.alt === null) ? m.alt : T.alt + (m.alt - T.alt) * 0.027;
+  // The model is a bounded continuation of the rate measured between the last
+  // two real fixes. Recalculate it directly each second; a new real fix snaps
+  // the anchor back to reality in _gateTelemSetReal().
+  if (m.spd !== null && m.spd !== undefined) T.spd = m.spd;
+  if (m.alt !== null && m.alt !== undefined) T.alt = m.alt;
   _writeGateTelemDom();
 }
 
@@ -2368,7 +2368,7 @@ function _animateGateTelem() {
 // updates the inbound object's live speed/altitude and re-anchors the telemetry
 // animator. It deliberately does NOT touch window._gateInboundLivePos or the
 // map — the map stays exactly as it is, so nothing can get jumpy. loadFlight
-// caches 60s, so a 90s cadence always gets a fresh reading.
+// caches 45s, so a 60s cadence always gets a fresh reading.
 var _gateNumPollBusy = false;
 // ── ADB ML FLIGHT TIME (Nick, from the ADB spec: /airports/.../distance-time,
 // flightTimeModel=ML01). Replaces the crude "great-circle ÷ 780 km/h + 25 min"
@@ -2376,46 +2376,81 @@ var _gateNumPollBusy = false;
 // 14 days per airport pair (Tier 2 → one call per pair per kiosk fortnight),
 // through the already-deployed worker's generic /api/adb proxy.
 var _mlftMem = {};
-function fidsMlFlightTimeMins(o, d) {
+function _fidsDurationMins(raw) {
+  if (raw == null) return 0;
+  var s = String(raw).trim();
+  // AeroDataBox date-span is normally HH:MM:SS and may include a day prefix
+  // (D.HH:MM:SS). Accept ISO-8601 duration too so a provider serialization
+  // change cannot silently erase the estimate.
+  var m = s.match(/^(?:(\d+)\.)?(\d{1,2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/);
+  if (m) return (parseInt(m[1] || '0', 10) * 1440)
+    + (parseInt(m[2], 10) * 60) + parseInt(m[3], 10)
+    + ((parseFloat(m[4] || '0') >= 30) ? 1 : 0);
+  m = s.match(/^P(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i);
+  if (m) return Math.round((parseFloat(m[1] || '0') * 1440)
+    + (parseFloat(m[2] || '0') * 60) + parseFloat(m[3] || '0')
+    + (parseFloat(m[4] || '0') / 60));
+  return 0;
+}
+function _fidsMlAircraftName(v) {
+  // Aircraft names are sent as a query parameter, never rendered as HTML.
+  // Still use a strict allow-list so provider text cannot carry markup or
+  // control characters into URLs, storage keys, logs, or future consumers.
+  var s = String(v || '').replace(/[^A-Za-z0-9 .(),+\/_-]+/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+  return s.slice(0, 100);
+}
+function fidsMlFlightTimeMins(o, d, aircraftName) {
   try {
     o = String(o || '').toUpperCase(); d = String(d || '').toUpperCase();
     if (!/^[A-Z]{3}$/.test(o) || !/^[A-Z]{3}$/.test(d) || o === d) return null;
-    var k = o + '_' + d;
-    if (_mlftMem[k] != null) return _mlftMem[k] || null;   // 0 = known-failed
+    var ac = _fidsMlAircraftName(aircraftName);
+    var acKey = ac ? ac.toUpperCase().replace(/[^A-Z0-9]+/g, '-').slice(0, 36) : 'ANY';
+    var k = o + '_' + d + '_' + acKey;
+    if (_mlftMem[k] != null) return _mlftMem[k] || null;
     var raw = null;
     try { raw = localStorage.getItem('fids_mlft_' + k); } catch (e) {}
     if (raw) {
       try {
         var obj = JSON.parse(raw);
-        if (obj && obj.mins > 0 && (Date.now() - obj.ts) < 14 * 86400000) { _mlftMem[k] = obj.mins; return obj.mins; }
+        if (obj && obj.mins > 0 && (Date.now() - obj.ts) < 14 * 86400000) {
+          _mlftMem[k] = obj.mins; return obj.mins;
+        }
       } catch (e) {}
     }
-    _fidsMlFetch(o, d, k);
+    _fidsMlFetch(o, d, k, ac);
     return null;
   } catch (e) { return null; }
 }
-function _fidsMlFetch(o, d, k) {
+function _fidsMlFetch(o, d, k, aircraftName) {
   if (window['_mlftF_' + k]) return;
   window['_mlftF_' + k] = true;
-  // /proxy/ passthrough — NOT /api/adb/, which sits inside the worker's
-  // JWT-authenticated block and 401s every unauthenticated board call
-  // (silently: ML times fell back to the km-guess, plans never loaded).
-  var url = 'https://fids-proxy.n-leblanc1984.workers.dev/proxy/airports/iata/' + o + '/distance-time/' + d + '?flightTimeModel=ML01';
+  // ML01 automatically falls back to Standard when route/type history is too
+  // thin. Passing aircraftName lets ADB use the confirmed airframe when known.
+  var url = 'https://fids-proxy.n-leblanc1984.workers.dev/proxy/airports/iata/' + o
+    + '/distance-time/' + d + '?flightTimeModel=ML01'
+    + (aircraftName ? '&aircraftName=' + encodeURIComponent(aircraftName) : '');
   adbPacedFetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-    var t = j && j.approxFlightTime;                       // "HH:MM:SS" date-span
-    var m = t ? String(t).match(/(\d+):(\d{2})/) : null;
-    var mins = m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : 0;
+    var mins = _fidsDurationMins(j && j.approxFlightTime);
     _mlftMem[k] = mins > 0 ? mins : 0;
     if (mins > 0) {
-      try { localStorage.setItem('fids_mlft_' + k, JSON.stringify({ mins: mins, ts: Date.now() })); } catch (e) {}
-      try { console.log('[MLFT] ' + o + '→' + d + ': ' + mins + ' min (ML01)'); } catch (e) {}
+      try {
+        localStorage.setItem('fids_mlft_' + k, JSON.stringify({
+          mins: mins, ts: Date.now(), aircraftName: aircraftName || ''
+        }));
+      } catch (e) {}
+      try {
+        console.log('[MLFT] ' + o + '→' + d + ': ' + mins + ' min (ML01'
+          + (aircraftName ? ', ' + aircraftName : '') + ')');
+      } catch (e) {}
+      try { if (typeof requestGateRebuild === 'function') requestGateRebuild(); } catch (e) {}
     }
   }).catch(function () { _mlftMem[k] = 0; });
 }
 
 // ── ADB FLIGHT PLAN ACCESS (Nick: 'FlightPlan access'). The ATC-FILED plan
 // (?withFlightPlan=true): route string + filed/assigned altitude & airspeed.
-// Fetched ONCE per flight (3 h cache) — NEVER on the 90 s poll, since a found
+// Fetched ONCE per flight (3 h cache) — NEVER on the 60 s poll, since a found
 // plan bills 2x per the spec. Filed numbers surface only where no live
 // telemetry exists yet, clearly labelled as filed — sourced data, not
 // fabrication.
@@ -2477,7 +2512,8 @@ async function _gateNumbersPoll() {
     iata = String(iata || window._gateIata || '').toUpperCase();
     if (!iata) return;
     _gateNumPollBusy = true;
-    var today = new Date().toISOString().slice(0, 10);
+    var _pollTz = ((typeof AP !== 'undefined' && AP[inb._locIata || iata]) ? AP[inb._locIata || iata].tz : '') || 'UTC';
+    var today = fidsLocalDateKey(inb._sortTs || Date.now(), _pollTz);
     // Filed flight plan — cached one-shot (see fidsFlightPlan); stashes the
     // filed altitude/airspeed for the labelled pre-live display.
     try {
@@ -2500,7 +2536,7 @@ async function _gateNumbersPoll() {
     // numbers, so the mini map could sit on the full-route view with no
     // plane). window._gateInboundLivePos is the map tick's EXISTING input:
     // a fresh fix here makes the camera follow the plane and re-seeds the
-    // glide every 90 s.
+    // glide every 60 s.
     var _lpLat = (typeof _lp.lat === 'number') ? _lp.lat : null;
     var _lpLng = (typeof _lp.lng === 'number') ? _lp.lng : null;
     if (_lpLat !== null && _lpLng !== null) {
@@ -2511,9 +2547,9 @@ async function _gateNumbersPoll() {
     try { console.log('[NUMPOLL]', flt, '→ spd', liveSpd, 'alt', liveAlt, 'pos', _lpLat, _lpLng); } catch (e) {}
   } catch (e) { _gateNumPollBusy = false; }
 }
-try { setInterval(_gateNumbersPoll, 90000); setTimeout(_gateNumbersPoll, 5000); } catch (e) {}
+try { setInterval(_gateNumbersPoll, 60000); setTimeout(_gateNumbersPoll, 2000); } catch (e) {}
 // MAP TICK — re-evaluates the gate map every 10 s against the latest state
-// (late-identified inbound, fresh 90 s fix). The posKey/progKey guards inside
+// (late-identified inbound, fresh 60 s fix). The posKey/progKey guards inside
 // tryInitMap make unchanged states a no-op, so this can't cause jumpiness;
 // it CAN swing a wrong first view (Nick's video: EWR outbound pins while the
 // panel tracked the DEN inbound) to the right one within 10 s.
@@ -4295,20 +4331,16 @@ function getAirlineAccent(code) {
     || '#0033A1';
 }
 
-// ── AIR CANADA EXPRESS CODE-PAIRING MATRIX (enforced) ────────────────────
-// Marketing AC flight-number ranges → operating carrier + scheduled aircraft.
-// The pairing is contractual, so it trumps whatever operator/equipment the
-// feed pre-tagged for these ranges:
-//   AC7000–7299 → PB PAL Airlines    DH4 De Havilland Dash 8-400
-//   AC7950–8249 → QK Jazz Aviation   DH4 De Havilland Dash 8-400
-//   AC8250–8549 → QK Jazz Aviation   E75 Embraer E175
-//   AC8550–8999 → QK Jazz Aviation   CR9 Mitsubishi CRJ-900
+// ── AIR CANADA EXPRESS OPERATOR MATRIX ───────────────────────────────────
+// Marketing AC flight-number ranges may identify the operating partner for
+// branding/boarding rules. They NEVER identify equipment: AC7992/AC7995 are a
+// concrete counterexample to the old range-based DH4 assumption. Aircraft
+// comes only from today's registration/live/scheduled truth chain.
 function acExpressMatrix(fn) {
   if (isNaN(fn)) return null;
-  if (fn >= 7000 && fn <= 7299) return { op:'PB', opName:'PAL Airlines',  eq:'DH4', eqTest:/DH8|DH4|DHC|DASH|Q400/ };
-  if (fn >= 7950 && fn <= 8249) return { op:'QK', opName:'Jazz Aviation', eq:'DH4', eqTest:/DH8|DH4|DHC|DASH|Q400/ };
-  if (fn >= 8250 && fn <= 8549) return { op:'QK', opName:'Jazz Aviation', eq:'E75', eqTest:/\bE75\b|E175|\bE7W\b/ };
-  if (fn >= 8550 && fn <= 8999) return { op:'QK', opName:'Jazz Aviation', eq:'CR9', eqTest:/\bCR9\b|CRJ[- ]?9/ };
+  if (fn >= 7000 && fn <= 7299) return { op:'PB', opName:'PAL Airlines' };
+  if (fn >= 7950 && fn <= 8249) return { op:'QK', opName:'Jazz Aviation' };
+  if (fn >= 8250 && fn <= 8999) return { op:'QK', opName:'Jazz Aviation' };
   return null;
 }
 
@@ -5803,13 +5835,36 @@ function _buildV2AircraftCol(ctx, vars) {
 
   var _hasInb = !!(inboundFlight && _inbOperating);
   var _anyInb = !!inboundFlight;
-  var _outEquipCd = equipRaw || '';
-  var _outEquipNm = equipName || '';
-  var _inbEquipCd = _anyInb ? (inboundFlight._aircraftCode || '') : '';
-  var _inbEquipNm = _anyInb ? (inboundFlight._aircraft || (inboundFlight._aircraftCode ? formatAircraft(inboundFlight._aircraftCode) : '')) : '';
-  var _equipCd = _outEquipCd || _inbEquipCd;
-  var _equipNm = _outEquipNm || _inbEquipNm;
-  var _reg = currentFlight._reg || (_anyInb ? (inboundFlight._reg || '') : '');
+  // Aircraft truth is source-ordered, never flight-number guessed:
+  // confirmed registration > current inbound/live equipment > today's schedule.
+  // History observations are not an assignment and cannot choose a type/image.
+  var _outCdHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftCodeSource) || ''));
+  var _outNmHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftSource) || ''));
+  var _inbCdHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftCodeSource || ''));
+  var _inbNmHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftSource || ''));
+  var _outEquipCd = _outCdHistorical ? '' : (equipRaw || '');
+  var _outEquipNm = _outNmHistorical ? '' : (equipName || '');
+  var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (inboundFlight._aircraftCode || '') : '';
+  var _inbEquipNm = (_anyInb && !_inbNmHistorical)
+    ? (inboundFlight._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
+  var _equipCd = _inbEquipCd || _outEquipCd;
+  var _equipNm = _inbEquipNm || _outEquipNm;
+  if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
+
+  var _currentRegSource = String((currentFlight && currentFlight._regSource) || '');
+  var _inboundRegSource = String((_anyInb && inboundFlight && inboundFlight._regSource) || '');
+  var _currentReg = /^history/i.test(_currentRegSource) ? '' : ((currentFlight && currentFlight._reg) || '');
+  var _inboundReg = /^history/i.test(_inboundRegSource) ? '' : ((_anyInb && inboundFlight && inboundFlight._reg) || '');
+  var _reg = _currentReg || _inboundReg;
+  try {
+    var _confirmedType = (_reg && typeof _regTrueType === 'function') ? _regTrueType(_reg) : '';
+    if (_confirmedType) {
+      _equipNm = _confirmedType;
+      var _confirmedCode = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_confirmedType) : '';
+      if (_confirmedCode) _equipCd = _confirmedCode;
+    }
+    if (typeof window !== 'undefined' && _reg) window._gateAcRegShown = _reg;
+  } catch (e) {}
 
   // Operating carrier. Keep marketing airline and true operator separate.
   // Same-carrier flights get a clean airline brand block; different operators
@@ -6391,7 +6446,10 @@ function _buildV2MapCol(ctx, vars) {
       try {
         var _lwArr = (_ib._revTs && _ib._revTs > _ib._sortTs) ? _ib._revTs : (_ib._sortTs || 0);
         if (_lwArr) {
-          var _lwDurMl = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(_ib._locIata, vars.iata) : null;
+          var _lwAcType = ((_ib._reg && typeof _regTrueType === 'function') ? _regTrueType(_ib._reg) : '')
+            || _ib._aircraft || _ib._aircraftCode || '';
+          var _lwDurMl = (typeof fidsMlFlightTimeMins === 'function')
+            ? fidsMlFlightTimeMins(_ib._locIata, vars.iata, _lwAcType) : null;
           var _lwSpan = ((_ib._durationMins || _lwDurMl || 240) + 25) * 60000;
           var _lwNow = Date.now();
           if (_lwNow < _lwArr - _lwSpan || _lwNow > _lwArr + 8 * 60000) {
@@ -6631,11 +6689,13 @@ function _buildV2MapCol(ctx, vars) {
       var _ibArrSchedStr = _ibArrTs ? _ibFmtT(_ibArrTs) : '';
       var _ibArrRevStr = (_ibRevTs && Math.abs(_ibRevTs - _ibArrTs) >= 60000) ? _ibFmtT(_ibRevTs) : '';
       var _ibArrRowHtml = '';
+      var _ibArrRevised = false;
       if (_ibArrSchedStr) {
         var _ibArrLblEn = (_stKey === 'arrived') ? 'Arrived' : 'Arrival';
         var _ibArrLblFr = (_stKey === 'arrived') ? 'Arrivé' : 'Arrivée';
         var _ibArrVal;
         if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
+          _ibArrRevised = true;
           // Revised time + a small 'revised | révisé' tag, ALL in the status
           // colour (green when earlier — Nick: 'revised beside it and all
           // green'). Mirrors the reg row's 'expected | prévu' treatment.
@@ -6655,7 +6715,7 @@ function _buildV2MapCol(ctx, vars) {
         _ibArrRowHtml =
             '<div class="v2-rc-fi-trow">'
           +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
-          +   '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>'
+          +   '<div class="v2-rc-fi-tval' + (_ibArrRevised ? ' v2-rc-fi-tval-revised' : '') + '">' + _ibArrVal + '</div>'
           + '</div>';
       }
       // Shelf-level t4 marker too: the shelf is flex-locked to 1/6 of the
@@ -6845,32 +6905,45 @@ function _buildV2MapCol(ctx, vars) {
   try {
     var _cf = vars.currentFlight || {};
     var _ib2 = vars.inboundFlight || null;
-    var _outEquipCd = vars.equipRaw || '';
-    var _outEquipNm = vars.equipName || '';
     var _anyInb = !!_ib2;
-    var _inbEquipCd = _anyInb ? (_ib2._aircraftCode || '') : '';
-    var _inbEquipNm = _anyInb ? (_ib2._aircraft || (_ib2._aircraftCode ? formatAircraft(_ib2._aircraftCode) : '')) : '';
-    var _equipCd = _outEquipCd || _inbEquipCd;
-    var _equipNm = _outEquipNm || _inbEquipNm;
+    // Aircraft truth priority:
+    //   1) a confirmed registration-backed registry type (applied below);
+    //   2) non-history inbound/live equipment for the physical turn;
+    //   3) non-history scheduled outbound equipment as the minimum fallback.
+    var _outCdHistorical = /^history/i.test(String((_cf && _cf._aircraftCodeSource) || ''));
+    var _outNmHistorical = /^history/i.test(String((_cf && _cf._aircraftSource) || ''));
+    var _inbCdHistorical = _anyInb && /^history/i.test(String((_ib2 && _ib2._aircraftCodeSource) || ''));
+    var _inbNmHistorical = _anyInb && /^history/i.test(String((_ib2 && _ib2._aircraftSource) || ''));
+    var _outEquipCd = _outCdHistorical ? '' : (vars.equipRaw || '');
+    var _outEquipNm = _outNmHistorical ? '' : (vars.equipName || '');
+    var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (_ib2._aircraftCode || '') : '';
+    var _inbEquipNm = (_anyInb && !_inbNmHistorical)
+      ? (_ib2._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
+    var _equipCd = _inbEquipCd || _outEquipCd;
+    var _equipNm = _inbEquipNm || _outEquipNm;
+    if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
+
+    // History tails are observations from another day, not a current assignment.
+    var _currentRegSource = String((_cf && _cf._regSource) || '');
+    var _inboundRegSource = String((_anyInb && _ib2 && _ib2._regSource) || '');
+    var _currentReg = /^history/i.test(_currentRegSource) ? '' : ((_cf && _cf._reg) || '');
+    var _inboundReg = /^history/i.test(_inboundRegSource) ? '' : ((_anyInb && _ib2 && _ib2._reg) || '');
     // v218.99.32 — Registration folded into aircraft block (two-column)
-    var _acReg = (vars.currentFlight && vars.currentFlight._reg) || (_anyInb && _ib2 && _ib2._reg) || '';
-    // STICKY expected tail (Nick: 'that aircraft loves to change wow'): the
-    // history-based 'expected' reg flaps between candidate tails poll to
-    // poll, dragging the type + photo with it. Once a tail is shown for this
-    // flight, HOLD it — only a CONFIRMED (non-history) reg or a new flight
-    // may replace it; a blank poll never blanks the shelf.
+    var _acReg = _currentReg || _inboundReg;
+    // Keep a confirmed tail through a thin provider poll, but never preserve a
+    // history-derived guess. Old sticky objects did not carry this provenance,
+    // so they are deliberately ignored.
     try {
-      var _regSrcSt = String((vars.currentFlight && vars.currentFlight._regSource) || '');
-      var _fltKeySt = String((vars.currentFlight && (vars.currentFlight.flight || '')) || '') + '|' + String(vars.iata || '');
+      var _fltKeySt = String((_cf && _cf.flight) || '') + '|' + String(vars.iata || '');
       var _stickSt = window._gateRegSticky;
-      var _sameKeySt = _stickSt && _stickSt.k === _fltKeySt && (Date.now() - _stickSt.ts) < 6 * 3600000;
-      if (_acReg && !/^history/.test(_regSrcSt)) {
-        window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now() };
-      } else if (_acReg) {
-        if (_sameKeySt && _stickSt.reg) _acReg = _stickSt.reg;
-        else window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now() };
+      var _sameKeySt = _stickSt && _stickSt.k === _fltKeySt
+        && _stickSt.confirmed === true && (Date.now() - _stickSt.ts) < 6 * 3600000;
+      if (_acReg) {
+        window._gateRegSticky = { k: _fltKeySt, reg: _acReg, ts: Date.now(), confirmed: true };
       } else if (_sameKeySt && _stickSt.reg) {
         _acReg = _stickSt.reg;
+      } else if (_stickSt && _stickSt.k === _fltKeySt && _stickSt.confirmed !== true) {
+        window._gateRegSticky = null;
       }
     } catch (e) {}
 
@@ -6983,19 +7056,9 @@ function _buildV2MapCol(ctx, vars) {
         _equipNm = '';
       }
     }
-    // Express matrix fills the SCHEDULED type in only when the feed has no
-    // credible regional equipment. When the feed reports a real regional
-    // airframe (E175 on a nominal Dash range, etc.) the REAL aircraft wins —
-    // live telemetry must never contradict the label (Nick: a 'Q400' showing
-    // 31,400 ft was the matrix overwriting an actual E175).
-    if (_mxGate) {
-      var _mxEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
-      var _mxRealRegional = /CRJ|\bCR[0-9JK]\b|DASH|DH[0-9C]|Q400|E1[79][05]|\bE7[05W]\b|EMBRAER/.test(_mxEqUp);
-      if (!_mxRealRegional && !_mxGate.eqTest.test(_mxEqUp)) {
-        _equipCd = _mxGate.eq;
-        _equipNm = (typeof formatAircraft === 'function') ? formatAircraft(_mxGate.eq) : _mxGate.eq;
-      }
-    }
+    // The Express matrix may identify an operator, but it must never invent an
+    // aircraft type. With no registration/live/scheduled equipment, Pending is
+    // more accurate than a route-range guess (the former AC7995 DH4 error).
     // (The old 'Porter with no equipment → E195' pin is GONE: Porter flies
     // two types, so it was a guess — PD2382 to St-Hubert is a Dash 8 route
     // and the screen said E195 (Nick: 'wrong aircraft'). No data → Pending;
@@ -7574,16 +7637,7 @@ function uxgGateHtml(ctx) {
   // Inbound panel — only show when aircraft is still en-route or about to depart.
   // Once it has actually landed/arrived at this airport, the aircraft is at the
   // gate — no longer "incoming" — so the panel should disappear.
-  var _inbAlreadyArrived = inboundFlight && (
-    inboundFlight.status === 'landed' ||
-    inboundFlight.status === 'arrived'
-  );
-  // Additional check: if arrival time is in the past by more than 5 minutes,
-  // treat as arrived even if status hasn't updated yet
-  var _inbArrTs = (inboundFlight && (inboundFlight._revTs || inboundFlight._sortTs)) || null;
-  if (_inbArrTs && (Date.now() - _inbArrTs) > 5 * 60000) {
-    _inbAlreadyArrived = true;
-  }
+  var _inbAlreadyArrived = fidsInboundHasArrived(inboundFlight, Date.now());
   var _inbOperating = inboundFlight && !_inbAlreadyArrived && (
     inboundFlight.status === 'active' ||
     inboundFlight.status === 'en-route' ||
@@ -8779,20 +8833,36 @@ function uxgGateHtml(ctx) {
         // RIGHT COLUMN — Aircraft Arrival Data panels (~60%) + Flight Path map (~40%)
         +     (function() {
                 var _hasInb = !!(inboundFlight && _inbOperating);
-                // Equipment data — prefer outbound (the plane that's actually flying out),
-                // fall back to ANY known inbound (even arrived) since once it lands it
-                // becomes the outbound's aircraft. This is separate from _hasInb which
-                // controls the "incoming flight" panel visibility.
+                // Legacy layout uses the same truth order as V2:
+                // confirmed registration > inbound/live update > today's schedule.
                 var _airline = airlineCode;
-                var _outEquipCd = equipRaw || '';
-                var _outEquipNm = equipName || '';
                 var _anyInb = !!inboundFlight;  // any inbound we know about, arrived or not
-                var _inbEquipCd = _anyInb ? (inboundFlight._aircraftCode || '') : '';
-                var _inbEquipNm = _anyInb ? (inboundFlight._aircraft || (inboundFlight._aircraftCode ? formatAircraft(inboundFlight._aircraftCode) : '')) : '';
-                var _equipCd = _outEquipCd || _inbEquipCd;
-                var _equipNm = _outEquipNm || _inbEquipNm;
-                // Registration: prefer outbound's reg; fall back to any inbound reg
-                var _reg = currentFlight._reg || (_anyInb ? (inboundFlight._reg || '') : '');
+                var _outCdHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftCodeSource) || ''));
+                var _outNmHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftSource) || ''));
+                var _inbCdHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftCodeSource || ''));
+                var _inbNmHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftSource || ''));
+                var _outEquipCd = _outCdHistorical ? '' : (equipRaw || '');
+                var _outEquipNm = _outNmHistorical ? '' : (equipName || '');
+                var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (inboundFlight._aircraftCode || '') : '';
+                var _inbEquipNm = (_anyInb && !_inbNmHistorical)
+                  ? (inboundFlight._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
+                var _equipCd = _inbEquipCd || _outEquipCd;
+                var _equipNm = _inbEquipNm || _outEquipNm;
+                if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
+                var _curRegSource = String((currentFlight && currentFlight._regSource) || '');
+                var _inbRegSource = String((_anyInb && inboundFlight && inboundFlight._regSource) || '');
+                var _curReg = /^history/i.test(_curRegSource) ? '' : ((currentFlight && currentFlight._reg) || '');
+                var _inbReg = /^history/i.test(_inbRegSource) ? '' : ((_anyInb && inboundFlight && inboundFlight._reg) || '');
+                var _reg = _curReg || _inbReg;
+                try {
+                  var _legacyRegType = (_reg && typeof _regTrueType === 'function') ? _regTrueType(_reg) : '';
+                  if (_legacyRegType) {
+                    _equipNm = _legacyRegType;
+                    var _legacyRegCode = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_legacyRegType) : '';
+                    if (_legacyRegCode) _equipCd = _legacyRegCode;
+                  }
+                  if (typeof window !== 'undefined' && _reg) window._gateAcRegShown = _reg;
+                } catch (e) {}
 
                 var _fromCity = '', _fromIata = '';
                 var _schedDepStr = '--', _schedArrStr = '--';
@@ -9551,7 +9621,10 @@ const gView = document.getElementById('gateView');
         let flightMins = estimateFlightDuration(iata, locIata);
         // ADB ML01 realistic route time beats the distance guess when cached.
         try {
-          var _mlArrMins = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(iata, locIata) : null;
+          var _mlArrType = ((currentFlight._reg && typeof _regTrueType === 'function') ? _regTrueType(currentFlight._reg) : '')
+            || currentFlight._aircraft || currentFlight._aircraftCode || '';
+          var _mlArrMins = (typeof fidsMlFlightTimeMins === 'function')
+            ? fidsMlFlightTimeMins(iata, locIata, _mlArrType) : null;
           if (_mlArrMins) flightMins = _mlArrMins;
         } catch (e) {}
         durationStr = formatDuration(flightMins);
@@ -9638,16 +9711,16 @@ const gView = document.getElementById('gateView');
       // Ownership check here too — the panel is BUILT from this value before
       // the cleanup section below runs, so an un-owned stale inbound painted
       // one full render (harness case: stale CRJ model on the fresh gate).
-      const _regBasedInbound = (window._gateInbound
-        && window._gateInbound._inboundSource === 'reg-lookup'
+      const _verifiedInbound = (window._gateInbound
+        && /^(reg-lookup|flight-lookup)$/.test(String(window._gateInbound._inboundSource || ''))
         && window._gateInbound._forOutbound === currentFlight.flight) ? window._gateInbound : null;
-      const inboundFlight = _regBasedInbound || _gateMatchFallback;
+      const inboundFlight = _verifiedInbound || _gateMatchFallback;
 
       if (inboundFlight) {
         console.log('[FIDS] Inbound for', currentFlight.flight, ':',
                     inboundFlight.flight,
                     'from', inboundFlight._locIata || inboundFlight.origin || '?',
-                    'source:', _regBasedInbound ? 'reg-lookup' : 'gate-fallback');
+                    'source:', _verifiedInbound ? 'reg-lookup' : 'gate-fallback');
 
         // ── INBOUND LIVE POSITION FETCH ──
         // When inbound was found via gate-fallback (not reg-lookup), the
@@ -9658,7 +9731,7 @@ const gView = document.getElementById('gateView');
         // SAFETY: scoped tightly to the airport that triggered the fetch.
         // If the user switches displays mid-fetch, the result is dropped
         // so live data from one airport never leaks into another's render.
-        if (!_regBasedInbound && inboundFlight.flight) {
+        if (!_verifiedInbound && inboundFlight.flight) {
           var _capturedIata = iata;
           var _capturedOutbound = currentFlight.flight;
           var _capturedInbound = inboundFlight.flight;
@@ -9668,39 +9741,60 @@ const gView = document.getElementById('gateView');
           if (_now - _last > 60000) {
             window[_inbKey] = _now;
             try {
-              var _inbToday = new Date().toISOString().slice(0,10);
               var _inbAirport = inboundFlight._locIata || _capturedIata;
+              var _inbTz = ((typeof AP !== 'undefined' && AP[_inbAirport]) ? AP[_inbAirport].tz : '') || tz || 'UTC';
+              var _inbToday = fidsLocalDateKey(inboundFlight._sortTs || Date.now(), _inbTz);
               loadFlight(_capturedInbound, _inbToday, _inbAirport).then(async function(inbData){
                 if (!inbData) return;
-                // Verify we still belong to the same view that requested this.
-                // If user switched airports or the gate now shows a different
-                // outbound, drop the result silently.
                 var _curIata = '';
                 try { _curIata = (document.getElementById('apSel') || {}).value || ''; } catch(e) {}
                 if (_curIata && _curIata !== _capturedIata) return;
-                var _stillSameOutbound = (window._gateInbound && window._gateInboundOutboundFlight === _capturedOutbound);
-                // Persist outbound link for the next render's verification
+                var _curOutbound = window._gateCurrentFlight && window._gateCurrentFlight.flight;
+                if (_curOutbound && _curOutbound !== _capturedOutbound) return;
+
+                var _regSrc = String(inbData._regSource || '');
+                var _acSrc = String(inbData._aircraftSource || '');
+                var _cdSrc = String(inbData._aircraftCodeSource || '');
+                var _todayReg = /^history/i.test(_regSrc) ? '' : (inbData.reg || '');
+                var _todayAc = /^history/i.test(_acSrc) ? '' : (inbData.aircraft || '');
+                var _todayCd = /^history/i.test(_cdSrc) ? '' : (inbData.aircraftCode || '');
+                var _directInbound = Object.assign({}, inboundFlight, {
+                  _reg: _todayReg || inboundFlight._reg || '',
+                  _regSource: _todayReg ? 'today' : (inboundFlight._regSource || ''),
+                  _aircraft: _todayAc || inboundFlight._aircraft || '',
+                  _aircraftCode: _todayCd || inboundFlight._aircraftCode || '',
+                  _inboundSource: 'flight-lookup',
+                  _forOutbound: _capturedOutbound
+                });
                 window._gateInboundOutboundFlight = _capturedOutbound;
+                window._gateInbound = _directInbound;
+                window._gateInboundDirect = _directInbound;
+
                 var _lp = inbData.livePosition || {};
-                // loadFlight stores { lat, lng, alt, speed } — read both key spellings.
                 var _spdRaw = (typeof _lp.speed === 'number') ? _lp.speed : null;
                 var _altRaw = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
-                // Coordinates too — WITHOUT these the gate map can't plot the
-                // plane (its livePos.lat/lng check fails) so it never traces,
-                // even though spd/alt show. Accept lat/lng, lon, or latitude/longitude.
                 var _latRaw = (typeof _lp.lat === 'number') ? _lp.lat : ((typeof _lp.latitude === 'number') ? _lp.latitude : null);
                 var _lngRaw = (typeof _lp.lng === 'number') ? _lp.lng : ((typeof _lp.lon === 'number') ? _lp.lon : ((typeof _lp.longitude === 'number') ? _lp.longitude : null));
                 var liveSpd = (_spdRaw !== null) ? Math.round(_spdRaw) : null;
                 var liveAlt = (_altRaw !== null) ? Math.round(_altRaw) : null;
-                // SPD/ALT come from AeroDataBox's livePosition only.
+                if (liveSpd !== null) _directInbound._liveSpd = liveSpd;
+                if (liveAlt !== null) _directInbound._liveAlt = liveAlt;
+                if (_latRaw !== null) _directInbound._liveLat = _latRaw;
+                if (_lngRaw !== null) _directInbound._liveLng = _lngRaw;
                 if (liveSpd !== null || liveAlt !== null || (_latRaw !== null && _lngRaw !== null)) {
-                  window._gateInboundLivePos = { lat: _latRaw, lng: _lngRaw, speed: liveSpd, altitude: liveAlt, _airport: _capturedIata, _inboundFlight: _capturedInbound };
-                  console.log('[FIDS] Inbound live position for', _capturedInbound, '@', _capturedIata, '→ spd:', liveSpd, 'alt:', liveAlt);
-                  window._lastGateKey = ''; // force re-render with telemetry
-                  if (typeof requestGateRebuild === 'function') requestGateRebuild();
+                  window._gateInboundLivePos = {
+                    lat: _latRaw, lng: _lngRaw, speed: liveSpd, altitude: liveAlt,
+                    _airport: _capturedIata, _inboundFlight: _capturedInbound
+                  };
+                  try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
                 }
+                console.log('[FIDS] Direct inbound resolved:', _capturedInbound,
+                  'reg:', _todayReg || '(pending)', 'type:', _todayAc || _todayCd || '(scheduled fallback)',
+                  'spd:', liveSpd, 'alt:', liveAlt);
+                window._lastGateKey = '';
+                if (typeof requestGateRebuild === 'function') requestGateRebuild();
               }).catch(function(e){
-                console.warn('[FIDS] inbound position fetch failed for', _capturedInbound, '@', _capturedIata, ':', e && e.message);
+                console.warn('[FIDS] inbound flight lookup failed for', _capturedInbound, '@', _inbAirport, ':', e && e.message);
               });
             } catch(e) { /* ignore */ }
           }
@@ -9959,12 +10053,13 @@ const gView = document.getElementById('gateView');
       // section is _gateKey-guarded, no later render re-assigned it. The map
       // then sat on the departure-route fallback (Porter gate 3 drew YHU
       // while the panel said 'From Ottawa (YOW)') with no plane glyph, and
-      // the 90 s numbers poll (which needs window._gateInbound.flight) never
+      // the 60 s numbers poll (which needs window._gateInbound.flight) never
       // ran — Nick: 'the route airplane there is none its not tracking it'.
       if (window._gateLastFlightKey !== currentFlight.flight) {
         window._gateAircraftSpecs = null;
         window._gateAircraftImg = null;
         window._gateInbound = null;
+        window._gateInboundDirect = null;
         window._gateInboundLivePos = null;
         // New flight → wipe the live-telemetry animator so the previous plane's
         // gliding speed/altitude don't bleed into the new one.
@@ -10164,7 +10259,10 @@ const gView = document.getElementById('gateView');
                   var _kmMini = 6371 * 2 * Math.atan2(Math.sqrt(_hv), Math.sqrt(1 - _hv));
                   var _durMini = Math.max(3600000, (_kmMini / 13 + 25) * 60000);   // ~780 km/h + 25 min
                   // ADB ML01 realistic route time beats the guess when cached.
-                  var _mlMini = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(inb._locIata, apIata) : null;
+                  var _mlMiniType = ((inb._reg && typeof _regTrueType === 'function') ? _regTrueType(inb._reg) : '')
+                    || inb._aircraft || inb._aircraftCode || '';
+                  var _mlMini = (typeof fidsMlFlightTimeMins === 'function')
+                    ? fidsMlFlightTimeMins(inb._locIata, apIata, _mlMiniType) : null;
                   if (_mlMini) _durMini = _mlMini * 60000;
                   var _pMini = (Date.now() - (_arrTMini - _durMini)) / _durMini;
                   if (_pMini >= 0.02 && _pMini <= 0.98) _estProg = _pMini;
@@ -10208,7 +10306,7 @@ const gView = document.getElementById('gateView');
       // re-evaluated it until a full re-render). Expose this render's
       // tryInitMap; a global 10 s interval re-runs it. The posKey/progKey
       // guards inside make unchanged states a no-op — no jumpiness — while a
-      // fresh fix (the 90 s poll now feeds positions) or a late-arriving
+      // fresh fix (the 60 s poll now feeds positions) or a late-arriving
       // inbound swings the map to the right view within 10 s.
       window._gateMapRetry = tryInitMap;
       scheduleGateControlsAutoHide();
@@ -10251,7 +10349,7 @@ const gView = document.getElementById('gateView');
       if (currentFlight.flight && !currentFlight._gateEnriched) {
         currentFlight._gateEnriched = true;
         var _enrichIata = iata;
-        var _todayStr = new Date().toISOString().slice(0,10);
+        var _todayStr = fidsLocalDateKey(Date.now(), ((typeof AP !== 'undefined' && AP[_enrichIata]) ? AP[_enrichIata].tz : '') || tz || 'UTC');
 
         var _enrichFlight = currentFlight.flight;
         loadFlight(currentFlight.flight, _todayStr, _enrichIata).then(function(data) {
@@ -10292,7 +10390,7 @@ const gView = document.getElementById('gateView');
                 // rebuilt from the feed (bogus again) every refresh, so this
                 // backfill re-fires each time — flagging 'changed' every time
                 // forced a full gate rebuild per refresh, which wiped the
-                // stashed live speed/altitude until the next 90 s poll
+                // stashed live speed/altitude until the next 60 s poll
                 // (Nick: 'had data and no longer shows a speed an altitude').
                 var _bfKey = String(currentFlight.flight) + '|' + _todayStr + '|' + _legArrLocal;
                 if (window._gateArrBackfilled !== _bfKey) {
@@ -14856,7 +14954,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22350';
+var FIDS_BUILD_TAG = 'v22354';
 (function(){
   try {
     function _addTag(){
@@ -17345,9 +17443,75 @@ async function adbFetch(iata, direction) {
 }
 function adbTs(str) { if(!str)return null; return new Date(str.replace(' ','T')).getTime(); }
 function adbHHMM(str) { if(!str)return null; const m=str.match(/(\d{2}):(\d{2})/); return m?`${m[1]}:${m[2]}`:null; }
+function fidsLocalDateKey(ts, timeZone) {
+  try {
+    return new Date(ts || Date.now()).toLocaleDateString('en-CA', {
+      timeZone: timeZone || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit'
+    });
+  } catch (e) {
+    return new Date(ts || Date.now()).toISOString().slice(0, 10);
+  }
+}
+function fidsInboundHasArrived(inboundFlight, nowTs) {
+  if (!inboundFlight) return false;
+  var status = String(inboundFlight.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (status === 'arrived' || status === 'landed' || inboundFlight._actualArrTime) return true;
+  // A published airborne status outranks a stale scheduled/revised clock.
+  // AC7992 was still EnRoute with a 10:57 predicted arrival, but the old
+  // five-minute heuristic hid its map and aircraft after the earlier 10:25
+  // revised time. Only a neutral status may fall back to a clock inference.
+  if (/^(active|enroute|approaching|departed)$/.test(status)) return false;
+  var arrivalTs = inboundFlight._revTs || inboundFlight._sortTs || 0;
+  return !!arrivalTs && ((nowTs || Date.now()) - arrivalTs) > 30 * 60000;
+}
+function fidsAdbStatusKey(value) {
+  if (typeof value === 'number') {
+    return ['scheduled','scheduled','active','scheduled','boarding','gateclosed',
+      'departed','delayed','active','arrived','cancelled','diverted','cancelled'][value] || 'scheduled';
+  }
+  var k = String(value || '').replace(/[\s_-]+/g, '').toLowerCase();
+  var map = {
+    unknown:'scheduled', expected:'scheduled', enroute:'active',
+    checkin:'scheduled', boarding:'boarding', gateclosed:'gateclosed',
+    departed:'departed', delayed:'delayed', approaching:'active',
+    arrived:'arrived', landed:'arrived', canceled:'cancelled',
+    cancelled:'cancelled', diverted:'diverted',
+    canceleduncertain:'cancelled', cancelleduncertain:'cancelled'
+  };
+  return map[k] || (k || 'scheduled');
+}
 
 // ── AIRCRAFT LOOKUP BY REGISTRATION ──────────────────────────────
 var _aircraftCache = {};
+var _aircraftByModeSCache = {};
+
+// FlightAircraftContract can expose modeS even before it exposes reg. Resolve
+// that ICAO-24 address through the documented aircraft endpoint so the current
+// active registration can still become the authoritative identity.
+async function fidsAircraftByModeS(modeS) {
+  var hex = String(modeS || '').replace(/[^A-F0-9]/gi, '').toUpperCase();
+  if (!/^[A-F0-9]{6}$/.test(hex)) return null;
+  if (_aircraftByModeSCache[hex] !== undefined) return _aircraftByModeSCache[hex];
+  try {
+    var resp = await adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev/aircrafts/icao24/'
+      + encodeURIComponent(hex) + '?withImage=false&withRegistrations=false');
+    if (!resp.ok) return null;
+    var ac = await resp.json();
+    if (!ac || ac.active === false) { _aircraftByModeSCache[hex] = null; return null; }
+    var out = {
+      id: ac.id || null,
+      reg: String(ac.reg || '').trim().toUpperCase(),
+      modeS: String(ac.hexIcao || hex).trim().toUpperCase(),
+      aircraft: String(ac.typeName || ac.model || ac.productionLine || '').trim(),
+      aircraftCode: String(ac.iataCodeShort || ac.iataType || ac.icaoCode || ac.modelCode || '').trim(),
+      verified: ac.verified === true
+    };
+    _aircraftByModeSCache[hex] = out;
+    return out;
+  } catch (e) {
+    return null;
+  }
+}
 
 // ── AIRLINE FLEET CACHE ─────────────────────────────────────────────────────
 var _fleetCache = {};  // keyed by airline IATA code
@@ -17415,8 +17579,8 @@ async function fetchFlightReg(flightNumber) {
   if (_regFetching[flightNumber]) return null; // Already fetching
   _regFetching[flightNumber] = true;
   try {
-    var today = new Date();
-    var dateStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    var _regTz = ((typeof AP !== 'undefined' && AP[window._gateIata || '']) ? AP[window._gateIata || ''].tz : '') || 'UTC';
+    var dateStr = fidsLocalDateKey(Date.now(), _regTz);
     var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + dateStr;
     var url = ADB_BASE + path;
     console.log('[FIDS] Fetching flight reg for:', flightNumber);
@@ -17472,8 +17636,8 @@ async function fetchInboundByReg(reg, airportIata) {
   if (_inboundByRegCache[cacheKey] !== undefined) return _inboundByRegCache[cacheKey];
   try {
     var cleanReg = reg.replace(/[-\s]/g,'');
-    var today = new Date();
-    var dateStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    var _inbRegTz = ((typeof AP !== 'undefined' && AP[airportIata]) ? AP[airportIata].tz : '') || 'UTC';
+    var dateStr = fidsLocalDateKey(Date.now(), _inbRegTz);
     // The API specification defaults withLocation to false. This helper reads
     // location below, so request it explicitly instead of waiting for a field
     // the endpoint will otherwise omit.
@@ -17525,11 +17689,7 @@ async function fetchInboundByReg(reg, airportIata) {
     var depRevTime = (best.departure.revisedTime || {});
     var arrSchedTime = (best.arrival.scheduledTime || {});
     var arrRevTime = (best.arrival.revisedTime || {});
-    var st = (best.status || '').toLowerCase();
-    // Map ADB status strings (spec vocabulary: EnRoute / Approaching /
-    // Departed are the airborne phases; Landed → arrived)
-    if (st === 'departed' || st === 'enroute' || st === 'approaching') st = 'active';
-    if (st === 'landed') st = 'arrived';
+    var st = fidsAdbStatusKey(best.status);
     
     // Calculate timestamps
     var arrSchedTs = new Date(arrSchedTime.utc || arrSchedTime.local || '').getTime() || 0;
@@ -17830,16 +17990,17 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
   if (!flightNumber) return null;
   var cacheKey = (flightNumber + '|' + (dateStr || '') + '|' + (airportIata || '')).toUpperCase();
 
-  // Serve from cache if fresh (60 seconds)
+  // A 45 s TTL deduplicates a render burst while guaranteeing that the
+  // 60-second live telemetry poll receives a fresh provider anchor.
   var cached = _loadFlightCache[cacheKey];
-  if (cached && (Date.now() - cached._cachedAt < 180000)) return cached;
+  if (cached && (Date.now() - cached._cachedAt < 45000)) return cached;
 
   // Deduplicate in-flight requests
   if (_loadFlightFetching[cacheKey]) return _loadFlightFetching[cacheKey];
 
   if (!dateStr) {
-    var today = new Date();
-    dateStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    var _loadTz = ((typeof AP !== 'undefined' && AP[airportIata]) ? AP[airportIata].tz : '') || 'UTC';
+    dateStr = fidsLocalDateKey(Date.now(), _loadTz);
   }
 
   var promise = (async function() {
@@ -17901,6 +18062,7 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         _cachedAt: Date.now(),
         _source: 'loadFlight',
         reg: (ac.reg || ac.registration || '').trim(),
+        modeS: (ac.modeS || ac.hexIcao || '').trim().toUpperCase(),
         aircraft: formatAircraft(ac.model || ac.typeName || ''),
         aircraftCode: (ac.iataCodeShort || ac.iataCode || '').trim(),
         aircraftModel: ac.model || ac.typeName || '',
@@ -17911,8 +18073,24 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         livePosition: null,
         legs: flights,
         leg: primaryLeg,
-        status: (primaryLeg.status || '').toLowerCase()
+        status: fidsAdbStatusKey(primaryLeg.status)
       };
+
+      // A Mode-S address is also a current aircraft identifier. If the flight
+      // payload has it but omits reg, resolve the active registry record before
+      // inbound linking; this uses the API's documented Icao24 search option.
+      if (!result.reg && result.modeS) {
+        try {
+          var _modeIdent = await fidsAircraftByModeS(result.modeS);
+          if (_modeIdent && _modeIdent.reg) {
+            result.reg = _modeIdent.reg;
+            result._regSource = 'icao24';
+            if (!result.aircraft && _modeIdent.aircraft) result.aircraft = formatAircraft(_modeIdent.aircraft);
+            if (!result.aircraftCode && _modeIdent.aircraftCode) result.aircraftCode = _modeIdent.aircraftCode;
+            if (!result.aircraftModel && _modeIdent.aircraft) result.aircraftModel = _modeIdent.aircraft;
+          }
+        } catch (e) {}
+      }
 
       // Step 3: Resolve marketing vs operating carrier.
       // leg.airline = marketing carrier. leg.departure.airline = operating carrier.
@@ -17969,92 +18147,13 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         result.inbound = await _loadInboundByReg(result.reg, airportIata, primaryLeg, dateStr);
       }
 
-      // Step 6: HISTORY FUSION
-      // Today's ADB data may be thin (common when the flight is scheduled
-      // more than a few hours out). When a field is missing here, check what
-      // the last 14 days of ADB observations say. If there's a clear majority
-      // winner (≥60% of days agree), fill the field with that value and mark
-      // its source as 'history'. No guessing — these are actual prior values.
-      //
-      // CRITICAL: When ADB returns an aircraft type WITHOUT a registration,
-      // it's a generic guess (often the most common type for that flight
-      // number), not real telemetry. In that case, prefer history's
-      // high-confidence majority winner if it conflicts. With a registration,
-      // trust today's ADB completely (real telemetry).
-      var _needHistory = !result.reg || !result.operator || result.operator._source === 'same-as-marketing' || !result.aircraftCode;
-      if (_needHistory) {
-        try {
-          var hist = await loadFlightHistory(flightNumber);
-          if (hist) {
-            // Fill reg from history if today doesn't have one.
-            if (!result.reg && hist.reg) {
-              result.reg = hist.reg.value;
-              result._regSource = 'history';
-              console.log('[loadFlight]', flightNumber, 'reg from history:', hist.reg.value,
-                '(' + Math.round(hist.reg.confidence*100) + '% confidence,',
-                hist.reg.observed + '/' + hist.reg.total + ' days)');
-            } else if (!result.reg && hist.regLatest) {
-              // No majority winner (fleets that rotate tails daily never
-              // produce one) — fall back to the most recent real observation.
-              // The UI shows this with an "expected | prévu" qualifier and
-              // keeps re-checking for today's confirmed tail.
-              result.reg = hist.regLatest.value;
-              result._regSource = 'history-latest';
-              console.log('[loadFlight]', flightNumber, 'reg from latest observation:',
-                hist.regLatest.value, '(' + (hist.regLatest.date || 'undated') + ')');
-            }
-            // Aircraft type — only fill from history if today has nothing
-            var _todayHasReg = !!result.reg && result._regSource !== 'history';
-            if (!result.aircraftCode && hist.aircraftCode) {
-              // Missing today: fill from history
-              result.aircraftCode = hist.aircraftCode.value;
-              result._aircraftCodeSource = 'history';
-            }
-            // OVERRIDE LOGIC REMOVED here too — same root cause as the
-            // aircraftModel override below. Today's data wins.
-            if ((!result.aircraft || !result.aircraftModel) && hist.aircraftModel) {
-              result.aircraftModel = hist.aircraftModel.value;
-              result.aircraft = formatAircraft(hist.aircraftModel.value);
-              result._aircraftSource = 'history';
-            }
-            // OVERRIDE LOGIC REMOVED: previously, if today provided an aircraft model
-            // but no reg, the code would override today's model with the history's
-            // most-common-model. That caused the on-screen aircraft type to flip
-            // between today's actual data (e.g. Bombardier CRJ900) and history's
-            // pattern (e.g. Embraer 175) every poll cycle. Today's fresh data wins
-            // — even without a reg, the model name returned by ADB is current and
-            // accurate. History should only FILL gaps, not override fresh data.
-            // Fill operator from history only if today says marketing === operator.
-            // Do NOT override a confirmed operator from today's ADB data.
-            if (hist.operator && result.operator._source === 'same-as-marketing') {
-              result.operator = {
-                iata: hist.operator.value,
-                name: AIRLINE_NAME[hist.operator.value] || hist.operator.value,
-                icao: '',
-                _source: 'history'
-              };
-              console.log('[loadFlight]', flightNumber, 'operator from history:', hist.operator.value,
-                '(' + Math.round(hist.operator.confidence*100) + '% confidence,',
-                hist.operator.observed + '/' + hist.operator.total + ' days)');
-            }
-            // If we got a reg from history but have no inbound yet (because
-            // step 5 skipped it due to no reg), try the inbound lookup now.
-            // NOTE: majority-history regs only — a 'history-latest' reg is
-            // display-only ("expected | prévu") and must not seed the inbound
-            // airframe lookup: a live fix found for the WRONG tail would
-            // render as confirmed telemetry on the map.
-            if (result._regSource === 'history' && !result.inbound && airportIata) {
-              // Use the historical reg to look up today's airframe path.
-              // This may or may not match today — if the reg hasn't actually
-              // been assigned to this flight, this lookup returns no inbound,
-              // and the panel will show "pending" which is still correct.
-              result.inbound = await _loadInboundByReg(result.reg, airportIata, primaryLeg, dateStr);
-            }
-          }
-        } catch (historyErr) {
-          console.warn('[loadFlight] history fusion error:', historyErr.message);
-        }
-      }
+      // Historical observations are deliberately excluded from the live gate
+      // truth path. A tail or type flown on a previous day is not today's
+      // assignment and must never consume calls, select an image, or replace a
+      // scheduled equipment value. If today's payload is incomplete, leave the
+      // field pending and let the 60-second live poll obtain the assignment.
+      // Truth order remains: confirmed current registration/registry record,
+      // current inbound update, then today's scheduled equipment.
 
       _loadFlightCache[cacheKey] = result;
       return result;
@@ -18339,13 +18438,30 @@ async function loadFlightHistory(flightNumber) {
 }
 
 function adbStatus(f, mode, schedTs, nowTs) {
-  const raw=(f.status||'').toLowerCase();
-  if(raw==='cancelled')return 'cancelled'; if(raw==='diverted')return 'diverted';
-  const rev=mode==='dep'?f.departure?.revisedTime?.local:f.arrival?.revisedTime?.local;
-  const revTs=rev?adbTs(rev):null;
-  if(raw==='departed'||raw==='arrived'||raw==='landed') return mode==='dep'?'departed':'arrived';
-  // Use revised time for status progression if delayed
-  const refTs = (revTs && revTs > schedTs + 5*60000) ? revTs : schedTs;
+  const raw=String(f.status||'').replace(/[\s_-]+/g,'').toLowerCase();
+  // AeroDataBox's explicit status is authoritative. In particular, EnRoute /
+  // Approaching must never be converted to Arrived merely because an older ETA
+  // passed. A departure status on an ARRIVAL row means the inbound is airborne.
+  if(raw==='cancelled'||raw==='canceled'||raw==='cancelleduncertain'||raw==='canceleduncertain')return 'cancelled';
+  if(raw==='diverted')return 'diverted';
+  if(raw==='arrived'||raw==='landed')return 'arrived';
+  if(raw==='enroute'||raw==='approaching'||raw==='active')return mode==='dep'?'departed':'active';
+  if(raw==='departed')return mode==='dep'?'departed':'active';
+  if(raw==='boarding')return 'boarding';
+  if(raw==='gateclosed')return 'gateclosed';
+  if(raw==='final'||raw==='finalcall')return 'final';
+  if(raw==='delayed')return 'delayed';
+  if(raw==='early')return 'early';
+
+  const leg=mode==='dep'?(f.departure||{}):(f.arrival||{});
+  // Provider update order: actual runway time > live predicted time > revised
+  // schedule > original schedule. This is the same order mapADB exposes as
+  // `upd` / `_revTs`, keeping labels, status and arrival-hiding in agreement.
+  const update=(leg.runwayTime&&(leg.runwayTime.local||leg.runwayTime.utc))
+    ||(leg.predictedTime&&(leg.predictedTime.local||leg.predictedTime.utc))
+    ||(leg.revisedTime&&(leg.revisedTime.local||leg.revisedTime.utc));
+  const updateTs=update?adbTs(update):null;
+  const refTs = updateTs || schedTs;
   const minsToRef = (refTs - nowTs) / 60000;
   // Base phase from the (revised) reference time — boarding/final/gate
   // phases always outrank a delay/early label.
@@ -18357,8 +18473,8 @@ function adbStatus(f, mode, schedTs, nowTs) {
   // (Nick: 'flights delayed showing on time and early should be early') —
   // the old >30-min gate let a flight revised 40 min later read 'On time'.
   if(base==='ontime'||base==='scheduled'){
-    if(revTs && revTs > schedTs + 5*60000) return 'delayed';
-    if(revTs && revTs < schedTs - 5*60000) return 'early';
+    if(updateTs && updateTs > schedTs + 5*60000) return 'delayed';
+    if(updateTs && updateTs < schedTs - 5*60000) return 'early';
   }
   return base;
 }
@@ -18458,7 +18574,11 @@ function mapADB(raw, mode) {
         }
       }
     }
-    const revL=mode==='dep'?f.departure?.revisedTime?.local:f.arrival?.revisedTime?.local;
+    const _timeLeg=mode==='dep'?(f.departure||{}):(f.arrival||{});
+    const _actualL=(_timeLeg.runwayTime&&(_timeLeg.runwayTime.local||_timeLeg.runwayTime.utc))||null;
+    const _predL=(_timeLeg.predictedTime&&(_timeLeg.predictedTime.local||_timeLeg.predictedTime.utc))||null;
+    const _revisedL=(_timeLeg.revisedTime&&(_timeLeg.revisedTime.local||_timeLeg.revisedTime.utc))||null;
+    const revL=_actualL||_predL||_revisedL;
     const revTs=revL?adbTs(revL):null;
     const upd=(revTs&&Math.abs(revTs-schedTs)>5*60000)?adbHHMM(revL):null;
     const st=adbStatus(f,mode,schedTs,nowTs);
@@ -25037,18 +25157,39 @@ function _regTrueType(reg) {
     window._regTypeRetry = window._regTypeRetry || {};
     if (window._regTypeRetry[r] && _now < window._regTypeRetry[r]) return '';
     window._regTypeRetry[r] = _now + 10 * 60000;   // one attempt per 10 min max
-    adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev/aircrafts/reg/' + encodeURIComponent(r))
+    adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev/aircrafts/reg/' + encodeURIComponent(r)
+        + '?withImage=false&withRegistrations=false')
       .then(function (resp) { return resp.ok ? resp.json() : null; })
       .then(function (ac) {
-        // ADB aircraft objects vary: typeName / model / productionLine.
-        var t = ac ? String(ac.typeName || ac.model || ac.productionLine || '').trim() : '';
+        var activeRecord = !!ac && ac.active !== false;
+        var code = activeRecord ? String(ac.iataCodeShort || ac.iataType || ac.icaoCode || ac.modelCode || '').trim() : '';
+        var t = activeRecord ? String(ac.typeName || ac.model || ac.productionLine || '').trim() : '';
+        if (!t && code && typeof formatAircraft === 'function') t = formatAircraft(code);
         if (t && !/^(airbus|boeing|embraer|bombardier|de havilland|atr|mitsubishi|cessna|beech)/i.test(t)) {
           var mfr = (String(ac.productionLine || '').match(/^(Airbus|Boeing|Embraer|Bombardier|De Havilland|ATR|Mitsubishi)/i) || [])[1] || '';
           if (mfr) t = mfr + ' ' + t;
         }
+        if (activeRecord) {
+          window._regAircraftCache = window._regAircraftCache || {};
+          window._regAircraftCache[r] = {
+            type: t, code: code, verified: ac.verified === true,
+            active: ac.active !== false, airlineName: ac.airlineName || '',
+            model: ac.model || '', typeName: ac.typeName || ''
+          };
+        }
         if (t) {
           window._regTypeCache[r] = t;
           try { store[r] = t; localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch (e) {}
+          // Registration is the confirmed source of truth. Rebuild once when
+          // its type arrives so the label and livery update immediately rather
+          // than waiting for the next multi-minute flight poll.
+          try {
+            if (window._gateAcRegShown === r && typeof renderDedicatedScreen === 'function') {
+              window.setTimeout(function () {
+                try { renderDedicatedScreen(); } catch (e) {}
+              }, 0);
+            }
+          } catch (e) {}
         }
         try { console.log('[REGTYPE]', r, '→', t || '(no type in response — will retry)'); } catch (e) {}
       })
@@ -25127,7 +25268,10 @@ function _map3dFlightCtx(allowEstimated) {
       try {
         _estDurMs = (_hav(oC, dC) / 13 + 25) * 60000;
         // ADB ML01 realistic route time beats the 780 km/h guess when cached.
-        var _mlDur = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(oI, dI) : null;
+        var _mlDurType = (((inb && inb._reg) && typeof _regTrueType === 'function') ? _regTrueType(inb._reg) : '')
+          || (inb && (inb._aircraft || inb._aircraftCode)) || '';
+        var _mlDur = (typeof fidsMlFlightTimeMins === 'function')
+          ? fidsMlFlightTimeMins(oI, dI, _mlDurType) : null;
         if (_mlDur) _estDurMs = _mlDur * 60000;
       } catch (e) {}
       var depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal)

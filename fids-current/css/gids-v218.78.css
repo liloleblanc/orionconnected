@@ -5208,3 +5208,103 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 .g8-wrap .gad-media-col.g8-static-page-ad #gateAdCarousel .ad-tech-media {
   z-index: 3 !important;
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   v22354 — AD GUTTER MASK + GATE ALIGNMENT (Jul 20 2026)
+   The measured advert rectangle is a protected hole. Decorative art may draw
+   only in the four surrounding gutters; it cannot sit over or under the ad.
+   ════════════════════════════════════════════════════════════════════════ */
+.g8-wrap .gad-media-col.g8-static-page-ad:not(.g8-ad-safe-ready)::before,
+.g8-wrap .gad-media-col.g8-static-page-ad:not(.g8-ad-safe-ready)::after {
+  visibility: hidden !important;
+}
+.g8-wrap .gad-media-col.g8-static-page-ad.g8-ad-safe-ready::before,
+.g8-wrap .gad-media-col.g8-static-page-ad.g8-ad-safe-ready::after,
+.ad-tech-frame.g8-ad-safe-ready,
+.g8-ad-surround-wrapper.g8-ad-safe-ready {
+  visibility: visible !important;
+  -webkit-mask-image:
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position:
+    0 0,
+    0 100%,
+    0 var(--g8-ad-safe-top),
+    100% var(--g8-ad-safe-top);
+  -webkit-mask-size:
+    100% var(--g8-ad-safe-top),
+    100% var(--g8-ad-safe-bottom),
+    var(--g8-ad-safe-left) var(--g8-ad-safe-height),
+    var(--g8-ad-safe-right) var(--g8-ad-safe-height);
+  mask-image:
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0);
+  mask-repeat: no-repeat;
+  mask-position:
+    0 0,
+    0 100%,
+    0 var(--g8-ad-safe-top),
+    100% var(--g8-ad-safe-top);
+  mask-size:
+    100% var(--g8-ad-safe-top),
+    100% var(--g8-ad-safe-bottom),
+    var(--g8-ad-safe-left) var(--g8-ad-safe-height),
+    var(--g8-ad-safe-right) var(--g8-ad-safe-height);
+}
+.g8-ad-surround-wrapper {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+.g8-ad-surround-wrapper > * {
+  pointer-events: none !important;
+}
+.g8-wrap .gad-media-col.g8-static-page-ad > #gateAdCarousel {
+  z-index: 2 !important;
+}
+.g8-wrap .gad-media-col.g8-static-page-ad #gateAdCarousel .ad-tech-media {
+  z-index: 3 !important;
+}
+
+/* Keep every bilingual left-rail heading complete and aligned with the data
+   lane. The former 21px title size forced “Boarding | Embarquement” into an
+   ellipsis even though the shelf had enough horizontal room at a readable size. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title {
+  font-size: clamp(13px,1.05vw,18px) !important;
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+/* Large enough to read across a concourse, but bounded so 7-character times
+   such as 12:20pm remain fully inside the data lane at 1680×1050 and 1080p. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol
+:is(.v2-fi-value.v2-fi-flight-number,.v2-fi-value.v2-fi-time) {
+  font-size: clamp(38px,3.8vw,64px) !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+/* Revised arrival has two times plus its bilingual qualifier. Give that one
+   row a compact, aligned line instead of letting it collide and clip. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-fi-tval-revised {
+  justify-content: flex-start !important;
+  gap: clamp(4px,.35vw,7px) !important;
+  font-size: clamp(13px,1.55vh,18px) !important;
+  letter-spacing: -.02em !important;
+  overflow: visible !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-fi-tval-revised > span {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+}
