@@ -8,10 +8,18 @@ console.log('%c[FIDS BUILD ' + FIDS_BUILD + '] loaded ' + new Date().toISOString
 // Toggle at runtime: localStorage.setItem('fids_gate_layout_v2', 'on'|'off')
 // Default: ON. Roll back instantly by setting to 'off' and refreshing.
 (function(){
+  // v22356: the 'off' rollback is RETIRED. A stale machine-local flag
+  // resurrected the unmaintained legacy gate on Nick's admin browser
+  // ('looks like an old screen just crept up') — the v2 gate is the only
+  // maintained layout and is now unconditional. The old flag is cleared
+  // so no display can ever trip on it again.
+  window.GATE_LAYOUT_V2 = true;
   try {
-    var pref = localStorage.getItem('fids_gate_layout_v2');
-    window.GATE_LAYOUT_V2 = (pref === 'off') ? false : true;
-  } catch(e) { window.GATE_LAYOUT_V2 = true; }
+    if (localStorage.getItem('fids_gate_layout_v2') === 'off') {
+      console.warn('[FIDS] Ignoring stale fids_gate_layout_v2=off (legacy layout retired)');
+      localStorage.removeItem('fids_gate_layout_v2');
+    }
+  } catch(e) {}
   console.log('[FIDS] GATE_LAYOUT_V2 =', window.GATE_LAYOUT_V2);
 })();
 
@@ -14999,7 +15007,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22355';
+var FIDS_BUILD_TAG = 'v22356';
 (function(){
   try {
     function _addTag(){
