@@ -14836,7 +14836,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22345';
+var FIDS_BUILD_TAG = 'v22346';
 (function(){
   try {
     function _addTag(){
@@ -17340,6 +17340,48 @@ var _aircraftImageCache = {};
 
 var _regCache = {};
 var _regFetching = {}; // Guard against duplicate concurrent requests
+// ── ADB REQUEST REGULATOR ───────────────────────────────────────────────
+// Nick's MEGA plan has plenty of MONTHLY units (441k/600k left) but a
+// PER-SECOND cap. The boards fire bursts (every gate asks for flight, reg,
+// history, image at once, on every screen) — the provider answers the first
+// few and throttles the rest, which is exactly the 'very rare to see an
+// aircraft' rationing. This regulator smooths the burst under the cap:
+// max 2 in flight, 300 ms between launches, honest backoff on 429.
+var _adbQ = [], _adbActive = 0, _adbLastLaunch = 0;
+function _adbPump() {
+  if (_adbActive >= 2 || !_adbQ.length) return;
+  var wait = Math.max(0, _adbLastLaunch + 300 - Date.now());
+  var job = _adbQ.shift();
+  _adbActive++;
+  setTimeout(function () {
+    _adbLastLaunch = Date.now();
+    (async function () {
+      var tries = 0;
+      for (;;) {
+        try {
+          var r = await fetch(job.url, job.opts);
+          if (r.status === 429 && tries < 3) {
+            tries++;
+            var ra = parseInt(r.headers.get('Retry-After') || '0', 10);
+            await new Promise(function (res) { setTimeout(res, (ra ? ra * 1000 : 1500 * Math.pow(2, tries))); });
+            continue;
+          }
+          job.resolve(r);
+        } catch (e) { job.reject(e); }
+        break;
+      }
+      _adbActive--;
+      _adbPump();
+    })();
+  }, wait);
+}
+function adbPacedFetch(url, opts) {
+  return new Promise(function (resolve, reject) {
+    _adbQ.push({ url: url, opts: opts, resolve: resolve, reject: reject });
+    _adbPump();
+  });
+}
+
 async function fetchFlightReg(flightNumber) {
   if (!flightNumber) return null;
   if (_regCache[flightNumber] !== undefined) return _regCache[flightNumber];
@@ -17351,7 +17393,7 @@ async function fetchFlightReg(flightNumber) {
     var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + dateStr;
     var url = ADB_BASE + path;
     console.log('[FIDS] Fetching flight reg for:', flightNumber);
-    var r = await fetch(url.replace(ADB_BASE, 'https://fids-proxy.n-leblanc1984.workers.dev'));
+    var r = await adbPacedFetch(url.replace(ADB_BASE, 'https://fids-proxy.n-leblanc1984.workers.dev'));
     if (!r.ok) { console.warn('[FIDS] Flight reg fetch failed:', r.status); return null; }
     var data = await r.json();
     if (Array.isArray(data)) {
@@ -17524,7 +17566,7 @@ async function fetchFlightPosition(flightNumber, dateStr) {
     var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + dateStr;
     var url = ADB_BASE + path;
     console.log('[FIDS] Fetching flight position:', url);
-    var r = await fetch(url.replace(ADB_BASE, 'https://fids-proxy.n-leblanc1984.workers.dev'));
+    var r = await adbPacedFetch(url.replace(ADB_BASE, 'https://fids-proxy.n-leblanc1984.workers.dev'));
     if (!r.ok) { console.warn('[FIDS] Flight track fetch failed:', r.status); return null; }
     var data = await r.json();
     console.log('[FIDS] Flight track response:', JSON.stringify(data).substring(0, 500));
@@ -17746,7 +17788,7 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
 
   // Serve from cache if fresh (60 seconds)
   var cached = _loadFlightCache[cacheKey];
-  if (cached && (Date.now() - cached._cachedAt < 60000)) return cached;
+  if (cached && (Date.now() - cached._cachedAt < 180000)) return cached;
 
   // Deduplicate in-flight requests
   if (_loadFlightFetching[cacheKey]) return _loadFlightFetching[cacheKey];
@@ -17762,7 +17804,7 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
       // withLocation=true → AeroDataBox returns live position (speed/altitude)
       // for airborne legs; without it the gate's SPD/ALT were always empty.
       var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + dateStr + '?withLocation=true';
-      var r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev' + path);
+      var r = await adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev' + path);
       if (!r.ok) {
         // Surface WHY live tracking is dark (quota, key, upstream) instead of
         // failing silently — 'no plane / not tracking' is undiagnosable
@@ -17997,7 +18039,7 @@ async function _loadInboundByReg(reg, airportIata, primaryLeg, dateStr) {
     // withLocation=true → include the airframe's live position (speed/altitude)
     // so the inbound panel can show SPD/ALT when it's in the air.
     var path = '/flights/reg/' + encodeURIComponent(cleanReg) + '/' + dateStr + '?withLocation=true';
-    var r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev' + path);
+    var r = await adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev' + path);
     if (!r.ok) return null;
     // ADB sometimes returns 200 with empty body when a reg has no flights
     // on the requested date. await r.json() on empty body throws
@@ -18151,7 +18193,7 @@ async function loadFlightHistory(flightNumber) {
                String(d.getDate()).padStart(2,'0');
       };
       var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + fmt(dateFrom) + '/' + fmt(yesterday);
-      var r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev' + path);
+      var r = await adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev' + path);
       if (!r.ok) {
         console.warn('[loadFlightHistory] fetch failed:', r.status, flightNumber);
         return null;
