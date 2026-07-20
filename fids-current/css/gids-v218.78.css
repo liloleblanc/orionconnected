@@ -5174,3 +5174,13 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-repeat: no-repeat !important;
   background-blend-mode: normal !important;
 }
+
+
+/* v22352 — STATUS COLOUR RESTORE
+   Ordinary AC shelf copy is white; operational status keeps its semantic
+   warning colour on both the left and right flight-information panels. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col .v2-fi-status-val.delayed,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed {
+  color: #f59e0b !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.82) !important;
+}
