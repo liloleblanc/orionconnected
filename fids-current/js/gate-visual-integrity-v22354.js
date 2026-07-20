@@ -101,6 +101,15 @@
       }
     }
     if (wrapper) setSafeZone(wrapper, media);
+
+    // The accent frame is another surround layer. Keep its rim, but mask its
+    // fill out of the creative rectangle too, so transparent artwork cannot
+    // reveal decoration underneath the advert.
+    var frame = null;
+    Array.prototype.forEach.call(host.children, function (child) {
+      if (child.classList && child.classList.contains('ad-tech-frame')) frame = child;
+    });
+    if (frame) setSafeZone(frame, media);
   }
 
   function updateAdvertSafeZones() {
