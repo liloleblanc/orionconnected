@@ -5190,15 +5190,18 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
    dark ink). The AC-skin block below re-inks them bright for its dark wood.
    Every state the status key can produce has a colour — the class now always
    matches the shown word (enroute, arrived, early included). */
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-early,
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-enroute,
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived { color: #0e7c4a !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding { color: #1d4ed8 !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed,
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-diverted { color: #d97706 !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled { color: #b91c1c !important; }
-.g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-gateclosed { color: #4b5563 !important; }
+/* v22364 — selectors carry the full fi-table hop so they BEAT the generic
+   navy value rule (it is (0,5,2); these are (0,6,2)) on light skins too —
+   the AA card was showing Delayed and the revised time in plain navy. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-ontime,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-early,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-enroute,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-arrived { color: #0e7c4a !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-boarding { color: #1d4ed8 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-delayed,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-diverted { color: #d97706 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-cancelled { color: #b91c1c !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-gateclosed { color: #4b5563 !important; }
 
 /* v22361 — FULL STATUS PALETTE on the AC skin (Nick: 'make sure we do
    colored status'). v22352 restored only Delayed; every other state was
