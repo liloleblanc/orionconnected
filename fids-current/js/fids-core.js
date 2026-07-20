@@ -7568,6 +7568,35 @@ function uxgGateHtml(ctx) {
   }
   if (_effDepForBoard) {
     var boardTs = _effDepForBoard - boardLeadMins*60000;
+    // HONESTY FLOOR (Nick: 'boarding will not happen at 7:17 — it ARRIVES
+    // at 7:17'): boarding can't be estimated before the airframe is even at
+    // the gate. When the shown inbound's (revised) arrival is known and the
+    // dep-minus-lead estimate lands before arrival + turn, floor it at
+    // arrival + 20 min — but never later than dep − 10 min, and always at
+    // least 5 min after the arrival itself in a degenerate window.
+    try {
+      var _bArrTs = 0;
+      var _bGi = window._gateInbound;
+      if (_bGi && (!_bGi._forOutbound || _bGi._forOutbound === currentFlight.flight)) {
+        _bArrTs = _bGi._revTs || _bGi._sortTs || 0;
+      }
+      if (!_bArrTs && currentFlight.gate) {
+        // window._gateInbound settles asynchronously — at banner-build time
+        // use the SAME source the card's gate-fallback reads: the latest
+        // live arrival on this gate landing before this departure.
+        var _bg = String(currentFlight.gate);
+        (data.arr || []).forEach(function (a) {
+          if (String(a.gate || '') !== _bg) return;
+          if (a.status === 'cancelled' || a.status === 'diverted') return;
+          var _ts = a._revTs || a._sortTs || 0;
+          if (_ts && _ts < _effDepForBoard && _ts > _bArrTs) _bArrTs = _ts;
+        });
+      }
+      if (_bArrTs && boardTs < _bArrTs + 20 * 60000) {
+        boardTs = Math.min(_bArrTs + 20 * 60000, _effDepForBoard - 10 * 60000);
+        if (boardTs < _bArrTs + 5 * 60000) boardTs = _bArrTs + 5 * 60000;
+      }
+    } catch (e) {}
     var bd = new Date(boardTs);
     boardTimeHtml = bd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
     // If delayed, show original boarding time struck through + new boarding time
@@ -15076,7 +15105,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22363';
+var FIDS_BUILD_TAG = 'v22364';
 (function(){
   try {
     function _addTag(){
