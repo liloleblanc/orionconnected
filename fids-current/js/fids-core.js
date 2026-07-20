@@ -9574,6 +9574,194 @@ function gateAutofit(root) {
   } catch (e) {}
 }
 
+// ═══ BOARD AUTOFIT ═══ (Nick: 'row sizes everywhere to check and adjust',
+// 'you take the whole square inch') — the gate's measure-the-box law applied
+// to the MAIN BOARD table and the BAGS list:
+//   1. rows STRETCH to consume the real space above the ticker (no dead
+//      band), capped at 1.5× the theme's base row height;
+//   2. every TEXT column is fitted COLUMN-UNIFORM: each cell's largest
+//      fitting size is measured, the column takes the minimum — so no cell
+//      can ever ellipsize ('B65…', 'Embarquem…') and the column reads as
+//      one size, not ragged per-row type.
+// The airline brand cell keeps its calibrated wordmark artwork sizes.
+function _boardFitCol(cells, capRatio, allowWrap) {
+  var colSize = 999;
+  cells.forEach(function (el) {
+    if (!(el.textContent || '').trim()) return;
+    var host = el.parentElement; if (!host) return;
+    var rowH = (el.closest('tr') || el.closest('.bidsv2-flight-row') || host).clientHeight;
+    var availH = Math.floor(rowH * (capRatio || 0.72));
+    if (el.clientWidth < 24 || availH < 12) return;
+    // Single-line fit by default: the width check is the honest one;
+    // wrapping would sneak past it and stack lines into the row. Columns
+    // that pass allowWrap (BAGS 'From' cities in their narrow lane) may
+    // break to two lines — the height check governs them.
+    el.style.setProperty('white-space', allowWrap ? 'normal' : 'nowrap', 'important');
+    function fits(px) {
+      el.style.setProperty('font-size', px + 'px', 'important');
+      if (el.scrollWidth > el.clientWidth) return false;
+      if (el.scrollHeight > rowH) return false;
+      return true;
+    }
+    var lo = 12, hi = Math.min(96, availH);
+    if (!fits(hi)) { while (lo < hi) { var mid = Math.ceil((lo + hi) / 2); if (fits(mid)) lo = mid; else hi = mid - 1; } }
+    else lo = hi;
+    if (lo < colSize) colSize = lo;
+  });
+  if (colSize < 999) {
+    var fin = Math.max(12, colSize - 1) + 'px';
+    cells.forEach(function (el) { el.style.setProperty('font-size', fin, 'important'); });
+  }
+}
+function boardAutofit() {
+  try {
+    var tbl = document.getElementById('fidsTable');
+    if (tbl && tbl.offsetParent) {
+      var rows = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr'));
+      if (rows.length) {
+        // 1 — stretch. Base height is remembered on the table so the
+        // pagination math keeps counting rows by the UNSTRETCHED height
+        // (otherwise stretch → fewer rows next page → stretch more → loop).
+        rows.forEach(function (r) { r.style.removeProperty('height'); });
+        var baseH = rows[0].offsetHeight || 60;
+        tbl.dataset.fidsBaseRowH = baseH;
+        var avail = (typeof _fidsRowsAvail === 'function') ? _fidsRowsAvail() : 0;
+        if (avail > 0 && rows.length) {
+          var target = Math.min(Math.floor(avail / rows.length), Math.floor(baseH * 1.5));
+          if (target > baseH) rows.forEach(function (r) { r.style.setProperty('height', target + 'px', 'important'); });
+        }
+        // 2 — COLUMN WIDTHS, then text fit. The flight column was 100px —
+        // 'WN4038' overflows it at 14px, so no font could ever fill the row
+        // ('B65…'). Measure what each text column's content actually needs
+        // (widest cell at a common probe size, real font family/weight) and
+        // redistribute the text columns' share of the table proportionally.
+        // Brand + weather columns keep their designed widths. Geometry is
+        // then FROZEN (fixed layout) so the per-column text fit below
+        // measures honest, stable boxes — with auto layout every font
+        // change reflowed the columns and early fits collapsed to 12px.
+        var TEXTCOLS = ['td-flight', 'td-dest', 'td-term', 'td-gate', 'td-time', 'td-time-rev', 'td-status'];
+        try {
+          var firstRow = rows[0];
+          var ths = tbl.querySelectorAll('thead th');
+          if (ths.length && ths.length === firstRow.children.length) {
+            // Budget from the CONTAINER, never the table itself: a colgroup
+            // sum wider than the container GROWS a fixed-layout table, so
+            // reading tbl.clientWidth on the next pass compounds into a
+            // runaway (columns ballooned to 4000px+ across heartbeats).
+            var tableW = (tbl.parentElement && tbl.parentElement.clientWidth) || tbl.clientWidth;
+            var fixedW = 0, needs = [], totalNeed = 0;
+            var probe = document.createElement('span');
+            probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;left:-9999px;top:0;';
+            document.body.appendChild(probe);
+            Array.prototype.forEach.call(firstRow.children, function (td0, i) {
+              var isText = TEXTCOLS.some(function (c) { return td0.classList.contains(c); });
+              if (!isText) {
+                var w0 = ths[i].getBoundingClientRect().width;
+                fixedW += w0;
+                needs.push({ i: i, fixed: w0 });
+                return;
+              }
+              // Probe at the size text SHOULD render (half the row) so the
+              // proportional split hands every column the width its content
+              // needs at that same size — the whole board then fits at one
+              // big, uniform scale instead of starving short columns (gate
+              // dropped to 16px when probed at caption size).
+              var _probePx = Math.max(18, Math.round((rows[0].clientHeight || 60) * 0.5));
+              var maxW = 0, padW = 0;
+              tbl.querySelectorAll('tbody tr').forEach(function (r) {
+                var td = r.children[i]; if (!td) return;
+                var cs = getComputedStyle(td);
+                // The theme pads cells 22px per side — that overhead comes
+                // off the col width before any text fits, so it must be
+                // counted in the need (a 46px airside column left 2px of
+                // content box and even 'F' clipped).
+                padW = Math.max(padW, (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0));
+                probe.style.fontFamily = cs.fontFamily;
+                probe.style.fontWeight = cs.fontWeight;
+                probe.style.letterSpacing = cs.letterSpacing;
+                probe.style.fontSize = _probePx + 'px';
+                probe.textContent = (td.textContent || '').trim().replace(/\s+/g, ' ');
+                maxW = Math.max(maxW, probe.offsetWidth);
+              });
+              // The HEADER label needs room too — 'AIRSIDE' was clipping to
+              // 'AIRSID' over a column whose cells only hold one letter.
+              try {
+                var hcs = getComputedStyle(ths[i]);
+                probe.style.fontFamily = hcs.fontFamily;
+                probe.style.fontWeight = hcs.fontWeight;
+                probe.style.letterSpacing = hcs.letterSpacing;
+                probe.style.fontSize = hcs.fontSize;
+                probe.textContent = (ths[i].textContent || '').trim();
+                maxW = Math.max(maxW, probe.offsetWidth);
+              } catch (e2) {}
+              var floorW = padW + 36;                 // padding + ~3 glyphs, never less
+              var need = Math.max(floorW, maxW + padW + 10);
+              needs.push({ i: i, need: need, floorW: floorW });
+              totalNeed += need;
+            });
+            probe.parentNode.removeChild(probe);
+            var textBudget = tableW - fixedW;
+            if (totalNeed > 0 && textBudget > 200) {
+              // Widths go onto the table's EXISTING colgroup cols (inline
+              // !important beats the stylesheet's col width rules). Never
+              // ADD a colgroup: a table concatenates all colgroups' cols,
+              // so a second set doubled the column count and the fixed
+              // table ballooned to ~2450px inside a 1358px board.
+              // Floors first (uniform scaling starved 1-char columns below
+              // their own padding), then the leftover budget splits in
+              // proportion to each column's need ABOVE its floor.
+              var floorSum = 0, extraSum = 0;
+              needs.forEach(function (n) {
+                if (n.fixed !== undefined) return;
+                floorSum += n.floorW;
+                extraSum += Math.max(0, n.need - n.floorW);
+              });
+              var leftover = Math.max(0, textBudget - floorSum);
+              var widths = [], sumW = 0, bigI = -1, bigNeed = -1;
+              needs.forEach(function (n, k) {
+                var w;
+                if (n.fixed !== undefined) w = Math.round(n.fixed);
+                else {
+                  var extra = Math.max(0, n.need - n.floorW);
+                  w = n.floorW + (extraSum > 0 ? Math.floor(leftover * extra / extraSum) : Math.floor(leftover / Math.max(1, needs.length)));
+                  if (n.need > bigNeed) { bigNeed = n.need; bigI = k; }
+                }
+                widths.push(w); sumW += w;
+              });
+              if (bigI >= 0) widths[bigI] += (tableW - sumW);
+              var _cgCols = tbl.querySelectorAll('colgroup col');
+              if (_cgCols.length === widths.length) {
+                widths.forEach(function (w, k) {
+                  _cgCols[k].style.setProperty('width', Math.max(0, w) + 'px', 'important');
+                  _cgCols[k].style.setProperty('min-width', '0', 'important');
+                });
+                tbl.style.setProperty('table-layout', 'fixed', 'important');
+                tbl.style.setProperty('width', '100%', 'important');
+              }
+            }
+          }
+        } catch (e) {}
+        TEXTCOLS.forEach(function (c) {
+          _boardFitCol(Array.prototype.slice.call(tbl.querySelectorAll('tbody td.' + c)), 0.72);
+        });
+      }
+    }
+    var list = document.querySelector('.bidsv2-flight-list');
+    if (list && list.offsetParent) {
+      ['.bidsv2-flight-num', '.bidsv2-col-time', '.bidsv2-col-status'].forEach(function (sel) {
+        _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row ' + sel)), 0.6);
+      });
+      // The From lane is narrow and its cities are long — two fitted lines
+      // beat one 12px whisper.
+      _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row .bidsv2-col-from')), 0.42, true);
+    }
+  } catch (e) {}
+}
+// Standing refit — covers the BAGS render, destination flips changing text
+// lengths, and window resizes, same rhythm as the gate's fit heartbeat.
+try { setInterval(boardAutofit, 5000); } catch (e) {}
+try { window.addEventListener('resize', function () { setTimeout(boardAutofit, 120); }); } catch (e) {}
+
 function renderDedicatedScreen() {
   if (screenType === 'gate') { document.body.classList.add('uxg-gate-mode'); }
   // Light/dark board flag on DEDICATED screens too — it only ran in the main
@@ -15105,7 +15293,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22364';
+var FIDS_BUILD_TAG = 'v22365';
 (function(){
   try {
     function _addTag(){
@@ -15743,7 +15931,11 @@ function render() {
   // A row must NEVER be cut: prefer the measured height, else the theme var,
   // else a conservative 62. (Available height comes from _fidsRowsAvail() —
   // real table-to-ticker geometry.)
-  const _measuredRowH = document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
+  // boardAutofit STRETCHES rows to fill the screen; page math must count by
+  // the UNSTRETCHED base height it records, or the two feed back into
+  // ever-fewer, ever-taller rows.
+  const _measuredRowH = (parseFloat(tbl.dataset.fidsBaseRowH) || 0)
+    || document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
   const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
   const available = _fidsRowsAvail();
@@ -16085,6 +16277,9 @@ function render() {
   if (_newHtml !== _lastTbodyHtml) {
     tbody.innerHTML = _newHtml;
     _lastTbodyHtml = _newHtml;
+    // Fit the fresh rows right away — the 5 s heartbeat alone would let a
+    // just-rendered page sit unfitted for seconds.
+    try { setTimeout(boardAutofit, 60); } catch (e) {}
   }
   // Phase 4: expose flight lists to the Search tab
   try {
@@ -19665,8 +19860,10 @@ function getPageCount(modeKey) {
   // Measure the real rendered row height — themes vary it (58-66px). The old
   // hardcoded 56 overcounted rows per page, clipping the last row mid-height.
   // A row must NEVER be cut: prefer the measured height, else the theme var,
-  // else a conservative 62.
-  const _measuredRowH = document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
+  // else a conservative 62. (Same base-height rule as the renderer: count by
+  // boardAutofit's recorded UNSTRETCHED height so paging stays stable.)
+  const _measuredRowH = (parseFloat((document.getElementById('fidsTable') || { dataset: {} }).dataset.fidsBaseRowH) || 0)
+    || document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
   const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
   const available = _fidsRowsAvail();
