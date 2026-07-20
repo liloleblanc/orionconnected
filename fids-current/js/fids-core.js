@@ -2718,6 +2718,10 @@ try {
             try {
               var gv = document.getElementById('gateView');
               if (gv && gv.contains(el2) && typeof gateAutofit === 'function') gateAutofit(gv);
+              // Board rows: refit FONTS immediately after the swap (geometry
+              // stays frozen — widths already reserve the longest alternate).
+              var tb = document.getElementById('fidsTable');
+              if (tb && tb.contains(el2) && typeof boardAutofit === 'function') setTimeout(function () { boardAutofit(false); }, 30);
             } catch (e) {}
             el2.style.opacity = '1';
           }, 370);
@@ -7872,7 +7876,7 @@ function uxgGateHtml(ctx) {
   // airline+alliance lockup — a separate mark would show the alliance twice.
   // (UA removed — Nick wants United's globe+wordmark with the Star Alliance
   // mark shown SEPARATELY, like every other Star carrier.)
-  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1 };
+  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1, 'AC': 1 };   // AC: official AC+Star lockup in the banner (Nick's zip)
   // Per-carrier alliance-mark override (Nick's official asset): United uses
   // the official 2011 Star Alliance lockup, black backing stripped so the
   // white mark floats on the banner.
@@ -8358,8 +8362,8 @@ function uxgGateHtml(ctx) {
   // cleanly on dark banners without needing a CSS filter.
   var BANNER_LOGO_OVERRIDE = {
     // BLACK BANNERS — use white-wordmark variants so logo text reads clean
-    'AC': '/logos/airlines/canadian/air-canada-white.svg',                       // red rondelle + white "AIR CANADA"
-    'QK': '/logos/airlines/canadian/air-canada-white.svg',                       // Jazz under AC
+    'AC': '/logos/airlines/canadian/ac-star-lockup.svg?v=22371',                 // official AC + Star Alliance lockup (Nick's zip)
+    'QK': '/logos/airlines/canadian/ac-star-lockup.svg?v=22371',                 // Jazz under AC — same lockup
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
@@ -8494,6 +8498,18 @@ function uxgGateHtml(ctx) {
     _sz = { h: 106, w: 300 };         // compact brand mark on the white plate
     _bannerUsedWordmark = true;       // reuse the white-plate styling
     _bannerPlateForced = true;        // BoA-style mark genuinely needs the plate
+  }
+  // Official combined AC + Star Alliance banner lockup (Nick's supplied zip,
+  // Jul 2026: 'thats the look im going for air canada') — white-ink official
+  // art straight on the black banner, real colours, no filter. The separate
+  // alliance mark is suppressed for AC (the lockup already carries it).
+  var _BANNER_LOCKUP_FILE = { 'AC': '/logos/airlines/canadian/ac-star-lockup.svg?v=22371' };
+  var _bannerLockupSrc = _BANNER_LOCKUP_FILE[_bannerBrandCode] || _BANNER_LOCKUP_FILE[airlineCode];
+  if (!_useOverrideFile && _bannerLockupSrc) {
+    r1LogoSrc = _bannerLockupSrc;
+    _useOverrideFile = true;          // real colours — no white filter
+    _sz = { h: 102, w: 560 };         // wide lockup fills the band
+    _bannerUsedWordmark = true;
   }
   // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
   // Render the LOCAL dark-ink wordmark on a clean white plate: real brand type,
@@ -9650,7 +9666,7 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
     cells.forEach(function (el) { el.style.setProperty('font-size', finPx + 'px', 'important'); });
   }
 }
-function boardAutofit() {
+function boardAutofit(full) {
   try {
     // BANNER TITLE ('Retrait des bagages' + bag icon spilling out of the
     // yellow block at MCO): the label fits the board block's width minus
@@ -9704,7 +9720,13 @@ function boardAutofit() {
         // measures honest, stable boxes — with auto layout every font
         // change reflowed the columns and early fits collapsed to 12px.
         var TEXTCOLS = ['td-flight', 'td-dest', 'td-term', 'td-gate', 'td-time', 'td-time-rev', 'td-status'];
-        try {
+        // WIDTHS ONLY ON FULL PASSES (Nick's video: 'flip flopping, really
+        // bad'): the destination flip changes text every 7 s, and when the
+        // heartbeat re-probed column widths from the new text the whole
+        // table's columns shifted — every flip, both directions. Geometry
+        // may change ONLY on a real render or resize; heartbeats fit fonts
+        // inside the frozen columns.
+        if (full) try {
           var firstRow = rows[0];
           var ths = tbl.querySelectorAll('thead th');
           if (ths.length && ths.length === firstRow.children.length) {
@@ -9745,7 +9767,25 @@ function boardAutofit() {
                 probe.style.letterSpacing = cs.letterSpacing;
                 probe.style.fontSize = _probePx + 'px';
                 probe.textContent = (td.textContent || '').trim().replace(/\s+/g, ' ');
-                maxW = Math.max(maxW, probe.offsetWidth);
+                var _w0 = probe.offsetWidth;
+                // FLIP-AWARE (the flip-flop video): a [data-destflip] child
+                // swaps cities every 7 s — the column must be sized for its
+                // LONGEST alternate, not whichever city was on screen when
+                // the widths were computed.
+                td.querySelectorAll('[data-destflip]').forEach(function (fe) {
+                  try {
+                    var _its = JSON.parse(decodeURIComponent(fe.getAttribute('data-destflip')));
+                    var _kd = fe.getAttribute('data-dfk') || 'c';
+                    probe.textContent = (fe.textContent || '').trim();
+                    var _curW = probe.offsetWidth, _maxAlt = 0;
+                    _its.forEach(function (it) {
+                      probe.textContent = String((_kd === 'ia') ? (it.ia || '') : (it.c || ''));
+                      if (probe.offsetWidth > _maxAlt) _maxAlt = probe.offsetWidth;
+                    });
+                    if (_maxAlt > _curW) _w0 += (_maxAlt - _curW);
+                  } catch (e2) {}
+                });
+                maxW = Math.max(maxW, _w0);
               });
               // The HEADER label needs room too — 'AIRSIDE' was clipping to
               // 'AIRSID' over a column whose cells only hold one letter.
@@ -9849,8 +9889,8 @@ function boardAutofit() {
 }
 // Standing refit — covers the BAGS render, destination flips changing text
 // lengths, and window resizes, same rhythm as the gate's fit heartbeat.
-try { setInterval(boardAutofit, 5000); } catch (e) {}
-try { window.addEventListener('resize', function () { setTimeout(boardAutofit, 120); }); } catch (e) {}
+try { setInterval(function () { boardAutofit(false); }, 5000); } catch (e) {}
+try { window.addEventListener('resize', function () { setTimeout(function () { boardAutofit(true); }, 120); }); } catch (e) {}
 
 function renderDedicatedScreen() {
   if (screenType === 'gate') { document.body.classList.add('uxg-gate-mode'); }
@@ -15383,7 +15423,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22370';
+var FIDS_BUILD_TAG = 'v22371';
 (function(){
   try {
     function _addTag(){
@@ -16369,7 +16409,7 @@ function render() {
     _lastTbodyHtml = _newHtml;
     // Fit the fresh rows right away — the 5 s heartbeat alone would let a
     // just-rendered page sit unfitted for seconds.
-    try { setTimeout(boardAutofit, 60); } catch (e) {}
+    try { setTimeout(function () { boardAutofit(true); }, 60); } catch (e) {}
   }
   // Phase 4: expose flight lists to the Search tab
   try {
