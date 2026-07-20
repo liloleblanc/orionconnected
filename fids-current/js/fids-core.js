@@ -2393,7 +2393,11 @@ function _fidsDurationMins(raw) {
   return 0;
 }
 function _fidsMlAircraftName(v) {
-  var s = String(v || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  // Aircraft names are sent as a query parameter, never rendered as HTML.
+  // Still use a strict allow-list so provider text cannot carry markup or
+  // control characters into URLs, storage keys, logs, or future consumers.
+  var s = String(v || '').replace(/[^A-Za-z0-9 .(),+\/_-]+/g, ' ')
+    .replace(/\s+/g, ' ').trim();
   return s.slice(0, 100);
 }
 function fidsMlFlightTimeMins(o, d, aircraftName) {
