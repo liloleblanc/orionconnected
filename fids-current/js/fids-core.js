@@ -18148,90 +18148,13 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         result.inbound = await _loadInboundByReg(result.reg, airportIata, primaryLeg, dateStr);
       }
 
-      // Step 6: HISTORY FUSION
-      // Today's ADB data may be thin (common when the flight is scheduled
-      // more than a few hours out). When a field is missing here, check what
-      // the last 14 days of ADB observations say. If there's a clear majority
-      // winner (≥60% of days agree), fill the field with that value and mark
-      // its source as 'history'. No guessing — these are actual prior values.
-      //
-      // CRITICAL: When ADB returns an aircraft type WITHOUT a registration,
-      // it's a generic guess (often the most common type for that flight
-      // number), not real telemetry. In that case, prefer history's
-      // high-confidence majority winner if it conflicts. With a registration,
-      // trust today's ADB completely (real telemetry).
-      var _needHistory = !result.reg || !result.operator || result.operator._source === 'same-as-marketing' || !result.aircraftCode;
-      if (_needHistory) {
-        try {
-          var hist = await loadFlightHistory(flightNumber);
-          if (hist) {
-            // Fill reg from history if today doesn't have one.
-            if (!result.reg && hist.reg) {
-              result.reg = hist.reg.value;
-              result._regSource = 'history';
-              console.log('[loadFlight]', flightNumber, 'reg from history:', hist.reg.value,
-                '(' + Math.round(hist.reg.confidence*100) + '% confidence,',
-                hist.reg.observed + '/' + hist.reg.total + ' days)');
-            } else if (!result.reg && hist.regLatest) {
-              // No majority winner (fleets that rotate tails daily never
-              // produce one) — fall back to the most recent real observation.
-              // The UI shows this with an "expected | prévu" qualifier and
-              // keeps re-checking for today's confirmed tail.
-              result.reg = hist.regLatest.value;
-              result._regSource = 'history-latest';
-              console.log('[loadFlight]', flightNumber, 'reg from latest observation:',
-                hist.regLatest.value, '(' + (hist.regLatest.date || 'undated') + ')');
-            }
-            // Aircraft type — only fill from history if today has nothing
-            var _todayHasReg = !!result.reg && result._regSource !== 'history';
-            if (!result.aircraftCode && hist.aircraftCode) {
-              // Missing today: fill from history
-              result.aircraftCode = hist.aircraftCode.value;
-              result._aircraftCodeSource = 'history';
-            }
-            // OVERRIDE LOGIC REMOVED here too — same root cause as the
-            // aircraftModel override below. Today's data wins.
-            if ((!result.aircraft || !result.aircraftModel) && hist.aircraftModel) {
-              result.aircraftModel = hist.aircraftModel.value;
-              result.aircraft = formatAircraft(hist.aircraftModel.value);
-              result._aircraftSource = 'history';
-            }
-            // OVERRIDE LOGIC REMOVED: previously, if today provided an aircraft model
-            // but no reg, the code would override today's model with the history's
-            // most-common-model. That caused the on-screen aircraft type to flip
-            // between today's actual data (e.g. Bombardier CRJ900) and history's
-            // pattern (e.g. Embraer 175) every poll cycle. Today's fresh data wins
-            // — even without a reg, the model name returned by ADB is current and
-            // accurate. History should only FILL gaps, not override fresh data.
-            // Fill operator from history only if today says marketing === operator.
-            // Do NOT override a confirmed operator from today's ADB data.
-            if (hist.operator && result.operator._source === 'same-as-marketing') {
-              result.operator = {
-                iata: hist.operator.value,
-                name: AIRLINE_NAME[hist.operator.value] || hist.operator.value,
-                icao: '',
-                _source: 'history'
-              };
-              console.log('[loadFlight]', flightNumber, 'operator from history:', hist.operator.value,
-                '(' + Math.round(hist.operator.confidence*100) + '% confidence,',
-                hist.operator.observed + '/' + hist.operator.total + ' days)');
-            }
-            // If we got a reg from history but have no inbound yet (because
-            // step 5 skipped it due to no reg), try the inbound lookup now.
-            // NOTE: majority-history regs only — a 'history-latest' reg is
-            // display-only ("expected | prévu") and must not seed the inbound
-            // airframe lookup: a live fix found for the WRONG tail would
-            // render as confirmed telemetry on the map.
-            // Never seed today's inbound-aircraft lookup from a historical
-            // registration. A majority tail from prior days is still not a
-            // confirmed assignment for this departure and can select the wrong
-            // route, model and livery. Natural polling will populate the inbound
-            // as soon as today's registration is published.
-          }
-        } catch (historyErr) {
-          console.warn('[loadFlight] history fusion error:', historyErr.message);
-        }
-      }
+      // Historical observations are deliberately excluded from the live gate
+      // truth path. A tail or type flown on a previous day is not today's
+      // assignment and must never consume calls, select an image, or replace a
+      // scheduled equipment value. If today's payload is incomplete, leave the
+      // field pending and let the 60-second live poll obtain the assignment.
+      // Truth order remains: confirmed current registration/registry record,
+      // current inbound update, then today's scheduled equipment.
 
       _loadFlightCache[cacheKey] = result;
       return result;
