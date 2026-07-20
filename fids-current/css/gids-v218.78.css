@@ -4825,7 +4825,7 @@ body, body.gids-page, body.gate-page{
    uses Nick's dark brown-smooth texture; the three right shelves below the map
    use the lighter 935 texture, with the cloud layer preserved over row 5. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
-  background: url('/textures/ac-left-brown-smooth.jpg?v=22350') center / cover no-repeat !important;
+  background: url('/textures/ac-left-brown-smooth.jpg?v=22351') center / cover no-repeat !important;
   border: 1px solid rgba(255,255,255,0.10) !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title,
@@ -5105,4 +5105,56 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow 
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   v22351 — AC GATE CORRECTIVE OVERRIDES (Jul 20 2026)
+   Keep this block last: the general right-shelf type rules above deliberately
+   use !important, so the airline-specific contrast treatment must follow them.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Accept the IATA, ICAO and full-name values seen in live/demo feeds. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col {
+  background: #201d1b url('/textures/ac-left-brown-smooth.jpg?v=22351') center / cover no-repeat !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  background: rgba(20,17,15,.14) url('/textures/ac-left-brown-smooth.jpg?v=22351') center / cover no-repeat !important;
+  background-blend-mode: multiply !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-aircraft-col .v2-fi-row :is(.v2-fi-title,.v2-fi-title span,.v2-fi-value,.v2-fi-value span) {
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.78) !important;
+}
+
+/* The generic table rules are more specific than the former AC override and
+   were repainting the right shelf copy navy. Apply the final visible colour to
+   every textual descendant of AC's three non-map shelves. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map),
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(div,span,p,b,strong,small) {
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.78) !important;
+}
+
+/* Ad creative is the top visual layer. Abstract art remains in the surround
+   generated behind it; container pseudo-art and the fitted bezel can never
+   paint across the creative itself. */
+.g8-wrap .gad-media-col.g8-static-page-ad::before,
+.g8-wrap .gad-media-col.g8-static-page-ad::after {
+  display: none !important;
+}
+.g8-wrap .gad-media-col.g8-static-page-ad > #gateAdCarousel {
+  z-index: 2 !important;
+}
+#gateAdCarousel .ad-tech-media {
+  position: absolute !important;
+  z-index: 3 !important;
+}
+#gateAdCarousel .ad-tech-frame,
+#fidsMediaFrame .ad-tech-frame {
+  z-index: 1 !important;
+  pointer-events: none !important;
+}
+#fidsMediaFrame {
+  z-index: 5 !important;
 }
