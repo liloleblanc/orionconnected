@@ -9437,41 +9437,52 @@ function gateAutofit(root) {
   // short value (a time) genuinely fills its shelf. Runs last and is
   // deterministic from geometry, so the 5s heartbeat converges instead of
   // dancing. Status value excluded (two stacked bilingual lines).
+  // Shared box-assign: binary-search the largest size that fits the given
+  // box, strict (the browser ellipsizes on 1px of overflow), 1px slack.
+  function _boxAssign(el, availW, availH, colR, skipH) {
+    if (availH < 12 || availW < 30) return;
+    function fits(px) {
+      el.style.setProperty('font-size', px + 'px', 'important');
+      if (el.scrollWidth > el.clientWidth) return false;
+      if (el.scrollWidth > availW) return false;
+      if (!skipH && el.offsetHeight > availH) return false;
+      if (colR && el.getBoundingClientRect().right > colR) return false;
+      return true;
+    }
+    var lo = 12, hi = Math.min(140, Math.floor(availH));
+    if (!fits(hi)) {
+      while (lo < hi) {
+        var mid = Math.ceil((lo + hi) / 2);
+        if (fits(mid)) lo = mid; else hi = mid - 1;
+      }
+    } else { lo = hi; }
+    fits(Math.max(12, lo - 1));
+  }
   try {
+    // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper)
     root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-value').forEach(function (el) {
       if (/v2-fi-status-val/.test(el.className)) return;
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var title = row.querySelector('.v2-fi-title');
       var availH = row.clientHeight - (title ? title.offsetHeight : 0) - 6;
-      var availW = tc.clientWidth;
-      if (availH < 14 || availW < 40) return;
-      var col = el.closest('.gad-aircraft-col');
       var colR = Infinity;
+      var col = el.closest('.gad-aircraft-col');
       if (col) {
         var ccs2 = window.getComputedStyle(col);
         colR = col.getBoundingClientRect().right - (parseFloat(ccs2.paddingRight) || 0);
       }
-      function fits(px) {
-        el.style.setProperty('font-size', px + 'px', 'important');
-        // STRICT: the browser ellipsizes on even 1px of overflow ('Toron…'
-        // at scrollWidth 262 vs box 261) — no tolerances here.
-        if (el.scrollWidth > el.clientWidth) return false;
-        if (el.scrollWidth > availW) return false;
-        if (el.offsetHeight > availH) return false;
-        if (el.getBoundingClientRect().right > colR) return false;
-        return true;
-      }
-      var lo = 14, hi = Math.min(140, Math.floor(availH));
-      if (!fits(hi)) {
-        while (lo < hi) {
-          var mid = Math.ceil((lo + hi) / 2);
-          if (fits(mid)) lo = mid; else hi = mid - 1;
-        }
-      } else { lo = hi; }
-      // one px of slack under the found maximum — sub-pixel layout can round
-      // against us between heartbeats
-      fits(Math.max(14, lo - 1));
+      _boxAssign(el, tc.clientWidth, availH, colR);
+    });
+    // RIGHT CARD rows ('all spaces accounted for'): the value cell is a
+    // FIXED flex box (its scroll/offset sizes never follow the font), so
+    // the box IS the budget: width = the cell's own box (text-overflow
+    // catches width), height cap = a single-line fraction of the cell.
+    root.querySelectorAll('.gad-map-col-v2 .v2-rc-fi-trow').forEach(function (row) {
+      var val = row.querySelector('.v2-rc-fi-tval');
+      if (!val) return;
+      var cap = Math.floor((row.clientHeight - 6) * 0.72);
+      _boxAssign(val, val.clientWidth, cap, null, true);
     });
   } catch (e) {}
 }
@@ -15007,7 +15018,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22356';
+var FIDS_BUILD_TAG = 'v22357';
 (function(){
   try {
     function _addTag(){
