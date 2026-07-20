@@ -5308,3 +5308,11 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-fi-tval-revised > span {
   flex: 0 1 auto !important;
   min-width: 0 !important;
 }
+
+/* v22358 — stylesheet-alive sentinel. Deliberately the LAST rule in the
+   file: it only takes effect if the ENTIRE stylesheet was fetched and
+   parsed. fids-core probes for it after load and re-fetches this file
+   under a fresh URL when it's missing — a browser that cached a bad or
+   truncated response for this URL would otherwise wear the retired gate
+   look (visible g8-r2 banner, unstyled rails) forever. */
+.g8-css-sentinel { height: 7px !important; }
