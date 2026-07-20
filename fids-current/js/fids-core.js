@@ -7637,16 +7637,7 @@ function uxgGateHtml(ctx) {
   // Inbound panel — only show when aircraft is still en-route or about to depart.
   // Once it has actually landed/arrived at this airport, the aircraft is at the
   // gate — no longer "incoming" — so the panel should disappear.
-  var _inbAlreadyArrived = inboundFlight && (
-    inboundFlight.status === 'landed' ||
-    inboundFlight.status === 'arrived'
-  );
-  // Additional check: if arrival time is in the past by more than 5 minutes,
-  // treat as arrived even if status hasn't updated yet
-  var _inbArrTs = (inboundFlight && (inboundFlight._revTs || inboundFlight._sortTs)) || null;
-  if (_inbArrTs && (Date.now() - _inbArrTs) > 5 * 60000) {
-    _inbAlreadyArrived = true;
-  }
+  var _inbAlreadyArrived = fidsInboundHasArrived(inboundFlight, Date.now());
   var _inbOperating = inboundFlight && !_inbAlreadyArrived && (
     inboundFlight.status === 'active' ||
     inboundFlight.status === 'en-route' ||
@@ -17461,6 +17452,18 @@ function fidsLocalDateKey(ts, timeZone) {
     return new Date(ts || Date.now()).toISOString().slice(0, 10);
   }
 }
+function fidsInboundHasArrived(inboundFlight, nowTs) {
+  if (!inboundFlight) return false;
+  var status = String(inboundFlight.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (status === 'arrived' || status === 'landed' || inboundFlight._actualArrTime) return true;
+  // A published airborne status outranks a stale scheduled/revised clock.
+  // AC7992 was still EnRoute with a 10:57 predicted arrival, but the old
+  // five-minute heuristic hid its map and aircraft after the earlier 10:25
+  // revised time. Only a neutral status may fall back to a clock inference.
+  if (/^(active|enroute|approaching|departed)$/.test(status)) return false;
+  var arrivalTs = inboundFlight._revTs || inboundFlight._sortTs || 0;
+  return !!arrivalTs && ((nowTs || Date.now()) - arrivalTs) > 30 * 60000;
+}
 function fidsAdbStatusKey(value) {
   if (typeof value === 'number') {
     return ['scheduled','scheduled','active','scheduled','boarding','gateclosed',
@@ -18435,13 +18438,30 @@ async function loadFlightHistory(flightNumber) {
 }
 
 function adbStatus(f, mode, schedTs, nowTs) {
-  const raw=(f.status||'').toLowerCase();
-  if(raw==='cancelled')return 'cancelled'; if(raw==='diverted')return 'diverted';
-  const rev=mode==='dep'?f.departure?.revisedTime?.local:f.arrival?.revisedTime?.local;
-  const revTs=rev?adbTs(rev):null;
-  if(raw==='departed'||raw==='arrived'||raw==='landed') return mode==='dep'?'departed':'arrived';
-  // Use revised time for status progression if delayed
-  const refTs = (revTs && revTs > schedTs + 5*60000) ? revTs : schedTs;
+  const raw=String(f.status||'').replace(/[\s_-]+/g,'').toLowerCase();
+  // AeroDataBox's explicit status is authoritative. In particular, EnRoute /
+  // Approaching must never be converted to Arrived merely because an older ETA
+  // passed. A departure status on an ARRIVAL row means the inbound is airborne.
+  if(raw==='cancelled'||raw==='canceled'||raw==='cancelleduncertain'||raw==='canceleduncertain')return 'cancelled';
+  if(raw==='diverted')return 'diverted';
+  if(raw==='arrived'||raw==='landed')return 'arrived';
+  if(raw==='enroute'||raw==='approaching'||raw==='active')return mode==='dep'?'departed':'active';
+  if(raw==='departed')return mode==='dep'?'departed':'active';
+  if(raw==='boarding')return 'boarding';
+  if(raw==='gateclosed')return 'gateclosed';
+  if(raw==='final'||raw==='finalcall')return 'final';
+  if(raw==='delayed')return 'delayed';
+  if(raw==='early')return 'early';
+
+  const leg=mode==='dep'?(f.departure||{}):(f.arrival||{});
+  // Provider update order: actual runway time > live predicted time > revised
+  // schedule > original schedule. This is the same order mapADB exposes as
+  // `upd` / `_revTs`, keeping labels, status and arrival-hiding in agreement.
+  const update=(leg.runwayTime&&(leg.runwayTime.local||leg.runwayTime.utc))
+    ||(leg.predictedTime&&(leg.predictedTime.local||leg.predictedTime.utc))
+    ||(leg.revisedTime&&(leg.revisedTime.local||leg.revisedTime.utc));
+  const updateTs=update?adbTs(update):null;
+  const refTs = updateTs || schedTs;
   const minsToRef = (refTs - nowTs) / 60000;
   // Base phase from the (revised) reference time — boarding/final/gate
   // phases always outrank a delay/early label.
@@ -18453,8 +18473,8 @@ function adbStatus(f, mode, schedTs, nowTs) {
   // (Nick: 'flights delayed showing on time and early should be early') —
   // the old >30-min gate let a flight revised 40 min later read 'On time'.
   if(base==='ontime'||base==='scheduled'){
-    if(revTs && revTs > schedTs + 5*60000) return 'delayed';
-    if(revTs && revTs < schedTs - 5*60000) return 'early';
+    if(updateTs && updateTs > schedTs + 5*60000) return 'delayed';
+    if(updateTs && updateTs < schedTs - 5*60000) return 'early';
   }
   return base;
 }
@@ -18554,7 +18574,11 @@ function mapADB(raw, mode) {
         }
       }
     }
-    const revL=mode==='dep'?f.departure?.revisedTime?.local:f.arrival?.revisedTime?.local;
+    const _timeLeg=mode==='dep'?(f.departure||{}):(f.arrival||{});
+    const _actualL=(_timeLeg.runwayTime&&(_timeLeg.runwayTime.local||_timeLeg.runwayTime.utc))||null;
+    const _predL=(_timeLeg.predictedTime&&(_timeLeg.predictedTime.local||_timeLeg.predictedTime.utc))||null;
+    const _revisedL=(_timeLeg.revisedTime&&(_timeLeg.revisedTime.local||_timeLeg.revisedTime.utc))||null;
+    const revL=_actualL||_predL||_revisedL;
     const revTs=revL?adbTs(revL):null;
     const upd=(revTs&&Math.abs(revTs-schedTs)>5*60000)?adbHHMM(revL):null;
     const st=adbStatus(f,mode,schedTs,nowTs);
