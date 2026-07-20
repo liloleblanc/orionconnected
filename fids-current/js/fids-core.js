@@ -2283,10 +2283,12 @@ function _gateTelemSetReal(spdKt, altFt) {
   // between pings (Nick's glide rule, applied to the digits).
   if (T.realTs) { T.prevSpd = T.realSpd; T.prevAlt = T.realAlt; T.prevTs = T.realTs; }
   T.realSpd = sp; T.realAlt = al; T.realTs = now;
-  // A fresh provider reading is the new physical truth: show it immediately.
-  // Do not spend the next minute easing toward a value that is already known.
-  if (sp !== null) T.spd = sp;
-  if (al !== null) T.alt = al;
+  // A fresh ping re-anchors the MODEL; the per-second animator EASES the
+  // displayed digits onto it over ~10 s (Nick: 'play the realistic game,
+  // then catch up with the pings') — no hard snap after a frozen minute.
+  // Only a first-ever anchor is written directly (nothing to ease from).
+  if (T.spd === null && sp !== null) T.spd = sp;
+  if (T.alt === null && al !== null) T.alt = al;
   _writeGateTelemDom();
   var inb = window._gateInbound;
   var arrTs = inb && (inb._revTs || inb._sortTs);
@@ -2319,10 +2321,11 @@ function _gateTelemModel() {
       // DAMPED: two pings can differ by a wind/ADS-B noise blip, and running
       // that rate for a whole minute doubles the blip into a fake surge
       // (Nick: '757kph to 867 climbing in less than a minute'). Tight rate
-      // caps, and the extrapolation runs at most 45 s then HOLDS until the
-      // next real ping corrects it — visible motion, never a runaway.
-      var effAge = Math.min(age, 45);
-      if (span >= 20 && span <= 300) {
+      // caps keep it sane; the trend runs the full 90 s window (the old 45 s
+      // hold froze the digits for the back half of every 60 s poll — Nick:
+      // 'very inconsistent... does not move like it should').
+      var effAge = Math.min(age, 90);
+      if (span >= 10 && span <= 420) {
         if (typeof T.prevAlt === 'number' && typeof alt === 'number') {
           var altRate = (alt - T.prevAlt) / span;                     // ft/s
           altRate = Math.max(-30, Math.min(30, altRate));             // ≤1800 fpm
@@ -2362,11 +2365,12 @@ function _animateGateTelem() {
   var T = window._gateTelemAnim;
   var m = _gateTelemModel();
   if (!m) return;
-  // The model is a bounded continuation of the rate measured between the last
-  // two real fixes. Recalculate it directly each second; a new real fix snaps
-  // the anchor back to reality in _gateTelemSetReal().
-  if (m.spd !== null && m.spd !== undefined) T.spd = m.spd;
-  if (m.alt !== null && m.alt !== undefined) T.alt = m.alt;
+  // The model is the last real anchor plus its bounded measured trend. The
+  // DISPLAYED digits ease toward it ~22%/s — smooth continuous motion while
+  // the trend runs, and a ~10 s visible 'catch-up' whenever a fresh ping
+  // moves the anchor, instead of the old snap-freeze-snap cadence.
+  if (typeof m.spd === 'number') T.spd = (typeof T.spd === 'number') ? T.spd + (m.spd - T.spd) * 0.22 : m.spd;
+  if (typeof m.alt === 'number') T.alt = (typeof T.alt === 'number') ? T.alt + (m.alt - T.alt) * 0.22 : m.alt;
   _writeGateTelemDom();
 }
 
@@ -6618,13 +6622,12 @@ function _buildV2MapCol(ctx, vars) {
           : _ibMinsToArr + ' min';
       }
 
-      // Status class for color (matches left column status colors)
-      var _stCls = '';
-      var _rs = _rawSt;
-      if (_rs === 'scheduled' || _rs === 'on-time' || _rs === 'ontime' || _rs === 'early') _stCls = 'scheduled';
-      else if (_rs === 'boarding' || _rs === 'delayed' || _rs === 'final-call' || _rs === 'finalcall') _stCls = 'delayed';
-      else if (_rs === 'cancelled' || _rs === 'gate-closed' || _rs === 'gateclosed') _stCls = 'cancelled';
-      else _stCls = 'ontime';
+      // Status class for color — the SAME key as the shown word. It used to
+      // re-derive from the raw feed status while the text upgraded to
+      // 'En route' at altitude, so an airborne plane wore Scheduled's white
+      // (Nick: 'make sure we do colored status'). Label and colour come
+      // from one key so they can never disagree.
+      var _stCls = _stKey || 'scheduled';
 
       // v220 — compact telemetry (kt→kph) + inline brand icons for the redesigned card
       // REAL telemetry only. Speed/altitude come from live ADS-B (via the board
@@ -15074,7 +15077,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22360';
+var FIDS_BUILD_TAG = 'v22361';
 (function(){
   try {
     function _addTag(){
