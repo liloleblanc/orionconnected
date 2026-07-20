@@ -1,1 +1,2 @@
 kick 2026-07-19T18:43:23Z — force a real build; empty commit was skipped as a no-op
+kick 2026-07-20T01:25:16Z — fids worker missed builds for #292/#293 (GitHub 503 window)
