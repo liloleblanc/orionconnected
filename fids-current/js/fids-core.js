@@ -6850,10 +6850,22 @@ function _buildV2MapCol(ctx, vars) {
     var _anyInb = !!_ib2;
     var _inbEquipCd = _anyInb ? (_ib2._aircraftCode || '') : '';
     var _inbEquipNm = _anyInb ? (_ib2._aircraft || (_ib2._aircraftCode ? formatAircraft(_ib2._aircraftCode) : '')) : '';
-    var _equipCd = _outEquipCd || _inbEquipCd;
-    var _equipNm = _outEquipNm || _inbEquipNm;
+    // The right shelf is explicitly “Your Aircraft”: when an inbound flight
+    // is present, its equipment is the physical aircraft turning at this gate.
+    // Never let the outbound flight-number matrix replace that record (AC7995
+    // previously invented a DH4 even though inbound AC7992 reported a CR9).
+    // If the inbound row has no equipment, show Pending instead of guessing.
+    var _equipCd = _anyInb ? _inbEquipCd : _outEquipCd;
+    var _equipNm = _anyInb ? _inbEquipNm : _outEquipNm;
+    if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
+    // History tails are prior observations, not today's assigned airframe.
+    // They may remain available to the text/history subsystem, but they must
+    // never choose the aircraft picture or model in this physical-aircraft shelf.
+    var _currentRegSource = String((vars.currentFlight && vars.currentFlight._regSource) || '');
+    var _currentReg = (vars.currentFlight && vars.currentFlight._reg) || '';
+    if (/^history/.test(_currentRegSource)) _currentReg = '';
     // v218.99.32 — Registration folded into aircraft block (two-column)
-    var _acReg = (vars.currentFlight && vars.currentFlight._reg) || (_anyInb && _ib2 && _ib2._reg) || '';
+    var _acReg = _currentReg || (_anyInb && _ib2 && _ib2._reg) || '';
     // STICKY expected tail (Nick: 'that aircraft loves to change wow'): the
     // history-based 'expected' reg flaps between candidate tails poll to
     // poll, dragging the type + photo with it. Once a tail is shown for this
@@ -6988,7 +7000,7 @@ function _buildV2MapCol(ctx, vars) {
     // airframe (E175 on a nominal Dash range, etc.) the REAL aircraft wins —
     // live telemetry must never contradict the label (Nick: a 'Q400' showing
     // 31,400 ft was the matrix overwriting an actual E175).
-    if (_mxGate) {
+    if (_mxGate && !_anyInb) {
       var _mxEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
       var _mxRealRegional = /CRJ|\bCR[0-9JK]\b|DASH|DH[0-9C]|Q400|E1[79][05]|\bE7[05W]\b|EMBRAER/.test(_mxEqUp);
       if (!_mxRealRegional && !_mxGate.eqTest.test(_mxEqUp)) {
@@ -14856,7 +14868,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22350';
+var FIDS_BUILD_TAG = 'v22354';
 (function(){
   try {
     function _addTag(){
@@ -18043,13 +18055,11 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
             // display-only ("expected | prévu") and must not seed the inbound
             // airframe lookup: a live fix found for the WRONG tail would
             // render as confirmed telemetry on the map.
-            if (result._regSource === 'history' && !result.inbound && airportIata) {
-              // Use the historical reg to look up today's airframe path.
-              // This may or may not match today — if the reg hasn't actually
-              // been assigned to this flight, this lookup returns no inbound,
-              // and the panel will show "pending" which is still correct.
-              result.inbound = await _loadInboundByReg(result.reg, airportIata, primaryLeg, dateStr);
-            }
+            // Never seed today's inbound-aircraft lookup from a historical
+            // registration. A majority tail from prior days is still not a
+            // confirmed assignment for this departure and can select the wrong
+            // route, model and livery. Natural polling will populate the inbound
+            // as soon as today's registration is published.
           }
         } catch (historyErr) {
           console.warn('[loadFlight] history fusion error:', historyErr.message);
