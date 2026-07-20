@@ -7276,12 +7276,17 @@ function _buildV2MapCol(ctx, vars) {
       // Airlines swap A320/A321 on these routes right up to assignment, so
       // with no confirmed tail the scheduled/history type carries the same
       // honest 'expected' qualifier the tails do.
+      // NO-SPLIT LAW (Nick: 'certain things should never be separated on
+      // several lines such as a name or place or aircraft'): each segment
+      // (model, registration, qualifier) is nowrap — a line may only break
+      // BETWEEN segments at the separator, never inside 'Boeing 737-800'.
+      var _nbw = function (t) { return '<span style="white-space:nowrap;">' + t + '</span>'; };
       var _acTypeVal;
       if (_acModel && !_acReg) {
-        _acTypeVal = _acModel + ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> '
+        _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
           + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>';
       } else {
-        _acTypeVal = _acModel + (_acReg ? '  |  ' + _acReg + _acRegTag : '');
+        _acTypeVal = _nbw(_acModel) + (_acReg ? '  |  ' + _nbw(_acReg + _acRegTag) : '');
       }
       // Shorter label per Nick: "Aircraft / Appareil" (was "Aircraft type").
       var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
@@ -7308,8 +7313,8 @@ function _buildV2MapCol(ctx, vars) {
       // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
       // BOTTOM (only if operated by another carrier): Operated By + logo, centered.
       var _pendingAircraftText = (_lang2b === 'es')
-        ? 'Aircraft details pending <span class="v2-rc-fi-sep">|</span> Datos del avión pendientes'
-        : 'Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir';
+        ? _nbw('Aircraft details pending') + ' <span class="v2-rc-fi-sep">|</span> ' + _nbw('Datos del avión pendientes')
+        : _nbw('Aircraft details pending') + ' <span class="v2-rc-fi-sep">|</span> ' + _nbw('Détails de l’appareil à venir');
       var _typeCellHtml =
           '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || _pendingAircraftText) + '</div>'
         + (_opByVal
@@ -7320,7 +7325,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div id="gateCloudsBg"></div>'
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
-              : '<div class="v2-rc-aircraft-pending">Aircraft image pending <span>|</span> Image de l’appareil à venir</div>')
+              : '<div class="v2-rc-aircraft-pending"><span style="white-space:nowrap;">Aircraft image pending</span> <span>|</span> <span style="white-space:nowrap;">Image de l’appareil à venir</span></div>')
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
         +   _typeCellHtml
@@ -7333,7 +7338,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus">'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<div class="v2-rc-aircraft-pending">Aircraft image pending <span>|</span> Image de l’appareil à venir</div>'
+      +   '<div class="v2-rc-aircraft-pending"><span style="white-space:nowrap;">Aircraft image pending</span> <span>|</span> <span style="white-space:nowrap;">Image de l’appareil à venir</span></div>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
       +   '<div class="v2-rc-acb-actype v2-rc-actype-val">Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir</div>'
@@ -9584,12 +9589,12 @@ function gateAutofit(root) {
 //      can ever ellipsize ('B65…', 'Embarquem…') and the column reads as
 //      one size, not ragged per-row type.
 // The airline brand cell keeps its calibrated wordmark artwork sizes.
-function _boardFitCol(cells, capRatio, allowWrap) {
+function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
   var colSize = 999;
   cells.forEach(function (el) {
     if (!(el.textContent || '').trim()) return;
     var host = el.parentElement; if (!host) return;
-    var rowH = (el.closest('tr') || el.closest('.bidsv2-flight-row') || host).clientHeight;
+    var rowH = fixedRowH || (el.closest('tr') || el.closest('.bidsv2-flight-row') || host).clientHeight;
     var availH = Math.floor(rowH * (capRatio || 0.72));
     if (el.clientWidth < 24 || availH < 12) return;
     // Single-line fit by default: the width check is the honest one;
@@ -9615,21 +9620,33 @@ function _boardFitCol(cells, capRatio, allowWrap) {
 }
 function boardAutofit() {
   try {
+    // BANNER TITLE ('Retrait des bagages' + bag icon spilling out of the
+    // yellow block at MCO): the label fits the board block's width minus
+    // the icon, single line — same law as everything else.
+    document.querySelectorAll('.fids-banner-board').forEach(function (bb) {
+      var lbl = bb.querySelector('.fids-board-label'); if (!lbl) return;
+      var icon = bb.querySelector('.fids-board-icon');
+      var bcs = getComputedStyle(bb);
+      var w = bb.clientWidth - (parseFloat(bcs.paddingLeft) || 0) - (parseFloat(bcs.paddingRight) || 0)
+            - (icon ? icon.offsetWidth + 14 : 0);
+      var h = bb.clientHeight;
+      if (w < 40 || h < 20) return;
+      lbl.style.setProperty('white-space', 'nowrap', 'important');
+      function _lfits(px) { lbl.style.setProperty('font-size', px + 'px', 'important'); return lbl.scrollWidth <= w && lbl.offsetHeight <= h; }
+      var lo = 14, hi = Math.max(15, Math.min(72, Math.floor(h * 0.62)));
+      if (!_lfits(hi)) { while (lo < hi) { var mid = Math.ceil((lo + hi) / 2); if (_lfits(mid)) lo = mid; else hi = mid - 1; } }
+      _lfits(Math.max(14, lo - 1));
+    });
     var tbl = document.getElementById('fidsTable');
     if (tbl && tbl.offsetParent) {
       var rows = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr'));
       if (rows.length) {
-        // 1 — stretch. Base height is remembered on the table so the
-        // pagination math keeps counting rows by the UNSTRETCHED height
-        // (otherwise stretch → fewer rows next page → stretch more → loop).
+        // 1 — the ROW IS THE FIXED OBJECT (Nick: 'they are the fixed
+        // object that does not change — the text and surroundings conform
+        // to it'). The small/medium/large density setting owns the height;
+        // no stretching. Base height is still recorded for the page math.
         rows.forEach(function (r) { r.style.removeProperty('height'); });
-        var baseH = rows[0].offsetHeight || 60;
-        tbl.dataset.fidsBaseRowH = baseH;
-        var avail = (typeof _fidsRowsAvail === 'function') ? _fidsRowsAvail() : 0;
-        if (avail > 0 && rows.length) {
-          var target = Math.min(Math.floor(avail / rows.length), Math.floor(baseH * 1.5));
-          if (target > baseH) rows.forEach(function (r) { r.style.setProperty('height', target + 'px', 'important'); });
-        }
+        tbl.dataset.fidsBaseRowH = rows[0].offsetHeight || 60;
         // 2 — COLUMN WIDTHS, then text fit. The flight column was 100px —
         // 'WN4038' overflows it at 14px, so no font could ever fill the row
         // ('B65…'). Measure what each text column's content actually needs
@@ -9746,14 +9763,40 @@ function boardAutofit() {
         });
       }
     }
+    // WORDMARK BACKSTOP — 'jetBlu' kept getting cut on the live board even
+    // after fresh stylesheets: whatever mis-sizes a mark (missing data-code,
+    // per-airport slot vars), the drawn artwork must never exceed its slot.
+    try {
+      document.querySelectorAll('#fidsTable .fids-airline-wordmark').forEach(function (img) {
+        if (!img.naturalWidth || !img.naturalHeight) return;
+        var slot = img.closest('.fids-airline-wordmark-slot'); if (!slot) return;
+        var scs = getComputedStyle(slot);
+        var availW = slot.clientWidth - (parseFloat(scs.paddingLeft) || 0) - (parseFloat(scs.paddingRight) || 0);
+        if (availW < 20) return;
+        var maxH = Math.floor(availW * img.naturalHeight / img.naturalWidth);
+        if (img.clientHeight > maxH) {
+          img.style.setProperty('height', maxH + 'px', 'important');
+          img.style.setProperty('max-height', maxH + 'px', 'important');
+        }
+      });
+    } catch (e) {}
     var list = document.querySelector('.bidsv2-flight-list');
     if (list && list.offsetParent) {
-      ['.bidsv2-flight-num', '.bidsv2-col-time', '.bidsv2-col-status'].forEach(function (sel) {
-        _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row ' + sel)), 0.6);
+      // The row is the FIXED OBJECT here too: bids rows auto-grow with
+      // content, so measuring a row the previous fit inflated spiraled the
+      // text extra-large (Nick at MCO: 'supposed to be small its extra
+      // large') and pushed the last row off the panel. Record the natural
+      // height ONCE (first pass, CSS fonts) and always fit against that.
+      if (!list.dataset.fidsBaseRowH) {
+        var _r0 = list.querySelector('.bidsv2-flight-row');
+        if (_r0) list.dataset.fidsBaseRowH = _r0.clientHeight || 64;
+      }
+      var _bBase = parseFloat(list.dataset.fidsBaseRowH) || 64;
+      // Places never split across lines (Nick) — every BAGS lane fits on
+      // ONE line, whatever size that costs.
+      ['.bidsv2-flight-num', '.bidsv2-col-from', '.bidsv2-col-time', '.bidsv2-col-status'].forEach(function (sel) {
+        _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row ' + sel)), 0.55, false, _bBase);
       });
-      // The From lane is narrow and its cities are long — two fitted lines
-      // beat one 12px whisper.
-      _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row .bidsv2-col-from')), 0.42, true);
     }
   } catch (e) {}
 }
@@ -15293,7 +15336,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22365';
+var FIDS_BUILD_TAG = 'v22366';
 (function(){
   try {
     function _addTag(){
