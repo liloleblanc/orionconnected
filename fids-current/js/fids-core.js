@@ -2401,7 +2401,7 @@ function _fidsMlFetch(o, d, k) {
   // JWT-authenticated block and 401s every unauthenticated board call
   // (silently: ML times fell back to the km-guess, plans never loaded).
   var url = 'https://fids-proxy.n-leblanc1984.workers.dev/proxy/airports/iata/' + o + '/distance-time/' + d + '?flightTimeModel=ML01';
-  fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+  adbPacedFetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
     var t = j && j.approxFlightTime;                       // "HH:MM:SS" date-span
     var m = t ? String(t).match(/(\d+):(\d{2})/) : null;
     var mins = m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : 0;
@@ -2438,7 +2438,7 @@ function fidsFlightPlan(flightNo, dateStr) {
     window['_fpF_' + k] = true;
     // /proxy/ passthrough — /api/adb/ requires a JWT (admin block) and 401s.
     var url = 'https://fids-proxy.n-leblanc1984.workers.dev/proxy/flights/number/' + encodeURIComponent(fl) + '/' + dateStr + '?withFlightPlan=true';
-    fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    adbPacedFetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       var arr = Array.isArray(j) ? j : (j ? [j] : []);
       var fp = null;
       for (var i = 0; i < arr.length; i++) {
@@ -5769,7 +5769,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // United globe (white path only, padded to sit inside the round badge)
+        'UA':  '/logos/airline-tiles/UA-globe-glossy.png?v=22349',      // Nick's supplied glossy United globe; native-colour, full-bleed first shelf orb
         'DL':  '/logos/airlines/us-major/delta-widget.svg',
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
@@ -5832,7 +5832,7 @@ function _buildV2AircraftCol(ctx, vars) {
     if (typeof aircraftImgTag === 'function' && _liveryEq) {
       _acImg = aircraftImgTag(_liveryAirline, _liveryEq, {
         rawModel: _equipNm || _equipCd || '',
-        reg: _acReg || ''
+        reg: _reg || ''
       });
     }
   } catch(e) { _acImg = ''; }
@@ -6067,7 +6067,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true };  // (PD uses a white "p", and PB a white arrow, on the accent circle — not native; F8's green dot stays full-colour)
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true };  // United's supplied globe and Flair's green dot keep their native colours
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
@@ -7054,7 +7054,11 @@ function _buildV2MapCol(ctx, vars) {
       }
     } catch(e) { _acImg = ''; }
 
-    if (_acImg || _equipNm || _equipCd || _acReg || _opCode === 'RV' || _opCode === 'QK') {
+    // Keep rows 5 and 6 mounted even when the provider returns a thin or
+    // rate-limited response. Their former conditional made the plane/cloud
+    // and aircraft-info shelves vanish together, which changed the grid and
+    // looked like a broken screen. Missing data is shown honestly as pending.
+    {
       // Operated-by badge — Nick wants this on the SAME LINE as the
       // aircraft type, NOT overlaid on the plane image. Built first so it
       // can be slotted into the type-shelf row below.
@@ -7219,21 +7223,38 @@ function _buildV2MapCol(ctx, vars) {
       //   Operated By: / Exploté Par:  [LOGO]    Aircraft: / Appareil:  A319 | reg
       // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
       // BOTTOM (only if operated by another carrier): Operated By + logo, centered.
+      var _pendingAircraftText = (_lang2b === 'es')
+        ? 'Aircraft details pending <span class="v2-rc-fi-sep">|</span> Datos del avión pendientes'
+        : 'Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir';
       var _typeCellHtml =
-          '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || '—') + '</div>'
+          '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || _pendingAircraftText) + '</div>'
         + (_opByVal
             ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">Operated By <span class="v2-rc-fi-sep">|</span> ' + _opByL2 + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
             : '');
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus">'
         +   '<div id="gateCloudsBg"></div>'
-        +   (_acImg ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>' : '')
+        +   (_acImg
+              ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
+              : '<div class="v2-rc-aircraft-pending">Aircraft image pending <span>|</span> Image de l’appareil à venir</div>')
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
         +   _typeCellHtml
         + '</div></div>';
     }
   } catch (e) {}
+  // Last-resort geometry guard: even a malformed enrichment field must not
+  // remove the two fixed shelves from the six-row right rail.
+  if (!_aircraftBlock) {
+    _aircraftBlock =
+        '<div class="v2-rc-shelf v2-rc-shelf-illus">'
+      +   '<div id="gateCloudsBg"></div>'
+      +   '<div class="v2-rc-aircraft-pending">Aircraft image pending <span>|</span> Image de l’appareil à venir</div>'
+      + '</div>'
+      + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
+      +   '<div class="v2-rc-acb-actype v2-rc-actype-val">Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir</div>'
+      + '</div></div>';
+  }
 
   // Map area — now the TOP half of the right column, with the "Your Aircraft"
   // title overlaid at the top and the speed/altitude telemetry at the bottom
@@ -9308,10 +9329,10 @@ function gateAutofit(root) {
   // UNIFORM SIZE for the big shelf values — per-element fitting left them at
   // DIFFERENT sizes (one long word shrank only its own shelf while the rest
   // stayed huge; Nick: 'protect the words from shrinking'). Every value now
-  // gets the size of the WORST fitter, floored at 62% of the design size so
-  // nothing can turn tiny — an extreme value ellipsizes instead of dragging
-  // the whole rail microscopic. The bilingual status value is excluded (its
-  // two stacked lines fit smaller by design and would drag the group down).
+  // gets the size of the WORST fitter. Do not re-enlarge that fitted size:
+  // the former 62% floor put long city/flight values back into overflow after
+  // they had already fitted correctly, producing clipped words. The bilingual
+  // status value is excluded (its two stacked lines fit smaller by design).
   try {
     var _vals = Array.prototype.slice.call(root.querySelectorAll('.v2-fi-value'))
       .filter(function (el) { return !/v2-fi-status-val/.test(el.className); });
@@ -9324,7 +9345,7 @@ function gateAutofit(root) {
         _maxOrig = Math.max(_maxOrig, o2);
       });
       if (isFinite(_minPx) && _maxOrig > 0) {
-        var _uni = Math.max(_minPx, Math.round(_maxOrig * 0.62));
+        var _uni = _minPx;
         _vals.forEach(function (el) {
           el.style.setProperty('font-size', _uni + 'px', 'important');
         });
@@ -14050,7 +14071,7 @@ const LOGO_SUBFOLDER = {
   'Oneworld.svg':'airlines/alliances', 'Oneworld_logo.svg':'airlines/alliances', 'PAL-Airlines.svg':'airlines/canadian-regional', 'bearskin-wordmark-light.svg':'airlines/canadian-regional', 'wasaya-wordmark-light.svg':'airlines/canadian-regional', 'north-star-wordmark-light.svg':'airlines/canadian-regional', 'Porter_Airlines_Logo_2006.svg':'airlines/canadian',
   'SO.png':'hotels/accor-premium', 'Skywest-Airlines-01.svg':'airlines/us-regional', 'Sofitel-01.eps':'hotels/accor-luxury', 'Sofitel-01.jpg':'hotels/accor-luxury',
   'Sofitel-01.png':'hotels/accor-luxury', 'WestJet_Logo_2016_symbol.svg':'airlines/canadian', 'WestJet_Logo_2018.svg':'airlines/canadian', 'WestJet_Logo_2018_white_wordmark.svg':'airlines/canadian', 'aaadvantage-white.png':'airlines/us-major', 'aaadvantage.png':'airlines/us-major', 'ac-hotels.png':'hotels/marriott',
-  'ac-roundel.png':'airlines/canadian', 'aeroplan.svg':'airlines/canadian', 'air-canada-white.svg':'airlines/canadian', 'air-canada-wordmark-dark.svg':'airlines/canadian', 'air-canada-wordmark-light.svg':'airlines/canadian', 'air-canada.svg':'airlines/canadian', 'air-france-wordmark-dark.svg':'airlines/european',
+  'ac-roundel.png':'airlines/canadian', 'aeroplan.svg':'airlines/canadian', 'air-canada-star-alliance-horizontal.svg':'airlines/canadian', 'air-canada-white.svg':'airlines/canadian', 'air-canada-wordmark-dark.svg':'airlines/canadian', 'air-canada-wordmark-light.svg':'airlines/canadian', 'air-canada.svg':'airlines/canadian', 'air-france-wordmark-dark.svg':'airlines/european',
   'air-france-wordmark-light.svg':'airlines/european', 'air-france.svg':'airlines/european', 'alaska-airlines-wordmark-dark.svg':'airlines/us-major',
   'alaska-airlines-wordmark-light.svg':'airlines/us-major', 'alaska-airlines.svg':'airlines/us-major', 'all-accor.svg':'hotels/accor-corporate', 'aloft.png':'hotels/marriott', 'american-airlines-white.svg':'airlines/us-major', 'american-airlines-wordmark-dark.svg':'airlines/us-major', 'american-airlines-wordmark-light.svg':'airlines/us-major',
   'american-airlines.svg':'airlines/us-major', 'american-flight-symbol.svg':'airlines/us-major', 'american-wordmark-dark.svg':'airlines/us-major', 'american-wordmark-light.svg':'airlines/us-major', 'sun-country-wordmark-dark.svg':'airlines/us-major', 'sun-country-wordmark-light.svg':'airlines/us-major', 'sun-country-wordmark-color.svg':'airlines/us-major', 'angsana.svg':'hotels/accor-premium', 'art-series.svg':'hotels/accor-premium', 'autograph-collection.png':'hotels/marriott',
@@ -14836,7 +14857,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22348';
+var FIDS_BUILD_TAG = 'v22349';
 (function(){
   try {
     function _addTag(){
@@ -16671,7 +16692,7 @@ async function adbFetchWindow(iata, direction, fromStr, toStr) {
       const url = proxyUrl;
       const opts = {};
       console.log(`[FIDS] ADB fetch (attempt ${attempt+1}):`, url);
-      const r = await fetch(url, opts);
+      const r = await adbPacedFetch(url, opts);
       if (r.status === 429) {
         console.warn(`[FIDS] Rate limited (429), waiting ${(attempt+1)*2}s...`);
         await new Promise(resolve => setTimeout(resolve, (attempt+1) * 2000));
@@ -17346,14 +17367,19 @@ var _regFetching = {}; // Guard against duplicate concurrent requests
 // history, image at once, on every screen) — the provider answers the first
 // few and throttles the rest, which is exactly the 'very rare to see an
 // aircraft' rationing. This regulator smooths the burst under the cap:
-// max 2 in flight, 300 ms between launches, honest backoff on 429.
-var _adbQ = [], _adbActive = 0, _adbLastLaunch = 0;
+// max 2 in flight, 350 ms between launches, honest backoff on 429.
+var _adbQ = [], _adbActive = 0, _adbLastLaunch = 0, _adbLaunchTimer = null;
 function _adbPump() {
-  if (_adbActive >= 2 || !_adbQ.length) return;
-  var wait = Math.max(0, _adbLastLaunch + 300 - Date.now());
-  var job = _adbQ.shift();
-  _adbActive++;
-  setTimeout(function () {
+  if (_adbLaunchTimer || _adbActive >= 2 || !_adbQ.length) return;
+  // One shared launch timer guarantees the spacing. The former implementation
+  // scheduled the first two jobs against the same timestamp, so both still
+  // fired together even though the queue claimed to pace them.
+  var wait = Math.max(0, _adbLastLaunch + 350 - Date.now());
+  _adbLaunchTimer = setTimeout(function () {
+    _adbLaunchTimer = null;
+    if (_adbActive >= 2 || !_adbQ.length) { _adbPump(); return; }
+    var job = _adbQ.shift();
+    _adbActive++;
     _adbLastLaunch = Date.now();
     (async function () {
       var tries = 0;
@@ -17373,6 +17399,8 @@ function _adbPump() {
       _adbActive--;
       _adbPump();
     })();
+    // Fill the second concurrency slot only after the same 350 ms launch gap.
+    _adbPump();
   }, wait);
 }
 function adbPacedFetch(url, opts) {
@@ -17447,10 +17475,13 @@ async function fetchInboundByReg(reg, airportIata) {
     var cleanReg = reg.replace(/[-\s]/g,'');
     var today = new Date();
     var dateStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-    var path = '/flights/reg/' + encodeURIComponent(cleanReg) + '/' + dateStr;
+    // The API specification defaults withLocation to false. This helper reads
+    // location below, so request it explicitly instead of waiting for a field
+    // the endpoint will otherwise omit.
+    var path = '/flights/reg/' + encodeURIComponent(cleanReg) + '/' + dateStr + '?withLocation=true';
     var proxyUrl = 'https://fids-proxy.n-leblanc1984.workers.dev' + path;
     console.log('[FIDS] Looking up inbound by reg:', cleanReg, 'at', airportIata);
-    var r = await fetch(proxyUrl);
+    var r = await adbPacedFetch(proxyUrl);
     if (!r.ok) {
       var _rbSnip = ''; try { _rbSnip = (await r.text()).slice(0, 200); } catch (e2) {}
       window._adbHealth = { failStatus: r.status, failPath: path, failBody: _rbSnip, failTs: Date.now() };
@@ -17528,8 +17559,8 @@ async function fetchInboundByReg(reg, airportIata) {
       _reg: reg,
       _aircraft: best.aircraft ? formatAircraft(best.aircraft.model || best.aircraft.typeName || '') : '',
       _aircraftCode: best.aircraft ? (best.aircraft.iataCodeShort || '') : '',
-      _liveLat: (best.location && best.location.lat) || null,
-      _liveLng: (best.location && (best.location.lon || best.location.lng)) || null,
+      _liveLat: _adbLat(best.location),
+      _liveLng: _adbLng(best.location),
       _liveAlt: _adbAltFt(best.location),
       _liveSpd: _adbSpdKt(best.location),
       _liveOnGround: _adbOnGround(best.location),
@@ -17563,7 +17594,7 @@ async function fetchFlightPosition(flightNumber, dateStr) {
   _trackFetching[cacheKey] = true;
   try {
     // ADB endpoint: GET /flights/number/{flightNumber}/{dateLocal}
-    var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + dateStr;
+    var path = '/flights/number/' + encodeURIComponent(flightNumber) + '/' + dateStr + '?withLocation=true';
     var url = ADB_BASE + path;
     console.log('[FIDS] Fetching flight position:', url);
     var r = await adbPacedFetch(url.replace(ADB_BASE, 'https://fids-proxy.n-leblanc1984.workers.dev'));
@@ -17591,8 +17622,8 @@ async function fetchFlightPosition(flightNumber, dateStr) {
         if (leg.location) {
           var loc = leg.location;
           pos = {
-            lat: loc.lat || loc.latitude || null,
-            lng: loc.lon || loc.lng || loc.longitude || null
+            lat: _adbLat(loc),
+            lng: _adbLng(loc)
           };
         }
         // Also check top-level lat/lon fields
@@ -17683,6 +17714,20 @@ function _adbAltFt(loc) {
   if (p && typeof p.feet === 'number' && p.feet > 0) return Math.round(p.feet);
   if (p && typeof p.meters === 'number' && p.meters > 0) return Math.round(p.meters * 3.28084);
   return null;
+}
+// ADB usually uses lat/lon, but some responses use latitude/longitude or
+// serialize the numbers as strings. Normalize them so a valid position is not
+// discarded before it reaches the gate map.
+function _adbCoord(loc, primary, secondary) {
+  if (!loc) return null;
+  var v = (loc[primary] !== undefined && loc[primary] !== null) ? loc[primary] : loc[secondary];
+  if (typeof v === 'string' && v.trim()) v = parseFloat(v);
+  return (typeof v === 'number' && isFinite(v)) ? v : null;
+}
+function _adbLat(loc) { return _adbCoord(loc, 'lat', 'latitude'); }
+function _adbLng(loc) {
+  var v = _adbCoord(loc, 'lon', 'lng');
+  return v !== null ? v : _adbCoord(loc, 'longitude', 'long');
 }
 // True when ADB explicitly reports the airframe on the ground (or only a stale
 // surface fix): an altitude field present but <= 0. Used to keep the telemetry
@@ -17910,8 +17955,8 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
       var loc = primaryLeg.location;
       if (loc) {
         result.livePosition = {
-          lat: loc.lat || loc.latitude || null,
-          lng: loc.lon || loc.lng || loc.longitude || null,
+          lat: _adbLat(loc),
+          lng: _adbLng(loc),
           alt: _adbAltFt(loc),
           speed: _adbSpdKt(loc)
         };
@@ -18106,11 +18151,16 @@ async function _loadInboundByReg(reg, airportIata, primaryLeg, dateStr) {
       if (tMatch) timeStr = tMatch[1];
     }
 
-    // Live position if airborne
-    var liveSpd = null, liveAlt = null;
+    // Preserve the full live fix. The map reads coordinates from this legacy
+    // inbound object; the old adapter kept only SPD/ALT and silently lost the
+    // plane position returned by ADB.
+    var liveSpd = null, liveAlt = null, liveLat = null, liveLng = null, liveOnGround = false;
     if (best.location) {
       liveSpd = _adbSpdKt(best.location);
       liveAlt = _adbAltFt(best.location);
+      liveLat = _adbLat(best.location);
+      liveLng = _adbLng(best.location);
+      liveOnGround = _adbOnGround(best.location);
     }
 
     return {
@@ -18140,6 +18190,9 @@ async function _loadInboundByReg(reg, airportIata, primaryLeg, dateStr) {
       // Live telemetry
       _liveSpd: liveSpd,
       _liveAlt: liveAlt,
+      _liveLat: liveLat,
+      _liveLng: liveLng,
+      _liveOnGround: liveOnGround,
 
       // Meta
       _inboundSource: 'reg-lookup'
@@ -18583,8 +18636,8 @@ function mapADB(raw, mode) {
     }
     const _checkIn = f.departure?.checkInDesk || null;
     // Live position
-    const _liveLat = (f.location&&f.location.lat)||null;
-    const _liveLng = (f.location&&(f.location.lon||f.location.lng))||null;
+    const _liveLat = _adbLat(f.location);
+    const _liveLng = _adbLng(f.location);
     const _liveAlt = _adbAltFt(f.location);
     const _liveSpd = _adbSpdKt(f.location);
     const _liveOnGround = _adbOnGround(f.location);
@@ -20370,7 +20423,7 @@ function apAutoSearch(q, ctx) {
   _apSearchTimer = setTimeout(function() {
     if (_apSearchCache[vUp]) { renderMatches(_apSearchCache[vUp]); return; }
     var path = '/airports/search/term?q=' + encodeURIComponent(v) + '&limit=12&withFlightInfoOnly=true&withSearchByCode=true';
-    fetch('https://fids-proxy.n-leblanc1984.workers.dev' + path)
+    adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev' + path)
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
         if (!data || !data.items || !data.items.length) return;
@@ -24985,7 +25038,7 @@ function _regTrueType(reg) {
     window._regTypeRetry = window._regTypeRetry || {};
     if (window._regTypeRetry[r] && _now < window._regTypeRetry[r]) return '';
     window._regTypeRetry[r] = _now + 10 * 60000;   // one attempt per 10 min max
-    fetch('https://fids-proxy.n-leblanc1984.workers.dev/aircrafts/reg/' + encodeURIComponent(r))
+    adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev/aircrafts/reg/' + encodeURIComponent(r))
       .then(function (resp) { return resp.ok ? resp.json() : null; })
       .then(function (ac) {
         // ADB aircraft objects vary: typeName / model / productionLine.

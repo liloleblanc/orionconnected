@@ -4549,6 +4549,23 @@ body, body.gids-page, body.gate-page{
     inset 0 2px 5px rgba(255,255,255,0.42),
     0 2px 6px rgba(0,0,0,0.22) !important;
 }
+/* The supplied United globe is already a finished glossy orb. Let it fill the
+   first shelf badge without whitening, shrinking, or adding a second sheen;
+   the remaining five functional badges keep the matching United-blue finish. */
+.g8-wrap.g8-airline-UA .gad-aircraft-col .v2-fi-row:first-child .v2-fi-emblem-wrap.v2-fi-emblem-native {
+  background: transparent !important;
+  padding: 0 !important;
+}
+.g8-wrap.g8-airline-UA .gad-aircraft-col .v2-fi-row:first-child .v2-fi-emblem-wrap.v2-fi-emblem-native::after {
+  display: none !important;
+}
+.g8-wrap.g8-airline-UA .gad-aircraft-col .v2-fi-row:first-child .v2-fi-emblem-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  filter: none !important;
+  margin: 0 !important;
+}
 
 /* ════════ v253 — Shiny orb badges: contained top sheen (colour-safe) ════════
    A defined highlight ellipse over the full-colour body reads as a glossy orb on
@@ -4711,6 +4728,23 @@ body, body.gids-page, body.gate-page{
 }
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > * { position: relative; z-index: 1; }
 
+/* Stable honest fallback when aircraft enrichment is delayed. Keeping this
+   small label inside the cloud shelf is preferable to removing rows 5–6 and
+   making the entire rail jump. */
+.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-pending {
+  align-self: center !important;
+  max-width: 88% !important;
+  padding: 0.45em 0.8em !important;
+  border-radius: 999px !important;
+  background: rgba(255,255,255,0.72) !important;
+  color: #24364b !important;
+  font-size: clamp(10px,1.35vh,17px) !important;
+  font-weight: 750 !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+
 /* Clouds drift follows the plane's heading. Facing varies by aircraft type,
    not airline (AC mainline faces left, AC regional faces right), so it's
    auto-detected per image by a canvas scan that adds .g8-plane-faces-right to
@@ -4787,13 +4821,11 @@ body, body.gids-page, body.gate-page{
   font-size:13px; letter-spacing:0.6px; text-align:center; line-height:1.6;
 }
 
-/* ══ AIR CANADA BRUSHED GRAPHITE — ON THE SHELVES (Nick: 'I meant for
-   the shelves'). Each left-rail shelf wears his reference fade: silver top
-   into dark graphite, fine striations, pure CSS (sharp at any size).
-   Lettering goes white/silver for the dark zone; status keeps its
-   semantic colours. AC gates only via body[data-gate-airline]. */
+/* ══ AIR CANADA SHELVES — exact supplied references. The opposite/left rail
+   uses Nick's dark brown-smooth texture; the three right shelves below the map
+   use the lighter 935 texture, with the cloud layer preserved over row 5. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
-  background: url('/textures/ac-metal-dark.jpg?v=22348') center / cover no-repeat !important;
+  background: url('/textures/ac-metal-dark.jpg?v=22349') center / cover no-repeat !important;
   border: 1px solid rgba(255,255,255,0.10) !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row .v2-fi-title,
@@ -4820,12 +4852,13 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
   letter-spacing: -0.3px !important;
   font-size: 0.95em !important;
 }
-/* Right column: same brushed steel, lighter run so navy text keeps reading */
+/* Right column: supplied 935 metal on Flight Info, cloud/aircraft, and the
+   bottom Aircraft Info shelf. The real cloud element remains above this base. */
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
-  background: url('/textures/ac-metal-dark.jpg?v=22348') center / cover no-repeat !important;
+  background: url('/textures/ac-shelf-935.jpg?v=22349') center / cover no-repeat !important;
 }
-/* Left-rail globe REMOVED for AC (Nick: 'remove the globe') — the bronze
-   metal stands alone. The is-bare pending filler is untouched. */
+/* Left-rail globe remains removed for AC so the brown-smooth material stands
+   on its own. The is-bare pending filler is untouched. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col:not(.is-bare)::after {
   display: none !important;
 }
