@@ -15018,7 +15018,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22357';
+var FIDS_BUILD_TAG = 'v22358';
 (function(){
   try {
     function _addTag(){
@@ -15046,6 +15046,47 @@ var FIDS_BUILD_TAG = 'v22357';
       }, 2000);
     }
     if (document.body) _addTag(); else document.addEventListener('DOMContentLoaded', _addTag);
+  } catch (e) {}
+})();
+
+// ── GATE STYLESHEET GUARD ────────────────────────────────────────────────
+// One browser cached a dead response for gids-v218.78.css (fetched during a
+// deploy window) and rendered the retired gate look — visible g8-r2 banner,
+// unstyled rails — on every build after, because the cached URL never
+// changed. The probe measures the sentinel rule that sits at the END of the
+// stylesheet (so it also catches truncated responses); when it isn't live,
+// the file is re-fetched under a unique URL. Screens in the field can't
+// have their caches cleared by hand — they have to self-heal.
+(function () {
+  try {
+    var _tries = 0;
+    function _cssAlive() {
+      if (!document.body) return true; // can't probe yet — don't re-fetch blind
+      var p = document.createElement('div');
+      p.className = 'g8-css-sentinel';
+      p.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;';
+      document.body.appendChild(p);
+      var h = p.offsetHeight;
+      p.parentNode.removeChild(p);
+      return h === 7;
+    }
+    function _check() {
+      var link = document.querySelector('link[href*="gids-v218.78.css"]');
+      if (!link) return;            // page doesn't use the gate stylesheet
+      if (_cssAlive()) return;      // sheet is live — nothing to do
+      if (_tries >= 3) return;      // give up after 3 recoveries (network down)
+      _tries++;
+      console.warn('[FIDS] gate stylesheet not applied — re-fetching (attempt ' + _tries + ')');
+      var fresh = document.createElement('link');
+      fresh.rel = 'stylesheet';
+      fresh.href = link.getAttribute('href').split('?')[0] + '?v=cssguard-' + Date.now();
+      fresh.onload = function () { setTimeout(_check, 1500); };
+      fresh.onerror = function () { setTimeout(_check, 8000); };
+      link.parentNode.insertBefore(fresh, link.nextSibling);
+    }
+    if (document.readyState === 'complete') setTimeout(_check, 3000);
+    else window.addEventListener('load', function () { setTimeout(_check, 3000); });
+    setTimeout(_check, 12000); // fallback in case the load event never fires
   } catch (e) {}
 })();
 
