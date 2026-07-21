@@ -18,22 +18,58 @@
  * worker does NOT touch the flight feed.
  */
 
+// Each engine file lists FALLBACK upstreams, tried in order — a single-CDN
+// outage (or one CDN blocked from Cloudflare's egress) must not take the
+// route maps down. First upstream that answers 200 wins.
 const MAP_ENGINE = {
-  'leaflet.js':     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-  'leaflet.css':    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
-  'leaflet-arc.js': 'https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js',
+  'leaflet.js': [
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
+    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js',
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  ],
+  'leaflet.css': [
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
+    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css',
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  ],
+  'leaflet-arc.js': [
+    'https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js',
+    'https://cdn.jsdelivr.net/npm/leaflet-arc/bin/leaflet-arc.min.js',
+  ],
   // MapLibre GL JS v5 — WebGL engine with globe projection + 3D tilt, used by
   // the 3D route-map prototype. Same-origin passthrough so locked-down gate
   // display networks (which block public CDNs) can still load it.
-  'maplibre-gl.js':  'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js',
-  'maplibre-gl.css': 'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css',
+  'maplibre-gl.js': [
+    'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js',
+    'https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js',
+  ],
+  'maplibre-gl.css': [
+    'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css',
+    'https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.css',
+  ],
   // three.js r128 (UMD global THREE) — renders the 3D plane model in a
   // MapLibre custom layer.
-  'three.min.js':    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+  'three.min.js': [
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+  ],
   // glTF loader (UMD, attaches THREE.GLTFLoader) + a real airliner model.
-  'gltf-loader.js':  'https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js',
-  'plane.glb':       'https://raw.githubusercontent.com/CesiumGS/cesium/main/Apps/SampleData/models/CesiumAir/Cesium_Air.glb',
+  'gltf-loader.js': [
+    'https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js',
+    'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js',
+  ],
+  'plane.glb': [
+    'https://raw.githubusercontent.com/CesiumGS/cesium/main/Apps/SampleData/models/CesiumAir/Cesium_Air.glb',
+    'https://cdn.jsdelivr.net/gh/CesiumGS/cesium@main/Apps/SampleData/models/CesiumAir/Cesium_Air.glb',
+  ],
 };
+
+// Failure responses must NEVER carry cache headers. Until v22378 every branch
+// below stamped 'max-age=86400' on whatever came back — including upstream
+// 5xx bodies — so a display that hit one bad moment cached a dead map engine
+// for 24 h and lost every route map on screen (the CSS-sentinel / wordmark
+// cache-poisoning class, third appearance).
+const NO_STORE = { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' };
 
 const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
 // AWS open elevation tiles (terrarium encoding) — free, no API key.
@@ -71,24 +107,26 @@ export default {
     // ── Map engine passthrough ──────────────────────────────────────────
     if (path.startsWith('/mapcdn/')) {
       const file = path.slice('/mapcdn/'.length);
-      const upstream = MAP_ENGINE[file];
-      if (!upstream) return new Response('Not found', { status: 404 });
-      try {
-        const r = await fetch(upstream, { cf: { cacheEverything: true, cacheTtl: DAY } });
-        const ct = file.endsWith('.css') ? 'text/css'
-                 : file.endsWith('.js')  ? 'application/javascript'
-                 : (r.headers.get('Content-Type') || 'application/octet-stream');
-        return new Response(r.body, {
-          status: r.status,
-          headers: {
-            'Content-Type': ct,
-            'Cache-Control': 'public, max-age=' + DAY,
-            'Access-Control-Allow-Origin': '*',
-          },
-        });
-      } catch (e) {
-        return new Response('Map engine fetch failed', { status: 502 });
+      const upstreams = MAP_ENGINE[file];
+      if (!upstreams) return new Response('Not found', { status: 404, headers: NO_STORE });
+      const ct = file.endsWith('.css') ? 'text/css'
+               : file.endsWith('.js')  ? 'application/javascript'
+               : null;
+      for (const upstream of upstreams) {
+        try {
+          const r = await fetch(upstream, { cf: { cacheEverything: true, cacheTtl: DAY } });
+          if (!r.ok) continue;   // try the next CDN — and never cache a corpse
+          return new Response(r.body, {
+            status: 200,
+            headers: {
+              'Content-Type': ct || r.headers.get('Content-Type') || 'application/octet-stream',
+              'Cache-Control': 'public, max-age=' + DAY,
+              'Access-Control-Allow-Origin': '*',
+            },
+          });
+        } catch (e) { /* network error — fall through to the next upstream */ }
       }
+      return new Response('Map engine fetch failed', { status: 503, headers: NO_STORE });
     }
 
     // ── 7-day weather passthrough (Open-Meteo, keyless) ─────────────────
@@ -105,8 +143,9 @@ export default {
           + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
           + '&timezone=auto&forecast_days=7';
         const r = await fetch(om, { cf: { cacheEverything: true, cacheTtl: 1800 } });
+        if (!r.ok) return new Response('wxdaily upstream ' + r.status, { status: 502, headers: NO_STORE });
         return new Response(r.body, {
-          status: r.status,
+          status: 200,
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'public, max-age=1800',
@@ -114,7 +153,7 @@ export default {
           },
         });
       } catch (e) {
-        return new Response('wxdaily fetch failed', { status: 502 });
+        return new Response('wxdaily fetch failed', { status: 502, headers: NO_STORE });
       }
     }
 
@@ -127,8 +166,9 @@ export default {
       }
       try {
         const r = await fetch(TILE_BASE + rest, { cf: { cacheEverything: true, cacheTtl: DAY } });
+        if (!r.ok) return new Response('Tile upstream ' + r.status, { status: 502, headers: NO_STORE });
         return new Response(r.body, {
-          status: r.status,
+          status: 200,
           headers: {
             'Content-Type': 'image/png',
             'Cache-Control': 'public, max-age=' + DAY,
@@ -136,7 +176,7 @@ export default {
           },
         });
       } catch (e) {
-        return new Response('Tile fetch failed', { status: 502 });
+        return new Response('Tile fetch failed', { status: 502, headers: NO_STORE });
       }
     }
 
@@ -151,8 +191,9 @@ export default {
       }
       try {
         const r = await fetch(DEM_BASE + rest, { cf: { cacheEverything: true, cacheTtl: DAY } });
+        if (!r.ok) return new Response('DEM upstream ' + r.status, { status: 502, headers: NO_STORE });
         return new Response(r.body, {
-          status: r.status,
+          status: 200,
           headers: {
             'Content-Type': 'image/png',
             'Cache-Control': 'public, max-age=' + DAY,
@@ -160,7 +201,7 @@ export default {
           },
         });
       } catch (e) {
-        return new Response('DEM fetch failed', { status: 502 });
+        return new Response('DEM fetch failed', { status: 502, headers: NO_STORE });
       }
     }
 
@@ -179,8 +220,9 @@ export default {
           cf: { cacheEverything: true, cacheTtl: DAY },
           headers: { 'User-Agent': 'OrionConnectedFIDS/1.0 (airport display board; +https://flymco.com)' }
         });
+        if (!r.ok) return new Response('Tile upstream ' + r.status, { status: 502, headers: NO_STORE });
         return new Response(r.body, {
-          status: r.status,
+          status: 200,
           headers: {
             'Content-Type': r.headers.get('Content-Type') || 'image/png',
             'Cache-Control': 'public, max-age=' + DAY,
@@ -188,7 +230,7 @@ export default {
           },
         });
       } catch (e) {
-        return new Response('Tile fetch failed', { status: 502 });
+        return new Response('Tile fetch failed', { status: 502, headers: NO_STORE });
       }
     }
 
