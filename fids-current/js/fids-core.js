@@ -9656,6 +9656,13 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
   }
   return null;
 }
+// TEMPORARY KILL SWITCH (Nick: 'is there a temporary fix cause I need to
+// go and this is not working right now'). false = the board renders at the
+// theme's own stock CSS sizes, exactly as it did before the fitter existed:
+// no measuring, no fitting, no geometry writes, nothing that can move.
+// The banner-overflow guard and wordmark backstop below stay active.
+// Re-enable ONLY with Nick's sign-off after harness proof.
+var BOARD_AUTOFIT_ENABLED = false;
 function boardAutofit(full) {
   try {
     // BANNER TITLE ('Retrait des bagages' + bag icon spilling out of the
@@ -9683,7 +9690,7 @@ function boardAutofit(full) {
       }
     });
     var tbl = document.getElementById('fidsTable');
-    if (tbl && tbl.offsetParent) {
+    if (BOARD_AUTOFIT_ENABLED && tbl && tbl.offsetParent) {
       var rows = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr'));
       if (rows.length) {
         // 1 — the ROW IS THE FIXED OBJECT (Nick: 'they should never ever
@@ -9923,7 +9930,7 @@ function boardAutofit(full) {
       });
     } catch (e) {}
     var list = document.querySelector('.bidsv2-flight-list');
-    if (list && list.offsetParent) {
+    if (BOARD_AUTOFIT_ENABLED && list && list.offsetParent) {
       // The row is the FIXED OBJECT here too: bids rows auto-grow with
       // content, so measuring a row the previous fit inflated spiraled the
       // text extra-large (Nick at MCO: 'supposed to be small its extra
@@ -15478,7 +15485,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22375';
+var FIDS_BUILD_TAG = 'v22376';
 (function(){
   try {
     function _addTag(){
