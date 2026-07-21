@@ -15667,7 +15667,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22386';
+var FIDS_BUILD_TAG = 'v22387';
 (function(){
   try {
     function _addTag(){
@@ -27060,6 +27060,12 @@ function _buildGateAdSlideList() {
     else {
       var _fb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[code]) || null;
       var _fbLogo = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[code]) || null;
+      // Opaque full-colour TILE emblems become a solid white slab under the
+      // standard ad renderer's white-force filter (Nick's Breeze A17: giant
+      // white square over the Welcome slide). Those brands show their WHITE
+      // wordmark here instead — already white, so the filter is an identity.
+      var _FB_WELCOME_LOGO = { 'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg' };
+      if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
         bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
         headline: 'Welcome aboard · Bienvenue à bord',
