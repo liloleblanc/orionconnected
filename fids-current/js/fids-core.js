@@ -15485,7 +15485,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22376';
+var FIDS_BUILD_TAG = 'v22377';
 (function(){
   try {
     function _addTag(){
@@ -16022,7 +16022,7 @@ function render() {
       ...(_isMcoBoard ? [{ cls: 'col-term', txt: _airsideLabel }] : []),
       { cls: 'col-gate',     txt: _T('gate')     },
       { cls: 'col-time',     txt: _T('time')     },
-      { cls: 'col-time-rev', txt: 'Revised'      },
+      { cls: 'col-time-rev', txt: (TL('revised') || 'Revised') }, // TL map: proper case + FR 'Révisé' (fidsT's key is lowercase; the old literal sat untranslated on the French board)
       { cls: 'col-status',   txt: _T('status')   }
     ];
     const _arrHeaders = [
@@ -16032,7 +16032,7 @@ function render() {
       ...(_isMcoBoard ? [{ cls: 'col-term', txt: _airsideLabel }] : []),
       { cls: 'col-gate',     txt: _T('carousel') },
       { cls: 'col-time',     txt: _T('time')     },
-      { cls: 'col-time-rev', txt: 'Revised'      },
+      { cls: 'col-time-rev', txt: (TL('revised') || 'Revised') }, // TL map: proper case + FR 'Révisé' (fidsT's key is lowercase; the old literal sat untranslated on the French board)
       { cls: 'col-status',   txt: _T('status')   }
     ];
     const _heads = isDep ? _depHeaders : _arrHeaders;
