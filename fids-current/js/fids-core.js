@@ -2529,7 +2529,10 @@ async function _gateNumbersPoll() {
   try {
     if (_gateNumPollBusy) return;
     if (typeof screenType !== 'undefined' && screenType !== 'gate') return;
-    var inb = window._gateInbound;
+    // The PANEL's inbound first (same object the right card rendered — the
+    // verified loadFlight link when it exists, else the gate-match fallback),
+    // so the poll always tracks what the screen is actually showing.
+    var inb = window._gatePanelInbound || window._gateInbound;
     var flt = inb && inb.flight;
     if (!flt) return;
     if (/cancel|arriv|land/i.test(String(inb.status || ''))) return;   // on the ground → stop
@@ -10411,6 +10414,14 @@ const gView = document.getElementById('gateView');
         && /^(reg-lookup|flight-lookup)$/.test(String(window._gateInbound._inboundSource || ''))
         && window._gateInbound._forOutbound === currentFlight.flight) ? window._gateInbound : null;
       const inboundFlight = _verifiedInbound || _gateMatchFallback;
+      // PANEL PARITY for the 60 s numbers poll: when the loadFlight linking
+      // never lands (quota, timing), the panel still shows the gate-match
+      // fallback — but window._gateInbound stays null, so the poll idled and
+      // the shelf sat regless forever (Nick's PD2293 at v22382: 'currently i
+      // have no registration'). Publish the EXACT object the panel rendered;
+      // the poll enriches it in place, so the fetched tail is what the next
+      // render reads.
+      try { window._gatePanelInbound = inboundFlight || null; } catch (e) {}
 
       if (inboundFlight) {
         console.log('[FIDS] Inbound for', currentFlight.flight, ':',
@@ -15650,7 +15661,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22382';
+var FIDS_BUILD_TAG = 'v22383';
 (function(){
   try {
     function _addTag(){
