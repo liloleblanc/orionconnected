@@ -15754,7 +15754,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22395';
+var FIDS_BUILD_TAG = 'v22396';
 (function(){
   try {
     function _addTag(){
@@ -18420,8 +18420,14 @@ async function adbFetch(iata, direction) {
 // trust window): a same-day assignment push is still today's tail per
 // Nick's 'go by the registration — from today, never the past'; the
 // carrier/leg sanity guards downstream re-validate every reg regardless.
+// ENABLED push airports — the ONLY places the board even asks the worker's
+// webhook cache (Nick: 'It should only be Moncton no?'). A subscription
+// lives in the ADB account, never in this code; when Nick adds one for
+// KTPA / KMCO, enabling it here is a one-line change.
+var _WEBHOOK_PUSH_ENABLED = { 'CYQM': true };
 async function _yqmCacheAircraftMerge(list, direction, icao) {
   try {
+    if (!_WEBHOOK_PUSH_ENABLED[String(icao || '').toUpperCase()]) return;
     if (!Array.isArray(list) || !list.length) return;
     const dirParam = direction === 'Departure' ? 'dep' : 'arr';
     // Parameterized (Nick: 'better check TPA — we may be experiencing a
