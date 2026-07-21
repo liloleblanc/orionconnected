@@ -15754,7 +15754,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22393';
+var FIDS_BUILD_TAG = 'v22394';
 (function(){
   try {
     function _addTag(){
@@ -18123,7 +18123,12 @@ async function adbFetch(iata, direction) {
           .filter(f => (String(f.adi || '').toUpperCase() === 'D') === wantDep)
           .map(tpaToAdbFlight).filter(Boolean);
         console.log(`[FIDS] TPA feed ${direction}: ${list.length} flights`);
-        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+        if (list.length) {
+          // Same webhook aircraft merge as Moncton — no-ops until a KTPA
+          // Flight-Alert subscription feeds the cache.
+          try { await _yqmCacheAircraftMerge(list, direction, 'KTPA'); } catch (e2) {}
+          return wantDep ? { departures: list } : { arrivals: list };
+        }
         console.warn('[FIDS] TPA feed empty — falling back to ADB scrape');
       } else {
         console.warn(`[FIDS] TPA feed HTTP ${r.status} — falling back to ADB scrape`);
@@ -18150,7 +18155,7 @@ async function adbFetch(iata, direction) {
           // ADB's by-number endpoint served for PD2293 (console: 'Direct
           // inbound resolved: PD2293 reg: (pending)' while the portal
           // showed C-GKQE). Merge ONLY the airframe identity back in.
-          try { await _yqmCacheAircraftMerge(list, direction); } catch (e2) {}
+          try { await _yqmCacheAircraftMerge(list, direction, 'CYQM'); } catch (e2) {}
           return direction === 'Departure' ? { departures: list } : { arrivals: list };
         }
         console.warn('[FIDS] YQM cyqm.ca feed empty — falling back to ADB scrape');
@@ -18409,11 +18414,17 @@ async function adbFetch(iata, direction) {
 // trust window): a same-day assignment push is still today's tail per
 // Nick's 'go by the registration — from today, never the past'; the
 // carrier/leg sanity guards downstream re-validate every reg regardless.
-async function _yqmCacheAircraftMerge(list, direction) {
+async function _yqmCacheAircraftMerge(list, direction, icao) {
   try {
     if (!Array.isArray(list) || !list.length) return;
     const dirParam = direction === 'Departure' ? 'dep' : 'arr';
-    const r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev/flights/cached/CYQM?direction=' + dirParam);
+    // Parameterized (Nick: 'better check TPA — we may be experiencing a
+    // similar issue from the same thing that happened in moncton'): TPA's
+    // native feed also carries ZERO aircraft data, so its gates also lean
+    // entirely on the by-number lookup. Any airport with a Flight-Alert
+    // PUSH subscription can merge tails the same way; an airport without
+    // one simply gets an empty cache and this no-ops.
+    const r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev/flights/cached/' + (icao || 'CYQM') + '?direction=' + dirParam);
     if (r.status !== 200) return;
     const j = await r.json();
     const recs = (j && Array.isArray(j.flights)) ? j.flights : [];
