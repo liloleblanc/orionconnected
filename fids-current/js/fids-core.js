@@ -6304,20 +6304,26 @@ function _buildV2AircraftCol(ctx, vars) {
         if (code === 'F8') {
           return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;background:#7AFF94;"></div>';
         }
-        var path = GATE_TOP_ROUND_EMBLEM_FILES[code] || AIRLINE_EMBLEM_FILES[code];
+        var path = (_tileBrand && _tileBrand.icon) || GATE_TOP_ROUND_EMBLEM_FILES[code] || AIRLINE_EMBLEM_FILES[code];
         // v218.99.69 — Airlines whose emblem files are full-color tiles
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        // MX added: Breeze's emblem is a full-colour navy tile with the
-        // light-blue check — the white-invert filter turned the WHOLE opaque
-        // tile into a solid white square (Nick's A17 banner: empty white box).
+        // TILE-BRAND badges (Nick: 'the circle needs to be same color as the
+        // icon then the middle needs to fit within the circle'): brands whose
+        // emblem is an opaque square tile render as a CIRCLE in the tile's
+        // own background colour with just the mark padded inside — the mark
+        // file is derived from the airline's own tile art, never redrawn.
+        var BADGE_TILE_BRANDS = { 'MX': { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' } };
+        var _tileBrand = BADGE_TILE_BRANDS[code] || null;
         var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true };  // supplied full-colour art keeps its native colours
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
-        var BADGE = native
-          ? BADGE_BASE + 'background:transparent;padding:0;'
-          : BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(2px,0.3vh,4px);';
+        var BADGE = _tileBrand
+          ? BADGE_BASE + 'background:' + _tileBrand.bg + ';padding:clamp(8px,1.1vh,14px);'
+          : native
+            ? BADGE_BASE + 'background:transparent;padding:0;'
+            : BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(2px,0.3vh,4px);';
         if (!path) {
           var GENERIC_PLANE = '<svg viewBox="0 0 24 24" style="width:100%;height:100%;fill:#fff;"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
           return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(5px,0.7vh,10px);">'
@@ -8132,9 +8138,12 @@ function uxgGateHtml(ctx) {
     // NATIVE colors (white-inverting the glossy orb made a white blob).
     var _birRound = (typeof GATE_TOP_ROUND_EMBLEM_FILES !== 'undefined' && GATE_TOP_ROUND_EMBLEM_FILES[airlineCode]) || null;
     var _birEmblemPath = _birRound || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
-    // MX: Breeze's emblem is a full-colour tile — white-inverting it makes a
-    // solid white square (same class as the UA orb, same native-colour cure).
-    var _birNativeColor = !!_birRound || airlineCode === 'MX';
+    // MX: tile-brand treatment (Nick: 'circle same color as the icon, the
+    // middle fits within') — navy circle in the tile's own colour, check
+    // mark (derived from the airline's tile art) padded inside, no filter.
+    var _birTile = (airlineCode === 'MX') ? { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' } : null;
+    if (_birTile) _birEmblemPath = _birTile.icon;
+    var _birNativeColor = !!_birRound || !!_birTile;
     var _birFilter = _birNativeColor ? '' : 'filter:brightness(0) invert(1);';
     var _birFlightIcon = _birEmblemPath
       ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:14%;box-sizing:border-box;">'
@@ -8142,7 +8151,9 @@ function uxgGateHtml(ctx) {
     // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
     var _birFlightBadge = _birF8
       ? '<div class="g8-bir-badge" style="background:#7AFF94;"></div>'
-      : (_birFlightIcon ? '<div class="g8-bir-badge">' + _birFlightIcon + '</div>' : null);
+      : (_birFlightIcon
+          ? '<div class="g8-bir-badge"' + (_birTile ? ' style="background:' + _birTile.bg + ';"' : '') + '>' + _birFlightIcon + '</div>'
+          : null);
     return '<div class="g8-board-info-row">'
       + (_birFlightBadge
           ? '<div class="g8-bir-cell">'
@@ -15667,7 +15678,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22387';
+var FIDS_BUILD_TAG = 'v22388';
 (function(){
   try {
     function _addTag(){
