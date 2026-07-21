@@ -15722,7 +15722,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22391';
+var FIDS_BUILD_TAG = 'v22392';
 (function(){
   try {
     function _addTag(){
@@ -19045,11 +19045,33 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         }
       }
 
+      // FOREIGN-LEG GUARD (Nick's C-GFCP: his TPA gate's AC1661 wore the
+      // tail of ADB's AC1661 record for a DIFFERENT airport pair — the
+      // MIA leg. When no leg matched the requested airport, the picker
+      // fell back to whatever leg existed and its airframe identity
+      // walked onto the wrong gate as _regSource 'today'). If the chosen
+      // leg NAMES both of its airports and NEITHER end is the airport we
+      // asked about, the record is for another route: keep the leg for
+      // linking/diagnostics, but it contributes NO airframe identity and
+      // NO live position.
+      var _legForeign = false;
+      try {
+        if (airportIata) {
+          var _apReqUp = String(airportIata).toUpperCase();
+          var _plDep = ((primaryLeg.departure && primaryLeg.departure.airport && primaryLeg.departure.airport.iata) || '').toUpperCase();
+          var _plArr = ((primaryLeg.arrival && primaryLeg.arrival.airport && primaryLeg.arrival.airport.iata) || '').toUpperCase();
+          if (_plDep && _plArr && _plDep !== _apReqUp && _plArr !== _apReqUp) {
+            _legForeign = true;
+            try { console.warn('[FIDS] FOREIGN LEG for', flightNumber, '@' + _apReqUp, '— record is', _plDep + '\u2192' + _plArr, '; airframe identity withheld'); } catch (e2) {}
+          }
+        }
+      } catch (e) {}
       // Step 2: Normalize everything off the primary leg
-      var ac = primaryLeg.aircraft || {};
+      var ac = _legForeign ? {} : (primaryLeg.aircraft || {});
       var result = {
         _cachedAt: Date.now(),
         _source: 'loadFlight',
+        _legForeign: _legForeign,
         reg: (ac.reg || ac.registration || '').trim(),
         modeS: (ac.modeS || ac.hexIcao || '').trim().toUpperCase(),
         aircraft: formatAircraft(ac.model || ac.typeName || ''),
@@ -19117,8 +19139,9 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         result.operator = Object.assign({}, result.marketing, { _source: 'same-as-marketing' });
       }
 
-      // Step 4: Extract live position from the leg if airborne
-      var loc = primaryLeg.location;
+      // Step 4: Extract live position from the leg if airborne.
+      // A foreign leg's position is another flight's aircraft — never ours.
+      var loc = _legForeign ? null : primaryLeg.location;
       if (loc) {
         result.livePosition = {
           lat: _adbLat(loc),
