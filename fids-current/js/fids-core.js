@@ -9693,9 +9693,15 @@ function boardAutofit(full) {
         // crept). Rows are PINNED to it; the text conforms.
         var _rowAuthH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
         if (!_rowAuthH) {
-          // No theme var: record the natural height ONCE, before any fit.
-          if (!tbl.dataset.fidsBaseRowH) tbl.dataset.fidsBaseRowH = rows[0].offsetHeight || 60;
-          _rowAuthH = parseFloat(tbl.dataset.fidsBaseRowH) || 60;
+          // Natural height — but only trust a SETTLED measurement. The old
+          // record-once could capture a collapsed row on a half-loaded page
+          // (~20px) and every fit forever capped against that phantom —
+          // Nick's 'its tiny'. Keep the largest sane measurement seen.
+          rows.forEach(function (r) { r.style.removeProperty('height'); });
+          var _meas = rows[0].offsetHeight || 0;
+          var _stored = parseFloat(tbl.dataset.fidsBaseRowH) || 0;
+          if (_meas >= 40 && _meas <= 140 && _meas > _stored) { tbl.dataset.fidsBaseRowH = _meas; _stored = _meas; }
+          _rowAuthH = (_stored >= 40) ? _stored : Math.max(52, _meas);
         } else {
           tbl.dataset.fidsBaseRowH = _rowAuthH;
         }
@@ -9737,7 +9743,8 @@ function boardAutofit(full) {
         } catch (e) {}
         var _wfp = _wfpTxt + '|'
           + Array.prototype.map.call(rows, function (r) { return r.getAttribute('data-flight') || ''; }).join(',')
-          + '|' + ((tbl.parentElement && tbl.parentElement.clientWidth) || 0) + '|' + rows.length + '|' + _wfpFlips;
+          + '|' + ((tbl.parentElement && tbl.parentElement.clientWidth) || 0) + '|' + rows.length + '|' + _wfpFlips
+          + '|h' + _rowAuthH;
         window._fidsGeoCache = window._fidsGeoCache || {};
         var _geoHit = window._fidsGeoCache[_wfp];
         var _widthsStale = tbl.dataset.fidsWidthFp !== _wfp;
@@ -15471,7 +15478,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22374';
+var FIDS_BUILD_TAG = 'v22375';
 (function(){
   try {
     function _addTag(){
