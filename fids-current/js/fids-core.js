@@ -5282,11 +5282,87 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
 // sits at the tail end, so whichever horizontal edge reaches highest is the
 // tail; the nose faces the opposite way. Adds .g8-plane-faces-right /
 // .g8-plane-faces-left to the .v2-rc-aircraft panel.
+// FACING MANIFEST — the tail side of every aircraft illustration in the
+// repo, audited offline (two independent heuristics over all 274 files;
+// the two disagreements — AS/789, AC/319retired — settled by eye). The
+// runtime canvas scan below tested correct in every harness run, but its
+// class arrives ASYNC on img onload: one missed or late detection on a
+// live display leaves the shelf unclassed and the clouds unmirrored — a
+// right-facing plane then drifts WITH the clouds and reads as flying
+// backwards (Nick: 'this plane is going backwards CRJ900 clouds need
+// reversed'). Known art now resolves SYNCHRONOUSLY from this table (baked
+// into the shelf class at render time); the canvas scan remains solely
+// for art not yet in the table.
+var PLANE_FACING = {
+  '146.png':'L', '221.png':'L', '223.png':'L', '290.png':'L', '295.png':'L', '312.png':'L',
+  '313.png':'L', '319.png':'L', '320.png':'L', '321.png':'L', '32A.png':'L', '32B.png':'L',
+  '32D.png':'L', '32N.png':'L', '32Q.png':'L', '332.png':'L', '333.png':'L', '338.png':'L',
+  '339.png':'L', '340.png':'L', '342.png':'L', '343.png':'L', '345.png':'L', '346.png':'L',
+  '351.png':'L', '359.png':'L', '388.png':'L', '3H/732.png':'R', '3H/733.png':'R', '3H/738.png':'R',
+  '3H/BEK.png':'R', '3H/DH1.png':'R', '3H/DH3.png':'R', '3H/DHT.png':'R', '5T/733.png':'R', '5T/734.png':'R',
+  '5T/73C.png':'R', '5T/73P.png':'R', '5T/AT7.png':'R', '5T/ATR.png':'R', '717.png':'L', '730.png':'L',
+  '732.png':'L', '733.png':'L', '734.png':'L', '735.png':'L', '736.png':'L', '737.png':'L',
+  '738.png':'L', '739.png':'L', '73C.png':'L', '73E.png':'L', '73G.png':'L', '73H.png':'L',
+  '73J.png':'L', '73K.png':'L', '73S.png':'L', '73W.png':'L', '744.png':'L', '748.png':'L',
+  '74H.png':'L', '74N.png':'L', '74Y.png':'L', '752.png':'L', '753.png':'L', '75W.png':'L',
+  '762.png':'L', '763.png':'L', '764.png':'L', '76W.png':'L', '76Y.png':'L', '772.png':'L',
+  '773.png':'L', '778.png':'L', '779.png':'L', '77L.png':'L', '77W.png':'L', '77X.png':'L',
+  '781.png':'L', '788.png':'L', '789.png':'L', '78J.png':'L', '7M7.png':'L', '7M8.png':'L',
+  '7M9.png':'L', 'A34.png':'L', 'AA/319-cfm.png':'L', 'AA/319-iae.png':'L', 'AA/319.png':'L', 'AA/320-cfm.png':'L',
+  'AA/320-iae.png':'L', 'AA/320.png':'L', 'AA/321-cfm.png':'L', 'AA/321-iae.png':'L', 'AA/321.png':'L', 'AA/32B.png':'L',
+  'AA/32D.png':'L', 'AA/32Q.png':'L', 'AA/737.png':'L', 'AA/738.png':'L', 'AA/73H.png':'L', 'AA/752.png':'L',
+  'AA/772.png':'L', 'AA/773.png':'L', 'AA/777.png':'L', 'AA/77L.png':'L', 'AA/77W.png':'L', 'AA/788.png':'L',
+  'AA/789.png':'L', 'AA/7M8.png':'L', 'AA/CAN.png':'L', 'AA/CR2.png':'L', 'AA/CR7.png':'L', 'AA/CR9.png':'L',
+  'AA/E70.png':'L', 'AA/E75.png':'L', 'AA/ER4.png':'L', 'AA/RJ1.png':'L', 'AB4.png':'L', 'AB6.png':'L',
+  'AC/221.png':'L', 'AC/223.png':'L', 'AC/319.png':'R', 'AC/319r.png':'R', 'AC/319retired.png':'R', 'AC/320.png':'L',
+  'AC/320r.png':'L', 'AC/321.png':'L', 'AC/321r.png':'L', 'AC/32Q.png':'L', 'AC/332.png':'L', 'AC/333.png':'L',
+  'AC/737.png':'L', 'AC/737r.png':'L', 'AC/73H.png':'L', 'AC/73Hr.png':'L', 'AC/772.png':'L', 'AC/773.png':'L',
+  'AC/77L-ge.png':'L', 'AC/77L.png':'L', 'AC/77W-ge.png':'L', 'AC/77W.png':'L', 'AC/788.png':'L', 'AC/789.png':'L',
+  'AC/7M8.png':'L', 'AC/7M8r.png':'L', 'AC/BEE.png':'L', 'AC/CR7.png':'R', 'AC/CR9.png':'R', 'AC/DH4.png':'R',
+  'AC/E75.png':'R', 'AC/E7W.png':'R', 'AR1.png':'L', 'AR8.png':'L', 'AS/737.png':'L', 'AS/738.png':'L',
+  'AS/739.png':'L', 'AS/73H.png':'L', 'AS/73J.png':'L', 'AS/73W.png':'L', 'AS/789.png':'L', 'AS/7M9.png':'L',
+  'AS/E75.png':'L', 'AT4.png':'L', 'AT5.png':'L', 'AT7.png':'L', 'ATR.png':'L', 'B6/223.png':'L',
+  'B6/320.png':'L', 'B6/321.png':'L', 'B6/32A.png':'L', 'B6/32Q.png':'L', 'BCS.png':'L', 'BEE.png':'L',
+  'BEH.png':'L', 'CCX.png':'L', 'CNJ.png':'L', 'CR2.png':'L', 'CR7.png':'L', 'CR9.png':'L',
+  'CRK.png':'L', 'CS1.png':'L', 'CS3.png':'L', 'D38.png':'L', 'D9S.png':'L', 'DH1.png':'L',
+  'DH2.png':'L', 'DH3.png':'L', 'DH4.png':'L', 'DH8.png':'L', 'DHT.png':'L', 'DL/221.png':'L',
+  'DL/223.png':'L', 'DL/319.png':'L', 'DL/320.png':'L', 'DL/32B.png':'L', 'DL/32Q.png':'L', 'DL/332.png':'L',
+  'DL/339.png':'L', 'DL/359.png':'L', 'DL/717.png':'L', 'DL/738.png':'L', 'DL/739.png':'L', 'DL/752.png':'L',
+  'DL/753.png':'L', 'DL/763.png':'L', 'DL/764.png':'L', 'DL/CR5.png':'L', 'DL/CR7.png':'L', 'DL/CR9.png':'L',
+  'DL/E70.png':'L', 'DL/E75.png':'L', 'E45.png':'L', 'E75.png':'L', 'E7W.png':'L', 'E90.png':'L',
+  'E95.png':'L', 'ER3.png':'L', 'ER4.png':'L', 'ERD.png':'L', 'F8/737.png':'L', 'HA/32Q.png':'L',
+  'HA/332.png':'L', 'HA/717.png':'L', 'HA/789.png':'L', 'J41.png':'L', 'M11.png':'L', 'M1F.png':'L',
+  'M87.png':'L', 'PB/DH1.png':'L', 'PB/DH2.png':'L', 'PB/DH3.png':'L', 'PB/DH4.png':'L', 'PD/195.png':'L',
+  'PD/295.png':'L', 'PD/DH4.png':'L', 'PD/E95.png':'L', 'SF3.png':'L', 'TS/321.png':'R', 'TS/32Q.png':'R',
+  'TS/332.png':'R', 'TS/333.png':'R', 'UA/319.png':'L', 'UA/320.png':'L', 'UA/32Q.png':'L', 'UA/737.png':'L',
+  'UA/738.png':'L', 'UA/73H.png':'L', 'UA/752.png':'L', 'UA/753.png':'L', 'UA/763.png':'L', 'UA/764.png':'L',
+  'UA/772.png':'L', 'UA/777.png':'L', 'UA/77L.png':'L', 'UA/788.png':'L', 'UA/789.png':'L', 'UA/7M8.png':'L',
+  'UA/7M9.png':'L', 'UA/CR7.png':'L', 'UA/CRJ.png':'L', 'UA/E75.png':'L', 'WN/737.png':'L', 'WN/738.png':'L',
+  'WN/73W.png':'L', 'WN/7M8.png':'L', 'WS/737.png':'L', 'WS/738.png':'L', 'WS/73G.png':'L', 'WS/73H.png':'L',
+  'WS/73W.png':'L', 'WS/789.png':'L', 'WS/7M8.png':'L', 'WS/DH4.png':'L'
+};
+function _planeFacingFromSrc(src) {
+  try {
+    var p = String(src || '').split('?')[0];
+    var i = p.indexOf('/aircraft/');
+    if (i !== -1) p = p.slice(i + 10);
+    else if (p.indexOf('aircraft/') === 0) p = p.slice(9);
+    else return null;
+    return PLANE_FACING[p] || null;
+  } catch (e) { return null; }
+}
 window._detectPlaneFacing = function(img) {
   try {
-    if (!img || !img.naturalWidth || !img.naturalHeight) return;
+    if (!img) return;
     var panel = img.closest && (img.closest('.v2-rc-shelf-illus') || img.closest('.v2-rc-aircraft'));
     if (!panel) return;
+    var _known = _planeFacingFromSrc(img.getAttribute && img.getAttribute('src'));
+    if (_known) {
+      panel.classList.toggle('g8-plane-faces-right', _known === 'R');
+      panel.classList.toggle('g8-plane-faces-left', _known !== 'R');
+      return;
+    }
+    if (!img.naturalWidth || !img.naturalHeight) return;
     var w = img.naturalWidth, h = img.naturalHeight;
     var scale = Math.min(1, 240 / w);
     var cw = Math.max(8, Math.round(w * scale)), ch = Math.max(8, Math.round(h * scale));
@@ -7368,8 +7444,16 @@ function _buildV2MapCol(ctx, vars) {
         + (_opByVal
             ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">Operated By <span class="v2-rc-fi-sep">|</span> ' + _opByL2 + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
             : '');
+      // Facing class baked at build time from the manifest — the clouds are
+      // mirrored correctly on the FIRST painted frame, no onload race.
+      var _facingCls = '';
+      try {
+        var _fSrcM = _acImg && _acImg.match(/src="([^"]+)"/);
+        var _fV = _fSrcM ? _planeFacingFromSrc(_fSrcM[1]) : null;
+        if (_fV) _facingCls = (_fV === 'R') ? ' g8-plane-faces-right' : ' g8-plane-faces-left';
+      } catch (e) {}
       _aircraftBlock =
-          '<div class="v2-rc-shelf v2-rc-shelf-illus">'
+          '<div class="v2-rc-shelf v2-rc-shelf-illus' + _facingCls + '">'
         +   '<div id="gateCloudsBg"></div>'
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
@@ -15525,7 +15609,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22379';
+var FIDS_BUILD_TAG = 'v22380';
 (function(){
   try {
     function _addTag(){
