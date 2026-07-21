@@ -2573,21 +2573,10 @@ html body .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-oneworld {
 }
 
 /* ── YQM main/baggage boards: the Acadian flag lives in the banner tabs too
-   (Nick: 'flag in YQM was to be on every screen') — and survives the merged
-   banner (Nick: 'merge the time and airport together'): the clock now sits
-   INSIDE the white airport band, so the flag's blue field becomes a rounded
-   blue CHIP wrapped around the clock — blue chip + gold star, white band,
-   RED board tab keeps the tricolore. ── */
-body.fids-ap-YQM .fids-airport-pill .fids-banner-time-block {
-  background: #003DA5 !important;
-  padding: 10px 26px !important;
-  border-radius: 14px !important;
-}
-body.fids-ap-YQM .fids-airport-pill .fids-banner-time {
-  color: #ffffff !important;
-}
-body.fids-ap-YQM .fids-airport-pill .fids-banner-date {
-  color: rgba(255, 255, 255, 0.85) !important;
+   (Nick: 'flag in YQM was to be on every screen') — blue time tab with the
+   gold star, white airport band, RED board tab. ── */
+body.fids-ap-YQM .fids-banner-time-block {
+  background: linear-gradient(90deg, #0b0f16 0%, #003DA5 32%) !important;
 }
 body.fids-ap-YQM .fids-banner-time::before {
   content: '★ ';
