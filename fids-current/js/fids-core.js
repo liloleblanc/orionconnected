@@ -6309,7 +6309,10 @@ function _buildV2AircraftCol(ctx, vars) {
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true };  // United's supplied globe and Flair's green dot keep their native colours
+        // MX added: Breeze's emblem is a full-colour navy tile with the
+        // light-blue check — the white-invert filter turned the WHOLE opaque
+        // tile into a solid white square (Nick's A17 banner: empty white box).
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true };  // supplied full-colour art keeps its native colours
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = native
@@ -8129,7 +8132,10 @@ function uxgGateHtml(ctx) {
     // NATIVE colors (white-inverting the glossy orb made a white blob).
     var _birRound = (typeof GATE_TOP_ROUND_EMBLEM_FILES !== 'undefined' && GATE_TOP_ROUND_EMBLEM_FILES[airlineCode]) || null;
     var _birEmblemPath = _birRound || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
-    var _birFilter = _birRound ? '' : 'filter:brightness(0) invert(1);';
+    // MX: Breeze's emblem is a full-colour tile — white-inverting it makes a
+    // solid white square (same class as the UA orb, same native-colour cure).
+    var _birNativeColor = !!_birRound || airlineCode === 'MX';
+    var _birFilter = _birNativeColor ? '' : 'filter:brightness(0) invert(1);';
     var _birFlightIcon = _birEmblemPath
       ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:14%;box-sizing:border-box;">'
       : null;
@@ -15661,7 +15667,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22384';
+var FIDS_BUILD_TAG = 'v22385';
 (function(){
   try {
     function _addTag(){
