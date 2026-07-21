@@ -15667,7 +15667,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22385';
+var FIDS_BUILD_TAG = 'v22386';
 (function(){
   try {
     function _addTag(){
@@ -19529,12 +19529,44 @@ function mapADB(raw, mode) {
     // reconnects the weather column, which keys off _locIata via COORDS.
     if (!locIata && cityName) {
       const _fold = s => String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/['\u2019\u02bc]/g, "'")
         .replace(/\s+(INTERNATIONAL\s+|REGIONAL\s+)?AIRPORT$/,'').replace(/\s+/g, ' ').trim();
+      const _lookup = (cn) => {
+        if (!cn) return '';
+        for (const [k, v] of Object.entries(CITY)) { if (_fold(v) === cn) return k; }
+        if (typeof AP !== 'undefined') {
+          for (const k of Object.keys(AP)) { if (_fold(AP[k].name) === cn) return k; }
+        }
+        return '';
+      };
       const _cn = _fold(cityName);
-      if (_cn) {
-        for (const [k, v] of Object.entries(CITY)) { if (_fold(v) === _cn) { locIata = k; break; } }
-        if (!locIata && typeof AP !== 'undefined') {
-          for (const k of Object.keys(AP)) { if (_fold(AP[k].name) === _cn) { locIata = k; break; } }
+      locIata = _lookup(_cn);
+      // QUALIFIER FORMS (Nick's UA2223: 'Chicago - O'hare' had no chip and
+      // no weather). Feeds write 'City - Airport' with ' - '; the full
+      // string matches nothing. Try: (1) 'City Airport' joined \u2014 that IS
+      // many airports' listed name ('Chicago O'Hare'); (2) the city segment
+      // alone, but ONLY when it names a single airport OR the qualifier
+      // confirms which one (ORD vs MDW are both 'Chicago' \u2014 a coin flip
+      // would put the wrong airport's chip and weather on the row, worse
+      // than a dash). Ambiguous and unconfirmed stays honestly unresolved.
+      if (!locIata && /\s-\s/.test(String(cityName))) {
+        const _parts = String(cityName).split(/\s-\s/);
+        locIata = _lookup(_fold(_parts.join(' ')));
+        if (!locIata) {
+          const _citySeg = _fold(_parts[0]);
+          const _qualSeg = _fold(_parts.slice(1).join(' '));
+          const _cands = [];
+          for (const [k, v] of Object.entries(CITY)) { if (_fold(v) === _citySeg) _cands.push(k); }
+          if (typeof AP !== 'undefined') {
+            for (const k of Object.keys(AP)) {
+              if (_fold(AP[k].name).indexOf(_citySeg) === 0 && _cands.indexOf(k) === -1) _cands.push(k);
+            }
+          }
+          if (_cands.length === 1) locIata = _cands[0];
+          else if (_cands.length > 1 && _qualSeg && typeof AP !== 'undefined') {
+            const _conf = _cands.filter(k => AP[k] && _fold(AP[k].name).indexOf(_qualSeg) !== -1);
+            if (_conf.length === 1) locIata = _conf[0];
+          }
         }
       }
     }
