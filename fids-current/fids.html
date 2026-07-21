@@ -57,11 +57,11 @@
   <link rel="stylesheet" href="css/shared.css?v=21899-21">
   <link rel="stylesheet" href="css/menu.css?v=21899-22">
   <link rel="stylesheet" href="css/fids.css?v=21899-12">
-  <link rel="stylesheet" href="css/fids-v3.css?v=374">
+  <link rel="stylesheet" href="css/fids-v3.css?v=373">
   <link rel="stylesheet" href="css/bids-v2.css?v=320">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-v216.css?v=312">
-  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=21908-129">
+  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=21908-128">
   <link rel="stylesheet" href="css/gids-v218.78.css?v=21905-105">
   <link rel="stylesheet" href="css/accor-slide.css?v=27">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
@@ -387,20 +387,18 @@
 <div class="fids-banner" id="fidsBanner">
   <div class="fids-banner-chevrons" aria-hidden="true"></div>
 
-  <!-- Airport pill MERGED with the clock (Nick: "merge the time and airport
-       together") — the time block now lives INSIDE the white pill, after a
-       slim divider. Element IDs (clock, clockDate) preserved so the
-       fids-core.js tickers keep working unchanged. -->
-  <div class="fids-airport-pill has-time" id="fidsAirportPill">
+  <!-- Time + date, top-right corner -->
+  <div class="fids-banner-time-block">
+    <div class="fids-banner-time" id="clock">--:--:--</div>
+    <div class="fids-banner-date" id="clockDate"></div>
+  </div>
+
+  <!-- Center pill: airport identity (logo + IATA + name) -->
+  <div class="fids-airport-pill" id="fidsAirportPill">
     <img class="fids-airport-logo-img" id="fidsAirportLogoImg" alt="" style="display:none;">
     <div class="fids-airport-text">
       <div class="fids-airport-iata" id="fidsAirportIata">YQM</div>
       <div class="fids-airport-name" id="hdrApName">Greater Moncton</div>
-    </div>
-    <div class="fids-pill-timesep" aria-hidden="true"></div>
-    <div class="fids-banner-time-block">
-      <div class="fids-banner-time" id="clock">--:--:--</div>
-      <div class="fids-banner-date" id="clockDate"></div>
     </div>
   </div>
 
@@ -671,12 +669,12 @@
 </div>
 
 
-<script src="/mapcdn/leaflet.js?v=22399"></script>
-<script src="/mapcdn/leaflet-arc.js?v=22399"></script>
+<script src="/mapcdn/leaflet.js?v=22400"></script>
+<script src="/mapcdn/leaflet-arc.js?v=22400"></script>
 <script src="js/fids-v2.js?v=317"></script>
 <script src="js/gids-layout.js?v=1"></script>
 <script src="data/airline-colors.js?v=22"></script>
-<script src="js/fids-core.js?v=22399"></script>
+<script src="js/fids-core.js?v=22400"></script>
 <script src="js/gate-visual-integrity-v22354.js?v=1"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
