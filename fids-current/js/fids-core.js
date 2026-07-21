@@ -10223,8 +10223,13 @@ try { window.addEventListener('resize', function () { setTimeout(function () { b
 // deploy out of step, the banner falls back to today's 'tabs' look,
 // never a broken one.
 var BANNER_STYLE = {
-  'YQM': 'tabs',   // Acadian flag — Moncton keeps the tricolore (standing directive)
-  '*': 'merged'
+  // Concept A ('Silk', Nick-approved in Figma): one continuous band, colours
+  // flow like fabric. Moncton's variant IS the Acadian tricolore flowing
+  // blue → white → red with the gold star at the clock. 'tabs' (the old
+  // three-tab banner) remains available as a named style and is the
+  // fallback whenever no style resolves.
+  'YQM': 'silk-acadian',
+  '*': 'silk'
 };
 function _applyBannerStyle(iata, screen) {
   try {

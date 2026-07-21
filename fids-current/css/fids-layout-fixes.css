@@ -3087,3 +3087,165 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
    fresh URL when missing — a cached bad response otherwise wears retired
    layout/calibration (e.g. oversized clipped wordmarks) forever. */
 .fids-css-sentinel { height: 9px !important; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BANNER STYLE 'silk' / 'silk-acadian' — Concept A, approved by Nick in
+   the Figma file (OrionConnected — Board Banner Design): ONE continuous
+   band whose colours flow like fabric. Generic: deep navy → white → gold.
+   Moncton: the Acadian tricolore flowing blue → white → red, gold star at
+   the clock (star comes from the existing fids-ap-YQM ::before rule).
+   Lives at the END of fids-layout-fixes.css so it out-cascades both the
+   three-tab geometry in fids-v3.css and the YQM flag-tab rules above.
+   ADDITIVE-ONLY: without body[data-fids-banner] these rules are inert and
+   the three-tab banner renders — deploy skew falls back, never breaks.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (min-width: 701px) {
+  /* ── shared structure: strip the tab geometry, lay content on the band ── */
+  body[data-fids-banner="silk"] .fids-banner-chevrons,
+  body[data-fids-banner="silk-acadian"] .fids-banner-chevrons { display: none !important; }
+
+  body[data-fids-banner="silk"] .fids-banner-time-block,
+  body[data-fids-banner="silk-acadian"] .fids-banner-time-block {
+    position: absolute !important;
+    left: 90px !important; right: auto !important;
+    top: 0 !important; bottom: 0 !important;
+    width: auto !important; height: auto !important;
+    padding: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    display: flex !important; flex-direction: column !important;
+    align-items: flex-start !important; justify-content: center !important;
+    text-align: left !important;
+    z-index: 2 !important;
+  }
+  body[data-fids-banner="silk"] .fids-banner-time-block > *,
+  body[data-fids-banner="silk-acadian"] .fids-banner-time-block > * { transform: none !important; }
+
+  body[data-fids-banner="silk"] .fids-airport-pill,
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill {
+    position: absolute !important;
+    left: 50% !important; right: auto !important;
+    top: 50% !important; bottom: auto !important;
+    width: auto !important; height: auto !important;
+    min-width: 0 !important; max-width: none !important;
+    padding: 0 !important; margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 2 !important;
+  }
+  body[data-fids-banner="silk"] .fids-airport-pill > *,
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill > * { transform: none !important; }
+  /* no-logo fallback: IATA + name text may show again (three-tab hides it) */
+  body[data-fids-banner="silk"] .fids-airport-pill:not(.has-logo) .fids-airport-text,
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill:not(.has-logo) .fids-airport-text {
+    display: block !important;
+  }
+
+  body[data-fids-banner="silk"] .fids-banner-board,
+  body[data-fids-banner="silk-acadian"] .fids-banner-board {
+    position: absolute !important;
+    right: 64px !important; left: auto !important;
+    top: 0 !important; bottom: 0 !important;
+    width: auto !important; margin: 0 !important;
+    /* the core's banner-overflow guard shrinks the label unless it ends
+       >=10px before the block's right edge — keep real right padding */
+    padding: 0 28px 0 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    display: flex !important; align-items: center !important;
+    gap: 20px !important;
+    z-index: 2 !important;
+  }
+  /* base CSS gives the label a FIXED 360px box — content-size it so the
+     overflow guard measures reality, not the stale box */
+  body[data-fids-banner="silk"] .fids-banner-board .fids-board-label,
+  body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label {
+    width: auto !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+  }
+  body[data-fids-banner="silk"] .fids-banner-board > *,
+  body[data-fids-banner="silk-acadian"] .fids-banner-board > * { transform: none !important; }
+  body[data-fids-banner="silk"] .fids-board-icon,
+  body[data-fids-banner="silk-acadian"] .fids-board-icon {
+    background: transparent !important;
+    box-shadow: none !important;
+    width: 56px !important; height: 56px !important;
+  }
+  body[data-fids-banner="silk"] .fids-banner-time,
+  body[data-fids-banner="silk-acadian"] .fids-banner-time {
+    font-size: clamp(36px, 2.9vw, 54px) !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+  }
+  body[data-fids-banner="silk"] .fids-banner-date,
+  body[data-fids-banner="silk-acadian"] .fids-banner-date {
+    display: block !important;
+    font-size: clamp(14px, 1.05vw, 20px) !important;
+    font-weight: 500 !important;
+    margin-top: 6px !important;
+  }
+
+  /* ── 'silk' colours: navy → white → gold, clock white, label navy ── */
+  body[data-fids-banner="silk"] .fids-banner {
+    background: linear-gradient(100deg,
+      #0b1220 0%, #10233f 30%, #f7f9fc 52%, #f7f9fc 72%, #FAC120 86%, #FAC120 100%) !important;
+    border-top-left-radius: 30px !important;
+  }
+  body[data-fids-banner="silk"] .fids-banner-time { color: #ffffff !important; }
+  body[data-fids-banner="silk"] .fids-banner-date { color: rgba(255, 255, 255, 0.70) !important; }
+  body[data-fids-banner="silk"] .fids-banner-board .fids-board-label {
+    color: #0d2440 !important;
+    font-size: clamp(34px, 2.6vw, 48px) !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+  }
+  body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon svg {
+    fill: #0d2440 !important;
+    width: 52px !important; height: 52px !important;
+  }
+  body[data-fids-banner="silk"] .fids-airport-pill .fids-airport-iata { color: #0d2440 !important; }
+  body[data-fids-banner="silk"] .fids-airport-pill .fids-airport-name { color: rgba(13, 36, 64, 0.6) !important; }
+
+  /* ── 'silk-acadian' colours: the flag flows — blue → white → red ── */
+  body[data-fids-banner="silk-acadian"] .fids-banner {
+    background: linear-gradient(100deg,
+      #003DA5 0%, #003DA5 34%, #ffffff 50%, #ffffff 70%, #D21034 84%, #D21034 100%) !important;
+    border-top-left-radius: 30px !important;
+  }
+  body[data-fids-banner="silk-acadian"] .fids-banner-time { color: #ffffff !important; }
+  body[data-fids-banner="silk-acadian"] .fids-banner-date { color: rgba(255, 255, 255, 0.85) !important; }
+  body[data-fids-banner="silk-acadian"] .fids-banner-board { background: transparent !important; }
+  body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label,
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label {
+    color: #ffffff !important;
+    font-size: clamp(34px, 2.6vw, 48px) !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+  }
+  body[data-fids-banner="silk-acadian"] .fids-board-icon,
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon {
+    background: transparent !important;
+  }
+  body[data-fids-banner="silk-acadian"] .fids-board-icon svg,
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon svg {
+    fill: #ffffff !important;
+    width: 52px !important; height: 52px !important;
+  }
+  /* the visible plane/bag glyph is an icon-font ::before coloured via
+     `color`, not an svg fill */
+  body[data-fids-banner="silk-acadian"] .fids-board-icon::before,
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon::before {
+    color: #ffffff !important;
+  }
+  body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon::before {
+    color: #0d2440 !important;
+  }
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-iata { color: #0d2440 !important; }
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-name { color: rgba(13, 36, 64, 0.6) !important; }
+}
