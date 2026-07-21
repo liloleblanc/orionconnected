@@ -11651,17 +11651,20 @@ const gView = document.getElementById('gateView');
           var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
                           de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem' };
           var _ttl = _ttlMap[(typeof lang !== 'undefined' && lang) || 'en'] || _ttlMap.en;
+          // Airport pill MERGED with the clock — same structure as the FIDS
+          // board banner (Nick: "merge the time and airport together").
           return '<div class="fids-banner bidsv2-fids-banner">'
             + '<div class="fids-banner-chevrons" aria-hidden="true"></div>'
-            + '<div class="fids-banner-time-block">'
-            +   '<div class="fids-banner-time" id="dedicatedBannerClock">' + timeStr + '</div>'
-            +   '<div class="fids-banner-date" id="bidsBannerDate">' + _cap(dayName) + ', ' + _cap(monthName) + ' ' + now.getDate() + '</div>'
-            + '</div>'
-            + '<div class="fids-airport-pill' + (_lg ? ' has-logo' : '') + '">'
+            + '<div class="fids-airport-pill has-time' + (_lg ? ' has-logo' : '') + '">'
             +   (_lg ? '<img class="fids-airport-logo-img" src="' + _lg + '" alt="" onerror="this.style.display=\'none\'">' : '')
             +   '<div class="fids-airport-text">'
             +     '<div class="fids-airport-iata">' + iata + '</div>'
             +     '<div class="fids-airport-name">' + ((AP[iata] || {}).name || iata) + '</div>'
+            +   '</div>'
+            +   '<div class="fids-pill-timesep" aria-hidden="true"></div>'
+            +   '<div class="fids-banner-time-block">'
+            +     '<div class="fids-banner-time" id="dedicatedBannerClock">' + timeStr + '</div>'
+            +     '<div class="fids-banner-date" id="bidsBannerDate">' + _cap(dayName) + ', ' + _cap(monthName) + ' ' + now.getDate() + '</div>'
             +   '</div>'
             + '</div>'
             + '<div class="fids-banner-board">'
@@ -15783,7 +15786,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22398';
+var FIDS_BUILD_TAG = 'v22399';
 (function(){
   try {
     function _addTag(){
