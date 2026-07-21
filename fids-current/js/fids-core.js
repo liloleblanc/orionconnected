@@ -2316,19 +2316,29 @@ function _gateTelemModel() {
   // final keeps visibly descending instead of freezing at the last ping
   // for 60 s (video: locked at 230 kph / 825 ft through the approach).
   // This is measured motion carried forward, not an invented profile:
-  // clamped to sane rates, trusted max 120 s, re-anchored by every ping.
+  // clamped to sane rates, trusted max 360 s (tapered), re-anchored by
+  // every ping.
   try {
     var now = Date.now();
     var age = (now - (T.realTs || 0)) / 1000;
-    if (T.prevTs && T.realTs && T.realTs > T.prevTs && age > 0 && age < 120) {
+    // TRUST WINDOW = the real inter-ping gap. ADB's upstream often repeats
+    // the SAME fix for 3-5 minutes; the old 90 s cap froze the digits for
+    // the back half of every such gap — glide, stall, lurch (Nick: 'the
+    // altimeter and speed dont [work] as intended'). The measured rate now
+    // carries the WHOLE gap: full strength for 120 s, HALF strength out to
+    // 360 s (accumulated-error damping — a noise blip can't run at full
+    // rate for six minutes), then HELD saturated. Held, never dropped: the
+    // old code gated on age and REVERTED to the raw stale anchor when the
+    // window expired — the display glided down for 90 s then eased back UP
+    // to the old ping (an altimeter climbing on final). Still measured
+    // motion carried forward, never an invented profile: rate caps below,
+    // floor 0, re-anchored by every genuinely fresh ping.
+    if (T.prevTs && T.realTs && T.realTs > T.prevTs && age > 0) {
       var span = (T.realTs - T.prevTs) / 1000;
-      // DAMPED: two pings can differ by a wind/ADS-B noise blip, and running
-      // that rate for a whole minute doubles the blip into a fake surge
-      // (Nick: '757kph to 867 climbing in less than a minute'). Tight rate
-      // caps keep it sane; the trend runs the full 90 s window (the old 45 s
-      // hold froze the digits for the back half of every 60 s poll — Nick:
-      // 'very inconsistent... does not move like it should').
-      var effAge = Math.min(age, 90);
+      // DAMPED: two pings can differ by a wind/ADS-B noise blip (Nick:
+      // '757kph to 867 climbing in less than a minute') — tight rate caps
+      // keep the carried trend sane at any age.
+      var effAge = Math.min(age, 120) + Math.max(0, Math.min(age, 360) - 120) * 0.5;
       if (span >= 10 && span <= 420) {
         if (typeof T.prevAlt === 'number' && typeof alt === 'number') {
           var altRate = (alt - T.prevAlt) / span;                     // ft/s
@@ -15515,7 +15525,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22378';
+var FIDS_BUILD_TAG = 'v22379';
 (function(){
   try {
     function _addTag(){
