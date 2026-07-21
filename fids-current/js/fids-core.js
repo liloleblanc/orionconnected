@@ -6387,7 +6387,11 @@ function _buildV2AircraftCol(ctx, vars) {
       // Single source of truth for what a flight-info badge looks like.
       // Flair (Nick): black badges with the green glyph inside; the airline
       // badge itself is the plain green dot (handled in _emblemImg).
-      var _railBadgeBg = (_alCodeEmb === 'F8') ? '#141414' : 'var(--airline-accent,#D82F2E)';
+      // Breeze (Nick: 'keep the color consistent so the rest same color'):
+      // every badge matches the flight rondelle's tile navy.
+      var _railBadgeBg = (_alCodeEmb === 'F8') ? '#141414'
+        : (_alCodeEmb === 'MX') ? '#001633'
+        : 'var(--airline-accent,#D82F2E)';
       var _railBadgeInk = (_alCodeEmb === 'F8') ? '#7AFF94' : '#fff';
       var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _railBadgeBg + ';color:' + _railBadgeInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       function _badge(svg) {
@@ -8119,7 +8123,11 @@ function uxgGateHtml(ctx) {
     // Flair brand palette (Nick): airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
     var _birF8 = (airlineCode === 'F8');
-    var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"' : '';
+    // Breeze: every badge in the row wears the flight rondelle's tile navy
+    // (Nick: 'keep the color consistent so the rest same color').
+    var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"'
+      : (airlineCode === 'MX') ? ' style="background:#001633;"'
+      : '';
     function _cell(icon, en, fr, val, noswap) {
       var _t1 = en, _t2 = fr;
       if (_frF && !noswap && fr && fr !== en) { _t1 = fr; _t2 = en; }
@@ -15678,7 +15686,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22388';
+var FIDS_BUILD_TAG = 'v22389';
 (function(){
   try {
     function _addTag(){
