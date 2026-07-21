@@ -5351,6 +5351,16 @@ function _planeFacingFromSrc(src) {
     return PLANE_FACING[p] || null;
   } catch (e) { return null; }
 }
+// ROUGE FLEET IS AIRBUS ONLY (Nick: '73Hr no 737-800' — Rouge never flew a
+// 737 of any kind; fleet is A319/A320/A321). ONE shared gate for every
+// surface that picks Rouge paint: the 'r' suffix applies solely to that
+// family. Anything else RV-labeled (feed mislabel, the 1600-1999
+// flight-number heuristic misfiring on a mainline bird) renders honest
+// MAINLINE art instead of the fabricated 'Rouge 737' hybrid files.
+function _rougeLiveryEq(eq) {
+  var e = String(eq || '');
+  return /^(319|320|321)$/i.test(e) ? (e + 'r') : e;
+}
 window._detectPlaneFacing = function(img) {
   try {
     if (!img) return;
@@ -5544,8 +5554,8 @@ function renderMobileGateHtml(ctx) {
     try {
       let _liveryEq = equipRaw;
       if (airline === 'AC' && _opCode === 'RV' && _liveryEq) {
-        const _baseEq = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_liveryEq) : null;
-        if (_baseEq) _liveryEq = _baseEq + 'r';
+        const _baseEq = ((typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_liveryEq) : null) || _liveryEq;
+        _liveryEq = _rougeLiveryEq(_baseEq);   // Airbus family only — see helper
       }
       _liveryEqDebug = _liveryEq;
       _acImgHtml = aircraftImgTag(airline, _liveryEq, {
@@ -6019,8 +6029,14 @@ function _buildV2AircraftCol(ctx, vars) {
 
   // Livery code: subbrands (Rouge=RV, Express=QK, JazzAC=QK) use AC's folder.
   // The "r" suffix on Rouge codes (e.g. 319r) is preserved; AC folder has these.
+  // ROUGE FLEET IS AIRBUS ONLY (Nick: '73Hr no 737-800' — Rouge never flew a
+  // 737 of any kind; the old blanket suffix let a mislabeled RV flight — the
+  // 1600-1999 flight-number heuristic can misfire — render the fabricated
+  // 'Rouge MAX' hybrid art). The r-suffix now applies solely to the A319/
+  // A320/A321 family Rouge actually operates; anything else RV-labeled falls
+  // back to honest mainline art.
   var _liveryEq = _equipCd;
-  if (_opCode === 'RV' && _liveryEq && /^[A-Z0-9]{3}$/i.test(_liveryEq)) _liveryEq = _liveryEq + 'r';
+  if (_opCode === 'RV' && _liveryEq) _liveryEq = _rougeLiveryEq(_liveryEq);
 
   // For RV/QK route image lookup through parent AC so the AC folder
   // resolves correctly. aircraftImgTag uses LIVERY_FOLDERS to pick path.
@@ -7224,7 +7240,7 @@ function _buildV2MapCol(ctx, vars) {
       }
     }
     var _liveryEq = _equipCd;
-    if (_opCode === 'RV' && _liveryEq && /^[A-Z0-9]{3}$/i.test(_liveryEq)) _liveryEq = _liveryEq + 'r';
+    if (_opCode === 'RV' && _liveryEq) _liveryEq = _rougeLiveryEq(_liveryEq);
     // The aircraft wears the MARKETING carrier's livery, not the operator's:
     // United Express (Republic/SkyWest/Mesa...) jets are painted United, American
     // Eagle jets are painted American, etc. Using the operator code (YX/OO/...)
@@ -7251,7 +7267,9 @@ function _buildV2MapCol(ctx, vars) {
         // A319 → 319r.png, not the scheduled 321r; Nick: 'showing a 320
         // picture with 319 registration').
         var _rcRouge = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_regTrueImg) : '';
-        _regTrueImg = (_rcRouge && /^[A-Z0-9]{3}$/i.test(_rcRouge)) ? (_rcRouge + 'r') : '';
+        // Non-Airbus under RV = data error: keep the TRUE type in mainline
+        // paint rather than fabricating Rouge art that doesn't exist.
+        _regTrueImg = _rcRouge ? _rougeLiveryEq(_rcRouge) : '';
       }
       var _imgEq = _regTrueImg || _liveryEq;
       if (typeof aircraftImgTag === 'function' && _imgEq) {
@@ -9112,8 +9130,8 @@ function uxgGateHtml(ctx) {
                 // so we pick up the Rouge variant liveries in /aircraft/AC/ (e.g. 321r.png).
                 var _liveryEq = _equipCd || _equipNm;
                 if (_airline === 'AC' && _opCode === 'RV' && _liveryEq) {
-                  var _baseEq = aircraftCodeToIata(_liveryEq);
-                  if (_baseEq) _liveryEq = _baseEq + 'r';
+                  var _baseEq = aircraftCodeToIata(_liveryEq) || _liveryEq;
+                  _liveryEq = _rougeLiveryEq(_baseEq);   // Airbus family only
                 }
                 var _acImg = aircraftImgTag(_airline, _liveryEq, {
                   rawModel: _equipNm || _equipCd || '',
@@ -15609,7 +15627,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22380';
+var FIDS_BUILD_TAG = 'v22381';
 (function(){
   try {
     function _addTag(){
