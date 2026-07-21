@@ -15471,7 +15471,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22373';
+var FIDS_BUILD_TAG = 'v22374';
 (function(){
   try {
     function _addTag(){
@@ -16487,9 +16487,14 @@ function render() {
   if (_newHtml !== _lastTbodyHtml) {
     tbody.innerHTML = _newHtml;
     _lastTbodyHtml = _newHtml;
-    // Fit the fresh rows right away — the 5 s heartbeat alone would let a
-    // just-rendered page sit unfitted for seconds.
-    try { setTimeout(function () { boardAutofit(true); }, 60); } catch (e) {}
+    // Fit SYNCHRONOUSLY in the same task as the innerHTML swap: the old
+    // 60 ms timer let the browser PAINT the fresh rows at theme-default
+    // fonts and re-paint fitted a frame later — a visible pop on every
+    // 12 s language cycle (Nick at v22373: 'its still doing it'). One
+    // task → one paint → the new language arrives already fitted.
+    try { boardAutofit(true); } catch (e) {}
+    // settle pass for late layout (web fonts, images shifting metrics)
+    try { setTimeout(function () { boardAutofit(false); }, 350); } catch (e) {}
   }
   // Phase 4: expose flight lists to the Search tab
   try {
@@ -27531,9 +27536,14 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // font-size and re-shrinks from the CSS base, so having both meant the
     // two fitters fought and the type+reg line kept collapsing back small
     // (Nick: 'can you also fit this one line? Boeing 737 MAX 8 | C-GMJI').
+    // #fidsTable td.fids-cell-flight REMOVED too (the soak instrument caught
+    // it ticking 25px<->23px forever: this shrinker kept clearing the board
+    // fitter's size and the fitter kept restoring it — the last live
+    // oscillator behind Nick's 'still doing it'). The board fitter owns ALL
+    // #fidsTable cells now; the name-span fallback keeps this shrinker.
     var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
-      + ' #fidsTable td.fids-cell-flight, #fidsTable .fids-airline-name,'
+      + ' #fidsTable .fids-airline-name,'
       + ' .bigcraft-side .v2-rc-fi-tval');
     for (var j = 0; j < ones.length; j++) {
       var el = ones[j];
