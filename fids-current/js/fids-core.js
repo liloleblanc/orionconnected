@@ -2550,6 +2550,29 @@ async function _gateNumbersPoll() {
     _gateNumPollBusy = false;
     if (!inbData) return;
     if (!window._gateInbound || window._gateInbound.flight !== flt) return;   // gate changed mid-fetch
+    // TODAY'S TAIL FROM THE SAME FETCH (Nick's PD2293: ADB had C-GKQE all
+    // along while the panel said 'expected | prévu' — the render-time
+    // enrichment had missed once, and this poll then fetched the FULL
+    // record every 60 s and threw everything but the live position away).
+    // This lookup is for TODAY by construction, satisfying the 'go by the
+    // registration — from today, never the past' rule: an absent or
+    // history-sourced reg is upgraded the moment the poll sees a real one;
+    // a confirmed same-day reg is never overwritten by silence. One gate
+    // rebuild on the transition so the shelf shows the tail now.
+    try {
+      var _polledReg = String(inbData.reg || '').trim();
+      var _inbRegHist = /^history/i.test(String(inb._regSource || ''));
+      if (_polledReg && (!inb._reg || _inbRegHist)) {
+        inb._reg = _polledReg;
+        inb._regSource = 'loadFlight';
+        if (!inb._aircraft && inbData.aircraft) inb._aircraft = inbData.aircraft;
+        if (!inb._aircraftCode && inbData.aircraftCode) inb._aircraftCode = inbData.aircraftCode;
+        if (/^history/i.test(String(inb._aircraftSource || ''))) inb._aircraftSource = '';
+        if (/^history/i.test(String(inb._aircraftCodeSource || ''))) inb._aircraftCodeSource = '';
+        try { console.log('[NUMPOLL] reg landed via poll:', _polledReg, 'for', flt); } catch (e3) {}
+        try { window._lastGateKey = ''; render(); } catch (e2) {}
+      }
+    } catch (e4) {}
     var _lp = inbData.livePosition || {};
     var _spd = (typeof _lp.speed === 'number') ? _lp.speed : null;
     var _alt = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
@@ -15627,7 +15650,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22381';
+var FIDS_BUILD_TAG = 'v22382';
 (function(){
   try {
     function _addTag(){
