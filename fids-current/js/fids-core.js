@@ -10254,8 +10254,23 @@ function _applyBannerStyle(iata, screen) {
       var acc = '';
       try { acc = localStorage.getItem('fids_banner_accent_' + ap) || ''; } catch (e2) {}
       if (!acc) acc = BANNER_ACCENT[ap] || '';
-      if (acc) { document.body.style.setProperty('--fids-silk-accent', acc); }
-      else { document.body.style.removeProperty('--fids-silk-accent'); }
+      if (acc) {
+        document.body.style.setProperty('--fids-silk-accent', acc);
+        // Tail TINT — the accent blended 84% toward white, so the logo sits
+        // on a near-white wash of the airport's own colour instead of a
+        // pasted-looking plate (Nick: 'looks pasted there and colors dont
+        // match').
+        try {
+          var m = acc.replace('#', '');
+          if (m.length === 3) { m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2]; }
+          var rr = parseInt(m.slice(0, 2), 16), gg = parseInt(m.slice(2, 4), 16), bb = parseInt(m.slice(4, 6), 16);
+          var mixW = function (c) { return Math.round(c * 0.16 + 255 * 0.84); };
+          document.body.style.setProperty('--fids-silk-accent-tint', 'rgb(' + mixW(rr) + ',' + mixW(gg) + ',' + mixW(bb) + ')');
+        } catch (e4) {}
+      } else {
+        document.body.style.removeProperty('--fids-silk-accent');
+        document.body.style.removeProperty('--fids-silk-accent-tint');
+      }
     } catch (e3) {}
   } catch (e) {}
 }

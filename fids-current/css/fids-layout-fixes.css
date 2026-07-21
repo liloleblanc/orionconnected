@@ -3130,17 +3130,24 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
     top: 50% !important; bottom: auto !important;
     width: auto !important; height: auto !important;
     min-width: 0 !important; max-width: none !important;
-    padding: 10px 26px !important; margin: 0 !important;
-    background: #ffffff !important;
-    border-radius: 14px !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18) !important;
+    padding: 0 !important; margin: 0 !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     transform: translateY(-50%) !important;
     z-index: 2 !important;
   }
+  /* Moncton: the logo lives ON the red field, knocked out to white (same
+     brightness/invert treatment as the boot-loader logo) — native flag
+     art, not a pasted graphic */
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-logo-img {
+    filter: brightness(0) invert(1) !important;
+  }
+
   body[data-fids-banner="silk"] .fids-airport-pill .fids-airport-logo-img,
   body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-logo-img {
-    height: 76px !important;
-    max-width: 320px !important;
+    height: 84px !important;
+    max-width: 340px !important;
     width: auto !important;
     object-fit: contain !important;
   }
@@ -3202,8 +3209,8 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   /* ── 'silk' colours: navy → white → gold, clock white, label navy ── */
   body[data-fids-banner="silk"] .fids-banner {
     background: linear-gradient(100deg,
-      #0b1220 0%, #10233f 30%, #f7f9fc 52%, #f7f9fc 72%,
-      var(--fids-silk-accent, #FAC120) 86%, var(--fids-silk-accent, #FAC120) 100%) !important;
+      #0b1220 0%, #10233f 30%, #f7f9fc 52%, #f7f9fc 70%,
+      var(--fids-silk-accent-tint, #f7f2e2) 88%, var(--fids-silk-accent-tint, #f7f2e2) 100%) !important;
     border-top-left-radius: 30px !important;
   }
   body[data-fids-banner="silk"] .fids-banner-time { color: #ffffff !important; }
@@ -3255,6 +3262,6 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon::before {
     color: #0d2440 !important;
   }
-  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-iata { color: #0d2440 !important; }
-  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-name { color: rgba(13, 36, 64, 0.6) !important; }
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-iata { color: #ffffff !important; }
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-name { color: rgba(255, 255, 255, 0.85) !important; }
 }
