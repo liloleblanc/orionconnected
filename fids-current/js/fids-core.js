@@ -15754,7 +15754,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22396';
+var FIDS_BUILD_TAG = 'v22397';
 (function(){
   try {
     function _addTag(){
@@ -19118,6 +19118,22 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
           if (_plDep && _plArr && _plDep !== _apReqUp && _plArr !== _apReqUp) {
             _legForeign = true;
             try { console.warn('[FIDS] FOREIGN LEG for', flightNumber, '@' + _apReqUp, '— record is', _plDep + '\u2192' + _plArr, '; airframe identity withheld'); } catch (e2) {}
+          }
+        }
+        // WRONG-DAY GUARD (Nick: 'is it possible that it is assigned to the
+        // wrong date?' — yes. Evening departures cross the UTC midnight, so
+        // yesterday's 9 PM EDT AC1661 lives under TODAY'S date key; querying
+        // today served YESTERDAY'S completed leg — right number, right
+        // route, wrong day — and its tail C-GFCP (flying MIA today per the
+        // portal rotation) dressed tonight's gate. Same daily schedule
+        // times made it look plausible). A leg whose scheduled departure is
+        // more than 12 h in the past is yesterday's airplane: same
+        // withholding and same downstream eviction as a foreign leg.
+        if (!_legForeign) {
+          var _plDepTsWd = _legDepTs(primaryLeg);
+          if (_plDepTsWd && (Date.now() - _plDepTsWd) > 12 * 3600000) {
+            _legForeign = true;
+            try { console.warn('[FIDS] WRONG-DAY LEG for', flightNumber, '— departed', Math.round((Date.now() - _plDepTsWd) / 3600000) + 'h ago; airframe identity withheld'); } catch (e3) {}
           }
         }
       } catch (e) {}
