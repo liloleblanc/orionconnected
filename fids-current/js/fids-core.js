@@ -6019,8 +6019,16 @@ function _buildV2AircraftCol(ctx, vars) {
   var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (inboundFlight._aircraftCode || '') : '';
   var _inbEquipNm = (_anyInb && !_inbNmHistorical)
     ? (inboundFlight._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
-  var _equipCd = _inbEquipCd || _outEquipCd;
-  var _equipNm = _inbEquipNm || _outEquipNm;
+  // PAIRWISE, ONE FLIGHT (Nick: 'the airplane picture does not always
+  // match the aircraft details so it must be coming from 2 different
+  // sources' — exactly right: name and code were merged FIELD-BY-FIELD,
+  // so an inbound carrying only the CODE (320) zipped with the
+  // outbound's NAME ('Airbus A319'): the text said A319 while the image
+  // drew the 320, with the reg riding along from whichever had it. Type
+  // name and code now always travel together from the SAME flight.
+  var _equipCd, _equipNm;
+  if (_inbEquipCd || _inbEquipNm) { _equipCd = _inbEquipCd; _equipNm = _inbEquipNm; }
+  else { _equipCd = _outEquipCd; _equipNm = _outEquipNm; }
   if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
 
   var _currentRegSource = String((currentFlight && currentFlight._regSource) || '');
@@ -7110,8 +7118,16 @@ function _buildV2MapCol(ctx, vars) {
     var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (_ib2._aircraftCode || '') : '';
     var _inbEquipNm = (_anyInb && !_inbNmHistorical)
       ? (_ib2._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
-    var _equipCd = _inbEquipCd || _outEquipCd;
-    var _equipNm = _inbEquipNm || _outEquipNm;
+    // PAIRWISE, ONE FLIGHT (Nick: 'the airplane picture does not always
+    // match the aircraft details so it must be coming from 2 different
+    // sources' — exactly right: name and code were merged FIELD-BY-FIELD,
+    // so an inbound carrying only the CODE (320) zipped with the
+    // outbound's NAME ('Airbus A319'): the text said A319 while the image
+    // drew the 320, with the reg riding along from whichever had it. Type
+    // name and code now always travel together from the SAME flight.
+    var _equipCd, _equipNm;
+    if (_inbEquipCd || _inbEquipNm) { _equipCd = _inbEquipCd; _equipNm = _inbEquipNm; }
+    else { _equipCd = _outEquipCd; _equipNm = _outEquipNm; }
     if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
 
     // History tails are observations from another day, not a current assignment.
@@ -9099,8 +9115,16 @@ function uxgGateHtml(ctx) {
                 var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (inboundFlight._aircraftCode || '') : '';
                 var _inbEquipNm = (_anyInb && !_inbNmHistorical)
                   ? (inboundFlight._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
-                var _equipCd = _inbEquipCd || _outEquipCd;
-                var _equipNm = _inbEquipNm || _outEquipNm;
+                // PAIRWISE, ONE FLIGHT (Nick: 'the airplane picture does not always
+                // match the aircraft details so it must be coming from 2 different
+                // sources' — exactly right: name and code were merged FIELD-BY-FIELD,
+                // so an inbound carrying only the CODE (320) zipped with the
+                // outbound's NAME ('Airbus A319'): the text said A319 while the image
+                // drew the 320, with the reg riding along from whichever had it. Type
+                // name and code now always travel together from the SAME flight.
+                var _equipCd, _equipNm;
+                if (_inbEquipCd || _inbEquipNm) { _equipCd = _inbEquipCd; _equipNm = _inbEquipNm; }
+                else { _equipCd = _outEquipCd; _equipNm = _outEquipNm; }
                 if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
                 var _curRegSource = String((currentFlight && currentFlight._regSource) || '');
                 var _inbRegSource = String((_anyInb && inboundFlight && inboundFlight._regSource) || '');
@@ -15686,7 +15710,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22389';
+var FIDS_BUILD_TAG = 'v22390';
 (function(){
   try {
     function _addTag(){
