@@ -15661,7 +15661,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22383';
+var FIDS_BUILD_TAG = 'v22384';
 (function(){
   try {
     function _addTag(){
@@ -18050,7 +18050,16 @@ async function adbFetch(iata, direction) {
         const rows = Array.isArray(raw) ? raw : (Array.isArray(raw && raw.flights) ? raw.flights : []);
         const list = rows.map(f => yqmToAdbFlight(f, direction)).filter(Boolean);
         console.log(`[FIDS] YQM cyqm.ca feed ${direction}: ${list.length} flights`);
-        if (list.length) return direction === 'Departure' ? { departures: list } : { arrivals: list };
+        if (list.length) {
+          // The CYQM webhook subscription was wired but BYPASSED the moment
+          // the native feed adopted (Nick: 'are we still using webhooks').
+          // Pushes carry the reg — the exact field neither cyqm.ca nor
+          // ADB's by-number endpoint served for PD2293 (console: 'Direct
+          // inbound resolved: PD2293 reg: (pending)' while the portal
+          // showed C-GKQE). Merge ONLY the airframe identity back in.
+          try { await _yqmCacheAircraftMerge(list, direction); } catch (e2) {}
+          return direction === 'Departure' ? { departures: list } : { arrivals: list };
+        }
         console.warn('[FIDS] YQM cyqm.ca feed empty — falling back to ADB scrape');
       } else {
         console.warn(`[FIDS] YQM cyqm.ca feed HTTP ${r.status} — falling back to ADB scrape`);
@@ -18299,6 +18308,51 @@ async function adbFetch(iata, direction) {
   }
 
   return direction==='Departure'?{departures:scrapeList}:{arrivals:scrapeList};
+}
+// WEBHOOK AIRCRAFT MERGE for the native cyqm.ca rows. The native feed stays
+// authoritative for gate/belt/times/status — the webhook cache contributes
+// ONLY the airframe identity (reg / Mode-S / model) it alone has, and only
+// where the native row lacks it. Window is 6 h (matches the sticky-reg
+// trust window): a same-day assignment push is still today's tail per
+// Nick's 'go by the registration — from today, never the past'; the
+// carrier/leg sanity guards downstream re-validate every reg regardless.
+async function _yqmCacheAircraftMerge(list, direction) {
+  try {
+    if (!Array.isArray(list) || !list.length) return;
+    const dirParam = direction === 'Departure' ? 'dep' : 'arr';
+    const r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev/flights/cached/CYQM?direction=' + dirParam);
+    if (r.status !== 200) return;
+    const j = await r.json();
+    const recs = (j && Array.isArray(j.flights)) ? j.flights : [];
+    if (!recs.length) return;
+    const cutoff = Date.now() - 6 * 3600000;
+    const byNum = {};
+    for (const rec of recs) {
+      let ts = 0; try { ts = new Date(rec.received_at).getTime(); } catch (e) {}
+      if (!ts || ts < cutoff) continue;
+      const cf = rec.flight;
+      if (!cf) continue;
+      const num = String(cf.number || '').replace(/\s+/g, '').toUpperCase();
+      if (!num) continue;
+      if (!byNum[num] || ts > byNum[num]._ts) byNum[num] = { _ts: ts, f: cf };
+    }
+    let merged = 0;
+    for (const row of list) {
+      const num = String(row.number || '').replace(/\s+/g, '').toUpperCase();
+      const hit = num && byNum[num];
+      if (!hit) continue;
+      const ac = hit.f.aircraft || {};
+      const reg = String(ac.reg || ac.registration || '').trim();
+      const modeS = String(ac.modeS || ac.hexIcao || '').trim().toUpperCase();
+      const model = String(ac.model || ac.typeName || '').trim();
+      if (!reg && !modeS && !model) continue;
+      row.aircraft = row.aircraft || {};
+      if (!row.aircraft.reg && reg) { row.aircraft.reg = reg; merged++; }
+      if (!row.aircraft.modeS && modeS) row.aircraft.modeS = modeS;
+      if (!row.aircraft.model && model) row.aircraft.model = model;
+    }
+    if (merged) console.log('[FIDS] YQM webhook aircraft merge: ' + merged + ' tail(s) applied to native rows (' + direction + ')');
+  } catch (e) {}
 }
 function adbTs(str) { if(!str)return null; return new Date(str.replace(' ','T')).getTime(); }
 function adbHHMM(str) { if(!str)return null; const m=str.match(/(\d{2}):(\d{2})/); return m?`${m[1]}:${m[2]}`:null; }
