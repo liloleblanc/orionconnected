@@ -7479,9 +7479,21 @@ function _buildV2MapCol(ctx, vars) {
       // BETWEEN segments at the separator, never inside 'Boeing 737-800'.
       var _nbw = function (t) { return '<span style="white-space:nowrap;">' + t + '</span>'; };
       var _acTypeVal;
+      // THE REG ALWAYS TELLS YOU (Nick: 'C-GFCP is a 320 — it never should
+      // have read 319 ... because the reg will always tell you, especially
+      // the day of'). Until the registry has confirmed THIS tail's type,
+      // the schedule's type may contradict it — so a reg and an unverified
+      // type never appear together as a confirmed pair: the 'expected'
+      // qualifier stays on, and the resolver's instant rebuild replaces the
+      // whole line the moment the registry answers.
+      var _regConfirmed = !!(typeof _regTrue !== 'undefined' && _regTrue);
       if (_acModel && !_acReg) {
         _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
           + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>';
+      } else if (_acModel && _acReg && !_regConfirmed) {
+        _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
+          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
+          + '  |  ' + _nbw(_acReg + _acRegTag);
       } else {
         _acTypeVal = _nbw(_acModel) + (_acReg ? '  |  ' + _nbw(_acReg + _acRegTag) : '');
       }
@@ -15710,7 +15722,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22390';
+var FIDS_BUILD_TAG = 'v22391';
 (function(){
   try {
     function _addTag(){
