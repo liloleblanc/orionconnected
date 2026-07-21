@@ -10231,6 +10231,12 @@ var BANNER_STYLE = {
   'YQM': 'silk-acadian',
   '*': 'silk'
 };
+// Per-airport silk accent — the band's tail colour, keyed to the airport's
+// own logo (Nick: 'match the logo on the top'). localStorage override:
+// fids_banner_accent_<IATA>. Unlisted airports fall back to the gold.
+var BANNER_ACCENT = {
+  'TPA': '#C8102E'   // Tampa roundel red
+};
 function _applyBannerStyle(iata, screen) {
   try {
     var ap = String(iata || '').toUpperCase();
@@ -10244,6 +10250,13 @@ function _applyBannerStyle(iata, screen) {
       s = (c && typeof c === 'object') ? (c[screen] || c['*'] || 'tabs') : (c || 'tabs');
     }
     document.body.dataset.fidsBanner = s;
+    try {
+      var acc = '';
+      try { acc = localStorage.getItem('fids_banner_accent_' + ap) || ''; } catch (e2) {}
+      if (!acc) acc = BANNER_ACCENT[ap] || '';
+      if (acc) { document.body.style.setProperty('--fids-silk-accent', acc); }
+      else { document.body.style.removeProperty('--fids-silk-accent'); }
+    } catch (e3) {}
   } catch (e) {}
 }
 
