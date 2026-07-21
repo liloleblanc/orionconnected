@@ -2676,11 +2676,41 @@ function _destFlipFromItems(items, kind, cls) {
 // MCO via-leg codes). Rows carry them as _stops = [{iata, city}] and every
 // leg renders through the SAME naming machinery a single-stop destination
 // uses — no reverse-guessing codes from display strings, no per-leg drift.
+// City/airport display name → IATA. The SAME fold the ADB ingest's
+// reverse-lookup uses (case- and accent-insensitive, trailing
+// 'International/Regional Airport' dropped) over the engine's own CITY and
+// AP tables. Returns '' when no table knows the name — callers keep their
+// no-fabrication fallbacks.
+function _iataFromCityName(name) {
+  try {
+    var fold = function (s) {
+      return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+(INTERNATIONAL\s+|REGIONAL\s+)?AIRPORT$/, '').replace(/\s+/g, ' ').trim();
+    };
+    var cn = fold(name);
+    if (!cn) return '';
+    if (typeof CITY !== 'undefined') {
+      for (var k in CITY) { if (fold(CITY[k]) === cn) return k; }
+    }
+    if (typeof AP !== 'undefined') {
+      for (var k2 in AP) { if (fold(AP[k2] && AP[k2].name) === cn) return k2; }
+    }
+  } catch (e) {}
+  return '';
+}
 function _destFlipStops(stops, kind, cls) {
   try {
     if (!Array.isArray(stops) || stops.length < 2) return null;
     var items = stops.map(function (s) {
       var ia = String((s && s.iata) || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+      // Feeds that NAME a via-stop without its code (TPA name-only legs,
+      // YYZ routes[] without .code) left ia = '' here — and because the
+      // chip is all-or-nothing, ONE such leg hid the (XXX) chip on the
+      // whole row while every single-stop row kept its code (Nick: 'the
+      // multi destination flights show the city and not the code like
+      // others'). Resolve the code from the city name through the engine's
+      // own tables; legs no table can name still suppress the chip.
+      if (!ia) ia = _iataFromCityName((s && s.city) || '');
       var name = '';
       try { name = airportCityNameSafe_v21877(ia) || ''; } catch (e) {}
       if (!name) name = String((s && s.city) || '') || ia;
@@ -15485,7 +15515,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22377';
+var FIDS_BUILD_TAG = 'v22378';
 (function(){
   try {
     function _addTag(){
@@ -15595,6 +15625,64 @@ var FIDS_BUILD_TAG = 'v22377';
     if (document.readyState === 'complete') setTimeout(_check, 3000);
     else window.addEventListener('load', function () { setTimeout(_check, 3000); });
     setTimeout(_check, 12000); // fallback in case the load event never fires
+  } catch (e) {}
+})();
+
+// ── MAP ENGINE GUARD ─────────────────────────────────────────────────────
+// The stylesheet guard's failure class, aimed at the route maps: the
+// /mapcdn/leaflet.js tag carries no version, and until v22378 the worker
+// stamped day-long cache headers on FAILED upstream fetches too — so one bad
+// response poisoned a display's copy of the map engine for 24 h, initGateMap
+// bailed on its typeof L check, and every route map on that screen vanished
+// (Nick: 'the flight routes i dont see any show up whatsoever'). Probe
+// window.L after load; when the engine is missing, re-inject it under a
+// unique query (the worker ignores queries; browser and edge treat it as a
+// new URL) and re-run the live map init so maps return without a re-render.
+// leaflet-arc is optional (plain-line fallback exists) but heals the same
+// way once L is live.
+(function () {
+  try {
+    var _engTries = 0, _arcTries = 0, _engInFlight = false;
+    function _engAlive() {
+      return typeof window.L !== 'undefined' && window.L && typeof window.L.map === 'function';
+    }
+    function _healArc() {
+      try {
+        if (!_engAlive() || !window.L.Polyline) return;
+        if (typeof window.L.Polyline.Arc === 'function' || _arcTries >= 3) return;
+        _arcTries++;
+        var a = document.createElement('script');
+        a.src = '/mapcdn/leaflet-arc.js?v=mapguard-' + Date.now();
+        document.head.appendChild(a);
+      } catch (e) {}
+    }
+    function _probe() {
+      if (_engAlive()) { _healArc(); return; }
+      // Only pages that draw maps carry the engine tag — bail elsewhere.
+      if (!document.querySelector('script[src*="/mapcdn/leaflet.js"]')) return;
+      if (_engInFlight || _engTries >= 3) return;
+      _engTries++; _engInFlight = true;
+      console.warn('[FIDS] map engine missing — re-fetching leaflet.js (attempt ' + _engTries + ')');
+      var s = document.createElement('script');
+      s.src = '/mapcdn/leaflet.js?v=mapguard-' + Date.now();
+      s.onload = function () {
+        _engInFlight = false;
+        _healArc();
+        // Bring the maps back NOW — the 10 s map tick would also catch it,
+        // but the retry hook re-frames the current gate immediately.
+        try { if (typeof window._gateMapRetry === 'function') window._gateMapRetry(); } catch (e) {}
+      };
+      s.onerror = function () { _engInFlight = false; };
+      document.head.appendChild(s);
+    }
+    if (document.readyState === 'complete') setTimeout(_probe, 3000);
+    else window.addEventListener('load', function () { setTimeout(_probe, 3000); });
+    // Screens run for days — keep a slow watch, allowing one fresh attempt
+    // per cycle while the engine is still out (network may have recovered).
+    setInterval(function () {
+      if (!_engAlive()) { _engTries = Math.min(_engTries, 2); _probe(); }
+      else _healArc();
+    }, 180000);
   } catch (e) {}
 })();
 
