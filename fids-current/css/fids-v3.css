@@ -4046,3 +4046,40 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
 #fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { height: 23px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { height: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { height: 21px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BANNER STYLE 'merged' — the clock joins the white airport band.
+   Scoped ENTIRELY to body[data-fids-banner="merged"], which fids-core.js
+   sets from the BANNER_STYLE registry (per airport / per screen — YQM is
+   pinned to 'tabs' so the Acadian tricolore renders exactly as today).
+   ADDITIVE-ONLY by design: without the attribute every rule here is inert
+   and the three-tab banner renders unchanged — a mid-deploy JS/CSS
+   mismatch can only ever fall back to the current look.
+   Geometry: the white band stretches to the left edge (same 29px inset +
+   angled edge the navy tab used); the time block keeps its position and
+   skew but sheds the navy field, so the clock sits ON the white band in
+   navy ink, with the airport logo centered beside it and the accent
+   board tab untouched on the right.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (min-width: 701px) {
+  body[data-fids-banner="merged"] .fids-airport-pill {
+    left: 29px !important;
+    right: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+  body[data-fids-banner="merged"] .fids-banner-time-block {
+    background: none !important;
+    box-shadow: none !important;
+    z-index: 3 !important;
+    padding-left: 72px !important;
+  }
+  body[data-fids-banner="merged"] .fids-banner-time,
+  body[data-fids-theme][data-fids-banner="merged"] .fids-banner-time {
+    color: #0d2440 !important;
+  }
+  body[data-fids-banner="merged"] .fids-banner-date,
+  body[data-fids-theme][data-fids-banner="merged"] .fids-banner-date {
+    color: rgba(13, 36, 64, 0.66) !important;
+  }
+}

@@ -10212,6 +10212,36 @@ function boardAutofit(full) {
 try { setInterval(function () { boardAutofit(false); }, 5000); } catch (e) {}
 try { window.addEventListener('resize', function () { setTimeout(function () { boardAutofit(true); }, 120); }); } catch (e) {}
 
+// ── Banner style registry (Nick: merged time+airport banner, "changeable by
+// destination or screen", Acadian flag pinned for Moncton). Resolution:
+// localStorage override (fids_banner_style_<IATA>_<SCREEN>, then
+// fids_banner_style_<IATA>) → registry per-airport (a string, or an object
+// keyed fids/gids/bids/'*') → global '*'. Styles: 'tabs' = the current
+// three-tab banner (YQM's Acadian tricolore lives there, untouched);
+// 'merged' = the clock joins the white airport band (two tabs). CSS keys
+// off body[data-fids-banner] and is ADDITIVE-ONLY — if JS and CSS ever
+// deploy out of step, the banner falls back to today's 'tabs' look,
+// never a broken one.
+var BANNER_STYLE = {
+  'YQM': 'tabs',   // Acadian flag — Moncton keeps the tricolore (standing directive)
+  '*': 'merged'
+};
+function _applyBannerStyle(iata, screen) {
+  try {
+    var ap = String(iata || '').toUpperCase();
+    var s = '';
+    try {
+      s = localStorage.getItem('fids_banner_style_' + ap + '_' + screen)
+        || localStorage.getItem('fids_banner_style_' + ap) || '';
+    } catch (e) {}
+    if (!s) {
+      var c = Object.prototype.hasOwnProperty.call(BANNER_STYLE, ap) ? BANNER_STYLE[ap] : BANNER_STYLE['*'];
+      s = (c && typeof c === 'object') ? (c[screen] || c['*'] || 'tabs') : (c || 'tabs');
+    }
+    document.body.dataset.fidsBanner = s;
+  } catch (e) {}
+}
+
 function renderDedicatedScreen() {
   if (screenType === 'gate') { document.body.classList.add('uxg-gate-mode'); }
   // Light/dark board flag on DEDICATED screens too — it only ran in the main
@@ -10222,6 +10252,7 @@ function renderDedicatedScreen() {
   try {
     var _apClsIata = (document.getElementById('apSel') || {}).value || '';
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+    _applyBannerStyle(_apClsIata, screenType === 'gate' ? 'gids' : 'bids');
   } catch (e) {}
   
 // ── GATE v5 weather builder ──
@@ -16504,6 +16535,7 @@ function render() {
   try {
     var _apClsIata = (document.getElementById('apSel') || {}).value || '';
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+    _applyBannerStyle(_apClsIata, 'fids');
   } catch (e) {}
 
   // Measure the real rendered row height — themes vary it (58-66px). The old
