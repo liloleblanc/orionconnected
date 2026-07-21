@@ -9650,9 +9650,11 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
     // it — per-cell hysteresis left mixed sizes inside a column.
     var curCol = parseFloat(cells[0] && cells[0].style.fontSize) || 0;
     var allSame = curCol && cells.every(function (el) { return (parseFloat(el.style.fontSize) || 0) === curCol; });
-    if (allSame && Math.abs(curCol - finPx) <= 1) return;
+    if (allSame && Math.abs(curCol - finPx) <= 1) return curCol;
     cells.forEach(function (el) { el.style.setProperty('font-size', finPx + 'px', 'important'); });
+    return finPx;
   }
+  return null;
 }
 function boardAutofit(full) {
   try {
@@ -9716,11 +9718,48 @@ function boardAutofit(full) {
         // forever. Geometry is keyed to the FLIGHT SET + container: the same
         // flights keep the same columns whatever the language or flip shows;
         // fonts adapt inside them.
+        // SEPARATE BOARDS PER LANGUAGE (Nick: 'the boards should be built
+        // separately in all languages — all different boards'). Each
+        // language's board is measured ONCE per flight set — its own column
+        // widths, its own fonts — and cached. The 12 s language cycle then
+        // APPLIES that language's prebuilt geometry atomically: no probing,
+        // no jitter, every language a properly built board of its own.
         var _wfpFlips = 0;
         tbl.querySelectorAll('[data-destflip]').forEach(function (fe) { _wfpFlips += (fe.getAttribute('data-destflip') || '').length; });
-        var _wfp = Array.prototype.map.call(rows, function (r) { return r.getAttribute('data-flight') || ''; }).join(',')
+        // Key by the RENDERED language texts (thead labels + status words are
+        // language-distinct by construction) — the `lang` global is mutated
+        // by the phase machinery mid-render and can't be trusted as the key.
+        var _wfpTxt = '';
+        try {
+          var _th0 = tbl.querySelector('thead');
+          _wfpTxt = (_th0 ? _th0.textContent.replace(/\s+/g, '') : '');
+          tbl.querySelectorAll('tbody td.td-status').forEach(function (td) { _wfpTxt += '~' + (td.textContent || '').trim(); });
+        } catch (e) {}
+        var _wfp = _wfpTxt + '|'
+          + Array.prototype.map.call(rows, function (r) { return r.getAttribute('data-flight') || ''; }).join(',')
           + '|' + ((tbl.parentElement && tbl.parentElement.clientWidth) || 0) + '|' + rows.length + '|' + _wfpFlips;
+        window._fidsGeoCache = window._fidsGeoCache || {};
+        var _geoHit = window._fidsGeoCache[_wfp];
         var _widthsStale = tbl.dataset.fidsWidthFp !== _wfp;
+        if (_widthsStale && _geoHit) {
+          tbl.dataset.fidsWidthFp = _wfp;
+          var _cgA = tbl.querySelectorAll('colgroup col');
+          if (_cgA.length === _geoHit.widths.length) {
+            _geoHit.widths.forEach(function (w, k) {
+              _cgA[k].style.setProperty('width', w + 'px', 'important');
+              _cgA[k].style.setProperty('min-width', '0', 'important');
+            });
+            tbl.style.setProperty('table-layout', 'fixed', 'important');
+            tbl.style.setProperty('width', '100%', 'important');
+          }
+          Object.keys(_geoHit.fonts).forEach(function (c) {
+            tbl.querySelectorAll('tbody td.' + c).forEach(function (td) {
+              td.style.setProperty('white-space', 'nowrap', 'important');
+              td.style.setProperty('font-size', _geoHit.fonts[c] + 'px', 'important');
+            });
+          });
+          _widthsStale = false;
+        }
         if (full && _widthsStale) try {
           tbl.dataset.fidsWidthFp = _wfp;
           var firstRow = rows[0];
@@ -9841,9 +9880,22 @@ function boardAutofit(full) {
             }
           }
         } catch (e) {}
+        var _fitFonts = {};
         TEXTCOLS.forEach(function (c) {
-          _boardFitCol(Array.prototype.slice.call(tbl.querySelectorAll('tbody td.' + c)), 0.72, false, _rowAuthH);
+          var _px = _boardFitCol(Array.prototype.slice.call(tbl.querySelectorAll('tbody td.' + c)), 0.72, false, _rowAuthH);
+          if (_px) _fitFonts[c] = _px;
         });
+        // snapshot THIS language's finished build (widths live in the
+        // colgroup right now) so its next appearance applies instantly
+        try {
+          var _cgS = tbl.querySelectorAll('colgroup col');
+          var _wArr = Array.prototype.map.call(_cgS, function (c) { return parseFloat(c.style.width) || 0; });
+          if (_wArr.length && _wArr.every(function (w) { return w > 0; })) {
+            var _gk = Object.keys(window._fidsGeoCache);
+            if (_gk.length > 8) delete window._fidsGeoCache[_gk[0]];
+            window._fidsGeoCache[tbl.dataset.fidsWidthFp] = { widths: _wArr, fonts: _fitFonts };
+          }
+        } catch (e) {}
       }
     }
     // WORDMARK BACKSTOP — 'jetBlu' kept getting cut on the live board even
@@ -15419,7 +15471,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22372';
+var FIDS_BUILD_TAG = 'v22373';
 (function(){
   try {
     function _addTag(){
