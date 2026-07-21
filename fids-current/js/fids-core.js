@@ -7876,7 +7876,7 @@ function uxgGateHtml(ctx) {
   // airline+alliance lockup — a separate mark would show the alliance twice.
   // (UA removed — Nick wants United's globe+wordmark with the Star Alliance
   // mark shown SEPARATELY, like every other Star carrier.)
-  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1, 'AC': 1 };   // AC: official AC+Star lockup in the banner (Nick's zip)
+  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1 };
   // Per-carrier alliance-mark override (Nick's official asset): United uses
   // the official 2011 Star Alliance lockup, black backing stripped so the
   // white mark floats on the banner.
@@ -8362,8 +8362,8 @@ function uxgGateHtml(ctx) {
   // cleanly on dark banners without needing a CSS filter.
   var BANNER_LOGO_OVERRIDE = {
     // BLACK BANNERS — use white-wordmark variants so logo text reads clean
-    'AC': '/logos/airlines/canadian/ac-star-lockup.svg?v=22371',                 // official AC + Star Alliance lockup (Nick's zip)
-    'QK': '/logos/airlines/canadian/ac-star-lockup.svg?v=22371',                 // Jazz under AC — same lockup
+    'AC': '/logos/airlines/canadian/air-canada-white.svg',                       // red rondelle + white "AIR CANADA"
+    'QK': '/logos/airlines/canadian/air-canada-white.svg',                       // Jazz under AC
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
     'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
@@ -8498,18 +8498,6 @@ function uxgGateHtml(ctx) {
     _sz = { h: 106, w: 300 };         // compact brand mark on the white plate
     _bannerUsedWordmark = true;       // reuse the white-plate styling
     _bannerPlateForced = true;        // BoA-style mark genuinely needs the plate
-  }
-  // Official combined AC + Star Alliance banner lockup (Nick's supplied zip,
-  // Jul 2026: 'thats the look im going for air canada') — white-ink official
-  // art straight on the black banner, real colours, no filter. The separate
-  // alliance mark is suppressed for AC (the lockup already carries it).
-  var _BANNER_LOCKUP_FILE = { 'AC': '/logos/airlines/canadian/ac-star-lockup.svg?v=22371' };
-  var _bannerLockupSrc = _BANNER_LOCKUP_FILE[_bannerBrandCode] || _BANNER_LOCKUP_FILE[airlineCode];
-  if (!_useOverrideFile && _bannerLockupSrc) {
-    r1LogoSrc = _bannerLockupSrc;
-    _useOverrideFile = true;          // real colours — no white filter
-    _sz = { h: 102, w: 560 };         // wide lockup fills the band
-    _bannerUsedWordmark = true;
   }
   // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
   // Render the LOCAL dark-ink wordmark on a clean white plate: real brand type,
@@ -9720,13 +9708,21 @@ function boardAutofit(full) {
         // measures honest, stable boxes — with auto layout every font
         // change reflowed the columns and early fits collapsed to 12px.
         var TEXTCOLS = ['td-flight', 'td-dest', 'td-term', 'td-gate', 'td-time', 'td-time-rev', 'td-status'];
-        // WIDTHS ONLY ON FULL PASSES (Nick's video: 'flip flopping, really
-        // bad'): the destination flip changes text every 7 s, and when the
-        // heartbeat re-probed column widths from the new text the whole
-        // table's columns shifted — every flip, both directions. Geometry
-        // may change ONLY on a real render or resize; heartbeats fit fonts
-        // inside the frozen columns.
-        if (full) try {
+        // WIDTHS ONLY ON FULL PASSES, AND ONLY WHEN THE FLIGHT SET CHANGES.
+        // Two oscillators, both mine: (1) the 5 s heartbeat re-probed widths
+        // from whatever text was on screen; (2) the board's 12 s FR/EN cycle
+        // is a full re-render, and French vs English text lengths re-derived
+        // DIFFERENT widths every cycle — the whole table lurched both ways,
+        // forever. Geometry is keyed to the FLIGHT SET + container: the same
+        // flights keep the same columns whatever the language or flip shows;
+        // fonts adapt inside them.
+        var _wfpFlips = 0;
+        tbl.querySelectorAll('[data-destflip]').forEach(function (fe) { _wfpFlips += (fe.getAttribute('data-destflip') || '').length; });
+        var _wfp = Array.prototype.map.call(rows, function (r) { return r.getAttribute('data-flight') || ''; }).join(',')
+          + '|' + ((tbl.parentElement && tbl.parentElement.clientWidth) || 0) + '|' + rows.length + '|' + _wfpFlips;
+        var _widthsStale = tbl.dataset.fidsWidthFp !== _wfp;
+        if (full && _widthsStale) try {
+          tbl.dataset.fidsWidthFp = _wfp;
           var firstRow = rows[0];
           var ths = tbl.querySelectorAll('thead th');
           if (ths.length && ths.length === firstRow.children.length) {
@@ -15423,7 +15419,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22371';
+var FIDS_BUILD_TAG = 'v22372';
 (function(){
   try {
     function _addTag(){
@@ -15451,6 +15447,38 @@ var FIDS_BUILD_TAG = 'v22371';
       }, 2000);
     }
     if (document.body) _addTag(); else document.addEventListener('DOMContentLoaded', _addTag);
+  } catch (e) {}
+})();
+
+// ── BUILD WATCHDOG ───────────────────────────────────────────────────────
+// A running page executes the build it loaded — field displays run for days,
+// so every deployed fix reached them only on a manual reload (Nick: 'its not
+// getting fixed nothing is changing' — the screen was still executing an old
+// build). Poll our own page (served no-store), read the fids-core buster,
+// and when a newer build is live reload at a QUIET moment: no pointer/key
+// input for 5+ minutes, so an unattended kiosk updates within minutes and an
+// admin mid-click is never yanked.
+(function () {
+  try {
+    var _lastInput = Date.now();
+    ['pointerdown', 'keydown', 'mousemove', 'touchstart', 'wheel'].forEach(function (ev) {
+      window.addEventListener(ev, function () { _lastInput = Date.now(); }, { passive: true });
+    });
+    var _newBuild = null;
+    setInterval(function () {
+      try {
+        fetch(location.pathname + location.search, { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.text() : ''; })
+          .then(function (html) {
+            var m = html && html.match(/fids-core\.js\?v=([0-9][0-9.-]*)/);
+            if (m && ('v' + m[1]) !== FIDS_BUILD_TAG) _newBuild = 'v' + m[1];
+            if (_newBuild && Date.now() - _lastInput > 5 * 60000) {
+              console.log('[FIDS] Build ' + _newBuild + ' deployed (running ' + FIDS_BUILD_TAG + ') — reloading');
+              location.reload();
+            }
+          }).catch(function () {});
+      } catch (e) {}
+    }, 180000);
   } catch (e) {}
 })();
 
