@@ -15754,7 +15754,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22394';
+var FIDS_BUILD_TAG = 'v22395';
 (function(){
   try {
     function _addTag(){
@@ -18265,6 +18265,12 @@ async function adbFetch(iata, direction) {
         } catch (e) {
           console.warn(`[FIDS] MCO ADB enrich ${direction}: ${e.message} — feed shows without aircraft/position`);
         }
+        // Same webhook aircraft merge as Moncton/TPA (Nick: 'we best check
+        // MCO as well') — no-ops until a KMCO Flight-Alert subscription
+        // feeds the cache. MCO's window-scoped enrichment above is already
+        // foreign-leg-proof (airport-scoped list, minute-keyed match); this
+        // adds the push path for tails ADB's scrape misses.
+        try { await _yqmCacheAircraftMerge(list, direction, 'KMCO'); } catch (e3) {}
         console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
         // Cache this good GOAA result so a transient blip on the next poll
         // returns the last-known GOAA list instead of swapping the whole board
