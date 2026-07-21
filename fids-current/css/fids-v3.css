@@ -4083,3 +4083,33 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
     color: rgba(13, 36, 64, 0.66) !important;
   }
 }
+
+/* ── 'merged' refinement (Nick: 'make it fade and blend a bit more like
+   art') — the hard angled seams become feathered fades. Scoped to the
+   merged style only: YQM's flag banner stays crisp — a flag should not
+   blend. ── */
+@media (min-width: 701px) {
+  /* White band: feathers in from the dark base at its left edge and
+     drifts through a soft off-white wash toward the accent side. */
+  body[data-fids-banner="merged"] .fids-airport-pill {
+    background: linear-gradient(105deg,
+      rgba(248, 250, 252, 0) 0%,
+      #ffffff 6%,
+      #f7f9fc 55%,
+      #edf1f6 100%) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10) !important;
+  }
+  /* Accent tab: its leading edge dissolves into the white band instead
+     of cutting across it. */
+  body[data-fids-banner="merged"] .fids-banner-board {
+    background: linear-gradient(90deg,
+      transparent 0%,
+      var(--fids-hdr-accent, #FAC120) 30%) !important;
+    box-shadow: none !important;
+  }
+  /* Banner base: the dark strip behind the tabs breathes navy in the
+     middle rather than sitting flat black. */
+  body[data-fids-banner="merged"] .fids-banner {
+    background: linear-gradient(100deg, #0b0f16 0%, #16253f 55%, #0b0f16 100%) !important;
+  }
+}
