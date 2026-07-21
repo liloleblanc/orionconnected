@@ -7153,6 +7153,35 @@ function _buildV2MapCol(ctx, vars) {
         window._gateRegSticky = null;
       }
     } catch (e) {}
+    // REG ↔ FLIGHT VERIFICATION (Nick: 'once a registration pops up
+    // verify that registration' — his C-GFCP portal rotation proved ADB's
+    // FLIGHT record can claim a tail whose OWN schedule contradicts it:
+    // today's AC1616 record said C-GFCP while C-GFCP's own day was the
+    // Miami rotation; no airport or date guard can see that). Ask ADB what
+    // this reg itself flies today — one paced call per tail per day,
+    // cached. A list that exists and does NOT contain this flight is a
+    // positive contradiction: the tail is withheld and purged everywhere.
+    // Missing / failed / empty lists are indeterminate and change nothing
+    // (thin coverage must not hide honest tails). The pending first look
+    // withholds for one render; the verdict rebuild settles it in seconds.
+    try {
+      if (_acReg && typeof _regFlightVerdict === 'function') {
+        var _rfv = _regFlightVerdict(_acReg, (_cf && _cf.flight) || '', vars.iata);
+        if (_rfv === false) {
+          try {
+            if (window._gateRegSticky && window._gateRegSticky.reg === _acReg) window._gateRegSticky = null;
+            if (window._gateEquipLock && window._gateEquipLock.reg === _acReg) window._gateEquipLock = null;
+            if (_cf && _cf._reg === _acReg) { _cf._reg = ''; _cf._regSource = ''; }
+            var _ibv = vars.inboundFlight;
+            if (_ibv && _ibv._reg === _acReg) { _ibv._reg = ''; _ibv._regSource = ''; }
+            if (window._gateInbound && window._gateInbound._reg === _acReg) { window._gateInbound._reg = ''; window._gateInbound._regSource = ''; }
+          } catch (e2) {}
+          _acReg = '';
+        } else if (_rfv === null) {
+          _acReg = '';   // unverified first look — never show an unproven tail
+        }
+      }
+    } catch (e) {}
 
     var _opCodeRaw = String(_cf._opCode || vars.airlineCode || '').trim().toUpperCase();
     var _opCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opCodeRaw]) ? CALLSIGN_TO_IATA[_opCodeRaw] : _opCodeRaw;
@@ -15754,7 +15783,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22397';
+var FIDS_BUILD_TAG = 'v22398';
 (function(){
   try {
     function _addTag(){
@@ -26255,6 +26284,45 @@ function _liveFixPhysOk(inb) {
 // proxy) and let it win. Cached permanently in localStorage — a tail's type
 // never changes — so each tail costs one lookup ever. Async: returns '' on
 // the first call and the ~15 s panel re-render picks up the cached answer.
+// REG → what does it FLY today? Verdict cached per (reg, flight, local
+// day). true = the reg's own schedule contains this flight (or is
+// indeterminate — missing/failed/empty coverage never hides a tail);
+// false = the reg's schedule EXISTS and contradicts the claim; null =
+// lookup in flight (callers withhold until the rebuild).
+window._regFlightVerdicts = window._regFlightVerdicts || {};
+function _regFlightVerdict(reg, flightNo, apIata) {
+  try {
+    var r = String(reg || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    var f = String(flightNo || '').toUpperCase().replace(/\s+/g, '');
+    if (!r || !f) return true;
+    var tz = ((typeof AP !== 'undefined' && AP[apIata]) ? AP[apIata].tz : '') || 'UTC';
+    var day = fidsLocalDateKey(Date.now(), tz);
+    var k = r + '|' + f + '|' + day;
+    var V = window._regFlightVerdicts;
+    if (k in V) return V[k];
+    if (V['_p_' + k]) return null;
+    V['_p_' + k] = 1;
+    adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev/proxy/flights/reg/' + encodeURIComponent(r) + '/' + day + '?dateLocalRole=Both')
+      .then(function (resp) { return resp && resp.ok ? resp.json() : null; })
+      .then(function (arr) {
+        var verdict = true;
+        if (Array.isArray(arr) && arr.length) {
+          verdict = arr.some(function (fl) {
+            var n = String((fl && fl.number) || '').toUpperCase().replace(/\s+/g, '');
+            return n === f;
+          });
+        }
+        V[k] = verdict;
+        delete V['_p_' + k];
+        try { console.log('[REGVERIFY]', r, 'flies', f, 'today?', verdict); } catch (e) {}
+        // Either verdict changes what the shelf shows (pending withheld the
+        // tail) — rebuild once so it settles now.
+        try { if (typeof renderDedicatedScreen === 'function') setTimeout(function () { try { renderDedicatedScreen(); } catch (e2) {} }, 0); } catch (e) {}
+      })
+      .catch(function () { V[k] = true; delete V['_p_' + k]; });
+    return null;
+  } catch (e) { return true; }
+}
 function _regTrueType(reg) {
   try {
     var r = String(reg || '').replace(/[^A-Z0-9-]/gi, '').toUpperCase();
