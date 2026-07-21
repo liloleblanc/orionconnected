@@ -3107,7 +3107,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk"] .fids-banner-time-block,
   body[data-fids-banner="silk-acadian"] .fids-banner-time-block {
     position: absolute !important;
-    left: 90px !important; right: auto !important;
+    right: 90px !important; left: auto !important;
     top: 0 !important; bottom: 0 !important;
     width: auto !important; height: auto !important;
     padding: 0 !important;
@@ -3116,8 +3116,8 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
     border-radius: 0 !important;
     transform: none !important;
     display: flex !important; flex-direction: column !important;
-    align-items: flex-start !important; justify-content: center !important;
-    text-align: left !important;
+    align-items: flex-end !important; justify-content: center !important;
+    text-align: right !important;
     z-index: 2 !important;
   }
   body[data-fids-banner="silk"] .fids-banner-time-block > *,
@@ -3126,7 +3126,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk"] .fids-airport-pill,
   body[data-fids-banner="silk-acadian"] .fids-airport-pill {
     position: absolute !important;
-    right: 64px !important; left: auto !important;
+    left: 50% !important; right: auto !important;
     top: 50% !important; bottom: auto !important;
     width: auto !important; height: auto !important;
     min-width: 0 !important; max-width: none !important;
@@ -3134,15 +3134,10 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
     background: transparent !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    transform: translateY(-50%) !important;
+    transform: translate(-50%, -50%) !important;
     z-index: 2 !important;
   }
-  /* Moncton: the logo lives ON the red field, knocked out to white (same
-     brightness/invert treatment as the boot-loader logo) — native flag
-     art, not a pasted graphic */
-  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-logo-img {
-    filter: brightness(0) invert(1) !important;
-  }
+
 
   body[data-fids-banner="silk"] .fids-airport-pill .fids-airport-logo-img,
   body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-logo-img {
@@ -3162,7 +3157,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk"] .fids-banner-board,
   body[data-fids-banner="silk-acadian"] .fids-banner-board {
     position: absolute !important;
-    left: 50% !important; right: auto !important;
+    left: 90px !important; right: auto !important;
     top: 0 !important; bottom: 0 !important;
     width: auto !important; margin: 0 !important;
     /* the core's banner-overflow guard shrinks the label unless it ends
@@ -3171,7 +3166,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
     background: transparent !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    transform: translateX(-50%) !important;
+    transform: none !important;
     display: flex !important; align-items: center !important;
     gap: 20px !important;
     z-index: 2 !important;
@@ -3194,7 +3189,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body[data-fids-banner="silk"] .fids-banner-time,
   body[data-fids-banner="silk-acadian"] .fids-banner-time {
-    font-size: clamp(36px, 2.9vw, 54px) !important;
+    font-size: clamp(34px, 2.6vw, 48px) !important;
     font-weight: 800 !important;
     line-height: 1 !important;
   }
@@ -3213,16 +3208,16 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
       var(--fids-silk-accent-tint, #f7f2e2) 88%, var(--fids-silk-accent-tint, #f7f2e2) 100%) !important;
     border-top-left-radius: 30px !important;
   }
-  body[data-fids-banner="silk"] .fids-banner-time { color: #ffffff !important; }
-  body[data-fids-banner="silk"] .fids-banner-date { color: rgba(255, 255, 255, 0.70) !important; }
+  body[data-fids-banner="silk"] .fids-banner-time { color: #0d2440 !important; }
+  body[data-fids-banner="silk"] .fids-banner-date { color: rgba(13, 36, 64, 0.66) !important; }
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-label {
-    color: #0d2440 !important;
+    color: #ffffff !important;
     font-size: clamp(34px, 2.6vw, 48px) !important;
     font-weight: 800 !important;
     line-height: 1 !important;
   }
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon svg {
-    fill: #0d2440 !important;
+    fill: #ffffff !important;
     width: 52px !important; height: 52px !important;
   }
   body[data-fids-banner="silk"] .fids-airport-pill .fids-airport-iata { color: #0d2440 !important; }
@@ -3239,7 +3234,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk-acadian"] .fids-banner-board { background: transparent !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label,
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label {
-    color: #0d2440 !important;
+    color: #ffffff !important;
     font-size: clamp(34px, 2.6vw, 48px) !important;
     font-weight: 800 !important;
     line-height: 1 !important;
@@ -3250,18 +3245,18 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body[data-fids-banner="silk-acadian"] .fids-board-icon svg,
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon svg {
-    fill: #0d2440 !important;
+    fill: #ffffff !important;
     width: 52px !important; height: 52px !important;
   }
   /* the visible plane/bag glyph is an icon-font ::before coloured via
      `color`, not an svg fill */
   body[data-fids-banner="silk-acadian"] .fids-board-icon::before,
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon::before {
-    color: #0d2440 !important;
+    color: #ffffff !important;
   }
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon::before {
-    color: #0d2440 !important;
+    color: #ffffff !important;
   }
-  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-iata { color: #ffffff !important; }
-  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-name { color: rgba(255, 255, 255, 0.85) !important; }
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-iata { color: #0d2440 !important; }
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-name { color: rgba(13, 36, 64, 0.6) !important; }
 }
