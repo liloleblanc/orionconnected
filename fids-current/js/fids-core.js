@@ -11219,6 +11219,38 @@ const gView = document.getElementById('gateView');
             return 0;
           }
           _eqIncoming.regSource = data._regSource || (data.reg ? 'today' : '');
+          // FOREIGN-LEG EVICTION (Nick at v22392: 'Still showing C-GFCP').
+          // The guard stops NEW contamination, but a tail delivered by the
+          // pre-guard build survives in the monotonic equip lock, the 6 h
+          // sticky, and on the row itself — all three keep resurrecting it
+          // after the source dries up. When the enrichment now says the
+          // record is a FOREIGN leg, everything that tail touched is purged.
+          if (data._legForeign) {
+            try {
+              var _fgReg = String(currentFlight._reg || '');
+              var _fgHadLock = !!(window._gateEquipLock && window._gateEquipLock.key === _eqKey && window._gateEquipLock.reg);
+              var _fgHadSticky = !!(window._gateRegSticky && window._gateRegSticky.k
+                  && window._gateRegSticky.k.indexOf(String(currentFlight.flight || '') + '|') === 0);
+              if (window._gateEquipLock && window._gateEquipLock.key === _eqKey) window._gateEquipLock = null;
+              if (_fgHadSticky) window._gateRegSticky = null;
+              var _fgRowPurged = false;
+              if (_fgReg && !/^history/.test(String(currentFlight._regSource || ''))) {
+                currentFlight._reg = '';
+                currentFlight._regSource = '';
+                changed = true;
+                _fgRowPurged = true;
+              }
+              if (_fgRowPurged || _fgHadLock || _fgHadSticky) {
+                console.log('[FIDS] FOREIGN LEG eviction for', currentFlight.flight, '— purged', _fgReg || '(no reg)', 'from lock/sticky/row');
+                // The tail is already PAINTED — rebuild now, don't wait for
+                // the next cycle to stop showing another flight's airplane.
+                try {
+                  window._lastGateKey = '';
+                  window.setTimeout(function () { try { renderDedicatedScreen(); } catch (e2) {} }, 0);
+                } catch (e3) {}
+              }
+            } catch (eF) {}
+          }
           var _eqPrev = (window._gateEquipLock && window._gateEquipLock.key === _eqKey) ? window._gateEquipLock : null;
           var _eqAccepted = _eqStrength(_eqIncoming) >= _eqStrength(_eqPrev);
           if (_eqAccepted) window._gateEquipLock = _eqIncoming;
@@ -15722,7 +15754,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22392';
+var FIDS_BUILD_TAG = 'v22393';
 (function(){
   try {
     function _addTag(){
