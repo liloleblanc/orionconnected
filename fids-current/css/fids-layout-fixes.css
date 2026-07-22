@@ -2779,6 +2779,14 @@ html .g8-bir-badge {
   overflow: hidden;
 }
 html .g8-bir-badge .ac-ico { font-size: clamp(24px, 3.4vh, 44px); line-height: 1; }
+/* Frontier (Nick, Jul 2026): 'the icons green'. The gate icon badges default
+   to var(--airline-accent) (blue #0033A1 for F9). Green ONLY the round icon
+   badges here — NOT --airline-accent itself, so the blue boarding panels and
+   final-call strip Nick already approved stay blue. Covers both the idle
+   (v2-fi) and boarding-takeover (g8-bir) info rows, glyphs + airline emblem. */
+html body[data-gate-airline="F9"] .g8-bir-badge,
+html body[data-gate-airline="F9"] .v2-fi-icon-badge,
+html body[data-gate-airline="F9"] .v2-fi-emblem-wrap { background: #00854D !important; }
 /* Glyphs take the BADGE's ink — font.css paints .ac-ico white directly,
    which stomped per-airline badge inks (Flair's green, Nick). */
 html .g8-bir-badge .ac-ico,
@@ -2862,6 +2870,11 @@ html .g8-board-hdr-now, html .g8-board-col.now { background: var(--banner-bg, #0
    too light for white lettering (Flair lime, Southwest yellow). */
 html .g8-board-hdr-next, html .g8-board-col.next { background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important; }
 html .g8-board-col.next { border-left: none !important; }
+/* Frontier (Nick): 'gray on the left for boarding now' — the Boarding-now
+   panel/header go slate gray (white lettering still reads); the Boarding-next
+   panel keeps its brand blue. */
+html body[data-gate-airline="F9"] .g8-board-hdr-now,
+html body[data-gate-airline="F9"] .g8-board-col.now { background: #5B646F !important; }
 html .g8-board-col .g8-board-grp-label,
 html .g8-board-col .g8-board-grp-num,
 html .g8-board-col .g8-board-arrow,

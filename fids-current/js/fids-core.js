@@ -8758,6 +8758,25 @@ function uxgGateHtml(ctx) {
     _bannerUsedWordmark = true;       // reuse the white-plate styling
     _bannerPlateForced = true;        // BoA-style mark genuinely needs the plate
   }
+  // Frontier (Nick, Jul 2026): 'lighter blue where Frontier is on the top with
+  // green Frontier and no F at the beginning'. The banner (r1) is a lighter
+  // Frontier blue (airline-colors.js) so the green wordmark reads directly on
+  // it — no white plate. Leaving _bannerWmFromBase false suppresses the F
+  // emblem (the brand-pair path only appends it when the wordmark FILE is the
+  // from-base one). Icons go green via the F9 badge CSS.
+  if (!_useOverrideFile && (_bannerBrandCode === 'F9' || airlineCode === 'F9')) {
+    // 'dark' = dark-ink-for-light-bg, which routes through COLOR_WORDMARKS to
+    // Frontier's real GREEN wordmark file (the literal 'color' variant name
+    // isn't a real file suffix and 404s to the avs.io fallback).
+    r1LogoSrc = (typeof wordmarkSrc === 'function')
+      ? wordmarkSrc('frontier', 'dark')
+      : '/logos/airlines/us-major/frontier-wordmark-color.svg';
+    _useOverrideFile = true;          // real green ink — no whiten filter
+    _sz = { h: 102, w: 480 };         // wide wordmark, same as the from-base path
+    _bannerUsedWordmark = true;       // wordmark sizing (no plate — see below)
+    // NO white plate: the green wordmark sits directly on the lighter-blue
+    // banner. _bannerWmFromBase stays false → the green 'F' emblem is dropped.
+  }
   // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
   // Render the LOCAL dark-ink wordmark on a clean white plate: real brand type,
   // never force-whitened, never clipped, and works on a locked-down network.
@@ -9022,7 +9041,14 @@ function uxgGateHtml(ctx) {
     // etc. Airlines NOT listed here fall through to the default theme.
     + '<div class="g8-r1 g8-r1-bg"' + (
         _bannerSpec
-          ? ' style="background:' + _bannerSpec.r1 + ' !important;color:' + (_bannerSpec.r1Text || '#FFFFFF') + ' !important;"'
+          ? (function () {
+              // Frontier (Nick): the VISIBLE top banner is a lighter Frontier
+              // sky-blue so the green wordmark reads — but _bannerSpec.r1 stays
+              // deep blue because --banner-bg feeds dark card ink elsewhere.
+              var _r1Vis  = (airlineCode === 'F9') ? '#5AA0DE' : _bannerSpec.r1;
+              var _r1VisT = (airlineCode === 'F9') ? '#0A2E52' : (_bannerSpec.r1Text || '#FFFFFF');
+              return ' style="background:' + _r1Vis + ' !important;color:' + _r1VisT + ' !important;"';
+            })()
           : ''
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
@@ -15856,7 +15882,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22405';
+var FIDS_BUILD_TAG = 'v22406';
 (function(){
   try {
     function _addTag(){
