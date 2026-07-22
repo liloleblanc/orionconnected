@@ -11730,7 +11730,7 @@ const gView = document.getElementById('gateView');
             + '</div>'
             + '<div class="fids-banner-board">'
             +   '<div class="fids-board-icon" aria-hidden="true"><span class="ac-ico ac-ico-baggage" style="font-size:clamp(30px,4vh,44px);line-height:1;"></span></div>'
-            +   '<div class="fids-board-label">' + _ttl + '</div>'
+            +   '<div class="fids-board-label">' + _boardLabelBilingual('baggage') + '</div>'
             + '</div>'
           + '</div>';
         })()}
@@ -15847,7 +15847,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22402';
+var FIDS_BUILD_TAG = 'v22403';
 (function(){
   try {
     function _addTag(){
@@ -16421,7 +16421,7 @@ function render() {
   // Departures columns: Airline | To       | Weather | Flight | Gate     | Time | Status
   // Arrivals columns:   Airline | From     |         | Flight | Carousel | Time | Status
   // We rewrite the entire <thead> so column order matches the row template.
-  document.getElementById('hdrBoard').textContent = TL(mode);
+  document.getElementById('hdrBoard').innerHTML = _boardLabelBilingual(mode);
   // v2 banner: set body[data-fids-mode] so the plane icon flips down for
   // arrivals (CSS rotates the SVG 180deg when data-fids-mode="arr").
   document.body.dataset.fidsMode = mode;
@@ -20623,6 +20623,19 @@ function _bilingualDate(now, tz) {
   var en = now.toLocaleDateString('en-CA', eo);
   fr = fr.charAt(0).toUpperCase() + fr.slice(1);
   return fr + '  ·  ' + en;
+}
+
+// Bilingual board label (Nick: 'it should be 2 languages at once'). English
+// over French, stacked — both show at once and the longer French line
+// ('Retrait des bagages') no longer clips against the flag's white band.
+var _BOARD_LABEL_BI = {
+  dep: ['Departures', 'Départs'],
+  arr: ['Arrivals', 'Arrivées'],
+  baggage: ['Baggage claim', 'Retrait des bagages']
+};
+function _boardLabelBilingual(key) {
+  var pair = _BOARD_LABEL_BI[key] || _BOARD_LABEL_BI.dep;
+  return '<span class="fbl-en">' + pair[0] + '</span><span class="fbl-fr">' + pair[1] + '</span>';
 }
 
 // ── CLOCK — airport local time ────────────────────────────────────────────
