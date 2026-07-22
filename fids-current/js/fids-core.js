@@ -5214,7 +5214,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // narrowbody to 32Q (neo) for TS so the gate always shows the neo image,
   // never a ceo/320. Other carriers genuinely fly these, so this stays TS-only.
   if (al === 'TS' && /^(319|320|321|32N|32A|32B|32S)$/.test(eq)) eq = '32Q';
-  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, '3H':1, '5T':1 };
+  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, F9:1, '3H':1, '5T':1 };
   var miss = (typeof window !== 'undefined') ? window.AIRCRAFT_IMG_MISSING : {};
 
   // v218.99.47 — Engine variant detection. If the full model string was
@@ -15856,7 +15856,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22404';
+var FIDS_BUILD_TAG = 'v22405';
 (function(){
   try {
     function _addTag(){
