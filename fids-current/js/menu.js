@@ -1473,6 +1473,15 @@ function _cuApplyFont(fontKey) {
   // Map keys to CSS font stacks. Keep in sync with css/font.css :root vars.
   var stacks = {
     'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+    'ginto-nord':          "'ABC Ginto Nord', -apple-system, BlinkMacSystemFont, sans-serif",
+    'ginto-nord-thin':     "'ABC Ginto Nord Thin', 'ABC Ginto Nord', sans-serif",
+    'ginto-nord-light':    "'ABC Ginto Nord Light', 'ABC Ginto Nord', sans-serif",
+    'ginto-nord-regular':  "'ABC Ginto Nord Regular', 'ABC Ginto Nord', sans-serif",
+    'ginto-nord-medium':   "'ABC Ginto Nord Medium', 'ABC Ginto Nord', sans-serif",
+    'ginto-nord-bold':     "'ABC Ginto Nord Bold', 'ABC Ginto Nord', sans-serif",
+    'ginto-nord-black':    "'ABC Ginto Nord Black', 'ABC Ginto Nord', sans-serif",
+    'ginto-nord-ultra':    "'ABC Ginto Nord Ultra', 'ABC Ginto Nord', sans-serif",
+    'ginto-nord-hairline': "'ABC Ginto Nord Hairline', 'ABC Ginto Nord', sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
     'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
     'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
