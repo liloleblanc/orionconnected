@@ -4912,16 +4912,9 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2::after { display: non
 }
 .g8-wrap .gad-media-col.g8-static-page-ad::after {
   inset: 0;
-  opacity: .72;
-  background:
-    linear-gradient(118deg, transparent 46.8%, color-mix(in srgb, var(--airline-accent,#d82f2e) 78%, #fff) 47.2%, transparent 47.8%) left top / 42% 39% no-repeat,
-    linear-gradient(118deg, transparent 54.0%, rgba(255,255,255,.62) 54.35%, transparent 54.8%) left top / 49% 46% no-repeat,
-    linear-gradient(118deg, transparent 61.2%, color-mix(in srgb, var(--airline-accent3,#f4c542) 72%, #fff) 61.55%, transparent 62.0%) left top / 55% 52% no-repeat,
-    linear-gradient(118deg, transparent 68.0%, rgba(255,255,255,.42) 68.25%, transparent 68.65%) left top / 61% 58% no-repeat,
-    linear-gradient(-62deg, transparent 45.8%, color-mix(in srgb, var(--airline-accent,#d82f2e) 76%, #fff) 46.2%, transparent 46.8%) right bottom / 42% 39% no-repeat,
-    linear-gradient(-62deg, transparent 53.4%, rgba(255,255,255,.56) 53.75%, transparent 54.2%) right bottom / 49% 46% no-repeat,
-    linear-gradient(-62deg, transparent 61.0%, color-mix(in srgb, var(--airline-accent3,#f4c542) 66%, #fff) 61.35%, transparent 61.8%) right bottom / 55% 52% no-repeat,
-    linear-gradient(-62deg, transparent 68.2%, rgba(255,255,255,.38) 68.45%, transparent 68.85%) right bottom / 61% 58% no-repeat;
+  /* Diagonal accent streak-lines REMOVED (Nick, Jul 2026: 'the main screen
+     remove the lines'). The corner glow (::before) stays for subtle depth. */
+  background: none;
 }
 
 /* Left rail: put more width into the data column and let numeric content use

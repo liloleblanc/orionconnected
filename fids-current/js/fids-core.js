@@ -6882,8 +6882,10 @@ function _buildV2MapCol(ctx, vars) {
       // Nick's approved reference (Jul 2026): a clean 3-row LABEL | VALUE
       // table — "Flight | Vol  WS576" / "From | De  Edmonton (YEG)" /
       // "Status | Statut  Early | En avance" — thin rules between rows.
+      // City | CODE with the code in a different colour (Nick: 'Cleveland |
+      // CLE … different colour', consistent on the From side too).
       var _ibCityCode = _origCity
-        ? (_origCity + (_origIata ? ' (' + _origIata + ')' : ''))
+        ? (_origCity + (_origIata ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _origIata + '</span>' : ''))
         : (_origIata || '—');
       // Arrival row — RESTORED (Nick: 'we don't have an arrival time anymore
       // on there, we did before and we need it'). Scheduled time, with a
@@ -7071,7 +7073,7 @@ function _buildV2MapCol(ctx, vars) {
       // Flight·To + Status only (no departing-in row — it's on the left).
       // Same 3-row LABEL | VALUE table as the inbound card (Nick, Jul 2026).
       var _dCityCode = _dDestCity
-        ? (_dDestCity + (_dDest ? ' (' + _dDest + ')' : ''))
+        ? (_dDestCity + (_dDest ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dDest + '</span>' : ''))
         : (_dDest || '—');
       // Multi-city through-flight → flip the panel row city-by-city too.
       // Raw feed dest — the display city was already first-leg-reduced.
@@ -7080,7 +7082,7 @@ function _buildV2MapCol(ctx, vars) {
           ? vars.currentFlight._stops : null;
         var _dfRow = _dfRowStops ? _destFlipStops(_dfRowStops, 'c') : null;
         var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
-        if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' (' + _dfRowIa + ')' : '');
+        if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dfRowIa + '</span>' : '');
       })();
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t4">'
@@ -7089,7 +7091,7 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'À' : 'Destination') + '</span><span>' + (_frF ? 'Destination' : 'À') + '</span></div>'
+        +     '<div class="v2-rc-fi-tlbl"><span>Destination</span><span>Destination</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
         +   '</div>'
         // Departure TIME restored (Nick: 'who told you to remove the time') —
@@ -9024,6 +9026,10 @@ function uxgGateHtml(ctx) {
        // wordmarks on the left.
        + ' style="--g8-tab-w:clamp(240px,17.5vw,420px)'
        + ';--airline-accent:' + accent
+       // r2 = the airline BRAND accent from airline-colors.js (green for F9,
+       // red for DL…). Drives the flight-info TITLE colour so title and data
+       // read as two colours (Nick). Falls back to the icon accent.
+       + ';--airline-r2:' + ((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
        // Lane/takeover surfaces need white lettering — pre-darken accents
        // that are too light for it (Flair lime, Southwest yellow).
        + ';--accent-lane:' + (_hexIsLight(accent) ? 'color-mix(in srgb, ' + accent + ' 55%, #141a14)' : accent)
@@ -15889,7 +15895,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22408';
+var FIDS_BUILD_TAG = 'v22409';
 (function(){
   try {
     function _addTag(){
@@ -26688,20 +26694,10 @@ function _adBackdropHtml(blurUrl) {
     + 'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
     + 'background-size:cover;background-position:center 30%;background-repeat:no-repeat;'
     + 'opacity:.42;filter:grayscale(1) brightness(1.85);mix-blend-mode:screen;pointer-events:none;"></div>';
-  // Diagonal slat set (Nick: 'maybe more diagonal lines?') — the two thick
-  // edge handles plus echoing thinner slats stepping inward on both sides.
-  // These nodes are emitted BEFORE the media's z-index:1 layer, so every line
-  // stays behind/around the creative and never crosses the advert itself.
-  function _slat(side, off, w, op) {
-    return '<div style="position:absolute;z-index:0;top:-8%;bottom:-8%;' + side + ':' + off + ';width:' + w + ';'
-      + 'background:var(--airline-accent,#D82F2E);opacity:' + op + ';transform:skewX(-14deg);pointer-events:none;"></div>';
-  }
-  var handles = _slat('left', '-3.5%', '6%', '.9') + _slat('right', '-3.5%', '6%', '.9')
-    + _slat('left', '3.6%', '1.1%', '.55') + _slat('right', '3.6%', '1.1%', '.55')
-    + _slat('left', '5.9%', '0.45%', '.35') + _slat('right', '5.9%', '0.45%', '.35')
-    + _slat('left', '8.0%', '0.32%', '.28') + _slat('right', '8.0%', '0.32%', '.28')
-    + _slat('left', '10.0%', '0.20%', '.20') + _slat('right', '10.0%', '0.20%', '.20');
-  return base + dots + handles;
+  // Diagonal slats REMOVED (Nick, Jul 2026: 'the main screen remove the
+  // lines'). The dotted globe stays (Nick liked 'the dots world') — only the
+  // skewed accent line-set that streaked across the welcome/ad backdrop is gone.
+  return base + dots;
 }
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 

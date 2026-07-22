@@ -16,7 +16,7 @@
   const TX = {
     // Column headers
     airline:    { en:'Airline', fr:'Ligne aérienne', es:'Aerolínea', de:'Fluggesellschaft', it:'Compagnia', pt:'Companhia', ja:'航空会社', zh:'航空公司', ar:'شركة الطيران' },
-    to:         { en:'To',      fr:'Vers',           es:'A',         de:'Nach',             it:'Per',       pt:'Para',      ja:'行先',     zh:'前往',     ar:'إلى' },
+    to:         { en:'Destination', fr:'Destination',   es:'A',         de:'Nach',             it:'Per',       pt:'Para',      ja:'行先',     zh:'前往',     ar:'إلى' },
     from:       { en:'From',    fr:'De',             es:'Desde',     de:'Von',              it:'Da',        pt:'De',        ja:'出発地',   zh:'始发',     ar:'من' },
     weather:    { en:'Weather', fr:'Météo',          es:'Clima',     de:'Wetter',           it:'Meteo',     pt:'Clima',     ja:'天気',     zh:'天气',     ar:'الطقس' },
     flight:     { en:'Flight #',  fr:'Vol #',            es:'Vuelo #',     de:'Flug #',             it:'Volo #',      pt:'Voo #',       ja:'便名 #',     zh:'航班 #',     ar:'# رحلة' },
