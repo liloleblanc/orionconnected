@@ -2649,7 +2649,7 @@ function updateDedicatedTimeOnly() {
   const banClock = document.getElementById('dedicatedBannerClock');
   if (banClock) banClock.textContent = timeStr;
   const bidsDate = document.getElementById('bidsBannerDate');
-  if (bidsDate) bidsDate.textContent = `${_cap(dayName)}, ${_cap(monthName)} ${now.getDate()}`;
+  if (bidsDate) bidsDate.textContent = _bilingualDate(now, tz);
   const emptyTime = document.getElementById('dedicatedEmptyTime');
   if (emptyTime) emptyTime.textContent = timeStr;
   // Update boarding countdown
@@ -11719,7 +11719,7 @@ const gView = document.getElementById('gateView');
             + '<div class="fids-banner-chevrons" aria-hidden="true"></div>'
             + '<div class="fids-banner-time-block">'
             +   '<div class="fids-banner-time" id="dedicatedBannerClock">' + timeStr + '</div>'
-            +   '<div class="fids-banner-date" id="bidsBannerDate">' + _cap(dayName) + ', ' + _cap(monthName) + ' ' + now.getDate() + '</div>'
+            +   '<div class="fids-banner-date" id="bidsBannerDate">' + _bilingualDate(now, (AP[iata] || {}).tz) + '</div>'
             + '</div>'
             + '<div class="fids-airport-pill' + (_lg ? ' has-logo' : '') + '">'
             +   (_lg ? '<img class="fids-airport-logo-img" src="' + _lg + '" alt="" onerror="this.style.display=\'none\'">' : '')
@@ -15847,7 +15847,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22401';
+var FIDS_BUILD_TAG = 'v22402';
 (function(){
   try {
     function _addTag(){
@@ -20611,6 +20611,20 @@ function loadDemo() {
   _fetchBoardWeather(allCodes);
 }
 
+// Bilingual date line (Nick: 'date in both languages… BIDS for sure can be
+// both languages on one screen'). French first (capitalised), then English,
+// e.g. "Mardi 21 juillet · Tuesday, Jul 21". Used by the FIDS clock and the
+// BIDS banner alike.
+function _bilingualDate(now, tz) {
+  var fo = { weekday: 'long', day: 'numeric', month: 'long' };
+  var eo = { weekday: 'long', month: 'short', day: 'numeric' };
+  if (tz) { fo.timeZone = tz; eo.timeZone = tz; }
+  var fr = now.toLocaleDateString('fr-CA', fo);
+  var en = now.toLocaleDateString('en-CA', eo);
+  fr = fr.charAt(0).toUpperCase() + fr.slice(1);
+  return fr + '  ·  ' + en;
+}
+
 // ── CLOCK — airport local time ────────────────────────────────────────────
 function tick() {
   const iata = document.getElementById('apSel').value;
@@ -20629,8 +20643,7 @@ function tick() {
   document.getElementById('clock').textContent =
     now.toLocaleTimeString('en-CA', timeOpts);
 
-  document.getElementById('clockDate').textContent =
-    now.toLocaleDateString('en-CA', dateOpts);
+  document.getElementById('clockDate').textContent = _bilingualDate(now, tz);
 }
 
 // ── AUTO PAGING CAROUSEL ─────────────────────────────────────────────────
