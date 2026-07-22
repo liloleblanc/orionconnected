@@ -904,6 +904,15 @@ function changeFont(f) {
 // Customize panel (same keys the Customize <select> saves).
 var FIDS_FONT_STACKS = {
   'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+  'ginto-nord': "'ABC Ginto Nord', -apple-system, BlinkMacSystemFont, sans-serif",
+  'ginto-nord-thin': "'ABC Ginto Nord Thin', 'ABC Ginto Nord', sans-serif",
+  'ginto-nord-light': "'ABC Ginto Nord Light', 'ABC Ginto Nord', sans-serif",
+  'ginto-nord-regular': "'ABC Ginto Nord Regular', 'ABC Ginto Nord', sans-serif",
+  'ginto-nord-medium': "'ABC Ginto Nord Medium', 'ABC Ginto Nord', sans-serif",
+  'ginto-nord-bold': "'ABC Ginto Nord Bold', 'ABC Ginto Nord', sans-serif",
+  'ginto-nord-black': "'ABC Ginto Nord Black', 'ABC Ginto Nord', sans-serif",
+  'ginto-nord-ultra': "'ABC Ginto Nord Ultra', 'ABC Ginto Nord', sans-serif",
+  'ginto-nord-hairline': "'ABC Ginto Nord Hairline', 'ABC Ginto Nord', sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
   'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
   'inter':         "'Inter', system-ui, -apple-system, sans-serif",
@@ -15847,7 +15856,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22403';
+var FIDS_BUILD_TAG = 'v22404';
 (function(){
   try {
     function _addTag(){
@@ -20276,6 +20285,15 @@ function applyAirportConfigToBoard(iata) {
   if (_font) {
     var _fontStacks = {
       'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+      'ginto-nord': "'ABC Ginto Nord', -apple-system, BlinkMacSystemFont, sans-serif",
+      'ginto-nord-thin': "'ABC Ginto Nord Thin', 'ABC Ginto Nord', sans-serif",
+      'ginto-nord-light': "'ABC Ginto Nord Light', 'ABC Ginto Nord', sans-serif",
+      'ginto-nord-regular': "'ABC Ginto Nord Regular', 'ABC Ginto Nord', sans-serif",
+      'ginto-nord-medium': "'ABC Ginto Nord Medium', 'ABC Ginto Nord', sans-serif",
+      'ginto-nord-bold': "'ABC Ginto Nord Bold', 'ABC Ginto Nord', sans-serif",
+      'ginto-nord-black': "'ABC Ginto Nord Black', 'ABC Ginto Nord', sans-serif",
+      'ginto-nord-ultra': "'ABC Ginto Nord Ultra', 'ABC Ginto Nord', sans-serif",
+      'ginto-nord-hairline': "'ABC Ginto Nord Hairline', 'ABC Ginto Nord', sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
       'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
       'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
