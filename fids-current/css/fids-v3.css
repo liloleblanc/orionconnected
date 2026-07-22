@@ -4046,3 +4046,70 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
 #fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { height: 23px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { height: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { height: 21px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BANNER STYLE 'merged' — the clock joins the white airport band.
+   Scoped ENTIRELY to body[data-fids-banner="merged"], which fids-core.js
+   sets from the BANNER_STYLE registry (per airport / per screen — YQM is
+   pinned to 'tabs' so the Acadian tricolore renders exactly as today).
+   ADDITIVE-ONLY by design: without the attribute every rule here is inert
+   and the three-tab banner renders unchanged — a mid-deploy JS/CSS
+   mismatch can only ever fall back to the current look.
+   Geometry: the white band stretches to the left edge (same 29px inset +
+   angled edge the navy tab used); the time block keeps its position and
+   skew but sheds the navy field, so the clock sits ON the white band in
+   navy ink, with the airport logo centered beside it and the accent
+   board tab untouched on the right.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (min-width: 701px) {
+  body[data-fids-banner="merged"] .fids-airport-pill {
+    left: 29px !important;
+    right: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+  body[data-fids-banner="merged"] .fids-banner-time-block {
+    background: none !important;
+    box-shadow: none !important;
+    z-index: 3 !important;
+    padding-left: 72px !important;
+  }
+  body[data-fids-banner="merged"] .fids-banner-time,
+  body[data-fids-theme][data-fids-banner="merged"] .fids-banner-time {
+    color: #0d2440 !important;
+  }
+  body[data-fids-banner="merged"] .fids-banner-date,
+  body[data-fids-theme][data-fids-banner="merged"] .fids-banner-date {
+    color: rgba(13, 36, 64, 0.66) !important;
+  }
+}
+
+/* ── 'merged' refinement (Nick: 'make it fade and blend a bit more like
+   art') — the hard angled seams become feathered fades. Scoped to the
+   merged style only: YQM's flag banner stays crisp — a flag should not
+   blend. ── */
+@media (min-width: 701px) {
+  /* White band: feathers in from the dark base at its left edge and
+     drifts through a soft off-white wash toward the accent side. */
+  body[data-fids-banner="merged"] .fids-airport-pill {
+    background: linear-gradient(105deg,
+      rgba(248, 250, 252, 0) 0%,
+      #ffffff 6%,
+      #f7f9fc 55%,
+      #edf1f6 100%) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10) !important;
+  }
+  /* Accent tab: its leading edge dissolves into the white band instead
+     of cutting across it. */
+  body[data-fids-banner="merged"] .fids-banner-board {
+    background: linear-gradient(90deg,
+      transparent 0%,
+      var(--fids-hdr-accent, #FAC120) 30%) !important;
+    box-shadow: none !important;
+  }
+  /* Banner base: the dark strip behind the tabs breathes navy in the
+     middle rather than sitting flat black. */
+  body[data-fids-banner="merged"] .fids-banner {
+    background: linear-gradient(100deg, #0b0f16 0%, #16253f 55%, #0b0f16 100%) !important;
+  }
+}

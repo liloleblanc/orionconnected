@@ -10212,6 +10212,69 @@ function boardAutofit(full) {
 try { setInterval(function () { boardAutofit(false); }, 5000); } catch (e) {}
 try { window.addEventListener('resize', function () { setTimeout(function () { boardAutofit(true); }, 120); }); } catch (e) {}
 
+// ── Banner style registry (Nick: merged time+airport banner, "changeable by
+// destination or screen", Acadian flag pinned for Moncton). Resolution:
+// localStorage override (fids_banner_style_<IATA>_<SCREEN>, then
+// fids_banner_style_<IATA>) → registry per-airport (a string, or an object
+// keyed fids/gids/bids/'*') → global '*'. Styles: 'tabs' = the current
+// three-tab banner (YQM's Acadian tricolore lives there, untouched);
+// 'merged' = the clock joins the white airport band (two tabs). CSS keys
+// off body[data-fids-banner] and is ADDITIVE-ONLY — if JS and CSS ever
+// deploy out of step, the banner falls back to today's 'tabs' look,
+// never a broken one.
+var BANNER_STYLE = {
+  // Concept A ('Silk', Nick-approved in Figma): one continuous band, colours
+  // flow like fabric. Moncton's variant IS the Acadian tricolore flowing
+  // blue → white → red with the gold star at the clock. 'tabs' (the old
+  // three-tab banner) remains available as a named style and is the
+  // fallback whenever no style resolves.
+  'YQM': 'silk-acadian',
+  '*': 'silk'
+};
+// Per-airport silk accent — the band's tail colour, keyed to the airport's
+// own logo (Nick: 'match the logo on the top'). localStorage override:
+// fids_banner_accent_<IATA>. Unlisted airports fall back to the gold.
+var BANNER_ACCENT = {
+  'TPA': '#C8102E'   // Tampa roundel red
+};
+function _applyBannerStyle(iata, screen) {
+  try {
+    var ap = String(iata || '').toUpperCase();
+    var s = '';
+    try {
+      s = localStorage.getItem('fids_banner_style_' + ap + '_' + screen)
+        || localStorage.getItem('fids_banner_style_' + ap) || '';
+    } catch (e) {}
+    if (!s) {
+      var c = Object.prototype.hasOwnProperty.call(BANNER_STYLE, ap) ? BANNER_STYLE[ap] : BANNER_STYLE['*'];
+      s = (c && typeof c === 'object') ? (c[screen] || c['*'] || 'tabs') : (c || 'tabs');
+    }
+    document.body.dataset.fidsBanner = s;
+    try {
+      var acc = '';
+      try { acc = localStorage.getItem('fids_banner_accent_' + ap) || ''; } catch (e2) {}
+      if (!acc) acc = BANNER_ACCENT[ap] || '';
+      if (acc) {
+        document.body.style.setProperty('--fids-silk-accent', acc);
+        // Tail TINT — the accent blended 84% toward white, so the logo sits
+        // on a near-white wash of the airport's own colour instead of a
+        // pasted-looking plate (Nick: 'looks pasted there and colors dont
+        // match').
+        try {
+          var m = acc.replace('#', '');
+          if (m.length === 3) { m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2]; }
+          var rr = parseInt(m.slice(0, 2), 16), gg = parseInt(m.slice(2, 4), 16), bb = parseInt(m.slice(4, 6), 16);
+          var mixW = function (c) { return Math.round(c * 0.16 + 255 * 0.84); };
+          document.body.style.setProperty('--fids-silk-accent-tint', 'rgb(' + mixW(rr) + ',' + mixW(gg) + ',' + mixW(bb) + ')');
+        } catch (e4) {}
+      } else {
+        document.body.style.removeProperty('--fids-silk-accent');
+        document.body.style.removeProperty('--fids-silk-accent-tint');
+      }
+    } catch (e3) {}
+  } catch (e) {}
+}
+
 function renderDedicatedScreen() {
   if (screenType === 'gate') { document.body.classList.add('uxg-gate-mode'); }
   // Light/dark board flag on DEDICATED screens too — it only ran in the main
@@ -10222,6 +10285,7 @@ function renderDedicatedScreen() {
   try {
     var _apClsIata = (document.getElementById('apSel') || {}).value || '';
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+    _applyBannerStyle(_apClsIata, screenType === 'gate' ? 'gids' : 'bids');
   } catch (e) {}
   
 // ── GATE v5 weather builder ──
@@ -15783,7 +15847,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22400';
+var FIDS_BUILD_TAG = 'v22401';
 (function(){
   try {
     function _addTag(){
@@ -16504,6 +16568,7 @@ function render() {
   try {
     var _apClsIata = (document.getElementById('apSel') || {}).value || '';
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+    _applyBannerStyle(_apClsIata, 'fids');
   } catch (e) {}
 
   // Measure the real rendered row height — themes vary it (58-66px). The old
