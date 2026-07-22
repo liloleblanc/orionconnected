@@ -7889,7 +7889,14 @@ function uxgGateHtml(ctx) {
   var _ovMsg = getOverrideMessage(currentFlight.flight);
   var minsToBoard = Math.max(0, minsToDep - boardLeadMins);
   var showBoarding = minsToDep <= boardLeadMins && minsToDep > -15;
-  var showCountdown = minsToDep <= (boardLeadMins + 25) && minsToDep > boardLeadMins;
+  // Nick (Jul 2026): 'boarding takes over, but less' + 'aircraft images not
+  // seen a lot'. The full-screen "Boarding begins in X" countdown used to take
+  // over the whole gate 25 min BEFORE boarding even started (so ~55 min before
+  // an A320's departure) — burying the aircraft image + adverts for the better
+  // part of an hour. Trim that pre-boarding takeover to the last 10 min; the
+  // aircraft/media/map layout (with the small "will board in X" strip) now
+  // stays up until then.
+  var showCountdown = minsToDep <= (boardLeadMins + 10) && minsToDep > boardLeadMins;
   var isGateClosedStatus = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed');
   var isFinalCallStatus = (stKey === 'final' || stKey === 'finalcall' || stKey === 'final-call');
   var inbDelayed = inboundFlight && (inboundFlight.status === 'delayed' || (inboundFlight.upd && inboundFlight._revTs && inboundFlight._revTs > inboundFlight._sortTs));
@@ -15882,7 +15889,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22406';
+var FIDS_BUILD_TAG = 'v22407';
 (function(){
   try {
     function _addTag(){
