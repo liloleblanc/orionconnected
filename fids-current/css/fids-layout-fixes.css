@@ -3226,7 +3226,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   /* ── 'silk-acadian' colours: the flag flows — blue → white → red ── */
   body[data-fids-banner="silk-acadian"] .fids-banner {
     background: linear-gradient(100deg,
-      #003DA5 0%, #003DA5 31%, #ffffff 35.5%, #ffffff 64.5%, #D21034 69%, #D21034 100%) !important;
+      #003DA5 0%, #003DA5 18%, #ffffff 43%, #ffffff 57%, #D21034 82%, #D21034 100%) !important;
     border-top-left-radius: 30px !important;
   }
   body[data-fids-banner="silk-acadian"] .fids-banner-time { color: #ffffff !important; }
@@ -3282,5 +3282,37 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon .ac-ico,
   body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon .ac-ico {
     color: #ffffff !important;
+  }
+}
+
+/* ── Bilingual stacked board label (Nick: 'both languages at once'):
+   English over French. Sized to fit the flag's blue third without clipping
+   'Retrait des bagages'. Overrides the single-line big-word rule above. ── */
+@media (min-width: 701px) {
+  body[data-fids-banner="silk"] .fids-banner-board .fids-board-label,
+  body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    line-height: 1.02 !important;
+    font-size: inherit !important;
+  }
+  body[data-fids-banner="silk"] .fids-board-label .fbl-en,
+  body[data-fids-banner="silk-acadian"] .fids-board-label .fbl-en {
+    display: block !important;
+    font-size: clamp(28px, 2.1vw, 40px) !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
+    line-height: 1.02 !important;
+  }
+  body[data-fids-banner="silk"] .fids-board-label .fbl-fr,
+  body[data-fids-banner="silk-acadian"] .fids-board-label .fbl-fr {
+    display: block !important;
+    font-size: clamp(20px, 1.5vw, 29px) !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    line-height: 1.05 !important;
+    opacity: 0.92 !important;
   }
 }
