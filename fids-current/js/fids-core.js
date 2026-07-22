@@ -15889,7 +15889,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22407';
+var FIDS_BUILD_TAG = 'v22408';
 (function(){
   try {
     function _addTag(){
@@ -24956,7 +24956,13 @@ function getGateAds() {
   });
   // v218.99.46 — Nick's spec: ad rotation = Aeroplan/airline-related ads
   // ONLY + Accor hotel ads. No generic destination ads.
-  var allAds = airline.concat(accorAds);
+  // v22408 — Nick: 'this bullshit over the ads' (Delta 'SkyMiles / Earn miles
+  // on every flight' etc.). The APP-GENERATED airline promo slides (a headline
+  // + tagline laid over the carrier logo) are not wanted on the guest ad area.
+  // Keep only FINISHED CREATIVE image ads (imageOnly art the operator supplied)
+  // and the real Accor hotel ads; drop every generated-copy promo.
+  var airlineKept = airline.filter(function (ad) { return ad && ad.imageOnly; });
+  var allAds = airlineKept.concat(accorAds);
 
   // DEBUG: log ad count once per destination change
   if (window._lastAdLogKey !== code + '|' + destIata) {
