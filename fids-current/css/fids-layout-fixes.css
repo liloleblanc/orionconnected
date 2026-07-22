@@ -3329,3 +3329,33 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
     opacity: 0.92 !important;
   }
 }
+
+/* ── v22409 — flight-info TITLE vs DATA read as two colours (Nick: 'Title
+   Departure and data 2 different colours'). Title label → the airline BRAND
+   accent (r2: green for Frontier, red for Delta…); the airport CODE in the
+   title → the icon accent (a different colour again — Nick: 'green title =
+   blue airport code'); the big VALUE keeps the dark ink. AC family keeps its
+   bespoke tuning, so it's excluded. Scoped by [data-gate-airline] both to
+   theme per carrier and to win over gids-v218.78.css (loaded after). ── */
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="QK"]):not([data-gate-airline="RV"]) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en {
+  color: var(--airline-r2, var(--airline-accent, #D82F2E)) !important;
+}
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
+  color: var(--airline-accent, #0033A1) !important;
+}
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="QK"]):not([data-gate-airline="RV"]) .g8-bir-title {
+  color: var(--airline-r2, var(--airline-accent, #D82F2E)) !important;
+}
+/* Frontier: the DATA values in a deeper blue than the banner tint (Nick:
+   'the Frontier data needs to be darker blue'). Status keeps its state colour
+   via the more-specific .g8-bir-st* rules. */
+html body[data-gate-airline="F9"] .g8-wrap .gad-aircraft-col .v2-fi-value,
+html body[data-gate-airline="F9"] .g8-bir-val { color: #0A3D6B !important; }
+
+/* v22409 — 'City | CODE' in the aircraft card: the IATA code takes the airline
+   accent (a different colour from the city), the bar is a soft separator
+   (Nick: 'Cleveland | CLE … different colour', both From and Destination). */
+html .g8-wrap .gad-map-col-v2 .v2-rc-iata,
+html .g8-wrap .v2-rc-fi-tval .v2-rc-iata { color: var(--airline-accent, #0033A1) !important; font-weight: 900 !important; }
+html .g8-wrap .gad-map-col-v2 .v2-rc-bar,
+html .g8-wrap .v2-rc-fi-tval .v2-rc-bar { opacity: 0.4 !important; font-weight: 500 !important; margin: 0 0.12em !important; }
