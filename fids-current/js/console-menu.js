@@ -158,9 +158,17 @@
     if (subWrap && chips) {
       if (st !== 'main' && sub && sub.options && sub.options.length) {
         document.getElementById('ocSubLbl').textContent = (st === 'baggage') ? 'Carousel' : 'Gate';
-        var html = '';
-        for (var i = 0; i < sub.options.length; i++) html += '<button class="oc-chip' + (sub.options[i].value === sub.value ? ' on' : '') + '" data-ocsub2="' + sub.options[i].value.replace(/"/g, '') + '">' + sub.options[i].textContent + '</button>';
-        chips.innerHTML = html; subWrap.style.display = '';
+        // Build chips as real DOM nodes — textContent/setAttribute never
+        // reinterpret option text as HTML (CodeQL: DOM-text-as-HTML).
+        chips.textContent = '';
+        for (var i = 0; i < sub.options.length; i++) {
+          var o = sub.options[i], btn = document.createElement('button');
+          btn.className = 'oc-chip' + (o.value === sub.value ? ' on' : '');
+          btn.setAttribute('data-ocsub2', o.value);
+          btn.textContent = o.textContent;
+          chips.appendChild(btn);
+        }
+        subWrap.style.display = '';
       } else { subWrap.style.display = 'none'; }
     }
     // background chips only on dedicated screens
