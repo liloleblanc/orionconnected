@@ -41,7 +41,7 @@ window.AIRLINE_BRAND_COLORS = {
   'WN': { r1:'#304CB2', r1Text:'#FFFFFF', r2:'#F9B612', body:'#EAEDF7', bodyText:'#304CB2' }, // Southwest
   'B6': { r1:'#003876', r1Text:'#FFFFFF', r2:'#00A1DE', body:'#EAF0F7', bodyText:'#003876' }, // JetBlue
   'HA': { r1:'#4B286D', r1Text:'#FFFFFF', r2:'#E0218A', body:'#F4EFF7', bodyText:'#4B286D' }, // Hawaiian
-  'F9': { r1:'#0E5FB0', r1Text:'#FFFFFF', r2:'#00854D', body:'#F1F7FC', bodyText:'#0A3D6B' }, // Frontier — blue banner / green accent / white body (Nick: blue + green + white)
+  'F9': { r1:'#0E5FB0', r1Text:'#FFFFFF', r2:'#00854D', body:'#F1F7FC', bodyText:'#0A3D6B' }, // Frontier — r1 stays deep blue for --banner-bg (dark card ink); the VISIBLE top banner is lightened to Frontier sky-blue in fids-core (green wordmark reads on it). Accent green / white body.
 
   /* ── International ──────────────────────────────────────────────────── */
   'LH': { r1:'#05164D', r1Text:'#FFFFFF', r2:'#FFB81C', body:'#F1F2F4', bodyText:'#05164D' }, // Lufthansa
