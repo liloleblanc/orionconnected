@@ -2436,7 +2436,9 @@ html body .fids-banner .fids-banner-analog {
   width: clamp(52px, 7vh, 96px) !important;
   flex: 0 0 auto !important;
   display: block !important;
+  order: 2 !important;   /* Nick: analog clock on the RIGHT of the digital */
 }
+html body .fids-banner .fids-banner-time-text { order: 1 !important; }
 html body .fids-banner .fids-banner-analog .cl-face {
   fill: rgba(255, 255, 255, 0.14);
   stroke: var(--fids-banner-text, #fff);
@@ -3468,19 +3470,30 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-name { color: rgba(13, 36, 64, 0.6) !important; }
 }
 
-/* ── Acadian silk refinements (Nick): the yellow star moves onto the BLUE
-   section (left, with Departures) and grows; the clock loses its star since
-   it now sits on the red. Flag-authentic — the star belongs in the blue. ── */
+/* ── Acadian silk refinements (Nick): a BIG gold Acadian star with the
+   departure/arrival plane icon INSIDE it, the words beside it. The star is a
+   scalable SVG background on the board-icon; the plane glyph sits centred on
+   it in Acadian navy. The old separate ★ glyph beside the icon is dropped. ── */
 @media (min-width: 701px) {
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-time::before { content: '' !important; }
-  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board::before {
-    content: '★';
-    color: #FFD600 !important;
-    font-size: clamp(42px, 3vw, 58px) !important;
-    line-height: 1 !important;
-    margin-right: 6px !important;
-    order: -1 !important;
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board::before { content: none !important; }
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon {
+    width: clamp(84px, 6.6vw, 120px) !important;
+    height: clamp(84px, 6.6vw, 120px) !important;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23FFD600' d='M50 3 L61.8 38.2 L98.5 38.2 L68.8 60 L80.4 95.1 L50 73.5 L19.6 95.1 L31.2 60 L1.5 38.2 L38.2 38.2 Z'/%3E%3C/svg%3E") center/contain no-repeat !important;
+    border-radius: 0 !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    margin-left: 0 !important;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.28)) !important;
   }
+  /* plane/landing glyph centred INSIDE the star, in Acadian navy */
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon::before {
+    font-size: clamp(30px, 2.3vw, 44px) !important;
+    color: #003DA5 !important;
+    margin-top: 6% !important;   /* nudge into the star's optical centre */
+    line-height: 1 !important;
+  }
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon svg { display: none !important; }
 }
 
 /* ── BIDS bag icon: white on the silk banner, not black (Nick). The baggage

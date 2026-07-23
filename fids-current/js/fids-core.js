@@ -9202,10 +9202,7 @@ function uxgGateHtml(ctx) {
           var _tbInkSoft = _tbSpec ? _tbSpec.inkSoft : 'rgba(255,255,255,0.88)';
           var _tbTz = (AP[iata] || {}).tz || '';
           var _tbNow = '';
-          try {
-            var _tbO = _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
-            _tbNow = new Date().toLocaleTimeString('en-US', _tbO).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
-          } catch (e) {}
+          try { _tbNow = _ocClockTime(new Date(), _tbTz || null); } catch (e) {}
           // Same tab grammar as the gate block: width --gate-rcw, 30px
           // top-left radius, stacked UNDER the airport band (z1 < band z2 <
           // gate z3) so each seam shows only the next tab's rounded corner.
@@ -9227,24 +9224,11 @@ function uxgGateHtml(ctx) {
               _tbCity = (typeof CITY !== 'undefined' && CITY[_ci]) || (typeof AP !== 'undefined' && AP[_ci] && AP[_ci].city) || _ci;
               if (typeof normalizeDisplayCity === 'function') _tbCity = normalizeDisplayCity(_tbCity, _ci);
             } catch (e) { _tbCity = String(iata || ''); }
-            var _dOpt = _tbTz ? { timeZone: _tbTz } : {};
-            var _tbFullEn = '', _tbFullFr = '';
-            try {
-              // EN keeps its comma: 'Thursday, July 23' (Nick's design).
-              _tbFullEn = new Date().toLocaleDateString('en-US', Object.assign({ weekday: 'long', month: 'long', day: 'numeric' }, _dOpt));
-              var _fWk = new Date().toLocaleDateString('fr-CA', Object.assign({ weekday: 'long' }, _dOpt));
-              var _fDy = new Date().toLocaleDateString('fr-CA', Object.assign({ day: 'numeric' }, _dOpt));
-              var _fMo = new Date().toLocaleDateString('fr-CA', Object.assign({ month: 'long' }, _dOpt));
-              // FR: 'Jeudi, 23 juillet' — capitalised weekday, comma, no 'le'.
-              _tbFullFr = (_fWk.charAt(0).toUpperCase() + _fWk.slice(1)) + ', ' + _fDy + ' ' + _fMo;
-            } catch (e) {}
-            var _tbDateHtml = (_tbFullEn && _tbFullFr)
-              ? '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:rgba(255,255,255,.80);white-space:nowrap;letter-spacing:.01em;">' + _tbFullEn + ' <span style="opacity:.45">|</span> ' + _tbFullFr + '</span>'
-              : '';
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:34%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;text-align:right;padding:0 6px 0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
-              +   '<span style="font-size:clamp(15px,2.1vh,28px);font-weight:800;color:rgba(255,255,255,.82);letter-spacing:.03em;white-space:nowrap;">'
-              +     _tbCity + ' Local Time <span style="opacity:.5">|</span> Heure Locale &agrave; ' + _tbCity + '</span>'
-              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(44px,7vh,94px);font-weight:900;color:#ffffff;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
+            var _tbDateHtml = '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:rgba(255,255,255,.80);white-space:nowrap;letter-spacing:.01em;">' + _ocClockDate(new Date(), _tbTz || null) + '</span>';
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:32%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;text-align:right;padding:0 6px 0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
+              +   '<span style="font-size:clamp(14px,2vh,26px);font-weight:800;color:rgba(255,255,255,.82);letter-spacing:.03em;white-space:nowrap;">'
+              +     _ocClockLabel(_tbCity) + '</span>'
+              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" data-fmt="dual" style="font-size:clamp(30px,4.6vh,62px);font-weight:900;color:#ffffff;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
               +   _tbDateHtml
               + '</div>';
           }
@@ -16051,7 +16035,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22433';
+var FIDS_BUILD_TAG = 'v22434';
 (function(){
   try {
     function _addTag(){
@@ -20851,17 +20835,35 @@ function _boardLabelBilingual(key) {
   return '<span class="fbl-en">' + pair[0] + '</span><span class="fbl-fr">' + pair[1] + '</span>';
 }
 
-// Gate-style bilingual date for the FIDS/BIDS clock (Nick: 'same format as the
-// gate') — 'Thursday, July 23 | Jeudi, 23 juillet'. EN keeps its comma; FR is
-// capitalised, comma, no 'le'.
-function _clockDateBi(now, tz) {
+// ── Shared clock format (Nick, Jul 2026) — the SAME words + format on every
+// screen (gate / FIDS / BIDS):
+//   Time In <City> | Heure à <City>
+//   6:26PM | 18 h 26
+//   Thursday, July 23rd | Jeudi, le 23 juillet
+function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; }
+function _ocClockLabel(city) {
+  return 'Time In ' + city + ' <span class="cl-sep">|</span> Heure à ' + city;
+}
+// Dual time '6:26PM | 18 h 26' — PLAIN text (used in textContent contexts too).
+function _ocClockTime(now, tz) {
+  var eo = { hour: 'numeric', minute: '2-digit', hour12: true }; if (tz) eo.timeZone = tz;
+  var en = now.toLocaleTimeString('en-US', eo).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
+  var po = { hour: '2-digit', minute: '2-digit', hour12: false }; if (tz) po.timeZone = tz;
+  var H = '0', M = '00';
+  new Intl.DateTimeFormat('en-GB', po).formatToParts(now).forEach(function (p) {
+    if (p.type === 'hour') H = p.value; else if (p.type === 'minute') M = p.value;
+  });
+  // Tight (Nick: 'have it closer 7:00PM|19h00').
+  return en + '|' + String(parseInt(H, 10)) + 'h' + M;
+}
+function _ocClockDate(now, tz) {
   var eo = { weekday: 'long', month: 'long', day: 'numeric' };
-  var wo = { weekday: 'long' }, do_ = { day: 'numeric' }, mo = { month: 'long' };
-  if (tz) { eo.timeZone = tz; wo.timeZone = tz; do_.timeZone = tz; mo.timeZone = tz; }
-  var en = now.toLocaleDateString('en-US', eo);
+  var wo = { weekday: 'long' }, dd = { day: 'numeric' }, mo = { month: 'long' };
+  if (tz) { eo.timeZone = tz; wo.timeZone = tz; dd.timeZone = tz; mo.timeZone = tz; }
+  var en = now.toLocaleDateString('en-US', eo).replace(/(\d+)$/, function (m) { return m + _ocOrdinal(parseInt(m, 10)); });
   var fw = now.toLocaleDateString('fr-CA', wo);
-  var fr = (fw.charAt(0).toUpperCase() + fw.slice(1)) + ', '
-         + now.toLocaleDateString('fr-CA', do_) + ' ' + now.toLocaleDateString('fr-CA', mo);
+  var fr = (fw.charAt(0).toUpperCase() + fw.slice(1)) + ', le '
+         + now.toLocaleDateString('fr-CA', dd) + ' ' + now.toLocaleDateString('fr-CA', mo);
   return en + ' <span class="cl-sep">|</span> ' + fr;
 }
 
@@ -20881,15 +20883,9 @@ function tick() {
   var _city = (typeof CITY !== 'undefined' && CITY[_ci]) || ((AP[_ci] || {}).city) || _ci;
   if (typeof normalizeDisplayCity === 'function') _city = normalizeDisplayCity(_city, _ci);
   var _lbl = document.getElementById('clockLabel');
-  if (_lbl) _lbl.innerHTML = _city + ' Local Time <span class="cl-sep">|</span> Heure Locale à ' + _city;
-
-  // Time: uppercase meridiem, no space — '3:34PM'.
-  var _tOpt = { hour: 'numeric', minute: '2-digit', hour12: true };
-  if (tz) _tOpt.timeZone = tz;
-  document.getElementById('clock').textContent =
-    now.toLocaleTimeString('en-US', _tOpt).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
-
-  document.getElementById('clockDate').innerHTML = _clockDateBi(now, tz);
+  if (_lbl) _lbl.innerHTML = _ocClockLabel(_city);
+  document.getElementById('clock').textContent = _ocClockTime(now, tz);
+  document.getElementById('clockDate').innerHTML = _ocClockDate(now, tz);
 
   // Analog clock (Nick: 'analog clock to the left of digital') — hands in the
   // airport's local time. Hour + minute only (no per-second jump).
@@ -28622,11 +28618,17 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     for (var i = 0; i < els.length; i++) {
       var tz = els[i].getAttribute('data-tz') || '';
       try {
-        var o = tz ? { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
-        // data-mer="up" → uppercase 'PM' (silk banner clock, Nick's design);
-        // default stays lowercase 'pm' for the rail shelf clocks.
-        var _up = els[i].getAttribute('data-mer') === 'up';
-        var s = new Date().toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
+        var s;
+        // data-fmt="dual" → the shared banner format '6:26PM | 18 h 26'.
+        if (els[i].getAttribute('data-fmt') === 'dual' && typeof _ocClockTime === 'function') {
+          s = _ocClockTime(new Date(), tz || null);
+        } else {
+          var o = tz ? { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
+          // data-mer="up" → uppercase 'PM' (silk banner clock); default stays
+          // lowercase 'pm' for the rail shelf clocks.
+          var _up = els[i].getAttribute('data-mer') === 'up';
+          s = new Date().toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
+        }
         if (s && els[i].textContent !== s) els[i].textContent = s;
       } catch (e) {}
     }
