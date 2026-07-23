@@ -2826,35 +2826,41 @@ html .g8-bir-badge::after {
    Extra-specific prefix so these beat the gids .g8-r1-star / .g8-r1-apband
    !important rules. */
 html body .g8-wrap .g8-r1-silk .g8-r1-logoslot {
-  max-width: 26% !important;
+  max-width: 30% !important;
   flex-direction: row !important;
   align-items: center !important;
   justify-content: flex-start !important;
   position: relative !important;
   overflow: hidden !important;
+  /* Reserve a bottom strip for the alliance 'member' mark so the (bigger)
+     wordmark centres in the space above it and the two never overlap. */
+  padding-bottom: clamp(20px, 3vh, 34px) !important;
 }
-/* Text wordmarks (AIR CANADA…) and image logos both held to the left zone. */
+/* Airline wordmark BIGGER (Nick). */
 html body .g8-wrap .g8-r1-silk .g8-r1-airline {
-  font-size: clamp(24px, 2.9vw, 40px) !important;
+  font-size: clamp(28px, 3.3vw, 48px) !important;
   white-space: nowrap !important;
 }
 html body .g8-wrap .g8-r1-silk .g8-r1-logo,
 html body .g8-wrap .g8-r1-silk .g8-r1-logoslot img:not(.g8-r1-star) {
-  max-width: 22vw !important;
-  max-height: 66px !important;
+  height: clamp(74px, 8.6vh, 92px) !important;
+  max-height: 94px !important;
+  width: auto !important;
+  max-width: 30vw !important;
+  object-fit: contain !important;
 }
-/* Alliance 'member' mark (Nick wanted it back) — small, pinned bottom-left so
-   it never crowds the wordmark or the Time. */
+/* Alliance 'member' mark — BIGGER (Nick) and pinned along the bottom of the
+   logo zone so it reads as an 'Air Canada · Star Alliance' lockup. */
 html body .g8-wrap .g8-r1-silk .g8-r1-star {
   position: absolute !important;
   left: 4px !important;
-  bottom: 5px !important;
-  height: clamp(13px, 1.7vh, 22px) !important;
-  max-height: clamp(13px, 1.7vh, 22px) !important;
+  bottom: 4px !important;
+  height: clamp(16px, 2.3vh, 31px) !important;
+  max-height: clamp(16px, 2.3vh, 31px) !important;
   width: auto !important;
-  max-width: 88% !important;
+  max-width: 94% !important;
   margin: 0 !important;
-  opacity: 0.9 !important;
+  opacity: 0.95 !important;
   z-index: 6 !important;
 }
 /* Airport logo: own zone on the white centre, contained (beats the gids
@@ -2866,7 +2872,7 @@ html body .g8-wrap .g8-r1-silk .g8-r1-apband-silk {
   padding: 0 6px !important;
 }
 html body .g8-wrap .g8-r1-silk .g8-r1-apband-silk img {
-  max-height: 66% !important;
+  max-height: 72% !important;
   max-width: 100% !important;
 }
 html .g8-bir-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
