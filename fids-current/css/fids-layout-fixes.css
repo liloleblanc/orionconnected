@@ -2439,24 +2439,28 @@ html body .fids-banner .fids-banner-analog {
   order: 2 !important;   /* Nick: analog clock on the RIGHT of the digital */
 }
 html body .fids-banner .fids-banner-time-text { order: 1 !important; }
+/* currentColor everywhere so the analog follows each theme's banner text
+   colour (Nick: 'white on white on normal pages' — the old #fff fallback was
+   invisible on the light-banner themes). */
+html body .fids-banner .fids-banner-analog { color: inherit !important; }
 html body .fids-banner .fids-banner-analog .cl-face {
-  fill: rgba(255, 255, 255, 0.14);
-  stroke: var(--fids-banner-text, #fff);
+  fill: none;
+  stroke: currentColor;
   stroke-width: 3;
-  opacity: 0.92;
+  opacity: 0.9;
 }
 html body .fids-banner .fids-banner-analog .cl-ticks line {
-  stroke: var(--fids-banner-text, #fff);
+  stroke: currentColor;
   stroke-width: 3;
-  opacity: 0.7;
+  opacity: 0.65;
 }
 html body .fids-banner .fids-banner-analog .cl-hand {
-  stroke: var(--fids-banner-text, #fff);
+  stroke: currentColor;
   stroke-linecap: round;
 }
 html body .fids-banner .fids-banner-analog .cl-hour { stroke-width: 5; }
 html body .fids-banner .fids-banner-analog .cl-min { stroke-width: 3.5; }
-html body .fids-banner .fids-banner-analog .cl-pin { fill: var(--fids-banner-text, #fff); }
+html body .fids-banner .fids-banner-analog .cl-pin { fill: currentColor; }
 html body .fids-banner .fids-banner-tlabel {
   font-size: clamp(12px, 1.35vh, 20px) !important;
   font-weight: 800 !important;
@@ -2465,7 +2469,7 @@ html body .fids-banner .fids-banner-tlabel {
   white-space: nowrap !important;
   line-height: 1.05 !important;
   margin-bottom: 1px !important;
-  color: var(--fids-banner-text, inherit) !important;
+  color: inherit !important;
 }
 html body .fids-banner .fids-banner-time {
   font-size: clamp(34px, 4.4vh, 60px) !important;
@@ -2473,6 +2477,9 @@ html body .fids-banner .fids-banner-time {
   line-height: 1 !important;
   letter-spacing: 0 !important;
   white-space: nowrap !important;
+  /* follow the theme's banner-text colour (dark on light, white on dark) so
+     the clock is never white-on-white on the light themes (Nick). */
+  color: inherit !important;
 }
 html body .fids-banner .fids-banner-date {
   font-size: clamp(13px, 1.55vh, 23px) !important;
@@ -2481,6 +2488,7 @@ html body .fids-banner .fids-banner-date {
   white-space: nowrap !important;
   margin-top: 1px !important;
   text-transform: none !important;
+  color: inherit !important;
 }
 html body .fids-banner .fids-banner-time-block .cl-sep { opacity: 0.4; font-weight: 500; }
 
@@ -3518,22 +3526,19 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
     line-height: 1.02 !important;
     font-size: inherit !important;
   }
+  /* Nick: 'make Departures and Départs the SAME size and take more space' —
+     both lines equal size + weight, sized up (still fits BIDS' long
+     'Retrait des bagages' in the flag's blue third). */
   body[data-fids-banner="silk"] .fids-board-label .fbl-en,
-  body[data-fids-banner="silk-acadian"] .fids-board-label .fbl-en {
-    display: block !important;
-    font-size: clamp(28px, 2.1vw, 40px) !important;
-    font-weight: 800 !important;
-    white-space: nowrap !important;
-    line-height: 1.02 !important;
-  }
+  body[data-fids-banner="silk-acadian"] .fids-board-label .fbl-en,
   body[data-fids-banner="silk"] .fids-board-label .fbl-fr,
   body[data-fids-banner="silk-acadian"] .fids-board-label .fbl-fr {
     display: block !important;
-    font-size: clamp(20px, 1.5vw, 29px) !important;
-    font-weight: 600 !important;
+    font-size: clamp(32px, 2.6vw, 50px) !important;
+    font-weight: 800 !important;
     white-space: nowrap !important;
-    line-height: 1.05 !important;
-    opacity: 0.92 !important;
+    line-height: 1.04 !important;
+    opacity: 1 !important;
   }
 }
 
