@@ -2826,15 +2826,12 @@ html .g8-bir-badge::after {
    Extra-specific prefix so these beat the gids .g8-r1-star / .g8-r1-apband
    !important rules. */
 html body .g8-wrap .g8-r1-silk .g8-r1-logoslot {
-  max-width: 30% !important;
+  max-width: 36% !important;
   flex-direction: row !important;
   align-items: center !important;
   justify-content: flex-start !important;
   position: relative !important;
-  overflow: hidden !important;
-  /* Reserve a bottom strip for the alliance 'member' mark so the (bigger)
-     wordmark centres in the space above it and the two never overlap. */
-  padding-bottom: clamp(20px, 3vh, 34px) !important;
+  overflow: visible !important;
 }
 /* Airline wordmark BIGGER (Nick). */
 html body .g8-wrap .g8-r1-silk .g8-r1-airline {
@@ -2849,25 +2846,26 @@ html body .g8-wrap .g8-r1-silk .g8-r1-logoslot img:not(.g8-r1-star) {
   max-width: 30vw !important;
   object-fit: contain !important;
 }
-/* Alliance 'member' mark — BIGGER (Nick) and pinned along the bottom of the
-   logo zone so it reads as an 'Air Canada · Star Alliance' lockup. */
+/* Alliance mark — the STAR ALONE (no words), sat inline at the END of the
+   airline wordmark (Nick: 'the star alone no words and at the end by air
+   canada'). Vertically centred, small. */
 html body .g8-wrap .g8-r1-silk .g8-r1-star {
-  position: absolute !important;
-  left: 4px !important;
-  bottom: 4px !important;
-  height: clamp(16px, 2.3vh, 31px) !important;
-  max-height: clamp(16px, 2.3vh, 31px) !important;
+  position: static !important;
+  display: inline-block !important;
+  align-self: center !important;
+  height: clamp(30px, 4.4vh, 56px) !important;
+  max-height: clamp(30px, 4.4vh, 56px) !important;
   width: auto !important;
-  max-width: 94% !important;
-  margin: 0 !important;
-  opacity: 0.95 !important;
-  z-index: 6 !important;
+  max-width: none !important;
+  margin: 0 0 0 clamp(8px, 0.8vw, 18px) !important;
+  opacity: 0.98 !important;
+  flex: 0 0 auto !important;
 }
 /* Airport logo: own zone on the white centre, contained (beats the gids
    .g8-r1-apband full-width rule) so it never sprawls under the Time. */
 html body .g8-wrap .g8-r1-silk .g8-r1-apband-silk {
   width: 22% !important;
-  right: 27% !important;
+  right: 23% !important;
   left: auto !important;
   padding: 0 6px !important;
 }
