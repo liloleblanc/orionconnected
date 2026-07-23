@@ -8213,6 +8213,15 @@ function uxgGateHtml(ctx) {
         +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
+    // Nick: 'even the times should be bigger than that'. The value column is
+    // WIDTH-limited, and 'AM/PM' eats ~3 of the 8 characters. Shrinking the
+    // meridiem lets the shrink-to-fit grower push the DIGITS much larger
+    // (they end up on par with the flight number), which is what reads as
+    // 'bigger'. Wraps both times in a revised 'was \u2192 now' pair.
+    function _birMerid(html) {
+      if (!html) return html;
+      return String(html).replace(/\b([AaPp][Mm])\b/g, '<span class="g8-bir-mer">$1</span>');
+    }
     // Flight cell carries the airline RONDELLE (same emblem set as the
     // rail) instead of the generic glyph (Nick).
     // The horizontal (boarding) badge is a gate flight badge — it wears the
@@ -8229,7 +8238,7 @@ function uxgGateHtml(ctx) {
     var _birNativeColor = !!_birRound || !!_birTile;
     var _birFilter = _birNativeColor ? '' : 'filter:brightness(0) invert(1);';
     var _birFlightIcon = _birEmblemPath
-      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:14%;box-sizing:border-box;">'
+      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:9%;box-sizing:border-box;">'
       : null;
     // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
     var _birFlightBadge = _birF8
@@ -8247,8 +8256,8 @@ function uxgGateHtml(ctx) {
             + '</div></div>'
           : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
       + _cell('ac-ico-dest', 'Destination', (locIata ? '<span class="g8-bir-code-t">' + locIata + '</span>' : ''), _bDest, true)
-      + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', boardTimeHtml)
-      + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', depTimeHtml)
+      + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', _birMerid(boardTimeHtml))
+      + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', _birMerid(depTimeHtml))
       + _cell('ac-ico-status', 'Status', 'Statut', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
       + '</div>';
   }
@@ -15910,7 +15919,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22413';
+var FIDS_BUILD_TAG = 'v22414';
 (function(){
   try {
     function _addTag(){
@@ -28296,7 +28305,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         var _gRow = el.closest ? el.closest('.g8-board-info-row') : null;
         var _gIsStatus = !!(_gCell && !_gCell.nextElementSibling);
         if (_gRow && !_gIsStatus) {
-          var _gCap = Math.max(40, _gRow.clientHeight * 0.56);
+          var _gCap = Math.max(40, _gRow.clientHeight * 0.62);
           var g = size, gGuard = 20;
           while (el.scrollWidth <= el.clientWidth * 0.94 && g < _gCap && gGuard-- > 0) {
             g = Math.min(_gCap, g + Math.max(1, g * 0.06));
@@ -28311,6 +28320,32 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       }
       el.dataset.fitW = _fp;
     }
+    // Nick: 'the 1 and 2 should align, same size — they're not.' The shrink
+    // pass above fits each lane numeral to ITS OWN column, so a wide glyph
+    // ('2') ends up smaller than a narrow one ('1'). Re-equalize the priority
+    // lane pair (now + non-zones next) in each boarding body to their shared
+    // MINIMUM font-size, so both numerals match and their baselines line up.
+    // The wider Zones panel (its own flex:2 column) and Porter's word-value
+    // ('Porter Reserve') are excluded.
+    try {
+      var _bodies = document.querySelectorAll('.g8-board-body');
+      for (var _b = 0; _b < _bodies.length; _b++) {
+        var _wraps = _bodies[_b].querySelectorAll(
+          '.g8-board-col.now > .g8-board-grp-wrap,'
+          + ' .g8-board-col.next:not(.g8-zones):not(.g8-pd-rows):not(.g8-pd-prio) > .g8-board-grp-wrap');
+        var _lw = [], _min = Infinity;
+        for (var _w = 0; _w < _wraps.length; _w++) {
+          if (_wraps[_w].querySelector('.g8-grp-txt')) continue; // skip word values
+          var _fs = parseFloat(getComputedStyle(_wraps[_w]).fontSize) || 0;
+          if (_fs > 0) { _lw.push(_wraps[_w]); if (_fs < _min) _min = _fs; }
+        }
+        if (_lw.length > 1 && isFinite(_min) && _min > 0) {
+          for (var _k = 0; _k < _lw.length; _k++) {
+            _lw[_k].style.setProperty('font-size', _min + 'px', 'important');
+          }
+        }
+      }
+    } catch (e) {}
   }
   // Initial scan after a tick to let qrcode.js finish loading
   setTimeout(_scanAndUpgrade, 100);

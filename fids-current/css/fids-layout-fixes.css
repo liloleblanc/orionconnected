@@ -2761,8 +2761,11 @@ html .g8-bir-cell {
      cells from the top down (Nick: 'top cells shelves all align from the top
      down'), instead of each cell centring on its own height. */
   align-items: flex-start;
-  gap: clamp(10px, 1vw, 20px);
-  padding: clamp(10px, 1.6vh, 22px) clamp(8px, 0.8vw, 16px);
+  /* Tighter gap + side padding gives the VALUE column more width so the times
+     read bigger (Nick: 'even the times should be bigger than that') — the
+     values are width-limited, not height-limited, in this row. */
+  gap: clamp(7px, 0.6vw, 13px);
+  padding: clamp(10px, 1.6vh, 22px) clamp(5px, 0.45vw, 11px);
   background: transparent;
   border-right: 2px solid rgba(15, 34, 56, 0.18);
 }
@@ -2770,8 +2773,8 @@ html .g8-bir-cell:last-child { border-right: 0; }
 html .g8-bir-badge {
   position: relative;
   flex: 0 0 auto;
-  width: clamp(52px, 7vh, 88px);
-  height: clamp(52px, 7vh, 88px);
+  width: clamp(48px, 6vh, 72px);
+  height: clamp(48px, 6vh, 72px);
   border-radius: 50%;
   background: var(--airline-accent, #D82F2E);
   display: inline-flex;
@@ -2781,7 +2784,13 @@ html .g8-bir-badge {
   box-shadow: 0 2px 8px rgba(5, 15, 30, 0.35);
   overflow: hidden;
 }
-html .g8-bir-badge .ac-ico { font-size: clamp(24px, 3.4vh, 44px); line-height: 1; }
+/* Banner-badge glyphs render at ONE uniform size (Nick: 'these don't align
+   and they're not the same size'). The per-glyph OPTICAL clamps in font.css
+   (.ac-ico-status 6.63vh, .ac-ico-dest 5.54vh …) were calibrated for the tall
+   vertical rail; leaked into this 76px badge they made the bell/takeoff read
+   visibly bigger than the target/leaf. Force a single size here (higher
+   specificity + !important beats those single-class per-glyph rules). */
+html .g8-bir-badge .ac-ico { font-size: clamp(30px, 4vh, 50px) !important; line-height: 1; }
 /* Frontier (Nick, Jul 2026): 'the icons green'. The gate icon badges default
    to var(--airline-accent) (blue #0033A1 for F9). Green ONLY the round icon
    badges here — NOT --airline-accent itself, so the blue boarding panels and
@@ -2835,6 +2844,10 @@ html .g8-bir-val {
   text-overflow: ellipsis;
 }
 html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.68em; }
+/* Meridiem (AM/PM) rendered smaller so the DIGITS dominate and the grow-fit
+   pushes the time up to flight-number size (Nick: 'the times should be
+   bigger'). */
+html .g8-bir-val .g8-bir-mer { font-size: 0.58em; font-weight: 800; opacity: 0.72; margin-left: 0.08em; }
 html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }
 html .g8-bir-val .g8-r2-revised { color: #b45309; }
