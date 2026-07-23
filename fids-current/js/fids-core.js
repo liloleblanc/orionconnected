@@ -3902,35 +3902,33 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   // 80-unit viewBox width. Available width for text is ~70 units (with
   // ~5 units of margin on each side). With letter-spacing 1.5 added per
   // character, we estimate text width and scale font down if needed.
+  // Match the OFFICIAL Canadian property lockups: the property name is set in
+  // LATO sans-serif, ~17px/400/2.7-tracking in their 266.5-wide viewBox — i.e.
+  // ~6.4% of width, 1.0% tracking. Not an ornate serif (Nick: 'totally wrong
+  // font — thin and skinny'). Scale that ratio to our 80-wide box (~5.1u), and
+  // shrink only for very long names so they still fit.
   var len = name.length;
   var fontSize, letterSpacing;
-  if (len <= 12) {
-    fontSize = 5; letterSpacing = 1.5;
-  } else if (len <= 18) {
-    fontSize = 4.2; letterSpacing = 1.0;
+  if (len <= 18) {
+    fontSize = 5.1; letterSpacing = 0.82;
   } else if (len <= 26) {
-    fontSize = 3.4; letterSpacing = 0.6;
+    fontSize = 4.2; letterSpacing = 0.6;
+  } else if (len <= 34) {
+    fontSize = 3.4; letterSpacing = 0.4;
   } else {
-    fontSize = 2.8; letterSpacing = 0.3;
+    fontSize = 2.9; letterSpacing = 0.25;
   }
 
-  // Layout: 80x36 viewBox.
-  //   Wordmark (native 54x18) scaled 0.93x, placed top-center
-  //   Horizontal rule below wordmark
-  //   Property name (serif, spaced caps) below rule
-  // Renderer applies brightness(0) invert(1) for white-on-dark panels.
-  // Official Fairmont lockups (e.g. 'Fairmont / LE REINE ELIZABETH') are ONE
-  // unit: script wordmark with the spaced-caps property name directly under
-  // it — no rule between them (Nick: 'nowhere in that logo is there black,
-  // and so separated — no'). Everything renders white; the renderer's
-  // brightness/invert filter handles dark-on-light contexts.
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 32" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 1) scale(0.926)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
+  // Layout: 80x33 viewBox — the script wordmark fills the width (like the
+  // official lockup), property name in Lato sans directly under it, one unit.
+  // Everything white; the renderer's brightness/invert handles dark-on-light.
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 33" preserveAspectRatio="xMidYMid meet">'
+    + '<g transform="translate(4.5, 0.5) scale(1.33)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
-    + '<text x="40" y="27" text-anchor="middle" '
-    +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
-    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
+    + '<text x="40" y="31" text-anchor="middle" '
+    +   'font-family="Lato, &apos;Avenir Next&apos;, &apos;Helvetica Neue&apos;, Arial, sans-serif" '
+    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
     +   name
     + '</text>'
     + '</svg>';
@@ -16035,7 +16033,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22435';
+var FIDS_BUILD_TAG = 'v22436';
 (function(){
   try {
     function _addTag(){
