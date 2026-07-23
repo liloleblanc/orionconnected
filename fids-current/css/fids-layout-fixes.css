@@ -2757,7 +2757,10 @@ html .g8-bir-cell {
   flex: 1 1 0;
   min-width: 0;
   display: flex;
-  align-items: center;
+  /* Top-align every top-cell shelf so the badge + title line up across all
+     cells from the top down (Nick: 'top cells shelves all align from the top
+     down'), instead of each cell centring on its own height. */
+  align-items: flex-start;
   gap: clamp(10px, 1vw, 20px);
   padding: clamp(10px, 1.6vh, 22px) clamp(8px, 0.8vw, 16px);
   background: transparent;
@@ -2921,10 +2924,20 @@ html .g8-board-grp-num.g8-grp-txt {
    header entirely; this keeps the other airlines legible.) */
 html .g8-board-hdr-now,
 html .g8-board-hdr-next {
-  font-size: clamp(22px, 2.9vh, 40px) !important;
+  /* Bigger, readable from across the gate (Nick: 'Boarding Now … all bigger'). */
+  font-size: clamp(30px, 4.1vh, 60px) !important;
   font-weight: 800 !important;
   letter-spacing: .01em !important;
   padding: clamp(6px, 1vh, 15px) clamp(8px, 1vw, 18px) !important;
+}
+/* 'Group' label + 'Use Lane X' bigger too (Nick). */
+html .g8-board-col .g8-board-grp-label {
+  font-size: clamp(30px, 4vh, 58px) !important;
+  font-weight: 700 !important;
+}
+html .g8-board-col .g8-board-lane {
+  font-size: clamp(28px, 3.6vh, 52px) !important;
+  font-weight: 600 !important;
 }
 
 /* Lane-direction arrows beside the zone numerals, like the physical signage
@@ -2939,13 +2952,21 @@ html .g8-board-hdr-next {
 html .g8-board-col {
   min-width: 0;
   overflow: hidden;
+  /* Fill the whole panel height (Nick: 'fill up as much space') — spread
+     Group / numeral / Use Lane top-to-bottom instead of bunching them in the
+     middle, with generous top/bottom breathing room. */
+  justify-content: space-evenly !important;
+  padding: clamp(24px, 4vh, 70px) 0 !important;
 }
+/* the boarding body owns all the room under the welcome strip */
+html .g8-board-body { flex: 1 1 auto !important; align-items: stretch !important; }
 html .g8-board-grp-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(10px, 2vw, 36px);
-  font-size: clamp(120px, 18vw, 220px);
+  gap: clamp(10px, 2vw, 44px);
+  /* bigger numeral to fill the space (was 120–220) */
+  font-size: clamp(150px, 23vw, 340px);
   white-space: nowrap;
   max-width: 100%;
   min-width: 0;
