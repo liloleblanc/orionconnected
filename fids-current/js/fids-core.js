@@ -9028,8 +9028,13 @@ function uxgGateHtml(ctx) {
        + ';--airline-accent:' + accent
        // r2 = the airline BRAND accent from airline-colors.js (green for F9,
        // red for DL…). Drives the flight-info TITLE colour so title and data
-       // read as two colours (Nick). Falls back to the icon accent.
-       + ';--airline-r2:' + ((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
+       // read as two colours (Nick). Falls back to the icon accent. LIGHT
+       // accents (Flair lime, Southwest gold) are darkened toward their own
+       // hue so the title/code stay legible on the LIGHT info cards (Nick,
+       // pointing at Flair: 'we cant see this'). --airline-accent-ink is the
+       // same treatment for the airport-code colour.
+       + ';--airline-r2:' + (function (h) { return _hexIsLight(h) ? ('color-mix(in srgb, ' + h + ' 42%, #0a1f12)') : h; })((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
+       + ';--airline-accent-ink:' + (_hexIsLight(accent) ? ('color-mix(in srgb, ' + accent + ' 42%, #0a1f12)') : accent)
        // Lane/takeover surfaces need white lettering — pre-darken accents
        // that are too light for it (Flair lime, Southwest yellow).
        + ';--accent-lane:' + (_hexIsLight(accent) ? 'color-mix(in srgb, ' + accent + ' 55%, #141a14)' : accent)
@@ -15895,7 +15900,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22409';
+var FIDS_BUILD_TAG = 'v22410';
 (function(){
   try {
     function _addTag(){
