@@ -2416,7 +2416,45 @@ html .fids-banner .fids-banner-board { gap: 16px !important; }
    local-time label / BIG time / bilingual date, right-aligned, sized up to
    'take as much space as possible'. High specificity beats the per-theme
    .fids-banner-time / -date font rules. ── */
-html body .fids-banner .fids-banner-time-block { text-align: right !important; line-height: 1.02 !important; }
+/* Analog clock (left) + digital text column (right). Row overrides the silk
+   theme's column stack. */
+html body .fids-banner .fids-banner-time-block {
+  text-align: right !important;
+  line-height: 1.02 !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: clamp(10px, 0.9vw, 20px) !important;
+}
+html body .fids-banner .fids-banner-time-text {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+}
+html body .fids-banner .fids-banner-analog {
+  height: clamp(52px, 7vh, 96px) !important;
+  width: clamp(52px, 7vh, 96px) !important;
+  flex: 0 0 auto !important;
+  display: block !important;
+}
+html body .fids-banner .fids-banner-analog .cl-face {
+  fill: rgba(255, 255, 255, 0.14);
+  stroke: var(--fids-banner-text, #fff);
+  stroke-width: 3;
+  opacity: 0.92;
+}
+html body .fids-banner .fids-banner-analog .cl-ticks line {
+  stroke: var(--fids-banner-text, #fff);
+  stroke-width: 3;
+  opacity: 0.7;
+}
+html body .fids-banner .fids-banner-analog .cl-hand {
+  stroke: var(--fids-banner-text, #fff);
+  stroke-linecap: round;
+}
+html body .fids-banner .fids-banner-analog .cl-hour { stroke-width: 5; }
+html body .fids-banner .fids-banner-analog .cl-min { stroke-width: 3.5; }
+html body .fids-banner .fids-banner-analog .cl-pin { fill: var(--fids-banner-text, #fff); }
 html body .fids-banner .fids-banner-tlabel {
   font-size: clamp(12px, 1.35vh, 20px) !important;
   font-weight: 800 !important;

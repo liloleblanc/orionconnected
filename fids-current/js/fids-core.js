@@ -7393,6 +7393,15 @@ function _buildV2MapCol(ctx, vars) {
         _regTrueImg = _rcRouge ? _rougeLiveryEq(_rcRouge) : '';
       }
       var _imgEq = _regTrueImg || _liveryEq;
+      // Fallback (Nick: 'it should fall back to a picture of the scheduled
+      // aircraft on paper'): no reg/equip CODE resolved, but the schedule
+      // NAMES a type (e.g. 'Boeing 737-800') — derive the code from that name
+      // so the EXPECTED type's livery shows instead of a bare 'pending'. The
+      // label already reads that type, so image + label still agree (Nick's
+      // rule). Airline-specific pins above (AC 737→MAX, TS→neo) already ran.
+      if (!_imgEq && _equipNm && typeof aircraftCodeToIata === 'function') {
+        try { _imgEq = aircraftCodeToIata(_equipNm) || ''; } catch (e) { _imgEq = ''; }
+      }
       if (typeof aircraftImgTag === 'function' && _imgEq) {
         _acImg = aircraftImgTag(_liveryAirline, _imgEq, {
           rawModel: _regTrueImg || _equipNm || _equipCd || '',
@@ -16042,7 +16051,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22432';
+var FIDS_BUILD_TAG = 'v22433';
 (function(){
   try {
     function _addTag(){
@@ -20881,6 +20890,24 @@ function tick() {
     now.toLocaleTimeString('en-US', _tOpt).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
 
   document.getElementById('clockDate').innerHTML = _clockDateBi(now, tz);
+
+  // Analog clock (Nick: 'analog clock to the left of digital') — hands in the
+  // airport's local time. Hour + minute only (no per-second jump).
+  try {
+    var _hEl = document.getElementById('clHour'), _mEl = document.getElementById('clMin');
+    if (_hEl && _mEl) {
+      var _po = { hour: 'numeric', minute: 'numeric', hour12: false };
+      if (tz) _po.timeZone = tz;
+      var _pp = new Intl.DateTimeFormat('en-US', _po).formatToParts(now);
+      var _h = 0, _m = 0;
+      for (var _pi = 0; _pi < _pp.length; _pi++) {
+        if (_pp[_pi].type === 'hour') _h = parseInt(_pp[_pi].value, 10) % 12;
+        else if (_pp[_pi].type === 'minute') _m = parseInt(_pp[_pi].value, 10);
+      }
+      _hEl.setAttribute('transform', 'rotate(' + (_h * 30 + _m * 0.5) + ' 50 50)');
+      _mEl.setAttribute('transform', 'rotate(' + (_m * 6) + ' 50 50)');
+    }
+  } catch (e) {}
 }
 
 // ── AUTO PAGING CAROUSEL ─────────────────────────────────────────────────

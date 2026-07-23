@@ -61,7 +61,7 @@
   <link rel="stylesheet" href="css/bids-v2.css?v=320">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-v216.css?v=312">
-  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=21908-150">
+  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=21908-151">
   <link rel="stylesheet" href="css/gids-v218.78.css?v=21905-109">
   <link rel="stylesheet" href="css/accor-slide.css?v=27">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
@@ -387,12 +387,27 @@
 <div class="fids-banner" id="fidsBanner">
   <div class="fids-banner-chevrons" aria-hidden="true"></div>
 
-  <!-- Time + date, top-right corner. 3-line block matching the gate banner:
-       local-time label / big time / bilingual date (Nick, Jul 2026). -->
+  <!-- Time + date, top-right corner. Analog clock (left) + 3-line digital
+       block matching the gate banner: label / big time / bilingual date
+       (Nick, Jul 2026). -->
   <div class="fids-banner-time-block">
-    <div class="fids-banner-tlabel" id="clockLabel"></div>
-    <div class="fids-banner-time" id="clock">--:--</div>
-    <div class="fids-banner-date" id="clockDate"></div>
+    <svg class="fids-banner-analog" id="clockAnalog" viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="cl-face" cx="50" cy="50" r="46"></circle>
+      <g class="cl-ticks">
+        <line x1="50" y1="6" x2="50" y2="13"></line>
+        <line x1="94" y1="50" x2="87" y2="50"></line>
+        <line x1="50" y1="94" x2="50" y2="87"></line>
+        <line x1="6" y1="50" x2="13" y2="50"></line>
+      </g>
+      <line class="cl-hand cl-hour" id="clHour" x1="50" y1="50" x2="50" y2="29"></line>
+      <line class="cl-hand cl-min" id="clMin" x1="50" y1="50" x2="50" y2="17"></line>
+      <circle class="cl-pin" cx="50" cy="50" r="3.4"></circle>
+    </svg>
+    <div class="fids-banner-time-text">
+      <div class="fids-banner-tlabel" id="clockLabel"></div>
+      <div class="fids-banner-time" id="clock">--:--</div>
+      <div class="fids-banner-date" id="clockDate"></div>
+    </div>
   </div>
 
   <!-- Center pill: airport identity (logo + IATA + name) -->
@@ -671,12 +686,12 @@
 </div>
 
 
-<script src="/mapcdn/leaflet.js?v=22432"></script>
-<script src="/mapcdn/leaflet-arc.js?v=22432"></script>
+<script src="/mapcdn/leaflet.js?v=22433"></script>
+<script src="/mapcdn/leaflet-arc.js?v=22433"></script>
 <script src="js/fids-v2.js?v=318"></script>
 <script src="js/gids-layout.js?v=1"></script>
 <script src="data/airline-colors.js?v=24"></script>
-<script src="js/fids-core.js?v=22432"></script>
+<script src="js/fids-core.js?v=22433"></script>
 <script src="js/gate-visual-integrity-v22354.js?v=1"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
