@@ -2817,7 +2817,7 @@ html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 /* Destination IATA in the title styled like the vertical rail's
    'Destination | YYZ' — accent, bigger, heavy (Nick). */
 html .g8-bir-title .g8-bir-code-t {
-  color: var(--airline-accent, #D82F2E);
+  color: var(--airline-accent-ink, var(--airline-accent, #D82F2E));
   font-size: 1.3em;
   font-weight: 900;
   letter-spacing: 0.02em;
@@ -3341,7 +3341,7 @@ html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airlin
   color: var(--airline-r2, var(--airline-accent, #D82F2E)) !important;
 }
 html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
-  color: var(--airline-accent, #0033A1) !important;
+  color: var(--airline-accent-ink, var(--airline-accent, #0033A1)) !important;
 }
 html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="QK"]):not([data-gate-airline="RV"]) .g8-bir-title {
   color: var(--airline-r2, var(--airline-accent, #D82F2E)) !important;
@@ -3356,6 +3356,6 @@ html body[data-gate-airline="F9"] .g8-bir-val { color: #0A3D6B !important; }
    accent (a different colour from the city), the bar is a soft separator
    (Nick: 'Cleveland | CLE … different colour', both From and Destination). */
 html .g8-wrap .gad-map-col-v2 .v2-rc-iata,
-html .g8-wrap .v2-rc-fi-tval .v2-rc-iata { color: var(--airline-accent, #0033A1) !important; font-weight: 900 !important; }
+html .g8-wrap .v2-rc-fi-tval .v2-rc-iata { color: var(--airline-accent-ink, var(--airline-accent, #0033A1)) !important; font-weight: 900 !important; }
 html .g8-wrap .gad-map-col-v2 .v2-rc-bar,
 html .g8-wrap .v2-rc-fi-tval .v2-rc-bar { opacity: 0.4 !important; font-weight: 500 !important; margin: 0 0.12em !important; }
