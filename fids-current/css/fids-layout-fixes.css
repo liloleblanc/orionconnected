@@ -2412,6 +2412,38 @@ html .fids-banner .fids-board-icon {
 }
 html .fids-banner .fids-banner-board { gap: 16px !important; }
 
+/* ── FIDS/BIDS clock — 3-line block matching the gate banner (Nick, Jul 2026):
+   local-time label / BIG time / bilingual date, right-aligned, sized up to
+   'take as much space as possible'. High specificity beats the per-theme
+   .fids-banner-time / -date font rules. ── */
+html body .fids-banner .fids-banner-time-block { text-align: right !important; line-height: 1.02 !important; }
+html body .fids-banner .fids-banner-tlabel {
+  font-size: clamp(12px, 1.35vh, 20px) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  opacity: 0.74 !important;
+  white-space: nowrap !important;
+  line-height: 1.05 !important;
+  margin-bottom: 1px !important;
+  color: var(--fids-banner-text, inherit) !important;
+}
+html body .fids-banner .fids-banner-time {
+  font-size: clamp(34px, 4.4vh, 60px) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+}
+html body .fids-banner .fids-banner-date {
+  font-size: clamp(13px, 1.55vh, 23px) !important;
+  font-weight: 700 !important;
+  opacity: 0.9 !important;
+  white-space: nowrap !important;
+  margin-top: 1px !important;
+  text-transform: none !important;
+}
+html body .fids-banner .fids-banner-time-block .cl-sep { opacity: 0.4; font-weight: 500; }
+
 /* Baggage banner: same title/icon treatment as the FIDS board, but keep the
    AC SUITCASE (not the plane). Remove the plane glyph the FIDS rule adds,
    enlarge the suitcase, and give the (longer) baggage titles their own

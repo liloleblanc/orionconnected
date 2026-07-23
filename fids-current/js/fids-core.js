@@ -16042,7 +16042,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22431';
+var FIDS_BUILD_TAG = 'v22432';
 (function(){
   try {
     function _addTag(){
@@ -20842,25 +20842,45 @@ function _boardLabelBilingual(key) {
   return '<span class="fbl-en">' + pair[0] + '</span><span class="fbl-fr">' + pair[1] + '</span>';
 }
 
+// Gate-style bilingual date for the FIDS/BIDS clock (Nick: 'same format as the
+// gate') — 'Thursday, July 23 | Jeudi, 23 juillet'. EN keeps its comma; FR is
+// capitalised, comma, no 'le'.
+function _clockDateBi(now, tz) {
+  var eo = { weekday: 'long', month: 'long', day: 'numeric' };
+  var wo = { weekday: 'long' }, do_ = { day: 'numeric' }, mo = { month: 'long' };
+  if (tz) { eo.timeZone = tz; wo.timeZone = tz; do_.timeZone = tz; mo.timeZone = tz; }
+  var en = now.toLocaleDateString('en-US', eo);
+  var fw = now.toLocaleDateString('fr-CA', wo);
+  var fr = (fw.charAt(0).toUpperCase() + fw.slice(1)) + ', '
+         + now.toLocaleDateString('fr-CA', do_) + ' ' + now.toLocaleDateString('fr-CA', mo);
+  return en + ' <span class="cl-sep">|</span> ' + fr;
+}
+
 // ── CLOCK — airport local time ────────────────────────────────────────────
 function tick() {
   const iata = document.getElementById('apSel').value;
   const tz   = (AP[iata] || {}).tz || null;
   const now  = new Date();
 
-  const timeOpts = { hour:'2-digit', minute:'2-digit', hour12:true };
-  const dateOpts = { weekday:'long', month:'short', day:'numeric', year:'numeric' };
-  if (tz) { timeOpts.timeZone = tz; dateOpts.timeZone = tz; }
-
   if (screenType !== 'main') {
     updateDedicatedTimeOnly();
     return;
   }
 
-  document.getElementById('clock').textContent =
-    now.toLocaleTimeString('en-CA', timeOpts);
+  // Local-time label: '<City> Local Time | Heure Locale à <City>'.
+  var _ci = String(iata || '').toUpperCase();
+  var _city = (typeof CITY !== 'undefined' && CITY[_ci]) || ((AP[_ci] || {}).city) || _ci;
+  if (typeof normalizeDisplayCity === 'function') _city = normalizeDisplayCity(_city, _ci);
+  var _lbl = document.getElementById('clockLabel');
+  if (_lbl) _lbl.innerHTML = _city + ' Local Time <span class="cl-sep">|</span> Heure Locale à ' + _city;
 
-  document.getElementById('clockDate').textContent = _bilingualDate(now, tz);
+  // Time: uppercase meridiem, no space — '3:34PM'.
+  var _tOpt = { hour: 'numeric', minute: '2-digit', hour12: true };
+  if (tz) _tOpt.timeZone = tz;
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('en-US', _tOpt).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
+
+  document.getElementById('clockDate').innerHTML = _clockDateBi(now, tz);
 }
 
 // ── AUTO PAGING CAROUSEL ─────────────────────────────────────────────────
