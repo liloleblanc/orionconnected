@@ -2822,13 +2822,14 @@ html .g8-bir-badge::after {
    gate zones each have room — a wide wordmark (AIR CANADA) otherwise ran under
    the time. Wordmark stays left-aligned on the band's dark end. */
 html .g8-r1-silk .g8-r1-logoslot {
-  max-width: 30% !important;
+  max-width: 25% !important;
   justify-content: flex-start !important;
+  overflow: hidden !important;
 }
-/* Text wordmarks (AIR CANADA…) and image logos both held to the left third. */
+/* Text wordmarks (AIR CANADA…) and image logos both held to the left zone. */
 html .g8-r1-silk .g8-r1-airline,
 html body .g8-wrap .g8-r1-silk .g8-r1-airline {
-  font-size: clamp(26px, 3.2vw, 44px) !important;
+  font-size: clamp(24px, 2.9vw, 40px) !important;
   white-space: nowrap !important;
 }
 html .g8-r1-silk .g8-r1-logo,
@@ -2836,6 +2837,9 @@ html .g8-r1-silk .g8-r1-logoslot img {
   max-width: 22vw !important;
   max-height: 74px !important;
 }
+/* Declutter: the alliance lockup crowded the Time zone (oneworld landed on the
+   clock for American). Drop it on the silk band — the board silk carries none. */
+html .g8-r1-silk .g8-r1-star { display: none !important; }
 html .g8-bir-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 html .g8-bir-title {
   font-size: clamp(14px, 2vh, 24px);
