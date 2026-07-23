@@ -2861,6 +2861,19 @@ html body .g8-wrap .g8-r1-silk .g8-r1-star {
   opacity: 0.98 !important;
   flex: 0 0 auto !important;
 }
+/* Star Alliance MEMBER TILE (Nick's metallic 'STAR ALLIANCE' chip,
+   star-3d-tile.jpg) — a SQUARE brushed-metal badge sat after the wordmark,
+   sized to the wordmark's cap height with a soft rounded edge + drop shadow.
+   Scoped to .g8-r1-alliance-star so oneworld/skyteam marks keep their sizing.
+   The extra class + html body prefix beats the gids .g8-r1-star !important. */
+html body .g8-wrap .g8-r1-silk .g8-r1-star.g8-r1-alliance-star {
+  height: clamp(58px, 7.4vh, 84px) !important;
+  max-height: clamp(58px, 7.4vh, 84px) !important;
+  width: auto !important;
+  border-radius: 9px !important;
+  box-shadow: 0 3px 11px rgba(0, 0, 0, 0.30) !important;
+  margin-left: clamp(12px, 1.2vw, 26px) !important;
+}
 /* Airport logo: own zone on the white centre, contained (beats the gids
    .g8-r1-apband full-width rule) so it never sprawls under the Time. */
 html body .g8-wrap .g8-r1-silk .g8-r1-apband-silk {
@@ -3132,6 +3145,12 @@ html .g8-board-welcome .g8-r1-star {
   margin-left: 0 !important;
   opacity: 1 !important;
   object-fit: contain !important;
+}
+/* Chrome Star Alliance SYMBOL on the white welcome strip (Nick's design) —
+   a touch larger with a soft metallic drop-shadow so it reads as 3D. */
+html body .g8-wrap .g8-board-welcome .g8-bw-star img[src*="star-3d-symbol"] {
+  height: clamp(52px, 7.2vh, 92px) !important;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.26)) !important;
 }
 
 /* United — the Star Alliance mark reads CLEARLY beside the wordmark

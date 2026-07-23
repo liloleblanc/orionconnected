@@ -8149,9 +8149,11 @@ function uxgGateHtml(ctx) {
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    // SYMBOL ONLY — the mark alone, no wordmark text (Nick: 'the star alone no
-    // words', sat at the end of the airline wordmark on the silk band).
-    'star':     '/logos/airlines/alliances/star-alliance-symbol-white.svg',
+    // Star Alliance MEMBER TILE — Nick's metallic 'STAR ALLIANCE' chip
+    // (brushed-metal square, chrome 3D star + wordmark) sat after the airline
+    // wordmark on the silk band. The welcome strip swaps it for the bare
+    // chrome symbol (star-3d-symbol.webp) below.
+    'star':     '/logos/airlines/alliances/star-3d-tile.jpg',
     'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
@@ -8188,10 +8190,10 @@ function uxgGateHtml(ctx) {
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
   function _boardWelcomeStripHtml() {
     var _bwEmb = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
-    // The strip is WHITE like the printed sign, so the Star Alliance mark
-    // must be the original dark-lettered lockup, not the brightened one
-    // made for the black banner.
-    var _bwStar = starHtml ? starHtml.replace('StarGray-bright-text.svg', 'StarGray.svg') : '';
+    // The strip is WHITE like the printed sign — swap the banner's metallic
+    // TILE chip for the bare chrome star symbol (no box, no text) so it floats
+    // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
+    var _bwStar = starHtml ? starHtml.replace('star-3d-tile.jpg', 'star-3d-symbol.webp') : '';
     return '<div class="g8-board-welcome">'
       + (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
       + '<div class="g8-bw-text">' + (_frF ? 'Bienvenue' : 'Welcome') + ' <span class="g8-bw-sep">\u00b7</span> ' + (_frF ? 'Welcome' : 'Bienvenue') + '</div>'
@@ -8305,8 +8307,8 @@ function uxgGateHtml(ctx) {
   // 3 \u2022 4 \u2022 5 \u2022 6, also Lane 2).
   function _acLanesBodyHtml(zonesVal) {
     return '<div class="g8-board-body g8-lanes3">'
-      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">Priority</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
+      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">Prioritaire</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
       + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">Zones</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
       + '</div>';
   }
@@ -9177,7 +9179,7 @@ function uxgGateHtml(ctx) {
           var _tbNow = '';
           try {
             var _tbO = _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
-            _tbNow = new Date().toLocaleTimeString('en-US', _tbO).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
+            _tbNow = new Date().toLocaleTimeString('en-US', _tbO).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
           } catch (e) {}
           // Same tab grammar as the gate block: width --gate-rcw, 30px
           // top-left radius, stacked UNDER the airport band (z1 < band z2 <
@@ -9203,19 +9205,21 @@ function uxgGateHtml(ctx) {
             var _dOpt = _tbTz ? { timeZone: _tbTz } : {};
             var _tbFullEn = '', _tbFullFr = '';
             try {
-              _tbFullEn = new Date().toLocaleDateString('en-US', Object.assign({ weekday: 'long', month: 'long', day: 'numeric' }, _dOpt)).replace(/,/g, '');
+              // EN keeps its comma: 'Thursday, July 23' (Nick's design).
+              _tbFullEn = new Date().toLocaleDateString('en-US', Object.assign({ weekday: 'long', month: 'long', day: 'numeric' }, _dOpt));
               var _fWk = new Date().toLocaleDateString('fr-CA', Object.assign({ weekday: 'long' }, _dOpt));
               var _fDy = new Date().toLocaleDateString('fr-CA', Object.assign({ day: 'numeric' }, _dOpt));
               var _fMo = new Date().toLocaleDateString('fr-CA', Object.assign({ month: 'long' }, _dOpt));
-              _tbFullFr = _fWk + ' le ' + _fDy + ' ' + _fMo;
+              // FR: 'Jeudi, 23 juillet' — capitalised weekday, comma, no 'le'.
+              _tbFullFr = (_fWk.charAt(0).toUpperCase() + _fWk.slice(1)) + ', ' + _fDy + ' ' + _fMo;
             } catch (e) {}
             var _tbDateHtml = (_tbFullEn && _tbFullFr)
               ? '<span style="font-size:clamp(12px,1.6vh,22px);font-weight:800;color:rgba(20,38,64,.72);white-space:nowrap;letter-spacing:.01em;">' + _tbFullEn + ' <span style="opacity:.4">|</span> ' + _tbFullFr + '</span>'
               : '';
             return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:30%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.04;">'
               +   '<span style="font-size:clamp(13px,1.75vh,24px);font-weight:800;color:rgba(20,38,64,.66);letter-spacing:.03em;white-space:nowrap;">'
-              +     _tbCity + ' Local Time <span style="opacity:.4">·</span> Heure Locale à ' + _tbCity + '</span>'
-              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(38px,5.8vh,80px);font-weight:900;color:#14263f;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
+              +     _tbCity + ' Local Time <span style="opacity:.4">|</span> Heure Locale &agrave; ' + _tbCity + '</span>'
+              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(38px,5.8vh,80px);font-weight:900;color:#14263f;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
               +   _tbDateHtml
               + '</div>';
           }
@@ -9226,7 +9230,7 @@ function uxgGateHtml(ctx) {
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
             +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">'
             +     (_frF ? 'Heure <span style="opacity:.6">|</span> Time' : 'Time <span style="opacity:.6">|</span> Heure') + '</span>'
-            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
+            +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
         })()
@@ -16022,7 +16026,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22426';
+var FIDS_BUILD_TAG = 'v22427';
 (function(){
   try {
     function _addTag(){
@@ -28556,7 +28560,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       var tz = els[i].getAttribute('data-tz') || '';
       try {
         var o = tz ? { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
-        var s = new Date().toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; });
+        // data-mer="up" → uppercase 'PM' (silk banner clock, Nick's design);
+        // default stays lowercase 'pm' for the rail shelf clocks.
+        var _up = els[i].getAttribute('data-mer') === 'up';
+        var s = new Date().toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
         if (s && els[i].textContent !== s) els[i].textContent = s;
       } catch (e) {}
     }
