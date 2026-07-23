@@ -6335,11 +6335,13 @@ function _buildV2AircraftCol(ctx, vars) {
         var _tileBrand = BADGE_TILE_BRANDS[code] || null;
         var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true };  // supplied full-colour art keeps its native colours
         var native = !!NATIVE_COLOR_EMBLEMS[code];
-        // COLOR-ON-WHITE (Nick: 'make the icons such as American and Delta
-        // color and centered'). AA's flight symbol is red+BLUE and Delta's
-        // widget is two reds — white-inverting them to a flat silhouette threw
-        // the colour away, and their blues would vanish on the blue/navy accent
-        // circle. Render the real colour art, centred on a clean WHITE chip.
+        // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
+        // it the same colour and shiny' + 'AA is a light blue it will fit
+        // perfectly'). White-inverting AA's red+blue symbol / Delta's red
+        // widget to a flat silhouette threw the brand colour away. Instead keep
+        // the real colour art, centred on the SAME accent-coloured glossy orb
+        // the other icon badges wear (the orb sheen + inset shadow already come
+        // from the shared .v2-fi-emblem-wrap rule), so it matches its neighbours.
         var COLOR_ON_WHITE = { 'AA': true, 'DL': true };
         var onWhite = !!COLOR_ON_WHITE[code] && !_tileBrand && !native;
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
@@ -6348,7 +6350,7 @@ function _buildV2AircraftCol(ctx, vars) {
           : native
             ? BADGE_BASE + 'background:transparent;padding:0;'
             : onWhite
-              ? BADGE_BASE + 'background:#ffffff;padding:clamp(7px,1vh,13px);box-shadow:inset 0 0 0 1px rgba(10,20,35,0.10),0 2px 7px rgba(5,15,30,0.24);'
+              ? BADGE_BASE + 'background:var(--airline-accent,#0078D2);padding:clamp(6px,0.9vh,13px);'
               : BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(2px,0.3vh,4px);';
         if (!path) {
           var GENERIC_PLANE = '<svg viewBox="0 0 24 24" style="width:100%;height:100%;fill:#fff;"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
@@ -6366,7 +6368,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // emblems), which would beat the inline `cover` and leave the square
         // tile visible inside the round badge (PAL read as a square in the
         // circle). The class lets CSS re-assert cover for tiles only.
-        return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (native ? ' v2-fi-emblem-native' : '') + (onWhite ? ' v2-fi-emblem-glossy' : '') + '" style="' + BADGE + '">'
+        return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (native ? ' v2-fi-emblem-native' : '') + '" style="' + BADGE + '">'
           + '<img src="' + path + '" alt="" class="v2-fi-emblem-img" style="' + IMG + '" '
           + 'onerror="this.outerHTML=\'<svg viewBox=\\\'0 0 24 24\\\' style=\\\'width:100%;height:100%;fill:#fff;\\\'><path d=\\\'M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z\\\'/></svg>\'">'
           + '</div>';
@@ -8257,12 +8259,14 @@ function uxgGateHtml(ctx) {
       ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:' + _birPad + ';box-sizing:border-box;">'
       : null;
     // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
-    var _birBadgeBgStyle = _birTile ? ' style="background:' + _birTile.bg + ';"'
-      : (_birOnWhite ? ' style="background:#ffffff;box-shadow:inset 0 0 0 1px rgba(10,20,35,0.10),0 2px 7px rgba(5,15,30,0.24);"' : '');
+    // AA/DL (_birOnWhite): keep the DEFAULT accent-coloured badge (same as the
+    // other cells) — just don't white-invert the emblem, so the colour art sits
+    // on the matching accent orb.
+    var _birBadgeBgStyle = _birTile ? ' style="background:' + _birTile.bg + ';"' : '';
     var _birFlightBadge = _birF8
       ? '<div class="g8-bir-badge" style="background:#7AFF94;"></div>'
       : (_birFlightIcon
-          ? '<div class="g8-bir-badge' + (_birOnWhite ? ' g8-bir-badge-glossy' : '') + '"' + _birBadgeBgStyle + '>' + _birFlightIcon + '</div>'
+          ? '<div class="g8-bir-badge"' + _birBadgeBgStyle + '>' + _birFlightIcon + '</div>'
           : null);
     return '<div class="g8-board-info-row">'
       + (_birFlightBadge
@@ -15937,7 +15941,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22415';
+var FIDS_BUILD_TAG = 'v22416';
 (function(){
   try {
     function _addTag(){
