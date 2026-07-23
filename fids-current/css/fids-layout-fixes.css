@@ -2733,25 +2733,21 @@ html .g8-board-info-row {
   max-height: clamp(126px, 17vh, 216px);
   border-radius: 0;
   overflow: hidden;
-  border-bottom: clamp(5px, 0.7vh, 9px) solid var(--banner-bg, #003A5D);
-  /* the rail's brushed-metal recipe — one bar, whole row */
-  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%);
+  border-bottom: clamp(5px, 0.7vh, 9px) solid var(--airline-accent, #D82F2E);
+  /* Nick: 'same background metals as the vertical, with white lettering' —
+     the DARK brushed-metal shelf (ac-metal-dark.jpg) under a soft diagonal
+     sheen, replacing the old light card. */
+  background-color: #14181d;
   background-image:
     linear-gradient(122deg,
-      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
-      rgba(255,255,255,0.34) 47%, rgba(255,255,255,0.10) 55%,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.04) 30%,
+      rgba(255,255,255,0.16) 47%, rgba(255,255,255,0.05) 55%,
       rgba(255,255,255,0) 82%),
-    repeating-linear-gradient(0deg,
-      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
-      rgba(0,0,0,0.055) 1px, rgba(0,0,0,0.055) 2px),
-    repeating-linear-gradient(0deg,
-      rgba(0,0,0,0.022) 0px, rgba(0,0,0,0.022) 3px,
-      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
-      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
-      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%);
-  box-shadow: 0 4px 14px rgba(5, 15, 30, 0.32);
+    linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.28) 100%),
+    url('../textures/ac-metal-dark.jpg');
+  background-size: auto, auto, cover;
+  background-position: center, center, center;
+  box-shadow: 0 4px 14px rgba(5, 15, 30, 0.45);
 }
 html .g8-bir-cell {
   flex: 1 1 0;
@@ -2767,7 +2763,7 @@ html .g8-bir-cell {
   gap: clamp(7px, 0.6vw, 13px);
   padding: clamp(10px, 1.6vh, 22px) clamp(5px, 0.45vw, 11px);
   background: transparent;
-  border-right: 2px solid rgba(15, 34, 56, 0.18);
+  border-right: 2px solid rgba(255, 255, 255, 0.14);
 }
 html .g8-bir-cell:last-child { border-right: 0; }
 html .g8-bir-badge {
@@ -2840,10 +2836,11 @@ html body .g8-wrap .g8-r1-silk .g8-r1-airline {
 }
 html body .g8-wrap .g8-r1-silk .g8-r1-logo,
 html body .g8-wrap .g8-r1-silk .g8-r1-logoslot img:not(.g8-r1-star) {
-  height: clamp(74px, 8.6vh, 92px) !important;
-  max-height: 94px !important;
+  /* Nick: 'the words not capped' — fill the solid band. */
+  height: clamp(90px, 12.5vh, 124px) !important;
+  max-height: 126px !important;
   width: auto !important;
-  max-width: 30vw !important;
+  max-width: 32vw !important;
   object-fit: contain !important;
 }
 /* Alliance mark — the STAR ALONE (no words), sat inline at the END of the
@@ -2867,12 +2864,14 @@ html body .g8-wrap .g8-r1-silk .g8-r1-star {
    Scoped to .g8-r1-alliance-star so oneworld/skyteam marks keep their sizing.
    The extra class + html body prefix beats the gids .g8-r1-star !important. */
 html body .g8-wrap .g8-r1-silk .g8-r1-star.g8-r1-alliance-star {
-  height: clamp(58px, 7.4vh, 84px) !important;
-  max-height: clamp(58px, 7.4vh, 84px) !important;
+  height: clamp(64px, 8.6vh, 98px) !important;
+  max-height: clamp(64px, 8.6vh, 98px) !important;
   width: auto !important;
   border-radius: 9px !important;
-  box-shadow: 0 3px 11px rgba(0, 0, 0, 0.30) !important;
-  margin-left: clamp(12px, 1.2vw, 26px) !important;
+  /* Faint light hairline + shadow so the dark metal tile separates from the
+     now-solid-black band (Nick's one-colour banner). */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 3px 12px rgba(0, 0, 0, 0.45) !important;
+  margin-left: clamp(14px, 1.4vw, 30px) !important;
 }
 /* Airport logo: own zone on the white centre, contained (beats the gids
    .g8-r1-apband full-width rule) so it never sprawls under the Time. */
@@ -2890,7 +2889,7 @@ html .g8-bir-text { min-width: 0; flex: 1; display: flex; flex-direction: column
 html .g8-bir-title {
   font-size: clamp(14px, 2vh, 24px);
   font-weight: 800;
-  color: #0f2238;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2898,7 +2897,11 @@ html .g8-bir-title {
   padding-bottom: 3px;
   margin-bottom: clamp(3px, 0.6vh, 8px);
 }
-html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
+/* Nick: 'french vs english different colours, like the vertical' — primary
+   language bright white, secondary a muted white so the two read distinctly. */
+html .g8-bir-title .g8-bir-l1 { color: #ffffff; }
+html .g8-bir-title .g8-bir-l2 { color: rgba(255, 255, 255, 0.58); font-weight: 700; }
+html .g8-bir-title .g8-bir-sep { opacity: 0.35; font-weight: 500; color: #fff; }
 /* Destination IATA in the title styled like the vertical rail's
    'Destination | YYZ' — accent, bigger, heavy (Nick). */
 html .g8-bir-title .g8-bir-code-t {
@@ -2910,11 +2913,16 @@ html .g8-bir-title .g8-bir-code-t {
 html .g8-bir-val {
   font-size: clamp(46px, 8.6vh, 128px);
   font-weight: 900;
-  color: #0f2238;
+  color: #ffffff;
   line-height: 1.02;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+/* Nick: 'flight number bigger' — the flight cell (first) reads largest. */
+html .g8-bir-cell:first-child .g8-bir-val {
+  font-size: clamp(52px, 10vh, 150px);
 }
 html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.68em; }
 /* Meridiem (AM/PM) rendered smaller so the DIGITS dominate and the grow-fit
@@ -2938,11 +2946,14 @@ html .g8-bir-cell:last-child .g8-bir-val {
 html .g8-bir-cell:last-child .g8-bir-val .g8-bir-st2 { display: block; }
 /* Status state colours — matches the vertical rail's coding. */
 html .g8-bir-val .g8-bir-stwrap { display: contents; }
-html .g8-bir-val .g8-bir-st-ok .g8-bir-st2 { color: #15803d; }
-html .g8-bir-val .g8-bir-st-boarding .g8-bir-st2 { color: #b45309; }
-html .g8-bir-val .g8-bir-st-delayed .g8-bir-st2 { color: #c2410c; }
+/* Status colours brightened for the dark metal shelf (Nick's white-lettering
+   redesign) so on-time green / boarding amber / delay orange / final red all
+   read against the dark ground. */
+html .g8-bir-val .g8-bir-st-ok .g8-bir-st2 { color: #34d399; }
+html .g8-bir-val .g8-bir-st-boarding .g8-bir-st2 { color: #fbbf24; }
+html .g8-bir-val .g8-bir-st-delayed .g8-bir-st2 { color: #fb923c; }
 html .g8-bir-val .g8-bir-st-cancelled .g8-bir-st2,
-html .g8-bir-val .g8-bir-st-final .g8-bir-st2 { color: #b91c1c; }
+html .g8-bir-val .g8-bir-st-final .g8-bir-st2 { color: #f87171; }
 html .g8-bir-cell:last-child .g8-bir-val .g8-bir-sep { display: none; }
 
 /* ── Boarding zone panels EXACTLY like the physical gate sign (Nick: 'look
@@ -3463,7 +3474,7 @@ html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airlin
    'the Frontier data needs to be darker blue'). Status keeps its state colour
    via the more-specific .g8-bir-st* rules. */
 html body[data-gate-airline="F9"] .g8-wrap .gad-aircraft-col .v2-fi-value,
-html body[data-gate-airline="F9"] .g8-bir-val { color: #0A3D6B !important; }
+html body[data-gate-airline="F9"] .g8-bir-val { color: #ffffff !important; }
 
 /* v22409 — 'City | CODE' in the aircraft card: the IATA code takes the airline
    accent (a different colour from the city), the bar is a soft separator

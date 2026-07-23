@@ -8208,6 +8208,13 @@ function uxgGateHtml(ctx) {
   // badge, bilingual title with accent underline, big navy value.
   function _boardInfoRowHtml(statusKey) {
     var _bDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
+    // Nick: 'MONTREAL = Montreal' — the gate info row reads title-case, not the
+    // board's ALL-CAPS. Only re-case strings that are fully upper (leave mixed
+    // names like 'Fort McMurray' untouched). Word breaks on space/hyphen only,
+    // so apostrophes (St. John's) keep their trailing lowercase.
+    if (_bDest && _bDest === _bDest.toUpperCase()) {
+      _bDest = _bDest.toLowerCase().replace(/(^|[\s\-])([a-zà-ÿ])/g, function (m, p, c) { return p + c.toUpperCase(); });
+    }
     var _stP = (typeof SS !== 'undefined' && SS[statusKey]) ? SS[statusKey] : null;
     // Status VALUE carries its state colour like the vertical rail
     // (green on-time, orange delayed... — Nick: 'the horizontal status
@@ -8239,7 +8246,7 @@ function uxgGateHtml(ctx) {
       return '<div class="g8-bir-cell">'
         + '<div class="g8-bir-badge"' + _birBadgeStyle + '><span class="ac-ico ' + icon + '"></span></div>'
         + '<div class="g8-bir-text">'
-        +   '<div class="g8-bir-title">' + _t1 + (_t2 && _t2 !== _t1 ? ' <span class="g8-bir-sep">|</span> ' + _t2 : '') + '</div>'
+        +   '<div class="g8-bir-title"><span class="g8-bir-l1">' + _t1 + '</span>' + (_t2 && _t2 !== _t1 ? ' <span class="g8-bir-sep">|</span> <span class="g8-bir-l2">' + _t2 + '</span>' : '') + '</div>'
         +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
@@ -8290,7 +8297,7 @@ function uxgGateHtml(ctx) {
           ? '<div class="g8-bir-cell">'
             + _birFlightBadge
             + '<div class="g8-bir-text">'
-            +   '<div class="g8-bir-title">' + (_frF ? 'Vol' : 'Flight') + ' <span class="g8-bir-sep">|</span> ' + (_frF ? 'Flight' : 'Vol') + '</div>'
+            +   '<div class="g8-bir-title"><span class="g8-bir-l1">' + (_frF ? 'Vol' : 'Flight') + '</span> <span class="g8-bir-sep">|</span> <span class="g8-bir-l2">' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
           : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
@@ -8889,12 +8896,13 @@ function uxgGateHtml(ctx) {
   // localStorage fids_gate_banner_classic='1'.
   var _silkBanner = true;
   try { if (localStorage.getItem('fids_gate_banner_classic') === '1') _silkBanner = false; } catch (e) {}
-  // Silk holds the airline wordmark on a full-height flowing band, so it can run
-  // BIGGER than the classic 76px tab cap (Nick: 'air canada logo bigger'). Scale
-  // the calibrated size up and widen the vw cap so wide wordmarks actually grow.
+  // Silk holds the airline wordmark on a full-height SOLID band, so it runs
+  // much BIGGER than the classic 76px tab cap (Nick: 'the words not capped' —
+  // fill the band). Scale the calibrated size up and widen the vw cap so wide
+  // wordmarks actually grow to the band height.
   if (_silkBanner) {
-    _logoH = Math.round(_logoH * 1.22);
-    _sz = { h: _sz.h, w: Math.round((_sz.w || 480) * 1.5) };
+    _logoH = Math.round(_logoH * 1.55);
+    _sz = { h: _sz.h, w: Math.round((_sz.w || 480) * 1.6) };
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
@@ -9083,7 +9091,12 @@ function uxgGateHtml(ctx) {
   // gate where it blends a bit.' Short airline-colour start (holds the logo) →
   // quick fade → white body (time + airport logo) → soft blend into the gate
   // accent on the right (the gate tab sits on that accent end).
-  var _silkGrad = 'linear-gradient(95deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 24%, #eef3f8 35%, #f8fbfd 50%, #f8fbfd 73%, color-mix(in srgb, var(--airline-accent,#1aa) 70%, #f8fbfd) 84%, var(--airline-accent,#1aa) 98%)';
+  // Nick (Jul 2026): scrap the fade-to-white silk — 'all one colour, black,
+  // all black till the gate'. The banner field is SOLID airline colour (AC
+  // black) edge-to-edge; the airline accent (red) only enters in the last
+  // ~16%, which sits UNDER the skewed gate tab so no black wedge shows at the
+  // seam. Result: solid black wordmark+time field, red only at the gate.
+  var _silkGrad = 'linear-gradient(90deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 84%, var(--airline-accent,#1aa) 93%, var(--airline-accent,#1aa) 100%)';
 
   // Silk drops the airport LOGO (Nick's redesign): the centre now holds a
   // centred local-time block instead. Classic banner keeps the airport band.
@@ -9214,12 +9227,12 @@ function uxgGateHtml(ctx) {
               _tbFullFr = (_fWk.charAt(0).toUpperCase() + _fWk.slice(1)) + ', ' + _fDy + ' ' + _fMo;
             } catch (e) {}
             var _tbDateHtml = (_tbFullEn && _tbFullFr)
-              ? '<span style="font-size:clamp(12px,1.6vh,22px);font-weight:800;color:rgba(20,38,64,.72);white-space:nowrap;letter-spacing:.01em;">' + _tbFullEn + ' <span style="opacity:.4">|</span> ' + _tbFullFr + '</span>'
+              ? '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:rgba(255,255,255,.80);white-space:nowrap;letter-spacing:.01em;">' + _tbFullEn + ' <span style="opacity:.45">|</span> ' + _tbFullFr + '</span>'
               : '';
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:30%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.04;">'
-              +   '<span style="font-size:clamp(13px,1.75vh,24px);font-weight:800;color:rgba(20,38,64,.66);letter-spacing:.03em;white-space:nowrap;">'
-              +     _tbCity + ' Local Time <span style="opacity:.4">|</span> Heure Locale &agrave; ' + _tbCity + '</span>'
-              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(38px,5.8vh,80px);font-weight:900;color:#14263f;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:28%;right:24%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
+              +   '<span style="font-size:clamp(15px,2.1vh,28px);font-weight:800;color:rgba(255,255,255,.82);letter-spacing:.03em;white-space:nowrap;">'
+              +     _tbCity + ' Local Time <span style="opacity:.5">|</span> Heure Locale &agrave; ' + _tbCity + '</span>'
+              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(44px,7vh,94px);font-weight:900;color:#ffffff;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
               +   _tbDateHtml
               + '</div>';
           }
@@ -16026,7 +16039,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22427';
+var FIDS_BUILD_TAG = 'v22428';
 (function(){
   try {
     function _addTag(){
