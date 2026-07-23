@@ -2952,13 +2952,21 @@ html .g8-board-col .g8-board-lane {
 html .g8-board-col {
   min-width: 0;
   overflow: hidden;
+  /* Fill the whole panel height (Nick: 'fill up as much space') — spread
+     Group / numeral / Use Lane top-to-bottom instead of bunching them in the
+     middle, with generous top/bottom breathing room. */
+  justify-content: space-evenly !important;
+  padding: clamp(24px, 4vh, 70px) 0 !important;
 }
+/* the boarding body owns all the room under the welcome strip */
+html .g8-board-body { flex: 1 1 auto !important; align-items: stretch !important; }
 html .g8-board-grp-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(10px, 2vw, 36px);
-  font-size: clamp(120px, 18vw, 220px);
+  gap: clamp(10px, 2vw, 44px);
+  /* bigger numeral to fill the space (was 120–220) */
+  font-size: clamp(150px, 23vw, 340px);
   white-space: nowrap;
   max-width: 100%;
   min-width: 0;
