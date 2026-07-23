@@ -8149,7 +8149,9 @@ function uxgGateHtml(ctx) {
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    'star':     '/logos/airlines/alliances/StarGray-bright-text.svg',  // Nick's lockup, lettering brightened for the black band
+    // SYMBOL ONLY — the mark alone, no wordmark text (Nick: 'the star alone no
+    // words', sat at the end of the airline wordmark on the silk band).
+    'star':     '/logos/airlines/alliances/star-alliance-symbol-white.svg',
     'oneworld': '/logos/airlines/alliances/Oneworld.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
@@ -9085,7 +9087,7 @@ function uxgGateHtml(ctx) {
     ? (_silkBanner
         // Silk: the airport logo floats on the band's white centre — no skewed
         // white slab, no rounded tab. Positioned centre-right, left of the gate.
-        ? '<div class="g8-r1-apband g8-r1-apband-silk" style="position:absolute;right:25%;top:0;bottom:0;width:21%;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 8px;overflow:hidden;">'
+        ? '<div class="g8-r1-apband g8-r1-apband-silk" style="position:absolute;right:23%;top:0;bottom:0;width:22%;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 8px;overflow:hidden;">'
           + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:64%;max-height:72%;max-width:100%;width:auto;object-fit:contain;mix-blend-mode:multiply;" onerror="this.parentNode.style.display=\'none\'">'
           + '</div>'
         : '<div class="g8-r1-apband" style="position:absolute;right:0;top:0;bottom:0;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
@@ -9191,14 +9193,24 @@ function uxgGateHtml(ctx) {
           // 2*tab-w - 24px from the right. The time tab slots left of that
           // with a 30px underlap; without a band, directly left of the gate.
           if (_silkBanner) {
-            // Silk: the time sits on the band's DARK left zone (just right of the
-            // airline logo) — no tab, no skew. Sits on the WHITE body, so DARK
-            // ink. Own zone (26–48%), clipped so it never runs into the airport.
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;right:46%;bottom:0;width:20%;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-start;padding:0 10px;background:transparent;overflow:hidden;z-index:4;">'
-              + '<span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.02;">'
-              +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:rgba(20,38,64,.66);letter-spacing:.04em;white-space:nowrap;">'
+            // Silk: the time sits on the WHITE body (dark ink), nudged toward the
+            // airport logo, with the DATE beneath it (Nick: 'time closer to the
+            // airport logo … dont forget the date July 23 | 23 juillet').
+            var _tbDateEn = '', _tbDateFr = '';
+            try {
+              var _dOpt = _tbTz ? { timeZone: _tbTz } : {};
+              _tbDateEn = new Date().toLocaleDateString('en-US', Object.assign({ month: 'long', day: 'numeric' }, _dOpt));
+              _tbDateFr = new Date().toLocaleDateString('fr-CA', Object.assign({ day: 'numeric', month: 'long' }, _dOpt));
+            } catch (e) {}
+            var _tbDateHtml = (_tbDateEn && _tbDateFr)
+              ? '<span style="font-size:clamp(12px,1.6vh,22px);font-weight:800;color:rgba(20,38,64,.72);white-space:nowrap;letter-spacing:.01em;">' + _tbDateEn + ' <span style="opacity:.45">|</span> ' + _tbDateFr + '</span>'
+              : '';
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;right:41%;bottom:0;width:19%;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-start;padding:0 10px;background:transparent;overflow:visible;z-index:4;">'
+              + '<span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.0;">'
+              +   '<span style="font-size:clamp(14px,1.9vh,25px);font-weight:800;color:rgba(20,38,64,.66);letter-spacing:.04em;white-space:nowrap;">'
               +     (_frF ? 'Heure <span style="opacity:.5">|</span> Time' : 'Time <span style="opacity:.5">|</span> Heure') + '</span>'
-              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:#14263f;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
+              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(36px,5.4vh,74px);font-weight:900;color:#14263f;white-space:nowrap;line-height:1.02;">' + (_tbNow || '—') + '</span>'
+              +   _tbDateHtml
               + '</span>'
               + '</div>';
           }
@@ -16005,7 +16017,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22424';
+var FIDS_BUILD_TAG = 'v22425';
 (function(){
   try {
     function _addTag(){
