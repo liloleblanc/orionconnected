@@ -16035,7 +16035,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22434';
+var FIDS_BUILD_TAG = 'v22435';
 (function(){
   try {
     function _addTag(){
@@ -20853,16 +20853,18 @@ function _ocClockTime(now, tz) {
   new Intl.DateTimeFormat('en-GB', po).formatToParts(now).forEach(function (p) {
     if (p.type === 'hour') H = p.value; else if (p.type === 'minute') M = p.value;
   });
-  // Tight (Nick: 'have it closer 7:00PM|19h00').
-  return en + '|' + String(parseInt(H, 10)) + 'h' + M;
+  // Nick: '7:03PM | 19h 03'.
+  return en + ' | ' + String(parseInt(H, 10)) + 'h ' + M;
 }
 function _ocClockDate(now, tz) {
   var eo = { weekday: 'long', month: 'long', day: 'numeric' };
   var wo = { weekday: 'long' }, dd = { day: 'numeric' }, mo = { month: 'long' };
   if (tz) { eo.timeZone = tz; wo.timeZone = tz; dd.timeZone = tz; mo.timeZone = tz; }
-  var en = now.toLocaleDateString('en-US', eo).replace(/(\d+)$/, function (m) { return m + _ocOrdinal(parseInt(m, 10)); });
+  // Nick: 'Thursday, July 23 | Jeudi 23 juillet' — EN comma, no ordinal; FR
+  // capitalised weekday, no comma, no 'le'.
+  var en = now.toLocaleDateString('en-US', eo);
   var fw = now.toLocaleDateString('fr-CA', wo);
-  var fr = (fw.charAt(0).toUpperCase() + fw.slice(1)) + ', le '
+  var fr = (fw.charAt(0).toUpperCase() + fw.slice(1)) + ' '
          + now.toLocaleDateString('fr-CA', dd) + ' ' + now.toLocaleDateString('fr-CA', mo);
   return en + ' <span class="cl-sep">|</span> ' + fr;
 }
