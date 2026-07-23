@@ -7357,6 +7357,12 @@ function _buildV2MapCol(ctx, vars) {
     var _liveryAirline = _mktCodeLiv || _opCode;
     // Rouge has its OWN paint (321r.png) but the files live in the AC folder.
     if (_opCode === 'RV' || _opCode === 'QK') _liveryAirline = 'AC';
+    // PAL Airlines flies AC Express on its OWN aircraft, in PAL's own livery —
+    // NOT the mainline-painted regional jets above (Nick: 'Air Canada aircraft
+    // operated by PAL should show the PAL aircraft'). PAL has a distinct livery
+    // folder (aircraft/PB/DH*.png), so paint the image from there. Operator is
+    // resolved by registration upstream (the P-series C-F/GP** tails).
+    if (_opCode === 'PB') _liveryAirline = 'PB';
 
     var _acImg = '';
     try {
@@ -15941,7 +15947,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22416';
+var FIDS_BUILD_TAG = 'v22417';
 (function(){
   try {
     function _addTag(){
