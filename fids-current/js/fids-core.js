@@ -9232,7 +9232,7 @@ function uxgGateHtml(ctx) {
             var _tbDateHtml = (_tbFullEn && _tbFullFr)
               ? '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:rgba(255,255,255,.80);white-space:nowrap;letter-spacing:.01em;">' + _tbFullEn + ' <span style="opacity:.45">|</span> ' + _tbFullFr + '</span>'
               : '';
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:24%;right:24%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:40%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
               +   '<span style="font-size:clamp(15px,2.1vh,28px);font-weight:800;color:rgba(255,255,255,.82);letter-spacing:.03em;white-space:nowrap;">'
               +     _tbCity + ' Local Time <span style="opacity:.5">|</span> Heure Locale &agrave; ' + _tbCity + '</span>'
               +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(44px,7vh,94px);font-weight:900;color:#ffffff;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
@@ -9250,14 +9250,14 @@ function uxgGateHtml(ctx) {
             + '</span>'
             + '</div>';
         })()
-    // Gate block: FULL banner height (top:0), skewed −24° in PARALLEL with the
-    // airport band so the white↔accent seam keeps the slanted angle (it went
-    // vertical when the block was straight). The block bleeds 80px past the
-    // right screen edge so its skewed top-right corner can never expose a gap;
-    // inner spans counter-skew +24° to stay upright.
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:-80px !important;bottom:0 !important;width:calc(var(--gate-rcw, 25%) + 80px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 104px 0 24px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;overflow:visible;z-index:3;">'
-    +     '<span class="g8-bilbl" style="transform:skewX(24deg) !important;transform-origin:bottom right;"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
-    +     '<span class="g8-r1-gate" style="transform:skewX(24deg) !important;transform-origin:bottom right;font-size:' + (function(g){var n=String(g||'').length; return n>=5?'clamp(56px,7vh,84px)':(n===4?'clamp(78px,9.5vh,110px)':'clamp(96px,13vh,138px)');})(gateVal) + ' !important;line-height:0.92 !important;">' + gateVal + '</span>'
+    // Gate block: FULL banner height (top:0), a STRAIGHT rounded-top tab (Nick:
+    // 'the gate should not be angled anymore but rounded at the top with a nice
+    // separation like a border'). Flush to the right edge; the top-LEFT corner
+    // is rounded and a white left border + shadow separate it from the banner
+    // field. No skew, so inner spans no longer counter-skew.
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:0 !important;bottom:0 !important;width:var(--gate-rcw, 25%) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 30px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;border-radius:26px 0 0 0 !important;border-left:5px solid rgba(255,255,255,0.92) !important;box-shadow:-12px 0 26px rgba(0,0,0,0.32) !important;overflow:hidden;z-index:5;">'
+    +     '<span class="g8-bilbl"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
+    +     '<span class="g8-r1-gate" style="font-size:' + (function(g){var n=String(g||'').length; return n>=5?'clamp(56px,7vh,84px)':(n===4?'clamp(78px,9.5vh,110px)':'clamp(96px,13vh,138px)');})(gateVal) + ' !important;line-height:0.92 !important;">' + gateVal + '</span>'
     +   '</div>'
     + '</div>'
     // ROW 2 - flight number + fields (full width)
@@ -16042,7 +16042,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22429';
+var FIDS_BUILD_TAG = 'v22430';
 (function(){
   try {
     function _addTag(){
