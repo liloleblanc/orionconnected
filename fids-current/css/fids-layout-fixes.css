@@ -2813,6 +2813,26 @@ html .g8-bir-badge::after {
   background: linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(255,255,255,0.05));
   pointer-events: none;
 }
+/* Shiny 'polished orb' finish for the colour-on-white emblem chips (Nick:
+   'make it the same colour and shiny'). A white chip needs SHADING — a white
+   highlight alone is invisible on white — so read it as a glossy sphere: a
+   soft radial vignette for roundness + a bright top-crescent highlight. Same
+   treatment on the rail rondelle and the boarding banner so they match. */
+html .v2-fi-emblem-wrap.v2-fi-emblem-glossy,
+html .g8-bir-badge.g8-bir-badge-glossy { position: relative; }
+html .v2-fi-emblem-wrap.v2-fi-emblem-glossy::before,
+html .g8-bir-badge.g8-bir-badge-glossy::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  pointer-events: none; z-index: 2;
+  background: radial-gradient(118% 118% at 50% 16%,
+    rgba(255,255,255,0) 40%, rgba(8,20,38,0.09) 76%, rgba(8,20,38,0.22) 100%);
+}
+html .v2-fi-emblem-wrap.v2-fi-emblem-glossy::after,
+html .g8-bir-badge.g8-bir-badge-glossy::after {
+  content: ""; position: absolute; left: 15%; right: 15%; top: 6%; height: 36%;
+  border-radius: 50%; pointer-events: none; z-index: 3;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.92), rgba(255,255,255,0.12));
+}
 html .g8-bir-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 html .g8-bir-title {
   font-size: clamp(14px, 2vh, 24px);
