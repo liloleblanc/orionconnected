@@ -9232,7 +9232,7 @@ function uxgGateHtml(ctx) {
             var _tbDateHtml = (_tbFullEn && _tbFullFr)
               ? '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:rgba(255,255,255,.80);white-space:nowrap;letter-spacing:.01em;">' + _tbFullEn + ' <span style="opacity:.45">|</span> ' + _tbFullFr + '</span>'
               : '';
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:40%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:34%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;text-align:right;padding:0 6px 0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
               +   '<span style="font-size:clamp(15px,2.1vh,28px);font-weight:800;color:rgba(255,255,255,.82);letter-spacing:.03em;white-space:nowrap;">'
               +     _tbCity + ' Local Time <span style="opacity:.5">|</span> Heure Locale &agrave; ' + _tbCity + '</span>'
               +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(44px,7vh,94px);font-weight:900;color:#ffffff;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
@@ -16042,7 +16042,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22430';
+var FIDS_BUILD_TAG = 'v22431';
 (function(){
   try {
     function _addTag(){
