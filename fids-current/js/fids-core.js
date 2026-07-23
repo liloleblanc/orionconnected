@@ -9163,7 +9163,9 @@ function uxgGateHtml(ctx) {
           var _tbSpec = _TB_SPEC[(typeof airlineCode !== 'undefined' ? airlineCode : '')] || null;
           // Non-YQM default: a fixed deep slate — accent3 could match the gate
           // accent (AC red next to red gate = 'red and red', per Nick at YHZ).
-          var _tbBg = _tbSpec ? _tbSpec.bg : (_tbYQM ? '#003DA5' : '#1F2C44');
+          // (Nick: the Acadian flag doesn't belong on the GATE — no Acadian blue
+          // tab, no gold star. The board keeps its silk-acadian theme untouched.)
+          var _tbBg = _tbSpec ? _tbSpec.bg : '#1F2C44';
           var _tbInk = _tbSpec ? _tbSpec.ink : '#fff';
           var _tbInkSoft = _tbSpec ? _tbSpec.inkSoft : 'rgba(255,255,255,0.88)';
           var _tbTz = (AP[iata] || {}).tz || '';
@@ -9188,7 +9190,6 @@ function uxgGateHtml(ctx) {
             return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;right:52%;bottom:0;width:22%;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-start;padding:0 12px;background:transparent;overflow:hidden;z-index:4;">'
               + '<span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.02;">'
               +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:rgba(20,38,64,.66);letter-spacing:.04em;white-space:nowrap;">'
-              +     (_tbYQM ? '<span style="color:#C8A100;margin-right:.4em;">★</span>' : '')
               +     (_frF ? 'Heure <span style="opacity:.5">|</span> Time' : 'Time <span style="opacity:.5">|</span> Heure') + '</span>'
               +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:#14263f;white-space:nowrap;">' + (_tbNow || '—') + '</span>'
               + '</span>'
@@ -9200,7 +9201,6 @@ function uxgGateHtml(ctx) {
           return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
             +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">'
-            +     (_tbYQM ? '<span style="color:#FFD600;margin-right:.4em;">★</span>' : '')
             +     (_frF ? 'Heure <span style="opacity:.6">|</span> Time' : 'Time <span style="opacity:.6">|</span> Heure') + '</span>'
             +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
@@ -15998,7 +15998,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22421';
+var FIDS_BUILD_TAG = 'v22422';
 (function(){
   try {
     function _addTag(){
