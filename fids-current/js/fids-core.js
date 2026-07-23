@@ -10889,9 +10889,18 @@ const gView = document.getElementById('gateView');
               try {
                 var _wmCol = document.querySelector('.gad-map-col-v2');
                 var _wmMap = _wmCol && _wmCol.querySelector('.v2-rc-shelf-map');
+                // DEAD-BAND (Nick: 'the panels move every few seconds … the
+                // maps'). This runs every 2s and re-measures the MAP shelf; the
+                // Leaflet map's height/width jitters by a pixel or two as tiles
+                // settle, which used to rewrite --gate-wm-top / --gate-rcw on
+                // every tick and visibly nudge the watermark band + banner gate
+                // block. Only rewrite a var when it moves by more than 4px, so
+                // real layout changes still self-heal but sub-pixel noise can't
+                // make the panels twitch.
                 if (_wmCol && _wmMap) {
                   var _wmTopPx = Math.round(_wmMap.offsetTop + _wmMap.offsetHeight);
-                  if (_wmTopPx > 0) _wmCol.style.setProperty('--gate-wm-top', _wmTopPx + 'px');
+                  var _prevTop = parseInt(_wmCol.style.getPropertyValue('--gate-wm-top'), 10) || 0;
+                  if (_wmTopPx > 0 && Math.abs(_wmTopPx - _prevTop) > 4) _wmCol.style.setProperty('--gate-wm-top', _wmTopPx + 'px');
                 }
                 // Publish the right column's REAL width so the banner's gate
                 // block can span exactly to the column seam (its slanted left
@@ -10900,7 +10909,8 @@ const gView = document.getElementById('gateView');
                 // duplicate .g8-wrap nodes made a wrap-scoped var ambiguous.
                 if (_wmCol) {
                   var _rcw = Math.round(_wmCol.getBoundingClientRect().width);
-                  if (_rcw > 0) document.documentElement.style.setProperty('--gate-rcw', _rcw + 'px');
+                  var _prevRcw = parseInt(document.documentElement.style.getPropertyValue('--gate-rcw'), 10) || 0;
+                  if (_rcw > 0 && Math.abs(_rcw - _prevRcw) > 4) document.documentElement.style.setProperty('--gate-rcw', _rcw + 'px');
                 }
               } catch (e) {}
             };
@@ -15900,7 +15910,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22411';
+var FIDS_BUILD_TAG = 'v22412';
 (function(){
   try {
     function _addTag(){
