@@ -3902,35 +3902,36 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   // 80-unit viewBox width. Available width for text is ~70 units (with
   // ~5 units of margin on each side). With letter-spacing 1.5 added per
   // character, we estimate text width and scale font down if needed.
+  // Match the OFFICIAL Canadian property lockups: the property name is set in
+  // LATO sans-serif, ~17px/400/2.7-tracking in their 266.5-wide viewBox — i.e.
+  // ~6.4% of width, 1.0% tracking. Not an ornate serif (Nick: 'totally wrong
+  // font — thin and skinny'). Scale that ratio to our 80-wide box (~5.1u), and
+  // shrink only for very long names so they still fit.
   var len = name.length;
   var fontSize, letterSpacing;
-  if (len <= 12) {
-    fontSize = 5; letterSpacing = 1.5;
-  } else if (len <= 18) {
-    fontSize = 4.2; letterSpacing = 1.0;
+  if (len <= 18) {
+    fontSize = 5.1; letterSpacing = 0.82;
   } else if (len <= 26) {
-    fontSize = 3.4; letterSpacing = 0.6;
+    fontSize = 4.2; letterSpacing = 0.6;
+  } else if (len <= 34) {
+    fontSize = 3.4; letterSpacing = 0.4;
   } else {
-    fontSize = 2.8; letterSpacing = 0.3;
+    fontSize = 2.9; letterSpacing = 0.25;
   }
 
-  // Layout: 80x36 viewBox.
-  //   Wordmark (native 54x18) scaled 0.93x, placed top-center
-  //   Horizontal rule below wordmark
-  //   Property name (serif, spaced caps) below rule
-  // Renderer applies brightness(0) invert(1) for white-on-dark panels.
-  // Official Fairmont lockups (e.g. 'Fairmont / LE REINE ELIZABETH') are ONE
-  // unit: script wordmark with the spaced-caps property name directly under
-  // it — no rule between them (Nick: 'nowhere in that logo is there black,
-  // and so separated — no'). Everything renders white; the renderer's
-  // brightness/invert filter handles dark-on-light contexts.
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 32" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(15, 1) scale(0.926)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
+  // Layout: 80x33 viewBox — the script wordmark fills the width (like the
+  // official lockup), property name in Lato sans directly under it, one unit.
+  // Everything white; the renderer's brightness/invert handles dark-on-light.
+  // Property name in Franklin Gothic Book (Nick) — ships on the Windows boards;
+  // falls back to other Franklin grotesques then Arial elsewhere. Wordmark a
+  // touch bigger, filling the width (Nick: 'the Fairmont needs a bit bigger').
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30.5" preserveAspectRatio="xMidYMid meet">'
+    + '<g transform="translate(1.6, 0) scale(1.42)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
-    + '<text x="40" y="27" text-anchor="middle" '
-    +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
-    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
+    + '<text x="40" y="29.4" text-anchor="middle" '
+    +   'font-family="&apos;Franklin Gothic Book&apos;, &apos;ITC Franklin Gothic&apos;, &apos;Franklin Gothic Medium&apos;, &apos;Libre Franklin&apos;, Arial, sans-serif" '
+    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
     +   name
     + '</text>'
     + '</svg>';
@@ -9096,6 +9097,18 @@ function uxgGateHtml(ctx) {
   // (_silkBanner is computed earlier, before the logo width cap.)
   var _silkDark = (airlineCode === 'F9') ? '#5AA0DE'
     : ((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF') ? _bannerSpec.r1 : '#0c1119');
+  // Timebox ink adapts to the banner colour (Nick: 'Frontier — the font is all
+  // white and it's light, needs to be blue'). Frontier's sky-blue band is too
+  // light for white text; use a deep navy instead. Luminance > 140 → dark ink.
+  var _silkLum = (function (h) {
+    var m = String(h || '').replace('#', '');
+    if (m.length === 3) m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2];
+    if (m.length !== 6) return 0;
+    return 0.299 * parseInt(m.slice(0, 2), 16) + 0.587 * parseInt(m.slice(2, 4), 16) + 0.114 * parseInt(m.slice(4, 6), 16);
+  })(_silkDark);
+  var _silkLightBand = _silkLum > 140;
+  var _silkInk = _silkLightBand ? '#0A2E6B' : '#ffffff';
+  var _silkInkSoft = _silkLightBand ? 'rgba(10,46,107,0.86)' : 'rgba(255,255,255,0.82)';
   // Flow: dark (airline + time) → white centre (airport logo) → accent (into the
   // gate tab on the right). The gate tab covers the right ~25%, so the accent
   // stop lands just before it and reads as one continuous fabric.
@@ -9224,11 +9237,11 @@ function uxgGateHtml(ctx) {
               _tbCity = (typeof CITY !== 'undefined' && CITY[_ci]) || (typeof AP !== 'undefined' && AP[_ci] && AP[_ci].city) || _ci;
               if (typeof normalizeDisplayCity === 'function') _tbCity = normalizeDisplayCity(_tbCity, _ci);
             } catch (e) { _tbCity = String(iata || ''); }
-            var _tbDateHtml = '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:rgba(255,255,255,.80);white-space:nowrap;letter-spacing:.01em;">' + _ocClockDate(new Date(), _tbTz || null) + '</span>';
+            var _tbDateHtml = '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:' + _silkInkSoft + ';white-space:nowrap;letter-spacing:.01em;">' + _ocClockDate(new Date(), _tbTz || null) + '</span>';
             return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:32%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;text-align:right;padding:0 6px 0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
-              +   '<span style="font-size:clamp(14px,2vh,26px);font-weight:800;color:rgba(255,255,255,.82);letter-spacing:.03em;white-space:nowrap;">'
+              +   '<span style="font-size:clamp(14px,2vh,26px);font-weight:800;color:' + _silkInkSoft + ';letter-spacing:.03em;white-space:nowrap;">'
               +     _ocClockLabel(_tbCity) + '</span>'
-              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" data-fmt="dual" style="font-size:clamp(30px,4.6vh,62px);font-weight:900;color:#ffffff;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
+              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" data-fmt="dual" style="font-size:clamp(30px,4.6vh,62px);font-weight:900;color:' + _silkInk + ';white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
               +   _tbDateHtml
               + '</div>';
           }
@@ -16035,7 +16048,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22435';
+var FIDS_BUILD_TAG = 'v22439';
 (function(){
   try {
     function _addTag(){

@@ -2439,10 +2439,10 @@ html body .fids-banner .fids-banner-analog {
   order: 2 !important;   /* Nick: analog clock on the RIGHT of the digital */
 }
 html body .fids-banner .fids-banner-time-text { order: 1 !important; }
-/* currentColor everywhere so the analog follows each theme's banner text
-   colour (Nick: 'white on white on normal pages' — the old #fff fallback was
-   invisible on the light-banner themes). */
-html body .fids-banner .fids-banner-analog { color: inherit !important; }
+/* Colour comes from the per-theme rules (which now also target -tlabel and
+   -analog), so the clock follows each theme's banner-text colour instead of
+   the unreliable --fids-banner-text var (Nick: 'white on white anywhere but
+   Moncton'). Analog strokes use currentColor = that theme colour. */
 html body .fids-banner .fids-banner-analog .cl-face {
   fill: none;
   stroke: currentColor;
@@ -2469,7 +2469,6 @@ html body .fids-banner .fids-banner-tlabel {
   white-space: nowrap !important;
   line-height: 1.05 !important;
   margin-bottom: 1px !important;
-  color: inherit !important;
 }
 html body .fids-banner .fids-banner-time {
   font-size: clamp(34px, 4.4vh, 60px) !important;
@@ -2477,9 +2476,6 @@ html body .fids-banner .fids-banner-time {
   line-height: 1 !important;
   letter-spacing: 0 !important;
   white-space: nowrap !important;
-  /* follow the theme's banner-text colour (dark on light, white on dark) so
-     the clock is never white-on-white on the light themes (Nick). */
-  color: inherit !important;
 }
 html body .fids-banner .fids-banner-date {
   font-size: clamp(13px, 1.55vh, 23px) !important;
@@ -2488,7 +2484,6 @@ html body .fids-banner .fids-banner-date {
   white-space: nowrap !important;
   margin-top: 1px !important;
   text-transform: none !important;
-  color: inherit !important;
 }
 html body .fids-banner .fids-banner-time-block .cl-sep { opacity: 0.4; font-weight: 500; }
 
@@ -3427,6 +3422,8 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body[data-fids-banner="silk"] .fids-banner-time { color: #0d2440 !important; }
   body[data-fids-banner="silk"] .fids-banner-date { color: rgba(13, 36, 64, 0.66) !important; }
+  body[data-fids-banner="silk"] .fids-banner-tlabel,
+  body[data-fids-banner="silk"] .fids-banner-analog { color: #0d2440 !important; }
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-label {
     color: #ffffff !important;
     font-size: clamp(40px, 2.9vw, 56px) !important;
@@ -3448,6 +3445,8 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body[data-fids-banner="silk-acadian"] .fids-banner-time { color: #ffffff !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-date { color: rgba(255, 255, 255, 0.85) !important; }
+  body[data-fids-banner="silk-acadian"] .fids-banner-tlabel,
+  body[data-fids-banner="silk-acadian"] .fids-banner-analog { color: #ffffff !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-board { background: transparent !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label,
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label {
