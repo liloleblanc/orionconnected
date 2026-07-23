@@ -5394,7 +5394,14 @@ function _planeFacingFromSrc(src) {
 // MAINLINE art instead of the fabricated 'Rouge 737' hybrid files.
 function _rougeLiveryEq(eq) {
   var e = String(eq || '');
-  return /^(319|320|321)$/i.test(e) ? (e + 'r') : e;
+  // NORMALIZE the feed's A320-family variants to the base IATA code BEFORE
+  // applying the Rouge 'r' suffix. The old strict /^(319|320|321)$/ test only
+  // matched the exact demo strings, so a LIVE variant ('32A'→319, '32B'/'32S'→320,
+  // 'A320'→320…) slipped past un-suffixed and aircraftImgTag then loaded the
+  // MAINLINE 320.png — Nick: 'AC Rouge aircraft does not show'. Rouge flies only
+  // the A319/A320/A321 (ceo), so those three are the complete set.
+  var base = (typeof aircraftCodeToIata === 'function') ? (aircraftCodeToIata(e) || e) : e;
+  return /^(319|320|321)$/.test(base) ? (base + 'r') : e;
 }
 window._detectPlaneFacing = function(img) {
   try {
@@ -15947,7 +15954,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22417';
+var FIDS_BUILD_TAG = 'v22418';
 (function(){
   try {
     function _addTag(){
