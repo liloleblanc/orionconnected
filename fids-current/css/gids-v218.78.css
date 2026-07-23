@@ -4851,10 +4851,12 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
   letter-spacing: -0.3px !important;
 }
-/* Right column: supplied 935 metal on Flight Info, cloud/aircraft, and the
-   bottom Aircraft Info shelf. The real cloud element remains above this base. */
+/* Right column: sleek BLACK perforated-metal on Flight Info, cloud/aircraft,
+   and the bottom Aircraft Info shelf (Nick: the bronze/brown pattern 'its brown
+   right now, black would be sleek' — supplied perforated texture). The real
+   cloud element remains above this base. */
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
-  background: url('/textures/ac-shelf-935.jpg?v=22349') center / cover no-repeat !important;
+  background: #0b0b0d url('/textures/ac-black-perforated.jpg?v=22418') center / cover no-repeat !important;
 }
 /* AC's supplied 935 surface is dark enough that the old navy copy loses
    contrast. Use white for labels and ordinary values on these right shelves;
