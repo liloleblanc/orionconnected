@@ -8885,8 +8885,15 @@ function uxgGateHtml(ctx) {
   // localStorage fids_gate_banner_classic='1'.
   var _silkBanner = true;
   try { if (localStorage.getItem('fids_gate_banner_classic') === '1') _silkBanner = false; } catch (e) {}
+  // Silk holds the airline wordmark on a full-height flowing band, so it can run
+  // BIGGER than the classic 76px tab cap (Nick: 'air canada logo bigger'). Scale
+  // the calibrated size up and widen the vw cap so wide wordmarks actually grow.
+  if (_silkBanner) {
+    _logoH = Math.round(_logoH * 1.22);
+    _sz = { h: _sz.h, w: Math.round((_sz.w || 480) * 1.5) };
+  }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
-                 + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 22vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
+                 + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
                  + (_useOverrideFile
                      ? (_darkLogoWhiten ? 'filter:brightness(0) invert(1) !important;' : 'filter:none !important;')
                      : '')
@@ -9072,13 +9079,13 @@ function uxgGateHtml(ctx) {
   // gate where it blends a bit.' Short airline-colour start (holds the logo) →
   // quick fade → white body (time + airport logo) → soft blend into the gate
   // accent on the right (the gate tab sits on that accent end).
-  var _silkGrad = 'linear-gradient(95deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 19%, #eef3f8 33%, #f8fbfd 50%, #f8fbfd 72%, color-mix(in srgb, var(--airline-accent,#1aa) 70%, #f8fbfd) 84%, var(--airline-accent,#1aa) 98%)';
+  var _silkGrad = 'linear-gradient(95deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 24%, #eef3f8 35%, #f8fbfd 50%, #f8fbfd 73%, color-mix(in srgb, var(--airline-accent,#1aa) 70%, #f8fbfd) 84%, var(--airline-accent,#1aa) 98%)';
 
   var _apBandTop = _apLogoTop
     ? (_silkBanner
         // Silk: the airport logo floats on the band's white centre — no skewed
         // white slab, no rounded tab. Positioned centre-right, left of the gate.
-        ? '<div class="g8-r1-apband g8-r1-apband-silk" style="position:absolute;right:28%;top:0;bottom:0;width:20%;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 8px;overflow:hidden;">'
+        ? '<div class="g8-r1-apband g8-r1-apband-silk" style="position:absolute;right:25%;top:0;bottom:0;width:21%;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 8px;overflow:hidden;">'
           + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:64%;max-height:72%;max-width:100%;width:auto;object-fit:contain;mix-blend-mode:multiply;" onerror="this.parentNode.style.display=\'none\'">'
           + '</div>'
         : '<div class="g8-r1-apband" style="position:absolute;right:0;top:0;bottom:0;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
@@ -9187,7 +9194,7 @@ function uxgGateHtml(ctx) {
             // Silk: the time sits on the band's DARK left zone (just right of the
             // airline logo) — no tab, no skew. Sits on the WHITE body, so DARK
             // ink. Own zone (26–48%), clipped so it never runs into the airport.
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;right:52%;bottom:0;width:22%;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-start;padding:0 12px;background:transparent;overflow:hidden;z-index:4;">'
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;right:46%;bottom:0;width:20%;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-start;padding:0 10px;background:transparent;overflow:hidden;z-index:4;">'
               + '<span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.02;">'
               +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:rgba(20,38,64,.66);letter-spacing:.04em;white-space:nowrap;">'
               +     (_frF ? 'Heure <span style="opacity:.5">|</span> Time' : 'Time <span style="opacity:.5">|</span> Heure') + '</span>'
@@ -15998,7 +16005,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22423';
+var FIDS_BUILD_TAG = 'v22424';
 (function(){
   try {
     function _addTag(){
