@@ -3922,12 +3922,15 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   // Layout: 80x33 viewBox — the script wordmark fills the width (like the
   // official lockup), property name in Lato sans directly under it, one unit.
   // Everything white; the renderer's brightness/invert handles dark-on-light.
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 33" preserveAspectRatio="xMidYMid meet">'
-    + '<g transform="translate(4.5, 0.5) scale(1.33)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
+  // Property name in Franklin Gothic Book (Nick) — ships on the Windows boards;
+  // falls back to other Franklin grotesques then Arial elsewhere. Wordmark a
+  // touch bigger, filling the width (Nick: 'the Fairmont needs a bit bigger').
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30.5" preserveAspectRatio="xMidYMid meet">'
+    + '<g transform="translate(1.6, 0) scale(1.42)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
-    + '<text x="40" y="31" text-anchor="middle" '
-    +   'font-family="Lato, &apos;Avenir Next&apos;, &apos;Helvetica Neue&apos;, Arial, sans-serif" '
+    + '<text x="40" y="29.4" text-anchor="middle" '
+    +   'font-family="&apos;Franklin Gothic Book&apos;, &apos;ITC Franklin Gothic&apos;, &apos;Franklin Gothic Medium&apos;, &apos;Libre Franklin&apos;, Arial, sans-serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
     +   name
     + '</text>'
@@ -16033,7 +16036,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22436';
+var FIDS_BUILD_TAG = 'v22437';
 (function(){
   try {
     function _addTag(){
