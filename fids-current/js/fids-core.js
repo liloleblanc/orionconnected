@@ -2656,9 +2656,39 @@ function updateDedicatedTimeOnly() {
   const footer = document.getElementById('dedicatedFooterRight');
   if (footer) footer.textContent = dateDisplay;
   const banClock = document.getElementById('dedicatedBannerClock');
-  if (banClock) banClock.textContent = timeStr;
   const bidsDate = document.getElementById('bidsBannerDate');
-  if (bidsDate) bidsDate.textContent = _bilingualDate(now, tz);
+  if (screenType === 'baggage') {
+    // BIDS banner clock matches the FIDS board (Nick: 'the same on all
+    // screens even FIDS and BIDS') — shared helpers for label / dual time /
+    // bilingual date, plus the analog hands.
+    if (banClock) banClock.textContent = _ocClockTime(now, tz);
+    if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
+    var _bLbl = document.getElementById('bidsBannerLabel');
+    if (_bLbl) {
+      var _bci2 = String(iata || '').toUpperCase();
+      var _bCity = (typeof CITY !== 'undefined' && CITY[_bci2]) || ((AP[_bci2] || {}).city) || _bci2;
+      try { if (typeof normalizeDisplayCity === 'function') _bCity = normalizeDisplayCity(_bCity, _bci2); } catch (e) {}
+      _bLbl.innerHTML = _ocClockLabel(_bCity);
+    }
+    try {
+      var _bh = document.getElementById('bidsClHour'), _bm = document.getElementById('bidsClMin');
+      if (_bh && _bm) {
+        var _bpo = { hour: 'numeric', minute: 'numeric', hour12: false };
+        if (tz) _bpo.timeZone = tz;
+        var _bpp = new Intl.DateTimeFormat('en-US', _bpo).formatToParts(now);
+        var _bH = 0, _bM = 0;
+        for (var _bpi = 0; _bpi < _bpp.length; _bpi++) {
+          if (_bpp[_bpi].type === 'hour') _bH = parseInt(_bpp[_bpi].value, 10) % 12;
+          else if (_bpp[_bpi].type === 'minute') _bM = parseInt(_bpp[_bpi].value, 10);
+        }
+        _bh.setAttribute('transform', 'rotate(' + (_bH * 30 + _bM * 0.5) + ' 50 50)');
+        _bm.setAttribute('transform', 'rotate(' + (_bM * 6) + ' 50 50)');
+      }
+    } catch (e) {}
+  } else {
+    if (banClock) banClock.textContent = timeStr;
+    if (bidsDate) bidsDate.textContent = _bilingualDate(now, tz);
+  }
   const emptyTime = document.getElementById('dedicatedEmptyTime');
   if (emptyTime) emptyTime.textContent = timeStr;
   // Update boarding countdown
@@ -11916,11 +11946,28 @@ const gView = document.getElementById('gateView');
           var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
                           de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem' };
           var _ttl = _ttlMap[(typeof lang !== 'undefined' && lang) || 'en'] || _ttlMap.en;
+          // Clock matches the FIDS board exactly (Nick: 'the same on all
+          // screens even FIDS and BIDS'): analog (right) + 3-line digital
+          // (label / big dual time / bilingual date) via the shared helpers.
+          var _bidsTz = (AP[iata] || {}).tz || null;
+          var _bci = String(iata || '').toUpperCase();
+          var _bidsCity = (typeof CITY !== 'undefined' && CITY[_bci]) || ((AP[_bci] || {}).city) || _bci;
+          try { if (typeof normalizeDisplayCity === 'function') _bidsCity = normalizeDisplayCity(_bidsCity, _bci); } catch (e) {}
           return '<div class="fids-banner bidsv2-fids-banner">'
             + '<div class="fids-banner-chevrons" aria-hidden="true"></div>'
             + '<div class="fids-banner-time-block">'
-            +   '<div class="fids-banner-time" id="dedicatedBannerClock">' + timeStr + '</div>'
-            +   '<div class="fids-banner-date" id="bidsBannerDate">' + _bilingualDate(now, (AP[iata] || {}).tz) + '</div>'
+            +   '<svg class="fids-banner-analog" id="bidsClockAnalog" viewBox="0 0 100 100" aria-hidden="true">'
+            +     '<circle class="cl-face" cx="50" cy="50" r="46"></circle>'
+            +     '<g class="cl-ticks"><line x1="50" y1="6" x2="50" y2="13"></line><line x1="94" y1="50" x2="87" y2="50"></line><line x1="50" y1="94" x2="50" y2="87"></line><line x1="6" y1="50" x2="13" y2="50"></line></g>'
+            +     '<line class="cl-hand cl-hour" id="bidsClHour" x1="50" y1="50" x2="50" y2="29"></line>'
+            +     '<line class="cl-hand cl-min" id="bidsClMin" x1="50" y1="50" x2="50" y2="17"></line>'
+            +     '<circle class="cl-pin" cx="50" cy="50" r="3.4"></circle>'
+            +   '</svg>'
+            +   '<div class="fids-banner-time-text">'
+            +     '<div class="fids-banner-tlabel" id="bidsBannerLabel">' + _ocClockLabel(_bidsCity) + '</div>'
+            +     '<div class="fids-banner-time" id="dedicatedBannerClock">' + _ocClockTime(now, _bidsTz) + '</div>'
+            +     '<div class="fids-banner-date" id="bidsBannerDate">' + _ocClockDate(now, _bidsTz) + '</div>'
+            +   '</div>'
             + '</div>'
             + '<div class="fids-airport-pill' + (_lg ? ' has-logo' : '') + '">'
             +   (_lg ? '<img class="fids-airport-logo-img" src="' + _lg + '" alt="" onerror="this.style.display=\'none\'">' : '')
@@ -16048,7 +16095,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22440';
+var FIDS_BUILD_TAG = 'v22441';
 (function(){
   try {
     function _addTag(){
