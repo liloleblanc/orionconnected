@@ -2261,6 +2261,32 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-position: center 30% !important;
 }
 
+/* Air Canada: replace the globe watermark on the right 'Your Aircraft' column
+   with the dark grunge/distress texture (Nick: 'the dark is for AC right
+   bottom shelves — I don't like the one there now'). Placed AFTER both globe
+   rules so it wins background-image/opacity/blend for AC only; multiply at a
+   low opacity so it reads as a subtle dark grain on the panel, not a blackout. */
+html .g8-wrap.g8-airline-AC .gad-map-col-v2::before {
+  background-image: url('/logos/Backgrounds/textures/grunge-dark-distress.jpg') !important;
+  background-size: cover !important;
+  background-position: center bottom !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.20 !important;
+  filter: none !important;
+  mix-blend-mode: multiply !important;
+}
+
+/* Gate ad panels — recolorable gradient-wave backdrop behind the rotating
+   ad/promo carousel (Nick: 'the gradient is for the smaller ads background,
+   you can change its colours'). Sits under #gateAdCarousel so it shows in any
+   letterbox space around the slide artwork. hue-rotate is the recolor knob. */
+html .g8-wrap .gad-media-col {
+  background-image: url('/logos/Backgrounds/textures/gradient-wave-minimalist.svg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+
 /* Slide-entry transition (Nick: 'transitions are very dry'): each new slide
    in the gate ad deck eases in — soft fade with a gentle drift — instead of
    the hard innerHTML cut. Entry-only (no exit hold): media starts instantly
