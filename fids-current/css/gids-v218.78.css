@@ -4853,7 +4853,7 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
    right now, black would be sleek' — supplied perforated texture). The real
    cloud element remains above this base. */
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
-  background: #0b0b0d url('/textures/ac-black-perforated.jpg?v=22418') center / cover no-repeat !important;
+  background: #141416 url('/textures/ac-grunge-distress.jpg?v=22445') center / cover no-repeat !important;
 }
 /* AC's supplied 935 surface is dark enough that the old navy copy loses
    contrast. Use white for labels and ordinary values on these right shelves;
