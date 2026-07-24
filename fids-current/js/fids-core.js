@@ -16259,7 +16259,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22465';
+var FIDS_BUILD_TAG = 'v22466';
 (function(){
   try {
     function _addTag(){
@@ -29743,15 +29743,20 @@ function _renderWxCard(el) {
     // clear' — the abbreviated + tiny-grey second line read badly).
     var _dEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     var _dFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    // Actual DATE under the day name (Nick: 'it should have days too, hard to
-    // tell what day they're talking about') — day-of-month + short month.
-    var _moEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    var _moFr = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
-    var _dateLbl = function (d) { return d.getDate() + ' ' + (_wxFrF ? _moFr : _moEn)[d.getMonth()]; };
+    // FULL month names, both languages (Nick: 'Friday | July 24 / Vendredi |
+    // 24 juillet'). English date reads 'Month Day', French date 'Day month'.
+    var _moEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    var _moFr = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
     var _wxFrF = false;
     try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
-    var _dayLbl = function (dow) {
-      var a = _wxFrF ? _dFr[dow] : _dEn[dow], b = _wxFrF ? _dEn[dow] : _dFr[dow];
+    // Each language on its OWN line, day + full date joined by '|' (Nick's
+    // exact spec: 'Friday | July 24' over 'Vendredi | 24 juillet'). FR line
+    // first at the French-first airports.
+    var _dayLbl = function (d) {
+      var dow = d.getDay(), mo = d.getMonth(), dd = d.getDate();
+      var enLine = _dEn[dow] + ' <span class="wxc-dsep">|</span> ' + _moEn[mo] + ' ' + dd;
+      var frLine = _dFr[dow] + ' <span class="wxc-dsep">|</span> ' + dd + ' ' + _moFr[mo];
+      var a = _wxFrF ? frLine : enLine, b = _wxFrF ? enLine : frLine;
       return a + '<span class="wxc-d2">' + b + '</span>';
     };
     // Meta labels bilingual like the rest of the card (Nick: 'half french half
@@ -29772,8 +29777,7 @@ function _renderWxCard(el) {
       for (var i = 0; i < Math.min(7, daily.time.length); i++) {
         var dt = new Date(daily.time[i] + 'T12:00:00');
         var icd = _wmoAnimIcon(daily.weather_code[i]);
-        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt.getDay()) + '</div>'
-          + '<div class="wxc-dt">' + _dateLbl(dt) + '</div>'
+        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt) + '</div>'
           + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
           + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
           + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
@@ -29795,18 +29799,37 @@ function _renderWxCard(el) {
         var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
         var dt2 = new Date(k + 'T12:00:00');
         var ich = _wxAnimIcon(code, false);
-        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt2.getDay()) + '</div>'
-          + '<div class="wxc-dt">' + _dateLbl(dt2) + '</div>'
+        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt2) + '</div>'
           + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
           + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
         nDays++;
       });
     }
 
-    // 'Next hours' strip RETIRED (Nick: the three-section card read TINY,
-    // and the hourly entries changed every hour = another jump source).
-    // The card is hero + 7-day outlook only, both bigger.
+    // NEXT-HOURS strip (Nick: 'add weather hourly on top of the 7 days like it
+    // was before'). Next 6 hours from the cached hourly forecast, in the
+    // DESTINATION's local time, sitting above the 7-day outlook.
     var hoursHtml = '';
+    try {
+      var _hTz = (AP[dest] || {}).tz;
+      var _hNow = Date.now();
+      var _hFmt = _hTz ? { timeZone: _hTz, hour: 'numeric', hour12: true } : { hour: 'numeric', hour12: true };
+      var _hFmt24 = _hTz ? { timeZone: _hTz, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' };
+      var _hrs = (wx.hourly || [])
+        .filter(function (h) { return h && typeof h.temp === 'number' && h.ts && h.ts >= _hNow - 1800000; })
+        .sort(function (a, b) { return a.ts - b.ts; })
+        .slice(0, 6);
+      _hrs.forEach(function (h) {
+        var hd = new Date(h.ts);
+        var lbl = hd.toLocaleTimeString('en-US', _hFmt).replace(/:00/, '').replace(/\s/g, ' '); // "3 PM"
+        var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
+        var hNight = h24 < 6 || h24 >= 21;
+        var hic = _wxAnimIcon(h.code, hNight);
+        hoursHtml += '<div class="wxc-hour"><div class="wxc-hr">' + lbl + '</div>'
+          + '<img class="wxanim" data-wx="' + hic + '" src="/logos/weather/animated/' + hic + '.svg" alt="">'
+          + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';
+      });
+    } catch (eHrs) { hoursHtml = ''; }
     // Split MAIN (globe + head + hero) from the STRIPS (hours + outlook):
     // the 7-day data usually lands a beat AFTER the first paint, and
     // rebuilding the whole card for it reloaded the big hero icon — the
@@ -29832,7 +29855,9 @@ function _renderWxCard(el) {
       +   '</div>'
       + '</div>';
     var _wxStripsHtml =
-        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">Next hours <span class="v2-rc-fi-sep">|</span> Prochaines heures</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
+        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + (_wxFrF
+            ? 'PROCHAINES HEURES <span class="v2-rc-fi-sep">|</span> NEXT HOURS'
+            : 'NEXT HOURS <span class="v2-rc-fi-sep">|</span> PROCHAINES HEURES') + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
       + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + (_wxFrF
             ? 'PRÉVISIONS ' + nDays + ' JOURS <span class="v2-rc-fi-sep">|</span> ' + nDays + '-DAY'
             : nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS') + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');

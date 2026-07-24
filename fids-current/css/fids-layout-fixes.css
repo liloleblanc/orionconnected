@@ -1883,13 +1883,19 @@ html .wxcard-col .wxc-grid-5 { grid-template-columns: repeat(5, 1fr) !important;
    the edge. Pin min-width:0 so all seven tiles share the width equally; the
    labels shrink/clip inside their own tile instead of blowing out the grid. */
 html .wxcard-col .wxc-grid-7 > .wxc-day {
-  min-width: 0 !important; overflow: hidden !important;
+  min-width: 0 !important; overflow: visible !important;
   padding-left: 4px !important; padding-right: 4px !important;
 }
+/* Day + full date on one line each ('Friday | July 24'). Narrow 7-day tiles
+   can't hold that on a single line, so WRAP instead of clipping to 'Jul…'
+   (Nick hates clipping). Slightly smaller type in the 7-day grid keeps most
+   labels to one line and any long ones to a clean two. */
 html .wxcard-col .wxc-grid-7 .wxc-d,
-html .wxcard-col .wxc-grid-7 .wxc-d2,
-html .wxcard-col .wxc-grid-7 .wxc-dt {
-  overflow: hidden !important; text-overflow: ellipsis !important; max-width: 100% !important;
+html .wxcard-col .wxc-grid-7 .wxc-d2 {
+  white-space: normal !important; overflow: visible !important; text-overflow: clip !important;
+  max-width: 100% !important; line-height: 1.12 !important;
+  overflow-wrap: anywhere !important; word-break: normal !important;
+  font-size: clamp(10px, 1.45vh, 17px) !important;
 }
 html .wxcard-col .wxc-grid-2, html .wxcard-col .wxc-grid-3, html .wxcard-col .wxc-grid-4 { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important; }
 html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
@@ -1913,7 +1919,9 @@ html .wxcard-col .wxc-title { font-size: clamp(13px, 1.9vh, 23px) !important; }
 /* Full day names, both languages equally legible. v22210's second line was
    0.74em @ 0.55 opacity — Nick: 'english so much smaller and gray … it needs
    to be … clear'. Both lines now white, bold, one line each, no wrap. */
-html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-height: 1.16 !important; font-weight: 800 !important; color: #ffffff !important; white-space: nowrap !important; }
+html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-height: 1.16 !important; font-weight: 800 !important; color: #ffffff !important; white-space: normal !important; }
+/* Day|date separator — subtle, so 'Friday | July 24' reads as one unit. */
+html .wxcard-col .wxc-dsep { opacity: 0.5 !important; font-weight: 600 !important; margin: 0 0.16em !important; }
 /* BOTH languages the SAME size (Nick, 5th mention: 'days of the week still
    different sizes'). The second line was 0.86em — visibly smaller than the
    first. Now identical size, weight and colour; one clean two-line label. */
@@ -1922,7 +1930,7 @@ html .wxcard-col .wxc-d2 { display: block !important; font-size: 1em !important;
    what day they're talking about'). */
 html .wxcard-col .wxc-dt { display: block !important; font-size: clamp(11px, 1.5vh, 18px) !important; font-weight: 700 !important; color: rgba(255,255,255,.72) !important; white-space: nowrap !important; margin-top: 1px !important; }
 html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
-  width: clamp(64px, 11.5vh, 128px) !important; height: clamp(64px, 11.5vh, 128px) !important;
+  width: clamp(48px, 8.6vh, 104px) !important; height: clamp(48px, 8.6vh, 104px) !important;
 }
 html .wxcard-col .wxc-hi { font-size: clamp(18px, 2.9vh, 36px) !important; }
 html .wxcard-col .wxc-lo { font-size: clamp(14px, 2.2vh, 27px) !important; }
