@@ -4848,12 +4848,34 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi
 html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
   letter-spacing: -0.3px !important;
 }
-/* Right column: sleek BLACK perforated-metal on Flight Info, cloud/aircraft,
-   and the bottom Aircraft Info shelf (Nick: the bronze/brown pattern 'its brown
-   right now, black would be sleek' — supplied perforated texture). The real
-   cloud element remains above this base. */
-html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
-  background: #141416 url('/textures/ac-grunge-distress.jpg?v=22445') center / cover no-repeat !important;
+/* Right column: ONE continuous grunge/distress surface spanning the whole
+   column top→bottom (Nick: 'it needs to be stretched to the top too'), tinted
+   with Air Canada's own navy+red (Nick: 'blended according to the colours
+   proper to the airline'). The grunge lives on the COLUMN; the shelves and the
+   header go transparent so the single textured surface reads continuously
+   behind them, and a light grunge wash blends over the map/photo too (Nick:
+   'could even be blended slightly over the map'). */
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 {
+  background:
+    linear-gradient(158deg,
+      rgba(30,44,68,0.48) 0%,
+      rgba(12,22,40,0.72) 55%,
+      rgba(8,14,26,0.86) 100%),
+    #10141c url('/textures/ac-grunge-distress.jpg?v=22446') center / cover no-repeat !important;
+  background-blend-mode: multiply, normal !important;
+}
+html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map),
+html body[data-gate-airline="AC"] .g8-wrap .v2-rc-maptitle {
+  background: transparent !important;
+}
+/* slight grunge blend over the map / aircraft photo (Nick) */
+html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf-map { position: relative !important; }
+html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf-map::after {
+  content: "" !important;
+  position: absolute !important; inset: 0 !important;
+  background: url('/textures/ac-grunge-distress.jpg?v=22446') center / cover no-repeat !important;
+  mix-blend-mode: multiply !important; opacity: 0.20 !important;
+  pointer-events: none !important; z-index: 4 !important;
 }
 /* AC's supplied 935 surface is dark enough that the old navy copy loses
    contrast. Use white for labels and ordinary values on these right shelves;
