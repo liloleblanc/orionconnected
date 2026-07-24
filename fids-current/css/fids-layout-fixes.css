@@ -3576,6 +3576,26 @@ html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airlin
 html body[data-gate-airline="F9"] .g8-wrap .gad-aircraft-col .v2-fi-value,
 html body[data-gate-airline="F9"] .g8-bir-val { color: #0A2E6B !important; }
 
+/* Frontier: the RIGHT 'Your Aircraft' card is a DARK plate (the Frontier-blue
+   gate body #0033A1, white header) — but its data is themed to --banner-bg, a
+   mid-blue, so it went blue-on-blue and vanished (Nick: 'the top one is a dark
+   plate, hard to see'). Whiten the data on that dark plate; the ontime/delayed/
+   cancelled state colours are re-asserted below so status still reads at a
+   glance. The LEFT rail keeps its navy-on-white (Nick: 'regular boarding is
+   fine'). */
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval,
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval .v2-rc-iata,
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-actype-val,
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-reg-expected {
+  color: #ffffff !important;
+}
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval .v2-rc-bar {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime   { color: #34d399 !important; }
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed  { color: #fbbf24 !important; }
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled{ color: #f87171 !important; }
+
 /* v22409 — 'City | CODE' in the aircraft card: the IATA code takes the airline
    accent (a different colour from the city), the bar is a soft separator
    (Nick: 'Cleveland | CLE … different colour', both From and Destination). */
