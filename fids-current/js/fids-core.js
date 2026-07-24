@@ -11894,9 +11894,16 @@ const gView = document.getElementById('gateView');
     // overflows. The measurement loop expands them to actual fit.
     const _estimatePerPage = _logoSize === 'large' ? 6 :
                              _logoSize === 'small' ? 9 : 7;
+    // The measured fit runs away: few bags -> the row auto-fit scales them
+    // BIG -> a tall row is measured -> even fewer 'fit' -> taller still, until
+    // rows are ~3x and the small/medium/large choice stops mattering (Nick:
+    // 'rows are 3 times larger... forget small medium large, it's all one big
+    // shit show'). Floor the per-page count at the size-based estimate so the
+    // chosen size sets the row count and the rows can't balloon; the measured
+    // fit can still ADD rows on a tall screen, never remove them.
     const BIDS_FLIGHTS_PER_PAGE = (typeof bView._bidsMeasuredFit === 'number'
                                    && bView._bidsMeasuredFit > 0)
-                                  ? bView._bidsMeasuredFit
+                                  ? Math.max(_estimatePerPage, bView._bidsMeasuredFit)
                                   : _estimatePerPage;
     const BIDS_ROTATE_MS = 10000;
     const _totalPages = Math.max(1, Math.ceil(arrFlights.length / BIDS_FLIGHTS_PER_PAGE));
@@ -16135,7 +16142,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22451';
+var FIDS_BUILD_TAG = 'v22452';
 (function(){
   try {
     function _addTag(){
