@@ -7506,6 +7506,24 @@ function _buildV2MapCol(ctx, vars) {
       }
     } catch(e) { _acImg = ''; }
 
+    // LATCH the aircraft image so it can't flicker to "pending" on a transient
+    // feed gap (Nick: 'aircraft is in and out, it's a shit show'). The inbound
+    // tail/equipment sometimes drops out of the feed for a tick, which emptied
+    // _acImg and flipped the panel to "Aircraft image pending" then back. Cache
+    // the last good image per FLIGHT (stable key — the reg itself can flicker)
+    // and reuse it when this pass resolved nothing. A genuinely image-less
+    // flight never caches, so it still shows an honest 'pending'.
+    try {
+      if (typeof window !== 'undefined') {
+        window._acImgLatch = window._acImgLatch || {};
+        var _acLatchKey = String((currentFlight && currentFlight.flight) || '').trim();
+        if (_acLatchKey) {
+          if (_acImg) window._acImgLatch[_acLatchKey] = _acImg;
+          else if (window._acImgLatch[_acLatchKey]) _acImg = window._acImgLatch[_acLatchKey];
+        }
+      }
+    } catch (e) {}
+
     // Keep rows 5 and 6 mounted even when the provider returns a thin or
     // rate-limited response. Their former conditional made the plane/cloud
     // and aircraft-info shelves vanish together, which changed the grid and
@@ -16215,7 +16233,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22463';
+var FIDS_BUILD_TAG = 'v22464';
 (function(){
   try {
     function _addTag(){
