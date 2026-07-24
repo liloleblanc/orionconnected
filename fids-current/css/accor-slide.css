@@ -1164,3 +1164,38 @@
   color: #ffffff;
   margin: calc(var(--axr-info) * 0.25) 0 calc(var(--axr-info) * 0.15);
 }
+
+/* ── v22461 — PROPERTY-LOCKUP LOGO: consistent size, big enough, anchored ──
+   Nick: Sofitel lockup 'way too small'; the two Fairmont lockups render at
+   different sizes. Root cause: the logos were sized height:auto with a small
+   max-width (min(80%,480px)), so a VERY wide lockup (SOFITEL, ~6:1) got
+   width-clamped and came out tiny, while different-aspect Fairmont SVGs hit
+   different limits. Fix: size every baked-name lockup by a FIXED HEIGHT (so the
+   wordmarks land at a comparable scale regardless of aspect) and drop the small
+   width cap so the wide SOFITEL fills the panel width instead of shrinking.
+   Bottom-aligned so the wordmark baseline sits consistently. Placed last so it
+   wins over the per-brand rules above. */
+.axr[data-brand-code="FAI"] .axr-logo,
+.axr[data-brand-code="SOF"] .axr-logo,
+.axr[data-brand-code="SLE"] .axr-logo,
+.axr[data-brand-code="RAF"] .axr-logo,
+.axr[data-brand-code="RAH"] .axr-logo,
+.axr[data-brand-code="EMB"] .axr-logo,
+.axr[data-brand-code="MGA"] .axr-logo {
+  height: clamp(104px, 17vh, 152px) !important;
+  align-items: flex-end !important;
+}
+.axr[data-brand-code="FAI"] .axr-logo img,
+.axr[data-brand-code="SOF"] .axr-logo img,
+.axr[data-brand-code="SLE"] .axr-logo img,
+.axr[data-brand-code="RAF"] .axr-logo img,
+.axr[data-brand-code="RAH"] .axr-logo img,
+.axr[data-brand-code="EMB"] .axr-logo img,
+.axr[data-brand-code="MGA"] .axr-logo img {
+  height: 100% !important;
+  width: auto !important;
+  max-width: 92% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: left bottom !important;
+}
