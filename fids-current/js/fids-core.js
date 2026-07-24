@@ -11147,7 +11147,16 @@ const gView = document.getElementById('gateView');
       // Store current inbound info for map interval
       // Only rebuild inbound panel if flight changed
       var _prevInbId = window._gateInboundId || '';
-      var _newInbId = inboundFlight ? (inboundFlight.flight + inboundFlight.status) : 'none';
+      // Key the map-rebuild ONLY on the aircraft identity (flight #, or the
+      // registration when known) — NOT the status. Including status meant every
+      // live status tick tore the map down and the plane glide restarted from
+      // the origin, so the aircraft appeared to take off over and over (Nick:
+      // 'seen the plane pass 4 times in front of the terminal taking off'). The
+      // glide already tracks real progress; a status change never needs a full
+      // rebuild.
+      var _newInbId = inboundFlight
+        ? String(inboundFlight._reg || inboundFlight.registration || inboundFlight.flight || 'inb')
+        : 'none';
       // When the flight changes, clear the PREVIOUS flight's stale inbound /
       // live data BEFORE assigning this render's inbound. This block used to
       // run AFTER the assignment below, which nulled the freshly-matched
@@ -16126,7 +16135,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22448';
+var FIDS_BUILD_TAG = 'v22449';
 (function(){
   try {
     function _addTag(){
@@ -22735,8 +22744,21 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         if (map.getSize && map.latLngToContainerPoint && map.getZoom) {
           var _sz = map.getSize();
           var _pt = map.latLngToContainerPoint([lat, lng]);
-          if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.38 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.38) {
-            map.setView([lat, lng], map.getZoom(), { animate: false });
+          if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.42 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.42) {
+            // Nudge the map only enough to keep the plane on-screen (panInside),
+            // instead of SNAPPING it back to dead-centre. The snap made the
+            // aircraft lurch out then jump back — 'bobbling left and right like
+            // someone moving it carelessly' (Nick). animate:false = no tile
+            // thrash. Fallback to the old setView if panInside is unavailable.
+            try {
+              if (typeof map.panInside === 'function') {
+                map.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)], animate: false });
+              } else {
+                map.setView([lat, lng], map.getZoom(), { animate: false });
+              }
+            } catch (er2) {
+              try { map.setView([lat, lng], map.getZoom(), { animate: false }); } catch (er3) {}
+            }
             gateMap._fidsLastView = { lat: lat, lng: lng, zoom: map.getZoom() };
           }
         }

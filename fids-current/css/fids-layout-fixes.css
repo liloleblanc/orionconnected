@@ -2261,15 +2261,14 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-position: center 30% !important;
 }
 
-/* Gate ad panels — recolorable gradient-wave backdrop behind the rotating
-   ad/promo carousel (Nick: 'the gradient is for the smaller ads background,
-   you can change its colours'). Sits under #gateAdCarousel so it shows in any
-   letterbox space around the slide artwork. hue-rotate is the recolor knob. */
+/* Gate ad panels — full-bleed carousel, no inset. The inset-card + abstract-
+   backdrop experiment made the background layers pop/flicker every time the ad
+   switched slides (Nick: 'layers pop in and out, flickers when it switches,
+   terrible'), so the ad fills its column again. No media-col background image:
+   with a full-bleed ad nothing shows behind it anyway, and dropping it removes
+   the extra layer that was repainting on each slide swap. */
 html .g8-wrap .gad-media-col {
-  background-image: url('/logos/Backgrounds/textures/gradient-wave-minimalist.svg') !important;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
+  background-image: none !important;
 }
 
 /* Slide-entry transition (Nick: 'transitions are very dry'): each new slide

@@ -4855,42 +4855,41 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
    header go transparent so the single textured surface reads continuously
    behind them, and a light grunge wash blends over the map/photo too (Nick:
    'could even be blended slightly over the map'). */
+/* Right column: silver brushed-metal (Nick: 'the new grunge is too dark, try
+   this' — supplied light foil/brushed texture). Spans the whole column top→
+   bottom; shelves + header go transparent so the one metal surface reads
+   continuously, with a light metal wash over the map/photo too. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 {
-  background:
-    linear-gradient(158deg,
-      rgba(30,44,68,0.48) 0%,
-      rgba(12,22,40,0.72) 55%,
-      rgba(8,14,26,0.86) 100%),
-    #10141c url('/textures/ac-grunge-distress.jpg?v=22446') center / cover no-repeat !important;
-  background-blend-mode: multiply, normal !important;
+  background: #c4c6cb url('/textures/ac-silver-brushed.jpg?v=22449') center / cover no-repeat !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map),
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-maptitle {
   background: transparent !important;
 }
-/* slight grunge blend over the map / aircraft photo (Nick) */
+/* slight metal wash over the map / aircraft photo (Nick) */
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf-map { position: relative !important; }
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf-map::after {
   content: "" !important;
   position: absolute !important; inset: 0 !important;
-  background: url('/textures/ac-grunge-distress.jpg?v=22446') center / cover no-repeat !important;
-  mix-blend-mode: multiply !important; opacity: 0.20 !important;
+  background: url('/textures/ac-silver-brushed.jpg?v=22449') center / cover no-repeat !important;
+  mix-blend-mode: overlay !important; opacity: 0.22 !important;
   pointer-events: none !important; z-index: 4 !important;
 }
-/* AC's supplied 935 surface is dark enough that the old navy copy loses
-   contrast. Use white for labels and ordinary values on these right shelves;
-   keep semantic status colours visible and airline-red divider accents. */
+/* Silver is LIGHT, so the right-shelf copy goes dark navy (was white for the
+   old dark surface) — keep semantic status colours + airline-red dividers. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl,
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:not([class*="v2-rc-status-"]),
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype,
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-acb-lbl,
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-acb-val,
-html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl {
-  color: #fff !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,.72) !important;
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl,
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-maptitle * {
+  color: #12233b !important;
+  text-shadow: 0 1px 2px rgba(255,255,255,.5) !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span + span {
-  color: rgba(255,255,255,.78) !important;
+  color: rgba(18,35,59,.72) !important;
   opacity: 1 !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow {
