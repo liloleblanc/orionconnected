@@ -9268,11 +9268,15 @@ function uxgGateHtml(ctx) {
               _tbCity = (typeof CITY !== 'undefined' && CITY[_ci]) || (typeof AP !== 'undefined' && AP[_ci] && AP[_ci].city) || _ci;
               if (typeof normalizeDisplayCity === 'function') _tbCity = normalizeDisplayCity(_tbCity, _ci);
             } catch (e) { _tbCity = String(iata || ''); }
-            var _tbDateHtml = '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:' + _silkInkSoft + ';white-space:nowrap;letter-spacing:.01em;">' + _ocClockDate(new Date(), _tbTz || null) + '</span>';
+            // Timebox clock/label/date are ALWAYS white (Nick: 'revert the time
+            // back to white — it was never meant to change'). v22438 tried to
+            // flip Frontier's clock to navy on its light band; that was the
+            // wrong read — 'needs to be blue' was about the DATA, not the time.
+            var _tbDateHtml = '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:rgba(255,255,255,.80);white-space:nowrap;letter-spacing:.01em;">' + _ocClockDate(new Date(), _tbTz || null) + '</span>';
             return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:32%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;text-align:right;padding:0 6px 0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
-              +   '<span style="font-size:clamp(14px,2vh,26px);font-weight:800;color:' + _silkInkSoft + ';letter-spacing:.03em;white-space:nowrap;">'
+              +   '<span style="font-size:clamp(14px,2vh,26px);font-weight:800;color:rgba(255,255,255,.82);letter-spacing:.03em;white-space:nowrap;">'
               +     _ocClockLabel(_tbCity) + '</span>'
-              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" data-fmt="dual" style="font-size:clamp(30px,4.6vh,62px);font-weight:900;color:' + _silkInk + ';white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
+              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" data-fmt="dual" style="font-size:clamp(30px,4.6vh,62px);font-weight:900;color:#ffffff;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
               +   _tbDateHtml
               + '</div>';
           }
@@ -16096,7 +16100,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22442';
+var FIDS_BUILD_TAG = 'v22443';
 (function(){
   try {
     function _addTag(){
