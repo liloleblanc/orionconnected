@@ -6582,7 +6582,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // Code slot shows CODES only. The dest-string fallback painted the
       // whole city list into the label ('Destination | DENVER, RENO' above
       // 'Denver, Reno' — Nick's gate A6 screenshot). No code → no chip.
-      var _destIataDisp = String(locIata || '').toUpperCase();
+      var _destIataDisp = _dispIata(String(locIata || '').toUpperCase());
       if (!/^[A-Z]{3,4}$/.test(_destIataDisp)) _destIataDisp = '';
       // Per Nick: "Destination | YYZ" — code on the label line, accent-coloured
       // (same size, not bigger); the value is the city alone.
@@ -7001,8 +7001,8 @@ function _buildV2MapCol(ctx, vars) {
       // City | CODE with the code in a different colour (Nick: 'Cleveland |
       // CLE … different colour', consistent on the From side too).
       var _ibCityCode = _origCity
-        ? (_origCity + (_origIata ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _origIata + '</span>' : ''))
-        : (_origIata || '—');
+        ? (_origCity + (_origIata ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_origIata) + '</span>' : ''))
+        : (_dispIata(_origIata) || '—');
       // Arrival row — RESTORED (Nick: 'we don't have an arrival time anymore
       // on there, we did before and we need it'). Scheduled time, with a
       // strike + revised time when the ETA moved: green when earlier (early
@@ -7189,8 +7189,8 @@ function _buildV2MapCol(ctx, vars) {
       // Flight·To + Status only (no departing-in row — it's on the left).
       // Same 3-row LABEL | VALUE table as the inbound card (Nick, Jul 2026).
       var _dCityCode = _dDestCity
-        ? (_dDestCity + (_dDest ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dDest + '</span>' : ''))
-        : (_dDest || '—');
+        ? (_dDestCity + (_dDest ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dDest) + '</span>' : ''))
+        : (_dispIata(_dDest) || '—');
       // Multi-city through-flight → flip the panel row city-by-city too.
       // Raw feed dest — the display city was already first-leg-reduced.
       (function () {
@@ -7198,7 +7198,7 @@ function _buildV2MapCol(ctx, vars) {
           ? vars.currentFlight._stops : null;
         var _dfRow = _dfRowStops ? _destFlipStops(_dfRowStops, 'c') : null;
         var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
-        if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dfRowIa + '</span>' : '');
+        if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dfRowIa) + '</span>' : '');
       })();
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t4">'
@@ -8409,7 +8409,7 @@ function uxgGateHtml(ctx) {
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
           : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
-      + _cell('ac-ico-dest', 'Destination', (locIata ? '<span class="g8-bir-code-t">' + locIata + '</span>' : ''), _bDest, true)
+      + _cell('ac-ico-dest', 'Destination', (locIata ? '<span class="g8-bir-code-t">' + _dispIata(locIata) + '</span>' : ''), _bDest, true)
       + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', _birMerid(boardTimeHtml))
       + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', _birMerid(depTimeHtml))
       + _cell('ac-ico-status', 'Status', 'Statut', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
@@ -12462,7 +12462,7 @@ const CITY = {
   SAW:'ISTANBUL',TIJ:'TIJUANA',
   YBR:'BRANDON',        YCB:'CAMBRIDGE BAY',     YCG:'CASTLEGAR',
   YCH:'MIRAMICHI',      YDA:'DAWSON CITY',       YEK:'ARVIAT',
-  YEV:'INUVIK',         YGW:'CHISASIBI',         YHU:'ST-HUBERT',
+  YEV:'INUVIK',         YGW:'CHISASIBI',         YHU:'MONTREAL',
   YHY:'HAY RIVER',      YKL:'SCHEFFERVILLE',     YKZ:'BUTTONVILLE',
   YLL:'LLOYDMINSTER',   YMJ:'MOOSE JAW',         YMO:'MOOSONEE',
   YNA:'NATASHQUAN',     YOC:'OLD CROW',          YOJ:'HIGH LEVEL',
@@ -16111,6 +16111,15 @@ function formatCityIata(raw, iata, langOverride) {
 // v218.14: Changed from "City-IATA" hyphen format to "City (IATA)" parens
 // format. All defensive checks that scanned for "-IATA" suffix were
 // updated to scan for " (IATA)" instead.
+// Display-only IATA overrides (Nick). The real code still drives weather,
+// coords and data-iata logic; only the code CHIP shown to travellers changes.
+// YHU (Montréal Saint-Hubert) shows as the Montréal metro code MET.
+var AIRPORT_DISPLAY_IATA = { YHU: 'MET' };
+function _dispIata(code) {
+  var c = String(code || '').toUpperCase().trim();
+  return AIRPORT_DISPLAY_IATA[c] || code;
+}
+
 function cityCode(iata, overrideCity, langOverride) {
   var code = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
   if (!code) return normalizeDisplayCity(overrideCity || '', '');
@@ -16121,9 +16130,9 @@ function cityCode(iata, overrideCity, langOverride) {
   if (city.replace(/[^A-Za-z]/g, '').toUpperCase() === code) city = '';
 
   if (!city) city = airportCityNameSafe_v21877(code, langOverride);
-  if (!city) return code;
+  if (!city) return _dispIata(code);
 
-  return normalizeDisplayCity(city, code) + ' (' + code + ')';
+  return normalizeDisplayCity(city, code) + ' (' + _dispIata(code) + ')';
 }
 
 // TL() returns current rotation language only
@@ -16206,7 +16215,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22457';
+var FIDS_BUILD_TAG = 'v22458';
 (function(){
   try {
     function _addTag(){
@@ -29737,7 +29746,7 @@ function _renderWxCard(el) {
       +     '<div><div class="wxc-kicker">' + (_wxFrF
                 ? 'Météo à l\'arrivée <span class="v2-rc-fi-sep">|</span> Arrival Weather'
                 : 'Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée') + '</div>'
-      +     '<div class="wxc-city">' + city + ' <span class="wxc-bar">|</span> <span class="wxc-iata">' + dest + '</span></div></div>'
+      +     '<div class="wxc-city">' + city + ' <span class="wxc-bar">|</span> <span class="wxc-iata">' + _dispIata(dest) + '</span></div></div>'
       +   '</div>'
       +   '<div class="wxc-hero">'
       +     '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
