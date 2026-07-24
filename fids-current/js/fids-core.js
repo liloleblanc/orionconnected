@@ -3881,6 +3881,38 @@ var FAIRMONT_PROPERTY_LOCKUPS = {
   "fairmont zimbali lodge" : "/logos/hotels/accor-luxury/fairmont/outlined_svg_white/067_Fairmont_Zimbali_Lodge.svg",
 };
 
+// Robust property -> real-lockup resolver. The old buildAdLogoPanel path did an
+// EXACT normalized-key lookup, so any feed name variant the table didn't list
+// verbatim ("The Fairmont San Francisco", "Chateau Frontenac", "The Savoy, A
+// Fairmont Managed Hotel", accents, "&"...) missed and dropped to the runtime
+// GENERATOR — a typed-text fake. Every one of these 67 properties has real
+// vectorized art in outlined_svg_white/, so we normalize hard (accents folded,
+// non-alphanumerics collapsed) and take the LONGEST property key that appears
+// as a whole word inside the name. Returns the real file, never a generated one.
+function _fairmontNorm(s) {
+  return String(s || '').toLowerCase()
+    .replace(/[àâä]/g, 'a').replace(/[éèêë]/g, 'e').replace(/[îï]/g, 'i')
+    .replace(/[ôö]/g, 'o').replace(/[ûüù]/g, 'u').replace(/ç/g, 'c')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function resolveFairmontLockupFile(hotelName) {
+  var norm = _fairmontNorm(hotelName);
+  if (!norm) return null;
+  var padded = ' ' + norm + ' ';
+  var best = null, bestLen = 0;
+  for (var key in FAIRMONT_PROPERTY_LOCKUPS) {
+    if (!Object.prototype.hasOwnProperty.call(FAIRMONT_PROPERTY_LOCKUPS, key)) continue;
+    var nk = _fairmontNorm(key);
+    if (!nk) continue;
+    if (norm === nk) return FAIRMONT_PROPERTY_LOCKUPS[key];   // exact — best possible
+    if (nk.length > bestLen && padded.indexOf(' ' + nk + ' ') !== -1) {
+      best = FAIRMONT_PROPERTY_LOCKUPS[key]; bestLen = nk.length;
+    }
+  }
+  return best;
+}
+
 // ── FAIRMONT LOCKUP GENERATOR ──────────────────────────────────────────
 // When a Fairmont property doesn't have an official brand-team lockup file
 // in FAIRMONT_PROPERTY_LOCKUPS above, we build one on the fly using this
@@ -16145,7 +16177,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22455';
+var FIDS_BUILD_TAG = 'v22456';
 (function(){
   try {
     function _addTag(){
@@ -24909,15 +24941,22 @@ function _processAccorData(data, destIata, langKey) {
       } catch (e) {}
       if (_frLockupPath) {
         _propertyLockupPath = _frLockupPath;
-      } else if (FAIRMONT_PROPERTY_LOCKUPS[_lockupKey]) {
-        // Official brand-team file — preferred
-        _propertyLockupPath = FAIRMONT_PROPERTY_LOCKUPS[_lockupKey];
-      } else if (FAIRMONT_PROPERTY_LOCKUPS[hotelName.toLowerCase().trim()]) {
-        // Fallback: try unmodified key in case the property name itself starts with "the"
-        _propertyLockupPath = FAIRMONT_PROPERTY_LOCKUPS[hotelName.toLowerCase().trim()];
-      } else if (typeof makeFairmontLockupSvgDataUri === 'function') {
-        // Last resort: runtime-generate a Fairmont-style lockup
-        _propertyLockupPath = makeFairmontLockupSvgDataUri(_lockupKey || hotelName);
+      } else {
+        // REAL brand art first — forgiving match against the property table so
+        // every feed name variant lands on its official outlined_svg_white file.
+        // The exact-key lookups below are kept as a fast path; the robust
+        // resolver covers everything they miss. Only a genuinely unknown
+        // property reaches the generator now (Nick: 'if the logo is available
+        // take it — the generator is terrible').
+        var _realFai = FAIRMONT_PROPERTY_LOCKUPS[_lockupKey]
+          || FAIRMONT_PROPERTY_LOCKUPS[hotelName.toLowerCase().trim()]
+          || (typeof resolveFairmontLockupFile === 'function' ? resolveFairmontLockupFile(hotelName) : null);
+        if (_realFai) {
+          _propertyLockupPath = _realFai;
+        } else if (typeof makeFairmontLockupSvgDataUri === 'function') {
+          // Last resort only — truly unlisted property.
+          _propertyLockupPath = makeFairmontLockupSvgDataUri(_lockupKey || hotelName);
+        }
       }
     } else if (brand === 'EMB' && hotelName) {
       // The Accor API often returns Emblems Collection properties with
