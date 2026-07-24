@@ -3510,6 +3510,19 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon .ac-ico {
     color: #ffffff !important;
   }
+  /* Acadian BIDS: the suitcase sits INSIDE the gold star (same as the FIDS
+     plane), so it must be Acadian blue — 'blue like the background' — and
+     smaller so it clears the star's points (Nick). Mirrors the plane glyph
+     size/centring at line ~3497. Highest specificity so it beats the 56px
+     dark rule and the white .ac-ico rule above. */
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon .ac-ico-baggage,
+  body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage,
+  html .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
+    color: #003DA5 !important;
+    font-size: clamp(26px, 2.0vw, 40px) !important;
+    margin-top: 6% !important;
+    line-height: 1 !important;
+  }
 }
 
 /* ── Bilingual stacked board label (Nick: 'both languages at once'):
@@ -3561,7 +3574,7 @@ html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airlin
    'the Frontier data needs to be darker blue'). Status keeps its state colour
    via the more-specific .g8-bir-st* rules. */
 html body[data-gate-airline="F9"] .g8-wrap .gad-aircraft-col .v2-fi-value,
-html body[data-gate-airline="F9"] .g8-bir-val { color: #ffffff !important; }
+html body[data-gate-airline="F9"] .g8-bir-val { color: #0A2E6B !important; }
 
 /* v22409 — 'City | CODE' in the aircraft card: the IATA code takes the airline
    accent (a different colour from the city), the bar is a soft separator
