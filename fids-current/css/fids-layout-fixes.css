@@ -2261,21 +2261,14 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-position: center 30% !important;
 }
 
-/* Gate ad panels — the elegant-blue abstract backdrop, with the ad INSET so
-   the backdrop actually shows as a frame around it (Nick: 'where are these
-   backgrounds, I don't even see them' — the ad played full-bleed and covered
-   the old backdrop entirely). */
+/* Gate ad panels — full-bleed carousel, no inset. The inset-card + abstract-
+   backdrop experiment made the background layers pop/flicker every time the ad
+   switched slides (Nick: 'layers pop in and out, flickers when it switches,
+   terrible'), so the ad fills its column again. No media-col background image:
+   with a full-bleed ad nothing shows behind it anyway, and dropping it removes
+   the extra layer that was repainting on each slide swap. */
 html .g8-wrap .gad-media-col {
-  background-image: url('/logos/Backgrounds/textures/abstract-blue-elegant.svg') !important;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-}
-html .g8-wrap .gad-media-col #gateAdCarousel {
-  inset: clamp(22px, 3vh, 48px) clamp(24px, 2.6vw, 52px) !important;
-  border-radius: 18px !important;
-  overflow: hidden !important;
-  box-shadow: 0 12px 34px rgba(0,0,0,0.32) !important;
+  background-image: none !important;
 }
 
 /* Slide-entry transition (Nick: 'transitions are very dry'): each new slide
