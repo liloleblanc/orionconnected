@@ -2261,15 +2261,24 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-position: center 30% !important;
 }
 
-/* Gate ad panels — recolorable gradient-wave backdrop behind the rotating
-   ad/promo carousel (Nick: 'the gradient is for the smaller ads background,
-   you can change its colours'). Sits under #gateAdCarousel so it shows in any
-   letterbox space around the slide artwork. hue-rotate is the recolor knob. */
+/* Gate ad panels — the abstract-blue backdrop sits behind the rotating ad, and
+   the ad is INSET so the abstract frames it all round (Nick: 'the abstract is
+   the background for the smaller ads / and the smaller ads around' — 'I don't
+   see the background' because the ad was full-bleed and covered it). */
 html .g8-wrap .gad-media-col {
-  background-image: url('/logos/Backgrounds/textures/gradient-wave-minimalist.svg') !important;
+  background-image: url('/logos/Backgrounds/textures/abstract-blue-background.svg') !important;
   background-size: cover !important;
   background-position: center center !important;
   background-repeat: no-repeat !important;
+}
+/* Shrink the ad so the abstract shows as a frame around it. The carousel is
+   position:absolute inset:0 inside its wrapper — inset it instead so the
+   backdrop breathes around all four sides, with a soft rounded card. */
+html .g8-wrap .gad-media-col #gateAdCarousel {
+  inset: clamp(18px, 2.2vh, 40px) clamp(20px, 2.2vw, 44px) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.28) !important;
 }
 
 /* Slide-entry transition (Nick: 'transitions are very dry'): each new slide
