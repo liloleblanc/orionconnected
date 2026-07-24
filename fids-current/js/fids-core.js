@@ -8008,6 +8008,32 @@ function uxgGateHtml(ctx) {
         if (boardTs < _bArrTs + 5 * 60000) boardTs = _bArrTs + 5 * 60000;
       }
     } catch (e) {}
+    // FINAL GUARD (Nick: 'boarding is past departure'): the boarding base
+    // (_effDepForBoard, from _sortTs) can diverge from the departure the field
+    // actually shows (currentFlight.time), which let boarding land at/after the
+    // shown departure. Clamp boarding's displayed time-of-day so it is always a
+    // sensible interval BEFORE the shown departure. Midnight-crossing flights
+    // (boarding late night, departure after midnight → a large negative gap)
+    // are left alone.
+    try {
+      // Use the departure the field ACTUALLY shows: revised (upd) when delayed,
+      // scheduled otherwise. Comparing against scheduled on a delayed flight
+      // would wrongly pull boarding back.
+      var _gShownDep = (depDelayed && currentFlight.upd) ? currentFlight.upd : currentFlight.time;
+      var _gDepHM = String(_gShownDep || '').match(/^(\d{1,2}):(\d{2})/);
+      if (_gDepHM) {
+        var _gTz = { timeZone: tz || 'UTC', hour12: false, hour: '2-digit', minute: '2-digit' };
+        var _gBoardHM = new Date(boardTs).toLocaleTimeString('en-GB', _gTz).match(/^(\d{1,2}):(\d{2})/);
+        if (_gBoardHM) {
+          var _gDepMin = parseInt(_gDepHM[1], 10) * 60 + parseInt(_gDepHM[2], 10);
+          var _gBoardMin = parseInt(_gBoardHM[1], 10) * 60 + parseInt(_gBoardHM[2], 10);
+          var _gGap = _gDepMin - _gBoardMin;           // + = boarding before dep (same day)
+          if (_gGap < 10 && _gGap > -720) {            // boarding at/after dep → fix; leave real midnight crossings
+            boardTs -= (boardLeadMins - _gGap) * 60000; // pull back to dep − lead
+          }
+        }
+      }
+    } catch (e) {}
     var bd = new Date(boardTs);
     boardTimeHtml = bd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
     // If delayed, show original boarding time struck through + new boarding time
@@ -16233,7 +16259,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22464';
+var FIDS_BUILD_TAG = 'v22465';
 (function(){
   try {
     function _addTag(){
