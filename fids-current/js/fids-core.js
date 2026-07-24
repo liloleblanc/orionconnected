@@ -5418,12 +5418,11 @@ function _planeFacingFromSrc(src) {
     return PLANE_FACING[p] || null;
   } catch (e) { return null; }
 }
-// ROUGE FLEET IS AIRBUS ONLY (Nick: '73Hr no 737-800' — Rouge never flew a
-// 737 of any kind; fleet is A319/A320/A321). ONE shared gate for every
-// surface that picks Rouge paint: the 'r' suffix applies solely to that
-// family. Anything else RV-labeled (feed mislabel, the 1600-1999
-// flight-number heuristic misfiring on a mainline bird) renders honest
-// MAINLINE art instead of the fabricated 'Rouge 737' hybrid files.
+// ROUGE FLEET: A319/A320/A321 + the 737 MAX 8 (Nick confirmed the MAX flies in
+// Rouge paint; 7M8r.png is the real livery). NOT the 737-800 (Nick: '73Hr no
+// 737-800' — Rouge never flew the NG). ONE shared gate for every surface that
+// picks Rouge paint: the 'r' suffix / MAX-8 mapping applies solely to those
+// families; anything else RV-labeled renders honest MAINLINE art.
 function _rougeLiveryEq(eq) {
   var e = String(eq || '');
   // NORMALIZE the feed's A320-family variants to the base IATA code BEFORE
@@ -5433,6 +5432,13 @@ function _rougeLiveryEq(eq) {
   // MAINLINE 320.png — Nick: 'AC Rouge aircraft does not show'. Rouge flies only
   // the A319/A320/A321 (ceo), so those three are the complete set.
   var base = (typeof aircraftCodeToIata === 'function') ? (aircraftCodeToIata(e) || e) : e;
+  // Rouge now flies the 737 MAX 8 alongside the A319/A320/A321. AC's ONLY 737
+  // is the MAX 8 (mainline pins 737/738/73H → 7M8), and Rouge is an AC
+  // subbrand, so ANY 737 code on a Rouge flight is a MAX 8 → the Rouge MAX 8
+  // livery (7M8r.png — the only Rouge 737 paint on disk). Without this a Rouge
+  // MAX arriving as a raw '738' hit /aircraft/AC/738.png (no file) and drew
+  // NOTHING. Nick: 'its not rendering the 737 Max from rouge'.
+  if (/^7M[789]$/.test(base) || /^73[0-9HGJW]$/.test(base) || /737|7M[789]|MAX/i.test(e)) return '7M8r';
   return /^(319|320|321)$/.test(base) ? (base + 'r') : e;
 }
 window._detectPlaneFacing = function(img) {
@@ -6111,12 +6117,9 @@ function _buildV2AircraftCol(ctx, vars) {
 
   // Livery code: subbrands (Rouge=RV, Express=QK, JazzAC=QK) use AC's folder.
   // The "r" suffix on Rouge codes (e.g. 319r) is preserved; AC folder has these.
-  // ROUGE FLEET IS AIRBUS ONLY (Nick: '73Hr no 737-800' — Rouge never flew a
-  // 737 of any kind; the old blanket suffix let a mislabeled RV flight — the
-  // 1600-1999 flight-number heuristic can misfire — render the fabricated
-  // 'Rouge MAX' hybrid art). The r-suffix now applies solely to the A319/
-  // A320/A321 family Rouge actually operates; anything else RV-labeled falls
-  // back to honest mainline art.
+  // ROUGE FLEET: A319/A320/A321 + 737 MAX 8 (7M8r.png). The MAX now flies in
+  // Rouge paint (Nick), so any 737 code on an RV flight → the Rouge MAX 8
+  // livery; the A319/A320/A321 keep the 'r' suffix. See _rougeLiveryEq.
   var _liveryEq = _equipCd;
   if (_opCode === 'RV' && _liveryEq) _liveryEq = _rougeLiveryEq(_liveryEq);
 
@@ -16142,7 +16145,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22452';
+var FIDS_BUILD_TAG = 'v22453';
 (function(){
   try {
     function _addTag(){
