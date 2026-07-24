@@ -11147,7 +11147,16 @@ const gView = document.getElementById('gateView');
       // Store current inbound info for map interval
       // Only rebuild inbound panel if flight changed
       var _prevInbId = window._gateInboundId || '';
-      var _newInbId = inboundFlight ? (inboundFlight.flight + inboundFlight.status) : 'none';
+      // Key the map-rebuild ONLY on the aircraft identity (flight #, or the
+      // registration when known) — NOT the status. Including status meant every
+      // live status tick tore the map down and the plane glide restarted from
+      // the origin, so the aircraft appeared to take off over and over (Nick:
+      // 'seen the plane pass 4 times in front of the terminal taking off'). The
+      // glide already tracks real progress; a status change never needs a full
+      // rebuild.
+      var _newInbId = inboundFlight
+        ? String(inboundFlight._reg || inboundFlight.registration || inboundFlight.flight || 'inb')
+        : 'none';
       // When the flight changes, clear the PREVIOUS flight's stale inbound /
       // live data BEFORE assigning this render's inbound. This block used to
       // run AFTER the assignment below, which nulled the freshly-matched
