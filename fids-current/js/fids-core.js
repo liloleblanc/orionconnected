@@ -3909,6 +3909,7 @@ function accorLockupCarriesName(p) {
   if (/^data:image\/svg\+xml/i.test(p)) return true;                                  // runtime-generated lockup (name baked in)
   if (/\/fairmont\/(outlined|editable)_svg_(white|black|gray)\//i.test(p)) return true; // brand-team per-property packs
   if (/\/rimrock-banff\.svg(?:[?#]|$)/i.test(p)) return true;                          // Emblems per-property file
+  if (/\/sofitel\/sofitel-montreal-(en|fr)\.svg(?:[?#]|$)/i.test(p)) return true;      // Sofitel Montréal per-property (Nick, EN/FR)
   if (/\/fairmont-(?!monochrome\b|full\b)[a-z0-9-]+\.svg(?:[?#]|$)/i.test(p)) return true; // legacy one-off per-property lockups
   return false;
 }
@@ -16095,7 +16096,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22441';
+var FIDS_BUILD_TAG = 'v22442';
 (function(){
   try {
     function _addTag(){
@@ -24823,9 +24824,13 @@ function _processAccorData(data, destIata, langKey) {
       // from the brand-team editable file, not a runtime composition).
       var _frLockupPath = null;
       try {
-        var _curL = (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) ? langs[langIdx || 0]
-                  : ((typeof lang !== 'undefined' && lang) || 'en');
-        if (_curL === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(hotelName)) {
+        // Key on _ckLang — the language THIS processing pass is building the
+        // cache for (ACCOR_HOTEL_CACHE[destIata|_ckLang]) — NOT the live global
+        // display index. The bug (Nick: 'French should be Le Reine Elizabeth on
+        // French boards'): reading langs[langIdx] baked whatever was on screen
+        // at fetch time (usually EN) into the FR cache entry too, so FR boards
+        // kept the English lockup.
+        if (_ckLang === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(hotelName)) {
           _frLockupPath = '/logos/hotels/accor-luxury/fairmont/editable_svg_white/010_Fairmont_Le_Reine_Elizabeth.svg';
         }
       } catch (e) {}
@@ -24855,6 +24860,15 @@ function _processAccorData(data, destIata, langKey) {
         // CLEANED name so we don't bake "EMBLEMS COLLECTION" into the lockup.
         _propertyLockupPath = makeEmblemsLockupSvgDataUri(_emiLockupKey || hotelName);
       }
+    } else if (brand === 'SOF' && hotelName && /montr[eé]al/i.test(hotelName)) {
+      // Sofitel Montréal — brand-team lockups Nick supplied. EN on English
+      // boards, FR on French boards (option B), keyed on _ckLang (the pass's
+      // language, not the live display index). The art is black-fill; the
+      // property-lockup render path auto-inverts it to white on the dark panel,
+      // and accorLockupCarriesName() is taught it bakes the property name.
+      _propertyLockupPath = (_ckLang === 'fr')
+        ? '/logos/hotels/sofitel/sofitel-montreal-fr.svg'
+        : '/logos/hotels/sofitel/sofitel-montreal-en.svg';
     }
 
     // DIAGNOSTIC: only log Accor hotels that DIDN'T get a lockup — that
