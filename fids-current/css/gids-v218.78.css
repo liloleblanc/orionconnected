@@ -4855,17 +4855,21 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
    header go transparent so the single textured surface reads continuously
    behind them, and a light grunge wash blends over the map/photo too (Nick:
    'could even be blended slightly over the map'). */
-/* v22454 — AC right shelves: the WHOLE info shelf now wears the dark plate
-   colour Nick liked, a touch lighter and warmed with a slight tone of brown
-   (Nick: 'the colour is good, why don't we colour the whole shelves like that,
-   maybe a bit lighter and a slight very little tone of brown'). Was the silver
-   brushed-metal; the v22453 per-row dark plates that sat ON the silver are
-   folded into this one uniform surface. A gentle top→bottom gradient keeps the
-   shelf from looking flat — cool warm-slate at the top easing to a browner tone
-   below. Applies to the info shelves ONLY (not the route map, not the 'Your
-   Aircraft' header). */
+/* v22455 — AC right shelves: KEEP the brushed-metal grain, just recolour it
+   (Nick: 'the metal is gone, it's not what I asked for' — v22454 flattened it
+   to a plain gradient). The silver brushed-metal texture stays as the top
+   layer and is MULTIPLIED onto a warm slate→brown gradient, so the metal
+   highlights + grain read through but the tone is the darker, lighter-than-the-
+   plate, slightly-brown colour Nick asked for. Info shelves ONLY (not the route
+   map, not the 'Your Aircraft' header). */
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
-  background: linear-gradient(180deg, #4c4a45 0%, #45464d 52%, #403f45 100%) !important;
+  background-color: #6e6a60 !important;
+  background-image: url('/textures/ac-silver-vertical.jpg?v=22451'),
+                    linear-gradient(180deg, #b2a688 0%, #9a9aa6 52%, #8c8c98 100%) !important;
+  background-size: cover, cover !important;
+  background-position: center, center !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-blend-mode: multiply, normal !important;
 }
 /* Rows are now uniform with the shelf — no separate darker boxes. The red
    divider line stays under each row for definition; grid rows are fixed 1fr
