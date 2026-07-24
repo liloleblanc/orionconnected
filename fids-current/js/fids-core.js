@@ -16215,7 +16215,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22459';
+var FIDS_BUILD_TAG = 'v22460';
 (function(){
   try {
     function _addTag(){
@@ -26467,6 +26467,19 @@ var ACCOR_LOGO_CROP = {
   "tribe-monochrome-white.svg": "17 8 35.3 24",
 };
 
+// French-board hotel-name localization (Nick): the Accor feed ships the
+// English property name, so on FR boards accent/translate the place words.
+// e.g. "Novotel Montreal Centre" -> "Novotel Montréal Centre",
+// "Novotel Montreal Airport" -> "Novotel Montréal Aéroport". English boards
+// are untouched.
+function _accorFrName(name) {
+  if (typeof accorLang === 'function' && accorLang() !== 'fr') return name;
+  return String(name || '')
+    .replace(/\bMontreal\b/g, 'Montréal')
+    .replace(/\bQuebec\b/g, 'Québec')
+    .replace(/\bAirport\b/g, 'Aéroport');
+}
+
 function buildAccorAdOnlyV6(ad) {
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function first(){ for(var i=0;i<arguments.length;i++){ var a=arguments[i]; if(a!==undefined&&a!==null&&String(a).trim()!=='') return a; } return ''; }
@@ -26571,7 +26584,7 @@ function buildAccorAdOnlyV6(ad) {
   }
   // Brand policy (Nick): never print the brand twice — the logo slot ALWAYS
   // carries the brand (image or text label), so the name is always stripped.
-  var displayName=stripBrand(hotelName);
+  var displayName=_accorFrName(stripBrand(hotelName));
   // Property lockups (Fairmont/Emblems per-property art, runtime-generated or
   // brand-team file) already bake the property name INTO the logo artwork, so
   // printing the name again below it is a duplicate. Suppress the text name
@@ -26617,7 +26630,7 @@ function buildAccorAdOnlyV6(ad) {
   // (brand + location, e.g. "Novotel Toronto Centre"), for every brand.
   // Full hotel name incl. brand — the slide's `headline` is brand-stripped
   // (so the logo isn't duplicated), so use ad.nameFull for the bubble/context.
-  var _fullName = first(ad.nameFull, hotelName);
+  var _fullName = _accorFrName(first(ad.nameFull, hotelName));
   // French boards: the Fairmont Queen Elizabeth is "Fairmont Le Reine Elizabeth"
   // (Nick). The feed name stays English, so localize it for the FR QR caption.
   if (accorLang() === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(_fullName)) {
