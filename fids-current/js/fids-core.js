@@ -14511,6 +14511,27 @@ const WX_KEY_CODE = {
   rain:61,hvyrain:65,fzrain:66,snow:71,hvysnow:75,showers:80,snowshow:85,tstorm:95,
 };
 
+// All destination IATAs a flight's board row can display — the primary dest
+// PLUS every through-flight leg (Nick: multi-city rows 'do not give us
+// weather'). The dest chip flips leg-by-leg (_destFlipStops), but the weather
+// fetch list only had f._locIata, so the non-primary legs had no weather to
+// show when the row flipped to them. Resolve name-only legs to a code the same
+// way _destFlipStops does, so TPA/YYZ via-stops are covered too.
+function _flightWxCodes(f) {
+  var out = [];
+  try {
+    if (f && f._locIata) out.push(String(f._locIata).toUpperCase());
+    if (f && Array.isArray(f._stops)) {
+      f._stops.forEach(function (s) {
+        var ia = String((s && s.iata) || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+        if (!ia && typeof _iataFromCityName === 'function') ia = _iataFromCityName((s && s.city) || '');
+        if (ia) out.push(ia);
+      });
+    }
+  } catch (e) {}
+  return out;
+}
+
 // Batch weather fetcher for board destinations
 async function _fetchBoardWeather(codes) {
   var now = Date.now();
@@ -16105,7 +16126,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22446';
+var FIDS_BUILD_TAG = 'v22448';
 (function(){
   try {
     function _addTag(){
@@ -16921,7 +16942,18 @@ function render() {
     // Weather — only on departures (per agreed layout).
     const wxHtml = (() => {
       if (!isDep) return '';
-      const tw = TOMORROW_WX[f._locIata];
+      let tw = TOMORROW_WX[f._locIata];
+      // Multi-city rows: the primary code often has no weather (or the row's
+      // dest is a via-stop). Fall back to the first through-flight leg that
+      // DOES have weather so the column isn't a dead '—' (Nick: 'multi city
+      // does not give us weather'). _fetchBoardWeather now fetches every leg.
+      if (!(tw && tw.current && tw.current.temp !== undefined) && f._stops) {
+        const _codes = _flightWxCodes(f);
+        for (let _ci = 0; _ci < _codes.length; _ci++) {
+          const _cw = TOMORROW_WX[_codes[_ci]];
+          if (_cw && _cw.current && _cw.current.temp !== undefined) { tw = _cw; break; }
+        }
+      }
       if (!(tw && tw.current && tw.current.temp !== undefined)) return '<td class="td-wx">—</td>';
       const tempStr = displayTemp(Math.round(tw.current.temp));
       const iconHtml = (typeof window.fidsWxIcon === 'function')
@@ -20347,7 +20379,7 @@ async function fetchLive() {
     render();
 
     if (COORDS[iata]) fetchTomorrowWeather(iata).then(() => render());
-    const destCodes = [...new Set([...data.dep, ...data.arr].map(f => f._locIata).filter(c => c && COORDS[c]))];
+    const destCodes = [...new Set([...data.dep, ...data.arr].flatMap(_flightWxCodes).filter(c => c && COORDS[c]))];
     _fetchBoardWeather(destCodes);
 
     if (autoRefreshTimer) clearInterval(autoRefreshTimer);
@@ -20874,7 +20906,7 @@ function loadDemo() {
   setState('error',   false);
   render();
   if (COORDS[iata]) fetchTomorrowWeather(iata).then(() => render());
-  const allCodes = [...new Set([...d.dep, ...d.arr].map(f => f._locIata).filter(c => c && COORDS[c]))];
+  const allCodes = [...new Set([...d.dep, ...d.arr].flatMap(_flightWxCodes).filter(c => c && COORDS[c]))];
   _fetchBoardWeather(allCodes);
 }
 
