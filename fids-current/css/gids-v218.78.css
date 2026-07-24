@@ -4860,7 +4860,7 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
    bottom; shelves + header go transparent so the one metal surface reads
    continuously, with a light metal wash over the map/photo too. */
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 {
-  background: #c4c6cb url('/textures/ac-silver-brushed.jpg?v=22449') center / cover no-repeat !important;
+  background: #c4c6cb url('/textures/ac-silver-vertical.jpg?v=22450') center / cover no-repeat !important;
 }
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map),
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-maptitle {
@@ -4871,7 +4871,7 @@ html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf-map { position: relative
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf-map::after {
   content: "" !important;
   position: absolute !important; inset: 0 !important;
-  background: url('/textures/ac-silver-brushed.jpg?v=22449') center / cover no-repeat !important;
+  background: url('/textures/ac-silver-vertical.jpg?v=22450') center / cover no-repeat !important;
   mix-blend-mode: overlay !important; opacity: 0.22 !important;
   pointer-events: none !important; z-index: 4 !important;
 }
