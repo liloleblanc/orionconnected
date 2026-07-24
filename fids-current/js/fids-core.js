@@ -15811,7 +15811,7 @@ const LS = {
   familyFriendly:   { en:'Family-friendly',   fr:'Idéal en famille', es:'Apto para familias',de:'Familienfreundlich',    it:'Adatto alle famiglie',pt:'Para famílias',   ja:'ファミリー向け', zh:'适合家庭', ar:'مناسب للعائلات' },
   ecoCertified:     { en:'Ecocertified',      fr:'Écocertifié',      es:'Ecocertificado',   de:'Öko-zertifiziert',      it:'Ecocertificato',     pt:'Ecocertificado',   ja:'環境認証',      zh:'生态认证', ar:'معتمد بيئيًا' },
   scanToUnlockAll:  { en:'Scan to unlock<br>limitless experiences<br>with ALL.', fr:'Scannez pour débloquer<br>des expériences illimitées<br>avec ALL.', es:'Escanea para desbloquear<br>experiencias ilimitadas<br>con ALL.', de:'Scannen Sie für grenzenlose<br>Erlebnisse mit ALL.', it:'Scansiona per esperienze<br>illimitate con ALL.', pt:'Digitalize para experiências<br>ilimitadas com ALL.', ja:'スキャンしてALLで無限の<br>体験を解き放とう。', zh:'扫码解锁ALL无限体验', ar:'امسح لاستكشاف<br>تجارب لا محدودة مع ALL.' },
-  scanToDiscover:   { en:'Scan to discover', fr:'Scannez pour découvrir', es:'Escanea para descubrir', de:'Zum Entdecken scannen', it:'Scansiona per scoprire', pt:'Digitalize para descobrir', ja:'スキャンして発見', zh:'扫码探索', ar:'امسح للاكتشاف' },
+  scanToDiscover:   { en:'Scan to discover', fr:'Scanner pour le', es:'Escanea para descubrir', de:'Zum Entdecken scannen', it:'Scansiona per scoprire', pt:'Digitalize para descobrir', ja:'スキャンして発見', zh:'扫码探索', ar:'امسح للاكتشاف' },
   memberOf:         { en:'Member of',         fr:'Membre de',        es:'Miembro de',       de:'Mitglied von',          it:'Membro di',          pt:'Membro de',        ja:'会員：',         zh:'会员：', ar:'عضو في' },
   limitlessLoyaltyProgramme: { en:'The Limitless Loyalty Programme', fr:'Le programme de fidélité illimité', es:'El programa de fidelidad ilimitado', de:'Das grenzenlose Treueprogramm', it:'Il programma fedeltà illimitato', pt:'O programa de fidelidade ilimitado', ja:'リミットレス・ロイヤルティ・プログラム', zh:'无限忠诚计划', ar:'برنامج الولاء اللامحدود' },
   accorTagline:     { en:'ACCOR · LIVE LIMITLESS', fr:'ACCOR · VIVRE SANS LIMITES', es:'ACCOR · LIVE LIMITLESS', de:'ACCOR · LIVE LIMITLESS', it:'ACCOR · LIVE LIMITLESS', pt:'ACCOR · LIVE LIMITLESS', ja:'ACCOR · LIVE LIMITLESS', zh:'ACCOR · LIVE LIMITLESS', ar:'ACCOR · LIVE LIMITLESS' },
@@ -16215,7 +16215,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22458';
+var FIDS_BUILD_TAG = 'v22459';
 (function(){
   try {
     function _addTag(){
@@ -26618,6 +26618,11 @@ function buildAccorAdOnlyV6(ad) {
   // Full hotel name incl. brand — the slide's `headline` is brand-stripped
   // (so the logo isn't duplicated), so use ad.nameFull for the bubble/context.
   var _fullName = first(ad.nameFull, hotelName);
+  // French boards: the Fairmont Queen Elizabeth is "Fairmont Le Reine Elizabeth"
+  // (Nick). The feed name stays English, so localize it for the FR QR caption.
+  if (accorLang() === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(_fullName)) {
+    _fullName = 'Fairmont Le Reine Elizabeth';
+  }
   // Brand policy (Nick): a hotel name is NEVER split across two lines —
   // .axr-one-line keeps it whole and the fitter shrinks it until it fits.
   var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br><span class="axr-one-line">' + esc(_fullName) + '</span>';

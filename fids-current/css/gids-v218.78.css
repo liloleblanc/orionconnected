@@ -4855,21 +4855,20 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-value {
    header go transparent so the single textured surface reads continuously
    behind them, and a light grunge wash blends over the map/photo too (Nick:
    'could even be blended slightly over the map'). */
-/* v22455 — AC right shelves: KEEP the brushed-metal grain, just recolour it
-   (Nick: 'the metal is gone, it's not what I asked for' — v22454 flattened it
-   to a plain gradient). The silver brushed-metal texture stays as the top
-   layer and is MULTIPLIED onto a warm slate→brown gradient, so the metal
-   highlights + grain read through but the tone is the darker, lighter-than-the-
-   plate, slightly-brown colour Nick asked for. Info shelves ONLY (not the route
-   map, not the 'Your Aircraft' header). */
+/* v22459 — AC right shelves: brushed metal, UNIFORM tone across every shelf
+   (Nick: 'make the metal below the map more uniform and the same colour'). The
+   old per-shelf top→bottom gradient repeated on each shelf, so the stack banded
+   warm→cool→warm. Now the silver brushed-metal texture multiplies onto ONE flat
+   warm tint, so the grain reads through but the colour is identical on all
+   shelves. Info shelves ONLY (not the route map, not the 'Your Aircraft'
+   header). */
 html body[data-gate-airline="AC"] .g8-wrap .v2-rc-shelf:not(.v2-rc-shelf-map) {
-  background-color: #6e6a60 !important;
-  background-image: url('/textures/ac-silver-vertical.jpg?v=22451'),
-                    linear-gradient(180deg, #b2a688 0%, #9a9aa6 52%, #8c8c98 100%) !important;
-  background-size: cover, cover !important;
-  background-position: center, center !important;
-  background-repeat: no-repeat, no-repeat !important;
-  background-blend-mode: multiply, normal !important;
+  background-color: #a49c8a !important;
+  background-image: url('/textures/ac-silver-vertical.jpg?v=22451') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
 }
 /* Rows are now uniform with the shelf — no separate darker boxes. The red
    divider line stays under each row for definition; grid rows are fixed 1fr
