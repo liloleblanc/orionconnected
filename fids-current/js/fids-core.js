@@ -16215,7 +16215,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22461';
+var FIDS_BUILD_TAG = 'v22462';
 (function(){
   try {
     function _addTag(){
@@ -25052,6 +25052,13 @@ function _processAccorData(data, destIata, langKey) {
       _customLogo: _resolvedHotelLogo,
       brand: brand,
       isAccorHotel: true,
+      // The language THIS content was actually built in (_ckLang). The ad
+      // renderer binds its LABELS to this so a slide can never come out
+      // half-French/half-English: if the deck forced FR but only EN content
+      // had loaded (cache fell back to |en), the labels follow the EN content
+      // instead of staying French. (Nick: 'some hotel ads are half french
+      // half english'.)
+      _adLang: _ckLang,
       _propertyLockup: _propertyLockupPath,
       // v218.99.25 — extended Catalog fields for the Option D overlay
       advantages: Array.isArray(h.advantages) ? h.advantages : [],
@@ -26501,6 +26508,10 @@ function buildAccorAdOnlyV6(ad) {
   // the forced-language LABELS and the board-language CONTENT disagreed and the
   // card came out half-French/half-English (Nick, Novotel). One source now.
   function accorLang(){
+    // Bind LABELS to the language THIS ad's content was actually built in, so a
+    // slide is never half-French/half-English. Fall back to the forced deck
+    // language only when the ad wasn't stamped. (Nick.)
+    if (ad && (ad._adLang === 'fr' || ad._adLang === 'en')) return ad._adLang;
     try { if (typeof _accorLangNow === 'function') return _accorLangNow(); } catch(e){}
     return (typeof lang!=='undefined'&&lang)?lang:'en';
   }
