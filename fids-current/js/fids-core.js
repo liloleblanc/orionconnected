@@ -22744,8 +22744,21 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         if (map.getSize && map.latLngToContainerPoint && map.getZoom) {
           var _sz = map.getSize();
           var _pt = map.latLngToContainerPoint([lat, lng]);
-          if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.38 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.38) {
-            map.setView([lat, lng], map.getZoom(), { animate: false });
+          if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.42 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.42) {
+            // Nudge the map only enough to keep the plane on-screen (panInside),
+            // instead of SNAPPING it back to dead-centre. The snap made the
+            // aircraft lurch out then jump back — 'bobbling left and right like
+            // someone moving it carelessly' (Nick). animate:false = no tile
+            // thrash. Fallback to the old setView if panInside is unavailable.
+            try {
+              if (typeof map.panInside === 'function') {
+                map.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)], animate: false });
+              } else {
+                map.setView([lat, lng], map.getZoom(), { animate: false });
+              }
+            } catch (er2) {
+              try { map.setView([lat, lng], map.getZoom(), { animate: false }); } catch (er3) {}
+            }
             gateMap._fidsLastView = { lat: lat, lng: lng, zoom: map.getZoom() };
           }
         }
