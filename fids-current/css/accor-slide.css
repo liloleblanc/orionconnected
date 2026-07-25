@@ -1296,8 +1296,11 @@
 .axr .sof-inline-lockup text { font-family:'SofitelName',sans-serif !important; }
 .axr[data-brand-code="FAI"] .axr-logo:has(.fai-inline-lockup) { height: auto !important; align-items: center !important; }
 .axr[data-brand-code="FAI"] .axr-logo .fai-inline-lockup {
+  /* Same footprint as the baked IMG lockups (.axr[FAI] .axr-logo img) so the
+     generated lockup renders at the same scale as every other Fairmont logo
+     (Nick: 'the logo itself is simply way too big'). */
   height: auto !important;
-  width: min(94%, 640px) !important;
-  max-width: min(94%, 640px) !important;
-  max-height: clamp(140px, 27vh, 240px) !important;
+  width: min(80%, 480px) !important;
+  max-width: min(80%, 480px) !important;
+  max-height: clamp(96px, 17vh, 168px) !important;
 }
