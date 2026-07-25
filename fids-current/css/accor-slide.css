@@ -189,8 +189,8 @@
   --axr-goldgrad:linear-gradient(42deg,#B88D5B 0%,#D0B494 100%); }
 .axr[data-brand-code="FAI"] .axr-logo{ height:auto; }
 .axr[data-brand-code="FAI"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
-.axr[data-brand-code="FAI"] .axr-name{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
-.axr[data-brand-code="FAI"] .axr-page-ctx{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="FAI"] .axr-name{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; text-transform:uppercase; }
+.axr[data-brand-code="FAI"] .axr-page-ctx{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.03em; text-transform:uppercase; }
 .axr[data-brand-code="FAI"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
 .axr[data-brand-code="FAI"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="FAI"] .axr-addr{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-weight:400; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EFE6D6; }
@@ -199,9 +199,9 @@
 .axr[data-brand-code="FAI"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="FAI"] .axr-score small{ color:#B88D5B; }
 .axr[data-brand-code="FAI"] .axr-amen{ gap:0; }
-.axr[data-brand-code="FAI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-style:italic; font-weight:400; color:#EFE6D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="FAI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-style:normal; font-weight:400; color:#EFE6D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
 .axr[data-brand-code="FAI"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B88D5B; font-style:normal; }
-.axr[data-brand-code="FAI"] .axr-list li{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-style:italic; font-weight:400; letter-spacing:.02em; }
+.axr[data-brand-code="FAI"] .axr-list li{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-style:normal; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="FAI"] .axr-blurb{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-weight:400; }
 .axr[data-brand-code="FAI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="FAI"] .axr-bubble{ background:#EFE9DE; color:#14161C; border:1px solid #B88D5B; border-radius:2px 2px 2px 0; }
