@@ -1883,13 +1883,17 @@ html .wxcard-col .wxc-grid-5 { grid-template-columns: repeat(5, 1fr) !important;
    the edge. Pin min-width:0 so all seven tiles share the width equally; the
    labels shrink/clip inside their own tile instead of blowing out the grid. */
 html .wxcard-col .wxc-grid-7 > .wxc-day {
-  min-width: 0 !important; overflow: hidden !important;
+  min-width: 0 !important; overflow: visible !important;
   padding-left: 4px !important; padding-right: 4px !important;
 }
+/* Centred day cell: EN day + EN date above the icon, FR day + FR date below
+   (Nick's spec). Short single words per line — keep them on one centred line,
+   no clipping. */
 html .wxcard-col .wxc-grid-7 .wxc-d,
-html .wxcard-col .wxc-grid-7 .wxc-d2,
 html .wxcard-col .wxc-grid-7 .wxc-dt {
-  overflow: hidden !important; text-overflow: ellipsis !important; max-width: 100% !important;
+  white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important;
+  max-width: 100% !important; line-height: 1.14 !important; text-align: center !important;
+  font-size: clamp(10px, 1.5vh, 18px) !important;
 }
 html .wxcard-col .wxc-grid-2, html .wxcard-col .wxc-grid-3, html .wxcard-col .wxc-grid-4 { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important; }
 html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
@@ -1913,16 +1917,15 @@ html .wxcard-col .wxc-title { font-size: clamp(13px, 1.9vh, 23px) !important; }
 /* Full day names, both languages equally legible. v22210's second line was
    0.74em @ 0.55 opacity — Nick: 'english so much smaller and gray … it needs
    to be … clear'. Both lines now white, bold, one line each, no wrap. */
-html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-height: 1.16 !important; font-weight: 800 !important; color: #ffffff !important; white-space: nowrap !important; }
-/* BOTH languages the SAME size (Nick, 5th mention: 'days of the week still
-   different sizes'). The second line was 0.86em — visibly smaller than the
-   first. Now identical size, weight and colour; one clean two-line label. */
-html .wxcard-col .wxc-d2 { display: block !important; font-size: 1em !important; font-weight: 800 !important; opacity: 1 !important; color: #ffffff !important; white-space: nowrap !important; letter-spacing: 0.1px !important; }
-/* Actual date under the day name so it's clear WHICH day (Nick: 'hard to tell
-   what day they're talking about'). */
-html .wxcard-col .wxc-dt { display: block !important; font-size: clamp(11px, 1.5vh, 18px) !important; font-weight: 700 !important; color: rgba(255,255,255,.72) !important; white-space: nowrap !important; margin-top: 1px !important; }
+/* Day name — bold white, centred. EN sits above the icon, FR (.wxc-d-fr)
+   below it; both the same size/weight so the cell reads top-to-bottom cleanly. */
+html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-height: 1.16 !important; font-weight: 800 !important; color: #ffffff !important; white-space: nowrap !important; text-align: center !important; }
+/* Date line under each day name — slightly lighter than the day. */
+html .wxcard-col .wxc-dt { display: block !important; font-size: clamp(11px, 1.5vh, 18px) !important; font-weight: 700 !important; color: rgba(255,255,255,.75) !important; white-space: nowrap !important; text-align: center !important; margin-top: 1px !important; }
+/* French block sits BELOW the icon — a little breathing room from the icon. */
+html .wxcard-col .wxc-d-fr { margin-top: 4px !important; }
 html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
-  width: clamp(64px, 11.5vh, 128px) !important; height: clamp(64px, 11.5vh, 128px) !important;
+  width: clamp(48px, 8.6vh, 104px) !important; height: clamp(48px, 8.6vh, 104px) !important;
 }
 html .wxcard-col .wxc-hi { font-size: clamp(18px, 2.9vh, 36px) !important; }
 html .wxcard-col .wxc-lo { font-size: clamp(14px, 2.2vh, 27px) !important; }
@@ -2261,6 +2264,16 @@ html .g8-wrap.g8-airline-PB .gad-map-col-v2::before {
   background-position: center 30% !important;
 }
 
+/* Gate ad panels — full-bleed carousel, no inset. The inset-card + abstract-
+   backdrop experiment made the background layers pop/flicker every time the ad
+   switched slides (Nick: 'layers pop in and out, flickers when it switches,
+   terrible'), so the ad fills its column again. No media-col background image:
+   with a full-bleed ad nothing shows behind it anyway, and dropping it removes
+   the extra layer that was repainting on each slide swap. */
+html .g8-wrap .gad-media-col {
+  background-image: none !important;
+}
+
 /* Slide-entry transition (Nick: 'transitions are very dry'): each new slide
    in the gate ad deck eases in — soft fade with a gentle drift — instead of
    the hard innerHTML cut. Entry-only (no exit hold): media starts instantly
@@ -2412,12 +2425,103 @@ html .fids-banner .fids-board-icon {
 }
 html .fids-banner .fids-banner-board { gap: 16px !important; }
 
+/* ── FIDS/BIDS clock — 3-line block matching the gate banner (Nick, Jul 2026):
+   local-time label / BIG time / bilingual date, right-aligned, sized up to
+   'take as much space as possible'. High specificity beats the per-theme
+   .fids-banner-time / -date font rules. ── */
+/* Analog clock (left) + digital text column (right). Row overrides the silk
+   theme's column stack. */
+html body .fids-banner .fids-banner-time-block {
+  text-align: right !important;
+  line-height: 1.02 !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: clamp(10px, 0.9vw, 20px) !important;
+}
+html body .fids-banner .fids-banner-time-text {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+}
+html body .fids-banner .fids-banner-analog {
+  height: clamp(52px, 7vh, 96px) !important;
+  width: clamp(52px, 7vh, 96px) !important;
+  flex: 0 0 auto !important;
+  display: block !important;
+  order: 2 !important;   /* Nick: analog clock on the RIGHT of the digital */
+}
+html body .fids-banner .fids-banner-time-text { order: 1 !important; }
+/* Colour comes from the per-theme rules (which now also target -tlabel and
+   -analog), so the clock follows each theme's banner-text colour instead of
+   the unreliable --fids-banner-text var (Nick: 'white on white anywhere but
+   Moncton'). Analog strokes use currentColor = that theme colour. */
+html body .fids-banner .fids-banner-analog .cl-face {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  opacity: 0.9;
+}
+html body .fids-banner .fids-banner-analog .cl-ticks line {
+  stroke: currentColor;
+  stroke-width: 3;
+  opacity: 0.65;
+}
+html body .fids-banner .fids-banner-analog .cl-hand {
+  stroke: currentColor;
+  stroke-linecap: round;
+}
+html body .fids-banner .fids-banner-analog .cl-hour { stroke-width: 5; }
+html body .fids-banner .fids-banner-analog .cl-min { stroke-width: 3.5; }
+html body .fids-banner .fids-banner-analog .cl-pin { fill: currentColor; }
+html body .fids-banner .fids-banner-tlabel {
+  font-size: clamp(12px, 1.35vh, 20px) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  opacity: 0.74 !important;
+  white-space: nowrap !important;
+  line-height: 1.05 !important;
+  margin-bottom: 1px !important;
+}
+html body .fids-banner .fids-banner-time {
+  font-size: clamp(34px, 4.4vh, 60px) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+}
+html body .fids-banner .fids-banner-date {
+  font-size: clamp(13px, 1.55vh, 23px) !important;
+  font-weight: 700 !important;
+  opacity: 0.9 !important;
+  white-space: nowrap !important;
+  margin-top: 1px !important;
+  text-transform: none !important;
+}
+html body .fids-banner .fids-banner-time-block .cl-sep { opacity: 0.4; font-weight: 500; }
+/* Two-row bilingual label on FIDS/BIDS (Nick, gate layout): 'Time in <City>'
+   over 'Heure à <City>' — no box, just the text beside the analog clock. */
+html .cl-l1, html .cl-l2 { display: block !important; line-height: 1.08 !important; }
+html .cl-l2 { opacity: 0.82 !important; }
+/* Label BESIDE the time (Nick's sketch: 'Time in Orlando / Heure à Orlando  10:29PM'
+   then the date below). Keeps the block short enough that the label never gets
+   clipped above the time. */
+html body .fids-banner .fids-banner-digirow {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: clamp(8px, 0.8vw, 18px) !important;
+}
+html body .fids-banner .fids-banner-digirow .fids-banner-tlabel {
+  text-align: right !important; margin-bottom: 0 !important; white-space: nowrap !important;
+}
+
 /* Baggage banner: same title/icon treatment as the FIDS board, but keep the
    AC SUITCASE (not the plane). Remove the plane glyph the FIDS rule adds,
    enlarge the suitcase, and give the (longer) baggage titles their own
    fixed reserve so the icon + first letter stay put on language rotation. */
 html body .bidsv2-fids-banner .fids-board-icon::before { content: "" !important; display: none !important; }
-html .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage { font-size: 56px !important; color: #14263f !important; }
+html .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage { font-size: clamp(60px, 6vh, 96px) !important; color: #14263f !important; }
 html .bidsv2-fids-banner .fids-board-label { font-size: 54px !important; min-width: 560px !important; }
 /* Baggage banner: nudge the whole title block toward the right edge and tuck
    the suitcase closer to the words (Nick). */
@@ -2733,42 +2837,44 @@ html .g8-board-info-row {
   max-height: clamp(126px, 17vh, 216px);
   border-radius: 0;
   overflow: hidden;
-  border-bottom: clamp(5px, 0.7vh, 9px) solid var(--banner-bg, #003A5D);
-  /* the rail's brushed-metal recipe — one bar, whole row */
-  background-color: color-mix(in srgb, var(--body-bg,#e3e8ee) 80%, var(--airline-accent,#8a8f96) 20%);
+  border-bottom: clamp(5px, 0.7vh, 9px) solid var(--airline-accent, #D82F2E);
+  /* Nick: 'same background metals as the vertical, with white lettering' —
+     the DARK brushed-metal shelf (ac-metal-dark.jpg) under a soft diagonal
+     sheen, replacing the old light card. */
+  background-color: #14181d;
   background-image:
     linear-gradient(122deg,
-      rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 30%,
-      rgba(255,255,255,0.34) 47%, rgba(255,255,255,0.10) 55%,
+      rgba(255,255,255,0) 0%, rgba(255,255,255,0.04) 30%,
+      rgba(255,255,255,0.16) 47%, rgba(255,255,255,0.05) 55%,
       rgba(255,255,255,0) 82%),
-    repeating-linear-gradient(0deg,
-      rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
-      rgba(0,0,0,0.055) 1px, rgba(0,0,0,0.055) 2px),
-    repeating-linear-gradient(0deg,
-      rgba(0,0,0,0.022) 0px, rgba(0,0,0,0.022) 3px,
-      rgba(255,255,255,0.018) 3px, rgba(255,255,255,0.018) 7px),
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--body-bg,#eef2f6) 50%, #ffffff 50%) 0%,
-      color-mix(in srgb, var(--body-bg,#e6ebf0) 78%, var(--airline-accent,#8a8f96) 22%) 52%,
-      color-mix(in srgb, var(--body-bg,#dde2e8) 70%, #000000 15%) 100%);
-  box-shadow: 0 4px 14px rgba(5, 15, 30, 0.32);
+    linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.28) 100%),
+    url('../textures/ac-metal-dark.jpg');
+  background-size: auto, auto, cover;
+  background-position: center, center, center;
+  box-shadow: 0 4px 14px rgba(5, 15, 30, 0.45);
 }
 html .g8-bir-cell {
   flex: 1 1 0;
   min-width: 0;
   display: flex;
-  align-items: center;
-  gap: clamp(10px, 1vw, 20px);
-  padding: clamp(10px, 1.6vh, 22px) clamp(8px, 0.8vw, 16px);
+  /* Top-align every top-cell shelf so the badge + title line up across all
+     cells from the top down (Nick: 'top cells shelves all align from the top
+     down'), instead of each cell centring on its own height. */
+  align-items: flex-start;
+  /* Tighter gap + side padding gives the VALUE column more width so the times
+     read bigger (Nick: 'even the times should be bigger than that') — the
+     values are width-limited, not height-limited, in this row. */
+  gap: clamp(7px, 0.6vw, 13px);
+  padding: clamp(10px, 1.6vh, 22px) clamp(5px, 0.45vw, 11px);
   background: transparent;
-  border-right: 2px solid rgba(15, 34, 56, 0.18);
+  border-right: 2px solid rgba(255, 255, 255, 0.14);
 }
 html .g8-bir-cell:last-child { border-right: 0; }
 html .g8-bir-badge {
   position: relative;
   flex: 0 0 auto;
-  width: clamp(52px, 7vh, 88px);
-  height: clamp(52px, 7vh, 88px);
+  width: clamp(48px, 6vh, 72px);
+  height: clamp(48px, 6vh, 72px);
   border-radius: 50%;
   background: var(--airline-accent, #D82F2E);
   display: inline-flex;
@@ -2778,7 +2884,21 @@ html .g8-bir-badge {
   box-shadow: 0 2px 8px rgba(5, 15, 30, 0.35);
   overflow: hidden;
 }
-html .g8-bir-badge .ac-ico { font-size: clamp(24px, 3.4vh, 44px); line-height: 1; }
+/* Banner-badge glyphs render at ONE uniform size (Nick: 'these don't align
+   and they're not the same size'). The per-glyph OPTICAL clamps in font.css
+   (.ac-ico-status 6.63vh, .ac-ico-dest 5.54vh …) were calibrated for the tall
+   vertical rail; leaked into this 76px badge they made the bell/takeoff read
+   visibly bigger than the target/leaf. Force a single size here (higher
+   specificity + !important beats those single-class per-glyph rules). */
+html .g8-bir-badge .ac-ico { font-size: clamp(30px, 4vh, 50px) !important; line-height: 1; }
+/* Frontier (Nick, Jul 2026): 'the icons green'. The gate icon badges default
+   to var(--airline-accent) (blue #0033A1 for F9). Green ONLY the round icon
+   badges here — NOT --airline-accent itself, so the blue boarding panels and
+   final-call strip Nick already approved stay blue. Covers both the idle
+   (v2-fi) and boarding-takeover (g8-bir) info rows, glyphs + airline emblem. */
+html body[data-gate-airline="F9"] .g8-bir-badge,
+html body[data-gate-airline="F9"] .v2-fi-icon-badge,
+html body[data-gate-airline="F9"] .v2-fi-emblem-wrap { background: #00854D !important; }
 /* Glyphs take the BADGE's ink — font.css paints .ac-ico white directly,
    which stomped per-airline badge inks (Flair's green, Nick). */
 html .g8-bir-badge .ac-ico,
@@ -2793,11 +2913,87 @@ html .g8-bir-badge::after {
   background: linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(255,255,255,0.05));
   pointer-events: none;
 }
+/* (AA/DL emblem orbs now use the SAME accent-coloured badge + shared orb sheen
+   as the other icon badges — Nick: 'make it the same colour and shiny', 'AA is
+   a light blue it will fit perfectly'. No separate white-chip gloss needed.) */
+
+/* ── SILK gate banner (Nick: match the FIDS board's flowing band) ──────────
+   Hold the airline wordmark to the left third so the flowing Time / airport /
+   gate zones each have room — a wide wordmark (AIR CANADA) otherwise ran under
+   the time. Wordmark stays left-aligned on the band's dark end. */
+/* Left zone: airline wordmark (row, vertically centred — the layout Nick liked),
+   with the alliance mark pinned SMALL at the bottom-left as a 'member' badge.
+   Extra-specific prefix so these beat the gids .g8-r1-star / .g8-r1-apband
+   !important rules. */
+html body .g8-wrap .g8-r1-silk .g8-r1-logoslot {
+  max-width: 36% !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+/* Airline wordmark BIGGER (Nick). */
+html body .g8-wrap .g8-r1-silk .g8-r1-airline {
+  font-size: clamp(28px, 3.3vw, 48px) !important;
+  white-space: nowrap !important;
+}
+html body .g8-wrap .g8-r1-silk .g8-r1-logo,
+html body .g8-wrap .g8-r1-silk .g8-r1-logoslot img:not(.g8-r1-star) {
+  /* Nick: 'the words not capped' — fill the solid band. */
+  height: clamp(90px, 12.5vh, 124px) !important;
+  max-height: 126px !important;
+  width: auto !important;
+  max-width: 32vw !important;
+  object-fit: contain !important;
+}
+/* Alliance mark — the STAR ALONE (no words), sat inline at the END of the
+   airline wordmark (Nick: 'the star alone no words and at the end by air
+   canada'). Vertically centred, small. */
+html body .g8-wrap .g8-r1-silk .g8-r1-star {
+  position: static !important;
+  display: inline-block !important;
+  align-self: center !important;
+  height: clamp(30px, 4.4vh, 56px) !important;
+  max-height: clamp(30px, 4.4vh, 56px) !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 0 0 clamp(8px, 0.8vw, 18px) !important;
+  opacity: 0.98 !important;
+  flex: 0 0 auto !important;
+}
+/* Star Alliance MEMBER TILE (Nick's metallic 'STAR ALLIANCE' chip,
+   star-3d-tile.jpg) — a SQUARE brushed-metal badge sat after the wordmark,
+   sized to the wordmark's cap height with a soft rounded edge + drop shadow.
+   Scoped to .g8-r1-alliance-star so oneworld/skyteam marks keep their sizing.
+   The extra class + html body prefix beats the gids .g8-r1-star !important. */
+html body .g8-wrap .g8-r1-silk .g8-r1-star.g8-r1-alliance-star {
+  height: clamp(64px, 8.6vh, 98px) !important;
+  max-height: clamp(64px, 8.6vh, 98px) !important;
+  width: auto !important;
+  border-radius: 9px !important;
+  /* Faint light hairline + shadow so the dark metal tile separates from the
+     now-solid-black band (Nick's one-colour banner). */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 3px 12px rgba(0, 0, 0, 0.45) !important;
+  margin-left: clamp(14px, 1.4vw, 30px) !important;
+}
+/* Airport logo: own zone on the white centre, contained (beats the gids
+   .g8-r1-apband full-width rule) so it never sprawls under the Time. */
+html body .g8-wrap .g8-r1-silk .g8-r1-apband-silk {
+  width: 22% !important;
+  right: 23% !important;
+  left: auto !important;
+  padding: 0 6px !important;
+}
+html body .g8-wrap .g8-r1-silk .g8-r1-apband-silk img {
+  max-height: 72% !important;
+  max-width: 100% !important;
+}
 html .g8-bir-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 html .g8-bir-title {
   font-size: clamp(14px, 2vh, 24px);
   font-weight: 800;
-  color: #0f2238;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2805,11 +3001,15 @@ html .g8-bir-title {
   padding-bottom: 3px;
   margin-bottom: clamp(3px, 0.6vh, 8px);
 }
-html .g8-bir-title .g8-bir-sep { opacity: 0.45; font-weight: 500; }
+/* Nick: 'french vs english different colours, like the vertical' — primary
+   language bright white, secondary a muted white so the two read distinctly. */
+html .g8-bir-title .g8-bir-l1 { color: #ffffff; }
+html .g8-bir-title .g8-bir-l2 { color: rgba(255, 255, 255, 0.58); font-weight: 700; }
+html .g8-bir-title .g8-bir-sep { opacity: 0.35; font-weight: 500; color: #fff; }
 /* Destination IATA in the title styled like the vertical rail's
    'Destination | YYZ' — accent, bigger, heavy (Nick). */
 html .g8-bir-title .g8-bir-code-t {
-  color: var(--airline-accent, #D82F2E);
+  color: var(--airline-accent-ink, var(--airline-accent, #D82F2E));
   font-size: 1.3em;
   font-weight: 900;
   letter-spacing: 0.02em;
@@ -2817,13 +3017,22 @@ html .g8-bir-title .g8-bir-code-t {
 html .g8-bir-val {
   font-size: clamp(46px, 8.6vh, 128px);
   font-weight: 900;
-  color: #0f2238;
+  color: #ffffff;
   line-height: 1.02;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+/* Nick: 'flight number bigger' — the flight cell (first) reads largest. */
+html .g8-bir-cell:first-child .g8-bir-val {
+  font-size: clamp(52px, 10vh, 150px);
 }
 html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.68em; }
+/* Meridiem (AM/PM) rendered smaller so the DIGITS dominate and the grow-fit
+   pushes the time up to flight-number size (Nick: 'the times should be
+   bigger'). */
+html .g8-bir-val .g8-bir-mer { font-size: 0.58em; font-weight: 800; opacity: 0.72; margin-left: 0.08em; }
 html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }
 html .g8-bir-val .g8-r2-revised { color: #b45309; }
@@ -2841,11 +3050,14 @@ html .g8-bir-cell:last-child .g8-bir-val {
 html .g8-bir-cell:last-child .g8-bir-val .g8-bir-st2 { display: block; }
 /* Status state colours — matches the vertical rail's coding. */
 html .g8-bir-val .g8-bir-stwrap { display: contents; }
-html .g8-bir-val .g8-bir-st-ok .g8-bir-st2 { color: #15803d; }
-html .g8-bir-val .g8-bir-st-boarding .g8-bir-st2 { color: #b45309; }
-html .g8-bir-val .g8-bir-st-delayed .g8-bir-st2 { color: #c2410c; }
+/* Status colours brightened for the dark metal shelf (Nick's white-lettering
+   redesign) so on-time green / boarding amber / delay orange / final red all
+   read against the dark ground. */
+html .g8-bir-val .g8-bir-st-ok .g8-bir-st2 { color: #34d399; }
+html .g8-bir-val .g8-bir-st-boarding .g8-bir-st2 { color: #fbbf24; }
+html .g8-bir-val .g8-bir-st-delayed .g8-bir-st2 { color: #fb923c; }
 html .g8-bir-val .g8-bir-st-cancelled .g8-bir-st2,
-html .g8-bir-val .g8-bir-st-final .g8-bir-st2 { color: #b91c1c; }
+html .g8-bir-val .g8-bir-st-final .g8-bir-st2 { color: #f87171; }
 html .g8-bir-cell:last-child .g8-bir-val .g8-bir-sep { display: none; }
 
 /* ── Boarding zone panels EXACTLY like the physical gate sign (Nick: 'look
@@ -2862,6 +3074,11 @@ html .g8-board-hdr-now, html .g8-board-col.now { background: var(--banner-bg, #0
    too light for white lettering (Flair lime, Southwest yellow). */
 html .g8-board-hdr-next, html .g8-board-col.next { background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important; }
 html .g8-board-col.next { border-left: none !important; }
+/* Frontier (Nick): 'gray on the left for boarding now' — the Boarding-now
+   panel/header go slate gray (white lettering still reads); the Boarding-next
+   panel keeps its brand blue. */
+html body[data-gate-airline="F9"] .g8-board-hdr-now,
+html body[data-gate-airline="F9"] .g8-board-col.now { background: #5B646F !important; }
 html .g8-board-col .g8-board-grp-label,
 html .g8-board-col .g8-board-grp-num,
 html .g8-board-col .g8-board-arrow,
@@ -2908,10 +3125,20 @@ html .g8-board-grp-num.g8-grp-txt {
    header entirely; this keeps the other airlines legible.) */
 html .g8-board-hdr-now,
 html .g8-board-hdr-next {
-  font-size: clamp(22px, 2.9vh, 40px) !important;
+  /* Bigger, readable from across the gate (Nick: 'Boarding Now … all bigger'). */
+  font-size: clamp(30px, 4.1vh, 60px) !important;
   font-weight: 800 !important;
   letter-spacing: .01em !important;
   padding: clamp(6px, 1vh, 15px) clamp(8px, 1vw, 18px) !important;
+}
+/* 'Group' label + 'Use Lane X' bigger too (Nick). */
+html .g8-board-col .g8-board-grp-label {
+  font-size: clamp(30px, 4vh, 58px) !important;
+  font-weight: 700 !important;
+}
+html .g8-board-col .g8-board-lane {
+  font-size: clamp(28px, 3.6vh, 52px) !important;
+  font-weight: 600 !important;
 }
 
 /* Lane-direction arrows beside the zone numerals, like the physical signage
@@ -2926,13 +3153,21 @@ html .g8-board-hdr-next {
 html .g8-board-col {
   min-width: 0;
   overflow: hidden;
+  /* Fill the whole panel height (Nick: 'fill up as much space') — spread
+     Group / numeral / Use Lane top-to-bottom instead of bunching them in the
+     middle, with generous top/bottom breathing room. */
+  justify-content: space-evenly !important;
+  padding: clamp(24px, 4vh, 70px) 0 !important;
 }
+/* the boarding body owns all the room under the welcome strip */
+html .g8-board-body { flex: 1 1 auto !important; align-items: stretch !important; }
 html .g8-board-grp-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(10px, 2vw, 36px);
-  font-size: clamp(120px, 18vw, 220px);
+  gap: clamp(10px, 2vw, 44px);
+  /* bigger numeral to fill the space (was 120–220) */
+  font-size: clamp(150px, 23vw, 340px);
   white-space: nowrap;
   max-width: 100%;
   min-width: 0;
@@ -3025,6 +3260,12 @@ html .g8-board-welcome .g8-r1-star {
   margin-left: 0 !important;
   opacity: 1 !important;
   object-fit: contain !important;
+}
+/* Chrome Star Alliance SYMBOL on the white welcome strip (Nick's design) —
+   a touch larger with a soft metallic drop-shadow so it reads as 3D. */
+html body .g8-wrap .g8-board-welcome .g8-bw-star img[src*="star-3d-symbol"] {
+  height: clamp(52px, 7.2vh, 92px) !important;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.26)) !important;
 }
 
 /* United — the Star Alliance mark reads CLEARLY beside the wordmark
@@ -3210,6 +3451,8 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body[data-fids-banner="silk"] .fids-banner-time { color: #0d2440 !important; }
   body[data-fids-banner="silk"] .fids-banner-date { color: rgba(13, 36, 64, 0.66) !important; }
+  body[data-fids-banner="silk"] .fids-banner-tlabel,
+  body[data-fids-banner="silk"] .fids-banner-analog { color: #0d2440 !important; }
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-label {
     color: #ffffff !important;
     font-size: clamp(40px, 2.9vw, 56px) !important;
@@ -3231,6 +3474,8 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body[data-fids-banner="silk-acadian"] .fids-banner-time { color: #ffffff !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-date { color: rgba(255, 255, 255, 0.85) !important; }
+  body[data-fids-banner="silk-acadian"] .fids-banner-tlabel,
+  body[data-fids-banner="silk-acadian"] .fids-banner-analog { color: #ffffff !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-board { background: transparent !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label,
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label {
@@ -3261,19 +3506,30 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-name { color: rgba(13, 36, 64, 0.6) !important; }
 }
 
-/* ── Acadian silk refinements (Nick): the yellow star moves onto the BLUE
-   section (left, with Departures) and grows; the clock loses its star since
-   it now sits on the red. Flag-authentic — the star belongs in the blue. ── */
+/* ── Acadian silk refinements (Nick): a BIG gold Acadian star with the
+   departure/arrival plane icon INSIDE it, the words beside it. The star is a
+   scalable SVG background on the board-icon; the plane glyph sits centred on
+   it in Acadian navy. The old separate ★ glyph beside the icon is dropped. ── */
 @media (min-width: 701px) {
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-time::before { content: '' !important; }
-  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board::before {
-    content: '★';
-    color: #FFD600 !important;
-    font-size: clamp(42px, 3vw, 58px) !important;
-    line-height: 1 !important;
-    margin-right: 6px !important;
-    order: -1 !important;
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board::before { content: none !important; }
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon {
+    width: clamp(84px, 6.6vw, 120px) !important;
+    height: clamp(84px, 6.6vw, 120px) !important;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23FFD600' d='M50 3 L61.8 38.2 L98.5 38.2 L68.8 60 L80.4 95.1 L50 73.5 L19.6 95.1 L31.2 60 L1.5 38.2 L38.2 38.2 Z'/%3E%3C/svg%3E") center/contain no-repeat !important;
+    border-radius: 0 !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    margin-left: 0 !important;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.28)) !important;
   }
+  /* plane/landing glyph centred INSIDE the star, in Acadian navy */
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon::before {
+    font-size: clamp(30px, 2.3vw, 44px) !important;
+    color: #003DA5 !important;
+    margin-top: 6% !important;   /* nudge into the star's optical centre */
+    line-height: 1 !important;
+  }
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon svg { display: none !important; }
 }
 
 /* ── BIDS bag icon: white on the silk banner, not black (Nick). The baggage
@@ -3282,6 +3538,27 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon .ac-ico,
   body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon .ac-ico {
     color: #ffffff !important;
+  }
+  /* Acadian BIDS: the suitcase sits INSIDE the gold star (same as the FIDS
+     plane), so it must be Acadian blue — 'blue like the background' — and
+     smaller so it clears the star's points (Nick). Mirrors the plane glyph
+     size/centring at line ~3497. Highest specificity so it beats the 56px
+     dark rule and the white .ac-ico rule above. */
+  /* Acadian (Moncton): SMALL bag so it clears the flag star's points (Nick:
+     'the baggage in Moncton was fine, now it's taken over the star'). */
+  body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon .ac-ico-baggage,
+  body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
+    color: #003DA5 !important;
+    font-size: clamp(26px, 2.0vw, 40px) !important;
+    margin-top: 6% !important;
+    line-height: 1 !important;
+  }
+  /* Every OTHER BIDS banner (no Acadian star to clear): big, clean bag (Nick). */
+  html body:not([data-fids-banner="silk-acadian"]) .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
+    color: #003DA5 !important;
+    font-size: clamp(52px, 4.4vw, 92px) !important;
+    margin-top: 6% !important;
+    line-height: 1 !important;
   }
 }
 
@@ -3298,21 +3575,169 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
     line-height: 1.02 !important;
     font-size: inherit !important;
   }
+  /* Nick: 'make Departures and Départs the SAME size and take more space' —
+     both lines equal size + weight, sized up (still fits BIDS' long
+     'Retrait des bagages' in the flag's blue third). */
   body[data-fids-banner="silk"] .fids-board-label .fbl-en,
-  body[data-fids-banner="silk-acadian"] .fids-board-label .fbl-en {
-    display: block !important;
-    font-size: clamp(28px, 2.1vw, 40px) !important;
-    font-weight: 800 !important;
-    white-space: nowrap !important;
-    line-height: 1.02 !important;
-  }
+  body[data-fids-banner="silk-acadian"] .fids-board-label .fbl-en,
   body[data-fids-banner="silk"] .fids-board-label .fbl-fr,
   body[data-fids-banner="silk-acadian"] .fids-board-label .fbl-fr {
     display: block !important;
-    font-size: clamp(20px, 1.5vw, 29px) !important;
-    font-weight: 600 !important;
+    font-size: clamp(32px, 2.6vw, 50px) !important;
+    font-weight: 800 !important;
     white-space: nowrap !important;
-    line-height: 1.05 !important;
-    opacity: 0.92 !important;
+    line-height: 1.04 !important;
+    opacity: 1 !important;
   }
+}
+
+/* ── v22409 — flight-info TITLE vs DATA read as two colours (Nick: 'Title
+   Departure and data 2 different colours'). Title label → the airline BRAND
+   accent (r2: green for Frontier, red for Delta…); the airport CODE in the
+   title → the icon accent (a different colour again — Nick: 'green title =
+   blue airport code'); the big VALUE keeps the dark ink. AC family keeps its
+   bespoke tuning, so it's excluded. Scoped by [data-gate-airline] both to
+   theme per carrier and to win over gids-v218.78.css (loaded after). ── */
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="QK"]):not([data-gate-airline="RV"]):not([data-gate-airline="WS"]) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en {
+  color: var(--airline-r2, var(--airline-accent, #D82F2E)) !important;
+}
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
+  color: var(--airline-accent-ink, var(--airline-accent, #0033A1)) !important;
+}
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="QK"]):not([data-gate-airline="RV"]):not([data-gate-airline="WS"]) .g8-bir-title {
+  color: var(--airline-r2, var(--airline-accent, #D82F2E)) !important;
+}
+/* Frontier: the DATA values in a deeper blue than the banner tint (Nick:
+   'the Frontier data needs to be darker blue'). Status keeps its state colour
+   via the more-specific .g8-bir-st* rules. */
+html body[data-gate-airline="F9"] .g8-wrap .gad-aircraft-col .v2-fi-value,
+html body[data-gate-airline="F9"] .g8-bir-val { color: #0A2E6B !important; }
+
+/* Frontier: the RIGHT 'Your Aircraft' card is a DARK plate (the Frontier-blue
+   gate body #0033A1, white header) — but its data is themed to --banner-bg, a
+   mid-blue, so it went blue-on-blue and vanished (Nick: 'the top one is a dark
+   plate, hard to see'). Whiten the data on that dark plate; the ontime/delayed/
+   cancelled state colours are re-asserted below so status still reads at a
+   glance. The LEFT rail keeps its navy-on-white (Nick: 'regular boarding is
+   fine'). */
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval,
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval .v2-rc-iata,
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-actype-val,
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-reg-expected {
+  color: #ffffff !important;
+}
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval .v2-rc-bar {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime   { color: #34d399 !important; }
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed  { color: #fbbf24 !important; }
+html body[data-gate-airline="F9"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled{ color: #f87171 !important; }
+
+/* v22409 — 'City | CODE' in the aircraft card: the IATA code takes the airline
+   accent (a different colour from the city), the bar is a soft separator
+   (Nick: 'Cleveland | CLE … different colour', both From and Destination). */
+html .g8-wrap .gad-map-col-v2 .v2-rc-iata,
+html .g8-wrap .v2-rc-fi-tval .v2-rc-iata { color: var(--airline-accent-ink, var(--airline-accent, #0033A1)) !important; font-weight: 900 !important; }
+html .g8-wrap .gad-map-col-v2 .v2-rc-bar,
+html .g8-wrap .v2-rc-fi-tval .v2-rc-bar { opacity: 0.4 !important; font-weight: 500 !important; margin: 0 0.12em !important; }
+
+/* v22413 — weather panel city as 'City | CODE' (Nick: 'Amsterdam | AMS'). */
+html .wxcard-col .wxc-city .wxc-bar { opacity: 0.5 !important; font-weight: 400 !important; margin: 0 0.1em !important; }
+html .wxcard-col .wxc-city .wxc-iata { font-weight: 900 !important; }
+
+/* v22413 — WestJet: title label BLUE (not the teal r2), code stays teal
+   (Nick: 'the titles blue comes first and then teal'). Scoped to WS so other
+   carriers keep the r2-accent title. */
+html body[data-gate-airline="WS"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline="WS"] .g8-bir-title { color: #1568B0 !important; }
+
+/* v22413 — the Destination title carries a 1.45em code, which let the gate
+   autofit shrink 'Destination | AMS' smaller than the other titles (Nick: 'the
+   Destination | AMS its smaller than others'). Pin it to the same size as the
+   sibling titles and let the code be a touch smaller so it still fits. */
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title:has(.v2-fi-code) {
+  font-size: clamp(15px, 2vh, 24px) !important;
+}
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title .v2-fi-code {
+  font-size: 1.06em !important;
+}
+
+/* ── Gate banner time panels — Local + Destination (Nick, Jul 2026) ──
+   A faded gate-style gray panel with a soft border/separation. Label on two
+   stacked rows (EN over FR: 'Time in <City>' / 'Heure à <City>') with the big
+   single-12h clock to its right, and the full bilingual date centred below.
+   White ink on the (usually black) silk banner. */
+html .octb-wrap { line-height: 1.05 !important; }
+html .octb {
+  display: flex !important; flex-direction: column !important;
+  align-items: stretch !important; justify-content: center !important;
+  background: rgba(150,152,160,0.16) !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  border-radius: 12px !important;
+  padding: clamp(3px,0.6vh,7px) clamp(9px,1vw,15px) !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.20) !important;
+  min-width: 0 !important; max-height: 100% !important; box-sizing: border-box !important;
+}
+html .octb-top { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: clamp(8px,0.7vw,14px) !important; }
+html .octb-lbls { display: flex !important; flex-direction: column !important; line-height: 1.08 !important; }
+html .octb-en { font-size: clamp(10px,1.35vh,16px) !important; font-weight: 800 !important; color: #ffffff !important; white-space: nowrap !important; letter-spacing: .01em !important; }
+html .octb-fr { font-size: clamp(10px,1.35vh,16px) !important; font-weight: 700 !important; color: rgba(255,255,255,0.66) !important; white-space: nowrap !important; letter-spacing: .01em !important; }
+html .octb-clock { font-size: clamp(22px,3.2vh,42px) !important; font-weight: 900 !important; color: #ffffff !important; white-space: nowrap !important; line-height: 1.0 !important; }
+html .octb-date { font-size: clamp(9px,1.2vh,14px) !important; font-weight: 700 !important; color: rgba(255,255,255,0.80) !important; white-space: nowrap !important; text-align: center !important; margin-top: 2px !important; }
+html .octb-date .cl-sep { opacity: .5 !important; }
+/* Single local-time TAB (Nick: 'with a tab'): full banner height, rounded top
+   corners, flush bottom, soft border + shadow — the gate-tab grammar. Sized a
+   touch larger now that it's the only panel. */
+html .octb-tab {
+  align-self: stretch !important;
+  justify-content: center !important;
+  border-radius: 20px 20px 0 0 !important;
+  border: 1px solid rgba(255,255,255,0.20) !important;
+  border-bottom: none !important;
+  box-shadow: 0 -3px 16px rgba(0,0,0,0.26) !important;
+  /* Lighter gray that reads against any airline banner. */
+  background: rgba(214,218,226,0.26) !important;
+  padding: clamp(4px,0.9vh,12px) clamp(20px,2vw,38px) 0 !important;
+  /* Enough width that the label and clock justify to the edges (take the
+     space) without the tab sprawling across the banner. */
+  min-width: clamp(320px, 20vw, 440px) !important;
+}
+/* Justify: label hard-left, clock hard-right; date spans centred below. */
+html .octb-tab .octb-top { justify-content: space-between !important; gap: clamp(16px,1.6vw,34px) !important; }
+html .octb-tab .octb-lbls { align-items: flex-start !important; }
+html .octb-tab .octb-en, html .octb-tab .octb-fr { font-size: clamp(13px,1.95vh,27px) !important; }
+html .octb-tab .octb-clock { font-size: clamp(30px,4.7vh,66px) !important; }
+html .octb-tab .octb-date { font-size: clamp(12px,1.7vh,23px) !important; }
+/* ATTACHED-TO-GATE (Nick): the SAME compact gray tab, just butted against the
+   gate tab's left edge — the wrap is pinned to right:var(--gate-rcw) so the tab
+   touches the gate. Square off the right (gate-facing) top corner so it meets
+   the gate cleanly; the left top corner stays rounded. */
+html .octb-attached .octb-tab {
+  border-radius: 20px 0 0 0 !important;
+  border: none !important;
+  border-left: 5px solid rgba(255,255,255,0.92) !important;   /* white streak, like the gate */
+  box-shadow: -10px 0 24px rgba(0,0,0,0.30) !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+/* Fill the little wedge where the tab's straight right edge meets the gate's
+   rounded top-left corner (Nick: 'fill in the color'). A same-colour strip
+   sits just right of the tab, tucked UNDER the gate (gate z-index > tab) — the
+   gate's rounded corner reveals this strip's colour instead of the dark banner. */
+html .octb-attached .octb-tab::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; bottom: 0 !important; left: 100% !important;
+  width: 34px !important;
+  background: rgba(214,218,226,0.26) !important;
+}
+
+/* Moncton's Acadian banner carries a flag STAR right by the title — keep its
+   baggage icon at the original small size so the enlarged bag (used everywhere
+   else) doesn't cover it (Nick: 'the baggage in Moncton was fine, now it's
+   taken over the star'). High-specificity + end-of-file so it wins over the
+   big-bag rules for Moncton only. */
+html body.fids-ap-YQM .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage,
+html body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage {
+  font-size: clamp(24px, 1.9vw, 40px) !important;
 }

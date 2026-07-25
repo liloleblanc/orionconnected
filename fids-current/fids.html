@@ -51,19 +51,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
-  <link rel="stylesheet" href="css/font.css?v=325">
+  <link rel="stylesheet" href="css/font.css?v=327">
   <link rel="stylesheet" href="css/airport-fonts.css?v=312">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
   <link rel="stylesheet" href="css/shared.css?v=21899-21">
   <link rel="stylesheet" href="css/menu.css?v=21899-22">
   <link rel="stylesheet" href="css/fids.css?v=21899-12">
-  <link rel="stylesheet" href="css/fids-v3.css?v=377">
-  <link rel="stylesheet" href="css/bids-v2.css?v=320">
+  <link rel="stylesheet" href="css/fids-v3.css?v=379">
+  <link rel="stylesheet" href="css/bids-v2.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-v216.css?v=312">
-  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=21908-134">
-  <link rel="stylesheet" href="css/gids-v218.78.css?v=21905-105">
-  <link rel="stylesheet" href="css/accor-slide.css?v=27">
+  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=21908-167">
+  <link rel="stylesheet" href="css/gids-v218.78.css?v=21905-118">
+  <link rel="stylesheet" href="css/accor-slide.css?v=34">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg-v21853">
@@ -387,10 +387,29 @@
 <div class="fids-banner" id="fidsBanner">
   <div class="fids-banner-chevrons" aria-hidden="true"></div>
 
-  <!-- Time + date, top-right corner -->
+  <!-- Time + date, top-right corner. Analog clock (left) + 3-line digital
+       block matching the gate banner: label / big time / bilingual date
+       (Nick, Jul 2026). -->
   <div class="fids-banner-time-block">
-    <div class="fids-banner-time" id="clock">--:--:--</div>
-    <div class="fids-banner-date" id="clockDate"></div>
+    <svg class="fids-banner-analog" id="clockAnalog" viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="cl-face" cx="50" cy="50" r="46"></circle>
+      <g class="cl-ticks">
+        <line x1="50" y1="6" x2="50" y2="13"></line>
+        <line x1="94" y1="50" x2="87" y2="50"></line>
+        <line x1="50" y1="94" x2="50" y2="87"></line>
+        <line x1="6" y1="50" x2="13" y2="50"></line>
+      </g>
+      <line class="cl-hand cl-hour" id="clHour" x1="50" y1="50" x2="50" y2="29"></line>
+      <line class="cl-hand cl-min" id="clMin" x1="50" y1="50" x2="50" y2="17"></line>
+      <circle class="cl-pin" cx="50" cy="50" r="3.4"></circle>
+    </svg>
+    <div class="fids-banner-time-text">
+      <div class="fids-banner-digirow">
+        <div class="fids-banner-tlabel" id="clockLabel"></div>
+        <div class="fids-banner-time" id="clock">--:--</div>
+      </div>
+      <div class="fids-banner-date" id="clockDate"></div>
+    </div>
   </div>
 
   <!-- Center pill: airport identity (logo + IATA + name) -->
@@ -669,12 +688,12 @@
 </div>
 
 
-<script src="/mapcdn/leaflet.js?v=22403"></script>
-<script src="/mapcdn/leaflet-arc.js?v=22403"></script>
-<script src="js/fids-v2.js?v=317"></script>
+<script src="/mapcdn/leaflet.js?v=22485"></script>
+<script src="/mapcdn/leaflet-arc.js?v=22485"></script>
+<script src="js/fids-v2.js?v=318"></script>
 <script src="js/gids-layout.js?v=1"></script>
-<script src="data/airline-colors.js?v=22"></script>
-<script src="js/fids-core.js?v=22403"></script>
+<script src="data/airline-colors.js?v=24"></script>
+<script src="js/fids-core.js?v=22485"></script>
 <script src="js/gate-visual-integrity-v22354.js?v=1"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -683,7 +702,7 @@
 <script src="js/airport-coords.js?v=22335"></script>
 <script src="js/template-renderer.js?v=1"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=21899-45"></script>
+<script src="js/menu.js?v=21899-46"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/menubar.js?v=11"></script>
 <script src="js/console-menu.js?v=3"></script>

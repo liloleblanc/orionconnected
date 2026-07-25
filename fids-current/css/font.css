@@ -121,3 +121,43 @@
    ac-ico-TIME, so a bare `.ac-ico-time` loses to it. Hence the deep scope below. */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge:has(.ac-ico-time) { overflow: visible !important; }
 .g8-wrap .gad-aircraft-col .v2-fi-icon-badge .ac-ico-time { font-size:clamp(39px,6.10vh,82px) !important; line-height:1 !important; }  /* stopwatch — ink .88 */
+
+/* ─────────────────────────────────────────────────────────────────────
+   ABC Ginto Nord (Trial) — display typeface bundled locally (OTF). Nick
+   supplied the trial family (Thin→Ultra + italics; Hairline).
+   Main 'ABC Ginto Nord' maps each weight to its file; per-weight families
+   (…Thin/Light/…/Ultra) force one exact weight, mirroring the AC Nord setup
+   so the font picker can offer each weight on its own.
+
+   ⚠ TRIAL FILES ARE MISLABELLED (Nick: 'the only Ginto fonts are italic').
+   Verified by rendering every OTF: the "-Weight.otf" files contain the
+   ITALIC cut and the "-WeightItalic.otf" files contain the UPRIGHT cut —
+   the italic/roman filenames are swapped. So NORMAL faces intentionally
+   point at the "-…Italic.otf" files (which are actually upright) and the
+   italic faces point at the plain "-Weight.otf" files. Hairline ships only
+   as "-HairlineItalic.otf", which is actually upright → declared normal.
+   Swap for correctly-named licensed files before production.
+   ───────────────────────────────────────────────────────────────────── */
+@font-face { font-family:'ABC Ginto Nord'; font-weight:100; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-ThinItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:100; font-style:italic; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-Thin.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:300; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-LightItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:300; font-style:italic; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-Light.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-RegularItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:400; font-style:italic; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-Regular.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-MediumItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:500; font-style:italic; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-Medium.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-BoldItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:700; font-style:italic; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-Bold.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:800; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-BlackItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:800; font-style:italic; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-Black.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:900; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-UltraItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord'; font-weight:900; font-style:italic; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-Ultra.otf') format('opentype'); }
+/* per-weight forced families (each maps ALL weights to one UPRIGHT file) */
+@font-face { font-family:'ABC Ginto Nord Thin';    font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-ThinItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord Light';   font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-LightItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord Regular'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-RegularItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord Medium';  font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-MediumItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord Bold';    font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-BoldItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord Black';   font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-BlackItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord Ultra';   font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-UltraItalic.otf') format('opentype'); }
+@font-face { font-family:'ABC Ginto Nord Hairline';font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-HairlineItalic.otf') format('opentype'); }

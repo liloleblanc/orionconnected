@@ -156,6 +156,22 @@ body[data-fids-logo-size="large"] .bidsv2-col-time { font-size: 30px; }
 body[data-fids-logo-size="large"] .bidsv2-col-status { font-size: 30px; }
 body[data-fids-logo-size="large"] .bidsv2-flight-row { padding: 22px 24px; }
 
+/* HARD FIXED row heights per size (Nick: 'a set size and not change, doesn't
+   matter what's on screen — if it's 1 line it's 1 line'). Each size is an
+   exact pixel height; rows never stretch or shrink with the flight count.
+   Small was actually padded LARGER (12px) than medium's base, which is why the
+   two looked identical. */
+body[data-fids-logo-size="small"]  .bidsv2-flight-row { height: 68px !important;  min-height: 68px !important;  max-height: 68px !important;  padding-top: 0 !important; padding-bottom: 0 !important; overflow: hidden !important; }
+body[data-fids-logo-size="medium"] .bidsv2-flight-row { height: 98px !important;  min-height: 98px !important;  max-height: 98px !important;  padding-top: 0 !important; padding-bottom: 0 !important; overflow: hidden !important; }
+body[data-fids-logo-size="large"]  .bidsv2-flight-row { height: 132px !important; min-height: 132px !important; max-height: 132px !important; padding-top: 0 !important; padding-bottom: 0 !important; overflow: hidden !important; }
+/* Medium logo/font tier (was implicit base — pin it explicitly so it sits
+   clearly between small and large). */
+body[data-fids-logo-size="medium"] .bidsv2-airline-block { width: 62px; height: 62px; }
+body[data-fids-logo-size="medium"] .bidsv2-flight-num { font-size: 25px; }
+body[data-fids-logo-size="medium"] .bidsv2-col-from { font-size: 29px; }
+body[data-fids-logo-size="medium"] .bidsv2-col-time { font-size: 26px; }
+body[data-fids-logo-size="medium"] .bidsv2-col-status { font-size: 26px; }
+
 /* ─── Logo position (responds to body[data-fids-logo-position]) ──── */
 body[data-fids-logo-position="center"] .bidsv2-banner-left { margin: 0 auto; }
 body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; padding-right: 32px; }

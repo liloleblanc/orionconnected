@@ -998,7 +998,9 @@ body[data-fids-theme="cream"] .fids-banner {
 }
 body[data-fids-theme="cream"] .fids-board-label,
 body[data-fids-theme="cream"] .fids-banner-time,
-body[data-fids-theme="cream"] .fids-banner-date {
+body[data-fids-theme="cream"] .fids-banner-date,
+body[data-fids-theme="cream"] .fids-banner-tlabel,
+body[data-fids-theme="cream"] .fids-banner-analog {
   color: #0a2236 !important;
 }
 body[data-fids-theme="cream"] #fidsTable {
@@ -1415,7 +1417,9 @@ body[data-fids-theme="paper"] .fids-banner {
 }
 body[data-fids-theme="paper"] .fids-board-label,
 body[data-fids-theme="paper"] .fids-banner-time,
-body[data-fids-theme="paper"] .fids-banner-date {
+body[data-fids-theme="paper"] .fids-banner-date,
+body[data-fids-theme="paper"] .fids-banner-tlabel,
+body[data-fids-theme="paper"] .fids-banner-analog {
   color: #18181b !important;
 }
 body[data-fids-theme="paper"] #fidsTable { background: #faf7f2 !important; }
@@ -2194,9 +2198,11 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wo
    navy-board redefine --fids-row-h, breaking consistency. Force
    the user-picked logo size via body[data-fids-logo-size=...].
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-body[data-fids-logo-size="small"]  { --fids-logo-size: 36px !important; --fids-row-h: 44px !important; }
-body[data-fids-logo-size="medium"] { --fids-logo-size: 44px !important; --fids-row-h: 52px !important; }
-body[data-fids-logo-size="large"]  { --fids-logo-size: 50px !important; --fids-row-h: 60px !important; }
+/* Clearly-distinct fixed row heights per size (Nick: widen the spread so Small
+   / Medium / Large actually differ — 44/52/60 read the same). */
+body[data-fids-logo-size="small"]  { --fids-logo-size: 34px !important; --fids-row-h: 44px !important; }
+body[data-fids-logo-size="medium"] { --fids-logo-size: 52px !important; --fids-row-h: 66px !important; }
+body[data-fids-logo-size="large"]  { --fids-logo-size: 72px !important; --fids-row-h: 90px !important; }
 
 /* Beat ALL theme-specific row height overrides (cream, navy-board, etc.) */
 body[data-fids-logo-size] #fidsTable tbody tr,
@@ -2313,24 +2319,32 @@ body[data-fids-theme="cream"] .fids-banner { background: #ffffff !important; }
 /* Banner text colors per theme so the airport name/time stay readable */
 body[data-fids-theme="grey"]  .fids-banner-time,
 body[data-fids-theme="grey"]  .fids-banner-date,
+body[data-fids-theme="grey"]  .fids-banner-tlabel,
+body[data-fids-theme="grey"]  .fids-banner-analog,
 body[data-fids-theme="grey"]  .fids-board-label,
 body[data-fids-theme="grey"]  .fids-airport-name,
 body[data-fids-theme="grey"]  .fids-airport-iata { color: #ffffff !important; }
 
 body[data-fids-theme="amber"] .fids-banner-time,
 body[data-fids-theme="amber"] .fids-banner-date,
+body[data-fids-theme="amber"] .fids-banner-tlabel,
+body[data-fids-theme="amber"] .fids-banner-analog,
 body[data-fids-theme="amber"] .fids-board-label,
 body[data-fids-theme="amber"] .fids-airport-name,
 body[data-fids-theme="amber"] .fids-airport-iata { color: #fef3c7 !important; }
 
 body[data-fids-theme="green"] .fids-banner-time,
 body[data-fids-theme="green"] .fids-banner-date,
+body[data-fids-theme="green"] .fids-banner-tlabel,
+body[data-fids-theme="green"] .fids-banner-analog,
 body[data-fids-theme="green"] .fids-board-label,
 body[data-fids-theme="green"] .fids-airport-name,
 body[data-fids-theme="green"] .fids-airport-iata { color: #d1fae5 !important; }
 
 body[data-fids-theme="navy"] .fids-banner-time,
 body[data-fids-theme="navy"] .fids-banner-date,
+body[data-fids-theme="navy"] .fids-banner-tlabel,
+body[data-fids-theme="navy"] .fids-banner-analog,
 body[data-fids-theme="navy"] .fids-board-label,
 body[data-fids-theme="navy"] .fids-airport-name,
 body[data-fids-theme="navy"] .fids-airport-iata { color: #ffffff !important; }
@@ -2364,6 +2378,8 @@ body[data-fids-theme="cream"] #fidsTable thead th {
 }
 body[data-fids-theme="cream"] .fids-banner-time,
 body[data-fids-theme="cream"] .fids-banner-date,
+body[data-fids-theme="cream"] .fids-banner-tlabel,
+body[data-fids-theme="cream"] .fids-banner-analog,
 body[data-fids-theme="cream"] .fids-board-label,
 body[data-fids-theme="cream"] .fids-airport-name,
 body[data-fids-theme="cream"] .fids-airport-iata { color: #0a2236 !important; }
@@ -3149,6 +3165,8 @@ body[data-fids-theme="tus-teal"] .fids-banner {
 }
 body[data-fids-theme="tus-teal"] .fids-banner-time,
 body[data-fids-theme="tus-teal"] .fids-banner-date,
+body[data-fids-theme="tus-teal"] .fids-banner-tlabel,
+body[data-fids-theme="tus-teal"] .fids-banner-analog,
 body[data-fids-theme="tus-teal"] .fids-board-label,
 body[data-fids-theme="tus-teal"] .fids-airport-name,
 body[data-fids-theme="tus-teal"] .fids-airport-iata,
@@ -3165,6 +3183,8 @@ body[data-fids-theme="midnight"] #fidsTable { background: #000000 !important; }
 body[data-fids-theme="midnight"] .fids-banner { background: #050505 !important; }
 body[data-fids-theme="midnight"] .fids-banner-time,
 body[data-fids-theme="midnight"] .fids-banner-date,
+body[data-fids-theme="midnight"] .fids-banner-tlabel,
+body[data-fids-theme="midnight"] .fids-banner-analog,
 body[data-fids-theme="midnight"] .fids-board-label,
 body[data-fids-theme="midnight"] .fids-airport-name,
 body[data-fids-theme="midnight"] .fids-airport-iata,
@@ -3181,6 +3201,8 @@ body[data-fids-theme="charcoal"] #fidsTable { background: #1c1917 !important; }
 body[data-fids-theme="charcoal"] .fids-banner { background: #292524 !important; }
 body[data-fids-theme="charcoal"] .fids-banner-time,
 body[data-fids-theme="charcoal"] .fids-banner-date,
+body[data-fids-theme="charcoal"] .fids-banner-tlabel,
+body[data-fids-theme="charcoal"] .fids-banner-analog,
 body[data-fids-theme="charcoal"] .fids-board-label,
 body[data-fids-theme="charcoal"] .fids-airport-name,
 body[data-fids-theme="charcoal"] .fids-airport-iata,
@@ -3197,6 +3219,8 @@ body[data-fids-theme="burgundy"] #fidsTable { background: #2a0a14 !important; }
 body[data-fids-theme="burgundy"] .fids-banner { background: #4a0e1f !important; }
 body[data-fids-theme="burgundy"] .fids-banner-time,
 body[data-fids-theme="burgundy"] .fids-banner-date,
+body[data-fids-theme="burgundy"] .fids-banner-tlabel,
+body[data-fids-theme="burgundy"] .fids-banner-analog,
 body[data-fids-theme="burgundy"] .fids-board-label,
 body[data-fids-theme="burgundy"] .fids-airport-name,
 body[data-fids-theme="burgundy"] .fids-airport-iata,
@@ -3213,6 +3237,8 @@ body[data-fids-theme="forest"] #fidsTable { background: #0a1f1c !important; }
 body[data-fids-theme="forest"] .fids-banner { background: #134e4a !important; }
 body[data-fids-theme="forest"] .fids-banner-time,
 body[data-fids-theme="forest"] .fids-banner-date,
+body[data-fids-theme="forest"] .fids-banner-tlabel,
+body[data-fids-theme="forest"] .fids-banner-analog,
 body[data-fids-theme="forest"] .fids-board-label,
 body[data-fids-theme="forest"] .fids-airport-name,
 body[data-fids-theme="forest"] .fids-airport-iata,
@@ -3232,6 +3258,8 @@ body[data-fids-theme="paper"] .fids-banner {
 }
 body[data-fids-theme="paper"] .fids-banner-time,
 body[data-fids-theme="paper"] .fids-banner-date,
+body[data-fids-theme="paper"] .fids-banner-tlabel,
+body[data-fids-theme="paper"] .fids-banner-analog,
 body[data-fids-theme="paper"] .fids-board-label,
 body[data-fids-theme="paper"] .fids-airport-name,
 body[data-fids-theme="paper"] .fids-airport-iata,
@@ -3254,6 +3282,8 @@ body[data-fids-theme="terminal"] #fidsTable { background: #000000 !important; fo
 body[data-fids-theme="terminal"] .fids-banner { background: #001a00 !important; }
 body[data-fids-theme="terminal"] .fids-banner-time,
 body[data-fids-theme="terminal"] .fids-banner-date,
+body[data-fids-theme="terminal"] .fids-banner-tlabel,
+body[data-fids-theme="terminal"] .fids-banner-analog,
 body[data-fids-theme="terminal"] .fids-board-label,
 body[data-fids-theme="terminal"] .fids-airport-name,
 body[data-fids-theme="terminal"] .fids-airport-iata,
@@ -3273,6 +3303,8 @@ body[data-fids-theme="sky"] .fids-banner {
 }
 body[data-fids-theme="sky"] .fids-banner-time,
 body[data-fids-theme="sky"] .fids-banner-date,
+body[data-fids-theme="sky"] .fids-banner-tlabel,
+body[data-fids-theme="sky"] .fids-banner-analog,
 body[data-fids-theme="sky"] .fids-board-label,
 body[data-fids-theme="sky"] .fids-airport-name,
 body[data-fids-theme="sky"] .fids-airport-iata,
@@ -3298,6 +3330,8 @@ body[data-fids-theme="sunset"] .fids-banner {
 }
 body[data-fids-theme="sunset"] .fids-banner-time,
 body[data-fids-theme="sunset"] .fids-banner-date,
+body[data-fids-theme="sunset"] .fids-banner-tlabel,
+body[data-fids-theme="sunset"] .fids-banner-analog,
 body[data-fids-theme="sunset"] .fids-board-label,
 body[data-fids-theme="sunset"] .fids-airport-name,
 body[data-fids-theme="sunset"] .fids-airport-iata,
