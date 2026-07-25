@@ -16387,7 +16387,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22506';
+var FIDS_BUILD_TAG = 'v22507';
 (function(){
   try {
     function _addTag(){
@@ -27041,28 +27041,28 @@ function buildAccorAdOnlyV6(ad) {
     +   (showName ? '<h1 class="axr-name">'+esc(displayName)+'</h1>' : '')
     +   _addrLineHtml + _locLineHtml + _starsRow
     + '</div></div>';
-  // Page 2 — THE HOTEL. Fairmont cards sell like fairmont.com (Nick showed
-  // the El San Juan page): the hotel's ADVANTAGES as short Seasons caps
-  // phrases — 'award-winning Isla Verde Beach', 'Four pristine pools' — not
-  // a commodity amenity inventory. Other brands keep the amenity list.
+  // Page 2 — THE HOTEL. Every hotel card sells like fairmont.com (Nick:
+  // 'All hotels should be this way'): the hotel's ADVANTAGES as short caps
+  // phrases in the brand's display face — 'award-winning Isla Verde Beach',
+  // 'Four pristine pools' — never a commodity amenity inventory. Only when a
+  // hotel ships NO advantages does the amenity list return as a fallback so
+  // the card isn't empty.
   var _isFaiCard = String(ad.brand || '').toUpperCase() === 'FAI';
-  var _faiFeats = '';
-  if (_isFaiCard) {
-    var _advs = (Array.isArray(ad.advantages) ? ad.advantages : [])
-      .map(function (a) { return String(a || '').trim(); })
-      .filter(function (a) { return a && a.length <= 60 && !_covidRx.test(a); })
-      .slice(0, 3);
-    if (_advs.length) {
-      _faiFeats = '<div class="axr-fai-feats">' + _advs.map(function (a) {
-        return '<span>' + esc(a) + '</span>';
-      }).join('') + '</div>';
-    }
+  var _featsHtml = '';
+  var _advs = (Array.isArray(ad.advantages) ? ad.advantages : [])
+    .map(function (a) { return String(a || '').trim(); })
+    .filter(function (a) { return a && a.length <= 60 && !_covidRx.test(a); })
+    .slice(0, 3);
+  if (_advs.length) {
+    _featsHtml = '<div class="axr-fai-feats">' + _advs.map(function (a) {
+      return '<span>' + esc(a) + '</span>';
+    }).join('') + '</div>';
   }
   var _page2 = '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
     + logoHtml + _ctxName
-    +   (_isFaiCard ? _faiFeats : _list(_amenList)) + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
+    +   (_featsHtml || _list(_amenList)) + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
     + '</div></div>';
   // Page 3 — DINING & REVIEWS: restaurants + guest rating + QR
   var _page3 = '<div class="axr-page">'
@@ -27109,9 +27109,8 @@ function buildAccorAdOnlyV6(ad) {
         +   (lockupHasName ? '' : '<div class="axr-room-hotel">' + esc(displayName) + '</div>')
         +   '<div class="axr-page-ctx axr-room-name">' + esc(_rTitle) + '</div>'
         +   (_rSub ? '<div class="axr-room-details">' + esc(_rSub) + '</div>' : '')
-        // fairmont.com room pages carry NO amenity list — title, subtitle,
-        // one paragraph (Nick). Other brands keep their list.
-        +   (_isFaiCard ? '' : _list((r.amen || []).slice(0, 4)))
+        // Room pages carry NO amenity list — title, subtitle, one paragraph,
+        // like the brand sites (Nick: 'All hotels should be this way').
         +   (_rd ? '<p class="axr-blurb">' + esc(_rd) + '</p>' : '')
         + '</div></div>';
     }).join('');
