@@ -95,8 +95,24 @@
 /* Hotel content — bottom-left over the gradient */
 .axr-hotel{ position:absolute; left:clamp(28px,3vw,44px); right:clamp(28px,3vw,44px);
   bottom:clamp(22px,3.2vh,34px); z-index:3;
-  display:flex; flex-direction:column; gap:calc(var(--axr-info) * 0.28);
+  /* Cap the block to the panel so tall content (many amenities + a long blurb)
+     can never grow the bottom-anchored column past the top of the ad and clip
+     the LOGO off-screen (Nick: 'no logo showing' on Novotel/Sofitel Montréal —
+     the block overflowed upward and the logo, its first child, was pushed out
+     of view). Stays content-height (grounded at the bottom) until it would
+     exceed the panel; then it caps and the expendable copy shrinks instead. */
+  max-height:calc(100% - clamp(40px,6vh,64px));
+  display:flex; flex-direction:column; justify-content:flex-end;
+  gap:calc(var(--axr-info) * 0.28);
   text-shadow:0 2px 14px rgba(0,0,0,.55); }
+/* The logo and the headings never shrink — they stay full size and in view.
+   The expendable copy (amenity list, marketing blurb) is what shrinks and clips
+   first when the block would otherwise exceed the panel, so the logo is always
+   the LAST thing to be sacrificed, never the first. */
+.axr-hotel::before,
+.axr-logo, .axr-name, .axr-sub,
+.axr-page-ctx, .axr-room-hotel, .axr-room-name{ flex:0 0 auto; }
+.axr-hotel .axr-list, .axr-hotel .axr-blurb{ flex:0 1 auto; min-height:0; overflow:hidden; }
 /* Accent grounding bar above the content block — gradient gold, brand-tinted
    brands override --axr-goldgrad via their accent (generated section). */
 .axr-hotel::before{ content:""; width:clamp(36px,3.4vw,56px); height:3px; border-radius:2px;
