@@ -16259,7 +16259,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22466';
+var FIDS_BUILD_TAG = 'v22467';
 (function(){
   try {
     function _addTag(){
@@ -29749,15 +29749,22 @@ function _renderWxCard(el) {
     var _moFr = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
     var _wxFrF = false;
     try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
-    // Each language on its OWN line, day + full date joined by '|' (Nick's
-    // exact spec: 'Friday | July 24' over 'Vendredi | 24 juillet'). FR line
-    // first at the French-first airports.
-    var _dayLbl = function (d) {
-      var dow = d.getDay(), mo = d.getMonth(), dd = d.getDate();
-      var enLine = _dEn[dow] + ' <span class="wxc-dsep">|</span> ' + _moEn[mo] + ' ' + dd;
-      var frLine = _dFr[dow] + ' <span class="wxc-dsep">|</span> ' + dd + ' ' + _moFr[mo];
-      var a = _wxFrF ? frLine : enLine, b = _wxFrF ? enLine : frLine;
-      return a + '<span class="wxc-d2">' + b + '</span>';
+    // Day cell, all centred (Nick's exact spec): English day + date ABOVE the
+    // icon, French day + date BELOW it —
+    //     Friday          (EN day)
+    //     July 24         (EN date)
+    //     [icon]
+    //     Vendredi        (FR day)
+    //     24 juillet      (FR date)
+    // English is always on top, French always on the bottom (his instruction),
+    // regardless of the airport's usual language order.
+    var _dayTopEn = function (d) {
+      return '<div class="wxc-d">' + _dEn[d.getDay()] + '</div>'
+        + '<div class="wxc-dt">' + _moEn[d.getMonth()] + ' ' + d.getDate() + '</div>';
+    };
+    var _dayBotFr = function (d) {
+      return '<div class="wxc-d wxc-d-fr">' + _dFr[d.getDay()] + '</div>'
+        + '<div class="wxc-dt wxc-dt-fr">' + d.getDate() + ' ' + _moFr[d.getMonth()] + '</div>';
     };
     // Meta labels bilingual like the rest of the card (Nick: 'half french half
     // not' — Feels like/Wind/Humidity were English-only under a bilingual
@@ -29777,8 +29784,9 @@ function _renderWxCard(el) {
       for (var i = 0; i < Math.min(7, daily.time.length); i++) {
         var dt = new Date(daily.time[i] + 'T12:00:00');
         var icd = _wmoAnimIcon(daily.weather_code[i]);
-        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt) + '</div>'
+        tiles += '<div class="wxc-day">' + _dayTopEn(dt)
           + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
+          + _dayBotFr(dt)
           + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
           + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
         nDays++;
@@ -29799,8 +29807,9 @@ function _renderWxCard(el) {
         var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
         var dt2 = new Date(k + 'T12:00:00');
         var ich = _wxAnimIcon(code, false);
-        tiles += '<div class="wxc-day"><div class="wxc-d">' + _dayLbl(dt2) + '</div>'
+        tiles += '<div class="wxc-day">' + _dayTopEn(dt2)
           + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
+          + _dayBotFr(dt2)
           + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
         nDays++;
       });
