@@ -16387,7 +16387,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22503';
+var FIDS_BUILD_TAG = 'v22504';
 (function(){
   try {
     function _addTag(){
@@ -27002,11 +27002,14 @@ function buildAccorAdOnlyV6(ad) {
     { rx: /navette|shuttle|\bbus\b/i,                             ico: '/logos/hotels/accor-pictos/bus-white.svg' },
     { rx: /parking|valet|voiturier|stationnement/i,               ico: '/logos/hotels/accor-pictos/car-white.svg' },
     { rx: /golf/i,                                                ico: '/logos/hotels/accor-pictos/golf-white.svg' },
-    { rx: /accessib|handicap|wheelchair|fauteuil|\bpmr\b|81 ?cm/i, ico: '/logos/hotels/accor-pictos/handicap-white.svg' }
+    { rx: /accessib|handicap|wheelchair|fauteuil|\bpmr\b|81 ?cm/i, ico: '/logos/hotels/accor-pictos/handicap-white.svg' },
+    { rx: /restaurant|room service|service aux chambres|dining|repas|gastro/i, ico: '/logos/hotels/accor-pictos/buffet-white.svg' }
   ];
   function _amenPicto(s) {
     for (var i = 0; i < _AMEN_PICTOS.length; i++) if (_AMEN_PICTOS[i].rx.test(s)) return _AMEN_PICTOS[i].ico;
-    return '';
+    // No specific pictogram → the ALL star, so every line carries an icon
+    // (Nick: 'not all categories have an icon it looks terrible').
+    return '/logos/hotels/accor-pictos/star-white.svg';
   }
   function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){
     var p = _amenPicto(String(i || ''));
@@ -27059,12 +27062,20 @@ function buildAccorAdOnlyV6(ad) {
       // bottom — the old 190-char budget overflowed once the room title and
       // bullets grew, so the CSS clamp chopped mid-phrase ('…rest after a
       // long day at the…' — Nick: 'the text at the bottom cuts off').
-      if (_rd.length > 120) {
-        var _rc2 = _rd.slice(0, 150);
+      if (_rd.length > 170) {
+        // COMPLETE sentence or nothing — a word-cut '…le…' fragment reads
+        // broken on a paying advertiser's card (Nick: 'the ads cut out words').
+        var _rc2 = _rd.slice(0, 240);
         var _pe2 = Math.max(_rc2.lastIndexOf('. '), _rc2.lastIndexOf('! '), _rc2.lastIndexOf('? '),
                             /[.!?]$/.test(_rc2) ? _rc2.length - 1 : -1);
-        _rd = (_pe2 > 40) ? _rc2.slice(0, _pe2 + 1) : _rd.slice(0, 110).replace(/\s+\S*$/, '') + '…';
+        _rd = (_pe2 > 40) ? _rc2.slice(0, _pe2 + 1) : '';
       }
+      // Split the long feed name into TITLE + DETAILS lines (Nick: 'ROOM
+      // NAME / DETAILS, two sentences') — first comma/period ends the title.
+      var _rn = String(r.name || '').trim();
+      var _rSp = _rn.search(/[,.]|\s[–·-]\s/);
+      var _rTitle = (_rSp > 3) ? _rn.slice(0, _rSp).trim() : _rn;
+      var _rSub = (_rSp > 3) ? _rn.slice(_rSp + 1).replace(/^[\s,.·–-]+/, '').trim() : '';
       return '<div class="axr-page">'
         + _heroImg(r.photo || _ph1) + '<div class="axr-hero-grad"></div>'
         + '<div class="axr-hotel">'
@@ -27073,7 +27084,8 @@ function buildAccorAdOnlyV6(ad) {
         // property name under it (Nick); property lockups (Fairmont…)
         // already have the name inside the artwork.
         +   (lockupHasName ? '' : '<div class="axr-room-hotel">' + esc(displayName) + '</div>')
-        +   '<div class="axr-page-ctx axr-room-name">' + esc(r.name) + '</div>'
+        +   '<div class="axr-page-ctx axr-room-name">' + esc(_rTitle) + '</div>'
+        +   (_rSub ? '<div class="axr-room-details">' + esc(_rSub) + '</div>' : '')
         +   _list((r.amen || []).slice(0, 4))
         +   (_rd ? '<p class="axr-blurb">' + esc(_rd) + '</p>' : '')
         + '</div></div>';
@@ -28269,6 +28281,23 @@ function _restartGateAdsTimer() {
   var gen = ++_gateAdGen;
   var _tick = function() {
     if (gen !== _gateAdGen) return; // superseded — abandon this chain
+    // v22504 — LATE ROOM PAGES: the Accor dwell is sized at slide start, but
+    // room pages render asynchronously after the detail fetch. If the live
+    // deck now has MORE pages than the pager has shown, hold the slide for
+    // the remaining pages instead of advancing mid-story (Nick: 'cut short
+    // by the map'). One extension per rendered deck.
+    try {
+      var _exWrap = document.querySelector('.axr-pages');
+      var _exSt = window._axrPageSt;
+      if (_exWrap && _exSt && !_exWrap.dataset.axrExtended && _exSt.seen === _exWrap) {
+        var _exPages = _exWrap.querySelectorAll('.axr-page').length;
+        if (_exPages > 1 && _exSt.idx < _exPages - 1) {
+          _exWrap.dataset.axrExtended = '1';
+          _gateAdTimer = setTimeout(_tick, (_exPages - 1 - _exSt.idx) * 10000 + 1500);
+          return;
+        }
+      }
+    } catch (e) {}
     // Inside the rotator, tell the parent an ad just completed its full dwell.
     // The rotator only switches away from the gate on one of these boundaries
     // (once past its minimum), so an ad is never chopped mid-display.
@@ -29191,6 +29220,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   // SAME hotel resumes on the page it was showing — previously every rebuild
   // restarted at page 1, so pages 2–3 kept getting cut off ("ads clash").
   var _st = { id: null, idx: 0, next: 0, seen: null };
+  window._axrPageSt = _st;   // rotator reads this to hold slides w/ unseen pages
   function _showPage(pages, idx){
     for (var i = 0; i < pages.length; i++) pages[i].classList.toggle('axr-page-on', i === idx);
   }
