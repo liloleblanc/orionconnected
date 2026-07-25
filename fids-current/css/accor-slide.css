@@ -189,23 +189,24 @@
   --axr-goldgrad:linear-gradient(42deg,#B88D5B 0%,#D0B494 100%); }
 .axr[data-brand-code="FAI"] .axr-logo{ height:auto; }
 .axr[data-brand-code="FAI"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
-.axr[data-brand-code="FAI"] .axr-name{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
-.axr[data-brand-code="FAI"] .axr-page-ctx{ font-weight:400; letter-spacing:.03em; }
+.axr[data-brand-code="FAI"] .axr-name{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; }
+.axr[data-brand-code="FAI"] .axr-page-ctx{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:.03em; }
 .axr[data-brand-code="FAI"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
 .axr[data-brand-code="FAI"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
-.axr[data-brand-code="FAI"] .axr-addr{ font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:300; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EFE6D6; }
+.axr[data-brand-code="FAI"] .axr-addr{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EFE6D6; }
 .axr[data-brand-code="FAI"] .axr-addr-line, .axr[data-brand-code="FAI"] .axr-loc-line{ font-weight:300; letter-spacing:.06em; color:#EFE6D6; }
 .axr[data-brand-code="FAI"] .axr-stars{ color:#B88D5B; letter-spacing:.14em; }
 .axr[data-brand-code="FAI"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="FAI"] .axr-score small{ color:#B88D5B; }
 .axr[data-brand-code="FAI"] .axr-amen{ gap:0; }
-.axr[data-brand-code="FAI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-style:italic; font-weight:300; color:#EFE6D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="FAI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif; font-style:italic; font-weight:400; color:#EFE6D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
 .axr[data-brand-code="FAI"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B88D5B; font-style:normal; }
-.axr[data-brand-code="FAI"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
+.axr[data-brand-code="FAI"] .axr-list li{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif; font-style:italic; font-weight:400; letter-spacing:.02em; }
+.axr[data-brand-code="FAI"] .axr-blurb{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif; font-weight:400; }
 .axr[data-brand-code="FAI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="FAI"] .axr-bubble{ background:#EFE9DE; color:#14161C; border:1px solid #B88D5B; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="FAI"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="FAI"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
+.axr[data-brand-code="FAI"] .axr-bubble-copy{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="FAI"] .axr-all{ background:transparent; border-top:1px solid rgba(184,141,91,0.6); padding:14px 0 8px; }
 .axr[data-brand-code="FAI"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="FAI"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
@@ -1246,14 +1247,26 @@
   max-height: clamp(140px, 27vh, 240px) !important;
 }
 
-/* Fairmont property-name font, declared at DOCUMENT level so the inline-SVG
-   Fairmont lockup can use it (a font embedded inside an <img>-rendered SVG
-   never loads). The Seasons (Nick) — the elegant high-contrast serif Fairmont
-   sets its page titles in on fairmont.com (body is Montserrat). The property
-   name is a title, so it takes The Seasons. */
+/* Fairmont TITLE font — The Seasons (Nick), the elegant high-contrast serif
+   Fairmont sets its page titles in on fairmont.com. Used for text titles/names
+   in a sentence (property-name heading, page context, offer/room title) and,
+   in italic, for the amenity list. NOT the standalone logo lockup name — that
+   stays part of the logo art. (Family kept as 'FairmontName' for continuity.) */
 @font-face {
   font-family: 'FairmontName';
   src: url('/fonts/fairmont-title-seasons.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fairmont BODY font — Montserrat Medium (Nick), the body face on
+   fairmont.com. Used for the description, address, and QR caption. Scoped to a
+   Fairmont-specific family name so it never changes other brands that merely
+   list bare 'Montserrat' as an (unloaded) fallback. */
+@font-face {
+  font-family: 'FairmontBody';
+  src: url('/fonts/fairmont-body-montserrat.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
