@@ -3671,28 +3671,26 @@ html .octb-tab {
   border: 1px solid rgba(255,255,255,0.20) !important;
   border-bottom: none !important;
   box-shadow: 0 -3px 16px rgba(0,0,0,0.26) !important;
-  background: rgba(150,152,160,0.18) !important;
-  padding: clamp(4px,0.9vh,12px) clamp(18px,1.8vw,32px) 0 !important;
+  /* Lighter gray that reads against any airline banner. */
+  background: rgba(214,218,226,0.26) !important;
+  padding: clamp(4px,0.9vh,12px) clamp(20px,2vw,38px) 0 !important;
+  /* Enough width that the label and clock justify to the edges (take the
+     space) without the tab sprawling across the banner. */
+  min-width: clamp(320px, 20vw, 440px) !important;
 }
-html .octb-tab .octb-en, html .octb-tab .octb-fr { font-size: clamp(11px,1.5vh,19px) !important; }
-html .octb-tab .octb-clock { font-size: clamp(26px,3.8vh,52px) !important; }
-html .octb-tab .octb-date { font-size: clamp(10px,1.35vh,16px) !important; }
-/* ATTACHED-TO-GATE variant (Nick): the tab butts the gate tab, wears the
-   airline accent + white left border + rounded top-left — the gate-tab
-   grammar — and fills its width with justified content. */
-html .octb-attached { justify-content: stretch !important; }
-html .octb-gatetab {
-  width: 100% !important; align-self: stretch !important; justify-content: center !important;
-  background: var(--airline-accent, #2a3550) !important;
+/* Justify: label hard-left, clock hard-right; date spans centred below. */
+html .octb-tab .octb-top { justify-content: space-between !important; gap: clamp(16px,1.6vw,34px) !important; }
+html .octb-tab .octb-lbls { align-items: flex-start !important; }
+html .octb-tab .octb-en, html .octb-tab .octb-fr { font-size: clamp(13px,1.95vh,27px) !important; }
+html .octb-tab .octb-clock { font-size: clamp(30px,4.7vh,66px) !important; }
+html .octb-tab .octb-date { font-size: clamp(12px,1.7vh,23px) !important; }
+/* ATTACHED-TO-GATE (Nick): the SAME compact gray tab, just butted against the
+   gate tab's left edge — the wrap is pinned to right:var(--gate-rcw) so the tab
+   touches the gate. Square off the right (gate-facing) top corner so it meets
+   the gate cleanly; the left top corner stays rounded. */
+html .octb-attached .octb-tab {
+  border-radius: 20px 0 0 0 !important;
   border: none !important;
-  border-left: 5px solid rgba(255,255,255,0.90) !important;
-  border-radius: 26px 0 0 0 !important;
-  box-shadow: -10px 0 24px rgba(0,0,0,0.28) !important;
-  padding: clamp(4px,0.9vh,12px) clamp(22px,2.2vw,44px) 0 !important;
+  border-left: 5px solid rgba(255,255,255,0.92) !important;   /* white streak, like the gate */
+  box-shadow: -10px 0 24px rgba(0,0,0,0.30) !important;
 }
-/* Justified across the width: label left, clock hard right; date spans below. */
-html .octb-gatetab .octb-top { justify-content: space-between !important; gap: clamp(16px,2vw,44px) !important; }
-html .octb-gatetab .octb-lbls { align-items: flex-start !important; }
-html .octb-gatetab .octb-en, html .octb-gatetab .octb-fr { font-size: clamp(13px,2vh,28px) !important; }
-html .octb-gatetab .octb-clock { font-size: clamp(32px,5.2vh,76px) !important; }
-html .octb-gatetab .octb-date { font-size: clamp(12px,1.75vh,24px) !important; letter-spacing: .02em !important; }

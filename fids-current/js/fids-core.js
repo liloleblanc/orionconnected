@@ -9416,7 +9416,7 @@ function uxgGateHtml(ctx) {
             // justified across the width: label (left) ↔ clock (right), date
             // spanning below.
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
-              + '<div class="octb octb-tab octb-gatetab">'
+              + '<div class="octb octb-tab">'
               +   '<div class="octb-top">'
               +     '<div class="octb-lbls"><span class="octb-en">Time in ' + _e(_tbCity) + '</span><span class="octb-fr">Heure à ' + _e(_tbCity) + '</span></div>'
               +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
