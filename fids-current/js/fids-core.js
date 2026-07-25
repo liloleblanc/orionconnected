@@ -16259,7 +16259,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22467';
+var FIDS_BUILD_TAG = 'v22468';
 (function(){
   try {
     function _addTag(){
@@ -27994,6 +27994,32 @@ function _preloadGateAdMediaForSlide(slide) {
       if (d._customLogoVideo) jobs.push({ u: d._customLogoVideo, v: true });
       if (d.videoSrc)         jobs.push({ u: d.videoSrc, v: true });
       if (d.logo)             jobs.push({ u: d.logo, v: false });
+      // Accor hotel decks paint a PER-PAGE hero photo (.axr-hero-img
+      // background) that none of the generic fields above cover. Left
+      // unwarmed, each page's photo decoded a beat AFTER the slide/page
+      // appeared — the ad showed first and the photo faded in over it (Nick:
+      // 'it fades in first to the ad before properly fading in'), and the
+      // image settling could nudge the layout ('sometimes bumps or twitches').
+      // Warm the whole deck's photo set — page 1/2/3 heroes plus the room
+      // pages — so every hero is decoded before it's shown. Pure prefetch.
+      if (d.isAccorHotel) {
+        var _accP = [];
+        if (Array.isArray(d.photos)) _accP = _accP.concat(d.photos);
+        if (d.photo) _accP.push(d.photo);
+        try {
+          if (d.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
+            var _dd = null;
+            for (var _k in ACCOR_HOTEL_DETAIL_CACHE) {
+              if (_k === d.hotelId || _k.indexOf(d.hotelId + '|') === 0) { _dd = ACCOR_HOTEL_DETAIL_CACHE[_k]; break; }
+            }
+            if (_dd) {
+              if (Array.isArray(_dd.photos)) _accP = _accP.concat(_dd.photos.slice(0, 6));
+              if (Array.isArray(_dd.rooms)) _dd.rooms.slice(0, 3).forEach(function (r) { if (r && r.photo) _accP.push(r.photo); });
+            }
+          }
+        } catch (e) {}
+        _accP.slice(0, 8).forEach(function (u) { if (u) jobs.push({ u: u, v: false }); });
+      }
     }
     jobs.forEach(function (o) {
       if (!o.u || seen[o.u]) return;
