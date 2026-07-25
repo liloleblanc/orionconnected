@@ -16382,7 +16382,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22500';
+var FIDS_BUILD_TAG = 'v22501';
 (function(){
   try {
     function _addTag(){
@@ -26986,7 +26986,20 @@ function buildAccorAdOnlyV6(ad) {
   var _kDining = ({en:'Dining & reviews',fr:'Restauration & avis',es:'Gastronomía y reseñas',de:'Gastronomie & Bewertungen',it:'Ristorazione e recensioni',pt:'Restauração e avaliações',ja:'ダイニング＆レビュー',zh:'餐饮与评价',ar:'المطاعم والتقييمات'})[_acL] || 'Dining & reviews';
 
   function _heroImg(u){ return u ? '<div class="axr-hero-img" style="background-image:url(\''+esc(u)+'\')"></div>' : '<div class="axr-hero-img axr-hero-noimg"></div>'; }
-  function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul>' : ''; }
+  // Official Accor ALL pictograms for amenity lines (Nick) — matched by
+  // keyword; unmatched lines keep the "›" chevron. Grows as Nick supplies
+  // more pictos (files live in /logos/hotels/accor-pictos/, white cuts).
+  var _AMEN_PICTOS = [
+    { rx: /wi[\s-]?fi|internet|wireless|haut d[ée]bit|sans fil/i, ico: '/logos/hotels/accor-pictos/internet-white.svg' }
+  ];
+  function _amenPicto(s) {
+    for (var i = 0; i < _AMEN_PICTOS.length; i++) if (_AMEN_PICTOS[i].rx.test(s)) return _AMEN_PICTOS[i].ico;
+    return '';
+  }
+  function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){
+    var p = _amenPicto(String(i || ''));
+    return '<li'+(p ? ' class="axr-li-picto" style="--amen-picto:url(&quot;'+p+'&quot;)"' : '')+'>'+esc(i)+'</li>';
+  }).join('')+'</ul>' : ''; }
   var _ph0 = _photoSet[0]||photo||'', _ph1 = _photoSet[1]||_ph0, _ph2 = _photoSet[2]||_ph1;
   // Continuation pages carry the brand LOGO (Nick: 'the logo should be on
   // all screens'), so the context name is the brand-stripped property name —

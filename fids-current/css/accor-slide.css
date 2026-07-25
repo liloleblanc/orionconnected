@@ -50,6 +50,9 @@
 .axr-list li{ position:relative; padding-left:1.65em; font-size:calc(var(--axr-info) * 1.18); font-weight:400;
   line-height:1.3; max-width:92%; letter-spacing:.005em; }
 .axr-list li::before{ content:"\203A"; position:absolute; left:0; color:var(--all-gold); font-weight:700; }
+/* Amenity lines with an official Accor pictogram (set via --amen-picto by the
+   renderer) swap the "›" chevron for the white picto, sized to the text. */
+.axr-list li.axr-li-picto::before{ content:""; background:var(--amen-picto) center/contain no-repeat; width:1.2em; height:1.2em; top:.02em; }
 /* All pages use the gold chevron bullet. The old per-page icon-font glyphs
    (\e972/\e965) rendered as red ✕ marks on the amenity lists — they read
    as "not available" (Nick's ibis shot). */
