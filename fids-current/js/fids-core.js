@@ -16387,7 +16387,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22508';
+var FIDS_BUILD_TAG = 'v22509';
 (function(){
   try {
     function _addTag(){
@@ -26865,7 +26865,14 @@ function buildAccorAdOnlyV6(ad) {
   }
   // Brand policy (Nick): a hotel name is NEVER split across two lines —
   // .axr-one-line keeps it whole and the fitter shrinks it until it fits.
-  var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br><span class="axr-one-line">' + esc(_fullName) + '</span>';
+  // Fairmont-style accent (Nick): first word italic sentence-case, the rest
+  // renders CAPS via the brand's bubble CSS — like 'SAVOR SAN JUAN flavor'.
+  var _scanTxt = safeTL('scanToDiscover','Scan to discover');
+  var _scanSp = _scanTxt.indexOf(' ');
+  var _scanHtml = (_scanSp > 0)
+    ? '<i class="axr-scan-accent">' + esc(_scanTxt.slice(0, _scanSp)) + '</i> ' + esc(_scanTxt.slice(_scanSp + 1))
+    : esc(_scanTxt);
+  var _qrCaption = _scanHtml + '<br><span class="axr-one-line">' + esc(_fullName) + '</span>';
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).

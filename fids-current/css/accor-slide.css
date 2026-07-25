@@ -225,7 +225,8 @@
 .axr[data-brand-code="FAI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="FAI"] .axr-bubble{ background:#EFE9DE; color:#14161C; border:1px solid #B88D5B; border-radius:2px 2px 2px 0; }
 .axr[data-brand-code="FAI"] .axr-bubble::after{ border-top-color:#EFE9DE; }
-.axr[data-brand-code="FAI"] .axr-bubble-copy{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-weight:400; letter-spacing:.02em; }
+.axr[data-brand-code="FAI"] .axr-bubble-copy{ font-family:'FairmontName','The Seasons',Georgia,serif !important; text-transform:uppercase; letter-spacing:.05em; font-weight:400; }
+.axr[data-brand-code="FAI"] .axr-bubble-copy .axr-scan-accent{ text-transform:none; font-style:italic; letter-spacing:.02em; }
 .axr[data-brand-code="FAI"] .axr-all{ background:transparent; border-top:1px solid rgba(184,141,91,0.6); padding:14px 0 8px; }
 .axr[data-brand-code="FAI"] .axr-all.axr-all-simple::before{ display:none; }
 .axr[data-brand-code="FAI"] .axr-all img{ filter:none; opacity:.92; max-height:30px; }
