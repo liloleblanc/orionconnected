@@ -4041,6 +4041,28 @@ function makeSofitelLockupSvgDataUri(propertyName) {
     + '</svg>';
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
+// INLINE-SVG variant of the Sofitel lockup (Nick: 'some Sofitel … wrong font').
+// A @font-face embedded in an SVG rendered as <img> does NOT load in browsers,
+// so the property name fell back to a system font. Rendered INLINE in the DOM
+// with the font declared at document level (RebeltonExt @font-face in
+// accor-slide.css), the name paints in the real Rebelton Extended. The SOFITEL
+// wordmark is vector paths either way. Returns raw <svg> markup (not a data URI).
+function makeSofitelLockupInlineSvg(propertyName) {
+  if (!propertyName) return '';
+  var clean = String(propertyName)
+    .replace(/^sofitel\s+/i, '')
+    .replace(/,?\s*(a\s+)?sofitel\s+(hotel|resort)s?\s*$/i, '')
+    .trim();
+  if (!clean) clean = String(propertyName).trim();
+  var name = String(clean.toUpperCase()).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  var len = name.length;
+  var fsz = len <= 12 ? 6.0 : len <= 20 ? 4.8 : len <= 30 ? 3.8 : 3.1;
+  var ls  = len <= 12 ? 2.2 : len <= 20 ? 1.6 : len <= 30 ? 1.0 : 0.8;
+  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" viewBox="0 -2 190 30" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
+    + '<g fill="#FFFFFF">' + _SOFITEL_WORDMARK_G + '</g>'
+    + '<text x="95" y="25" text-anchor="middle" fill="#FFFFFF" font-family="RebeltonExt, sans-serif" font-size="' + fsz + '" letter-spacing="' + ls + '">' + name + '</text>'
+    + '</svg>';
+}
 
 // ── EMBLEMS COLLECTION LOCKUP MAP & GENERATOR ──────────────────────────
 // Same architecture as Fairmont. Emblems Collection is Accor's curated
@@ -16303,7 +16325,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22477';
+var FIDS_BUILD_TAG = 'v22478';
 (function(){
   try {
     function _addTag(){
@@ -25050,6 +25072,7 @@ function _processAccorData(data, destIata, langKey) {
     // Emblems Collection follows the same pattern — per-property override
     // first, runtime-generated lockup as fallback.
     var _propertyLockupPath = null;
+    var _sofitelInlineSvg = null;   // inline-SVG Sofitel lockup (real Rebelton font)
     if (brand === 'FAI' && hotelName) {
       // Normalize: lowercase, strip leading/trailing "fairmont" if present,
       // strip leading "the ", and trim.
@@ -25117,9 +25140,12 @@ function _processAccorData(data, destIata, langKey) {
         : '/logos/hotels/sofitel/sofitel-montreal-en.svg';
     } else if (brand === 'SOF' && hotelName && typeof makeSofitelLockupSvgDataUri === 'function') {
       // Every OTHER Sofitel property renders the same way as Montréal — real
-      // SOFITEL wordmark + property name in Rebelton Extended (Nick's font),
-      // composed at runtime with the font embedded (Nick approved the template).
+      // SOFITEL wordmark + property name in Rebelton Extended (Nick's font).
+      // The data-URI keeps accorLockupCarriesName() working (name suppression);
+      // the INLINE variant is what actually renders, so the name paints in the
+      // real Rebelton font (a font can't load inside an <img>-rendered SVG).
       _propertyLockupPath = makeSofitelLockupSvgDataUri(hotelName);
+      if (typeof makeSofitelLockupInlineSvg === 'function') _sofitelInlineSvg = makeSofitelLockupInlineSvg(hotelName);
     }
 
     // DIAGNOSTIC: only log Accor hotels that DIDN'T get a lockup — that
@@ -25157,6 +25183,7 @@ function _processAccorData(data, destIata, langKey) {
       // half english'.)
       _adLang: _ckLang,
       _propertyLockup: _propertyLockupPath,
+      _sofitelInlineSvg: _sofitelInlineSvg,
       // v218.99.25 — extended Catalog fields for the Option D overlay
       advantages: Array.isArray(h.advantages) ? h.advantages : [],
       amenityFree: (h.amenity && Array.isArray(h.amenity.free)) ? h.amenity.free : [],
@@ -26731,7 +26758,9 @@ function buildAccorAdOnlyV6(ad) {
   _logoBase = _logoBase.substring(_logoBase.lastIndexOf('/')+1);
   var _logoCrop = (typeof ACCOR_LOGO_CROP!=='undefined' && ACCOR_LOGO_CROP[_logoBase]) || _LOGO_CROP[lower(brandWord)] || '';
   var logoHtml=haveLogo
-    ? '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>'
+    ? (ad._sofitelInlineSvg
+        ? '<div class="axr-logo">'+ad._sofitelInlineSvg+'</div>'   // inline so Rebelton actually renders
+        : '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>')
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
   // QR caption — always invite discovery of the property by its FULL name
@@ -27681,6 +27710,17 @@ function buildAdLogoPanelHtml(ad) {
   // full brand-team lockup (script wordmark + property name + underline rule).
   // Render the lockup big, no separate name text, just the rating subtitle.
   if (ad._propertyLockup) {
+    // Sofitel: render the lockup INLINE (not <img>) so the property name paints
+    // in the real Rebelton Extended font — a font embedded in an <img>-rendered
+    // SVG never loads. Already white-filled, so no invert filter.
+    if (ad._sofitelInlineSvg) {
+      return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
+        + '<div style="width:90%;height:64%;display:flex;align-items:center;justify-content:center;">' + ad._sofitelInlineSvg + '</div>'
+        + (ad.sub
+            ? '<div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;">' + ad.sub + '</div>'
+            : '')
+        + '</div>';
+    }
     // Some brand-team lockups are already designed for dark backgrounds
     // (white fill) — applying the brightness(0) invert(1) filter would turn
     // them BLACK and invisible. Detect "white" property lockups and skip
