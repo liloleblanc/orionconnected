@@ -76,7 +76,7 @@
 /* Partial gradient — photo stays visible top/right; brand tint deepens bottom-left */
 .axr-hero-grad{ position:absolute; inset:0;
   background:
-    linear-gradient(90deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.24) 44%, rgba(0,0,0,0) 72%),
+    linear-gradient(90deg, rgba(0,0,0,.8) 0%, rgba(0,0,0,.42) 52%, rgba(0,0,0,0) 82%),
     linear-gradient(0deg, var(--axr-tint) -6%, color-mix(in srgb, var(--axr-tint) 58%, transparent) 26%, transparent 58%);
 }
 

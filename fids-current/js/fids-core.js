@@ -16387,7 +16387,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22504';
+var FIDS_BUILD_TAG = 'v22505';
 (function(){
   try {
     function _addTag(){
@@ -26957,7 +26957,12 @@ function buildAccorAdOnlyV6(ad) {
   if (_lblsAd.indexOf('DINING_OFFER') !== -1) _dineAmen.push(_dfr ? 'Offres restauration pour les clients' : 'Dining offers for guests');
   var _restList = _dedupe(_dineAdv.concat(_dineAmen)).slice(0, 5);
   if (!_restList.length) _restList = _dedupe((_detail && _detail.restaurants) ? _detail.restaurants : []).slice(0, 5);
-  var _blurb = first(ad.description, ad.destinationDescription, '');
+  // Hygiene/pandemic boilerplate is NEVER ad copy (Nick: the COVID notice
+  // rendering as the hotel's blurb — 'This cant happen').
+  var _covidRx = /covid|coronavirus|pand[ée]mi|sanitai?r|hygi[eè]n|propagation|all ?safe|\bvirus\b/i;
+  var _blurb = [ad.description, ad.destinationDescription].filter(function (t) {
+    return t && !_covidRx.test(String(t));
+  })[0] || '';
   if (_blurb) {
     _blurb = String(_blurb).replace(/\s+/g, ' ').trim();
     // End on a COMPLETE SENTENCE so the card never shows a mid-thought cut
@@ -26978,7 +26983,10 @@ function buildAccorAdOnlyV6(ad) {
         return idx > 0 && !_abbrRx.test(str.slice(0, idx));
       }
       var _sentEnd = -1;
-      for (var _si = _cut.length - 2; _si > 0; _si--) {
+      // FIRST sentence (forward scan) — the old last-sentence-within-budget
+      // could still overflow the 4-line CSS clamp at Fairmont's bigger body
+      // size, so the box ellipsized mid-word ('…(COVID-…').
+      for (var _si = 1; _si < _cut.length - 1; _si++) {
         if ('.!?'.indexOf(_cut[_si]) !== -1 && _cut[_si + 1] === ' ' && _validSentEnd(_cut, _si)) { _sentEnd = _si; break; }
       }
       if (/[.!?]$/.test(_cut) && _validSentEnd(_cut, _cut.length - 1)) _sentEnd = Math.max(_sentEnd, _cut.length - 1);
@@ -27058,17 +27066,16 @@ function buildAccorAdOnlyV6(ad) {
     var _rooms = (_detail && Array.isArray(_detail.rooms)) ? _detail.rooms.filter(function (r) { return r && r.name; }) : [];
     _roomsHtml = _rooms.slice(0, 3).map(function (r) {
       var _rd = String(r.desc || '');
+      if (_covidRx.test(_rd)) _rd = '';
       // Trim to a COMPLETE sentence that comfortably fits above the panel
       // bottom — the old 190-char budget overflowed once the room title and
       // bullets grew, so the CSS clamp chopped mid-phrase ('…rest after a
       // long day at the…' — Nick: 'the text at the bottom cuts off').
       if (_rd.length > 170) {
-        // COMPLETE sentence or nothing — a word-cut '…le…' fragment reads
-        // broken on a paying advertiser's card (Nick: 'the ads cut out words').
-        var _rc2 = _rd.slice(0, 240);
-        var _pe2 = Math.max(_rc2.lastIndexOf('. '), _rc2.lastIndexOf('! '), _rc2.lastIndexOf('? '),
-                            /[.!?]$/.test(_rc2) ? _rc2.length - 1 : -1);
-        _rd = (_pe2 > 40) ? _rc2.slice(0, _pe2 + 1) : '';
+        // FIRST complete sentence or nothing — never a fragment, never more
+        // than the visual box can hold (Nick: 'the ads cut out words').
+        var _pe2 = _rd.slice(0, 240).search(/[.!?](\s|$)/);
+        _rd = (_pe2 > 40) ? _rd.slice(0, _pe2 + 1) : '';
       }
       // Split the long feed name into TITLE + DETAILS lines (Nick: 'ROOM
       // NAME / DETAILS, two sentences') — first comma/period ends the title.
