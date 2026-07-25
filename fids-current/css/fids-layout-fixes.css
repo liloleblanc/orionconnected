@@ -3544,11 +3544,19 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
      smaller so it clears the star's points (Nick). Mirrors the plane glyph
      size/centring at line ~3497. Highest specificity so it beats the 56px
      dark rule and the white .ac-ico rule above. */
+  /* Acadian (Moncton): SMALL bag so it clears the flag star's points (Nick:
+     'the baggage in Moncton was fine, now it's taken over the star'). */
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon .ac-ico-baggage,
-  body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage,
-  html .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
+  body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
     color: #003DA5 !important;
-    font-size: clamp(52px, 4.4vw, 92px) !important;   /* Nick: the bag was tiny — make it big + clean */
+    font-size: clamp(26px, 2.0vw, 40px) !important;
+    margin-top: 6% !important;
+    line-height: 1 !important;
+  }
+  /* Every OTHER BIDS banner (no Acadian star to clear): big, clean bag (Nick). */
+  html body:not([data-fids-banner="silk-acadian"]) .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
+    color: #003DA5 !important;
+    font-size: clamp(52px, 4.4vw, 92px) !important;
     margin-top: 6% !important;
     line-height: 1 !important;
   }
@@ -3722,4 +3730,14 @@ html .octb-attached .octb-tab::after {
   top: 0 !important; bottom: 0 !important; left: 100% !important;
   width: 34px !important;
   background: rgba(214,218,226,0.26) !important;
+}
+
+/* Moncton's Acadian banner carries a flag STAR right by the title — keep its
+   baggage icon at the original small size so the enlarged bag (used everywhere
+   else) doesn't cover it (Nick: 'the baggage in Moncton was fine, now it's
+   taken over the star'). High-specificity + end-of-file so it wins over the
+   big-bag rules for Moncton only. */
+html body.fids-ap-YQM .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage,
+html body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage {
+  font-size: clamp(24px, 1.9vw, 40px) !important;
 }
