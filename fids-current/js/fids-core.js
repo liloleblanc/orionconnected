@@ -4050,7 +4050,7 @@ function makeFairmontLockupInlineSvg(propertyName) {
   } else {
     fontSize = 2.9; letterSpacing = 0.25;
   }
-  return '<svg class="axr-hotel-svg fai-inline-lockup" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30.5" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
+  return '<svg class="axr-hotel-svg fai-inline-lockup" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30.5" preserveAspectRatio="xMinYMid meet" style="width:100%;height:100%;display:block;">'
     + '<g transform="translate(1.6, 0) scale(1.42)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
@@ -16382,7 +16382,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22498';
+var FIDS_BUILD_TAG = 'v22499';
 (function(){
   try {
     function _addTag(){
@@ -27030,11 +27030,15 @@ function buildAccorAdOnlyV6(ad) {
     var _rooms = (_detail && Array.isArray(_detail.rooms)) ? _detail.rooms.filter(function (r) { return r && r.name; }) : [];
     _roomsHtml = _rooms.slice(0, 3).map(function (r) {
       var _rd = String(r.desc || '');
-      if (_rd.length > 150) {
-        var _rc2 = _rd.slice(0, 190);
+      // Trim to a COMPLETE sentence that comfortably fits above the panel
+      // bottom — the old 190-char budget overflowed once the room title and
+      // bullets grew, so the CSS clamp chopped mid-phrase ('…rest after a
+      // long day at the…' — Nick: 'the text at the bottom cuts off').
+      if (_rd.length > 120) {
+        var _rc2 = _rd.slice(0, 150);
         var _pe2 = Math.max(_rc2.lastIndexOf('. '), _rc2.lastIndexOf('! '), _rc2.lastIndexOf('? '),
                             /[.!?]$/.test(_rc2) ? _rc2.length - 1 : -1);
-        _rd = (_pe2 > 40) ? _rc2.slice(0, _pe2 + 1) : _rd.slice(0, 145).replace(/\s+\S*$/, '');
+        _rd = (_pe2 > 40) ? _rc2.slice(0, _pe2 + 1) : _rd.slice(0, 110).replace(/\s+\S*$/, '') + '…';
       }
       return '<div class="axr-page">'
         + _heroImg(r.photo || _ph1) + '<div class="axr-hero-grad"></div>'
