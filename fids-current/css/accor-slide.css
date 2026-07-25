@@ -1202,12 +1202,12 @@
 
 /* Sofitel property-name font, declared at DOCUMENT level so the inline-SVG
    Sofitel lockups can use it (a font embedded inside an <img>-rendered SVG
-   never loads). FF Good Pro Extended News (Nick) — an EXTENDED width that
-   matches the SOFITEL wordmark's proportions, standing in for Clan Extended
-   News SC per the brand book. */
+   never loads). MADE Outer Sans Light (Nick) — the closest match to the
+   Sofitel property-name cut: a light geometric that echoes the SOFITEL
+   wordmark's open, spacious proportions. */
 @font-face {
   font-family: 'SofitelName';
-  src: url('/fonts/sofitel-name-goodext.ttf') format('truetype');
+  src: url('/fonts/sofitel-name-outer.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
