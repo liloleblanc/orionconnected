@@ -1886,16 +1886,14 @@ html .wxcard-col .wxc-grid-7 > .wxc-day {
   min-width: 0 !important; overflow: visible !important;
   padding-left: 4px !important; padding-right: 4px !important;
 }
-/* Day + full date on one line each ('Friday | July 24'). Narrow 7-day tiles
-   can't hold that on a single line, so WRAP instead of clipping to 'Jul…'
-   (Nick hates clipping). Slightly smaller type in the 7-day grid keeps most
-   labels to one line and any long ones to a clean two. */
+/* Centred day cell: EN day + EN date above the icon, FR day + FR date below
+   (Nick's spec). Short single words per line — keep them on one centred line,
+   no clipping. */
 html .wxcard-col .wxc-grid-7 .wxc-d,
-html .wxcard-col .wxc-grid-7 .wxc-d2 {
-  white-space: normal !important; overflow: visible !important; text-overflow: clip !important;
-  max-width: 100% !important; line-height: 1.12 !important;
-  overflow-wrap: anywhere !important; word-break: normal !important;
-  font-size: clamp(10px, 1.45vh, 17px) !important;
+html .wxcard-col .wxc-grid-7 .wxc-dt {
+  white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important;
+  max-width: 100% !important; line-height: 1.14 !important; text-align: center !important;
+  font-size: clamp(10px, 1.5vh, 18px) !important;
 }
 html .wxcard-col .wxc-grid-2, html .wxcard-col .wxc-grid-3, html .wxcard-col .wxc-grid-4 { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important; }
 html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
@@ -1919,16 +1917,13 @@ html .wxcard-col .wxc-title { font-size: clamp(13px, 1.9vh, 23px) !important; }
 /* Full day names, both languages equally legible. v22210's second line was
    0.74em @ 0.55 opacity — Nick: 'english so much smaller and gray … it needs
    to be … clear'. Both lines now white, bold, one line each, no wrap. */
-html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-height: 1.16 !important; font-weight: 800 !important; color: #ffffff !important; white-space: normal !important; }
-/* Day|date separator — subtle, so 'Friday | July 24' reads as one unit. */
-html .wxcard-col .wxc-dsep { opacity: 0.5 !important; font-weight: 600 !important; margin: 0 0.16em !important; }
-/* BOTH languages the SAME size (Nick, 5th mention: 'days of the week still
-   different sizes'). The second line was 0.86em — visibly smaller than the
-   first. Now identical size, weight and colour; one clean two-line label. */
-html .wxcard-col .wxc-d2 { display: block !important; font-size: 1em !important; font-weight: 800 !important; opacity: 1 !important; color: #ffffff !important; white-space: nowrap !important; letter-spacing: 0.1px !important; }
-/* Actual date under the day name so it's clear WHICH day (Nick: 'hard to tell
-   what day they're talking about'). */
-html .wxcard-col .wxc-dt { display: block !important; font-size: clamp(11px, 1.5vh, 18px) !important; font-weight: 700 !important; color: rgba(255,255,255,.72) !important; white-space: nowrap !important; margin-top: 1px !important; }
+/* Day name — bold white, centred. EN sits above the icon, FR (.wxc-d-fr)
+   below it; both the same size/weight so the cell reads top-to-bottom cleanly. */
+html .wxcard-col .wxc-d { font-size: clamp(12px, 1.7vh, 21px) !important; line-height: 1.16 !important; font-weight: 800 !important; color: #ffffff !important; white-space: nowrap !important; text-align: center !important; }
+/* Date line under each day name — slightly lighter than the day. */
+html .wxcard-col .wxc-dt { display: block !important; font-size: clamp(11px, 1.5vh, 18px) !important; font-weight: 700 !important; color: rgba(255,255,255,.75) !important; white-space: nowrap !important; text-align: center !important; margin-top: 1px !important; }
+/* French block sits BELOW the icon — a little breathing room from the icon. */
+html .wxcard-col .wxc-d-fr { margin-top: 4px !important; }
 html .wxcard-col .wxc-day img, html .wxcard-col .wxc-day .wxanim-host {
   width: clamp(48px, 8.6vh, 104px) !important; height: clamp(48px, 8.6vh, 104px) !important;
 }
