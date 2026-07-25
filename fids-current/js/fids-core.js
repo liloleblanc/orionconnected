@@ -2225,6 +2225,17 @@ function _gateCsPick(list) {
   });
   out.forEach(function (f) {
     if (foreign(f)) {
+      // Rebrand to the operator's mainline family ONLY when the MARKETING code
+      // is itself a regional/commuter code (e.g. QK/Jazz → Air Canada). NEVER
+      // override an explicit mainline marketing carrier: AA4420 must stay
+      // American Airlines even when the operator resolves to Republic (YX),
+      // whose static family here is United. Republic (and several regionals)
+      // fly for more than one mainline — American Eagle, United Express, Delta
+      // Connection — so the operator code alone can't pick the brand. Left
+      // unguarded, the gate banner flipped AA↔UA every time the operator field
+      // oscillated between Envoy (MQ→AA) and Republic (YX→UA) for one flight
+      // (Nick: 'United branding on an AA flight … it keeps happening').
+      if (!_CS_REGIONAL_FAM[f.airline]) return;
       var fm = fam(f._opCode);
       f._csRebrandFrom = f._csRebrandFrom || f.airline;
       f.airline = fm;
@@ -16259,7 +16270,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22468';
+var FIDS_BUILD_TAG = 'v22469';
 (function(){
   try {
     function _addTag(){
