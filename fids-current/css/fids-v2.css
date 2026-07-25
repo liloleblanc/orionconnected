@@ -1442,9 +1442,10 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-na
    navy-board redefine --fids-row-h, breaking consistency. Force
    the user-picked logo size via body[data-fids-logo-size=...].
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-body[data-fids-logo-size="small"]  { --fids-logo-size: 48px !important; --fids-row-h: 56px !important; }
-body[data-fids-logo-size="medium"] { --fids-logo-size: 56px !important; --fids-row-h: 64px !important; }
-body[data-fids-logo-size="large"]  { --fids-logo-size: 64px !important; --fids-row-h: 72px !important; }
+/* Clearly-distinct fixed row heights per size (Nick: widen the spread). */
+body[data-fids-logo-size="small"]  { --fids-logo-size: 44px !important; --fids-row-h: 52px !important; }
+body[data-fids-logo-size="medium"] { --fids-logo-size: 60px !important; --fids-row-h: 74px !important; }
+body[data-fids-logo-size="large"]  { --fids-logo-size: 78px !important; --fids-row-h: 98px !important; }
 
 /* Beat ALL theme-specific row height overrides (cream, navy-board, etc.) */
 body[data-fids-logo-size] #fidsTable tbody tr,
