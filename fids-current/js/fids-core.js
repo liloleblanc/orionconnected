@@ -16382,7 +16382,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22491';
+var FIDS_BUILD_TAG = 'v22492';
 (function(){
   try {
     function _addTag(){
@@ -24591,6 +24591,8 @@ function fetchAccorHotels(destIata) {
 // h.localization.coordinates) and a known downtown-centre coordinate
 // per major Canadian city.
 var DOWNTOWN_COORDS = {
+  'SYR': { lat: 43.0481, lng: -76.1474, name: 'Syracuse' },
+  'SJU': { lat: 18.4655, lng: -66.1057, name: 'San Juan' },
   'YYZ': { lat: 43.6532, lng: -79.3832, name: 'Toronto' },
   'YUL': { lat: 45.5017, lng: -73.5673, name: 'Montreal' },
   'YVR': { lat: 49.2827, lng: -123.1207, name: 'Vancouver' },
@@ -25309,17 +25311,25 @@ function _processAccorData(data, destIata, langKey) {
     };
   });
 
-  // v218.99.55 — Filter: drop hotels only if downtown distance is KNOWN and >100km.
-  // If GPS is missing or city coords aren't in our table, KEEP the hotel
-  // (just won't show the distance line). This way Accor ads always render
-  // even if our distance calculation can't determine the answer.
+  // v22492 — Filter: a hotel must be provably NEAR the destination to show.
+  // The old rule ('drop only if downtown distance KNOWN and >100km, keep
+  // unknowns') leaked wrong-city hotels: SYR isn't in DOWNTOWN_COORDS, so the
+  // Ottawa Château Laurier (259km away, Accor's nearest result) showed as the
+  // ONLY ad on a Syracuse/Chicago flight, and the GPS-less El San Juan showed
+  // for Punta Cana (Nick: 'this is CHICAGO its showing OTTAWA'). New rule:
+  //   1. downtown distance known  → keep iff ≤100km
+  //   2. else airport distance known (COORDS has every IATA) → keep iff ≤100km
+  //   3. else (no GPS at all) → DROP — better no hotel ad than the wrong city
   var DOWNTOWN_THRESHOLD_KM = 100;
   var beforeFilter = hotels.length;
   hotels = hotels.filter(function(ad) {
-    // Keep if we don't know the distance (no GPS or city not in our table)
-    if (!ad.distanceCity || typeof ad.distanceCity.km !== 'number') return true;
-    // Drop only if we KNOW it's beyond the threshold
-    return ad.distanceCity.km <= DOWNTOWN_THRESHOLD_KM;
+    if (ad.distanceCity && typeof ad.distanceCity.km === 'number') {
+      return ad.distanceCity.km <= DOWNTOWN_THRESHOLD_KM;
+    }
+    if (ad.distanceAirport && typeof ad.distanceAirport.km === 'number') {
+      return ad.distanceAirport.km <= DOWNTOWN_THRESHOLD_KM;
+    }
+    return false;
   });
   // Sort closest-first when we have distance; unknowns go to end
   hotels.sort(function(a, b) {
