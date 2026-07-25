@@ -2521,7 +2521,7 @@ html body .fids-banner .fids-banner-digirow .fids-banner-tlabel {
    enlarge the suitcase, and give the (longer) baggage titles their own
    fixed reserve so the icon + first letter stay put on language rotation. */
 html body .bidsv2-fids-banner .fids-board-icon::before { content: "" !important; display: none !important; }
-html .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage { font-size: 56px !important; color: #14263f !important; }
+html .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage { font-size: clamp(60px, 6vh, 96px) !important; color: #14263f !important; }
 html .bidsv2-fids-banner .fids-board-label { font-size: 54px !important; min-width: 560px !important; }
 /* Baggage banner: nudge the whole title block toward the right edge and tuck
    the suitcase closer to the words (Nick). */
@@ -3548,7 +3548,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage,
   html .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
     color: #003DA5 !important;
-    font-size: clamp(26px, 2.0vw, 40px) !important;
+    font-size: clamp(52px, 4.4vw, 92px) !important;   /* Nick: the bag was tiny — make it big + clean */
     margin-top: 6% !important;
     line-height: 1 !important;
   }
