@@ -3661,3 +3661,19 @@ html .octb-fr { font-size: clamp(10px,1.35vh,16px) !important; font-weight: 700 
 html .octb-clock { font-size: clamp(22px,3.2vh,42px) !important; font-weight: 900 !important; color: #ffffff !important; white-space: nowrap !important; line-height: 1.0 !important; }
 html .octb-date { font-size: clamp(9px,1.2vh,14px) !important; font-weight: 700 !important; color: rgba(255,255,255,0.80) !important; white-space: nowrap !important; text-align: center !important; margin-top: 2px !important; }
 html .octb-date .cl-sep { opacity: .5 !important; }
+/* Single local-time TAB (Nick: 'with a tab'): full banner height, rounded top
+   corners, flush bottom, soft border + shadow — the gate-tab grammar. Sized a
+   touch larger now that it's the only panel. */
+html .octb-tab {
+  align-self: stretch !important;
+  justify-content: center !important;
+  border-radius: 20px 20px 0 0 !important;
+  border: 1px solid rgba(255,255,255,0.20) !important;
+  border-bottom: none !important;
+  box-shadow: 0 -3px 16px rgba(0,0,0,0.26) !important;
+  background: rgba(150,152,160,0.18) !important;
+  padding: clamp(4px,0.9vh,12px) clamp(18px,1.8vw,32px) 0 !important;
+}
+html .octb-tab .octb-en, html .octb-tab .octb-fr { font-size: clamp(11px,1.5vh,19px) !important; }
+html .octb-tab .octb-clock { font-size: clamp(26px,3.8vh,52px) !important; }
+html .octb-tab .octb-date { font-size: clamp(10px,1.35vh,16px) !important; }

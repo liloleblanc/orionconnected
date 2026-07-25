@@ -9396,38 +9396,25 @@ function uxgGateHtml(ctx) {
             // back to white — it was never meant to change'). v22438 tried to
             // flip Frontier's clock to navy on its light band; that was the
             // wrong read — 'needs to be blue' was about the DATA, not the time.
-            // Local + Destination time panels (Nick: 'Local Time and
-            // Destination time'). Each panel: the label on two stacked rows
-            // ('Time in <City>' / 'Heure à <City>'), the big single 12h clock
-            // to its right, and the full bilingual date below — sitting in a
-            // faded gate-style gray panel with a soft border/separation.
+            // Local-time TAB (Nick: 'simply the location where it's at, with a
+            // tab ... one time format such as 7:30PM'). Just the GATE airport's
+            // time — no destination panel. Label on two rows ('Time in <City>' /
+            // 'Heure à <City>'), the single 12h clock to the right, and the
+            // full bilingual date below, all inside a faded gate-style tab
+            // (rounded top, soft border/shadow separation).
             var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
-            var _mkTimeBlock = function (city, zone) {
-              var _it = '—';
-              try { _it = new Date().toLocaleTimeString('en-US', zone ? { timeZone: zone, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
-              var _id = '';
-              try { _id = _ocClockDate(new Date(), zone || null); } catch (e) {}
-              return '<div class="octb">'
-                + '<div class="octb-top">'
-                +   '<div class="octb-lbls"><span class="octb-en">Time in ' + _e(city) + '</span><span class="octb-fr">Heure à ' + _e(city) + '</span></div>'
-                +   '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(zone) + '" data-mer="up">' + _it + '</span>'
-                + '</div>'
-                + '<div class="octb-date">' + _id + '</div>'
-                + '</div>';
-            };
-            var _dstIata = String(locIata || '').toUpperCase();
-            var _dstTz = (typeof AP !== 'undefined' && AP[_dstIata] || {}).tz || '';
-            var _dstCity = '';
-            if (_dstIata) {
-              try {
-                _dstCity = (typeof CITY !== 'undefined' && CITY[_dstIata]) || (typeof AP !== 'undefined' && AP[_dstIata] && AP[_dstIata].city) || _dstIata;
-                if (typeof normalizeDisplayCity === 'function') _dstCity = normalizeDisplayCity(_dstCity, _dstIata);
-              } catch (e) { _dstCity = _dstIata; }
-            }
-            var _showDst = !!(_dstIata && _dstTz && _dstIata !== String(iata || '').toUpperCase());
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap" style="position:absolute;top:0;left:' + (_showDst ? '35.5%' : '40%') + ';right:26%;bottom:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 8px;background:transparent;overflow:hidden;z-index:4;">'
-              + _mkTimeBlock(_tbCity, _tbTz)
-              + (_showDst ? _mkTimeBlock(_dstCity, _dstTz) : '')
+            var _tbNow1 = '—';
+            try { _tbNow1 = new Date().toLocaleTimeString('en-US', _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
+            var _tbDate1 = '';
+            try { _tbDate1 = _ocClockDate(new Date(), _tbTz || null); } catch (e) {}
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap" style="position:absolute;top:0;left:34%;right:26%;bottom:0;box-sizing:border-box;display:flex;align-items:stretch;justify-content:center;z-index:4;">'
+              + '<div class="octb octb-tab">'
+              +   '<div class="octb-top">'
+              +     '<div class="octb-lbls"><span class="octb-en">Time in ' + _e(_tbCity) + '</span><span class="octb-fr">Heure à ' + _e(_tbCity) + '</span></div>'
+              +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
+              +   '</div>'
+              +   '<div class="octb-date">' + _tbDate1 + '</div>'
+              + '</div>'
               + '</div>';
           }
           var _tbRight = _apLogoTop
@@ -10196,6 +10183,11 @@ function gateAutofit(root) {
     // take the largest sizes their measured tab box fits. client boxes are
     // pre-transform, so the skew never distorts the measurement.
     root.querySelectorAll('.g8-r1-timebox').forEach(function (box) {
+      // The new local-time TAB (octb-wrap) is fully sized by its own CSS clamps
+      // (label rows / clock / date). This legacy fitter assumes the old
+      // structure (child[0]=label, child[1]=clock) and would force child[1] —
+      // now the DATE — to ~66% of the tab height (a giant 40px date). Skip it.
+      if (box.classList.contains('octb-wrap')) return;
       var inner = box.firstElementChild; if (!inner) return;
       var lbl = inner.children[0] || null, val = inner.children[1] || null;
       // Budget = tab width minus its 26px side paddings AND the 30px right
@@ -16296,7 +16288,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22470';
+var FIDS_BUILD_TAG = 'v22471';
 (function(){
   try {
     function _addTag(){
