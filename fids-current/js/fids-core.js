@@ -8431,7 +8431,12 @@ function uxgGateHtml(ctx) {
   // and the rondelle and Star') — like the physical AC gate sign's header:
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
   function _boardWelcomeStripHtml() {
-    var _bwEmb = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    // WHITE-path emblems vanish on the white strip (Nick: United missing its
+    // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
+    // Swap those brands for a colored cut here, like the SkyTeam invert below.
+    var _BW_EMBLEM = { 'UA': '/logos/airlines/us-major/united-globe-only.svg' };
+    var _bwEmb = _BW_EMBLEM[airlineCode]
+      || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
     // The strip is WHITE like the printed sign — swap the banner's metallic
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
     // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
@@ -16382,7 +16387,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22502';
+var FIDS_BUILD_TAG = 'v22503';
 (function(){
   try {
     function _addTag(){
