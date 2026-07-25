@@ -85,12 +85,15 @@
   align-items:center; width:min(470px, 66%); padding:clamp(14px,1.7vw,22px);
   background:var(--all-light); color:var(--all-blue);
   border-radius:0; box-shadow:0 14px 36px rgba(0,0,0,.34); }
-/* ALL Brand Book 3.12 'Graphic cues': the speech bubble is a SQUARE-cornered
-   box whose bottom-left corner flows down into a point — the gentle curve of
-   the ALL 'L', rotated. Left edge runs straight into the point; the right
-   side of the tail is the L's concave sweep back up to the bottom edge. */
-.axr-bubble::after{ content:""; position:absolute; left:0; bottom:-16px; width:46px; height:17px;
-  background:inherit; border:none; border-bottom-right-radius:100% 100%; }
+/* ALL Brand Book 3.12 'Graphic cues': the tail IS the ALL wordmark's actual
+   L glyph, rotated + flipped (all-l-tail.svg, cut from all-mark-white.svg).
+   Rendered as a mask so it takes each brand's bubble colour; the glyph's
+   stem fuses invisibly with the bubble's bottom edge, the curved foot dips
+   below at the left — exactly the book's speech-bubble cue. */
+.axr-bubble::after{ content:""; position:absolute; left:0; bottom:-12px; width:120px; height:34px;
+  background:inherit; border:none;
+  -webkit-mask:url('/logos/hotels/accor-corporate/all-l-tail.svg') 0 0/100% 100% no-repeat;
+          mask:url('/logos/hotels/accor-corporate/all-l-tail.svg') 0 0/100% 100% no-repeat; }
 .axr-bubble-copy{ min-width:0; font-family:var(--axr-display); font-size:clamp(18px,1.6vw,26px);
   line-height:1.24; font-weight:500; letter-spacing:.002em; }
 .axr-bubble-copy::before{ font-family:'ac-icons' !important; content:'\e968'; display:block;
