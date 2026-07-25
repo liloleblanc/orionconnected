@@ -1213,10 +1213,16 @@
   font-display: swap;
 }
 
-/* Sofitel: the full lockup (wordmark / name / emblem) rendered MUCH bigger and
-   wider (Nick), like the Montréal art — the default 38px logo height made it
-   tiny. Only the SOF brand; other brands keep their sizing. */
-.axr[data-brand-code="SOF"] .axr-logo { height: auto !important; align-items: center !important; }
+/* Sofitel: the INLINE-SVG lockup (generated wordmark / name / emblem) renders
+   MUCH bigger and wider (Nick), like the Montréal art. It needs an auto-height
+   parent so it can grow past the fixed 152px cap — but ONLY when the inline
+   lockup is present. The baked-name IMG lockups (Sofitel Montréal etc.) MUST
+   keep the v22461 fixed height: with height:auto the <img>'s height:100%
+   resolves to its full natural size (~288px), which overflows the bottom-
+   anchored room-page content block upward and clips the logo off the top of the
+   ad panel — i.e. 'no logo showing'. Scope the override with :has() so only the
+   inline case relaxes the height. */
+.axr[data-brand-code="SOF"] .axr-logo:has(.sof-inline-lockup) { height: auto !important; align-items: center !important; }
 .axr[data-brand-code="SOF"] .axr-logo .sof-inline-lockup {
   height: auto !important;
   width: min(94%, 640px) !important;
