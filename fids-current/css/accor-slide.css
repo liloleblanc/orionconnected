@@ -1248,12 +1248,12 @@
 
 /* Fairmont property-name font, declared at DOCUMENT level so the inline-SVG
    Fairmont lockup can use it (a font embedded inside an <img>-rendered SVG
-   never loads — the name was falling back to Arial/Franklin Gothic Medium,
-   which isn't the intended cut). Franklin Gothic URW Book (Nick) — the same
-   face as the official Franklin Gothic Book the lockup calls for. */
+   never loads). The Seasons (Nick) — the elegant high-contrast serif Fairmont
+   sets its page titles in on fairmont.com (body is Montserrat). The property
+   name is a title, so it takes The Seasons. */
 @font-face {
   font-family: 'FairmontName';
-  src: url('/fonts/fairmont-name-franklin.otf') format('opentype');
+  src: url('/fonts/fairmont-title-seasons.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
