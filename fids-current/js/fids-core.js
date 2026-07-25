@@ -16382,7 +16382,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22494';
+var FIDS_BUILD_TAG = 'v22495';
 (function(){
   try {
     function _addTag(){
@@ -25328,6 +25328,16 @@ function _processAccorData(data, destIata, langKey) {
     }
     if (ad.distanceAirport && typeof ad.distanceAirport.km === 'number') {
       return ad.distanceAirport.km <= DOWNTOWN_THRESHOLD_KM;
+    }
+    // v22495 — GPS entirely missing from the catalog row (e.g. Fairmont El San
+    // Juan ships without coordinates). Last proof: the destination CITY NAME
+    // appears in the hotel's name/address. 'San Juan' matches El San Juan for
+    // SJU flights; Ottawa's Château Laurier still can't pass for Syracuse.
+    // Without this, v22492 over-dropped legit hotels → no Accor ads at all.
+    var _dcName = DOWNTOWN_COORDS[destIata] && DOWNTOWN_COORDS[destIata].name;
+    if (_dcName) {
+      var _hay = ((ad.nameFull || ad.headline || '') + ' ' + (ad.fullAddress || '') + ' ' + (ad.address || '')).toLowerCase();
+      if (_hay.indexOf(String(_dcName).toLowerCase()) !== -1) return true;
     }
     return false;
   });
