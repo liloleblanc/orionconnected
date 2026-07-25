@@ -9385,12 +9385,38 @@ function uxgGateHtml(ctx) {
             // back to white — it was never meant to change'). v22438 tried to
             // flip Frontier's clock to navy on its light band; that was the
             // wrong read — 'needs to be blue' was about the DATA, not the time.
-            var _tbDateHtml = '<span style="font-size:clamp(14px,1.9vh,26px);font-weight:800;color:rgba(255,255,255,.80);white-space:nowrap;letter-spacing:.01em;">' + _ocClockDate(new Date(), _tbTz || null) + '</span>';
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk" style="position:absolute;top:0;left:32%;right:26%;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;text-align:right;padding:0 6px 0 12px;background:transparent;overflow:hidden;z-index:4;line-height:1.06;">'
-              +   '<span style="font-size:clamp(14px,2vh,26px);font-weight:800;color:rgba(255,255,255,.82);letter-spacing:.03em;white-space:nowrap;">'
-              +     _ocClockLabel(_tbCity) + '</span>'
-              +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" data-fmt="dual" style="font-size:clamp(30px,4.6vh,62px);font-weight:900;color:#ffffff;white-space:nowrap;line-height:1.0;">' + (_tbNow || '—') + '</span>'
-              +   _tbDateHtml
+            // Local + Destination time panels (Nick: 'Local Time and
+            // Destination time'). Each panel: the label on two stacked rows
+            // ('Time in <City>' / 'Heure à <City>'), the big single 12h clock
+            // to its right, and the full bilingual date below — sitting in a
+            // faded gate-style gray panel with a soft border/separation.
+            var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+            var _mkTimeBlock = function (city, zone) {
+              var _it = '—';
+              try { _it = new Date().toLocaleTimeString('en-US', zone ? { timeZone: zone, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
+              var _id = '';
+              try { _id = _ocClockDate(new Date(), zone || null); } catch (e) {}
+              return '<div class="octb">'
+                + '<div class="octb-top">'
+                +   '<div class="octb-lbls"><span class="octb-en">Time in ' + _e(city) + '</span><span class="octb-fr">Heure à ' + _e(city) + '</span></div>'
+                +   '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(zone) + '" data-mer="up">' + _it + '</span>'
+                + '</div>'
+                + '<div class="octb-date">' + _id + '</div>'
+                + '</div>';
+            };
+            var _dstIata = String(locIata || '').toUpperCase();
+            var _dstTz = (typeof AP !== 'undefined' && AP[_dstIata] || {}).tz || '';
+            var _dstCity = '';
+            if (_dstIata) {
+              try {
+                _dstCity = (typeof CITY !== 'undefined' && CITY[_dstIata]) || (typeof AP !== 'undefined' && AP[_dstIata] && AP[_dstIata].city) || _dstIata;
+                if (typeof normalizeDisplayCity === 'function') _dstCity = normalizeDisplayCity(_dstCity, _dstIata);
+              } catch (e) { _dstCity = _dstIata; }
+            }
+            var _showDst = !!(_dstIata && _dstTz && _dstIata !== String(iata || '').toUpperCase());
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap" style="position:absolute;top:0;left:32%;right:26%;bottom:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 8px;background:transparent;overflow:hidden;z-index:4;">'
+              + _mkTimeBlock(_tbCity, _tbTz)
+              + (_showDst ? _mkTimeBlock(_dstCity, _dstTz) : '')
               + '</div>';
           }
           var _tbRight = _apLogoTop
