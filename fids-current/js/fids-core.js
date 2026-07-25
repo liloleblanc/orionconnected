@@ -16382,7 +16382,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22497';
+var FIDS_BUILD_TAG = 'v22498';
 (function(){
   try {
     function _addTag(){
@@ -27800,9 +27800,11 @@ function buildAdLogoPanelHtml(ad) {
     // Seasons) — a font embedded in an <img>-rendered SVG never loads. Already
     // white-filled, so no invert filter.
     var _inlineLockup = ad._sofitelInlineSvg || ad._fairmontInlineSvg;
+    // Fairmont: logo pinned LEFT (Nick); Sofitel stays centered.
+    var _lkAlign = ad._fairmontInlineSvg ? 'flex-start' : 'center';
     if (_inlineLockup) {
-      return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
-        + '<div style="width:90%;height:64%;display:flex;align-items:center;justify-content:center;">' + _inlineLockup + '</div>'
+      return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:' + _lkAlign + ';justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
+        + '<div style="width:90%;height:64%;display:flex;align-items:center;justify-content:' + _lkAlign + ';">' + _inlineLockup + '</div>'
         + (ad.sub
             ? '<div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;">' + ad.sub + '</div>'
             : '')
@@ -27817,7 +27819,9 @@ function buildAdLogoPanelHtml(ad) {
                        || /\/outlined_svg_white\//i.test(ad._propertyLockup)  // Fairmont brand-team white pack
                        || /rimrock-banff\.svg/i.test(ad._propertyLockup);
     var _lockupFilter = _isAlreadyWhite ? '' : 'filter:brightness(0) invert(1);';
-    return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
+    // Fairmont lockups pinned LEFT (Nick); other brands stay centered.
+    var _imgAlign = (String(ad.brand || '').toUpperCase() === 'FAI') ? 'flex-start' : 'center';
+    return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:' + _imgAlign + ';justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
       + '<img src="' + ad._propertyLockup + '" alt="' + (ad.headline || '') + '" '
       +   'style="width:88%;max-width:88%;height:auto;max-height:70%;object-fit:contain;' + _lockupFilter + '">'
       + (ad.sub

@@ -187,13 +187,13 @@
 /* FAI — Fairmont (elegant) */
 .axr[data-brand-code="FAI"]{ --all-blue:#14161C; --axr-tint:#14161C; --all-gold:#B88D5B; --all-light:#EFE9DE;
   --axr-goldgrad:linear-gradient(42deg,#B88D5B 0%,#D0B494 100%); }
-.axr[data-brand-code="FAI"] .axr-logo{ height:auto; margin-bottom:clamp(10px, 1.8vh, 20px); }
+.axr[data-brand-code="FAI"] .axr-logo{ height:auto; margin-bottom:clamp(10px, 1.8vh, 20px); justify-content:flex-start; }
 .axr[data-brand-code="FAI"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
-.axr[data-brand-code="FAI"] .axr-name{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; text-transform:uppercase; }
-.axr[data-brand-code="FAI"] .axr-page-ctx{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.03em; text-transform:uppercase; }
+.axr[data-brand-code="FAI"] .axr-name{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.26; padding-bottom:.08em; text-transform:uppercase; }
+.axr[data-brand-code="FAI"] .axr-page-ctx{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.03em; text-transform:uppercase; line-height:1.28; padding-bottom:.1em; }
 /* Room title was illegibly small in The Seasons (Nick) — the generic
    .axr-room-name rule shrinks it to 1.0×; Seasons needs more body. */
-.axr[data-brand-code="FAI"] .axr-page-ctx.axr-room-name{ font-size:calc(var(--axr-name) * 1.45) !important; }
+.axr[data-brand-code="FAI"] .axr-page-ctx.axr-room-name{ font-size:calc(var(--axr-name) * 1.85) !important; line-height:1.28 !important; padding-bottom:.1em; overflow:visible; }
 .axr[data-brand-code="FAI"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
 .axr[data-brand-code="FAI"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
 .axr[data-brand-code="FAI"] .axr-addr{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-weight:400; letter-spacing:.14em; text-transform: none; font-size:.8em; color:#EFE6D6; }
@@ -202,9 +202,9 @@
 .axr[data-brand-code="FAI"] .axr-score{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; color:#fff; }
 .axr[data-brand-code="FAI"] .axr-score small{ color:#B88D5B; }
 .axr[data-brand-code="FAI"] .axr-amen{ gap:0; }
-.axr[data-brand-code="FAI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-style:normal; font-weight:400; color:#EFE6D6; font-size:calc(var(--axr-info)*0.82); letter-spacing:.03em; backdrop-filter:none; }
+.axr[data-brand-code="FAI"] .axr-amen span{ background:none; border:none; padding:0; font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-style:normal; font-weight:400; color:#EFE6D6; font-size:calc(var(--axr-info)*1.05); letter-spacing:.03em; backdrop-filter:none; }
 .axr[data-brand-code="FAI"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B88D5B; font-style:normal; }
-.axr[data-brand-code="FAI"] .axr-list li{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-style:normal; font-weight:400; letter-spacing:.02em; }
+.axr[data-brand-code="FAI"] .axr-list li{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-style:normal; font-weight:400; letter-spacing:.02em; font-size:calc(var(--axr-info) * 1.5); }
 .axr[data-brand-code="FAI"] .axr-blurb{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-weight:400; }
 .axr[data-brand-code="FAI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
 .axr[data-brand-code="FAI"] .axr-bubble{ background:#EFE9DE; color:#14161C; border:1px solid #B88D5B; border-radius:2px 2px 2px 0; }
@@ -1255,18 +1255,14 @@
    in a sentence (property-name heading, page context, offer/room title) and,
    in italic, for the amenity list. NOT the standalone logo lockup name — that
    stays part of the logo art. (Family kept as 'FairmontName' for continuity.) */
+/* Season Serif (TRIAL, Nick's family) — full glyph coverage verified (digits,
+   ², ·, &, accents), replacing the broken The Seasons demo cut. */
 @font-face {
   font-family: 'FairmontName';
-  src: url('/fonts/fairmont-title-seasons.ttf') format('opentype');
+  src: url('/fonts/fairmont-title-season.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
-  /* This The Seasons file is a DEMO cut: digits '4', '·', '-', apostrophes &
-     ampersands are replaced with a tiny DEMO watermark glyph (Nick: 'not sure
-     whats happening in there' — '41 m²' rendered as garbage). Serve it for
-     LETTERS ONLY; digits & punctuation fall through to Georgia, a harmonious
-     serif. Swap in a licensed file to lift this. */
-  unicode-range: U+0041-005A, U+0061-007A, U+00C0-024F, U+1E00-1EFF;
 }
 
 /* Fairmont BODY font — Montserrat Medium (Nick), the body face on
@@ -1284,7 +1280,7 @@
 /* Fairmont LOGO-NAME font — Franklin Gothic URW Book (Nick). The property
    name line inside the LOCKUP (under the script wordmark, e.g. 'EL SAN JUAN
    HOTEL') is set in Franklin Gothic Book — Nick's spec for the logo name.
-   Distinct from titles (The Seasons) and body (Montserrat). */
+   Distinct from titles (Season Serif) and body (Montserrat). */
 @font-face {
   font-family: 'FairmontLogoName';
   src: url('/fonts/fairmont-name-franklin.otf') format('opentype');
