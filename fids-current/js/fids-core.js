@@ -9407,7 +9407,15 @@ function uxgGateHtml(ctx) {
             try { _tbNow1 = new Date().toLocaleTimeString('en-US', _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
             var _tbDate1 = '';
             try { _tbDate1 = _ocClockDate(new Date(), _tbTz || null); } catch (e) {}
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap" style="position:absolute;top:0;left:34%;right:26%;bottom:0;box-sizing:border-box;display:flex;align-items:stretch;justify-content:center;z-index:4;">'
+            // ATTACHED-TO-GATE tab (Nick: 'align it with the gate tab, same
+            // format as the gate — a colour and border, attached to the gate,
+            // all text justified, take as much space'). The tab's right edge
+            // butts the gate tab's left edge; it wears the airline accent + a
+            // white left border and rounded top-left, exactly the gate-tab
+            // grammar, so the two read as one connected unit. Content is
+            // justified across the width: label (left) ↔ clock (right), date
+            // spanning below.
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
               + '<div class="octb octb-tab">'
               +   '<div class="octb-top">'
               +     '<div class="octb-lbls"><span class="octb-en">Time in ' + _e(_tbCity) + '</span><span class="octb-fr">Heure à ' + _e(_tbCity) + '</span></div>'
@@ -16288,7 +16296,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22471';
+var FIDS_BUILD_TAG = 'v22472';
 (function(){
   try {
     function _addTag(){
