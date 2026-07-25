@@ -2672,7 +2672,7 @@ function updateDedicatedTimeOnly() {
     // BIDS banner clock matches the FIDS board (Nick: 'the same on all
     // screens even FIDS and BIDS') — shared helpers for label / dual time /
     // bilingual date, plus the analog hands.
-    if (banClock) banClock.textContent = _ocClockTime(now, tz);
+    if (banClock) banClock.textContent = _ocClockTime1(now, tz);
     if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
     var _bLbl = document.getElementById('bidsBannerLabel');
     if (_bLbl) {
@@ -12135,8 +12135,10 @@ const gView = document.getElementById('gateView');
             +     '<circle class="cl-pin" cx="50" cy="50" r="3.4"></circle>'
             +   '</svg>'
             +   '<div class="fids-banner-time-text">'
-            +     '<div class="fids-banner-tlabel" id="bidsBannerLabel">' + _ocClockLabel(_bidsCity) + '</div>'
-            +     '<div class="fids-banner-time" id="dedicatedBannerClock">' + _ocClockTime(now, _bidsTz) + '</div>'
+            +     '<div class="fids-banner-digirow">'
+            +       '<div class="fids-banner-tlabel" id="bidsBannerLabel">' + _ocClockLabel(_bidsCity) + '</div>'
+            +       '<div class="fids-banner-time" id="dedicatedBannerClock">' + _ocClockTime1(now, _bidsTz) + '</div>'
+            +     '</div>'
             +     '<div class="fids-banner-date" id="bidsBannerDate">' + _ocClockDate(now, _bidsTz) + '</div>'
             +   '</div>'
             + '</div>'
@@ -16296,7 +16298,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22472';
+var FIDS_BUILD_TAG = 'v22473';
 (function(){
   try {
     function _addTag(){
@@ -21114,7 +21116,16 @@ function _boardLabelBilingual(key) {
 //   Thursday, July 23rd | Jeudi, le 23 juillet
 function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; }
 function _ocClockLabel(city) {
-  return 'Time In ' + city + ' <span class="cl-sep">|</span> Heure à ' + city;
+  // Two stacked rows (Nick, gate layout on FIDS/BIDS too): 'Time in <City>'
+  // over 'Heure à <City>'. Used only by the FIDS/BIDS banner clocks; the gate
+  // builds its own label inline.
+  return '<span class="cl-l1">Time in ' + city + '</span><span class="cl-l2">Heure à ' + city + '</span>';
+}
+// Single 12h time '10:29PM' (Nick: 'one time format') — for the FIDS/BIDS
+// banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
+function _ocClockTime1(now, tz) {
+  var o = { hour: 'numeric', minute: '2-digit', hour12: true }; if (tz) o.timeZone = tz;
+  return now.toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
 }
 // Dual time '6:26PM | 18 h 26' — PLAIN text (used in textContent contexts too).
 function _ocClockTime(now, tz) {
@@ -21158,7 +21169,7 @@ function tick() {
   if (typeof normalizeDisplayCity === 'function') _city = normalizeDisplayCity(_city, _ci);
   var _lbl = document.getElementById('clockLabel');
   if (_lbl) _lbl.innerHTML = _ocClockLabel(_city);
-  document.getElementById('clock').textContent = _ocClockTime(now, tz);
+  document.getElementById('clock').textContent = _ocClockTime1(now, tz);
   document.getElementById('clockDate').innerHTML = _ocClockDate(now, tz);
 
   // Analog clock (Nick: 'analog clock to the left of digital') — hands in the

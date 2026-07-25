@@ -2499,6 +2499,22 @@ html body .fids-banner .fids-banner-date {
   text-transform: none !important;
 }
 html body .fids-banner .fids-banner-time-block .cl-sep { opacity: 0.4; font-weight: 500; }
+/* Two-row bilingual label on FIDS/BIDS (Nick, gate layout): 'Time in <City>'
+   over 'Heure à <City>' — no box, just the text beside the analog clock. */
+html .cl-l1, html .cl-l2 { display: block !important; line-height: 1.08 !important; }
+html .cl-l2 { opacity: 0.82 !important; }
+/* Label BESIDE the time (Nick's sketch: 'Time in Orlando / Heure à Orlando  10:29PM'
+   then the date below). Keeps the block short enough that the label never gets
+   clipped above the time. */
+html body .fids-banner .fids-banner-digirow {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: clamp(8px, 0.8vw, 18px) !important;
+}
+html body .fids-banner .fids-banner-digirow .fids-banner-tlabel {
+  text-align: right !important; margin-bottom: 0 !important; white-space: nowrap !important;
+}
 
 /* Baggage banner: same title/icon treatment as the FIDS board, but keep the
    AC SUITCASE (not the plane). Remove the plane glyph the FIDS rule adds,
@@ -3693,4 +3709,17 @@ html .octb-attached .octb-tab {
   border: none !important;
   border-left: 5px solid rgba(255,255,255,0.92) !important;   /* white streak, like the gate */
   box-shadow: -10px 0 24px rgba(0,0,0,0.30) !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+/* Fill the little wedge where the tab's straight right edge meets the gate's
+   rounded top-left corner (Nick: 'fill in the color'). A same-colour strip
+   sits just right of the tab, tucked UNDER the gate (gate z-index > tab) — the
+   gate's rounded corner reveals this strip's colour instead of the dark banner. */
+html .octb-attached .octb-tab::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; bottom: 0 !important; left: 100% !important;
+  width: 34px !important;
+  background: rgba(214,218,226,0.26) !important;
 }
