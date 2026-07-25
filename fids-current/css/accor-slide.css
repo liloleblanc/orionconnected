@@ -1272,15 +1272,27 @@
   font-display: swap;
 }
 
+/* Fairmont LOGO-NAME font — Franklin Gothic URW Book (Nick). The property
+   name line inside the LOCKUP (under the script wordmark, e.g. 'EL SAN JUAN
+   HOTEL') is set in Franklin Gothic Book — Nick's spec for the logo name.
+   Distinct from titles (The Seasons) and body (Montserrat). */
+@font-face {
+  font-family: 'FairmontLogoName';
+  src: url('/fonts/fairmont-name-franklin.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Fairmont: same treatment as Sofitel — the inline lockup needs an auto-height
    parent so it can grow past the fixed cap, but ONLY when the inline lockup is
    present (baked-name IMG lockups keep the fixed height). Scoped with :has(). */
 /* Stylesheet-level font for the inline-lockup SVG names — the SVG
    font-family presentation attribute has zero specificity, so the board's
    universal font override (or any stray rule) beats it. These rules pin the
-   name fonts deterministically. Fairmont lockup name = body sans (part of the
-   LOGO, not a title — Nick); Sofitel = its property-name face. */
-.axr .fai-inline-lockup text { font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; }
+   name fonts deterministically. Fairmont lockup name = Franklin Gothic Book
+   (Nick's spec for the LOGO name line); Sofitel = its property-name face. */
+.axr .fai-inline-lockup text { font-family:'FairmontLogoName','Franklin Gothic Book','ITC Franklin Gothic','Franklin Gothic Medium',Arial,sans-serif !important; }
 .axr .sof-inline-lockup text { font-family:'SofitelName',sans-serif !important; }
 .axr[data-brand-code="FAI"] .axr-logo:has(.fai-inline-lockup) { height: auto !important; align-items: center !important; }
 .axr[data-brand-code="FAI"] .axr-logo .fai-inline-lockup {

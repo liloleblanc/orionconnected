@@ -4010,7 +4010,7 @@ function makeFairmontLockupSvgDataUri(propertyName) {
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
     + '<text x="40" y="29.4" text-anchor="middle" '
-    +   'font-family="FairmontBody, &apos;AC Nord Text&apos;, &apos;Helvetica Neue&apos;, Arial, sans-serif" '
+    +   'font-family="FairmontLogoName, &apos;Franklin Gothic Book&apos;, &apos;ITC Franklin Gothic&apos;, &apos;Franklin Gothic Medium&apos;, Arial, sans-serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
     +   name
     + '</text>'
@@ -4023,8 +4023,8 @@ function makeFairmontLockupSvgDataUri(propertyName) {
 // rendered as <img> does NOT load in browsers, so the property name fell back
 // to whatever the board had installed. Rendered INLINE in the DOM the name can
 // use a document-level @font-face. Per Nick, the standalone lockup name is part
-// of the LOGO (not a title in a sentence), so it is set in the Fairmont body
-// sans (FairmontBody → Montserrat), matching the property-name line on the real
+// of the LOGO (not a title in a sentence), so it is set in Franklin Gothic
+// URW Book (FairmontLogoName — Nick's spec), matching the name line on the real
 // Fairmont logos ('ROYAL YORK', 'LE REINE ELIZABETH') — NOT The Seasons, which
 // is reserved for titles. The Fairmont script wordmark is vector paths either
 // way. Returns raw <svg> markup (not a data URI). Layout matches
@@ -4055,7 +4055,7 @@ function makeFairmontLockupInlineSvg(propertyName) {
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
     + '<text x="40" y="29.4" text-anchor="middle" '
-    +   'font-family="FairmontBody, &apos;AC Nord Text&apos;, &apos;Helvetica Neue&apos;, Arial, sans-serif" '
+    +   'font-family="FairmontLogoName, &apos;Franklin Gothic Book&apos;, &apos;ITC Franklin Gothic&apos;, &apos;Franklin Gothic Medium&apos;, Arial, sans-serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
     +   name
     + '</text>'
@@ -16382,7 +16382,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22489';
+var FIDS_BUILD_TAG = 'v22490';
 (function(){
   try {
     function _addTag(){
