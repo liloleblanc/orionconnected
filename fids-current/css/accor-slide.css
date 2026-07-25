@@ -84,11 +84,12 @@
   display:grid; grid-template-columns:minmax(0,1fr) clamp(72px,8vw,100px); gap:clamp(12px,1.4vw,18px);
   align-items:center; width:min(470px, 66%); padding:clamp(14px,1.7vw,22px);
   background:var(--all-light); color:var(--all-blue);
-  border-radius:16px 16px 16px 0; box-shadow:0 14px 36px rgba(0,0,0,.34); }
-/* The ALL loyalty device: the bubble's tail is the ALL wordmark's L foot,
-   flipped (Nick) — a stem descending from the bottom-left corner whose right
-   edge sweeps back up in a curve, like the L glyph's curved foot. */
-.axr-bubble::after{ content:""; position:absolute; left:0; bottom:-14px; width:30px; height:15px;
+  border-radius:0; box-shadow:0 14px 36px rgba(0,0,0,.34); }
+/* ALL Brand Book 3.12 'Graphic cues': the speech bubble is a SQUARE-cornered
+   box whose bottom-left corner flows down into a point — the gentle curve of
+   the ALL 'L', rotated. Left edge runs straight into the point; the right
+   side of the tail is the L's concave sweep back up to the bottom edge. */
+.axr-bubble::after{ content:""; position:absolute; left:0; bottom:-16px; width:46px; height:17px;
   background:inherit; border:none; border-bottom-right-radius:100% 100%; }
 .axr-bubble-copy{ min-width:0; font-family:var(--axr-display); font-size:clamp(18px,1.6vw,26px);
   line-height:1.24; font-weight:500; letter-spacing:.002em; }
@@ -225,7 +226,7 @@
 .axr[data-brand-code="FAI"] .axr-list li{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-style:normal; font-weight:400; letter-spacing:.02em; font-size:calc(var(--axr-info) * 1.5); }
 .axr[data-brand-code="FAI"] .axr-blurb{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-weight:400; }
 .axr[data-brand-code="FAI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="FAI"] .axr-bubble{ background:#EFE9DE; color:#14161C; border:1px solid #B88D5B; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="FAI"] .axr-bubble{ background:#EFE9DE; color:#14161C; border:1px solid #B88D5B; border-radius:0; }
 .axr[data-brand-code="FAI"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="FAI"] .axr-bubble-copy{ font-family:'FairmontName','The Seasons',Georgia,serif !important; text-transform:uppercase; letter-spacing:.05em; font-weight:400; }
 .axr[data-brand-code="FAI"] .axr-bubble-copy .axr-scan-accent{ text-transform:none; font-style:italic; letter-spacing:.02em; }
@@ -252,7 +253,7 @@
 .axr[data-brand-code="SOF"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B6912E; font-style:normal; }
 .axr[data-brand-code="SOF"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="SOF"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="SOF"] .axr-bubble{ background:#EFE9DE; color:#0B0B0D; border:1px solid #B6912E; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="SOF"] .axr-bubble{ background:#EFE9DE; color:#0B0B0D; border:1px solid #B6912E; border-radius:0; }
 .axr[data-brand-code="SOF"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="SOF"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="SOF"] .axr-all{ background:transparent; border-top:1px solid rgba(182,145,46,0.6); padding:14px 0 8px; }
@@ -278,7 +279,7 @@
 .axr[data-brand-code="SLE"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B6912E; font-style:normal; }
 .axr[data-brand-code="SLE"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="SLE"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="SLE"] .axr-bubble{ background:#EFE9DE; color:#0B0B0D; border:1px solid #B6912E; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="SLE"] .axr-bubble{ background:#EFE9DE; color:#0B0B0D; border:1px solid #B6912E; border-radius:0; }
 .axr[data-brand-code="SLE"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="SLE"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="SLE"] .axr-all{ background:transparent; border-top:1px solid rgba(182,145,46,0.6); padding:14px 0 8px; }
@@ -304,7 +305,7 @@
 .axr[data-brand-code="RAF"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="RAF"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="RAF"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="RAF"] .axr-bubble{ background:#EFE9DE; color:#15241F; border:1px solid #C2A35C; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="RAF"] .axr-bubble{ background:#EFE9DE; color:#15241F; border:1px solid #C2A35C; border-radius:0; }
 .axr[data-brand-code="RAF"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="RAF"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="RAF"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -330,7 +331,7 @@
 .axr[data-brand-code="RAH"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="RAH"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="RAH"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="RAH"] .axr-bubble{ background:#EFE9DE; color:#15241F; border:1px solid #C2A35C; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="RAH"] .axr-bubble{ background:#EFE9DE; color:#15241F; border:1px solid #C2A35C; border-radius:0; }
 .axr[data-brand-code="RAH"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="RAH"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="RAH"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -356,7 +357,7 @@
 .axr[data-brand-code="EMB"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B89B6E; font-style:normal; }
 .axr[data-brand-code="EMB"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="EMB"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="EMB"] .axr-bubble{ background:#EFE9DE; color:#1A1A1A; border:1px solid #B89B6E; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="EMB"] .axr-bubble{ background:#EFE9DE; color:#1A1A1A; border:1px solid #B89B6E; border-radius:0; }
 .axr[data-brand-code="EMB"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="EMB"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="EMB"] .axr-all{ background:transparent; border-top:1px solid rgba(184,155,110,0.6); padding:14px 0 8px; }
@@ -382,7 +383,7 @@
 .axr[data-brand-code="BAN"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="BAN"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="BAN"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="BAN"] .axr-bubble{ background:#EFE9DE; color:#163A33; border:1px solid #C2A35C; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="BAN"] .axr-bubble{ background:#EFE9DE; color:#163A33; border:1px solid #C2A35C; border-radius:0; }
 .axr[data-brand-code="BAN"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="BAN"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="BAN"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -408,7 +409,7 @@
 .axr[data-brand-code="ORI"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B99653; font-style:normal; }
 .axr[data-brand-code="ORI"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="ORI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="ORI"] .axr-bubble{ background:#EFE9DE; color:#0E1B2A; border:1px solid #B99653; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="ORI"] .axr-bubble{ background:#EFE9DE; color:#0E1B2A; border:1px solid #B99653; border-radius:0; }
 .axr[data-brand-code="ORI"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="ORI"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="ORI"] .axr-all{ background:transparent; border-top:1px solid rgba(185,150,83,0.6); padding:14px 0 8px; }
@@ -434,7 +435,7 @@
 .axr[data-brand-code="OE"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B99653; font-style:normal; }
 .axr[data-brand-code="OE"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="OE"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="OE"] .axr-bubble{ background:#EFE9DE; color:#0E1B2A; border:1px solid #B99653; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="OE"] .axr-bubble{ background:#EFE9DE; color:#0E1B2A; border:1px solid #B99653; border-radius:0; }
 .axr[data-brand-code="OE"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="OE"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="OE"] .axr-all{ background:transparent; border-top:1px solid rgba(185,150,83,0.6); padding:14px 0 8px; }
@@ -460,7 +461,7 @@
 .axr[data-brand-code="FAE"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C8A24A; font-style:normal; }
 .axr[data-brand-code="FAE"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="FAE"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="FAE"] .axr-bubble{ background:#EFE9DE; color:#5E1417; border:1px solid #C8A24A; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="FAE"] .axr-bubble{ background:#EFE9DE; color:#5E1417; border:1px solid #C8A24A; border-radius:0; }
 .axr[data-brand-code="FAE"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="FAE"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="FAE"] .axr-all{ background:transparent; border-top:1px solid rgba(200,162,74,0.6); padding:14px 0 8px; }
@@ -486,7 +487,7 @@
 .axr[data-brand-code="RIX"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="RIX"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="RIX"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="RIX"] .axr-bubble{ background:#EFE9DE; color:#1A1712; border:1px solid #C2A35C; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="RIX"] .axr-bubble{ background:#EFE9DE; color:#1A1712; border:1px solid #C2A35C; border-radius:0; }
 .axr[data-brand-code="RIX"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="RIX"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="RIX"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -512,7 +513,7 @@
 .axr[data-brand-code="MAN"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B89B6E; font-style:normal; }
 .axr[data-brand-code="MAN"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="MAN"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="MAN"] .axr-bubble{ background:#EFE9DE; color:#1C2A1E; border:1px solid #B89B6E; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="MAN"] .axr-bubble{ background:#EFE9DE; color:#1C2A1E; border:1px solid #B89B6E; border-radius:0; }
 .axr[data-brand-code="MAN"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="MAN"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MAN"] .axr-all{ background:transparent; border-top:1px solid rgba(184,155,110,0.6); padding:14px 0 8px; }
@@ -538,7 +539,7 @@
 .axr[data-brand-code="MGH"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="MGH"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="MGH"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="MGH"] .axr-bubble{ background:#EFE9DE; color:#12120D; border:1px solid #C2A35C; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="MGH"] .axr-bubble{ background:#EFE9DE; color:#12120D; border:1px solid #C2A35C; border-radius:0; }
 .axr[data-brand-code="MGH"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="MGH"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MGH"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -564,7 +565,7 @@
 .axr[data-brand-code="MGA"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="MGA"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="MGA"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="MGA"] .axr-bubble{ background:#EFE9DE; color:#12120D; border:1px solid #C2A35C; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="MGA"] .axr-bubble{ background:#EFE9DE; color:#12120D; border:1px solid #C2A35C; border-radius:0; }
 .axr[data-brand-code="MGA"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="MGA"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MGA"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -590,7 +591,7 @@
 .axr[data-brand-code="MOV"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C8A24A; font-style:normal; }
 .axr[data-brand-code="MOV"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="MOV"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="MOV"] .axr-bubble{ background:#EFE9DE; color:#2A1418; border:1px solid #C8A24A; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="MOV"] .axr-bubble{ background:#EFE9DE; color:#2A1418; border:1px solid #C8A24A; border-radius:0; }
 .axr[data-brand-code="MOV"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="MOV"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MOV"] .axr-all{ background:transparent; border-top:1px solid rgba(200,162,74,0.6); padding:14px 0 8px; }
@@ -616,7 +617,7 @@
 .axr[data-brand-code="DEL"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C9A227; font-style:normal; }
 .axr[data-brand-code="DEL"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="DEL"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="DEL"] .axr-bubble{ background:#EFE9DE; color:#111214; border:1px solid #C9A227; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="DEL"] .axr-bubble{ background:#EFE9DE; color:#111214; border:1px solid #C9A227; border-radius:0; }
 .axr[data-brand-code="DEL"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="DEL"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="DEL"] .axr-all{ background:transparent; border-top:1px solid rgba(201,162,39,0.6); padding:14px 0 8px; }
@@ -965,7 +966,7 @@
 .axr[data-brand-code="SEB"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B59A5E; font-style:normal; }
 .axr[data-brand-code="SEB"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="SEB"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="SEB"] .axr-bubble{ background:#EFE9DE; color:#1A2230; border:1px solid #B59A5E; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="SEB"] .axr-bubble{ background:#EFE9DE; color:#1A2230; border:1px solid #B59A5E; border-radius:0; }
 .axr[data-brand-code="SEB"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="SEB"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="SEB"] .axr-all{ background:transparent; border-top:1px solid rgba(181,154,94,0.6); padding:14px 0 8px; }
@@ -991,7 +992,7 @@
 .axr[data-brand-code="TSB"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B59A5E; font-style:normal; }
 .axr[data-brand-code="TSB"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="TSB"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="TSB"] .axr-bubble{ background:#EFE9DE; color:#1A2230; border:1px solid #B59A5E; border-radius:16px 16px 16px 0; }
+.axr[data-brand-code="TSB"] .axr-bubble{ background:#EFE9DE; color:#1A2230; border:1px solid #B59A5E; border-radius:0; }
 .axr[data-brand-code="TSB"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="TSB"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="TSB"] .axr-all{ background:transparent; border-top:1px solid rgba(181,154,94,0.6); padding:14px 0 8px; }
