@@ -3677,3 +3677,22 @@ html .octb-tab {
 html .octb-tab .octb-en, html .octb-tab .octb-fr { font-size: clamp(11px,1.5vh,19px) !important; }
 html .octb-tab .octb-clock { font-size: clamp(26px,3.8vh,52px) !important; }
 html .octb-tab .octb-date { font-size: clamp(10px,1.35vh,16px) !important; }
+/* ATTACHED-TO-GATE variant (Nick): the tab butts the gate tab, wears the
+   airline accent + white left border + rounded top-left — the gate-tab
+   grammar — and fills its width with justified content. */
+html .octb-attached { justify-content: stretch !important; }
+html .octb-gatetab {
+  width: 100% !important; align-self: stretch !important; justify-content: center !important;
+  background: var(--airline-accent, #2a3550) !important;
+  border: none !important;
+  border-left: 5px solid rgba(255,255,255,0.90) !important;
+  border-radius: 26px 0 0 0 !important;
+  box-shadow: -10px 0 24px rgba(0,0,0,0.28) !important;
+  padding: clamp(4px,0.9vh,12px) clamp(22px,2.2vw,44px) 0 !important;
+}
+/* Justified across the width: label left, clock hard right; date spans below. */
+html .octb-gatetab .octb-top { justify-content: space-between !important; gap: clamp(16px,2vw,44px) !important; }
+html .octb-gatetab .octb-lbls { align-items: flex-start !important; }
+html .octb-gatetab .octb-en, html .octb-gatetab .octb-fr { font-size: clamp(13px,2vh,28px) !important; }
+html .octb-gatetab .octb-clock { font-size: clamp(32px,5.2vh,76px) !important; }
+html .octb-gatetab .octb-date { font-size: clamp(12px,1.75vh,24px) !important; letter-spacing: .02em !important; }
