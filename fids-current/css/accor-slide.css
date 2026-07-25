@@ -1199,3 +1199,15 @@
   object-fit: contain !important;
   object-position: left bottom !important;
 }
+
+/* Rebelton Extended (Nick's Sofitel font), declared at DOCUMENT level so the
+   inline-SVG Sofitel lockups can use it. A font embedded inside an SVG that is
+   rendered as an <img> never loads, which is why non-Montreal Sofitel property
+   names fell back to a system font — the inline lockups reference this. */
+@font-face {
+  font-family: 'RebeltonExt';
+  src: url('/fonts/rebelton-extended.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
