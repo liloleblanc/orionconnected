@@ -4013,6 +4013,48 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
+// INLINE-SVG variant of the Fairmont lockup (Nick: 'this is not the right
+// font'). A @font-face embedded in an SVG rendered as <img> does NOT load in
+// browsers, so the property name fell back to whatever grotesque the board had
+// installed — Franklin Gothic *Book* isn't a Windows default, so it silently
+// dropped to Medium/Arial. Rendered INLINE in the DOM with the font declared at
+// document level (FairmontName @font-face in accor-slide.css → the real
+// Franklin Gothic URW Book Nick supplied), the name paints in the intended
+// face. The Fairmont script wordmark is vector paths either way. Returns raw
+// <svg> markup (not a data URI). Layout matches makeFairmontLockupSvgDataUri
+// exactly so only the font — not the sizing — changes.
+function makeFairmontLockupInlineSvg(propertyName) {
+  if (!propertyName) return '';
+  var clean = String(propertyName)
+    .replace(/,?\s*a\s+fairmont\s+(managed\s+)?hotel\s*$/i, '')
+    .replace(/,?\s*fairmont\s+(managed\s+)?hotel\s*$/i, '')
+    .replace(/^fairmont\s+/i, '')
+    .trim();
+  if (!clean) clean = String(propertyName).trim();
+  var name = String(clean.toUpperCase()).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  var len = clean.length;
+  var fontSize, letterSpacing;
+  if (len <= 18) {
+    fontSize = 5.1; letterSpacing = 0.82;
+  } else if (len <= 26) {
+    fontSize = 4.2; letterSpacing = 0.6;
+  } else if (len <= 34) {
+    fontSize = 3.4; letterSpacing = 0.4;
+  } else {
+    fontSize = 2.9; letterSpacing = 0.25;
+  }
+  return '<svg class="axr-hotel-svg fai-inline-lockup" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30.5" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
+    + '<g transform="translate(1.6, 0) scale(1.42)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
+    +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
+    + '</g>'
+    + '<text x="40" y="29.4" text-anchor="middle" '
+    +   'font-family="FairmontName, &apos;Franklin Gothic Book&apos;, &apos;ITC Franklin Gothic&apos;, &apos;Franklin Gothic Medium&apos;, &apos;Libre Franklin&apos;, Arial, sans-serif" '
+    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
+    +   name
+    + '</text>'
+    + '</svg>';
+}
+
 // ── SOFITEL LOCKUP GENERATOR ───────────────────────────────────────────
 // Every Sofitel property renders the SAME way as the Montréal art Nick
 // supplied: the real SOFITEL wordmark + the property name set in Rebelton
@@ -25081,6 +25123,7 @@ function _processAccorData(data, destIata, langKey) {
     // first, runtime-generated lockup as fallback.
     var _propertyLockupPath = null;
     var _sofitelInlineSvg = null;   // inline-SVG Sofitel lockup (real Rebelton font)
+    var _fairmontInlineSvg = null;  // inline-SVG Fairmont lockup (real Franklin Gothic name)
     if (brand === 'FAI' && hotelName) {
       // Normalize: lowercase, strip leading/trailing "fairmont" if present,
       // strip leading "the ", and trim.
@@ -25120,8 +25163,12 @@ function _processAccorData(data, destIata, langKey) {
         if (_realFai) {
           _propertyLockupPath = _realFai;
         } else if (typeof makeFairmontLockupSvgDataUri === 'function') {
-          // Last resort only — truly unlisted property.
+          // Last resort only — truly unlisted property. The data-URI keeps
+          // accorLockupCarriesName() working (name suppression); the INLINE
+          // variant is what actually renders, so the property name paints in
+          // the real Franklin Gothic (a font can't load inside an <img> SVG).
           _propertyLockupPath = makeFairmontLockupSvgDataUri(_lockupKey || hotelName);
+          if (typeof makeFairmontLockupInlineSvg === 'function') _fairmontInlineSvg = makeFairmontLockupInlineSvg(_lockupKey || hotelName);
         }
       }
     } else if (brand === 'EMB' && hotelName) {
@@ -25192,6 +25239,7 @@ function _processAccorData(data, destIata, langKey) {
       _adLang: _ckLang,
       _propertyLockup: _propertyLockupPath,
       _sofitelInlineSvg: _sofitelInlineSvg,
+      _fairmontInlineSvg: _fairmontInlineSvg,
       // v218.99.25 — extended Catalog fields for the Option D overlay
       advantages: Array.isArray(h.advantages) ? h.advantages : [],
       amenityFree: (h.amenity && Array.isArray(h.amenity.free)) ? h.amenity.free : [],
@@ -26765,9 +26813,10 @@ function buildAccorAdOnlyV6(ad) {
   var _logoBase = String(logo||'').split('?')[0].split('#')[0];
   _logoBase = _logoBase.substring(_logoBase.lastIndexOf('/')+1);
   var _logoCrop = (typeof ACCOR_LOGO_CROP!=='undefined' && ACCOR_LOGO_CROP[_logoBase]) || _LOGO_CROP[lower(brandWord)] || '';
+  var _inlineLockup = ad._sofitelInlineSvg || ad._fairmontInlineSvg;  // inline so the real property-name font renders (Rebelton / Franklin Gothic)
   var logoHtml=haveLogo
-    ? (ad._sofitelInlineSvg
-        ? '<div class="axr-logo">'+ad._sofitelInlineSvg+'</div>'   // inline so Rebelton actually renders
+    ? (_inlineLockup
+        ? '<div class="axr-logo">'+_inlineLockup+'</div>'   // inline so the property-name font actually renders
         : '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>')
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
@@ -27718,12 +27767,14 @@ function buildAdLogoPanelHtml(ad) {
   // full brand-team lockup (script wordmark + property name + underline rule).
   // Render the lockup big, no separate name text, just the rating subtitle.
   if (ad._propertyLockup) {
-    // Sofitel: render the lockup INLINE (not <img>) so the property name paints
-    // in the real Rebelton Extended font — a font embedded in an <img>-rendered
-    // SVG never loads. Already white-filled, so no invert filter.
-    if (ad._sofitelInlineSvg) {
+    // Sofitel / Fairmont: render the lockup INLINE (not <img>) so the property
+    // name paints in the real property-name font (Rebelton Extended / Franklin
+    // Gothic) — a font embedded in an <img>-rendered SVG never loads. Already
+    // white-filled, so no invert filter.
+    var _inlineLockup = ad._sofitelInlineSvg || ad._fairmontInlineSvg;
+    if (_inlineLockup) {
       return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
-        + '<div style="width:90%;height:64%;display:flex;align-items:center;justify-content:center;">' + ad._sofitelInlineSvg + '</div>'
+        + '<div style="width:90%;height:64%;display:flex;align-items:center;justify-content:center;">' + _inlineLockup + '</div>'
         + (ad.sub
             ? '<div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;">' + ad.sub + '</div>'
             : '')

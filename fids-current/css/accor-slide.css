@@ -1245,3 +1245,27 @@
   max-width: min(94%, 640px) !important;
   max-height: clamp(140px, 27vh, 240px) !important;
 }
+
+/* Fairmont property-name font, declared at DOCUMENT level so the inline-SVG
+   Fairmont lockup can use it (a font embedded inside an <img>-rendered SVG
+   never loads — the name was falling back to Arial/Franklin Gothic Medium,
+   which isn't the intended cut). Franklin Gothic URW Book (Nick) — the same
+   face as the official Franklin Gothic Book the lockup calls for. */
+@font-face {
+  font-family: 'FairmontName';
+  src: url('/fonts/fairmont-name-franklin.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fairmont: same treatment as Sofitel — the inline lockup needs an auto-height
+   parent so it can grow past the fixed cap, but ONLY when the inline lockup is
+   present (baked-name IMG lockups keep the fixed height). Scoped with :has(). */
+.axr[data-brand-code="FAI"] .axr-logo:has(.fai-inline-lockup) { height: auto !important; align-items: center !important; }
+.axr[data-brand-code="FAI"] .axr-logo .fai-inline-lockup {
+  height: auto !important;
+  width: min(94%, 640px) !important;
+  max-width: min(94%, 640px) !important;
+  max-height: clamp(140px, 27vh, 240px) !important;
+}
