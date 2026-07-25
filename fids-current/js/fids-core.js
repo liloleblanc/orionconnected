@@ -897,7 +897,7 @@ function changeFont(f) {
   // Montserrat / Rebelton…) must render per brand book, not the board font.
   // Without the :not() guards this universal !important nuked those fonts
   // (Nick: 'AC Nord takes over' — it was actually this override).
-  s.textContent = `*:not(.axr):not(.axr *), *:not(.axr):not(.axr *)::before, *:not(.axr):not(.axr *)::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
+  s.textContent = `*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
   // Persist the choice — page load used to hard-reset to Geist, wiping
   // whatever the user picked ("every time I add a new font it goes away").
   try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
@@ -956,7 +956,7 @@ function restoreFontChoice(defaultFont) {
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
         // .axr exempt — Accor brand ads keep brand typography (see changeFont).
-        s.textContent = '*:not(.axr):not(.axr *), *:not(.axr):not(.axr *)::before, *:not(.axr):not(.axr *)::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
+        s.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
         return;
       }
     }
@@ -16382,7 +16382,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22490';
+var FIDS_BUILD_TAG = 'v22491';
 (function(){
   try {
     function _addTag(){
@@ -20866,7 +20866,7 @@ function applyAirportConfigToBoard(iata) {
         document.head.appendChild(_ovr);
       }
       // .axr exempt — Accor brand ads keep brand typography (see changeFont).
-      _ovr.textContent = '*:not(.axr):not(.axr *), *:not(.axr):not(.axr *)::before, *:not(.axr):not(.axr *)::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
+      _ovr.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
     }
   } else {
     // No board-pref font — but NEVER nuke a font the user picked via the

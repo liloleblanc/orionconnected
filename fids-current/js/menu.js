@@ -1535,7 +1535,7 @@ function _cuApplyFont(fontKey) {
     }
     // .axr (Accor hotel ads) exempt — brand typography must survive the nuke
     // (same guard as fids-core changeFont; Nick: 'AC Nord takes over').
-    s.textContent = '*:not(.axr):not(.axr *), *:not(.axr):not(.axr *)::before, *:not(.axr):not(.axr *)::after { font-family: ' + stack + ' !important; }';
+    s.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + stack + ' !important; }';
   } else {
     st.removeProperty('--font-primary');
     delete document.body.dataset.fidsFont;
