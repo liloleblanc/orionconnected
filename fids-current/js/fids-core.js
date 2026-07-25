@@ -893,7 +893,11 @@ function changeFont(f) {
   // Force font on ALL elements including gate/baggage screens
   let s = document.getElementById('fids-font-override');
   if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
-  s.textContent = `*, *::before, *::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
+  // .axr (Accor hotel ads) is EXEMPT — brand typography (The Seasons /
+  // Montserrat / Rebelton…) must render per brand book, not the board font.
+  // Without the :not() guards this universal !important nuked those fonts
+  // (Nick: 'AC Nord takes over' — it was actually this override).
+  s.textContent = `*:not(.axr):not(.axr *), *:not(.axr):not(.axr *)::before, *:not(.axr):not(.axr *)::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
   // Persist the choice — page load used to hard-reset to Geist, wiping
   // whatever the user picked ("every time I add a new font it goes away").
   try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
@@ -951,7 +955,8 @@ function restoreFontChoice(defaultFont) {
         document.body.style.setProperty('--font-primary', _stack, 'important');
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
-        s.textContent = '*, *::before, *::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
+        // .axr exempt — Accor brand ads keep brand typography (see changeFont).
+        s.textContent = '*:not(.axr):not(.axr *), *:not(.axr):not(.axr *)::before, *:not(.axr):not(.axr *)::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
         return;
       }
     }
@@ -4005,7 +4010,7 @@ function makeFairmontLockupSvgDataUri(propertyName) {
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
     + '<text x="40" y="29.4" text-anchor="middle" '
-    +   'font-family="&apos;The Seasons&apos;, Georgia, &apos;Times New Roman&apos;, serif" '
+    +   'font-family="FairmontBody, &apos;AC Nord Text&apos;, &apos;Helvetica Neue&apos;, Arial, sans-serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
     +   name
     + '</text>'
@@ -4014,14 +4019,15 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
-// INLINE-SVG variant of the Fairmont lockup (Nick: 'this is not the right
-// font'). A @font-face embedded in an SVG rendered as <img> does NOT load in
-// browsers, so the property name fell back to whatever the board had installed.
-// Rendered INLINE in the DOM with the font declared at document level
-// (FairmontName @font-face in accor-slide.css → The Seasons, the elegant serif
-// Fairmont sets its page titles in on fairmont.com), the name paints in the
-// real brand face. The Fairmont script wordmark is vector paths either way.
-// Returns raw <svg> markup (not a data URI). Layout matches
+// INLINE-SVG variant of the Fairmont lockup. A @font-face embedded in an SVG
+// rendered as <img> does NOT load in browsers, so the property name fell back
+// to whatever the board had installed. Rendered INLINE in the DOM the name can
+// use a document-level @font-face. Per Nick, the standalone lockup name is part
+// of the LOGO (not a title in a sentence), so it is set in the Fairmont body
+// sans (FairmontBody → Montserrat), matching the property-name line on the real
+// Fairmont logos ('ROYAL YORK', 'LE REINE ELIZABETH') — NOT The Seasons, which
+// is reserved for titles. The Fairmont script wordmark is vector paths either
+// way. Returns raw <svg> markup (not a data URI). Layout matches
 // makeFairmontLockupSvgDataUri exactly so only the font — not the sizing —
 // changes.
 function makeFairmontLockupInlineSvg(propertyName) {
@@ -4049,7 +4055,7 @@ function makeFairmontLockupInlineSvg(propertyName) {
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
     + '<text x="40" y="29.4" text-anchor="middle" '
-    +   'font-family="FairmontName, &apos;The Seasons&apos;, Georgia, &apos;Times New Roman&apos;, serif" '
+    +   'font-family="FairmontBody, &apos;AC Nord Text&apos;, &apos;Helvetica Neue&apos;, Arial, sans-serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
     +   name
     + '</text>'
@@ -16376,7 +16382,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22485';
+var FIDS_BUILD_TAG = 'v22489';
 (function(){
   try {
     function _addTag(){
@@ -20859,7 +20865,8 @@ function applyAirportConfigToBoard(iata) {
         _ovr.id = 'fids-font-override';
         document.head.appendChild(_ovr);
       }
-      _ovr.textContent = '*, *::before, *::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
+      // .axr exempt — Accor brand ads keep brand typography (see changeFont).
+      _ovr.textContent = '*:not(.axr):not(.axr *), *:not(.axr):not(.axr *)::before, *:not(.axr):not(.axr *)::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
     }
   } else {
     // No board-pref font — but NEVER nuke a font the user picked via the
