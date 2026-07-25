@@ -187,7 +187,7 @@
 /* FAI — Fairmont (elegant) */
 .axr[data-brand-code="FAI"]{ --all-blue:#14161C; --axr-tint:#14161C; --all-gold:#B88D5B; --all-light:#EFE9DE;
   --axr-goldgrad:linear-gradient(42deg,#B88D5B 0%,#D0B494 100%); }
-.axr[data-brand-code="FAI"] .axr-logo{ height:auto; }
+.axr[data-brand-code="FAI"] .axr-logo{ height:auto; margin-bottom:clamp(10px, 1.8vh, 20px); }
 .axr[data-brand-code="FAI"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
 .axr[data-brand-code="FAI"] .axr-name{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.14; text-transform:uppercase; }
 .axr[data-brand-code="FAI"] .axr-page-ctx{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.03em; text-transform:uppercase; }
