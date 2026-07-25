@@ -1255,11 +1255,12 @@
    in a sentence (property-name heading, page context, offer/room title) and,
    in italic, for the amenity list. NOT the standalone logo lockup name — that
    stays part of the logo art. (Family kept as 'FairmontName' for continuity.) */
-/* Season Serif (TRIAL, Nick's family) — full glyph coverage verified (digits,
-   ², ·, &, accents), replacing the broken The Seasons demo cut. */
+/* The Seasons Regular (Elena Genova) — the REAL fairmont.com title serif,
+   proper licensed cut Nick supplied. Full glyph coverage verified (digits,
+   m², commas, &, accents) — replaces the Season Serif trial stand-in. */
 @font-face {
   font-family: 'FairmontName';
-  src: url('/fonts/fairmont-title-season-medium.otf') format('opentype');
+  src: url('/fonts/fairmont-title-theseasons.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
