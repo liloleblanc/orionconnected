@@ -4055,18 +4055,20 @@ function makeSofitelLockupInlineSvg(propertyName) {
     .trim();
   if (!clean) clean = String(propertyName).trim();
   var name = String(clean.toUpperCase()).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  var len = name.length;
-  var fsz = len <= 12 ? 6.0 : len <= 20 ? 4.8 : len <= 30 ? 3.8 : 3.1;
-  var ls  = len <= 12 ? 2.2 : len <= 20 ? 1.6 : len <= 30 ? 1.0 : 0.8;
+  // Big — as tall as fits — then STRETCHED to span the full width of the SOFITEL
+  // wordmark (Nick: 'bigger, and that sentence should take the whole word of
+  // Sofitel'). font-size scales down only enough that a long name's natural run
+  // still fits inside 184u before textLength spaces it out to the wordmark edge.
+  var len = Math.max(1, clean.length);
+  var fsz = Math.max(4.6, Math.min(8, 260 / len));
   // Full brand lockup like Montréal: SOFITEL wordmark (paths) / property name
-  // (Rebelton) / the Sofitel emblem below (Nick: 'the logo needs to be in there
-  // too, like Montreal'). The emblem is pure vector (no font), so an <image>
-  // reference renders it fine — the emblem file was extracted from the Montréal
-  // lockup Nick supplied.
-  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -2 190 54" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
+  // (FF Good Pro Extended) / the Sofitel emblem below. The emblem is pure vector
+  // (no font), so an <image> reference renders it fine — extracted from the
+  // Montréal lockup Nick supplied.
+  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -2 190 56" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
     + '<g fill="#FFFFFF">' + _SOFITEL_WORDMARK_G + '</g>'
-    + '<text x="95" y="25" text-anchor="middle" fill="#FFFFFF" font-family="RebeltonExt, sans-serif" font-size="' + fsz + '" letter-spacing="' + ls + '">' + name + '</text>'
-    + '<image href="/logos/hotels/sofitel/sofitel-emblem-white.svg" xlink:href="/logos/hotels/sofitel/sofitel-emblem-white.svg" x="79" y="31" width="32" height="20" preserveAspectRatio="xMidYMid meet"/>'
+    + '<text x="95" y="24.5" text-anchor="middle" textLength="184" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
+    + '<image href="/logos/hotels/sofitel/sofitel-emblem-white.svg" xlink:href="/logos/hotels/sofitel/sofitel-emblem-white.svg" x="80" y="31.5" width="30" height="18" preserveAspectRatio="xMidYMid meet"/>'
     + '</svg>';
 }
 
@@ -16331,7 +16333,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22479';
+var FIDS_BUILD_TAG = 'v22480';
 (function(){
   try {
     function _addTag(){
