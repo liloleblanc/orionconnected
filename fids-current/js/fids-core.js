@@ -16333,7 +16333,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22484';
+var FIDS_BUILD_TAG = 'v22485';
 (function(){
   try {
     function _addTag(){
@@ -26703,7 +26703,7 @@ function buildAccorAdOnlyV6(ad) {
   // Accent-fold so brand names with diacritics (Swissôtel, Mövenpick) are
   // detected and stripped the same as their plain spellings.
   function _foldAcc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
-  var BRAND_WORDS=['Novotel','Fairmont','Sofitel','Pullman','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis','Mama Shelter','Mondrian'];
+  var BRAND_WORDS=['Novotel','Fairmont','Sofitel','Pullman','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis','Mama Shelter','Mondrian','Faena'];
   var brandWord='';
   var _brandLowerFold=_foldAcc(brandLower);
   for(var bw=0; bw<BRAND_WORDS.length; bw++){ if(_brandLowerFold.indexOf(_foldAcc(BRAND_WORDS[bw]))!==-1){ brandWord=BRAND_WORDS[bw]; break; } }
