@@ -1211,3 +1211,14 @@
   font-style: normal;
   font-display: swap;
 }
+
+/* Sofitel: the full lockup (wordmark / name / emblem) rendered MUCH bigger and
+   wider (Nick), like the Montréal art — the default 38px logo height made it
+   tiny. Only the SOF brand; other brands keep their sizing. */
+.axr[data-brand-code="SOF"] .axr-logo { height: auto !important; align-items: center !important; }
+.axr[data-brand-code="SOF"] .axr-logo .sof-inline-lockup {
+  height: auto !important;
+  width: min(94%, 640px) !important;
+  max-width: min(94%, 640px) !important;
+  max-height: clamp(140px, 27vh, 240px) !important;
+}
