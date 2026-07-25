@@ -16382,7 +16382,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22501';
+var FIDS_BUILD_TAG = 'v22502';
 (function(){
   try {
     function _addTag(){
@@ -26990,7 +26990,14 @@ function buildAccorAdOnlyV6(ad) {
   // keyword; unmatched lines keep the "›" chevron. Grows as Nick supplies
   // more pictos (files live in /logos/hotels/accor-pictos/, white cuts).
   var _AMEN_PICTOS = [
-    { rx: /wi[\s-]?fi|internet|wireless|haut d[ée]bit|sans fil/i, ico: '/logos/hotels/accor-pictos/internet-white.svg' }
+    { rx: /wi[\s-]?fi|internet|wireless|haut d[ée]bit|sans fil/i, ico: '/logos/hotels/accor-pictos/internet-white.svg' },
+    { rx: /breakfast|petit[- ]d[ée]j|d[ée]jeuner/i,               ico: '/logos/hotels/accor-pictos/breakfast-white.svg' },
+    { rx: /buffet/i,                                              ico: '/logos/hotels/accor-pictos/buffet-white.svg' },
+    { rx: /nespresso|cafeti[eè]re|coffee|caf[ée]|plateau th[ée]|\btea\b|\bth[ée]\b/i, ico: '/logos/hotels/accor-pictos/coffee-white.svg' },
+    { rx: /navette|shuttle|\bbus\b/i,                             ico: '/logos/hotels/accor-pictos/bus-white.svg' },
+    { rx: /parking|valet|voiturier|stationnement/i,               ico: '/logos/hotels/accor-pictos/car-white.svg' },
+    { rx: /golf/i,                                                ico: '/logos/hotels/accor-pictos/golf-white.svg' },
+    { rx: /accessib|handicap|wheelchair|fauteuil|\bpmr\b|81 ?cm/i, ico: '/logos/hotels/accor-pictos/handicap-white.svg' }
   ];
   function _amenPicto(s) {
     for (var i = 0; i < _AMEN_PICTOS.length; i++) if (_AMEN_PICTOS[i].rx.test(s)) return _AMEN_PICTOS[i].ico;
