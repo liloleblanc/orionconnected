@@ -6371,6 +6371,20 @@ function _buildV2AircraftCol(ctx, vars) {
   var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (inboundFlight._aircraftCode || '') : '';
   var _inbEquipNm = (_anyInb && !_inbNmHistorical)
     ? (inboundFlight._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
+  // The INBOUND is the aircraft that becomes your flight, and it is what the
+  // poll actually resolves — but this read goes straight at the flight object,
+  // which the board rebuilds from the feed every refresh. WS813 at YQM: the
+  // poll had 'Boeing 737-800 | C-GWSZ' cached for the inbound WS812 while the
+  // panel still said 'aircraft details pending'. Same churn the outbound side
+  // was already taught to survive.
+  if (_anyInb && !_inbEquipNm && !_inbEquipCd && typeof _acResolvedGet === 'function') {
+    var _inbR = _acResolvedGet(inboundFlight.flight);
+    if (_inbR) {
+      _inbEquipCd = _inbR.cd || '';
+      _inbEquipNm = _inbR.nm || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '');
+      if (!inboundFlight._reg && _inbR.reg) inboundFlight._reg = _inbR.reg;
+    }
+  }
   // PAIRWISE, ONE FLIGHT (Nick: 'the airplane picture does not always
   // match the aircraft details so it must be coming from 2 different
   // sources' — exactly right: name and code were merged FIELD-BY-FIELD,
@@ -7482,6 +7496,14 @@ function _buildV2MapCol(ctx, vars) {
     var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (_ib2._aircraftCode || '') : '';
     var _inbEquipNm = (_anyInb && !_inbNmHistorical)
       ? (_ib2._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
+    if (_anyInb && !_inbEquipNm && !_inbEquipCd && typeof _acResolvedGet === 'function') {
+      var _inbR2 = _acResolvedGet(_ib2.flight);
+      if (_inbR2) {
+        _inbEquipCd = _inbR2.cd || '';
+        _inbEquipNm = _inbR2.nm || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '');
+        if (!_ib2._reg && _inbR2.reg) _ib2._reg = _inbR2.reg;
+      }
+    }
     // PAIRWISE, ONE FLIGHT (Nick: 'the airplane picture does not always
     // match the aircraft details so it must be coming from 2 different
     // sources' — exactly right: name and code were merged FIELD-BY-FIELD,
@@ -9777,6 +9799,14 @@ function uxgGateHtml(ctx) {
                 var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (inboundFlight._aircraftCode || '') : '';
                 var _inbEquipNm = (_anyInb && !_inbNmHistorical)
                   ? (inboundFlight._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
+                if (_anyInb && !_inbEquipNm && !_inbEquipCd && typeof _acResolvedGet === 'function') {
+                  var _inbR3 = _acResolvedGet(inboundFlight.flight);
+                  if (_inbR3) {
+                    _inbEquipCd = _inbR3.cd || '';
+                    _inbEquipNm = _inbR3.nm || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '');
+                    if (!inboundFlight._reg && _inbR3.reg) inboundFlight._reg = _inbR3.reg;
+                  }
+                }
                 // PAIRWISE, ONE FLIGHT (Nick: 'the airplane picture does not always
                 // match the aircraft details so it must be coming from 2 different
                 // sources' — exactly right: name and code were merged FIELD-BY-FIELD,
@@ -16594,7 +16624,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22540';
+var FIDS_BUILD_TAG = 'v22541';
 (function(){
   try {
     function _addTag(){
