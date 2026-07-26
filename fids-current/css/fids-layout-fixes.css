@@ -3976,3 +3976,17 @@ html .wxc-day img {
   height: clamp(38px, 5.8vh, 66px) !important;
 }
 html .wxc-city { font-size: clamp(20px, 3vh, 38px) !important; }
+
+/* ── v22588: AC LEFT SHELVES — Nick's luxury layered panel, lifted to dark
+   gray ('I think for AC we need more of a gray inside'). The :not(#_)
+   bumps specificity over the charcoal data-URI rule in gids css, which
+   loads after this file. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  background-color: #43464c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
