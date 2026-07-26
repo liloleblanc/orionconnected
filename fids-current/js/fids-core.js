@@ -2590,6 +2590,26 @@ async function _gateNumbersPoll() {
     try {
       var _polledReg = String(inbData.reg || '').trim();
       var _inbRegHist = /^history/i.test(String(inb._regSource || ''));
+      var _acqType = false;
+      // THE SCHEDULED TYPE DOES NOT WAIT FOR A TAIL. A scheduled flight has a
+      // scheduled aircraft — AC165 and its inbound AC439 both read 'Airbus
+      // A220-300' in the feed the night before, with no registration yet,
+      // because the tail is assigned in the morning. The type was only being
+      // copied INSIDE the registration branch, so the panel sat on 'aircraft
+      // details pending' while the answer was already in hand (Nick: 'there
+      // should always be an aircraft assigned its a scheduled with a
+      // scheduled aircraft'). Adopt it on its own, and let a real
+      // registration still upgrade it later.
+      if (inbData.aircraft && (!inb._aircraft || /^history/i.test(String(inb._aircraftSource || '')))) {
+        inb._aircraft = inbData.aircraft;
+        inb._aircraftSource = 'schedule';
+        _acqType = true;
+      }
+      if (inbData.aircraftCode && (!inb._aircraftCode || /^history/i.test(String(inb._aircraftCodeSource || '')))) {
+        inb._aircraftCode = inbData.aircraftCode;
+        inb._aircraftCodeSource = 'schedule';
+        _acqType = true;
+      }
       if (_polledReg && (!inb._reg || _inbRegHist)) {
         inb._reg = _polledReg;
         inb._regSource = 'loadFlight';
@@ -2597,7 +2617,11 @@ async function _gateNumbersPoll() {
         if (!inb._aircraftCode && inbData.aircraftCode) inb._aircraftCode = inbData.aircraftCode;
         if (/^history/i.test(String(inb._aircraftSource || ''))) inb._aircraftSource = '';
         if (/^history/i.test(String(inb._aircraftCodeSource || ''))) inb._aircraftCodeSource = '';
+        _acqType = true;
         try { console.log('[NUMPOLL] reg landed via poll:', _polledReg, 'for', flt); } catch (e3) {}
+      }
+      if (_acqType) {
+        try { console.log('[NUMPOLL] aircraft for', flt, '→', inb._aircraft || inb._aircraftCode, inb._reg ? ('| ' + inb._reg) : '| no tail yet'); } catch (e5) {}
         try { window._lastGateKey = ''; render(); } catch (e2) {}
       }
     } catch (e4) {}
@@ -16474,7 +16498,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22530';
+var FIDS_BUILD_TAG = 'v22531';
 (function(){
   try {
     function _addTag(){
