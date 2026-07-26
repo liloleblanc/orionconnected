@@ -16547,7 +16547,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22537';
+var FIDS_BUILD_TAG = 'v22538';
 (function(){
   try {
     function _addTag(){
@@ -27313,7 +27313,7 @@ function buildAccorAdOnlyV6(ad) {
   var _page1 = '<div class="axr-page axr-page-on">'
     + _heroImg(_ph0) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">' + logoHtml
-    +   (showName ? '<h1 class="axr-name">'+esc(displayName)+'</h1>' : '')
+    +   (showName ? '<div class="axr-name">'+esc(displayName)+'</div>' : '')
     +   _addrLineHtml + _locLineHtml + _starsRow
     + '</div></div>';
   // Page 2 — THE HOTEL. Every hotel card sells like fairmont.com (Nick:
