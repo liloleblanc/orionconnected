@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22579';
+var FIDS_BUILD_TAG = 'v22580';
 (function(){
   try {
     function _addTag(){
@@ -24290,40 +24290,13 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       var r = _drawnRect(m);
       if (!r) continue;
       var hb = host.getBoundingClientRect();
-      // Mullion placement: full-length silver members along the ad's
-      // letterbox edges, running to the outer frame (square windows).
-      f.style.left = '0px'; f.style.top = '0px';
-      f.style.width = Math.round(hb.width) + 'px';
-      f.style.height = Math.round(hb.height) + 'px';
+      // Second instance of the wall frame, stretched to hug the ad.
+      var pad = 4;
+      f.style.left = Math.round(r.left - hb.left - pad) + 'px';
+      f.style.top = Math.round(r.top - hb.top - pad) + 'px';
+      f.style.width = Math.round(r.width + 2 * pad) + 'px';
+      f.style.height = Math.round(r.height + 2 * pad) + 'px';
       f.style.right = 'auto'; f.style.bottom = 'auto';
-      var A = f.querySelector('.ad-mull-a'), B = f.querySelector('.ad-mull-b');
-      var C = f.querySelector('.ad-mull-c'), D = f.querySelector('.ad-mull-d');
-      if (A && B && C && D) {
-        // SQUARE WINDOWS, literally: all four members, each full length,
-        // forming a window grid with the ad as the middle pane. A member
-        // that would land on the outer frame edge is dropped.
-        var TH = 16;
-        var GH = 'linear-gradient(180deg,#e8eaec 0%,#f7f8f9 20%,#9aa0a8 55%,#eceded 85%,#c9cdd2 100%)';
-        var GV = 'linear-gradient(90deg,#e8eaec 0%,#f7f8f9 20%,#9aa0a8 55%,#eceded 85%,#c9cdd2 100%)';
-        var adT = Math.round(r.top - hb.top), adB = Math.round(r.top - hb.top + r.height);
-        var adL = Math.round(r.left - hb.left), adR = Math.round(r.left - hb.left + r.width);
-        function _hbar(el, y) {
-          if (y - TH < 6 || y > hb.height - 6) { el.style.display = 'none'; return; }
-          el.style.display = 'block'; el.style.background = GH;
-          el.style.left = '0px'; el.style.width = Math.round(hb.width) + 'px';
-          el.style.height = TH + 'px'; el.style.top = Math.max(0, y - TH) + 'px';
-        }
-        function _vbar(el, x) {
-          if (x - TH < 6 || x > hb.width - 6) { el.style.display = 'none'; return; }
-          el.style.display = 'block'; el.style.background = GV;
-          el.style.top = '0px'; el.style.height = Math.round(hb.height) + 'px';
-          el.style.width = TH + 'px'; el.style.left = Math.max(0, x - TH) + 'px';
-        }
-        _hbar(A, adT);              // bar ENDS at the ad's top edge
-        _hbar(B, adB + TH);         // bar STARTS at the ad's bottom edge
-        _vbar(C, adL);              // column ends at the ad's left edge
-        _vbar(D, adR + TH);         // column starts at the ad's right edge
-      }
       f.style.visibility = 'visible';   // fitted — safe to show
     }
   }
@@ -27970,19 +27943,12 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  // WINDOW MULLIONS (Nick's reference, what_i_need.zip): the ad's letterbox
-  // edges carry full-length silver members that run to the outer frame -
-  // square window panes with the ad in the middle pane. A wide ad gets two
-  // full-width horizontal bars at its top and bottom edges; a tall ad gets
-  // two full-height vertical columns at its left and right edges. Same
-  // metal finish as the outer frame. Hidden until the fitter places them.
-  var _mEdge = 'box-shadow:0 0 0 1px rgba(70,75,85,.55), inset 0 0 0 1px rgba(255,255,255,.85);';
-  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;visibility:hidden;pointer-events:none;z-index:3;">'
-    + '<div class="ad-mull-a" style="position:absolute;display:none;' + _mEdge + '"></div>'
-    + '<div class="ad-mull-b" style="position:absolute;display:none;' + _mEdge + '"></div>'
-    + '<div class="ad-mull-c" style="position:absolute;display:none;' + _mEdge + '"></div>'
-    + '<div class="ad-mull-d" style="position:absolute;display:none;' + _mEdge + '"></div>'
-    + '</div>';
+  // THE SAME FRAME, USED TWICE (Nick): the identical silver picture-frame
+  // artwork that wraps the panel walls, in a second instance stretched to
+  // the ad's drawn rectangle. The fitter sizes it; hidden until placed.
+  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
+    + 'visibility:hidden;pointer-events:none;z-index:3;'
+    + 'background-image:url(/logos/Backgrounds/ad-frame-silver.png?v=2);background-size:100% 100%;"></div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
