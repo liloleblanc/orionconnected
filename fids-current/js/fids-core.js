@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22577';
+var FIDS_BUILD_TAG = 'v22578';
 (function(){
   try {
     function _addTag(){
@@ -24290,17 +24290,38 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       var r = _drawnRect(m);
       if (!r) continue;
       var hb = host.getBoundingClientRect();
-      // Ring geometry: border 7px + 4px gap — the band sits fully outside
-      // the ad's edge, deterministically.
-      var pad = 11;
-      // The accent frame hugs the ad on all four sides — 'the middle one,
-      // the same just smaller, around the ad' (Nick). No stretching: on a
-      // full-width creative its sides naturally land on the outer frame.
-      f.style.left = Math.round(r.left - hb.left - pad) + 'px';
-      f.style.width = Math.round(r.width + 2 * pad) + 'px';
-      f.style.top = Math.round(r.top - hb.top - pad) + 'px';
-      f.style.height = Math.round(r.height + 2 * pad) + 'px';
+      // Mullion placement: full-length silver members along the ad's
+      // letterbox edges, running to the outer frame (square windows).
+      f.style.left = '0px'; f.style.top = '0px';
+      f.style.width = Math.round(hb.width) + 'px';
+      f.style.height = Math.round(hb.height) + 'px';
       f.style.right = 'auto'; f.style.bottom = 'auto';
+      var A = f.querySelector('.ad-mull-a'), B = f.querySelector('.ad-mull-b');
+      if (A && B) {
+        var TH = 16;
+        var GH = 'linear-gradient(180deg,#e8eaec 0%,#f7f8f9 20%,#9aa0a8 55%,#eceded 85%,#c9cdd2 100%)';
+        var GV = 'linear-gradient(90deg,#e8eaec 0%,#f7f8f9 20%,#9aa0a8 55%,#eceded 85%,#c9cdd2 100%)';
+        var fullW = r.width >= hb.width - 6, fullH = r.height >= hb.height - 6;
+        if (fullW && fullH) {
+          A.style.display = 'none'; B.style.display = 'none';
+        } else if (fullW) {
+          A.style.display = 'block'; B.style.display = 'block';
+          A.style.background = GH; B.style.background = GH;
+          A.style.left = '0px'; B.style.left = '0px';
+          A.style.width = Math.round(hb.width) + 'px'; B.style.width = Math.round(hb.width) + 'px';
+          A.style.height = TH + 'px'; B.style.height = TH + 'px';
+          A.style.top = Math.max(0, Math.round(r.top - hb.top - TH)) + 'px';
+          B.style.top = Math.min(Math.round(hb.height - TH), Math.round(r.top - hb.top + r.height)) + 'px';
+        } else {
+          A.style.display = 'block'; B.style.display = 'block';
+          A.style.background = GV; B.style.background = GV;
+          A.style.top = '0px'; B.style.top = '0px';
+          A.style.height = Math.round(hb.height) + 'px'; B.style.height = Math.round(hb.height) + 'px';
+          A.style.width = TH + 'px'; B.style.width = TH + 'px';
+          A.style.left = Math.max(0, Math.round(r.left - hb.left - TH)) + 'px';
+          B.style.left = Math.min(Math.round(hb.width - TH), Math.round(r.left - hb.left + r.width)) + 'px';
+        }
+      }
       f.style.visibility = 'visible';   // fitted — safe to show
     }
   }
@@ -27913,15 +27934,7 @@ function _adBackdropHtml(blurUrl) {
           + '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;background-image:url(/logos/Backgrounds/adback-spots.png?v=1);background-size:cover;background-position:center;opacity:.28;mix-blend-mode:screen;"></div>';
       }
       var rg = col.querySelector(':scope > .ad-accent-frame');
-      if (!rg) {
-        rg = document.createElement('div');
-        rg.className = 'ad-accent-frame';
-        rg.style.cssText = 'position:absolute;left:1.1%;right:1.1%;top:1.7%;bottom:1.7%;'
-          + 'pointer-events:none;z-index:59;border:8px solid #8a94a6;'
-          + 'box-shadow: inset 0 0 0 2px rgba(255,255,255,.75);';
-        col.appendChild(rg);
-      }
-      if (rg.dataset.acc !== _bdAcc) { rg.dataset.acc = _bdAcc; rg.style.borderColor = _bdAcc; }
+      if (rg) rg.remove();   // the wall-nested ring is not in Nick's reference
       var f = col.querySelector(':scope > .ad-outer-frame');
       if (!f) {
         f = document.createElement('div');
@@ -27955,21 +27968,17 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  // Per-ad ring (Nick: "you're missing the frame around American Way and
-  // Free Wi-Fi") — on top of the square-windows wall frames, each creative
-  // gets its own accent ring hugging its drawn edges. Drawn (not art), so
-  // it can never cover the ad; hidden until the fitter has it in place.
-  var _fAcc = '';
-  try {
-    var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-    if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = AIRLINE_ACCENT[_fAl];
-  } catch (e) {}
-  if (!_fAcc) _fAcc = '#8a94a6';
-  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
-    + 'visibility:hidden;pointer-events:none;z-index:3;'
-    + 'border:12px solid ' + _fAcc + ';'
-    + 'box-shadow: inset 0 0 0 3px rgba(255,255,255,.92), 0 0 0 3px rgba(255,255,255,.92), 0 8px 20px rgba(5,10,20,.35);'
-    + '"></div>';
+  // WINDOW MULLIONS (Nick's reference, what_i_need.zip): the ad's letterbox
+  // edges carry full-length silver members that run to the outer frame -
+  // square window panes with the ad in the middle pane. A wide ad gets two
+  // full-width horizontal bars at its top and bottom edges; a tall ad gets
+  // two full-height vertical columns at its left and right edges. Same
+  // metal finish as the outer frame. Hidden until the fitter places them.
+  var _mEdge = 'box-shadow:0 0 0 1px rgba(70,75,85,.55), inset 0 0 0 1px rgba(255,255,255,.85);';
+  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;visibility:hidden;pointer-events:none;z-index:3;">'
+    + '<div class="ad-mull-a" style="position:absolute;display:none;' + _mEdge + '"></div>'
+    + '<div class="ad-mull-b" style="position:absolute;display:none;' + _mEdge + '"></div>'
+    + '</div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the

@@ -3931,10 +3931,12 @@ html body .gad-media-col #gateAdCarousel {
   /* v22575: opening = silver band (1.1%/1.7%) + accent ring (8px).
      Square windows: silver frame, accent frame flush against it, content
      inside both. */
-  left: calc(1.1% + 8px) !important;
-  right: calc(1.1% + 8px) !important;
-  top: calc(1.7% + 8px) !important;
-  bottom: calc(1.7% + 8px) !important;
+  /* v22578: ring removed (not in Nick's reference) - opening back to the
+     silver band's inner edge. */
+  left: 1.1% !important;
+  right: 1.1% !important;
+  top: 1.7% !important;
+  bottom: 1.7% !important;
   width: auto !important;
   height: auto !important;
 }
