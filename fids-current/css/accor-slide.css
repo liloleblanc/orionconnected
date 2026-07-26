@@ -1410,3 +1410,101 @@
   max-width: min(80%, 480px) !important;
   max-height: clamp(96px, 17vh, 168px) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   ONE MARK SIZE FOR EVERY BRAND — v22522
+   The hotel mark was sized three different ways depending on the brand: most
+   brands ran height:auto under a max-height, so the rendered size fell out of
+   each artwork's own aspect ratio (a wide wordmark hit the width cap and came
+   out short, a squarer one hit the height cap and came out tall); the
+   property-lockup brands used a fixed 104-152px; the runtime inline lockups
+   used a width with a 96-240px cap. Same card, same slot, a different size on
+   every hotel (Nick: 'I cant accept this its all different sizes').
+   One height for wordmarks. Lockups — whose artwork has the property name
+   built into it — get that height PLUS the name line every other brand prints
+   underneath as its own row, so the wordmark inside them lands at the same
+   optical size. Width always follows the artwork's own aspect.
+   Placed last: it has to win over the generated per-brand blocks above.
+   ════════════════════════════════════════════════════════════════════════ */
+.axr .axr-logo{
+  height:clamp(44px,5.9vh,66px) !important;
+  align-items:flex-end !important;
+  justify-content:flex-start !important;
+}
+.axr .axr-logo img,
+.axr .axr-logo svg{
+  height:100% !important;
+  width:auto !important;
+  max-height:100% !important;
+  max-width:min(74%,470px) !important;
+  object-fit:contain !important;
+  object-position:left center !important;
+}
+/* Lockup brands (property name baked into the artwork) + the runtime inline
+   lockups: one taller band, shared by all of them. */
+.axr[data-brand-code="FAI"] .axr-logo,
+.axr[data-brand-code="SOF"] .axr-logo,
+.axr[data-brand-code="SLE"] .axr-logo,
+.axr[data-brand-code="RAF"] .axr-logo,
+.axr[data-brand-code="RAH"] .axr-logo,
+.axr[data-brand-code="EMB"] .axr-logo,
+.axr[data-brand-code="MGA"] .axr-logo,
+.axr .axr-logo:has(.fai-inline-lockup),
+.axr .axr-logo:has(.sof-inline-lockup){
+  height:clamp(64px,8.6vh,96px) !important;
+  align-items:flex-end !important;
+}
+.axr .axr-logo .fai-inline-lockup,
+.axr .axr-logo .sof-inline-lockup{
+  height:100% !important;
+  width:auto !important;
+  max-height:100% !important;
+  max-width:min(88%,560px) !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   ONE SIZE PER ROLE — v22522
+   Nick counted four different sizes of the SAME hotel name inside one ad, and
+   he is right: the name was styled once per surface (page-1 headline, page-2/3
+   context heading, room-page eyebrow, QR caption) and three of those were then
+   run through a shrink-to-fit fitter that sized each one to its own line
+   width. Same word, four sizes, one card.
+   Every role below now has exactly ONE size, brand-independent, computed off
+   the same --axr-name step. Long text WRAPS (max two lines) instead of being
+   shrunk, so a name is never resized to fit — and the ad's fitter entries were
+   removed in fids-core.js to match. Placed last so it beats the generated
+   per-brand blocks, which set their own name sizes.
+   ROLE LADDER:  room name 1.90x  >  hotel name 1.15x  >  advantages 0.87x
+                 > details 0.73x  >  body 0.55x        (x = --axr-name)
+   ════════════════════════════════════════════════════════════════════════ */
+.axr .axr-name,
+.axr .axr-page-ctx:not(.axr-room-name),
+.axr .axr-room-hotel{
+  font-size:calc(var(--axr-name) * 1.15) !important;
+  line-height:1.16 !important;
+  font-weight:600 !important;
+  text-transform:uppercase !important;
+  letter-spacing:.07em !important;
+  color:#fff !important;
+  /* wrap, never shrink */
+  white-space:normal !important;
+  display:-webkit-box !important;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden !important;
+  max-width:92% !important;
+  margin-bottom:calc(var(--axr-info) * 0.18) !important;
+}
+/* The room name is the only line allowed to be bigger than the hotel name. */
+.axr .axr-page-ctx.axr-room-name{
+  font-size:calc(var(--axr-name) * 1.90) !important;
+  font-weight:700 !important;
+}
+/* Details / advantages / body: one size each, every brand. */
+.axr .axr-room-details{ font-size:calc(var(--axr-name) * 0.73) !important; }
+.axr .axr-fai-feats span{ font-size:calc(var(--axr-name) * 0.87) !important; }
+.axr .axr-blurb{ font-size:calc(var(--axr-name) * 0.55) !important; }
+.axr .axr-list li{ font-size:calc(var(--axr-name) * 0.62) !important; }
+/* The QR caption's name line: fixed with the rest of the bubble copy, no
+   fitter — it was the fourth size of the hotel name. */
+.axr .axr-bub-name{ font-size:1em; font-weight:600; }

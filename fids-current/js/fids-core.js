@@ -16462,7 +16462,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22521';
+var FIDS_BUILD_TAG = 'v22522';
 (function(){
   try {
     function _addTag(){
@@ -26969,8 +26969,10 @@ function buildAccorAdOnlyV6(ad) {
   if (accorLang() === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(_fullName)) {
     _fullName = 'Fairmont Le Reine Elizabeth';
   }
-  // Brand policy (Nick): a hotel name is NEVER split across two lines —
-  // .axr-one-line keeps it whole and the fitter shrinks it until it fits.
+  // The caption's name line is NOT run through the shrink-to-fit fitter any
+  // more. Fitting it meant the same hotel name rendered at yet another size
+  // here — Nick counted four sizes of one hotel's name inside a single ad.
+  // The bubble copy is a fixed size and wraps to two lines instead.
   // Fairmont-style accent (Nick): first word italic sentence-case, the rest
   // renders CAPS via the brand's bubble CSS — like 'SAVOR SAN JUAN flavor'.
   var _scanTxt = safeTL('scanToDiscover','Scan to discover');
@@ -26978,7 +26980,7 @@ function buildAccorAdOnlyV6(ad) {
   var _scanHtml = (_scanSp > 0)
     ? '<i class="axr-scan-accent">' + esc(_scanTxt.slice(0, _scanSp)) + '</i> ' + esc(_scanTxt.slice(_scanSp + 1))
     : esc(_scanTxt);
-  var _qrCaption = _scanHtml + '<br><span class="axr-one-line">' + esc(_fullName) + '</span>';
+  var _qrCaption = _scanHtml + '<br><span class="axr-bub-name">' + esc(_fullName) + '</span>';
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
@@ -29191,7 +29193,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // of being shrunk to one line, so every room card's headline is the same
     // size (Nick: 'no consistency' — a long French room name had shrunk below
     // the body copy under it).
-    var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx:not(.axr-room-name),'
+    // NOTHING inside a hotel ad is shrink-to-fit any more. Fitting each name
+    // line to its own width is precisely why one hotel's name rendered at four
+    // different sizes across the pages of a single ad (Nick: 'ALL THE SECTIONS
+    // NEED TO BE UNIFORM EVERYWHERE'). Ad type is fixed by role and wraps.
+    var ones = document.querySelectorAll('.axr-one-line,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable .fids-airline-name,'
       + ' .bigcraft-side .v2-rc-fi-tval');
