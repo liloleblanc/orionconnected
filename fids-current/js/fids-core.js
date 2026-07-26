@@ -2789,6 +2789,25 @@ function _iataFromCityName(name) {
   } catch (e) {}
   return '';
 }
+// Feeds qualify a stop with its airport, not just its city: TPA writes
+// 'Houston - Intercontinental', 'Chicago - O'Hare', 'Washington - Dulles'.
+// A board says WHERE the flight goes, so the qualifier is dropped whenever the
+// part in front of it is a city the engine already knows (Nick: 'the nams of
+// the fucking multi ass city still has not been fucking changed'). Names with
+// a hyphen of their own \u2014 Wilkes-Barre, Baie-Comeau \u2014 are untouched because
+// the split needs whitespace around the dash, and an unknown head is kept
+// whole rather than guessed at.
+function _cityFromStopLabel(raw) {
+  var s = String(raw || '').replace(/\s+/g, ' ').trim();
+  if (!s) return s;
+  var m = s.split(/\s+[-\u2013\u2014|\/]\s+/);
+  if (m.length < 2) return s;
+  var head = m[0].trim();
+  if (!head) return s;
+  // Keep the qualifier unless the head alone names a place we can resolve.
+  if (typeof _iataFromCityName === 'function' && _iataFromCityName(head)) return head;
+  return s;
+}
 function _destFlipStops(stops, kind, cls) {
   try {
     if (!Array.isArray(stops) || stops.length < 2) return null;
@@ -2801,10 +2820,11 @@ function _destFlipStops(stops, kind, cls) {
       // multi destination flights show the city and not the code like
       // others'). Resolve the code from the city name through the engine's
       // own tables; legs no table can name still suppress the chip.
-      if (!ia) ia = _iataFromCityName((s && s.city) || '');
+      if (!ia) ia = _iataFromCityName(_cityFromStopLabel((s && s.city) || ''));
       var name = '';
       try { name = airportCityNameSafe_v21877(ia) || ''; } catch (e) {}
-      if (!name) name = String((s && s.city) || '') || ia;
+      // Feed label as written ('Houston - Intercontinental') → the city only.
+      if (!name) name = _cityFromStopLabel(String((s && s.city) || '')) || ia;
       try { if (typeof normalizeDisplayCity === 'function') name = normalizeDisplayCity(name, ia); } catch (e) {}
       try { if (typeof tc === 'function' && name === name.toUpperCase()) name = tc(name); } catch (e) {}
       return { c: name, ia: ia };
@@ -16395,7 +16415,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22519';
+var FIDS_BUILD_TAG = 'v22520';
 (function(){
   try {
     function _addTag(){
@@ -18620,7 +18640,12 @@ function tpaToAdbFlight(f) {
   // 'Richmond, Las Vegas'): commas separate STOPS; qualifiers use ' - '
   // ('Houston - Intercontinental'). So a comma in city content IS a stop
   // list, array or string alike.
-  const _cityNames = _toks(f.city);
+  // ' - Intercontinental' / ' - O'Hare' qualify the airport, not the city; a
+  // board shows the city (Nick). Dropped at ingest so every surface — row,
+  // gate rail, right card, flip — reads the same clean name.
+  const _cityNames = _toks(f.city).map(function (n) {
+    return (typeof _cityFromStopLabel === 'function') ? _cityFromStopLabel(n) : n;
+  });
   const cityCode = _cityCodes[0] || null;
   // Airport identity = the FIRST stop only. Its name (not a joined list)
   // feeds the ingest's existing reverse-lookup when the feed omits the
@@ -28208,19 +28233,32 @@ function _buildGateAdSlideList() {
   // ── 3. The "3" pool = media first (operator content leads), then airline ads.
   var nonAccor = mediaSlides.concat(airlineAdSlides);
 
-  // ── 4. Interleave 3 non-Accor : 1 Accor. Cycle Accor if fewer than needed.
+  // ── 4. Interleave 3 non-Accor : 1 Accor, and give EVERY nearby hotel a turn
+  // within ONE pass of the deck. The old loop only placed a hotel after every
+  // third non-Accor item, so a short non-Accor pool (one house ad, no uploaded
+  // media — United at TPA) fell through to a single accorSlides[0] and the
+  // SAME hotel played forever: Nick got Faena New York over and over and never
+  // saw Sofitel New York, The Plaza or the Hard Rock a few blocks away, all of
+  // which the catalog returns for that destination.
+  var ACCOR_PER_PASS = 4;
   var deck = [];
-  var ai = 0;
-  for (var i = 0; i < nonAccor.length; i++) {
-    deck.push(nonAccor[i]);
-    if ((i + 1) % 3 === 0 && accorSlides.length) {
-      deck.push(accorSlides[ai % accorSlides.length]);
-      ai++;
+  var _wantAccor = Math.min(accorSlides.length, ACCOR_PER_PASS);
+  if (nonAccor.length && _wantAccor) {
+    var ai = 0, _since = 0;
+    for (var i = 0; ai < _wantAccor && i < 64; i++) {
+      deck.push(nonAccor[i % nonAccor.length]);
+      _since++;
+      // a hotel after every 3 others — or as soon as the pool wraps, when it
+      // is shorter than 3 (a 1-item pool never reaches the counter otherwise)
+      if (_since >= 3 || (i + 1) % nonAccor.length === 0) {
+        deck.push(accorSlides[ai++]);
+        _since = 0;
+      }
     }
-  }
-  // 1–2 non-Accor items: still show ONE Accor so it appears, never dominates.
-  if (nonAccor.length > 0 && nonAccor.length < 3 && accorSlides.length) {
-    deck.push(accorSlides[0]);
+  } else if (nonAccor.length) {
+    deck = nonAccor.slice();
+  } else if (_wantAccor) {
+    deck = accorSlides.slice(0, _wantAccor);
   }
 
   // ── 5. Graceful fallback — never all-Accor, never blank. Airlines with
@@ -29102,7 +29140,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // fitter's size and the fitter kept restoring it — the last live
     // oscillator behind Nick's 'still doing it'). The board fitter owns ALL
     // #fidsTable cells now; the name-span fallback keeps this shrinker.
-    var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
+    // Room names are excluded: they wrap to two lines at a FIXED size instead
+    // of being shrunk to one line, so every room card's headline is the same
+    // size (Nick: 'no consistency' — a long French room name had shrunk below
+    // the body copy under it).
+    var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx:not(.axr-room-name),'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable .fids-airline-name,'
       + ' .bigcraft-side .v2-rc-fi-tval');
