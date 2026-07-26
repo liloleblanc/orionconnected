@@ -4310,3 +4310,20 @@ html body::after {
 html body .g8-r1::after, html body .fids-banner::after {
   opacity: .32 !important;
 }
+
+/* ── v22601: SKYTEAM MARK — matched to the other alliance tiles (Nick:
+   'the Skyteam logo is still small'). The white symbol is 512px art but
+   rendered at natural-fit ~44px; the dedicated override (extra class =
+   top specificity) brings it to the Star Alliance tile's scale. */
+html body .g8-wrap .g8-r1-star.g8-r1-alliance-skyteam,
+html body .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-skyteam {
+  height: clamp(80px, 12vh, 100px) !important;
+  max-height: clamp(80px, 12vh, 100px) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: min(20vw, 340px) !important;
+  opacity: 1 !important;
+  align-self: center !important;
+  margin-left: 26px !important;
+  object-fit: contain !important;
+}

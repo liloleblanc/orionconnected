@@ -8754,6 +8754,11 @@ function uxgGateHtml(ctx) {
     // for united but it wasnt changed on the horizontal display'), in its
     // NATIVE colors (white-inverting the glossy orb made a white blob).
     var _birRound = (typeof GATE_TOP_ROUND_EMBLEM_FILES !== 'undefined' && GATE_TOP_ROUND_EMBLEM_FILES[airlineCode]) || null;
+    // DL: the glossy white orb was the ONLY light chip in a row of accent
+    // circles (Nick: 'Delta icon does not match any others') — the strip
+    // badge goes back to the standard treatment; the glossy art stays on
+    // the other surfaces.
+    if (airlineCode === 'DL') _birRound = null;
     var _birEmblemPath = _birRound || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
     // MX: tile-brand treatment (Nick: 'circle same color as the icon, the
     // middle fits within') — navy circle in the tile's own colour, check
@@ -8763,7 +8768,7 @@ function uxgGateHtml(ctx) {
     // COLOR-ON-WHITE (Nick: American/Delta 'color and centered'): the real
     // colour symbol on a white chip instead of the flat white silhouette on
     // the accent circle — matches the rail rondelle treatment.
-    var _birOnWhite = { 'AA': true, 'DL': true }[airlineCode] && !_birRound && !_birTile;
+    var _birOnWhite = { 'AA': true }[airlineCode] && !_birRound && !_birTile;
     var _birNativeColor = !!_birRound || !!_birTile || !!_birOnWhite;
     var _birFilter = _birNativeColor ? '' : 'filter:brightness(0) invert(1);';
     var _birPad = _birOnWhite ? '13%' : '9%';
@@ -16677,7 +16682,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22600';
+var FIDS_BUILD_TAG = 'v22601';
 (function(){
   try {
     function _addTag(){
