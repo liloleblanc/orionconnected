@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22551';
+var FIDS_BUILD_TAG = 'v22552';
 (function(){
   try {
     function _addTag(){
@@ -27908,12 +27908,27 @@ function _adTechFrameHtml() {
   // bezel did. The fitter still positions .ad-tech-frame; the two layers
   // inside just fill it.
   var _fUrl = '/logos/Backgrounds/ad-frame-silver.png?v=1';
+  // Resolve the accent NOW: the CSS var doesn't reliably cascade into the
+  // carousel, and the fallback painted every frame pale blue. Airline map
+  // first, then the gate wrapper's computed var, then neutral silver.
+  var _fAcc = '';
+  try {
+    var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+    if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = AIRLINE_ACCENT[_fAl];
+    if (!_fAcc) {
+      var _fEl = document.querySelector('.g8-wrap') || document.body;
+      _fAcc = (getComputedStyle(_fEl).getPropertyValue('--airline-accent') || '').trim();
+    }
+  } catch (e) {}
+  var _fTint = _fAcc
+    ? '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.88;'
+      + '-webkit-mask-image:url(\'' + _fUrl + '\');-webkit-mask-size:100% 100%;'
+      + 'mask-image:url(\'' + _fUrl + '\');mask-size:100% 100%;"></div>'
+    : '';
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
     + 'pointer-events:none;z-index:3;isolation:isolate;filter:drop-shadow(0 10px 26px rgba(5,10,20,0.4));">'
     +   '<div style="position:absolute;inset:0;background-image:url(\'' + _fUrl + '\');background-size:100% 100%;"></div>'
-    +   '<div style="position:absolute;inset:0;background:var(--airline-accent,#38bdf8);mix-blend-mode:multiply;opacity:.88;'
-    +     '-webkit-mask-image:url(\'' + _fUrl + '\');-webkit-mask-size:100% 100%;'
-    +     'mask-image:url(\'' + _fUrl + '\');mask-size:100% 100%;"></div>'
+    +   _fTint
     + '</div>';
 }
 
