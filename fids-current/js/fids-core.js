@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22570';
+var FIDS_BUILD_TAG = 'v22571';
 (function(){
   try {
     function _addTag(){
@@ -24287,10 +24287,22 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       if (!m && typeof _libImgEl !== 'undefined' && _libImgEl && _libImgEl.style.display !== 'none') m = _libImgEl;
       if (!m && typeof _nativeVideoEl !== 'undefined' && _nativeVideoEl && _nativeVideoEl.style.display !== 'none') m = _nativeVideoEl;
       if (!m) continue;
+      // 'TOUCH THE BORDER THE SIDE' (Nick): the ad always spans the full
+      // width. Wider-than-panel creatives letterbox vertically (contain);
+      // taller-than-panel creatives fill and crop vertically (cover).
+      try {
+        var _mw = m.videoWidth || m.naturalWidth, _mh = m.videoHeight || m.naturalHeight;
+        var _mb = m.getBoundingClientRect();
+        if (_mw && _mh && _mb.width && _mb.height) {
+          m.style.objectFit = ((_mw / _mh) >= (_mb.width / _mb.height)) ? 'contain' : 'cover';
+        }
+      } catch (e) {}
       var r = _drawnRect(m);
       if (!r) continue;
       var hb = host.getBoundingClientRect();
-      var pad = 5;   // hug the ad tight (Nick, Jul 26)
+      // Inflate so the frame art's band paints just OUTSIDE the ad edge in
+      // the art area, instead of over the creative's copy.
+      var pad = Math.round(Math.min(r.width, r.height) * 0.05) + 4;
       // The accent frame hugs the ad on all four sides — 'the middle one,
       // the same just smaller, around the ad' (Nick). No stretching: on a
       // full-width creative its sides naturally land on the outer frame.
