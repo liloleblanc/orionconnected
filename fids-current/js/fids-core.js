@@ -2558,6 +2558,16 @@ async function _gateNumbersPoll() {
     // verified loadFlight link when it exists, else the gate-match fallback),
     // so the poll always tracks what the screen is actually showing.
     var inb = window._gatePanelInbound || window._gateInbound;
+    // NO INBOUND IS NOT NO AIRCRAFT. Plenty of gates show the DEPARTING
+    // flight in the aircraft panel (AC185 at D24 — no inbound linked at all),
+    // and this poll bailed out entirely in that case, so the type never
+    // arrived and the panel read 'aircraft details pending' with the schedule
+    // sitting right there in the feed (Nick: 'btw no aircraft'). Fall back to
+    // the flight the gate is actually showing.
+    if (!inb || !inb.flight) {
+      var _cf = window._gateCurrentFlight;
+      if (_cf && _cf.flight && !(_cf._aircraft || _cf._aircraftCode)) inb = _cf;
+    }
     var flt = inb && inb.flight;
     if (!flt) return;
     if (/cancel|arriv|land/i.test(String(inb.status || ''))) return;   // on the ground → stop
@@ -10492,6 +10502,35 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
 // The banner-overflow guard and wordmark backstop below stay active.
 // Re-enable ONLY with Nick's sign-off after harness proof.
 var BOARD_AUTOFIT_ENABLED = false;
+
+// THE HOTEL NAME IN THE BUBBLE IS ONE LINE, WHOLE. Not wrapped to a second
+// line (Nick: 'in the bubble the hotel name cuts to the enxt line big NO NO'),
+// and not ellipsised either — which leaves exactly one lever: the longest
+// names step down until they fit the chip's width. Keyed on text+width, so a
+// given name in a given bubble always renders at the same size; it is fitted
+// once, not re-derived on a timer. Called straight after the ad is written so
+// the size is right on the first painted frame, and again from the 5s autofit
+// pass as a backstop.
+function _axrFitBubbleNames() {
+  var names = document.querySelectorAll('.axr-bub-name');
+  for (var i = 0; i < names.length; i++) {
+    var el = names[i];
+    var box = el.parentElement;
+    if (!box || !box.clientWidth) continue;
+    var key = (el.textContent || '') + '|' + Math.round(box.clientWidth);
+    if (el.dataset.fitKey === key) continue;
+    el.dataset.fitKey = key;
+    el.style.removeProperty('font-size');
+    var base = parseFloat(getComputedStyle(el).fontSize) || 18;
+    var size = base, guard = 26;
+    var min = base * 0.56;
+    while (el.scrollWidth > box.clientWidth + 0.5 && size > min && guard-- > 0) {
+      size = Math.max(min, size - Math.max(0.5, size * 0.045));
+      el.style.setProperty('font-size', size + 'px', 'important');
+    }
+  }
+}
+
 function boardAutofit(full) {
   try {
     // BANNER TITLE ('Retrait des bagages' + bag icon spilling out of the
@@ -16498,7 +16537,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22531';
+var FIDS_BUILD_TAG = 'v22532';
 (function(){
   try {
     function _addTag(){
@@ -27960,6 +27999,7 @@ function renderGateAd(index) {
   // page 1 at full opacity first and then ghost-crossfaded forward to the page
   // it was actually on — the jump on screen.
   try { if (typeof window._axrPageSync === 'function') window._axrPageSync(); } catch (e) {}
+  try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
 
   var logoEl = document.getElementById('gateAdLogo');
   if (logoEl) {
@@ -29373,6 +29413,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // line to its own width is precisely why one hotel's name rendered at four
     // different sizes across the pages of a single ad (Nick: 'ALL THE SECTIONS
     // NEED TO BE UNIFORM EVERYWHERE'). Ad type is fixed by role and wraps.
+    try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
     var ones = document.querySelectorAll('.axr-one-line,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable .fids-airline-name,'

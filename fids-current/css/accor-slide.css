@@ -117,8 +117,10 @@
      own name is never cut: 'Scanner POUR LE FAIRMONT EL SAN…' on a paid ad is
      not acceptable, and the caption is not shrink-to-fit either, so the size
      is set low enough that the longest names in the portfolio still land. */
-  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
-  hyphens:none; }
+  overflow:hidden; hyphens:none; }
+/* The name is its own line and stays on ONE line: never wrapped, never cut.
+   The fitter in fids-core steps the longest names down to fit the width. */
+.axr .axr-bub-name{ display:block; white-space:nowrap; overflow:hidden; font-weight:600; }
 /* Sized by the shape's inner height, and the generated code is taken OUT of
    the grid's intrinsic sizing. qrcodejs injects a bitmap at a hard pixel size,
    which made the grid row taller than the shape's own ratio allows; the
@@ -1444,7 +1446,7 @@
    Placed last: it has to win over the generated per-brand blocks above.
    ════════════════════════════════════════════════════════════════════════ */
 .axr .axr-logo{
-  height:clamp(44px,5.9vh,66px) !important;
+  height:clamp(58px,7.6vh,86px) !important;
   align-items:flex-end !important;
   justify-content:flex-start !important;
 }
@@ -1468,7 +1470,7 @@
 .axr[data-brand-code="MGA"] .axr-logo,
 .axr .axr-logo:has(.fai-inline-lockup),
 .axr .axr-logo:has(.sof-inline-lockup){
-  height:clamp(64px,8.6vh,96px) !important;
+  height:clamp(84px,11.2vh,126px) !important;
   align-items:flex-end !important;
 }
 .axr .axr-logo .fai-inline-lockup,
@@ -1510,7 +1512,7 @@
   -webkit-box-orient:vertical;
   overflow:hidden !important;
   max-width:92% !important;
-  margin-bottom:calc(var(--axr-info) * 0.18) !important;
+  margin-bottom:calc(var(--axr-info) * 0.10) !important;
 }
 /* The room name is the only line allowed to be bigger than the hotel name —
    but the gap to the line under it was absurd: 54px over 21px, a headline
@@ -1518,14 +1520,17 @@
    its an oximoron'). The ladder is compressed so each step is a step, not a
    cliff: 1.45x over 0.85x reads as title-then-detail. */
 .axr .axr-page-ctx.axr-room-name{
-  font-size:calc(var(--axr-name) * 1.45) !important;
+  font-size:calc(var(--axr-name) * 1.28) !important;
   font-weight:700 !important;
+  margin-bottom:calc(var(--axr-info) * 0.10) !important;
 }
 /* Details / advantages / body: one size each, every brand. */
-.axr .axr-room-details{ font-size:calc(var(--axr-name) * 0.85) !important; }
+.axr .axr-room-details{ font-size:calc(var(--axr-name) * 0.95) !important;
+  margin:0 0 calc(var(--axr-info) * 0.14) !important; }
 .axr .axr-fai-feats span{ font-size:calc(var(--axr-name) * 0.87) !important; }
-.axr .axr-blurb{ font-size:calc(var(--axr-name) * 0.60) !important; }
+.axr .axr-blurb{ font-size:calc(var(--axr-name) * 0.60) !important;
+  margin-top:calc(var(--axr-info) * 0.22) !important; line-height:1.32 !important; }
 .axr .axr-list li{ font-size:calc(var(--axr-name) * 0.62) !important; }
 /* The QR caption's name line: fixed with the rest of the bubble copy, no
    fitter — it was the fourth size of the hotel name. */
-.axr .axr-bub-name{ font-size:1em; font-weight:600; }
+
