@@ -4650,6 +4650,39 @@ function acExpressMatrix(fn) {
   return null;
 }
 
+// ── THE PARTNER HAS TO BE ABLE TO FLY THE LEG ────────────────────────────
+// A flight-number band is contractual shorthand, not evidence. AC7053 (YYZ →
+// YVR, 3,355 km, Air Canada's own metal per the feed) landed inside the
+// 7000–7299 band, so the gate printed 'Operated by PAL Airlines' — and then,
+// because PAL flies nothing but Dash 8-400s, the equipment rule below
+// OVERWROTE the aircraft with a Dash 8. A turboprop crossing the country in
+// the schedule's block time (Nick: 'PAL airlines going to operate that flight
+// to YVR? In a Dash8? in one hour 15 minutes?'). Every band-derived operator
+// now has to survive the geography; when it can't, the attribution is dropped
+// and the marketing carrier stands on its own rather than being invented.
+var _REGIONAL_MAX_KM = { 'PB': 1900, 'WR': 1900, 'QK': 2900 };
+function _apLatLngFor(iata) {
+  var c = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+  if (!c) return null;
+  try { if (typeof GATE_AP !== 'undefined' && GATE_AP[c]) return GATE_AP[c]; } catch (e) {}
+  try { if (typeof AIRPORT_COORDS !== 'undefined' && AIRPORT_COORDS[c]) return AIRPORT_COORDS[c]; } catch (e) {}
+  try {
+    if (typeof AP !== 'undefined' && AP[c] && AP[c].lat != null && AP[c].lon != null) return [AP[c].lat, AP[c].lon];
+  } catch (e) {}
+  return null;
+}
+function _regionalOpFitsRoute(opCode, iataA, iataB) {
+  var lim = _REGIONAL_MAX_KM[String(opCode || '').toUpperCase()];
+  if (!lim) return true;                       // not a range-limited partner
+  var A = _apLatLngFor(iataA), B = _apLatLngFor(iataB);
+  if (!A || !B) return true;                   // unknown geography — no verdict either way
+  try {
+    var km = _haversineKm(A[0], A[1], B[0], B[1]);
+    if (!isFinite(km) || km <= 0) return true;
+    return km <= lim;
+  } catch (e) { return true; }
+}
+
 // Hawaii airports — used only as a fallback signal when equipment is unknown.
 // Comprehensive list per FAA/Wikipedia (commercial primary + nonprimary + GA + military).
 // Updated v186 to include all Mokulele-served small-island airports (HNM, MUE, LUP)
@@ -5798,14 +5831,19 @@ function renderMobileGateHtml(ctx) {
   (function(){
     var _fn = parseInt(String(currentFlight.flight || '').replace(/\D/g, ''), 10);
     if (isNaN(_fn)) return;
+    var _fitsRoute = function (op) {
+      return (typeof _regionalOpFitsRoute !== 'function') || _regionalOpFitsRoute(op, iata, destIata);
+    };
     if (airline === 'AC') {
       var _mxm = (typeof acExpressMatrix === 'function') ? acExpressMatrix(_fn) : null;
-      if (_mxm) _opCode = _mxm.op;
-      else if ((_fn >= 7600 && _fn <= 7699) || (_fn >= 2200 && _fn <= 2299)) _opCode = 'PB';
+      if (_mxm && _fitsRoute(_mxm.op)) _opCode = _mxm.op;
+      else if (((_fn >= 7600 && _fn <= 7699) || (_fn >= 2200 && _fn <= 2299)) && _fitsRoute('PB')) _opCode = 'PB';
       else if (_fn >= 1600 && _fn <= 1999) _opCode = 'RV';
-    } else if (airline === 'WS' && _fn >= 3000 && _fn <= 3999) {
+    } else if (airline === 'WS' && _fn >= 3000 && _fn <= 3999 && _fitsRoute('WR')) {
       _opCode = 'WR';
     }
+    // Never keep a partner the route rules out (see _regionalOpFitsRoute).
+    if (_opCode && !_fitsRoute(_opCode)) _opCode = '';
   })();
   let _acImgHtml = '';
   let _liveryEqDebug = '';
@@ -7448,11 +7486,20 @@ function _buildV2MapCol(ctx, vars) {
     // flight number is deterministic. (Livery still keys off AC below.)
     var _mktIsAC = String(vars.airlineCode || '').toUpperCase() === 'AC';
     var _mxGate = (_mktIsAC && typeof acExpressMatrix === 'function') ? acExpressMatrix(_acFlNum) : null;
+    // The band only decides the operator if that operator's fleet can fly this
+    // leg (see _regionalOpFitsRoute) — otherwise it isn't their flight.
+    if (_mxGate && typeof _regionalOpFitsRoute === 'function'
+        && !_regionalOpFitsRoute(_mxGate.op, iata, locIata)) _mxGate = null;
     if (_mktIsAC && !isNaN(_acFlNum)) {
       if (_mxGate) _opCode = _mxGate.op;
-      else if ((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299)) _opCode = 'PB';
+      else if (((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299))
+               && (typeof _regionalOpFitsRoute !== 'function' || _regionalOpFitsRoute('PB', iata, locIata))) _opCode = 'PB';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
     }
+    // A band-derived partner the route rules out is no attribution at all —
+    // the marketing carrier stands alone rather than a fabricated operator.
+    if (_opCode && typeof _regionalOpFitsRoute === 'function'
+        && !_regionalOpFitsRoute(_opCode, iata, locIata)) _opCode = '';
     // Air Canada Express Dash 8-400s are flown by BOTH Jazz AND PAL Airlines.
     // The two are told apart by REGISTRATION: PAL uses its distinctive "P" series
     // (C-FP•• / C-GP••), while Jazz's Dash 8-400s are C-GG••. So a Jazz-attributed
@@ -16415,7 +16462,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22520';
+var FIDS_BUILD_TAG = 'v22521';
 (function(){
   try {
     function _addTag(){
