@@ -3830,3 +3830,18 @@ html .g8-board-body .g8-board-col,
 html .g8-board-body .g8-board-col .g8-board-grp-wrap,
 html .g8-board-body .g8-board-col .g8-board-grp-label,
 html .g8-board-body .g8-board-col .g8-board-lane { min-width: 0 !important; }
+
+/* Digits that tick must not change width. With proportional figures, every
+   minute change re-measures the clock, the banner re-centres and the gate
+   number nudges — the last repeating shift in the recording (18 in 150s).
+   Tabular figures make every digit the same width, so the row is stable. */
+html .octb, html .octb *, html .v2-fi-clock-val,
+html .g8-r1-time, html .g8-r1-time *,
+html .g8-bir-val, html .v2-rc-fi-tval,
+html .gad-aircraft-col .v2-fi-value {
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: "tnum" 1 !important;
+}
+/* The clock tab swaps between one clock and two (local + destination). Give it
+   a floor so the swap cannot re-centre everything beside it. */
+html .octb-wrap, html .octb.octb-tab { min-width: clamp(360px, 27vw, 540px) !important; box-sizing: border-box !important; }
