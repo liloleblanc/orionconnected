@@ -3875,3 +3875,22 @@ html .g8-board-welcome img[src*="skyteam"] {
     max-height: 128px !important;
   }
 }
+
+/* ── v22553: THE FRAME SITS IN FRONT OF THE AD (Nick, Jul 26 2026:
+   'the frame goes — frame only, which can change colors like it does now —
+   in front of the advert'). The base stylesheet pinned the media at
+   z-index 3 over the frame at 1, and the safe-area system masked the frame
+   to the four gutters so it could "never sit over the ad" — the exact
+   opposite of the new design. Invert the order and drop that mask for the
+   frame only (the media-col ::before/::after gutter layers keep theirs). */
+#gateAdCarousel .ad-tech-media {
+  z-index: 2 !important;
+}
+#gateAdCarousel .ad-tech-frame,
+#fidsMediaFrame .ad-tech-frame {
+  z-index: 4 !important;
+}
+.ad-tech-frame.g8-ad-safe-ready {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
