@@ -3818,3 +3818,15 @@ html .g8-board-welcome {
   min-height: clamp(76px, 11vh, 132px) !important;
   box-sizing: border-box !important;
 }
+
+/* The lane columns are flex:1/flex:2 with a zero basis, so their widths should
+   be fixed proportions — but flex items default to min-width:auto, so the
+   longest unbreakable line inside a column can force it wider than its share.
+   The bilingual labels flip between 'Priority 2' and 'Prioritaire 2', and the
+   longer French run pushed the column out and pulled ~109px off its
+   neighbours, 21 times in 150 seconds of recording. That is the remaining
+   bump. Letting the columns shrink to their share keeps the sign still. */
+html .g8-board-body .g8-board-col,
+html .g8-board-body .g8-board-col .g8-board-grp-wrap,
+html .g8-board-body .g8-board-col .g8-board-grp-label,
+html .g8-board-body .g8-board-col .g8-board-lane { min-width: 0 !important; }
