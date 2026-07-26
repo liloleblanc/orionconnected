@@ -4263,3 +4263,18 @@ html body .g8-r1::after, html body .fids-banner::after {
   opacity: .16;
   pointer-events: none;
 }
+
+/* ── v22598: dot field UNSTRETCHED (Nick: 'the dots are oval … you need
+   to repeat the pattern') — native aspect, tiled horizontally. */
+html body::after {
+  background-size: auto 100% !important;
+  background-repeat: repeat-x !important;
+  background-position: left bottom !important;
+}
+/* ── v22598: boarding bar — the in-between area behind the slabs is a
+   lighter gray (Nick: 'in between slots make it a lighter gray').
+   Double :not(#_) outranks the AC texture rule above. */
+html body:not(#_):not(#_) .g8-board-info-row {
+  background-color: #5d6169 !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(0,0,0,.14) 100%) !important;
+}
