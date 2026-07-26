@@ -1512,15 +1512,19 @@
   max-width:92% !important;
   margin-bottom:calc(var(--axr-info) * 0.18) !important;
 }
-/* The room name is the only line allowed to be bigger than the hotel name. */
+/* The room name is the only line allowed to be bigger than the hotel name —
+   but the gap to the line under it was absurd: 54px over 21px, a headline
+   shouting at a whisper (Nick: 'this should not be that big and then so small
+   its an oximoron'). The ladder is compressed so each step is a step, not a
+   cliff: 1.45x over 0.85x reads as title-then-detail. */
 .axr .axr-page-ctx.axr-room-name{
-  font-size:calc(var(--axr-name) * 1.90) !important;
+  font-size:calc(var(--axr-name) * 1.45) !important;
   font-weight:700 !important;
 }
 /* Details / advantages / body: one size each, every brand. */
-.axr .axr-room-details{ font-size:calc(var(--axr-name) * 0.73) !important; }
+.axr .axr-room-details{ font-size:calc(var(--axr-name) * 0.85) !important; }
 .axr .axr-fai-feats span{ font-size:calc(var(--axr-name) * 0.87) !important; }
-.axr .axr-blurb{ font-size:calc(var(--axr-name) * 0.55) !important; }
+.axr .axr-blurb{ font-size:calc(var(--axr-name) * 0.60) !important; }
 .axr .axr-list li{ font-size:calc(var(--axr-name) * 0.62) !important; }
 /* The QR caption's name line: fixed with the rest of the bubble copy, no
    fitter — it was the fourth size of the hotel name. */
