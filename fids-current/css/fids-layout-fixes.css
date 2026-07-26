@@ -4403,3 +4403,33 @@ html body::after {
   opacity: .22 !important;
   height: 62vh !important;
 }
+
+/* ── v22606: tinted surfaces FADE instead of darkening (Nick: 'the panels
+   shelves are faded a bit and colors to the airline'). Multiply over the
+   dark luxury texture crushed every airline to near-black; soft-light
+   keeps the airline colour dominant and lets the material read as a
+   faint fade over it. AC's untinted material is unaffected — its
+   :not(#_) rules force blend:normal. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body .g8-bir-cell,
+html body .g8-wrap .gad-aircraft-col,
+html body .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body .g8-wrap .gad-map-col-v2,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-blend-mode: soft-light !important;
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 62%, #2f333a) !important;
+}
+/* AC keeps the approved material, untinted and unblended. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-blend-mode: normal !important;
+  background-color: #43464c !important;
+}
