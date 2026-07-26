@@ -16547,7 +16547,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22536';
+var FIDS_BUILD_TAG = 'v22537';
 (function(){
   try {
     function _addTag(){
@@ -28766,8 +28766,25 @@ function _restartGateAdsTimer() {
       window._gateAdAuthChange = true;
       try { renderGateAd(_gateAdIndex); } catch (e) {}
       window._gateAdAuthChange = false;
-      el3.style.transition = 'none';
-      el3.style.opacity = '1';
+      if (_old) {
+        el3.style.transition = 'none';
+        el3.style.opacity = '1';
+      } else {
+        // NOTHING TO DISSOLVE — FADE THE NEW SLIDE IN INSTEAD. The crossfade
+        // is built by lifting the OUTGOING slide's children into an overlay,
+        // which only works when the carousel actually holds them. The big
+        // route map renders outside the carousel, so leaving it left nothing
+        // to fade and the next slide arrived as a hard cut — once every
+        // cycle, and it reads as a blip. Fading the incoming slide up covers
+        // that case without touching the map itself.
+        try {
+          el3.style.transition = 'none';
+          el3.style.opacity = '0';
+          void el3.offsetWidth;
+          el3.style.transition = 'opacity 0.6s ease-in-out';
+          requestAnimationFrame(function () { try { el3.style.opacity = '1'; } catch (e) {} });
+        } catch (e) { el3.style.transition = 'none'; el3.style.opacity = '1'; }
+      }
       if (_old) {
         try {
           void _old.offsetWidth; // new is painted UNDER the cover; now dissolve
