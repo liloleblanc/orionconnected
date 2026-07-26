@@ -16462,7 +16462,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22524';
+var FIDS_BUILD_TAG = 'v22525';
 (function(){
   try {
     function _addTag(){
@@ -27880,7 +27880,14 @@ function renderGateAd(index) {
     html = buildGateAdHtml(slide.data);
   }
 
-  var newKey = slot + '|' + (html ? html.substring(0, 80) : '');
+  // The key must change when the CONTENT does. An 80-character prefix is
+  // identical for every Accor card of the same tier, so the repaint that
+  // carried a hotel's freshly-loaded room pages was discarded as a no-op: the
+  // deck stayed three pages long while the dwell logic reasoned about six, and
+  // the rooms only ever appeared the NEXT time that hotel came round. Length
+  // plus a longer prefix separates a 3-page deck from a 6-page one and one
+  // hotel from another.
+  var newKey = slot + '|' + (html ? (html.length + '|' + html.substring(0, 220)) : '');
   if (el._lastKey === newKey) return;
   el._lastKey = newKey;
   el.style.background = 'transparent';
@@ -27892,6 +27899,11 @@ function renderGateAd(index) {
     ? '<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;">' + html + '</div>'
     : '';
   el.style.opacity = '1';
+  // Select the resumed page in the SAME task as the write, before the browser
+  // paints. Left to the 250ms poll, every repaint of a live hotel card showed
+  // page 1 at full opacity first and then ghost-crossfaded forward to the page
+  // it was actually on — the jump on screen.
+  try { if (typeof window._axrPageSync === 'function') window._axrPageSync(); } catch (e) {}
 
   var logoEl = document.getElementById('gateAdLogo');
   if (logoEl) {
@@ -28237,6 +28249,12 @@ function _getGateAdDwellMs(slide) {
   // 3D flight map holds the slot for about a minute (per Nick) —
   // four camera views ~15s each inside GateMap3D's sequence.
   if (slide.type === 'map3d') return 60000;
+  // The big route map and the weather card had NO entry here and fell through
+  // to the generic floor, so the map got 22s for a sequence sized at about a
+  // minute and every scene ticked at the same flat interval — the 'welcome
+  // aboard to map, thats it, really bumping' cadence.
+  if (slide.type === 'bigcraft') return 45000;
+  if (slide.type === 'wxcard') return 24000;
   // v218.96: custom slides from the Gate Theme editor carry their own
   // configured duration. Clamp to a sensible 2s–600s range so a typo can't
   // freeze the carousel on a single slide for the rest of the day, while
@@ -28259,8 +28277,15 @@ function _getGateAdDwellMs(slide) {
     if (ad.isAccorHotel) {
       var _axN = 0;
       try {
-        var _axEls = document.querySelectorAll('.axr-pages .axr-page');
-        if (_axEls && _axEls.length >= 3) _axN = _axEls.length;
+        // Scope to the LIVE carousel: the outgoing slide sits in a crossfade
+        // overlay attached to the carousel's PARENT, so an unscoped query
+        // counted both cards' pages and granted a single-hotel deck 121s
+        // instead of 61s — the last page then sat frozen for a full minute.
+        // Any non-zero live count is the truth; the old '>= 3' floor threw
+        // away a legitimate 2-page card and over-held it.
+        var _axRoot = document.getElementById('gateAdCarousel');
+        var _axEls = _axRoot ? _axRoot.querySelectorAll('.axr-pages .axr-page') : null;
+        if (_axEls && _axEls.length) _axN = _axEls.length;
       } catch (e) {}
       if (!_axN && ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
         try {
@@ -28545,7 +28570,15 @@ function _restartGateAdsTimer() {
         var _exPages = _exWrap.querySelectorAll('.axr-page').length;
         if (_exPages > 1 && _exSt.idx < _exPages - 1) {
           _exWrap.dataset.axrExtended = '1';
-          _gateAdTimer = setTimeout(_tick, (_exPages - 1 - _exSt.idx) * 10000 + 1500);
+          // Budget the LAST page a full dwell too, and start counting from the
+          // flip that is already pending rather than from now. The old sum
+          // gave the final page 1.5s — the room page that 'cut out' after a
+          // couple of seconds, on the very slide this extension exists to
+          // protect.
+          var _exEvery = _exSt.every || 10000;
+          var _exGap = Math.max(0, (_exSt.next || Date.now()) - Date.now());
+          var _exLeft = Math.max(0, _exPages - 1 - _exSt.idx);
+          _gateAdTimer = setTimeout(_tick, _exGap + Math.max(0, _exLeft - 1) * _exEvery + _exEvery + 1000);
           return;
         }
       }
@@ -28596,6 +28629,8 @@ function _restartGateAdsTimer() {
             try { if (getComputedStyle(_pr).position === 'static') _pr.style.position = 'relative'; } catch (ep) {}
             var _er = el3.getBoundingClientRect(), _prr = _pr.getBoundingClientRect();
             _old = document.createElement('div');
+            // Marked so the page rotator leaves the dissolving copy alone.
+            _old.setAttribute('data-ad-fading', '1');
             _old.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
               + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.95s ease-in-out;overflow:hidden;';
             while (el3.firstChild) _old.appendChild(el3.firstChild);
@@ -29479,7 +29514,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   // .axr-pages element. Keying the state by hotel id means a re-render of the
   // SAME hotel resumes on the page it was showing — previously every rebuild
   // restarted at page 1, so pages 2–3 kept getting cut off ("ads clash").
-  var _st = { id: null, idx: 0, next: 0, seen: null };
+  var _st = { id: null, idx: 0, next: 0, seen: null, n: 0, slot: -1, every: EVERY };
   window._axrPageSt = _st;   // rotator reads this to hold slides w/ unseen pages
   function _showPage(pages, idx){
     for (var i = 0; i < pages.length; i++) pages[i].classList.toggle('axr-page-on', i === idx);
@@ -29487,6 +29522,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   function check(){
     var wrap = document.querySelector('.axr-pages');
     if (!wrap) { _st.seen = null; return; }
+    // Never drive the copy that is dissolving away: the outgoing card lives in
+    // a crossfade overlay for about a second, and advancing its pages under
+    // the fade changed the photo and the text mid-transition. Leaving _st.seen
+    // alone keeps the state intact for the incoming card.
+    try { if (wrap.closest && wrap.closest('[data-ad-fading]')) return; } catch (e) {}
     var pages = wrap.querySelectorAll('.axr-page');
     if (!pages || pages.length < 2) return;
     var now = Date.now();
@@ -29494,20 +29534,25 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       _st.seen = wrap;
       var art = wrap.closest ? wrap.closest('.axr') : null;
       var id = (art && art.getAttribute('data-hotel-id')) || '';
-      if (id && id === _st.id) {
-        // Same hotel re-rendered mid-slide — resume where we were. But if the
-        // deck already ran to its last page, this is the hotel RE-APPEARING in
-        // a later carousel slot, so restart its story from page 1.
-        if (_st.idx >= pages.length - 1) { _st.idx = 0; }
-        _showPage(pages, _st.idx % pages.length);
-        // FULL dwell for the resumed page — a board re-render mid-page was
-        // leaving it only the leftover seconds (Nick: 'the second room cuts
-        // after 2 seconds').
-        _st.next = now + EVERY;
+      var slotNow = (typeof window._gateAdCurrentIdx === 'number') ? window._gateAdCurrentIdx : -1;
+      // Resume only when this is the SAME deck in the SAME carousel slot: same
+      // hotel, same number of pages, still mid-story. Judging by index alone
+      // meant that when the room pages arrived and the deck grew from 3 to 6,
+      // a stale index of 2 read as 'mid-deck' and the card OPENED on the
+      // dining page — pages 1 and 2 never shown, then a dead hold at the end.
+      var sameDeck = id && id === _st.id && pages.length === _st.n && slotNow === _st.slot;
+      if (sameDeck && _st.idx < pages.length - 1) {
+        _showPage(pages, _st.idx);
+        // Keep the deadline this page already had. Rebasing it on every board
+        // re-render (they happen on the minute) handed the current page a
+        // fresh full dwell each time, so the deck overran its slot and the
+        // pages at the end were chopped.
+        if (!(_st.next > now)) _st.next = now + EVERY;
       } else {
-        // Genuinely new slide — page 1 gets its full dwell.
         _st.id = id; _st.idx = 0; _st.next = now + EVERY;
       }
+      _st.n = pages.length;
+      _st.slot = slotNow;
       return;
     }
     if (now < _st.next) return;
@@ -29520,6 +29565,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     _st.idx = Math.min(_st.idx + 1, pages.length - 1);
     _showPage(pages, _st.idx);
   }
+  // renderGateAd calls this right after it writes the new markup, so the
+  // resumed page is selected in the SAME task as the write. Without it every
+  // re-render painted page 1 at full opacity and then ghost-crossfaded forward
+  // to the real page — the visible jump.
+  window._axrPageSync = check;
   setInterval(check, 250);
 })();
 
