@@ -16677,7 +16677,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22594';
+var FIDS_BUILD_TAG = 'v22595';
 (function(){
   try {
     function _addTag(){
@@ -24327,49 +24327,25 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // ONE frame per ad. Full-bleed ad: the frame sits ON the ad ('it can
       // go over it, it's fine'). Smaller ad: the frame is inflated so its
       // band sits OUTSIDE the ad — the creative is confined within it.
+      // v22595: EXACTLY the v22589 behavior Nick approved ('almost there')
+      // — the v22592 clamp and v22593 auto-shrink both moved the border
+      // between builds and are gone.
       var fullW = r.width >= hb.width - 8, fullH = r.height >= hb.height - 8;
-      var _mFit = '';
-      try { _mFit = (getComputedStyle(m).objectFit || '').trim(); } catch (e) {}
-      var _mCover = (_mFit === 'cover' || _mFit === 'fill');
       var padX = 0, padY = 0;
-      if (!(fullW && fullH) || !_mCover) {
+      if (!(fullW && fullH)) {
         // Clear the WHOLE double-line motif past the ad edge (the inner
         // line sat on the creative — 'you can still see the ad outside
         // borders'). Solved from the art's line geometry: inner-line inner
         // edge at 2.8%/4.3% of the frame box.
         padX = Math.max(10, Math.round(r.width * 0.030));
         padY = Math.max(10, Math.round(r.height * 0.047));
-        // CONFINE, never cross the ad (v22592 clamped the band straight
-        // across the creative's edge — Nick's mockup has the COMPLETE
-        // frame around the ad with the ad inside). If the band can't fit
-        // between the drawn ad and the panel wall, inset the media so the
-        // creative redraws smaller and the frame closes around it.
-        if (!_mCover) {
-          var _spL = r.left - hb.left, _spR = (hb.left + hb.width) - (r.left + r.width);
-          var _spT = r.top - hb.top, _spB = (hb.top + hb.height) - (r.top + r.height);
-          if ((_spL < padX - 1 || _spR < padX - 1 || _spT < padY - 1 || _spB < padY - 1)
-              && !m.classList.contains('g8-ad-inset')) {
-            m.classList.add('g8-ad-inset');
-            delete f.dataset.geom;
-            continue;   // re-measure after the inset redraw
-          }
-        }
       }
+      try { if (m.classList.contains('g8-ad-inset')) { m.classList.remove('g8-ad-inset'); delete f.dataset.geom; continue; } } catch (e) {}
       // FREEZE (Nick: 'make sure the frames don't move'): once placed,
       // ignore sub-2px re-measures — rounding and image settle were able
       // to nudge the frame between ticks.
       var _gx = Math.round(r.left - hb.left - padX), _gy = Math.round(r.top - hb.top - padY);
       var _gw = Math.round(r.width + 2 * padX), _gh = Math.round(r.height + 2 * padY);
-      // CLAMP to the host (Nick's mockup: the wide map ad wears a COMPLETE
-      // frame). Un-clamped, a full-width ad pushed the inflated side bands
-      // outside the host where overflow clipped them — the frame looked
-      // MISSING. Clamped, the band rides on the ad's own edge instead
-      // ('it can go over it its fine').
-      var _hbW = Math.round(hb.width), _hbH = Math.round(hb.height);
-      if (_gx < 0) { _gw += _gx; _gx = 0; }
-      if (_gy < 0) { _gh += _gy; _gy = 0; }
-      if (_gx + _gw > _hbW) _gw = _hbW - _gx;
-      if (_gy + _gh > _hbH) _gh = _hbH - _gy;
       var _prev = (f.dataset.geom || '').split(',').map(Number);
       if (_prev.length === 4 && Math.abs(_prev[0]-_gx)<=2 && Math.abs(_prev[1]-_gy)<=2
           && Math.abs(_prev[2]-_gw)<=2 && Math.abs(_prev[3]-_gh)<=2) {
