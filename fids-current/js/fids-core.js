@@ -7552,7 +7552,10 @@ function _buildV2MapCol(ctx, vars) {
     // withholds for one render; the verdict rebuild settles it in seconds.
     try {
       if (_acReg && typeof _regFlightVerdict === 'function') {
-        var _rfv = _regFlightVerdict(_acReg, (_cf && _cf.flight) || '', vars.iata);
+        // Pass the inbound leg too — a turn's tail is listed under the flight
+        // it ARRIVED as long before the outbound assignment is filed.
+        var _rfv = _regFlightVerdict(_acReg, (_cf && _cf.flight) || '', vars.iata,
+          (_anyInb && _ib2 && _ib2.flight) || (window._gateInbound && window._gateInbound.flight) || '');
         if (_rfv === false) {
           try {
             if (window._gateRegSticky && window._gateRegSticky.reg === _acReg) window._gateRegSticky = null;
@@ -7589,20 +7592,31 @@ function _buildV2MapCol(ctx, vars) {
     // flight number is deterministic. (Livery still keys off AC below.)
     var _mktIsAC = String(vars.airlineCode || '').toUpperCase() === 'AC';
     var _mxGate = (_mktIsAC && typeof acExpressMatrix === 'function') ? acExpressMatrix(_acFlNum) : null;
+    // THE BUG THAT BLANKED EVERY GATE'S AIRCRAFT (Nick, days of 'no
+    // aircraft'): the three route-fit checks below said bare `iata` /
+    // `locIata` — names that exist in uxgGateHtml but NOT in this function.
+    // Every render of this block threw ReferenceError at the first check,
+    // the catch below swallowed it, and the last-resort guard printed
+    // 'Aircraft details pending' — on every gate, every flight, regardless
+    // of how much data the poll had resolved. The airport pair lives on
+    // vars/ctx here.
+    var _apIataRt = String((vars && vars.iata) || (ctx && ctx.iata) || '');
+    var _destIataRt = String((vars && vars.locIata) || (ctx && ctx.locIata)
+      || (_cf && _cf._locIata) || '');
     // The band only decides the operator if that operator's fleet can fly this
     // leg (see _regionalOpFitsRoute) — otherwise it isn't their flight.
     if (_mxGate && typeof _regionalOpFitsRoute === 'function'
-        && !_regionalOpFitsRoute(_mxGate.op, iata, locIata)) _mxGate = null;
+        && !_regionalOpFitsRoute(_mxGate.op, _apIataRt, _destIataRt)) _mxGate = null;
     if (_mktIsAC && !isNaN(_acFlNum)) {
       if (_mxGate) _opCode = _mxGate.op;
       else if (((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299))
-               && (typeof _regionalOpFitsRoute !== 'function' || _regionalOpFitsRoute('PB', iata, locIata))) _opCode = 'PB';
+               && (typeof _regionalOpFitsRoute !== 'function' || _regionalOpFitsRoute('PB', _apIataRt, _destIataRt))) _opCode = 'PB';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
     }
     // A band-derived partner the route rules out is no attribution at all —
     // the marketing carrier stands alone rather than a fabricated operator.
     if (_opCode && typeof _regionalOpFitsRoute === 'function'
-        && !_regionalOpFitsRoute(_opCode, iata, locIata)) _opCode = '';
+        && !_regionalOpFitsRoute(_opCode, _apIataRt, _destIataRt)) _opCode = '';
     // Air Canada Express Dash 8-400s are flown by BOTH Jazz AND PAL Airlines.
     // The two are told apart by REGISTRATION: PAL uses its distinctive "P" series
     // (C-FP•• / C-GP••), while Jazz's Dash 8-400s are C-GG••. So a Jazz-attributed
@@ -16639,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22542';
+var FIDS_BUILD_TAG = 'v22543';
 (function(){
   try {
     function _addTag(){
@@ -27589,14 +27603,23 @@ function _liveFixPhysOk(inb) {
 // false = the reg's schedule EXISTS and contradicts the claim; null =
 // lookup in flight (callers withhold until the rebuild).
 window._regFlightVerdicts = window._regFlightVerdicts || {};
-function _regFlightVerdict(reg, flightNo, apIata) {
+function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
   try {
     var r = String(reg || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
     var f = String(flightNo || '').toUpperCase().replace(/\s+/g, '');
+    // The other leg of the same physical turn (the INBOUND the tail was
+    // observed on). Nick's WS813 console proved the one-flight check purges
+    // honest tails: C-GWSZ's own list read "WS748, WS747, WS812" — the
+    // outbound assignment just wasn't filed yet — so "flies WS813? false"
+    // killed the tail AND the equip lock, and the gate showed no aircraft,
+    // re-resolving and re-purging every 3 minutes. A tail whose schedule
+    // contains EITHER leg of this gate's turn is exactly where it should be.
+    var f2 = String(altFlightNo || '').toUpperCase().replace(/\s+/g, '');
+    if (f2 === f) f2 = '';
     if (!r || !f) return true;
     var tz = ((typeof AP !== 'undefined' && AP[apIata]) ? AP[apIata].tz : '') || 'UTC';
     var day = fidsLocalDateKey(Date.now(), tz);
-    var k = r + '|' + f + '|' + day;
+    var k = r + '|' + f + (f2 ? '+' + f2 : '') + '|' + day;
     var V = window._regFlightVerdicts;
     if (k in V) return V[k];
     if (V['_p_' + k]) return null;
@@ -27608,12 +27631,12 @@ function _regFlightVerdict(reg, flightNo, apIata) {
         if (Array.isArray(arr) && arr.length) {
           verdict = arr.some(function (fl) {
             var n = String((fl && fl.number) || '').toUpperCase().replace(/\s+/g, '');
-            return n === f;
+            return n === f || (!!f2 && n === f2);
           });
         }
         V[k] = verdict;
         delete V['_p_' + k];
-        try { console.log('[REGVERIFY]', r, 'flies', f, 'today?', verdict); } catch (e) {}
+        try { console.log('[REGVERIFY]', r, 'flies', f + (f2 ? ' or ' + f2 : ''), 'today?', verdict); } catch (e) {}
         // Either verdict changes what the shelf shows (pending withheld the
         // tail) — rebuild once so it settles now.
         try { if (typeof renderDedicatedScreen === 'function') setTimeout(function () { try { renderDedicatedScreen(); } catch (e2) {} }, 0); } catch (e) {}
