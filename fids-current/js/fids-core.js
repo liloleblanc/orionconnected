@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22575';
+var FIDS_BUILD_TAG = 'v22576';
 (function(){
   try {
     function _addTag(){
@@ -24287,16 +24287,6 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       if (!m && typeof _libImgEl !== 'undefined' && _libImgEl && _libImgEl.style.display !== 'none') m = _libImgEl;
       if (!m && typeof _nativeVideoEl !== 'undefined' && _nativeVideoEl && _nativeVideoEl.style.display !== 'none') m = _nativeVideoEl;
       if (!m) continue;
-      // 'TOUCH THE BORDER THE SIDE' (Nick): the ad always spans the full
-      // width. Wider-than-panel creatives letterbox vertically (contain);
-      // taller-than-panel creatives fill and crop vertically (cover).
-      try {
-        var _mw = m.videoWidth || m.naturalWidth, _mh = m.videoHeight || m.naturalHeight;
-        var _mb = m.getBoundingClientRect();
-        if (_mw && _mh && _mb.width && _mb.height) {
-          m.style.objectFit = ((_mw / _mh) >= (_mb.width / _mb.height)) ? 'contain' : 'cover';
-        }
-      } catch (e) {}
       var r = _drawnRect(m);
       if (!r) continue;
       var hb = host.getBoundingClientRect();
@@ -27965,12 +27955,21 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  // v22575: the accent frame is no longer fitted per slide - it is a
-  // STATIC ring mounted on the panel, nested flush against the outer
-  // silver frame ('the frame needs to touch the other frame - square
-  // windows - and the content goes inside of it', Nick). See the panel
-  // mount below.
-  return '';
+  // Per-ad ring (Nick: "you're missing the frame around American Way and
+  // Free Wi-Fi") — on top of the square-windows wall frames, each creative
+  // gets its own accent ring hugging its drawn edges. Drawn (not art), so
+  // it can never cover the ad; hidden until the fitter has it in place.
+  var _fAcc = '';
+  try {
+    var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+    if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = AIRLINE_ACCENT[_fAl];
+  } catch (e) {}
+  if (!_fAcc) _fAcc = '#8a94a6';
+  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
+    + 'visibility:hidden;pointer-events:none;z-index:3;'
+    + 'border:6px solid ' + _fAcc + ';'
+    + 'box-shadow: inset 0 0 0 2px rgba(255,255,255,.8), 0 6px 16px rgba(5,10,20,.3);'
+    + '"></div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
