@@ -90,7 +90,7 @@
    Rendered as a mask so it takes each brand's bubble colour; the glyph's
    stem fuses invisibly with the bubble's bottom edge, the curved foot dips
    below at the left — exactly the book's speech-bubble cue. */
-.axr-bubble::after{ content:""; position:absolute; left:0; bottom:-31px; width:190px; height:70px;
+.axr-bubble::after{ content:""; position:absolute; left:0; bottom:-24px; width:190px; height:70px;
   background:inherit; border:none; z-index:-1;
   -webkit-mask:url('/logos/hotels/accor-corporate/all-l-tail.svg') 0 0/100% 100% no-repeat;
           mask:url('/logos/hotels/accor-corporate/all-l-tail.svg') 0 0/100% 100% no-repeat; }
