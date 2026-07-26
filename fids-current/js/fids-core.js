@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22568';
+var FIDS_BUILD_TAG = 'v22569';
 (function(){
   try {
     function _addTag(){
@@ -24291,9 +24291,12 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       if (!r) continue;
       var hb = host.getBoundingClientRect();
       var pad = 5;   // hug the ad tight (Nick, Jul 26)
-      f.style.left = Math.round(r.left - hb.left - pad) + 'px';
+      // Nick (mockup + 'stretch the border, touch the red on the side'):
+      // the accent frame spans the FULL opening width — its side members
+      // meet the outer frame — while its bars hug the ad's top and bottom.
+      f.style.left = '0px';
+      f.style.width = Math.round(hb.width) + 'px';
       f.style.top = Math.round(r.top - hb.top - pad) + 'px';
-      f.style.width = Math.round(r.width + 2 * pad) + 'px';
       f.style.height = Math.round(r.height + 2 * pad) + 'px';
       f.style.right = 'auto'; f.style.bottom = 'auto';
       f.style.visibility = 'visible';   // fitted — safe to show
