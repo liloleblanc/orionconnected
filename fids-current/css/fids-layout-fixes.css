@@ -4183,3 +4183,55 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-delayed { color: #fbbf24 !important; }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-cancelled { color: #f87171 !important; }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-boarding { color: #93c5fd !important; }
+
+/* ── v22596: SLABS AT EVERY GATE, AIRLINE-TINTED (Nick: 'added to every
+   gate … blend with the airline color so United would be blue etc').
+   The luxury material multiplied with the gate accent tints the slab;
+   AC keeps its approved untinted material via the :not(#_) rules above,
+   which outrank these. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 40%, #33363c) !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+}
+/* Every tinted slab is dark — lift the inks on all airlines (the AC
+   :not(#_) rules above stay the authority on AC). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl { color: #dfe5ee !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tval { color: #f2f5fa !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-scheduled,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-ontime,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-arrived { color: #34d399 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-delayed { color: #fbbf24 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-cancelled { color: #f87171 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-boarding { color: #93c5fd !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-rev2 > .v2-rc-fi-tlbl { color: #dfe5ee !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-rev2 > .v2-rc-fi-tval { color: #f2f5fa !important; }
+
+/* ── v22596: BOARDING BAR SLABS — the top strip's cells become the same
+   airline-tinted slabs ('the new slabs were not added to the top for
+   boarding'). */
+html body .g8-board-info-row {
+  gap: clamp(6px, .6vw, 12px) !important;
+  padding: clamp(5px, .8vh, 10px) clamp(6px, .6vw, 12px) !important;
+  box-sizing: border-box !important;
+}
+html body .g8-bir-cell {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 40%, #33363c) !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+  border-radius: 6px !important;
+  border-right: 0 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
+/* AC: untinted, the material as approved. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell {
+  background-color: #43464c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-blend-mode: normal !important;
+}
