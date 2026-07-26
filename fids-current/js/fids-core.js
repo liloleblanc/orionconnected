@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22547';
+var FIDS_BUILD_TAG = 'v22548';
 (function(){
   try {
     function _addTag(){
@@ -27860,9 +27860,17 @@ function _adBackdropHtml(blurUrl) {
   var _WAVES_BASE = true;
   var base;
   if (_WAVES_BASE) {
-    base = '<div style="position:absolute;inset:-2%;background-image:url(\'/logos/Backgrounds/adback-waves.jpg?v=1\');'
-      + 'background-size:cover;background-position:center;"></div>'
-      + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.30);"></div>';
+    // Theme-aware (Nick: 'it needs to adjust to the color theme'): the waves
+    // render as a LUMINOSITY layer over the airline accent — the art supplies
+    // the shapes and light, --airline-accent supplies the hue, so the same
+    // asset reads red at an AC gate, teal at WestJet, blue at United.
+    // isolation:isolate keeps the blend from reaching layers under the slide.
+    base = '<div style="position:absolute;inset:0;isolation:isolate;">'
+      +   '<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--airline-accent,#1230e6) 58%, #0b1020);"></div>'
+      +   '<div style="position:absolute;inset:-2%;background-image:url(\'/logos/Backgrounds/adback-waves.jpg?v=1\');'
+      +     'background-size:cover;background-position:center;mix-blend-mode:luminosity;"></div>'
+      +   '<div style="position:absolute;inset:0;background:rgba(8,12,20,.22);"></div>'
+      + '</div>';
   } else base = blurUrl
     ? '<div style="position:absolute;inset:-60px;background-image:url(\'' + blurUrl + '\');'
       + 'background-size:cover;background-position:center;filter:blur(46px) saturate(1.2) brightness(.92);transform:scale(1.15);"></div>'
