@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22571';
+var FIDS_BUILD_TAG = 'v22572';
 (function(){
   try {
     function _addTag(){
@@ -24300,9 +24300,9 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       var r = _drawnRect(m);
       if (!r) continue;
       var hb = host.getBoundingClientRect();
-      // Inflate so the frame art's band paints just OUTSIDE the ad edge in
-      // the art area, instead of over the creative's copy.
-      var pad = Math.round(Math.min(r.width, r.height) * 0.05) + 4;
+      // Ring geometry: border 7px + 4px gap — the band sits fully outside
+      // the ad's edge, deterministically.
+      var pad = 11;
       // The accent frame hugs the ad on all four sides — 'the middle one,
       // the same just smaller, around the ad' (Nick). No stretching: on a
       // full-width creative its sides naturally land on the outer frame.
@@ -27955,18 +27955,11 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  // NICK'S SILVER FRAME (Jul 26: 'the frame goes — frame only, which can
-  // change colors like it does now — in front of the advert'). His picture-
-  // frame SVG with the backing stripped, drawn ABOVE the media (z-index:3
-  // beats the media's 1) as a true hollow frame. The metal art keeps its
-  // shading; an accent layer masked by the same alpha re-hues it via
-  // mix-blend-mode:color, so it adapts per airline exactly like the old
-  // bezel did. The fitter still positions .ad-tech-frame; the two layers
-  // inside just fill it.
-  var _fUrl = '/logos/Backgrounds/ad-frame-silver.png?v=1';
-  // Resolve the accent NOW: the CSS var doesn't reliably cascade into the
-  // carousel, and the fallback painted every frame pale blue. Airline map
-  // first, then the gate wrapper's computed var, then neutral silver.
+  // ACCENT RING (Nick: 'YOU'RE OVER THE AD') — the stretched picture-frame
+  // art kept landing on the creative, so the inner frame is now a DRAWN
+  // ring: a solid accent band with a light hairline, painted inside this
+  // element's border box. The fitter sizes the box to the ad + gap, so the
+  // ring sits entirely OUTSIDE the ad's edge — it cannot cover the ad.
   var _fAcc = '';
   try {
     var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
@@ -27976,17 +27969,12 @@ function _adTechFrameHtml() {
       _fAcc = (getComputedStyle(_fEl).getPropertyValue('--airline-accent') || '').trim();
     }
   } catch (e) {}
-  var _fTint = _fAcc
-    ? '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.88;'
-      + '-webkit-mask-image:url(\'' + _fUrl + '\');-webkit-mask-size:100% 100%;'
-      + 'mask-image:url(\'' + _fUrl + '\');mask-size:100% 100%;"></div>'
-    : '';
+  if (!_fAcc) _fAcc = '#8a94a6';
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
-    + 'visibility:hidden;'   // shown by the fitter AFTER it hugs the ad — the full-size flash then snap was a per-slide blip
-    + 'pointer-events:none;z-index:3;isolation:isolate;filter:drop-shadow(0 10px 26px rgba(5,10,20,0.4));">'
-    +   '<div style="position:absolute;inset:0;background-image:url(\'' + _fUrl + '\');background-size:100% 100%;"></div>'
-    +   _fTint
-    + '</div>';
+    + 'visibility:hidden;pointer-events:none;z-index:3;'
+    + 'border:7px solid ' + _fAcc + ';'
+    + 'box-shadow: inset 0 0 0 2px rgba(255,255,255,.82), 0 8px 22px rgba(5,10,20,.35);'
+    + '"></div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
