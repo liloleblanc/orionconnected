@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22588';
+var FIDS_BUILD_TAG = 'v22589';
 (function(){
   try {
     function _addTag(){
@@ -27925,8 +27925,15 @@ function _adBackdropHtml(blurUrl) {
       if (!_bdAcc) _bdAcc = bd.dataset.acc || '#12309e';
       if (bd.dataset.acc !== _bdAcc) {
         bd.dataset.acc = _bdAcc;
+        // Nick on the AC middle panel: 'I think for AC we need more of a
+        // gray inside … the gray was the middle'. The 74% red mix reads
+        // harsh, so AC's inside leans charcoal with a breath of the red;
+        // every other carrier keeps the full accent wash.
+        var _bdBase = /^#d82f2e$/i.test(_bdAcc)
+          ? 'color-mix(in srgb, ' + _bdAcc + ' 14%, #494e57)'
+          : 'color-mix(in srgb, ' + _bdAcc + ' 74%, #0b1020)';
         bd.innerHTML =
-            '<div style="position:absolute;inset:0;background:color-mix(in srgb, ' + _bdAcc + ' 74%, #0b1020);"></div>'
+            '<div style="position:absolute;inset:0;background:' + _bdBase + ';"></div>'
           + '<div style="position:absolute;inset:-2%;background-image:url(/logos/Backgrounds/adback-waves2.jpg?v=1);background-size:cover;background-position:center;mix-blend-mode:luminosity;"></div>'
           + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.18);"></div>'
           + '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;background-image:url(/logos/Backgrounds/adback-spots.png?v=1);background-size:cover;background-position:center;opacity:.28;mix-blend-mode:screen;"></div>';

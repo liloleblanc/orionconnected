@@ -3977,10 +3977,10 @@ html .wxc-day img {
 }
 html .wxc-city { font-size: clamp(20px, 3vh, 38px) !important; }
 
-/* ── v22588: AC LEFT SHELVES — Nick's luxury layered panel, lifted to dark
-   gray ('I think for AC we need more of a gray inside'). The :not(#_)
-   bumps specificity over the charcoal data-URI rule in gids css, which
-   loads after this file. */
+/* ── v22588: AC LEFT SHELVES — Nick's luxury layered panel ('change the
+   panel shelves on the Air Canada side to this' → 'I see it now its
+   perfect'). The :not(#_) bumps specificity over the charcoal data-URI
+   rule in gids css, which loads after this file. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   background-color: #43464c !important;
@@ -3989,4 +3989,48 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-size: cover !important;
   background-repeat: no-repeat !important;
   background-blend-mode: normal !important;
+}
+
+/* ── v22589: AC RIGHT SHELVES — the other side, exactly like the left
+   ('can you do the other side exactly like it?'). The map shelf keeps its
+   map; the column base and the three info shelves take the same texture.
+   AC's labels on this column are already lifted to light ink above. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: #43464c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+/* The right column's inks were tuned for the old light brushed-metal —
+   navy on the dark texture would disappear. Lift them the same way the
+   left column's AC inks are lifted; light value cells keep their own. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-rtitle,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-actype-val,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-reg-expected {
+  color: #edf1f7 !important;
+}
+/* Status inks bright enough for the dark shelf (same palette the F9 dark
+   board uses). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived { color: #34d399 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed { color: #fbbf24 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled { color: #f87171 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding { color: #93c5fd !important; }
+
+/* ── v22589: AC BOARDING BAR — 'it can also be added when boarding and it
+   goes to the top': the horizontal strip that rides to the top during
+   boarding wears the same luxury panel instead of the plain dark metal. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-board-info-row {
+  background-color: #43464c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
 }
