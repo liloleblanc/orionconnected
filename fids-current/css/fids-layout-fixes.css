@@ -4457,18 +4457,26 @@ html body .gad-media-col > .ad-panel-backdrop::after {
 html body .g8-wrap .v2-rc-shelf-map,
 html body .bigcraft-mapcol,
 html body .bigcraft-map { position: relative; }
-html body .g8-wrap .v2-rc-shelf-map::after,
-html body .bigcraft-map::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url("/logos/Backgrounds/screen-wave-blue.png?v=1") center / cover no-repeat;
-  /* v22608: the map is LIGHT — a screen blend over it is a no-op, which
-     is why the veil never showed. Multiply lays the dots onto the map. */
-  mix-blend-mode: multiply;
-  opacity: .38;
-  pointer-events: none;
-  z-index: 400;
+/* v22609: ::after on the map shelf is already owned by a 6px divider
+   rule, which is why the veil measured 6px tall with no background. The
+   halftone moves to ::before with the geometry forced. */
+html body .g8-wrap .v2-rc-shelf-map::before,
+html body .bigcraft-map::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
+  width: auto !important; height: auto !important;
+  background-image: url("/logos/Backgrounds/screen-wave-blue.png?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  /* The map is LIGHT — a screen blend over it is a no-op. Multiply lays
+     the dots onto the tiles. */
+  mix-blend-mode: multiply !important;
+  opacity: .38 !important;
+  pointer-events: none !important;
+  z-index: 900 !important;
+  display: block !important;
 }
 
 /* ── v22607: TOP BANNER SWIRLS — the silk never painted: an !important
