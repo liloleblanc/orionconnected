@@ -4066,3 +4066,8 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
 html body .g8-wrap .gad-map-col-v2 .v2-rc-ms-val {
   font-variant-numeric: tabular-nums lining-nums !important;
 }
+
+/* ── v22591: single-row shelf table (second fi panel when no arrival time). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t1 {
+  grid-template-rows: minmax(0, 1fr) !important;
+}

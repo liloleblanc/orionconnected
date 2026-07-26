@@ -7279,35 +7279,49 @@ function _buildV2MapCol(ctx, vars) {
       };
       var _ibArrSchedStr = _ibArrTs ? _ibFmtT(_ibArrTs) : '';
       var _ibArrRevStr = (_ibRevTs && Math.abs(_ibRevTs - _ibArrTs) >= 60000) ? _ibFmtT(_ibRevTs) : '';
-      // Nick (Jul 26 2026): 'flight and from needs to be one and arrival and
-      // status needs to be one so 2 panels its 2 shelves' — the four stacked
-      // rows collapse to TWO rev2-style rows, each carrying two label|value
-      // pairs. A revised ETA renders inside the Arrival pair as
-      // struck-sched + revised (green earlier / amber later) instead of its
-      // own Revised pair, so a row never holds more than two pairs.
-      var _ibArrPair = '';
+      // Nick (Jul 26 2026): 'flight and from needs to be one and arrival
+      // and status needs to be one so 2 panels its 2 shelves' + 'I DIDNT
+      // ASK FOR EVERYTHING TO BE SQUISHED ON 2 LINES I SAID THE PATTERN
+      // NEEDS TO BE AS 2 PANELS' — every row keeps its OWN full line
+      // exactly as before; only the SHELF PANELS regroup: Flight+From
+      // share one textured panel, Arrival+Status share the other.
+      var _ibArrRowHtml = '';
       if (_ibArrSchedStr) {
         var _ibArrLblEn = (_stKey === 'arrived') ? 'Arrived' : 'Arrival';
         var _ibArrLblFr = (_stKey === 'arrived') ? 'Arrivé' : 'Arrivée';
-        var _ibArrVal = _ibArrSchedStr;
         if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
+          // Nick's approved sketch: 'Arrival 5:28PM    Revised 5:27PM' —
+          // one line, two pairs; revised inked green earlier/amber later.
           var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-early' : 'v2-rc-status-delayed';
-          _ibArrVal = '<span class="v2-rc-tval-old">' + _ibArrSchedStr + '</span> <span class="' + _ibRevCls + '">' + _ibArrRevStr + '</span>';
+          _ibArrRowHtml =
+              '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
+            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
+            +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _ibArrSchedStr + '</span></div>'
+            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Révisé' : 'Revised') + '</span><span>' + (_frF ? 'Revised' : 'Révisé') + '</span></div>'
+            +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _ibArrRevStr + '</div>'
+            + '</div>';
+        } else {
+          _ibArrRowHtml =
+              '<div class="v2-rc-fi-trow">'
+            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
+            +   '<div class="v2-rc-fi-tval">' + _ibArrSchedStr + '</div>'
+            + '</div>';
         }
-        _ibArrPair =
-            '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
-          + '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>';
       }
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t2">'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
+        +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
+        +   '</div>'
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2 v2-rc-fi-trow-last">'
-        +     _ibArrPair
+        + '</div></div>'
+        + '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table ' + (_ibArrRowHtml ? 'v2-rc-fi-t2' : 'v2-rc-fi-t1') + '">'
+        +   (_ibArrRowHtml || '')
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +   '</div>'
@@ -7448,21 +7462,27 @@ function _buildV2MapCol(ctx, vars) {
         var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
         if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dfRowIa) + '</span>' : '');
       })();
-      // Same 2-shelf collapse as the inbound card (Nick: 'flight and from
-      // needs to be one and arrival and status needs to be one so 2 panels
-      // its 2 shelves') — here: Flight·Destination / Departure·Status.
+      // Same 2-PANEL regroup as the inbound card (Nick: 'the pattern needs
+      // to be as 2 panels' — full lines, only the shelves regroup):
+      // panel 1 = Flight / Destination, panel 2 = Departure / Status.
       // Departure TIME stays (Nick: 'who told you to remove the time').
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t2">'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
+        +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
+        +   '</div>'
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>Destination</span><span>Destination</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2 v2-rc-fi-trow-last">'
+        + '</div></div>'
+        + '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t2">'
+        +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
         +     '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
+        +   '</div>'
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
         +   '</div>'
@@ -16648,7 +16668,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22590';
+var FIDS_BUILD_TAG = 'v22591';
 (function(){
   try {
     function _addTag(){
