@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22553';
+var FIDS_BUILD_TAG = 'v22554';
 (function(){
   try {
     function _addTag(){
@@ -27891,7 +27891,13 @@ function _adBackdropHtml(blurUrl) {
   // Diagonal slats REMOVED (Nick, Jul 2026: 'the main screen remove the
   // lines'). The dotted globe stays (Nick liked 'the dots world') — only the
   // skewed accent line-set that streaked across the welcome/ad backdrop is gone.
-  return base + dots;
+  // OUTER FRAME (Nick: 'also a frame around the whole middle part') — the
+  // same silver frame art pinned to the full panel edge, left in its metal
+  // finish so it reads distinct from the accent-tinted frame on the advert.
+  // Class is NOT .ad-tech-frame, so the media fitter never moves it.
+  var outerFrame = '<div class="ad-outer-frame" style="position:absolute;inset:0;pointer-events:none;'
+    + 'background-image:url(\'/logos/Backgrounds/ad-frame-silver.png?v=1\');background-size:100% 100%;"></div>';
+  return base + dots + outerFrame;
 }
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 
