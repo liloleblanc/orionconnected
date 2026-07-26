@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22576';
+var FIDS_BUILD_TAG = 'v22577';
 (function(){
   try {
     function _addTag(){
@@ -24233,7 +24233,7 @@ function _ensureMediaFrame() {
 }
 function _positionMediaFrame(r, blurUrl) {
   var f = _ensureMediaFrame();
-  var _bk = String(blurUrl || '');
+  var _bk = String(blurUrl || '') + '|' + (typeof FIDS_BUILD_TAG !== 'undefined' ? FIDS_BUILD_TAG : '');
   if (f._blurKey !== _bk) {
     f._blurKey = _bk;
     f.innerHTML = ((typeof _adBackdropHtml === 'function') ? _adBackdropHtml(_bk) : '')
@@ -27967,8 +27967,8 @@ function _adTechFrameHtml() {
   if (!_fAcc) _fAcc = '#8a94a6';
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;'
-    + 'border:6px solid ' + _fAcc + ';'
-    + 'box-shadow: inset 0 0 0 2px rgba(255,255,255,.8), 0 6px 16px rgba(5,10,20,.3);'
+    + 'border:12px solid ' + _fAcc + ';'
+    + 'box-shadow: inset 0 0 0 3px rgba(255,255,255,.92), 0 0 0 3px rgba(255,255,255,.92), 0 8px 20px rgba(5,10,20,.35);'
     + '"></div>';
 }
 
