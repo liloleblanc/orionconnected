@@ -16462,7 +16462,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22522';
+var FIDS_BUILD_TAG = 'v22523';
 (function(){
   try {
     function _addTag(){
@@ -27124,6 +27124,32 @@ function buildAccorAdOnlyV6(ad) {
       _blurb = (_sentEnd > 0) ? _cut.slice(0, _sentEnd + 1).trim() : '';
     }
   }
+  // A SECOND paragraph for page 3, from a different source than page 2's — the
+  // destination text (what's around the hotel), or the next sentence of the
+  // hotel's own copy. Without it page 3 was a logo, a name and a QR code and
+  // nothing else once the in-room fixtures were banned from the dining list
+  // (Nick: 'theres barely any info at all on some of these').
+  var _blurb2 = '';
+  (function () {
+    function _sent1(txt, skipFirst) {
+      var s = String(txt || '').replace(/\s+/g, ' ').trim();
+      if (!s || _covidRx.test(s)) return '';
+      var _ab = /(\b(?:St|Ste|Mt|Dr|Mr|Mrs|Ms|Ave|Blvd|Rd|Hwy|No|Nos|vs|etc|approx|Ft|Pt)|\b[A-Z])$/;
+      var ends = [];
+      for (var i = 1; i < s.length - 1 && ends.length < 3; i++) {
+        if ('.!?'.indexOf(s[i]) !== -1 && s[i + 1] === ' ' && !_ab.test(s.slice(0, i))) ends.push(i);
+      }
+      if (!ends.length) return (s.length <= 170 && /[.!?]$/.test(s)) ? s : '';
+      if (!skipFirst) return s.slice(0, ends[0] + 1).trim();
+      if (ends.length < 2) return '';
+      var second = s.slice(ends[0] + 1, ends[1] + 1).trim();
+      return (second.length <= 190) ? second : '';
+    }
+    var _dest = _sent1(ad.destinationDescription, false);
+    if (_dest && _dest !== _blurb) { _blurb2 = _dest; return; }
+    var _next = _sent1(ad.description, true);
+    if (_next && _next !== _blurb) _blurb2 = _next;
+  })();
 
   var _acL = accorLang();
   var _kHotel  = ({en:'The hotel',fr:"L'hôtel",es:'El hotel',de:'Das Hotel',it:"L'hotel",pt:'O hotel',ja:'ホテル',zh:'酒店',ar:'الفندق'})[_acL] || 'The hotel';
@@ -27182,16 +27208,25 @@ function buildAccorAdOnlyV6(ad) {
   // never renders (Nick, Faena New York: 'Why is that still there?').
   var _isFaiCard = String(ad.brand || '').toUpperCase() === 'FAI';
   var _featsHtml = '';
+  // Commodity lines are never a selling point, wherever they come from. Accor
+  // lists 'Mini Bar' among Faena New York's advantages, and with the longer
+  // ones filtered out it became the hotel's ONE headline claim.
+  var _dullAdvRx = /wi-?fi|internet|wireless|t[ée]l[ée]phone|telephone|mini ?bar|minibar|hair ?dry|s[èe]che-cheveux|iron(ing)?\b|fer [àa] repasser|kettle|bouilloire|coffee\/tea|wake[- ]?up|r[ée]veil|\btv\b|television|safe\b|coffre/i;
   var _advs = (Array.isArray(ad.advantages) ? ad.advantages : [])
     .map(function (a) { return String(a || '').trim(); })
-    .filter(function (a) { return a && a.length <= 60 && !_covidRx.test(a); })
+    .filter(function (a) { return a && a.length <= 60 && !_covidRx.test(a) && !_dullAdvRx.test(a); })
     .slice(0, 3);
   if (!_advs.length) {
-    // Selling points only — anything a guest would choose the hotel FOR.
-    var _hiRx = /\b(spa|hammam|sauna|thermal|pool|piscine|beach|plage|rooftop|terrace|terrasse|garden|jardin|golf|tennis|marina|ski|casino|vineyard|michelin|gastronom|fine dining|signature restaurant|cocktail|speakeasy|nightclub|private club|butler|kids club|club enfants|panoramic|sea view|ocean|lagoon|waterfront|historic|heritage)\b/i;
-    _advs = (Array.isArray(_amenList) ? _amenList : [])
+    // No advantages from the feed → the hotel's own SELLABLE facilities, which
+    // _amenSell has already separated from the in-room fixtures. Only the pure
+    // commodities every hotel has (wi-fi, a telephone line) stay out; a pool, a
+    // spa, a restaurant, parking or a shuttle is real information a traveller
+    // wants, and cutting it left cards with almost nothing on them (Nick:
+    // 'theres barely any info at all on some of these').
+    var _dullRx = /wi-?fi|internet|wireless|t[ée]l[ée]phone|telephone/i;
+    _advs = (Array.isArray(_amenSell) ? _amenSell : [])
       .map(function (a) { return String(a || '').trim(); })
-      .filter(function (a) { return a && a.length <= 40 && _hiRx.test(a) && !_covidRx.test(a); })
+      .filter(function (a) { return a && a.length <= 42 && !_dullRx.test(a) && !_covidRx.test(a); })
       .slice(0, 3);
   }
   if (_advs.length) {
@@ -27207,13 +27242,20 @@ function buildAccorAdOnlyV6(ad) {
     + logoHtml + _ctxName
     +   _featsHtml + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
     + '</div></div>';
-  // Page 3 — DINING & REVIEWS: restaurants + guest rating + QR
+  // Page 3 — THE DESTINATION: what's around the hotel, its real dining, the
+  // guest score, and the QR. It must always carry something beyond the logo:
+  // the second paragraph first, then real restaurants, then the score, and
+  // failing all of those the address and the distances (which are facts every
+  // hotel has). A page with only a wordmark on it is not an advertisement.
+  var _p3Body = (_blurb2 ? '<p class="axr-blurb">' + esc(_blurb2) + '</p>' : '')
+    + _list(_restList) + _ratingRow;
+  if (!_blurb2 && !_restList.length && !_ratingRow) _p3Body = _addrLineHtml + _locLineHtml + _starsRow;
   var _page3 = '<div class="axr-page">'
     + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'
     + bubbleHtml
     + '<div class="axr-hotel">'
     + logoHtml + _ctxName
-    +   _list(_restList) + _ratingRow
+    +   _p3Body
     + '</div></div>';
 
   // ROOM PAGES (Nick: '2 to 3 different room options, show 10 seconds maybe,
