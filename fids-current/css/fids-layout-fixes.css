@@ -3920,3 +3920,16 @@ html body .gad-media-col #gateAdCarousel {
   width: auto !important;
   height: auto !important;
 }
+
+/* ── v22560: the z-order overrides from v22553 lost the cascade — on the
+   gate page gids-v218.78.css loads AFTER this file, and its selectors tie
+   on specificity. Restate with html/body prefixes so specificity (not
+   order) decides: media under, frame over. */
+html body .g8-wrap .gad-media-col.g8-static-page-ad #gateAdCarousel .ad-tech-media,
+html body #gateAdCarousel .ad-tech-media {
+  z-index: 2 !important;
+}
+html body #gateAdCarousel .ad-tech-frame,
+html body #fidsMediaFrame .ad-tech-frame {
+  z-index: 4 !important;
+}
