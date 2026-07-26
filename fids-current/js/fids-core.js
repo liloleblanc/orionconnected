@@ -2550,6 +2550,35 @@ function fidsFlightPlan(flightNo, dateStr) {
   } catch (e) { return null; }
 }
 
+// RESOLVED AIRCRAFT, KEPT OUTSIDE THE FLIGHT OBJECTS.
+// The poll used to write the type straight onto the flight object it was
+// handed — but the board rebuilds those objects from the feed on every
+// refresh, roughly as often as the poll runs, so the answer was routinely
+// thrown away between resolving it and drawing it (Nick, repeatedly: 'no
+// aircraft'). Keyed by flight number and kept for six hours, this survives
+// every rebuild, and the renderers read it whenever the fresh object has
+// nothing of its own.
+window._ACRES = window._ACRES || {};
+function _acResolvedPut(fl, nm, cd, reg) {
+  try {
+    var k = String(fl || '').replace(/\s+/g, '').toUpperCase();
+    if (!k || (!nm && !cd)) return;
+    var cur = window._ACRES[k] || {};
+    window._ACRES[k] = {
+      nm: nm || cur.nm || '', cd: cd || cur.cd || '', reg: reg || cur.reg || '', ts: Date.now()
+    };
+  } catch (e) {}
+}
+function _acResolvedGet(fl) {
+  try {
+    var k = String(fl || '').replace(/\s+/g, '').toUpperCase();
+    var v = k && window._ACRES[k];
+    if (!v) return null;
+    if (Date.now() - v.ts > 6 * 3600000) { delete window._ACRES[k]; return null; }
+    return v;
+  } catch (e) { return null; }
+}
+
 async function _gateNumbersPoll() {
   try {
     if (_gateNumPollBusy) return;
@@ -2641,6 +2670,7 @@ async function _gateNumbersPoll() {
         try { console.log('[NUMPOLL] reg landed via poll:', _polledReg, 'for', flt); } catch (e3) {}
       }
       if (_acqType) {
+        _acResolvedPut(flt, inb._aircraft, inb._aircraftCode, inb._reg);
         try { console.log('[NUMPOLL] aircraft for', flt, '→', inb._aircraft || inb._aircraftCode, inb._reg ? ('| ' + inb._reg) : '| no tail yet'); } catch (e5) {}
         try { window._lastGateKey = ''; render(); } catch (e2) {}
       }
@@ -8068,6 +8098,16 @@ function uxgGateHtml(ctx) {
   var stKey = currentFlight.status || 'scheduled';
   var equipRaw = currentFlight._aircraftCode || '';
   var equipName = currentFlight._aircraft || (equipRaw ? formatAircraft(equipRaw) : '');
+  // Fall back to what the poll already resolved for this flight number — the
+  // feed object is rebuilt constantly and arrives empty again each time.
+  if (!equipName && !equipRaw) {
+    var _acR = (typeof _acResolvedGet === 'function') ? _acResolvedGet(currentFlight.flight) : null;
+    if (_acR) {
+      equipRaw = _acR.cd || '';
+      equipName = _acR.nm || (equipRaw ? formatAircraft(equipRaw) : '');
+      if (!currentFlight._reg && _acR.reg) currentFlight._reg = _acR.reg;
+    }
+  }
   var minsToDep = effectiveDepTs ? Math.round((effectiveDepTs - Date.now()) / 60000) : 9999;
   // Delayed if we have EITHER a revised HH:MM string (upd) OR a revised timestamp
   // (_revTs later than scheduled). Boarding is computed from _revTs, so if we only
@@ -16554,7 +16594,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22539';
+var FIDS_BUILD_TAG = 'v22540';
 (function(){
   try {
     function _addTag(){
@@ -21991,6 +22031,10 @@ function toggleCardExpand(card) {
   rows.push({ label: TLs('status') || 'Status', value: SL(f.status) });
   // Aircraft
   var equipName = f._aircraft || (f._aircraftCode ? (typeof formatAircraft === 'function' ? formatAircraft(f._aircraftCode) : f._aircraftCode) : '');
+  if (!equipName) {
+    var _acR3 = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f.flight) : null;
+    if (_acR3) equipName = _acR3.nm || _acR3.cd || '';
+  }
   if (equipName) rows.push({ label: 'Aircraft', value: equipName });
   if (f._reg) rows.push({ label: 'Registration', value: f._reg });
   // Route — use cityCode() which produces properly-cased "Toronto-YYZ"
@@ -22094,8 +22138,12 @@ function toggleHeroSection(btn, section, flightKey) {
 window.toggleHeroSection = toggleHeroSection;
 
 function renderHeroAircraft(f) {
-  const equipRaw = f._aircraftCode || '';
-  const equipName = f._aircraft || (equipRaw ? formatAircraft(equipRaw) : '');
+  var equipRaw = f._aircraftCode || '';
+  var equipName = f._aircraft || (equipRaw ? formatAircraft(equipRaw) : '');
+  if (!equipName && !equipRaw) {
+    var _acR2 = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f.flight) : null;
+    if (_acR2) { equipRaw = _acR2.cd || ''; equipName = _acR2.nm || (equipRaw ? formatAircraft(equipRaw) : ''); }
+  }
   const reg = f._reg || '';
   const opName = f._opName || (f._opCode && AIRLINE_NAME[f._opCode]) || '';
   const opCode = f._opCode || '';
