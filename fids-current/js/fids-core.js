@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22562';
+var FIDS_BUILD_TAG = 'v22563';
 (function(){
   try {
     function _addTag(){
@@ -26104,7 +26104,7 @@ function buildGateAdHtml(ad) {
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml('')
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
-        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
+        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
         + ' onerror="this.style.display=\'none\';"></video>' + _adTechFrameHtml()
         + '</div>'
       );
@@ -26131,7 +26131,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml(ad.bgImage)
-        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
         + '</div>'
       );
     }
@@ -27882,12 +27882,26 @@ function _adBackdropHtml(blurUrl) {
       if (!bd) {
         bd = document.createElement('div');
         bd.className = 'ad-panel-backdrop';
-        bd.style.cssText = 'position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;';
-        bd.innerHTML =
-            '<div style="position:absolute;inset:-2%;background-image:url(/logos/Backgrounds/adback-waves2.jpg?v=1);background-size:cover;background-position:center;"></div>'
-          + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.12);"></div>'
-          + '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;background-image:url(/logos/Backgrounds/adback-spots.png?v=1);background-size:cover;background-position:center;opacity:.38;mix-blend-mode:screen;"></div>';
+        bd.style.cssText = 'position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;isolation:isolate;';
         col.insertBefore(bd, col.firstChild);
+      }
+      // 'the background needs to blend in colors' (Nick, with his mockups):
+      // the wave art renders as a luminosity layer over the gate's airline
+      // accent — same treatment he approved on the first art — rebuilt only
+      // when the accent actually changes.
+      var _bdAcc = '';
+      try {
+        var _bdAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+        if (_bdAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_bdAl]) _bdAcc = AIRLINE_ACCENT[_bdAl];
+      } catch (e) {}
+      if (!_bdAcc) _bdAcc = '#12309e';
+      if (bd.dataset.acc !== _bdAcc) {
+        bd.dataset.acc = _bdAcc;
+        bd.innerHTML =
+            '<div style="position:absolute;inset:0;background:color-mix(in srgb, ' + _bdAcc + ' 55%, #0b1020);"></div>'
+          + '<div style="position:absolute;inset:-2%;background-image:url(/logos/Backgrounds/adback-waves2.jpg?v=1);background-size:cover;background-position:center;mix-blend-mode:luminosity;"></div>'
+          + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.15);"></div>'
+          + '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;background-image:url(/logos/Backgrounds/adback-spots.png?v=1);background-size:cover;background-position:center;opacity:.38;mix-blend-mode:screen;"></div>';
       }
       var f = col.querySelector(':scope > .ad-outer-frame');
       if (!f) {
@@ -28099,7 +28113,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
@@ -28118,7 +28132,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
           + '<img src="' + item.url + '" alt=""'
-          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
