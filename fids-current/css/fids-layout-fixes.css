@@ -4296,3 +4296,17 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
 html body .g8-bir-cell {
   background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 46%, #7a7e86) !important;
 }
+
+/* ── v22600: dots are BACKGROUND-ONLY and lighter (Nick: 'dont put on top
+   of text and planes and icons … background only'). Soft-light white ink
+   is a no-op on white/bright pixels — lettering, planes, icon glyphs —
+   and only lifts the dark background surfaces beneath them. */
+html body::after {
+  mix-blend-mode: soft-light !important;
+  opacity: .55 !important;
+}
+/* ── v22600: the banner silk was below the visibility floor — lift it so
+   the top pattern reads (still screen-blended, lettering untouched). */
+html body .g8-r1::after, html body .fids-banner::after {
+  opacity: .32 !important;
+}
