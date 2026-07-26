@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22584';
+var FIDS_BUILD_TAG = 'v22585';
 (function(){
   try {
     function _addTag(){
@@ -27910,9 +27910,9 @@ function _adBackdropHtml(blurUrl) {
       if (bd.dataset.acc !== _bdAcc) {
         bd.dataset.acc = _bdAcc;
         bd.innerHTML =
-            '<div style="position:absolute;inset:0;background:color-mix(in srgb, ' + _bdAcc + ' 55%, #0b1020);"></div>'
+            '<div style="position:absolute;inset:0;background:color-mix(in srgb, ' + _bdAcc + ' 74%, #0b1020);"></div>'
           + '<div style="position:absolute;inset:-2%;background-image:url(/logos/Backgrounds/adback-waves2.jpg?v=1);background-size:cover;background-position:center;mix-blend-mode:luminosity;"></div>'
-          + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.30);"></div>'
+          + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.18);"></div>'
           + '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;background-image:url(/logos/Backgrounds/adback-spots.png?v=1);background-size:cover;background-position:center;opacity:.28;mix-blend-mode:screen;"></div>';
       }
       var rg = col.querySelector(':scope > .ad-accent-frame');
@@ -27921,11 +27921,21 @@ function _adBackdropHtml(blurUrl) {
       if (!f) {
         f = document.createElement('div');
         f.className = 'ad-outer-frame';
-        f.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:60;overflow:hidden;'
-          + 'background-image:url(/logos/Backgrounds/ad-frame-silver.png?v=2);background-size:100% 100%;';
+        f.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:60;overflow:hidden;isolation:isolate;';
         col.appendChild(f);
       } else if (col.lastElementChild !== f) {
         col.appendChild(f);   // keep it on top when the col re-renders around it
+      }
+      // Frame matches the airline (Nick): the silver art re-hued by the
+      // accent via a masked multiply layer; rebuilt only on accent change.
+      if (f.dataset.acc !== _bdAcc) {
+        f.dataset.acc = _bdAcc;
+        var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
+        f.innerHTML =
+            '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
+          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;'
+          +   '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;'
+          +   'mask-image:url(' + _fa + ');mask-size:100% 100%;"></div>';
       }
     } catch (e) {}
   }
@@ -27950,11 +27960,24 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  // ONE complete frame per ad — the same silver art (Nick: 'the map should
-  // have the same frame, it can go over it; small ads confined within').
+  // ONE complete frame per ad, in the airline's colour — the same silver
+  // art with a masked accent-multiply layer, exactly like the wall frame.
+  var _fAcc = '';
+  try {
+    var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+    if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = AIRLINE_ACCENT[_fAl];
+  } catch (e) {}
+  var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
+  var _tint = _fAcc
+    ? '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.82;'
+      + '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;'
+      + 'mask-image:url(' + _fa + ');mask-size:100% 100%;"></div>'
+    : '';
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
-    + 'visibility:hidden;pointer-events:none;z-index:3;'
-    + 'background-image:url(/logos/Backgrounds/ad-frame-silver.png?v=2);background-size:100% 100%;"></div>';
+    + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
+    +   '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
+    +   _tint
+    + '</div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
