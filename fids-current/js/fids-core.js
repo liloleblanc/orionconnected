@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22556';
+var FIDS_BUILD_TAG = 'v22557';
 (function(){
   try {
     function _addTag(){
@@ -24281,7 +24281,7 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       var r = _drawnRect(m);
       if (!r) continue;
       var hb = host.getBoundingClientRect();
-      var pad = Math.max(12, Math.min(22, Math.round(r.width * 0.02)));
+      var pad = 5;   // hug the ad tight (Nick, Jul 26)
       f.style.left = Math.round(r.left - hb.left - pad) + 'px';
       f.style.top = Math.round(r.top - hb.top - pad) + 'px';
       f.style.width = Math.round(r.width + 2 * pad) + 'px';
@@ -26095,7 +26095,7 @@ function buildGateAdHtml(ad) {
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml('')
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
-        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:6%;top:5%;width:88%;height:90%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
+        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
         + ' onerror="this.style.display=\'none\';"></video>' + _adTechFrameHtml()
         + '</div>'
       );
@@ -26122,7 +26122,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml(ad.bgImage)
-        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:6%;top:5%;width:88%;height:90%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
         + '</div>'
       );
     }
@@ -28116,7 +28116,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:6%;top:5%;width:88%;height:90%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
@@ -28135,7 +28135,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
           + '<img src="' + item.url + '" alt=""'
-          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:6%;top:5%;width:88%;height:90%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
