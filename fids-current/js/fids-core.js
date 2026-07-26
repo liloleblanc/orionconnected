@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22586';
+var FIDS_BUILD_TAG = 'v22587';
 (function(){
   try {
     function _addTag(){
@@ -24303,10 +24303,22 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
         padX = Math.max(10, Math.round(r.width * 0.030));
         padY = Math.max(10, Math.round(r.height * 0.047));
       }
-      f.style.left = Math.round(r.left - hb.left - padX) + 'px';
-      f.style.top = Math.round(r.top - hb.top - padY) + 'px';
-      f.style.width = Math.round(r.width + 2 * padX) + 'px';
-      f.style.height = Math.round(r.height + 2 * padY) + 'px';
+      // FREEZE (Nick: 'make sure the frames don't move'): once placed,
+      // ignore sub-2px re-measures — rounding and image settle were able
+      // to nudge the frame between ticks.
+      var _gx = Math.round(r.left - hb.left - padX), _gy = Math.round(r.top - hb.top - padY);
+      var _gw = Math.round(r.width + 2 * padX), _gh = Math.round(r.height + 2 * padY);
+      var _prev = (f.dataset.geom || '').split(',').map(Number);
+      if (_prev.length === 4 && Math.abs(_prev[0]-_gx)<=2 && Math.abs(_prev[1]-_gy)<=2
+          && Math.abs(_prev[2]-_gw)<=2 && Math.abs(_prev[3]-_gh)<=2) {
+        f.style.visibility = 'visible';
+        continue;
+      }
+      f.dataset.geom = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
+      f.style.left = _gx + 'px';
+      f.style.top = _gy + 'px';
+      f.style.width = _gw + 'px';
+      f.style.height = _gh + 'px';
       f.style.right = 'auto'; f.style.bottom = 'auto';
       f.style.visibility = 'visible';   // fitted — safe to show
     }
