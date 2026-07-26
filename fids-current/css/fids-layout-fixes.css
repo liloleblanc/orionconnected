@@ -3845,3 +3845,33 @@ html .gad-aircraft-col .v2-fi-value {
 /* The clock tab swaps between one clock and two (local + destination). Give it
    a floor so the swap cannot re-centre everything beside it. */
 html .octb-wrap, html .octb.octb-tab { min-width: clamp(360px, 27vw, 540px) !important; box-sizing: border-box !important; }
+
+/* ── SkyTeam reads small next to the Star Alliance mark (v22539) ──────────
+   Nick: 'the Skyteam logo should be bigger'. Both marks get the same 104px
+   box, but skyteam-white.png is a 512×509 frame whose ink sits well inside its
+   own edges — the wordmark curves around the swirl with a wide margin — so at
+   an equal box it lands roughly a quarter smaller on screen than the star,
+   which fills its frame. A larger box for SkyTeam only, to match the optical
+   weight rather than the file dimensions. */
+html .g8-r1-right img[alt*="SkyTeam"],
+html .g8-r1-right img[src*="skyteam"],
+html .g8-board-welcome img[src*="skyteam"] {
+  width: 130px !important;
+  min-width: 130px !important;
+  height: 130px !important;
+  min-height: 130px !important;
+  max-width: 146px !important;
+  max-height: 146px !important;
+}
+@media (max-height: 820px) {
+  html .g8-r1-right img[alt*="SkyTeam"],
+  html .g8-r1-right img[src*="skyteam"],
+  html .g8-board-welcome img[src*="skyteam"] {
+    width: 114px !important;
+    min-width: 114px !important;
+    height: 114px !important;
+    min-height: 114px !important;
+    max-width: 128px !important;
+    max-height: 128px !important;
+  }
+}

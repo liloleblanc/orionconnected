@@ -6309,7 +6309,14 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
 // the first/top round Flight icon on the gate display — never in the main FIDS
 // all-flights airline cell (which has its own IATA_TO_* logo system).
 var GATE_TOP_ROUND_EMBLEM_FILES = {
-  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350'
+  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
+  // Delta gets the treatment United has (Nick: 'same for the Delta icon shiny
+  // orb'). DL-glossy is the same family of art — the widget and wordmark on a
+  // glossy sphere — so it goes in the round emblem slot and, like United's,
+  // renders full-bleed in its own colours instead of a flat silhouette padded
+  // inside an accent circle. Filling the badge edge to edge is also what makes
+  // it read bigger.
+  'DL': '/logos/airline-tiles/DL-glossy.svg?v=22539'
 };
 
 function _buildV2AircraftCol(ctx, vars) {
@@ -6636,7 +6643,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // file is derived from the airline's own tile art, never redrawn.
         var BADGE_TILE_BRANDS = { 'MX': { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' } };
         var _tileBrand = BADGE_TILE_BRANDS[code] || null;
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true };  // supplied full-colour art keeps its native colours
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true };  // supplied full-colour art keeps its native colours
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
@@ -16547,7 +16554,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22538';
+var FIDS_BUILD_TAG = 'v22539';
 (function(){
   try {
     function _addTag(){
