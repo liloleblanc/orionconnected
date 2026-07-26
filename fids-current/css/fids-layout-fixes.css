@@ -4113,3 +4113,73 @@ html body .ad-tech-media.g8-ad-inset {
   padding: clamp(30px, 5vh, 56px) clamp(22px, 2vw, 44px) !important;
   box-sizing: border-box !important;
 }
+
+/* ── v22594: PANE ROWS RESTYLED — every row rule in gids css is scoped to
+   DIRECT children of .v2-rc-fi-table, so rows nested in the new slabs
+   lost their entire layout (labels stacked over clipped values). These
+   are the same rules re-scoped to .v2-rc-fi-pane children. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:not(.v2-rc-fi-trow-rev2) {
+  display: grid !important;
+  grid-template-columns: minmax(64px, 28%) minmax(0, 72%) !important;
+  align-items: center !important;
+  column-gap: clamp(7px, .55vw, 11px) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow {
+  border-bottom: 1px solid color-mix(in srgb, var(--airline-accent, #d82f2e) 62%, transparent) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow-last,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:last-child {
+  border-bottom: 0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  color: color-mix(in srgb, var(--banner-bg, #142235) 84%, #000) !important;
+  font-size: clamp(11px, 1.35vh, 16px) !important;
+  font-weight: 850 !important;
+  line-height: 1.02 !important;
+  letter-spacing: -.01em !important;
+  padding: 0 !important;
+  border-bottom: 0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span + span {
+  margin-top: 2px !important;
+  font-size: .82em !important;
+  font-weight: 700 !important;
+  opacity: .62 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tval {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  color: var(--banner-bg, #142235) !important;
+  font-size: clamp(22px, 3.05vh, 35px) !important;
+  font-weight: 900 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -.03em !important;
+  padding: 0 !important;
+  border-bottom: 0 !important;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+/* Status palette (light shelves). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-arrived   { color: #0e7c4a !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-boarding  { color: #1d4ed8 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-delayed   { color: #d97706 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-cancelled { color: #b91c1c !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-gateclosed{ color: #4b5563 !important; }
+/* AC dark luxury slabs: lifted inks + bright status palette. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl { color: #cfd6df !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tval { color: #edf1f7 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-scheduled,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-ontime,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-arrived { color: #34d399 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-delayed { color: #fbbf24 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-cancelled { color: #f87171 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-boarding { color: #93c5fd !important; }
