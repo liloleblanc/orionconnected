@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22543';
+var FIDS_BUILD_TAG = 'v22544';
 (function(){
   try {
     function _addTag(){
@@ -26045,6 +26045,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;background:#000 url(\'' + ad.bgImage + '\') ' + (ad.bgPosition || 'center center') + ' / cover no-repeat;overflow:hidden;">'
         + '<div style="position:absolute;inset:0;background:linear-gradient(90deg,' + _bgLeft + ' 0%,' + _bgLeft + ' 35%,rgba(0,0,0,0.65) 70%,rgba(0,0,0,0.35) 100%);"></div>'
+        + _adSpotsOverlay(0.10)
         + '<div style="position:relative;z-index:2;width:100%;height:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 36px;max-width:70%;box-sizing:border-box;">'
         +   _adLogoHtml
         +   (_lsHeadline ? '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + _lsHeadline + '</div>' : '')
@@ -26053,12 +26054,17 @@ function buildGateAdHtml(ad) {
         + '</div>'
       );
     } else {
-      // No image: text-only on solid background, logo at top.
+      // No image: text-only on solid background, logo at top. The dot-field
+      // texture sits between the surface and the copy (content lifted to
+      // z-index 2 so the positioned overlay can't paint over the glyphs).
       return _adWrap(
-        '<div style="width:100%;height:100%;background:' + _bgLeft + ';display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 36px;">'
-        +   _adLogoHtml
-        +   (_lsHeadline ? '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + _lsHeadline + '</div>' : '')
-        +   (ad.sub ? '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:rgb(220,225,235);margin-top:18px;line-height:1.3;max-width:100%;">' + ad.sub + '</div>' : '')
+        '<div style="position:relative;width:100%;height:100%;background:' + _bgLeft + ';display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 36px;overflow:hidden;">'
+        +   _adSpotsOverlay(0.14)
+        +   '<div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;width:100%;">'
+        +     _adLogoHtml
+        +     (_lsHeadline ? '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + _lsHeadline + '</div>' : '')
+        +     (ad.sub ? '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:rgb(220,225,235);margin-top:18px;line-height:1.3;max-width:100%;">' + ad.sub + '</div>' : '')
+        +   '</div>'
         + '</div>'
       );
     }
@@ -26071,6 +26077,18 @@ function buildGateAdHtml(ad) {
   // it renders inside this box and can't escape it.
   function _adWrap(inner) {
     return '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;">' + inner + '</div>';
+  }
+
+  // Faded dot-field texture over classic ad surfaces (Nick's pick, Jul 2026:
+  // vecteezy 21949313 'light blue cover with spots', option C of three). The
+  // source art is dark-dots-on-white; the shipped PNG is the INVERSE baked to
+  // transparency — cool-white ink whose alpha IS the dot field — so it rides
+  // on any surface as a subtle light lift. It renders INSIDE the slide's own
+  // HTML (not a separate carousel layer, which is what flickered in the old
+  // abstract-backdrop experiment) so it fades in and out with its slide.
+  // Never on finished creatives (imageOnly) and never on Accor cards.
+  function _adSpotsOverlay(op) {
+    return '<div style="position:absolute;inset:0;background:url(\'/logos/Backgrounds/adback-spots.png?v=1\') center / cover no-repeat;opacity:' + (op || 0.14) + ';pointer-events:none;"></div>';
   }
 
   // ── LAYOUT 1: WI-FI AD ────────────────────────────────────────────────
