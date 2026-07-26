@@ -16668,7 +16668,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22591';
+var FIDS_BUILD_TAG = 'v22592';
 (function(){
   try {
     function _addTag(){
@@ -24323,6 +24323,16 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // to nudge the frame between ticks.
       var _gx = Math.round(r.left - hb.left - padX), _gy = Math.round(r.top - hb.top - padY);
       var _gw = Math.round(r.width + 2 * padX), _gh = Math.round(r.height + 2 * padY);
+      // CLAMP to the host (Nick's mockup: the wide map ad wears a COMPLETE
+      // frame). Un-clamped, a full-width ad pushed the inflated side bands
+      // outside the host where overflow clipped them — the frame looked
+      // MISSING. Clamped, the band rides on the ad's own edge instead
+      // ('it can go over it its fine').
+      var _hbW = Math.round(hb.width), _hbH = Math.round(hb.height);
+      if (_gx < 0) { _gw += _gx; _gx = 0; }
+      if (_gy < 0) { _gh += _gy; _gy = 0; }
+      if (_gx + _gw > _hbW) _gw = _hbW - _gx;
+      if (_gy + _gh > _hbH) _gh = _hbH - _gy;
       var _prev = (f.dataset.geom || '').split(',').map(Number);
       if (_prev.length === 4 && Math.abs(_prev[0]-_gx)<=2 && Math.abs(_prev[1]-_gy)<=2
           && Math.abs(_prev[2]-_gw)<=2 && Math.abs(_prev[3]-_gh)<=2) {
