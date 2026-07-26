@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22549';
+var FIDS_BUILD_TAG = 'v22550';
 (function(){
   try {
     function _addTag(){
@@ -27865,16 +27865,12 @@ function _adBackdropHtml(blurUrl) {
     // the shapes and light, --airline-accent supplies the hue, so the same
     // asset reads red at an AC gate, teal at WestJet, blue at United.
     // isolation:isolate keeps the blend from reaching layers under the slide.
-    // Zoomed into the ribbon lines (Nick: 'zoomed in the abstract lines'),
-    // contrast pulled down so the cream ribbons sit back (Nick: 'fade out
-    // the lines a bit') — the luminosity blend keeps them accent-tinted.
-    base = '<div style="position:absolute;inset:0;isolation:isolate;">'
-      +   '<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--airline-accent,#1230e6) 58%, #0b1020);"></div>'
-      +   '<div style="position:absolute;inset:-2%;background-image:url(\'/logos/Backgrounds/adback-waves.jpg?v=1\');'
-      +     'background-size:240%;background-position:38% 42%;mix-blend-mode:luminosity;'
-      +     'filter:contrast(.68) brightness(.97);"></div>'
-      +   '<div style="position:absolute;inset:0;background:rgba(8,12,20,.22);"></div>'
-      + '</div>';
+    // Round 3 (Nick, Jul 26): his bright blue/orange wavy art, shown in its
+    // OWN colors (no accent blend — the frame carries the theme now), with
+    // only a whisper of veil so the ad still pops off it.
+    base = '<div style="position:absolute;inset:-2%;background-image:url(\'/logos/Backgrounds/adback-waves2.jpg?v=1\');'
+      +   'background-size:cover;background-position:center;"></div>'
+      + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.12);"></div>';
   } else base = blurUrl
     ? '<div style="position:absolute;inset:-60px;background-image:url(\'' + blurUrl + '\');'
       + 'background-size:cover;background-position:center;filter:blur(46px) saturate(1.2) brightness(.92);transform:scale(1.15);"></div>'
@@ -27886,12 +27882,12 @@ function _adBackdropHtml(blurUrl) {
   // texture breathing through the ad surround. The PNG is light ink baked to
   // transparency, so screen-blended it lifts both the blurred-photo ambient
   // and the gradient base without painting white.
-  // Dotted layer = option B, the halftone waves (Nick: 'I do like B') —
-  // size-graded dot arcs that move with the ribbon art, not static grain.
+  // Dotted layer = C spots again ('the dots first one we had'), riding the
+  // bright art — screen blend lifts on the colored waves, vanishes on white.
   var dots = '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;'
-    + 'background-image:url(\'/logos/Backgrounds/adback-dots-b.png?v=1\');'
+    + 'background-image:url(\'/logos/Backgrounds/adback-spots.png?v=1\');'
     + 'background-size:cover;background-position:center;background-repeat:no-repeat;'
-    + 'opacity:.34;mix-blend-mode:screen;pointer-events:none;"></div>';
+    + 'opacity:.38;mix-blend-mode:screen;pointer-events:none;"></div>';
   // Diagonal slats REMOVED (Nick, Jul 2026: 'the main screen remove the
   // lines'). The dotted globe stays (Nick liked 'the dots world') — only the
   // skewed accent line-set that streaked across the welcome/ad backdrop is gone.
@@ -27903,15 +27899,22 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  // CONTEMPORARY BEZEL (Nick: 'a border, not lines') — a thick gradient
-  // mat the ad sits IN, like a framed poster: accent surface, rounded,
-  // deep shadow. Painted BEHIND the media (media carries z-index:1); the
-  // fitter inflates it ~16px beyond the ad's drawn rectangle.
+  // NICK'S SILVER FRAME (Jul 26: 'the frame goes — frame only, which can
+  // change colors like it does now — in front of the advert'). His picture-
+  // frame SVG with the backing stripped, drawn ABOVE the media (z-index:3
+  // beats the media's 1) as a true hollow frame. The metal art keeps its
+  // shading; an accent layer masked by the same alpha re-hues it via
+  // mix-blend-mode:color, so it adapts per airline exactly like the old
+  // bezel did. The fitter still positions .ad-tech-frame; the two layers
+  // inside just fill it.
+  var _fUrl = '/logos/Backgrounds/ad-frame-silver.png?v=1';
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
-    + 'background:linear-gradient(160deg, color-mix(in srgb, var(--airline-accent,#38bdf8) 86%, #fff) 0%, var(--airline-accent,#38bdf8) 42%, color-mix(in srgb, var(--airline-accent,#38bdf8) 52%, #000) 100%);'
-    + 'border-radius:24px;'
-    + 'box-shadow:0 18px 50px rgba(5,10,20,0.45), inset 0 1px 0 rgba(255,255,255,0.35);'
-    + 'pointer-events:none;"></div>';
+    + 'pointer-events:none;z-index:3;isolation:isolate;filter:drop-shadow(0 10px 26px rgba(5,10,20,0.4));">'
+    +   '<div style="position:absolute;inset:0;background-image:url(\'' + _fUrl + '\');background-size:100% 100%;"></div>'
+    +   '<div style="position:absolute;inset:0;background:var(--airline-accent,#38bdf8);mix-blend-mode:color;'
+    +     '-webkit-mask-image:url(\'' + _fUrl + '\');-webkit-mask-size:100% 100%;'
+    +     'mask-image:url(\'' + _fUrl + '\');mask-size:100% 100%;"></div>'
+    + '</div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
