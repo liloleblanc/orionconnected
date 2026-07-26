@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22548';
+var FIDS_BUILD_TAG = 'v22549';
 (function(){
   try {
     function _addTag(){
@@ -27865,10 +27865,14 @@ function _adBackdropHtml(blurUrl) {
     // the shapes and light, --airline-accent supplies the hue, so the same
     // asset reads red at an AC gate, teal at WestJet, blue at United.
     // isolation:isolate keeps the blend from reaching layers under the slide.
+    // Zoomed into the ribbon lines (Nick: 'zoomed in the abstract lines'),
+    // contrast pulled down so the cream ribbons sit back (Nick: 'fade out
+    // the lines a bit') — the luminosity blend keeps them accent-tinted.
     base = '<div style="position:absolute;inset:0;isolation:isolate;">'
       +   '<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--airline-accent,#1230e6) 58%, #0b1020);"></div>'
       +   '<div style="position:absolute;inset:-2%;background-image:url(\'/logos/Backgrounds/adback-waves.jpg?v=1\');'
-      +     'background-size:cover;background-position:center;mix-blend-mode:luminosity;"></div>'
+      +     'background-size:240%;background-position:38% 42%;mix-blend-mode:luminosity;'
+      +     'filter:contrast(.68) brightness(.97);"></div>'
       +   '<div style="position:absolute;inset:0;background:rgba(8,12,20,.22);"></div>'
       + '</div>';
   } else base = blurUrl
@@ -27882,10 +27886,12 @@ function _adBackdropHtml(blurUrl) {
   // texture breathing through the ad surround. The PNG is light ink baked to
   // transparency, so screen-blended it lifts both the blurred-photo ambient
   // and the gradient base without painting white.
+  // Dotted layer = option B, the halftone waves (Nick: 'I do like B') —
+  // size-graded dot arcs that move with the ribbon art, not static grain.
   var dots = '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;'
-    + 'background-image:url(\'/logos/Backgrounds/adback-spots.png?v=1\');'
+    + 'background-image:url(\'/logos/Backgrounds/adback-dots-b.png?v=1\');'
     + 'background-size:cover;background-position:center;background-repeat:no-repeat;'
-    + 'opacity:.38;mix-blend-mode:screen;pointer-events:none;"></div>';
+    + 'opacity:.34;mix-blend-mode:screen;pointer-events:none;"></div>';
   // Diagonal slats REMOVED (Nick, Jul 2026: 'the main screen remove the
   // lines'). The dotted globe stays (Nick liked 'the dots world') — only the
   // skewed accent line-set that streaked across the welcome/ad backdrop is gone.
