@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22554';
+var FIDS_BUILD_TAG = 'v22555';
 (function(){
   try {
     function _addTag(){
@@ -27891,14 +27891,36 @@ function _adBackdropHtml(blurUrl) {
   // Diagonal slats REMOVED (Nick, Jul 2026: 'the main screen remove the
   // lines'). The dotted globe stays (Nick liked 'the dots world') — only the
   // skewed accent line-set that streaked across the welcome/ad backdrop is gone.
-  // OUTER FRAME (Nick: 'also a frame around the whole middle part') — the
-  // same silver frame art pinned to the full panel edge, left in its metal
-  // finish so it reads distinct from the accent-tinted frame on the advert.
-  // Class is NOT .ad-tech-frame, so the media fitter never moves it.
-  var outerFrame = '<div class="ad-outer-frame" style="position:absolute;inset:0;pointer-events:none;'
-    + 'background-image:url(\'/logos/Backgrounds/ad-frame-silver.png?v=1\');background-size:100% 100%;"></div>';
-  return base + dots + outerFrame;
+  return base + dots;
 }
+
+// ── OUTER PANEL FRAME ────────────────────────────────────────────────────
+// Nick: 'a frame around the whole middle part … around the middle screen at
+// all times'. A slide-built frame dies with its slide, so this one is
+// mounted on .gad-media-col itself and re-ensured every second — it rides
+// over every slide, weather card, takeover and Accor card alike. Silver
+// finish, distinct from the accent-tinted frame hugging the advert.
+(function () {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  function _ensureOuterFrame() {
+    try {
+      var col = document.querySelector('.gad-media-col');
+      if (!col) return;
+      var f = col.querySelector(':scope > .ad-outer-frame');
+      if (!f) {
+        f = document.createElement('div');
+        f.className = 'ad-outer-frame';
+        f.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:60;'
+          + 'background-image:url(/logos/Backgrounds/ad-frame-silver.png?v=1);background-size:100% 100%;';
+        col.appendChild(f);
+      } else if (col.lastElementChild !== f) {
+        col.appendChild(f);   // keep it on top when the col re-renders around it
+      }
+    } catch (e) {}
+  }
+  setInterval(_ensureOuterFrame, 1000);
+  _ensureOuterFrame();
+})();
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 
 // Tech-frame border drawn AROUND contain-fit ad media (Nick: 'a border
