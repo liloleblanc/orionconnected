@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22550';
+var FIDS_BUILD_TAG = 'v22551';
 (function(){
   try {
     function _addTag(){
@@ -26095,7 +26095,7 @@ function buildGateAdHtml(ad) {
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml('')
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
-        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
+        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:6%;top:5%;width:88%;height:90%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
         + ' onerror="this.style.display=\'none\';"></video>' + _adTechFrameHtml()
         + '</div>'
       );
@@ -26122,7 +26122,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml(ad.bgImage)
-        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:6%;top:5%;width:88%;height:90%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
         + '</div>'
       );
     }
@@ -27911,7 +27911,7 @@ function _adTechFrameHtml() {
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
     + 'pointer-events:none;z-index:3;isolation:isolate;filter:drop-shadow(0 10px 26px rgba(5,10,20,0.4));">'
     +   '<div style="position:absolute;inset:0;background-image:url(\'' + _fUrl + '\');background-size:100% 100%;"></div>'
-    +   '<div style="position:absolute;inset:0;background:var(--airline-accent,#38bdf8);mix-blend-mode:color;'
+    +   '<div style="position:absolute;inset:0;background:var(--airline-accent,#38bdf8);mix-blend-mode:multiply;opacity:.88;'
     +     '-webkit-mask-image:url(\'' + _fUrl + '\');-webkit-mask-size:100% 100%;'
     +     'mask-image:url(\'' + _fUrl + '\');mask-size:100% 100%;"></div>'
     + '</div>';
@@ -28073,7 +28073,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:6%;top:5%;width:88%;height:90%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
@@ -28092,7 +28092,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
           + '<img src="' + item.url + '" alt=""'
-          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:6%;top:5%;width:88%;height:90%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
