@@ -7308,22 +7308,29 @@ function _buildV2MapCol(ctx, vars) {
             + '</div>';
         }
       }
+      // ONE shelf element as it always was — the right column is a fixed
+      // grid and a second shelf child spilled the whole rail into a
+      // phantom side column (v22591 regression). The 2-PANEL pattern Nick
+      // asked for lives INSIDE the shelf: pane 1 = Flight/From, pane 2 =
+      // Arrival/Status, each drawn as its own panel.
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t2">'
-        +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
+        +   '<div class="v2-rc-fi-pane">'
+        +     '<div class="v2-rc-fi-trow">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
+        +     '</div>'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
+        +     '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
-        +   '</div>'
-        + '</div></div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table ' + (_ibArrRowHtml ? 'v2-rc-fi-t2' : 'v2-rc-fi-t1') + '">'
-        +   (_ibArrRowHtml || '')
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
+        +   '<div class="v2-rc-fi-pane' + (_ibArrRowHtml ? '' : ' v2-rc-fi-pane-1') + '">'
+        +     (_ibArrRowHtml || '')
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
+        +     '</div>'
         +   '</div>'
         + '</div></div>';
 
@@ -7462,29 +7469,31 @@ function _buildV2MapCol(ctx, vars) {
         var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
         if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dfRowIa) + '</span>' : '');
       })();
-      // Same 2-PANEL regroup as the inbound card (Nick: 'the pattern needs
-      // to be as 2 panels' — full lines, only the shelves regroup):
-      // panel 1 = Flight / Destination, panel 2 = Departure / Status.
-      // Departure TIME stays (Nick: 'who told you to remove the time').
+      // Same 2-PANEL pattern as the inbound card, inside ONE shelf element
+      // (a second shelf child breaks the rail grid): pane 1 = Flight /
+      // Destination, pane 2 = Departure / Status. Departure TIME stays
+      // (Nick: 'who told you to remove the time').
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t2">'
-        +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
+        +   '<div class="v2-rc-fi-pane">'
+        +     '<div class="v2-rc-fi-trow">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
+        +     '</div>'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +       '<div class="v2-rc-fi-tlbl"><span>Destination</span><span>Destination</span></div>'
+        +       '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
+        +     '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Destination</span><span>Destination</span></div>'
-        +     '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
-        +   '</div>'
-        + '</div></div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t2">'
-        +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+        +   '<div class="v2-rc-fi-pane">'
+        +     '<div class="v2-rc-fi-trow">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
+        +     '</div>'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+        +     '</div>'
         +   '</div>'
         + '</div></div>';
     } catch (e) {}
@@ -16668,7 +16677,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22592';
+var FIDS_BUILD_TAG = 'v22593';
 (function(){
   try {
     function _addTag(){
@@ -24282,15 +24291,25 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
     // whole element box — the frame hugs the box itself. The contain math
     // below only applies when the media letterboxes.
     var _fit = '';
-    try { _fit = (getComputedStyle(m).objectFit || '').trim(); } catch (e) {}
+    var _cs = null;
+    try { _cs = getComputedStyle(m); _fit = (_cs.objectFit || '').trim(); } catch (e) {}
     if (_fit === 'cover' || _fit === 'fill') {
       return { left: b.left, top: b.top, width: b.width, height: b.height };
     }
     var mw = m.videoWidth || m.naturalWidth, mh = m.videoHeight || m.naturalHeight;
     if (!mw || !mh) return null;
-    var ar = mw / mh, br = b.width / b.height, w, h;
-    if (ar >= br) { w = b.width; h = b.width / ar; } else { h = b.height; w = b.height * ar; }
-    return { left: b.left + (b.width - w) / 2, top: b.top + (b.height - h) / 2, width: w, height: h };
+    // object-fit paints inside the CONTENT box — when the confine pass has
+    // padded the media (g8-ad-inset below), the drawn art lives inside the
+    // padding, so the box math must use the content box.
+    var _pl = _cs ? (parseFloat(_cs.paddingLeft) || 0) : 0;
+    var _pr = _cs ? (parseFloat(_cs.paddingRight) || 0) : 0;
+    var _pt = _cs ? (parseFloat(_cs.paddingTop) || 0) : 0;
+    var _pb = _cs ? (parseFloat(_cs.paddingBottom) || 0) : 0;
+    var bl = b.left + _pl, bt = b.top + _pt;
+    var bw = Math.max(1, b.width - _pl - _pr), bh = Math.max(1, b.height - _pt - _pb);
+    var ar = mw / mh, br = bw / bh, w, h;
+    if (ar >= br) { w = bw; h = bw / ar; } else { h = bh; w = bh * ar; }
+    return { left: bl + (bw - w) / 2, top: bt + (bh - h) / 2, width: w, height: h };
   }
   function _tick() {
     var frames = document.querySelectorAll('.ad-tech-frame');
@@ -24309,14 +24328,32 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // go over it, it's fine'). Smaller ad: the frame is inflated so its
       // band sits OUTSIDE the ad — the creative is confined within it.
       var fullW = r.width >= hb.width - 8, fullH = r.height >= hb.height - 8;
+      var _mFit = '';
+      try { _mFit = (getComputedStyle(m).objectFit || '').trim(); } catch (e) {}
+      var _mCover = (_mFit === 'cover' || _mFit === 'fill');
       var padX = 0, padY = 0;
-      if (!(fullW && fullH)) {
+      if (!(fullW && fullH) || !_mCover) {
         // Clear the WHOLE double-line motif past the ad edge (the inner
         // line sat on the creative — 'you can still see the ad outside
         // borders'). Solved from the art's line geometry: inner-line inner
         // edge at 2.8%/4.3% of the frame box.
         padX = Math.max(10, Math.round(r.width * 0.030));
         padY = Math.max(10, Math.round(r.height * 0.047));
+        // CONFINE, never cross the ad (v22592 clamped the band straight
+        // across the creative's edge — Nick's mockup has the COMPLETE
+        // frame around the ad with the ad inside). If the band can't fit
+        // between the drawn ad and the panel wall, inset the media so the
+        // creative redraws smaller and the frame closes around it.
+        if (!_mCover) {
+          var _spL = r.left - hb.left, _spR = (hb.left + hb.width) - (r.left + r.width);
+          var _spT = r.top - hb.top, _spB = (hb.top + hb.height) - (r.top + r.height);
+          if ((_spL < padX - 1 || _spR < padX - 1 || _spT < padY - 1 || _spB < padY - 1)
+              && !m.classList.contains('g8-ad-inset')) {
+            m.classList.add('g8-ad-inset');
+            delete f.dataset.geom;
+            continue;   // re-measure after the inset redraw
+          }
+        }
       }
       // FREEZE (Nick: 'make sure the frames don't move'): once placed,
       // ignore sub-2px re-measures — rounding and image settle were able
