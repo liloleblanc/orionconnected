@@ -3925,10 +3925,13 @@ html body .gad-media-col #gateAdCarousel {
   /* v22573 'TOUCH THE EDGE': the outer frame band now sits at the wall
      (104% art stretch), so the content opening moves out to meet it —
      the ad's sides land on the silver band itself. */
-  left: 2% !important;
-  right: 2% !important;
-  top: 3.6% !important;
-  bottom: 3.6% !important;
+  /* v22574: measured from the CROPPED frame art - the silver band is
+     1.09% of width / 1.68% of height. The opening starts exactly at the
+     band's inner edge, so content meets the frame. */
+  left: 1.1% !important;
+  right: 1.1% !important;
+  top: 1.7% !important;
+  bottom: 1.7% !important;
   width: auto !important;
   height: auto !important;
 }

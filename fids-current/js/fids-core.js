@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22573';
+var FIDS_BUILD_TAG = 'v22574';
 (function(){
   try {
     function _addTag(){
@@ -27927,7 +27927,7 @@ function _adBackdropHtml(blurUrl) {
         f = document.createElement('div');
         f.className = 'ad-outer-frame';
         f.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:60;overflow:hidden;'
-          + 'background-image:url(/logos/Backgrounds/ad-frame-silver.png?v=1);background-size:104% 105%;background-position:center;';
+          + 'background-image:url(/logos/Backgrounds/ad-frame-silver.png?v=2);background-size:100% 100%;';
         col.appendChild(f);
       } else if (col.lastElementChild !== f) {
         col.appendChild(f);   // keep it on top when the col re-renders around it
