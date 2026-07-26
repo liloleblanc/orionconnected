@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22564';
+var FIDS_BUILD_TAG = 'v22565';
 (function(){
   try {
     function _addTag(){
@@ -27894,7 +27894,10 @@ function _adBackdropHtml(blurUrl) {
         var _bdAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
         if (_bdAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_bdAl]) _bdAcc = AIRLINE_ACCENT[_bdAl];
       } catch (e) {}
-      if (!_bdAcc) _bdAcc = '#12309e';
+      // HYSTERESIS: while the airline global is momentarily unset (it
+      // flickers around renders) KEEP the current accent — rebuilding the
+      // backdrop on every flip was a visible blip.
+      if (!_bdAcc) _bdAcc = bd.dataset.acc || '#12309e';
       if (bd.dataset.acc !== _bdAcc) {
         bd.dataset.acc = _bdAcc;
         bd.innerHTML =
@@ -27915,7 +27918,19 @@ function _adBackdropHtml(blurUrl) {
       }
     } catch (e) {}
   }
-  setInterval(_ensureOuterFrame, 1000);
+  // A gate re-render wipes the column's children; a 1s poll then left the
+  // panel bare for up to a second — Nick saw it as a blip on every refresh.
+  // Re-mount SYNCHRONOUSLY on any column childList change; the slow poll
+  // stays as a backstop only.
+  try {
+    new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var t = muts[i].target;
+        if (t && t.classList && t.classList.contains('gad-media-col')) { _ensureOuterFrame(); return; }
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  } catch (e) {}
+  setInterval(_ensureOuterFrame, 1500);
   _ensureOuterFrame();
 })();
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
