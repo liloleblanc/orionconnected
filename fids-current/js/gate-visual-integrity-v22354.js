@@ -102,14 +102,10 @@
     }
     if (wrapper) setSafeZone(wrapper, media);
 
-    // The accent frame is another surround layer. Keep its rim, but mask its
-    // fill out of the creative rectangle too, so transparent artwork cannot
-    // reveal decoration underneath the advert.
-    var frame = null;
-    Array.prototype.forEach.call(host.children, function (child) {
-      if (child.classList && child.classList.contains('ad-tech-frame')) frame = child;
-    });
-    if (frame) setSafeZone(frame, media);
+    // v22559: the frame is NO LONGER masked out of the creative rectangle.
+    // Nick's silver frame deliberately sits IN FRONT of the advert ('the
+    // frame goes in front of the advert', Jul 26 2026) — the old safe-zone
+    // mask here is exactly what kept erasing it over the ad.
   }
 
   function updateAdvertSafeZones() {
