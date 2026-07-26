@@ -3741,3 +3741,137 @@ html body.fids-ap-YQM .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage,
 html body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage {
   font-size: clamp(24px, 1.9vw, 40px) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   THE DATA IS THE POINT — IATA chip + right-card labels (v22530)
+   The destination code was cut from 1.45em to 1.06em by a later override, and
+   on the dark rails it renders in the airline's own accent — Air Canada red on
+   near-black, small and dim (Nick boxed 'Destination | YYC' on both the rail
+   and the right card: 'this is what I need but you dont provide').
+   The code goes back up in size and weight, and the ink is lifted so it stays
+   the airline's colour but is actually readable against a dark shelf.
+   ════════════════════════════════════════════════════════════════════════ */
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title:has(.v2-fi-code) {
+  font-size: clamp(17px, 2.3vh, 27px) !important;
+}
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title .v2-fi-code {
+  font-size: 1.34em !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em !important;
+}
+/* Lifted inks: same hue as the carrier, enough luminance to read on black. */
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code,
+html body[data-gate-airline="QK"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code,
+html body[data-gate-airline="RV"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
+  color: #ff5666 !important;
+}
+/* Right card: the same code, and the label above it, were the dimmest things
+   on the panel. */
+html .g8-bir-title .g8-bir-code-t,
+html .gad-map-col-v2 .v2-rc-fi-tlabel .v2-fi-code {
+  font-size: 1.22em !important;
+  font-weight: 800 !important;
+}
+html body[data-gate-airline="AC"] .g8-bir-title .g8-bir-code-t {
+  color: #ff5666 !important;
+}
+html body[data-gate-airline="AC"] .gad-map-col-v2 .v2-rc-fi-tlabel,
+html body[data-gate-airline="AC"] .gad-map-col-v2 .v2-rc-fi-tlabel * {
+  color: #e9edf5 !important;
+  opacity: 1 !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   THE BUMP — reserve the welcome strip's image slots (v22533)
+   A LayoutShift recording of the live board pinned 96% of ALL shift on this
+   one strip: 17 shifts in 150 seconds, the biggest moving a 689px-wide block
+   to 580px, with the emblem sliding 37px and the copy 33px each time. Cause:
+   the strip is a CENTRED flex row and both of its images are sized
+   `width:auto`, so between the row being written and each image decoding they
+   occupy zero width — the row re-centres, everything jumps, and it happens
+   again on every board re-render.
+   Both slots now reserve their width up front, so a decode can never move a
+   neighbour. Heights are untouched.
+   ════════════════════════════════════════════════════════════════════════ */
+html .g8-board-welcome .g8-bw-emblem {
+  width: clamp(44px, 6.4vh, 80px) !important;
+  min-width: clamp(44px, 6.4vh, 80px) !important;
+  flex: 0 0 auto !important;
+}
+html .g8-board-welcome .g8-bw-star {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: clamp(52px, 7.2vh, 92px) !important;
+  min-width: clamp(52px, 7.2vh, 92px) !important;
+}
+html body .g8-wrap .g8-board-welcome .g8-bw-star img,
+html body .g8-wrap .g8-board-welcome .g8-r1-star,
+html .g8-board-welcome .g8-r1-star {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+/* The strip's own height is fixed too, so a taller/shorter run of content
+   cannot nudge the rows beneath it. */
+html .g8-board-welcome {
+  min-height: clamp(76px, 11vh, 132px) !important;
+  box-sizing: border-box !important;
+}
+
+/* The lane columns are flex:1/flex:2 with a zero basis, so their widths should
+   be fixed proportions — but flex items default to min-width:auto, so the
+   longest unbreakable line inside a column can force it wider than its share.
+   The bilingual labels flip between 'Priority 2' and 'Prioritaire 2', and the
+   longer French run pushed the column out and pulled ~109px off its
+   neighbours, 21 times in 150 seconds of recording. That is the remaining
+   bump. Letting the columns shrink to their share keeps the sign still. */
+html .g8-board-body .g8-board-col,
+html .g8-board-body .g8-board-col .g8-board-grp-wrap,
+html .g8-board-body .g8-board-col .g8-board-grp-label,
+html .g8-board-body .g8-board-col .g8-board-lane { min-width: 0 !important; }
+
+/* Digits that tick must not change width. With proportional figures, every
+   minute change re-measures the clock, the banner re-centres and the gate
+   number nudges — the last repeating shift in the recording (18 in 150s).
+   Tabular figures make every digit the same width, so the row is stable. */
+html .octb, html .octb *, html .v2-fi-clock-val,
+html .g8-r1-time, html .g8-r1-time *,
+html .g8-bir-val, html .v2-rc-fi-tval,
+html .gad-aircraft-col .v2-fi-value {
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: "tnum" 1 !important;
+}
+/* The clock tab swaps between one clock and two (local + destination). Give it
+   a floor so the swap cannot re-centre everything beside it. */
+html .octb-wrap, html .octb.octb-tab { min-width: clamp(360px, 27vw, 540px) !important; box-sizing: border-box !important; }
+
+/* ── SkyTeam reads small next to the Star Alliance mark (v22539) ──────────
+   Nick: 'the Skyteam logo should be bigger'. Both marks get the same 104px
+   box, but skyteam-white.png is a 512×509 frame whose ink sits well inside its
+   own edges — the wordmark curves around the swirl with a wide margin — so at
+   an equal box it lands roughly a quarter smaller on screen than the star,
+   which fills its frame. A larger box for SkyTeam only, to match the optical
+   weight rather than the file dimensions. */
+html .g8-r1-right img[alt*="SkyTeam"],
+html .g8-r1-right img[src*="skyteam"],
+html .g8-board-welcome img[src*="skyteam"] {
+  width: 130px !important;
+  min-width: 130px !important;
+  height: 130px !important;
+  min-height: 130px !important;
+  max-width: 146px !important;
+  max-height: 146px !important;
+}
+@media (max-height: 820px) {
+  html .g8-r1-right img[alt*="SkyTeam"],
+  html .g8-r1-right img[src*="skyteam"],
+  html .g8-board-welcome img[src*="skyteam"] {
+    width: 114px !important;
+    min-width: 114px !important;
+    height: 114px !important;
+    min-height: 114px !important;
+    max-width: 128px !important;
+    max-height: 128px !important;
+  }
+}

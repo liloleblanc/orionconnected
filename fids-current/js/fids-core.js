@@ -893,7 +893,11 @@ function changeFont(f) {
   // Force font on ALL elements including gate/baggage screens
   let s = document.getElementById('fids-font-override');
   if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
-  s.textContent = `*, *::before, *::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
+  // .axr (Accor hotel ads) is EXEMPT — brand typography (The Seasons /
+  // Montserrat / Rebelton…) must render per brand book, not the board font.
+  // Without the :not() guards this universal !important nuked those fonts
+  // (Nick: 'AC Nord takes over' — it was actually this override).
+  s.textContent = `*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
   // Persist the choice — page load used to hard-reset to Geist, wiping
   // whatever the user picked ("every time I add a new font it goes away").
   try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
@@ -951,7 +955,8 @@ function restoreFontChoice(defaultFont) {
         document.body.style.setProperty('--font-primary', _stack, 'important');
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
-        s.textContent = '*, *::before, *::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
+        // .axr exempt — Accor brand ads keep brand typography (see changeFont).
+        s.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
         return;
       }
     }
@@ -2553,6 +2558,16 @@ async function _gateNumbersPoll() {
     // verified loadFlight link when it exists, else the gate-match fallback),
     // so the poll always tracks what the screen is actually showing.
     var inb = window._gatePanelInbound || window._gateInbound;
+    // NO INBOUND IS NOT NO AIRCRAFT. Plenty of gates show the DEPARTING
+    // flight in the aircraft panel (AC185 at D24 — no inbound linked at all),
+    // and this poll bailed out entirely in that case, so the type never
+    // arrived and the panel read 'aircraft details pending' with the schedule
+    // sitting right there in the feed (Nick: 'btw no aircraft'). Fall back to
+    // the flight the gate is actually showing.
+    if (!inb || !inb.flight) {
+      var _cf = window._gateCurrentFlight;
+      if (_cf && _cf.flight && !(_cf._aircraft || _cf._aircraftCode)) inb = _cf;
+    }
     var flt = inb && inb.flight;
     if (!flt) return;
     if (/cancel|arriv|land/i.test(String(inb.status || ''))) return;   // on the ground → stop
@@ -2572,7 +2587,17 @@ async function _gateNumbersPoll() {
     var inbData = await loadFlight(flt, today, inb._locIata || iata);
     _gateNumPollBusy = false;
     if (!inbData) return;
-    if (!window._gateInbound || window._gateInbound.flight !== flt) return;   // gate changed mid-fetch
+    // Still the same flight after the await? Check against whichever source we
+    // actually targeted. This guard used to demand window._gateInbound match —
+    // so on a gate with NO inbound linked (the common case: the panel is
+    // showing the departing flight) it returned here every single time, before
+    // the aircraft was ever adopted. loadFlight had already answered 'Airbus
+    // A320' and the answer was thrown away one line later. That is why the
+    // panel still read 'aircraft details pending' after the last two fixes.
+    var _stillSame = (window._gatePanelInbound && window._gatePanelInbound.flight === flt)
+                  || (window._gateInbound && window._gateInbound.flight === flt)
+                  || (window._gateCurrentFlight && window._gateCurrentFlight.flight === flt);
+    if (!_stillSame) return;   // gate changed mid-fetch
     // TODAY'S TAIL FROM THE SAME FETCH (Nick's PD2293: ADB had C-GKQE all
     // along while the panel said 'expected | prévu' — the render-time
     // enrichment had missed once, and this poll then fetched the FULL
@@ -2585,6 +2610,26 @@ async function _gateNumbersPoll() {
     try {
       var _polledReg = String(inbData.reg || '').trim();
       var _inbRegHist = /^history/i.test(String(inb._regSource || ''));
+      var _acqType = false;
+      // THE SCHEDULED TYPE DOES NOT WAIT FOR A TAIL. A scheduled flight has a
+      // scheduled aircraft — AC165 and its inbound AC439 both read 'Airbus
+      // A220-300' in the feed the night before, with no registration yet,
+      // because the tail is assigned in the morning. The type was only being
+      // copied INSIDE the registration branch, so the panel sat on 'aircraft
+      // details pending' while the answer was already in hand (Nick: 'there
+      // should always be an aircraft assigned its a scheduled with a
+      // scheduled aircraft'). Adopt it on its own, and let a real
+      // registration still upgrade it later.
+      if (inbData.aircraft && (!inb._aircraft || /^history/i.test(String(inb._aircraftSource || '')))) {
+        inb._aircraft = inbData.aircraft;
+        inb._aircraftSource = 'schedule';
+        _acqType = true;
+      }
+      if (inbData.aircraftCode && (!inb._aircraftCode || /^history/i.test(String(inb._aircraftCodeSource || '')))) {
+        inb._aircraftCode = inbData.aircraftCode;
+        inb._aircraftCodeSource = 'schedule';
+        _acqType = true;
+      }
       if (_polledReg && (!inb._reg || _inbRegHist)) {
         inb._reg = _polledReg;
         inb._regSource = 'loadFlight';
@@ -2592,7 +2637,11 @@ async function _gateNumbersPoll() {
         if (!inb._aircraftCode && inbData.aircraftCode) inb._aircraftCode = inbData.aircraftCode;
         if (/^history/i.test(String(inb._aircraftSource || ''))) inb._aircraftSource = '';
         if (/^history/i.test(String(inb._aircraftCodeSource || ''))) inb._aircraftCodeSource = '';
+        _acqType = true;
         try { console.log('[NUMPOLL] reg landed via poll:', _polledReg, 'for', flt); } catch (e3) {}
+      }
+      if (_acqType) {
+        try { console.log('[NUMPOLL] aircraft for', flt, '→', inb._aircraft || inb._aircraftCode, inb._reg ? ('| ' + inb._reg) : '| no tail yet'); } catch (e5) {}
         try { window._lastGateKey = ''; render(); } catch (e2) {}
       }
     } catch (e4) {}
@@ -2784,6 +2833,25 @@ function _iataFromCityName(name) {
   } catch (e) {}
   return '';
 }
+// Feeds qualify a stop with its airport, not just its city: TPA writes
+// 'Houston - Intercontinental', 'Chicago - O'Hare', 'Washington - Dulles'.
+// A board says WHERE the flight goes, so the qualifier is dropped whenever the
+// part in front of it is a city the engine already knows (Nick: 'the nams of
+// the fucking multi ass city still has not been fucking changed'). Names with
+// a hyphen of their own \u2014 Wilkes-Barre, Baie-Comeau \u2014 are untouched because
+// the split needs whitespace around the dash, and an unknown head is kept
+// whole rather than guessed at.
+function _cityFromStopLabel(raw) {
+  var s = String(raw || '').replace(/\s+/g, ' ').trim();
+  if (!s) return s;
+  var m = s.split(/\s+[-\u2013\u2014|\/]\s+/);
+  if (m.length < 2) return s;
+  var head = m[0].trim();
+  if (!head) return s;
+  // Keep the qualifier unless the head alone names a place we can resolve.
+  if (typeof _iataFromCityName === 'function' && _iataFromCityName(head)) return head;
+  return s;
+}
 function _destFlipStops(stops, kind, cls) {
   try {
     if (!Array.isArray(stops) || stops.length < 2) return null;
@@ -2796,10 +2864,11 @@ function _destFlipStops(stops, kind, cls) {
       // multi destination flights show the city and not the code like
       // others'). Resolve the code from the city name through the engine's
       // own tables; legs no table can name still suppress the chip.
-      if (!ia) ia = _iataFromCityName((s && s.city) || '');
+      if (!ia) ia = _iataFromCityName(_cityFromStopLabel((s && s.city) || ''));
       var name = '';
       try { name = airportCityNameSafe_v21877(ia) || ''; } catch (e) {}
-      if (!name) name = String((s && s.city) || '') || ia;
+      // Feed label as written ('Houston - Intercontinental') → the city only.
+      if (!name) name = _cityFromStopLabel(String((s && s.city) || '')) || ia;
       try { if (typeof normalizeDisplayCity === 'function') name = normalizeDisplayCity(name, ia); } catch (e) {}
       try { if (typeof tc === 'function' && name === name.toUpperCase()) name = tc(name); } catch (e) {}
       return { c: name, ia: ia };
@@ -3263,6 +3332,7 @@ var ACCOR_BRAND_NAMES = {
   'SUI': 'Suite Novotel',
   'MER': 'Mercure',
   'HOF': 'Handwritten Collection',
+  'SOU': 'Handwritten Collection',   // code the Accor catalog actually returns
   'ADA': 'Adagio',
   'ADG': 'Adagio',
   'TRI': 'TRIBE',
@@ -3310,6 +3380,7 @@ var ACCOR_BRAND_LOGOS = {
   'NOV': '/logos/hotels/accor-midscale/novotel-monochrome-white.svg',
   'MER': '/logos/hotels/accor-midscale/mercure-monochrome-white.svg',
   'HOF': '/logos/hotels/accor-midscale/handwritten-monochrome-white.svg',
+  'SOU': '/logos/hotels/accor-midscale/handwritten-monochrome-white.svg',
   'ADA': '/logos/hotels/accor-midscale/adagiooriginal-monochrome-white.svg',
   // Economy / Lifestyle
   'IBS': '/logos/hotels/accor-economy/ibis-monochrome-white.svg',          // ibis (red logo)
@@ -3347,6 +3418,7 @@ var ACCOR_BRAND_CATEGORY = {
   'ADA': 'midscale',  // Adagio / Aparthotels Adagio
   'GRE': 'midscale',  // Greet
   'HOF': 'midscale',  // Handwritten Collection
+  'SOU': 'midscale',  // Handwritten Collection (live catalog code)
   'HF1': 'midscale',  // hotelF1
   '25H': 'midscale',  // 25hours
   'N25': 'midscale',
@@ -3450,6 +3522,11 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
     [/art\s*series/,                        '/logos/hotels/accor-premium/artseries-monochrome-white.svg'],
     [/greet/,                                '/logos/hotels/accor-economy/greet-monochrome-white.svg'],
     [/mama\s*shelter/,                      '/logos/hotels/accor-midscale/mamashelter-monochrome-white.svg'],
+    // Handwritten Collection properties carry the brand in their name
+    // ('Hotel Maison Hamelin Paris - Handwritten Collection'), so match on it:
+    // the script wordmark then shows for whatever code the catalog sends
+    // (Nick: 'Many hotels should be using this logo, its not used at all').
+    [/handwritten/,                          '/logos/hotels/accor-midscale/handwritten-monochrome-white.svg'],
     [/faena/,                                '/logos/hotels/accor-luxury/faena-monochrome-white.svg'],
     [/orient\s*express/,                    '/logos/hotels/accor-luxury/orientexpress-monochrome-white.svg'],
     [/our\s*habitas/,                       '/logos/hotels/accor-premium/our-habitas.svg'],
@@ -3996,21 +4073,65 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   // Layout: 80x33 viewBox — the script wordmark fills the width (like the
   // official lockup), property name in Lato sans directly under it, one unit.
   // Everything white; the renderer's brightness/invert handles dark-on-light.
-  // Property name in Franklin Gothic Book (Nick) — ships on the Windows boards;
-  // falls back to other Franklin grotesques then Arial elsewhere. Wordmark a
-  // touch bigger, filling the width (Nick: 'the Fairmont needs a bit bigger').
+  // NOTE: this data-URI variant renders as an <img>, so its font never loads —
+  // the INLINE variant (makeFairmontLockupInlineSvg) is what actually paints the
+  // name in The Seasons. This copy stays only for name-suppression bookkeeping.
+  // Wordmark a touch bigger, filling the width (Nick: 'Fairmont a bit bigger').
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30.5" preserveAspectRatio="xMidYMid meet">'
     + '<g transform="translate(1.6, 0) scale(1.42)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
     + '</g>'
     + '<text x="40" y="29.4" text-anchor="middle" '
-    +   'font-family="&apos;Franklin Gothic Book&apos;, &apos;ITC Franklin Gothic&apos;, &apos;Franklin Gothic Medium&apos;, &apos;Libre Franklin&apos;, Arial, sans-serif" '
+    +   'font-family="FairmontLogoName, &apos;Franklin Gothic Book&apos;, &apos;ITC Franklin Gothic&apos;, &apos;Franklin Gothic Medium&apos;, Arial, sans-serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
     +   name
     + '</text>'
     + '</svg>';
   // Encode as data URI — encodeURIComponent handles the special chars
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+// INLINE-SVG variant of the Fairmont lockup. A @font-face embedded in an SVG
+// rendered as <img> does NOT load in browsers, so the property name fell back
+// to whatever the board had installed. Rendered INLINE in the DOM the name can
+// use a document-level @font-face. Per Nick, the standalone lockup name is part
+// of the LOGO (not a title in a sentence), so it is set in Franklin Gothic
+// URW Book (FairmontLogoName — Nick's spec), matching the name line on the real
+// Fairmont logos ('ROYAL YORK', 'LE REINE ELIZABETH') — NOT The Seasons, which
+// is reserved for titles. The Fairmont script wordmark is vector paths either
+// way. Returns raw <svg> markup (not a data URI). Layout matches
+// makeFairmontLockupSvgDataUri exactly so only the font — not the sizing —
+// changes.
+function makeFairmontLockupInlineSvg(propertyName) {
+  if (!propertyName) return '';
+  var clean = String(propertyName)
+    .replace(/,?\s*a\s+fairmont\s+(managed\s+)?hotel\s*$/i, '')
+    .replace(/,?\s*fairmont\s+(managed\s+)?hotel\s*$/i, '')
+    .replace(/^fairmont\s+/i, '')
+    .trim();
+  if (!clean) clean = String(propertyName).trim();
+  var name = String(clean.toUpperCase()).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  var len = clean.length;
+  var fontSize, letterSpacing;
+  if (len <= 18) {
+    fontSize = 5.1; letterSpacing = 0.82;
+  } else if (len <= 26) {
+    fontSize = 4.2; letterSpacing = 0.6;
+  } else if (len <= 34) {
+    fontSize = 3.4; letterSpacing = 0.4;
+  } else {
+    fontSize = 2.9; letterSpacing = 0.25;
+  }
+  return '<svg class="axr-hotel-svg fai-inline-lockup" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30.5" preserveAspectRatio="xMinYMid meet" style="width:100%;height:100%;display:block;">'
+    + '<g transform="translate(1.6, 0) scale(1.42)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
+    +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
+    + '</g>'
+    + '<text x="40" y="29.4" text-anchor="middle" '
+    +   'font-family="FairmontLogoName, &apos;Franklin Gothic Book&apos;, &apos;ITC Franklin Gothic&apos;, &apos;Franklin Gothic Medium&apos;, Arial, sans-serif" '
+    +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="400" fill="#ffffff">'
+    +   name
+    + '</text>'
+    + '</svg>';
 }
 
 // ── SOFITEL LOCKUP GENERATOR ───────────────────────────────────────────
@@ -4571,6 +4692,39 @@ function acExpressMatrix(fn) {
   if (fn >= 7950 && fn <= 8249) return { op:'QK', opName:'Jazz Aviation' };
   if (fn >= 8250 && fn <= 8999) return { op:'QK', opName:'Jazz Aviation' };
   return null;
+}
+
+// ── THE PARTNER HAS TO BE ABLE TO FLY THE LEG ────────────────────────────
+// A flight-number band is contractual shorthand, not evidence. AC7053 (YYZ →
+// YVR, 3,355 km, Air Canada's own metal per the feed) landed inside the
+// 7000–7299 band, so the gate printed 'Operated by PAL Airlines' — and then,
+// because PAL flies nothing but Dash 8-400s, the equipment rule below
+// OVERWROTE the aircraft with a Dash 8. A turboprop crossing the country in
+// the schedule's block time (Nick: 'PAL airlines going to operate that flight
+// to YVR? In a Dash8? in one hour 15 minutes?'). Every band-derived operator
+// now has to survive the geography; when it can't, the attribution is dropped
+// and the marketing carrier stands on its own rather than being invented.
+var _REGIONAL_MAX_KM = { 'PB': 1900, 'WR': 1900, 'QK': 2900 };
+function _apLatLngFor(iata) {
+  var c = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+  if (!c) return null;
+  try { if (typeof GATE_AP !== 'undefined' && GATE_AP[c]) return GATE_AP[c]; } catch (e) {}
+  try { if (typeof AIRPORT_COORDS !== 'undefined' && AIRPORT_COORDS[c]) return AIRPORT_COORDS[c]; } catch (e) {}
+  try {
+    if (typeof AP !== 'undefined' && AP[c] && AP[c].lat != null && AP[c].lon != null) return [AP[c].lat, AP[c].lon];
+  } catch (e) {}
+  return null;
+}
+function _regionalOpFitsRoute(opCode, iataA, iataB) {
+  var lim = _REGIONAL_MAX_KM[String(opCode || '').toUpperCase()];
+  if (!lim) return true;                       // not a range-limited partner
+  var A = _apLatLngFor(iataA), B = _apLatLngFor(iataB);
+  if (!A || !B) return true;                   // unknown geography — no verdict either way
+  try {
+    var km = _haversineKm(A[0], A[1], B[0], B[1]);
+    if (!isFinite(km) || km <= 0) return true;
+    return km <= lim;
+  } catch (e) { return true; }
 }
 
 // Hawaii airports — used only as a fallback signal when equipment is unknown.
@@ -5721,14 +5875,19 @@ function renderMobileGateHtml(ctx) {
   (function(){
     var _fn = parseInt(String(currentFlight.flight || '').replace(/\D/g, ''), 10);
     if (isNaN(_fn)) return;
+    var _fitsRoute = function (op) {
+      return (typeof _regionalOpFitsRoute !== 'function') || _regionalOpFitsRoute(op, iata, destIata);
+    };
     if (airline === 'AC') {
       var _mxm = (typeof acExpressMatrix === 'function') ? acExpressMatrix(_fn) : null;
-      if (_mxm) _opCode = _mxm.op;
-      else if ((_fn >= 7600 && _fn <= 7699) || (_fn >= 2200 && _fn <= 2299)) _opCode = 'PB';
+      if (_mxm && _fitsRoute(_mxm.op)) _opCode = _mxm.op;
+      else if (((_fn >= 7600 && _fn <= 7699) || (_fn >= 2200 && _fn <= 2299)) && _fitsRoute('PB')) _opCode = 'PB';
       else if (_fn >= 1600 && _fn <= 1999) _opCode = 'RV';
-    } else if (airline === 'WS' && _fn >= 3000 && _fn <= 3999) {
+    } else if (airline === 'WS' && _fn >= 3000 && _fn <= 3999 && _fitsRoute('WR')) {
       _opCode = 'WR';
     }
+    // Never keep a partner the route rules out (see _regionalOpFitsRoute).
+    if (_opCode && !_fitsRoute(_opCode)) _opCode = '';
   })();
   let _acImgHtml = '';
   let _liveryEqDebug = '';
@@ -6150,7 +6309,14 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
 // the first/top round Flight icon on the gate display — never in the main FIDS
 // all-flights airline cell (which has its own IATA_TO_* logo system).
 var GATE_TOP_ROUND_EMBLEM_FILES = {
-  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350'
+  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
+  // Delta gets the treatment United has (Nick: 'same for the Delta icon shiny
+  // orb'). DL-glossy is the same family of art — the widget and wordmark on a
+  // glossy sphere — so it goes in the round emblem slot and, like United's,
+  // renders full-bleed in its own colours instead of a flat silhouette padded
+  // inside an accent circle. Filling the badge edge to edge is also what makes
+  // it read bigger.
+  'DL': '/logos/airline-tiles/DL-glossy.svg?v=22539'
 };
 
 function _buildV2AircraftCol(ctx, vars) {
@@ -6477,7 +6643,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // file is derived from the airline's own tile art, never redrawn.
         var BADGE_TILE_BRANDS = { 'MX': { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' } };
         var _tileBrand = BADGE_TILE_BRANDS[code] || null;
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true };  // supplied full-colour art keeps its native colours
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true };  // supplied full-colour art keeps its native colours
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
@@ -7371,11 +7537,20 @@ function _buildV2MapCol(ctx, vars) {
     // flight number is deterministic. (Livery still keys off AC below.)
     var _mktIsAC = String(vars.airlineCode || '').toUpperCase() === 'AC';
     var _mxGate = (_mktIsAC && typeof acExpressMatrix === 'function') ? acExpressMatrix(_acFlNum) : null;
+    // The band only decides the operator if that operator's fleet can fly this
+    // leg (see _regionalOpFitsRoute) — otherwise it isn't their flight.
+    if (_mxGate && typeof _regionalOpFitsRoute === 'function'
+        && !_regionalOpFitsRoute(_mxGate.op, iata, locIata)) _mxGate = null;
     if (_mktIsAC && !isNaN(_acFlNum)) {
       if (_mxGate) _opCode = _mxGate.op;
-      else if ((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299)) _opCode = 'PB';
+      else if (((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299))
+               && (typeof _regionalOpFitsRoute !== 'function' || _regionalOpFitsRoute('PB', iata, locIata))) _opCode = 'PB';
       else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
     }
+    // A band-derived partner the route rules out is no attribution at all —
+    // the marketing carrier stands alone rather than a fabricated operator.
+    if (_opCode && typeof _regionalOpFitsRoute === 'function'
+        && !_regionalOpFitsRoute(_opCode, iata, locIata)) _opCode = '';
     // Air Canada Express Dash 8-400s are flown by BOTH Jazz AND PAL Airlines.
     // The two are told apart by REGISTRATION: PAL uses its distinctive "P" series
     // (C-FP•• / C-GP••), while Jazz's Dash 8-400s are C-GG••. So a Jazz-attributed
@@ -8382,7 +8557,12 @@ function uxgGateHtml(ctx) {
   // and the rondelle and Star') — like the physical AC gate sign's header:
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
   function _boardWelcomeStripHtml() {
-    var _bwEmb = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    // WHITE-path emblems vanish on the white strip (Nick: United missing its
+    // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
+    // Swap those brands for a colored cut here, like the SkyTeam invert below.
+    var _BW_EMBLEM = { 'UA': '/logos/airlines/us-major/united-globe-only.svg' };
+    var _bwEmb = _BW_EMBLEM[airlineCode]
+      || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
     // The strip is WHITE like the printed sign — swap the banner's metallic
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
     // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
@@ -10152,6 +10332,18 @@ function gateAutofit(root) {
   // box, strict (the browser ellipsizes on 1px of overflow), 1px slack.
   function _boxAssign(el, availW, availH, colR, skipH) {
     if (availH < 12 || availW < 30) return;
+    // DON'T RE-DERIVE WHAT HASN'T CHANGED. This runs on every rebuild and on
+    // the 5s heartbeat, and each pass re-measures — so a box that reads a pixel
+    // narrower once (mid-transition, a font settling, the destination flip
+    // swapping in a longer word) permanently ratchets the type DOWN, and the
+    // data on screen quietly shrinks over the course of a shift (Nick: 'my
+    // data keeps shrinking I dont know why'). Same text in the same box keeps
+    // the size it already earned.
+    try {
+      var _faKey = (el.textContent || '').trim() + '|' + Math.round(availW) + 'x' + Math.round(availH);
+      if (el.dataset.faKey === _faKey && parseFloat(el.style.fontSize) > 0) return;
+      el.dataset.faKey = _faKey;
+    } catch (e) {}
     // HYSTERESIS (Nick: 'fighting with itself'): the 5 s heartbeats
     // re-derive the size each pass; a result within 1px of what's already
     // applied must not repaint, or the type visibly ticks.
@@ -10327,6 +10519,35 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
 // The banner-overflow guard and wordmark backstop below stay active.
 // Re-enable ONLY with Nick's sign-off after harness proof.
 var BOARD_AUTOFIT_ENABLED = false;
+
+// THE HOTEL NAME IN THE BUBBLE IS ONE LINE, WHOLE. Not wrapped to a second
+// line (Nick: 'in the bubble the hotel name cuts to the enxt line big NO NO'),
+// and not ellipsised either — which leaves exactly one lever: the longest
+// names step down until they fit the chip's width. Keyed on text+width, so a
+// given name in a given bubble always renders at the same size; it is fitted
+// once, not re-derived on a timer. Called straight after the ad is written so
+// the size is right on the first painted frame, and again from the 5s autofit
+// pass as a backstop.
+function _axrFitBubbleNames() {
+  var names = document.querySelectorAll('.axr-bub-name');
+  for (var i = 0; i < names.length; i++) {
+    var el = names[i];
+    var box = el.parentElement;
+    if (!box || !box.clientWidth) continue;
+    var key = (el.textContent || '') + '|' + Math.round(box.clientWidth);
+    if (el.dataset.fitKey === key) continue;
+    el.dataset.fitKey = key;
+    el.style.removeProperty('font-size');
+    var base = parseFloat(getComputedStyle(el).fontSize) || 18;
+    var size = base, guard = 26;
+    var min = base * 0.56;
+    while (el.scrollWidth > box.clientWidth + 0.5 && size > min && guard-- > 0) {
+      size = Math.max(min, size - Math.max(0.5, size * 0.045));
+      el.style.setProperty('font-size', size + 'px', 'important');
+    }
+  }
+}
+
 function boardAutofit(full) {
   try {
     // BANNER TITLE ('Retrait des bagages' + bag icon spilling out of the
@@ -16333,7 +16554,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22485';
+var FIDS_BUILD_TAG = 'v22539';
 (function(){
   try {
     function _addTag(){
@@ -18558,7 +18779,12 @@ function tpaToAdbFlight(f) {
   // 'Richmond, Las Vegas'): commas separate STOPS; qualifiers use ' - '
   // ('Houston - Intercontinental'). So a comma in city content IS a stop
   // list, array or string alike.
-  const _cityNames = _toks(f.city);
+  // ' - Intercontinental' / ' - O'Hare' qualify the airport, not the city; a
+  // board shows the city (Nick). Dropped at ingest so every surface — row,
+  // gate rail, right card, flip — reads the same clean name.
+  const _cityNames = _toks(f.city).map(function (n) {
+    return (typeof _cityFromStopLabel === 'function') ? _cityFromStopLabel(n) : n;
+  });
   const cityCode = _cityCodes[0] || null;
   // Airport identity = the FIRST stop only. Its name (not a joined list)
   // feeds the ingest's existing reverse-lookup when the feed omits the
@@ -20816,7 +21042,8 @@ function applyAirportConfigToBoard(iata) {
         _ovr.id = 'fids-font-override';
         document.head.appendChild(_ovr);
       }
-      _ovr.textContent = '*, *::before, *::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
+      // .axr exempt — Accor brand ads keep brand typography (see changeFont).
+      _ovr.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
     }
   } else {
     // No board-pref font — but NEVER nuke a font the user picked via the
@@ -23169,6 +23396,10 @@ var _gateAdTimer = null;
 var _gateAdFadeTimer = null; // the in-flight 700ms fade callback (must be cancellable)
 var _gateAdGen = 0;          // generation token — invalidates orphaned timer chains
 var _gateAdIndex = 0;
+// Late-page holds granted on the CURRENT slide visit. The limiter used to live
+// on the .axr-pages element (dataset.axrExtended), but every repaint mints a
+// fresh element, so the 'one hold per deck' cap reset and the holds compounded.
+var _gateAdExtN = 0;
 
 // ═══════════════════════════════════════════════════════════════════════
 // AIR CANADA "BIEN VOYAGER" DESTINATION VIDEOS
@@ -24410,7 +24641,7 @@ function _accorCacheFor(iata) {
 var ACCOR_BRAND_COLORS = {
   'FAI':'#B88D5B','SOF':'#1a1a2e','PUL':'#2d2d3f','MGH':'#8B0000','NOV':'#6B8E23',
   'MER':'#003366','SWI':'#cc0000','MOV':'#6A0DAD','IBS':'#D22030','IBB':'#D22030',
-  'IBI':'#D22030','IBH':'#D22030','HOF':'#003580','ADA':'#0066cc','GRA':'#003366',
+  'IBI':'#D22030','IBH':'#D22030','HOF':'#1C1C22','SOU':'#1C1C22','ADA':'#0066cc','GRA':'#003366',
   'BAN':'#003580','MAN':'#050033','SEQ':'#1a1a2e','RAH':'#B88D5B','RAF':'#B88D5B',
   'SO':'#1a1a2e','HYD':'#B88D5B','SLS':'#1a1a2e','DEL':'#050033','MON':'#050033',
   'RIX':'#B88D5B','HB':'#0057b8','JO':'#2E4057','N25':'#050033','EMB':'#B88D5B'
@@ -24419,7 +24650,7 @@ var ACCOR_BRAND_COLORS = {
 var ACCOR_BRAND_NAMES = {
   'FAI':'Fairmont','SOF':'Sofitel','PUL':'Pullman','MGH':'MGallery','NOV':'Novotel',
   'MER':'Mercure','SWI':'Swissôtel','MOV':'Mövenpick','IBS':'ibis','IBB':'ibis budget',
-  'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','ADA':'Adagio',
+  'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','SOU':'Handwritten Collection','ADA':'Adagio',
   'GRA':'Grand Mercure','BAN':'Banyan Tree','MAN':'Mantis','SEQ':'SO/','RAH':'Raffles',
   'RAF':'Raffles','SO':'SO/','HYD':'Hyde','SLS':'SLS','DEL':'Delano','MON':'Mondrian',
   'RIX':'Rixos','HB':'Hoxton','JO':'JO&JOE','N25':'25hours','EMB':'Emblème'
@@ -24541,6 +24772,8 @@ function fetchAccorHotels(destIata) {
 // h.localization.coordinates) and a known downtown-centre coordinate
 // per major Canadian city.
 var DOWNTOWN_COORDS = {
+  'SYR': { lat: 43.0481, lng: -76.1474, name: 'Syracuse' },
+  'SJU': { lat: 18.4655, lng: -66.1057, name: 'San Juan' },
   'YYZ': { lat: 43.6532, lng: -79.3832, name: 'Toronto' },
   'YUL': { lat: 45.5017, lng: -73.5673, name: 'Montreal' },
   'YVR': { lat: 49.2827, lng: -123.1207, name: 'Vancouver' },
@@ -24636,14 +24869,18 @@ function _accorHotelAirportDistance(h, destIata) {
 var ACCOR_HOTEL_DETAIL_CACHE = {};
 var ACCOR_DETAIL_TTL = 6 * 60 * 60 * 1000;  // 6 hours
 
-function fetchAccorHotelDetail(hotelId) {
+function fetchAccorHotelDetail(hotelId, langWanted) {
   if (!hotelId) return;
   // Per Accor docs: Accept-Language header drives localization. Cache is
   // keyed by hotelId + current display language so that flipping languages
   // (en ↔ fr) triggers a fresh fetch instead of serving stale strings.
+  // langWanted lets a caller ask for the language ITS card is being built in:
+  // the ad deck alternates EN/FR per slide, and fetching only the board's
+  // language is why a French card ended up with English room names.
   var curLang = 'en';
   try {
-    if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) curLang = langs[langIdx || 0];
+    if (langWanted) curLang = String(langWanted);
+    else if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) curLang = langs[langIdx || 0];
     else if (typeof lang !== 'undefined' && lang) curLang = lang;
   } catch (e) {}
   var cacheKey = hotelId + '|' + curLang;
@@ -25055,6 +25292,14 @@ function _processAccorData(data, destIata, langKey) {
       if (_brandName && _rawName.toLowerCase().indexOf(_brandName.toLowerCase()) === 0) {
         // Brand is at the start — strip it (and any connector whitespace/punctuation)
         hotelName = _rawName.substring(_brandName.length).replace(/^\s*[-\s·:]+\s*/, '').trim();
+      } else if (_brandName) {
+        // …or at the END, the way the collections sign themselves ('Hotel
+        // Maison Hamelin Paris - Handwritten Collection'). The wordmark
+        // already says it, so the name line shouldn't repeat it.
+        var _tailIx = _rawName.toLowerCase().lastIndexOf(_brandName.toLowerCase());
+        if (_tailIx > 0 && _tailIx + _brandName.length >= _rawName.length - 1) {
+          hotelName = _rawName.slice(0, _tailIx).replace(/[\s,·:–—-]+$/, '').trim();
+        }
       }
       // Sanity: if stripping emptied it, put it back
       if (!hotelName) hotelName = _rawName;
@@ -25081,6 +25326,7 @@ function _processAccorData(data, destIata, langKey) {
     // first, runtime-generated lockup as fallback.
     var _propertyLockupPath = null;
     var _sofitelInlineSvg = null;   // inline-SVG Sofitel lockup (real Rebelton font)
+    var _fairmontInlineSvg = null;  // inline-SVG Fairmont lockup (property name in The Seasons)
     if (brand === 'FAI' && hotelName) {
       // Normalize: lowercase, strip leading/trailing "fairmont" if present,
       // strip leading "the ", and trim.
@@ -25120,8 +25366,12 @@ function _processAccorData(data, destIata, langKey) {
         if (_realFai) {
           _propertyLockupPath = _realFai;
         } else if (typeof makeFairmontLockupSvgDataUri === 'function') {
-          // Last resort only — truly unlisted property.
+          // Last resort only — truly unlisted property. The data-URI keeps
+          // accorLockupCarriesName() working (name suppression); the INLINE
+          // variant is what actually renders, so the property name paints in
+          // the real The Seasons serif (a font can't load inside an <img> SVG).
           _propertyLockupPath = makeFairmontLockupSvgDataUri(_lockupKey || hotelName);
+          if (typeof makeFairmontLockupInlineSvg === 'function') _fairmontInlineSvg = makeFairmontLockupInlineSvg(_lockupKey || hotelName);
         }
       }
     } else if (brand === 'EMB' && hotelName) {
@@ -25192,6 +25442,7 @@ function _processAccorData(data, destIata, langKey) {
       _adLang: _ckLang,
       _propertyLockup: _propertyLockupPath,
       _sofitelInlineSvg: _sofitelInlineSvg,
+      _fairmontInlineSvg: _fairmontInlineSvg,
       // v218.99.25 — extended Catalog fields for the Option D overlay
       advantages: Array.isArray(h.advantages) ? h.advantages : [],
       amenityFree: (h.amenity && Array.isArray(h.amenity.free)) ? h.amenity.free : [],
@@ -25253,17 +25504,35 @@ function _processAccorData(data, destIata, langKey) {
     };
   });
 
-  // v218.99.55 — Filter: drop hotels only if downtown distance is KNOWN and >100km.
-  // If GPS is missing or city coords aren't in our table, KEEP the hotel
-  // (just won't show the distance line). This way Accor ads always render
-  // even if our distance calculation can't determine the answer.
+  // v22492 — Filter: a hotel must be provably NEAR the destination to show.
+  // The old rule ('drop only if downtown distance KNOWN and >100km, keep
+  // unknowns') leaked wrong-city hotels: SYR isn't in DOWNTOWN_COORDS, so the
+  // Ottawa Château Laurier (259km away, Accor's nearest result) showed as the
+  // ONLY ad on a Syracuse/Chicago flight, and the GPS-less El San Juan showed
+  // for Punta Cana (Nick: 'this is CHICAGO its showing OTTAWA'). New rule:
+  //   1. downtown distance known  → keep iff ≤100km
+  //   2. else airport distance known (COORDS has every IATA) → keep iff ≤100km
+  //   3. else (no GPS at all) → DROP — better no hotel ad than the wrong city
   var DOWNTOWN_THRESHOLD_KM = 100;
   var beforeFilter = hotels.length;
   hotels = hotels.filter(function(ad) {
-    // Keep if we don't know the distance (no GPS or city not in our table)
-    if (!ad.distanceCity || typeof ad.distanceCity.km !== 'number') return true;
-    // Drop only if we KNOW it's beyond the threshold
-    return ad.distanceCity.km <= DOWNTOWN_THRESHOLD_KM;
+    if (ad.distanceCity && typeof ad.distanceCity.km === 'number') {
+      return ad.distanceCity.km <= DOWNTOWN_THRESHOLD_KM;
+    }
+    if (ad.distanceAirport && typeof ad.distanceAirport.km === 'number') {
+      return ad.distanceAirport.km <= DOWNTOWN_THRESHOLD_KM;
+    }
+    // v22495 — GPS entirely missing from the catalog row (e.g. Fairmont El San
+    // Juan ships without coordinates). Last proof: the destination CITY NAME
+    // appears in the hotel's name/address. 'San Juan' matches El San Juan for
+    // SJU flights; Ottawa's Château Laurier still can't pass for Syracuse.
+    // Without this, v22492 over-dropped legit hotels → no Accor ads at all.
+    var _dcName = DOWNTOWN_COORDS[destIata] && DOWNTOWN_COORDS[destIata].name;
+    if (_dcName) {
+      var _hay = ((ad.nameFull || ad.headline || '') + ' ' + (ad.fullAddress || '') + ' ' + (ad.address || '')).toLowerCase();
+      if (_hay.indexOf(String(_dcName).toLowerCase()) !== -1) return true;
+    }
+    return false;
   });
   // Sort closest-first when we have distance; unknowns go to end
   hotels.sort(function(a, b) {
@@ -26673,10 +26942,12 @@ function buildAccorAdOnlyV6(ad) {
   // endpoint only returns one photo; the DETAIL endpoint returns the gallery.
   if (ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
     var _hpLang = 'en';
-    try {
-      if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _hpLang = langs[langIdx || 0];
-      else if (typeof lang !== 'undefined' && lang) _hpLang = lang;
-    } catch (e) {}
+    try { _hpLang = accorLang(); } catch (e) {
+      try {
+        if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _hpLang = langs[langIdx || 0];
+        else if (typeof lang !== 'undefined' && lang) _hpLang = lang;
+      } catch (e2) {}
+    }
     var _hpDetail = ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId + '|' + _hpLang]
                  || ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId] || null;
     if (_hpDetail && Array.isArray(_hpDetail.photos) && _hpDetail.photos.length) {
@@ -26685,7 +26956,8 @@ function buildAccorAdOnlyV6(ad) {
       _hpDetail.photos.forEach(function(u){ if (u && _merged.indexOf(u) === -1) _merged.push(u); });
       _photoSet = _merged;
     } else if (typeof fetchAccorHotelDetail === 'function') {
-      try { fetchAccorHotelDetail(ad.hotelId); } catch (e) {}
+      // Ask in the language THIS card is being built in, not the board's.
+      try { fetchAccorHotelDetail(ad.hotelId, accorLang()); } catch (e) {}
     }
   }
   _photoSet = _photoSet.slice(0, 6);
@@ -26703,7 +26975,11 @@ function buildAccorAdOnlyV6(ad) {
   // Accent-fold so brand names with diacritics (Swissôtel, Mövenpick) are
   // detected and stripped the same as their plain spellings.
   function _foldAcc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
-  var BRAND_WORDS=['Novotel','Fairmont','Sofitel','Pullman','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis','Mama Shelter','Mondrian','Faena'];
+  // EVERY Accor brand, not a hand-picked dozen. The short list below silently
+  // let SLS, Hyde, Delano, TRIBE, Rixos, Handwritten Collection… through, so
+  // the wordmark and the name both said the brand — 'SLS' over 'SLS Baha Mar'
+  // (Nick: 'do not use the Logo and the name again SLS SLS').
+  var BRAND_WORDS=['Novotel','Fairmont','Sofitel Legend','Sofitel','Pullman','Grand Mercure','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis Styles','ibis budget','ibis','Mama Shelter','Mondrian','Faena','SLS','Hyde','Delano','Morgans Originals','TRIBE','Tribe','25hours','Rixos','Banyan Tree','Mantis','Orient Express','Emblems','Art Series','Handwritten Collection','The Hoxton','Hoxton','The Sebel','Adagio','greet','JO&JOE','BreakFree','Peppers','Mantra','hotelF1','21c Museum Hotels','Angsana','Our Habitas'];
   var brandWord='';
   var _brandLowerFold=_foldAcc(brandLower);
   for(var bw=0; bw<BRAND_WORDS.length; bw++){ if(_brandLowerFold.indexOf(_foldAcc(BRAND_WORDS[bw]))!==-1){ brandWord=BRAND_WORDS[bw]; break; } }
@@ -26711,19 +26987,33 @@ function buildAccorAdOnlyV6(ad) {
   var tint=BRAND_TINT[lower(brandWord)]||'#0a1a3a';
 
   var haveLogo=!!logo;
+  // Whatever the catalog calls this brand code, on top of the word list —
+  // covers collections that sign at the END of the name ('Hotel Maison
+  // Hamelin Paris - Handwritten Collection').
+  var _brandByCode='';
+  try { _brandByCode = (typeof ACCOR_BRAND_NAMES!=='undefined' && ACCOR_BRAND_NAMES[String(ad.brand||'').toUpperCase()]) || ''; } catch(e){}
   function stripBrand(name){
     var s=String(name||'').replace(/\s+/g,' ').trim();
-    if(!brandWord) return s;
+    if(_brandByCode){
+      var reC=new RegExp('\\b'+_brandByCode.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig');
+      var _sC=s.replace(reC,'').replace(/\s+/g,' ').replace(/^[\s,·:–—-]+|[\s,·:–—-]+$/g,'').trim();
+      if(_sC) s=_sC;   // never strip the name down to nothing
+    }
+    if(!brandWord) return s.replace(/^[\s,·:–—-]+|[\s,·:–—-]+$/g,'').trim();
     // 1) exact case-insensitive removal (handles multi-word brands, exact spellings)
     var re=new RegExp('\\b'+brandWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig');
-    s=s.replace(re,'').replace(/\s+/g,' ').trim();
+    var _s1=s.replace(re,'').replace(/\s+/g,' ').trim();
+    if(_s1) s=_s1;
     // 2) accent-insensitive whole-word removal — strips "Swissôtel" when the
     //    brand word is "Swissotel" (and likewise Mövenpick/Movenpick).
     if(brandWord.indexOf(' ')===-1){
       var _bwKey=_foldAcc(brandWord).replace(/[^a-z0-9]/g,'');
-      s=s.split(' ').filter(function(w){ return _foldAcc(w).replace(/[^a-z0-9]/g,'') !== _bwKey; }).join(' ').replace(/\s+/g,' ').trim();
+      var _s2=s.split(' ').filter(function(w){ return _foldAcc(w).replace(/[^a-z0-9]/g,'') !== _bwKey; }).join(' ').replace(/\s+/g,' ').trim();
+      if(_s2) s=_s2;
     }
-    return s;
+    // Leftover joiners from a brand that sat at either end (', Handwritten
+    // Collection' → 'Hotel Faubourg Galant Paris,')
+    return s.replace(/^[\s,·:–—-]+|[\s,·:–—-]+$/g,'').trim();
   }
   // Brand policy (Nick): never print the brand twice — the logo slot ALWAYS
   // carries the brand (image or text label), so the name is always stripped.
@@ -26751,6 +27041,12 @@ function buildAccorAdOnlyV6(ad) {
   var starCount=Math.max(0,Math.min(5,Math.round(stars||0)));
   var starsHtml=starCount>0?'<span class="axr-stars">'+Array(starCount+1).join('★')+'</span>':'';
   var reviewsLabel=({en:'reviews',fr:'avis',es:'reseñas',de:'Bewertungen',it:'recensioni',pt:'avaliações',ja:'件のレビュー',zh:'条评论',ar:'تقييمات'}[accorLang()]||'reviews');
+  // Never let an object reach the card: an upstream shape change would print
+  // '[object Object]/5' on a paying advertiser's slide.
+  if (rating && typeof rating === 'object') {
+    try { rating = (rating.trustyou && rating.trustyou.score) || rating.score || rating.value || ''; } catch (e) { rating = ''; }
+  }
+  if (rating != null && typeof rating !== 'string' && typeof rating !== 'number') rating = '';
   var ratingHtml=rating?'<span class="axr-score">'+esc(rating)+'<small>/5'+(reviewCount?' · '+esc(reviewCount)+' '+reviewsLabel:'')+'</small></span>':'';
 
   // Per-brand logo crops — many hotel SVGs float their wordmark in a big
@@ -26765,9 +27061,10 @@ function buildAccorAdOnlyV6(ad) {
   var _logoBase = String(logo||'').split('?')[0].split('#')[0];
   _logoBase = _logoBase.substring(_logoBase.lastIndexOf('/')+1);
   var _logoCrop = (typeof ACCOR_LOGO_CROP!=='undefined' && ACCOR_LOGO_CROP[_logoBase]) || _LOGO_CROP[lower(brandWord)] || '';
+  var _inlineLockup = ad._sofitelInlineSvg || ad._fairmontInlineSvg;  // inline so the real property-name font renders (Rebelton / The Seasons)
   var logoHtml=haveLogo
-    ? (ad._sofitelInlineSvg
-        ? '<div class="axr-logo">'+ad._sofitelInlineSvg+'</div>'   // inline so Rebelton actually renders
+    ? (_inlineLockup
+        ? '<div class="axr-logo">'+_inlineLockup+'</div>'   // inline so the property-name font actually renders
         : '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>')
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
@@ -26781,9 +27078,18 @@ function buildAccorAdOnlyV6(ad) {
   if (accorLang() === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(_fullName)) {
     _fullName = 'Fairmont Le Reine Elizabeth';
   }
-  // Brand policy (Nick): a hotel name is NEVER split across two lines —
-  // .axr-one-line keeps it whole and the fitter shrinks it until it fits.
-  var _qrCaption = safeTL('scanToDiscover','Scan to discover') + '<br><span class="axr-one-line">' + esc(_fullName) + '</span>';
+  // The caption's name line is NOT run through the shrink-to-fit fitter any
+  // more. Fitting it meant the same hotel name rendered at yet another size
+  // here — Nick counted four sizes of one hotel's name inside a single ad.
+  // The bubble copy is a fixed size and wraps to two lines instead.
+  // Fairmont-style accent (Nick): first word italic sentence-case, the rest
+  // renders CAPS via the brand's bubble CSS — like 'SAVOR SAN JUAN flavor'.
+  var _scanTxt = safeTL('scanToDiscover','Scan to discover');
+  var _scanSp = _scanTxt.indexOf(' ');
+  var _scanHtml = (_scanSp > 0)
+    ? '<i class="axr-scan-accent">' + esc(_scanTxt.slice(0, _scanSp)) + '</i> ' + esc(_scanTxt.slice(_scanSp + 1))
+    : esc(_scanTxt);
+  var _qrCaption = _scanHtml + '<br><span class="axr-bub-name">' + esc(_fullName) + '</span>';
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
@@ -26833,6 +27139,17 @@ function buildAccorAdOnlyV6(ad) {
   // description) fill pages 2–3 once the per-hotel detail endpoint loads; until
   // then they fall back to list-level data so no page is ever empty.
   var _detail = (typeof _hpDetail !== 'undefined' && _hpDetail) ? _hpDetail : null;
+  // WORDS MUST MATCH THE CARD'S LANGUAGE. The detail cache is keyed by
+  // hotelId|lang with a fallback to the unkeyed entry, so a French card was
+  // picking up an English detail whenever that was the one already cached —
+  // English room names and room copy under French headings (Nick: 'Ads half
+  // french half english'). Photos are language-neutral and were merged into
+  // _photoSet already, so only the TEXT source is dropped here; the detail for
+  // this card's own language is requested so the next pass has it.
+  if (_detail && _detail.lang && _detail.lang !== accorLang()) {
+    try { if (typeof fetchAccorHotelDetail === 'function') fetchAccorHotelDetail(ad.hotelId, accorLang()); } catch (e) {}
+    _detail = null;
+  }
   function _dedupe(arr){ var seen={}, out=[]; (arr||[]).forEach(function(x){ var k=String(x||'').toLowerCase().trim(); if (x && !seen[k]) { seen[k]=1; out.push(x); } }); return out; }
   // Curate, don't just take the first six: the room-level feed leads with
   // fixtures nobody chooses a hotel for (Nick: the card was selling 'Iron' and
@@ -26873,9 +27190,35 @@ function buildAccorAdOnlyV6(ad) {
   // 'breakfast' for hotels that don't include it (Fairmont). No breakfast line.
   if (_amenFree.indexOf('room_service') !== -1) _dineAmen.push(_dfr ? 'Service aux chambres' : 'Room service');
   if (_lblsAd.indexOf('DINING_OFFER') !== -1) _dineAmen.push(_dfr ? 'Offres restauration pour les clients' : 'Dining offers for guests');
-  var _restList = _dedupe(_dineAdv.concat(_dineAmen)).slice(0, 5);
-  if (!_restList.length) _restList = _dedupe((_detail && _detail.restaurants) ? _detail.restaurants : []).slice(0, 5);
-  var _blurb = first(ad.description, ad.destinationDescription, '');
+  // REAL restaurant names only. The derived phrases ('Restaurant sur place',
+  // 'Bar-salon', 'Service aux chambres', 'Offres restauration pour les
+  // clients') are our own wording spun out of amenity flags, and rendered as a
+  // bullet list they read like a commodity inventory — the exact thing this
+  // card is supposed to have stopped doing.
+  var _restList = [];
+  if (!_restList.length) {
+    // REAL hotel dining only — from the master record. The detail endpoint's
+    // 'restaurants' are IN-ROOM food & beverage fixtures (Mini Bar, Ice
+    // Machine, Microwave, Coffee/tea making facilities); selling those as the
+    // hotel's restaurants is exactly what Nick keeps calling out, so they are
+    // no longer a fallback. No real dining data → the page carries the guest
+    // rating and the QR alone.
+    var _mstr = null;
+    try {
+      for (var _mk in ACCOR_HOTEL_MASTER_CACHE) {
+        if (_mk === ad.hotelId || _mk.indexOf(ad.hotelId + '|') === 0) { _mstr = ACCOR_HOTEL_MASTER_CACHE[_mk]; break; }
+      }
+    } catch (e) {}
+    _restList = _dedupe(((_mstr && _mstr.restaurants) || []).map(function (r) {
+      return (typeof r === 'string') ? r : String((r && r.name) || '');
+    }).filter(function (n) { return n && !_isBreakfast(n); })).slice(0, 5);
+  }
+  // Hygiene/pandemic boilerplate is NEVER ad copy (Nick: the COVID notice
+  // rendering as the hotel's blurb — 'This cant happen').
+  var _covidRx = /covid|coronavirus|pand[ée]mi|sanitai?r|hygi[eè]n|propagation|all ?safe|\bvirus\b/i;
+  var _blurb = [ad.description, ad.destinationDescription].filter(function (t) {
+    return t && !_covidRx.test(String(t));
+  })[0] || '';
   if (_blurb) {
     _blurb = String(_blurb).replace(/\s+/g, ' ').trim();
     // End on a COMPLETE SENTENCE so the card never shows a mid-thought cut
@@ -26896,20 +27239,72 @@ function buildAccorAdOnlyV6(ad) {
         return idx > 0 && !_abbrRx.test(str.slice(0, idx));
       }
       var _sentEnd = -1;
-      for (var _si = _cut.length - 2; _si > 0; _si--) {
+      // FIRST sentence (forward scan) — the old last-sentence-within-budget
+      // could still overflow the 4-line CSS clamp at Fairmont's bigger body
+      // size, so the box ellipsized mid-word ('…(COVID-…').
+      for (var _si = 1; _si < _cut.length - 1; _si++) {
         if ('.!?'.indexOf(_cut[_si]) !== -1 && _cut[_si + 1] === ' ' && _validSentEnd(_cut, _si)) { _sentEnd = _si; break; }
       }
       if (/[.!?]$/.test(_cut) && _validSentEnd(_cut, _cut.length - 1)) _sentEnd = Math.max(_sentEnd, _cut.length - 1);
       _blurb = (_sentEnd > 0) ? _cut.slice(0, _sentEnd + 1).trim() : '';
     }
   }
+  // A SECOND paragraph for page 3, from a different source than page 2's — the
+  // destination text (what's around the hotel), or the next sentence of the
+  // hotel's own copy. Without it page 3 was a logo, a name and a QR code and
+  // nothing else once the in-room fixtures were banned from the dining list
+  // (Nick: 'theres barely any info at all on some of these').
+  var _blurb2 = '';
+  (function () {
+    function _sent1(txt, skipFirst) {
+      var s = String(txt || '').replace(/\s+/g, ' ').trim();
+      if (!s || _covidRx.test(s)) return '';
+      var _ab = /(\b(?:St|Ste|Mt|Dr|Mr|Mrs|Ms|Ave|Blvd|Rd|Hwy|No|Nos|vs|etc|approx|Ft|Pt)|\b[A-Z])$/;
+      var ends = [];
+      for (var i = 1; i < s.length - 1 && ends.length < 3; i++) {
+        if ('.!?'.indexOf(s[i]) !== -1 && s[i + 1] === ' ' && !_ab.test(s.slice(0, i))) ends.push(i);
+      }
+      if (!ends.length) return (s.length <= 170 && /[.!?]$/.test(s)) ? s : '';
+      if (!skipFirst) return s.slice(0, ends[0] + 1).trim();
+      if (ends.length < 2) return '';
+      var second = s.slice(ends[0] + 1, ends[1] + 1).trim();
+      return (second.length <= 190) ? second : '';
+    }
+    var _dest = _sent1(ad.destinationDescription, false);
+    if (_dest && _dest !== _blurb) { _blurb2 = _dest; return; }
+    var _next = _sent1(ad.description, true);
+    if (_next && _next !== _blurb) _blurb2 = _next;
+  })();
 
   var _acL = accorLang();
   var _kHotel  = ({en:'The hotel',fr:"L'hôtel",es:'El hotel',de:'Das Hotel',it:"L'hotel",pt:'O hotel',ja:'ホテル',zh:'酒店',ar:'الفندق'})[_acL] || 'The hotel';
   var _kDining = ({en:'Dining & reviews',fr:'Restauration & avis',es:'Gastronomía y reseñas',de:'Gastronomie & Bewertungen',it:'Ristorazione e recensioni',pt:'Restauração e avaliações',ja:'ダイニング＆レビュー',zh:'餐饮与评价',ar:'المطاعم والتقييمات'})[_acL] || 'Dining & reviews';
 
   function _heroImg(u){ return u ? '<div class="axr-hero-img" style="background-image:url(\''+esc(u)+'\')"></div>' : '<div class="axr-hero-img axr-hero-noimg"></div>'; }
-  function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul>' : ''; }
+  // Official Accor ALL pictograms for amenity lines (Nick) — matched by
+  // keyword; unmatched lines keep the "›" chevron. Grows as Nick supplies
+  // more pictos (files live in /logos/hotels/accor-pictos/, white cuts).
+  var _AMEN_PICTOS = [
+    { rx: /wi[\s-]?fi|internet|wireless|haut d[ée]bit|sans fil/i, ico: '/logos/hotels/accor-pictos/internet-white.svg' },
+    { rx: /breakfast|petit[- ]d[ée]j|d[ée]jeuner/i,               ico: '/logos/hotels/accor-pictos/breakfast-white.svg' },
+    { rx: /buffet/i,                                              ico: '/logos/hotels/accor-pictos/buffet-white.svg' },
+    { rx: /nespresso|cafeti[eè]re|coffee|caf[ée]|plateau th[ée]|\btea\b|\bth[ée]\b/i, ico: '/logos/hotels/accor-pictos/coffee-white.svg' },
+    { rx: /navette|shuttle|\bbus\b/i,                             ico: '/logos/hotels/accor-pictos/bus-white.svg' },
+    { rx: /parking|valet|voiturier|stationnement/i,               ico: '/logos/hotels/accor-pictos/car-white.svg' },
+    { rx: /golf/i,                                                ico: '/logos/hotels/accor-pictos/golf-white.svg' },
+    { rx: /accessib|handicap|wheelchair|fauteuil|\bpmr\b|81 ?cm/i, ico: '/logos/hotels/accor-pictos/handicap-white.svg' },
+    { rx: /restaurant|room service|service aux chambres|dining|repas|gastro/i, ico: '/logos/hotels/accor-pictos/buffet-white.svg' }
+  ];
+  function _amenPicto(s) {
+    for (var i = 0; i < _AMEN_PICTOS.length; i++) if (_AMEN_PICTOS[i].rx.test(s)) return _AMEN_PICTOS[i].ico;
+    // No specific pictogram → the ALL star, so every line carries an icon
+    // (Nick: 'not all categories have an icon it looks terrible').
+    return '/logos/hotels/accor-pictos/star-white.svg';
+  }
+  function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){
+    var p = _amenPicto(String(i || ''));
+    return '<li'+(p ? ' class="axr-li-picto" style="--amen-picto:url(&quot;'+p+'&quot;)"' : '')+'>'+esc(i)+'</li>';
+  }).join('')+'</ul>' : ''; }
   var _ph0 = _photoSet[0]||photo||'', _ph1 = _photoSet[1]||_ph0, _ph2 = _photoSet[2]||_ph1;
   // Continuation pages carry the brand LOGO (Nick: 'the logo should be on
   // all screens'), so the context name is the brand-stripped property name —
@@ -26925,23 +27320,74 @@ function buildAccorAdOnlyV6(ad) {
   var _page1 = '<div class="axr-page axr-page-on">'
     + _heroImg(_ph0) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">' + logoHtml
-    +   (showName ? '<h1 class="axr-name">'+esc(displayName)+'</h1>' : '')
+    +   (showName ? '<div class="axr-name">'+esc(displayName)+'</div>' : '')
     +   _addrLineHtml + _locLineHtml + _starsRow
     + '</div></div>';
-  // Page 2 — THE HOTEL: amenities + facilities + short blurb
-  var _page2 = '<div class="axr-page">'
+  // Page 2 — THE HOTEL. Every hotel card sells like fairmont.com (Nick:
+  // 'All hotels should be this way'): the hotel's ADVANTAGES as short caps
+  // phrases in the brand's display face — 'award-winning Isla Verde Beach',
+  // 'Four pristine pools' — never a commodity amenity inventory. A hotel with
+  // no advantages falls back to its STANDOUT amenities only (spa, pools,
+  // beach, rooftop…) in the same inline treatment; the plain amenity
+  // inventory — 'Mini Bar', 'Automatic wake up call', 'Make-up mirror' —
+  // never renders (Nick, Faena New York: 'Why is that still there?').
+  var _isFaiCard = String(ad.brand || '').toUpperCase() === 'FAI';
+  var _featsHtml = '';
+  // Commodity lines are never a selling point, wherever they come from. Accor
+  // lists 'Mini Bar' among Faena New York's advantages, and with the longer
+  // ones filtered out it became the hotel's ONE headline claim.
+  var _dullAdvRx = /wi-?fi|internet|wireless|t[ée]l[ée]phone|telephone|mini[\s-]?bar|hair ?dry|s[èe]che-cheveux|iron(ing)?\b|fer [àa] repasser|kettle|bouilloire|coffee ?\/? ?tea|plateau (de )?th[ée]|wake[- ]?up|r[ée]veil|\btv\b|t[ée]l[ée]vision|television|\bsafe\b|coffre[- ]?fort|air ?condition|climatisation/i;
+  var _advs = (Array.isArray(ad.advantages) ? ad.advantages : [])
+    .map(function (a) { return String(a || '').trim(); })
+    .filter(function (a) { return a && a.length <= 60 && !_covidRx.test(a) && !_dullAdvRx.test(a); })
+    .slice(0, 3);
+  if (!_advs.length) {
+    // No advantages from the feed → the hotel's own SELLABLE facilities, which
+    // _amenSell has already separated from the in-room fixtures. Only the pure
+    // commodities every hotel has (wi-fi, a telephone line) stay out; a pool, a
+    // spa, a restaurant, parking or a shuttle is real information a traveller
+    // wants, and cutting it left cards with almost nothing on them (Nick:
+    // 'theres barely any info at all on some of these').
+    var _dullRx = _dullAdvRx;
+    _advs = (Array.isArray(_amenSell) ? _amenSell : [])
+      .map(function (a) { return String(a || '').trim(); })
+      .filter(function (a) { return a && a.length <= 42 && !_dullRx.test(a) && !_covidRx.test(a); })
+      .slice(0, 3);
+  }
+  if (_advs.length) {
+    _featsHtml = '<div class="axr-fai-feats">' + _advs.map(function (a) {
+      return '<span>' + esc(a) + '</span>';
+    }).join('') + '</div>';
+  }
+  // No advantages AND no prose → there is nothing to say on this page, so it
+  // is dropped from the deck rather than shown as a bare logo + name.
+  var _page2 = (!_featsHtml && !_blurb) ? '' : '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
     + logoHtml + _ctxName
-    +   _list(_amenList) + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
+    +   _featsHtml + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
     + '</div></div>';
-  // Page 3 — DINING & REVIEWS: restaurants + guest rating + QR
+  // Page 3 — THE DESTINATION: what's around the hotel, its real dining, the
+  // guest score, and the QR. It must always carry something beyond the logo:
+  // the second paragraph first, then real restaurants, then the score, and
+  // failing all of those the address and the distances (which are facts every
+  // hotel has). A page with only a wordmark on it is not an advertisement.
+  // Restaurants flow inline in the advantages treatment — caps, gold middots —
+  // never as a bulleted list (Nick has rejected bullets on these cards).
+  var _restInline = _restList.length
+    ? '<div class="axr-fai-feats">' + _restList.slice(0, 3).map(function (r) {
+        return '<span>' + esc(r) + '</span>';
+      }).join('') + '</div>'
+    : '';
+  var _p3Body = (_blurb2 ? '<p class="axr-blurb">' + esc(_blurb2) + '</p>' : '')
+    + _restInline + _ratingRow;
+  if (!_blurb2 && !_restList.length && !_ratingRow) _p3Body = _addrLineHtml + _locLineHtml + _starsRow;
   var _page3 = '<div class="axr-page">'
     + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'
     + bubbleHtml
     + '<div class="axr-hotel">'
     + logoHtml + _ctxName
-    +   _list(_restList) + _ratingRow
+    +   _p3Body
     + '</div></div>';
 
   // ROOM PAGES (Nick: '2 to 3 different room options, show 10 seconds maybe,
@@ -26951,14 +27397,35 @@ function buildAccorAdOnlyV6(ad) {
   var _roomsHtml = '';
   try {
     var _rooms = (_detail && Array.isArray(_detail.rooms)) ? _detail.rooms.filter(function (r) { return r && r.name; }) : [];
-    _roomsHtml = _rooms.slice(0, 3).map(function (r) {
-      var _rd = String(r.desc || '');
-      if (_rd.length > 150) {
-        var _rc2 = _rd.slice(0, 190);
-        var _pe2 = Math.max(_rc2.lastIndexOf('. '), _rc2.lastIndexOf('! '), _rc2.lastIndexOf('? '),
-                            /[.!?]$/.test(_rc2) ? _rc2.length - 1 : -1);
-        _rd = (_pe2 > 40) ? _rc2.slice(0, _pe2 + 1) : _rd.slice(0, 145).replace(/\s+\S*$/, '');
+    // Decide the copy FIRST, then decide which rooms earn a page. Filtering on
+    // the raw description was wrong: a long description with no sentence break
+    // is trimmed to nothing at render time, so rooms counted as 'has copy'
+    // still produced a bare title (Novotel Montréal showed two such pages in a
+    // row). Rooms with real copy lead; a bare one is only used to top the deck
+    // up to two pages, never three.
+    var _roomCards = _rooms.map(function (r) {
+      var _d = String(r.desc || '');
+      if (_covidRx.test(_d)) _d = '';
+      if (_d.length > 170) {
+        // FIRST complete sentence or nothing — never a fragment, never more
+        // than the visual box can hold (Nick: 'the ads cut out words').
+        var _pe = _d.slice(0, 240).search(/[.!?](\s|$)/);
+        _d = (_pe > 40) ? _d.slice(0, _pe + 1) : '';
       }
+      return { r: r, rd: _d.trim() };
+    });
+    // No copy, no page. Novotel Montréal's three rooms all trim to nothing, so
+    // topping the deck up with them just produced pages carrying a room name
+    // and a bed count — filler on an advertisement. Fewer, fuller pages.
+    _roomCards = _roomCards.filter(function (c) { return c.rd.length > 25; });
+    _roomsHtml = _roomCards.slice(0, 3).map(function (c) {
+      var r = c.r, _rd = c.rd;
+      // Split the long feed name into TITLE + DETAILS lines (Nick: 'ROOM
+      // NAME / DETAILS, two sentences') — first comma/period ends the title.
+      var _rn = String(r.name || '').trim();
+      var _rSp = _rn.search(/[,.]|\s[–·-]\s/);
+      var _rTitle = (_rSp > 3) ? _rn.slice(0, _rSp).trim() : _rn;
+      var _rSub = (_rSp > 3) ? _rn.slice(_rSp + 1).replace(/^[\s,.·–-]+/, '').trim() : '';
       return '<div class="axr-page">'
         + _heroImg(r.photo || _ph1) + '<div class="axr-hero-grad"></div>'
         + '<div class="axr-hotel">'
@@ -26967,8 +27434,10 @@ function buildAccorAdOnlyV6(ad) {
         // property name under it (Nick); property lockups (Fairmont…)
         // already have the name inside the artwork.
         +   (lockupHasName ? '' : '<div class="axr-room-hotel">' + esc(displayName) + '</div>')
-        +   '<div class="axr-page-ctx axr-room-name">' + esc(r.name) + '</div>'
-        +   _list((r.amen || []).slice(0, 4))
+        +   '<div class="axr-page-ctx axr-room-name">' + esc(_rTitle) + '</div>'
+        +   (_rSub ? '<div class="axr-room-details">' + esc(_rSub) + '</div>' : '')
+        // Room pages carry NO amenity list — title, subtitle, one paragraph,
+        // like the brand sites (Nick: 'All hotels should be this way').
         +   (_rd ? '<p class="axr-blurb">' + esc(_rd) + '</p>' : '')
         + '</div></div>';
     }).join('');
@@ -27523,7 +27992,14 @@ function renderGateAd(index) {
     html = buildGateAdHtml(slide.data);
   }
 
-  var newKey = slot + '|' + (html ? html.substring(0, 80) : '');
+  // The key must change when the CONTENT does. An 80-character prefix is
+  // identical for every Accor card of the same tier, so the repaint that
+  // carried a hotel's freshly-loaded room pages was discarded as a no-op: the
+  // deck stayed three pages long while the dwell logic reasoned about six, and
+  // the rooms only ever appeared the NEXT time that hotel came round. Length
+  // plus a longer prefix separates a 3-page deck from a 6-page one and one
+  // hotel from another.
+  var newKey = slot + '|' + (html ? (html.length + '|' + html.substring(0, 220)) : '');
   if (el._lastKey === newKey) return;
   el._lastKey = newKey;
   el.style.background = 'transparent';
@@ -27535,6 +28011,12 @@ function renderGateAd(index) {
     ? '<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;">' + html + '</div>'
     : '';
   el.style.opacity = '1';
+  // Select the resumed page in the SAME task as the write, before the browser
+  // paints. Left to the 250ms poll, every repaint of a live hotel card showed
+  // page 1 at full opacity first and then ghost-crossfaded forward to the page
+  // it was actually on — the jump on screen.
+  try { if (typeof window._axrPageSync === 'function') window._axrPageSync(); } catch (e) {}
+  try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
 
   var logoEl = document.getElementById('gateAdLogo');
   if (logoEl) {
@@ -27718,12 +28200,16 @@ function buildAdLogoPanelHtml(ad) {
   // full brand-team lockup (script wordmark + property name + underline rule).
   // Render the lockup big, no separate name text, just the rating subtitle.
   if (ad._propertyLockup) {
-    // Sofitel: render the lockup INLINE (not <img>) so the property name paints
-    // in the real Rebelton Extended font — a font embedded in an <img>-rendered
-    // SVG never loads. Already white-filled, so no invert filter.
-    if (ad._sofitelInlineSvg) {
-      return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
-        + '<div style="width:90%;height:64%;display:flex;align-items:center;justify-content:center;">' + ad._sofitelInlineSvg + '</div>'
+    // Sofitel / Fairmont: render the lockup INLINE (not <img>) so the property
+    // name paints in the real property-name font (Rebelton Extended / The
+    // Seasons) — a font embedded in an <img>-rendered SVG never loads. Already
+    // white-filled, so no invert filter.
+    var _inlineLockup = ad._sofitelInlineSvg || ad._fairmontInlineSvg;
+    // Fairmont: logo pinned LEFT (Nick); Sofitel stays centered.
+    var _lkAlign = ad._fairmontInlineSvg ? 'flex-start' : 'center';
+    if (_inlineLockup) {
+      return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:' + _lkAlign + ';justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
+        + '<div style="width:90%;height:64%;display:flex;align-items:center;justify-content:' + _lkAlign + ';">' + _inlineLockup + '</div>'
         + (ad.sub
             ? '<div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;">' + ad.sub + '</div>'
             : '')
@@ -27738,7 +28224,9 @@ function buildAdLogoPanelHtml(ad) {
                        || /\/outlined_svg_white\//i.test(ad._propertyLockup)  // Fairmont brand-team white pack
                        || /rimrock-banff\.svg/i.test(ad._propertyLockup);
     var _lockupFilter = _isAlreadyWhite ? '' : 'filter:brightness(0) invert(1);';
-    return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
+    // Fairmont lockups pinned LEFT (Nick); other brands stay centered.
+    var _imgAlign = (String(ad.brand || '').toUpperCase() === 'FAI') ? 'flex-start' : 'center';
+    return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:' + _imgAlign + ';justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
       + '<img src="' + ad._propertyLockup + '" alt="' + (ad.headline || '') + '" '
       +   'style="width:88%;max-width:88%;height:auto;max-height:70%;object-fit:contain;' + _lockupFilter + '">'
       + (ad.sub
@@ -27874,6 +28362,12 @@ function _getGateAdDwellMs(slide) {
   // 3D flight map holds the slot for about a minute (per Nick) —
   // four camera views ~15s each inside GateMap3D's sequence.
   if (slide.type === 'map3d') return 60000;
+  // The big route map and the weather card had NO entry here and fell through
+  // to the generic floor, so the map got 22s for a sequence sized at about a
+  // minute and every scene ticked at the same flat interval — the 'welcome
+  // aboard to map, thats it, really bumping' cadence.
+  if (slide.type === 'bigcraft') return 45000;
+  if (slide.type === 'wxcard') return 24000;
   // v218.96: custom slides from the Gate Theme editor carry their own
   // configured duration. Clamp to a sensible 2s–600s range so a typo can't
   // freeze the carousel on a single slide for the rest of the day, while
@@ -27896,8 +28390,19 @@ function _getGateAdDwellMs(slide) {
     if (ad.isAccorHotel) {
       var _axN = 0;
       try {
-        var _axEls = document.querySelectorAll('.axr-pages .axr-page');
-        if (_axEls && _axEls.length >= 3) _axN = _axEls.length;
+        // Count the LIVE card's pages only. The outgoing slide lingers in a
+        // crossfade overlay for about a second, and counting both cards
+        // granted a single-hotel deck 121s instead of 61s — the last page then
+        // sat frozen for a minute. Filtering on the overlay marker works
+        // wherever the ad is mounted, unlike scoping to a container id.
+        // Any non-zero live count is the truth; the old '>= 3' floor threw
+        // away a legitimate 2-page card and over-held it.
+        var _axAll = document.querySelectorAll('.axr-pages .axr-page');
+        for (var _axI = 0; _axI < _axAll.length; _axI++) {
+          var _axP = _axAll[_axI];
+          if (_axP.closest && _axP.closest('[data-ad-fading]')) continue;
+          _axN++;
+        }
       } catch (e) {}
       if (!_axN && ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
         try {
@@ -27991,19 +28496,32 @@ function _buildGateAdSlideList() {
   // ── 3. The "3" pool = media first (operator content leads), then airline ads.
   var nonAccor = mediaSlides.concat(airlineAdSlides);
 
-  // ── 4. Interleave 3 non-Accor : 1 Accor. Cycle Accor if fewer than needed.
+  // ── 4. Interleave 3 non-Accor : 1 Accor, and give EVERY nearby hotel a turn
+  // within ONE pass of the deck. The old loop only placed a hotel after every
+  // third non-Accor item, so a short non-Accor pool (one house ad, no uploaded
+  // media — United at TPA) fell through to a single accorSlides[0] and the
+  // SAME hotel played forever: Nick got Faena New York over and over and never
+  // saw Sofitel New York, The Plaza or the Hard Rock a few blocks away, all of
+  // which the catalog returns for that destination.
+  var ACCOR_PER_PASS = 4;
   var deck = [];
-  var ai = 0;
-  for (var i = 0; i < nonAccor.length; i++) {
-    deck.push(nonAccor[i]);
-    if ((i + 1) % 3 === 0 && accorSlides.length) {
-      deck.push(accorSlides[ai % accorSlides.length]);
-      ai++;
+  var _wantAccor = Math.min(accorSlides.length, ACCOR_PER_PASS);
+  if (nonAccor.length && _wantAccor) {
+    var ai = 0, _since = 0;
+    for (var i = 0; ai < _wantAccor && i < 64; i++) {
+      deck.push(nonAccor[i % nonAccor.length]);
+      _since++;
+      // a hotel after every 3 others — or as soon as the pool wraps, when it
+      // is shorter than 3 (a 1-item pool never reaches the counter otherwise)
+      if (_since >= 3 || (i + 1) % nonAccor.length === 0) {
+        deck.push(accorSlides[ai++]);
+        _since = 0;
+      }
     }
-  }
-  // 1–2 non-Accor items: still show ONE Accor so it appears, never dominates.
-  if (nonAccor.length > 0 && nonAccor.length < 3 && accorSlides.length) {
-    deck.push(accorSlides[0]);
+  } else if (nonAccor.length) {
+    deck = nonAccor.slice();
+  } else if (_wantAccor) {
+    deck = accorSlides.slice(0, _wantAccor);
   }
 
   // ── 5. Graceful fallback — never all-Accor, never blank. Airlines with
@@ -28157,6 +28675,38 @@ function _restartGateAdsTimer() {
   var gen = ++_gateAdGen;
   var _tick = function() {
     if (gen !== _gateAdGen) return; // superseded — abandon this chain
+    // v22504 — LATE ROOM PAGES: the Accor dwell is sized at slide start, but
+    // room pages render asynchronously after the detail fetch. If the live
+    // deck now has MORE pages than the pager has shown, hold the slide for
+    // the remaining pages instead of advancing mid-story (Nick: 'cut short
+    // by the map'). One extension per rendered deck.
+    try {
+      var _exWrap = document.querySelector('.axr-pages');
+      var _exSt = window._axrPageSt;
+      // Identity alone is not enough: _exSt.seen is only this element once the
+      // 250ms poller has adopted it, so a repaint in that window made the whole
+      // extension vanish and the carousel moved on with room pages unshown.
+      // Matching the hotel id covers the gap.
+      var _exArt = _exWrap && _exWrap.closest ? _exWrap.closest('.axr') : null;
+      var _exId = (_exArt && _exArt.getAttribute('data-hotel-id')) || '';
+      if (_exWrap && _exSt && _gateAdExtN < 2
+          && (_exSt.seen === _exWrap || (_exId && _exId === _exSt.id))) {
+        var _exPages = _exWrap.querySelectorAll('.axr-page').length;
+        if (_exPages > 1 && _exSt.idx < _exPages - 1) {
+          _gateAdExtN++;
+          // Budget the LAST page a full dwell too, and start counting from the
+          // flip that is already pending rather than from now. The old sum
+          // gave the final page 1.5s — the room page that 'cut out' after a
+          // couple of seconds, on the very slide this extension exists to
+          // protect.
+          var _exEvery = _exSt.every || 10000;
+          var _exGap = Math.max(0, (_exSt.next || Date.now()) - Date.now());
+          var _exLeft = Math.max(0, _exPages - 1 - _exSt.idx);
+          _gateAdTimer = setTimeout(_tick, _exGap + Math.max(0, _exLeft - 1) * _exEvery + _exEvery + 1000);
+          return;
+        }
+      }
+    } catch (e) {}
     // Inside the rotator, tell the parent an ad just completed its full dwell.
     // The rotator only switches away from the gate on one of these boundaries
     // (once past its minimum), so an ad is never chopped mid-display.
@@ -28203,6 +28753,8 @@ function _restartGateAdsTimer() {
             try { if (getComputedStyle(_pr).position === 'static') _pr.style.position = 'relative'; } catch (ep) {}
             var _er = el3.getBoundingClientRect(), _prr = _pr.getBoundingClientRect();
             _old = document.createElement('div');
+            // Marked so the page rotator leaves the dissolving copy alone.
+            _old.setAttribute('data-ad-fading', '1');
             _old.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
               + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.95s ease-in-out;overflow:hidden;';
             while (el3.firstChild) _old.appendChild(el3.firstChild);
@@ -28215,13 +28767,31 @@ function _restartGateAdsTimer() {
         }
       } catch (e) { _old = null; }
       _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
+      _gateAdExtN = 0;   // new slide visit, holds start over
       // The rotation tick is the ONE authority allowed to change the slide —
       // announce it so the slide lock in renderGateAd lets this swap through.
       window._gateAdAuthChange = true;
       try { renderGateAd(_gateAdIndex); } catch (e) {}
       window._gateAdAuthChange = false;
-      el3.style.transition = 'none';
-      el3.style.opacity = '1';
+      if (_old) {
+        el3.style.transition = 'none';
+        el3.style.opacity = '1';
+      } else {
+        // NOTHING TO DISSOLVE — FADE THE NEW SLIDE IN INSTEAD. The crossfade
+        // is built by lifting the OUTGOING slide's children into an overlay,
+        // which only works when the carousel actually holds them. The big
+        // route map renders outside the carousel, so leaving it left nothing
+        // to fade and the next slide arrived as a hard cut — once every
+        // cycle, and it reads as a blip. Fading the incoming slide up covers
+        // that case without touching the map itself.
+        try {
+          el3.style.transition = 'none';
+          el3.style.opacity = '0';
+          void el3.offsetWidth;
+          el3.style.transition = 'opacity 0.6s ease-in-out';
+          requestAnimationFrame(function () { try { el3.style.opacity = '1'; } catch (e) {} });
+        } catch (e) { el3.style.transition = 'none'; el3.style.opacity = '1'; }
+      }
       if (_old) {
         try {
           void _old.offsetWidth; // new is painted UNDER the cover; now dissolve
@@ -28834,8 +29404,9 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     el.innerHTML = ''; // clear the placeholder
     try {
       // Use the rendered element size so the QR fills the box at any zoom
-      var w = el.clientWidth - 16; // account for padding
-      if (w < 80) w = 96;
+      // Render at the box's real inner size instead of falling back to a fixed
+      // 96px bitmap that then gets scaled down — the modules stay sharp.
+      var w = Math.max(48, (el.clientWidth || 0) - 10);
       new QRCode(el, {
         text: url,
         width: w,
@@ -28868,7 +29439,16 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // fitter's size and the fitter kept restoring it — the last live
     // oscillator behind Nick's 'still doing it'). The board fitter owns ALL
     // #fidsTable cells now; the name-span fallback keeps this shrinker.
-    var ones = document.querySelectorAll('.axr-one-line, .axr-page-ctx,'
+    // Room names are excluded: they wrap to two lines at a FIXED size instead
+    // of being shrunk to one line, so every room card's headline is the same
+    // size (Nick: 'no consistency' — a long French room name had shrunk below
+    // the body copy under it).
+    // NOTHING inside a hotel ad is shrink-to-fit any more. Fitting each name
+    // line to its own width is precisely why one hotel's name rendered at four
+    // different sizes across the pages of a single ad (Nick: 'ALL THE SECTIONS
+    // NEED TO BE UNIFORM EVERYWHERE'). Ad type is fixed by role and wraps.
+    try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
+    var ones = document.querySelectorAll('.axr-one-line,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable .fids-airline-name,'
       + ' .bigcraft-side .v2-rc-fi-tval');
@@ -29078,13 +29658,22 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   // .axr-pages element. Keying the state by hotel id means a re-render of the
   // SAME hotel resumes on the page it was showing — previously every rebuild
   // restarted at page 1, so pages 2–3 kept getting cut off ("ads clash").
-  var _st = { id: null, idx: 0, next: 0, seen: null };
+  var _st = { id: null, idx: 0, next: 0, seen: null, n: 0, slot: -1, away: false, every: EVERY };
+  window._axrPageSt = _st;   // rotator reads this to hold slides w/ unseen pages
   function _showPage(pages, idx){
     for (var i = 0; i < pages.length; i++) pages[i].classList.toggle('axr-page-on', i === idx);
   }
   function check(){
     var wrap = document.querySelector('.axr-pages');
-    if (!wrap) { _st.seen = null; return; }
+    // The card genuinely leaving the screen is the ONLY thing that should
+    // restart its story. The outgoing copy is removed about a second into the
+    // crossfade, so this branch is a reliable 'the carousel moved on' signal.
+    if (!wrap) { _st.seen = null; _st.away = true; return; }
+    // Never drive the copy that is dissolving away: the outgoing card lives in
+    // a crossfade overlay for about a second, and advancing its pages under
+    // the fade changed the photo and the text mid-transition. Leaving _st.seen
+    // alone keeps the state intact for the incoming card.
+    try { if (wrap.closest && wrap.closest('[data-ad-fading]')) return; } catch (e) {}
     var pages = wrap.querySelectorAll('.axr-page');
     if (!pages || pages.length < 2) return;
     var now = Date.now();
@@ -29092,20 +29681,32 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       _st.seen = wrap;
       var art = wrap.closest ? wrap.closest('.axr') : null;
       var id = (art && art.getAttribute('data-hotel-id')) || '';
-      if (id && id === _st.id) {
-        // Same hotel re-rendered mid-slide — resume where we were. But if the
-        // deck already ran to its last page, this is the hotel RE-APPEARING in
-        // a later carousel slot, so restart its story from page 1.
-        if (_st.idx >= pages.length - 1) { _st.idx = 0; }
-        _showPage(pages, _st.idx % pages.length);
-        // FULL dwell for the resumed page — a board re-render mid-page was
-        // leaving it only the leftover seconds (Nick: 'the second room cuts
-        // after 2 seconds').
-        _st.next = now + EVERY;
+      var slotNow = (typeof window._gateAdCurrentIdx === 'number') ? window._gateAdCurrentIdx : -1;
+      // Resume only when this is the SAME deck in the SAME carousel slot: same
+      // hotel, same number of pages, still mid-story. Judging by index alone
+      // meant that when the room pages arrived and the deck grew from 3 to 6,
+      // a stale index of 2 read as 'mid-deck' and the card OPENED on the
+      // dining page — pages 1 and 2 never shown, then a dead hold at the end.
+      // Requiring the page count to match sent two legitimate resumes to the
+      // reset branch: a deck growing 3→6 when the room pages land, and any
+      // board repaint while parked on the final page. Both snapped the card
+      // back to page 1 and re-armed a full-length hold, so a six-page card
+      // could sit for nearly two minutes replaying its whole story.
+      var sameDeck = id && id === _st.id && slotNow === _st.slot && !_st.away;
+      if (sameDeck) {
+        _st.idx = Math.min(_st.idx, pages.length - 1);
+        _showPage(pages, _st.idx);
+        // Keep the deadline this page already had. Rebasing it on every board
+        // re-render (they happen on the minute) handed the current page a
+        // fresh full dwell each time, so the deck overran its slot and the
+        // pages at the end were chopped.
+        if (!(_st.next > now)) _st.next = now + EVERY;
       } else {
-        // Genuinely new slide — page 1 gets its full dwell.
         _st.id = id; _st.idx = 0; _st.next = now + EVERY;
       }
+      _st.n = pages.length;
+      _st.slot = slotNow;
+      _st.away = false;
       return;
     }
     if (now < _st.next) return;
@@ -29118,6 +29719,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     _st.idx = Math.min(_st.idx + 1, pages.length - 1);
     _showPage(pages, _st.idx);
   }
+  // renderGateAd calls this right after it writes the new markup, so the
+  // resumed page is selected in the SAME task as the write. Without it every
+  // re-render painted page 1 at full opacity and then ghost-crossfaded forward
+  // to the real page — the visible jump.
+  window._axrPageSync = check;
   setInterval(check, 250);
 })();
 

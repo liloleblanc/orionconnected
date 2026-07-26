@@ -1533,7 +1533,9 @@ function _cuApplyFont(fontKey) {
       s.id = 'fids-font-override';
       document.head.appendChild(s);
     }
-    s.textContent = '*, *::before, *::after { font-family: ' + stack + ' !important; }';
+    // .axr (Accor hotel ads) exempt — brand typography must survive the nuke
+    // (same guard as fids-core changeFont; Nick: 'AC Nord takes over').
+    s.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + stack + ' !important; }';
   } else {
     st.removeProperty('--font-primary');
     delete document.body.dataset.fidsFont;

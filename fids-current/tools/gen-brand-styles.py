@@ -42,6 +42,7 @@ TABLE = [
  ("MER","Mercure","modern","#14233F","#B59A5E","#F0ECDF"),
  ("GRA","Grand Mercure","modern","#16233C","#C2A35C","#F0ECDF"),
  ("HOF","Handwritten","modern","#1C1C22","#D8A24B","#F0ECE3"),
+ ("SOU","Handwritten","modern","#1C1C22","#D8A24B","#F0ECE3"),  # live catalog code
  ("TRB","Tribe","modern","#111114","#C8A24A","#F0EFEC"),
  ("TRI","Tribe","modern","#111114","#C8A24A","#F0EFEC"),
  ("HB","The Hoxton","modern","#1E1A16","#D98E4B","#F0E7DB"),
