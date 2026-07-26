@@ -3912,11 +3912,15 @@ html .g8-wrap .gad-media-col.g8-static-page-ad::after {
    carousel — every slide: ads, Accor, weather, takeovers — is inset to
    that window. The panel-level backdrop (.ad-panel-backdrop) and the
    outer frame stay full-bleed on the column. */
+/* v22566 (Nick: 'I said touch the border') — the inset opening was wrong:
+   in his mockup the ad runs to the walls and the frame sits ON its edges
+   like a real picture frame. Carousel back to full-bleed; the outer frame
+   (z 60) overlays every slide's edges. */
 html body .gad-media-col #gateAdCarousel {
-  left: 4.9% !important;
-  right: 4.9% !important;
-  top: 7% !important;
-  bottom: 7% !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
   width: auto !important;
   height: auto !important;
 }
