@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22545';
+var FIDS_BUILD_TAG = 'v22546';
 (function(){
   try {
     function _addTag(){
@@ -26045,7 +26045,6 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;background:#000 url(\'' + ad.bgImage + '\') ' + (ad.bgPosition || 'center center') + ' / cover no-repeat;overflow:hidden;">'
         + '<div style="position:absolute;inset:0;background:linear-gradient(90deg,' + _bgLeft + ' 0%,' + _bgLeft + ' 35%,rgba(0,0,0,0.65) 70%,rgba(0,0,0,0.35) 100%);"></div>'
-        + _adSpotsOverlay(0.10)
         + '<div style="position:relative;z-index:2;width:100%;height:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 36px;max-width:70%;box-sizing:border-box;">'
         +   _adLogoHtml
         +   (_lsHeadline ? '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + _lsHeadline + '</div>' : '')
@@ -26054,17 +26053,12 @@ function buildGateAdHtml(ad) {
         + '</div>'
       );
     } else {
-      // No image: text-only on solid background, logo at top. The dot-field
-      // texture sits between the surface and the copy (content lifted to
-      // z-index 2 so the positioned overlay can't paint over the glyphs).
+      // No image: text-only on solid background, logo at top.
       return _adWrap(
-        '<div style="position:relative;width:100%;height:100%;background:' + _bgLeft + ';display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 36px;overflow:hidden;">'
-        +   _adSpotsOverlay(0.14)
-        +   '<div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;width:100%;">'
-        +     _adLogoHtml
-        +     (_lsHeadline ? '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + _lsHeadline + '</div>' : '')
-        +     (ad.sub ? '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:rgb(220,225,235);margin-top:18px;line-height:1.3;max-width:100%;">' + ad.sub + '</div>' : '')
-        +   '</div>'
+        '<div style="width:100%;height:100%;background:' + _bgLeft + ';display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 36px;">'
+        +   _adLogoHtml
+        +   (_lsHeadline ? '<div style="font-size:clamp(36px,4.2vw,60px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-0.3px;max-width:100%;">' + _lsHeadline + '</div>' : '')
+        +   (ad.sub ? '<div style="font-size:clamp(20px,2.2vw,32px);font-weight:500;color:rgb(220,225,235);margin-top:18px;line-height:1.3;max-width:100%;">' + ad.sub + '</div>' : '')
         + '</div>'
       );
     }
@@ -26079,17 +26073,6 @@ function buildGateAdHtml(ad) {
     return '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;">' + inner + '</div>';
   }
 
-  // Faded dot-field texture over classic ad surfaces (Nick's pick, Jul 2026:
-  // vecteezy 21949313 'light blue cover with spots', option C of three). The
-  // source art is dark-dots-on-white; the shipped PNG is the INVERSE baked to
-  // transparency — cool-white ink whose alpha IS the dot field — so it rides
-  // on any surface as a subtle light lift. It renders INSIDE the slide's own
-  // HTML (not a separate carousel layer, which is what flickered in the old
-  // abstract-backdrop experiment) so it fades in and out with its slide.
-  // Never on finished creatives (imageOnly) and never on Accor cards.
-  function _adSpotsOverlay(op) {
-    return '<div style="position:absolute;inset:0;background:url(\'/logos/Backgrounds/adback-spots.png?v=1\') center / cover no-repeat;opacity:' + (op || 0.14) + ';pointer-events:none;"></div>';
-  }
 
   // ── LAYOUT 1: WI-FI AD ────────────────────────────────────────────────
   // Matches the Air Canada Aeroplan Wi-Fi reference: icon CENTERED above
@@ -27876,10 +27859,15 @@ function _adBackdropHtml(blurUrl) {
       + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.16);"></div>'
     : '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#151c2a 0%,#0a0e16 100%);"></div>'
       + '<div style="position:absolute;inset:0;background:var(--airline-accent,#D82F2E);opacity:.22;"></div>';
-  var dots = '<div style="position:absolute;left:-14%;right:-14%;top:-10%;bottom:-10%;'
-    + 'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
-    + 'background-size:cover;background-position:center 30%;background-repeat:no-repeat;'
-    + 'opacity:.42;filter:grayscale(1) brightness(1.85);mix-blend-mode:screen;pointer-events:none;"></div>';
+  // Dot field = Nick's pick (Jul 2026, vecteezy 21949313 'spots', option C —
+  // 'behind here like in the background'): replaces the 3d-globe dots as the
+  // texture breathing through the ad surround. The PNG is light ink baked to
+  // transparency, so screen-blended it lifts both the blurred-photo ambient
+  // and the gradient base without painting white.
+  var dots = '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;'
+    + 'background-image:url(\'/logos/Backgrounds/adback-spots.png?v=1\');'
+    + 'background-size:cover;background-position:center;background-repeat:no-repeat;'
+    + 'opacity:.38;mix-blend-mode:screen;pointer-events:none;"></div>';
   // Diagonal slats REMOVED (Nick, Jul 2026: 'the main screen remove the
   // lines'). The dotted globe stays (Nick liked 'the dots world') — only the
   // skewed accent line-set that streaked across the welcome/ad backdrop is gone.
