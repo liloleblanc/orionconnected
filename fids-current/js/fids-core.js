@@ -16462,7 +16462,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22526';
+var FIDS_BUILD_TAG = 'v22527';
 (function(){
   try {
     function _addTag(){
@@ -28293,15 +28293,19 @@ function _getGateAdDwellMs(slide) {
     if (ad.isAccorHotel) {
       var _axN = 0;
       try {
-        // Scope to the LIVE carousel: the outgoing slide sits in a crossfade
-        // overlay attached to the carousel's PARENT, so an unscoped query
-        // counted both cards' pages and granted a single-hotel deck 121s
-        // instead of 61s — the last page then sat frozen for a full minute.
+        // Count the LIVE card's pages only. The outgoing slide lingers in a
+        // crossfade overlay for about a second, and counting both cards
+        // granted a single-hotel deck 121s instead of 61s — the last page then
+        // sat frozen for a minute. Filtering on the overlay marker works
+        // wherever the ad is mounted, unlike scoping to a container id.
         // Any non-zero live count is the truth; the old '>= 3' floor threw
         // away a legitimate 2-page card and over-held it.
-        var _axRoot = document.getElementById('gateAdCarousel');
-        var _axEls = _axRoot ? _axRoot.querySelectorAll('.axr-pages .axr-page') : null;
-        if (_axEls && _axEls.length) _axN = _axEls.length;
+        var _axAll = document.querySelectorAll('.axr-pages .axr-page');
+        for (var _axI = 0; _axI < _axAll.length; _axI++) {
+          var _axP = _axAll[_axI];
+          if (_axP.closest && _axP.closest('[data-ad-fading]')) continue;
+          _axN++;
+        }
       } catch (e) {}
       if (!_axN && ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
         try {
