@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22546';
+var FIDS_BUILD_TAG = 'v22547';
 (function(){
   try {
     function _addTag(){
@@ -27853,7 +27853,17 @@ function _adBackdropHtml(blurUrl) {
   // ambient), videos get a dark airline-accent vignette (a second decoding
   // video would OOM the stream box). The dots world breathes through both,
   // and the accent handles hold the edges.
-  var base = blurUrl
+  // PREVIEW (Nick, Jul 26: 'can you try this as well with the other one
+  // somehow?') — his blue-waves art (vecteezy EPS, placeholder text removed)
+  // as the surround base, with the C spots breathing on top. Flip
+  // _WAVES_BASE off to restore the blurred-photo ambient / gradient base.
+  var _WAVES_BASE = true;
+  var base;
+  if (_WAVES_BASE) {
+    base = '<div style="position:absolute;inset:-2%;background-image:url(\'/logos/Backgrounds/adback-waves.jpg?v=1\');'
+      + 'background-size:cover;background-position:center;"></div>'
+      + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.30);"></div>';
+  } else base = blurUrl
     ? '<div style="position:absolute;inset:-60px;background-image:url(\'' + blurUrl + '\');'
       + 'background-size:cover;background-position:center;filter:blur(46px) saturate(1.2) brightness(.92);transform:scale(1.15);"></div>'
       + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.16);"></div>'
