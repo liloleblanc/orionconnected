@@ -3922,10 +3922,13 @@ html .g8-wrap .gad-media-col.g8-static-page-ad::after {
    band ends ~4% in horizontally and ~6% vertically (2048x1365 art
    stretched to the panel), so that is exactly where the carousel starts. */
 html body .gad-media-col #gateAdCarousel {
-  left: 4% !important;
-  right: 4% !important;
-  top: 6% !important;
-  bottom: 6% !important;
+  /* v22573 'TOUCH THE EDGE': the outer frame band now sits at the wall
+     (104% art stretch), so the content opening moves out to meet it —
+     the ad's sides land on the silver band itself. */
+  left: 2% !important;
+  right: 2% !important;
+  top: 3.6% !important;
+  bottom: 3.6% !important;
   width: auto !important;
   height: auto !important;
 }
