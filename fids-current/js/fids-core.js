@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22544';
+var FIDS_BUILD_TAG = 'v22545';
 (function(){
   try {
     function _addTag(){
@@ -17804,20 +17804,20 @@ const DEMO_SCHEDULES = {
       {m: -12, flight:'PD506',  dest:'TORONTO',       di:'YYZ', al:'PD', gate:'3',  terminal:'—'},
       {m:  10, flight:'AC8658', dest:'OTTAWA',        di:'YOW', al:'AC', gate:'2',  terminal:'—'},
       {m:  28, flight:'WS3340', dest:'CALGARY',       di:'YYC', al:'WS', gate:'1',  terminal:'—'},
-      {m:  55, flight:'AC1960', dest:'NEW YORK',      di:'JFK', al:'AC', gate:'5',  terminal:'—'},
+      {m:  55, flight:'AC1960', dest:'NEW YORK',      di:'JFK', al:'AC', gate:'4',  terminal:'—'},
       {m:  85, flight:'AC8660', dest:'MONTREAL',      di:'YUL', al:'AC', gate:'3',  terminal:'—'},
-      {m: 115, flight:'UA4891', dest:'CHICAGO',       di:'ORD', al:'UA', gate:'6',  terminal:'—'},
+      {m: 115, flight:'UA4891', dest:'CHICAGO',       di:'ORD', al:'UA', gate:'1',  terminal:'—'},
       {m: 150, flight:'PD508',  dest:'TORONTO',       di:'YYZ', al:'PD', gate:'2',  terminal:'—', delay:30},
-      {m: 185, flight:'TS372',  dest:'CANCUN',        di:'CUN', al:'TS', gate:'7',  terminal:'—'},
+      {m: 185, flight:'TS372',  dest:'CANCUN',        di:'CUN', al:'TS', gate:'3',  terminal:'—'},
       {m: 220, flight:'AC8662', dest:'TORONTO',       di:'YYZ', al:'AC', gate:'1',  terminal:'—'},
       {m: 270, flight:'WS5890', dest:'PUNTA CANA',    di:'PUJ', al:'WS', gate:'4',  terminal:'—'},
-      {m: 310, flight:'AC876',  dest:'LONDON',        di:'LHR', al:'AC', gate:'5',  terminal:'—'},
+      {m: 310, flight:'AC876',  dest:'LONDON',        di:'LHR', al:'AC', gate:'1',  terminal:'—'},
       {m: 360, flight:'WS3342', dest:'HALIFAX',       di:'YHZ', al:'WS', gate:'3',  terminal:'—'},
       {m: 420, flight:'PB8668', dest:"ST. JOHN'S",    di:'YYT', al:'PB', gate:'2',  terminal:'—'},
-      {m: 475, flight:'TS962',  dest:'VARADERO',      di:'VRA', al:'TS', gate:'7',  terminal:'—'},
+      {m: 475, flight:'TS962',  dest:'VARADERO',      di:'VRA', al:'TS', gate:'4',  terminal:'—'},
       {m: 530, flight:'AC8670', dest:'MONTREAL',      di:'YUL', al:'AC', gate:'1',  terminal:'—'},
-      {m: 590, flight:'AF3850', dest:'PARIS',         di:'CDG', al:'AF', gate:'6',  terminal:'—'},
-      {m: 660, flight:'WS2402', dest:'MONTEGO BAY',   di:'MBJ', al:'WS', gate:'7',  terminal:'—'},
+      {m: 590, flight:'AF3850', dest:'PARIS',         di:'CDG', al:'AF', gate:'3',  terminal:'—'},
+      {m: 660, flight:'WS2402', dest:'MONTEGO BAY',   di:'MBJ', al:'WS', gate:'4',  terminal:'—'},
       {m: 740, flight:'AC8674', dest:'TORONTO',       di:'YYZ', al:'AC', gate:'2',  terminal:'—'},
     ],
     arr:[
