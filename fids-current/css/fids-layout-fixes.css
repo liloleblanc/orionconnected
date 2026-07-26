@@ -3741,3 +3741,42 @@ html body.fids-ap-YQM .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage,
 html body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage {
   font-size: clamp(24px, 1.9vw, 40px) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   THE DATA IS THE POINT — IATA chip + right-card labels (v22530)
+   The destination code was cut from 1.45em to 1.06em by a later override, and
+   on the dark rails it renders in the airline's own accent — Air Canada red on
+   near-black, small and dim (Nick boxed 'Destination | YYC' on both the rail
+   and the right card: 'this is what I need but you dont provide').
+   The code goes back up in size and weight, and the ink is lifted so it stays
+   the airline's colour but is actually readable against a dark shelf.
+   ════════════════════════════════════════════════════════════════════════ */
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title:has(.v2-fi-code) {
+  font-size: clamp(17px, 2.3vh, 27px) !important;
+}
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title .v2-fi-code {
+  font-size: 1.34em !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em !important;
+}
+/* Lifted inks: same hue as the carrier, enough luminance to read on black. */
+html body[data-gate-airline="AC"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code,
+html body[data-gate-airline="QK"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code,
+html body[data-gate-airline="RV"] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
+  color: #ff5666 !important;
+}
+/* Right card: the same code, and the label above it, were the dimmest things
+   on the panel. */
+html .g8-bir-title .g8-bir-code-t,
+html .gad-map-col-v2 .v2-rc-fi-tlabel .v2-fi-code {
+  font-size: 1.22em !important;
+  font-weight: 800 !important;
+}
+html body[data-gate-airline="AC"] .g8-bir-title .g8-bir-code-t {
+  color: #ff5666 !important;
+}
+html body[data-gate-airline="AC"] .gad-map-col-v2 .v2-rc-fi-tlabel,
+html body[data-gate-airline="AC"] .gad-map-col-v2 .v2-rc-fi-tlabel * {
+  color: #e9edf5 !important;
+  opacity: 1 !important;
+}

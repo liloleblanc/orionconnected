@@ -10281,6 +10281,18 @@ function gateAutofit(root) {
   // box, strict (the browser ellipsizes on 1px of overflow), 1px slack.
   function _boxAssign(el, availW, availH, colR, skipH) {
     if (availH < 12 || availW < 30) return;
+    // DON'T RE-DERIVE WHAT HASN'T CHANGED. This runs on every rebuild and on
+    // the 5s heartbeat, and each pass re-measures — so a box that reads a pixel
+    // narrower once (mid-transition, a font settling, the destination flip
+    // swapping in a longer word) permanently ratchets the type DOWN, and the
+    // data on screen quietly shrinks over the course of a shift (Nick: 'my
+    // data keeps shrinking I dont know why'). Same text in the same box keeps
+    // the size it already earned.
+    try {
+      var _faKey = (el.textContent || '').trim() + '|' + Math.round(availW) + 'x' + Math.round(availH);
+      if (el.dataset.faKey === _faKey && parseFloat(el.style.fontSize) > 0) return;
+      el.dataset.faKey = _faKey;
+    } catch (e) {}
     // HYSTERESIS (Nick: 'fighting with itself'): the 5 s heartbeats
     // re-derive the size each pass; a result within 1px of what's already
     // applied must not repaint, or the type visibly ticks.
@@ -16462,7 +16474,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22529';
+var FIDS_BUILD_TAG = 'v22530';
 (function(){
   try {
     function _addTag(){
