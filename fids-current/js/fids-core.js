@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22557';
+var FIDS_BUILD_TAG = 'v22558';
 (function(){
   try {
     function _addTag(){
@@ -27848,50 +27848,13 @@ function _map3dFlightCtx(allowEstimated) {
 // soft white brushed base, the dotted globe faded in grey (multiply, rising
 // from the bottom), and the airline-accent diagonal 'handles' at both edges.
 function _adBackdropHtml(blurUrl) {
-  // BLEND backdrop (Nick: 'nothing blends, it's just pasted'): images fill
-  // their own surround with a blown-up blurred copy of themselves (TV
-  // ambient), videos get a dark airline-accent vignette (a second decoding
-  // video would OOM the stream box). The dots world breathes through both,
-  // and the accent handles hold the edges.
-  // PREVIEW (Nick, Jul 26: 'can you try this as well with the other one
-  // somehow?') — his blue-waves art (vecteezy EPS, placeholder text removed)
-  // as the surround base, with the C spots breathing on top. Flip
-  // _WAVES_BASE off to restore the blurred-photo ambient / gradient base.
-  var _WAVES_BASE = true;
-  var base;
-  if (_WAVES_BASE) {
-    // Theme-aware (Nick: 'it needs to adjust to the color theme'): the waves
-    // render as a LUMINOSITY layer over the airline accent — the art supplies
-    // the shapes and light, --airline-accent supplies the hue, so the same
-    // asset reads red at an AC gate, teal at WestJet, blue at United.
-    // isolation:isolate keeps the blend from reaching layers under the slide.
-    // Round 3 (Nick, Jul 26): his bright blue/orange wavy art, shown in its
-    // OWN colors (no accent blend — the frame carries the theme now), with
-    // only a whisper of veil so the ad still pops off it.
-    base = '<div style="position:absolute;inset:-2%;background-image:url(\'/logos/Backgrounds/adback-waves2.jpg?v=1\');'
-      +   'background-size:cover;background-position:center;"></div>'
-      + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.12);"></div>';
-  } else base = blurUrl
-    ? '<div style="position:absolute;inset:-60px;background-image:url(\'' + blurUrl + '\');'
-      + 'background-size:cover;background-position:center;filter:blur(46px) saturate(1.2) brightness(.92);transform:scale(1.15);"></div>'
-      + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.16);"></div>'
-    : '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#151c2a 0%,#0a0e16 100%);"></div>'
-      + '<div style="position:absolute;inset:0;background:var(--airline-accent,#D82F2E);opacity:.22;"></div>';
-  // Dot field = Nick's pick (Jul 2026, vecteezy 21949313 'spots', option C —
-  // 'behind here like in the background'): replaces the 3d-globe dots as the
-  // texture breathing through the ad surround. The PNG is light ink baked to
-  // transparency, so screen-blended it lifts both the blurred-photo ambient
-  // and the gradient base without painting white.
-  // Dotted layer = C spots again ('the dots first one we had'), riding the
-  // bright art — screen blend lifts on the colored waves, vanishes on white.
-  var dots = '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;'
-    + 'background-image:url(\'/logos/Backgrounds/adback-spots.png?v=1\');'
-    + 'background-size:cover;background-position:center;background-repeat:no-repeat;'
-    + 'opacity:.38;mix-blend-mode:screen;pointer-events:none;"></div>';
-  // Diagonal slats REMOVED (Nick, Jul 2026: 'the main screen remove the
-  // lines'). The dotted globe stays (Nick liked 'the dots world') — only the
-  // skewed accent line-set that streaked across the welcome/ad backdrop is gone.
-  return base + dots;
+  // The surround design now lives on .gad-media-col itself (art + spots +
+  // outer frame, mounted persistently below) so it bleeds to the walls
+  // UNDER the frame at all times (Nick: 'everything on the screen goes
+  // inside the frame ... minus the background abstract, the frame can just
+  // go on top of it'). Slides render transparent and sit inside the
+  // frame's opening; nothing per-slide to paint any more.
+  return '';
 }
 
 // ── OUTER PANEL FRAME ────────────────────────────────────────────────────
@@ -27906,6 +27869,17 @@ function _adBackdropHtml(blurUrl) {
     try {
       var col = document.querySelector('.gad-media-col');
       if (!col) return;
+      var bd = col.querySelector(':scope > .ad-panel-backdrop');
+      if (!bd) {
+        bd = document.createElement('div');
+        bd.className = 'ad-panel-backdrop';
+        bd.style.cssText = 'position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;';
+        bd.innerHTML =
+            '<div style="position:absolute;inset:-2%;background-image:url(/logos/Backgrounds/adback-waves2.jpg?v=1);background-size:cover;background-position:center;"></div>'
+          + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.12);"></div>'
+          + '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;background-image:url(/logos/Backgrounds/adback-spots.png?v=1);background-size:cover;background-position:center;opacity:.38;mix-blend-mode:screen;"></div>';
+        col.insertBefore(bd, col.firstChild);
+      }
       var f = col.querySelector(':scope > .ad-outer-frame');
       if (!f) {
         f = document.createElement('div');
