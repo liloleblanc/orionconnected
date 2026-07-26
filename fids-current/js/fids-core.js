@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22578';
+var FIDS_BUILD_TAG = 'v22579';
 (function(){
   try {
     function _addTag(){
@@ -24297,30 +24297,32 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       f.style.height = Math.round(hb.height) + 'px';
       f.style.right = 'auto'; f.style.bottom = 'auto';
       var A = f.querySelector('.ad-mull-a'), B = f.querySelector('.ad-mull-b');
-      if (A && B) {
+      var C = f.querySelector('.ad-mull-c'), D = f.querySelector('.ad-mull-d');
+      if (A && B && C && D) {
+        // SQUARE WINDOWS, literally: all four members, each full length,
+        // forming a window grid with the ad as the middle pane. A member
+        // that would land on the outer frame edge is dropped.
         var TH = 16;
         var GH = 'linear-gradient(180deg,#e8eaec 0%,#f7f8f9 20%,#9aa0a8 55%,#eceded 85%,#c9cdd2 100%)';
         var GV = 'linear-gradient(90deg,#e8eaec 0%,#f7f8f9 20%,#9aa0a8 55%,#eceded 85%,#c9cdd2 100%)';
-        var fullW = r.width >= hb.width - 6, fullH = r.height >= hb.height - 6;
-        if (fullW && fullH) {
-          A.style.display = 'none'; B.style.display = 'none';
-        } else if (fullW) {
-          A.style.display = 'block'; B.style.display = 'block';
-          A.style.background = GH; B.style.background = GH;
-          A.style.left = '0px'; B.style.left = '0px';
-          A.style.width = Math.round(hb.width) + 'px'; B.style.width = Math.round(hb.width) + 'px';
-          A.style.height = TH + 'px'; B.style.height = TH + 'px';
-          A.style.top = Math.max(0, Math.round(r.top - hb.top - TH)) + 'px';
-          B.style.top = Math.min(Math.round(hb.height - TH), Math.round(r.top - hb.top + r.height)) + 'px';
-        } else {
-          A.style.display = 'block'; B.style.display = 'block';
-          A.style.background = GV; B.style.background = GV;
-          A.style.top = '0px'; B.style.top = '0px';
-          A.style.height = Math.round(hb.height) + 'px'; B.style.height = Math.round(hb.height) + 'px';
-          A.style.width = TH + 'px'; B.style.width = TH + 'px';
-          A.style.left = Math.max(0, Math.round(r.left - hb.left - TH)) + 'px';
-          B.style.left = Math.min(Math.round(hb.width - TH), Math.round(r.left - hb.left + r.width)) + 'px';
+        var adT = Math.round(r.top - hb.top), adB = Math.round(r.top - hb.top + r.height);
+        var adL = Math.round(r.left - hb.left), adR = Math.round(r.left - hb.left + r.width);
+        function _hbar(el, y) {
+          if (y - TH < 6 || y > hb.height - 6) { el.style.display = 'none'; return; }
+          el.style.display = 'block'; el.style.background = GH;
+          el.style.left = '0px'; el.style.width = Math.round(hb.width) + 'px';
+          el.style.height = TH + 'px'; el.style.top = Math.max(0, y - TH) + 'px';
         }
+        function _vbar(el, x) {
+          if (x - TH < 6 || x > hb.width - 6) { el.style.display = 'none'; return; }
+          el.style.display = 'block'; el.style.background = GV;
+          el.style.top = '0px'; el.style.height = Math.round(hb.height) + 'px';
+          el.style.width = TH + 'px'; el.style.left = Math.max(0, x - TH) + 'px';
+        }
+        _hbar(A, adT);              // bar ENDS at the ad's top edge
+        _hbar(B, adB + TH);         // bar STARTS at the ad's bottom edge
+        _vbar(C, adL);              // column ends at the ad's left edge
+        _vbar(D, adR + TH);         // column starts at the ad's right edge
       }
       f.style.visibility = 'visible';   // fitted — safe to show
     }
@@ -27978,6 +27980,8 @@ function _adTechFrameHtml() {
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;visibility:hidden;pointer-events:none;z-index:3;">'
     + '<div class="ad-mull-a" style="position:absolute;display:none;' + _mEdge + '"></div>'
     + '<div class="ad-mull-b" style="position:absolute;display:none;' + _mEdge + '"></div>'
+    + '<div class="ad-mull-c" style="position:absolute;display:none;' + _mEdge + '"></div>'
+    + '<div class="ad-mull-d" style="position:absolute;display:none;' + _mEdge + '"></div>'
     + '</div>';
 }
 
