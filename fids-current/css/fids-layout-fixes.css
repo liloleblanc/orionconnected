@@ -4343,3 +4343,51 @@ html body[data-gate-airline="DL"] .g8-bir-badge img {
 html body[data-gate-airline="DL"] .g8-bir-badge img {
   filter: none !important;
 }
+
+/* ── v22604: DL triangle bigger (Nick: 'icon needs to be bigger') —
+   between the glyph scale and the original full-bleed. */
+html body[data-gate-airline="DL"] .g8-bir-badge img {
+  padding: 14% !important;
+}
+
+/* ── v22604: dots visible again (Nick: 'I dont see any changes') —
+   soft-light was a no-op on the near-black gate surfaces. Screen blend
+   lifts dark backgrounds and is still a no-op on white lettering. */
+html body::after {
+  mix-blend-mode: screen !important;
+  opacity: .14 !important;
+}
+
+/* ── v22604: SIDE SHELVES at every gate — the material faded and colored
+   to the airline (Nick: 'the panels shelves are faded a bit and colors
+   to the airline'). AC's approved untinted rules outrank these. */
+html body .g8-wrap .gad-aircraft-col,
+html body .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body .g8-wrap .gad-map-col-v2,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 34%, #83878f) !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+}
+/* Tinted shelves are dark — inks lift on every airline (AC already has
+   its own lifts). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-rtitle,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-actype-val,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-reg-expected {
+  color: #edf1f7 !important;
+}
+/* Keep AC's approved untinted material un-multiplied on the shelf set
+   (same guard the slabs needed in v22599). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-blend-mode: normal !important;
+}
