@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22561';
+var FIDS_BUILD_TAG = 'v22562';
 (function(){
   try {
     function _addTag(){
@@ -24261,9 +24261,18 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
    frame hugs the ad itself (Nick), whatever the creative's aspect ratio. */
 (function () {
   function _drawnRect(m) {
-    var mw = m.videoWidth || m.naturalWidth, mh = m.videoHeight || m.naturalHeight;
     var b = m.getBoundingClientRect();
-    if (!mw || !mh || !b.width || !b.height) return null;
+    if (!b.width || !b.height) return null;
+    // cover/fill media (v22561: the ad goes against the border) paints the
+    // whole element box — the frame hugs the box itself. The contain math
+    // below only applies when the media letterboxes.
+    var _fit = '';
+    try { _fit = (getComputedStyle(m).objectFit || '').trim(); } catch (e) {}
+    if (_fit === 'cover' || _fit === 'fill') {
+      return { left: b.left, top: b.top, width: b.width, height: b.height };
+    }
+    var mw = m.videoWidth || m.naturalWidth, mh = m.videoHeight || m.naturalHeight;
+    if (!mw || !mh) return null;
     var ar = mw / mh, br = b.width / b.height, w, h;
     if (ar >= br) { w = b.width; h = b.width / ar; } else { h = b.height; w = b.height * ar; }
     return { left: b.left + (b.width - w) / 2, top: b.top + (b.height - h) / 2, width: w, height: h };
