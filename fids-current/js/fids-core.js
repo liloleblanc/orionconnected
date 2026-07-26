@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22581';
+var FIDS_BUILD_TAG = 'v22582';
 (function(){
   try {
     function _addTag(){
@@ -24290,35 +24290,20 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       var r = _drawnRect(m);
       if (!r) continue;
       var hb = host.getBoundingClientRect();
-      // Strip placement: members OUTSIDE the ad's edges along its letterbox
-      // boundaries; drop any member that meets the outer frame.
-      f.style.left = '0px'; f.style.top = '0px';
-      f.style.width = Math.round(hb.width) + 'px';
-      f.style.height = Math.round(hb.height) + 'px';
-      f.style.right = 'auto'; f.style.bottom = 'auto';
-      var T = f.querySelector('.ad-fs-t'), Bt = f.querySelector('.ad-fs-b');
-      var L = f.querySelector('.ad-fs-l'), R = f.querySelector('.ad-fs-r');
-      if (T && Bt && L && R) {
-        var TH = 20;
-        var adT = Math.round(r.top - hb.top), adB = Math.round(r.top - hb.top + r.height);
-        var adL = Math.round(r.left - hb.left), adR = Math.round(r.left - hb.left + r.width);
-        function _hm(el, yTop) {   // horizontal member: its BOTTOM meets yTop==ad edge
-          if (yTop - TH < 8 || yTop > hb.height - 8) { el.style.display = 'none'; return; }
-          el.style.display = 'block';
-          el.style.left = '0px'; el.style.width = Math.round(hb.width) + 'px';
-          el.style.height = TH + 'px'; el.style.top = (yTop - TH) + 'px';
-        }
-        function _vm(el, xLeft) {
-          if (xLeft - TH < 8 || xLeft > hb.width - 8) { el.style.display = 'none'; return; }
-          el.style.display = 'block';
-          el.style.top = '0px'; el.style.height = Math.round(hb.height) + 'px';
-          el.style.width = TH + 'px'; el.style.left = (xLeft - TH) + 'px';
-        }
-        _hm(T, adT);          // above the ad, bottom edge kissing the ad top
-        _hm(Bt, adB + TH);    // below the ad
-        _vm(L, adL);          // left of the ad
-        _vm(R, adR + TH);     // right of the ad
+      // ONE frame per ad. Full-bleed ad: the frame sits ON the ad ('it can
+      // go over it, it's fine'). Smaller ad: the frame is inflated so its
+      // band sits OUTSIDE the ad — the creative is confined within it.
+      var fullW = r.width >= hb.width - 8, fullH = r.height >= hb.height - 8;
+      var padX = 0, padY = 0;
+      if (!(fullW && fullH)) {
+        padX = Math.max(8, Math.round(r.width * 0.016));
+        padY = Math.max(8, Math.round(r.height * 0.024));
       }
+      f.style.left = Math.round(r.left - hb.left - padX) + 'px';
+      f.style.top = Math.round(r.top - hb.top - padY) + 'px';
+      f.style.width = Math.round(r.width + 2 * padX) + 'px';
+      f.style.height = Math.round(r.height + 2 * padY) + 'px';
+      f.style.right = 'auto'; f.style.bottom = 'auto';
       f.style.visibility = 'visible';   // fitted — safe to show
     }
   }
@@ -27965,19 +27950,11 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  // FRAME STRIPS (Nick: 'almost correct - the ad must not hide in the
-  // lines, and cut the member where it meets the other border'). The
-  // members are slices of the SAME silver frame art, placed fully OUTSIDE
-  // the ad's drawn edges along its letterbox boundaries; a member that
-  // would land on the outer frame is dropped.
-  var _hb = '/logos/Backgrounds/ad-frame-hbar.png?v=1';
-  var _vb = '/logos/Backgrounds/ad-frame-vbar.png?v=1';
-  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;visibility:hidden;pointer-events:none;z-index:3;">'
-    + '<div class="ad-fs-t" style="position:absolute;display:none;background-image:url(' + _hb + ');background-size:100% 100%;"></div>'
-    + '<div class="ad-fs-b" style="position:absolute;display:none;background-image:url(' + _hb + ');background-size:100% 100%;transform:scaleY(-1);"></div>'
-    + '<div class="ad-fs-l" style="position:absolute;display:none;background-image:url(' + _vb + ');background-size:100% 100%;"></div>'
-    + '<div class="ad-fs-r" style="position:absolute;display:none;background-image:url(' + _vb + ');background-size:100% 100%;transform:scaleX(-1);"></div>'
-    + '</div>';
+  // ONE complete frame per ad — the same silver art (Nick: 'the map should
+  // have the same frame, it can go over it; small ads confined within').
+  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
+    + 'visibility:hidden;pointer-events:none;z-index:3;'
+    + 'background-image:url(/logos/Backgrounds/ad-frame-silver.png?v=2);background-size:100% 100%;"></div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
