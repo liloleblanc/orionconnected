@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22585';
+var FIDS_BUILD_TAG = 'v22586';
 (function(){
   try {
     function _addTag(){
@@ -24296,8 +24296,12 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       var fullW = r.width >= hb.width - 8, fullH = r.height >= hb.height - 8;
       var padX = 0, padY = 0;
       if (!(fullW && fullH)) {
-        padX = Math.max(8, Math.round(r.width * 0.016));
-        padY = Math.max(8, Math.round(r.height * 0.024));
+        // Clear the WHOLE double-line motif past the ad edge (the inner
+        // line sat on the creative — 'you can still see the ad outside
+        // borders'). Solved from the art's line geometry: inner-line inner
+        // edge at 2.8%/4.3% of the frame box.
+        padX = Math.max(10, Math.round(r.width * 0.030));
+        padY = Math.max(10, Math.round(r.height * 0.047));
       }
       f.style.left = Math.round(r.left - hb.left - padX) + 'px';
       f.style.top = Math.round(r.top - hb.top - padY) + 'px';

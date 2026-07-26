@@ -3957,3 +3957,22 @@ html body #gateAdCarousel .ad-tech-frame,
 html body #fidsMediaFrame .ad-tech-frame {
   z-index: 4 !important;
 }
+
+/* ── v22586: WEATHER CARD FITS THE FRAMED OPENING (Nick: 'the weather it
+   cuts off'). The card's clamps are vh-based but its box lost ~9% height
+   to the frame inset, so the outlook strip clipped. Key elements come
+   down ~12% so the whole card fits the opening. */
+html .wxcard-wrap {
+  padding: clamp(12px, 1.8vh, 26px) clamp(16px, 1.6vw, 32px) !important;
+}
+html .wxcard-col .wxc-hero img, html .wxcard-col .wxc-hero .wxanim-host {
+  width: clamp(92px, 15.5vh, 175px) !important;
+  height: clamp(92px, 15.5vh, 175px) !important;
+}
+html .wxc-temp { font-size: clamp(36px, 6.3vh, 78px) !important; }
+html .wxc-hero { margin: clamp(4px, 0.8vh, 10px) 0 !important; }
+html .wxc-day img {
+  width: clamp(38px, 5.8vh, 66px) !important;
+  height: clamp(38px, 5.8vh, 66px) !important;
+}
+html .wxc-city { font-size: clamp(20px, 3vh, 38px) !important; }
