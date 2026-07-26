@@ -4235,3 +4235,31 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
   background-blend-mode: normal !important;
 }
+
+/* ── v22597: AMBIENT TEXTURES (Nick's two uploads, both 'very faint').
+   1) Halftone dot field on the LOWER part of every screen — the art is
+   dense at the bottom and dissolves upward, so anchored to the bottom it
+   never reaches the banner. White ink baked to alpha, so it reads as a
+   quiet lift on dark surfaces and stays invisible on light ones. */
+html body::after {
+  content: '';
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 58vh;
+  background: url("/logos/Backgrounds/screen-dots-b.png?v=1") center bottom / 100% 100% no-repeat;
+  opacity: .10;
+  pointer-events: none;
+  z-index: 500;
+}
+/* 2) Gray volumetric silk across the TOP BANNER only — screen-blended so
+   it lifts the dark banner surfaces without touching the lettering. */
+html body .g8-r1, html body .fids-banner { position: relative; }
+html body .g8-r1::after, html body .fids-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("/logos/Backgrounds/banner-silk.jpg?v=1") center / cover no-repeat;
+  mix-blend-mode: screen;
+  opacity: .16;
+  pointer-events: none;
+}
