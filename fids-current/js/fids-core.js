@@ -16462,7 +16462,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22525';
+var FIDS_BUILD_TAG = 'v22526';
 (function(){
   try {
     function _addTag(){
@@ -26945,6 +26945,12 @@ function buildAccorAdOnlyV6(ad) {
   var starCount=Math.max(0,Math.min(5,Math.round(stars||0)));
   var starsHtml=starCount>0?'<span class="axr-stars">'+Array(starCount+1).join('★')+'</span>':'';
   var reviewsLabel=({en:'reviews',fr:'avis',es:'reseñas',de:'Bewertungen',it:'recensioni',pt:'avaliações',ja:'件のレビュー',zh:'条评论',ar:'تقييمات'}[accorLang()]||'reviews');
+  // Never let an object reach the card: an upstream shape change would print
+  // '[object Object]/5' on a paying advertiser's slide.
+  if (rating && typeof rating === 'object') {
+    try { rating = (rating.trustyou && rating.trustyou.score) || rating.score || rating.value || ''; } catch (e) { rating = ''; }
+  }
+  if (rating != null && typeof rating !== 'string' && typeof rating !== 'number') rating = '';
   var ratingHtml=rating?'<span class="axr-score">'+esc(rating)+'<small>/5'+(reviewCount?' · '+esc(reviewCount)+' '+reviewsLabel:'')+'</small></span>':'';
 
   // Per-brand logo crops — many hotel SVGs float their wordmark in a big
@@ -27234,7 +27240,7 @@ function buildAccorAdOnlyV6(ad) {
   // Commodity lines are never a selling point, wherever they come from. Accor
   // lists 'Mini Bar' among Faena New York's advantages, and with the longer
   // ones filtered out it became the hotel's ONE headline claim.
-  var _dullAdvRx = /wi-?fi|internet|wireless|t[ée]l[ée]phone|telephone|mini ?bar|minibar|hair ?dry|s[èe]che-cheveux|iron(ing)?\b|fer [àa] repasser|kettle|bouilloire|coffee\/tea|wake[- ]?up|r[ée]veil|\btv\b|television|safe\b|coffre/i;
+  var _dullAdvRx = /wi-?fi|internet|wireless|t[ée]l[ée]phone|telephone|mini[\s-]?bar|hair ?dry|s[èe]che-cheveux|iron(ing)?\b|fer [àa] repasser|kettle|bouilloire|coffee ?\/? ?tea|plateau (de )?th[ée]|wake[- ]?up|r[ée]veil|\btv\b|t[ée]l[ée]vision|television|\bsafe\b|coffre[- ]?fort|air ?condition|climatisation/i;
   var _advs = (Array.isArray(ad.advantages) ? ad.advantages : [])
     .map(function (a) { return String(a || '').trim(); })
     .filter(function (a) { return a && a.length <= 60 && !_covidRx.test(a) && !_dullAdvRx.test(a); })
@@ -27246,7 +27252,7 @@ function buildAccorAdOnlyV6(ad) {
     // spa, a restaurant, parking or a shuttle is real information a traveller
     // wants, and cutting it left cards with almost nothing on them (Nick:
     // 'theres barely any info at all on some of these').
-    var _dullRx = /wi-?fi|internet|wireless|t[ée]l[ée]phone|telephone/i;
+    var _dullRx = _dullAdvRx;
     _advs = (Array.isArray(_amenSell) ? _amenSell : [])
       .map(function (a) { return String(a || '').trim(); })
       .filter(function (a) { return a && a.length <= 42 && !_dullRx.test(a) && !_covidRx.test(a); })
@@ -27295,19 +27301,29 @@ function buildAccorAdOnlyV6(ad) {
   var _roomsHtml = '';
   try {
     var _rooms = (_detail && Array.isArray(_detail.rooms)) ? _detail.rooms.filter(function (r) { return r && r.name; }) : [];
-    _roomsHtml = _rooms.slice(0, 3).map(function (r) {
-      var _rd = String(r.desc || '');
-      if (_covidRx.test(_rd)) _rd = '';
-      // Trim to a COMPLETE sentence that comfortably fits above the panel
-      // bottom — the old 190-char budget overflowed once the room title and
-      // bullets grew, so the CSS clamp chopped mid-phrase ('…rest after a
-      // long day at the…' — Nick: 'the text at the bottom cuts off').
-      if (_rd.length > 170) {
+    // Decide the copy FIRST, then decide which rooms earn a page. Filtering on
+    // the raw description was wrong: a long description with no sentence break
+    // is trimmed to nothing at render time, so rooms counted as 'has copy'
+    // still produced a bare title (Novotel Montréal showed two such pages in a
+    // row). Rooms with real copy lead; a bare one is only used to top the deck
+    // up to two pages, never three.
+    var _roomCards = _rooms.map(function (r) {
+      var _d = String(r.desc || '');
+      if (_covidRx.test(_d)) _d = '';
+      if (_d.length > 170) {
         // FIRST complete sentence or nothing — never a fragment, never more
         // than the visual box can hold (Nick: 'the ads cut out words').
-        var _pe2 = _rd.slice(0, 240).search(/[.!?](\s|$)/);
-        _rd = (_pe2 > 40) ? _rd.slice(0, _pe2 + 1) : '';
+        var _pe = _d.slice(0, 240).search(/[.!?](\s|$)/);
+        _d = (_pe > 40) ? _d.slice(0, _pe + 1) : '';
       }
+      return { r: r, rd: _d.trim() };
+    });
+    // No copy, no page. Novotel Montréal's three rooms all trim to nothing, so
+    // topping the deck up with them just produced pages carrying a room name
+    // and a bed count — filler on an advertisement. Fewer, fuller pages.
+    _roomCards = _roomCards.filter(function (c) { return c.rd.length > 25; });
+    _roomsHtml = _roomCards.slice(0, 3).map(function (c) {
+      var r = c.r, _rd = c.rd;
       // Split the long feed name into TITLE + DETAILS lines (Nick: 'ROOM
       // NAME / DETAILS, two sentences') — first comma/period ends the title.
       var _rn = String(r.name || '').trim();

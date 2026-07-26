@@ -1,0 +1,64 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/css/accor-slide.css">
+<style>
+  html,body{margin:0;padding:0;background:#3a3a3a;}
+  #well{ position:absolute; left:0; top:0; width:1035px; height:760px; }
+  .axr{ width:100%; height:100%; }
+  .axr-all{ height:72px; }
+  /* flat grey hero so any shadow is a pure delta from 58,58,58 */
+  .probe-hero-bg{ position:absolute; inset:0; background:#3a3a3a; }
+  .axr-hero-grad{ display:none; }
+  .axr-hotel{ display:none; }
+  .axr-all.axr-all-simple::before{ display:none; }
+  .axr-all{ background:#3a3a3a !important; border-top:none !important; }
+  .axr{ background:#3a3a3a !important; }
+  .axr-hero{ background:#3a3a3a !important; }
+</style>
+<style id="variant"></style>
+</head>
+<body>
+<div id="well">
+  <article class="axr" data-brand-code="NOV">
+    <div class="axr-hero axr-pages">
+      <div class="axr-page axr-page-on">
+        <div class="axr-hero-img probe-hero-bg"></div>
+        <div class="axr-hero-grad"></div>
+        <div class="axr-bubble">
+          <div class="axr-bubble-copy"><i class="axr-scan-accent">Scan</i> to discover<br><span class="axr-bub-name">Novotel Toronto Centre</span></div>
+          <div class="axr-qr hotel-ad-qr" data-qr-url="https://all.accor.com/hotel/0910/index.en.shtml"></div>
+        </div>
+      </div>
+    </div>
+    <div class="axr-all axr-all-simple"><div class="axr-all-mark"></div></div>
+  </article>
+</div>
+<script src="/__qr/qrcode.min.js"></script>
+<script>
+function _upgradeQR(el) {
+  if (!el || el.dataset.qrUpgraded === '1') return;
+  if (typeof QRCode === 'undefined') return;
+  var url = el.getAttribute('data-qr-url');
+  if (!url) return;
+  el.innerHTML = '';
+  var w = el.clientWidth - 16;
+  if (w < 80) w = 96;
+  new QRCode(el, { text:url, width:w, height:w, colorDark:'#000000', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  el.dataset.qrUpgraded = '1';
+}
+document.querySelectorAll('.hotel-ad-qr').forEach(_upgradeQR);
+
+// variant switch via ?v=
+var v = new URLSearchParams(location.search).get('v');
+if (v === 'parent') {
+  document.getElementById('variant').textContent =
+    '.axr-bubble::before{ filter:none; } .axr-bubble{ filter:drop-shadow(0 8px 18px rgba(0,0,0,.45)); }';
+} else if (v === 'nofilter') {
+  document.getElementById('variant').textContent = '.axr-bubble::before{ filter:none; }';
+}
+// report geometry
+var b = document.querySelector('.axr-bubble');
+var r = b.getBoundingClientRect();
+document.title = 'BUBBLE ' + JSON.stringify({x:r.x,y:r.y,w:r.width,h:r.height});
+</script>
+</body></html>
