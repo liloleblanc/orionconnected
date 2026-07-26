@@ -2587,7 +2587,17 @@ async function _gateNumbersPoll() {
     var inbData = await loadFlight(flt, today, inb._locIata || iata);
     _gateNumPollBusy = false;
     if (!inbData) return;
-    if (!window._gateInbound || window._gateInbound.flight !== flt) return;   // gate changed mid-fetch
+    // Still the same flight after the await? Check against whichever source we
+    // actually targeted. This guard used to demand window._gateInbound match —
+    // so on a gate with NO inbound linked (the common case: the panel is
+    // showing the departing flight) it returned here every single time, before
+    // the aircraft was ever adopted. loadFlight had already answered 'Airbus
+    // A320' and the answer was thrown away one line later. That is why the
+    // panel still read 'aircraft details pending' after the last two fixes.
+    var _stillSame = (window._gatePanelInbound && window._gatePanelInbound.flight === flt)
+                  || (window._gateInbound && window._gateInbound.flight === flt)
+                  || (window._gateCurrentFlight && window._gateCurrentFlight.flight === flt);
+    if (!_stillSame) return;   // gate changed mid-fetch
     // TODAY'S TAIL FROM THE SAME FETCH (Nick's PD2293: ADB had C-GKQE all
     // along while the panel said 'expected | prévu' — the render-time
     // enrichment had missed once, and this poll then fetched the FULL
@@ -16537,7 +16547,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22535';
+var FIDS_BUILD_TAG = 'v22536';
 (function(){
   try {
     function _addTag(){
