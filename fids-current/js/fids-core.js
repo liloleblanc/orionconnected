@@ -3268,6 +3268,7 @@ var ACCOR_BRAND_NAMES = {
   'SUI': 'Suite Novotel',
   'MER': 'Mercure',
   'HOF': 'Handwritten Collection',
+  'SOU': 'Handwritten Collection',   // code the Accor catalog actually returns
   'ADA': 'Adagio',
   'ADG': 'Adagio',
   'TRI': 'TRIBE',
@@ -3315,6 +3316,7 @@ var ACCOR_BRAND_LOGOS = {
   'NOV': '/logos/hotels/accor-midscale/novotel-monochrome-white.svg',
   'MER': '/logos/hotels/accor-midscale/mercure-monochrome-white.svg',
   'HOF': '/logos/hotels/accor-midscale/handwritten-monochrome-white.svg',
+  'SOU': '/logos/hotels/accor-midscale/handwritten-monochrome-white.svg',
   'ADA': '/logos/hotels/accor-midscale/adagiooriginal-monochrome-white.svg',
   // Economy / Lifestyle
   'IBS': '/logos/hotels/accor-economy/ibis-monochrome-white.svg',          // ibis (red logo)
@@ -3352,6 +3354,7 @@ var ACCOR_BRAND_CATEGORY = {
   'ADA': 'midscale',  // Adagio / Aparthotels Adagio
   'GRE': 'midscale',  // Greet
   'HOF': 'midscale',  // Handwritten Collection
+  'SOU': 'midscale',  // Handwritten Collection (live catalog code)
   'HF1': 'midscale',  // hotelF1
   '25H': 'midscale',  // 25hours
   'N25': 'midscale',
@@ -3455,6 +3458,11 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
     [/art\s*series/,                        '/logos/hotels/accor-premium/artseries-monochrome-white.svg'],
     [/greet/,                                '/logos/hotels/accor-economy/greet-monochrome-white.svg'],
     [/mama\s*shelter/,                      '/logos/hotels/accor-midscale/mamashelter-monochrome-white.svg'],
+    // Handwritten Collection properties carry the brand in their name
+    // ('Hotel Maison Hamelin Paris - Handwritten Collection'), so match on it:
+    // the script wordmark then shows for whatever code the catalog sends
+    // (Nick: 'Many hotels should be using this logo, its not used at all').
+    [/handwritten/,                          '/logos/hotels/accor-midscale/handwritten-monochrome-white.svg'],
     [/faena/,                                '/logos/hotels/accor-luxury/faena-monochrome-white.svg'],
     [/orient\s*express/,                    '/logos/hotels/accor-luxury/orientexpress-monochrome-white.svg'],
     [/our\s*habitas/,                       '/logos/hotels/accor-premium/our-habitas.svg'],
@@ -16387,7 +16395,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22517';
+var FIDS_BUILD_TAG = 'v22518';
 (function(){
   try {
     function _addTag(){
@@ -24465,7 +24473,7 @@ function _accorCacheFor(iata) {
 var ACCOR_BRAND_COLORS = {
   'FAI':'#B88D5B','SOF':'#1a1a2e','PUL':'#2d2d3f','MGH':'#8B0000','NOV':'#6B8E23',
   'MER':'#003366','SWI':'#cc0000','MOV':'#6A0DAD','IBS':'#D22030','IBB':'#D22030',
-  'IBI':'#D22030','IBH':'#D22030','HOF':'#003580','ADA':'#0066cc','GRA':'#003366',
+  'IBI':'#D22030','IBH':'#D22030','HOF':'#1C1C22','SOU':'#1C1C22','ADA':'#0066cc','GRA':'#003366',
   'BAN':'#003580','MAN':'#050033','SEQ':'#1a1a2e','RAH':'#B88D5B','RAF':'#B88D5B',
   'SO':'#1a1a2e','HYD':'#B88D5B','SLS':'#1a1a2e','DEL':'#050033','MON':'#050033',
   'RIX':'#B88D5B','HB':'#0057b8','JO':'#2E4057','N25':'#050033','EMB':'#B88D5B'
@@ -24474,7 +24482,7 @@ var ACCOR_BRAND_COLORS = {
 var ACCOR_BRAND_NAMES = {
   'FAI':'Fairmont','SOF':'Sofitel','PUL':'Pullman','MGH':'MGallery','NOV':'Novotel',
   'MER':'Mercure','SWI':'Swissôtel','MOV':'Mövenpick','IBS':'ibis','IBB':'ibis budget',
-  'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','ADA':'Adagio',
+  'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','SOU':'Handwritten Collection','ADA':'Adagio',
   'GRA':'Grand Mercure','BAN':'Banyan Tree','MAN':'Mantis','SEQ':'SO/','RAH':'Raffles',
   'RAF':'Raffles','SO':'SO/','HYD':'Hyde','SLS':'SLS','DEL':'Delano','MON':'Mondrian',
   'RIX':'Rixos','HB':'Hoxton','JO':'JO&JOE','N25':'25hours','EMB':'Emblème'
@@ -25112,6 +25120,14 @@ function _processAccorData(data, destIata, langKey) {
       if (_brandName && _rawName.toLowerCase().indexOf(_brandName.toLowerCase()) === 0) {
         // Brand is at the start — strip it (and any connector whitespace/punctuation)
         hotelName = _rawName.substring(_brandName.length).replace(/^\s*[-\s·:]+\s*/, '').trim();
+      } else if (_brandName) {
+        // …or at the END, the way the collections sign themselves ('Hotel
+        // Maison Hamelin Paris - Handwritten Collection'). The wordmark
+        // already says it, so the name line shouldn't repeat it.
+        var _tailIx = _rawName.toLowerCase().lastIndexOf(_brandName.toLowerCase());
+        if (_tailIx > 0 && _tailIx + _brandName.length >= _rawName.length - 1) {
+          hotelName = _rawName.slice(0, _tailIx).replace(/[\s,·:–—-]+$/, '').trim();
+        }
       }
       // Sanity: if stripping emptied it, put it back
       if (!hotelName) hotelName = _rawName;
@@ -26963,7 +26979,23 @@ function buildAccorAdOnlyV6(ad) {
   if (_amenFree.indexOf('room_service') !== -1) _dineAmen.push(_dfr ? 'Service aux chambres' : 'Room service');
   if (_lblsAd.indexOf('DINING_OFFER') !== -1) _dineAmen.push(_dfr ? 'Offres restauration pour les clients' : 'Dining offers for guests');
   var _restList = _dedupe(_dineAdv.concat(_dineAmen)).slice(0, 5);
-  if (!_restList.length) _restList = _dedupe((_detail && _detail.restaurants) ? _detail.restaurants : []).slice(0, 5);
+  if (!_restList.length) {
+    // REAL hotel dining only — from the master record. The detail endpoint's
+    // 'restaurants' are IN-ROOM food & beverage fixtures (Mini Bar, Ice
+    // Machine, Microwave, Coffee/tea making facilities); selling those as the
+    // hotel's restaurants is exactly what Nick keeps calling out, so they are
+    // no longer a fallback. No real dining data → the page carries the guest
+    // rating and the QR alone.
+    var _mstr = null;
+    try {
+      for (var _mk in ACCOR_HOTEL_MASTER_CACHE) {
+        if (_mk === ad.hotelId || _mk.indexOf(ad.hotelId + '|') === 0) { _mstr = ACCOR_HOTEL_MASTER_CACHE[_mk]; break; }
+      }
+    } catch (e) {}
+    _restList = _dedupe(((_mstr && _mstr.restaurants) || []).map(function (r) {
+      return (typeof r === 'string') ? r : String((r && r.name) || '');
+    }).filter(function (n) { return n && !_isBreakfast(n); })).slice(0, 5);
+  }
   // Hygiene/pandemic boilerplate is NEVER ad copy (Nick: the COVID notice
   // rendering as the hotel's blurb — 'This cant happen').
   var _covidRx = /covid|coronavirus|pand[ée]mi|sanitai?r|hygi[eè]n|propagation|all ?safe|\bvirus\b/i;
@@ -27051,25 +27083,37 @@ function buildAccorAdOnlyV6(ad) {
   // Page 2 — THE HOTEL. Every hotel card sells like fairmont.com (Nick:
   // 'All hotels should be this way'): the hotel's ADVANTAGES as short caps
   // phrases in the brand's display face — 'award-winning Isla Verde Beach',
-  // 'Four pristine pools' — never a commodity amenity inventory. Only when a
-  // hotel ships NO advantages does the amenity list return as a fallback so
-  // the card isn't empty.
+  // 'Four pristine pools' — never a commodity amenity inventory. A hotel with
+  // no advantages falls back to its STANDOUT amenities only (spa, pools,
+  // beach, rooftop…) in the same inline treatment; the plain amenity
+  // inventory — 'Mini Bar', 'Automatic wake up call', 'Make-up mirror' —
+  // never renders (Nick, Faena New York: 'Why is that still there?').
   var _isFaiCard = String(ad.brand || '').toUpperCase() === 'FAI';
   var _featsHtml = '';
   var _advs = (Array.isArray(ad.advantages) ? ad.advantages : [])
     .map(function (a) { return String(a || '').trim(); })
     .filter(function (a) { return a && a.length <= 60 && !_covidRx.test(a); })
     .slice(0, 3);
+  if (!_advs.length) {
+    // Selling points only — anything a guest would choose the hotel FOR.
+    var _hiRx = /\b(spa|hammam|sauna|thermal|pool|piscine|beach|plage|rooftop|terrace|terrasse|garden|jardin|golf|tennis|marina|ski|casino|vineyard|michelin|gastronom|fine dining|signature restaurant|cocktail|speakeasy|nightclub|private club|butler|kids club|club enfants|panoramic|sea view|ocean|lagoon|waterfront|historic|heritage)\b/i;
+    _advs = (Array.isArray(_amenList) ? _amenList : [])
+      .map(function (a) { return String(a || '').trim(); })
+      .filter(function (a) { return a && a.length <= 40 && _hiRx.test(a) && !_covidRx.test(a); })
+      .slice(0, 3);
+  }
   if (_advs.length) {
     _featsHtml = '<div class="axr-fai-feats">' + _advs.map(function (a) {
       return '<span>' + esc(a) + '</span>';
     }).join('') + '</div>';
   }
-  var _page2 = '<div class="axr-page">'
+  // No advantages AND no prose → there is nothing to say on this page, so it
+  // is dropped from the deck rather than shown as a bare logo + name.
+  var _page2 = (!_featsHtml && !_blurb) ? '' : '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
     + logoHtml + _ctxName
-    +   (_featsHtml || _list(_amenList)) + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
+    +   _featsHtml + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
     + '</div></div>';
   // Page 3 — DINING & REVIEWS: restaurants + guest rating + QR
   var _page3 = '<div class="axr-page">'

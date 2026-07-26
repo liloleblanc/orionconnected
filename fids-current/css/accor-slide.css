@@ -82,22 +82,26 @@
 /* ALL speech bubble (to standard) — light card, copy + QR, tail bottom-left */
 .axr-bubble{ position:absolute; top:clamp(20px,3vh,30px); left:clamp(20px,2.4vw,30px); z-index:4;
   display:grid; grid-template-columns:minmax(0,1fr) clamp(72px,8vw,100px); gap:clamp(12px,1.4vw,18px);
-  align-items:center; width:min(470px, 66%); padding:clamp(14px,1.7vw,22px);
-  background:var(--all-light); color:var(--all-blue);
-  border-radius:0; box-shadow:0 14px 36px rgba(0,0,0,.34); }
-/* ALL Brand Book 3.12 'Graphic cues': the tail IS the ALL wordmark's actual
-   L glyph, rotated + flipped (all-l-tail.svg, cut from all-mark-white.svg).
-   Rendered as a mask so it takes each brand's bubble colour; the glyph's
-   stem fuses invisibly with the bubble's bottom edge, the curved foot dips
-   below at the left — exactly the book's speech-bubble cue. */
-.axr-bubble::after{ content:""; position:absolute; left:0; bottom:-24px; width:190px; height:70px;
-  background:inherit; border:none; z-index:-1;
-  -webkit-mask:url('/logos/hotels/accor-corporate/all-l-tail.svg') 0 0/100% 100% no-repeat;
-          mask:url('/logos/hotels/accor-corporate/all-l-tail.svg') 0 0/100% 100% no-repeat; }
+  align-items:center; width:min(470px, 66%);
+  /* extra left inset: the shape's top-left corner is one long sweeping curve,
+     so copy set at an even padding would run into it */
+  padding:clamp(14px,1.7vw,22px) clamp(16px,1.9vw,24px) clamp(14px,1.7vw,22px) clamp(34px,4.2vw,60px);
+  --bub-bg:var(--all-light); background:transparent; color:var(--all-blue);
+  border-radius:0; }
+/* Nick's Bubble.svg IS the container — box, sweeping top-left corner and the
+   ALL 'L' tail, one piece. Painted as a masked layer so it takes each brand's
+   colour. Geometry from the file: the box occupies y 3.66→78.12 of a 122.044
+   tall canvas, so to land the box exactly on this element the layer is
+   122.044/74.46 = 163.9% tall and sits 3.66/74.46 = 4.92% above the top; the
+   tail then dips 51.9% of the box height below it. */
+.axr-bubble::before{ content:""; position:absolute; left:0; top:-4.92%; right:0; height:163.9%;
+  background:var(--bub-bg); z-index:-1;
+  -webkit-mask:url('/logos/hotels/accor-corporate/all-bubble.svg') 0 0/100% 100% no-repeat;
+          mask:url('/logos/hotels/accor-corporate/all-bubble.svg') 0 0/100% 100% no-repeat;
+  filter:drop-shadow(0 10px 22px rgba(0,0,0,.4)); }
+.axr-bubble::after{ display:none; }
 .axr-bubble-copy{ min-width:0; font-family:var(--axr-display); font-size:clamp(18px,1.6vw,26px);
   line-height:1.24; font-weight:500; letter-spacing:.002em; }
-.axr-bubble-copy::before{ font-family:'ac-icons' !important; content:'\e968'; display:block;
-  font-size:1.25em; line-height:1; margin-bottom:.3em; color:var(--all-gold); font-weight:normal; }
 .axr-qr{ aspect-ratio:1; width:100%; background:#fff; border-radius:7px; padding:6px;
   display:flex; align-items:center; justify-content:center; }
 .axr-qr svg, .axr-qr img{ width:100%; height:100%; display:block; }
@@ -229,7 +233,7 @@
 .axr[data-brand-code="FAI"] .axr-list li{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-style:normal; font-weight:400; letter-spacing:.02em; font-size:calc(var(--axr-info) * 1.5); }
 .axr[data-brand-code="FAI"] .axr-blurb{ font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important; font-weight:400; }
 .axr[data-brand-code="FAI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="FAI"] .axr-bubble{ background:#EFE9DE; color:#14161C; border-radius:0; }
+.axr[data-brand-code="FAI"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#14161C; border-radius:0; }
 .axr[data-brand-code="FAI"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="FAI"] .axr-bubble-copy{ font-family:'FairmontName','The Seasons',Georgia,serif !important; text-transform:uppercase; letter-spacing:.05em; font-weight:400; }
 .axr[data-brand-code="FAI"] .axr-bubble-copy .axr-scan-accent{ text-transform:none; font-style:italic; letter-spacing:.02em; }
@@ -256,7 +260,7 @@
 .axr[data-brand-code="SOF"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B6912E; font-style:normal; }
 .axr[data-brand-code="SOF"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="SOF"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="SOF"] .axr-bubble{ background:#EFE9DE; color:#0B0B0D; border-radius:0; }
+.axr[data-brand-code="SOF"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#0B0B0D; border-radius:0; }
 .axr[data-brand-code="SOF"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="SOF"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="SOF"] .axr-all{ background:transparent; border-top:1px solid rgba(182,145,46,0.6); padding:14px 0 8px; }
@@ -282,7 +286,7 @@
 .axr[data-brand-code="SLE"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B6912E; font-style:normal; }
 .axr[data-brand-code="SLE"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="SLE"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="SLE"] .axr-bubble{ background:#EFE9DE; color:#0B0B0D; border-radius:0; }
+.axr[data-brand-code="SLE"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#0B0B0D; border-radius:0; }
 .axr[data-brand-code="SLE"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="SLE"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="SLE"] .axr-all{ background:transparent; border-top:1px solid rgba(182,145,46,0.6); padding:14px 0 8px; }
@@ -308,7 +312,7 @@
 .axr[data-brand-code="RAF"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="RAF"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="RAF"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="RAF"] .axr-bubble{ background:#EFE9DE; color:#15241F; border-radius:0; }
+.axr[data-brand-code="RAF"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#15241F; border-radius:0; }
 .axr[data-brand-code="RAF"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="RAF"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="RAF"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -334,7 +338,7 @@
 .axr[data-brand-code="RAH"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="RAH"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="RAH"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="RAH"] .axr-bubble{ background:#EFE9DE; color:#15241F; border-radius:0; }
+.axr[data-brand-code="RAH"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#15241F; border-radius:0; }
 .axr[data-brand-code="RAH"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="RAH"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="RAH"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -360,7 +364,7 @@
 .axr[data-brand-code="EMB"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B89B6E; font-style:normal; }
 .axr[data-brand-code="EMB"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="EMB"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="EMB"] .axr-bubble{ background:#EFE9DE; color:#1A1A1A; border-radius:0; }
+.axr[data-brand-code="EMB"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#1A1A1A; border-radius:0; }
 .axr[data-brand-code="EMB"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="EMB"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="EMB"] .axr-all{ background:transparent; border-top:1px solid rgba(184,155,110,0.6); padding:14px 0 8px; }
@@ -386,7 +390,7 @@
 .axr[data-brand-code="BAN"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="BAN"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="BAN"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="BAN"] .axr-bubble{ background:#EFE9DE; color:#163A33; border-radius:0; }
+.axr[data-brand-code="BAN"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#163A33; border-radius:0; }
 .axr[data-brand-code="BAN"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="BAN"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="BAN"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -412,7 +416,7 @@
 .axr[data-brand-code="ORI"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B99653; font-style:normal; }
 .axr[data-brand-code="ORI"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="ORI"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="ORI"] .axr-bubble{ background:#EFE9DE; color:#0E1B2A; border-radius:0; }
+.axr[data-brand-code="ORI"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#0E1B2A; border-radius:0; }
 .axr[data-brand-code="ORI"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="ORI"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="ORI"] .axr-all{ background:transparent; border-top:1px solid rgba(185,150,83,0.6); padding:14px 0 8px; }
@@ -438,7 +442,7 @@
 .axr[data-brand-code="OE"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B99653; font-style:normal; }
 .axr[data-brand-code="OE"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="OE"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="OE"] .axr-bubble{ background:#EFE9DE; color:#0E1B2A; border-radius:0; }
+.axr[data-brand-code="OE"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#0E1B2A; border-radius:0; }
 .axr[data-brand-code="OE"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="OE"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="OE"] .axr-all{ background:transparent; border-top:1px solid rgba(185,150,83,0.6); padding:14px 0 8px; }
@@ -464,7 +468,7 @@
 .axr[data-brand-code="FAE"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C8A24A; font-style:normal; }
 .axr[data-brand-code="FAE"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="FAE"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="FAE"] .axr-bubble{ background:#EFE9DE; color:#5E1417; border-radius:0; }
+.axr[data-brand-code="FAE"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#5E1417; border-radius:0; }
 .axr[data-brand-code="FAE"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="FAE"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="FAE"] .axr-all{ background:transparent; border-top:1px solid rgba(200,162,74,0.6); padding:14px 0 8px; }
@@ -490,7 +494,7 @@
 .axr[data-brand-code="RIX"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="RIX"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="RIX"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="RIX"] .axr-bubble{ background:#EFE9DE; color:#1A1712; border-radius:0; }
+.axr[data-brand-code="RIX"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#1A1712; border-radius:0; }
 .axr[data-brand-code="RIX"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="RIX"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="RIX"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -516,7 +520,7 @@
 .axr[data-brand-code="MAN"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B89B6E; font-style:normal; }
 .axr[data-brand-code="MAN"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="MAN"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="MAN"] .axr-bubble{ background:#EFE9DE; color:#1C2A1E; border-radius:0; }
+.axr[data-brand-code="MAN"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#1C2A1E; border-radius:0; }
 .axr[data-brand-code="MAN"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="MAN"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MAN"] .axr-all{ background:transparent; border-top:1px solid rgba(184,155,110,0.6); padding:14px 0 8px; }
@@ -542,7 +546,7 @@
 .axr[data-brand-code="MGH"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="MGH"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="MGH"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="MGH"] .axr-bubble{ background:#EFE9DE; color:#12120D; border-radius:0; }
+.axr[data-brand-code="MGH"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#12120D; border-radius:0; }
 .axr[data-brand-code="MGH"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="MGH"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MGH"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -568,7 +572,7 @@
 .axr[data-brand-code="MGA"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C2A35C; font-style:normal; }
 .axr[data-brand-code="MGA"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="MGA"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="MGA"] .axr-bubble{ background:#EFE9DE; color:#12120D; border-radius:0; }
+.axr[data-brand-code="MGA"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#12120D; border-radius:0; }
 .axr[data-brand-code="MGA"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="MGA"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MGA"] .axr-all{ background:transparent; border-top:1px solid rgba(194,163,92,0.6); padding:14px 0 8px; }
@@ -594,7 +598,7 @@
 .axr[data-brand-code="MOV"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C8A24A; font-style:normal; }
 .axr[data-brand-code="MOV"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="MOV"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="MOV"] .axr-bubble{ background:#EFE9DE; color:#2A1418; border-radius:0; }
+.axr[data-brand-code="MOV"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#2A1418; border-radius:0; }
 .axr[data-brand-code="MOV"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="MOV"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="MOV"] .axr-all{ background:transparent; border-top:1px solid rgba(200,162,74,0.6); padding:14px 0 8px; }
@@ -620,7 +624,7 @@
 .axr[data-brand-code="DEL"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#C9A227; font-style:normal; }
 .axr[data-brand-code="DEL"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="DEL"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="DEL"] .axr-bubble{ background:#EFE9DE; color:#111214; border-radius:0; }
+.axr[data-brand-code="DEL"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#111214; border-radius:0; }
 .axr[data-brand-code="DEL"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="DEL"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="DEL"] .axr-all{ background:transparent; border-top:1px solid rgba(201,162,39,0.6); padding:14px 0 8px; }
@@ -728,6 +732,24 @@
 .axr[data-brand-code="HOF"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
 .axr[data-brand-code="HOF"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#D8A24B; }
 .axr[data-brand-code="HOF"] .axr-all{ background:color-mix(in srgb, #1C1C22 86%, #000); }
+
+/* SOU — Handwritten (modern) — the code the live Accor catalog returns for
+   Handwritten Collection properties; HOF above is the legacy code. */
+.axr[data-brand-code="SOU"]{ --all-blue:#1C1C22; --axr-tint:#1C1C22; --all-gold:#D8A24B;
+  --axr-goldgrad:linear-gradient(42deg,#D8A24B 0%,#E1B978 100%); }
+.axr[data-brand-code="SOU"] .axr-logo{ height:auto; }
+.axr[data-brand-code="SOU"] .axr-logo img{ height:auto; max-width:min(72%,440px); max-height:clamp(90px,16vh,160px); }
+.axr[data-brand-code="SOU"] .axr-name{ color:#F0ECE3; font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-size:calc(var(--axr-logo)*0.68); font-weight:700; letter-spacing:-.006em; }
+.axr[data-brand-code="SOU"] .axr-page-ctx{ font-weight:700; }
+.axr[data-brand-code="SOU"] .axr-page-kicker{ font-weight:500; }
+.axr[data-brand-code="SOU"] .axr-sub{ font-size:calc(var(--axr-info)*0.86); }
+.axr[data-brand-code="SOU"] .axr-addr{ color:#F0ECE3; font-weight:500; letter-spacing:.02em; }
+.axr[data-brand-code="SOU"] .axr-addr-line, .axr[data-brand-code="SOU"] .axr-loc-line{ color:#F0ECE3; }
+.axr[data-brand-code="SOU"] .axr-stars{ color:#D8A24B; }
+.axr[data-brand-code="SOU"] .axr-amen{ gap:0; }
+.axr[data-brand-code="SOU"] .axr-amen span{ background:none; border:none; padding:0; color:#F0ECE3; font-weight:500; font-size:calc(var(--axr-info)*0.80); backdrop-filter:none; }
+.axr[data-brand-code="SOU"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#D8A24B; }
+.axr[data-brand-code="SOU"] .axr-all{ background:color-mix(in srgb, #1C1C22 86%, #000); }
 
 /* TRB — Tribe (modern) */
 .axr[data-brand-code="TRB"]{ --all-blue:#111114; --axr-tint:#111114; --all-gold:#C8A24A;
@@ -969,7 +991,7 @@
 .axr[data-brand-code="SEB"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B59A5E; font-style:normal; }
 .axr[data-brand-code="SEB"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="SEB"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="SEB"] .axr-bubble{ background:#EFE9DE; color:#1A2230; border-radius:0; }
+.axr[data-brand-code="SEB"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#1A2230; border-radius:0; }
 .axr[data-brand-code="SEB"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="SEB"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="SEB"] .axr-all{ background:transparent; border-top:1px solid rgba(181,154,94,0.6); padding:14px 0 8px; }
@@ -995,7 +1017,7 @@
 .axr[data-brand-code="TSB"] .axr-amen span:not(:last-child)::after{ content:"·"; margin:0 .55em; color:#B59A5E; font-style:normal; }
 .axr[data-brand-code="TSB"] .axr-list li{ font-weight:300; letter-spacing:.02em; }
 .axr[data-brand-code="TSB"] .axr-hotel::before{ height:1px; width:clamp(48px,4.4vw,72px); opacity:.9; }
-.axr[data-brand-code="TSB"] .axr-bubble{ background:#EFE9DE; color:#1A2230; border-radius:0; }
+.axr[data-brand-code="TSB"] .axr-bubble{ --bub-bg:#EFE9DE; background:transparent; color:#1A2230; border-radius:0; }
 .axr[data-brand-code="TSB"] .axr-bubble::after{ border-top-color:#EFE9DE; }
 .axr[data-brand-code="TSB"] .axr-bubble-copy{ font-family:'AC Nord Display','AC Nord Text','Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:400; letter-spacing:.02em; }
 .axr[data-brand-code="TSB"] .axr-all{ background:transparent; border-top:1px solid rgba(181,154,94,0.6); padding:14px 0 8px; }
@@ -1189,23 +1211,40 @@
 .axr[data-brand-code="BKF"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#27AAE1; }
 .axr[data-brand-code="BKF"] .axr-all{ background:color-mix(in srgb, #102A3A 86%, #000); }
 
-/* Room pages: the room-type heading a touch smaller and in the brand accent
-   so it reads as a category label, not a second hotel name (Nick). */
+/* Room pages — same grammar for every brand (Nick: 'All hotels should be this
+   way'): the ROOM is the subject of the page, so its name is the headline. The
+   property line above it is an eyebrow, the details line an italic subtitle.
+   Before this the property name (1.3×) outsized the room name (1.0×) and the
+   body copy nearly matched both — a flat, cheap-looking block. */
 .axr .axr-page-ctx.axr-room-name {
-  font-size: calc(var(--axr-name) * 1.0);
-  /* accent hue lightened toward white — pure brand accents (Novotel blue)
-     were too dark to read over the hero photo (Nick) */
-  color: color-mix(in srgb, var(--all-gold) 45%, #fff);
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+  font-size: calc(var(--axr-name) * 1.9);
+  line-height: 1.1;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin-bottom: calc(var(--axr-info) * 0.22);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
-/* Room pages, wordmark-only brands: property name sits under the wordmark. */
+/* Room pages, wordmark-only brands: property name sits under the wordmark as
+   a quiet letterspaced eyebrow — it names the hotel, it isn't the headline. */
 .axr .axr-room-hotel {
   font-family: var(--axr-display);
-  font-size: calc(var(--axr-name) * 1.3);
-  font-weight: 700;
+  font-size: calc(var(--axr-info) * 1.02);
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  margin: calc(var(--axr-info) * 0.35) 0 calc(var(--axr-info) * 0.08);
+}
+
+/* Details line (size, bed, view) — italic subtitle under the room name. */
+.axr .axr-room-details {
+  font-size: calc(var(--axr-info) * 1.3);
+  font-style: italic;
   color: #ffffff;
-  margin: calc(var(--axr-info) * 0.25) 0 calc(var(--axr-info) * 0.15);
+  opacity: .95;
+  line-height: 1.3;
 }
 
 /* ── v22461 — PROPERTY-LOCKUP LOGO: consistent size, big enough, anchored ──
