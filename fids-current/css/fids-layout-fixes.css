@@ -3780,3 +3780,41 @@ html body[data-gate-airline="AC"] .gad-map-col-v2 .v2-rc-fi-tlabel * {
   color: #e9edf5 !important;
   opacity: 1 !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   THE BUMP — reserve the welcome strip's image slots (v22533)
+   A LayoutShift recording of the live board pinned 96% of ALL shift on this
+   one strip: 17 shifts in 150 seconds, the biggest moving a 689px-wide block
+   to 580px, with the emblem sliding 37px and the copy 33px each time. Cause:
+   the strip is a CENTRED flex row and both of its images are sized
+   `width:auto`, so between the row being written and each image decoding they
+   occupy zero width — the row re-centres, everything jumps, and it happens
+   again on every board re-render.
+   Both slots now reserve their width up front, so a decode can never move a
+   neighbour. Heights are untouched.
+   ════════════════════════════════════════════════════════════════════════ */
+html .g8-board-welcome .g8-bw-emblem {
+  width: clamp(44px, 6.4vh, 80px) !important;
+  min-width: clamp(44px, 6.4vh, 80px) !important;
+  flex: 0 0 auto !important;
+}
+html .g8-board-welcome .g8-bw-star {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: clamp(52px, 7.2vh, 92px) !important;
+  min-width: clamp(52px, 7.2vh, 92px) !important;
+}
+html body .g8-wrap .g8-board-welcome .g8-bw-star img,
+html body .g8-wrap .g8-board-welcome .g8-r1-star,
+html .g8-board-welcome .g8-r1-star {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+/* The strip's own height is fixed too, so a taller/shorter run of content
+   cannot nudge the rows beneath it. */
+html .g8-board-welcome {
+  min-height: clamp(76px, 11vh, 132px) !important;
+  box-sizing: border-box !important;
+}
