@@ -4433,3 +4433,60 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-blend-mode: normal !important;
   background-color: #43464c !important;
 }
+
+/* ── v22607: DOTS ONLY IN THE MAP AND THE ADS (Nick, with his photo of a
+   Porter gate: 'It should go in the map and the ads just not the
+   borders'). The full-screen overlay is retired — it was painting the
+   halftone across the rail shelves, which are the borders. */
+html body::after {
+  display: none !important;
+}
+/* ADS — the halftone rides the ad panel's own backdrop, so it sits
+   BEHIND every slide and under the frame, never over the creative. */
+html body .gad-media-col > .ad-panel-backdrop::after {
+  content: '';
+  position: absolute;
+  left: -3%; right: -3%; top: -3%; bottom: -3%;
+  background: url("/logos/Backgrounds/screen-wave-blue.png?v=1") center / cover no-repeat;
+  mix-blend-mode: screen;
+  opacity: .40;
+  pointer-events: none;
+}
+/* MAP — the route map and the big-map takeover carry the same halftone
+   as a faint veil over the tiles. */
+html body .g8-wrap .v2-rc-shelf-map,
+html body .bigcraft-mapcol,
+html body .bigcraft-map { position: relative; }
+html body .g8-wrap .v2-rc-shelf-map::after,
+html body .bigcraft-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("/logos/Backgrounds/screen-wave-blue.png?v=1") center / cover no-repeat;
+  mix-blend-mode: screen;
+  opacity: .30;
+  pointer-events: none;
+  z-index: 400;
+}
+
+/* ── v22607: TOP BANNER SWIRLS — the silk never painted: an !important
+   radial-gradient sheen already owns .g8-r1::after, so the shorthand
+   here lost every time. The art moves to ::before (z-index 0: above the
+   banner surface, below the wordmark/time/gate children at z 1/4/5). */
+html body .g8-r1::before,
+html body .fids-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("/logos/Backgrounds/banner-silk.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  mix-blend-mode: screen;
+  opacity: .30;
+  pointer-events: none;
+  z-index: 0;
+}
+html body .g8-r1::after, html body .fids-banner::after {
+  opacity: .32 !important;
+}
