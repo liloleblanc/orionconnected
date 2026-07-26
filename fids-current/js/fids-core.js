@@ -16395,7 +16395,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22518';
+var FIDS_BUILD_TAG = 'v22519';
 (function(){
   try {
     function _addTag(){
@@ -26800,7 +26800,11 @@ function buildAccorAdOnlyV6(ad) {
   // Accent-fold so brand names with diacritics (Swissôtel, Mövenpick) are
   // detected and stripped the same as their plain spellings.
   function _foldAcc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
-  var BRAND_WORDS=['Novotel','Fairmont','Sofitel','Pullman','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis','Mama Shelter','Mondrian','Faena'];
+  // EVERY Accor brand, not a hand-picked dozen. The short list below silently
+  // let SLS, Hyde, Delano, TRIBE, Rixos, Handwritten Collection… through, so
+  // the wordmark and the name both said the brand — 'SLS' over 'SLS Baha Mar'
+  // (Nick: 'do not use the Logo and the name again SLS SLS').
+  var BRAND_WORDS=['Novotel','Fairmont','Sofitel Legend','Sofitel','Pullman','Grand Mercure','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis Styles','ibis budget','ibis','Mama Shelter','Mondrian','Faena','SLS','Hyde','Delano','Morgans Originals','TRIBE','Tribe','25hours','Rixos','Banyan Tree','Mantis','Orient Express','Emblems','Art Series','Handwritten Collection','The Hoxton','Hoxton','The Sebel','Adagio','greet','JO&JOE','BreakFree','Peppers','Mantra','hotelF1','21c Museum Hotels','Angsana','Our Habitas'];
   var brandWord='';
   var _brandLowerFold=_foldAcc(brandLower);
   for(var bw=0; bw<BRAND_WORDS.length; bw++){ if(_brandLowerFold.indexOf(_foldAcc(BRAND_WORDS[bw]))!==-1){ brandWord=BRAND_WORDS[bw]; break; } }
@@ -26808,19 +26812,33 @@ function buildAccorAdOnlyV6(ad) {
   var tint=BRAND_TINT[lower(brandWord)]||'#0a1a3a';
 
   var haveLogo=!!logo;
+  // Whatever the catalog calls this brand code, on top of the word list —
+  // covers collections that sign at the END of the name ('Hotel Maison
+  // Hamelin Paris - Handwritten Collection').
+  var _brandByCode='';
+  try { _brandByCode = (typeof ACCOR_BRAND_NAMES!=='undefined' && ACCOR_BRAND_NAMES[String(ad.brand||'').toUpperCase()]) || ''; } catch(e){}
   function stripBrand(name){
     var s=String(name||'').replace(/\s+/g,' ').trim();
-    if(!brandWord) return s;
+    if(_brandByCode){
+      var reC=new RegExp('\\b'+_brandByCode.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig');
+      var _sC=s.replace(reC,'').replace(/\s+/g,' ').replace(/^[\s,·:–—-]+|[\s,·:–—-]+$/g,'').trim();
+      if(_sC) s=_sC;   // never strip the name down to nothing
+    }
+    if(!brandWord) return s.replace(/^[\s,·:–—-]+|[\s,·:–—-]+$/g,'').trim();
     // 1) exact case-insensitive removal (handles multi-word brands, exact spellings)
     var re=new RegExp('\\b'+brandWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig');
-    s=s.replace(re,'').replace(/\s+/g,' ').trim();
+    var _s1=s.replace(re,'').replace(/\s+/g,' ').trim();
+    if(_s1) s=_s1;
     // 2) accent-insensitive whole-word removal — strips "Swissôtel" when the
     //    brand word is "Swissotel" (and likewise Mövenpick/Movenpick).
     if(brandWord.indexOf(' ')===-1){
       var _bwKey=_foldAcc(brandWord).replace(/[^a-z0-9]/g,'');
-      s=s.split(' ').filter(function(w){ return _foldAcc(w).replace(/[^a-z0-9]/g,'') !== _bwKey; }).join(' ').replace(/\s+/g,' ').trim();
+      var _s2=s.split(' ').filter(function(w){ return _foldAcc(w).replace(/[^a-z0-9]/g,'') !== _bwKey; }).join(' ').replace(/\s+/g,' ').trim();
+      if(_s2) s=_s2;
     }
-    return s;
+    // Leftover joiners from a brand that sat at either end (', Handwritten
+    // Collection' → 'Hotel Faubourg Galant Paris,')
+    return s.replace(/^[\s,·:–—-]+|[\s,·:–—-]+$/g,'').trim();
   }
   // Brand policy (Nick): never print the brand twice — the logo slot ALWAYS
   // carries the brand (image or text label), so the name is always stripped.
