@@ -4463,8 +4463,10 @@ html body .bigcraft-map::after {
   position: absolute;
   inset: 0;
   background: url("/logos/Backgrounds/screen-wave-blue.png?v=1") center / cover no-repeat;
-  mix-blend-mode: screen;
-  opacity: .30;
+  /* v22608: the map is LIGHT — a screen blend over it is a no-op, which
+     is why the veil never showed. Multiply lays the dots onto the map. */
+  mix-blend-mode: multiply;
+  opacity: .38;
   pointer-events: none;
   z-index: 400;
 }
