@@ -4391,3 +4391,15 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   background-blend-mode: normal !important;
 }
+
+/* ── v22605: Nick's blue halftone wave replaces the mono dot field
+   ('put this instead'). Its own blue tones, faint, background-only. */
+html body::after {
+  background-image: url("/logos/Backgrounds/screen-wave-blue.png?v=1") !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center bottom !important;
+  mix-blend-mode: screen !important;
+  opacity: .22 !important;
+  height: 62vh !important;
+}
