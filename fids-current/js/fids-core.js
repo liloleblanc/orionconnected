@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22574';
+var FIDS_BUILD_TAG = 'v22575';
 (function(){
   try {
     function _addTag(){
@@ -27922,6 +27922,16 @@ function _adBackdropHtml(blurUrl) {
           + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.30);"></div>'
           + '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;background-image:url(/logos/Backgrounds/adback-spots.png?v=1);background-size:cover;background-position:center;opacity:.28;mix-blend-mode:screen;"></div>';
       }
+      var rg = col.querySelector(':scope > .ad-accent-frame');
+      if (!rg) {
+        rg = document.createElement('div');
+        rg.className = 'ad-accent-frame';
+        rg.style.cssText = 'position:absolute;left:1.1%;right:1.1%;top:1.7%;bottom:1.7%;'
+          + 'pointer-events:none;z-index:59;border:8px solid #8a94a6;'
+          + 'box-shadow: inset 0 0 0 2px rgba(255,255,255,.75);';
+        col.appendChild(rg);
+      }
+      if (rg.dataset.acc !== _bdAcc) { rg.dataset.acc = _bdAcc; rg.style.borderColor = _bdAcc; }
       var f = col.querySelector(':scope > .ad-outer-frame');
       if (!f) {
         f = document.createElement('div');
@@ -27955,26 +27965,12 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
 function _adTechFrameHtml() {
-  // ACCENT RING (Nick: 'YOU'RE OVER THE AD') — the stretched picture-frame
-  // art kept landing on the creative, so the inner frame is now a DRAWN
-  // ring: a solid accent band with a light hairline, painted inside this
-  // element's border box. The fitter sizes the box to the ad + gap, so the
-  // ring sits entirely OUTSIDE the ad's edge — it cannot cover the ad.
-  var _fAcc = '';
-  try {
-    var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-    if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = AIRLINE_ACCENT[_fAl];
-    if (!_fAcc) {
-      var _fEl = document.querySelector('.g8-wrap') || document.body;
-      _fAcc = (getComputedStyle(_fEl).getPropertyValue('--airline-accent') || '').trim();
-    }
-  } catch (e) {}
-  if (!_fAcc) _fAcc = '#8a94a6';
-  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
-    + 'visibility:hidden;pointer-events:none;z-index:3;'
-    + 'border:7px solid ' + _fAcc + ';'
-    + 'box-shadow: inset 0 0 0 2px rgba(255,255,255,.82), 0 8px 22px rgba(5,10,20,.35);'
-    + '"></div>';
+  // v22575: the accent frame is no longer fitted per slide - it is a
+  // STATIC ring mounted on the panel, nested flush against the outer
+  // silver frame ('the frame needs to touch the other frame - square
+  // windows - and the content goes inside of it', Nick). See the panel
+  // mount below.
+  return '';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the

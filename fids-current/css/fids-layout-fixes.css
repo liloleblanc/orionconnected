@@ -3928,10 +3928,13 @@ html body .gad-media-col #gateAdCarousel {
   /* v22574: measured from the CROPPED frame art - the silver band is
      1.09% of width / 1.68% of height. The opening starts exactly at the
      band's inner edge, so content meets the frame. */
-  left: 1.1% !important;
-  right: 1.1% !important;
-  top: 1.7% !important;
-  bottom: 1.7% !important;
+  /* v22575: opening = silver band (1.1%/1.7%) + accent ring (8px).
+     Square windows: silver frame, accent frame flush against it, content
+     inside both. */
+  left: calc(1.1% + 8px) !important;
+  right: calc(1.1% + 8px) !important;
+  top: calc(1.7% + 8px) !important;
+  bottom: calc(1.7% + 8px) !important;
   width: auto !important;
   height: auto !important;
 }
