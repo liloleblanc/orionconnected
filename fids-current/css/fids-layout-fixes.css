@@ -3933,10 +3933,14 @@ html body .gad-media-col #gateAdCarousel {
      inside both. */
   /* v22578: ring removed (not in Nick's reference) - opening back to the
      silver band's inner edge. */
-  left: 1.1% !important;
-  right: 1.1% !important;
-  top: 1.7% !important;
-  bottom: 1.7% !important;
+  /* v22583 (Nick: 'the Accor ad cuts off the Accor logo') - the frame art
+     is a DOUBLE line; the inner line lands at 2.8%/4.3% and was sitting on
+     slide content near the edges. The opening now starts inside the whole
+     frame motif, so no slide content can ever sit under either line. */
+  left: 2.9% !important;
+  right: 2.9% !important;
+  top: 4.4% !important;
+  bottom: 4.4% !important;
   width: auto !important;
   height: auto !important;
 }
