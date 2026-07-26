@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22569';
+var FIDS_BUILD_TAG = 'v22570';
 (function(){
   try {
     function _addTag(){
@@ -24291,11 +24291,11 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       if (!r) continue;
       var hb = host.getBoundingClientRect();
       var pad = 5;   // hug the ad tight (Nick, Jul 26)
-      // Nick (mockup + 'stretch the border, touch the red on the side'):
-      // the accent frame spans the FULL opening width — its side members
-      // meet the outer frame — while its bars hug the ad's top and bottom.
-      f.style.left = '0px';
-      f.style.width = Math.round(hb.width) + 'px';
+      // The accent frame hugs the ad on all four sides — 'the middle one,
+      // the same just smaller, around the ad' (Nick). No stretching: on a
+      // full-width creative its sides naturally land on the outer frame.
+      f.style.left = Math.round(r.left - hb.left - pad) + 'px';
+      f.style.width = Math.round(r.width + 2 * pad) + 'px';
       f.style.top = Math.round(r.top - hb.top - pad) + 'px';
       f.style.height = Math.round(r.height + 2 * pad) + 'px';
       f.style.right = 'auto'; f.style.bottom = 'auto';
@@ -27914,8 +27914,8 @@ function _adBackdropHtml(blurUrl) {
       if (!f) {
         f = document.createElement('div');
         f.className = 'ad-outer-frame';
-        f.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:60;'
-          + 'background-image:url(/logos/Backgrounds/ad-frame-silver.png?v=1);background-size:100% 100%;';
+        f.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:60;overflow:hidden;'
+          + 'background-image:url(/logos/Backgrounds/ad-frame-silver.png?v=1);background-size:104% 105%;background-position:center;';
         col.appendChild(f);
       } else if (col.lastElementChild !== f) {
         col.appendChild(f);   // keep it on top when the col re-renders around it
