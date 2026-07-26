@@ -95,7 +95,11 @@
      so copy set at an even padding would run into it */
   padding:clamp(10px,1.2vw,16px) clamp(16px,1.9vw,24px) clamp(10px,1.2vw,16px) clamp(34px,4.2vw,60px);
   --bub-bg:var(--all-light); background:transparent; color:var(--all-blue);
-  border-radius:0; }
+  border-radius:0;
+  /* The shadow is cast from HERE, not from the masked ::before: a filter runs
+     before the mask, so the mask erased it and the card has had no shadow at
+     all since the shape landed. */
+  filter:drop-shadow(0 8px 18px rgba(0,0,0,.45)); }
 /* Nick's Bubble.svg IS the container — box, sweeping top-left corner and the
    ALL 'L' tail, one piece. Painted as a masked layer so it takes each brand's
    colour. Geometry from the file: the box occupies y 3.66→78.12 of a 122.044
@@ -105,8 +109,7 @@
 .axr-bubble::before{ content:""; position:absolute; left:0; top:-4.92%; right:0; height:163.9%;
   background:var(--bub-bg); z-index:-1;
   -webkit-mask:url('/logos/hotels/accor-corporate/all-bubble.svg') 0 0/100% 100% no-repeat;
-          mask:url('/logos/hotels/accor-corporate/all-bubble.svg') 0 0/100% 100% no-repeat;
-  filter:drop-shadow(0 10px 22px rgba(0,0,0,.4)); }
+          mask:url('/logos/hotels/accor-corporate/all-bubble.svg') 0 0/100% 100% no-repeat; }
 .axr-bubble::after{ display:none; }
 .axr-bubble-copy{ min-width:0; font-family:var(--axr-display); font-size:clamp(13px,1.12vw,19px);
   line-height:1.22; font-weight:500; letter-spacing:.002em;
@@ -116,11 +119,21 @@
      is set low enough that the longest names in the portfolio still land. */
   display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
   hyphens:none; }
-/* Sized by the shape's inner height (not a fixed width), so the chip can
-   never be taller than the bubble it sits in. */
-.axr-qr{ aspect-ratio:1; height:100%; width:auto; max-height:100%; background:#fff; border-radius:7px; padding:5px;
-  display:flex; align-items:center; justify-content:center; }
-.axr-qr svg, .axr-qr img{ width:100%; height:100%; display:block; }
+/* Sized by the shape's inner height, and the generated code is taken OUT of
+   the grid's intrinsic sizing. qrcodejs injects a bitmap at a hard pixel size,
+   which made the grid row taller than the shape's own ratio allows; the
+   automatic content-based minimum then won over aspect-ratio and the mask
+   letterboxed again, leaving the white chip poking above the cream. It also
+   meant the bubble grew ~32px a few hundred ms AFTER the ad painted — a jolt
+   on screen. Absolutely positioning the code fixes both.
+   The svg/img/canvas selectors are spelled out on purpose: a bare '.axr-qr > *'
+   loses to the older '.axr-qr svg, .axr-qr img' pair and the code would be
+   clipped by the overflow rule — live data modules, unscannable. */
+.axr-qr{ aspect-ratio:1; height:100%; width:auto; max-height:100%; background:#fff; border-radius:7px;
+  padding:0; position:relative; overflow:hidden; }
+.axr-qr > *, .axr-qr svg, .axr-qr img, .axr-qr canvas{
+  position:absolute; top:5px; left:5px;
+  width:calc(100% - 10px); height:calc(100% - 10px); display:block; }
 
 /* Hotel content — bottom-left over the gradient */
 .axr-hotel{ position:absolute; left:clamp(28px,3vw,44px); right:clamp(28px,3vw,44px);
