@@ -4034,3 +4034,35 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-size: cover !important;
   background-repeat: no-repeat !important;
 }
+
+/* ── v22590: RIGHT CARD = 2 SHELVES (Nick: 'flight and from needs to be one
+   and arrival and status needs to be one so 2 panels its 2 shelves').
+   The table now holds two rev2-style rows of two pairs each. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t2 {
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+}
+/* Revised ETA lives INSIDE the Arrival pair now: struck sched + inked
+   revision (green earlier / amber later; bright variants on AC's dark
+   luxury shelf). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval .v2-rc-tval-old {
+  text-decoration: line-through;
+  opacity: .72;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-early { color: #0e7c4a; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-delayed { color: #d97706; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-early { color: #34d399 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-delayed { color: #fbbf24 !important; }
+
+/* ── v22590: SPEED/ALTITUDE BAR — never changes size (Nick: 'that altimeter
+   panel keeps glitching and changing sizes'). The bar keeps a reserved
+   height and tabular numerals so live value updates can't re-flow it;
+   fids-core now also holds the last airborne reading across fix gaps so
+   the bar stops popping in and out. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  min-height: clamp(52px, 7.6vh, 96px) !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-ms-val {
+  font-variant-numeric: tabular-nums lining-nums !important;
+}

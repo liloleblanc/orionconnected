@@ -7042,6 +7042,21 @@ function _buildV2MapCol(ctx, vars) {
       // Speed and altitude appear together or not at all — never one without a
       // genuine airborne altitude (that produced "141 kph at 0 ft").
       if (_liveAlt === null || _liveAlt <= 0) { _liveAlt = null; _liveSpd = null; }
+      // Nick: 'that altimeter panel keeps glitching and changing sizes' —
+      // a render that momentarily lost the fix dropped the Speed/Altitude
+      // bar entirely and the map re-flowed around it, then the next fix
+      // brought it back. Hold the last airborne reading for up to 3 minutes
+      // across fix gaps; landing clears it (arrived-like drops the cache
+      // above and we clear the hold with it).
+      if (_arrivedLikeIb) { window._gateTelemHold = null; }
+      else if (_liveSpd === null && _liveAlt === null) {
+        var _tHold = window._gateTelemHold;
+        if (_tHold && _tHold.key === String(_ib.flight || _ib._reg || '') && (Date.now() - _tHold.ts) < 180000) {
+          _liveSpd = _tHold.spd; _liveAlt = _tHold.alt;
+        }
+      } else {
+        window._gateTelemHold = { key: String(_ib.flight || _ib._reg || ''), spd: _liveSpd, alt: _liveAlt, ts: Date.now() };
+      }
       // Feed the real reading to the live-telemetry animator and DISPLAY its
       // current modeled value, so numbers glide between fixes and a full
       // re-render doesn't snap them back to the last raw fix (see
@@ -7264,53 +7279,35 @@ function _buildV2MapCol(ctx, vars) {
       };
       var _ibArrSchedStr = _ibArrTs ? _ibFmtT(_ibArrTs) : '';
       var _ibArrRevStr = (_ibRevTs && Math.abs(_ibRevTs - _ibArrTs) >= 60000) ? _ibFmtT(_ibRevTs) : '';
-      var _ibArrRowHtml = '';
-      var _ibArrRevised = false;
+      // Nick (Jul 26 2026): 'flight and from needs to be one and arrival and
+      // status needs to be one so 2 panels its 2 shelves' — the four stacked
+      // rows collapse to TWO rev2-style rows, each carrying two label|value
+      // pairs. A revised ETA renders inside the Arrival pair as
+      // struck-sched + revised (green earlier / amber later) instead of its
+      // own Revised pair, so a row never holds more than two pairs.
+      var _ibArrPair = '';
       if (_ibArrSchedStr) {
         var _ibArrLblEn = (_stKey === 'arrived') ? 'Arrived' : 'Arrival';
         var _ibArrLblFr = (_stKey === 'arrived') ? 'Arrivé' : 'Arrivée';
+        var _ibArrVal = _ibArrSchedStr;
         if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
-          _ibArrRevised = true;
-          // Nick's sketch, verbatim: 'Arrival 5:28PM    Revised: 5:27PM' —
-          // ONE row, TWO label|value pairs, each time at full row height
-          // (the old single stacked cell crammed everything small). The
-          // revised time wears the status palette classes (green earlier /
-          // amber later) so every skin inks it correctly — the old inline
-          // hex was a dark green that vanished on AC's dark wood.
           var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-early' : 'v2-rc-status-delayed';
-          _ibArrRowHtml =
-              '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
-            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
-            +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _ibArrSchedStr + '</span></div>'
-            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Révisé' : 'Revised') + '</span><span>' + (_frF ? 'Revised' : 'Révisé') + '</span></div>'
-            +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _ibArrRevStr + '</div>'
-            + '</div>';
-        } else {
-          // NOT trow-last: the Status row now always renders LAST (below
-          // this), so the time-vs-status order matches the departure card.
-          _ibArrRowHtml =
-              '<div class="v2-rc-fi-trow">'
-            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
-            +   '<div class="v2-rc-fi-tval">' + _ibArrSchedStr + '</div>'
-            + '</div>';
+          _ibArrVal = '<span class="v2-rc-tval-old">' + _ibArrSchedStr + '</span> <span class="' + _ibRevCls + '">' + _ibArrRevStr + '</span>';
         }
+        _ibArrPair =
+            '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
+          + '<div class="v2-rc-fi-tval">' + _ibArrVal + '</div>';
       }
-      // Shelf-level t4 marker too: the shelf is flex-locked to 1/6 of the
-      // rail (sized for 3 rows) and :has() is unusable on the older kiosk
-      // browsers, so CSS needs the class ON the shelf to widen its share
-      // when the Arrival row makes it 4 rows (Nick: 'capped out').
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table' + (_ibArrRowHtml ? ' v2-rc-fi-t4' : '') + '">'
-        +   '<div class="v2-rc-fi-trow">'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t2">'
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
         +   '</div>'
-        +   _ibArrRowHtml
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2 v2-rc-fi-trow-last">'
+        +     _ibArrPair
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +   '</div>'
@@ -7451,23 +7448,21 @@ function _buildV2MapCol(ctx, vars) {
         var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
         if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dfRowIa) + '</span>' : '');
       })();
+      // Same 2-shelf collapse as the inbound card (Nick: 'flight and from
+      // needs to be one and arrival and status needs to be one so 2 panels
+      // its 2 shelves') — here: Flight·Destination / Departure·Status.
+      // Departure TIME stays (Nick: 'who told you to remove the time').
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t4">'
-        +   '<div class="v2-rc-fi-trow">'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t2">'
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
         +     '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-trow">'
         +     '<div class="v2-rc-fi-tlbl"><span>Destination</span><span>Destination</span></div>'
         +     '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
         +   '</div>'
-        // Departure TIME restored (Nick: 'who told you to remove the time') —
-        // the card dropped it 'because it's on the left', but Nick wants it here.
-        +   '<div class="v2-rc-fi-trow">'
+        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2 v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
         +     '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
         +     '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
         +   '</div>'
@@ -16653,7 +16648,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22589';
+var FIDS_BUILD_TAG = 'v22590';
 (function(){
   try {
     function _addTag(){
@@ -27925,6 +27920,7 @@ function _adBackdropHtml(blurUrl) {
       if (!_bdAcc) _bdAcc = bd.dataset.acc || '#12309e';
       if (bd.dataset.acc !== _bdAcc) {
         bd.dataset.acc = _bdAcc;
+        bd.dataset.blur = '';
         // Nick on the AC middle panel: 'I think for AC we need more of a
         // gray inside … the gray was the middle'. The 74% red mix reads
         // harsh, so AC's inside leans charcoal with a breath of the red;
@@ -27932,12 +27928,29 @@ function _adBackdropHtml(blurUrl) {
         var _bdBase = /^#d82f2e$/i.test(_bdAcc)
           ? 'color-mix(in srgb, ' + _bdAcc + ' 14%, #494e57)'
           : 'color-mix(in srgb, ' + _bdAcc + ' 74%, #0b1020)';
+        // 'the ad to still reflect in the background like it did before'
+        // (Nick): the current advert, blown up and blurred, IS the wall
+        // art — the waves show through it faintly and carry the panel
+        // whenever no ad image is up (weather card, videos).
         bd.innerHTML =
             '<div style="position:absolute;inset:0;background:' + _bdBase + ';"></div>'
           + '<div style="position:absolute;inset:-2%;background-image:url(/logos/Backgrounds/adback-waves2.jpg?v=1);background-size:cover;background-position:center;mix-blend-mode:luminosity;"></div>'
+          + '<div class="ad-bd-blur" style="position:absolute;inset:-3%;background-size:cover;background-position:center;filter:blur(26px) saturate(1.08);opacity:.8;"></div>'
           + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.18);"></div>'
           + '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;background-image:url(/logos/Backgrounds/adback-spots.png?v=1);background-size:cover;background-position:center;opacity:.28;mix-blend-mode:screen;"></div>';
       }
+      // Keep the reflection in step with the slide on every ensure pass —
+      // it lives OUTSIDE the slide so it survives slide swaps and still
+      // bleeds to the walls under the frame.
+      try {
+        var _bImg = col.querySelector('#gateAdCarousel img.ad-tech-media');
+        var _bSrc = (_bImg && _bImg.src) ? _bImg.src : '';
+        if (_bSrc && bd.dataset.blur !== _bSrc) {
+          bd.dataset.blur = _bSrc;
+          var _bLayer = bd.querySelector('.ad-bd-blur');
+          if (_bLayer) _bLayer.style.backgroundImage = 'url("' + _bSrc + '")';
+        }
+      } catch (e) {}
       var rg = col.querySelector(':scope > .ad-accent-frame');
       if (rg) rg.remove();   // the wall-nested ring is not in Nick's reference
       var f = col.querySelector(':scope > .ad-outer-frame');
@@ -27970,7 +27983,23 @@ function _adBackdropHtml(blurUrl) {
     new MutationObserver(function (muts) {
       for (var i = 0; i < muts.length; i++) {
         var t = muts[i].target;
-        if (t && t.classList && t.classList.contains('gad-media-col')) { _ensureOuterFrame(); return; }
+        // ANY mutation inside the column (not just on it): a slide swap
+        // mutates #gateAdCarousel, and the backdrop's ad reflection must
+        // follow the new creative on the same frame.
+        if (t && t.nodeType === 1 && t.closest && t.closest('.gad-media-col')) { _ensureOuterFrame(); return; }
+        // A re-render that REPLACES the column node mutates its parent, not
+        // the column — the 45s map takeover did exactly that, and only the
+        // 1.5s backstop re-mounted the frame+backdrop: a visible blip on
+        // the map (Nick: 'the map keeps blipping'). Catch the fresh column
+        // in addedNodes and re-mount synchronously.
+        var an = muts[i].addedNodes;
+        for (var j = 0; j < (an ? an.length : 0); j++) {
+          var n = an[j];
+          if (n && n.nodeType === 1 && ((n.classList && n.classList.contains('gad-media-col')) || (n.querySelector && n.querySelector('.gad-media-col')))) {
+            _ensureOuterFrame();
+            return;
+          }
+        }
       }
     }).observe(document.documentElement, { childList: true, subtree: true });
   } catch (e) {}
