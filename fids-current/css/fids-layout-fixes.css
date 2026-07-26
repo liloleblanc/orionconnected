@@ -4327,3 +4327,13 @@ html body .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-skyteam {
   margin-left: 26px !important;
   object-fit: contain !important;
 }
+
+/* ── v22602: DL strip badge at GLYPH scale — the triangle filled ~82% of
+   the circle so the badge read white, not navy like its neighbours
+   (Nick: 'the Delta badge does not match the colors of the others').
+   Padded to the same optical size as the line glyphs, the navy circle
+   dominates again. */
+html body[data-gate-airline="DL"] .g8-bir-badge img {
+  padding: 23% !important;
+  box-sizing: border-box !important;
+}
