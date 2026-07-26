@@ -4337,3 +4337,9 @@ html body[data-gate-airline="DL"] .g8-bir-badge img {
   padding: 23% !important;
   box-sizing: border-box !important;
 }
+
+/* ── v22603: the Delta triangle is RED (Nick: 'its supposed to be red') —
+   native two-tone widget colours on the navy badge, no white invert. */
+html body[data-gate-airline="DL"] .g8-bir-badge img {
+  filter: none !important;
+}
