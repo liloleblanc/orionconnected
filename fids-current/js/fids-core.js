@@ -16653,7 +16653,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22566';
+var FIDS_BUILD_TAG = 'v22567';
 (function(){
   try {
     function _addTag(){
@@ -24296,6 +24296,7 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       f.style.width = Math.round(r.width + 2 * pad) + 'px';
       f.style.height = Math.round(r.height + 2 * pad) + 'px';
       f.style.right = 'auto'; f.style.bottom = 'auto';
+      f.style.visibility = 'visible';   // fitted — safe to show
     }
   }
   setInterval(_tick, 600);
@@ -27966,6 +27967,7 @@ function _adTechFrameHtml() {
       + 'mask-image:url(\'' + _fUrl + '\');mask-size:100% 100%;"></div>'
     : '';
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
+    + 'visibility:hidden;'   // shown by the fitter AFTER it hugs the ad — the full-size flash then snap was a per-slide blip
     + 'pointer-events:none;z-index:3;isolation:isolate;filter:drop-shadow(0 10px 26px rgba(5,10,20,0.4));">'
     +   '<div style="position:absolute;inset:0;background-image:url(\'' + _fUrl + '\');background-size:100% 100%;"></div>'
     +   _fTint
