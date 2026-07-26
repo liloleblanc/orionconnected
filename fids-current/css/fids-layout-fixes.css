@@ -4500,3 +4500,51 @@ html body .fids-banner::before {
 html body .g8-r1::after, html body .fids-banner::after {
   opacity: .32 !important;
 }
+
+/* ── v22610: DOTS + BANNER SWIRLS MORE PROMINENT (Nick: 'make both the
+   dots and lines above more prominent'). */
+html body .gad-media-col > .ad-panel-backdrop::after { opacity: .62 !important; }
+html body .g8-wrap .v2-rc-shelf-map::before,
+html body .bigcraft-map::before { opacity: .52 !important; }
+html body .g8-r1::before, html body .fids-banner::before { opacity: .52 !important; }
+
+/* ── v22610: WEATHER CARD — the 7-day lows were clipped off the bottom
+   edge (Nick: 'the weather needs adjusted'). The outlook strip loses a
+   little height everywhere so the whole card lands inside the opening. */
+html .wxcard-wrap {
+  padding: clamp(8px, 1.2vh, 18px) clamp(14px, 1.4vw, 28px) !important;
+}
+html .wxcard-col .wxc-hero img, html .wxcard-col .wxc-hero .wxanim-host {
+  width: clamp(78px, 12.6vh, 140px) !important;
+  height: clamp(78px, 12.6vh, 140px) !important;
+}
+html .wxc-temp { font-size: clamp(32px, 5.4vh, 66px) !important; }
+html .wxc-hero { margin: clamp(2px, 0.4vh, 6px) 0 !important; }
+html .wxc-day img, html .wxcard-col .wxc-day img,
+html .wxc-day .wxanim-host, html .wxcard-col .wxc-day .wxanim-host {
+  width: clamp(30px, 4.4vh, 50px) !important;
+  height: clamp(30px, 4.4vh, 50px) !important;
+  margin: 2px auto !important;
+}
+html .wxc-day, html .wxcard-col .wxc-grid-7 > .wxc-day {
+  padding-top: clamp(3px, 0.5vh, 8px) !important;
+  padding-bottom: clamp(3px, 0.5vh, 8px) !important;
+}
+html .wxc-hour img, html .wxc-hour .wxanim-host {
+  width: clamp(30px, 4.4vh, 50px) !important;
+  height: clamp(30px, 4.4vh, 50px) !important;
+}
+
+/* ── v22610: NUMBERS WHITE ON THE DARK CARD (Nick: 'the numbers needs to
+   be changed and done to white on a dark background'). The overnight
+   lows rendered at 55% white — grey mush against the dark panel. */
+html .wxc-lo, html .wxcard-col .wxc-lo {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+html .wxc-hi, html .wxcard-col .wxc-hi,
+html .wxc-hour .wxc-h-temp, html .wxc-hr {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
