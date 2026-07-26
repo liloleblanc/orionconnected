@@ -16462,7 +16462,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22523';
+var FIDS_BUILD_TAG = 'v22524';
 (function(){
   try {
     function _addTag(){
@@ -24773,14 +24773,18 @@ function _accorHotelAirportDistance(h, destIata) {
 var ACCOR_HOTEL_DETAIL_CACHE = {};
 var ACCOR_DETAIL_TTL = 6 * 60 * 60 * 1000;  // 6 hours
 
-function fetchAccorHotelDetail(hotelId) {
+function fetchAccorHotelDetail(hotelId, langWanted) {
   if (!hotelId) return;
   // Per Accor docs: Accept-Language header drives localization. Cache is
   // keyed by hotelId + current display language so that flipping languages
   // (en ↔ fr) triggers a fresh fetch instead of serving stale strings.
+  // langWanted lets a caller ask for the language ITS card is being built in:
+  // the ad deck alternates EN/FR per slide, and fetching only the board's
+  // language is why a French card ended up with English room names.
   var curLang = 'en';
   try {
-    if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) curLang = langs[langIdx || 0];
+    if (langWanted) curLang = String(langWanted);
+    else if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) curLang = langs[langIdx || 0];
     else if (typeof lang !== 'undefined' && lang) curLang = lang;
   } catch (e) {}
   var cacheKey = hotelId + '|' + curLang;
@@ -26842,10 +26846,12 @@ function buildAccorAdOnlyV6(ad) {
   // endpoint only returns one photo; the DETAIL endpoint returns the gallery.
   if (ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
     var _hpLang = 'en';
-    try {
-      if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _hpLang = langs[langIdx || 0];
-      else if (typeof lang !== 'undefined' && lang) _hpLang = lang;
-    } catch (e) {}
+    try { _hpLang = accorLang(); } catch (e) {
+      try {
+        if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _hpLang = langs[langIdx || 0];
+        else if (typeof lang !== 'undefined' && lang) _hpLang = lang;
+      } catch (e2) {}
+    }
     var _hpDetail = ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId + '|' + _hpLang]
                  || ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId] || null;
     if (_hpDetail && Array.isArray(_hpDetail.photos) && _hpDetail.photos.length) {
@@ -26854,7 +26860,8 @@ function buildAccorAdOnlyV6(ad) {
       _hpDetail.photos.forEach(function(u){ if (u && _merged.indexOf(u) === -1) _merged.push(u); });
       _photoSet = _merged;
     } else if (typeof fetchAccorHotelDetail === 'function') {
-      try { fetchAccorHotelDetail(ad.hotelId); } catch (e) {}
+      // Ask in the language THIS card is being built in, not the board's.
+      try { fetchAccorHotelDetail(ad.hotelId, accorLang()); } catch (e) {}
     }
   }
   _photoSet = _photoSet.slice(0, 6);
@@ -27030,6 +27037,17 @@ function buildAccorAdOnlyV6(ad) {
   // description) fill pages 2–3 once the per-hotel detail endpoint loads; until
   // then they fall back to list-level data so no page is ever empty.
   var _detail = (typeof _hpDetail !== 'undefined' && _hpDetail) ? _hpDetail : null;
+  // WORDS MUST MATCH THE CARD'S LANGUAGE. The detail cache is keyed by
+  // hotelId|lang with a fallback to the unkeyed entry, so a French card was
+  // picking up an English detail whenever that was the one already cached —
+  // English room names and room copy under French headings (Nick: 'Ads half
+  // french half english'). Photos are language-neutral and were merged into
+  // _photoSet already, so only the TEXT source is dropped here; the detail for
+  // this card's own language is requested so the next pass has it.
+  if (_detail && _detail.lang && _detail.lang !== accorLang()) {
+    try { if (typeof fetchAccorHotelDetail === 'function') fetchAccorHotelDetail(ad.hotelId, accorLang()); } catch (e) {}
+    _detail = null;
+  }
   function _dedupe(arr){ var seen={}, out=[]; (arr||[]).forEach(function(x){ var k=String(x||'').toLowerCase().trim(); if (x && !seen[k]) { seen[k]=1; out.push(x); } }); return out; }
   // Curate, don't just take the first six: the room-level feed leads with
   // fixtures nobody chooses a hotel for (Nick: the card was selling 'Iron' and
@@ -27070,7 +27088,12 @@ function buildAccorAdOnlyV6(ad) {
   // 'breakfast' for hotels that don't include it (Fairmont). No breakfast line.
   if (_amenFree.indexOf('room_service') !== -1) _dineAmen.push(_dfr ? 'Service aux chambres' : 'Room service');
   if (_lblsAd.indexOf('DINING_OFFER') !== -1) _dineAmen.push(_dfr ? 'Offres restauration pour les clients' : 'Dining offers for guests');
-  var _restList = _dedupe(_dineAdv.concat(_dineAmen)).slice(0, 5);
+  // REAL restaurant names only. The derived phrases ('Restaurant sur place',
+  // 'Bar-salon', 'Service aux chambres', 'Offres restauration pour les
+  // clients') are our own wording spun out of amenity flags, and rendered as a
+  // bullet list they read like a commodity inventory — the exact thing this
+  // card is supposed to have stopped doing.
+  var _restList = [];
   if (!_restList.length) {
     // REAL hotel dining only — from the master record. The detail endpoint's
     // 'restaurants' are IN-ROOM food & beverage fixtures (Mini Bar, Ice
@@ -27247,8 +27270,15 @@ function buildAccorAdOnlyV6(ad) {
   // the second paragraph first, then real restaurants, then the score, and
   // failing all of those the address and the distances (which are facts every
   // hotel has). A page with only a wordmark on it is not an advertisement.
+  // Restaurants flow inline in the advantages treatment — caps, gold middots —
+  // never as a bulleted list (Nick has rejected bullets on these cards).
+  var _restInline = _restList.length
+    ? '<div class="axr-fai-feats">' + _restList.slice(0, 3).map(function (r) {
+        return '<span>' + esc(r) + '</span>';
+      }).join('') + '</div>'
+    : '';
   var _p3Body = (_blurb2 ? '<p class="axr-blurb">' + esc(_blurb2) + '</p>' : '')
-    + _list(_restList) + _ratingRow;
+    + _restInline + _ratingRow;
   if (!_blurb2 && !_restList.length && !_ratingRow) _p3Body = _addrLineHtml + _locLineHtml + _starsRow;
   var _page3 = '<div class="axr-page">'
     + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'

@@ -108,10 +108,14 @@
           mask:url('/logos/hotels/accor-corporate/all-bubble.svg') 0 0/100% 100% no-repeat;
   filter:drop-shadow(0 10px 22px rgba(0,0,0,.4)); }
 .axr-bubble::after{ display:none; }
-.axr-bubble-copy{ min-width:0; font-family:var(--axr-display); font-size:clamp(15px,1.35vw,23px);
-  line-height:1.24; font-weight:500; letter-spacing:.002em;
-  /* two lines inside the fixed-aspect shape, never a third that would spill */
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.axr-bubble-copy{ min-width:0; font-family:var(--axr-display); font-size:clamp(13px,1.12vw,19px);
+  line-height:1.22; font-weight:500; letter-spacing:.002em;
+  /* THREE lines, sized so the longest property names fit whole. The hotel's
+     own name is never cut: 'Scanner POUR LE FAIRMONT EL SAN…' on a paid ad is
+     not acceptable, and the caption is not shrink-to-fit either, so the size
+     is set low enough that the longest names in the portfolio still land. */
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  hyphens:none; }
 /* Sized by the shape's inner height (not a fixed width), so the chip can
    never be taller than the bubble it sits in. */
 .axr-qr{ aspect-ratio:1; height:100%; width:auto; max-height:100%; background:#fff; border-radius:7px; padding:5px;
