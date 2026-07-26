@@ -8342,8 +8342,23 @@ function uxgGateHtml(ctx) {
   var r3Right = '';
   // Check for user override message first
   var _ovMsg = getOverrideMessage(currentFlight.flight);
-  var minsToBoard = Math.max(0, minsToDep - boardLeadMins);
-  var showBoarding = minsToDep <= boardLeadMins && minsToDep > -15;
+  // ONE BOARDING CLOCK (Nick, Jul 26 2026: 'boarding says 1:20 for a 1:30
+  // departure and the screen at 12:50 says 2 mins to boarding'). The Boarding
+  // FIELD above runs through the honesty floor (can't board before the inbound
+  // is at the gate) and the final guard, so on that PAL turn it printed
+  // dep − 10. Every countdown/threshold down here was still deriving its own
+  // boarding moment as dep − boardLeadMins, i.e. 25 min earlier — so the panel
+  // announced boarding while the field said it was still half an hour off.
+  // Derive the lead from the boardTs the field actually prints, so one clock
+  // drives the field, the countdown, and both takeovers. Only trust it inside a
+  // sane window; a genuine midnight-crossing boardTs must not widen the lead.
+  var _boardLeadShown = boardLeadMins;
+  if (typeof boardTs === 'number' && boardTs && effectiveDepTs) {
+    var _leadShown = Math.round((effectiveDepTs - boardTs) / 60000);
+    if (_leadShown >= 5 && _leadShown <= 90) _boardLeadShown = _leadShown;
+  }
+  var minsToBoard = Math.max(0, minsToDep - _boardLeadShown);
+  var showBoarding = minsToDep <= _boardLeadShown && minsToDep > -15;
   // Nick (Jul 2026): 'boarding takes over, but less' + 'aircraft images not
   // seen a lot'. The full-screen "Boarding begins in X" countdown used to take
   // over the whole gate 25 min BEFORE boarding even started (so ~55 min before
@@ -8351,7 +8366,7 @@ function uxgGateHtml(ctx) {
   // part of an hour. Trim that pre-boarding takeover to the last 10 min; the
   // aircraft/media/map layout (with the small "will board in X" strip) now
   // stays up until then.
-  var showCountdown = minsToDep <= (boardLeadMins + 10) && minsToDep > boardLeadMins;
+  var showCountdown = minsToDep <= (_boardLeadShown + 10) && minsToDep > _boardLeadShown;
   var isGateClosedStatus = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed');
   var isFinalCallStatus = (stKey === 'final' || stKey === 'finalcall' || stKey === 'final-call');
   var inbDelayed = inboundFlight && (inboundFlight.status === 'delayed' || (inboundFlight.upd && inboundFlight._revTs && inboundFlight._revTs > inboundFlight._sortTs));
@@ -8376,7 +8391,7 @@ function uxgGateHtml(ctx) {
     // Countdown takeover already shows the big timer — the 'will board in
     // approximately X minutes' strip duplicated it (Nick).
     r3Left = '';
-  } else if (minsToDep <= (boardLeadMins + 55) && minsToDep > (boardLeadMins + 25)) {
+  } else if (minsToDep <= (_boardLeadShown + 55) && minsToDep > (_boardLeadShown + 25)) {
     r3Left = TL('willBoardIn') + ' ' + minsToBoard + ' ' + (minsToBoard!==1?TL('minutes').toLowerCase():TL('minute').toLowerCase()) + '.';
   }
   if (equipName || currentFlight._reg) {
@@ -16624,7 +16639,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22541';
+var FIDS_BUILD_TAG = 'v22542';
 (function(){
   try {
     function _addTag(){
