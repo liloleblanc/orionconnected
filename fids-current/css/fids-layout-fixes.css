@@ -5185,3 +5185,49 @@ html body:not(#_) .fids-banner .fids-banner-date .cl-sep {
   color: #ffffff !important;
   opacity: 1 !important;
 }
+
+/* ── v22641: THE TIME BLOCK NEEDS ITS OWN PLATE, NOT A DIFFERENT INK.
+   v22640 fixed the silk overlay's screen-wash, which helped (2.10 → 2.41)
+   but did not solve it, because the overlay was never the main cause.
+
+   The block is pinned at right:90px, which on the Acadian banner lands it
+   squarely in the gradient's white→red transition. Measured across just
+   that span the backdrop runs from a pale pink (233,140,158) to the full
+   #D21034. No single ink survives that:
+
+     white  2.41:1 on the pale end, 5.43:1 on the red
+     navy   6.34:1 on the pale end, 2.81:1 on the red
+
+   Whichever one is picked, half the block fails. So the ink is not the
+   variable to change — the backdrop is. The gate solves this already: its
+   time block sits on its own panel. The banner had `background: none`,
+   so it was reading straight off the gradient.
+
+   Giving it the same treatment: an Acadian-navy plate, which the flag
+   already contains, so it belongs on the band rather than fighting it.
+   White on the plate measures about 15:1 and no longer depends on where
+   the gradient happens to be underneath. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"]:not(#_) .fids-banner-time-block,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block {
+    background: rgba(13, 36, 64, 0.88) !important;
+    border-radius: 18px !important;
+    top: 10px !important;
+    bottom: 10px !important;
+    padding: 4px 22px !important;
+    box-shadow: 0 2px 14px rgba(5, 12, 24, 0.28) !important;
+  }
+  /* Every line inside the plate is white now — the block no longer takes
+     its colour from whichever banner theme is active. */
+  html body[data-fids-banner="silk"]:not(#_) .fids-banner-time-block .fids-banner-time,
+  html body[data-fids-banner="silk"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
+  html body[data-fids-banner="silk"]:not(#_) .fids-banner-time-block .fids-banner-date,
+  html body[data-fids-banner="silk"]:not(#_) .fids-banner-time-block .fids-banner-analog,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-time,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-analog {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+}
