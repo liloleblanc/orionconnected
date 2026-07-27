@@ -5677,14 +5677,15 @@ html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even) td.td
 }
 /* every logo image on a cancelled/diverted row renders white — tile,
    emblem, monogram and wordmark alike */
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .fids-airline-cell img,
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled img.full-logo,
+/* v22658 — the tile filter is REVERTED. brightness(0) invert(1) works on a
+   TRANSPARENT wordmark: the glyphs flatten to black, invert makes them
+   white, the empty canvas stays empty. A TILE is an opaque square — the
+   whole square flattens and inverts, so jetBlue's blue jB tile became a
+   solid WHITE BOX on the crimson row. That is what Nick photographed after
+   v22655, and it was mine. Tiles keep their own artwork; only wordmarks and
+   emblems, which have transparent grounds, get whitened. */
 html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled img.airline-emblem,
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .fids-airline-cell img,
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted img.full-logo,
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted img.airline-emblem,
-html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled img.full-logo,
-html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted img.full-logo {
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted img.airline-emblem {
   filter: brightness(0) invert(1) !important;
   background: transparent !important;
   mix-blend-mode: normal !important;
@@ -5721,4 +5722,23 @@ html:not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr.row-arrived
 html:not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:has(td.fids-status-departed) td.td-time-rev.has-rev *,
 html:not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:has(td.fids-status-arrived) td.td-time-rev.has-rev * {
   color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* ── v22658: THE FINAL-CALL REVISED TIME READS. Nick: '4:00PM is wrong
+   color on American 2066 revised time'.
+
+   On a light board the revised time is gold #A66F00 (fids-v3 3801). The
+   Dernier appel block is orange #F28C00. Gold on orange measures 1.74:1 —
+   the worst number on the board, and the reason that time looks washed
+   out rather than merely off-colour. Delayed and early rows already
+   override the gold; final call was never given an override.
+
+   It takes the same dark ink the rest of its own row uses: 6.41:1. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-time-rev,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-time-rev *,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-time-rev.has-rev *,
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-final td.td-time-rev.has-rev *,
+html:not(#_) body:not(#_) #fidsTable tbody tr:has(td.fids-status-final) td.td-time-rev.has-rev * {
+  color: #102437 !important;
+  opacity: 1 !important;
 }
