@@ -11308,11 +11308,16 @@ function _autoBandPalette(ap, _tries) {
       _clearBandPalette();
       return;
     }
+    // v3 key (v22664): the TAIL GUARD changed from 0.183 to 0.115, so every
+    // palette cached under v2 still carries a tail that the silk sheen lifts
+    // out of contrast — Orlando's gold, where the clock measured 2.36:1. A
+    // cached palette is never re-extracted, so without a new key the fix
+    // would reach no screen that had already run once.
     // v2 key: the extractor changed, so every palette cached by the old one
     // is wrong now. Re-keying discards them without a migration step —
     // otherwise a screen that has already been up keeps painting the muddy
     // sampled colours forever and only a cleared cache would ever fix it.
-    var ck = 'fids_logo_palette2_' + ap;
+    var ck = 'fids_logo_palette3_' + ap;
     try {
       var cached = JSON.parse(localStorage.getItem(ck) || 'null');
       if (cached && cached.url === logo && cached.pal && cached.pal.length === 4) {
@@ -17062,7 +17067,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22663';
+var FIDS_BUILD_TAG = 'v22664';
 (function(){
   try {
     function _addTag(){
