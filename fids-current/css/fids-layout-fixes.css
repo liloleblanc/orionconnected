@@ -5985,7 +5985,7 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
     background-image: url("/logos/Backgrounds/fids-hexline.png?v=1") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
-    background-size: auto calc(var(--fids-pat-h, 660px) * 0.4) !important;
+    background-size: auto calc(var(--fids-pat-h, 660px) * 0.6) !important;
     background-repeat: repeat !important;
     background-blend-mode: multiply !important;
   }
@@ -6046,3 +6046,31 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
    outlines are bolder and more open than those struts, which is why 40%
    holds up here where 27% did not there — but this is the direction that
    broke last time, so it is worth watching on a real screen. */
+
+/* ── v22671: ONE HEX ROW PER BOARD ROW. Nick: 'if the rows can fit within
+   the actual lines im good with that'.
+
+   That is a stricter thing than what v22670 did. Up to now the TILE
+   restarted on a row edge every four rows, but the hex lines inside it fell
+   wherever they liked — a row could start halfway up a cell. Fitting the
+   row INSIDE the lines means the pattern's own period has to equal the row
+   pitch, not merely divide into it.
+
+   Measured off the file: the strongest vertical period is 106.67px at 0.76
+   correlation, and 640 / 106.67 is exactly 6 — six hex rows per tile, with
+   a boundary at y=0. So one hex row per board row needs a rendered tile of
+   6 x 66 = 396px, which is 0.6 of --fids-pat-h. The tile already starts at
+   --fids-pat-y, the first row's top edge, so every hex boundary from there
+   lands on a row edge.
+
+   Width check, the thing that ruined the lattice: 396 x (1920/640) = 1188px,
+   a horizontal scale of 0.62. Asa-no-ha renders at 0.635 and is clean; the
+   lattice failed at 0.27. This sits with the good one.
+
+   SIZE CONSEQUENCE, stated because it runs against the last instruction:
+   the cells get bigger. At the 4-row tile the hex period was 44px inside a
+   66px row; at true registration it is 66px. That is the cost of rows
+   sitting inside the lines rather than across them — the pattern's period
+   IS the row now, so its size is no longer a free choice. If it reads too
+   large, the next honest step is two hex rows per board row (0.3), which
+   keeps every row edge on a boundary and halves the cells. */
