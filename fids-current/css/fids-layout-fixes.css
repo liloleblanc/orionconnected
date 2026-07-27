@@ -4783,3 +4783,77 @@ html .wxc-hour {
   padding-right: clamp(4px, 0.5vw, 10px) !important;
 }
 html .wxc-grid-7 { gap: clamp(5px, 0.6vw, 12px) !important; }
+
+/* ── v22617: THE FRENCH LABEL CLASS IS .v2-fi-lbl-2, NOT .v2-fi-lbl-fr.
+   Dumped from the live DOM — every earlier override missed it, which is
+   why 'Vol', 'Statut', 'Départ' stayed dark on the tinted rail while
+   the English half went light. The attribute selector matches the
+   depth of the airline-scoped rules that were winning. */
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+/* Bigger and tighter (Nick: 'put your text bigger and closer together
+   for bilingual'). */
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title {
+  font-size: clamp(15px, 2.05vh, 27px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -.005em !important;
+}
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 {
+  font-size: 1em !important;
+  font-weight: 800 !important;
+}
+
+/* City | CODE on the right card — the bar and the IATA code were dark
+   (Nick: 'Mont-Joli | YYY (this part cant see)'). */
+html body[data-gate-airline] .g8-wrap .gad-map-col-v2 .v2-rc-bar,
+html body[data-gate-airline] .g8-wrap .gad-map-col-v2 .v2-rc-iata,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-rc-bar,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-rc-iata {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Pane labels bigger + tighter to match. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl {
+  font-size: clamp(14px, 1.85vh, 23px) !important;
+  line-height: 1.02 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span + span {
+  margin-top: 0 !important;
+}
+
+/* ── v22617: TIME TAB — the two language lines tighten up and the date
+   stretches across the width of the row above it. */
+html .octb-lbls { line-height: 1.0 !important; gap: 0 !important; }
+html .octb-en, html .octb-fr, html .octb-tab .octb-en, html .octb-tab .octb-fr {
+  line-height: 1.02 !important;
+  font-size: clamp(14px, 2.05vh, 28px) !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+}
+html .octb-date, html .octb-tab .octb-date {
+  width: 100% !important;
+  display: block !important;
+  text-align: justify !important;
+  text-align-last: justify !important;
+  white-space: nowrap !important;
+  color: #ffffff !important;
+  margin-top: 3px !important;
+}
+
+/* ── v22617: GATE TAB — blends were invisible on saturated and dark
+   accents (screen washed the red flat, overlay did nothing on navy).
+   The art is now baked to alpha as white ink, so it paints the same on
+   every carrier with no blend mode at all. */
+html body .g8-r1-right::before {
+  background-image: url("/logos/Backgrounds/banner-silk-alpha.png?v=1") !important;
+  mix-blend-mode: normal !important;
+  opacity: .30 !important;
+}
