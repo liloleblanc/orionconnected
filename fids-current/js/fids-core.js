@@ -11006,6 +11006,241 @@ var BANNER_STYLE = {
 var BANNER_ACCENT = {
   'TPA': '#C8102E'   // Tampa roundel red
 };
+// Hand-set palettes are an OVERRIDE ONLY. Nick: 'it doesn't work for all
+// airports… it should be automatic.' Right — so the band reads the colours
+// out of whatever logo the airport has, and this table stays empty unless
+// some airport's logo genuinely defies extraction.
+var BANNER_PALETTE = {};
+
+// ── Pull an airport's brand colours out of its own logo ─────────────────
+// Draws the logo into a small canvas and picks the colours it is actually
+// made of. Cross-origin logos come through /logoimg so the canvas stays
+// readable; see the note on that route about why it is host-pinned.
+function _rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  var h = 0, s = 0, l = (mx + mn) / 2;
+  if (d) {
+    s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0));
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, s, l];
+}
+function _relLum(r, g, b) {
+  var f = function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function _hslToRgb(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  var c = (1 - Math.abs(2 * l - 1)) * s;
+  var x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  var m = l - c / 2;
+  var r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+}
+// Nick: 'you can probably go even deeper in colour'. Logos carry a lot of
+// pale anti-aliased edge tint, and once a tint survives as a distinct stop
+// the band gets a washed-out patch in it. This pushes every stop toward the
+// saturated version of the hue it already is — the hue is never changed, so
+// the band stays the airport's own colours, just at full strength.
+function _deepen(c) {
+  var hs = _rgbToHsl(c.r, c.g, c.b);
+  var h = hs[0];
+  var s = Math.min(1, hs[1] * 1.20 + 0.10);
+  var l = hs[2];
+  // Anything lighter than mid gets pulled most of the way back down; deeper
+  // stops are left where they are so a genuinely dark navy stays navy.
+  if (l > 0.50) l = 0.50 + (l - 0.50) * 0.32;
+  var rgb = _hslToRgb(h, s, l);
+  return { r: rgb[0], g: rgb[1], b: rgb[2], h: h, s: s, l: l, lum: _relLum(rgb[0], rgb[1], rgb[2]) };
+}
+function _hex(r, g, b) {
+  return '#' + [r, g, b].map(function (v) {
+    return Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  }).join('');
+}
+// Order matters as much as the colours do. Anchor on the darkest brand
+// colour — the band starts there so the white board label has something to
+// sit on — then walk the colour wheel in ONE direction from that anchor.
+// On Tampa's roundel that yields deep blue → light blue → orange → red,
+// which is the order Nick read off the logo himself.
+function _orderBandColours(cands) {
+  if (cands.length < 2) return cands;
+  var sorted = cands.slice().sort(function (a, b) { return a.lum - b.lum; });
+  var anchor = sorted[0];
+  var rest = cands.filter(function (c) { return c !== anchor; });
+  rest.sort(function (a, b) {
+    var da = (anchor.h - a.h + 360) % 360;
+    var db = (anchor.h - b.h + 360) % 360;
+    return da - db;
+  });
+  return [anchor].concat(rest);
+}
+function _extractLogoPalette(logoUrl, cb) {
+  try {
+    if (!logoUrl) return cb(null);
+    var src = logoUrl;
+    try {
+      var lu = new URL(logoUrl, location.href);
+      if (lu.origin !== location.origin) src = '/logoimg?u=' + encodeURIComponent(lu.toString());
+    } catch (e) {}
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    var done = false;
+    var finish = function (v) { if (!done) { done = true; cb(v); } };
+    setTimeout(function () { finish(null); }, 6000);
+    img.onerror = function () { finish(null); };
+    img.onload = function () {
+      try {
+        var N = 72;
+        var cv = document.createElement('canvas');
+        cv.width = N; cv.height = N;
+        var cx = cv.getContext('2d', { willReadFrequently: true });
+        cx.drawImage(img, 0, 0, N, N);
+        var d = cx.getImageData(0, 0, N, N).data;
+        // Bucket by coarse hue+lightness so anti-aliased edges collapse into
+        // the solid colour they came from instead of inventing new ones.
+        var buckets = {};
+        for (var i = 0; i < d.length; i += 4) {
+          var a = d[i + 3];
+          if (a < 200) continue;
+          var r = d[i], g = d[i + 1], b = d[i + 2];
+          var hsl = _rgbToHsl(r, g, b);
+          // Skip the paper and the ink: near-white backgrounds and the
+          // near-black used for wordmark type are not brand colours.
+          if (hsl[1] < 0.22) continue;
+          if (hsl[2] > 0.90 || hsl[2] < 0.12) continue;
+          var key = Math.round(hsl[0] / 18) + '|' + Math.round(hsl[2] * 8);
+          var bk = buckets[key] || (buckets[key] = { n: 0, r: 0, g: 0, b: 0 });
+          bk.n++; bk.r += r; bk.g += g; bk.b += b;
+        }
+        var list = Object.keys(buckets).map(function (k) {
+          var bk = buckets[k];
+          var r = bk.r / bk.n, g = bk.g / bk.n, b = bk.b / bk.n;
+          var hsl = _rgbToHsl(r, g, b);
+          return { n: bk.n, r: r, g: g, b: b, h: hsl[0], s: hsl[1], l: hsl[2], lum: _relLum(r, g, b) };
+        }).filter(function (c) { return c.n >= 6; });
+        // Rank by area, but weighted toward saturation — a logo's solid brand
+        // colour should beat the larger drift of anti-aliased edge pixels
+        // around it, which are the same hue washed out.
+        list.sort(function (a, b) { return (b.n * (0.5 + b.s)) - (a.n * (0.5 + a.s)); });
+        // Keep only colours visibly different from the ones already taken.
+        // Hue-and-lightness was the wrong test for this: Tampa's deep blue
+        // and light blue are 17 degrees apart and read as two obviously
+        // different colours, while its red and the anti-aliased pink around
+        // it share a hue exactly. Perceptual distance separates both cases
+        // correctly — the blues land ~150 apart, the reds ~73.
+        var dist = function (a, b) {
+          var dr = a.r - b.r, dg = a.g - b.g, db = a.b - b.b;
+          return Math.sqrt(2 * dr * dr + 4 * dg * dg + 3 * db * db);
+        };
+        var picked = [];
+        for (var j = 0; j < list.length && picked.length < 4; j++) {
+          var c = list[j], ok = true;
+          for (var k2 = 0; k2 < picked.length; k2++) {
+            if (dist(c, picked[k2]) < 80) { ok = false; break; }
+          }
+          if (ok) picked.push(c);
+        }
+        if (!picked.length) return finish(null);
+        // Plenty of logos are one or two colours. Repeating a stop would just
+        // flatten the band, so the gaps are filled with shades and tints of
+        // the colours the airport actually uses — still its own palette, just
+        // given somewhere to travel.
+        var shade = function (c, f) {
+          return { r: c.r * f, g: c.g * f, b: c.b * f,
+                   h: c.h, s: c.s, l: c.l * f, lum: _relLum(c.r * f, c.g * f, c.b * f) };
+        };
+        var tint = function (c, f) {
+          var m = function (v) { return v + (255 - v) * f; };
+          var r = m(c.r), g = m(c.g), b = m(c.b);
+          var hs = _rgbToHsl(r, g, b);
+          return { r: r, g: g, b: b, h: hs[0], s: hs[1], l: hs[2], lum: _relLum(r, g, b) };
+        };
+        if (picked.length === 1) {
+          var base = picked[0];
+          picked = [shade(base, 0.62), base, tint(base, 0.45), shade(base, 0.80)];
+        } else if (picked.length === 2) {
+          picked = [shade(picked[0], 0.70), picked[0], picked[1], shade(picked[1], 0.82)];
+        } else if (picked.length === 3) {
+          picked = [picked[0], picked[1], picked[2], shade(picked[2], 0.80)];
+        }
+        picked = picked.map(_deepen);
+        var ordered = _orderBandColours(picked).slice(0, 4);
+        // The clock sits on the tail. If that colour is too light to carry
+        // white text, deepen it until it can — every other stop is untouched.
+        var tail = ordered[3];
+        var guard = 0;
+        while (_relLum(tail.r, tail.g, tail.b) > 0.175 && guard++ < 12) {
+          tail = { r: tail.r * 0.88, g: tail.g * 0.88, b: tail.b * 0.88 };
+        }
+        ordered[3] = tail;
+        finish(ordered.map(function (c) { return _hex(c.r, c.g, c.b); }));
+      } catch (e) { finish(null); }
+    };
+    img.src = src;
+  } catch (e) { cb(null); }
+}
+function _applyBandPalette(pal) {
+  try {
+    for (var i = 0; i < 4; i++) {
+      document.body.style.setProperty('--fids-band-' + (i + 1), pal[i]);
+    }
+    document.body.dataset.fidsBandPalette = '1';
+  } catch (e) {}
+}
+function _clearBandPalette() {
+  try {
+    for (var i = 0; i < 4; i++) { document.body.style.removeProperty('--fids-band-' + (i + 1)); }
+    delete document.body.dataset.fidsBandPalette;
+  } catch (e) {}
+}
+// Resolve the airport's logo, derive its palette, cache it against that exact
+// logo URL. Extraction is async and only runs on a cache miss, so a warm
+// board paints the branded band on the first frame with no flash.
+var _bandPaletteBusy = {};
+function _autoBandPalette(ap, _tries) {
+  try {
+    // The logo lives in the KV-backed airport config, not the static AP table,
+    // and that config arrives asynchronously — on a cold load the banner is
+    // styled before it lands. So when there is no logo yet, come back for it
+    // rather than concluding the airport has none.
+    var cfg = (typeof getAirportConfig === 'function') ? getAirportConfig(ap) : null;
+    var logo = (cfg && cfg.logo && cfg.logo.url) ? cfg.logo.url : '';
+    if (!logo) { try { logo = localStorage.getItem('fids_airport_logo_' + ap) || ''; } catch (e) {} }
+    if (!logo) {
+      var t = _tries || 0;
+      if (t < 12) { setTimeout(function () { _autoBandPalette(ap, t + 1); }, 700); return; }
+      _clearBandPalette();
+      return;
+    }
+    var ck = 'fids_logo_palette_' + ap;
+    try {
+      var cached = JSON.parse(localStorage.getItem(ck) || 'null');
+      if (cached && cached.url === logo && cached.pal && cached.pal.length === 4) {
+        _applyBandPalette(cached.pal);
+        return;
+      }
+    } catch (e2) {}
+    if (_bandPaletteBusy[ap]) return;
+    _bandPaletteBusy[ap] = 1;
+    _extractLogoPalette(logo, function (pal) {
+      _bandPaletteBusy[ap] = 0;
+      if (!pal) { _clearBandPalette(); return; }
+      try { localStorage.setItem(ck, JSON.stringify({ url: logo, pal: pal })); } catch (e3) {}
+      _applyBandPalette(pal);
+    });
+  } catch (e) { _clearBandPalette(); }
+}
 function _applyBannerStyle(iata, screen) {
   try {
     var ap = String(iata || '').toUpperCase();
@@ -11040,6 +11275,16 @@ function _applyBannerStyle(iata, screen) {
         document.body.style.removeProperty('--fids-silk-accent');
         document.body.style.removeProperty('--fids-silk-accent-tint');
       }
+      // Full logo palette. A single accent only tinted the band's tail, so an
+      // airport's identity came down to one faint edge colour. This reads the
+      // colours out of the airport's own logo and flows the whole band through
+      // them. Hand-set entries in BANNER_PALETTE override; otherwise it is
+      // derived and cached per logo URL.
+      var pal = null;
+      try { pal = JSON.parse(localStorage.getItem('fids_banner_palette_' + ap) || 'null'); } catch (e5) {}
+      if (!pal) pal = BANNER_PALETTE[ap] || null;
+      if (pal && pal.length >= 4) { _applyBandPalette(pal); }
+      else { _autoBandPalette(ap); }
     } catch (e3) {}
   } catch (e) {}
 }
@@ -16696,7 +16941,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22631';
+var FIDS_BUILD_TAG = 'v22632';
 (function(){
   try {
     function _addTag(){

@@ -4995,3 +4995,46 @@ html body .g8-r1-apmark img {
   height: clamp(52px, 8.2vh, 104px) !important;
   max-height: 78% !important;
 }
+
+/* ── v22632: THE BANNER CARRIES THE AIRPORT'S OWN LOGO COLOURS.
+   Nick: 'the logo is blue, light blue, orange and red — those colours should
+   reflect at the top', and later 'it should be automatic', 'it doesn't work
+   for all airports'.
+
+   Until now a non-Moncton airport got a SINGLE accent, applied as a
+   near-white wash on the band's tail, so an entire airport identity came
+   down to one faint edge colour. With a palette resolved, the band instead
+   flows through four of its logo's colours the way Moncton's flows through
+   the Acadian flag: deep, light, white held in the middle for the wordmark
+   to sit on, warm, then the strongest at the tail.
+
+   Nothing is hardcoded — fids-core reads the colours out of whatever logo
+   the airport has and caches them per logo URL, so a re-upload re-derives.
+
+   Landing a saturated colour at the tail also means the time block sits on
+   real colour rather than a pale wash, so it can be white throughout instead
+   of the mixed navy-and-white it had. Measured on Tampa's palette: 5.17:1. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner {
+    background: linear-gradient(100deg,
+      var(--fids-band-1) 0%, var(--fids-band-1) 12%,
+      var(--fids-band-2) 26%,
+      #ffffff 42%, #ffffff 56%,
+      var(--fids-band-3) 66%,
+      var(--fids-band-4) 78%, var(--fids-band-4) 100%) !important;
+  }
+  /* One ink for the whole time block, chosen by what the tail actually is:
+     white where it is a saturated logo colour... */
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-time,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-date,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-analog {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+  /* The board label rides the deep end of the palette, so it stays white. */
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-board .fids-board-label {
+    color: #ffffff !important;
+  }
+}

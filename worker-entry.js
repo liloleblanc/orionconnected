@@ -157,6 +157,42 @@ export default {
       }
     }
 
+    // ── Airport-logo passthrough, for palette extraction ────────────────
+    // The banner derives its colours from the airport's own logo by reading
+    // the image's pixels in a canvas. Logos live on the media-library bucket,
+    // which serves no Access-Control-Allow-Origin, so a direct read taints
+    // the canvas and getImageData throws. Streaming the bytes back through
+    // this origin makes the read legal.
+    //
+    // Deliberately NOT a general proxy: the host allowlist below is the whole
+    // point. Without it this route would fetch anything, for any caller, on
+    // our egress — so it stays pinned to the bucket that holds the logos.
+    if (path === '/logoimg') {
+      const raw = url.searchParams.get('u') || '';
+      let target;
+      try { target = new URL(raw); } catch (e) { return new Response('Bad url', { status: 400, headers: NO_STORE }); }
+      const hostOk = target.protocol === 'https:'
+        && (target.hostname === 'pub-e392224bda1a4096843ed05df504ca91.r2.dev'
+            || target.hostname.endsWith('.r2.cloudflarestorage.com'));
+      if (!hostOk) return new Response('Host not allowed', { status: 403, headers: NO_STORE });
+      try {
+        const r = await fetch(target.toString(), { cf: { cacheEverything: true, cacheTtl: DAY } });
+        if (!r.ok) return new Response('Logo upstream ' + r.status, { status: 502, headers: NO_STORE });
+        const ct = r.headers.get('Content-Type') || '';
+        if (!/^image\//.test(ct)) return new Response('Not an image', { status: 415, headers: NO_STORE });
+        return new Response(r.body, {
+          status: 200,
+          headers: {
+            'Content-Type': ct,
+            'Cache-Control': 'public, max-age=' + DAY,
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        return new Response('Logo fetch failed', { status: 502, headers: NO_STORE });
+      }
+    }
+
     // ── Map tiles passthrough ───────────────────────────────────────────
     // /maptiles/7/40/72.png  or  /maptiles/7/40/72@2x.png
     if (path.startsWith('/maptiles/')) {
