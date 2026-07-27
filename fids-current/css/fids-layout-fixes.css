@@ -5120,3 +5120,29 @@ html body .g8-bir-cell:last-child .g8-bir-val {
 html body .g8-bir-cell .g8-bir-val {
   margin-right: 16px !important;
 }
+
+/* ── v22636: THE CLOCK LANDS ON ONE COLOUR, NOT TWO.
+   Nick, on Tampa: 'you need to figure out these things too especially with
+   different colored backgrounds and text'.
+
+   Measured against the logo's real colours, white text scores 9.47:1 on the
+   deep blue, 4.16:1 on the light blue, 5.17:1 on the red — and 2.90:1 on the
+   orange. A deep navy ink inverts the problem exactly (5.09:1 on the orange,
+   1.56:1 on the blue). No single ink serves a band that runs light and dark
+   under the same block, so the answer is to stop straddling: the time block
+   starts at 74% of the banner width, so the tail colour now goes solid from
+   68% instead of 78% and the whole block sits on ONE ground.
+
+   All four logo colours still appear, in the order Nick read off the mark
+   himself — blue, light blue, orange, red. Only where the last one takes
+   over has moved. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner {
+    background: linear-gradient(100deg,
+      var(--fids-band-1) 0%, var(--fids-band-1) 11%,
+      var(--fids-band-2) 24%,
+      #ffffff 39%, #ffffff 54%,
+      var(--fids-band-3) 62%,
+      var(--fids-band-4) 68%, var(--fids-band-4) 100%) !important;
+  }
+}

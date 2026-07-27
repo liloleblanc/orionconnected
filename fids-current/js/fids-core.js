@@ -11085,6 +11085,41 @@ function _orderBandColours(cands) {
   });
   return [anchor].concat(rest);
 }
+// Read the brand colours a VECTOR logo declares about itself, instead of
+// guessing them back out of a rasterised copy. Nick, looking at Tampa on the
+// board: 'I see 4 different colors in the logo which I dont see in the image
+// — if it was for me it would follow the blue light blue orange and red'. He
+// was right, and the file agrees with him: tampa's SVG declares exactly
+// #003DA6, #0082CA, #EE7623, #DB0032. The pixel path was averaging those
+// against their own anti-aliased edges and handing back muddy approximations.
+//
+// Only saturated mid-tones count as brand colours — the near-black wordmark
+// ink (#101820) and the white knockout are chrome, not palette.
+function _svgDeclaredPalette(txt) {
+  var out = [], seen = {};
+  var re = /(?:fill|stop-color|stroke)\s*[:=]\s*["']?\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\))/g;
+  var m;
+  while ((m = re.exec(txt))) {
+    var raw = m[1], r, g, b;
+    if (raw.charAt(0) === '#') {
+      var h = raw.slice(1);
+      if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+      r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16);
+    } else {
+      var p = raw.replace(/[^0-9,]/g, '').split(',');
+      r = +p[0]; g = +p[1]; b = +p[2];
+    }
+    if (!isFinite(r) || !isFinite(g) || !isFinite(b)) continue;
+    var hsl = _rgbToHsl(r, g, b);
+    if (hsl[1] < 0.22) continue;
+    if (hsl[2] > 0.90 || hsl[2] < 0.12) continue;
+    var key = r + ',' + g + ',' + b;
+    if (seen[key]) continue;
+    seen[key] = 1;
+    out.push({ r: r, g: g, b: b, h: hsl[0], s: hsl[1], l: hsl[2], lum: _relLum(r, g, b) });
+  }
+  return out;
+}
 function _extractLogoPalette(logoUrl, cb) {
   try {
     if (!logoUrl) return cb(null);
@@ -11097,6 +11132,36 @@ function _extractLogoPalette(logoUrl, cb) {
     img.crossOrigin = 'anonymous';
     var done = false;
     var finish = function (v) { if (!done) { done = true; cb(v); } };
+    // Vector logos get read, not sampled. Two-to-four declared brand colours
+    // ARE the palette — no area ranking to do, no deepening, no tail-shading:
+    // every one of those steps exists to rescue a guess, and there is nothing
+    // to guess at here. More than four (illustrative marks, gradients) still
+    // go down the pixel path, where painted area decides which four matter.
+    if (/\.svg(\?|#|$)/i.test(logoUrl)) {
+      try {
+        fetch(src, { cache: 'force-cache' })
+          .then(function (r) { return r.ok ? r.text() : null; })
+          .then(function (txt) {
+            if (done) return;
+            var decl = txt ? _svgDeclaredPalette(txt) : [];
+            if (decl.length >= 2 && decl.length <= 4) {
+              var ord = _orderBandColours(decl).slice(0, 4);
+              while (ord.length < 4) ord.push(ord[ord.length - 1]);
+              // The clock sits on the tail. Tampa's red carries white at
+              // 5.17:1 and is left exactly as the logo draws it; an airport
+              // whose last colour is a pale yellow would not, so that one
+              // gets deepened until it can. Nothing else is touched.
+              var t = ord[3], tg = 0;
+              while (_relLum(t.r, t.g, t.b) > 0.183 && tg++ < 14) {
+                t = { r: t.r * 0.9, g: t.g * 0.9, b: t.b * 0.9 };
+              }
+              ord[3] = t;
+              finish(ord.map(function (c) { return _hex(c.r, c.g, c.b); }));
+            }
+          })
+          .catch(function () {});
+      } catch (e) {}
+    }
     setTimeout(function () { finish(null); }, 6000);
     img.onerror = function () { finish(null); };
     img.onload = function () {
@@ -11223,7 +11288,11 @@ function _autoBandPalette(ap, _tries) {
       _clearBandPalette();
       return;
     }
-    var ck = 'fids_logo_palette_' + ap;
+    // v2 key: the extractor changed, so every palette cached by the old one
+    // is wrong now. Re-keying discards them without a migration step —
+    // otherwise a screen that has already been up keeps painting the muddy
+    // sampled colours forever and only a cleared cache would ever fix it.
+    var ck = 'fids_logo_palette2_' + ap;
     try {
       var cached = JSON.parse(localStorage.getItem(ck) || 'null');
       if (cached && cached.url === logo && cached.pal && cached.pal.length === 4) {
@@ -16941,7 +17010,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22635';
+var FIDS_BUILD_TAG = 'v22636';
 (function(){
   try {
     function _addTag(){
