@@ -4715,3 +4715,71 @@ html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi > .v2-rc-fi {
   height: auto !important;
   align-self: stretch !important;
 }
+
+/* ── v22616: BILINGUAL PARITY — French is not a second-class label
+   (Nick: 'why are french words smaller??? they shouldnt be … same
+   color everywhere same size no descrimination'). Every second-language
+   line matches its English partner in size, weight and colour. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span + span,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table .v2-rc-fi-tlbl span + span {
+  font-size: 1em !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  opacity: 1 !important;
+  margin-top: 1px !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table .v2-rc-fi-tlbl {
+  color: #ffffff !important;
+  font-size: clamp(13px, 1.65vh, 20px) !important;
+}
+html body .g8-bir-cell .g8-bir-l1, html body .g8-bir-cell .g8-bir-l2 {
+  font-size: 1em !important; font-weight: 800 !important; opacity: 1 !important; color: #fff !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-fr,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en {
+  font-size: 1em !important; font-weight: 800 !important; opacity: 1 !important; color: #fff !important;
+}
+
+/* ── v22616: TIME TAB — all white, and the date line spans the width of
+   the row above it. */
+html .octb-fr { color: #ffffff !important; font-weight: 800 !important; opacity: 1 !important; }
+html .octb-en { color: #ffffff !important; }
+html .octb-date, html .octb-tab .octb-date {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+  width: 100% !important;
+  display: block !important;
+  font-size: clamp(13px, 1.9vh, 26px) !important;
+}
+html .octb-date .cl-sep { opacity: 1 !important; }
+
+/* ── v22616: WEATHER — one white, one size, boxes given the room they
+   need (Nick: 'its different fucking colors … WHITE all WHITE SAME SIZE
+   EXPAND YOUR BOXES THERES ROOM'). */
+html .wxc-cond, html .wxcard-col .wxc-cond,
+html .wxc-meta, html .wxcard-col .wxc-meta,
+html .wxc-meta b, html .wxc-hr, html .wxc-d,
+html .wxcard-col .wxc-d, html .wxcard-col .wxc-d-fr,
+html .wxcard-col .wxc-dt, html .wxc-city, html .wxc-temp,
+html .wxc-hi, html .wxcard-col .wxc-hi,
+html .wxc-lo, html .wxcard-col .wxc-lo {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+html .wxcard-col .wxc-d, html .wxcard-col .wxc-d-fr, html .wxcard-col .wxc-dt {
+  font-size: clamp(12px, 1.7vh, 21px) !important;
+  font-weight: 800 !important;
+}
+html .wxc-hi, html .wxcard-col .wxc-hi,
+html .wxc-lo, html .wxcard-col .wxc-lo {
+  font-size: clamp(16px, 2.5vh, 31px) !important;
+  font-weight: 800 !important;
+}
+html .wxc-day, html .wxcard-col .wxc-grid-7 > .wxc-day,
+html .wxc-hour {
+  padding-left: clamp(4px, 0.5vw, 10px) !important;
+  padding-right: clamp(4px, 0.5vw, 10px) !important;
+}
+html .wxc-grid-7 { gap: clamp(5px, 0.6vw, 12px) !important; }

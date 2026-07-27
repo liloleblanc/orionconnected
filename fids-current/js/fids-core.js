@@ -7481,7 +7481,7 @@ function _buildV2MapCol(ctx, vars) {
         +       '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
         +     '</div>'
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl"><span>Destination</span><span>Destination</span></div>'
+        +       '<div class="v2-rc-fi-tlbl"><span>Destination</span></div>'
         +       '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
         +     '</div>'
         +   '</div>'
@@ -16682,7 +16682,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22615';
+var FIDS_BUILD_TAG = 'v22616';
 (function(){
   try {
     function _addTag(){
