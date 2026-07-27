@@ -5869,3 +5869,15 @@ html:not(#_) body:not(#_) .bidsv2-list-header > * {
 html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
   background-color: #1B2838 !important;
 }
+
+/* ── v22663: BAGS FADES TO MATCH THE BOARD. Nick: 'the pattern design can
+   be even less visible, fade it to like fids'.
+
+   The number that matters is not the ink, it is what the line measures
+   AGAINST ITS OWN GROUND. On the board the pattern lands on coloured rows
+   and the lines sit around 1.10-1.20:1 — present, not read. The baggage
+   list is near-white, so multiply has nothing to sink into: 0.26 gave
+   1.26:1, 0.13 gave about 1.14:1 and still drew attention on that much
+   open white. 0.06 puts it at 1.06:1, which is the board's whisper.
+
+   Same artwork, same row lock, same alignment — only the weight moves. */
