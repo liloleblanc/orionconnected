@@ -17054,7 +17054,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22659';
+var FIDS_BUILD_TAG = 'v22660';
 (function(){
   try {
     function _addTag(){
@@ -31780,17 +31780,35 @@ setInterval(function () {
       // (Nick: 'align the rows to the pattern otherwise its a mess to
       // read'). offsetParent is null for a hidden element, so this picks
       // the visible one.
-      var vis = function (el) { return !!(el && el.offsetParent !== null); };
+      // offsetParent is null for anything inside a position:fixed ancestor
+      // even when it is plainly on screen, so it is the wrong visibility
+      // test here. A laid-out box is the honest one.
+      var vis = function (el) {
+        if (!el) return false;
+        var r = el.getBoundingClientRect();
+        return r.height > 0 && r.width > 0;
+      };
+      var pick = function (list) {
+        if (!list || !list.length) return null;
+        return vis(list[0]) ? list : null;
+      };
       var t = document.getElementById('fidsTable');
-      var rows = (t && vis(t) && t.tBodies[0]) ? t.tBodies[0].rows : null;
-      if (!rows || rows.length < 2) {
-        var bl = document.querySelectorAll('.bidsv2-flight-row');
-        if (bl.length > 1 && vis(bl[0])) rows = bl;
-      }
-      if (!rows || rows.length < 2) return;
+      var rows = (t && t.tBodies[0]) ? pick(t.tBodies[0].rows) : null;
+      if (!rows) rows = pick(document.querySelectorAll('.bidsv2-flight-row'));
+      if (!rows || !rows.length) return;
       var a = rows[0].getBoundingClientRect();
-      var b = rows[1].getBoundingClientRect();
-      var pitch = b.top - a.top;
+      // ONE row still has a pitch. Requiring two was why Orlando baggage
+      // never locked: it often carries a single arrival, so the sync bailed
+      // and the pattern kept whatever origin the other board had left in
+      // the vars (Nick: 'align the rows to the pattern otherwise its a mess
+      // to read'). Rows are hard-fixed heights with no gap between them, so
+      // one row's height IS the pitch; two rows only confirm it.
+      var pitch = a.height;
+      if (rows.length > 1) {
+        var b = rows[1].getBoundingClientRect();
+        var measured = b.top - a.top;
+        if (measured > 8) pitch = measured;
+      }
       if (!(pitch > 8)) return;                       // mid-render garbage
       var key = Math.round(a.top * 2) + '|' + Math.round(pitch * 2);
       if (key === last) return;
