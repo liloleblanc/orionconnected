@@ -5881,3 +5881,53 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
    open white. 0.06 puts it at 1.06:1, which is the board's whisper.
 
    Same artwork, same row lock, same alignment — only the weight moves. */
+
+/* ── v22665: THE CLOCK BLOCK GROWS, BOTH SECTIONS, ALL WHITE.
+   Nick: 'the clock part need bigger and bigger text all white please
+   still' — 'both sections'.
+
+   Both halves of the block move together, because shrinking one relative
+   to the other is what made it read as a big number with fine print
+   hanging off it:
+     the city lines   clamp(12,1.35vh,20)  ->  clamp(18,2.0vh,30)
+     the date         clamp(13,1.55vh,23)  ->  clamp(18,2.0vh,30)
+     the time itself  clamp(34,4.4vh,60)   ->  clamp(46,6.0vh,84)
+
+   And on both BOARDS, since the baggage banner is a different element and
+   has been quietly missing every treatment the others got:
+   .fids-banner and .bidsv2-fids-banner are named together.
+
+   White is stated here rather than inherited. The palette rules whiten the
+   time block, but only when a palette is actually applied; on an airport
+   with no logo palette the old inherited inks came back — half the block
+   white and half not, which is the 'not consistent everywhere' Nick keeps
+   seeing across screens. */
+@media (min-width: 701px) {
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-tlabel,
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-tlabel .cl-l1,
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-tlabel .cl-l2,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-tlabel,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-tlabel .cl-l1,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-tlabel .cl-l2 {
+    font-size: clamp(18px, 2.0vh, 30px) !important;
+    line-height: 1.08 !important;
+    font-weight: 800 !important;
+  }
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-date,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-date {
+    font-size: clamp(18px, 2.0vh, 30px) !important;
+    font-weight: 700 !important;
+    margin-top: 4px !important;
+  }
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-time,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-time {
+    font-size: clamp(46px, 6.0vh, 84px) !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .fids-banner .fids-banner-time-block *,
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-time-block * {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+}
