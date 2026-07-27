@@ -4635,3 +4635,53 @@ html body .g8-r1-right::before {
   border-radius: inherit;
 }
 html body .g8-r1-right > * { position: relative; z-index: 1; }
+
+/* ── v22614: WHITE ON THE DARK SHELVES, EVERYWHERE (Nick: 'Im also still
+   waiting for White on the dark backgrounds'). Measured live: the left
+   rail's values compute to rgb(10,10,10) on a non-AC carrier — black ink
+   on the tinted slate shelf. The base rule (#0f2238, written for the old
+   light shelf) is overridden here; the status inks are re-asserted
+   afterwards so On Time stays green and Delayed stays amber. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-value,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-fr,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
+  color: #ffffff !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-scheduled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-ontime,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-scheduled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-ontime { color: #34d399 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-delayed { color: #fbbf24 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-cancelled { color: #f87171 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-boarding { color: #93c5fd !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-arrived { color: #34d399 !important; }
+
+/* ── v22614: AIRCRAFT INFO CARD FILLS ITS SHELF (Nick: 'the aircraft info
+   is wonky again'). Measured: the shelf is 233px but the two slabs only
+   totalled 200px, leaving a dead band under Status. The table stretches
+   to the shelf now, so the slabs sit on the same rhythm as the shelves
+   above and below. */
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-2pane {
+  height: 100% !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ── v22614: LESS EFFECT ON THE TIME TAB, LESS DOTS ON THE MAP (Nick's
+   circled notes). */
+html body .g8-r1-timebox::before, html body .octb-wrap::before { opacity: .20 !important; }
+html body .g8-wrap .v2-rc-shelf-map::before,
+html body .bigcraft-map::before { opacity: .28 !important; }
+
+/* ── v22614: NO DOTS ON THE EMBLEM (Nick: 'when the map zooms out and
+   logo comes in no dots on the logo'). During the big-map takeover the
+   right column's map slot holds the airline emblem, not a map — the
+   veil has nothing to texture there and just dirties the logo. */
+html body .g8-bigcraft-active .v2-rc-shelf-map::before { display: none !important; }
