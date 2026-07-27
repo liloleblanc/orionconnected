@@ -196,7 +196,14 @@
     // animated set doesn't cover.
     const _animSet = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'mist':1,'overcast-day':1,'overcast':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'thunderstorms-day-rain':1,'thunderstorms-rain':1,'wind':1 };
     if (_animSet[nameKey]) {
-      return '<img class="fids-wx-cell" src="/logos/weather/animated/' + nameKey + '.svg" alt="" aria-hidden="true" style="'
+      // v22674 — data-wx names the icon so CSS can swap in the dark-ink
+      // variant on the light row states (Delayed, Final call). This art is
+      // drawn for a dark ground — near-white clouds, amber suns — and Nick
+      // was right that it 'doesn't go with light'. Callers are scattered
+      // across the board, the gate screens and the arrival card and none of
+      // them know the row state, so the swap has to happen in CSS, which
+      // does. See the -light.svg pairs in the same folder.
+      return '<img class="fids-wx-cell" data-wx="' + nameKey + '" src="/logos/weather/animated/' + nameKey + '.svg" alt="" aria-hidden="true" style="'
         + 'display:inline-block;width:' + size + 'px;height:' + size + 'px;'
         + 'flex-shrink:0;object-fit:contain;vertical-align:middle;">';
     }

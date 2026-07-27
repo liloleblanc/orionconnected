@@ -5971,29 +5971,19 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
    — comes up. 0.45 was the more visible option but put the delayed row's
    dark text at 4.38, under 4.5, so it loses.
 
-   Orlando keeps asa-no-ha; this is every other airport. */
-@media (min-width: 701px) {
-  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
-  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsTable tbody tr:not(#_),
-  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td,
-  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td,
-  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td,
-  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-final td,
-  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
-  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
-  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
-    background-image: url("/logos/Backgrounds/fids-triangle.png?v=2") !important;
-    background-attachment: fixed !important;
-    background-position: center var(--fids-pat-y, 165.5px) !important;
-    background-size: auto calc(var(--fids-pat-h, 660px) * 1.1) !important;
-    background-repeat: repeat !important;
-    background-blend-mode: multiply !important;
-  }
-  /* the header strip stays a solid bar on every airport, same as Orlando */
-  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-list-header {
-    background-image: none !important;
-  }
-}
+   Orlando keeps asa-no-ha; this is every other airport.
+
+   ── WITHDRAWN v22674. Nick: 'I'm not sure I like it' after the lighter
+   pass, then 'the pattern' when asked what to change. Lightening was the
+   thing he asked for and it did not rescue it, so the answer is not another
+   weight — it's that the triangle doesn't belong on these boards. Rule
+   removed rather than overridden so nothing has to fight it later; the
+   measurement notes above are kept because the row-registration machinery
+   (--fids-pat-y / --fids-pat-h, published every second by fids-core.js) is
+   still live and still correct, and Orlando still uses it.
+
+   The header-strip exception went with it — with no pattern on the board
+   there is nothing for the strip to opt out of. */
 
 /* ── v22669: HEXAGON OUTLINE REPLACES THE LATTICE, AND THE LATTICE'S REAL
    PROBLEM RECORDED. Nick: 'I wont lie I dont love it — sorry maybe try
@@ -6125,13 +6115,158 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
    chosen over 1px after rendering both — at 1px the sun's thin rays outline
    on both sides and thicken into capsules; at 0.75px they stay slim.
    Scoped to the light row states only. Dark rows keep the art untouched. */
-html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell,
-html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell,
-html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell,
-html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell {
-  filter:
-    drop-shadow(0.75px 0 0 #102437)
-    drop-shadow(-0.75px 0 0 #102437)
-    drop-shadow(0 0.75px 0 #102437)
-    drop-shadow(0 -0.75px 0 #102437) !important;
+   ── SUPERSEDED v22674. The rim read, but it was a workaround: it kept art
+   that is wrong for a light ground and drew a line round it. Nick: 'the
+   weather icons I've been meaning to change, they don't go with light'.
+   Replaced below by a real light-ground variant of each icon. */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   v22674 — WEATHER ICONS THAT WORK ON LIGHT ROWS
+
+   The animated set is Meteocons drawn for a dark ground: cloud bodies are
+   near-white (#f3f7fe over #deeafb), sun discs are amber (#fbbf24). Both
+   sit at almost exactly the value of the Delayed row (#EDBB00) and the
+   Final-call row (#F28C00), which is why the icon disappears there.
+
+   Every icon now has a -light.svg twin generated from the original by
+   remapping each colour into the board's navy ink family: hue fixed at
+   210deg, saturation 0.50, and lightness compressed to 0.11 + 0.22*L. The
+   compression keeps the ORIGINAL lightness ORDER, which is what preserves
+   the internal reading of the icon — on rain.svg the cloud lands at #285078
+   and the drops at #19324b, so the drops still read as darker marks on the
+   cloud instead of merging into one blob. Measured against the real rows:
+
+     cloud body  #285078   4.67:1 on delayed   3.40:1 on final call
+     sun disc    #1c3854   6.72:1 on delayed   4.89:1 on final call
+     rain drops  #19324b   7.32:1 on delayed   5.33:1 on final call
+
+   All clear of the 3.0 floor for graphical objects, most clear of 4.5.
+
+   The swap is CSS rather than JS because the callers are scattered — the
+   board, the gate screens and the arrival card each build their own cell
+   and none of them knows the row state. fids-v2.js now stamps data-wx with
+   the icon name; the row state is a class the CSS can already see, so the
+   two meet here. Dark rows are not touched and keep the original art. */
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx] {
+  /* object-fit has to be restated: `content` replaces the image, and the
+     replaced content is sized by the box, not by the original img's fit. */
+  object-fit: contain !important;
+}
+
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="clear-day"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="clear-day"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="clear-day"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="clear-day"] {
+  content: url("/logos/weather/animated/clear-day-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="clear-night"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="clear-night"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="clear-night"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="clear-night"] {
+  content: url("/logos/weather/animated/clear-night-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="cloudy"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="cloudy"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="cloudy"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="cloudy"] {
+  content: url("/logos/weather/animated/cloudy-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="drizzle"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="drizzle"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="drizzle"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="drizzle"] {
+  content: url("/logos/weather/animated/drizzle-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="extreme-rain"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="extreme-rain"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="extreme-rain"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="extreme-rain"] {
+  content: url("/logos/weather/animated/extreme-rain-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="extreme-snow"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="extreme-snow"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="extreme-snow"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="extreme-snow"] {
+  content: url("/logos/weather/animated/extreme-snow-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="fog"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="fog"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="fog"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="fog"] {
+  content: url("/logos/weather/animated/fog-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="hail"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="hail"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="hail"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="hail"] {
+  content: url("/logos/weather/animated/hail-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="mist"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="mist"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="mist"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="mist"] {
+  content: url("/logos/weather/animated/mist-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="overcast-day"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="overcast-day"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="overcast-day"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="overcast-day"] {
+  content: url("/logos/weather/animated/overcast-day-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="overcast"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="overcast"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="overcast"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="overcast"] {
+  content: url("/logos/weather/animated/overcast-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="partly-cloudy-day"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="partly-cloudy-day"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="partly-cloudy-day"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="partly-cloudy-day"] {
+  content: url("/logos/weather/animated/partly-cloudy-day-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="partly-cloudy-night"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="partly-cloudy-night"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="partly-cloudy-night"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="partly-cloudy-night"] {
+  content: url("/logos/weather/animated/partly-cloudy-night-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="rain"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="rain"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="rain"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="rain"] {
+  content: url("/logos/weather/animated/rain-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="sleet"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="sleet"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="sleet"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="sleet"] {
+  content: url("/logos/weather/animated/sleet-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="snow"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="snow"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="snow"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="snow"] {
+  content: url("/logos/weather/animated/snow-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="thunderstorms-day-rain"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="thunderstorms-day-rain"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="thunderstorms-day-rain"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="thunderstorms-day-rain"] {
+  content: url("/logos/weather/animated/thunderstorms-day-rain-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="thunderstorms-rain"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="thunderstorms-rain"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="thunderstorms-rain"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="thunderstorms-rain"] {
+  content: url("/logos/weather/animated/thunderstorms-rain-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="wind"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="wind"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="wind"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="wind"] {
+  content: url("/logos/weather/animated/wind-light.svg?v=1") !important;
 }
