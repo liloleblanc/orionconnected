@@ -3875,3 +3875,1123 @@ html .g8-board-welcome img[src*="skyteam"] {
     max-height: 128px !important;
   }
 }
+
+/* ── v22553: THE FRAME SITS IN FRONT OF THE AD (Nick, Jul 26 2026:
+   'the frame goes — frame only, which can change colors like it does now —
+   in front of the advert'). The base stylesheet pinned the media at
+   z-index 3 over the frame at 1, and the safe-area system masked the frame
+   to the four gutters so it could "never sit over the ad" — the exact
+   opposite of the new design. Invert the order and drop that mask for the
+   frame only (the media-col ::before/::after gutter layers keep theirs). */
+#gateAdCarousel .ad-tech-media {
+  z-index: 2 !important;
+}
+#gateAdCarousel .ad-tech-frame,
+#fidsMediaFrame .ad-tech-frame {
+  z-index: 4 !important;
+}
+.ad-tech-frame.g8-ad-safe-ready {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
+/* ── v22556: RETIRE THE LIGHT-SHELF GUTTERS. The media-col ::before/::after
+   layers painted soft light shelves in the four gutters around the ad —
+   that was the surround design before Nick's framed-poster look. Now they
+   just wash out his wave art and bury the accent frame under a white haze.
+   The backdrop (art + dots) and the two frames carry the design. */
+html .g8-wrap .gad-media-col.g8-static-page-ad::before,
+html .g8-wrap .gad-media-col.g8-static-page-ad::after {
+  display: none !important;
+}
+
+/* ── v22558: EVERYTHING RENDERS INSIDE THE OUTER FRAME'S OPENING (Nick:
+   'everything on the screen goes inside of the frame ... minus the
+   background abstract that the frame can just go on top of'). The frame
+   art's opening starts ~4.9% in horizontally and ~7% vertically; the
+   carousel — every slide: ads, Accor, weather, takeovers — is inset to
+   that window. The panel-level backdrop (.ad-panel-backdrop) and the
+   outer frame stay full-bleed on the column. */
+/* v22566 (Nick: 'I said touch the border') — the inset opening was wrong:
+   in his mockup the ad runs to the walls and the frame sits ON its edges
+   like a real picture frame. Carousel back to full-bleed; the outer frame
+   (z 60) overlays every slide's edges. */
+/* v22568 (Nick, with his mockups: 'THE FRAME GOES ON THE OUTER BORDER,
+   TOUCHES THE BORDER, THE AD INSIDE THE FRAME ... MOVE IT') — content sits
+   INSIDE the frame, edges meeting the frame's inner edge. The frame art's
+   band ends ~4% in horizontally and ~6% vertically (2048x1365 art
+   stretched to the panel), so that is exactly where the carousel starts. */
+html body .gad-media-col #gateAdCarousel {
+  /* v22573 'TOUCH THE EDGE': the outer frame band now sits at the wall
+     (104% art stretch), so the content opening moves out to meet it —
+     the ad's sides land on the silver band itself. */
+  /* v22574: measured from the CROPPED frame art - the silver band is
+     1.09% of width / 1.68% of height. The opening starts exactly at the
+     band's inner edge, so content meets the frame. */
+  /* v22575: opening = silver band (1.1%/1.7%) + accent ring (8px).
+     Square windows: silver frame, accent frame flush against it, content
+     inside both. */
+  /* v22578: ring removed (not in Nick's reference) - opening back to the
+     silver band's inner edge. */
+  /* v22583 (Nick: 'the Accor ad cuts off the Accor logo') - the frame art
+     is a DOUBLE line; the inner line lands at 2.8%/4.3% and was sitting on
+     slide content near the edges. The opening now starts inside the whole
+     frame motif, so no slide content can ever sit under either line. */
+  left: 2.9% !important;
+  right: 2.9% !important;
+  top: 4.4% !important;
+  bottom: 4.4% !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* ── v22560: the z-order overrides from v22553 lost the cascade — on the
+   gate page gids-v218.78.css loads AFTER this file, and its selectors tie
+   on specificity. Restate with html/body prefixes so specificity (not
+   order) decides: media under, frame over. */
+html body .g8-wrap .gad-media-col.g8-static-page-ad #gateAdCarousel .ad-tech-media,
+html body #gateAdCarousel .ad-tech-media {
+  z-index: 2 !important;
+}
+html body #gateAdCarousel .ad-tech-frame,
+html body #fidsMediaFrame .ad-tech-frame {
+  z-index: 4 !important;
+}
+
+/* ── v22586: WEATHER CARD FITS THE FRAMED OPENING (Nick: 'the weather it
+   cuts off'). The card's clamps are vh-based but its box lost ~9% height
+   to the frame inset, so the outlook strip clipped. Key elements come
+   down ~12% so the whole card fits the opening. */
+html .wxcard-wrap {
+  padding: clamp(12px, 1.8vh, 26px) clamp(16px, 1.6vw, 32px) !important;
+}
+html .wxcard-col .wxc-hero img, html .wxcard-col .wxc-hero .wxanim-host {
+  width: clamp(92px, 15.5vh, 175px) !important;
+  height: clamp(92px, 15.5vh, 175px) !important;
+}
+html .wxc-temp { font-size: clamp(36px, 6.3vh, 78px) !important; }
+html .wxc-hero { margin: clamp(4px, 0.8vh, 10px) 0 !important; }
+html .wxc-day img {
+  width: clamp(38px, 5.8vh, 66px) !important;
+  height: clamp(38px, 5.8vh, 66px) !important;
+}
+html .wxc-city { font-size: clamp(20px, 3vh, 38px) !important; }
+
+/* ── v22588: AC LEFT SHELVES — Nick's luxury layered panel ('change the
+   panel shelves on the Air Canada side to this' → 'I see it now its
+   perfect'). The :not(#_) bumps specificity over the charcoal data-URI
+   rule in gids css, which loads after this file. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  background-color: #43464c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── v22589: AC RIGHT SHELVES — the other side, exactly like the left
+   ('can you do the other side exactly like it?'). The map shelf keeps its
+   map; the column base and the three info shelves take the same texture.
+   AC's labels on this column are already lifted to light ink above. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: #43464c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+/* The right column's inks were tuned for the old light brushed-metal —
+   navy on the dark texture would disappear. Lift them the same way the
+   left column's AC inks are lifted; light value cells keep their own. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-rtitle,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-actype-val,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-reg-expected {
+  color: #edf1f7 !important;
+}
+/* Status inks bright enough for the dark shelf (same palette the F9 dark
+   board uses). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived { color: #34d399 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed { color: #fbbf24 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled { color: #f87171 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding { color: #93c5fd !important; }
+
+/* ── v22589: AC BOARDING BAR — 'it can also be added when boarding and it
+   goes to the top': the horizontal strip that rides to the top during
+   boarding wears the same luxury panel instead of the plain dark metal. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-board-info-row {
+  background-color: #43464c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+}
+
+/* ── v22590: RIGHT CARD = 2 SHELVES (Nick: 'flight and from needs to be one
+   and arrival and status needs to be one so 2 panels its 2 shelves').
+   The table now holds two rev2-style rows of two pairs each. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t2 {
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+}
+/* Revised ETA lives INSIDE the Arrival pair now: struck sched + inked
+   revision (green earlier / amber later; bright variants on AC's dark
+   luxury shelf). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval .v2-rc-tval-old {
+  text-decoration: line-through;
+  opacity: .72;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-early { color: #0e7c4a; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-delayed { color: #d97706; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-early { color: #34d399 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-delayed { color: #fbbf24 !important; }
+
+/* ── v22590: SPEED/ALTITUDE BAR — never changes size (Nick: 'that altimeter
+   panel keeps glitching and changing sizes'). The bar keeps a reserved
+   height and tabular numerals so live value updates can't re-flow it;
+   fids-core now also holds the last airborne reading across fix gaps so
+   the bar stops popping in and out. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  min-height: clamp(52px, 7.6vh, 96px) !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-ms-val {
+  font-variant-numeric: tabular-nums lining-nums !important;
+}
+
+/* ── v22591: single-row shelf table (second fi panel when no arrival time). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t1 {
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+
+/* ── v22593: RIGHT CARD — the old 4-line style on TWO SLABS (Nick: 'It
+   needs to go back to this style … I need 2 slabs of the new material').
+   One shelf element (a second shelf child broke the rail into a phantom
+   side column — v22591/22592). Inside it, two slab panes: Flight/From
+   and Arrival/Status, rows exactly as before. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-2pane {
+  display: grid !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  gap: clamp(5px, 0.8vh, 12px) !important;
+  padding: clamp(5px, .55vh, 9px) clamp(9px, .75vw, 14px) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
+  display: grid !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  padding: clamp(3px, .4vh, 7px) clamp(8px, .7vw, 13px) !important;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(8, 12, 18, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 6px rgba(0, 0, 0, 0.30);
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-1 {
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+/* AC: each slab IS the new luxury material. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
+  background-color: #43464c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+}
+
+/* ── v22593: CONFINED ADS — the fitter pads the media when the frame band
+   has no room between ad and wall, so the creative redraws smaller and
+   the COMPLETE frame closes around it (never across it). */
+html body .ad-tech-media.g8-ad-inset {
+  padding: clamp(30px, 5vh, 56px) clamp(22px, 2vw, 44px) !important;
+  box-sizing: border-box !important;
+}
+
+/* ── v22594: PANE ROWS RESTYLED — every row rule in gids css is scoped to
+   DIRECT children of .v2-rc-fi-table, so rows nested in the new slabs
+   lost their entire layout (labels stacked over clipped values). These
+   are the same rules re-scoped to .v2-rc-fi-pane children. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:not(.v2-rc-fi-trow-rev2) {
+  display: grid !important;
+  grid-template-columns: minmax(64px, 28%) minmax(0, 72%) !important;
+  align-items: center !important;
+  column-gap: clamp(7px, .55vw, 11px) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow {
+  border-bottom: 1px solid color-mix(in srgb, var(--airline-accent, #d82f2e) 62%, transparent) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow-last,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:last-child {
+  border-bottom: 0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  color: color-mix(in srgb, var(--banner-bg, #142235) 84%, #000) !important;
+  font-size: clamp(11px, 1.35vh, 16px) !important;
+  font-weight: 850 !important;
+  line-height: 1.02 !important;
+  letter-spacing: -.01em !important;
+  padding: 0 !important;
+  border-bottom: 0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span + span {
+  margin-top: 2px !important;
+  font-size: .82em !important;
+  font-weight: 700 !important;
+  opacity: .62 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tval {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  color: var(--banner-bg, #142235) !important;
+  font-size: clamp(22px, 3.05vh, 35px) !important;
+  font-weight: 900 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -.03em !important;
+  padding: 0 !important;
+  border-bottom: 0 !important;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+/* Status palette (light shelves). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-arrived   { color: #0e7c4a !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-boarding  { color: #1d4ed8 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-delayed   { color: #d97706 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-cancelled { color: #b91c1c !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-gateclosed{ color: #4b5563 !important; }
+/* AC dark luxury slabs: lifted inks + bright status palette. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl { color: #cfd6df !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tval { color: #edf1f7 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-scheduled,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-ontime,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-arrived { color: #34d399 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-delayed { color: #fbbf24 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-cancelled { color: #f87171 !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-boarding { color: #93c5fd !important; }
+
+/* ── v22596: SLABS AT EVERY GATE, AIRLINE-TINTED (Nick: 'added to every
+   gate … blend with the airline color so United would be blue etc').
+   The luxury material multiplied with the gate accent tints the slab;
+   AC keeps its approved untinted material via the :not(#_) rules above,
+   which outrank these. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 40%, #33363c) !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+}
+/* Every tinted slab is dark — lift the inks on all airlines (the AC
+   :not(#_) rules above stay the authority on AC). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl { color: #dfe5ee !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tval { color: #f2f5fa !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-scheduled,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-ontime,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-arrived { color: #34d399 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-delayed { color: #fbbf24 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-cancelled { color: #f87171 !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-boarding { color: #93c5fd !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-rev2 > .v2-rc-fi-tlbl { color: #dfe5ee !important; }
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-rev2 > .v2-rc-fi-tval { color: #f2f5fa !important; }
+
+/* ── v22596: BOARDING BAR SLABS — the top strip's cells become the same
+   airline-tinted slabs ('the new slabs were not added to the top for
+   boarding'). */
+html body .g8-board-info-row {
+  gap: clamp(6px, .6vw, 12px) !important;
+  padding: clamp(5px, .8vh, 10px) clamp(6px, .6vw, 12px) !important;
+  box-sizing: border-box !important;
+}
+html body .g8-bir-cell {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 40%, #33363c) !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+  border-radius: 6px !important;
+  border-right: 0 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
+/* AC: untinted, the material as approved. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell {
+  background-color: #43464c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── v22597: AMBIENT TEXTURES (Nick's two uploads, both 'very faint').
+   1) Halftone dot field on the LOWER part of every screen — the art is
+   dense at the bottom and dissolves upward, so anchored to the bottom it
+   never reaches the banner. White ink baked to alpha, so it reads as a
+   quiet lift on dark surfaces and stays invisible on light ones. */
+html body::after {
+  content: '';
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 58vh;
+  background: url("/logos/Backgrounds/screen-dots-b.png?v=1") center bottom / 100% 100% no-repeat;
+  opacity: .10;
+  pointer-events: none;
+  z-index: 500;
+}
+/* 2) Gray volumetric silk across the TOP BANNER only — screen-blended so
+   it lifts the dark banner surfaces without touching the lettering. */
+html body .g8-r1, html body .fids-banner { position: relative; }
+html body .g8-r1::after, html body .fids-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("/logos/Backgrounds/banner-silk.jpg?v=1") center / cover no-repeat;
+  mix-blend-mode: screen;
+  opacity: .16;
+  pointer-events: none;
+}
+
+/* ── v22598: dot field UNSTRETCHED (Nick: 'the dots are oval … you need
+   to repeat the pattern') — native aspect, tiled horizontally. */
+html body::after {
+  background-size: auto 100% !important;
+  background-repeat: repeat-x !important;
+  background-position: left bottom !important;
+}
+/* ── v22598: boarding bar — the in-between area behind the slabs is a
+   lighter gray (Nick: 'in between slots make it a lighter gray').
+   Double :not(#_) outranks the AC texture rule above. */
+html body:not(#_):not(#_) .g8-board-info-row {
+  background-color: #5d6169 !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(0,0,0,.14) 100%) !important;
+}
+
+/* ── v22599: Nick's replacement halftone ('just use this one') — uniform
+   dot grid, native aspect, tiled horizontally. */
+html body::after {
+  background-image: url("/logos/Backgrounds/screen-dots-c.png?v=1") !important;
+}
+/* AC slabs were being darkened by the v22596 multiply leak — the approved
+   untinted material renders normal again. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell {
+  background-blend-mode: normal !important;
+}
+/* Tinted slabs read too dark to register as the material — lighter mix
+   base so the airline colour comes through (AC rules above still win). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body .g8-bir-cell {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 46%, #7a7e86) !important;
+}
+
+/* ── v22600: dots are BACKGROUND-ONLY and lighter (Nick: 'dont put on top
+   of text and planes and icons … background only'). Soft-light white ink
+   is a no-op on white/bright pixels — lettering, planes, icon glyphs —
+   and only lifts the dark background surfaces beneath them. */
+html body::after {
+  mix-blend-mode: soft-light !important;
+  opacity: .55 !important;
+}
+/* ── v22600: the banner silk was below the visibility floor — lift it so
+   the top pattern reads (still screen-blended, lettering untouched). */
+html body .g8-r1::after, html body .fids-banner::after {
+  opacity: .32 !important;
+}
+
+/* ── v22601: SKYTEAM MARK — matched to the other alliance tiles (Nick:
+   'the Skyteam logo is still small'). The white symbol is 512px art but
+   rendered at natural-fit ~44px; the dedicated override (extra class =
+   top specificity) brings it to the Star Alliance tile's scale. */
+html body .g8-wrap .g8-r1-star.g8-r1-alliance-skyteam,
+html body .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-skyteam {
+  height: clamp(80px, 12vh, 100px) !important;
+  max-height: clamp(80px, 12vh, 100px) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: min(20vw, 340px) !important;
+  opacity: 1 !important;
+  align-self: center !important;
+  margin-left: 26px !important;
+  object-fit: contain !important;
+}
+
+/* ── v22602: DL strip badge at GLYPH scale — the triangle filled ~82% of
+   the circle so the badge read white, not navy like its neighbours
+   (Nick: 'the Delta badge does not match the colors of the others').
+   Padded to the same optical size as the line glyphs, the navy circle
+   dominates again. */
+html body[data-gate-airline="DL"] .g8-bir-badge img {
+  padding: 23% !important;
+  box-sizing: border-box !important;
+}
+
+/* ── v22603: the Delta triangle is RED (Nick: 'its supposed to be red') —
+   native two-tone widget colours on the navy badge, no white invert. */
+html body[data-gate-airline="DL"] .g8-bir-badge img {
+  filter: none !important;
+}
+
+/* ── v22604: DL triangle bigger (Nick: 'icon needs to be bigger') —
+   between the glyph scale and the original full-bleed. */
+html body[data-gate-airline="DL"] .g8-bir-badge img {
+  padding: 14% !important;
+}
+
+/* ── v22604: dots visible again (Nick: 'I dont see any changes') —
+   soft-light was a no-op on the near-black gate surfaces. Screen blend
+   lifts dark backgrounds and is still a no-op on white lettering. */
+html body::after {
+  mix-blend-mode: screen !important;
+  opacity: .14 !important;
+}
+
+/* ── v22604: SIDE SHELVES at every gate — the material faded and colored
+   to the airline (Nick: 'the panels shelves are faded a bit and colors
+   to the airline'). AC's approved untinted rules outrank these. */
+html body .g8-wrap .gad-aircraft-col,
+html body .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body .g8-wrap .gad-map-col-v2,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 34%, #83878f) !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+}
+/* Tinted shelves are dark — inks lift on every airline (AC already has
+   its own lifts). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-rtitle,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-actype-val,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-reg-expected {
+  color: #edf1f7 !important;
+}
+/* Keep AC's approved untinted material un-multiplied on the shelf set
+   (same guard the slabs needed in v22599). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-blend-mode: normal !important;
+}
+
+/* ── v22605: Nick's blue halftone wave replaces the mono dot field
+   ('put this instead'). Its own blue tones, faint, background-only. */
+html body::after {
+  background-image: url("/logos/Backgrounds/screen-wave-blue.png?v=1") !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center bottom !important;
+  mix-blend-mode: screen !important;
+  opacity: .22 !important;
+  height: 62vh !important;
+}
+
+/* ── v22606: tinted surfaces FADE instead of darkening (Nick: 'the panels
+   shelves are faded a bit and colors to the airline'). Multiply over the
+   dark luxury texture crushed every airline to near-black; soft-light
+   keeps the airline colour dominant and lets the material read as a
+   faint fade over it. AC's untinted material is unaffected — its
+   :not(#_) rules force blend:normal. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body .g8-bir-cell,
+html body .g8-wrap .gad-aircraft-col,
+html body .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body .g8-wrap .gad-map-col-v2,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-blend-mode: soft-light !important;
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 62%, #2f333a) !important;
+}
+/* AC keeps the approved material, untinted and unblended. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-blend-mode: normal !important;
+  background-color: #43464c !important;
+}
+
+/* ── v22607: DOTS ONLY IN THE MAP AND THE ADS (Nick, with his photo of a
+   Porter gate: 'It should go in the map and the ads just not the
+   borders'). The full-screen overlay is retired — it was painting the
+   halftone across the rail shelves, which are the borders. */
+html body::after {
+  display: none !important;
+}
+/* ADS — the halftone rides the ad panel's own backdrop, so it sits
+   BEHIND every slide and under the frame, never over the creative. */
+html body .gad-media-col > .ad-panel-backdrop::after {
+  content: '';
+  position: absolute;
+  left: -3%; right: -3%; top: -3%; bottom: -3%;
+  background: url("/logos/Backgrounds/screen-wave-blue.png?v=1") center / cover no-repeat;
+  mix-blend-mode: screen;
+  opacity: .40;
+  pointer-events: none;
+}
+/* MAP — the route map and the big-map takeover carry the same halftone
+   as a faint veil over the tiles. */
+html body .g8-wrap .v2-rc-shelf-map,
+html body .bigcraft-mapcol,
+html body .bigcraft-map { position: relative; }
+/* v22609: ::after on the map shelf is already owned by a 6px divider
+   rule, which is why the veil measured 6px tall with no background. The
+   halftone moves to ::before with the geometry forced. */
+html body .g8-wrap .v2-rc-shelf-map::before,
+html body .bigcraft-map::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
+  width: auto !important; height: auto !important;
+  background-image: url("/logos/Backgrounds/screen-wave-blue.png?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  /* The map is LIGHT — a screen blend over it is a no-op. Multiply lays
+     the dots onto the tiles. */
+  mix-blend-mode: multiply !important;
+  opacity: .38 !important;
+  pointer-events: none !important;
+  z-index: 900 !important;
+  display: block !important;
+}
+
+/* ── v22607: TOP BANNER SWIRLS — the silk never painted: an !important
+   radial-gradient sheen already owns .g8-r1::after, so the shorthand
+   here lost every time. The art moves to ::before (z-index 0: above the
+   banner surface, below the wordmark/time/gate children at z 1/4/5). */
+html body .g8-r1::before,
+html body .fids-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("/logos/Backgrounds/banner-silk.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  mix-blend-mode: screen;
+  opacity: .30;
+  pointer-events: none;
+  z-index: 0;
+}
+html body .g8-r1::after, html body .fids-banner::after {
+  opacity: .32 !important;
+}
+
+/* ── v22610: DOTS + BANNER SWIRLS MORE PROMINENT (Nick: 'make both the
+   dots and lines above more prominent'). */
+html body .gad-media-col > .ad-panel-backdrop::after { opacity: .62 !important; }
+html body .g8-wrap .v2-rc-shelf-map::before,
+html body .bigcraft-map::before { opacity: .52 !important; }
+html body .g8-r1::before, html body .fids-banner::before { opacity: .52 !important; }
+
+/* ── v22610: WEATHER CARD — the 7-day lows were clipped off the bottom
+   edge (Nick: 'the weather needs adjusted'). The outlook strip loses a
+   little height everywhere so the whole card lands inside the opening. */
+html .wxcard-wrap {
+  padding: clamp(8px, 1.2vh, 18px) clamp(14px, 1.4vw, 28px) !important;
+}
+html .wxcard-col .wxc-hero img, html .wxcard-col .wxc-hero .wxanim-host {
+  width: clamp(78px, 12.6vh, 140px) !important;
+  height: clamp(78px, 12.6vh, 140px) !important;
+}
+html .wxc-temp { font-size: clamp(32px, 5.4vh, 66px) !important; }
+html .wxc-hero { margin: clamp(2px, 0.4vh, 6px) 0 !important; }
+html .wxc-day img, html .wxcard-col .wxc-day img,
+html .wxc-day .wxanim-host, html .wxcard-col .wxc-day .wxanim-host {
+  width: clamp(30px, 4.4vh, 50px) !important;
+  height: clamp(30px, 4.4vh, 50px) !important;
+  margin: 2px auto !important;
+}
+html .wxc-day, html .wxcard-col .wxc-grid-7 > .wxc-day {
+  padding-top: clamp(3px, 0.5vh, 8px) !important;
+  padding-bottom: clamp(3px, 0.5vh, 8px) !important;
+}
+html .wxc-hour img, html .wxc-hour .wxanim-host {
+  width: clamp(30px, 4.4vh, 50px) !important;
+  height: clamp(30px, 4.4vh, 50px) !important;
+}
+
+/* ── v22610: NUMBERS WHITE ON THE DARK CARD (Nick: 'the numbers needs to
+   be changed and done to white on a dark background'). The overnight
+   lows rendered at 55% white — grey mush against the dark panel. */
+html .wxc-lo, html .wxcard-col .wxc-lo {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+html .wxc-hi, html .wxcard-col .wxc-hi,
+html .wxc-hour .wxc-h-temp, html .wxc-hr {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ── v22611: NO DARK WORDS ON DARK SLABS (Nick's PAL gate photo: the
+   flight number, city and times rendered navy-on-navy). The boarding
+   strip's ink was calibrated for the old light shelf; on the tinted
+   slabs it has to be white. Status spans keep their own palette — their
+   rules are more specific than this one. */
+html body .g8-bir-cell .g8-bir-val,
+html body .g8-bir-cell .g8-bir-title,
+html body .g8-bir-cell .g8-bir-l1,
+html body .g8-bir-cell .g8-bir-l2,
+html body .g8-bir-cell .g8-bir-sep,
+html body .g8-bir-cell .g8-bir-code-t,
+html body .g8-bir-cell .g8-bir-mer {
+  color: #ffffff !important;
+}
+html body .g8-bir-cell .g8-bir-l1,
+html body .g8-bir-cell .g8-bir-l2 { opacity: .92 !important; }
+
+/* ── v22611: SHELVES LIGHTER SO THE MATERIAL SHOWS (Nick: 'the shelves
+   are too dark can't see any details in it'). Mixing the accent toward
+   a light slate instead of a near-black base lands every carrier in
+   mid-tone, where the luxury texture is actually visible. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body .g8-bir-cell,
+html body .g8-wrap .gad-aircraft-col,
+html body .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body .g8-wrap .gad-map-col-v2,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 48%, #8b9099) !important;
+}
+/* AC keeps its approved material — restated last so it wins. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: #43464c !important;
+}
+
+/* ── v22611: the TIME TAB carries the banner pattern too (Nick: 'want
+   time too banner more seen'). The tab is its own absolutely-positioned
+   block at z 4, so the banner's ::before at z 0 never reached it. */
+html body .g8-r1-timebox, html body .octb-wrap { position: relative; }
+html body .g8-r1-timebox::before, html body .octb-wrap::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
+  background-image: url("/logos/Backgrounds/banner-silk.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  mix-blend-mode: screen !important;
+  opacity: .48 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  border-radius: inherit;
+}
+html body .g8-r1-timebox > *, html body .octb-wrap > * { position: relative; z-index: 1; }
+
+/* ── v22612: the GATE tab carries the design too (Nick: 'please also add
+   design to the gate') — completing the top band: banner, time tab and
+   now the gate block all wear the silk. The tab paints its accent via
+   an inline background, so the art rides a ::before above it and below
+   the 'Gate | Porte' label and number. */
+html body .g8-r1-right::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
+  background-image: url("/logos/Backgrounds/banner-silk.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  /* v22613: screen over the tab's SATURATED accent just washes it pink
+     and flattens the art — the red channel clips immediately. Overlay
+     keeps the accent and shows the swirls as light and dark. */
+  mix-blend-mode: overlay !important;
+  opacity: .70 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  border-radius: inherit;
+}
+html body .g8-r1-right > * { position: relative; z-index: 1; }
+
+/* ── v22614: WHITE ON THE DARK SHELVES, EVERYWHERE (Nick: 'Im also still
+   waiting for White on the dark backgrounds'). Measured live: the left
+   rail's values compute to rgb(10,10,10) on a non-AC carrier — black ink
+   on the tinted slate shelf. The base rule (#0f2238, written for the old
+   light shelf) is overridden here; the status inks are re-asserted
+   afterwards so On Time stays green and Delayed stays amber. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-value,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-fr,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
+  color: #ffffff !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-scheduled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-ontime,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-scheduled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-ontime { color: #34d399 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-delayed { color: #fbbf24 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-cancelled { color: #f87171 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-boarding { color: #93c5fd !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-arrived { color: #34d399 !important; }
+
+/* ── v22614: AIRCRAFT INFO CARD FILLS ITS SHELF (Nick: 'the aircraft info
+   is wonky again'). Measured: the shelf is 233px but the two slabs only
+   totalled 200px, leaving a dead band under Status. The table stretches
+   to the shelf now, so the slabs sit on the same rhythm as the shelves
+   above and below. */
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-2pane {
+  height: 100% !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ── v22614: LESS EFFECT ON THE TIME TAB, LESS DOTS ON THE MAP (Nick's
+   circled notes). */
+html body .g8-r1-timebox::before, html body .octb-wrap::before { opacity: .20 !important; }
+html body .g8-wrap .v2-rc-shelf-map::before,
+html body .bigcraft-map::before { opacity: .28 !important; }
+
+/* ── v22614: NO DOTS ON THE EMBLEM (Nick: 'when the map zooms out and
+   logo comes in no dots on the logo'). During the big-map takeover the
+   right column's map slot holds the airline emblem, not a map — the
+   veil has nothing to texture there and just dirties the logo. */
+html body .g8-bigcraft-active .v2-rc-shelf-map::before { display: none !important; }
+
+/* ── v22615: the rail ink override needs to OUTRANK the textcol rule.
+   `.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value` paints
+   var(--banner-bg) — near-black for a dark carrier — at 4 classes, so
+   the v22614 three-class override never applied. AC was only ever
+   readable because it has its own explicit rule. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-title {
+  color: #ffffff !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-scheduled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-ontime,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-status-ontime { color: #34d399 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-delayed,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-status-delayed { color: #fbbf24 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-cancelled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-status-cancelled { color: #f87171 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-boarding,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-status-boarding { color: #93c5fd !important; }
+
+/* ── v22615: the card's table must FLEX to fill the shelf — height:100%
+   alone did nothing inside a centred column flex, which is why the two
+   slabs still measured 200px in a 233px shelf. */
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi > .v2-rc-fi {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  align-self: stretch !important;
+}
+
+/* ── v22616: BILINGUAL PARITY — French is not a second-class label
+   (Nick: 'why are french words smaller??? they shouldnt be … same
+   color everywhere same size no descrimination'). Every second-language
+   line matches its English partner in size, weight and colour. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span + span,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table .v2-rc-fi-tlbl span + span {
+  font-size: 1em !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  opacity: 1 !important;
+  margin-top: 1px !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table .v2-rc-fi-tlbl {
+  color: #ffffff !important;
+  font-size: clamp(13px, 1.65vh, 20px) !important;
+}
+html body .g8-bir-cell .g8-bir-l1, html body .g8-bir-cell .g8-bir-l2 {
+  font-size: 1em !important; font-weight: 800 !important; opacity: 1 !important; color: #fff !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-fr,
+html body .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en {
+  font-size: 1em !important; font-weight: 800 !important; opacity: 1 !important; color: #fff !important;
+}
+
+/* ── v22616: TIME TAB — all white, and the date line spans the width of
+   the row above it. */
+html .octb-fr { color: #ffffff !important; font-weight: 800 !important; opacity: 1 !important; }
+html .octb-en { color: #ffffff !important; }
+html .octb-date, html .octb-tab .octb-date {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+  width: 100% !important;
+  display: block !important;
+  font-size: clamp(13px, 1.9vh, 26px) !important;
+}
+html .octb-date .cl-sep { opacity: 1 !important; }
+
+/* ── v22616: WEATHER — one white, one size, boxes given the room they
+   need (Nick: 'its different fucking colors … WHITE all WHITE SAME SIZE
+   EXPAND YOUR BOXES THERES ROOM'). */
+html .wxc-cond, html .wxcard-col .wxc-cond,
+html .wxc-meta, html .wxcard-col .wxc-meta,
+html .wxc-meta b, html .wxc-hr, html .wxc-d,
+html .wxcard-col .wxc-d, html .wxcard-col .wxc-d-fr,
+html .wxcard-col .wxc-dt, html .wxc-city, html .wxc-temp,
+html .wxc-hi, html .wxcard-col .wxc-hi,
+html .wxc-lo, html .wxcard-col .wxc-lo {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+html .wxcard-col .wxc-d, html .wxcard-col .wxc-d-fr, html .wxcard-col .wxc-dt {
+  font-size: clamp(12px, 1.7vh, 21px) !important;
+  font-weight: 800 !important;
+}
+html .wxc-hi, html .wxcard-col .wxc-hi,
+html .wxc-lo, html .wxcard-col .wxc-lo {
+  font-size: clamp(16px, 2.5vh, 31px) !important;
+  font-weight: 800 !important;
+}
+html .wxc-day, html .wxcard-col .wxc-grid-7 > .wxc-day,
+html .wxc-hour {
+  padding-left: clamp(4px, 0.5vw, 10px) !important;
+  padding-right: clamp(4px, 0.5vw, 10px) !important;
+}
+html .wxc-grid-7 { gap: clamp(5px, 0.6vw, 12px) !important; }
+
+/* ── v22617: THE FRENCH LABEL CLASS IS .v2-fi-lbl-2, NOT .v2-fi-lbl-fr.
+   Dumped from the live DOM — every earlier override missed it, which is
+   why 'Vol', 'Statut', 'Départ' stayed dark on the tinted rail while
+   the English half went light. The attribute selector matches the
+   depth of the airline-scoped rules that were winning. */
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+/* Bigger and tighter (Nick: 'put your text bigger and closer together
+   for bilingual'). */
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title {
+  font-size: clamp(15px, 2.05vh, 27px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -.005em !important;
+}
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2 {
+  font-size: 1em !important;
+  font-weight: 800 !important;
+}
+
+/* City | CODE on the right card — the bar and the IATA code were dark
+   (Nick: 'Mont-Joli | YYY (this part cant see)'). */
+html body[data-gate-airline] .g8-wrap .gad-map-col-v2 .v2-rc-bar,
+html body[data-gate-airline] .g8-wrap .gad-map-col-v2 .v2-rc-iata,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-rc-bar,
+html body[data-gate-airline] .g8-wrap .gad-aircraft-col .v2-rc-iata {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Pane labels bigger + tighter to match. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl {
+  font-size: clamp(14px, 1.85vh, 23px) !important;
+  line-height: 1.02 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span + span {
+  margin-top: 0 !important;
+}
+
+/* ── v22617: TIME TAB — the two language lines tighten up and the date
+   stretches across the width of the row above it. */
+html .octb-lbls { line-height: 1.0 !important; gap: 0 !important; }
+html .octb-en, html .octb-fr, html .octb-tab .octb-en, html .octb-tab .octb-fr {
+  line-height: 1.02 !important;
+  font-size: clamp(14px, 2.05vh, 28px) !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+}
+html .octb-date, html .octb-tab .octb-date {
+  width: 100% !important;
+  display: block !important;
+  text-align: justify !important;
+  text-align-last: justify !important;
+  white-space: nowrap !important;
+  color: #ffffff !important;
+  margin-top: 3px !important;
+}
+
+/* ── v22617: GATE TAB — blends were invisible on saturated and dark
+   accents (screen washed the red flat, overlay did nothing on navy).
+   The art is now baked to alpha as white ink, so it paints the same on
+   every carrier with no blend mode at all. */
+html body .g8-r1-right::before {
+  background-image: url("/logos/Backgrounds/banner-silk-alpha.png?v=1") !important;
+  mix-blend-mode: normal !important;
+  opacity: .30 !important;
+}
+
+/* ── v22618: the rail's English label was still inked by a rule chaining
+   four :not([data-gate-airline=...]) tests — roughly nine class-levels
+   of specificity, which beat the v22617 override and left 'Flight' red
+   beside a white 'Vol'. One :not(#_) raises this to id-level so both
+   halves finally match. */
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code,
+html body[data-gate-airline]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline]:not(#_) .g8-bir-cell .g8-bir-l2 {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-size: 1em !important;
+  font-weight: 800 !important;
+}
+
+/* ── v22618: DATE — two tight groups with one wide gap at the middle
+   (Nick: 'make Sunday, July 26 closer together with a larger gap in
+   between focussed on the middle'). Full justification spread every
+   word evenly; the separator carries the gap instead. */
+html .octb-date, html .octb-tab .octb-date {
+  text-align: center !important;
+  text-align-last: center !important;
+  word-spacing: normal !important;
+}
+html .octb-date .cl-sep {
+  margin: 0 clamp(12px, 1.9vw, 42px) !important;
+  opacity: 1 !important;
+}
+
+/* ── v22619: TIME TAB CENTRED (Nick's NO/YES sketch) — the row used
+   space-between, which pinned the labels left and the clock right with
+   dead space between. The pair is one centred group now. */
+html .octb-top, html .octb-tab .octb-top {
+  justify-content: center !important;
+  gap: clamp(14px, 1.5vw, 32px) !important;
+}
+html .octb-tab { justify-content: center !important; }
+
+/* ── v22619: FIRST WORDS BRIGHT (Nick: 'try the PAL yellow and then
+   lighter brighter colors in general … the first words'). The English
+   half takes a light tint of the carrier's colour; the French half
+   stays white so the pair still reads as one unit. */
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span:first-child {
+  color: color-mix(in srgb, var(--airline-accent, #D82F2E) 30%, #ffffff) !important;
+}
+/* PAL's brand yellow (Nick asked for it by name). */
+html body[data-gate-airline="PB"]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline="PB"]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline="PB"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span:first-child {
+  color: #FFC63D !important;
+}
+
+/* ── v22619: AIRPORT MARK IN THE GATE TAB (Nick: 'the logo and airport
+   code appear in the gate before the number … engraved or seen in
+   white'). The white lockup rides behind the label and number as an
+   engraved watermark, so it adds identity without crowding the tab.
+   The URL comes from the ICAO guessed off the airport's IATA; where no
+   asset exists the background simply does not paint. */
+html body .g8-r1-right::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 7% !important; right: 7% !important; top: 7% !important;
+  height: 24% !important;
+  background-image: var(--ap-mark, none) !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  opacity: .34 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+/* ── v22620: the shipped CYQM-white.svg is a white-filled rectangle, so
+   the v22619 watermark painted a haze band across the tab. That layer
+   is retired; the airport identity is a real element instead — the
+   swoosh cut to transparent white, with the IATA code beneath it. */
+html body .g8-r1-right::after { display: none !important; }
+html body .g8-r1-apmark {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  flex: 0 0 auto !important;
+  opacity: .92 !important;
+}
+html body .g8-r1-apmark img {
+  display: block !important;
+  height: clamp(26px, 3.6vh, 46px) !important;
+  width: auto !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.35));
+}
+html body .g8-r1-apcode {
+  font-size: clamp(11px, 1.5vh, 19px) !important;
+  font-weight: 900 !important;
+  letter-spacing: .06em !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+}
+
+/* ── v22621: the last dark-on-dark text, found by auditing every text
+   node's contrast against its real background rather than hunting one
+   element at a time (Nick: 'cant see numbers all that is dark blue on
+   dark blue'). Measured on a dark carrier:
+     'Aircraft image pending'  rgb(36,54,75)  on the shelf → 1.7:1
+     'Operated By | Exploite'  rgb(10,10,10)  on the shelf → 1.1:1
+     BIDS airport code / name  rgb(13,36,64)  on the banner → 1.8:1 */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus *,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-type,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-type *,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-pending,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-pending *,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl,
+html body .g8-wrap .gad-aircraft-col .v2-rc-aircraft-pending {
+  color: #ffffff !important;
+}
+html body:not(#_) .fids-airport-iata,
+html body:not(#_) .fids-airport-name {
+  color: #ffffff !important;
+}
+
+/* ── v22622: Nick's stacked YQM artwork, keyed to transparency. His file
+   was white-on-white with no alpha, so dropped in raw it would have
+   painted a white box like the old SVG did. Flood-filled the background
+   out and used nesting depth to fill the shapes solid while leaving the
+   Q's counter open. The lettering is part of the mark now, so the
+   separate code text is gone and the block gets the height to read. */
+html body .g8-r1-apmark img {
+  height: clamp(52px, 8.2vh, 104px) !important;
+  max-height: 78% !important;
+}

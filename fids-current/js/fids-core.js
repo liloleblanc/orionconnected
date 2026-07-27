@@ -7042,6 +7042,21 @@ function _buildV2MapCol(ctx, vars) {
       // Speed and altitude appear together or not at all — never one without a
       // genuine airborne altitude (that produced "141 kph at 0 ft").
       if (_liveAlt === null || _liveAlt <= 0) { _liveAlt = null; _liveSpd = null; }
+      // Nick: 'that altimeter panel keeps glitching and changing sizes' —
+      // a render that momentarily lost the fix dropped the Speed/Altitude
+      // bar entirely and the map re-flowed around it, then the next fix
+      // brought it back. Hold the last airborne reading for up to 3 minutes
+      // across fix gaps; landing clears it (arrived-like drops the cache
+      // above and we clear the hold with it).
+      if (_arrivedLikeIb) { window._gateTelemHold = null; }
+      else if (_liveSpd === null && _liveAlt === null) {
+        var _tHold = window._gateTelemHold;
+        if (_tHold && _tHold.key === String(_ib.flight || _ib._reg || '') && (Date.now() - _tHold.ts) < 180000) {
+          _liveSpd = _tHold.spd; _liveAlt = _tHold.alt;
+        }
+      } else {
+        window._gateTelemHold = { key: String(_ib.flight || _ib._reg || ''), spd: _liveSpd, alt: _liveAlt, ts: Date.now() };
+      }
       // Feed the real reading to the live-telemetry animator and DISPLAY its
       // current modeled value, so numbers glide between fixes and a full
       // re-render doesn't snap them back to the last raw fix (see
@@ -7264,19 +7279,19 @@ function _buildV2MapCol(ctx, vars) {
       };
       var _ibArrSchedStr = _ibArrTs ? _ibFmtT(_ibArrTs) : '';
       var _ibArrRevStr = (_ibRevTs && Math.abs(_ibRevTs - _ibArrTs) >= 60000) ? _ibFmtT(_ibRevTs) : '';
+      // Nick (Jul 26 2026): 'flight and from needs to be one and arrival
+      // and status needs to be one so 2 panels its 2 shelves' + 'I DIDNT
+      // ASK FOR EVERYTHING TO BE SQUISHED ON 2 LINES I SAID THE PATTERN
+      // NEEDS TO BE AS 2 PANELS' — every row keeps its OWN full line
+      // exactly as before; only the SHELF PANELS regroup: Flight+From
+      // share one textured panel, Arrival+Status share the other.
       var _ibArrRowHtml = '';
-      var _ibArrRevised = false;
       if (_ibArrSchedStr) {
         var _ibArrLblEn = (_stKey === 'arrived') ? 'Arrived' : 'Arrival';
         var _ibArrLblFr = (_stKey === 'arrived') ? 'Arrivé' : 'Arrivée';
         if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
-          _ibArrRevised = true;
-          // Nick's sketch, verbatim: 'Arrival 5:28PM    Revised: 5:27PM' —
-          // ONE row, TWO label|value pairs, each time at full row height
-          // (the old single stacked cell crammed everything small). The
-          // revised time wears the status palette classes (green earlier /
-          // amber later) so every skin inks it correctly — the old inline
-          // hex was a dark green that vanished on AC's dark wood.
+          // Nick's approved sketch: 'Arrival 5:28PM    Revised 5:27PM' —
+          // one line, two pairs; revised inked green earlier/amber later.
           var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-early' : 'v2-rc-status-delayed';
           _ibArrRowHtml =
               '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
@@ -7286,8 +7301,6 @@ function _buildV2MapCol(ctx, vars) {
             +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _ibArrRevStr + '</div>'
             + '</div>';
         } else {
-          // NOT trow-last: the Status row now always renders LAST (below
-          // this), so the time-vs-status order matches the departure card.
           _ibArrRowHtml =
               '<div class="v2-rc-fi-trow">'
             +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
@@ -7295,24 +7308,29 @@ function _buildV2MapCol(ctx, vars) {
             + '</div>';
         }
       }
-      // Shelf-level t4 marker too: the shelf is flex-locked to 1/6 of the
-      // rail (sized for 3 rows) and :has() is unusable on the older kiosk
-      // browsers, so CSS needs the class ON the shelf to widen its share
-      // when the Arrival row makes it 4 rows (Nick: 'capped out').
+      // ONE shelf element as it always was — the right column is a fixed
+      // grid and a second shelf child spilled the whole rail into a
+      // phantom side column (v22591 regression). The 2-PANEL pattern Nick
+      // asked for lives INSIDE the shelf: pane 1 = Flight/From, pane 2 =
+      // Arrival/Status, each drawn as its own panel.
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table' + (_ibArrRowHtml ? ' v2-rc-fi-t4' : '') + '">'
-        +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
+        +   '<div class="v2-rc-fi-pane">'
+        +     '<div class="v2-rc-fi-trow">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
+        +     '</div>'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
+        +     '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
-        +   '</div>'
-        +   _ibArrRowHtml
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
+        +   '<div class="v2-rc-fi-pane' + (_ibArrRowHtml ? '' : ' v2-rc-fi-pane-1') + '">'
+        +     (_ibArrRowHtml || '')
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
+        +     '</div>'
         +   '</div>'
         + '</div></div>';
 
@@ -7451,25 +7469,31 @@ function _buildV2MapCol(ctx, vars) {
         var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
         if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dfRowIa) + '</span>' : '');
       })();
+      // Same 2-PANEL pattern as the inbound card, inside ONE shelf element
+      // (a second shelf child breaks the rail grid): pane 1 = Flight /
+      // Destination, pane 2 = Departure / Status. Departure TIME stays
+      // (Nick: 'who told you to remove the time').
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-t4">'
-        +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
+        +   '<div class="v2-rc-fi-pane">'
+        +     '<div class="v2-rc-fi-trow">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
+        +     '</div>'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +       '<div class="v2-rc-fi-tlbl"><span>Destination</span></div>'
+        +       '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
+        +     '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>Destination</span><span>Destination</span></div>'
-        +     '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
-        +   '</div>'
-        // Departure TIME restored (Nick: 'who told you to remove the time') —
-        // the card dropped it 'because it's on the left', but Nick wants it here.
-        +   '<div class="v2-rc-fi-trow">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +     '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
-        +     '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+        +   '<div class="v2-rc-fi-pane">'
+        +     '<div class="v2-rc-fi-trow">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
+        +     '</div>'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+        +     '</div>'
         +   '</div>'
         + '</div></div>';
     } catch (e) {}
@@ -8730,6 +8754,11 @@ function uxgGateHtml(ctx) {
     // for united but it wasnt changed on the horizontal display'), in its
     // NATIVE colors (white-inverting the glossy orb made a white blob).
     var _birRound = (typeof GATE_TOP_ROUND_EMBLEM_FILES !== 'undefined' && GATE_TOP_ROUND_EMBLEM_FILES[airlineCode]) || null;
+    // DL: the glossy white orb was the ONLY light chip in a row of accent
+    // circles (Nick: 'Delta icon does not match any others') — the strip
+    // badge goes back to the standard treatment; the glossy art stays on
+    // the other surfaces.
+    if (airlineCode === 'DL') _birRound = null;
     var _birEmblemPath = _birRound || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
     // MX: tile-brand treatment (Nick: 'circle same color as the icon, the
     // middle fits within') — navy circle in the tile's own colour, check
@@ -8739,7 +8768,7 @@ function uxgGateHtml(ctx) {
     // COLOR-ON-WHITE (Nick: American/Delta 'color and centered'): the real
     // colour symbol on a white chip instead of the flat white silhouette on
     // the accent circle — matches the rail rondelle treatment.
-    var _birOnWhite = { 'AA': true, 'DL': true }[airlineCode] && !_birRound && !_birTile;
+    var _birOnWhite = { 'AA': true }[airlineCode] && !_birRound && !_birTile;
     var _birNativeColor = !!_birRound || !!_birTile || !!_birOnWhite;
     var _birFilter = _birNativeColor ? '' : 'filter:brightness(0) invert(1);';
     var _birPad = _birOnWhite ? '13%' : '9%';
@@ -9742,7 +9771,21 @@ function uxgGateHtml(ctx) {
     // separation like a border'). Flush to the right edge; the top-LEFT corner
     // is rounded and a white left border + shadow separate it from the banner
     // field. No skew, so inner spans no longer counter-skew.
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:0 !important;bottom:0 !important;width:var(--gate-rcw, 25%) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 30px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;border-radius:26px 0 0 0 !important;border-left:5px solid rgba(255,255,255,0.92) !important;box-shadow:-12px 0 26px rgba(0,0,0,0.32) !important;overflow:hidden;z-index:5;">'
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:0 !important;bottom:0 !important;width:var(--gate-rcw, 25%) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 30px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;border-radius:26px 0 0 0 !important;border-left:5px solid rgba(255,255,255,0.92) !important;box-shadow:-12px 0 26px rgba(0,0,0,0.32) !important;overflow:hidden;z-index:5;' + (function(){ var i = String(iata || '').toUpperCase(); var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i); return '--ap-mark:url(/logos/airports/' + ic + '-white.svg);'; })() + '">'
+    +     (function () {
+            // Airport identity ahead of the gate number (Nick: 'the logo
+            // and airport code appear in the gate before the number …
+            // engraved or seen in white'). The mark hides itself where
+            // no asset exists, taking the code with it.
+            var i = String(iata || '').toUpperCase();
+            if (!i) return '';
+            var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i);
+            return '<span class="g8-r1-apmark" style="visibility:hidden;">'
+              + '<img src="/logos/airports/mark-' + ic + '-white.png" alt="" '
+              +   'onerror="this.parentNode.style.display=\'none\';" '
+              +   'onload="if(this.naturalWidth){this.parentNode.style.visibility=\'visible\';}else{this.parentNode.style.display=\'none\';}">'
+              + '</span>';
+          })()
     +     '<span class="g8-bilbl"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
     +     '<span class="g8-r1-gate" style="font-size:' + (function(g){var n=String(g||'').length; return n>=5?'clamp(56px,7vh,84px)':(n===4?'clamp(78px,9.5vh,110px)':'clamp(96px,13vh,138px)');})(gateVal) + ' !important;line-height:0.92 !important;">' + gateVal + '</span>'
     +   '</div>'
@@ -16653,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22543';
+var FIDS_BUILD_TAG = 'v22631';
 (function(){
   try {
     function _addTag(){
@@ -17804,20 +17847,20 @@ const DEMO_SCHEDULES = {
       {m: -12, flight:'PD506',  dest:'TORONTO',       di:'YYZ', al:'PD', gate:'3',  terminal:'—'},
       {m:  10, flight:'AC8658', dest:'OTTAWA',        di:'YOW', al:'AC', gate:'2',  terminal:'—'},
       {m:  28, flight:'WS3340', dest:'CALGARY',       di:'YYC', al:'WS', gate:'1',  terminal:'—'},
-      {m:  55, flight:'AC1960', dest:'NEW YORK',      di:'JFK', al:'AC', gate:'5',  terminal:'—'},
+      {m:  55, flight:'AC1960', dest:'NEW YORK',      di:'JFK', al:'AC', gate:'4',  terminal:'—'},
       {m:  85, flight:'AC8660', dest:'MONTREAL',      di:'YUL', al:'AC', gate:'3',  terminal:'—'},
-      {m: 115, flight:'UA4891', dest:'CHICAGO',       di:'ORD', al:'UA', gate:'6',  terminal:'—'},
+      {m: 115, flight:'UA4891', dest:'CHICAGO',       di:'ORD', al:'UA', gate:'1',  terminal:'—'},
       {m: 150, flight:'PD508',  dest:'TORONTO',       di:'YYZ', al:'PD', gate:'2',  terminal:'—', delay:30},
-      {m: 185, flight:'TS372',  dest:'CANCUN',        di:'CUN', al:'TS', gate:'7',  terminal:'—'},
+      {m: 185, flight:'TS372',  dest:'CANCUN',        di:'CUN', al:'TS', gate:'3',  terminal:'—'},
       {m: 220, flight:'AC8662', dest:'TORONTO',       di:'YYZ', al:'AC', gate:'1',  terminal:'—'},
       {m: 270, flight:'WS5890', dest:'PUNTA CANA',    di:'PUJ', al:'WS', gate:'4',  terminal:'—'},
-      {m: 310, flight:'AC876',  dest:'LONDON',        di:'LHR', al:'AC', gate:'5',  terminal:'—'},
+      {m: 310, flight:'AC876',  dest:'LONDON',        di:'LHR', al:'AC', gate:'1',  terminal:'—'},
       {m: 360, flight:'WS3342', dest:'HALIFAX',       di:'YHZ', al:'WS', gate:'3',  terminal:'—'},
       {m: 420, flight:'PB8668', dest:"ST. JOHN'S",    di:'YYT', al:'PB', gate:'2',  terminal:'—'},
-      {m: 475, flight:'TS962',  dest:'VARADERO',      di:'VRA', al:'TS', gate:'7',  terminal:'—'},
+      {m: 475, flight:'TS962',  dest:'VARADERO',      di:'VRA', al:'TS', gate:'4',  terminal:'—'},
       {m: 530, flight:'AC8670', dest:'MONTREAL',      di:'YUL', al:'AC', gate:'1',  terminal:'—'},
-      {m: 590, flight:'AF3850', dest:'PARIS',         di:'CDG', al:'AF', gate:'6',  terminal:'—'},
-      {m: 660, flight:'WS2402', dest:'MONTEGO BAY',   di:'MBJ', al:'WS', gate:'7',  terminal:'—'},
+      {m: 590, flight:'AF3850', dest:'PARIS',         di:'CDG', al:'AF', gate:'3',  terminal:'—'},
+      {m: 660, flight:'WS2402', dest:'MONTEGO BAY',   di:'MBJ', al:'WS', gate:'4',  terminal:'—'},
       {m: 740, flight:'AC8674', dest:'TORONTO',       di:'YYZ', al:'AC', gate:'2',  terminal:'—'},
     ],
     arr:[
@@ -24233,7 +24276,7 @@ function _ensureMediaFrame() {
 }
 function _positionMediaFrame(r, blurUrl) {
   var f = _ensureMediaFrame();
-  var _bk = String(blurUrl || '');
+  var _bk = String(blurUrl || '') + '|' + (typeof FIDS_BUILD_TAG !== 'undefined' ? FIDS_BUILD_TAG : '');
   if (f._blurKey !== _bk) {
     f._blurKey = _bk;
     f.innerHTML = ((typeof _adBackdropHtml === 'function') ? _adBackdropHtml(_bk) : '')
@@ -24260,13 +24303,38 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
    shrink each .ad-tech-frame to the media's ACTUAL drawn rectangle so the
    frame hugs the ad itself (Nick), whatever the creative's aspect ratio. */
 (function () {
+  // Frozen frame rects, keyed by creative + panel size. Module scope on
+  // purpose: a slide re-render replaces BOTH the frame and its parent,
+  // so anything stored on those elements is lost and the frame re-places
+  // itself a pixel off — the twitch a 3-minute recording caught twice.
+  var _GEOM_CACHE = {};
+  var _PENDING = {};
   function _drawnRect(m) {
-    var mw = m.videoWidth || m.naturalWidth, mh = m.videoHeight || m.naturalHeight;
     var b = m.getBoundingClientRect();
-    if (!mw || !mh || !b.width || !b.height) return null;
-    var ar = mw / mh, br = b.width / b.height, w, h;
-    if (ar >= br) { w = b.width; h = b.width / ar; } else { h = b.height; w = b.height * ar; }
-    return { left: b.left + (b.width - w) / 2, top: b.top + (b.height - h) / 2, width: w, height: h };
+    if (!b.width || !b.height) return null;
+    // cover/fill media (v22561: the ad goes against the border) paints the
+    // whole element box — the frame hugs the box itself. The contain math
+    // below only applies when the media letterboxes.
+    var _fit = '';
+    var _cs = null;
+    try { _cs = getComputedStyle(m); _fit = (_cs.objectFit || '').trim(); } catch (e) {}
+    if (_fit === 'cover' || _fit === 'fill') {
+      return { left: b.left, top: b.top, width: b.width, height: b.height };
+    }
+    var mw = m.videoWidth || m.naturalWidth, mh = m.videoHeight || m.naturalHeight;
+    if (!mw || !mh) return null;
+    // object-fit paints inside the CONTENT box — when the confine pass has
+    // padded the media (g8-ad-inset below), the drawn art lives inside the
+    // padding, so the box math must use the content box.
+    var _pl = _cs ? (parseFloat(_cs.paddingLeft) || 0) : 0;
+    var _pr = _cs ? (parseFloat(_cs.paddingRight) || 0) : 0;
+    var _pt = _cs ? (parseFloat(_cs.paddingTop) || 0) : 0;
+    var _pb = _cs ? (parseFloat(_cs.paddingBottom) || 0) : 0;
+    var bl = b.left + _pl, bt = b.top + _pt;
+    var bw = Math.max(1, b.width - _pl - _pr), bh = Math.max(1, b.height - _pt - _pb);
+    var ar = mw / mh, br = bw / bh, w, h;
+    if (ar >= br) { w = bw; h = bw / ar; } else { h = bh; w = bh * ar; }
+    return { left: bl + (bw - w) / 2, top: bt + (bh - h) / 2, width: w, height: h };
   }
   function _tick() {
     var frames = document.querySelectorAll('.ad-tech-frame');
@@ -24281,12 +24349,71 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       var r = _drawnRect(m);
       if (!r) continue;
       var hb = host.getBoundingClientRect();
-      var pad = Math.max(12, Math.min(22, Math.round(r.width * 0.02)));
-      f.style.left = Math.round(r.left - hb.left - pad) + 'px';
-      f.style.top = Math.round(r.top - hb.top - pad) + 'px';
-      f.style.width = Math.round(r.width + 2 * pad) + 'px';
-      f.style.height = Math.round(r.height + 2 * pad) + 'px';
-      f.style.right = 'auto'; f.style.bottom = 'auto';
+      // ONE frame per ad. Full-bleed ad: the frame sits ON the ad ('it can
+      // go over it, it's fine'). Smaller ad: the frame is inflated so its
+      // band sits OUTSIDE the ad — the creative is confined within it.
+      // v22595: EXACTLY the v22589 behavior Nick approved ('almost there')
+      // — the v22592 clamp and v22593 auto-shrink both moved the border
+      // between builds and are gone.
+      var fullW = r.width >= hb.width - 8, fullH = r.height >= hb.height - 8;
+      var padX = 0, padY = 0;
+      if (!(fullW && fullH)) {
+        // Clear the WHOLE double-line motif past the ad edge (the inner
+        // line sat on the creative — 'you can still see the ad outside
+        // borders'). Solved from the art's line geometry: inner-line inner
+        // edge at 2.8%/4.3% of the frame box.
+        padX = Math.max(10, Math.round(r.width * 0.030));
+        padY = Math.max(10, Math.round(r.height * 0.047));
+      }
+      try { if (m.classList.contains('g8-ad-inset')) { m.classList.remove('g8-ad-inset'); delete f.dataset.geom; continue; } } catch (e) {}
+      // FREEZE (Nick: 'make sure the frames don't move'): once placed,
+      // ignore sub-2px re-measures — rounding and image settle were able
+      // to nudge the frame between ticks.
+      var _gx = Math.round(r.left - hb.left - padX), _gy = Math.round(r.top - hb.top - padY);
+      var _gw = Math.round(r.width + 2 * padX), _gh = Math.round(r.height + 2 * padY);
+      // ONE RECT PER CREATIVE, EVER. Recordings showed the frame landing
+      // on up to four different rects for a single ad: the fitter was
+      // measuring while the image was still decoding and while the panel
+      // was still settling, so each early pass produced a different
+      // answer and the frame visibly hopped. Three gates now stand
+      // between a measurement and the screen:
+      //   1. the media must be fully decoded before it counts at all
+      //   2. the key buckets the panel size, so sub-pixel host jitter
+      //      cannot mint a new entry for the same ad
+      //   3. a rect must repeat on two consecutive passes to be trusted
+      // Once committed it is reused verbatim for the life of the page.
+      var _ready = (m.tagName === 'VIDEO') ? (m.readyState >= 2) : (m.complete && m.naturalWidth > 0);
+      if (!_ready) continue;
+      // Key off the CAROUSEL, not the host. The host is the slide wrapper
+      // and it animates in, so bucketing its box minted a fresh cache
+      // entry at each stage of the transition and every entry confirmed
+      // a slightly different rect — which is how two creatives still
+      // hopped after the first fix. The carousel does not animate.
+      var _mkey = '';
+      try {
+        var _cz = document.getElementById('gateAdCarousel');
+        var _cr = _cz ? _cz.getBoundingClientRect() : hb;
+        _mkey = String(m.currentSrc || m.src || '')
+          + '|' + (Math.round(_cr.width / 20) * 20) + 'x' + (Math.round(_cr.height / 20) * 20);
+      } catch (e) {}
+      if (!_mkey) continue;
+      var _apply = function (str) {
+        var z = str.split(',');
+        f.dataset.geom = str;
+        f.style.left = z[0] + 'px'; f.style.top = z[1] + 'px';
+        f.style.width = z[2] + 'px'; f.style.height = z[3] + 'px';
+        f.style.right = 'auto'; f.style.bottom = 'auto';
+        f.style.visibility = 'visible';
+      };
+      if (_GEOM_CACHE[_mkey]) { _apply(_GEOM_CACHE[_mkey]); continue; }
+      var _pend = _PENDING[_mkey];
+      if (!_pend || Math.abs(_pend[0] - _gx) > 2 || Math.abs(_pend[1] - _gy) > 2
+          || Math.abs(_pend[2] - _gw) > 2 || Math.abs(_pend[3] - _gh) > 2) {
+        _PENDING[_mkey] = [_gx, _gy, _gw, _gh];
+        continue;                      // unconfirmed — stay hidden
+      }
+      _GEOM_CACHE[_mkey] = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
+      _apply(_GEOM_CACHE[_mkey]);
     }
   }
   setInterval(_tick, 600);
@@ -26073,6 +26200,7 @@ function buildGateAdHtml(ad) {
     return '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;">' + inner + '</div>';
   }
 
+
   // ── LAYOUT 1: WI-FI AD ────────────────────────────────────────────────
   // Matches the Air Canada Aeroplan Wi-Fi reference: icon CENTERED above
   // text, text CENTERED below. Black background. Three red arcs radiate
@@ -26094,7 +26222,7 @@ function buildGateAdHtml(ad) {
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml('')
         + '<video src="' + ad.videoSrc + '" autoplay muted loop playsinline'
-        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
+        + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"'
         + ' onerror="this.style.display=\'none\';"></video>' + _adTechFrameHtml()
         + '</div>'
       );
@@ -26121,7 +26249,7 @@ function buildGateAdHtml(ad) {
       return _adWrap(
         '<div style="position:relative;width:100%;height:100%;overflow:hidden;">'
         + _adBackdropHtml(ad.bgImage)
-        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+        + '<img src="' + ad.bgImage + '" alt="" class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
         + '</div>'
       );
     }
@@ -27847,41 +27975,198 @@ function _map3dFlightCtx(allowEstimated) {
 // soft white brushed base, the dotted globe faded in grey (multiply, rising
 // from the bottom), and the airline-accent diagonal 'handles' at both edges.
 function _adBackdropHtml(blurUrl) {
-  // BLEND backdrop (Nick: 'nothing blends, it's just pasted'): images fill
-  // their own surround with a blown-up blurred copy of themselves (TV
-  // ambient), videos get a dark airline-accent vignette (a second decoding
-  // video would OOM the stream box). The dots world breathes through both,
-  // and the accent handles hold the edges.
-  var base = blurUrl
-    ? '<div style="position:absolute;inset:-60px;background-image:url(\'' + blurUrl + '\');'
-      + 'background-size:cover;background-position:center;filter:blur(46px) saturate(1.2) brightness(.92);transform:scale(1.15);"></div>'
-      + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.16);"></div>'
-    : '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#151c2a 0%,#0a0e16 100%);"></div>'
-      + '<div style="position:absolute;inset:0;background:var(--airline-accent,#D82F2E);opacity:.22;"></div>';
-  var dots = '<div style="position:absolute;left:-14%;right:-14%;top:-10%;bottom:-10%;'
-    + 'background-image:url(\'/logos/3d_globe_desktop.svg?v=2\');'
-    + 'background-size:cover;background-position:center 30%;background-repeat:no-repeat;'
-    + 'opacity:.42;filter:grayscale(1) brightness(1.85);mix-blend-mode:screen;pointer-events:none;"></div>';
-  // Diagonal slats REMOVED (Nick, Jul 2026: 'the main screen remove the
-  // lines'). The dotted globe stays (Nick liked 'the dots world') — only the
-  // skewed accent line-set that streaked across the welcome/ad backdrop is gone.
-  return base + dots;
+  // The surround design now lives on .gad-media-col itself (art + spots +
+  // outer frame, mounted persistently below) so it bleeds to the walls
+  // UNDER the frame at all times (Nick: 'everything on the screen goes
+  // inside the frame ... minus the background abstract, the frame can just
+  // go on top of it'). Slides render transparent and sit inside the
+  // frame's opening; nothing per-slide to paint any more.
+  return '';
 }
+
+// ── OUTER PANEL FRAME ────────────────────────────────────────────────────
+// Nick: 'a frame around the whole middle part … around the middle screen at
+// all times'. A slide-built frame dies with its slide, so this one is
+// mounted on .gad-media-col itself and re-ensured every second — it rides
+// over every slide, weather card, takeover and Accor card alike. Silver
+// finish, distinct from the accent-tinted frame hugging the advert.
+(function () {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  function _ensureOuterFrame() {
+    try {
+      var col = document.querySelector('.gad-media-col');
+      if (!col) return;
+      var bd = col.querySelector(':scope > .ad-panel-backdrop');
+      if (!bd) {
+        bd = document.createElement('div');
+        bd.className = 'ad-panel-backdrop';
+        bd.style.cssText = 'position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;isolation:isolate;';
+        col.insertBefore(bd, col.firstChild);
+      }
+      // 'the background needs to blend in colors' (Nick, with his mockups):
+      // the wave art renders as a luminosity layer over the gate's airline
+      // accent — same treatment he approved on the first art — rebuilt only
+      // when the accent actually changes.
+      var _bdAcc = '';
+      try {
+        var _bdAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+        if (_bdAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_bdAl]) _bdAcc = AIRLINE_ACCENT[_bdAl];
+      } catch (e) {}
+      // HYSTERESIS: while the airline global is momentarily unset (it
+      // flickers around renders) KEEP the current accent — rebuilding the
+      // backdrop on every flip was a visible blip.
+      if (!_bdAcc) _bdAcc = bd.dataset.acc || '#12309e';
+      if (bd.dataset.acc !== _bdAcc) {
+        bd.dataset.acc = _bdAcc;
+        bd.dataset.blur = '';
+        // Nick on the AC middle panel: 'I think for AC we need more of a
+        // gray inside … the gray was the middle'. The 74% red mix reads
+        // harsh, so AC's inside leans charcoal with a breath of the red;
+        // every other carrier keeps the full accent wash.
+        var _bdBase = /^#d82f2e$/i.test(_bdAcc)
+          ? 'color-mix(in srgb, ' + _bdAcc + ' 14%, #494e57)'
+          : 'color-mix(in srgb, ' + _bdAcc + ' 74%, #0b1020)';
+        // 'the ad to still reflect in the background like it did before'
+        // (Nick): the current advert, blown up and blurred, IS the wall
+        // art — the waves show through it faintly and carry the panel
+        // whenever no ad image is up (weather card, videos).
+        bd.innerHTML =
+            '<div style="position:absolute;inset:0;background:' + _bdBase + ';"></div>'
+          + '<div style="position:absolute;inset:-2%;background-image:url(/logos/Backgrounds/adback-waves2.jpg?v=1);background-size:cover;background-position:center;mix-blend-mode:luminosity;"></div>'
+          + '<div class="ad-bd-blur" style="position:absolute;inset:-3%;background-size:cover;background-position:center;filter:blur(26px) saturate(1.08);opacity:.8;"></div>'
+          + '<div style="position:absolute;inset:0;background:rgba(8,12,20,.18);"></div>'
+          + '<div style="position:absolute;left:-4%;right:-4%;top:-4%;bottom:-4%;background-image:url(/logos/Backgrounds/adback-spots.png?v=1);background-size:cover;background-position:center;opacity:.28;mix-blend-mode:screen;"></div>';
+      }
+      // Keep the reflection in step with the slide on every ensure pass —
+      // it lives OUTSIDE the slide so it survives slide swaps and still
+      // bleeds to the walls under the frame.
+      try {
+        var _bImg = col.querySelector('#gateAdCarousel img.ad-tech-media');
+        var _bSrc = (_bImg && _bImg.src) ? _bImg.src : '';
+        if (_bSrc && bd.dataset.blur !== _bSrc) {
+          bd.dataset.blur = _bSrc;
+          var _bLayer = bd.querySelector('.ad-bd-blur');
+          if (_bLayer) _bLayer.style.backgroundImage = 'url("' + _bSrc + '")';
+        }
+      } catch (e) {}
+      var rg = col.querySelector(':scope > .ad-accent-frame');
+      if (rg) rg.remove();   // the wall-nested ring is not in Nick's reference
+      var f = col.querySelector(':scope > .ad-outer-frame');
+      if (!f) {
+        f = document.createElement('div');
+        f.className = 'ad-outer-frame';
+        f.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:60;overflow:hidden;isolation:isolate;';
+        col.appendChild(f);
+      } else if (col.lastElementChild !== f) {
+        col.appendChild(f);   // keep it on top when the col re-renders around it
+      }
+      // Frame matches the airline (Nick): the silver art re-hued by the
+      // accent via a masked multiply layer; rebuilt only on accent change.
+      if (f.dataset.acc !== _bdAcc) {
+        f.dataset.acc = _bdAcc;
+        var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
+        var _wMask = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
+        // Second line in the carrier's second colour, same as the ad frame.
+        var _wSec = '';
+        try {
+          var _wAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+          if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
+          else _wSec = '#AEB4BC';
+        } catch (e) { _wSec = '#AEB4BC'; }
+        f.innerHTML =
+            '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
+          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
+          + '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.92;'
+          +   'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _wMask + '"></div>';
+      }
+    } catch (e) {}
+  }
+  // A gate re-render wipes the column's children; a 1s poll then left the
+  // panel bare for up to a second — Nick saw it as a blip on every refresh.
+  // Re-mount SYNCHRONOUSLY on any column childList change; the slow poll
+  // stays as a backstop only.
+  try {
+    new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var t = muts[i].target;
+        // ANY mutation inside the column (not just on it): a slide swap
+        // mutates #gateAdCarousel, and the backdrop's ad reflection must
+        // follow the new creative on the same frame.
+        if (t && t.nodeType === 1 && t.closest && t.closest('.gad-media-col')) { _ensureOuterFrame(); return; }
+        // A re-render that REPLACES the column node mutates its parent, not
+        // the column — the 45s map takeover did exactly that, and only the
+        // 1.5s backstop re-mounted the frame+backdrop: a visible blip on
+        // the map (Nick: 'the map keeps blipping'). Catch the fresh column
+        // in addedNodes and re-mount synchronously.
+        var an = muts[i].addedNodes;
+        for (var j = 0; j < (an ? an.length : 0); j++) {
+          var n = an[j];
+          if (n && n.nodeType === 1 && ((n.classList && n.classList.contains('gad-media-col')) || (n.querySelector && n.querySelector('.gad-media-col')))) {
+            _ensureOuterFrame();
+            return;
+          }
+        }
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  } catch (e) {}
+  setInterval(_ensureOuterFrame, 1500);
+  _ensureOuterFrame();
+})();
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 
 // Tech-frame border drawn AROUND contain-fit ad media (Nick: 'a border
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
+// The carrier's SECOND colour, for the frame hugging the advert (Nick:
+// 'color the inside frame the second colour of the airline, so AC may be
+// gray or black'). The wall frame keeps the primary accent, so the two
+// frames read as a pair instead of one doubled line. Carriers without an
+// entry fall back to a neutral graphite, which suits every livery.
+// Nick: 'maybe go with lighter colors I think' — these are the SECOND
+// line of the frame motif, so they sit lighter than the primary rather
+// than competing with it.
+var AIRLINE_ACCENT2 = {
+  'AC': '#AEB4BC', 'QK': '#AEB4BC', 'RV': '#AEB4BC',   // Air Canada family: light silver-graphite
+  'WS': '#7FA8CE',                                      // WestJet: light steel
+  'PD': '#A8C4E2',                                      // Porter: pale steel blue (no red — Nick)
+  'PB': '#FFD46B',                                      // PAL: light brand yellow
+  'DL': '#9DB4D6', 'UA': '#9DB4D6', 'AA': '#A9BBD3',
+  'F9': '#8CC9AE', 'WG': '#BCC1C8'
+};
 function _adTechFrameHtml() {
-  // CONTEMPORARY BEZEL (Nick: 'a border, not lines') — a thick gradient
-  // mat the ad sits IN, like a framed poster: accent surface, rounded,
-  // deep shadow. Painted BEHIND the media (media carries z-index:1); the
-  // fitter inflates it ~16px beyond the ad's drawn rectangle.
-  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:1.25%;width:100%;height:97.5%;box-sizing:border-box;'
-    + 'background:linear-gradient(160deg, color-mix(in srgb, var(--airline-accent,#38bdf8) 86%, #fff) 0%, var(--airline-accent,#38bdf8) 42%, color-mix(in srgb, var(--airline-accent,#38bdf8) 52%, #000) 100%);'
-    + 'border-radius:24px;'
-    + 'box-shadow:0 18px 50px rgba(5,10,20,0.45), inset 0 1px 0 rgba(255,255,255,0.35);'
-    + 'pointer-events:none;"></div>';
+  // ONE complete frame per ad, in the airline's SECOND colour — the same
+  // silver art with a masked multiply layer, like the wall frame.
+  var _fAcc = '';
+  try {
+    var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+    if (_fAl && AIRLINE_ACCENT2[_fAl]) _fAcc = AIRLINE_ACCENT2[_fAl];
+    else if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = '#AEB4BC';
+  } catch (e) {}
+  // Nick: 'theres 2 lines around, first outerline should be red the
+  // second gray'. The art carries a double-line motif, so it takes TWO
+  // tints: the primary over the whole frame, then the secondary clipped
+  // to the inside of the outer band so only the second line changes.
+  // The band measures 1.09% of width / 1.68% of height.
+  var _fPri = '';
+  try {
+    var _fAl2 = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+    if (_fAl2 && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl2]) _fPri = AIRLINE_ACCENT[_fAl2];
+  } catch (e) {}
+  var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
+  var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
+  var _tint = '';
+  if (_fPri) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;' + _maskCss + '"></div>';
+  }
+  if (_fAcc) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.92;'
+      + 'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _maskCss + '"></div>';
+  }
+  return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
+    + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
+    +   '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
+    +   _tint
+    + '</div>';
 }
 
 // The VISIBLE ad panel rect — #gateAdCarousel's own box can extend past the
@@ -28040,7 +28325,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyle + '">' + _adBackdropHtml('')
           + '<video src="' + item.url + '" autoplay muted loop playsinline'
-          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));"></video>' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<video src="' + item.url + '" autoplay muted loop playsinline'
@@ -28059,7 +28344,7 @@ function renderGateAd(index) {
           : 'position:absolute;inset:0;overflow:hidden;';
         customHtml = '<div style="' + _wrapStyleI + '">' + _adBackdropHtml(item.url)
           + '<img src="' + item.url + '" alt=""'
-          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:1.25%;width:100%;height:97.5%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
+          + ' class="ad-tech-media" style="z-index:1;position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;object-position:' + posStr + ';filter:drop-shadow(0 14px 40px rgba(5,10,20,0.45));">' + _adTechFrameHtml()
           + '</div>';
       } else {
         customHtml = '<div style="position:absolute;inset:0;background-image:url(\'' + item.url
