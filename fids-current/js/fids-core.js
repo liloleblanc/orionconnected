@@ -12777,9 +12777,9 @@ const gView = document.getElementById('gateView');
     // floor existed only because rows used to balloon and the measure ran away;
     // with fixed heights that can't happen, and forcing MORE than fit would
     // overflow/clip the fixed rows.)
-    const BIDS_FLIGHTS_PER_PAGE = (typeof bView._bidsMeasuredFit === 'number'
-                                   && bView._bidsMeasuredFit > 0)
-                                  ? bView._bidsMeasuredFit
+    const _bidsFitKey = _logoSize + '|' + Math.round(window.innerHeight);
+    const BIDS_FLIGHTS_PER_PAGE = (_BIDS_FIT.key === _bidsFitKey && _BIDS_FIT.n > 0)
+                                  ? _BIDS_FIT.n
                                   : _estimatePerPage;
     const BIDS_ROTATE_MS = 10000;
     const _totalPages = Math.max(1, Math.ceil(arrFlights.length / BIDS_FLIGHTS_PER_PAGE));
@@ -12996,26 +12996,49 @@ const gView = document.getElementById('gateView');
           const _headerH = _header ? _header.offsetHeight : 0;
           const _rowH = _rows[0].offsetHeight;
           if (_listH <= 0 || _rowH <= 0) return;
-          const _avail = _listH - _headerH - 8; // 8px breathing room
+          // clientHeight INCLUDES the list's own padding; the rows do not
+          // get to use it. Not subtracting it overcounted the space by the
+          // padding (56px on this layout) — nearly a whole small row, which
+          // is exactly the bottom row that rendered clipped.
+          const _lcs = getComputedStyle(_list);
+          const _listPad = (parseFloat(_lcs.paddingTop) || 0) + (parseFloat(_lcs.paddingBottom) || 0);
+          const _avail = _listH - _listPad - _headerH - 8; // 8px breathing room
           let _fit = Math.max(1, Math.floor(_avail / _rowH));
-          // Sanity clamp — never more than arrFlights length, never crazy
           _fit = Math.min(_fit, 40);
-          // Only re-render if the fit actually changed by something
-          // meaningful (avoid flicker from ±1 jitter on layout).
-          const _current = (typeof bView._bidsMeasuredFit === 'number')
-                           ? bView._bidsMeasuredFit
-                           : _estimatePerPage;
-          if (Math.abs(_fit - _current) >= 1) {
-            bView._bidsMeasuredFit = _fit;
-            // One re-render to apply the new fit. The next render won't
-            // re-measure to a different value because layout is stable.
-            if (typeof render === 'function') render();
+          const _key = (document.body.dataset.fidsLogoSize || 'medium') + '|' + Math.round(window.innerHeight);
+          if (_BIDS_FIT.key !== _key) { _BIDS_FIT.key = _key; _BIDS_FIT.n = 0; _BIDS_FIT.capped = false; }
+          const _current = _BIDS_FIT.n || _estimatePerPage;
+          // Sticky cap: shrinking (real overflow) always applies and locks;
+          // growing is only allowed while no overflow has ever forced a
+          // shrink on this key. Without the lock the fit pulsed grow ->
+          // overflow -> shrink -> grow on the wall.
+          let _next = _current;
+          if (_fit < _current) { _next = _fit; _BIDS_FIT.capped = true; }
+          else if (_fit > _current && !_BIDS_FIT.capped) { _next = _fit; }
+          if (_next !== _BIDS_FIT.n) {
+            _BIDS_FIT.n = _next;
+            // The DEDICATED renderer owns this screen. render() is the main
+            // table's — routing the refit through it was repainting the
+            // wrong surface and never applying the corrected count here.
+            if (typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
+            else if (typeof render === 'function') render();
           }
         } catch (_e) { /* swallow — measurement is best-effort */ }
       });
     } catch (_e) {}
   }
 }
+
+// ── BIDS ROW FIT (module scope) ─────────────────────────────────────────────
+// The fit lives HERE and not on #baggageView: the re-render REPLACES that
+// node, so a measurement stored on it was discarded every pass and the
+// fitter re-guessed forever — the clipped bottom row came back each render
+// (Nick: 'size again no longer works and seeing bottoms now cut off').
+// Keyed on logo size + viewport height, the two things that change the
+// geometry. `capped` is the oscillation guard: once a shrink was forced by
+// real overflow, the fit may not grow again under the same key — grow ->
+// overflow -> shrink -> grow was a visible pulse on the wall.
+var _BIDS_FIT = { key: '', n: 0, capped: false };
 
 const AP = {
   YYZ:{ name:'Toronto Pearson International Airport',                tz:'America/Toronto'    },
@@ -17029,7 +17052,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22652';
+var FIDS_BUILD_TAG = 'v22653';
 (function(){
   try {
     function _addTag(){
