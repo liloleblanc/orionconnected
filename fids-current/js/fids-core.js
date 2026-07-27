@@ -9780,8 +9780,10 @@ function uxgGateHtml(ctx) {
             var i = String(iata || '').toUpperCase();
             if (!i) return '';
             var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i);
-            return '<span class="g8-r1-apmark">'
-              + '<img src="/logos/airports/mark-' + ic + '-white.png" alt="' + i + '" onerror="this.parentNode.style.display=\'none\';">'
+            return '<span class="g8-r1-apmark" style="visibility:hidden;">'
+              + '<img src="/logos/airports/mark-' + ic + '-white.png" alt="" '
+              +   'onerror="this.parentNode.style.display=\'none\';" '
+              +   'onload="if(this.naturalWidth){this.parentNode.style.visibility=\'visible\';}else{this.parentNode.style.display=\'none\';}">'
               + '</span>';
           })()
     +     '<span class="g8-bilbl"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
@@ -16694,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22626';
+var FIDS_BUILD_TAG = 'v22627';
 (function(){
   try {
     function _addTag(){
