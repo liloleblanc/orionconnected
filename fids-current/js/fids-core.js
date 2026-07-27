@@ -12942,7 +12942,7 @@ const gView = document.getElementById('gateView');
               // onerror string, where a stray quote kills the fallback.
               const _bSafeName = airlineName.replace(/[^A-Z0-9ÀÂÉÈÊÎÔÛÇ &().-]/gi, '');
               const _bAirlineHtml = _bidsEmblemOnly ? '' : (_bWmBase
-                ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
+                ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 'light' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
                 : '<div class="bidsv2-airline-name">' + airlineName + '</div>');
               return `<div class="bidsv2-flight-row${_bRowCls}">
                 <div class="bidsv2-col-flight">
@@ -17029,7 +17029,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22650';
+var FIDS_BUILD_TAG = 'v22651';
 (function(){
   try {
     function _addTag(){
@@ -31742,8 +31742,10 @@ setInterval(function () {
   function sync() {
     try {
       var t = document.getElementById('fidsTable');
-      if (!t) return;
-      var rows = t.tBodies[0] && t.tBodies[0].rows;
+      var rows = t && t.tBodies[0] && t.tBodies[0].rows;
+      // Baggage carries the same row-locked pattern (Nick), so when there is
+      // no main table on this screen, measure the baggage rows instead.
+      if (!rows || rows.length < 2) rows = document.querySelectorAll('.bidsv2-flight-row');
       if (!rows || rows.length < 2) return;
       var a = rows[0].getBoundingClientRect();
       var b = rows[1].getBoundingClientRect();

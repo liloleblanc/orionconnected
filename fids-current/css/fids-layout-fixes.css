@@ -5539,3 +5539,50 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td
 html body .bidsv2-flight-row:not(#_) {
   box-shadow: inset 0 -2px 0 rgba(9, 17, 28, 0.55) !important;
 }
+
+/* ── v22651: BAGGAGE CARRIES THE PATTERN, FIDS GOES A TOUCH DARKER, AND
+   CANCELLED IS WHITE ON BIDS TOO.
+   Nick: 'make the baggage arrival same pattern design same thing and also
+   darken a bit the one on FIDS', and 'cancelled on red needs to be white
+   ive said this many times on FIDS and possibly BIDS'.
+
+   CANCELLED WHITE — the real culprit this time. Every TEXT element on a
+   cancelled row already computes white on both boards (probed live, zero
+   non-white leaves). What is NOT text is the airline wordmark IMAGE. The
+   FIDS row builder already forces the white-ink artwork on cancelled and
+   diverted — its own comment cites Nick 'three times' — but the BAGGAGE row
+   builder only ever handled delayed, so on light themes BIDS picked the
+   dark-ink artwork: black lettering on the red block. That is the thing
+   that kept coming back. Fixed in the row builder (JS), not here: swapping
+   the artwork variant is not something a colour rule can do.
+
+   BAGGAGE PATTERN. Same artwork, same weights, same row-lock; the sync now
+   measures .bidsv2-flight-row when there is no main table on the screen.
+   Scoped to Orlando like the FIDS one.
+
+   DARKER BY A BIT. Dark-ground ink 0.48 -> 0.58, light 0.16 -> 0.20:
+
+     delayed yellow   dark text on a line    4.80:1
+     cyan row         white text on a line  10.51:1
+     cancelled red    white text on a line  16.33:1
+
+   Hover weight rises to 0.82 to keep the click-brightens step. */
+@media (min-width: 701px) {
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-body,
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row {
+    background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row.bidsv2-row-delayed {
+    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+}
