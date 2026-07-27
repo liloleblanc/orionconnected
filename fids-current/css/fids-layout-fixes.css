@@ -6270,3 +6270,68 @@ html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed i
 html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="wind"] {
   content: url("/logos/weather/animated/wind-light.svg?v=1") !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   v22675 — DIAGONAL STRIPES. Nick: 'lets just try this as background'
+   (vecteezy_abstractgrayandwhitestripesdiagonallinebackground_1233931).
+
+   This one is handled differently from every pattern before it, for two
+   reasons found by looking at the file rather than by assuming.
+
+   IT IS NOT A SEAMLESS TILE. Stripe density drifts across the frame —
+   heavy in the lower left, sparse in the upper right. Repeating it would
+   put a visible seam and an obviously recurring dense blob on the board.
+   So it does not repeat: one copy, sized to the viewport width, pinned with
+   background-attachment: fixed. The diagonal then runs unbroken from one
+   corner of the board to the other, which is the right look for diagonals
+   anyway, and there is no tile boundary to see. Nothing here needs the
+   row-registration variables — diagonals have no horizontal rhythm to lock
+   to — but --fids-pat-y / --fids-pat-h stay live for Orlando.
+
+   IT IS FINE PARALLEL HAIRLINES, WHICH IS WHAT KILLED THE LATTICE. That
+   failure (v22668) was a browser downscale to 0.27 aliasing hairline struts
+   into a barcode. The source here is 5040px wide, so leaving it to the
+   browser would repeat the mistake at 0.38. Instead the asset is resampled
+   ONCE, offline, with Lanczos, to exactly 1920 — the board's own width — so
+   at 1080p the browser scales by 1.0 and does no resampling at all. Stored
+   as 8-bit greyscale: multiply only reads luminance and the art is neutral,
+   so colour channels would be dead weight (742KB rather than ~2MB).
+
+   MULTIPLY, NOT SOFT-LIGHT. Rendered all three on the live board first.
+   soft-light and overlay lighten from a near-white source, which washed the
+   whole palette out — the Final-call orange went yellow and the blues went
+   pale. Multiply leaves hue alone and only deepens, so the board keeps its
+   colour system and gains a diagonal sheen. Measured on the two light rows,
+   surface only, against the dark row text:
+
+     delayed      5th-pct darkest 7.09:1    median 8.51:1
+     final call   5th-pct darkest 5.56:1    median 6.25:1
+
+   Both clear of 4.5 with room. The very darkest hairline cores are heavier
+   than that (they multiply the yellow to about 3.5:1) but they are roughly
+   a pixel wide against 4-5px text strokes, so no glyph ever sits on one.
+
+   Orlando is excluded, same as before — it has asa-no-ha, which Nick chose
+   and tuned himself. */
+@media (min-width: 701px) {
+  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsTable tbody tr:not(#_),
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-final td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
+    background-image: url("/logos/Backgrounds/fids-stripes.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center top !important;
+    background-size: 100vw auto !important;
+    background-repeat: no-repeat !important;
+    background-blend-mode: multiply !important;
+  }
+  /* the baggage header strip stays a solid bar, same as it was under the
+     previous patterns */
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-list-header {
+    background-image: none !important;
+  }
+}
