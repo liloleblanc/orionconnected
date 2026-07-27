@@ -4995,3 +4995,30 @@ html body .g8-r1-apmark img {
   height: clamp(52px, 8.2vh, 104px) !important;
   max-height: 78% !important;
 }
+
+/* ── v22632: FIRST WORDS LEGIBLE ON EVERY SLAB. Measured on production:
+   where the slab IS the carrier's colour, a 30% tint of that same colour
+   washes out against it — WestJet's teal first-words came in at 2.3:1 on
+   the teal boarding slab, while the white French half was fine. Pushing
+   the mix to 15% keeps Nick's tinted look but lands the ink near white,
+   so it reads on a mid-tone slab as well as a dark one. */
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span:first-child {
+  color: color-mix(in srgb, var(--airline-accent, #D82F2E) 15%, #ffffff) !important;
+}
+html body[data-gate-airline="PB"]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline="PB"]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline="PB"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span:first-child {
+  color: #FFDC8A !important;
+}
+
+/* ── v22632: the boarding STATUS keeps its meaning-carrying colour but
+   stops fighting the slab. 'Boarding | Embarquement' measured 1.8:1 in
+   amber on WestJet's teal — the most important words on the screen. A
+   dark halo lifts them off any slab without changing the colour, so
+   amber still means boarding and red still means final call. */
+html body .g8-bir-cell .g8-bir-stwrap .g8-bir-st2,
+html body .g8-bir-cell .g8-bir-val .g8-bir-st2 {
+  text-shadow: 0 1px 2px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.65) !important;
+}
