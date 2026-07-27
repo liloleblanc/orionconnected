@@ -3984,7 +3984,7 @@ html .wxc-city { font-size: clamp(20px, 3vh, 38px) !important; }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4000,7 +4000,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4029,7 +4029,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
    boarding wears the same luxury panel instead of the plain dark metal. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-board-info-row {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4100,7 +4100,7 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-1 {
 /* AC: each slab IS the new luxury material. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4191,7 +4191,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
    which outrank these. */
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
   background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 40%, #33363c) !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4220,7 +4220,7 @@ html body .g8-board-info-row {
 }
 html body .g8-bir-cell {
   background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 40%, #33363c) !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4232,7 +4232,7 @@ html body .g8-bir-cell {
 /* AC: untinted, the material as approved. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-blend-mode: normal !important;
 }
 
@@ -4368,7 +4368,7 @@ html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 34%, #83878f) !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -5093,3 +5093,13 @@ html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.gat
 html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val {
   text-shadow: 0 1px 2px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.6) !important;
 }
+
+/* ── v22635: the Air Canada shelves were still reading black because the
+   MATERIAL is dark, not because the CSS was wrong — the base colour and
+   texture were both applied correctly, but the artwork averaged a
+   luminance of 48/255, so 'cover' filled the rail with its darkest
+   region. Nick: 'you also put the same colors as before for air Canada
+   I'm requesting gray and lighter colors'. The texture is rebuilt into a
+   mid-gray band (mean 83), which shows the brushed detail he asked for
+   two rounds ago while keeping white lettering at 7.7:1 — going fully
+   light would have broken every white label we just fixed. */
