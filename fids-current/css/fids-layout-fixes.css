@@ -4857,3 +4857,35 @@ html body .g8-r1-right::before {
   mix-blend-mode: normal !important;
   opacity: .30 !important;
 }
+
+/* ── v22618: the rail's English label was still inked by a rule chaining
+   four :not([data-gate-airline=...]) tests — roughly nine class-levels
+   of specificity, which beat the v22617 override and left 'Flight' red
+   beside a white 'Vol'. One :not(#_) raises this to id-level so both
+   halves finally match. */
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code,
+html body[data-gate-airline]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline]:not(#_) .g8-bir-cell .g8-bir-l2 {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-size: 1em !important;
+  font-weight: 800 !important;
+}
+
+/* ── v22618: DATE — two tight groups with one wide gap at the middle
+   (Nick: 'make Sunday, July 26 closer together with a larger gap in
+   between focussed on the middle'). Full justification spread every
+   word evenly; the separator carries the gap instead. */
+html .octb-date, html .octb-tab .octb-date {
+  text-align: center !important;
+  text-align-last: center !important;
+  word-spacing: normal !important;
+}
+html .octb-date .cl-sep {
+  margin: 0 clamp(12px, 1.9vw, 42px) !important;
+  opacity: 1 !important;
+}
