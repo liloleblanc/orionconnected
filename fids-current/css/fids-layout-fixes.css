@@ -4685,3 +4685,33 @@ html body .bigcraft-map::before { opacity: .28 !important; }
    right column's map slot holds the airline emblem, not a map — the
    veil has nothing to texture there and just dirties the logo. */
 html body .g8-bigcraft-active .v2-rc-shelf-map::before { display: none !important; }
+
+/* ── v22615: the rail ink override needs to OUTRANK the textcol rule.
+   `.g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value` paints
+   var(--banner-bg) — near-black for a dark carrier — at 4 classes, so
+   the v22614 three-class override never applied. AC was only ever
+   readable because it has its own explicit rule. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-title,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-title {
+  color: #ffffff !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-scheduled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-ontime,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-status-ontime { color: #34d399 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-delayed,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-status-delayed { color: #fbbf24 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-cancelled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-status-cancelled { color: #f87171 !important; }
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-boarding,
+html body .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value.v2-fi-status-boarding { color: #93c5fd !important; }
+
+/* ── v22615: the card's table must FLEX to fill the shelf — height:100%
+   alone did nothing inside a centred column flex, which is why the two
+   slabs still measured 200px in a 233px shelf. */
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi > .v2-rc-fi {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  align-self: stretch !important;
+}
