@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22643';
+var FIDS_BUILD_TAG = 'v22644';
 (function(){
   try {
     function _addTag(){
@@ -28062,16 +28062,11 @@ function _adBackdropHtml(blurUrl) {
       }
       // Frame matches the airline (Nick): the silver art re-hued by the
       // accent via a masked multiply layer; rebuilt only on accent change.
-      // Second line in the carrier's second colour. Computed BEFORE the
-      // rebuild guard and folded into the cache key: two carriers can share a
-      // primary and differ on the secondary, and keying on the primary alone
-      // left the second line stuck on the previous carrier's colour.
-      var _wSec = '';
-      try {
-        var _wAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-        if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
-        else _wSec = '#AEB4BC';
-      } catch (e) { _wSec = '#AEB4BC'; }
+      // Second line of the BIG wall frame: near-black (Nick's reverse — the
+      // bigger frame takes the black, the small one inside takes the gray).
+      // Still computed before the rebuild guard and folded into the cache key
+      // so a carrier change always repaints.
+      var _wSec = (typeof WALL_LINE2_INK !== 'undefined') ? WALL_LINE2_INK : '#23262B';
       if (f.dataset.acc !== _bdAcc + '|' + _wSec) {
         f.dataset.acc = _bdAcc + '|' + _wSec;
         var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
@@ -28143,10 +28138,12 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // gray or black'). The wall frame keeps the primary accent, so the two
 // frames read as a pair instead of one doubled line. Carriers without an
 // entry fall back to a neutral graphite, which suits every livery.
-// Nick, on the wall frame: 'red out, dark gray inner'. So the outer line
-// keeps the carrier primary and this — the SECOND line — is a DARK gray.
-// Each carrier's entry is a dark gray carrying a hint of its own hue, so
-// the frames still read as that airline's rather than one generic gray.
+// Nick: 'do the reverse — black inner [on the] bigger frame, and small
+// gray'. So the two dark inks swap roles from the previous build.
+//
+// The SMALL frame hugging the advert now carries the per-carrier dark gray.
+// Each entry is a dark gray with a hint of that airline's own hue, so the
+// frame still reads as theirs rather than one generic gray.
 var AIRLINE_ACCENT2 = {
   'AC': '#4A5058', 'QK': '#4A5058', 'RV': '#4A5058',   // Air Canada family: neutral dark graphite
   'WS': '#3F4E5A',                                      // WestJet: dark cool gray
@@ -28155,15 +28152,18 @@ var AIRLINE_ACCENT2 = {
   'DL': '#414A5C', 'UA': '#414A5C', 'AA': '#45505F',
   'F9': '#3E4F49', 'WG': '#4A4F57'
 };
-// The SMALLER frame, the one hugging the advert itself. Nick: 'the smaller
-// one even darker gray almost black'. Near-black reads as a clean edge
-// against the creative without competing with the wall frame outside it,
-// and at that value there is no hue left to carry per carrier.
-var AD_FRAME_INK = '#23262B';
+// The BIGGER wall frame's second line is now the near-black one. Its outer
+// line still carries the carrier primary, so that frame reads red-then-black
+// while the small one inside it reads gray.
+var WALL_LINE2_INK = '#23262B';
 function _adTechFrameHtml() {
-  // ONE complete frame per ad, near-black — the same silver art with a
-  // masked multiply layer, like the wall frame, just inked much darker.
-  var _fAcc = AD_FRAME_INK;
+  // ONE complete frame per ad, in the carrier's dark gray — the same silver
+  // art with a masked multiply layer, like the wall frame.
+  var _fAcc = '';
+  try {
+    var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+    _fAcc = (_fAl && AIRLINE_ACCENT2[_fAl]) ? AIRLINE_ACCENT2[_fAl] : '#4A5058';
+  } catch (e) { _fAcc = '#4A5058'; }
   // NO primary here, and no per-carrier hue. The wall frame outside this one
   // carries the airline's primary on its outer line and a dark gray on its
   // second; this frame is the small one hugging the advert and stays
