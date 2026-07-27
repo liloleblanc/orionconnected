@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22637';
+var FIDS_BUILD_TAG = 'v22638';
 (function(){
   try {
     function _addTag(){
@@ -28172,28 +28172,19 @@ function _adTechFrameHtml() {
   // gray/light for Air Canada. v22625 washed the primary over this whole
   // frame as well, which put the red straight back. The outer wall frame
   // carries the primary; this one carries only the secondary.
-  var _fPri = '';
-  try {
-    var _pAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-    if (_pAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_pAl]) _fPri = AIRLINE_ACCENT[_pAl];
-  } catch (e) {}
+  // NO primary here. The wall frame carries the airline's primary colour;
+  // this frame hugs the advert and stays the SECOND colour only. Washing the
+  // primary over it puts the red straight back around the ad, which is the
+  // one thing Nick has said not to do, more than once.
   var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
-  var _artDiv = '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>';
-  // Same split as the wall frame: outer line primary, second line secondary.
-  var _outer = _fPri
-    ? '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;' + _maskCss + '"></div>'
-    : '';
-  var _inner = _fAcc
-    ? '<div style="position:absolute;inset:0;isolation:isolate;clip-path:inset(2.16% 1.40%);">'
-      +   _artDiv
-      +   '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>'
-      + '</div>'
+  var _tint = _fAcc
+    ? '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>'
     : '';
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
-    +   '<div style="position:absolute;inset:0;isolation:isolate;">' + _artDiv + _outer + '</div>'
-    +   _inner
+    +   '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
+    +   _tint
     + '</div>';
 }
 
