@@ -5985,7 +5985,7 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
     background-image: url("/logos/Backgrounds/fids-hexline.png?v=1") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
-    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-size: auto calc(var(--fids-pat-h, 660px) * 0.4) !important;
     background-repeat: repeat !important;
     background-blend-mode: multiply !important;
   }
@@ -6023,3 +6023,26 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
 
    0.22 is the strongest weight that keeps the delayed row's dark text above
    4.5, and it still lifts the cyan row from 2.91 bare to 4.38. */
+
+/* ── v22670: HEXES SMALLER AND AIRIER. Nick: 'I think it needs to go
+   smaller and really spread out'.
+
+   Two moves, because scale alone would have made it denser rather than
+   airier — shrinking a tessellating honeycomb puts MORE hexes in the same
+   space, which is the opposite of spread out. So the size comes down and
+   the ink comes down with it:
+
+     tile   10 row pitches -> 4   (660px -> 264px; hexes at 40%)
+     ink    0.22 -> 0.14
+
+   The lock survives: 4 pitches still restarts the tile on a row edge, now
+   every four rows instead of ten.
+
+   A correction to what I wrote in v22669: I called the lattice failure
+   'crushing horizontal detail'. That was wrong — background-size: auto
+   preserves aspect, so nothing was distorted. It was uniform DOWNSCALING to
+   27%, and thin vertical struts alias into a barcode at that reduction. The
+   real lesson is about reduction and line weight, not aspect. Hexagon
+   outlines are bolder and more open than those struts, which is why 40%
+   holds up here where 27% did not there — but this is the direction that
+   broke last time, so it is worth watching on a real screen. */
