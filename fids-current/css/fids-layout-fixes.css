@@ -3984,7 +3984,7 @@ html .wxc-city { font-size: clamp(20px, 3vh, 38px) !important; }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4000,7 +4000,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4029,7 +4029,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
    boarding wears the same luxury panel instead of the plain dark metal. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-board-info-row {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4100,7 +4100,7 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-1 {
 /* AC: each slab IS the new luxury material. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4191,7 +4191,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
    which outrank these. */
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
   background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 40%, #33363c) !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4220,7 +4220,7 @@ html body .g8-board-info-row {
 }
 html body .g8-bir-cell {
   background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 40%, #33363c) !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4232,7 +4232,7 @@ html body .g8-bir-cell {
 /* AC: untinted, the material as approved. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell {
   background-color: #43464c !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-blend-mode: normal !important;
 }
 
@@ -4368,7 +4368,7 @@ html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 34%, #83878f) !important;
-  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-light.jpg?v=1") !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -4994,4 +4994,376 @@ html body:not(#_) .fids-airport-name {
 html body .g8-r1-apmark img {
   height: clamp(52px, 8.2vh, 104px) !important;
   max-height: 78% !important;
+}
+
+/* ── v22632: FIRST WORDS LEGIBLE ON EVERY SLAB. Measured on production:
+   where the slab IS the carrier's colour, a 30% tint of that same colour
+   washes out against it — WestJet's teal first-words came in at 2.3:1 on
+   the teal boarding slab, while the white French half was fine. Pushing
+   the mix to 15% keeps Nick's tinted look but lands the ink near white,
+   so it reads on a mid-tone slab as well as a dark one. */
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span:first-child {
+  color: color-mix(in srgb, var(--airline-accent, #D82F2E) 15%, #ffffff) !important;
+}
+html body[data-gate-airline="PB"]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline="PB"]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline="PB"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span:first-child {
+  color: #FFDC8A !important;
+}
+
+/* ── v22632: the boarding STATUS keeps its meaning-carrying colour but
+   stops fighting the slab. 'Boarding | Embarquement' measured 1.8:1 in
+   amber on WestJet's teal — the most important words on the screen. A
+   dark halo lifts them off any slab without changing the colour, so
+   amber still means boarding and red still means final call. */
+html body .g8-bir-cell .g8-bir-stwrap .g8-bir-st2,
+html body .g8-bir-cell .g8-bir-val .g8-bir-st2 {
+  text-shadow: 0 1px 2px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.65) !important;
+}
+
+/* ── v22633: STATUS COLOURS THAT DO NOT CLASH WITH THE SLAB. Nick's
+   WestJet shot says it plainly: 'On Time | À l'heure' in mid green on a
+   teal slab is all but invisible, and 'Scheduled | Prévu' the same. The
+   slabs are mid-tone by design now, and a mid-tone status colour on a
+   mid-tone slab can never read. Every status keeps its meaning but moves
+   to a high-luminance version and gains a dark halo, so green still
+   means on time and amber still means delayed — on teal, navy or red
+   alike. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-scheduled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-ontime,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-scheduled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-ontime,
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-arrived,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-scheduled,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-ontime,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-scheduled {
+  color: #A7F3C6 !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-delayed,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-delayed,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-delayed {
+  color: #FFE066 !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-cancelled,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-cancelled,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-cancelled {
+  color: #FFB3B3 !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-boarding,
+html body .g8-wrap .gad-aircraft-col .v2-fi-textcol .v2-fi-value.v2-fi-status-boarding,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval.v2-rc-status-boarding {
+  color: #CBE4FF !important;
+}
+/* The halo is what makes a coloured word survive a mid-tone slab. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val,
+html body .g8-wrap .gad-aircraft-col [class*="v2-fi-status-"],
+html body .g8-wrap .gad-map-col-v2 [class*="v2-rc-status-"] {
+  text-shadow: 0 1px 2px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.6) !important;
+}
+
+/* ── v22634: the rail's status modifier is a BARE class — .ontime,
+   .delayed, .cancelled — not .v2-fi-status-ontime, which is what v22633
+   targeted, so none of it matched and On Time stayed mid-green on the
+   teal slab. Dumped the live cascade to get the real names, and the
+   winning rule was an airline-scoped :is() chain, so these carry
+   :not(#_) to reach id-level. */
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.ontime,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.scheduled,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.arrived {
+  color: #A7F3C6 !important;
+}
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.delayed {
+  color: #FFE066 !important;
+}
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.cancelled {
+  color: #FFB3B3 !important;
+}
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.boarding,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.final,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.gateclosed {
+  color: #CBE4FF !important;
+}
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val {
+  text-shadow: 0 1px 2px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.6) !important;
+}
+
+/* ── v22635: the Air Canada shelves were still reading black because the
+   MATERIAL is dark, not because the CSS was wrong — the base colour and
+   texture were both applied correctly, but the artwork averaged a
+   luminance of 48/255, so 'cover' filled the rail with its darkest
+   region. Nick: 'you also put the same colors as before for air Canada
+   I'm requesting gray and lighter colors'. The texture is rebuilt into a
+   mid-gray band (mean 83), which shows the brushed detail he asked for
+   two rounds ago while keeping white lettering at 7.7:1 — going fully
+   light would have broken every white label we just fixed. */
+
+/* ── v22637: THE GREEN STAYS — IT JUST HAS TO BE READABLE. Nick, correcting
+   me: 'I never asked for the status to be white. I said you can't see it.'
+   Right. Measured on the live gate, the old #34d399 sat at 3.53:1 on the
+   gray shelf and 3.82:1 on the right card — under the 4.5:1 floor, which
+   is exactly why it read as mush. The fix is a lighter mint at the same
+   hue: 5.30:1 and 5.72:1. Still green, now legible.
+   The status text is split into child spans (.v2-fi-st2 / inner spans)
+   that carry their own colour, so every rule has to name the children too
+   or the glyphs keep the old ink. Two id-levels of specificity so this
+   lands over the per-airline blocks further up and over gids-v218.78.css,
+   which loads after this file. */
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.ontime,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.ontime .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.scheduled,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.scheduled .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.arrived,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.arrived .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-scheduled,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-early,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-ontime,
+html:not(#_) body:not(#_) .g8-bir-cell .g8-bir-st-ok .g8-bir-st2,
+html:not(#_) body:not(#_) .g8-bir-val .g8-bir-st-ok .g8-bir-st2 {
+  color: #A7F3D0 !important;
+}
+/* Urgency states, lifted to the same legibility floor on the dark shelves. */
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.delayed,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.delayed .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-delayed {
+  color: #FFD98A !important;
+}
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.cancelled,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.cancelled .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled {
+  color: #FFB3B3 !important;
+}
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.boarding,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.boarding .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.final,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.final .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
+  color: #CFE4FF !important;
+}
+
+/* ── v22640: THE TIME BLOCK WAS UNREADABLE ON THE BAGS AND GATE BOARDS.
+   Nick, with a photo of the bags board: 'these are almost not visible,
+   the right side, for time — both bags and gate need adjusting.'
+
+   Measured on the live boards: the header time text is white, and it sat
+   at 2.10:1 on the bags/FIDS banner and 3.54:1 on the WestJet gate tab.
+   Both under the floor, and the bags one is barely there at all.
+
+   The cause is not the ink — it is the silk overlay underneath it. Those
+   layers paint the JPEG with mix-blend-mode:screen, and screen over a
+   saturated red clips the red channel immediately: the Acadian flag's
+   #D21034 lifts to a pale pink around L=0.44, so white has nothing left
+   to contrast against. This is the exact failure already diagnosed on the
+   gate tab in v22617, where the fix was to bake the art's luminance into
+   an alpha PNG and paint it as plain white ink with no blend mode.
+
+   Applying that same proven fix here. The swirls stay — Nick asked for
+   them and they are still visible as white ink — but the base colour is
+   no longer lifted, so the red returns to true and white text reads
+   against it again. */
+html body .fids-banner::before,
+html body .g8-r1::before,
+html body .g8-r1-timebox::before,
+html body .octb-wrap::before {
+  background-image: url("/logos/Backgrounds/banner-silk-alpha.png?v=1") !important;
+  mix-blend-mode: normal !important;
+  opacity: .30 !important;
+}
+/* The date rode at 85% alpha, which cost it a further half-stop against a
+   banner that had none to give. Full strength now. */
+html body:not(#_) .fids-banner .fids-banner-date,
+html body:not(#_) .fids-banner .fids-banner-date .cl-sep {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ── v22642: THE GATE TIME TAB GETS THE SAME FLOOR. Nick said BOTH bags
+   and gate. The bags side is fixed by the plate above; the gate tab is
+   airline-tinted, so its contrast swings with the carrier — measured
+   3.86:1 on WestJet's steel blue against 5.26:1 on Air Canada's graphite.
+   Rather than re-ink per carrier, a navy scrim inside the tab pulls every
+   livery down to a consistent dark base. The airline tint still shows
+   through it, so the tab stays that carrier's; white just stops depending
+   on which one it is. Measured after: WestJet ~6.5:1. */
+/* The scrim has to sit ABOVE the silk, not below it. An inset shadow paints
+   under the ::before silk layer, which then lifted the tab back up -- it only
+   reached 4.38:1 that way. ::after shares the silk's stacking level but paints
+   after it, and still sits below the content at z-index 1. */
+html body:not(#_) .octb-wrap::after,
+html body:not(#_) .g8-r1-timebox::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
+  background: rgba(13, 36, 64, 0.42) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  border-radius: inherit;
+}
+
+/* ── v22644: THE PLATE COMES OFF. Nick: 'no I dont want that, that plate
+   it ruins the flag'. Fair — it was a box sitting on the Acadian flag.
+
+   Removed. But the legibility problem it solved is real, so it needs a
+   different answer. The block is pinned at right:90px and spans roughly
+   75%-95% of the banner width, while the gradient only reaches full
+   #D21034 at 82%. So its left third sat in the white-to-red fade, where
+   white measured 2.41:1 — that fade, not the red, was the problem.
+
+   White on the SATURATED red measures 5.43:1 and is fine. So instead of
+   covering the flag, the red band simply arrives earlier: full red by 70%,
+   which puts the whole time block on solid colour. The flag still reads
+   blue → white → red, the star and proportions are untouched, and nothing
+   is laid over the top of it. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner {
+    background: linear-gradient(100deg,
+      #003DA5 0%, #003DA5 18%, #ffffff 43%, #ffffff 55%,
+      #D21034 70%, #D21034 100%) !important;
+  }
+  /* White throughout the block, at full strength — the 85% alpha on the
+     date cost it a further half-stop it could not spare. */
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-time,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-analog {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ── v22645: FADE THE SWIRLS OFF THE CLOCK, NOT OFF THE BANNER.
+   With the plate gone and the red band widened, white reached only 2.92:1
+   — because the silk layer is white ink at .30, and painting it over the
+   red lifts it (measured 221,80,106 where the flag's own red is 210,16,52).
+   The swirls were the last thing standing between the clock and a readable
+   backdrop.
+
+   Turning them down everywhere would cost the look Nick asked for, so
+   instead the silk carries a horizontal ramp: full strength across the
+   left and middle where it is purely decorative, fading out under the
+   time block on the right. The swirls stay where they are seen and the
+   red stays true where it has to carry text. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::before {
+  -webkit-mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 60%,
+    rgba(0,0,0,0.25) 72%, rgba(0,0,0,0.06) 80%, rgba(0,0,0,0.06) 100%) !important;
+  mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 60%,
+    rgba(0,0,0,0.25) 72%, rgba(0,0,0,0.06) 80%, rgba(0,0,0,0.06) 100%) !important;
+}
+
+/* ── v22646: FINISH THE JOB ON THE BANNER CLOCK. v22645 got white to
+   3.80:1 under the time block. The 44px clock clears its floor easily at
+   that value, but the 14px labels and 16px date need 4.5:1, so they were
+   still short. Two changes, both of which Nick has asked for separately.
+
+   First, the swirl ramp now goes to zero under the block rather than 6%,
+   so the red beneath the text is the flag's own #D21034 with nothing on
+   top of it lifting it.
+
+   Second, the bilingual labels and the date come up in size. Nick, on the
+   gate rail earlier: 'put your text bigger and closer together for
+   bilingual' — the same applies here, and it is the reason those two lines
+   were held to a stricter contrast floor than everything around them. At
+   19px bold they clear the large-text floor as well as reading better. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::before {
+  -webkit-mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 58%,
+    rgba(0,0,0,0.18) 70%, rgba(0,0,0,0) 78%, rgba(0,0,0,0) 100%) !important;
+  mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 58%,
+    rgba(0,0,0,0.18) 70%, rgba(0,0,0,0) 78%, rgba(0,0,0,0) 100%) !important;
+}
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel,
+  html body[data-fids-banner="silk"]:not(#_) .fids-banner-tlabel {
+    font-size: 19px !important;
+    line-height: 1.06 !important;
+    font-weight: 800 !important;
+  }
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-date,
+  html body[data-fids-banner="silk"]:not(#_) .fids-banner-date {
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    margin-top: 3px !important;
+  }
+}
+
+/* ── v22647: THE SECOND SILK LAYER WAS STILL LIFTING THE RED. Masking
+   ::before got white to 3.82:1 but no further, because the banner carries
+   TWO silk layers — ::before and ::after — and only one of them had the
+   ramp. ::after is still the JPEG at screen blend, which is precisely the
+   combination that washes a saturated red out.
+
+   Both layers now share the same ramp, and it reaches zero by 72% so the
+   whole time block (which starts around 74%) sits on the flag's own red
+   with nothing over it. The swirls are untouched across the left and
+   middle of the band, which is where they read anyway. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::after,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::after {
+  -webkit-mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.30) 64%, rgba(0,0,0,0) 72%, rgba(0,0,0,0) 100%) !important;
+  mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.30) 64%, rgba(0,0,0,0) 72%, rgba(0,0,0,0) 100%) !important;
+}
+
+/* ── v22648: LIFT THE BANNER'S CONTENT ABOVE THE SILK. Caught while
+   verifying the clock: the YQM wordmark in the white middle of the flag
+   had gone pale and hard to read.
+
+   My own doing, in v22640. Switching the silk to alpha-baked white ink
+   means it now paints white at 30% over whatever is beneath it — and the
+   silk pseudo carries z-index:0, which makes it a positioned layer that
+   paints ABOVE the banner's non-positioned children. So the airport
+   wordmark was being washed by 30% white. On the blue field it went
+   unnoticed because the text there is white anyway; on the white middle,
+   against a navy wordmark, it was obvious.
+
+   The codebase already solves this elsewhere — `.octb-wrap > *` and
+   `.g8-r1-right > *` both lift their content to z-index 1 above the same
+   art. The banner never got the same treatment. Giving it that keeps the
+   swirls exactly where they are and puts the content back on top of them,
+   rather than masking the art away to protect the logo. */
+html body:not(#_) .fids-banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── v22649: THE AIRPORT WORDMARK IS WHITE ON THE WHITE OF THE FLAG.
+   Probed live: .fids-airport-pill and both its lines compute
+   rgb(255,255,255), and no stylesheet rule inks them at all — the white is
+   simply inherited from the banner. On the Acadian band that puts the YQM
+   wordmark and the airport's full name in white directly on the white
+   centre stripe, which is why they read as a ghost.
+
+   Both silk themes have a light centre, so the identity goes navy there —
+   the same #0d2440 the rest of the light-banner furniture already uses.
+   Scoped to the silk themes only; a dark banner still wants white. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-airport-pill,
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-airport-pill .fids-airport-text,
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-airport-pill .fids-airport-iata,
+html body[data-fids-banner="silk"]:not(#_) .fids-airport-pill,
+html body[data-fids-banner="silk"]:not(#_) .fids-airport-pill .fids-airport-text,
+html body[data-fids-banner="silk"]:not(#_) .fids-airport-pill .fids-airport-iata {
+  color: #0d2440 !important;
+}
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-airport-pill .fids-airport-name,
+html body[data-fids-banner="silk"]:not(#_) .fids-airport-pill .fids-airport-name {
+  color: #24344f !important;
 }
