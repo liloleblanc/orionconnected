@@ -17010,7 +17010,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22643';
+var FIDS_BUILD_TAG = 'v22644';
 (function(){
   try {
     function _addTag(){
@@ -31693,3 +31693,45 @@ setInterval(function () {
     if (typeof applyAirportConfigToBoard === 'function') applyAirportConfigToBoard(iata);
   } catch (e) {}
 }, 60000);
+
+// ── ROW-LOCKED BOARD PATTERN ────────────────────────────────────────────────
+// Nick: 'it could work if each row was aligned to a line on the pattern'.
+// The asa-no-ha tile carries a horizontal rule every 103.8px of its own
+// 1039px height — exactly ten rules per tile. Scale the tile so those ten
+// rules span exactly ten board rows and start it on the first row's top
+// edge, and every rule lands on a row boundary: the pattern stops competing
+// with the rows and starts drawing them.
+//
+// The numbers are MEASURED, not written down. Row pitch is 66px and the
+// first row starts at 165.5px on a 1080p board, but both come from the row
+// fitter and change with screen height — a hard-coded 660/165.5 would look
+// right on the screens I tested and drift on the next one. This reads the
+// live geometry and only writes when it actually changes, so there is no
+// per-frame style churn.
+(function () {
+  var PERIODS = 10;              // horizontal rules per tile
+  var last = '';
+  function sync() {
+    try {
+      var t = document.getElementById('fidsTable');
+      if (!t) return;
+      var rows = t.tBodies[0] && t.tBodies[0].rows;
+      if (!rows || rows.length < 2) return;
+      var a = rows[0].getBoundingClientRect();
+      var b = rows[1].getBoundingClientRect();
+      var pitch = b.top - a.top;
+      if (!(pitch > 8)) return;                       // mid-render garbage
+      var key = Math.round(a.top * 2) + '|' + Math.round(pitch * 2);
+      if (key === last) return;
+      last = key;
+      var s = document.body.style;
+      s.setProperty('--fids-pat-h', (pitch * PERIODS) + 'px');
+      s.setProperty('--fids-pat-y', a.top + 'px');
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', sync);
+  } else { sync(); }
+  setInterval(sync, 1000);
+  window.addEventListener('resize', sync);
+})();

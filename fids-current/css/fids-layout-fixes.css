@@ -5220,10 +5220,10 @@ html body .g8-bir-cell .g8-bir-val {
    not something to disturb for a hairline. */
 html body #fidsBoard:not(#_),
 html body #fidsTable tbody tr:not(#_) {
-  background-image: url("/logos/Backgrounds/fids-geo-lines.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
   background-attachment: fixed !important;
-  background-position: center 128px !important;
-  background-size: 300px 300px !important;
+  background-position: center var(--fids-pat-y, 165.5px) !important;
+  background-size: auto var(--fids-pat-h, 660px) !important;
   background-repeat: repeat !important;
   background-blend-mode: multiply !important;
 }
@@ -5304,10 +5304,10 @@ html body #fidsTable tbody tr:not(#_) > td {
    (132,10,29), and the white lettering goes from 7.89:1 to 10.27:1. */
 html:not(#_) body:not(#_) #fidsTable tbody tr.row-delayed td,
 html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
-  background-image: url("/logos/Backgrounds/fids-geo-lines.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
   background-attachment: fixed !important;
-  background-position: center 128px !important;
-  background-size: 300px 300px !important;
+  background-position: center var(--fids-pat-y, 165.5px) !important;
+  background-size: auto var(--fids-pat-h, 660px) !important;
   background-repeat: repeat !important;
   background-blend-mode: multiply !important;
 }
@@ -5339,10 +5339,10 @@ html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
    lettering, 7.89:1 to 10.27:1. */
 html:not(#_) body.fids-light-board:not(#_) #fidsBoard,
 html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr {
-  background-image: url("/logos/Backgrounds/fids-geo-lines.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
   background-attachment: fixed !important;
-  background-position: center 128px !important;
-  background-size: 300px 300px !important;
+  background-position: center var(--fids-pat-y, 165.5px) !important;
+  background-size: auto var(--fids-pat-h, 660px) !important;
   background-repeat: repeat !important;
   background-blend-mode: multiply !important;
 }
@@ -5373,3 +5373,30 @@ html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr {
    bare: the pattern makes those rows MORE legible, not less.
 
    The three world-map files are deleted; nothing references them. */
+
+/* ── v22644: THE PATTERN IS LOCKED TO THE ROWS. Nick: 'it could work if
+   each row was aligned to a line on the pattern or if it was bigger maybe
+   lighter'. All three, and the alignment is the one that makes it work.
+
+   The asa-no-ha tile carries a horizontal rule every 103.8px of its own
+   1039px height — measured off the file, exactly ten rules per tile, no
+   remainder. Scale the tile so those ten rules span exactly ten board rows
+   and start it on the first row's top edge, and every rule falls on a row
+   boundary. The pattern stops cutting across the rows and starts drawing
+   them, which is also the row definition Nick asked for a while back.
+
+   --fids-pat-h and --fids-pat-y come from JS measuring the live table, not
+   from constants. Row pitch is 66px and the first row starts at 165.5px on
+   a 1080p board, so the tile lands at 660px tall — but both numbers come
+   out of the row fitter and move with screen height. Hard-coding them would
+   look right on the screens I tested and drift on the next one. The values
+   in the fallbacks are only there for the frame before JS first runs.
+
+   BIGGER: the rule spacing goes from 30px on screen to 66px, so the motif
+   is 2.2x the size it was.
+
+   LIGHTER: the ink drops from 0.40 to 0.30 over white.
+
+   Both together on the delayed row's dark text: still clear of the 4.5
+   floor, and on the dark rows the linework only darkens, so white
+   lettering gains contrast rather than losing it. */
