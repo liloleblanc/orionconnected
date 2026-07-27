@@ -5505,3 +5505,28 @@ html body[data-fids-banner="silk"]:not(#_) .fids-banner::after {
     rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
     rgba(0,0,0,0.80) 66%, rgba(0,0,0,0.62) 74%, rgba(0,0,0,0.62) 100%) !important;
 }
+
+/* ── v22654: TUNE THE RAMP TO THE AGREED NUMBER. v22653 set the floor at
+   62% and measured 3.04:1 on the clock — right on the limit, tighter than
+   the ~3.3:1 quoted when Nick picked the middle ground. Swept the floor on
+   the live banner:
+
+     0.62 -> 3.04:1, sheen 0.112
+     0.52 -> 3.37:1, sheen 0.086   <-
+     0.44 -> 3.69:1, sheen 0.066
+     0.28 -> 4.33:1, sheen 0.036
+
+   0.52 is the value that matches what was actually agreed. 0.44 would buy
+   more margin for very little visible sheen, but the number quoted was
+   3.3:1 and that is what this delivers. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::after,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::after {
+  -webkit-mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.68) 66%, rgba(0,0,0,0.52) 74%, rgba(0,0,0,0.52) 100%) !important;
+  mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.68) 66%, rgba(0,0,0,0.52) 74%, rgba(0,0,0,0.52) 100%) !important;
+}
