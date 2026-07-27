@@ -16694,7 +16694,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22624';
+var FIDS_BUILD_TAG = 'v22625';
 (function(){
   try {
     function _addTag(){
@@ -28027,11 +28027,19 @@ function _adBackdropHtml(blurUrl) {
       if (f.dataset.acc !== _bdAcc) {
         f.dataset.acc = _bdAcc;
         var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
+        var _wMask = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
+        // Second line in the carrier's second colour, same as the ad frame.
+        var _wSec = '';
+        try {
+          var _wAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+          if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
+          else _wSec = '#34373d';
+        } catch (e) { _wSec = '#34373d'; }
         f.innerHTML =
             '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
-          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;'
-          +   '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;'
-          +   'mask-image:url(' + _fa + ');mask-size:100% 100%;"></div>';
+          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
+          + '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.92;'
+          +   'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _wMask + '"></div>';
       }
     } catch (e) {}
   }
@@ -28093,12 +28101,26 @@ function _adTechFrameHtml() {
     if (_fAl && AIRLINE_ACCENT2[_fAl]) _fAcc = AIRLINE_ACCENT2[_fAl];
     else if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = '#34373d';
   } catch (e) {}
+  // Nick: 'theres 2 lines around, first outerline should be red the
+  // second gray'. The art carries a double-line motif, so it takes TWO
+  // tints: the primary over the whole frame, then the secondary clipped
+  // to the inside of the outer band so only the second line changes.
+  // The band measures 1.09% of width / 1.68% of height.
+  var _fPri = '';
+  try {
+    var _fAl2 = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+    if (_fAl2 && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl2]) _fPri = AIRLINE_ACCENT[_fAl2];
+  } catch (e) {}
   var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
-  var _tint = _fAcc
-    ? '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.82;'
-      + '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;'
-      + 'mask-image:url(' + _fa + ');mask-size:100% 100%;"></div>'
-    : '';
+  var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
+  var _tint = '';
+  if (_fPri) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;' + _maskCss + '"></div>';
+  }
+  if (_fAcc) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.92;'
+      + 'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _maskCss + '"></div>';
+  }
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
     +   '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
