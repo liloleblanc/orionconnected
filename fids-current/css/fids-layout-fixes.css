@@ -4611,3 +4611,24 @@ html body .g8-r1-timebox::before, html body .octb-wrap::before {
   border-radius: inherit;
 }
 html body .g8-r1-timebox > *, html body .octb-wrap > * { position: relative; z-index: 1; }
+
+/* ── v22612: the GATE tab carries the design too (Nick: 'please also add
+   design to the gate') — completing the top band: banner, time tab and
+   now the gate block all wear the silk. The tab paints its accent via
+   an inline background, so the art rides a ::before above it and below
+   the 'Gate | Porte' label and number. */
+html body .g8-r1-right::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
+  background-image: url("/logos/Backgrounds/banner-silk.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  mix-blend-mode: screen !important;
+  opacity: .44 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  border-radius: inherit;
+}
+html body .g8-r1-right > * { position: relative; z-index: 1; }
