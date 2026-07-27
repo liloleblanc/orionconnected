@@ -5038,3 +5038,26 @@ html body .g8-r1-apmark img {
     color: #ffffff !important;
   }
 }
+
+/* ── v22633: MONCTON'S TIME BLOCK GOES NAVY. Nick picked #1C2A39 from three
+   recommendations, measured against the band it actually sits on.
+
+   What it replaces: white, at 2.02:1 — the invisible clock he photographed.
+   Navy measures 3.66:1 at the worst point of the gradient and 7.23:1 at the
+   best.
+
+   One thing that is honest to record rather than quietly fix: 3.66 clears
+   the floor for the 44px clock, which needs 3.0, but the two 14px label
+   lines and the 16px date need 4.5 and are short by 0.84. Their SIZE is why,
+   not the colour — at 19px bold they would clear it on the same ink. Left as
+   chosen; the sizing is a separate change and his call. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-time,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-analog {
+    color: #1C2A39 !important;
+    opacity: 1 !important;
+  }
+}
