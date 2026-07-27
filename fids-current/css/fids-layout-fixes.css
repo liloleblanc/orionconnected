@@ -5088,3 +5088,35 @@ html body .g8-r1-apmark img {
     margin-top: 3px !important;
   }
 }
+
+/* ── v22635: THE BOARDING-STRIP VALUES SIT INSIDE THEIR TILE AGAIN.
+   Nick, on the YQM WestJet gate: 'these panels the text is not even in its
+   box'. Two separate faults, both measured on the live board:
+
+   1. DESCENDERS WERE BEING SLICED. .g8-bir-val carried line-height 1.02
+      with overflow:hidden. At the fitted size (74.7px for 'Calgary') the
+      line box is 76px but the font's own content box is ~89px, so the
+      half-leading goes NEGATIVE and the tails of the g and the y hang
+      6-7px below the box the overflow rule then clips. 1.16 is the first
+      value where the rendered text box sits fully inside the value box —
+      verified per cell, every cutTop/cutBottom now negative (inside).
+
+   2. THE TEXT RAN INTO THE TILE EDGE. The fitter shrinks while
+      scrollWidth > clientWidth, which lands the longest values FLUSH with
+      the box — 8px from the tile border for 'Calgary', 9px for
+      'Embarquement', against 85px of inset on the icon side. A 16px right
+      margin on the VALUE gives the fitter that much less to fill, so it
+      settles with 25-36px of clearance instead.
+
+   The margin goes on the value and NOT on .g8-bir-text: putting it on the
+   column narrows the label row too, and 'Boarding | Embarquement' promptly
+   ellipsised to 'Embarquem…'.
+
+   Row height is unchanged — 177px measured before and after. */
+html body .g8-bir-cell .g8-bir-val,
+html body .g8-bir-cell:last-child .g8-bir-val {
+  line-height: 1.16 !important;
+}
+html body .g8-bir-cell .g8-bir-val {
+  margin-right: 16px !important;
+}
