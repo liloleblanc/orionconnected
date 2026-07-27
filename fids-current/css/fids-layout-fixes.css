@@ -5311,3 +5311,39 @@ html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
   background-repeat: no-repeat !important;
   background-blend-mode: multiply !important;
 }
+
+/* ── v22642: LIGHT GROUNDS GET THE BLUE MAP. Nick: 'I think the issue is
+   between the dark and light backgrounds — I suggest this one for lighter
+   background and the other one for a darker.' He is right about the cause.
+
+   A darkening map (black dots, multiply) is correct on a DARK ground: it
+   deepens the surface and white lettering gains contrast. On a LIGHT ground
+   the same map is what put dark text on a near-black dot at 2.47:1.
+
+   The blue-circle map is the light-ground answer, still multiply so the
+   surface colour survives exactly. Measured on the live delayed row with
+   its dark ink, at four strengths of the blue over white:
+
+     0.25   dark text in a circle  8.34:1
+     0.40                          8.16:1
+     0.55                          8.04:1     <- ships
+     0.75                          7.83:1
+
+   Every one is safe, because blue circles are mid-tone and cannot crush a
+   light ground the way black dots do. 0.55 is the most visible of the safe
+   set. Compare the black map on this same yellow: 2.47:1.
+
+   Applies to the two light grounds on the board — a light-board theme, and
+   the delayed row's yellow wherever it appears. Cancelled stays on the dark
+   map: #A50D24 is a dark ground and multiply only lifts its white
+   lettering, 7.89:1 to 10.27:1. */
+html:not(#_) body.fids-light-board:not(#_) #fidsBoard,
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-delayed td {
+  background-image: url("/logos/Backgrounds/fids-worldmap-blue.jpg?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center 128px !important;
+  background-size: auto calc(100vh - 186px) !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+}
