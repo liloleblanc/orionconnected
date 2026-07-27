@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22636';
+var FIDS_BUILD_TAG = 'v22637';
 (function(){
   try {
     function _addTag(){
@@ -28062,20 +28062,43 @@ function _adBackdropHtml(blurUrl) {
       }
       // Frame matches the airline (Nick): the silver art re-hued by the
       // accent via a masked multiply layer; rebuilt only on accent change.
-      if (f.dataset.acc !== _bdAcc) {
-        f.dataset.acc = _bdAcc;
+      // Second line in the carrier's second colour. Computed BEFORE the
+      // rebuild guard and folded into the cache key: two carriers can share a
+      // primary and differ on the secondary, and keying on the primary alone
+      // left the second line stuck on the previous carrier's colour.
+      var _wSec = '';
+      try {
+        var _wAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+        if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
+        else _wSec = '#AEB4BC';
+      } catch (e) { _wSec = '#AEB4BC'; }
+      if (f.dataset.acc !== _bdAcc + '|' + _wSec) {
+        f.dataset.acc = _bdAcc + '|' + _wSec;
         var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
         var _wMask = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
-        // Second line in the carrier's second colour, same as the ad frame.
-        var _wSec = '';
-        try {
-          var _wAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-          if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
-          else _wSec = '#AEB4BC';
-        } catch (e) { _wSec = '#AEB4BC'; }
+        // Nick, repeatedly: 'theres 2 lines around, first outerline should be
+        // red the second gray' — and then 'you didnt do it right, its the
+        // inner and second frame'. He was right: there is only ONE frame
+        // element, and the two lines he sees are both drawn by this single
+        // piece of art, so one tint over the whole thing painted BOTH lines
+        // red. Measured on the asset, the outer line occupies 0–1.035% of
+        // width / 0–1.599% of height, the second line 1.76–2.74% / 2.72–4.24%,
+        // with a transparent gap between them. Splitting at the middle of
+        // that gap (1.40% / 2.16%) separates the two cleanly.
+        // Rather than punch a hole in the primary layer, the second line is a
+        // FRESH copy of the same art, tinted with the secondary and clipped to
+        // the inside of the outer band — it paints over the primary copy at
+        // identical geometry, so the lines can never drift apart.
+        var _artDiv = '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>';
         f.innerHTML =
-            '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
-          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>';
+            '<div style="position:absolute;inset:0;isolation:isolate;">'
+          +   _artDiv
+          +   '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
+          + '</div>'
+          + '<div style="position:absolute;inset:0;isolation:isolate;clip-path:inset(2.16% 1.40%);">'
+          +   _artDiv
+          +   '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.9;' + _wMask + '"></div>'
+          + '</div>';
       }
     } catch (e) {}
   }
@@ -28149,15 +28172,28 @@ function _adTechFrameHtml() {
   // gray/light for Air Canada. v22625 washed the primary over this whole
   // frame as well, which put the red straight back. The outer wall frame
   // carries the primary; this one carries only the secondary.
+  var _fPri = '';
+  try {
+    var _pAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+    if (_pAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_pAl]) _fPri = AIRLINE_ACCENT[_pAl];
+  } catch (e) {}
   var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
-  var _tint = _fAcc
-    ? '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>'
+  var _artDiv = '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>';
+  // Same split as the wall frame: outer line primary, second line secondary.
+  var _outer = _fPri
+    ? '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;' + _maskCss + '"></div>'
+    : '';
+  var _inner = _fAcc
+    ? '<div style="position:absolute;inset:0;isolation:isolate;clip-path:inset(2.16% 1.40%);">'
+      +   _artDiv
+      +   '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>'
+      + '</div>'
     : '';
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
-    +   '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
-    +   _tint
+    +   '<div style="position:absolute;inset:0;isolation:isolate;">' + _artDiv + _outer + '</div>'
+    +   _inner
     + '</div>';
 }
 

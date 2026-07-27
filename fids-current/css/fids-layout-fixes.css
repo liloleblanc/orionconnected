@@ -5104,43 +5104,48 @@ html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.v2-
    two rounds ago while keeping white lettering at 7.7:1 — going fully
    light would have broken every white label we just fixed. */
 
-/* ── v22636: THE GREEN GOES. Nick: 'that green needs to go you can't read
-   it'. Two things were wrong. The status text is split into child spans
-   (.v2-fi-st2) that carry their own rgb(34,197,94), so every rule aimed
-   at the parent left them untouched. And green is the worst possible
-   status hue here — it sits at nearly the same luminance as the gray
-   shelf and the teal slab, so no shade of it reads well.
-   On Time / Scheduled / Arrived now render WHITE like the rest of the
-   rail. Urgency states keep colour, because those must stand out and
-   amber and red separate cleanly from both backgrounds. */
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.ontime,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.ontime .v2-fi-st2,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.scheduled,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.scheduled .v2-fi-st2,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.arrived,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.arrived .v2-fi-st2 {
-  color: #ffffff !important;
+/* ── v22637: THE GREEN STAYS — IT JUST HAS TO BE READABLE. Nick, correcting
+   me: 'I never asked for the status to be white. I said you can't see it.'
+   Right. Measured on the live gate, the old #34d399 sat at 3.53:1 on the
+   gray shelf and 3.82:1 on the right card — under the 4.5:1 floor, which
+   is exactly why it read as mush. The fix is a lighter mint at the same
+   hue: 5.30:1 and 5.72:1. Still green, now legible.
+   The status text is split into child spans (.v2-fi-st2 / inner spans)
+   that carry their own colour, so every rule has to name the children too
+   or the glyphs keep the old ink. Two id-levels of specificity so this
+   lands over the per-airline blocks further up and over gids-v218.78.css,
+   which loads after this file. */
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.ontime,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.ontime .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.scheduled,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.scheduled .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.arrived,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.arrived .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-scheduled,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-early,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-i3val.v2-rc-status-ontime,
+html:not(#_) body:not(#_) .g8-bir-cell .g8-bir-st-ok .g8-bir-st2,
+html:not(#_) body:not(#_) .g8-bir-val .g8-bir-st-ok .g8-bir-st2 {
+  color: #A7F3D0 !important;
 }
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.delayed,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.delayed .v2-fi-st2 {
-  color: #FFD35C !important;
+/* Urgency states, lifted to the same legibility floor on the dark shelves. */
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.delayed,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.delayed .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-delayed {
+  color: #FFD98A !important;
 }
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.cancelled,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.cancelled .v2-fi-st2 {
-  color: #FF9E9E !important;
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.cancelled,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.cancelled .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled {
+  color: #FFB3B3 !important;
 }
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.boarding,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.boarding .v2-fi-st2,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.final,
-html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.final .v2-fi-st2 {
-  color: #BFDCFF !important;
-}
-/* Same treatment on the right card and the boarding strip, whose status
-   text is split into its own child spans too. */
-html body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
-html body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-scheduled,
-html body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived,
-html body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-status-ontime .v2-rc-fi-sep,
-html body:not(#_) .g8-bir-cell .g8-bir-st-ok .g8-bir-st2 {
-  color: #ffffff !important;
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.boarding,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.boarding .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.final,
+html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.final .v2-fi-st2,
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
+  color: #CFE4FF !important;
 }
