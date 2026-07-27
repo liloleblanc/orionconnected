@@ -5776,3 +5776,55 @@ html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted .bidsv2-airline
   -webkit-text-fill-color: #ffffff !important;
   opacity: 1 !important;
 }
+
+/* ── v22661: THE BAGGAGE BANNER JOINS THE OTHERS, AND THE LONE BLUE BAG GOES.
+   Nick: 'This also needs change like others — Time in Orlando / Heure à
+   Orlando / 4:35PM. The blue bag alone is atrocious.' Plus 'slightly
+   lighter' on the bags pattern.
+
+   WHY THE BAGGAGE BANNER WAS LEFT OUT. Every palette rule targets
+   `.fids-banner`. The baggage screen's banner is `.bidsv2-fids-banner` — a
+   different class on a different element — so it never matched. The board
+   and gate banners took the airport's logo colours and the white time-block
+   ink; baggage kept the old treatment and drifted out of the set. The
+   selectors now name both, so the same airport reads the same on all three
+   screens.
+
+   THE LONE BLUE BAG. The glyph is hard-coded `#003DA5` — a royal blue that
+   belongs to no airport in particular, sitting by itself on a band made of
+   the airport's own colours. On Orlando's orange it is the one element that
+   matches nothing. It takes the same white as the board label beside it, so
+   the icon and its words read as one lockup.
+
+   BAGS PATTERN: 0.34 -> 0.26. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner {
+    background: linear-gradient(100deg,
+      var(--fids-band-1) 0%, var(--fids-band-1) 11%,
+      var(--fids-band-2) 24%,
+      #ffffff 39%, #ffffff 54%,
+      var(--fids-band-3) 62%,
+      var(--fids-band-4) 68%, var(--fids-band-4) 100%) !important;
+  }
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-time,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-tlabel,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-date,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-date .cl-sep,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-analog,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-board-label {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner::before,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner::before {
+    mix-blend-mode: overlay !important;
+    opacity: .80 !important;
+  }
+}
+/* the bag glyph stops being the one thing on the banner that matches nothing */
+html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
+  color: #ffffff !important;
+}
+html:not(#_) body[data-fids-banner="silk-acadian"]:not(#_) .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
+  color: #ffffff !important;
+}
