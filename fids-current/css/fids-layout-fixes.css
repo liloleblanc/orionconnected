@@ -4962,3 +4962,25 @@ html body .g8-r1-apcode {
   color: #ffffff !important;
   line-height: 1 !important;
 }
+
+/* ── v22621: the last dark-on-dark text, found by auditing every text
+   node's contrast against its real background rather than hunting one
+   element at a time (Nick: 'cant see numbers all that is dark blue on
+   dark blue'). Measured on a dark carrier:
+     'Aircraft image pending'  rgb(36,54,75)  on the shelf → 1.7:1
+     'Operated By | Exploite'  rgb(10,10,10)  on the shelf → 1.1:1
+     BIDS airport code / name  rgb(13,36,64)  on the banner → 1.8:1 */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus *,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-type,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-type *,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-pending,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-pending *,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl,
+html body .g8-wrap .gad-aircraft-col .v2-rc-aircraft-pending {
+  color: #ffffff !important;
+}
+html body:not(#_) .fids-airport-iata,
+html body:not(#_) .fids-airport-name {
+  color: #ffffff !important;
+}
