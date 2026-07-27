@@ -3297,7 +3297,7 @@ var WATERMARK_OVERRIDE = {
   'DL': '/logos/airlines/us-major/delta-on-black.svg',
   'UA': '/logos/airlines/us-major/united.svg',
   'AS': '/logos/airlines/us-major/alaska-airlines-wordmark-light.svg',
-  'B6': '/logos/airlines/us-major/jetblue-wordmark-light.svg?v=22369',
+  'B6': '/logos/airlines/us-major/jetblue-wordmark-light.svg?v=22648',
   // NK (Spirit) — ceased operations May 2 2026
   'WN': '/logos/airlines/us-major/southwest-wordmark-light.svg',
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',
@@ -17019,7 +17019,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22647';
+var FIDS_BUILD_TAG = 'v22648';
 (function(){
   try {
     function _addTag(){
