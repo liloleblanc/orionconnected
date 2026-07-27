@@ -5322,3 +5322,25 @@ html body[data-fids-banner="silk"]:not(#_) .fids-banner::after {
     rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
     rgba(0,0,0,0.30) 64%, rgba(0,0,0,0) 72%, rgba(0,0,0,0) 100%) !important;
 }
+
+/* ── v22648: LIFT THE BANNER'S CONTENT ABOVE THE SILK. Caught while
+   verifying the clock: the YQM wordmark in the white middle of the flag
+   had gone pale and hard to read.
+
+   My own doing, in v22640. Switching the silk to alpha-baked white ink
+   means it now paints white at 30% over whatever is beneath it — and the
+   silk pseudo carries z-index:0, which makes it a positioned layer that
+   paints ABOVE the banner's non-positioned children. So the airport
+   wordmark was being washed by 30% white. On the blue field it went
+   unnoticed because the text there is white anyway; on the white middle,
+   against a navy wordmark, it was obvious.
+
+   The codebase already solves this elsewhere — `.octb-wrap > *` and
+   `.g8-r1-right > *` both lift their content to z-index 1 above the same
+   art. The banner never got the same treatment. Giving it that keeps the
+   swirls exactly where they are and puts the content back on top of them,
+   rather than masking the art away to protect the logo. */
+html body:not(#_) .fids-banner > * {
+  position: relative;
+  z-index: 1;
+}
