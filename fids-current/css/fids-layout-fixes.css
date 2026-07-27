@@ -5185,3 +5185,55 @@ html body .g8-bir-cell .g8-bir-val {
     opacity: .18 !important;
   }
 }
+
+/* ── v22638: NICK'S DOT PATTERN ON THE FIDS BOARD, AND ROWS THAT HAVE EDGES.
+   Two things he asked for together: 'try the last pattern I sent to you'
+   (the blue halftone dot field) and, from earlier, 'there is not a
+   definement of rows and in between such as deviders or lines'. Plus the
+   standing instruction on the last attempt: 'make it go all the way to the
+   bottom the design FIDS well until the yellow line anyway'.
+
+   HOW THE PATTERN GETS SEEN WITHOUT LANDING ON THE TEXT. Every row paints an
+   opaque background-color, so art placed behind the table is invisible and
+   art placed over the table covers the lettering — the two failures the
+   earlier attempts alternated between. The art goes on the ROWS themselves
+   as a background layer: under the text, over the row colour. multiply means
+   the white field is a no-op and only the dots register, so the row keeps its
+   own colour and the dots read as ink on it.
+
+   HOW IT STAYS ONE PICTURE. background-attachment: fixed anchors the art to
+   the viewport rather than to each row, so consecutive rows show consecutive
+   slices of one image instead of each repeating the whole thing. The board
+   itself carries the same layer at the same coordinates, which fills the
+   empty space below the last row — so the field runs unbroken from under the
+   banner to the top of the yellow ticker (128px to 1022px at 1080p, which is
+   exactly the 894px the art is cut to).
+
+   STRENGTH. Composited over white at three strengths and read on the live
+   board: 0.30 was the 'I cant tell its there' of the last attempt, 0.70 had
+   the left-hand clusters competing with the flight numbers. 0.50 ships.
+   Rows are white-on-colour, and the dots only darken, so row contrast goes
+   UP, never down.
+
+   DIVIDERS. inset box-shadow rather than a border — a border would add a
+   pixel to a row height the fitter has already measured, and row sizing is
+   not something to disturb for a hairline. */
+html body #fidsBoard:not(#_) {
+  background-image: url("/logos/Backgrounds/fids-dots-blue.jpg?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center 128px !important;
+  background-size: 1920px 894px !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+}
+html body #fidsTable tbody tr:not(#_) {
+  background-image: url("/logos/Backgrounds/fids-dots-blue.jpg?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center 128px !important;
+  background-size: 1920px 894px !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+}
+html body #fidsTable tbody tr:not(#_) > td {
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.26) !important;
+}
