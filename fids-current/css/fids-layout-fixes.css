@@ -5982,10 +5982,10 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
-    background-image: url("/logos/Backgrounds/fids-lattice.png?v=1") !important;
+    background-image: url("/logos/Backgrounds/fids-hexline.png?v=1") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
-    background-size: auto calc(var(--fids-pat-h, 660px) * 0.8) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
     background-repeat: repeat !important;
     background-blend-mode: multiply !important;
   }
@@ -5994,3 +5994,32 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
     background-image: none !important;
   }
 }
+
+/* ── v22669: HEXAGON OUTLINE REPLACES THE LATTICE, AND THE LATTICE'S REAL
+   PROBLEM RECORDED. Nick: 'I wont lie I dont love it — sorry maybe try
+   this instead'.
+
+   He was right and it was my error, not the artwork's. The lattice tile is
+   SQUARE, 1920x1920. Sizing it to 8 row pitches made it 528px tall and,
+   because the width was auto, 528px WIDE — crushing 1920px of horizontal
+   detail into 528, a 0.275 scale. Its vertical struts collapsed into a
+   barcode. Asa-no-ha survived the same treatment only because it is a wide
+   1920x1039 tile and never compressed below 0.635.
+
+   So the rule I should have applied from the start: check what the vertical
+   lock does to the WIDTH. This tile is 1920x640, a 3:1 wide tile. Locking
+   TEN rows to its height gives 1980x660 — a horizontal scale of 1.03, which
+   is native. No distortion at any board height, and the tile still restarts
+   on a row edge every ten rows, exactly like Orlando's.
+
+   WEIGHT. These are near-black outlines (darkest pixel 20,20,20), so unlike
+   the mid-grey lattice a heavy setting crushes the light rows. Swept
+   against the real colours:
+
+     0.40   delayed dark 3.18   FAILS      cyan white 6.35
+     0.30   delayed dark 4.01   FAILS      cyan white 5.15
+     0.22   delayed dark 4.78   ok         cyan white 4.38   <- ships
+     0.16   delayed dark 5.41   ok         cyan white 3.90
+
+   0.22 is the strongest weight that keeps the delayed row's dark text above
+   4.5, and it still lifts the cyan row from 2.91 bare to 4.38. */
