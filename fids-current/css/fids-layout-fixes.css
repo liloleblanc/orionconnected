@@ -5828,3 +5828,44 @@ html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-board .fids-board-ico
 html:not(#_) body[data-fids-banner="silk-acadian"]:not(#_) .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
   color: #ffffff !important;
 }
+
+/* ── v22662: THE COLUMN HEADER IS A SOLID BAR AGAIN, THE TAIL SURVIVES THE
+   SHEEN, AND BAGS GOES FAINT.
+
+   THE HEADER. Nick circled it: 'the Menu top make more dense'. It is a
+   translucent pill — rgba fills over whatever is behind — so once the
+   baggage list carried a pattern, the pattern showed straight THROUGH the
+   header and the bar stopped reading as a bar. Density is the fix in the
+   literal sense: it becomes opaque, and the pattern is switched off on it
+   so nothing bleeds through the one strip whose whole job is to separate
+   the titles from the data.
+
+   THE CLOCK ON GOLD. Flagged by measurement before Nick saw it: white on
+   Orlando's painted gold is 2.36:1, under the floor even at 44px. The
+   palette's tail guard used 0.183, the threshold for white on a BARE
+   colour — but the band is not bare. The silk sheen sits over it at
+   overlay .80 and lifts it: #a26600 (lum .172) passed the guard and then
+   painted as (207,160,35). Red tails survive the sheen; warm light ones do
+   not. The guard moves to 0.115 in the extractor so the tail is dark enough
+   that white still clears AFTER the sheen. Every airport keeps its own
+   colours — only how deep the last one goes has changed.
+
+   BAGS: 0.26 -> 0.13. The baggage list ground is near-white, so multiply
+   has nothing to sink into and the same ink that whispers on the board's
+   coloured rows shouted here — measured 1.26:1 line-against-ground, which
+   is not texture, it is drawing. */
+html:not(#_) body:not(#_) .bidsv2-list-header {
+  background-image: none !important;
+  background-color: #16202E !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22) !important;
+}
+html:not(#_) body:not(#_) .bidsv2-list-header > * {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
+  background-color: #1B2838 !important;
+}

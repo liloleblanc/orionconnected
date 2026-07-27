@@ -11163,8 +11163,16 @@ function _extractLogoPalette(logoUrl, cb) {
               // 5.17:1 and is left exactly as the logo draws it; an airport
               // whose last colour is a pale yellow would not, so that one
               // gets deepened until it can. Nothing else is touched.
+              // 0.183 is the bare-colour threshold for white at 4.5:1, but the
+              // band is not bare — the silk sheen sits over it at overlay .80
+              // and LIFTS it. Orlando's gold tail passes at #a26600 (lum .172)
+              // and then paints as (207,160,35): white on that measures
+              // 2.36:1, under the floor even for the 44px clock. Red tails
+              // survive the sheen; warm light ones do not. 0.115 leaves the
+              // painted band dark enough that white still clears after the
+              // sheen has had its way.
               var t = ord[3], tg = 0;
-              while (_relLum(t.r, t.g, t.b) > 0.183 && tg++ < 14) {
+              while (_relLum(t.r, t.g, t.b) > 0.115 && tg++ < 18) {
                 t = { r: t.r * 0.9, g: t.g * 0.9, b: t.b * 0.9 };
               }
               ord[3] = t;
@@ -17054,7 +17062,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22661';
+var FIDS_BUILD_TAG = 'v22662';
 (function(){
   try {
     function _addTag(){
