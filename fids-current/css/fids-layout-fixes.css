@@ -5653,13 +5653,27 @@ html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-final td.td-s
 html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-final td.td-status.fids-status-final {
   background: #F28C00 !important;
 }
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td.td-status,
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted td.td-status {
-  background: transparent !important;
+/* v22656b — I put `transparent` here in v22655 and re-created the exact
+   hole I had just fixed: the crimson is on the CELLS, so a transparent
+   status cell falls through to the page, not to the row. The status cell
+   takes the same crimson its siblings have, matched per nth-child. The
+   amber final-status background is also fenced to row-final, which is the
+   only reason a cancelled cell could have been amber in the first place. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled:nth-child(n) td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled:nth-child(n) td.td-status.fids-status-final {
+  background: #A50D24 !important;
 }
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td.td-status.fids-status-final,
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted td.td-status.fids-status-final {
-  background: transparent !important;
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled:nth-child(even) td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled:nth-child(even) td.td-status.fids-status-final {
+  background: #D42341 !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(n) td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(n) td.td-status.fids-status-final {
+  background: #A61B2B !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even) td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even) td.td-status.fids-status-final {
+  background: #DE4B58 !important;
 }
 /* every logo image on a cancelled/diverted row renders white — tile,
    emblem, monogram and wordmark alike */
