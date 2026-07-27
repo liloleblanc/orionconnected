@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22630';
+var FIDS_BUILD_TAG = 'v22631';
 (function(){
   try {
     function _addTag(){
@@ -24384,10 +24384,17 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // Once committed it is reused verbatim for the life of the page.
       var _ready = (m.tagName === 'VIDEO') ? (m.readyState >= 2) : (m.complete && m.naturalWidth > 0);
       if (!_ready) continue;
+      // Key off the CAROUSEL, not the host. The host is the slide wrapper
+      // and it animates in, so bucketing its box minted a fresh cache
+      // entry at each stage of the transition and every entry confirmed
+      // a slightly different rect — which is how two creatives still
+      // hopped after the first fix. The carousel does not animate.
       var _mkey = '';
       try {
+        var _cz = document.getElementById('gateAdCarousel');
+        var _cr = _cz ? _cz.getBoundingClientRect() : hb;
         _mkey = String(m.currentSrc || m.src || '')
-          + '|' + (Math.round(hb.width / 20) * 20) + 'x' + (Math.round(hb.height / 20) * 20);
+          + '|' + (Math.round(_cr.width / 20) * 20) + 'x' + (Math.round(_cr.height / 20) * 20);
       } catch (e) {}
       if (!_mkey) continue;
       var _apply = function (str) {
