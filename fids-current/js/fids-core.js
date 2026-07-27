@@ -11368,6 +11368,15 @@ function renderDedicatedScreen() {
   try {
     var _apClsIata = (document.getElementById('apSel') || {}).value || '';
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+    // General per-airport hook. Only YQM ever had a class, so anything that
+    // needed to target one airport had to hard-code a second one-off. This
+    // carries whatever airport is on screen, so CSS can scope to any of them
+    // without another bespoke class each time.
+    try {
+      var _apAttr = String(_apClsIata).toUpperCase();
+      if (_apAttr) document.body.setAttribute('data-fids-ap', _apAttr);
+      else document.body.removeAttribute('data-fids-ap');
+    } catch (e0) {}
     _applyBannerStyle(_apClsIata, screenType === 'gate' ? 'gids' : 'bids');
   } catch (e) {}
   
@@ -17010,7 +17019,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22645';
+var FIDS_BUILD_TAG = 'v22646';
 (function(){
   try {
     function _addTag(){
@@ -17731,6 +17740,15 @@ function render() {
   try {
     var _apClsIata = (document.getElementById('apSel') || {}).value || '';
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+    // General per-airport hook. Only YQM ever had a class, so anything that
+    // needed to target one airport had to hard-code a second one-off. This
+    // carries whatever airport is on screen, so CSS can scope to any of them
+    // without another bespoke class each time.
+    try {
+      var _apAttr = String(_apClsIata).toUpperCase();
+      if (_apAttr) document.body.setAttribute('data-fids-ap', _apAttr);
+      else document.body.removeAttribute('data-fids-ap');
+    } catch (e0) {}
     _applyBannerStyle(_apClsIata, 'fids');
   } catch (e) {}
 

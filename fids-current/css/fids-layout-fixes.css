@@ -5218,8 +5218,8 @@ html body .g8-bir-cell .g8-bir-val {
    DIVIDERS. inset box-shadow rather than a border — a border would add a
    pixel to a row height the fitter has already measured, and row sizing is
    not something to disturb for a hairline. */
-html body #fidsBoard:not(#_),
-html body #fidsTable tbody tr:not(#_) {
+html body[data-fids-ap="MCO"] #fidsBoard:not(#_),
+html body[data-fids-ap="MCO"] #fidsTable tbody tr:not(#_) {
   background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
@@ -5302,7 +5302,7 @@ html body #fidsTable tbody tr:not(#_) > td {
    0.20 is faint, still legible at a distance, and keeps headroom over the
    4.5 floor. On cancelled it only helps: multiply takes #A50D24 to
    (132,10,29), and the white lettering goes from 7.89:1 to 10.27:1. */
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
+html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-cancelled td {
   background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
@@ -5336,9 +5336,9 @@ html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
    the delayed row's yellow wherever it appears. Cancelled stays on the dark
    map: #A50D24 is a dark ground and multiply only lifts its white
    lettering, 7.89:1 to 10.27:1. */
-html:not(#_) body.fids-light-board:not(#_) #fidsBoard,
-html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr,
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-delayed td {
+html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsBoard,
+html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr,
+html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td {
   background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
@@ -5432,3 +5432,30 @@ html:not(#_) body:not(#_) #fidsTable tbody tr.row-delayed td {
    the cyan row — already at 2.91:1 before any of this, below the floor —
    substantially more legible, not less. 0.20 is the ceiling on the delayed
    yellow: 0.25 lands at 4.27 and misses. */
+
+/* ── v22646: ORLANDO ONLY, AND A TOUCH LIGHTER. Nick: 'lets put it lighter
+   by a bit that is Orlando only if possible'.
+
+   ORLANDO ONLY. There was no general per-airport hook — only a bespoke
+   fids-ap-YQM class, so targeting a second airport meant hard-coding a
+   second one-off. body[data-fids-ap] now carries whatever airport is on
+   screen, set from the same place that class is, so this and anything after
+   it can scope to any airport without another bespoke class. Every pattern
+   rule is now behind [data-fids-ap="MCO"]: no other airport's board gets
+   the pattern at all.
+
+   The ROW DIVIDERS are deliberately left global. They are a legibility fix
+   for rows that had no separation anywhere, not part of this pattern trial,
+   and pulling them back to Orlando would undo that everywhere else.
+
+   LIGHTER BY A BIT. Dark grounds 0.60 -> 0.48, light grounds 0.20 -> 0.16.
+   Where a line crosses text, measured on each ground:
+
+     delayed yellow    dark text   4.80 -> 5.26:1
+     light board       dark text   9.73 -> 10.78:1
+     cyan row          white text 11.01 ->  8.28:1   (2.91 bare)
+     blue row          white text            10.73:1   (4.44 bare)
+     cancelled red     white text 16.66 -> 14.66:1   (7.83 bare)
+
+   Everything still clears its floor with room, and the dark rows still come
+   out far ahead of where they started. */
