@@ -10968,20 +10968,22 @@ function boardAutofit(full) {
     } catch (e) {}
     var list = document.querySelector('.bidsv2-flight-list');
     if (BOARD_AUTOFIT_ENABLED && list && list.offsetParent) {
-      // The row is the FIXED OBJECT here too: bids rows auto-grow with
-      // content, so measuring a row the previous fit inflated spiraled the
-      // text extra-large (Nick at MCO: 'supposed to be small its extra
-      // large') and pushed the last row off the panel. Record the natural
-      // height ONCE (first pass, CSS fonts) and always fit against that.
-      if (!list.dataset.fidsBaseRowH) {
-        var _r0 = list.querySelector('.bidsv2-flight-row');
-        if (_r0) list.dataset.fidsBaseRowH = _r0.clientHeight || 64;
-      }
-      var _bBase = parseFloat(list.dataset.fidsBaseRowH) || 64;
-      // Places never split across lines (Nick) — every BAGS lane fits on
-      // ONE line, whatever size that costs.
+      // The ROW is the law and the TEXT serves it (Nick, standing rule for
+      // months: 'its the row and the row size — the text fits inside, not
+      // the other way around'). The old code recorded a 'natural' height
+      // ONCE and fitted every later pass against that ghost, so switching
+      // small/medium/large moved the ROWS while the TYPE stayed sized to
+      // whatever height happened to be on screen at first paint — row size
+      // changed nothing, which is exactly his complaint. The freeze existed
+      // because rows once auto-grew with content and measuring an inflated
+      // row spiraled the fit ('supposed to be small its extra large');
+      // rows are HARD-FIXED by CSS now (68/98/132, overflow hidden), that
+      // spiral is impossible, and the honest measure is the row itself —
+      // passing no fixed height makes _boardFitCol read each cell's own
+      // live row. Places still never split across lines (Nick) — every
+      // BAGS lane fits on ONE line, whatever size that costs.
       ['.bidsv2-flight-num', '.bidsv2-col-from', '.bidsv2-col-time', '.bidsv2-col-status'].forEach(function (sel) {
-        _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row ' + sel)), 0.55, false, _bBase);
+        _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row ' + sel)), 0.55, false, null);
       });
     }
   } catch (e) {}
@@ -17052,7 +17054,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22653';
+var FIDS_BUILD_TAG = 'v22654';
 (function(){
   try {
     function _addTag(){
