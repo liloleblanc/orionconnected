@@ -5146,3 +5146,42 @@ html body .g8-bir-cell .g8-bir-val {
       var(--fids-band-4) 68%, var(--fids-band-4) 100%) !important;
   }
 }
+
+/* ── v22637: THE SHEEN STOPS EATING THE BRAND COLOURS.
+   Nick: 'I see 4 different colors in the logo which I dont see in the image'.
+   The palette was right all along — the silk sheen over it was not.
+
+   .fids-banner::before paints banner-silk.jpg at mix-blend-mode: SCREEN,
+   opacity .52. Screen can only lighten, so a bright silk photo drags every
+   saturated colour toward white. Measured against Tampa's declared colours,
+   the painted band was 110 / 129 / 73 / 194 RGB units away from the blue,
+   light blue, orange and red the logo actually uses — and white text on the
+   'red' scored 2.17:1, which is why the clock disappeared.
+
+   Blend modes swept on the live board, distance-from-true-colour and white
+   contrast measured per band:
+
+     screen    .52  110 129  73 194   2.17:1   sheen .0033   (what shipped)
+     screen    .30   84  79  59 149   2.83:1   sheen .0021
+     hard-light.45   24  29  66 135   3.08:1   sheen .0028
+     soft-light.85   23  27  65  75   4.21:1   sheen .0014
+     overlay   .65   23  27  64  66   4.14:1   sheen .0014
+     overlay   .80   22  27  65  69   4.04:1   sheen .0018
+
+   Overlay at .80 is the pick: it keeps the colours honest, nearly doubles
+   white's contrast on the tail, and — because the opacity goes UP to pay for
+   the gentler mode — holds more of the silk texture than the softer options.
+   Hard-light holds the most texture of all but gives back the readability
+   Nick had just asked for, so it loses.
+
+   Scoped to banners actually carrying a logo palette. Every other airport's
+   banner, Moncton included, is untouched. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner::before {
+    mix-blend-mode: overlay !important;
+    opacity: .80 !important;
+  }
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner::after {
+    opacity: .18 !important;
+  }
+}
