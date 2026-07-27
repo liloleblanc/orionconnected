@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22628';
+var FIDS_BUILD_TAG = 'v22629';
 (function(){
   try {
     function _addTag(){
@@ -24303,6 +24303,11 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
    shrink each .ad-tech-frame to the media's ACTUAL drawn rectangle so the
    frame hugs the ad itself (Nick), whatever the creative's aspect ratio. */
 (function () {
+  // Frozen frame rects, keyed by creative + panel size. Module scope on
+  // purpose: a slide re-render replaces BOTH the frame and its parent,
+  // so anything stored on those elements is lost and the frame re-places
+  // itself a pixel off — the twitch a 3-minute recording caught twice.
+  var _GEOM_CACHE = {};
   function _drawnRect(m) {
     var b = m.getBoundingClientRect();
     if (!b.width || !b.height) return null;
@@ -24373,9 +24378,9 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // a fresh frame adopts the identical rect instead of re-measuring.
       var _mkey = '';
       try { _mkey = String(m.currentSrc || m.src || '') + '|' + Math.round(hb.width) + 'x' + Math.round(hb.height); } catch (e) {}
-      if (host.dataset.frameKey === _mkey && host.dataset.frameGeom) {
-        var _hz = host.dataset.frameGeom.split(',');
-        f.dataset.geom = host.dataset.frameGeom;
+      if (_mkey && _GEOM_CACHE[_mkey]) {
+        var _hz = _GEOM_CACHE[_mkey].split(',');
+        f.dataset.geom = _GEOM_CACHE[_mkey];
         f.style.left = _hz[0] + 'px'; f.style.top = _hz[1] + 'px';
         f.style.width = _hz[2] + 'px'; f.style.height = _hz[3] + 'px';
         f.style.right = 'auto'; f.style.bottom = 'auto';
@@ -24388,8 +24393,7 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
         f.style.visibility = 'visible';
         continue;
       }
-      host.dataset.frameKey = _mkey;
-      host.dataset.frameGeom = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
+      if (_mkey) _GEOM_CACHE[_mkey] = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
       f.dataset.geom = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
       f.style.left = _gx + 'px';
       f.style.top = _gy + 'px';
