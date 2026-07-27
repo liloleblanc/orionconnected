@@ -3326,7 +3326,11 @@ function airlineWatermarkUrl(code) {
 // paints them at a fixed 55% background width, so carriers whose old file
 // was mostly padding would suddenly render up to 2x larger. Scale the
 // background width by the old ink-width fraction to keep the tuned look.
-var WATERMARK_INK_COMP = { 'LO': 0.49, 'AT': 0.73, 'AF': 0.77, 'B6': 0.91, 'AS': 0.93, 'KL': 0.93 };
+// v22649 — B6 goes 0.91 -> 0.80. This map exists for exactly this: the
+// watermark paints at a fixed 55% background WIDTH, so re-cutting a file to
+// its ink makes it jump. jetBlue's ink was 88% of the old canvas width, so
+// 0.91 x 0.88 holds the tuned size.
+var WATERMARK_INK_COMP = { 'LO': 0.49, 'AT': 0.73, 'AF': 0.77, 'B6': 0.80, 'AS': 0.93, 'KL': 0.93 };
 
 // Map Accor brand codes to their local logo files in /logos/. Used by the
 // v218.99.28 — Brand code → human-readable name. The Catalog API returns
@@ -9225,7 +9229,13 @@ function uxgGateHtml(ctx) {
     'LA': { h: 116, w: 500 },
     'WN': { h: 116, w: 500 },
     'F9': { h: 116, w: 500 },
-    'B6': { h: 116, w: 500 },
+    // v22649 — recalibrated for the re-cut wordmark. The old file carried
+    // 26% empty canvas above the lettering and 12% below, so this box was
+    // tuned to art whose ink filled 61% of its height and 88% of its width.
+    // Cropping to the ink made it render 1.64x taller and overflow the
+    // banner. Same ink on screen as before, from a box scaled by those
+    // fractions.
+    'B6': { h: 71, w: 440 },
     '4Y': { h: 120, w: 120 }
   };
   var _bannerBrandCode = (typeof gatePreferredBrandCode === 'function')
@@ -17019,7 +17029,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22648';
+var FIDS_BUILD_TAG = 'v22649';
 (function(){
   try {
     function _addTag(){
