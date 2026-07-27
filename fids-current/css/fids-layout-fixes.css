@@ -5459,3 +5459,69 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td
 
    Everything still clears its floor with room, and the dark rows still come
    out far ahead of where they started. */
+
+/* ── v22647: EVERY ROW CARRIES IT, AND CLICKING BRINGS IT UP.
+   Nick: 'we cant see it on all rows' and 'when its white and i click on it
+   it should actually become more visible'.
+
+   ALL ROWS. Ordinary rows carry their colour on the <tr>, so the row's
+   pattern layer shows. Five row STATES paint theirs on the <td> instead,
+   which covers it: delayed, cancelled, diverted, gate-closed and final.
+   v22641 only ever caught two of them, so arrived/diverted/final/closed
+   rows came out blank — the gaps Nick is looking at. All five are covered
+   now, each on the weight its own ground needs.
+
+   Which weight, and why it is safe in both directions — multiply only
+   darkens, so it moves a surface AWAY from white text and TOWARD dark text:
+
+     light grounds, 0.16 ink        dark text        white text
+       delayed     #E5A800          7.39 -> 5.26      2.11 -> 2.97
+       final       #F28C00          6.35 -> 4.56      2.46 -> 3.43
+       gate-closed #AEB7C1          7.70 -> 5.47      2.03 -> 2.86
+     dark grounds, 0.48 ink                           white text
+       cancelled   #A50D24                            7.83 -> 14.66
+       cancelled   #D42341                            5.10 -> 11.82
+       diverted    #A61B2B                            7.47 -> 14.25
+       diverted    #185A9D                            7.03 -> 13.63
+       gate-closed #262D36                           13.90 -> 17.92
+
+   The light weight is used wherever the surface is light REGARDLESS of
+   which ink that row uses, because at 0.16 it lifts white text and still
+   leaves dark text above 4.5. Nothing gets worse on any row.
+
+   CLICKING. fids-row-clickable:hover carries filter: brightness(1.18) and
+   :active brightness(0.92). Brightening washes the surface toward white and
+   takes the pattern with it — that is precisely the 'when its white' Nick
+   is describing. Both states now swap to a heavier weight so the pattern
+   comes UP under the finger instead of fading out. */
+@media (min-width: 701px) {
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-final td,
+  html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-gate-closed td {
+    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-diverted td,
+  html:not(#_) body:not(.fids-light-board)[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-gate-closed td {
+    background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:hover,
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:hover td,
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:active,
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:active td {
+    background-image: url("/logos/Backgrounds/fids-asanoha-strong.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+}
