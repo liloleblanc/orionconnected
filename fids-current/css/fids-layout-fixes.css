@@ -5982,10 +5982,10 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
-    background-image: url("/logos/Backgrounds/fids-hexline.png?v=1") !important;
+    background-image: url("/logos/Backgrounds/fids-triangle.png?v=1") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
-    background-size: auto calc(var(--fids-pat-h, 660px) * 0.6) !important;
+    background-size: auto calc(var(--fids-pat-h, 660px) * 1.1) !important;
     background-repeat: repeat !important;
     background-blend-mode: multiply !important;
   }
@@ -6074,3 +6074,27 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
    IS the row now, so its size is no longer a free choice. If it reads too
    large, the next honest step is two hex rows per board row (0.3), which
    keeps every row edge on a boundary and halves the cells. */
+
+/* ── v22672: THE TRIANGLE, WITH THE ROWS INSIDE ITS LINES. Nick: 'Im
+   talking about the triangle not the hexagon' — the pattern he liked, with
+   the registration he asked for.
+
+   Measured off the file: strongest vertical period 174px at 0.89
+   correlation, and 1920 / 174 is 11 — eleven motif rows per tile. One motif
+   per board row therefore needs a rendered tile of 11 x 66 = 726px, which
+   is 1.10 of --fids-pat-h. Rendered period comes out at 726 / 11 = 66px,
+   exactly the row pitch, and the tile starts at --fids-pat-y, so every
+   motif boundary falls on a row edge.
+
+   I RENDERED IT BEFORE SHIPPING IT, because this is the geometry that broke
+   the lattice. The tile is square, so 726px tall is also 726px wide — a
+   0.38 horizontal scale, uncomfortably near the 0.27 that turned the
+   lattice into a barcode. It survives where the lattice did not: these are
+   triangle outlines with dots at their vertices, not hairline vertical
+   struts, so there is no fine parallel detail to alias. Checked on the
+   Tampa board first; clean.
+
+   Ink 0.22 — the strongest weight that keeps the delayed row's dark text
+   above 4.5 (4.87:1), and it lifts the cyan row from 2.91 bare to 4.25.
+
+   Orlando still keeps asa-no-ha. */
