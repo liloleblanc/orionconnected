@@ -5570,7 +5570,7 @@ html body .bidsv2-flight-row:not(#_) {
 @media (min-width: 701px) {
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row {
-    background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+    background-image: url("/logos/Backgrounds/fids-asanoha-bags.png?v=1") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5740,5 +5740,39 @@ html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-time-rev.has-rev *
 html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-final td.td-time-rev.has-rev *,
 html:not(#_) body:not(#_) #fidsTable tbody tr:has(td.fids-status-final) td.td-time-rev.has-rev * {
   color: #102437 !important;
+  opacity: 1 !important;
+}
+
+/* ── v22659: THE FALLBACK NAME CANNOT BE NAVY ON RED, AND BAGS CALMS DOWN.
+
+   BLACK ON CANCELLED — the path I had not covered. Nick has now said it of
+   the live board and of preview, and he is right that something is still
+   dark. Every rule so far targets IMAGES. When a logo image fails to load,
+   its onerror swaps in `<span class="logo-fallback" style="...
+   color:#002B58...">` — navy, inline, on the crimson block. The theme
+   injector also paints .logo-fallback with the row ink, which is dark on a
+   light board. No img selector was ever going to catch either, and an asset
+   that 404s or times out on a wall display is exactly when it shows.
+   Inline styles carry no !important, so an !important rule takes it.
+
+   Also covered: .logo-monogram (a text div, not an image) and the BIDS name
+   div — so nothing that can carry a carrier's name on a cancelled or
+   diverted row is still able to render dark.
+
+   BAGS FADES. Nick: 'fade out a bit bags'. Its own copy of the pattern at
+   0.34 against the board's 0.58 — baggage rows are taller and there are
+   fewer of them, so identical ink reads much heavier there. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .logo-fallback,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .logo-fallback,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .logo-monogram,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .logo-monogram,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .fids-airline-name,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .fids-airline-name,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled .logo-fallback,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted .logo-fallback,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled .bidsv2-airline-name,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted .bidsv2-airline-name {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   opacity: 1 !important;
 }

@@ -17054,7 +17054,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22658';
+var FIDS_BUILD_TAG = 'v22659';
 (function(){
   try {
     function _addTag(){
@@ -31771,11 +31771,22 @@ setInterval(function () {
   var last = '';
   function sync() {
     try {
+      // Measure whatever is ON SCREEN. Both surfaces exist in the DOM at
+      // once — the baggage screen does not remove #fidsTable, it hides it —
+      // so 'is there a main table' was the wrong question: on the baggage
+      // board the sync was measuring the HIDDEN main table's rows and
+      // locking the pattern to a pitch and origin that belong to a surface
+      // nobody is looking at. That is why the baggage rows never lined up
+      // (Nick: 'align the rows to the pattern otherwise its a mess to
+      // read'). offsetParent is null for a hidden element, so this picks
+      // the visible one.
+      var vis = function (el) { return !!(el && el.offsetParent !== null); };
       var t = document.getElementById('fidsTable');
-      var rows = t && t.tBodies[0] && t.tBodies[0].rows;
-      // Baggage carries the same row-locked pattern (Nick), so when there is
-      // no main table on this screen, measure the baggage rows instead.
-      if (!rows || rows.length < 2) rows = document.querySelectorAll('.bidsv2-flight-row');
+      var rows = (t && vis(t) && t.tBodies[0]) ? t.tBodies[0].rows : null;
+      if (!rows || rows.length < 2) {
+        var bl = document.querySelectorAll('.bidsv2-flight-row');
+        if (bl.length > 1 && vis(bl[0])) rows = bl;
+      }
       if (!rows || rows.length < 2) return;
       var a = rows[0].getBoundingClientRect();
       var b = rows[1].getBoundingClientRect();
