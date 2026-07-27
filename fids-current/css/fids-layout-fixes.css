@@ -5367,3 +5367,31 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-airport-pill .fids-airp
 html body[data-fids-banner="silk"]:not(#_) .fids-airport-pill .fids-airport-name {
   color: #24344f !important;
 }
+
+/* ── v22650: PUT THE SHEEN BACK. Nick: 'did you remove some of the effect,
+   it looks dull'. Yes — v22640 swapped the silk from the textured JPEG at
+   screen blend, opacity .52, to flat white ink at .30. Screen lifts the
+   highlights and leaves the shadows, which is what made the band look
+   polished; flat white at 30% just fogs everything evenly. That was a
+   bigger trade than the legibility fix actually needed.
+
+   The reason I moved off screen was that it washes a saturated red flat.
+   But that only matters where text sits on the red — and the banner now
+   carries a mask that removes the silk from exactly that region anyway.
+   So the blend can go back to screen everywhere; the mask already protects
+   the clock, and the wordmark sits above the silk since v22648.
+
+   Original strengths restored: .52 on the banner and the gate's top band,
+   .48 on the time tabs. */
+html body:not(#_) .fids-banner::before,
+html body:not(#_) .g8-r1::before {
+  background-image: url("/logos/Backgrounds/banner-silk.jpg?v=1") !important;
+  mix-blend-mode: screen !important;
+  opacity: .52 !important;
+}
+html body:not(#_) .g8-r1-timebox::before,
+html body:not(#_) .octb-wrap::before {
+  background-image: url("/logos/Backgrounds/banner-silk.jpg?v=1") !important;
+  mix-blend-mode: screen !important;
+  opacity: .48 !important;
+}
