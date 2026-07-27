@@ -5344,3 +5344,26 @@ html body:not(#_) .fids-banner > * {
   position: relative;
   z-index: 1;
 }
+
+/* ── v22649: THE AIRPORT WORDMARK IS WHITE ON THE WHITE OF THE FLAG.
+   Probed live: .fids-airport-pill and both its lines compute
+   rgb(255,255,255), and no stylesheet rule inks them at all — the white is
+   simply inherited from the banner. On the Acadian band that puts the YQM
+   wordmark and the airport's full name in white directly on the white
+   centre stripe, which is why they read as a ghost.
+
+   Both silk themes have a light centre, so the identity goes navy there —
+   the same #0d2440 the rest of the light-banner furniture already uses.
+   Scoped to the silk themes only; a dark banner still wants white. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-airport-pill,
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-airport-pill .fids-airport-text,
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-airport-pill .fids-airport-iata,
+html body[data-fids-banner="silk"]:not(#_) .fids-airport-pill,
+html body[data-fids-banner="silk"]:not(#_) .fids-airport-pill .fids-airport-text,
+html body[data-fids-banner="silk"]:not(#_) .fids-airport-pill .fids-airport-iata {
+  color: #0d2440 !important;
+}
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-airport-pill .fids-airport-name,
+html body[data-fids-banner="silk"]:not(#_) .fids-airport-pill .fids-airport-name {
+  color: #24344f !important;
+}
