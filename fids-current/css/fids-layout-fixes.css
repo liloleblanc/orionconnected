@@ -5149,3 +5149,39 @@ html:not(#_) body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value.final .v2-fi-s
 html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
   color: #CFE4FF !important;
 }
+
+/* ── v22640: THE TIME BLOCK WAS UNREADABLE ON THE BAGS AND GATE BOARDS.
+   Nick, with a photo of the bags board: 'these are almost not visible,
+   the right side, for time — both bags and gate need adjusting.'
+
+   Measured on the live boards: the header time text is white, and it sat
+   at 2.10:1 on the bags/FIDS banner and 3.54:1 on the WestJet gate tab.
+   Both under the floor, and the bags one is barely there at all.
+
+   The cause is not the ink — it is the silk overlay underneath it. Those
+   layers paint the JPEG with mix-blend-mode:screen, and screen over a
+   saturated red clips the red channel immediately: the Acadian flag's
+   #D21034 lifts to a pale pink around L=0.44, so white has nothing left
+   to contrast against. This is the exact failure already diagnosed on the
+   gate tab in v22617, where the fix was to bake the art's luminance into
+   an alpha PNG and paint it as plain white ink with no blend mode.
+
+   Applying that same proven fix here. The swirls stay — Nick asked for
+   them and they are still visible as white ink — but the base colour is
+   no longer lifted, so the red returns to true and white text reads
+   against it again. */
+html body .fids-banner::before,
+html body .g8-r1::before,
+html body .g8-r1-timebox::before,
+html body .octb-wrap::before {
+  background-image: url("/logos/Backgrounds/banner-silk-alpha.png?v=1") !important;
+  mix-blend-mode: normal !important;
+  opacity: .30 !important;
+}
+/* The date rode at 85% alpha, which cost it a further half-stop against a
+   banner that had none to give. Full strength now. */
+html body:not(#_) .fids-banner .fids-banner-date,
+html body:not(#_) .fids-banner .fids-banner-date .cl-sep {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
