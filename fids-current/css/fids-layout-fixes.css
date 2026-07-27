@@ -5982,7 +5982,7 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
-    background-image: url("/logos/Backgrounds/fids-triangle.png?v=1") !important;
+    background-image: url("/logos/Backgrounds/fids-triangle.png?v=2") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto calc(var(--fids-pat-h, 660px) * 1.1) !important;
@@ -6098,3 +6098,40 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
    above 4.5 (4.87:1), and it lifts the cyan row from 2.91 bare to 4.25.
 
    Orlando still keeps asa-no-ha. */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   v22673 — "perhaps a bit lighter and wheres the weather?"
+
+   LIGHTER. fids-triangle.png regenerated with its ink scaled to 0.68 of the
+   previous weight: the darkest pixel moves 203 → 220 (ink 0.204 → 0.137),
+   mean 247.9 → 250.0. Nothing else about the tile changes, so the row
+   registration from v22672 is untouched — every motif boundary still lands
+   on a row edge. Cache-buster stepped to v=2 so the CDN serves the new file.
+   Lightening only helps the contrast floors: less multiply ink means the
+   yellow Delayed row stays brighter under its dark text.
+
+   WEATHER. The animated weather art is drawn for a DARK ground — the cloud
+   body is white, the sun disc is yellow. On the Delayed row (#EDBB00) and
+   the Final-call row (#F28C00) the icon is the same value as the row it sits
+   on, so it vanishes: measured on YQM, a white cloud on #EDBB00 and a yellow
+   sun on #F28C00. That is Nick's "wheres the weather?" — the column is
+   populated, the icon is just invisible on exactly the two rows a passenger
+   most needs to read.
+
+   Recolouring the art would throw away the cue that carries the meaning
+   (sun = yellow, cloud = white), so we rim it instead: four 0.75px
+   drop-shadows in the board's dark ink trace the alpha edge, turning a
+   white-on-yellow blob into a white shape with a dark outline. 0.75px was
+   chosen over 1px after rendering both — at 1px the sun's thin rays outline
+   on both sides and thicken into capsules; at 0.75px they stay slim.
+   Scoped to the light row states only. Dark rows keep the art untouched. */
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell,
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell,
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell,
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell {
+  filter:
+    drop-shadow(0.75px 0 0 #102437)
+    drop-shadow(-0.75px 0 0 #102437)
+    drop-shadow(0 0.75px 0 #102437)
+    drop-shadow(0 -0.75px 0 #102437) !important;
+}
