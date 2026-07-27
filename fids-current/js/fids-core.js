@@ -16694,7 +16694,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22625';
+var FIDS_BUILD_TAG = 'v22626';
 (function(){
   try {
     function _addTag(){
@@ -28033,8 +28033,8 @@ function _adBackdropHtml(blurUrl) {
         try {
           var _wAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
           if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
-          else _wSec = '#34373d';
-        } catch (e) { _wSec = '#34373d'; }
+          else _wSec = '#AEB4BC';
+        } catch (e) { _wSec = '#AEB4BC'; }
         f.innerHTML =
             '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
           + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
@@ -28084,13 +28084,16 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // gray or black'). The wall frame keeps the primary accent, so the two
 // frames read as a pair instead of one doubled line. Carriers without an
 // entry fall back to a neutral graphite, which suits every livery.
+// Nick: 'maybe go with lighter colors I think' — these are the SECOND
+// line of the frame motif, so they sit lighter than the primary rather
+// than competing with it.
 var AIRLINE_ACCENT2 = {
-  'AC': '#34373d', 'QK': '#34373d', 'RV': '#34373d',   // Air Canada family: black/graphite
-  'WS': '#0E2A47',                                      // WestJet: deep navy
-  'PD': '#6E93C0',                                      // Porter: soft steel blue (Nick: 'red and porter dont go well together')
-  'PB': '#F0A81E',                                      // PAL: brand yellow
-  'DL': '#0B2C5B', 'UA': '#0B2C5B', 'AA': '#1F3A5F',
-  'F9': '#0A3D2A', 'WG': '#2B2F36'
+  'AC': '#AEB4BC', 'QK': '#AEB4BC', 'RV': '#AEB4BC',   // Air Canada family: light silver-graphite
+  'WS': '#7FA8CE',                                      // WestJet: light steel
+  'PD': '#A8C4E2',                                      // Porter: pale steel blue (no red — Nick)
+  'PB': '#FFD46B',                                      // PAL: light brand yellow
+  'DL': '#9DB4D6', 'UA': '#9DB4D6', 'AA': '#A9BBD3',
+  'F9': '#8CC9AE', 'WG': '#BCC1C8'
 };
 function _adTechFrameHtml() {
   // ONE complete frame per ad, in the airline's SECOND colour — the same
@@ -28099,7 +28102,7 @@ function _adTechFrameHtml() {
   try {
     var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
     if (_fAl && AIRLINE_ACCENT2[_fAl]) _fAcc = AIRLINE_ACCENT2[_fAl];
-    else if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = '#34373d';
+    else if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = '#AEB4BC';
   } catch (e) {}
   // Nick: 'theres 2 lines around, first outerline should be red the
   // second gray'. The art carries a double-line motif, so it takes TWO
