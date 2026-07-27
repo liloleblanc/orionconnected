@@ -16694,7 +16694,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22623';
+var FIDS_BUILD_TAG = 'v22624';
 (function(){
   try {
     function _addTag(){
@@ -28079,7 +28079,7 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 var AIRLINE_ACCENT2 = {
   'AC': '#34373d', 'QK': '#34373d', 'RV': '#34373d',   // Air Canada family: black/graphite
   'WS': '#0E2A47',                                      // WestJet: deep navy
-  'PD': '#8E1B2E',                                      // Porter: cranberry
+  'PD': '#6E93C0',                                      // Porter: soft steel blue (Nick: 'red and porter dont go well together')
   'PB': '#F0A81E',                                      // PAL: brand yellow
   'DL': '#0B2C5B', 'UA': '#0B2C5B', 'AA': '#1F3A5F',
   'F9': '#0A3D2A', 'WG': '#2B2F36'
