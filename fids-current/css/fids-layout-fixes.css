@@ -5621,3 +5621,63 @@ html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled .bidsv2-airlin
 html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted .bidsv2-airline-name {
   color: #ffffff !important;
 }
+
+/* ── v22655: THE STATUS CELL STOPS PUNCHING A HOLE IN THE ROW, AND NOTHING
+   COLOURED SURVIVES ON RED.
+
+   FINAL CALL runs all the way. Nick, with the Orlando board: 'Dernier appel
+   is not highlighted either, all the way'. Look at what paints what: the
+   orange block is set on the row's CELLS (fids-v3 4047, tr.row-final td),
+   never on the <tr>. Then 4063 sets the status cell to
+   `background: transparent`. Transparent has nothing to fall through TO —
+   the tr carries no colour — so it falls through to the page and renders
+   white. That is the white notch at the right end of the orange row: the
+   one cell that opted out of a colour its siblings were carrying.
+
+   It now carries the same orange as its siblings instead of opting out.
+   Same for the light-board and cancelled/diverted equivalents, so no status
+   cell can punch a hole in any coloured row.
+
+   NOTHING COLOURED ON RED. 'Airlines in general all white on red' is the
+   standing rule, and v22652 only whitened the WORDMARK image. The jetBlue
+   row in Nick's shot still shows its blue 'jB' TILE sitting on the crimson
+   block — a tile is a different element (.full-logo, data-logo-set="tile")
+   and the wordmark selector never touched it. Every logo image on a
+   cancelled or diverted row is now flattened to white, tile and emblem and
+   monogram included. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-status.fids-status-final {
+  background: #F28C00 !important;
+}
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-final td.td-status,
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-final td.td-status.fids-status-final {
+  background: #F28C00 !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted td.td-status {
+  background: transparent !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td.td-status.fids-status-final,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted td.td-status.fids-status-final {
+  background: transparent !important;
+}
+/* every logo image on a cancelled/diverted row renders white — tile,
+   emblem, monogram and wordmark alike */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .fids-airline-cell img,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled img.full-logo,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled img.airline-emblem,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .fids-airline-cell img,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted img.full-logo,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted img.airline-emblem,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled img.full-logo,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted img.full-logo {
+  filter: brightness(0) invert(1) !important;
+  background: transparent !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .full-logo.logo-monogram,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .full-logo.logo-monogram {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
