@@ -3269,7 +3269,19 @@ function carrierLogoUrl(code) {
   // reassigned to Discover Airlines in 2023. Without this, GIDS gate-screen
   // banner shows Yute Air's logo for Discover flights.
   // (Kept as a fallback safety net — 4Y should be handled by LOCAL_LOGOS above.)
-  var STALE_WWAY_CARRIER = { '4Y': 1 };
+  // Carriers whose wway.io artwork we will not use. Two reasons, same cure:
+  // returning '' drops the carrier onto the TEXT wordmark path, the same one
+  // every other artwork-less carrier already uses, so it comes out looking
+  // like the rest of the board instead of like a foreign object.
+  //   4Y — recycled IATA code; wway serves Yute Air (defunct 2017) for what
+  //        is now Discover Airlines.
+  //   XP — Avelo. wway's file arrives with its own canvas and a white
+  //        ground, so it rendered as a clipped 'velo' in a white box while
+  //        every neighbour showed a clean tile. It is the only carrier on
+  //        Orlando's board without a local asset, and it was the only one
+  //        that looked wrong (Nick: 'not really fully looking consistent
+  //        everywhere — Avelo I think needs a fix').
+  var STALE_WWAY_CARRIER = { '4Y': 1, 'XP': 1 };
   if (STALE_WWAY_CARRIER[up]) return '';
   return 'https://img.wway.io/pics/root/' + logoCode(up) + '@svg';
 }
@@ -17067,7 +17079,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22665';
+var FIDS_BUILD_TAG = 'v22666';
 (function(){
   try {
     function _addTag(){
