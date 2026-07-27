@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22638';
+var FIDS_BUILD_TAG = 'v22639';
 (function(){
   try {
     function _addTag(){
@@ -28143,39 +28143,32 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // gray or black'). The wall frame keeps the primary accent, so the two
 // frames read as a pair instead of one doubled line. Carriers without an
 // entry fall back to a neutral graphite, which suits every livery.
-// Nick: 'maybe go with lighter colors I think' — these are the SECOND
-// line of the frame motif, so they sit lighter than the primary rather
-// than competing with it.
+// Nick, on the wall frame: 'red out, dark gray inner'. So the outer line
+// keeps the carrier primary and this — the SECOND line — is a DARK gray.
+// Each carrier's entry is a dark gray carrying a hint of its own hue, so
+// the frames still read as that airline's rather than one generic gray.
 var AIRLINE_ACCENT2 = {
-  'AC': '#AEB4BC', 'QK': '#AEB4BC', 'RV': '#AEB4BC',   // Air Canada family: light silver-graphite
-  'WS': '#7FA8CE',                                      // WestJet: light steel
-  'PD': '#A8C4E2',                                      // Porter: pale steel blue (no red — Nick)
-  'PB': '#FFD46B',                                      // PAL: light brand yellow
-  'DL': '#9DB4D6', 'UA': '#9DB4D6', 'AA': '#A9BBD3',
-  'F9': '#8CC9AE', 'WG': '#BCC1C8'
+  'AC': '#4A5058', 'QK': '#4A5058', 'RV': '#4A5058',   // Air Canada family: neutral dark graphite
+  'WS': '#3F4E5A',                                      // WestJet: dark cool gray
+  'PD': '#3F4A5A',                                      // Porter: dark steel (no red — Nick)
+  'PB': '#55503E',                                      // PAL: dark warm gray
+  'DL': '#414A5C', 'UA': '#414A5C', 'AA': '#45505F',
+  'F9': '#3E4F49', 'WG': '#4A4F57'
 };
+// The SMALLER frame, the one hugging the advert itself. Nick: 'the smaller
+// one even darker gray almost black'. Near-black reads as a clean edge
+// against the creative without competing with the wall frame outside it,
+// and at that value there is no hue left to carry per carrier.
+var AD_FRAME_INK = '#23262B';
 function _adTechFrameHtml() {
-  // ONE complete frame per ad, in the airline's SECOND colour — the same
-  // silver art with a masked multiply layer, like the wall frame.
-  var _fAcc = '';
-  try {
-    var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-    if (_fAl && AIRLINE_ACCENT2[_fAl]) _fAcc = AIRLINE_ACCENT2[_fAl];
-    else if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = '#AEB4BC';
-  } catch (e) {}
-  // Nick: 'theres 2 lines around, first outerline should be red the
-  // second gray'. The art carries a double-line motif, so it takes TWO
-  // tints: the primary over the whole frame, then the secondary clipped
-  // to the inside of the outer band so only the second line changes.
-  // The band measures 1.09% of width / 1.68% of height.
-  // Nick, repeatedly: the INNER frame is the airline's second colour —
-  // gray/light for Air Canada. v22625 washed the primary over this whole
-  // frame as well, which put the red straight back. The outer wall frame
-  // carries the primary; this one carries only the secondary.
-  // NO primary here. The wall frame carries the airline's primary colour;
-  // this frame hugs the advert and stays the SECOND colour only. Washing the
-  // primary over it puts the red straight back around the ad, which is the
-  // one thing Nick has said not to do, more than once.
+  // ONE complete frame per ad, near-black — the same silver art with a
+  // masked multiply layer, like the wall frame, just inked much darker.
+  var _fAcc = AD_FRAME_INK;
+  // NO primary here, and no per-carrier hue. The wall frame outside this one
+  // carries the airline's primary on its outer line and a dark gray on its
+  // second; this frame is the small one hugging the advert and stays
+  // near-black. Washing the primary over it puts red back around the ad,
+  // which Nick has ruled out more than once.
   var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
   var _tint = _fAcc
