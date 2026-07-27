@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22629';
+var FIDS_BUILD_TAG = 'v22630';
 (function(){
   try {
     function _addTag(){
@@ -24308,6 +24308,7 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
   // so anything stored on those elements is lost and the frame re-places
   // itself a pixel off — the twitch a 3-minute recording caught twice.
   var _GEOM_CACHE = {};
+  var _PENDING = {};
   function _drawnRect(m) {
     var b = m.getBoundingClientRect();
     if (!b.width || !b.height) return null;
@@ -24370,37 +24371,42 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // to nudge the frame between ticks.
       var _gx = Math.round(r.left - hb.left - padX), _gy = Math.round(r.top - hb.top - padY);
       var _gw = Math.round(r.width + 2 * padX), _gh = Math.round(r.height + 2 * padY);
-      // FREEZE, and make it survive a rebuild. A slide re-render replaces
-      // the .ad-tech-frame element, which used to lose dataset.geom and
-      // re-place itself a pixel or two off — a visible twitch every few
-      // seconds (caught at t+123s and t+124s of a 3-minute recording).
-      // The frozen rect now lives on the HOST, keyed to the creative, so
-      // a fresh frame adopts the identical rect instead of re-measuring.
+      // ONE RECT PER CREATIVE, EVER. Recordings showed the frame landing
+      // on up to four different rects for a single ad: the fitter was
+      // measuring while the image was still decoding and while the panel
+      // was still settling, so each early pass produced a different
+      // answer and the frame visibly hopped. Three gates now stand
+      // between a measurement and the screen:
+      //   1. the media must be fully decoded before it counts at all
+      //   2. the key buckets the panel size, so sub-pixel host jitter
+      //      cannot mint a new entry for the same ad
+      //   3. a rect must repeat on two consecutive passes to be trusted
+      // Once committed it is reused verbatim for the life of the page.
+      var _ready = (m.tagName === 'VIDEO') ? (m.readyState >= 2) : (m.complete && m.naturalWidth > 0);
+      if (!_ready) continue;
       var _mkey = '';
-      try { _mkey = String(m.currentSrc || m.src || '') + '|' + Math.round(hb.width) + 'x' + Math.round(hb.height); } catch (e) {}
-      if (_mkey && _GEOM_CACHE[_mkey]) {
-        var _hz = _GEOM_CACHE[_mkey].split(',');
-        f.dataset.geom = _GEOM_CACHE[_mkey];
-        f.style.left = _hz[0] + 'px'; f.style.top = _hz[1] + 'px';
-        f.style.width = _hz[2] + 'px'; f.style.height = _hz[3] + 'px';
+      try {
+        _mkey = String(m.currentSrc || m.src || '')
+          + '|' + (Math.round(hb.width / 20) * 20) + 'x' + (Math.round(hb.height / 20) * 20);
+      } catch (e) {}
+      if (!_mkey) continue;
+      var _apply = function (str) {
+        var z = str.split(',');
+        f.dataset.geom = str;
+        f.style.left = z[0] + 'px'; f.style.top = z[1] + 'px';
+        f.style.width = z[2] + 'px'; f.style.height = z[3] + 'px';
         f.style.right = 'auto'; f.style.bottom = 'auto';
         f.style.visibility = 'visible';
-        continue;
+      };
+      if (_GEOM_CACHE[_mkey]) { _apply(_GEOM_CACHE[_mkey]); continue; }
+      var _pend = _PENDING[_mkey];
+      if (!_pend || Math.abs(_pend[0] - _gx) > 2 || Math.abs(_pend[1] - _gy) > 2
+          || Math.abs(_pend[2] - _gw) > 2 || Math.abs(_pend[3] - _gh) > 2) {
+        _PENDING[_mkey] = [_gx, _gy, _gw, _gh];
+        continue;                      // unconfirmed — stay hidden
       }
-      var _prev = (f.dataset.geom || '').split(',').map(Number);
-      if (_prev.length === 4 && Math.abs(_prev[0]-_gx)<=2 && Math.abs(_prev[1]-_gy)<=2
-          && Math.abs(_prev[2]-_gw)<=2 && Math.abs(_prev[3]-_gh)<=2) {
-        f.style.visibility = 'visible';
-        continue;
-      }
-      if (_mkey) _GEOM_CACHE[_mkey] = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
-      f.dataset.geom = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
-      f.style.left = _gx + 'px';
-      f.style.top = _gy + 'px';
-      f.style.width = _gw + 'px';
-      f.style.height = _gh + 'px';
-      f.style.right = 'auto'; f.style.bottom = 'auto';
-      f.style.visibility = 'visible';   // fitted — safe to show
+      _GEOM_CACHE[_mkey] = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
+      _apply(_GEOM_CACHE[_mkey]);
     }
   }
   setInterval(_tick, 600);
