@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22654';
+var FIDS_BUILD_TAG = 'v22631';
 (function(){
   try {
     function _addTag(){
@@ -28062,38 +28062,22 @@ function _adBackdropHtml(blurUrl) {
       }
       // Frame matches the airline (Nick): the silver art re-hued by the
       // accent via a masked multiply layer; rebuilt only on accent change.
-      // Second line of the BIG wall frame: near-black (Nick's reverse — the
-      // bigger frame takes the black, the small one inside takes the gray).
-      // Still computed before the rebuild guard and folded into the cache key
-      // so a carrier change always repaints.
-      var _wSec = (typeof WALL_LINE2_INK !== 'undefined') ? WALL_LINE2_INK : '#23262B';
-      if (f.dataset.acc !== _bdAcc + '|' + _wSec) {
-        f.dataset.acc = _bdAcc + '|' + _wSec;
+      if (f.dataset.acc !== _bdAcc) {
+        f.dataset.acc = _bdAcc;
         var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
         var _wMask = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
-        // Nick, repeatedly: 'theres 2 lines around, first outerline should be
-        // red the second gray' — and then 'you didnt do it right, its the
-        // inner and second frame'. He was right: there is only ONE frame
-        // element, and the two lines he sees are both drawn by this single
-        // piece of art, so one tint over the whole thing painted BOTH lines
-        // red. Measured on the asset, the outer line occupies 0–1.035% of
-        // width / 0–1.599% of height, the second line 1.76–2.74% / 2.72–4.24%,
-        // with a transparent gap between them. Splitting at the middle of
-        // that gap (1.40% / 2.16%) separates the two cleanly.
-        // Rather than punch a hole in the primary layer, the second line is a
-        // FRESH copy of the same art, tinted with the secondary and clipped to
-        // the inside of the outer band — it paints over the primary copy at
-        // identical geometry, so the lines can never drift apart.
-        var _artDiv = '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>';
+        // Second line in the carrier's second colour, same as the ad frame.
+        var _wSec = '';
+        try {
+          var _wAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+          if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
+          else _wSec = '#AEB4BC';
+        } catch (e) { _wSec = '#AEB4BC'; }
         f.innerHTML =
-            '<div style="position:absolute;inset:0;isolation:isolate;">'
-          +   _artDiv
-          +   '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
-          + '</div>'
-          + '<div style="position:absolute;inset:0;isolation:isolate;clip-path:inset(2.16% 1.40%);">'
-          +   _artDiv
-          +   '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.9;' + _wMask + '"></div>'
-          + '</div>';
+            '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
+          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
+          + '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.92;'
+          +   'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _wMask + '"></div>';
       }
     } catch (e) {}
   }
@@ -28138,42 +28122,46 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // gray or black'). The wall frame keeps the primary accent, so the two
 // frames read as a pair instead of one doubled line. Carriers without an
 // entry fall back to a neutral graphite, which suits every livery.
-// Nick: 'do the reverse — black inner [on the] bigger frame, and small
-// gray'. So the two dark inks swap roles from the previous build.
-//
-// The SMALL frame hugging the advert now carries the per-carrier dark gray.
-// Each entry is a dark gray with a hint of that airline's own hue, so the
-// frame still reads as theirs rather than one generic gray.
+// Nick: 'maybe go with lighter colors I think' — these are the SECOND
+// line of the frame motif, so they sit lighter than the primary rather
+// than competing with it.
 var AIRLINE_ACCENT2 = {
-  'AC': '#4A5058', 'QK': '#4A5058', 'RV': '#4A5058',   // Air Canada family: neutral dark graphite
-  'WS': '#3F4E5A',                                      // WestJet: dark cool gray
-  'PD': '#3F4A5A',                                      // Porter: dark steel (no red — Nick)
-  'PB': '#55503E',                                      // PAL: dark warm gray
-  'DL': '#414A5C', 'UA': '#414A5C', 'AA': '#45505F',
-  'F9': '#3E4F49', 'WG': '#4A4F57'
+  'AC': '#AEB4BC', 'QK': '#AEB4BC', 'RV': '#AEB4BC',   // Air Canada family: light silver-graphite
+  'WS': '#7FA8CE',                                      // WestJet: light steel
+  'PD': '#A8C4E2',                                      // Porter: pale steel blue (no red — Nick)
+  'PB': '#FFD46B',                                      // PAL: light brand yellow
+  'DL': '#9DB4D6', 'UA': '#9DB4D6', 'AA': '#A9BBD3',
+  'F9': '#8CC9AE', 'WG': '#BCC1C8'
 };
-// The BIGGER wall frame's second line is now the near-black one. Its outer
-// line still carries the carrier primary, so that frame reads red-then-black
-// while the small one inside it reads gray.
-var WALL_LINE2_INK = '#23262B';
 function _adTechFrameHtml() {
-  // ONE complete frame per ad, in the carrier's dark gray — the same silver
-  // art with a masked multiply layer, like the wall frame.
+  // ONE complete frame per ad, in the airline's SECOND colour — the same
+  // silver art with a masked multiply layer, like the wall frame.
   var _fAcc = '';
   try {
     var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-    _fAcc = (_fAl && AIRLINE_ACCENT2[_fAl]) ? AIRLINE_ACCENT2[_fAl] : '#4A5058';
-  } catch (e) { _fAcc = '#4A5058'; }
-  // NO primary here, and no per-carrier hue. The wall frame outside this one
-  // carries the airline's primary on its outer line and a dark gray on its
-  // second; this frame is the small one hugging the advert and stays
-  // near-black. Washing the primary over it puts red back around the ad,
-  // which Nick has ruled out more than once.
+    if (_fAl && AIRLINE_ACCENT2[_fAl]) _fAcc = AIRLINE_ACCENT2[_fAl];
+    else if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = '#AEB4BC';
+  } catch (e) {}
+  // Nick: 'theres 2 lines around, first outerline should be red the
+  // second gray'. The art carries a double-line motif, so it takes TWO
+  // tints: the primary over the whole frame, then the secondary clipped
+  // to the inside of the outer band so only the second line changes.
+  // The band measures 1.09% of width / 1.68% of height.
+  var _fPri = '';
+  try {
+    var _fAl2 = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+    if (_fAl2 && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl2]) _fPri = AIRLINE_ACCENT[_fAl2];
+  } catch (e) {}
   var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
-  var _tint = _fAcc
-    ? '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>'
-    : '';
+  var _tint = '';
+  if (_fPri) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;' + _maskCss + '"></div>';
+  }
+  if (_fAcc) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.92;'
+      + 'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _maskCss + '"></div>';
+  }
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
     +   '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
