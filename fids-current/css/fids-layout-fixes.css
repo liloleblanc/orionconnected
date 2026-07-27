@@ -5903,31 +5903,41 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
    white and half not, which is the 'not consistent everywhere' Nick keeps
    seeing across screens. */
 @media (min-width: 701px) {
-  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-tlabel,
-  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-tlabel .cl-l1,
-  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-tlabel .cl-l2,
-  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-tlabel,
-  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-tlabel .cl-l1,
-  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-tlabel .cl-l2 {
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-tlabel,
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-tlabel .cl-l1,
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-tlabel .cl-l2,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-tlabel,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-tlabel .cl-l1,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-tlabel .cl-l2 {
     font-size: clamp(18px, 2.0vh, 30px) !important;
     line-height: 1.08 !important;
     font-weight: 800 !important;
   }
-  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-date,
-  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-date {
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-date,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-date {
     font-size: clamp(18px, 2.0vh, 30px) !important;
     font-weight: 700 !important;
     margin-top: 4px !important;
   }
-  html:not(#_) body:not(#_) .fids-banner .fids-banner-time-block .fids-banner-time,
-  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time-block .fids-banner-time {
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-time,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time {
     font-size: clamp(46px, 6.0vh, 84px) !important;
     font-weight: 900 !important;
     line-height: 1 !important;
   }
   html:not(#_) body[data-fids-banner="silk"]:not(#_) .fids-banner .fids-banner-time-block *,
-  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-time-block * {
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-tlabel,
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-date,
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-time,
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-analog {
     color: #ffffff !important;
     opacity: 1 !important;
   }
 }
+
+/* ── v22667: the v22665 selectors required .fids-banner-time-block as an
+   ANCESTOR. On the board that holds; on the baggage banner the clock parts
+   do not sit under it, so the baggage clock never grew and 'both sections'
+   was only half done — verified by reading the baggage banner and getting
+   null for all three. Matching the parts directly under either banner
+   covers both structures. */
