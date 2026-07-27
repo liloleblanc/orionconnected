@@ -5061,3 +5061,30 @@ html body .g8-r1-apmark img {
     opacity: 1 !important;
   }
 }
+
+/* ── v22634: THE SMALL LINES IN THE TIME BLOCK COME UP IN SIZE. Nick chose
+   this over darkening his navy, which keeps the colour he picked.
+
+   The two bilingual labels were 14px and the date 16px. At that size, text
+   needs a 4.5:1 separation from its background to stay sharp at a distance,
+   and the navy gives 3.66:1 on this band. At 19px bold the requirement drops
+   to 3.0:1, which the same navy clears — so the fix is the size, not the
+   colour. The 44px clock always cleared it.
+
+   Both label lines and the date go to 19px, matching each other. Nick has
+   asked before for the bilingual pairs to be the same size as each other
+   with no difference between the English and the French. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel .cl-l1,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel .cl-l2 {
+    font-size: 19px !important;
+    line-height: 1.06 !important;
+    font-weight: 800 !important;
+  }
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-date {
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    margin-top: 3px !important;
+  }
+}
