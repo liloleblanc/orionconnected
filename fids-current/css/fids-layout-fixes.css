@@ -5300,3 +5300,25 @@ html body[data-fids-banner="silk"]:not(#_) .fids-banner::before {
     margin-top: 3px !important;
   }
 }
+
+/* ── v22647: THE SECOND SILK LAYER WAS STILL LIFTING THE RED. Masking
+   ::before got white to 3.82:1 but no further, because the banner carries
+   TWO silk layers — ::before and ::after — and only one of them had the
+   ramp. ::after is still the JPEG at screen blend, which is precisely the
+   combination that washes a saturated red out.
+
+   Both layers now share the same ramp, and it reaches zero by 72% so the
+   whole time block (which starts around 74%) sits on the flag's own red
+   with nothing over it. The swirls are untouched across the left and
+   middle of the band, which is where they read anyway. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::after,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::after {
+  -webkit-mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.30) 64%, rgba(0,0,0,0) 72%, rgba(0,0,0,0) 100%) !important;
+  mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.30) 64%, rgba(0,0,0,0) 72%, rgba(0,0,0,0) 100%) !important;
+}
