@@ -16694,7 +16694,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22622';
+var FIDS_BUILD_TAG = 'v22623';
 (function(){
   try {
     function _addTag(){
@@ -28071,13 +28071,27 @@ function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 // Tech-frame border drawn AROUND contain-fit ad media (Nick: 'a border
 // around these, kinda like the tech look from earlier'). Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
+// The carrier's SECOND colour, for the frame hugging the advert (Nick:
+// 'color the inside frame the second colour of the airline, so AC may be
+// gray or black'). The wall frame keeps the primary accent, so the two
+// frames read as a pair instead of one doubled line. Carriers without an
+// entry fall back to a neutral graphite, which suits every livery.
+var AIRLINE_ACCENT2 = {
+  'AC': '#34373d', 'QK': '#34373d', 'RV': '#34373d',   // Air Canada family: black/graphite
+  'WS': '#0E2A47',                                      // WestJet: deep navy
+  'PD': '#8E1B2E',                                      // Porter: cranberry
+  'PB': '#F0A81E',                                      // PAL: brand yellow
+  'DL': '#0B2C5B', 'UA': '#0B2C5B', 'AA': '#1F3A5F',
+  'F9': '#0A3D2A', 'WG': '#2B2F36'
+};
 function _adTechFrameHtml() {
-  // ONE complete frame per ad, in the airline's colour — the same silver
-  // art with a masked accent-multiply layer, exactly like the wall frame.
+  // ONE complete frame per ad, in the airline's SECOND colour — the same
+  // silver art with a masked multiply layer, like the wall frame.
   var _fAcc = '';
   try {
     var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-    if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = AIRLINE_ACCENT[_fAl];
+    if (_fAl && AIRLINE_ACCENT2[_fAl]) _fAcc = AIRLINE_ACCENT2[_fAl];
+    else if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = '#34373d';
   } catch (e) {}
   var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
   var _tint = _fAcc
