@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22627';
+var FIDS_BUILD_TAG = 'v22628';
 (function(){
   try {
     function _addTag(){
@@ -24365,12 +24365,31 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // to nudge the frame between ticks.
       var _gx = Math.round(r.left - hb.left - padX), _gy = Math.round(r.top - hb.top - padY);
       var _gw = Math.round(r.width + 2 * padX), _gh = Math.round(r.height + 2 * padY);
+      // FREEZE, and make it survive a rebuild. A slide re-render replaces
+      // the .ad-tech-frame element, which used to lose dataset.geom and
+      // re-place itself a pixel or two off — a visible twitch every few
+      // seconds (caught at t+123s and t+124s of a 3-minute recording).
+      // The frozen rect now lives on the HOST, keyed to the creative, so
+      // a fresh frame adopts the identical rect instead of re-measuring.
+      var _mkey = '';
+      try { _mkey = String(m.currentSrc || m.src || '') + '|' + Math.round(hb.width) + 'x' + Math.round(hb.height); } catch (e) {}
+      if (host.dataset.frameKey === _mkey && host.dataset.frameGeom) {
+        var _hz = host.dataset.frameGeom.split(',');
+        f.dataset.geom = host.dataset.frameGeom;
+        f.style.left = _hz[0] + 'px'; f.style.top = _hz[1] + 'px';
+        f.style.width = _hz[2] + 'px'; f.style.height = _hz[3] + 'px';
+        f.style.right = 'auto'; f.style.bottom = 'auto';
+        f.style.visibility = 'visible';
+        continue;
+      }
       var _prev = (f.dataset.geom || '').split(',').map(Number);
       if (_prev.length === 4 && Math.abs(_prev[0]-_gx)<=2 && Math.abs(_prev[1]-_gy)<=2
           && Math.abs(_prev[2]-_gw)<=2 && Math.abs(_prev[3]-_gh)<=2) {
         f.style.visibility = 'visible';
         continue;
       }
+      host.dataset.frameKey = _mkey;
+      host.dataset.frameGeom = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
       f.dataset.geom = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
       f.style.left = _gx + 'px';
       f.style.top = _gy + 'px';
