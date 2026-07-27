@@ -4625,8 +4625,11 @@ html body .g8-r1-right::before {
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
-  mix-blend-mode: screen !important;
-  opacity: .44 !important;
+  /* v22613: screen over the tab's SATURATED accent just washes it pink
+     and flattens the art — the red channel clips immediately. Overlay
+     keeps the accent and shows the swirls as light and dark. */
+  mix-blend-mode: overlay !important;
+  opacity: .70 !important;
   pointer-events: none !important;
   z-index: 0 !important;
   border-radius: inherit;
