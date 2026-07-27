@@ -5482,3 +5482,26 @@ html body[data-fids-banner="silk"]:not(#_) .fids-banner::after {
     rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
     rgba(0,0,0,0.46) 66%, rgba(0,0,0,0.18) 74%, rgba(0,0,0,0.18) 100%) !important;
 }
+
+/* ── v22653: MOST OF THE SHINE BACK OVER THE RED. Nick picked the middle
+   ground on the banner's right end.
+
+   The old look ran the silk at full strength over the red and measured
+   0.215 sheen — but that is what put the clock at 2.02:1, the state he
+   photographed this morning. Zeroing it gave 4.73:1 and a flat band.
+
+   The ramp now bottoms at 62% instead of 18%. The bilingual labels are
+   19px bold and the clock is 44px, so the floor for all of it is 3.0 —
+   which leaves room to spend most of that headroom on sheen and still
+   sit clear of it. Verified after deploy rather than assumed. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::after,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::after {
+  -webkit-mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.80) 66%, rgba(0,0,0,0.62) 74%, rgba(0,0,0,0.62) 100%) !important;
+  mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.80) 66%, rgba(0,0,0,0.62) 74%, rgba(0,0,0,0.62) 100%) !important;
+}
