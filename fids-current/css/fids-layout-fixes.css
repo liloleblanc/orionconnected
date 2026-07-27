@@ -5395,3 +5395,44 @@ html body:not(#_) .octb-wrap::before {
   mix-blend-mode: screen !important;
   opacity: .48 !important;
 }
+
+/* ── v22651: MORE SHINE, AND FIX WHERE THE DARKENING SITS. Still bland, and
+   two things were holding it back beyond the blend mode.
+
+   1. THE TIME TAB. v22643 put the navy scrim on ::after — ABOVE the silk.
+      That was right for contrast and wrong for looks: it flattens the
+      highlights the silk had just painted. Darkening belongs UNDER the art,
+      so the base goes deep and the swirls stay bright on top of it. The
+      scrim moves back to an inset shadow beneath the silk, but much
+      stronger than the .38 that failed the first time, and the silk itself
+      comes up to .62. Dark base, bright sheen — both, instead of trading
+      one for the other.
+
+   2. THE BANNER'S RIGHT END. The mask took the silk to zero under the
+      clock, which left that third of the band completely flat. White on
+      the red had 5.43:1, roughly a stop of headroom over the floor, so
+      some of it can be spent on sheen: the ramp now bottoms out at 34%
+      rather than 0. */
+html body:not(#_) .octb-wrap::after,
+html body:not(#_) .g8-r1-timebox::after {
+  background: transparent !important;
+}
+html body:not(#_) .octb-wrap,
+html body:not(#_) .g8-r1-timebox {
+  box-shadow: inset 0 0 0 999px rgba(9, 22, 42, 0.60) !important;
+}
+html body:not(#_) .octb-wrap::before,
+html body:not(#_) .g8-r1-timebox::before {
+  opacity: .62 !important;
+}
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::after,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::before,
+html body[data-fids-banner="silk"]:not(#_) .fids-banner::after {
+  -webkit-mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.58) 66%, rgba(0,0,0,0.34) 74%, rgba(0,0,0,0.34) 100%) !important;
+  mask-image: linear-gradient(to right,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%,
+    rgba(0,0,0,0.58) 66%, rgba(0,0,0,0.34) 74%, rgba(0,0,0,0.34) 100%) !important;
+}
