@@ -5220,11 +5220,11 @@ html body .g8-bir-cell .g8-bir-val {
    not something to disturb for a hairline. */
 html body #fidsBoard:not(#_),
 html body #fidsTable tbody tr:not(#_) {
-  background-image: url("/logos/Backgrounds/fids-worldmap-dots.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/fids-geo-lines.png?v=1") !important;
   background-attachment: fixed !important;
   background-position: center 128px !important;
-  background-size: auto calc(100vh - 186px) !important;
-  background-repeat: no-repeat !important;
+  background-size: 300px 300px !important;
+  background-repeat: repeat !important;
   background-blend-mode: multiply !important;
 }
 html body #fidsTable tbody tr:not(#_) > td {
@@ -5304,11 +5304,11 @@ html body #fidsTable tbody tr:not(#_) > td {
    (132,10,29), and the white lettering goes from 7.89:1 to 10.27:1. */
 html:not(#_) body:not(#_) #fidsTable tbody tr.row-delayed td,
 html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
-  background-image: url("/logos/Backgrounds/fids-worldmap-dots-faint.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/fids-geo-lines.png?v=1") !important;
   background-attachment: fixed !important;
   background-position: center 128px !important;
-  background-size: auto calc(100vh - 186px) !important;
-  background-repeat: no-repeat !important;
+  background-size: 300px 300px !important;
+  background-repeat: repeat !important;
   background-blend-mode: multiply !important;
 }
 
@@ -5338,12 +5338,38 @@ html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
    map: #A50D24 is a dark ground and multiply only lifts its white
    lettering, 7.89:1 to 10.27:1. */
 html:not(#_) body.fids-light-board:not(#_) #fidsBoard,
-html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr,
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-delayed td {
-  background-image: url("/logos/Backgrounds/fids-worldmap-blue.jpg?v=1") !important;
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr {
+  background-image: url("/logos/Backgrounds/fids-geo-lines.png?v=1") !important;
   background-attachment: fixed !important;
   background-position: center 128px !important;
-  background-size: auto calc(100vh - 186px) !important;
-  background-repeat: no-repeat !important;
+  background-size: 300px 300px !important;
+  background-repeat: repeat !important;
   background-blend-mode: multiply !important;
 }
+
+/* ── v22643: NICK'S GEOMETRIC LINE PATTERN REPLACES THE WORLD MAPS.
+   'I dont think dots are the answer lets try something new', then the
+   geometric textile tile.
+
+   It solves what the maps could not. A world map is a picture: it has a
+   right size, a centre, and edges, so it had to be placed once and scaled
+   to the board, and it looked different on a 2-row board than a 12-row one.
+   This is a true seamless tile — it repeats, so it is the same texture at
+   any board height, any row count, and on every surface at once. That also
+   retires the light-map/dark-map split: one artwork now serves the dark
+   rows, the light-board theme, the yellow delayed row and the red cancelled
+   row, because thin dark linework under multiply reads on all of them.
+
+   Scale and strength read together on the live board, four combinations:
+
+     0.20 @ 300px   dark text on a line, delayed row   6.35:1
+     0.32 @ 300px                                      5.16:1   <- ships
+     0.32 @ 200px                                      5.22:1
+     0.45 @ 200px                                      4.13:1   FAILS
+
+   0.32 at 300px is the most present of the safe set — 0.45 puts the delayed
+   row's dark ink under 4.5. On the dark rows the linework only darkens, so
+   white lettering measures 7.00:1 where a line crosses it against 4.44:1
+   bare: the pattern makes those rows MORE legible, not less.
+
+   The three world-map files are deleted; nothing references them. */
