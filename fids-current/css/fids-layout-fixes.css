@@ -5218,20 +5218,13 @@ html body .g8-bir-cell .g8-bir-val {
    DIVIDERS. inset box-shadow rather than a border — a border would add a
    pixel to a row height the fitter has already measured, and row sizing is
    not something to disturb for a hairline. */
-html body #fidsBoard:not(#_) {
-  background-image: url("/logos/Backgrounds/fids-dots-blue.jpg?v=1") !important;
-  background-attachment: fixed !important;
-  background-position: center 128px !important;
-  background-size: 1920px auto !important;
-  background-repeat: repeat !important;
-  background-blend-mode: multiply !important;
-}
+html body #fidsBoard:not(#_),
 html body #fidsTable tbody tr:not(#_) {
-  background-image: url("/logos/Backgrounds/fids-dots-blue.jpg?v=1") !important;
+  background-image: url("/logos/Backgrounds/fids-worldmap-dots.jpg?v=1") !important;
   background-attachment: fixed !important;
   background-position: center 128px !important;
-  background-size: 1920px auto !important;
-  background-repeat: repeat !important;
+  background-size: auto calc(100vh - 186px) !important;
+  background-repeat: no-repeat !important;
   background-blend-mode: multiply !important;
 }
 html body #fidsTable tbody tr:not(#_) > td {
@@ -5253,3 +5246,22 @@ html body #fidsTable tbody tr:not(#_) > td {
 
    The artwork itself is still open — Nick: 'I dont think this is the right
    one'. */
+
+/* ── v22640: THE DOTTED WORLD MAP. Nick sent it with 'try this instead'
+   after the halftone field ('I dont think this is the right one').
+
+   It is a PICTURE, not a tile, so the repeat from v22639 is wrong for it —
+   a world map printed four times across a departure board would be absurd.
+   It paints ONCE, centred, at its own proportions.
+
+   Sizing is calc(100vh - 186px): the banner is 128px and the yellow ticker
+   58px, so the map is exactly as tall as the board between them and no
+   taller. That is the same 894px it was read at on a 1080p screen, but
+   expressed so a screen of any height gets a map that reaches the yellow
+   line and stops — which is what Nick asked for two attempts ago and what
+   the hard-coded 894 would have broken on the next screen size.
+
+   Strength read on the live board at 0.35, 0.50 and 0.70 composited over
+   white. 0.50 ships: the continents are unmistakable, and because multiply
+   only darkens under white-on-colour rows, row contrast rises rather than
+   falls. */
