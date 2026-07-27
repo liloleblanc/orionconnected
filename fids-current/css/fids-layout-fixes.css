@@ -5228,7 +5228,7 @@ html body[data-fids-ap="MCO"] #fidsTable tbody tr:not(#_) {
   background-blend-mode: multiply !important;
 }
 html body #fidsTable tbody tr:not(#_) > td {
-  box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.55) !important;
+  box-shadow: inset 0 -2px 0 rgba(9, 17, 28, 0.55) !important;
 }
 
 /* ── v22639: NO MORE STRETCHING, AND DIVIDERS YOU CAN ACTUALLY SEE.
@@ -5524,4 +5524,18 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td
     background-repeat: repeat !important;
     background-blend-mode: multiply !important;
   }
+}
+
+/* ── v22650: DARK DIVIDERS, AND BAGGAGE GETS THEM TOO. Nick: 'check baggage
+   and add the same lines please but black — same thing for FIDS change them
+   to darker or black'.
+
+   The FIDS divider flips from white 55% to near-black (#09111C at 55%) —
+   the change is in the v22639 block above. On the baggage board the same
+   line goes on every flight row. Not pure #000: at 2px a hard black line
+   against the lighter rows reads as a gap in the screen rather than a rule
+   on it; the near-black ink is what the board's own dark rows are made of,
+   so the line reads as structure. */
+html body .bidsv2-flight-row:not(#_) {
+  box-shadow: inset 0 -2px 0 rgba(9, 17, 28, 0.55) !important;
 }
