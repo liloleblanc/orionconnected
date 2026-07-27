@@ -5302,7 +5302,6 @@ html body #fidsTable tbody tr:not(#_) > td {
    0.20 is faint, still legible at a distance, and keeps headroom over the
    4.5 floor. On cancelled it only helps: multiply takes #A50D24 to
    (132,10,29), and the white lettering goes from 7.89:1 to 10.27:1. */
-html:not(#_) body:not(#_) #fidsTable tbody tr.row-delayed td,
 html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
   background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
   background-attachment: fixed !important;
@@ -5338,8 +5337,9 @@ html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
    map: #A50D24 is a dark ground and multiply only lifts its white
    lettering, 7.89:1 to 10.27:1. */
 html:not(#_) body.fids-light-board:not(#_) #fidsBoard,
-html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr {
-  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-delayed td {
+  background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
   background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5400,3 +5400,35 @@ html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr {
    Both together on the delayed row's dark text: still clear of the 4.5
    floor, and on the dark rows the linework only darkens, so white
    lettering gains contrast rather than losing it. */
+
+/* ── v22645: THE PATTERN CARRIES TWO WEIGHTS, BY GROUND.
+   v22644 locked the pattern to the rows and took Nick's 'bigger maybe
+   lighter' literally — both at once. Locked and bigger were right; lighter
+   on top of bigger made it disappear, which is the opposite of what he has
+   asked for repeatedly.
+
+   Bigger is why. At 66px rule spacing the lines are 2.2x thicker on screen
+   than at 30px, so wherever a line crosses text it darkens far more deeply.
+   Read on the live delayed row at the locked geometry:
+
+     0.45 ink   dark text on a line   3.92:1   FAILS
+     0.60                             2.87:1   FAILS
+     0.75                             2.11:1   FAILS
+
+   So one weight cannot serve both grounds at this scale — which is exactly
+   the split Nick proposed himself for the maps. It applies here for a
+   sharper reason: multiply DARKENS, so on a dark ground it pushes the
+   surface away from white lettering and on a light ground it pushes the
+   surface toward dark lettering. The same ink helps one and hurts the other.
+
+     dark ground, 0.60 ink
+       cyan row white text      2.91:1 bare -> 11.01:1 on a line
+       cancelled white text     7.83:1 bare -> 16.66:1 on a line
+     light ground, 0.20 ink
+       delayed dark text        4.80:1 on a line
+       light board dark text    9.73:1 on a line
+
+   0.60 on the dark grounds is the visible weight Nick wants and it makes
+   the cyan row — already at 2.91:1 before any of this, below the floor —
+   substantially more legible, not less. 0.20 is the ceiling on the delayed
+   yellow: 0.25 lands at 4.27 and misses. */
