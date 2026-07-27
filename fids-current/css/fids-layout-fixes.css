@@ -5265,3 +5265,49 @@ html body #fidsTable tbody tr:not(#_) > td {
    white. 0.50 ships: the continents are unmistakable, and because multiply
    only darkens under white-on-colour rows, row contrast rises rather than
    falls. */
+
+/* ── v22641: THE MAP CROSSES THE DELAYED AND CANCELLED ROWS TOO.
+   Nick: 'I think it needs to go through all colors including the delayed
+   and cancelled but faint'.
+
+   Why they were blank: ordinary rows carry their colour on the <tr>, so the
+   map layer on the row shows through. Delayed and cancelled paint theirs on
+   the <td> with the background SHORTHAND and !important — which is opaque
+   over the row's layer AND resets background-image to none. Two id-levels
+   here to outrank the widest of those (html body.fids-light-board #fidsTable
+   tbody tr.row-cancelled:nth-child(even) td).
+
+   Why a SEPARATE, fainter file rather than a blend-mode change. Measured on
+   the live yellow row with its dark ink:
+
+     multiply, normal map   dot depth .420   text in a dot  2.47:1   FAILS
+     soft-light             dot depth .164   text in a dot  8.69:1
+     overlay                dot depth .397   text in a dot  8.65:1
+     darken                 dot depth .341   text in a dot  3.63:1   FAILS
+
+   multiply at full strength puts dark text on a near-black dot — it would
+   have shipped broken. But soft-light and overlay both LIGHTEN, because the
+   map's ground is white, and they visibly washed the delayed yellow to .70
+   and .93 luminance against its true .54. Nick has been specific about that
+   yellow, so changing it is not on.
+
+   multiply is the only mode where white is a no-op and the colour survives
+   exactly. So the fix is a fainter map, not a different blend. Composited
+   over white at three levels on the live row:
+
+     0.14   depth .208   text in a dot  6.37:1
+     0.20   depth .261   text in a dot  5.58:1     <- ships
+     0.26   depth .315   text in a dot  4.77:1
+
+   0.20 is faint, still legible at a distance, and keeps headroom over the
+   4.5 floor. On cancelled it only helps: multiply takes #A50D24 to
+   (132,10,29), and the white lettering goes from 7.89:1 to 10.27:1. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-delayed td,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td {
+  background-image: url("/logos/Backgrounds/fids-worldmap-dots-faint.jpg?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center 128px !important;
+  background-size: auto calc(100vh - 186px) !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+}
