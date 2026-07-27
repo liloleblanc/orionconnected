@@ -5941,3 +5941,56 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
    was only half done — verified by reading the baggage banner and getting
    null for all three. Matching the parts directly under either banner
    covers both structures. */
+
+/* ── v22668: THE LATTICE GOES TO EVERY OTHER AIRPORT. Nick: 'i want to try
+   this for other airports, same concept, fit the shelves on it'.
+
+   SAME CONCEPT, DIFFERENT GEOMETRY. Asa-no-ha carries a horizontal rule
+   every 103.8px — ten per tile, evenly spaced — so a rule could be put on
+   every row edge. This one does not: its registration gaps run 62, 245, 62,
+   111px, which sum to a 480px MOTIF repeating exactly four times in the
+   1920 tile. Irregular within the motif, perfectly regular between motifs.
+   So the lock is motif-to-rows rather than line-to-row: the tile is sized
+   to 8 row pitches, putting one motif across exactly 2 rows, and the
+   pattern's own rhythm restarts on a row edge every time.
+
+   The height is derived from the same measured pitch the board already
+   publishes — --fids-pat-h is 10 pitches, so 0.8 of it is 8. No second
+   measurement, no constant to drift.
+
+   ONE WEIGHT SERVES BOTH GROUNDS HERE. The darkest strut in this artwork is
+   only (119,120,122) — mid-grey, not near-black — so multiply cannot crush
+   a light row the way asa-no-ha's ink could. At 0.30, measured against the
+   real row colours:
+
+     delayed yellow   dark text on a strut   5.27:1   (7.39 bare)
+     cyan row         white text             3.99:1   (2.91 bare)
+     blue row         white text             5.87:1   (4.44 bare)
+
+   Nothing gets worse and the cyan row — under the floor before any of this
+   — comes up. 0.45 was the more visible option but put the delayed row's
+   dark text at 4.38, under 4.5, so it loses.
+
+   Orlando keeps asa-no-ha; this is every other airport. */
+@media (min-width: 701px) {
+  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
+  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsTable tbody tr:not(#_),
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-final td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
+    background-image: url("/logos/Backgrounds/fids-lattice.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto calc(var(--fids-pat-h, 660px) * 0.8) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+  /* the header strip stays a solid bar on every airport, same as Orlando */
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-list-header {
+    background-image: none !important;
+  }
+}
