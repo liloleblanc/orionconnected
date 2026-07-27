@@ -16696,7 +16696,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22632';
+var FIDS_BUILD_TAG = 'v22633';
 (function(){
   try {
     function _addTag(){
@@ -28075,9 +28075,7 @@ function _adBackdropHtml(blurUrl) {
         } catch (e) { _wSec = '#AEB4BC'; }
         f.innerHTML =
             '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
-          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
-          + '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.92;'
-          +   'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _wMask + '"></div>';
+          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>';
       }
     } catch (e) {}
   }
@@ -28147,21 +28145,15 @@ function _adTechFrameHtml() {
   // tints: the primary over the whole frame, then the secondary clipped
   // to the inside of the outer band so only the second line changes.
   // The band measures 1.09% of width / 1.68% of height.
-  var _fPri = '';
-  try {
-    var _fAl2 = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-    if (_fAl2 && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl2]) _fPri = AIRLINE_ACCENT[_fAl2];
-  } catch (e) {}
+  // Nick, repeatedly: the INNER frame is the airline's second colour —
+  // gray/light for Air Canada. v22625 washed the primary over this whole
+  // frame as well, which put the red straight back. The outer wall frame
+  // carries the primary; this one carries only the secondary.
   var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
-  var _tint = '';
-  if (_fPri) {
-    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;' + _maskCss + '"></div>';
-  }
-  if (_fAcc) {
-    _tint += '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.92;'
-      + 'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _maskCss + '"></div>';
-  }
+  var _tint = _fAcc
+    ? '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>'
+    : '';
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
     +   '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
