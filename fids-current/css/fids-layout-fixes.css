@@ -4889,3 +4889,48 @@ html .octb-date .cl-sep {
   margin: 0 clamp(12px, 1.9vw, 42px) !important;
   opacity: 1 !important;
 }
+
+/* ── v22619: TIME TAB CENTRED (Nick's NO/YES sketch) — the row used
+   space-between, which pinned the labels left and the clock right with
+   dead space between. The pair is one centred group now. */
+html .octb-top, html .octb-tab .octb-top {
+  justify-content: center !important;
+  gap: clamp(14px, 1.5vw, 32px) !important;
+}
+html .octb-tab { justify-content: center !important; }
+
+/* ── v22619: FIRST WORDS BRIGHT (Nick: 'try the PAL yellow and then
+   lighter brighter colors in general … the first words'). The English
+   half takes a light tint of the carrier's colour; the French half
+   stays white so the pair still reads as one unit. */
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span:first-child {
+  color: color-mix(in srgb, var(--airline-accent, #D82F2E) 30%, #ffffff) !important;
+}
+/* PAL's brand yellow (Nick asked for it by name). */
+html body[data-gate-airline="PB"]:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
+html body[data-gate-airline="PB"]:not(#_) .g8-bir-cell .g8-bir-l1,
+html body[data-gate-airline="PB"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span:first-child {
+  color: #FFC63D !important;
+}
+
+/* ── v22619: AIRPORT MARK IN THE GATE TAB (Nick: 'the logo and airport
+   code appear in the gate before the number … engraved or seen in
+   white'). The white lockup rides behind the label and number as an
+   engraved watermark, so it adds identity without crowding the tab.
+   The URL comes from the ICAO guessed off the airport's IATA; where no
+   asset exists the background simply does not paint. */
+html body .g8-r1-right::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 7% !important; right: 7% !important; top: 7% !important;
+  height: 24% !important;
+  background-image: var(--ap-mark, none) !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  opacity: .34 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}

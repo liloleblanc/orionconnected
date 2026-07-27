@@ -9771,7 +9771,7 @@ function uxgGateHtml(ctx) {
     // separation like a border'). Flush to the right edge; the top-LEFT corner
     // is rounded and a white left border + shadow separate it from the banner
     // field. No skew, so inner spans no longer counter-skew.
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:0 !important;bottom:0 !important;width:var(--gate-rcw, 25%) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 30px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;border-radius:26px 0 0 0 !important;border-left:5px solid rgba(255,255,255,0.92) !important;box-shadow:-12px 0 26px rgba(0,0,0,0.32) !important;overflow:hidden;z-index:5;">'
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:0 !important;bottom:0 !important;width:var(--gate-rcw, 25%) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 30px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;border-radius:26px 0 0 0 !important;border-left:5px solid rgba(255,255,255,0.92) !important;box-shadow:-12px 0 26px rgba(0,0,0,0.32) !important;overflow:hidden;z-index:5;' + (function(){ var i = String(iata || '').toUpperCase(); var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i); return '--ap-mark:url(/logos/airports/' + ic + '-white.svg);'; })() + '">'
     +     '<span class="g8-bilbl"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
     +     '<span class="g8-r1-gate" style="font-size:' + (function(g){var n=String(g||'').length; return n>=5?'clamp(56px,7vh,84px)':(n===4?'clamp(78px,9.5vh,110px)':'clamp(96px,13vh,138px)');})(gateVal) + ' !important;line-height:0.92 !important;">' + gateVal + '</span>'
     +   '</div>'
@@ -16682,7 +16682,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22618';
+var FIDS_BUILD_TAG = 'v22619';
 (function(){
   try {
     function _addTag(){
