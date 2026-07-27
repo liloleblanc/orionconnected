@@ -4984,3 +4984,14 @@ html body:not(#_) .fids-airport-iata,
 html body:not(#_) .fids-airport-name {
   color: #ffffff !important;
 }
+
+/* ── v22622: Nick's stacked YQM artwork, keyed to transparency. His file
+   was white-on-white with no alpha, so dropped in raw it would have
+   painted a white box like the old SVG did. Flood-filled the background
+   out and used nesting depth to fill the shapes solid while leaving the
+   Q's counter open. The lettering is part of the mark now, so the
+   separate code text is gone and the block gets the height to read. */
+html body .g8-r1-apmark img {
+  height: clamp(52px, 8.2vh, 104px) !important;
+  max-height: 78% !important;
+}
