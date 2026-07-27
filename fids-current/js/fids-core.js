@@ -17029,7 +17029,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22651';
+var FIDS_BUILD_TAG = 'v22652';
 (function(){
   try {
     function _addTag(){
@@ -17919,7 +17919,12 @@ function render() {
     // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
     // brand colours clash there (TAP green/red on yellow, Nick) and the
     // inline !important would beat any stylesheet fix.
-    const _brandInkOk = !(isDelayed || stKey === 'final-call');
+    // Cancelled/diverted joined Jul 27: their fallback NAME was still
+    // getting the brand colour inlined with !important, which beats every
+    // stylesheet rule — a navy or black brand rendered black on the red
+    // block whenever the white-ink artwork failed to load (Nick: 'I
+    // guarantee you on FIDS its not white. its black').
+    const _brandInkOk = !(isDelayed || stKey === 'final-call' || isCanc || isDiv);
     const _nameStyle = (_brandColor && _brandInkOk) ? ` style="color:${_brandColor} !important;"` : '';
     // onerror: RETRY once with a unique cache-buster before falling back to the
     // text name — a transient asset hiccup (or a stale cached 404) must not

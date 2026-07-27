@@ -5586,3 +5586,38 @@ html body .bidsv2-flight-row:not(#_) {
     background-blend-mode: multiply !important;
   }
 }
+
+/* ── v22652: CANCELLED CANNOT BE BLACK. Nick: 'I guarantee you on FIDS its
+   not white. its black.' He is right, and the earlier probe was the wrong
+   test — it walked TEXT colours, which are all white, while the black he
+   sees comes from the two things that are not plain text:
+
+   1. The airline WORDMARK IMAGE. The row builder asks for the white-ink
+      artwork on cancelled/diverted, but any carrier whose light variant is
+      missing, stale, or miscut ships dark lettering anyway — the file
+      decides, not the rule. The filter below stops asking: whatever ink the
+      artwork arrived with, brightness(0) flattens it and invert(1) makes it
+      white. Applies to FIDS and BIDS rows.
+
+   2. The FALLBACK NAME. When the artwork dies, onerror swaps in the typed
+      name with the brand colour INLINED with !important — inline beats
+      every stylesheet rule, so navy/black brands rendered black on red.
+      Fixed in the row builder: cancelled/diverted no longer inline a brand
+      colour at all. The belt below catches rows rendered before that fix.
+
+   White logos on the red block was the standing instruction ('airlines in
+   general all white on red' — recorded in the builder itself). */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled img.fids-airline-wordmark,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted img.fids-airline-wordmark,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled img.bidsv2-airline-wordmark,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted img.bidsv2-airline-wordmark {
+  filter: brightness(0) invert(1) !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .fids-airline-name,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .fids-airline-name,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled .bidsv2-airline-name,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted .bidsv2-airline-name {
+  color: #ffffff !important;
+}
