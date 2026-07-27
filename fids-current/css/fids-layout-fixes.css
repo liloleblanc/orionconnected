@@ -4548,3 +4548,66 @@ html .wxc-hour .wxc-h-temp, html .wxc-hr {
   color: #ffffff !important;
   opacity: 1 !important;
 }
+
+/* ── v22611: NO DARK WORDS ON DARK SLABS (Nick's PAL gate photo: the
+   flight number, city and times rendered navy-on-navy). The boarding
+   strip's ink was calibrated for the old light shelf; on the tinted
+   slabs it has to be white. Status spans keep their own palette — their
+   rules are more specific than this one. */
+html body .g8-bir-cell .g8-bir-val,
+html body .g8-bir-cell .g8-bir-title,
+html body .g8-bir-cell .g8-bir-l1,
+html body .g8-bir-cell .g8-bir-l2,
+html body .g8-bir-cell .g8-bir-sep,
+html body .g8-bir-cell .g8-bir-code-t,
+html body .g8-bir-cell .g8-bir-mer {
+  color: #ffffff !important;
+}
+html body .g8-bir-cell .g8-bir-l1,
+html body .g8-bir-cell .g8-bir-l2 { opacity: .92 !important; }
+
+/* ── v22611: SHELVES LIGHTER SO THE MATERIAL SHOWS (Nick: 'the shelves
+   are too dark can't see any details in it'). Mixing the accent toward
+   a light slate instead of a near-black base lands every carrier in
+   mid-tone, where the luxury texture is actually visible. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body .g8-bir-cell,
+html body .g8-wrap .gad-aircraft-col,
+html body .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body .g8-wrap .gad-map-col-v2,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 48%, #8b9099) !important;
+}
+/* AC keeps its approved material — restated last so it wins. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: #43464c !important;
+}
+
+/* ── v22611: the TIME TAB carries the banner pattern too (Nick: 'want
+   time too banner more seen'). The tab is its own absolutely-positioned
+   block at z 4, so the banner's ::before at z 0 never reached it. */
+html body .g8-r1-timebox, html body .octb-wrap { position: relative; }
+html body .g8-r1-timebox::before, html body .octb-wrap::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
+  background-image: url("/logos/Backgrounds/banner-silk.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  mix-blend-mode: screen !important;
+  opacity: .48 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  border-radius: inherit;
+}
+html body .g8-r1-timebox > *, html body .octb-wrap > * { position: relative; z-index: 1; }
