@@ -10627,6 +10627,30 @@ function gateAutofit(root) {
       var shelf = el.closest('.v2-rc-shelf-illus'); if (!shelf) return;
       _boxAssign(el, Math.floor(shelf.clientWidth * 0.88), Math.floor(shelf.clientHeight * 0.7), null, false);
     });
+    // v22686 — THE THIRD PANEL MATCHES THE OTHER TWO BY MEASUREMENT.
+    // Nick: 'same size as the other 2 and alligned' + 'The panels are not
+    // the same size either'. CSS could not deliver this: the fi-table
+    // renders ~27px narrower than its shelf's content box (measured live;
+    // clamp arithmetic never explains it because the discrepancy is the
+    // table's own layout), so any margin recipe drifts. Instead the type
+    // panel copies the FIRST PANE's real box — left edge, width, height —
+    // from getBoundingClientRect, the same measure-don't-assume law as the
+    // pattern registration and every fitter here. Runs with this fitter
+    // (every render + resize), so it self-corrects when the rail reflows.
+    root.querySelectorAll('.gad-map-col-v2').forEach(function (col) {
+      var pane = col.querySelector('.v2-rc-fi-pane');
+      var acb = col.querySelector('.v2-rc-acb');
+      if (!pane || !acb || !acb.offsetParent) return;
+      var pr = pane.getBoundingClientRect();
+      if (!(pr.width > 40 && pr.height > 20)) return;
+      var host = acb.parentElement.getBoundingClientRect();
+      acb.style.setProperty('margin', '0', 'important');
+      acb.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - host.left)) + 'px', 'important');
+      acb.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
+      acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
+      acb.style.setProperty('flex-direction', 'column', 'important');
+      acb.style.setProperty('justify-content', 'center', 'important');
+    });
   } catch (e) {}
 }
 
@@ -17096,7 +17120,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22685';
+var FIDS_BUILD_TAG = 'v22686';
 (function(){
   try {
     function _addTag(){

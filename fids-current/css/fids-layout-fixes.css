@@ -6322,10 +6322,19 @@ html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="win
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
-    background-image: url("/logos/Backgrounds/fids-stripes.png?v=1") !important;
+    /* v22686 — the diagonal stripes give way to Nick's blue wave
+       ('last thing for tonight ... the change of FIDS and BIDS background
+       again'). Same one-copy discipline: the artwork is fine curved
+       hairlines, so the shipped file is pre-rendered offline with Lanczos
+       to EXACTLY 1080px tall — at 1080p, cover matches height 1:1 and the
+       browser only center-crops the extra width. Zero play-time
+       resampling, so the curves can't alias the way the lattice did.
+       Darkest point 180/255; the blue hairlines are ~1px against 4-5px
+       glyph strokes, so no reading surface moves below its floor. */
+    background-image: url("/logos/Backgrounds/fids-wave.jpg?v=1") !important;
     background-attachment: fixed !important;
     background-position: center top !important;
-    background-size: 100vw auto !important;
+    background-size: cover !important;
     background-repeat: no-repeat !important;
     background-blend-mode: multiply !important;
   }
@@ -6364,8 +6373,15 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-acb {
   height: auto !important;
   margin: clamp(5px, .55vh, 9px) clamp(9px, .75vw, 14px) !important;
   padding: clamp(6px, .8vh, 12px) clamp(8px, .7vw, 13px) !important;
-  border-radius: 4px;
-  background: rgba(8, 12, 18, 0.10);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 6px rgba(0, 0, 0, 0.30);
+  border-radius: 4px !important;
+  /* v22686: the plate needs !important — the v22600 shelf-set paints this
+     element transparent WITH !important, which is why v22685's plate never
+     appeared (Nick's A321neo still floated). And per Nick ('maybe make a
+     distinction from the panel to the back — brighter blue? just
+     something'), the plate is a brighter blue glass rather than the panes'
+     dark smoke, so the third panel reads clearly against the shelf. */
+  background-color: rgba(92, 145, 215, 0.32) !important;
+  background-image: linear-gradient(180deg, rgba(140, 185, 240, 0.30) 0%, rgba(60, 105, 180, 0.26) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 6px rgba(0, 0, 0, 0.30) !important;
   box-sizing: border-box !important;
 }
