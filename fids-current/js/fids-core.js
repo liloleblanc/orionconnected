@@ -17120,7 +17120,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22686';
+var FIDS_BUILD_TAG = 'v22687';
 (function(){
   try {
     function _addTag(){
@@ -28752,6 +28752,17 @@ function _adTechFrameHtml() {
   if (_fAcc) {
     _tint += '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.92;'
       + 'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _maskCss + '"></div>';
+  }
+  // v22687 — Nick: 'put the middle frame and inner outer frame the
+  // different color'. The art's motif is three concentric lines. Two tints
+  // gave outer=primary, middle+inner=secondary; a third layer, clipped one
+  // band further in (the outer band clips at 1.9%/1.3%, so the inner line
+  // starts at double that), re-applies the PRIMARY on the innermost line.
+  // Net: outer primary · middle secondary · inner primary — the middle
+  // frame differs from the inner and outer pair.
+  if (_fPri && _fAcc) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;'
+      + 'clip-path:inset(3.8% 2.6% 3.8% 2.6%);' + _maskCss + '"></div>';
   }
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
