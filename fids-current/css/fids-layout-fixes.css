@@ -6408,3 +6408,13 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   background-image: none !important;
   box-shadow: none !important;
 }
+
+/* v22683 — the '738' itself was still white inside the silver panel 3:
+   the value is wrapped in an unclassed nowrap <span> (the no-split law's
+   _nbw wrapper), and the v22600 shelf-set rule paints shelf-type
+   descendants white with a direct `*` match — which beats the navy the
+   parent div inherits down. Match the descendants directly too. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb * {
+  color: #003366 !important;
+}
