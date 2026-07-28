@@ -3281,7 +3281,12 @@ function carrierLogoUrl(code) {
   //        the text-wordmark fallback was the lesser evil. v22676: Nick
   //        supplied the real brand kit, so XP now has local artwork like
   //        every other carrier and no longer needs the fallback.
-  var STALE_WWAY_CARRIER = { '4Y': 1 };
+  //   LL — LEVEL (flies MIA-Barcelona; surfaced the moment Miami went
+  //        live). Same white-canvas failure as Avelo had: the gate banner
+  //        showed an empty white box where the logo belongs (Nick's E25
+  //        screenshot). No local artwork yet, so the text-wordmark path is
+  //        the honest rendering until we have LEVEL's real files.
+  var STALE_WWAY_CARRIER = { '4Y': 1, 'LL': 1 };
   if (STALE_WWAY_CARRIER[up]) return '';
   return 'https://img.wway.io/pics/root/' + logoCode(up) + '@svg';
 }
@@ -4632,7 +4637,7 @@ const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
-  'HA':'#582C83','XP':'#492C92',
+  'HA':'#582C83','XP':'#492C92','LL':'#00B7C8',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
@@ -4648,7 +4653,7 @@ var AIRLINE_DOMAIN = {
   'UA':'united.com','DL':'delta.com','AA':'aa.com','WN':'southwest.com',
   'B6':'jetblue.com','AS':'alaskaair.com','F9':'flyfrontier.com',
   'G4':'allegiantair.com','HA':'hawaiianairlines.com','SY':'suncountry.com',
-  'XP':'aveloair.com',
+  'XP':'aveloair.com','LL':'flylevel.com',
   'LH':'lufthansa.com','BA':'britishairways.com','AF':'airfrance.com','KL':'klm.com',
   'VS':'virginatlantic.com','LX':'swiss.com','OS':'austrian.com','SK':'flysas.com',
   'AY':'finnair.com','IB':'iberia.com','TP':'flytap.com','EI':'aerlingus.com',
@@ -15919,7 +15924,7 @@ const _AIRLINE_NAME_OVERRIDE = {
   'UA':'United','DL':'Delta','AA':'American','WN':'Southwest',
   'B6':'JetBlue','AS':'Alaska','F9':'Frontier',
   // NK (Spirit) removed — ceased operations May 2 2026
-  'G4':'Allegiant','HA':'Hawaiian','SY':'Sun Country',
+  'G4':'Allegiant','HA':'Hawaiian','SY':'Sun Country','LL':'LEVEL',
   '9E':'Delta','9K':'Cape Air','MQ':'American','OH':'American','OO':'SkyWest',
   'YV':'Mesa','G7':'GoJet','YX':'Republic','PT':'American','ZW':'Air Wisconsin',
   'QX':'Horizon','EV':'ExpressJet',
@@ -15975,6 +15980,7 @@ const AIRLINE_NAME = {
   'B6':'JETBLUE',     'AS':'ALASKA',      'F9':'FRONTIER',
   // NK (Spirit) — ceased operations May 2 2026
   'G4':'ALLEGIANT',   'HA':'HAWAIIAN',    'SY':'SUN COUNTRY', 'XP':'AVELO',
+  'LL':'LEVEL',
   'WL':'WORLD ATLANTIC',
   '9E':'DELTA',       '9K':'CAPE AIR',    'MQ':'AMERICAN',    'OH':'AMERICAN',    'OO':'SKYWEST',
   'YV':'MESA',        'G7':'GOJET',       'YX':'REPUBLIC',    'PT':'AMERICAN',    'ZW':'AIR WISCONSIN',
@@ -17086,7 +17092,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22679';
+var FIDS_BUILD_TAG = 'v22680';
 (function(){
   try {
     function _addTag(){

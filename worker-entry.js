@@ -114,6 +114,13 @@ const MIA_FIELDS = [
   'airlineName', 'CXR', 'TRN', 'CTY', 'TYP', 'REG', 'timeInMillis',
 ];
 
+const MIA_ENTITIES = {
+  '&#160;': ' ', '&nbsp;': ' ', '\u00a0': ' ',
+  '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"',
+  '&#39;': "'", '&apos;': "'",
+};
+const MIA_ENTITY_RE = /&(?:#160|nbsp|amp|lt|gt|quot|#39|apos);|\u00a0/g;
+
 // Minimal XML field reader. The payload is flat, machine-generated and
 // regular — one <flight> per record with non-nested leaf tags — so a real
 // parser buys nothing, and Workers has no DOMParser anyway.
@@ -122,15 +129,11 @@ const MIA_FIELDS = [
 function miaField(rec, tag) {
   const m = rec.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>'));
   if (!m) return '';
-  const v = m[1]
-    .replace(/&#160;|&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/ /g, ' ')
-    .trim();
+  // ONE pass over the whole string, not a chain. Chained replaces
+  // double-unescape: "&amp;lt;" becomes "&lt;" on the &amp; pass and then "<"
+  // on the &lt; pass, so escaped markup in the source comes back as live
+  // markup. A single alternation consumes each entity exactly once.
+  const v = m[1].replace(MIA_ENTITY_RE, (e) => MIA_ENTITIES[e] || ' ').trim();
   return v === '#' ? '' : v;
 }
 
@@ -271,17 +274,31 @@ export default {
     // for someone else to point at their own host.
     if (path === '/miafids') {
       const dir = url.searchParams.get('direction') === 'arr' ? 'arr' : 'dep';
-      const upstream = MIA_FIDS_BASE
-        + (dir === 'dep' ? 'updateDepartures' : 'updateArrivals');
+      const action = dir === 'dep' ? 'updateDepartures' : 'updateArrivals';
+      // https first; plain http second. MIA's firewall silently drops the
+      // TCP handshake from Cloudflare's egress ranges on 443 (20s → 522 on
+      // every attempt, while the same URL answers instantly from elsewhere).
+      // Some origins only apply that filter to TLS, so port 80 is worth one
+      // try before giving up — the payload is public-board data, not secrets.
+      const upstreams = [
+        MIA_FIDS_BASE + action,
+        MIA_FIDS_BASE.replace('https://', 'http://') + action,
+      ];
       try {
-        const r = await fetch(upstream, {
-          cf: { cacheEverything: true, cacheTtl: MIA_TTL },
-          headers: {
-            'Accept': 'text/xml,application/xml',
-            'User-Agent': 'OrionConnectedFIDS/1.0 (airport display board; +https://fids.orionconnected.com)',
-          },
-        });
-        if (!r.ok) return new Response('MIA upstream ' + r.status, { status: 502, headers: NO_STORE });
+        let r = null;
+        for (const upstream of upstreams) {
+          try {
+            r = await fetch(upstream, {
+              cf: { cacheEverything: true, cacheTtl: MIA_TTL },
+              headers: {
+                'Accept': 'text/xml,application/xml',
+                'User-Agent': 'OrionConnectedFIDS/1.0 (airport display board; +https://fids.orionconnected.com)',
+              },
+            });
+            if (r.ok) break;
+          } catch (e) { r = null; }
+        }
+        if (!r || !r.ok) return new Response('MIA upstream ' + (r ? r.status : 'unreachable'), { status: 502, headers: NO_STORE });
         const xml = await r.text();
         const list = miaParseFlights(xml);
         // An empty parse means the upstream shape changed under us. Say so
