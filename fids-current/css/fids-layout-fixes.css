@@ -6335,3 +6335,76 @@ html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="win
     background-image: none !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   v22682 — DELTA SILVER SHELF TEST (Nick: 'so just delta i just want to
+   test something' + 'the 3 panels once you create one for the bottom itll
+   be total 3' + 'silver those up like simply the panel on top ... and have
+   the word in dark blue' + 'theres a panel behind the airplane you can see
+   through maybe remove that').
+
+   Scoped exactly like the Air Canada material test above: an experiment on
+   one airline's gates, touching nothing else. Selector mirrors the AC
+   grammar — code, ICAO, and name-contains — since data-gate-airline is
+   stamped from the feed and arrives in whichever form the feed used.
+
+   THE THREE PANELS. Panels 1-2 already exist (.v2-rc-fi-pane: Flight/From
+   and Arrival/Status). Panel 3 is CREATED here: .v2-rc-acb (the 'Airbus
+   A320 · expected' block) had no box of its own — it floated on the shelf
+   texture, which is why the bottom of the rail read as a missing panel.
+   All three now wear the same silver: a cool metal gradient echoing the
+   top banner panel, hairline white border, soft drop. Words in Delta's
+   own dark navy (#003366), labels at 78% for hierarchy. Status/revised
+   semantics keep navy too — the panel is the message here, per Nick.
+
+   THE PLANE PANEL. The see-through box behind the aircraft is the tinted
+   lux texture on .v2-rc-shelf-illus (v22600 shelf set). For Delta it goes
+   fully transparent so the livery floats over the sky/clouds instead of
+   sitting in a smoked-glass tray. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  background-color: #DFE4EB !important;
+  background-image: linear-gradient(160deg, #F7F9FC 0%, #E3E8EF 48%, #C9D0DA 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 3px 9px rgba(0, 0, 0, 0.28) !important;
+}
+/* Panel 3 needs the box model the panes already have */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  padding: clamp(6px, .8vh, 12px) clamp(12px, 1vw, 20px) !important;
+  margin: clamp(3px, .5vh, 8px) clamp(8px, .8vw, 14px) !important;
+}
+/* The shelf under panel 3 goes quiet so the silver box reads as THE panel */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+/* Words in dark blue — labels, values, both language lines, the IATA
+   accent, the strike/revised pair, the 'expected' qualifier, all of it. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval span,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval[class*="v2-rc-status-"],
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-iata,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb .v2-rc-actype-val,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb .v2-rc-acb-actype,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb .v2-rc-reg-expected,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb .v2-rc-fi-sep {
+  color: #003366 !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl {
+  color: rgba(0, 51, 102, 0.78) !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-bar,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-tval-old {
+  color: rgba(0, 51, 102, 0.55) !important;
+}
+/* Row dividers inside the silver: navy hairlines, not the accent mix */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow {
+  border-bottom-color: rgba(0, 51, 102, 0.30) !important;
+}
+/* And the see-through panel behind the airplane comes OFF */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
