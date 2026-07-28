@@ -6315,6 +6315,13 @@ html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="win
    and tuned himself. */
 @media (min-width: 701px) {
   html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsTable tbody tr:not(#_),
+  /* v22690 — departed rows too (Nick: 'it can go on the departed flights
+     too in general very faint and gray i think'). Their cells carry their
+     own opaque navy — the same cells-over-row trap the cancelled fix hit —
+     so the tr-level wave never showed through. On that dark desaturated
+     ground the multiply is inherently faint and reads gray, which is the
+     exact weight Nick asked for; no separate asset needed. */
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-departed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td,
