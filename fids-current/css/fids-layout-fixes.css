@@ -6337,101 +6337,35 @@ html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="win
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   v22682 — DELTA SILVER SHELF TEST (Nick: 'so just delta i just want to
-   test something' + 'the 3 panels once you create one for the bottom itll
-   be total 3' + 'silver those up like simply the panel on top ... and have
-   the word in dark blue' + 'theres a panel behind the airplane you can see
-   through maybe remove that').
+   v22685 — SILVER TEST REVERTED, THE THIRD PANEL STAYS.
 
-   Scoped exactly like the Air Canada material test above: an experiment on
-   one airline's gates, touching nothing else. Selector mirrors the AC
-   grammar — code, ICAO, and name-contains — since data-gate-airline is
-   stamped from the feed and arrives in whichever form the feed used.
+   Nick, after seeing the Delta silver experiment (v22682-84): 'I think its
+   ok you can revert back actually except please keep the panel item but
+   same size as the other 2 and alligned.'
 
-   THE THREE PANELS. Panels 1-2 already exist (.v2-rc-fi-pane: Flight/From
-   and Arrival/Status). Panel 3 is CREATED here: .v2-rc-acb (the 'Airbus
-   A320 · expected' block) had no box of its own — it floated on the shelf
-   texture, which is why the bottom of the rail read as a missing panel.
-   All three now wear the same silver: a cool metal gradient echoing the
-   top banner panel, hairline white border, soft drop. Words in Delta's
-   own dark navy (#003366), labels at 78% for hierarchy. Status/revised
-   semantics keep navy too — the panel is the message here, per Nick.
+   So the silver texture, the navy ink and the plane-tray removal are gone
+   — the Delta gates look like every other gate again — but the one
+   structural fix the experiment surfaced is kept, and kept for EVERY
+   airline: the aircraft-type block (.v2-rc-acb, "Airbus A320 · expected")
+   now has a real panel box instead of floating on the shelf texture. That
+   floating text was the "missing panel at the bottom" in his first
+   screenshot, and it was missing on every carrier, not just Delta.
 
-   THE PLANE PANEL. The see-through box behind the aircraft is the tinted
-   lux texture on .v2-rc-shelf-illus (v22600 shelf set). For Delta it goes
-   fully transparent so the livery floats over the sky/clouds instead of
-   sitting in a smoked-glass tray. */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
-  background-color: #DFE4EB !important;
-  background-image: linear-gradient(160deg, #F7F9FC 0%, #E3E8EF 48%, #C9D0DA 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
-  border-radius: 10px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 3px 9px rgba(0, 0, 0, 0.28) !important;
-}
-/* Panel 3 needs the box model the panes already have */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
-  padding: clamp(6px, .8vh, 12px) clamp(12px, 1vw, 20px) !important;
-  margin: clamp(3px, .5vh, 8px) clamp(8px, .8vw, 14px) !important;
-}
-/* The shelf under panel 3 goes quiet so the silver box reads as THE panel */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
-  background-color: transparent !important;
-  background-image: none !important;
-}
-/* Words in dark blue — labels, values, both language lines, the IATA
-   accent, the strike/revised pair, the 'expected' qualifier, all of it. */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval span,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tval[class*="v2-rc-status-"],
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-iata,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb .v2-rc-actype-val,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb .v2-rc-acb-actype,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb .v2-rc-reg-expected,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb .v2-rc-fi-sep {
-  color: #003366 !important;
-}
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl {
-  color: rgba(0, 51, 102, 0.78) !important;
-}
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-bar,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-tval-old {
-  color: rgba(0, 51, 102, 0.55) !important;
-}
-/* Row dividers inside the silver: navy hairlines, not the accent mix */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow {
-  border-bottom-color: rgba(0, 51, 102, 0.30) !important;
-}
-/* And the see-through panel behind the airplane comes OFF */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
-  background-color: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-}
-
-/* v22683 — the '738' itself was still white inside the silver panel 3:
-   the value is wrapped in an unclassed nowrap <span> (the no-split law's
-   _nbw wrapper), and the v22600 shelf-set rule paints shelf-type
-   descendants white with a direct `*` match — which beats the navy the
-   parent div inherits down. Match the descendants directly too. */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb * {
-  color: #003366 !important;
-}
-
-/* v22684 — Nick's silver replaces the synthetic gradient on the Delta
-   panels ('try this on the panel'). The artwork is a 1920px sheen with
-   hairline diagonal pinstripes — downscaled 4x by the browser those
-   stripes would alias (the lattice failure), so the shipped file is
-   pre-rendered once, offline, with Lanczos at 880px: ~2x the panel's
-   on-screen width, close enough that the browser's remaining scale is
-   gentle. Darkest point is 172/255, so the navy ink keeps >5:1 on the
-   darkest corner of the sheen. cover + center keeps the bright band in
-   the middle of each panel. */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
-  background-image: url("/logos/Backgrounds/silver-panel.jpg?v=1") !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
+   Same material as the other two panels, verbatim from the .v2-rc-fi-pane
+   recipe (v22594): the translucent smoked ground, 4px radius, the same
+   inset highlight and drop. Same size and alignment: the horizontal
+   margins reproduce the fi-table's padding (clamp(9px,.75vw,14px)) so the
+   third panel's edges line up exactly with the two above it, and height
+   comes from content + the panes' own padding scale rather than
+   stretching to fill the taller type shelf (gids sets height:100% on
+   .v2-rc-acb; auto restores content height, and the shelf's existing
+   justify-content:center seats it in the middle). */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  height: auto !important;
+  margin: clamp(5px, .55vh, 9px) clamp(9px, .75vw, 14px) !important;
+  padding: clamp(6px, .8vh, 12px) clamp(8px, .7vw, 13px) !important;
+  border-radius: 4px;
+  background: rgba(8, 12, 18, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 6px rgba(0, 0, 0, 0.30);
+  box-sizing: border-box !important;
 }
