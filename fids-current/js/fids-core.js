@@ -10643,9 +10643,14 @@ function gateAutofit(root) {
       if (!pane || !acb || !acb.offsetParent) return;
       var pr = pane.getBoundingClientRect();
       if (!(pr.width > 40 && pr.height > 20)) return;
-      var host = acb.parentElement.getBoundingClientRect();
+      var hostEl = acb.parentElement;
+      var host = hostEl.getBoundingClientRect();
+      // margins offset from the parent's CONTENT edge — inside its padding —
+      // so the padding must come off or the panel sits that far right
+      // (measured: +15px, exactly the shelf's padding-left).
+      var hostPad = parseFloat(getComputedStyle(hostEl).paddingLeft) || 0;
       acb.style.setProperty('margin', '0', 'important');
-      acb.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - host.left)) + 'px', 'important');
+      acb.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - host.left - hostPad)) + 'px', 'important');
       acb.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
       acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
       acb.style.setProperty('flex-direction', 'column', 'important');
@@ -17120,7 +17125,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22688';
+var FIDS_BUILD_TAG = 'v22689';
 (function(){
   try {
     function _addTag(){
