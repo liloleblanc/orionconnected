@@ -3093,6 +3093,7 @@ var LOCAL_LOGOS = {
   'AS': '/logos/airlines/us-major/alaska-airlines.svg',
   'B6': '/logos/airlines/us-major/jetblue.svg',
   'F9': '/logos/airlines/us-major/frontier.svg',  // Frontier Airlines (green wordmark + F-emblem)
+  'XP': '/logos/airlines/us-major/avelo.svg',     // Avelo Airlines (purple wordmark + tail emblem) — official kit from Nick
   // NK (Spirit) removed — airline ceased operations May 2 2026 after second
   // bankruptcy and failed bailout. Code paths preserved as no-ops in case
   // any historical/legacy data still references the carrier.
@@ -3275,13 +3276,12 @@ function carrierLogoUrl(code) {
   // like the rest of the board instead of like a foreign object.
   //   4Y — recycled IATA code; wway serves Yute Air (defunct 2017) for what
   //        is now Discover Airlines.
-  //   XP — Avelo. wway's file arrives with its own canvas and a white
-  //        ground, so it rendered as a clipped 'velo' in a white box while
-  //        every neighbour showed a clean tile. It is the only carrier on
-  //        Orlando's board without a local asset, and it was the only one
-  //        that looked wrong (Nick: 'not really fully looking consistent
-  //        everywhere — Avelo I think needs a fix').
-  var STALE_WWAY_CARRIER = { '4Y': 1, 'XP': 1 };
+  //   XP — WAS here. wway's file arrived with its own canvas and a white
+  //        ground, so Avelo rendered as a clipped 'velo' in a white box and
+  //        the text-wordmark fallback was the lesser evil. v22676: Nick
+  //        supplied the real brand kit, so XP now has local artwork like
+  //        every other carrier and no longer needs the fallback.
+  var STALE_WWAY_CARRIER = { '4Y': 1 };
   if (STALE_WWAY_CARRIER[up]) return '';
   return 'https://img.wway.io/pics/root/' + logoCode(up) + '@svg';
 }
@@ -3310,6 +3310,7 @@ var WATERMARK_OVERRIDE = {
   'UA': '/logos/airlines/us-major/united.svg',
   'AS': '/logos/airlines/us-major/alaska-airlines-wordmark-light.svg',
   'B6': '/logos/airlines/us-major/jetblue-wordmark-light.svg?v=22648',
+  'XP': '/logos/airlines/us-major/avelo-wordmark-light.svg',
   // NK (Spirit) — ceased operations May 2 2026
   'WN': '/logos/airlines/us-major/southwest-wordmark-light.svg',
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',
@@ -6339,6 +6340,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
         'F9':  '/logos/airlines/us-major/frontier-emblem.svg',
+        'XP':  '/logos/airlines/us-major/avelo-emblem.svg',   // Avelo tail mark — yellow/cyan/white, reads on the purple badge
         '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
         'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
         // International
@@ -9546,6 +9548,7 @@ function uxgGateHtml(ctx) {
     // v208 added (true emblems only — no wordmarks):
     '9X': '/logos/airlines/us-major/mokulele-emblem.svg',                          // Mokulele plumeria (red)
     'F9': '/logos/airlines/us-major/frontier-emblem.svg',                          // Frontier F-mark (green)
+    'XP': '/logos/airlines/us-major/avelo-emblem.svg',                             // Avelo tail mark
     '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',                 // Discover tail (yellow+blue)
     'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',                    // Breeze checkmark
     'BA': '/logos/airline-tiles/BAW.svg',                                          // BA speedmarque on navy square tile
@@ -16159,6 +16162,7 @@ const IATA_TO_WORDMARK = {
   'AA':'american',  'UA':'united',  'DL':'delta',
   'WN':'southwest',  'B6':'jetblue',
   'F9':'frontier',  // Frontier Airlines — official green wordmark + emblem from Nick's upload
+  'XP':'avelo',     // Avelo Airlines — official wordmark set (white / black / purple) from Nick's upload
   // NK (Spirit) — ceased operations May 2 2026
   'AS':'alaska-airlines',  'HA':'hawaiian',
   'SY':'sun-country',      // Sun Country — official lockup split: sun mark → SCX tile, lettering here (Jul 2026)
@@ -16328,7 +16332,7 @@ const LOGO_SUBFOLDER = {
   'hyatt.png':'hotels/hyatt', 'hyde.avif':'hotels/accor-premium', 'hyde.svg':'hotels/accor-premium', 'ibis-budget.svg':'hotels/accor-economy',
   'ibis-styles.svg':'hotels/accor-economy', 'ibis.png':'hotels/accor-economy', 'ibis.svg':'hotels/accor-economy', 'ihg-hotels.png':'hotels/ihg',
   'ihg.png':'hotels/ihg', 'intercontinental.png':'hotels/ihg', 'jazz-wordmark-dark.svg':'airlines/canadian-regional', 'jazz-wordmark-light.svg':'airlines/canadian-regional',
-  'jazz.svg':'airlines/canadian-regional', 'jetblue-wordmark-dark.svg':'airlines/us-major', 'jetblue-wordmark-light.svg':'airlines/us-major', 'jetblue.svg':'airlines/us-major', 'frontier.svg':'airlines/us-major', 'frontier-emblem.svg':'airlines/us-major', 'frontier-wordmark-light.svg':'airlines/us-major', 'frontier-wordmark-dark.svg':'airlines/us-major',
+  'jazz.svg':'airlines/canadian-regional', 'jetblue-wordmark-dark.svg':'airlines/us-major', 'avelo-wordmark-light.svg':'airlines/us-major', 'avelo-wordmark-dark.svg':'airlines/us-major', 'avelo-wordmark-color.svg':'airlines/us-major', 'avelo-emblem.svg':'airlines/us-major', 'avelo.svg':'airlines/us-major', 'jetblue-wordmark-light.svg':'airlines/us-major', 'jetblue.svg':'airlines/us-major', 'frontier.svg':'airlines/us-major', 'frontier-emblem.svg':'airlines/us-major', 'frontier-wordmark-light.svg':'airlines/us-major', 'frontier-wordmark-dark.svg':'airlines/us-major',
   'jo-and-joe.svg':'hotels/accor-premium', 'jojoe.png':'hotels/accor-premium', 'kempinski.png':'hotels/other-chains', 'kimpton.png':'hotels/ihg',
   'klm-wordmark-dark.svg':'airlines/european', 'klm-wordmark-light.svg':'airlines/european', 'klm.png':'airlines/european', 'le-meridien.png':'hotels/choice-le-meridien',
   'lemeridien-01.eps':'hotels/choice-le-meridien', 'logo-hiex-white.svg':'hotels/ihg', 'lot-wordmark-dark.svg':'airlines/european',
@@ -16375,6 +16379,7 @@ function logoPath(basename) {
 // recolored to each carrier's brand lettering color. Flair stays black on
 // purpose: black IS its lettering (and never green, per policy).
 const COLOR_WORDMARKS = {
+  'avelo': '/logos/airlines/us-major/avelo-wordmark-color.svg',   // Avelo purple #502E91
   'royal-air-maroc': '/logos/airlines/alliances/royal-air-maroc-wordmark-color.svg',
   'aeromexico': '/logos/airlines/asian-other/aeromexico-wordmark-color.svg',
   'avianca': '/logos/airlines/asian-other/avianca-wordmark-color.svg',
@@ -16477,6 +16482,7 @@ const IATA_TO_EMBLEM = {
   '9X': '/logos/airlines/us-major/mokulele-emblem.svg',  // Mokulele plumeria flower
   '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',  // Discover Airlines tail-fin emblem (yellow + blue gradient)
   'F9': '/logos/airlines/us-major/frontier-emblem.svg',  // Frontier Airlines green stylized "F" mark
+  'XP': '/logos/airlines/us-major/avelo-emblem.svg',     // Avelo Airlines tail mark
   'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',  // Breeze checkmark on navy square
   'VB': '/logos/airlines/asian-other/vivaaerobus-emblem.webp',  // Viva green leaf-shape "a" emblem
   'BW': '/logos/airlines/asian-other/caribbean-emblem.png',     // Caribbean hummingbird (official brand art; no tile exists)
@@ -17079,7 +17085,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22675';
+var FIDS_BUILD_TAG = 'v22676';
 (function(){
   try {
     function _addTag(){
