@@ -4995,3 +4995,1402 @@ html body .g8-r1-apmark img {
   height: clamp(52px, 8.2vh, 104px) !important;
   max-height: 78% !important;
 }
+
+/* ── v22632: THE BANNER CARRIES THE AIRPORT'S OWN LOGO COLOURS.
+   Nick: 'the logo is blue, light blue, orange and red — those colours should
+   reflect at the top', and later 'it should be automatic', 'it doesn't work
+   for all airports'.
+
+   Until now a non-Moncton airport got a SINGLE accent, applied as a
+   near-white wash on the band's tail, so an entire airport identity came
+   down to one faint edge colour. With a palette resolved, the band instead
+   flows through four of its logo's colours the way Moncton's flows through
+   the Acadian flag: deep, light, white held in the middle for the wordmark
+   to sit on, warm, then the strongest at the tail.
+
+   Nothing is hardcoded — fids-core reads the colours out of whatever logo
+   the airport has and caches them per logo URL, so a re-upload re-derives.
+
+   Landing a saturated colour at the tail also means the time block sits on
+   real colour rather than a pale wash, so it can be white throughout instead
+   of the mixed navy-and-white it had. Measured on Tampa's palette: 5.17:1. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner {
+    background: linear-gradient(100deg,
+      var(--fids-band-1) 0%, var(--fids-band-1) 12%,
+      var(--fids-band-2) 26%,
+      #ffffff 42%, #ffffff 56%,
+      var(--fids-band-3) 66%,
+      var(--fids-band-4) 78%, var(--fids-band-4) 100%) !important;
+  }
+  /* One ink for the whole time block, chosen by what the tail actually is:
+     white where it is a saturated logo colour... */
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-time,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-date,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-analog {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+  /* The board label rides the deep end of the palette, so it stays white. */
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-board .fids-board-label {
+    color: #ffffff !important;
+  }
+}
+
+/* ── v22633: MONCTON'S TIME BLOCK GOES NAVY. Nick picked #1C2A39 from three
+   recommendations, measured against the band it actually sits on.
+
+   What it replaces: white, at 2.02:1 — the invisible clock he photographed.
+   Navy measures 3.66:1 at the worst point of the gradient and 7.23:1 at the
+   best.
+
+   One thing that is honest to record rather than quietly fix: 3.66 clears
+   the floor for the 44px clock, which needs 3.0, but the two 14px label
+   lines and the 16px date need 4.5 and are short by 0.84. Their SIZE is why,
+   not the colour — at 19px bold they would clear it on the same ink. Left as
+   chosen; the sizing is a separate change and his call. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-time,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-analog {
+    color: #1C2A39 !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ── v22634: THE SMALL LINES IN THE TIME BLOCK COME UP IN SIZE. Nick chose
+   this over darkening his navy, which keeps the colour he picked.
+
+   The two bilingual labels were 14px and the date 16px. At that size, text
+   needs a 4.5:1 separation from its background to stay sharp at a distance,
+   and the navy gives 3.66:1 on this band. At 19px bold the requirement drops
+   to 3.0:1, which the same navy clears — so the fix is the size, not the
+   colour. The 44px clock always cleared it.
+
+   Both label lines and the date go to 19px, matching each other. Nick has
+   asked before for the bilingual pairs to be the same size as each other
+   with no difference between the English and the French. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel .cl-l1,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel .cl-l2 {
+    font-size: 19px !important;
+    line-height: 1.06 !important;
+    font-weight: 800 !important;
+  }
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-date {
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    margin-top: 3px !important;
+  }
+}
+
+/* ── v22635: THE BOARDING-STRIP VALUES SIT INSIDE THEIR TILE AGAIN.
+   Nick, on the YQM WestJet gate: 'these panels the text is not even in its
+   box'. Two separate faults, both measured on the live board:
+
+   1. DESCENDERS WERE BEING SLICED. .g8-bir-val carried line-height 1.02
+      with overflow:hidden. At the fitted size (74.7px for 'Calgary') the
+      line box is 76px but the font's own content box is ~89px, so the
+      half-leading goes NEGATIVE and the tails of the g and the y hang
+      6-7px below the box the overflow rule then clips. 1.16 is the first
+      value where the rendered text box sits fully inside the value box —
+      verified per cell, every cutTop/cutBottom now negative (inside).
+
+   2. THE TEXT RAN INTO THE TILE EDGE. The fitter shrinks while
+      scrollWidth > clientWidth, which lands the longest values FLUSH with
+      the box — 8px from the tile border for 'Calgary', 9px for
+      'Embarquement', against 85px of inset on the icon side. A 16px right
+      margin on the VALUE gives the fitter that much less to fill, so it
+      settles with 25-36px of clearance instead.
+
+   The margin goes on the value and NOT on .g8-bir-text: putting it on the
+   column narrows the label row too, and 'Boarding | Embarquement' promptly
+   ellipsised to 'Embarquem…'.
+
+   Row height is unchanged — 177px measured before and after. */
+html body .g8-bir-cell .g8-bir-val,
+html body .g8-bir-cell:last-child .g8-bir-val {
+  line-height: 1.16 !important;
+}
+html body .g8-bir-cell .g8-bir-val {
+  margin-right: 16px !important;
+}
+
+/* ── v22636: THE CLOCK LANDS ON ONE COLOUR, NOT TWO.
+   Nick, on Tampa: 'you need to figure out these things too especially with
+   different colored backgrounds and text'.
+
+   Measured against the logo's real colours, white text scores 9.47:1 on the
+   deep blue, 4.16:1 on the light blue, 5.17:1 on the red — and 2.90:1 on the
+   orange. A deep navy ink inverts the problem exactly (5.09:1 on the orange,
+   1.56:1 on the blue). No single ink serves a band that runs light and dark
+   under the same block, so the answer is to stop straddling: the time block
+   starts at 74% of the banner width, so the tail colour now goes solid from
+   68% instead of 78% and the whole block sits on ONE ground.
+
+   All four logo colours still appear, in the order Nick read off the mark
+   himself — blue, light blue, orange, red. Only where the last one takes
+   over has moved. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner {
+    background: linear-gradient(100deg,
+      var(--fids-band-1) 0%, var(--fids-band-1) 11%,
+      var(--fids-band-2) 24%,
+      #ffffff 39%, #ffffff 54%,
+      var(--fids-band-3) 62%,
+      var(--fids-band-4) 68%, var(--fids-band-4) 100%) !important;
+  }
+}
+
+/* ── v22637: THE SHEEN STOPS EATING THE BRAND COLOURS.
+   Nick: 'I see 4 different colors in the logo which I dont see in the image'.
+   The palette was right all along — the silk sheen over it was not.
+
+   .fids-banner::before paints banner-silk.jpg at mix-blend-mode: SCREEN,
+   opacity .52. Screen can only lighten, so a bright silk photo drags every
+   saturated colour toward white. Measured against Tampa's declared colours,
+   the painted band was 110 / 129 / 73 / 194 RGB units away from the blue,
+   light blue, orange and red the logo actually uses — and white text on the
+   'red' scored 2.17:1, which is why the clock disappeared.
+
+   Blend modes swept on the live board, distance-from-true-colour and white
+   contrast measured per band:
+
+     screen    .52  110 129  73 194   2.17:1   sheen .0033   (what shipped)
+     screen    .30   84  79  59 149   2.83:1   sheen .0021
+     hard-light.45   24  29  66 135   3.08:1   sheen .0028
+     soft-light.85   23  27  65  75   4.21:1   sheen .0014
+     overlay   .65   23  27  64  66   4.14:1   sheen .0014
+     overlay   .80   22  27  65  69   4.04:1   sheen .0018
+
+   Overlay at .80 is the pick: it keeps the colours honest, nearly doubles
+   white's contrast on the tail, and — because the opacity goes UP to pay for
+   the gentler mode — holds more of the silk texture than the softer options.
+   Hard-light holds the most texture of all but gives back the readability
+   Nick had just asked for, so it loses.
+
+   Scoped to banners actually carrying a logo palette. Every other airport's
+   banner, Moncton included, is untouched. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner::before {
+    mix-blend-mode: overlay !important;
+    opacity: .80 !important;
+  }
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner::after {
+    opacity: .18 !important;
+  }
+}
+
+/* ── v22638: NICK'S DOT PATTERN ON THE FIDS BOARD, AND ROWS THAT HAVE EDGES.
+   Two things he asked for together: 'try the last pattern I sent to you'
+   (the blue halftone dot field) and, from earlier, 'there is not a
+   definement of rows and in between such as deviders or lines'. Plus the
+   standing instruction on the last attempt: 'make it go all the way to the
+   bottom the design FIDS well until the yellow line anyway'.
+
+   HOW THE PATTERN GETS SEEN WITHOUT LANDING ON THE TEXT. Every row paints an
+   opaque background-color, so art placed behind the table is invisible and
+   art placed over the table covers the lettering — the two failures the
+   earlier attempts alternated between. The art goes on the ROWS themselves
+   as a background layer: under the text, over the row colour. multiply means
+   the white field is a no-op and only the dots register, so the row keeps its
+   own colour and the dots read as ink on it.
+
+   HOW IT STAYS ONE PICTURE. background-attachment: fixed anchors the art to
+   the viewport rather than to each row, so consecutive rows show consecutive
+   slices of one image instead of each repeating the whole thing. The board
+   itself carries the same layer at the same coordinates, which fills the
+   empty space below the last row — so the field runs unbroken from under the
+   banner to the top of the yellow ticker (128px to 1022px at 1080p, which is
+   exactly the 894px the art is cut to).
+
+   STRENGTH. Composited over white at three strengths and read on the live
+   board: 0.30 was the 'I cant tell its there' of the last attempt, 0.70 had
+   the left-hand clusters competing with the flight numbers. 0.50 ships.
+   Rows are white-on-colour, and the dots only darken, so row contrast goes
+   UP, never down.
+
+   DIVIDERS. inset box-shadow rather than a border — a border would add a
+   pixel to a row height the fitter has already measured, and row sizing is
+   not something to disturb for a hairline. */
+html body[data-fids-ap="MCO"] #fidsBoard:not(#_),
+html body[data-fids-ap="MCO"] #fidsTable tbody tr:not(#_) {
+  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center var(--fids-pat-y, 165.5px) !important;
+  background-size: auto var(--fids-pat-h, 660px) !important;
+  background-repeat: repeat !important;
+  background-blend-mode: multiply !important;
+}
+html body #fidsTable tbody tr:not(#_) > td {
+  box-shadow: inset 0 -2px 0 rgba(9, 17, 28, 0.55) !important;
+}
+
+/* ── v22639: NO MORE STRETCHING, AND DIVIDERS YOU CAN ACTUALLY SEE.
+   Nick on v22638: 'too stretched out its not what i wanted it should
+   simply be a pattern', and on the row lines: 'too faint'.
+
+   The stretch was mine: I cut the art to 1920x894 so it would fill the board
+   in one pass, which forces a composition into a shape it was never drawn
+   for. It now paints at its NATIVE aspect (1920px wide, height follows) and
+   REPEATS — so it behaves as a pattern rather than a poster, at whatever
+   board height the screen happens to be.
+
+   Dividers go from a 1px line at 26% white to 2px at 55%. Still an inset
+   shadow, so row heights the fitter measured are untouched.
+
+   The artwork itself is still open — Nick: 'I dont think this is the right
+   one'. */
+
+/* ── v22640: THE DOTTED WORLD MAP. Nick sent it with 'try this instead'
+   after the halftone field ('I dont think this is the right one').
+
+   It is a PICTURE, not a tile, so the repeat from v22639 is wrong for it —
+   a world map printed four times across a departure board would be absurd.
+   It paints ONCE, centred, at its own proportions.
+
+   Sizing is calc(100vh - 186px): the banner is 128px and the yellow ticker
+   58px, so the map is exactly as tall as the board between them and no
+   taller. That is the same 894px it was read at on a 1080p screen, but
+   expressed so a screen of any height gets a map that reaches the yellow
+   line and stops — which is what Nick asked for two attempts ago and what
+   the hard-coded 894 would have broken on the next screen size.
+
+   Strength read on the live board at 0.35, 0.50 and 0.70 composited over
+   white. 0.50 ships: the continents are unmistakable, and because multiply
+   only darkens under white-on-colour rows, row contrast rises rather than
+   falls. */
+
+/* ── v22641: THE MAP CROSSES THE DELAYED AND CANCELLED ROWS TOO.
+   Nick: 'I think it needs to go through all colors including the delayed
+   and cancelled but faint'.
+
+   Why they were blank: ordinary rows carry their colour on the <tr>, so the
+   map layer on the row shows through. Delayed and cancelled paint theirs on
+   the <td> with the background SHORTHAND and !important — which is opaque
+   over the row's layer AND resets background-image to none. Two id-levels
+   here to outrank the widest of those (html body.fids-light-board #fidsTable
+   tbody tr.row-cancelled:nth-child(even) td).
+
+   Why a SEPARATE, fainter file rather than a blend-mode change. Measured on
+   the live yellow row with its dark ink:
+
+     multiply, normal map   dot depth .420   text in a dot  2.47:1   FAILS
+     soft-light             dot depth .164   text in a dot  8.69:1
+     overlay                dot depth .397   text in a dot  8.65:1
+     darken                 dot depth .341   text in a dot  3.63:1   FAILS
+
+   multiply at full strength puts dark text on a near-black dot — it would
+   have shipped broken. But soft-light and overlay both LIGHTEN, because the
+   map's ground is white, and they visibly washed the delayed yellow to .70
+   and .93 luminance against its true .54. Nick has been specific about that
+   yellow, so changing it is not on.
+
+   multiply is the only mode where white is a no-op and the colour survives
+   exactly. So the fix is a fainter map, not a different blend. Composited
+   over white at three levels on the live row:
+
+     0.14   depth .208   text in a dot  6.37:1
+     0.20   depth .261   text in a dot  5.58:1     <- ships
+     0.26   depth .315   text in a dot  4.77:1
+
+   0.20 is faint, still legible at a distance, and keeps headroom over the
+   4.5 floor. On cancelled it only helps: multiply takes #A50D24 to
+   (132,10,29), and the white lettering goes from 7.89:1 to 10.27:1. */
+html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-cancelled td {
+  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center var(--fids-pat-y, 165.5px) !important;
+  background-size: auto var(--fids-pat-h, 660px) !important;
+  background-repeat: repeat !important;
+  background-blend-mode: multiply !important;
+}
+
+/* ── v22642: LIGHT GROUNDS GET THE BLUE MAP. Nick: 'I think the issue is
+   between the dark and light backgrounds — I suggest this one for lighter
+   background and the other one for a darker.' He is right about the cause.
+
+   A darkening map (black dots, multiply) is correct on a DARK ground: it
+   deepens the surface and white lettering gains contrast. On a LIGHT ground
+   the same map is what put dark text on a near-black dot at 2.47:1.
+
+   The blue-circle map is the light-ground answer, still multiply so the
+   surface colour survives exactly. Measured on the live delayed row with
+   its dark ink, at four strengths of the blue over white:
+
+     0.25   dark text in a circle  8.34:1
+     0.40                          8.16:1
+     0.55                          8.04:1     <- ships
+     0.75                          7.83:1
+
+   Every one is safe, because blue circles are mid-tone and cannot crush a
+   light ground the way black dots do. 0.55 is the most visible of the safe
+   set. Compare the black map on this same yellow: 2.47:1.
+
+   Applies to the two light grounds on the board — a light-board theme, and
+   the delayed row's yellow wherever it appears. Cancelled stays on the dark
+   map: #A50D24 is a dark ground and multiply only lifts its white
+   lettering, 7.89:1 to 10.27:1. */
+html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsBoard,
+html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr,
+html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td {
+  background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center var(--fids-pat-y, 165.5px) !important;
+  background-size: auto var(--fids-pat-h, 660px) !important;
+  background-repeat: repeat !important;
+  background-blend-mode: multiply !important;
+}
+
+/* ── v22643: NICK'S GEOMETRIC LINE PATTERN REPLACES THE WORLD MAPS.
+   'I dont think dots are the answer lets try something new', then the
+   geometric textile tile.
+
+   It solves what the maps could not. A world map is a picture: it has a
+   right size, a centre, and edges, so it had to be placed once and scaled
+   to the board, and it looked different on a 2-row board than a 12-row one.
+   This is a true seamless tile — it repeats, so it is the same texture at
+   any board height, any row count, and on every surface at once. That also
+   retires the light-map/dark-map split: one artwork now serves the dark
+   rows, the light-board theme, the yellow delayed row and the red cancelled
+   row, because thin dark linework under multiply reads on all of them.
+
+   Scale and strength read together on the live board, four combinations:
+
+     0.20 @ 300px   dark text on a line, delayed row   6.35:1
+     0.32 @ 300px                                      5.16:1   <- ships
+     0.32 @ 200px                                      5.22:1
+     0.45 @ 200px                                      4.13:1   FAILS
+
+   0.32 at 300px is the most present of the safe set — 0.45 puts the delayed
+   row's dark ink under 4.5. On the dark rows the linework only darkens, so
+   white lettering measures 7.00:1 where a line crosses it against 4.44:1
+   bare: the pattern makes those rows MORE legible, not less.
+
+   The three world-map files are deleted; nothing references them. */
+
+/* ── v22644: THE PATTERN IS LOCKED TO THE ROWS. Nick: 'it could work if
+   each row was aligned to a line on the pattern or if it was bigger maybe
+   lighter'. All three, and the alignment is the one that makes it work.
+
+   The asa-no-ha tile carries a horizontal rule every 103.8px of its own
+   1039px height — measured off the file, exactly ten rules per tile, no
+   remainder. Scale the tile so those ten rules span exactly ten board rows
+   and start it on the first row's top edge, and every rule falls on a row
+   boundary. The pattern stops cutting across the rows and starts drawing
+   them, which is also the row definition Nick asked for a while back.
+
+   --fids-pat-h and --fids-pat-y come from JS measuring the live table, not
+   from constants. Row pitch is 66px and the first row starts at 165.5px on
+   a 1080p board, so the tile lands at 660px tall — but both numbers come
+   out of the row fitter and move with screen height. Hard-coding them would
+   look right on the screens I tested and drift on the next one. The values
+   in the fallbacks are only there for the frame before JS first runs.
+
+   BIGGER: the rule spacing goes from 30px on screen to 66px, so the motif
+   is 2.2x the size it was.
+
+   LIGHTER: the ink drops from 0.40 to 0.30 over white.
+
+   Both together on the delayed row's dark text: still clear of the 4.5
+   floor, and on the dark rows the linework only darkens, so white
+   lettering gains contrast rather than losing it. */
+
+/* ── v22645: THE PATTERN CARRIES TWO WEIGHTS, BY GROUND.
+   v22644 locked the pattern to the rows and took Nick's 'bigger maybe
+   lighter' literally — both at once. Locked and bigger were right; lighter
+   on top of bigger made it disappear, which is the opposite of what he has
+   asked for repeatedly.
+
+   Bigger is why. At 66px rule spacing the lines are 2.2x thicker on screen
+   than at 30px, so wherever a line crosses text it darkens far more deeply.
+   Read on the live delayed row at the locked geometry:
+
+     0.45 ink   dark text on a line   3.92:1   FAILS
+     0.60                             2.87:1   FAILS
+     0.75                             2.11:1   FAILS
+
+   So one weight cannot serve both grounds at this scale — which is exactly
+   the split Nick proposed himself for the maps. It applies here for a
+   sharper reason: multiply DARKENS, so on a dark ground it pushes the
+   surface away from white lettering and on a light ground it pushes the
+   surface toward dark lettering. The same ink helps one and hurts the other.
+
+     dark ground, 0.60 ink
+       cyan row white text      2.91:1 bare -> 11.01:1 on a line
+       cancelled white text     7.83:1 bare -> 16.66:1 on a line
+     light ground, 0.20 ink
+       delayed dark text        4.80:1 on a line
+       light board dark text    9.73:1 on a line
+
+   0.60 on the dark grounds is the visible weight Nick wants and it makes
+   the cyan row — already at 2.91:1 before any of this, below the floor —
+   substantially more legible, not less. 0.20 is the ceiling on the delayed
+   yellow: 0.25 lands at 4.27 and misses. */
+
+/* ── v22646: ORLANDO ONLY, AND A TOUCH LIGHTER. Nick: 'lets put it lighter
+   by a bit that is Orlando only if possible'.
+
+   ORLANDO ONLY. There was no general per-airport hook — only a bespoke
+   fids-ap-YQM class, so targeting a second airport meant hard-coding a
+   second one-off. body[data-fids-ap] now carries whatever airport is on
+   screen, set from the same place that class is, so this and anything after
+   it can scope to any airport without another bespoke class. Every pattern
+   rule is now behind [data-fids-ap="MCO"]: no other airport's board gets
+   the pattern at all.
+
+   The ROW DIVIDERS are deliberately left global. They are a legibility fix
+   for rows that had no separation anywhere, not part of this pattern trial,
+   and pulling them back to Orlando would undo that everywhere else.
+
+   LIGHTER BY A BIT. Dark grounds 0.60 -> 0.48, light grounds 0.20 -> 0.16.
+   Where a line crosses text, measured on each ground:
+
+     delayed yellow    dark text   4.80 -> 5.26:1
+     light board       dark text   9.73 -> 10.78:1
+     cyan row          white text 11.01 ->  8.28:1   (2.91 bare)
+     blue row          white text            10.73:1   (4.44 bare)
+     cancelled red     white text 16.66 -> 14.66:1   (7.83 bare)
+
+   Everything still clears its floor with room, and the dark rows still come
+   out far ahead of where they started. */
+
+/* ── v22647: EVERY ROW CARRIES IT, AND CLICKING BRINGS IT UP.
+   Nick: 'we cant see it on all rows' and 'when its white and i click on it
+   it should actually become more visible'.
+
+   ALL ROWS. Ordinary rows carry their colour on the <tr>, so the row's
+   pattern layer shows. Five row STATES paint theirs on the <td> instead,
+   which covers it: delayed, cancelled, diverted, gate-closed and final.
+   v22641 only ever caught two of them, so arrived/diverted/final/closed
+   rows came out blank — the gaps Nick is looking at. All five are covered
+   now, each on the weight its own ground needs.
+
+   Which weight, and why it is safe in both directions — multiply only
+   darkens, so it moves a surface AWAY from white text and TOWARD dark text:
+
+     light grounds, 0.16 ink        dark text        white text
+       delayed     #E5A800          7.39 -> 5.26      2.11 -> 2.97
+       final       #F28C00          6.35 -> 4.56      2.46 -> 3.43
+       gate-closed #AEB7C1          7.70 -> 5.47      2.03 -> 2.86
+     dark grounds, 0.48 ink                           white text
+       cancelled   #A50D24                            7.83 -> 14.66
+       cancelled   #D42341                            5.10 -> 11.82
+       diverted    #A61B2B                            7.47 -> 14.25
+       diverted    #185A9D                            7.03 -> 13.63
+       gate-closed #262D36                           13.90 -> 17.92
+
+   The light weight is used wherever the surface is light REGARDLESS of
+   which ink that row uses, because at 0.16 it lifts white text and still
+   leaves dark text above 4.5. Nothing gets worse on any row.
+
+   CLICKING. fids-row-clickable:hover carries filter: brightness(1.18) and
+   :active brightness(0.92). Brightening washes the surface toward white and
+   takes the pattern with it — that is precisely the 'when its white' Nick
+   is describing. Both states now swap to a heavier weight so the pattern
+   comes UP under the finger instead of fading out. */
+@media (min-width: 701px) {
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-final td,
+  html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-gate-closed td {
+    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-diverted td,
+  html:not(#_) body:not(.fids-light-board)[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-gate-closed td {
+    background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:hover,
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:hover td,
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:active,
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:active td {
+    background-image: url("/logos/Backgrounds/fids-asanoha-strong.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+}
+
+/* ── v22650: DARK DIVIDERS, AND BAGGAGE GETS THEM TOO. Nick: 'check baggage
+   and add the same lines please but black — same thing for FIDS change them
+   to darker or black'.
+
+   The FIDS divider flips from white 55% to near-black (#09111C at 55%) —
+   the change is in the v22639 block above. On the baggage board the same
+   line goes on every flight row. Not pure #000: at 2px a hard black line
+   against the lighter rows reads as a gap in the screen rather than a rule
+   on it; the near-black ink is what the board's own dark rows are made of,
+   so the line reads as structure. */
+html body .bidsv2-flight-row:not(#_) {
+  box-shadow: inset 0 -2px 0 rgba(9, 17, 28, 0.55) !important;
+}
+
+/* ── v22651: BAGGAGE CARRIES THE PATTERN, FIDS GOES A TOUCH DARKER, AND
+   CANCELLED IS WHITE ON BIDS TOO.
+   Nick: 'make the baggage arrival same pattern design same thing and also
+   darken a bit the one on FIDS', and 'cancelled on red needs to be white
+   ive said this many times on FIDS and possibly BIDS'.
+
+   CANCELLED WHITE — the real culprit this time. Every TEXT element on a
+   cancelled row already computes white on both boards (probed live, zero
+   non-white leaves). What is NOT text is the airline wordmark IMAGE. The
+   FIDS row builder already forces the white-ink artwork on cancelled and
+   diverted — its own comment cites Nick 'three times' — but the BAGGAGE row
+   builder only ever handled delayed, so on light themes BIDS picked the
+   dark-ink artwork: black lettering on the red block. That is the thing
+   that kept coming back. Fixed in the row builder (JS), not here: swapping
+   the artwork variant is not something a colour rule can do.
+
+   BAGGAGE PATTERN. Same artwork, same weights, same row-lock; the sync now
+   measures .bidsv2-flight-row when there is no main table on the screen.
+   Scoped to Orlando like the FIDS one.
+
+   DARKER BY A BIT. Dark-ground ink 0.48 -> 0.58, light 0.16 -> 0.20:
+
+     delayed yellow   dark text on a line    4.80:1
+     cyan row         white text on a line  10.51:1
+     cancelled red    white text on a line  16.33:1
+
+   Hover weight rises to 0.82 to keep the click-brightens step. */
+@media (min-width: 701px) {
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-body,
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row {
+    background-image: url("/logos/Backgrounds/fids-asanoha-bags.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+  html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row.bidsv2-row-delayed {
+    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
+    background-attachment: fixed !important;
+    background-position: center var(--fids-pat-y, 165.5px) !important;
+    background-size: auto var(--fids-pat-h, 660px) !important;
+    background-repeat: repeat !important;
+    background-blend-mode: multiply !important;
+  }
+}
+
+/* ── v22652: CANCELLED CANNOT BE BLACK. Nick: 'I guarantee you on FIDS its
+   not white. its black.' He is right, and the earlier probe was the wrong
+   test — it walked TEXT colours, which are all white, while the black he
+   sees comes from the two things that are not plain text:
+
+   1. The airline WORDMARK IMAGE. The row builder asks for the white-ink
+      artwork on cancelled/diverted, but any carrier whose light variant is
+      missing, stale, or miscut ships dark lettering anyway — the file
+      decides, not the rule. The filter below stops asking: whatever ink the
+      artwork arrived with, brightness(0) flattens it and invert(1) makes it
+      white. Applies to FIDS and BIDS rows.
+
+   2. The FALLBACK NAME. When the artwork dies, onerror swaps in the typed
+      name with the brand colour INLINED with !important — inline beats
+      every stylesheet rule, so navy/black brands rendered black on red.
+      Fixed in the row builder: cancelled/diverted no longer inline a brand
+      colour at all. The belt below catches rows rendered before that fix.
+
+   White logos on the red block was the standing instruction ('airlines in
+   general all white on red' — recorded in the builder itself). */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled img.fids-airline-wordmark,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted img.fids-airline-wordmark,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled img.bidsv2-airline-wordmark,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted img.bidsv2-airline-wordmark {
+  filter: brightness(0) invert(1) !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .fids-airline-name,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .fids-airline-name,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled .bidsv2-airline-name,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted .bidsv2-airline-name {
+  color: #ffffff !important;
+}
+
+/* ── v22655: THE STATUS CELL STOPS PUNCHING A HOLE IN THE ROW, AND NOTHING
+   COLOURED SURVIVES ON RED.
+
+   FINAL CALL runs all the way. Nick, with the Orlando board: 'Dernier appel
+   is not highlighted either, all the way'. Look at what paints what: the
+   orange block is set on the row's CELLS (fids-v3 4047, tr.row-final td),
+   never on the <tr>. Then 4063 sets the status cell to
+   `background: transparent`. Transparent has nothing to fall through TO —
+   the tr carries no colour — so it falls through to the page and renders
+   white. That is the white notch at the right end of the orange row: the
+   one cell that opted out of a colour its siblings were carrying.
+
+   It now carries the same orange as its siblings instead of opting out.
+   Same for the light-board and cancelled/diverted equivalents, so no status
+   cell can punch a hole in any coloured row.
+
+   NOTHING COLOURED ON RED. 'Airlines in general all white on red' is the
+   standing rule, and v22652 only whitened the WORDMARK image. The jetBlue
+   row in Nick's shot still shows its blue 'jB' TILE sitting on the crimson
+   block — a tile is a different element (.full-logo, data-logo-set="tile")
+   and the wordmark selector never touched it. Every logo image on a
+   cancelled or diverted row is now flattened to white, tile and emblem and
+   monogram included. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-status.fids-status-final {
+  background: #F28C00 !important;
+}
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-final td.td-status,
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-final td.td-status.fids-status-final {
+  background: #F28C00 !important;
+}
+/* v22656b — I put `transparent` here in v22655 and re-created the exact
+   hole I had just fixed: the crimson is on the CELLS, so a transparent
+   status cell falls through to the page, not to the row. The status cell
+   takes the same crimson its siblings have, matched per nth-child. The
+   amber final-status background is also fenced to row-final, which is the
+   only reason a cancelled cell could have been amber in the first place. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled:nth-child(n) td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled:nth-child(n) td.td-status.fids-status-final {
+  background: #A50D24 !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled:nth-child(even) td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled:nth-child(even) td.td-status.fids-status-final {
+  background: #D42341 !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(n) td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(n) td.td-status.fids-status-final {
+  background: #A61B2B !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even) td.td-status,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even) td.td-status.fids-status-final {
+  background: #DE4B58 !important;
+}
+/* every logo image on a cancelled/diverted row renders white — tile,
+   emblem, monogram and wordmark alike */
+/* v22658 — the tile filter is REVERTED. brightness(0) invert(1) works on a
+   TRANSPARENT wordmark: the glyphs flatten to black, invert makes them
+   white, the empty canvas stays empty. A TILE is an opaque square — the
+   whole square flattens and inverts, so jetBlue's blue jB tile became a
+   solid WHITE BOX on the crimson row. That is what Nick photographed after
+   v22655, and it was mine. Tiles keep their own artwork; only wordmarks and
+   emblems, which have transparent grounds, get whitened. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled img.airline-emblem,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted img.airline-emblem {
+  filter: brightness(0) invert(1) !important;
+  background: transparent !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .full-logo.logo-monogram,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .full-logo.logo-monogram {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+
+/* ── v22656: THE REVISED TIME STOPS SHOUTING ON FLIGHTS THAT ALREADY WENT.
+   Nick: 'the font is also the wrong color for departure time'.
+
+   On a light board every revised time is forced gold — fids-v3 3801,
+   `td.td-time-rev.has-rev * { color: #A66F00 }`. Live states override it
+   (delayed goes navy, early goes green), but DEPARTED and ARRIVED rows do
+   not, so a flight that has already left still prints its revised time in
+   the amber that means 'this changed, look at it'. On the pale history row
+   that is 4.15:1 — it scrapes past the large-text floor, so this is not a
+   legibility bug; it is the wrong colour saying the wrong thing, which is
+   what Nick called out.
+
+   History rows take the same muted ink as the rest of their own row
+   (6.31:1). Amber stays where it belongs: on flights that have not gone. */
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-departed td.td-time-rev.has-rev *,
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-arrived td.td-time-rev.has-rev *,
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:has(td.fids-status-departed) td.td-time-rev.has-rev *,
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:has(td.fids-status-arrived) td.td-time-rev.has-rev * {
+  color: rgba(22, 40, 60, 0.78) !important;
+}
+html:not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr.row-departed td.td-time-rev.has-rev *,
+html:not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr.row-arrived td.td-time-rev.has-rev *,
+html:not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:has(td.fids-status-departed) td.td-time-rev.has-rev *,
+html:not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:has(td.fids-status-arrived) td.td-time-rev.has-rev * {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* ── v22658: THE FINAL-CALL REVISED TIME READS. Nick: '4:00PM is wrong
+   color on American 2066 revised time'.
+
+   On a light board the revised time is gold #A66F00 (fids-v3 3801). The
+   Dernier appel block is orange #F28C00. Gold on orange measures 1.74:1 —
+   the worst number on the board, and the reason that time looks washed
+   out rather than merely off-colour. Delayed and early rows already
+   override the gold; final call was never given an override.
+
+   It takes the same dark ink the rest of its own row uses: 6.41:1. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-time-rev,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-time-rev *,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-final td.td-time-rev.has-rev *,
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-final td.td-time-rev.has-rev *,
+html:not(#_) body:not(#_) #fidsTable tbody tr:has(td.fids-status-final) td.td-time-rev.has-rev * {
+  color: #102437 !important;
+  opacity: 1 !important;
+}
+
+/* ── v22659: THE FALLBACK NAME CANNOT BE NAVY ON RED, AND BAGS CALMS DOWN.
+
+   BLACK ON CANCELLED — the path I had not covered. Nick has now said it of
+   the live board and of preview, and he is right that something is still
+   dark. Every rule so far targets IMAGES. When a logo image fails to load,
+   its onerror swaps in `<span class="logo-fallback" style="...
+   color:#002B58...">` — navy, inline, on the crimson block. The theme
+   injector also paints .logo-fallback with the row ink, which is dark on a
+   light board. No img selector was ever going to catch either, and an asset
+   that 404s or times out on a wall display is exactly when it shows.
+   Inline styles carry no !important, so an !important rule takes it.
+
+   Also covered: .logo-monogram (a text div, not an image) and the BIDS name
+   div — so nothing that can carry a carrier's name on a cancelled or
+   diverted row is still able to render dark.
+
+   BAGS FADES. Nick: 'fade out a bit bags'. Its own copy of the pattern at
+   0.34 against the board's 0.58 — baggage rows are taller and there are
+   fewer of them, so identical ink reads much heavier there. */
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .logo-fallback,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .logo-fallback,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .logo-monogram,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .logo-monogram,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled .fids-airline-name,
+html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted .fids-airline-name,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled .logo-fallback,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted .logo-fallback,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled .bidsv2-airline-name,
+html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted .bidsv2-airline-name {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ── v22661: THE BAGGAGE BANNER JOINS THE OTHERS, AND THE LONE BLUE BAG GOES.
+   Nick: 'This also needs change like others — Time in Orlando / Heure à
+   Orlando / 4:35PM. The blue bag alone is atrocious.' Plus 'slightly
+   lighter' on the bags pattern.
+
+   WHY THE BAGGAGE BANNER WAS LEFT OUT. Every palette rule targets
+   `.fids-banner`. The baggage screen's banner is `.bidsv2-fids-banner` — a
+   different class on a different element — so it never matched. The board
+   and gate banners took the airport's logo colours and the white time-block
+   ink; baggage kept the old treatment and drifted out of the set. The
+   selectors now name both, so the same airport reads the same on all three
+   screens.
+
+   THE LONE BLUE BAG. The glyph is hard-coded `#003DA5` — a royal blue that
+   belongs to no airport in particular, sitting by itself on a band made of
+   the airport's own colours. On Orlando's orange it is the one element that
+   matches nothing. It takes the same white as the board label beside it, so
+   the icon and its words read as one lockup.
+
+   BAGS PATTERN: 0.34 -> 0.26. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner {
+    background: linear-gradient(100deg,
+      var(--fids-band-1) 0%, var(--fids-band-1) 11%,
+      var(--fids-band-2) 24%,
+      #ffffff 39%, #ffffff 54%,
+      var(--fids-band-3) 62%,
+      var(--fids-band-4) 68%, var(--fids-band-4) 100%) !important;
+  }
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-time,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-tlabel,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-date,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-date .cl-sep,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-analog,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-board-label {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner::before,
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner::before {
+    mix-blend-mode: overlay !important;
+    opacity: .80 !important;
+  }
+}
+/* the bag glyph stops being the one thing on the banner that matches nothing */
+html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
+  color: #ffffff !important;
+}
+html:not(#_) body[data-fids-banner="silk-acadian"]:not(#_) .bidsv2-fids-banner .fids-banner-board .fids-board-icon .ac-ico-baggage {
+  color: #ffffff !important;
+}
+
+/* ── v22662: THE COLUMN HEADER IS A SOLID BAR AGAIN, THE TAIL SURVIVES THE
+   SHEEN, AND BAGS GOES FAINT.
+
+   THE HEADER. Nick circled it: 'the Menu top make more dense'. It is a
+   translucent pill — rgba fills over whatever is behind — so once the
+   baggage list carried a pattern, the pattern showed straight THROUGH the
+   header and the bar stopped reading as a bar. Density is the fix in the
+   literal sense: it becomes opaque, and the pattern is switched off on it
+   so nothing bleeds through the one strip whose whole job is to separate
+   the titles from the data.
+
+   THE CLOCK ON GOLD. Flagged by measurement before Nick saw it: white on
+   Orlando's painted gold is 2.36:1, under the floor even at 44px. The
+   palette's tail guard used 0.183, the threshold for white on a BARE
+   colour — but the band is not bare. The silk sheen sits over it at
+   overlay .80 and lifts it: #a26600 (lum .172) passed the guard and then
+   painted as (207,160,35). Red tails survive the sheen; warm light ones do
+   not. The guard moves to 0.115 in the extractor so the tail is dark enough
+   that white still clears AFTER the sheen. Every airport keeps its own
+   colours — only how deep the last one goes has changed.
+
+   BAGS: 0.26 -> 0.13. The baggage list ground is near-white, so multiply
+   has nothing to sink into and the same ink that whispers on the board's
+   coloured rows shouted here — measured 1.26:1 line-against-ground, which
+   is not texture, it is drawing. */
+html:not(#_) body:not(#_) .bidsv2-list-header {
+  background-image: none !important;
+  background-color: #16202E !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22) !important;
+}
+html:not(#_) body:not(#_) .bidsv2-list-header > * {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
+  background-color: #1B2838 !important;
+}
+
+/* ── v22663: BAGS FADES TO MATCH THE BOARD. Nick: 'the pattern design can
+   be even less visible, fade it to like fids'.
+
+   The number that matters is not the ink, it is what the line measures
+   AGAINST ITS OWN GROUND. On the board the pattern lands on coloured rows
+   and the lines sit around 1.10-1.20:1 — present, not read. The baggage
+   list is near-white, so multiply has nothing to sink into: 0.26 gave
+   1.26:1, 0.13 gave about 1.14:1 and still drew attention on that much
+   open white. 0.06 puts it at 1.06:1, which is the board's whisper.
+
+   Same artwork, same row lock, same alignment — only the weight moves. */
+
+/* ── v22665: THE CLOCK BLOCK GROWS, BOTH SECTIONS, ALL WHITE.
+   Nick: 'the clock part need bigger and bigger text all white please
+   still' — 'both sections'.
+
+   Both halves of the block move together, because shrinking one relative
+   to the other is what made it read as a big number with fine print
+   hanging off it:
+     the city lines   clamp(12,1.35vh,20)  ->  clamp(18,2.0vh,30)
+     the date         clamp(13,1.55vh,23)  ->  clamp(18,2.0vh,30)
+     the time itself  clamp(34,4.4vh,60)   ->  clamp(46,6.0vh,84)
+
+   And on both BOARDS, since the baggage banner is a different element and
+   has been quietly missing every treatment the others got:
+   .fids-banner and .bidsv2-fids-banner are named together.
+
+   White is stated here rather than inherited. The palette rules whiten the
+   time block, but only when a palette is actually applied; on an airport
+   with no logo palette the old inherited inks came back — half the block
+   white and half not, which is the 'not consistent everywhere' Nick keeps
+   seeing across screens. */
+@media (min-width: 701px) {
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-tlabel,
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-tlabel .cl-l1,
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-tlabel .cl-l2,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-tlabel,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-tlabel .cl-l1,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-tlabel .cl-l2 {
+    font-size: clamp(18px, 2.0vh, 30px) !important;
+    line-height: 1.08 !important;
+    font-weight: 800 !important;
+  }
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-date,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-date {
+    font-size: clamp(18px, 2.0vh, 30px) !important;
+    font-weight: 700 !important;
+    margin-top: 4px !important;
+  }
+  html:not(#_) body:not(#_) .fids-banner .fids-banner-time,
+  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-time {
+    font-size: clamp(46px, 6.0vh, 84px) !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .fids-banner .fids-banner-time-block *,
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-tlabel,
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-date,
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-time,
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-analog {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ── v22667: the v22665 selectors required .fids-banner-time-block as an
+   ANCESTOR. On the board that holds; on the baggage banner the clock parts
+   do not sit under it, so the baggage clock never grew and 'both sections'
+   was only half done — verified by reading the baggage banner and getting
+   null for all three. Matching the parts directly under either banner
+   covers both structures. */
+
+/* ── v22668: THE LATTICE GOES TO EVERY OTHER AIRPORT. Nick: 'i want to try
+   this for other airports, same concept, fit the shelves on it'.
+
+   SAME CONCEPT, DIFFERENT GEOMETRY. Asa-no-ha carries a horizontal rule
+   every 103.8px — ten per tile, evenly spaced — so a rule could be put on
+   every row edge. This one does not: its registration gaps run 62, 245, 62,
+   111px, which sum to a 480px MOTIF repeating exactly four times in the
+   1920 tile. Irregular within the motif, perfectly regular between motifs.
+   So the lock is motif-to-rows rather than line-to-row: the tile is sized
+   to 8 row pitches, putting one motif across exactly 2 rows, and the
+   pattern's own rhythm restarts on a row edge every time.
+
+   The height is derived from the same measured pitch the board already
+   publishes — --fids-pat-h is 10 pitches, so 0.8 of it is 8. No second
+   measurement, no constant to drift.
+
+   ONE WEIGHT SERVES BOTH GROUNDS HERE. The darkest strut in this artwork is
+   only (119,120,122) — mid-grey, not near-black — so multiply cannot crush
+   a light row the way asa-no-ha's ink could. At 0.30, measured against the
+   real row colours:
+
+     delayed yellow   dark text on a strut   5.27:1   (7.39 bare)
+     cyan row         white text             3.99:1   (2.91 bare)
+     blue row         white text             5.87:1   (4.44 bare)
+
+   Nothing gets worse and the cyan row — under the floor before any of this
+   — comes up. 0.45 was the more visible option but put the delayed row's
+   dark text at 4.38, under 4.5, so it loses.
+
+   Orlando keeps asa-no-ha; this is every other airport.
+
+   ── WITHDRAWN v22674. Nick: 'I'm not sure I like it' after the lighter
+   pass, then 'the pattern' when asked what to change. Lightening was the
+   thing he asked for and it did not rescue it, so the answer is not another
+   weight — it's that the triangle doesn't belong on these boards. Rule
+   removed rather than overridden so nothing has to fight it later; the
+   measurement notes above are kept because the row-registration machinery
+   (--fids-pat-y / --fids-pat-h, published every second by fids-core.js) is
+   still live and still correct, and Orlando still uses it.
+
+   The header-strip exception went with it — with no pattern on the board
+   there is nothing for the strip to opt out of. */
+
+/* ── v22669: HEXAGON OUTLINE REPLACES THE LATTICE, AND THE LATTICE'S REAL
+   PROBLEM RECORDED. Nick: 'I wont lie I dont love it — sorry maybe try
+   this instead'.
+
+   He was right and it was my error, not the artwork's. The lattice tile is
+   SQUARE, 1920x1920. Sizing it to 8 row pitches made it 528px tall and,
+   because the width was auto, 528px WIDE — crushing 1920px of horizontal
+   detail into 528, a 0.275 scale. Its vertical struts collapsed into a
+   barcode. Asa-no-ha survived the same treatment only because it is a wide
+   1920x1039 tile and never compressed below 0.635.
+
+   So the rule I should have applied from the start: check what the vertical
+   lock does to the WIDTH. This tile is 1920x640, a 3:1 wide tile. Locking
+   TEN rows to its height gives 1980x660 — a horizontal scale of 1.03, which
+   is native. No distortion at any board height, and the tile still restarts
+   on a row edge every ten rows, exactly like Orlando's.
+
+   WEIGHT. These are near-black outlines (darkest pixel 20,20,20), so unlike
+   the mid-grey lattice a heavy setting crushes the light rows. Swept
+   against the real colours:
+
+     0.40   delayed dark 3.18   FAILS      cyan white 6.35
+     0.30   delayed dark 4.01   FAILS      cyan white 5.15
+     0.22   delayed dark 4.78   ok         cyan white 4.38   <- ships
+     0.16   delayed dark 5.41   ok         cyan white 3.90
+
+   0.22 is the strongest weight that keeps the delayed row's dark text above
+   4.5, and it still lifts the cyan row from 2.91 bare to 4.38. */
+
+/* ── v22670: HEXES SMALLER AND AIRIER. Nick: 'I think it needs to go
+   smaller and really spread out'.
+
+   Two moves, because scale alone would have made it denser rather than
+   airier — shrinking a tessellating honeycomb puts MORE hexes in the same
+   space, which is the opposite of spread out. So the size comes down and
+   the ink comes down with it:
+
+     tile   10 row pitches -> 4   (660px -> 264px; hexes at 40%)
+     ink    0.22 -> 0.14
+
+   The lock survives: 4 pitches still restarts the tile on a row edge, now
+   every four rows instead of ten.
+
+   A correction to what I wrote in v22669: I called the lattice failure
+   'crushing horizontal detail'. That was wrong — background-size: auto
+   preserves aspect, so nothing was distorted. It was uniform DOWNSCALING to
+   27%, and thin vertical struts alias into a barcode at that reduction. The
+   real lesson is about reduction and line weight, not aspect. Hexagon
+   outlines are bolder and more open than those struts, which is why 40%
+   holds up here where 27% did not there — but this is the direction that
+   broke last time, so it is worth watching on a real screen. */
+
+/* ── v22671: ONE HEX ROW PER BOARD ROW. Nick: 'if the rows can fit within
+   the actual lines im good with that'.
+
+   That is a stricter thing than what v22670 did. Up to now the TILE
+   restarted on a row edge every four rows, but the hex lines inside it fell
+   wherever they liked — a row could start halfway up a cell. Fitting the
+   row INSIDE the lines means the pattern's own period has to equal the row
+   pitch, not merely divide into it.
+
+   Measured off the file: the strongest vertical period is 106.67px at 0.76
+   correlation, and 640 / 106.67 is exactly 6 — six hex rows per tile, with
+   a boundary at y=0. So one hex row per board row needs a rendered tile of
+   6 x 66 = 396px, which is 0.6 of --fids-pat-h. The tile already starts at
+   --fids-pat-y, the first row's top edge, so every hex boundary from there
+   lands on a row edge.
+
+   Width check, the thing that ruined the lattice: 396 x (1920/640) = 1188px,
+   a horizontal scale of 0.62. Asa-no-ha renders at 0.635 and is clean; the
+   lattice failed at 0.27. This sits with the good one.
+
+   SIZE CONSEQUENCE, stated because it runs against the last instruction:
+   the cells get bigger. At the 4-row tile the hex period was 44px inside a
+   66px row; at true registration it is 66px. That is the cost of rows
+   sitting inside the lines rather than across them — the pattern's period
+   IS the row now, so its size is no longer a free choice. If it reads too
+   large, the next honest step is two hex rows per board row (0.3), which
+   keeps every row edge on a boundary and halves the cells. */
+
+/* ── v22672: THE TRIANGLE, WITH THE ROWS INSIDE ITS LINES. Nick: 'Im
+   talking about the triangle not the hexagon' — the pattern he liked, with
+   the registration he asked for.
+
+   Measured off the file: strongest vertical period 174px at 0.89
+   correlation, and 1920 / 174 is 11 — eleven motif rows per tile. One motif
+   per board row therefore needs a rendered tile of 11 x 66 = 726px, which
+   is 1.10 of --fids-pat-h. Rendered period comes out at 726 / 11 = 66px,
+   exactly the row pitch, and the tile starts at --fids-pat-y, so every
+   motif boundary falls on a row edge.
+
+   I RENDERED IT BEFORE SHIPPING IT, because this is the geometry that broke
+   the lattice. The tile is square, so 726px tall is also 726px wide — a
+   0.38 horizontal scale, uncomfortably near the 0.27 that turned the
+   lattice into a barcode. It survives where the lattice did not: these are
+   triangle outlines with dots at their vertices, not hairline vertical
+   struts, so there is no fine parallel detail to alias. Checked on the
+   Tampa board first; clean.
+
+   Ink 0.22 — the strongest weight that keeps the delayed row's dark text
+   above 4.5 (4.87:1), and it lifts the cyan row from 2.91 bare to 4.25.
+
+   Orlando still keeps asa-no-ha. */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   v22673 — "perhaps a bit lighter and wheres the weather?"
+
+   LIGHTER. fids-triangle.png regenerated with its ink scaled to 0.68 of the
+   previous weight: the darkest pixel moves 203 → 220 (ink 0.204 → 0.137),
+   mean 247.9 → 250.0. Nothing else about the tile changes, so the row
+   registration from v22672 is untouched — every motif boundary still lands
+   on a row edge. Cache-buster stepped to v=2 so the CDN serves the new file.
+   Lightening only helps the contrast floors: less multiply ink means the
+   yellow Delayed row stays brighter under its dark text.
+
+   WEATHER. The animated weather art is drawn for a DARK ground — the cloud
+   body is white, the sun disc is yellow. On the Delayed row (#EDBB00) and
+   the Final-call row (#F28C00) the icon is the same value as the row it sits
+   on, so it vanishes: measured on YQM, a white cloud on #EDBB00 and a yellow
+   sun on #F28C00. That is Nick's "wheres the weather?" — the column is
+   populated, the icon is just invisible on exactly the two rows a passenger
+   most needs to read.
+
+   Recolouring the art would throw away the cue that carries the meaning
+   (sun = yellow, cloud = white), so we rim it instead: four 0.75px
+   drop-shadows in the board's dark ink trace the alpha edge, turning a
+   white-on-yellow blob into a white shape with a dark outline. 0.75px was
+   chosen over 1px after rendering both — at 1px the sun's thin rays outline
+   on both sides and thicken into capsules; at 0.75px they stay slim.
+   Scoped to the light row states only. Dark rows keep the art untouched. */
+   ── SUPERSEDED v22674. The rim read, but it was a workaround: it kept art
+   that is wrong for a light ground and drew a line round it. Nick: 'the
+   weather icons I've been meaning to change, they don't go with light'.
+   Replaced below by a real light-ground variant of each icon. */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   v22674 — WEATHER ICONS THAT WORK ON LIGHT ROWS
+
+   The animated set is Meteocons drawn for a dark ground: cloud bodies are
+   near-white (#f3f7fe over #deeafb), sun discs are amber (#fbbf24). Both
+   sit at almost exactly the value of the Delayed row (#EDBB00) and the
+   Final-call row (#F28C00), which is why the icon disappears there.
+
+   Every icon now has a -light.svg twin generated from the original by
+   remapping each colour into the board's navy ink family: hue fixed at
+   210deg, saturation 0.50, and lightness compressed to 0.11 + 0.22*L. The
+   compression keeps the ORIGINAL lightness ORDER, which is what preserves
+   the internal reading of the icon — on rain.svg the cloud lands at #285078
+   and the drops at #19324b, so the drops still read as darker marks on the
+   cloud instead of merging into one blob. Measured against the real rows:
+
+     cloud body  #285078   4.67:1 on delayed   3.40:1 on final call
+     sun disc    #1c3854   6.72:1 on delayed   4.89:1 on final call
+     rain drops  #19324b   7.32:1 on delayed   5.33:1 on final call
+
+   All clear of the 3.0 floor for graphical objects, most clear of 4.5.
+
+   The swap is CSS rather than JS because the callers are scattered — the
+   board, the gate screens and the arrival card each build their own cell
+   and none of them knows the row state. fids-v2.js now stamps data-wx with
+   the icon name; the row state is a class the CSS can already see, so the
+   two meet here. Dark rows are not touched and keep the original art. */
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx] {
+  /* object-fit has to be restated: `content` replaces the image, and the
+     replaced content is sized by the box, not by the original img's fit. */
+  object-fit: contain !important;
+}
+
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="clear-day"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="clear-day"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="clear-day"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="clear-day"] {
+  content: url("/logos/weather/animated/clear-day-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="clear-night"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="clear-night"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="clear-night"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="clear-night"] {
+  content: url("/logos/weather/animated/clear-night-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="cloudy"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="cloudy"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="cloudy"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="cloudy"] {
+  content: url("/logos/weather/animated/cloudy-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="drizzle"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="drizzle"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="drizzle"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="drizzle"] {
+  content: url("/logos/weather/animated/drizzle-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="extreme-rain"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="extreme-rain"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="extreme-rain"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="extreme-rain"] {
+  content: url("/logos/weather/animated/extreme-rain-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="extreme-snow"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="extreme-snow"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="extreme-snow"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="extreme-snow"] {
+  content: url("/logos/weather/animated/extreme-snow-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="fog"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="fog"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="fog"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="fog"] {
+  content: url("/logos/weather/animated/fog-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="hail"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="hail"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="hail"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="hail"] {
+  content: url("/logos/weather/animated/hail-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="mist"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="mist"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="mist"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="mist"] {
+  content: url("/logos/weather/animated/mist-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="overcast-day"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="overcast-day"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="overcast-day"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="overcast-day"] {
+  content: url("/logos/weather/animated/overcast-day-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="overcast"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="overcast"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="overcast"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="overcast"] {
+  content: url("/logos/weather/animated/overcast-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="partly-cloudy-day"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="partly-cloudy-day"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="partly-cloudy-day"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="partly-cloudy-day"] {
+  content: url("/logos/weather/animated/partly-cloudy-day-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="partly-cloudy-night"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="partly-cloudy-night"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="partly-cloudy-night"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="partly-cloudy-night"] {
+  content: url("/logos/weather/animated/partly-cloudy-night-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="rain"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="rain"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="rain"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="rain"] {
+  content: url("/logos/weather/animated/rain-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="sleet"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="sleet"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="sleet"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="sleet"] {
+  content: url("/logos/weather/animated/sleet-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="snow"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="snow"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="snow"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="snow"] {
+  content: url("/logos/weather/animated/snow-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="thunderstorms-day-rain"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="thunderstorms-day-rain"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="thunderstorms-day-rain"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="thunderstorms-day-rain"] {
+  content: url("/logos/weather/animated/thunderstorms-day-rain-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="thunderstorms-rain"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="thunderstorms-rain"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="thunderstorms-rain"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="thunderstorms-rain"] {
+  content: url("/logos/weather/animated/thunderstorms-rain-light.svg?v=1") !important;
+}
+html:not(#_) #fidsTable tbody tr.row-delayed img.fids-wx-cell[data-wx="wind"],
+html:not(#_) #fidsTable tbody tr.row-final img.fids-wx-cell[data-wx="wind"],
+html:not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr.row-gate-closed img.fids-wx-cell[data-wx="wind"],
+html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="wind"] {
+  content: url("/logos/weather/animated/wind-light.svg?v=1") !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   v22675 — DIAGONAL STRIPES. Nick: 'lets just try this as background'
+   (vecteezy_abstractgrayandwhitestripesdiagonallinebackground_1233931).
+
+   This one is handled differently from every pattern before it, for two
+   reasons found by looking at the file rather than by assuming.
+
+   IT IS NOT A SEAMLESS TILE. Stripe density drifts across the frame —
+   heavy in the lower left, sparse in the upper right. Repeating it would
+   put a visible seam and an obviously recurring dense blob on the board.
+   So it does not repeat: one copy, sized to the viewport width, pinned with
+   background-attachment: fixed. The diagonal then runs unbroken from one
+   corner of the board to the other, which is the right look for diagonals
+   anyway, and there is no tile boundary to see. Nothing here needs the
+   row-registration variables — diagonals have no horizontal rhythm to lock
+   to — but --fids-pat-y / --fids-pat-h stay live for Orlando.
+
+   IT IS FINE PARALLEL HAIRLINES, WHICH IS WHAT KILLED THE LATTICE. That
+   failure (v22668) was a browser downscale to 0.27 aliasing hairline struts
+   into a barcode. The source here is 5040px wide, so leaving it to the
+   browser would repeat the mistake at 0.38. Instead the asset is resampled
+   ONCE, offline, with Lanczos, to exactly 1920 — the board's own width — so
+   at 1080p the browser scales by 1.0 and does no resampling at all. Stored
+   as 8-bit greyscale: multiply only reads luminance and the art is neutral,
+   so colour channels would be dead weight (742KB rather than ~2MB).
+
+   MULTIPLY, NOT SOFT-LIGHT. Rendered all three on the live board first.
+   soft-light and overlay lighten from a near-white source, which washed the
+   whole palette out — the Final-call orange went yellow and the blues went
+   pale. Multiply leaves hue alone and only deepens, so the board keeps its
+   colour system and gains a diagonal sheen. Measured on the two light rows,
+   surface only, against the dark row text:
+
+     delayed      5th-pct darkest 7.09:1    median 8.51:1
+     final call   5th-pct darkest 5.56:1    median 6.25:1
+
+   Both clear of 4.5 with room. The very darkest hairline cores are heavier
+   than that (they multiply the yellow to about 3.5:1) but they are roughly
+   a pixel wide against 4-5px text strokes, so no glyph ever sits on one.
+
+   Orlando is excluded, same as before — it has asa-no-ha, which Nick chose
+   and tuned himself. */
+@media (min-width: 701px) {
+  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsTable tbody tr:not(#_),
+  /* v22690 — departed rows too (Nick: 'it can go on the departed flights
+     too in general very faint and gray i think'). Their cells carry their
+     own opaque navy — the same cells-over-row trap the cancelled fix hit —
+     so the tr-level wave never showed through. On that dark desaturated
+     ground the multiply is inherently faint and reads gray, which is the
+     exact weight Nick asked for; no separate asset needed. */
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-departed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-final td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
+    /* v22686 — the diagonal stripes give way to Nick's blue wave
+       ('last thing for tonight ... the change of FIDS and BIDS background
+       again'). Same one-copy discipline: the artwork is fine curved
+       hairlines, so the shipped file is pre-rendered offline with Lanczos
+       to EXACTLY 1080px tall — at 1080p, cover matches height 1:1 and the
+       browser only center-crops the extra width. Zero play-time
+       resampling, so the curves can't alias the way the lattice did.
+       Darkest point 180/255; the blue hairlines are ~1px against 4-5px
+       glyph strokes, so no reading surface moves below its floor. */
+    background-image: url("/logos/Backgrounds/fids-wave.jpg?v=3") !important;
+    background-attachment: fixed !important;
+    background-position: center top !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    background-blend-mode: multiply !important;
+  }
+  /* the baggage header strip stays a solid bar, same as it was under the
+     previous patterns */
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-list-header {
+    background-image: none !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   v22685 — SILVER TEST REVERTED, THE THIRD PANEL STAYS.
+
+   Nick, after seeing the Delta silver experiment (v22682-84): 'I think its
+   ok you can revert back actually except please keep the panel item but
+   same size as the other 2 and alligned.'
+
+   So the silver texture, the navy ink and the plane-tray removal are gone
+   — the Delta gates look like every other gate again — but the one
+   structural fix the experiment surfaced is kept, and kept for EVERY
+   airline: the aircraft-type block (.v2-rc-acb, "Airbus A320 · expected")
+   now has a real panel box instead of floating on the shelf texture. That
+   floating text was the "missing panel at the bottom" in his first
+   screenshot, and it was missing on every carrier, not just Delta.
+
+   Same material as the other two panels, verbatim from the .v2-rc-fi-pane
+   recipe (v22594): the translucent smoked ground, 4px radius, the same
+   inset highlight and drop. Same size and alignment: the horizontal
+   margins reproduce the fi-table's padding (clamp(9px,.75vw,14px)) so the
+   third panel's edges line up exactly with the two above it, and height
+   comes from content + the panes' own padding scale rather than
+   stretching to fill the taller type shelf (gids sets height:100% on
+   .v2-rc-acb; auto restores content height, and the shelf's existing
+   justify-content:center seats it in the middle). */
+html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  height: auto !important;
+  margin: clamp(5px, .55vh, 9px) clamp(9px, .75vw, 14px) !important;
+  /* v22692 — IDENTICAL to the panes, full stop. Nick: 'I asked for these
+     to be the same theyre not its not the same background at the bottom
+     and color comon!!' The gray-glass "distinction" reading was wrong —
+     the final word is uniformity. This is the .v2-rc-fi-pane recipe
+     verbatim (v22594): same smoke, same radius, same inset highlight and
+     drop, same padding scale, sitting on the same tinted shelf — so the
+     three panels render as one set. The :not(#_) weight stays because the
+     shelf-set still paints this element transparent with !important. */
+  padding: clamp(3px, .4vh, 7px) clamp(8px, .7vw, 13px) !important;
+  border-radius: 4px !important;
+  background-color: rgba(8, 12, 18, 0.10) !important;
+  background-image: none !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 6px rgba(0, 0, 0, 0.30) !important;
+  box-sizing: border-box !important;
+}

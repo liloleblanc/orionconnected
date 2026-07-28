@@ -3093,6 +3093,8 @@ var LOCAL_LOGOS = {
   'AS': '/logos/airlines/us-major/alaska-airlines.svg',
   'B6': '/logos/airlines/us-major/jetblue.svg',
   'F9': '/logos/airlines/us-major/frontier.svg',  // Frontier Airlines (green wordmark + F-emblem)
+  'XP': '/logos/airlines/us-major/avelo.svg',     // Avelo Airlines (purple wordmark + tail emblem) — official kit from Nick
+  'LL': '/logos/airlines/european/level.svg',     // LEVEL (cyan/green mark + lettering) — official kit from Nick
   // NK (Spirit) removed — airline ceased operations May 2 2026 after second
   // bankruptcy and failed bailout. Code paths preserved as no-ops in case
   // any historical/legacy data still references the carrier.
@@ -3269,6 +3271,20 @@ function carrierLogoUrl(code) {
   // reassigned to Discover Airlines in 2023. Without this, GIDS gate-screen
   // banner shows Yute Air's logo for Discover flights.
   // (Kept as a fallback safety net — 4Y should be handled by LOCAL_LOGOS above.)
+  // Carriers whose wway.io artwork we will not use. Two reasons, same cure:
+  // returning '' drops the carrier onto the TEXT wordmark path, the same one
+  // every other artwork-less carrier already uses, so it comes out looking
+  // like the rest of the board instead of like a foreign object.
+  //   4Y — recycled IATA code; wway serves Yute Air (defunct 2017) for what
+  //        is now Discover Airlines.
+  //   XP — WAS here. wway's file arrived with its own canvas and a white
+  //        ground, so Avelo rendered as a clipped 'velo' in a white box and
+  //        the text-wordmark fallback was the lesser evil. v22676: Nick
+  //        supplied the real brand kit, so XP now has local artwork like
+  //        every other carrier and no longer needs the fallback.
+  //   LL — LEVEL sat here for one version (v22680, the white-box E25
+  //        banner) until Nick supplied the real brand kit; v22681 wires the
+  //        local artwork and the fallback comes off, same arc as Avelo.
   var STALE_WWAY_CARRIER = { '4Y': 1 };
   if (STALE_WWAY_CARRIER[up]) return '';
   return 'https://img.wway.io/pics/root/' + logoCode(up) + '@svg';
@@ -3297,7 +3313,9 @@ var WATERMARK_OVERRIDE = {
   'DL': '/logos/airlines/us-major/delta-on-black.svg',
   'UA': '/logos/airlines/us-major/united.svg',
   'AS': '/logos/airlines/us-major/alaska-airlines-wordmark-light.svg',
-  'B6': '/logos/airlines/us-major/jetblue-wordmark-light.svg?v=22369',
+  'B6': '/logos/airlines/us-major/jetblue-wordmark-light.svg?v=22648',
+  'XP': '/logos/airlines/us-major/avelo-wordmark-light.svg',
+  'LL': '/logos/airlines/european/level-wordmark-light.svg',
   // NK (Spirit) — ceased operations May 2 2026
   'WN': '/logos/airlines/us-major/southwest-wordmark-light.svg',
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',
@@ -3326,7 +3344,11 @@ function airlineWatermarkUrl(code) {
 // paints them at a fixed 55% background width, so carriers whose old file
 // was mostly padding would suddenly render up to 2x larger. Scale the
 // background width by the old ink-width fraction to keep the tuned look.
-var WATERMARK_INK_COMP = { 'LO': 0.49, 'AT': 0.73, 'AF': 0.77, 'B6': 0.91, 'AS': 0.93, 'KL': 0.93 };
+// v22649 — B6 goes 0.91 -> 0.80. This map exists for exactly this: the
+// watermark paints at a fixed 55% background WIDTH, so re-cutting a file to
+// its ink makes it jump. jetBlue's ink was 88% of the old canvas width, so
+// 0.91 x 0.88 holds the tuned size.
+var WATERMARK_INK_COMP = { 'LO': 0.49, 'AT': 0.73, 'AF': 0.77, 'B6': 0.80, 'AS': 0.93, 'KL': 0.93 };
 
 // Map Accor brand codes to their local logo files in /logos/. Used by the
 // v218.99.28 — Brand code → human-readable name. The Catalog API returns
@@ -4615,7 +4637,7 @@ const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
-  'HA':'#582C83','XP':'#492C92',
+  'HA':'#582C83','XP':'#492C92','LL':'#00B7C8',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
@@ -4631,7 +4653,7 @@ var AIRLINE_DOMAIN = {
   'UA':'united.com','DL':'delta.com','AA':'aa.com','WN':'southwest.com',
   'B6':'jetblue.com','AS':'alaskaair.com','F9':'flyfrontier.com',
   'G4':'allegiantair.com','HA':'hawaiianairlines.com','SY':'suncountry.com',
-  'XP':'aveloair.com',
+  'XP':'aveloair.com','LL':'flylevel.com',
   'LH':'lufthansa.com','BA':'britishairways.com','AF':'airfrance.com','KL':'klm.com',
   'VS':'virginatlantic.com','LX':'swiss.com','OS':'austrian.com','SK':'flysas.com',
   'AY':'finnair.com','IB':'iberia.com','TP':'flytap.com','EI':'aerlingus.com',
@@ -5532,7 +5554,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // narrowbody to 32Q (neo) for TS so the gate always shows the neo image,
   // never a ceo/320. Other carriers genuinely fly these, so this stays TS-only.
   if (al === 'TS' && /^(319|320|321|32N|32A|32B|32S)$/.test(eq)) eq = '32Q';
-  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, F9:1, '3H':1, '5T':1 };
+  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, F9:1, XP:1, '3H':1, '5T':1 };
   var miss = (typeof window !== 'undefined') ? window.AIRCRAFT_IMG_MISSING : {};
 
   // v218.99.47 — Engine variant detection. If the full model string was
@@ -5656,6 +5678,7 @@ var PLANE_FACING = {
   '5T/73C.png':'R', '5T/73P.png':'R', '5T/AT7.png':'R', '5T/ATR.png':'R', '717.png':'L', '730.png':'L',
   '732.png':'L', '733.png':'L', '734.png':'L', '735.png':'L', '736.png':'L', '737.png':'L',
   '738.png':'L', '739.png':'L', '73C.png':'L', '73E.png':'L', '73G.png':'L', '73H.png':'L',
+  'XP/73G.png':'L', 'XP/738.png':'L',
   '73J.png':'L', '73K.png':'L', '73S.png':'L', '73W.png':'L', '744.png':'L', '748.png':'L',
   '74H.png':'L', '74N.png':'L', '74Y.png':'L', '752.png':'L', '753.png':'L', '75W.png':'L',
   '762.png':'L', '763.png':'L', '764.png':'L', '76W.png':'L', '76Y.png':'L', '772.png':'L',
@@ -6323,6 +6346,8 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
         'F9':  '/logos/airlines/us-major/frontier-emblem.svg',
+        'XP':  '/logos/airlines/us-major/avelo-emblem.svg',   // Avelo tail mark — yellow/cyan/white, reads on the purple badge
+        'LL':  '/logos/airlines/european/level-emblem.svg',   // LEVEL cyan/green block mark
         '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
         'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
         // International
@@ -9225,7 +9250,13 @@ function uxgGateHtml(ctx) {
     'LA': { h: 116, w: 500 },
     'WN': { h: 116, w: 500 },
     'F9': { h: 116, w: 500 },
-    'B6': { h: 116, w: 500 },
+    // v22649 — recalibrated for the re-cut wordmark. The old file carried
+    // 26% empty canvas above the lettering and 12% below, so this box was
+    // tuned to art whose ink filled 61% of its height and 88% of its width.
+    // Cropping to the ink made it render 1.64x taller and overflow the
+    // banner. Same ink on screen as before, from a box scaled by those
+    // fractions.
+    'B6': { h: 71, w: 440 },
     '4Y': { h: 120, w: 120 }
   };
   var _bannerBrandCode = (typeof gatePreferredBrandCode === 'function')
@@ -9524,6 +9555,8 @@ function uxgGateHtml(ctx) {
     // v208 added (true emblems only — no wordmarks):
     '9X': '/logos/airlines/us-major/mokulele-emblem.svg',                          // Mokulele plumeria (red)
     'F9': '/logos/airlines/us-major/frontier-emblem.svg',                          // Frontier F-mark (green)
+    'XP': '/logos/airlines/us-major/avelo-emblem.svg',                             // Avelo tail mark
+    'LL': '/logos/airlines/european/level-emblem.svg',                             // LEVEL block mark
     '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',                 // Discover tail (yellow+blue)
     'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',                    // Breeze checkmark
     'BA': '/logos/airline-tiles/BAW.svg',                                          // BA speedmarque on navy square tile
@@ -10594,6 +10627,35 @@ function gateAutofit(root) {
       var shelf = el.closest('.v2-rc-shelf-illus'); if (!shelf) return;
       _boxAssign(el, Math.floor(shelf.clientWidth * 0.88), Math.floor(shelf.clientHeight * 0.7), null, false);
     });
+    // v22686 — THE THIRD PANEL MATCHES THE OTHER TWO BY MEASUREMENT.
+    // Nick: 'same size as the other 2 and alligned' + 'The panels are not
+    // the same size either'. CSS could not deliver this: the fi-table
+    // renders ~27px narrower than its shelf's content box (measured live;
+    // clamp arithmetic never explains it because the discrepancy is the
+    // table's own layout), so any margin recipe drifts. Instead the type
+    // panel copies the FIRST PANE's real box — left edge, width, height —
+    // from getBoundingClientRect, the same measure-don't-assume law as the
+    // pattern registration and every fitter here. Runs with this fitter
+    // (every render + resize), so it self-corrects when the rail reflows.
+    root.querySelectorAll('.gad-map-col-v2').forEach(function (col) {
+      var pane = col.querySelector('.v2-rc-fi-pane');
+      var acb = col.querySelector('.v2-rc-acb');
+      if (!pane || !acb || !acb.offsetParent) return;
+      var pr = pane.getBoundingClientRect();
+      if (!(pr.width > 40 && pr.height > 20)) return;
+      var hostEl = acb.parentElement;
+      var host = hostEl.getBoundingClientRect();
+      // margins offset from the parent's CONTENT edge — inside its padding —
+      // so the padding must come off or the panel sits that far right
+      // (measured: +15px, exactly the shelf's padding-left).
+      var hostPad = parseFloat(getComputedStyle(hostEl).paddingLeft) || 0;
+      acb.style.setProperty('margin', '0', 'important');
+      acb.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - host.left - hostPad)) + 'px', 'important');
+      acb.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
+      acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
+      acb.style.setProperty('flex-direction', 'column', 'important');
+      acb.style.setProperty('justify-content', 'center', 'important');
+    });
   } catch (e) {}
 }
 
@@ -10958,20 +11020,22 @@ function boardAutofit(full) {
     } catch (e) {}
     var list = document.querySelector('.bidsv2-flight-list');
     if (BOARD_AUTOFIT_ENABLED && list && list.offsetParent) {
-      // The row is the FIXED OBJECT here too: bids rows auto-grow with
-      // content, so measuring a row the previous fit inflated spiraled the
-      // text extra-large (Nick at MCO: 'supposed to be small its extra
-      // large') and pushed the last row off the panel. Record the natural
-      // height ONCE (first pass, CSS fonts) and always fit against that.
-      if (!list.dataset.fidsBaseRowH) {
-        var _r0 = list.querySelector('.bidsv2-flight-row');
-        if (_r0) list.dataset.fidsBaseRowH = _r0.clientHeight || 64;
-      }
-      var _bBase = parseFloat(list.dataset.fidsBaseRowH) || 64;
-      // Places never split across lines (Nick) — every BAGS lane fits on
-      // ONE line, whatever size that costs.
+      // The ROW is the law and the TEXT serves it (Nick, standing rule for
+      // months: 'its the row and the row size — the text fits inside, not
+      // the other way around'). The old code recorded a 'natural' height
+      // ONCE and fitted every later pass against that ghost, so switching
+      // small/medium/large moved the ROWS while the TYPE stayed sized to
+      // whatever height happened to be on screen at first paint — row size
+      // changed nothing, which is exactly his complaint. The freeze existed
+      // because rows once auto-grew with content and measuring an inflated
+      // row spiraled the fit ('supposed to be small its extra large');
+      // rows are HARD-FIXED by CSS now (68/98/132, overflow hidden), that
+      // spiral is impossible, and the honest measure is the row itself —
+      // passing no fixed height makes _boardFitCol read each cell's own
+      // live row. Places still never split across lines (Nick) — every
+      // BAGS lane fits on ONE line, whatever size that costs.
       ['.bidsv2-flight-num', '.bidsv2-col-from', '.bidsv2-col-time', '.bidsv2-col-status'].forEach(function (sel) {
-        _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row ' + sel)), 0.55, false, _bBase);
+        _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row ' + sel)), 0.55, false, null);
       });
     }
   } catch (e) {}
@@ -11006,6 +11070,323 @@ var BANNER_STYLE = {
 var BANNER_ACCENT = {
   'TPA': '#C8102E'   // Tampa roundel red
 };
+// Hand-set palettes are an OVERRIDE ONLY. Nick: 'it doesn't work for all
+// airports… it should be automatic.' Right — so the band reads the colours
+// out of whatever logo the airport has, and this table stays empty unless
+// some airport's logo genuinely defies extraction.
+var BANNER_PALETTE = {};
+
+// ── Pull an airport's brand colours out of its own logo ─────────────────
+// Draws the logo into a small canvas and picks the colours it is actually
+// made of. Cross-origin logos come through /logoimg so the canvas stays
+// readable; see the note on that route about why it is host-pinned.
+function _rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  var h = 0, s = 0, l = (mx + mn) / 2;
+  if (d) {
+    s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0));
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, s, l];
+}
+function _relLum(r, g, b) {
+  var f = function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function _hslToRgb(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  var c = (1 - Math.abs(2 * l - 1)) * s;
+  var x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  var m = l - c / 2;
+  var r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+}
+// Nick: 'you can probably go even deeper in colour'. Logos carry a lot of
+// pale anti-aliased edge tint, and once a tint survives as a distinct stop
+// the band gets a washed-out patch in it. This pushes every stop toward the
+// saturated version of the hue it already is — the hue is never changed, so
+// the band stays the airport's own colours, just at full strength.
+function _deepen(c) {
+  var hs = _rgbToHsl(c.r, c.g, c.b);
+  var h = hs[0];
+  var s = Math.min(1, hs[1] * 1.20 + 0.10);
+  var l = hs[2];
+  // Anything lighter than mid gets pulled most of the way back down; deeper
+  // stops are left where they are so a genuinely dark navy stays navy.
+  if (l > 0.50) l = 0.50 + (l - 0.50) * 0.32;
+  var rgb = _hslToRgb(h, s, l);
+  return { r: rgb[0], g: rgb[1], b: rgb[2], h: h, s: s, l: l, lum: _relLum(rgb[0], rgb[1], rgb[2]) };
+}
+function _hex(r, g, b) {
+  return '#' + [r, g, b].map(function (v) {
+    return Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  }).join('');
+}
+// Order matters as much as the colours do. Anchor on the darkest brand
+// colour — the band starts there so the white board label has something to
+// sit on — then walk the colour wheel in ONE direction from that anchor.
+// On Tampa's roundel that yields deep blue → light blue → orange → red,
+// which is the order Nick read off the logo himself.
+function _orderBandColours(cands) {
+  if (cands.length < 2) return cands;
+  var sorted = cands.slice().sort(function (a, b) { return a.lum - b.lum; });
+  var anchor = sorted[0];
+  var rest = cands.filter(function (c) { return c !== anchor; });
+  rest.sort(function (a, b) {
+    var da = (anchor.h - a.h + 360) % 360;
+    var db = (anchor.h - b.h + 360) % 360;
+    return da - db;
+  });
+  return [anchor].concat(rest);
+}
+// Read the brand colours a VECTOR logo declares about itself, instead of
+// guessing them back out of a rasterised copy. Nick, looking at Tampa on the
+// board: 'I see 4 different colors in the logo which I dont see in the image
+// — if it was for me it would follow the blue light blue orange and red'. He
+// was right, and the file agrees with him: tampa's SVG declares exactly
+// #003DA6, #0082CA, #EE7623, #DB0032. The pixel path was averaging those
+// against their own anti-aliased edges and handing back muddy approximations.
+//
+// Only saturated mid-tones count as brand colours — the near-black wordmark
+// ink (#101820) and the white knockout are chrome, not palette.
+function _svgDeclaredPalette(txt) {
+  var out = [], seen = {};
+  var re = /(?:fill|stop-color|stroke)\s*[:=]\s*["']?\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\))/g;
+  var m;
+  while ((m = re.exec(txt))) {
+    var raw = m[1], r, g, b;
+    if (raw.charAt(0) === '#') {
+      var h = raw.slice(1);
+      if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+      r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16);
+    } else {
+      var p = raw.replace(/[^0-9,]/g, '').split(',');
+      r = +p[0]; g = +p[1]; b = +p[2];
+    }
+    if (!isFinite(r) || !isFinite(g) || !isFinite(b)) continue;
+    var hsl = _rgbToHsl(r, g, b);
+    if (hsl[1] < 0.22) continue;
+    if (hsl[2] > 0.90 || hsl[2] < 0.12) continue;
+    var key = r + ',' + g + ',' + b;
+    if (seen[key]) continue;
+    seen[key] = 1;
+    out.push({ r: r, g: g, b: b, h: hsl[0], s: hsl[1], l: hsl[2], lum: _relLum(r, g, b) });
+  }
+  return out;
+}
+function _extractLogoPalette(logoUrl, cb) {
+  try {
+    if (!logoUrl) return cb(null);
+    var src = logoUrl;
+    try {
+      var lu = new URL(logoUrl, location.href);
+      if (lu.origin !== location.origin) src = '/logoimg?u=' + encodeURIComponent(lu.toString());
+    } catch (e) {}
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    var done = false;
+    var finish = function (v) { if (!done) { done = true; cb(v); } };
+    // Vector logos get read, not sampled. Two-to-four declared brand colours
+    // ARE the palette — no area ranking to do, no deepening, no tail-shading:
+    // every one of those steps exists to rescue a guess, and there is nothing
+    // to guess at here. More than four (illustrative marks, gradients) still
+    // go down the pixel path, where painted area decides which four matter.
+    if (/\.svg(\?|#|$)/i.test(logoUrl)) {
+      try {
+        fetch(src, { cache: 'force-cache' })
+          .then(function (r) { return r.ok ? r.text() : null; })
+          .then(function (txt) {
+            if (done) return;
+            var decl = txt ? _svgDeclaredPalette(txt) : [];
+            if (decl.length >= 2 && decl.length <= 4) {
+              var ord = _orderBandColours(decl).slice(0, 4);
+              while (ord.length < 4) ord.push(ord[ord.length - 1]);
+              // The clock sits on the tail. Tampa's red carries white at
+              // 5.17:1 and is left exactly as the logo draws it; an airport
+              // whose last colour is a pale yellow would not, so that one
+              // gets deepened until it can. Nothing else is touched.
+              // 0.183 is the bare-colour threshold for white at 4.5:1, but the
+              // band is not bare — the silk sheen sits over it at overlay .80
+              // and LIFTS it. Orlando's gold tail passes at #a26600 (lum .172)
+              // and then paints as (207,160,35): white on that measures
+              // 2.36:1, under the floor even for the 44px clock. Red tails
+              // survive the sheen; warm light ones do not. 0.115 leaves the
+              // painted band dark enough that white still clears after the
+              // sheen has had its way.
+              var t = ord[3], tg = 0;
+              while (_relLum(t.r, t.g, t.b) > 0.115 && tg++ < 18) {
+                t = { r: t.r * 0.9, g: t.g * 0.9, b: t.b * 0.9 };
+              }
+              ord[3] = t;
+              finish(ord.map(function (c) { return _hex(c.r, c.g, c.b); }));
+            }
+          })
+          .catch(function () {});
+      } catch (e) {}
+    }
+    setTimeout(function () { finish(null); }, 6000);
+    img.onerror = function () { finish(null); };
+    img.onload = function () {
+      try {
+        var N = 72;
+        var cv = document.createElement('canvas');
+        cv.width = N; cv.height = N;
+        var cx = cv.getContext('2d', { willReadFrequently: true });
+        cx.drawImage(img, 0, 0, N, N);
+        var d = cx.getImageData(0, 0, N, N).data;
+        // Bucket by coarse hue+lightness so anti-aliased edges collapse into
+        // the solid colour they came from instead of inventing new ones.
+        var buckets = {};
+        for (var i = 0; i < d.length; i += 4) {
+          var a = d[i + 3];
+          if (a < 200) continue;
+          var r = d[i], g = d[i + 1], b = d[i + 2];
+          var hsl = _rgbToHsl(r, g, b);
+          // Skip the paper and the ink: near-white backgrounds and the
+          // near-black used for wordmark type are not brand colours.
+          if (hsl[1] < 0.22) continue;
+          if (hsl[2] > 0.90 || hsl[2] < 0.12) continue;
+          var key = Math.round(hsl[0] / 18) + '|' + Math.round(hsl[2] * 8);
+          var bk = buckets[key] || (buckets[key] = { n: 0, r: 0, g: 0, b: 0 });
+          bk.n++; bk.r += r; bk.g += g; bk.b += b;
+        }
+        var list = Object.keys(buckets).map(function (k) {
+          var bk = buckets[k];
+          var r = bk.r / bk.n, g = bk.g / bk.n, b = bk.b / bk.n;
+          var hsl = _rgbToHsl(r, g, b);
+          return { n: bk.n, r: r, g: g, b: b, h: hsl[0], s: hsl[1], l: hsl[2], lum: _relLum(r, g, b) };
+        }).filter(function (c) { return c.n >= 6; });
+        // Rank by area, but weighted toward saturation — a logo's solid brand
+        // colour should beat the larger drift of anti-aliased edge pixels
+        // around it, which are the same hue washed out.
+        list.sort(function (a, b) { return (b.n * (0.5 + b.s)) - (a.n * (0.5 + a.s)); });
+        // Keep only colours visibly different from the ones already taken.
+        // Hue-and-lightness was the wrong test for this: Tampa's deep blue
+        // and light blue are 17 degrees apart and read as two obviously
+        // different colours, while its red and the anti-aliased pink around
+        // it share a hue exactly. Perceptual distance separates both cases
+        // correctly — the blues land ~150 apart, the reds ~73.
+        var dist = function (a, b) {
+          var dr = a.r - b.r, dg = a.g - b.g, db = a.b - b.b;
+          return Math.sqrt(2 * dr * dr + 4 * dg * dg + 3 * db * db);
+        };
+        var picked = [];
+        for (var j = 0; j < list.length && picked.length < 4; j++) {
+          var c = list[j], ok = true;
+          for (var k2 = 0; k2 < picked.length; k2++) {
+            if (dist(c, picked[k2]) < 80) { ok = false; break; }
+          }
+          if (ok) picked.push(c);
+        }
+        if (!picked.length) return finish(null);
+        // Plenty of logos are one or two colours. Repeating a stop would just
+        // flatten the band, so the gaps are filled with shades and tints of
+        // the colours the airport actually uses — still its own palette, just
+        // given somewhere to travel.
+        var shade = function (c, f) {
+          return { r: c.r * f, g: c.g * f, b: c.b * f,
+                   h: c.h, s: c.s, l: c.l * f, lum: _relLum(c.r * f, c.g * f, c.b * f) };
+        };
+        var tint = function (c, f) {
+          var m = function (v) { return v + (255 - v) * f; };
+          var r = m(c.r), g = m(c.g), b = m(c.b);
+          var hs = _rgbToHsl(r, g, b);
+          return { r: r, g: g, b: b, h: hs[0], s: hs[1], l: hs[2], lum: _relLum(r, g, b) };
+        };
+        if (picked.length === 1) {
+          var base = picked[0];
+          picked = [shade(base, 0.62), base, tint(base, 0.45), shade(base, 0.80)];
+        } else if (picked.length === 2) {
+          picked = [shade(picked[0], 0.70), picked[0], picked[1], shade(picked[1], 0.82)];
+        } else if (picked.length === 3) {
+          picked = [picked[0], picked[1], picked[2], shade(picked[2], 0.80)];
+        }
+        picked = picked.map(_deepen);
+        var ordered = _orderBandColours(picked).slice(0, 4);
+        // The clock sits on the tail. If that colour is too light to carry
+        // white text, deepen it until it can — every other stop is untouched.
+        var tail = ordered[3];
+        var guard = 0;
+        while (_relLum(tail.r, tail.g, tail.b) > 0.175 && guard++ < 12) {
+          tail = { r: tail.r * 0.88, g: tail.g * 0.88, b: tail.b * 0.88 };
+        }
+        ordered[3] = tail;
+        finish(ordered.map(function (c) { return _hex(c.r, c.g, c.b); }));
+      } catch (e) { finish(null); }
+    };
+    img.src = src;
+  } catch (e) { cb(null); }
+}
+function _applyBandPalette(pal) {
+  try {
+    for (var i = 0; i < 4; i++) {
+      document.body.style.setProperty('--fids-band-' + (i + 1), pal[i]);
+    }
+    document.body.dataset.fidsBandPalette = '1';
+  } catch (e) {}
+}
+function _clearBandPalette() {
+  try {
+    for (var i = 0; i < 4; i++) { document.body.style.removeProperty('--fids-band-' + (i + 1)); }
+    delete document.body.dataset.fidsBandPalette;
+  } catch (e) {}
+}
+// Resolve the airport's logo, derive its palette, cache it against that exact
+// logo URL. Extraction is async and only runs on a cache miss, so a warm
+// board paints the branded band on the first frame with no flash.
+var _bandPaletteBusy = {};
+function _autoBandPalette(ap, _tries) {
+  try {
+    // The logo lives in the KV-backed airport config, not the static AP table,
+    // and that config arrives asynchronously — on a cold load the banner is
+    // styled before it lands. So when there is no logo yet, come back for it
+    // rather than concluding the airport has none.
+    var cfg = (typeof getAirportConfig === 'function') ? getAirportConfig(ap) : null;
+    var logo = (cfg && cfg.logo && cfg.logo.url) ? cfg.logo.url : '';
+    if (!logo) { try { logo = localStorage.getItem('fids_airport_logo_' + ap) || ''; } catch (e) {} }
+    if (!logo) {
+      var t = _tries || 0;
+      if (t < 12) { setTimeout(function () { _autoBandPalette(ap, t + 1); }, 700); return; }
+      _clearBandPalette();
+      return;
+    }
+    // v3 key (v22664): the TAIL GUARD changed from 0.183 to 0.115, so every
+    // palette cached under v2 still carries a tail that the silk sheen lifts
+    // out of contrast — Orlando's gold, where the clock measured 2.36:1. A
+    // cached palette is never re-extracted, so without a new key the fix
+    // would reach no screen that had already run once.
+    // v2 key: the extractor changed, so every palette cached by the old one
+    // is wrong now. Re-keying discards them without a migration step —
+    // otherwise a screen that has already been up keeps painting the muddy
+    // sampled colours forever and only a cleared cache would ever fix it.
+    var ck = 'fids_logo_palette3_' + ap;
+    try {
+      var cached = JSON.parse(localStorage.getItem(ck) || 'null');
+      if (cached && cached.url === logo && cached.pal && cached.pal.length === 4) {
+        _applyBandPalette(cached.pal);
+        return;
+      }
+    } catch (e2) {}
+    if (_bandPaletteBusy[ap]) return;
+    _bandPaletteBusy[ap] = 1;
+    _extractLogoPalette(logo, function (pal) {
+      _bandPaletteBusy[ap] = 0;
+      if (!pal) { _clearBandPalette(); return; }
+      try { localStorage.setItem(ck, JSON.stringify({ url: logo, pal: pal })); } catch (e3) {}
+      _applyBandPalette(pal);
+    });
+  } catch (e) { _clearBandPalette(); }
+}
 function _applyBannerStyle(iata, screen) {
   try {
     var ap = String(iata || '').toUpperCase();
@@ -11040,6 +11421,16 @@ function _applyBannerStyle(iata, screen) {
         document.body.style.removeProperty('--fids-silk-accent');
         document.body.style.removeProperty('--fids-silk-accent-tint');
       }
+      // Full logo palette. A single accent only tinted the band's tail, so an
+      // airport's identity came down to one faint edge colour. This reads the
+      // colours out of the airport's own logo and flows the whole band through
+      // them. Hand-set entries in BANNER_PALETTE override; otherwise it is
+      // derived and cached per logo URL.
+      var pal = null;
+      try { pal = JSON.parse(localStorage.getItem('fids_banner_palette_' + ap) || 'null'); } catch (e5) {}
+      if (!pal) pal = BANNER_PALETTE[ap] || null;
+      if (pal && pal.length >= 4) { _applyBandPalette(pal); }
+      else { _autoBandPalette(ap); }
     } catch (e3) {}
   } catch (e) {}
 }
@@ -11054,6 +11445,15 @@ function renderDedicatedScreen() {
   try {
     var _apClsIata = (document.getElementById('apSel') || {}).value || '';
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+    // General per-airport hook. Only YQM ever had a class, so anything that
+    // needed to target one airport had to hard-code a second one-off. This
+    // carries whatever airport is on screen, so CSS can scope to any of them
+    // without another bespoke class each time.
+    try {
+      var _apAttr = String(_apClsIata).toUpperCase();
+      if (_apAttr) document.body.setAttribute('data-fids-ap', _apAttr);
+      else document.body.removeAttribute('data-fids-ap');
+    } catch (e0) {}
     _applyBannerStyle(_apClsIata, screenType === 'gate' ? 'gids' : 'bids');
   } catch (e) {}
   
@@ -12444,9 +12844,9 @@ const gView = document.getElementById('gateView');
     // floor existed only because rows used to balloon and the measure ran away;
     // with fixed heights that can't happen, and forcing MORE than fit would
     // overflow/clip the fixed rows.)
-    const BIDS_FLIGHTS_PER_PAGE = (typeof bView._bidsMeasuredFit === 'number'
-                                   && bView._bidsMeasuredFit > 0)
-                                  ? bView._bidsMeasuredFit
+    const _bidsFitKey = _logoSize + '|' + Math.round(window.innerHeight);
+    const BIDS_FLIGHTS_PER_PAGE = (_BIDS_FIT.key === _bidsFitKey && _BIDS_FIT.n > 0)
+                                  ? _BIDS_FIT.n
                                   : _estimatePerPage;
     const BIDS_ROTATE_MS = 10000;
     const _totalPages = Math.max(1, Math.ceil(arrFlights.length / BIDS_FLIGHTS_PER_PAGE));
@@ -12609,7 +13009,7 @@ const gView = document.getElementById('gateView');
               // onerror string, where a stray quote kills the fallback.
               const _bSafeName = airlineName.replace(/[^A-Z0-9ÀÂÉÈÊÎÔÛÇ &().-]/gi, '');
               const _bAirlineHtml = _bidsEmblemOnly ? '' : (_bWmBase
-                ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
+                ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 'light' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
                 : '<div class="bidsv2-airline-name">' + airlineName + '</div>');
               return `<div class="bidsv2-flight-row${_bRowCls}">
                 <div class="bidsv2-col-flight">
@@ -12663,26 +13063,49 @@ const gView = document.getElementById('gateView');
           const _headerH = _header ? _header.offsetHeight : 0;
           const _rowH = _rows[0].offsetHeight;
           if (_listH <= 0 || _rowH <= 0) return;
-          const _avail = _listH - _headerH - 8; // 8px breathing room
+          // clientHeight INCLUDES the list's own padding; the rows do not
+          // get to use it. Not subtracting it overcounted the space by the
+          // padding (56px on this layout) — nearly a whole small row, which
+          // is exactly the bottom row that rendered clipped.
+          const _lcs = getComputedStyle(_list);
+          const _listPad = (parseFloat(_lcs.paddingTop) || 0) + (parseFloat(_lcs.paddingBottom) || 0);
+          const _avail = _listH - _listPad - _headerH - 8; // 8px breathing room
           let _fit = Math.max(1, Math.floor(_avail / _rowH));
-          // Sanity clamp — never more than arrFlights length, never crazy
           _fit = Math.min(_fit, 40);
-          // Only re-render if the fit actually changed by something
-          // meaningful (avoid flicker from ±1 jitter on layout).
-          const _current = (typeof bView._bidsMeasuredFit === 'number')
-                           ? bView._bidsMeasuredFit
-                           : _estimatePerPage;
-          if (Math.abs(_fit - _current) >= 1) {
-            bView._bidsMeasuredFit = _fit;
-            // One re-render to apply the new fit. The next render won't
-            // re-measure to a different value because layout is stable.
-            if (typeof render === 'function') render();
+          const _key = (document.body.dataset.fidsLogoSize || 'medium') + '|' + Math.round(window.innerHeight);
+          if (_BIDS_FIT.key !== _key) { _BIDS_FIT.key = _key; _BIDS_FIT.n = 0; _BIDS_FIT.capped = false; }
+          const _current = _BIDS_FIT.n || _estimatePerPage;
+          // Sticky cap: shrinking (real overflow) always applies and locks;
+          // growing is only allowed while no overflow has ever forced a
+          // shrink on this key. Without the lock the fit pulsed grow ->
+          // overflow -> shrink -> grow on the wall.
+          let _next = _current;
+          if (_fit < _current) { _next = _fit; _BIDS_FIT.capped = true; }
+          else if (_fit > _current && !_BIDS_FIT.capped) { _next = _fit; }
+          if (_next !== _BIDS_FIT.n) {
+            _BIDS_FIT.n = _next;
+            // The DEDICATED renderer owns this screen. render() is the main
+            // table's — routing the refit through it was repainting the
+            // wrong surface and never applying the corrected count here.
+            if (typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
+            else if (typeof render === 'function') render();
           }
         } catch (_e) { /* swallow — measurement is best-effort */ }
       });
     } catch (_e) {}
   }
 }
+
+// ── BIDS ROW FIT (module scope) ─────────────────────────────────────────────
+// The fit lives HERE and not on #baggageView: the re-render REPLACES that
+// node, so a measurement stored on it was discarded every pass and the
+// fitter re-guessed forever — the clipped bottom row came back each render
+// (Nick: 'size again no longer works and seeing bottoms now cut off').
+// Keyed on logo size + viewport height, the two things that change the
+// geometry. `capped` is the oscillation guard: once a shrink was forced by
+// real overflow, the fit may not grow again under the same key — grow ->
+// overflow -> shrink -> grow was a visible pulse on the wall.
+var _BIDS_FIT = { key: '', n: 0, capped: false };
 
 const AP = {
   YYZ:{ name:'Toronto Pearson International Airport',                tz:'America/Toronto'    },
@@ -15532,7 +15955,7 @@ const _AIRLINE_NAME_OVERRIDE = {
   'UA':'United','DL':'Delta','AA':'American','WN':'Southwest',
   'B6':'JetBlue','AS':'Alaska','F9':'Frontier',
   // NK (Spirit) removed — ceased operations May 2 2026
-  'G4':'Allegiant','HA':'Hawaiian','SY':'Sun Country',
+  'G4':'Allegiant','HA':'Hawaiian','SY':'Sun Country','LL':'LEVEL',
   '9E':'Delta','9K':'Cape Air','MQ':'American','OH':'American','OO':'SkyWest',
   'YV':'Mesa','G7':'GoJet','YX':'Republic','PT':'American','ZW':'Air Wisconsin',
   'QX':'Horizon','EV':'ExpressJet',
@@ -15588,6 +16011,7 @@ const AIRLINE_NAME = {
   'B6':'JETBLUE',     'AS':'ALASKA',      'F9':'FRONTIER',
   // NK (Spirit) — ceased operations May 2 2026
   'G4':'ALLEGIANT',   'HA':'HAWAIIAN',    'SY':'SUN COUNTRY', 'XP':'AVELO',
+  'LL':'LEVEL',
   'WL':'WORLD ATLANTIC',
   '9E':'DELTA',       '9K':'CAPE AIR',    'MQ':'AMERICAN',    'OH':'AMERICAN',    'OO':'SKYWEST',
   'YV':'MESA',        'G7':'GOJET',       'YX':'REPUBLIC',    'PT':'AMERICAN',    'ZW':'AIR WISCONSIN',
@@ -15776,6 +16200,8 @@ const IATA_TO_WORDMARK = {
   'AA':'american',  'UA':'united',  'DL':'delta',
   'WN':'southwest',  'B6':'jetblue',
   'F9':'frontier',  // Frontier Airlines — official green wordmark + emblem from Nick's upload
+  'XP':'avelo',     // Avelo Airlines — official wordmark set (white / black / purple) from Nick's upload
+  'LL':'level',     // LEVEL — official wordmark set from Nick; dark lettering IS the brand (like Flair), so no COLOR_WORDMARKS entry
   // NK (Spirit) — ceased operations May 2 2026
   'AS':'alaska-airlines',  'HA':'hawaiian',
   'SY':'sun-country',      // Sun Country — official lockup split: sun mark → SCX tile, lettering here (Jul 2026)
@@ -15945,7 +16371,7 @@ const LOGO_SUBFOLDER = {
   'hyatt.png':'hotels/hyatt', 'hyde.avif':'hotels/accor-premium', 'hyde.svg':'hotels/accor-premium', 'ibis-budget.svg':'hotels/accor-economy',
   'ibis-styles.svg':'hotels/accor-economy', 'ibis.png':'hotels/accor-economy', 'ibis.svg':'hotels/accor-economy', 'ihg-hotels.png':'hotels/ihg',
   'ihg.png':'hotels/ihg', 'intercontinental.png':'hotels/ihg', 'jazz-wordmark-dark.svg':'airlines/canadian-regional', 'jazz-wordmark-light.svg':'airlines/canadian-regional',
-  'jazz.svg':'airlines/canadian-regional', 'jetblue-wordmark-dark.svg':'airlines/us-major', 'jetblue-wordmark-light.svg':'airlines/us-major', 'jetblue.svg':'airlines/us-major', 'frontier.svg':'airlines/us-major', 'frontier-emblem.svg':'airlines/us-major', 'frontier-wordmark-light.svg':'airlines/us-major', 'frontier-wordmark-dark.svg':'airlines/us-major',
+  'jazz.svg':'airlines/canadian-regional', 'jetblue-wordmark-dark.svg':'airlines/us-major', 'level-wordmark-light.svg':'airlines/european', 'level-wordmark-dark.svg':'airlines/european', 'level-emblem.svg':'airlines/european', 'level.svg':'airlines/european', 'avelo-wordmark-light.svg':'airlines/us-major', 'avelo-wordmark-dark.svg':'airlines/us-major', 'avelo-wordmark-color.svg':'airlines/us-major', 'avelo-emblem.svg':'airlines/us-major', 'avelo.svg':'airlines/us-major', 'jetblue-wordmark-light.svg':'airlines/us-major', 'jetblue.svg':'airlines/us-major', 'frontier.svg':'airlines/us-major', 'frontier-emblem.svg':'airlines/us-major', 'frontier-wordmark-light.svg':'airlines/us-major', 'frontier-wordmark-dark.svg':'airlines/us-major',
   'jo-and-joe.svg':'hotels/accor-premium', 'jojoe.png':'hotels/accor-premium', 'kempinski.png':'hotels/other-chains', 'kimpton.png':'hotels/ihg',
   'klm-wordmark-dark.svg':'airlines/european', 'klm-wordmark-light.svg':'airlines/european', 'klm.png':'airlines/european', 'le-meridien.png':'hotels/choice-le-meridien',
   'lemeridien-01.eps':'hotels/choice-le-meridien', 'logo-hiex-white.svg':'hotels/ihg', 'lot-wordmark-dark.svg':'airlines/european',
@@ -15992,6 +16418,7 @@ function logoPath(basename) {
 // recolored to each carrier's brand lettering color. Flair stays black on
 // purpose: black IS its lettering (and never green, per policy).
 const COLOR_WORDMARKS = {
+  'avelo': '/logos/airlines/us-major/avelo-wordmark-color.svg',   // Avelo purple #502E91
   'royal-air-maroc': '/logos/airlines/alliances/royal-air-maroc-wordmark-color.svg',
   'aeromexico': '/logos/airlines/asian-other/aeromexico-wordmark-color.svg',
   'avianca': '/logos/airlines/asian-other/avianca-wordmark-color.svg',
@@ -16094,6 +16521,8 @@ const IATA_TO_EMBLEM = {
   '9X': '/logos/airlines/us-major/mokulele-emblem.svg',  // Mokulele plumeria flower
   '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',  // Discover Airlines tail-fin emblem (yellow + blue gradient)
   'F9': '/logos/airlines/us-major/frontier-emblem.svg',  // Frontier Airlines green stylized "F" mark
+  'XP': '/logos/airlines/us-major/avelo-emblem.svg',     // Avelo Airlines tail mark
+  'LL': '/logos/airlines/european/level-emblem.svg',     // LEVEL block mark
   'MX': '/logos/airlines/us-major/breeze-airways-emblem.png',  // Breeze checkmark on navy square
   'VB': '/logos/airlines/asian-other/vivaaerobus-emblem.webp',  // Viva green leaf-shape "a" emblem
   'BW': '/logos/airlines/asian-other/caribbean-emblem.png',     // Caribbean hummingbird (official brand art; no tile exists)
@@ -16696,7 +17125,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22631';
+var FIDS_BUILD_TAG = 'v22692';
 (function(){
   try {
     function _addTag(){
@@ -17417,6 +17846,15 @@ function render() {
   try {
     var _apClsIata = (document.getElementById('apSel') || {}).value || '';
     document.body.classList.toggle('fids-ap-YQM', String(_apClsIata).toUpperCase() === 'YQM');
+    // General per-airport hook. Only YQM ever had a class, so anything that
+    // needed to target one airport had to hard-code a second one-off. This
+    // carries whatever airport is on screen, so CSS can scope to any of them
+    // without another bespoke class each time.
+    try {
+      var _apAttr = String(_apClsIata).toUpperCase();
+      if (_apAttr) document.body.setAttribute('data-fids-ap', _apAttr);
+      else document.body.removeAttribute('data-fids-ap');
+    } catch (e0) {}
     _applyBannerStyle(_apClsIata, 'fids');
   } catch (e) {}
 
@@ -17577,7 +18015,12 @@ function render() {
     // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
     // brand colours clash there (TAP green/red on yellow, Nick) and the
     // inline !important would beat any stylesheet fix.
-    const _brandInkOk = !(isDelayed || stKey === 'final-call');
+    // Cancelled/diverted joined Jul 27: their fallback NAME was still
+    // getting the brand colour inlined with !important, which beats every
+    // stylesheet rule — a navy or black brand rendered black on the red
+    // block whenever the white-ink artwork failed to load (Nick: 'I
+    // guarantee you on FIDS its not white. its black').
+    const _brandInkOk = !(isDelayed || stKey === 'final-call' || isCanc || isDiv);
     const _nameStyle = (_brandColor && _brandInkOk) ? ` style="color:${_brandColor} !important;"` : '';
     // onerror: RETRY once with a unique cache-buster before falling back to the
     // text name — a transient asset hiccup (or a stale cached 404) must not
@@ -18427,6 +18870,7 @@ const RFG_AIRCRAFT_BY_AL = {
   'AS': ['738','7M8','739'],
   // NK (Spirit) — ceased operations May 2 2026
   'F9': ['320','321','32N','32Q'],
+  'XP': ['73G','738'],               // Avelo flies only 737-700 and -800; both liveries are on disk
   'HA': ['32Q','332','717','789'],   // Hawaiian — A321neo (32Q, mainland), A330-200, 717 (inter-island), 787-9 (long-haul)
 };
 const RFG_AIRCRAFT_DEFAULT = ['319','320','321','738','7M8','789','77W','DH4','CR9','E75'];
@@ -19034,7 +19478,159 @@ function yyzToAdbFlight(f) {
   }
   return out;
 }
+// ── MIA (Miami International) — AirIT WebFIDS ──────────────────────────
+// The worker's /miafids route reduces MIA's XML board to flat records; this
+// maps one of them into the ADB-native shape the rest of the pipeline eats.
+//
+// TIME. Every record carries BOTH a local wall-clock string (stt/ett/att,
+// no zone) and timeInMillis, which is the true UTC epoch of stt. Rather
+// than look Miami's offset up per date the way the Tampa adapter has to, we
+// recover it from the pair — timeInMillis minus stt-read-as-UTC IS the
+// offset in force for that flight — then apply it to ett/att. Self-correcting
+// across the DST boundary, with no timezone table to drift.
+function miaTimeShape(localIso, offsetMs) {
+  const m = String(localIso || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) return null;
+  const Y = m[1], Mo = m[2], Da = m[3], H = m[4], Mi = m[5], S = m[6] || '00';
+  const sign = offsetMs <= 0 ? '+' : '-';
+  const absMin = Math.round(Math.abs(offsetMs) / 60000);
+  const off = sign + String(Math.floor(absMin / 60)).padStart(2, '0') + ':' + String(absMin % 60).padStart(2, '0');
+  const local = `${Y}-${Mo}-${Da} ${H}:${Mi}:${S}${off}`;
+  let utc = local;
+  try {
+    utc = new Date(Date.parse(`${Y}-${Mo}-${Da}T${H}:${Mi}:${S}Z`) + offsetMs)
+      .toISOString().slice(0, 19).replace('T', ' ') + '+00:00';
+  } catch (e) {}
+  return { local, utc };
+}
+
+// MIA's status vocabulary is small and, importantly, NOT what its own client
+// assumes. That client switches on the first two characters, so 'De' catches
+// both "Delayed" and "Departed" — and the live feed has 84 departures reading
+// "Departed" and zero reading "Delayed", so MIA's own board is colouring every
+// departed flight as delayed. We match the whole word instead.
+//
+// The real vocabulary, counted off the live board: "On Time", "Departed H:MMP",
+// "Arrived H:MMP", "Now H:MMP", "Cancelled". There is no "Delayed" string at
+// all — "Now" is how this feed spells a revised time, and on arrivals it can
+// be EARLIER than scheduled (5 of 58 were), so "Now" alone cannot mean late.
+// Delay is therefore decided from the clock, not the word.
+const MIA_DELAY_MIN = 15;
+function miaStatus(statusText, delayMin) {
+  const t = String(statusText || '').trim().toLowerCase();
+  if (t.startsWith('cancel')) return 'cancelled';
+  if (t.startsWith('divert')) return 'diverted';
+  if (t.startsWith('depart')) return 'departed';
+  if (t.startsWith('arriv') || t.startsWith('land')) return 'arrived';
+  if (t.startsWith('board')) return 'boarding';
+  if (t.startsWith('delay')) return 'delayed';
+  if (delayMin >= MIA_DELAY_MIN) return 'delayed';
+  return 'scheduled';
+}
+
+function miaToAdbFlight(f, direction) {
+  if (!f || typeof f !== 'object') return null;
+  const isDep = direction === 'Departure';
+  const code = String(f.CXR || '').trim().toUpperCase();
+  const trn = String(f.TRN || '').trim();
+  const number = (code + trn) || trn;
+  if (!number) return null;
+
+  const ms = parseInt(f.timeInMillis, 10);
+  const sttMs = Date.parse(String(f.stt || '') + 'Z');
+  const offsetMs = (isFinite(ms) && isFinite(sttMs)) ? (ms - sttMs) : 0;
+
+  const sched = miaTimeShape(f.stt, offsetMs);
+  // att (actual) outranks ett (estimated) once the movement has happened.
+  const revisedSrc = f.att || f.ett || '';
+  const revised = (revisedSrc && revisedSrc !== f.stt) ? miaTimeShape(revisedSrc, offsetMs) : null;
+  let delayMin = 0;
+  if (revisedSrc && f.stt) {
+    const d = Date.parse(revisedSrc + 'Z') - Date.parse(String(f.stt) + 'Z');
+    if (isFinite(d)) delayMin = Math.round(d / 60000);
+  }
+
+  const airline = { iata: code || null, icao: null, name: f.airlineName || null };
+  const home = { iata: 'MIA', icao: 'KMIA', name: 'Miami' };
+  // MIA writes city names in caps with an airport qualifier after a dash
+  // ("NEW YORK - JFK"). Strip the qualifier the way the Tampa ingest does,
+  // then case it — every other feed on the board delivers title case, and a
+  // row reading "ASHEVILLE" next to one reading "Toronto" shouts. Short
+  // all-caps tokens that are airport/─code-like (JFK, LGA) keep their caps;
+  // the usual small words stay lower unless they lead.
+  let cityName = String(f.city || '').trim();
+  if (typeof _cityFromStopLabel === 'function') cityName = _cityFromStopLabel(cityName);
+  // MIA also tacks a state or country on after a comma — "AUSTIN, TX",
+  // "DUBAI, AE", "COLUMBUS, OHIO". A board shows the city, and the IATA chip
+  // beside it already disambiguates the two Barcelonas (BCN vs BLA), so the
+  // qualifier is noise. Only stripped when what follows the comma is short
+  // enough to BE a qualifier — a genuine comma in a city name survives.
+  const _cm = cityName.match(/^(.+?),\s*([A-Za-z.\s]{2,8})$/);
+  if (_cm) cityName = _cm[1].trim();
+  if (cityName && cityName === cityName.toUpperCase()) {
+    const SMALL = { OF: 1, THE: 1, AND: 1, DE: 1, DEL: 1, DA: 1, DI: 1, LA: 1, LE: 1, EL: 1 };
+    cityName = cityName.split(/\s+/).map(function (w, i) {
+      if (/^[A-Z]{3}$/.test(w) && i > 0 && !SMALL[w]) return w;      // JFK, LGA, MSY
+      if (i > 0 && SMALL[w]) return w.toLowerCase();
+      if (/^(ST|MT|FT)\.?$/.test(w)) return w.charAt(0) + w.slice(1).toLowerCase() + (w.endsWith('.') ? '' : '.');
+      return w.charAt(0) + w.slice(1).toLowerCase();
+    }).join(' ')
+      // O'HARE → O'Hare, WINSTON-SALEM → Winston-Salem
+      .replace(/([A-Za-z])(['’-])([a-z])/g, function (_, a, p, c) { return a + p + c.toUpperCase(); });
+  }
+  const other = { iata: String(f.CTY || '').trim().toUpperCase() || null, icao: null, name: cityName || null };
+
+  const bags = String(f.bags || '').trim();
+  const homeSide = {
+    airport: home,
+    terminal: String(f.terminal || '').trim().toUpperCase() || null,
+    gate: String(f.gate || '').trim().toUpperCase() || null,
+    ...(!isDep && bags ? { baggageBelt: bags } : {}),
+    scheduledTime: sched,
+    ...(revised ? { revisedTime: revised } : {}),
+    airline, quality: ['Live']
+  };
+  const otherSide = { airport: other, scheduledTime: sched, airline, quality: ['Live'] };
+
+  const out = {
+    number, callSign: null,
+    status: miaStatus(f.status, delayMin),
+    codeshareStatus: 'IsOperator', isCargo: false,
+    departure: isDep ? homeSide : otherSide,
+    arrival: isDep ? otherSide : homeSide,
+  };
+  // The feed hands us the airframe outright — no AeroDataBox enrichment pass
+  // needed here, unlike MCO. This is what drives the gate screen's aircraft
+  // illustration and the tail number.
+  if (f.TYP) out.aircraft = { model: String(f.TYP).trim() };
+  if (f.REG) out.reg = String(f.REG).trim().toUpperCase();
+  return out;
+}
+
 async function adbFetch(iata, direction) {
+  // ── MIA: Miami's own WebFIDS board via our worker ───────────────────
+  // Same-origin (/miafids), so no CORS and no third-party dependency at
+  // display time. The worker caches, so screens polling together cost MIA
+  // one request. Carries real gate + terminal + aircraft type + tail.
+  if (iata === 'MIA') {
+    const wantDep = direction === 'Departure';
+    const miaUrl = '/miafids?direction=' + (wantDep ? 'dep' : 'arr');
+    try {
+      const r = await fetch(miaUrl, { headers: { 'Accept': 'application/json' } });
+      if (r.ok) {
+        const j = await r.json();
+        const rows = Array.isArray(j && j.list) ? j.list : [];
+        const list = rows.map(f => miaToAdbFlight(f, direction)).filter(Boolean);
+        console.log(`[FIDS] MIA WebFIDS ${direction}: ${list.length} flights`);
+        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+        console.warn('[FIDS] MIA feed empty — falling back to ADB scrape');
+      } else {
+        console.warn(`[FIDS] MIA feed HTTP ${r.status} — falling back to ADB scrape`);
+      }
+    } catch (e) {
+      console.warn(`[FIDS] MIA feed: ${e.message} — falling back to ADB scrape`);
+    }
+  }
   // ── YYZ: Toronto Pearson's own feed via the worker proxy ────────────
   // Toronto's feed sends no CORS header, so the browser can't read it
   // directly ("Failed to fetch"). The fids-proxy worker fetches it
@@ -28162,6 +28758,17 @@ function _adTechFrameHtml() {
     _tint += '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.92;'
       + 'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _maskCss + '"></div>';
   }
+  // v22687 — Nick: 'put the middle frame and inner outer frame the
+  // different color'. The art's motif is three concentric lines. Two tints
+  // gave outer=primary, middle+inner=secondary; a third layer, clipped one
+  // band further in (the outer band clips at 1.9%/1.3%, so the inner line
+  // starts at double that), re-applies the PRIMARY on the innermost line.
+  // Net: outer primary · middle secondary · inner primary — the middle
+  // frame differs from the inner and outer pair.
+  if (_fPri && _fAcc) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;'
+      + 'clip-path:inset(3.8% 2.6% 3.8% 2.6%);' + _maskCss + '"></div>';
+  }
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
     +   '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
@@ -31379,3 +31986,76 @@ setInterval(function () {
     if (typeof applyAirportConfigToBoard === 'function') applyAirportConfigToBoard(iata);
   } catch (e) {}
 }, 60000);
+
+// ── ROW-LOCKED BOARD PATTERN ────────────────────────────────────────────────
+// Nick: 'it could work if each row was aligned to a line on the pattern'.
+// The asa-no-ha tile carries a horizontal rule every 103.8px of its own
+// 1039px height — exactly ten rules per tile. Scale the tile so those ten
+// rules span exactly ten board rows and start it on the first row's top
+// edge, and every rule lands on a row boundary: the pattern stops competing
+// with the rows and starts drawing them.
+//
+// The numbers are MEASURED, not written down. Row pitch is 66px and the
+// first row starts at 165.5px on a 1080p board, but both come from the row
+// fitter and change with screen height — a hard-coded 660/165.5 would look
+// right on the screens I tested and drift on the next one. This reads the
+// live geometry and only writes when it actually changes, so there is no
+// per-frame style churn.
+(function () {
+  var PERIODS = 10;              // horizontal rules per tile
+  var last = '';
+  function sync() {
+    try {
+      // Measure whatever is ON SCREEN. Both surfaces exist in the DOM at
+      // once — the baggage screen does not remove #fidsTable, it hides it —
+      // so 'is there a main table' was the wrong question: on the baggage
+      // board the sync was measuring the HIDDEN main table's rows and
+      // locking the pattern to a pitch and origin that belong to a surface
+      // nobody is looking at. That is why the baggage rows never lined up
+      // (Nick: 'align the rows to the pattern otherwise its a mess to
+      // read'). offsetParent is null for a hidden element, so this picks
+      // the visible one.
+      // offsetParent is null for anything inside a position:fixed ancestor
+      // even when it is plainly on screen, so it is the wrong visibility
+      // test here. A laid-out box is the honest one.
+      var vis = function (el) {
+        if (!el) return false;
+        var r = el.getBoundingClientRect();
+        return r.height > 0 && r.width > 0;
+      };
+      var pick = function (list) {
+        if (!list || !list.length) return null;
+        return vis(list[0]) ? list : null;
+      };
+      var t = document.getElementById('fidsTable');
+      var rows = (t && t.tBodies[0]) ? pick(t.tBodies[0].rows) : null;
+      if (!rows) rows = pick(document.querySelectorAll('.bidsv2-flight-row'));
+      if (!rows || !rows.length) return;
+      var a = rows[0].getBoundingClientRect();
+      // ONE row still has a pitch. Requiring two was why Orlando baggage
+      // never locked: it often carries a single arrival, so the sync bailed
+      // and the pattern kept whatever origin the other board had left in
+      // the vars (Nick: 'align the rows to the pattern otherwise its a mess
+      // to read'). Rows are hard-fixed heights with no gap between them, so
+      // one row's height IS the pitch; two rows only confirm it.
+      var pitch = a.height;
+      if (rows.length > 1) {
+        var b = rows[1].getBoundingClientRect();
+        var measured = b.top - a.top;
+        if (measured > 8) pitch = measured;
+      }
+      if (!(pitch > 8)) return;                       // mid-render garbage
+      var key = Math.round(a.top * 2) + '|' + Math.round(pitch * 2);
+      if (key === last) return;
+      last = key;
+      var s = document.body.style;
+      s.setProperty('--fids-pat-h', (pitch * PERIODS) + 'px');
+      s.setProperty('--fids-pat-y', a.top + 'px');
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', sync);
+  } else { sync(); }
+  setInterval(sync, 1000);
+  window.addEventListener('resize', sync);
+})();
