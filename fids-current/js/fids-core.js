@@ -17086,7 +17086,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22678';
+var FIDS_BUILD_TAG = 'v22679';
 (function(){
   try {
     function _addTag(){
@@ -19439,7 +19439,159 @@ function yyzToAdbFlight(f) {
   }
   return out;
 }
+// ── MIA (Miami International) — AirIT WebFIDS ──────────────────────────
+// The worker's /miafids route reduces MIA's XML board to flat records; this
+// maps one of them into the ADB-native shape the rest of the pipeline eats.
+//
+// TIME. Every record carries BOTH a local wall-clock string (stt/ett/att,
+// no zone) and timeInMillis, which is the true UTC epoch of stt. Rather
+// than look Miami's offset up per date the way the Tampa adapter has to, we
+// recover it from the pair — timeInMillis minus stt-read-as-UTC IS the
+// offset in force for that flight — then apply it to ett/att. Self-correcting
+// across the DST boundary, with no timezone table to drift.
+function miaTimeShape(localIso, offsetMs) {
+  const m = String(localIso || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) return null;
+  const Y = m[1], Mo = m[2], Da = m[3], H = m[4], Mi = m[5], S = m[6] || '00';
+  const sign = offsetMs <= 0 ? '+' : '-';
+  const absMin = Math.round(Math.abs(offsetMs) / 60000);
+  const off = sign + String(Math.floor(absMin / 60)).padStart(2, '0') + ':' + String(absMin % 60).padStart(2, '0');
+  const local = `${Y}-${Mo}-${Da} ${H}:${Mi}:${S}${off}`;
+  let utc = local;
+  try {
+    utc = new Date(Date.parse(`${Y}-${Mo}-${Da}T${H}:${Mi}:${S}Z`) + offsetMs)
+      .toISOString().slice(0, 19).replace('T', ' ') + '+00:00';
+  } catch (e) {}
+  return { local, utc };
+}
+
+// MIA's status vocabulary is small and, importantly, NOT what its own client
+// assumes. That client switches on the first two characters, so 'De' catches
+// both "Delayed" and "Departed" — and the live feed has 84 departures reading
+// "Departed" and zero reading "Delayed", so MIA's own board is colouring every
+// departed flight as delayed. We match the whole word instead.
+//
+// The real vocabulary, counted off the live board: "On Time", "Departed H:MMP",
+// "Arrived H:MMP", "Now H:MMP", "Cancelled". There is no "Delayed" string at
+// all — "Now" is how this feed spells a revised time, and on arrivals it can
+// be EARLIER than scheduled (5 of 58 were), so "Now" alone cannot mean late.
+// Delay is therefore decided from the clock, not the word.
+const MIA_DELAY_MIN = 15;
+function miaStatus(statusText, delayMin) {
+  const t = String(statusText || '').trim().toLowerCase();
+  if (t.startsWith('cancel')) return 'cancelled';
+  if (t.startsWith('divert')) return 'diverted';
+  if (t.startsWith('depart')) return 'departed';
+  if (t.startsWith('arriv') || t.startsWith('land')) return 'arrived';
+  if (t.startsWith('board')) return 'boarding';
+  if (t.startsWith('delay')) return 'delayed';
+  if (delayMin >= MIA_DELAY_MIN) return 'delayed';
+  return 'scheduled';
+}
+
+function miaToAdbFlight(f, direction) {
+  if (!f || typeof f !== 'object') return null;
+  const isDep = direction === 'Departure';
+  const code = String(f.CXR || '').trim().toUpperCase();
+  const trn = String(f.TRN || '').trim();
+  const number = (code + trn) || trn;
+  if (!number) return null;
+
+  const ms = parseInt(f.timeInMillis, 10);
+  const sttMs = Date.parse(String(f.stt || '') + 'Z');
+  const offsetMs = (isFinite(ms) && isFinite(sttMs)) ? (ms - sttMs) : 0;
+
+  const sched = miaTimeShape(f.stt, offsetMs);
+  // att (actual) outranks ett (estimated) once the movement has happened.
+  const revisedSrc = f.att || f.ett || '';
+  const revised = (revisedSrc && revisedSrc !== f.stt) ? miaTimeShape(revisedSrc, offsetMs) : null;
+  let delayMin = 0;
+  if (revisedSrc && f.stt) {
+    const d = Date.parse(revisedSrc + 'Z') - Date.parse(String(f.stt) + 'Z');
+    if (isFinite(d)) delayMin = Math.round(d / 60000);
+  }
+
+  const airline = { iata: code || null, icao: null, name: f.airlineName || null };
+  const home = { iata: 'MIA', icao: 'KMIA', name: 'Miami' };
+  // MIA writes city names in caps with an airport qualifier after a dash
+  // ("NEW YORK - JFK"). Strip the qualifier the way the Tampa ingest does,
+  // then case it — every other feed on the board delivers title case, and a
+  // row reading "ASHEVILLE" next to one reading "Toronto" shouts. Short
+  // all-caps tokens that are airport/─code-like (JFK, LGA) keep their caps;
+  // the usual small words stay lower unless they lead.
+  let cityName = String(f.city || '').trim();
+  if (typeof _cityFromStopLabel === 'function') cityName = _cityFromStopLabel(cityName);
+  // MIA also tacks a state or country on after a comma — "AUSTIN, TX",
+  // "DUBAI, AE", "COLUMBUS, OHIO". A board shows the city, and the IATA chip
+  // beside it already disambiguates the two Barcelonas (BCN vs BLA), so the
+  // qualifier is noise. Only stripped when what follows the comma is short
+  // enough to BE a qualifier — a genuine comma in a city name survives.
+  const _cm = cityName.match(/^(.+?),\s*([A-Za-z.\s]{2,8})$/);
+  if (_cm) cityName = _cm[1].trim();
+  if (cityName && cityName === cityName.toUpperCase()) {
+    const SMALL = { OF: 1, THE: 1, AND: 1, DE: 1, DEL: 1, DA: 1, DI: 1, LA: 1, LE: 1, EL: 1 };
+    cityName = cityName.split(/\s+/).map(function (w, i) {
+      if (/^[A-Z]{3}$/.test(w) && i > 0 && !SMALL[w]) return w;      // JFK, LGA, MSY
+      if (i > 0 && SMALL[w]) return w.toLowerCase();
+      if (/^(ST|MT|FT)\.?$/.test(w)) return w.charAt(0) + w.slice(1).toLowerCase() + (w.endsWith('.') ? '' : '.');
+      return w.charAt(0) + w.slice(1).toLowerCase();
+    }).join(' ')
+      // O'HARE → O'Hare, WINSTON-SALEM → Winston-Salem
+      .replace(/([A-Za-z])(['’-])([a-z])/g, function (_, a, p, c) { return a + p + c.toUpperCase(); });
+  }
+  const other = { iata: String(f.CTY || '').trim().toUpperCase() || null, icao: null, name: cityName || null };
+
+  const bags = String(f.bags || '').trim();
+  const homeSide = {
+    airport: home,
+    terminal: String(f.terminal || '').trim().toUpperCase() || null,
+    gate: String(f.gate || '').trim().toUpperCase() || null,
+    ...(!isDep && bags ? { baggageBelt: bags } : {}),
+    scheduledTime: sched,
+    ...(revised ? { revisedTime: revised } : {}),
+    airline, quality: ['Live']
+  };
+  const otherSide = { airport: other, scheduledTime: sched, airline, quality: ['Live'] };
+
+  const out = {
+    number, callSign: null,
+    status: miaStatus(f.status, delayMin),
+    codeshareStatus: 'IsOperator', isCargo: false,
+    departure: isDep ? homeSide : otherSide,
+    arrival: isDep ? otherSide : homeSide,
+  };
+  // The feed hands us the airframe outright — no AeroDataBox enrichment pass
+  // needed here, unlike MCO. This is what drives the gate screen's aircraft
+  // illustration and the tail number.
+  if (f.TYP) out.aircraft = { model: String(f.TYP).trim() };
+  if (f.REG) out.reg = String(f.REG).trim().toUpperCase();
+  return out;
+}
+
 async function adbFetch(iata, direction) {
+  // ── MIA: Miami's own WebFIDS board via our worker ───────────────────
+  // Same-origin (/miafids), so no CORS and no third-party dependency at
+  // display time. The worker caches, so screens polling together cost MIA
+  // one request. Carries real gate + terminal + aircraft type + tail.
+  if (iata === 'MIA') {
+    const wantDep = direction === 'Departure';
+    const miaUrl = '/miafids?direction=' + (wantDep ? 'dep' : 'arr');
+    try {
+      const r = await fetch(miaUrl, { headers: { 'Accept': 'application/json' } });
+      if (r.ok) {
+        const j = await r.json();
+        const rows = Array.isArray(j && j.list) ? j.list : [];
+        const list = rows.map(f => miaToAdbFlight(f, direction)).filter(Boolean);
+        console.log(`[FIDS] MIA WebFIDS ${direction}: ${list.length} flights`);
+        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+        console.warn('[FIDS] MIA feed empty — falling back to ADB scrape');
+      } else {
+        console.warn(`[FIDS] MIA feed HTTP ${r.status} — falling back to ADB scrape`);
+      }
+    } catch (e) {
+      console.warn(`[FIDS] MIA feed: ${e.message} — falling back to ADB scrape`);
+    }
+  }
   // ── YYZ: Toronto Pearson's own feed via the worker proxy ────────────
   // Toronto's feed sends no CORS header, so the browser can't read it
   // directly ("Failed to fetch"). The fids-proxy worker fetches it

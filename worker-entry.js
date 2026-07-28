@@ -99,6 +99,57 @@ const TILE_PROVIDERS = {
 
 const DAY = 86400;
 
+// ── MIA WebFIDS ────────────────────────────────────────────────────────
+// Fixed upstream, never caller-supplied. 60s is well inside how fast the
+// board actually changes and keeps our footprint on MIA's server to about
+// one request a minute per edge no matter how many displays are running.
+const MIA_FIDS_BASE = 'https://webvids.miami-airport.com/webfids/webfids?action=';
+const MIA_TTL = 60;
+
+// Only the fields the board renders. Everything else in the record (their
+// own logo paths, formatted-time duplicates, sort keys) is dropped here so
+// the display never receives it.
+const MIA_FIELDS = [
+  'city', 'stt', 'ett', 'att', 'status', 'gate', 'terminal', 'bags',
+  'airlineName', 'CXR', 'TRN', 'CTY', 'TYP', 'REG', 'timeInMillis',
+];
+
+// Minimal XML field reader. The payload is flat, machine-generated and
+// regular — one <flight> per record with non-nested leaf tags — so a real
+// parser buys nothing, and Workers has no DOMParser anyway.
+//
+// '#' and &#160; are how this feed spells "empty"; both normalise to ''.
+function miaField(rec, tag) {
+  const m = rec.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>'));
+  if (!m) return '';
+  const v = m[1]
+    .replace(/&#160;|&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/ /g, ' ')
+    .trim();
+  return v === '#' ? '' : v;
+}
+
+function miaParseFlights(xml) {
+  const out = [];
+  const recs = String(xml || '').match(/<flight>[\s\S]*?<\/flight>/g) || [];
+  for (const rec of recs) {
+    const o = {};
+    for (const f of MIA_FIELDS) o[f] = miaField(rec, f);
+    // A record with no carrier or no flight number can't be rendered.
+    if (!o.CXR && !o.TRN) continue;
+    // First codeshare only — that's all the row has space to show.
+    const cs = rec.match(/<csFlight>([\s\S]*?)<\/csFlight>/);
+    if (cs) o.codeshare = cs[1].replace(/&#160;/g, ' ').trim();
+    out.push(o);
+  }
+  return out;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -190,6 +241,64 @@ export default {
         });
       } catch (e) {
         return new Response('Logo fetch failed', { status: 502, headers: NO_STORE });
+      }
+    }
+
+    // ── MIA flight feed ─────────────────────────────────────────────────
+    // /miafids?direction=dep|arr → Miami International's own WebFIDS board.
+    //
+    // MIA runs AirIT WebFIDS at webvids.miami-airport.com. Its refresh
+    // endpoint (action=updateDepartures / updateArrivals) returns the whole
+    // board as XML with no auth, no session and no cookie — and crucially it
+    // carries the REAL gate on 100% of departures and 97% of arrivals, plus
+    // aircraft type and tail number, straight from the airport's own system.
+    //
+    // Three reasons this is a Worker route and not a browser fetch:
+    //
+    //  1. CORS. The upstream sends no Access-Control-Allow-Origin, so a
+    //     display cannot read it directly — same wall Toronto's feed hit.
+    //  2. POLITENESS. Each poll is ~350KB. If every screen fetched its own
+    //     copy we would be hammering somebody else's airport infrastructure.
+    //     cacheEverything + cacheTtl means MIA sees at most one request per
+    //     TTL per edge, however many boards are running, and we identify
+    //     ourselves in the User-Agent rather than arriving anonymously.
+    //  3. WEIGHT. Parsing 350KB of XML on a signage box every minute is work
+    //     the display should not be doing. The Worker reduces it to the ~15
+    //     fields the board actually renders, which cuts it by roughly 80%.
+    //
+    // Deliberately NOT a general proxy, exactly like /logoimg: the upstream
+    // is a fixed constant, not a caller-supplied URL. There is nothing here
+    // for someone else to point at their own host.
+    if (path === '/miafids') {
+      const dir = url.searchParams.get('direction') === 'arr' ? 'arr' : 'dep';
+      const upstream = MIA_FIDS_BASE
+        + (dir === 'dep' ? 'updateDepartures' : 'updateArrivals');
+      try {
+        const r = await fetch(upstream, {
+          cf: { cacheEverything: true, cacheTtl: MIA_TTL },
+          headers: {
+            'Accept': 'text/xml,application/xml',
+            'User-Agent': 'OrionConnectedFIDS/1.0 (airport display board; +https://fids.orionconnected.com)',
+          },
+        });
+        if (!r.ok) return new Response('MIA upstream ' + r.status, { status: 502, headers: NO_STORE });
+        const xml = await r.text();
+        const list = miaParseFlights(xml);
+        // An empty parse means the upstream shape changed under us. Say so
+        // with a 502 rather than serving [] — the client falls back to its
+        // other source on a bad status, but would treat [] as "no flights"
+        // and wipe the board.
+        if (!list.length) return new Response('MIA parse produced 0 flights', { status: 502, headers: NO_STORE });
+        return new Response(JSON.stringify({ list, direction: dir, count: list.length }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=' + MIA_TTL,
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        return new Response('MIA fetch failed', { status: 502, headers: NO_STORE });
       }
     }
 
