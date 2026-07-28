@@ -6418,3 +6418,20 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb * {
   color: #003366 !important;
 }
+
+/* v22684 — Nick's silver replaces the synthetic gradient on the Delta
+   panels ('try this on the panel'). The artwork is a 1920px sheen with
+   hairline diagonal pinstripes — downscaled 4x by the browser those
+   stripes would alias (the lattice failure), so the shipped file is
+   pre-rendered once, offline, with Lanczos at 880px: ~2x the panel's
+   on-screen width, close enough that the browser's remaining scale is
+   gentle. Darkest point is 172/255, so the navy ink keeps >5:1 on the
+   darkest corner of the sheen. cover + center keeps the bright band in
+   the middle of each panel. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  background-image: url("/logos/Backgrounds/silver-panel.jpg?v=1") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
