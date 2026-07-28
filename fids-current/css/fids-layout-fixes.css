@@ -6338,7 +6338,7 @@ html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="win
        resampling, so the curves can't alias the way the lattice did.
        Darkest point 180/255; the blue hairlines are ~1px against 4-5px
        glyph strokes, so no reading surface moves below its floor. */
-    background-image: url("/logos/Backgrounds/fids-wave.jpg?v=2") !important;
+    background-image: url("/logos/Backgrounds/fids-wave.jpg?v=3") !important;
     background-attachment: fixed !important;
     background-position: center top !important;
     background-size: cover !important;
