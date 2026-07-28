@@ -6379,17 +6379,18 @@ html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="win
 html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
   height: auto !important;
   margin: clamp(5px, .55vh, 9px) clamp(9px, .75vw, 14px) !important;
-  padding: clamp(6px, .8vh, 12px) clamp(8px, .7vw, 13px) !important;
+  /* v22692 — IDENTICAL to the panes, full stop. Nick: 'I asked for these
+     to be the same theyre not its not the same background at the bottom
+     and color comon!!' The gray-glass "distinction" reading was wrong —
+     the final word is uniformity. This is the .v2-rc-fi-pane recipe
+     verbatim (v22594): same smoke, same radius, same inset highlight and
+     drop, same padding scale, sitting on the same tinted shelf — so the
+     three panels render as one set. The :not(#_) weight stays because the
+     shelf-set still paints this element transparent with !important. */
+  padding: clamp(3px, .4vh, 7px) clamp(8px, .7vw, 13px) !important;
   border-radius: 4px !important;
-  /* v22689: two corrections from live measurement + Nick. The v22686 plate
-     STILL computed transparent — the shelf-set's transparent !important
-     outweighed a class-only selector — so this rule now carries the
-     :not(#_) id-level hammer, the same escalation every override in this
-     file eventually needed. And Nick: 'I maybe would do gray instead of
-     blue' — the glass is a neutral gray, still brighter than the panes'
-     dark smoke so the third panel stays distinct from the shelf. */
-  background-color: rgba(196, 204, 214, 0.30) !important;
-  background-image: linear-gradient(180deg, rgba(225, 230, 238, 0.30) 0%, rgba(150, 158, 170, 0.26) 100%) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 2px 6px rgba(0, 0, 0, 0.30) !important;
+  background-color: rgba(8, 12, 18, 0.10) !important;
+  background-image: none !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 6px rgba(0, 0, 0, 0.30) !important;
   box-sizing: border-box !important;
 }
