@@ -5549,7 +5549,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // narrowbody to 32Q (neo) for TS so the gate always shows the neo image,
   // never a ceo/320. Other carriers genuinely fly these, so this stays TS-only.
   if (al === 'TS' && /^(319|320|321|32N|32A|32B|32S)$/.test(eq)) eq = '32Q';
-  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, F9:1, '3H':1, '5T':1 };
+  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, F9:1, XP:1, '3H':1, '5T':1 };
   var miss = (typeof window !== 'undefined') ? window.AIRCRAFT_IMG_MISSING : {};
 
   // v218.99.47 — Engine variant detection. If the full model string was
@@ -5673,6 +5673,7 @@ var PLANE_FACING = {
   '5T/73C.png':'R', '5T/73P.png':'R', '5T/AT7.png':'R', '5T/ATR.png':'R', '717.png':'L', '730.png':'L',
   '732.png':'L', '733.png':'L', '734.png':'L', '735.png':'L', '736.png':'L', '737.png':'L',
   '738.png':'L', '739.png':'L', '73C.png':'L', '73E.png':'L', '73G.png':'L', '73H.png':'L',
+  'XP/73G.png':'L', 'XP/738.png':'L',
   '73J.png':'L', '73K.png':'L', '73S.png':'L', '73W.png':'L', '744.png':'L', '748.png':'L',
   '74H.png':'L', '74N.png':'L', '74Y.png':'L', '752.png':'L', '753.png':'L', '75W.png':'L',
   '762.png':'L', '763.png':'L', '764.png':'L', '76W.png':'L', '76Y.png':'L', '772.png':'L',
@@ -17085,7 +17086,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22677';
+var FIDS_BUILD_TAG = 'v22678';
 (function(){
   try {
     function _addTag(){
@@ -18830,6 +18831,7 @@ const RFG_AIRCRAFT_BY_AL = {
   'AS': ['738','7M8','739'],
   // NK (Spirit) — ceased operations May 2 2026
   'F9': ['320','321','32N','32Q'],
+  'XP': ['73G','738'],               // Avelo flies only 737-700 and -800; both liveries are on disk
   'HA': ['32Q','332','717','789'],   // Hawaiian — A321neo (32Q, mainland), A330-200, 717 (inter-island), 787-9 (long-haul)
 };
 const RFG_AIRCRAFT_DEFAULT = ['319','320','321','738','7M8','789','77W','DH4','CR9','E75'];
