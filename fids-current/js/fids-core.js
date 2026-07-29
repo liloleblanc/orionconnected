@@ -17125,7 +17125,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22692';
+var FIDS_BUILD_TAG = 'v22693';
 (function(){
   try {
     function _addTag(){
@@ -17876,7 +17876,17 @@ function render() {
 
   if (currentPage >= totalPages) currentPage = 0;
 
-  const pageFlights = allFiltered.slice(currentPage * rowsPerPage, (currentPage + 1) * rowsPerPage);
+  // v22693 — BALANCED PAGES. Nick's long-standing 'row-count cycling'
+  // (11 -> 3 -> 11): the rotation itself is by design (dep pages then arr
+  // pages), but slicing every page to full capacity front-loads the list —
+  // 18 departures split 11+7, 14 arrivals split 11+3 — so every second
+  // page is a near-empty board for a whole dwell, which reads as broken.
+  // Same page count, rows spread evenly instead: ceil(n / totalPages)
+  // turns 11+7 into 9+9 and 11+3 into 7+7. Never exceeds capacity (the
+  // balanced size is <= rowsPerPage by construction), and single-page
+  // boards are untouched.
+  const pageRows = totalPages > 1 ? Math.ceil(allFiltered.length / totalPages) : rowsPerPage;
+  const pageFlights = allFiltered.slice(currentPage * pageRows, (currentPage + 1) * pageRows);
 
   // ── v2 row template ─────────────────────────────────────────────────
   // Renders rows in the new column order:
