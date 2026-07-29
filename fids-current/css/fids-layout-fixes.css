@@ -6592,12 +6592,15 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
    light board instead of blending into it. Mist scope. */
 @media (min-width: 701px) {
   html:not(#_) body[data-fids-theme="mist"] #fidsTable thead th {
-    background: linear-gradient(180deg, #5B5F67 0%, #43474E 20%, #33373D 60%, #2C3036 100%) !important;
+    /* v22709 — DARK SILVER + BIGGER TEXT (Nick: 'Lets do dark silver and
+       bigger text'): gunmetal-steel gloss between the silver and charcoal
+       samples, titles up from 15px. */
+    background: linear-gradient(180deg, #9AA2AC 0%, #7C848E 22%, #626A74 62%, #565E68 100%) !important;
     color: #FFFFFF !important;
     text-transform: uppercase !important;
     font-weight: 800 !important;
     letter-spacing: .04em !important;
-    font-size: 15px !important;
+    font-size: 19px !important;
     padding-top: 10px !important;
     padding-bottom: 10px !important;
     border-right: 1px solid rgba(0, 0, 0, .45) !important;
