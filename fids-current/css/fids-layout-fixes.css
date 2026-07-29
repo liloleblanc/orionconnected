@@ -6393,3 +6393,27 @@ html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 6px rgba(0, 0, 0, 0.30) !important;
   box-sizing: border-box !important;
 }
+
+/* ── v22698: PASTEL HEX BACKDROP on the mist board's empty band (Nick's
+   zoning rule: 'panels with flights on it either have it or dont but the
+   background has it or doesnt … different things for different sections').
+   The flight rows keep their uniform dot texture; the EMPTY band below the
+   list gets its own treatment — a small outlined honeycomb where every
+   cell carries a different very light pastel tint ('put different very
+   light colors in each and youve got it made the B'). The tile is
+   synthesized (594x456, seamless: colors period 9x6 with wrap-matched
+   seams), sized down twice on request ('smaller a bit … you need more',
+   'I think smaller and lighter') to 44px cells, 7px strokes, whisper
+   alphas. Rows paint opaquely over the board, so the pattern only shows
+   where there are no flights. Scoped to the mist theme: the tints are
+   mixed for the light #C7D2DD deck and the dark themes keep their current
+   look. The :not(#_) + html weight beats fids-v3's mist shorthand
+   (background: #C7D2DD !important) which would otherwise reset the image;
+   the base color still comes from that rule underneath. */
+html body[data-fids-theme="mist"]:not([data-page="bids"]) #fidsBoard:not(#_) {
+  background-image: url("/logos/Backgrounds/geo-hex-pastel.png?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center top !important;
+  background-size: 594px 456px !important;
+  background-repeat: repeat !important;
+}
