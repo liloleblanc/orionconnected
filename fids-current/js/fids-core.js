@@ -17125,7 +17125,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22711';
+var FIDS_BUILD_TAG = 'v22712';
 (function(){
   try {
     function _addTag(){
@@ -23555,13 +23555,53 @@ function _gateMapTileLayer() {
   // display networks. OSM already bakes in city/town/street names, so a
   // single layer is enough — no separate labels overlay. The route line +
   // plane live in the SVG overlay pane on top.
-  return L.tileLayer('/tiles/osm/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
+  var t = L.tileLayer('/tiles/osm/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
+  // v22712 — the radar overlay attaches itself whenever this base layer
+  // lands on a map. Hooking the layer's own 'add' event covers all six
+  // map-build sites (gate, gate-live, bigcraft, world fallbacks) without
+  // touching any of them.
+  t.on('add', function () {
+    var m = this._map;
+    setTimeout(function () { try { _wxRadarAdd(m); } catch (e) {} }, 0);
+  });
+  return t;
 }
 
 // v218.99.9 — overlay flags previously came from gate-theme; system removed.
-// All overlays default on except weather.
+// v22712 — weather flips ON: the route map carries live precipitation
+// radar (backlog #27, Nick: 'Did you want to start working on weather on
+// that map?').
 function _gateMapShowOverlay(name) {
-  return name !== 'weather';
+  return true;
+}
+
+// ── v22712: LIVE PRECIPITATION RADAR on the route maps. RainViewer's
+// global composite, served same-origin through the worker's /wxradar
+// route (host-pinned upstream, the /maptiles discipline) so locked-down
+// display networks only ever talk to us. The newest frame timestamp
+// comes from /wxradar/index (cached 5 min here AND at the worker); the
+// layer sits above the base tiles at 55% so streets stay readable, and
+// below the SVG pane so the route arc and plane always win. Where
+// there's no radar coverage (oceans, remote north) tiles are simply
+// transparent — the map looks exactly as before.
+var _wxRadarIdx = { at: 0, ts: 0 };
+function _wxRadarAdd(m) {
+  if (!m || !_gateMapShowOverlay('weather')) return;
+  var add = function (ts) {
+    if (!ts) return;
+    try {
+      if (!m._container || !m._container.isConnected) return; // map already torn down
+      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { opacity: 0.55, zIndex: 2, maxZoom: 12 }).addTo(m);
+    } catch (e) {}
+  };
+  if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }
+  try {
+    fetch('/wxradar/index').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
+      var past = j && j.radar && j.radar.past;
+      var ts = (past && past.length) ? past[past.length - 1].time : 0;
+      if (ts) { _wxRadarIdx = { at: Date.now(), ts: ts }; add(ts); }
+    }).catch(function () {});
+  } catch (e) {}
 }
 
 // ── Map plane marker: Nick's real silhouettes ('NO they are for the map').
