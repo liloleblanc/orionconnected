@@ -6619,3 +6619,14 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
     background: transparent !important;
   }
 }
+
+/* ── v22710: ORLANDO GETS THE CLOUD BAND TOO (Nick: 'we also need the same
+   pattern at the bottom etc' — MCO keeps its own rows/theme but the empty
+   band below the list carries the same paper-cut clouds as Moncton). */
+html body[data-fids-ap="MCO"]:not([data-page="bids"]) #fidsBoard:not(#_) {
+  background-image: url("/logos/Backgrounds/cloud-band.png?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center bottom !important;
+  background-size: 100vw auto !important;
+  background-repeat: no-repeat !important;
+}
