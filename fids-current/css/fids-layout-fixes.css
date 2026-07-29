@@ -6450,3 +6450,16 @@ html body[data-fids-banner="silk-acadian"] .fids-banner {
 html body[data-fids-banner="silk-acadian"] .fids-banner::after {
   opacity: .15 !important;
 }
+
+/* ── v22701: FLAG DEEPER STILL (Nick: 'I would ssay even more if possible').
+   The ends darken another step (#00225E navy edge, #7E0A1F oxblood edge),
+   the pure tones hold longer before yielding to the centre (24% / 76%),
+   and the silk overlay on this banner drops to .08 — present as a whisper
+   of weave, no longer a wash. */
+html body[data-fids-banner="silk-acadian"] .fids-banner {
+  background: linear-gradient(100deg,
+    #00225E 0%, #003DA5 24%, #EFF3F7 46%, #EFF3F7 54%, #C11031 76%, #7E0A1F 100%) !important;
+}
+html body[data-fids-banner="silk-acadian"] .fids-banner::after {
+  opacity: .08 !important;
+}
