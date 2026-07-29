@@ -6527,3 +6527,25 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-hand 
 html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
   fill: #1C2A39 !important;
 }
+
+/* ── v22704: TRIANGLES ON THE ROWS (Nick's 61716702 upload: 'try this for
+   rows instead'). His art is a halftone size-GRADIENT — used raw, every row
+   would catch a different density, the same non-uniformity that killed the
+   halftone dots. So the tile is synthesized at ONE size, like the dots
+   were: alternating up/down triangles, staggered, 11px edge on a 24px
+   pitch, ink 222 (bumped from a first pass he couldn't see). Same selector
+   set as the v22697 dot block; later in the file wins the tie. */
+@media (min-width: 701px) {
+  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsTable tbody tr:not(#_),
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-departed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-final td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
+    background-image: url("/logos/Backgrounds/fids-tris-uniform.png?v=1") !important;
+    background-size: 96px 96px !important;
+  }
+}
