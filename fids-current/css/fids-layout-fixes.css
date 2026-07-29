@@ -6329,16 +6329,16 @@ html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="win
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
-    /* v22686 — the diagonal stripes give way to Nick's blue wave
-       ('last thing for tonight ... the change of FIDS and BIDS background
-       again'). Same one-copy discipline: the artwork is fine curved
-       hairlines, so the shipped file is pre-rendered offline with Lanczos
-       to EXACTLY 1080px tall — at 1080p, cover matches height 1:1 and the
-       browser only center-crops the extra width. Zero play-time
-       resampling, so the curves can't alias the way the lattice did.
-       Darkest point 180/255; the blue hairlines are ~1px against 4-5px
-       glyph strokes, so no reading surface moves below its floor. */
-    background-image: url("/logos/Backgrounds/fids-wave.jpg?v=3") !important;
+    /* v22696 — Nick's halftone waves replace the blue wave ('the non
+       colored one'). Pure grayscale by measurement (zero colour-channel
+       spread), so multiply adds texture without adding hue to any row.
+       Same one-copy discipline: pre-rendered offline with Lanczos to
+       EXACTLY 1080px tall — at 1080p, cover matches height 1:1 and the
+       browser only center-crops the extra width, zero play-time
+       resampling. Featherweight by design: darkest dot 235/255, the
+       faintest surface any pattern here has shipped at, which is where
+       Nick has been steering every round. */
+    background-image: url("/logos/Backgrounds/fids-halftone.jpg?v=1") !important;
     background-attachment: fixed !important;
     background-position: center top !important;
     background-size: cover !important;
