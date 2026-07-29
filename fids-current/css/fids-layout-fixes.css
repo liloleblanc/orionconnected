@@ -6329,20 +6329,19 @@ html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="win
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
-    /* v22696 — Nick's halftone waves replace the blue wave ('the non
-       colored one'). Pure grayscale by measurement (zero colour-channel
-       spread), so multiply adds texture without adding hue to any row.
-       Same one-copy discipline: pre-rendered offline with Lanczos to
-       EXACTLY 1080px tall — at 1080p, cover matches height 1:1 and the
-       browser only center-crops the extra width, zero play-time
-       resampling. Featherweight by design: darkest dot 235/255, the
-       faintest surface any pattern here has shipped at, which is where
-       Nick has been steering every round. */
-    background-image: url("/logos/Backgrounds/fids-halftone.jpg?v=1") !important;
+    /* v22697 — UNIFORM dots ('oh its not uniform the dots i hate that').
+       Halftone-wave artwork can never be uniform — the varying dot size IS
+       how it draws the waves — so the tile is now SYNTHESIZED instead of
+       sourced: a staggered grid of identical dots (22px pitch, ~2.6px
+       radius, ink 236/255), supersampled 4x and Lanczos-downsized so every
+       dot is round. Identical everywhere by construction, seamless by
+       construction, and back to `repeat` — a uniform grid has no seam to
+       show and no frame to drift. */
+    background-image: url("/logos/Backgrounds/fids-dots-uniform.png?v=1") !important;
     background-attachment: fixed !important;
     background-position: center top !important;
-    background-size: cover !important;
-    background-repeat: no-repeat !important;
+    background-size: 176px 176px !important;
+    background-repeat: repeat !important;
     background-blend-mode: multiply !important;
   }
   /* the baggage header strip stays a solid bar, same as it was under the
