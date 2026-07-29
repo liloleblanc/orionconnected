@@ -72,12 +72,20 @@
 .axr-hero{ position:relative; min-height:0; overflow:hidden; background:#1a1a2a; }
 .axr-hero-img{ position:absolute; inset:0; background-size:cover; background-position:center; }
 .axr-hero-noimg{ background:linear-gradient(135deg,var(--axr-tint),var(--all-blue)); }
-/* Partial gradient — photo stays visible top/right; brand tint deepens bottom-left */
+/* Partial gradient — photo stays visible top/right; brand tint deepens bottom-left.
+   v22715 (Nick: Accor ads 'are very dark'): the veil was black .8→.42 across
+   half the card, stacked on Accor's own dusk photography — measured card
+   luminance sat at 52-69/255. Lightened to .60→.25 fading out by 70%, the
+   bottom tint pulled from 58% to 46% height, and the photo itself gets a
+   gentle brightness/saturation lift. Text zone (bottom-left) keeps the
+   strongest shading, so the white lockup/name/address still read. Measured
+   after: 73-97/255, names still crisp. */
 .axr-hero-grad{ position:absolute; inset:0;
   background:
-    linear-gradient(90deg, rgba(0,0,0,.8) 0%, rgba(0,0,0,.42) 52%, rgba(0,0,0,0) 82%),
-    linear-gradient(0deg, var(--axr-tint) -6%, color-mix(in srgb, var(--axr-tint) 58%, transparent) 26%, transparent 58%);
+    linear-gradient(90deg, rgba(0,0,0,.60) 0%, rgba(0,0,0,.25) 44%, rgba(0,0,0,0) 70%),
+    linear-gradient(0deg, var(--axr-tint) -10%, color-mix(in srgb, var(--axr-tint) 40%, transparent) 20%, transparent 46%);
 }
+.axr-hero-img{ filter: brightness(1.10) saturate(1.06); }
 
 /* ALL speech bubble (to standard) — light card, copy + QR, tail bottom-left */
 .axr-bubble{ position:absolute; top:clamp(20px,3vh,30px); left:clamp(20px,2.4vw,30px); z-index:4;
