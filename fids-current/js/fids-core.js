@@ -17125,7 +17125,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22692';
+var FIDS_BUILD_TAG = 'v22711';
 (function(){
   try {
     function _addTag(){
@@ -17876,7 +17876,17 @@ function render() {
 
   if (currentPage >= totalPages) currentPage = 0;
 
-  const pageFlights = allFiltered.slice(currentPage * rowsPerPage, (currentPage + 1) * rowsPerPage);
+  // v22693 — BALANCED PAGES. Nick's long-standing 'row-count cycling'
+  // (11 -> 3 -> 11): the rotation itself is by design (dep pages then arr
+  // pages), but slicing every page to full capacity front-loads the list —
+  // 18 departures split 11+7, 14 arrivals split 11+3 — so every second
+  // page is a near-empty board for a whole dwell, which reads as broken.
+  // Same page count, rows spread evenly instead: ceil(n / totalPages)
+  // turns 11+7 into 9+9 and 11+3 into 7+7. Never exceeds capacity (the
+  // balanced size is <= rowsPerPage by construction), and single-page
+  // boards are untouched.
+  const pageRows = totalPages > 1 ? Math.ceil(allFiltered.length / totalPages) : rowsPerPage;
+  const pageFlights = allFiltered.slice(currentPage * pageRows, (currentPage + 1) * pageRows);
 
   // ── v2 row template ─────────────────────────────────────────────────
   // Renders rows in the new column order:
@@ -23554,6 +23564,22 @@ function _gateMapShowOverlay(name) {
   return name !== 'weather';
 }
 
+// ── Map plane marker: Nick's real silhouettes ('NO they are for the map').
+// His Airplanes.svg carries two top-down aircraft — a jet and a turboprop —
+// split into centered, nose-up marker PNGs. Nose-up matters: the marker
+// rotates around its center by the route bearing, so an off-axis icon
+// would fly sideways. The prop set is the turboprop fleet the boards
+// actually see (Dash family, ATR, Beech/King Air, Saab, Metro, Twin
+// Otter, Caravan, PC-12); everything else gets the jet.
+function _mapPlaneIcon() {
+  try {
+    var cf = window._gateCurrentFlight || {};
+    var raw = String(cf._aircraft || cf.aircraft || '');
+    var eq = (typeof aircraftCodeToIata === 'function') ? String(aircraftCodeToIata(raw) || raw) : raw;
+    if (/^(DH[1-8]|DHT|DHC|AT[4-7]|ATR|BEK|BE[1H9]|B19|SF3|SW4|J3[12]|C08|CNA|CN1|PC2|EM2)/i.test(eq.toUpperCase())) return '/logos/map-plane-prop.png';
+  } catch (e) {}
+  return '/logos/map-plane-jet.png';
+}
 function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;try{if(typeof _stopGateMapGlide==='function')_stopGateMapGlide();}catch(e){}var mb=document.getElementById('gateMapBox');if(!mb)return;
   // Resolve airport coords. If either is unknown, kick off async lookup
   // and retry — the map will populate as soon as both coords arrive.
@@ -23646,7 +23672,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
       // Center on plane during cruise
       if (p >= 0.12 && p <= 0.88) {
         gateMap.setView(planePos, zoom);
@@ -23776,7 +23802,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  var _planeMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+  var _planeMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
   _ov.push(_planeMk);
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
@@ -31781,7 +31807,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
       // Center on plane during cruise
       if (p >= 0.12 && p <= 0.88) {
         window._bigCraftMap.setView(planePos, zoom);
@@ -31853,7 +31879,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  var _bcPlaneMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="/logos/aircraft-icon.png" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+  var _bcPlaneMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
   // SAME PROGRAMMING as the mini map (Nick: 'big screen and little screen need
   // same programming — it's not separate'): the identical glide engine now
   // dead-reckons the plane along the route on the BIG map too. The big plane
@@ -32058,4 +32084,26 @@ setInterval(function () {
   } else { sync(); }
   setInterval(sync, 1000);
   window.addEventListener('resize', sync);
+})();
+
+// ── v22711: BAGS CAROUSEL COLOR CODING (Nick: 'Bags I want different colors
+// for like Gate 1 maybe a pattern or colors or something then etc').
+// CSS can't read the carousel digit out of the DOM, so this keeper mirrors
+// .bidsv2-carousel-number's text onto body[data-bids-carousel]; the per-
+// carousel palette lives in fids-layout-fixes.css. Same keeper shape as the
+// pattern sync above — re-stamped every second so screen switches and
+// re-renders can never strand a stale colour.
+(function () {
+  function stamp() {
+    try {
+      var el = document.querySelector('.bidsv2-carousel-number');
+      var v = el ? String(el.textContent || '').trim() : '';
+      if (/^\d{1,2}$/.test(v)) document.body.setAttribute('data-bids-carousel', v);
+      else document.body.removeAttribute('data-bids-carousel');
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', stamp);
+  } else { stamp(); }
+  setInterval(stamp, 1000);
 })();

@@ -6329,20 +6329,19 @@ html:not(#_) .bidsv2-flight-row.bidsv2-row-delayed img.fids-wx-cell[data-wx="win
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
-    /* v22686 — the diagonal stripes give way to Nick's blue wave
-       ('last thing for tonight ... the change of FIDS and BIDS background
-       again'). Same one-copy discipline: the artwork is fine curved
-       hairlines, so the shipped file is pre-rendered offline with Lanczos
-       to EXACTLY 1080px tall — at 1080p, cover matches height 1:1 and the
-       browser only center-crops the extra width. Zero play-time
-       resampling, so the curves can't alias the way the lattice did.
-       Darkest point 180/255; the blue hairlines are ~1px against 4-5px
-       glyph strokes, so no reading surface moves below its floor. */
-    background-image: url("/logos/Backgrounds/fids-wave.jpg?v=3") !important;
+    /* v22697 — UNIFORM dots ('oh its not uniform the dots i hate that').
+       Halftone-wave artwork can never be uniform — the varying dot size IS
+       how it draws the waves — so the tile is now SYNTHESIZED instead of
+       sourced: a staggered grid of identical dots (22px pitch, ~2.6px
+       radius, ink 236/255), supersampled 4x and Lanczos-downsized so every
+       dot is round. Identical everywhere by construction, seamless by
+       construction, and back to `repeat` — a uniform grid has no seam to
+       show and no frame to drift. */
+    background-image: url("/logos/Backgrounds/fids-dots-uniform.png?v=1") !important;
     background-attachment: fixed !important;
     background-position: center top !important;
-    background-size: cover !important;
-    background-repeat: no-repeat !important;
+    background-size: 176px 176px !important;
+    background-repeat: repeat !important;
     background-blend-mode: multiply !important;
   }
   /* the baggage header strip stays a solid bar, same as it was under the
@@ -6393,4 +6392,270 @@ html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
   background-image: none !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 6px rgba(0, 0, 0, 0.30) !important;
   box-sizing: border-box !important;
+}
+
+/* ── v22698: PASTEL HEX BACKDROP on the mist board's empty band (Nick's
+   zoning rule: 'panels with flights on it either have it or dont but the
+   background has it or doesnt … different things for different sections').
+   The flight rows keep their uniform dot texture; the EMPTY band below the
+   list gets its own treatment — a small outlined honeycomb where every
+   cell carries a different very light pastel tint ('put different very
+   light colors in each and youve got it made the B'). The tile is
+   synthesized (594x456, seamless: colors period 9x6 with wrap-matched
+   seams), sized down twice on request ('smaller a bit … you need more',
+   'I think smaller and lighter') to 44px cells, 7px strokes, whisper
+   alphas. Rows paint opaquely over the board, so the pattern only shows
+   where there are no flights. Scoped to the mist theme: the tints are
+   mixed for the light #C7D2DD deck and the dark themes keep their current
+   look. The :not(#_) + html weight beats fids-v3's mist shorthand
+   (background: #C7D2DD !important) which would otherwise reset the image;
+   the base color still comes from that rule underneath. */
+html body[data-fids-theme="mist"]:not([data-page="bids"]) #fidsBoard:not(#_) {
+  background-image: url("/logos/Backgrounds/geo-hex-pastel.png?v=2") !important;
+  background-attachment: fixed !important;
+  background-position: center top !important;
+  background-size: 660px 456px !important;
+  background-repeat: repeat !important;
+}
+
+/* ── v22700: PAPER-CUT CLOUDS replace the hexagons on the mist empty band
+   (Nick: 'ive changed my mind again … clouds like this at the bottom',
+   'but faded', then 'lower them fade them a bit more'). The art is his own
+   Vecteezy download (9096191), cropped to the cloud band, baked to 32%
+   strength with a 110px top alpha ramp so the sky edge dissolves into the
+   mist deck, and trimmed 130px at the bottom so the whole formation sits
+   lower. One full-width viewport-fixed copy — non-seamless art, so no
+   tiling and no seams. Same selector as the v22698 hex rule; being later
+   in the file, this wins the tie and retires the hexagons. */
+html body[data-fids-theme="mist"]:not([data-page="bids"]) #fidsBoard:not(#_) {
+  background-image: url("/logos/Backgrounds/cloud-band.png?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center bottom !important;
+  background-size: 100vw auto !important;
+  background-repeat: no-repeat !important;
+}
+
+/* ── v22700: DEEPEN THE ACADIAN FLAG (Nick: 'deepen my acadian flag would
+   be great'). Two washes were diluting it: the banner-silk screen overlay
+   at .32, and gradient endpoints that never went past the flag's base
+   tones. The endpoints now start deeper (#002D7A blue edge, #A30D28 red
+   edge) and flow through the official tones mid-band; the silk overlay
+   drops to .15 on this banner only, so the weave still reads but the
+   tricolore holds its ink. The white centre warms a touch (#F2F5F8) so
+   the star band no longer glares against the deep ends. */
+html body[data-fids-banner="silk-acadian"] .fids-banner {
+  background: linear-gradient(100deg,
+    #002D7A 0%, #003DA5 20%, #F2F5F8 45%, #F2F5F8 55%, #C11031 80%, #A30D28 100%) !important;
+}
+html body[data-fids-banner="silk-acadian"] .fids-banner::after {
+  opacity: .15 !important;
+}
+
+/* ── v22701: FLAG DEEPER STILL (Nick: 'I would ssay even more if possible').
+   The ends darken another step (#00225E navy edge, #7E0A1F oxblood edge),
+   the pure tones hold longer before yielding to the centre (24% / 76%),
+   and the silk overlay on this banner drops to .08 — present as a whisper
+   of weave, no longer a wash. */
+html body[data-fids-banner="silk-acadian"] .fids-banner {
+  background: linear-gradient(100deg,
+    #00225E 0%, #003DA5 24%, #EFF3F7 46%, #EFF3F7 54%, #C11031 76%, #7E0A1F 100%) !important;
+}
+html body[data-fids-banner="silk-acadian"] .fids-banner::after {
+  opacity: .08 !important;
+}
+
+/* ── v22702: FLAG AT FULL DEPTH + WHITE INK (Nick: 'deeper flag enough to
+   make the text white again LOL'). Ends go darker again and the pure tones
+   hold to 30/70 — the tricolore now dominates the banner. That kills the
+   dark-ink-on-red readability, so the time block (label, clock, date,
+   analog face) flips to white on this banner regardless of the mist
+   light-board adaptation that was forcing it dark — hence the :not(#_)
+   weight. Departures/Départs and the star are already white/gold. */
+html body[data-fids-banner="silk-acadian"] .fids-banner {
+  background: linear-gradient(100deg,
+    #001A4D 0%, #003DA5 30%, #EDF1F6 46%, #EDF1F6 54%, #B50E2C 70%, #6E081A 100%) !important;
+}
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-time,
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-tlabel,
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-date,
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-analog,
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-analog * {
+  color: #ffffff !important;
+}
+
+/* ── v22703: THE WASH WAS ::BEFORE — v22701/22702 dimmed .fids-banner::after,
+   but a second silk layer rides ::before at .52 (v22640 era) and that was
+   the veil over the whole tricolore. On the acadian banner it drops to .12;
+   every other banner keeps its .52. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before {
+  opacity: .12 !important;
+}
+
+/* ── v22703: TIME BLOCK WHITE AGAIN (Nick: 'deeper flag enough to make the
+   text white again LOL'). The navy #1C2A39 was HIS pick in v22633 — white
+   measured 2.02:1 on the washed band and vanished. On the full-depth red
+   end white now measures ~6:1, so it comes back. Selector shape copies
+   v22633's exactly (same specificity, later in file wins). */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-time,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ── v22703: GOLD CLOCK (Nick: 'should the clock go deep yellow and the
+   numbers deep navy blue?'). The analog face fills with the star's gold and
+   its ticks, hands and pin take Nick's navy — the clock becomes a little
+   Stella Maris echo on the red end of the flag. The digital digits stay
+   white: navy digits on the deep red measure ~2:1 and would vanish; the
+   gold-and-navy lives in the clock where it reads at any size. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-face {
+  fill: #FAC120 !important;
+  stroke: #1C2A39 !important;
+  opacity: 1 !important;
+}
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-ticks line {
+  stroke: #1C2A39 !important;
+  opacity: .85 !important;
+}
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-hand {
+  stroke: #1C2A39 !important;
+}
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
+  fill: #1C2A39 !important;
+}
+
+/* ── v22704: TRIANGLES ON THE ROWS (Nick's 61716702 upload: 'try this for
+   rows instead'). His art is a halftone size-GRADIENT — used raw, every row
+   would catch a different density, the same non-uniformity that killed the
+   halftone dots. So the tile is synthesized at ONE size, like the dots
+   were: alternating up/down triangles, staggered, 11px edge on a 24px
+   pitch, ink 222 (bumped from a first pass he couldn't see). Same selector
+   set as the v22697 dot block; later in the file wins the tie. */
+@media (min-width: 701px) {
+  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsTable tbody tr:not(#_),
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-departed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-final td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
+    background-image: url("/logos/Backgrounds/fids-tris-uniform.png?v=2") !important;
+    background-size: 136px 136px !important;
+  }
+}
+
+/* ── v22706: GOLD RAIL PER ROW (Nick's 4397048 gold-stripe upload: 'lets
+   just do this', arriving on the heels of 'one line like this for every
+   row'). Every flight row carries one thin gold line along its bottom
+   edge — the shimmer is a horizontal gradient cycling deep gold to pale
+   gleam, like the art's glinting stripes. Pure CSS, no asset. This block
+   retires the v22704/05 triangle tile: same selector set, later in the
+   file, and it overrides every background longhand the tile block set
+   (image, attachment, position, size, repeat, blend). The gold echoes the
+   Acadian star and the banner clock. */
+@media (min-width: 701px) {
+  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsTable tbody tr:not(#_),
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-departed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-final td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
+    background-image: linear-gradient(90deg,
+      #707C89 0%, #B4BEC8 18%, #8A95A1 38%, #C9D1D8 55%,
+      #95A0AB 75%, #707C89 100%) !important;
+    background-attachment: scroll !important;
+    background-position: center bottom !important;
+    background-size: 100% 4px !important;
+    background-repeat: no-repeat !important;
+    background-blend-mode: normal !important;
+  }
+  /* the BAGS body wrapper kept the old tile via the shared block — clear it */
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body {
+    background-image: none !important;
+  }
+}
+
+/* ── v22708: GLOSSY BAR HEADER (Nick's EPS upload 86.eps: segmented 3D
+   navigation bars — 'Yes thats the idea'). The column-title strip becomes
+   the charcoal bar from his art: vertical gloss gradient, a groove between
+   every column, rounded end caps (clip-path — border-radius is dead in a
+   collapsed table), inset top highlight and a soft drop shadow. White
+   uppercase titles. Charcoal over the silver variant so the bar frames the
+   light board instead of blending into it. Mist scope. */
+@media (min-width: 701px) {
+  html:not(#_) body[data-fids-theme] #fidsTable thead th {
+    /* v22709 — DARK SILVER + BIGGER TEXT (Nick: 'Lets do dark silver and
+       bigger text'): gunmetal-steel gloss between the silver and charcoal
+       samples, titles up from 15px. */
+    background: linear-gradient(180deg, #9AA2AC 0%, #7C848E 22%, #626A74 62%, #565E68 100%) !important;
+    color: #FFFFFF !important;
+    /* v22709 — 'NonCAPS please': natural case, matching the row lettering */
+    text-transform: none !important;
+    font-weight: 800 !important;
+    letter-spacing: .04em !important;
+    font-size: 19px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    border-right: 1px solid rgba(0, 0, 0, .45) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 3px 6px rgba(0, 0, 0, .28) !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, .18) !important;
+  }
+  html:not(#_) body[data-fids-theme] #fidsTable thead th:first-child {
+    clip-path: inset(0 0 -12px 0 round 16px 0 0 16px);
+  }
+  html:not(#_) body[data-fids-theme] #fidsTable thead th:last-child {
+    border-right: none !important;
+    clip-path: inset(0 0 -12px 0 round 0 16px 16px 0);
+  }
+  html:not(#_) body[data-fids-theme] #fidsTable thead tr {
+    background: transparent !important;
+  }
+}
+
+/* ── v22710: ORLANDO GETS THE CLOUD BAND TOO (Nick: 'we also need the same
+   pattern at the bottom etc' — MCO keeps its own rows/theme but the empty
+   band below the list carries the same paper-cut clouds as Moncton). */
+html body[data-fids-ap="MCO"]:not([data-page="bids"]) #fidsBoard:not(#_) {
+  background-image: url("/logos/Backgrounds/cloud-band.png?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center bottom !important;
+  background-size: 100vw auto !important;
+  background-repeat: no-repeat !important;
+}
+
+/* ── v22711: BAGS CAROUSEL IDENTITY COLOURS (Nick: 'Bags I want different
+   colors for like Gate 1 maybe a pattern or colors or something then etc').
+   Each carousel number owns a colour: the big digit takes it, and the
+   decorative ribbon chevrons behind the white block flow in tints of the
+   same colour — so Carousel 1 reads blue from across the hall, Carousel 2
+   green, and so on. The digit is stamped onto body[data-bids-carousel] by
+   a fids-core keeper (CSS can't read text). Nine hues, chosen distinct at
+   a glance and dark enough on the white block; carousels past 9 keep the
+   stock navy. The label word and everything else stay untouched. */
+html body[data-bids-carousel="1"] { --crsl: #003DA5; }  /* Acadian blue  */
+html body[data-bids-carousel="2"] { --crsl: #0E7A3C; }  /* emerald       */
+html body[data-bids-carousel="3"] { --crsl: #C8102E; }  /* crimson       */
+html body[data-bids-carousel="4"] { --crsl: #6A3FA0; }  /* violet        */
+html body[data-bids-carousel="5"] { --crsl: #0E7E8A; }  /* deep teal     */
+html body[data-bids-carousel="6"] { --crsl: #C96A11; }  /* burnt orange  */
+html body[data-bids-carousel="7"] { --crsl: #A3145E; }  /* magenta       */
+html body[data-bids-carousel="8"] { --crsl: #4E6B12; }  /* olive         */
+html body[data-bids-carousel="9"] { --crsl: #7A4A16; }  /* bronze        */
+html body[data-bids-carousel] .bidsv2-carousel-number {
+  color: var(--crsl, #0E2748) !important;
+}
+html body[data-bids-carousel] .bidsv2-chevrons {
+  background:
+    linear-gradient(105deg, transparent 0%, transparent 28%, var(--crsl) 28%, var(--crsl) 32%, transparent 32%),
+    linear-gradient(105deg, transparent 0%, transparent 36%, color-mix(in srgb, var(--crsl) 45%, transparent) 36%, color-mix(in srgb, var(--crsl) 45%, transparent) 42%, transparent 42%),
+    linear-gradient(105deg, transparent 0%, transparent 22%, color-mix(in srgb, var(--crsl) 25%, transparent) 22%, color-mix(in srgb, var(--crsl) 25%, transparent) 25%, transparent 25%) !important;
+  opacity: .6 !important;
 }
