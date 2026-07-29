@@ -6417,3 +6417,36 @@ html body[data-fids-theme="mist"]:not([data-page="bids"]) #fidsBoard:not(#_) {
   background-size: 660px 456px !important;
   background-repeat: repeat !important;
 }
+
+/* ── v22700: PAPER-CUT CLOUDS replace the hexagons on the mist empty band
+   (Nick: 'ive changed my mind again … clouds like this at the bottom',
+   'but faded', then 'lower them fade them a bit more'). The art is his own
+   Vecteezy download (9096191), cropped to the cloud band, baked to 32%
+   strength with a 110px top alpha ramp so the sky edge dissolves into the
+   mist deck, and trimmed 130px at the bottom so the whole formation sits
+   lower. One full-width viewport-fixed copy — non-seamless art, so no
+   tiling and no seams. Same selector as the v22698 hex rule; being later
+   in the file, this wins the tie and retires the hexagons. */
+html body[data-fids-theme="mist"]:not([data-page="bids"]) #fidsBoard:not(#_) {
+  background-image: url("/logos/Backgrounds/cloud-band.png?v=1") !important;
+  background-attachment: fixed !important;
+  background-position: center bottom !important;
+  background-size: 100vw auto !important;
+  background-repeat: no-repeat !important;
+}
+
+/* ── v22700: DEEPEN THE ACADIAN FLAG (Nick: 'deepen my acadian flag would
+   be great'). Two washes were diluting it: the banner-silk screen overlay
+   at .32, and gradient endpoints that never went past the flag's base
+   tones. The endpoints now start deeper (#002D7A blue edge, #A30D28 red
+   edge) and flow through the official tones mid-band; the silk overlay
+   drops to .15 on this banner only, so the weave still reads but the
+   tricolore holds its ink. The white centre warms a touch (#F2F5F8) so
+   the star band no longer glares against the deep ends. */
+html body[data-fids-banner="silk-acadian"] .fids-banner {
+  background: linear-gradient(100deg,
+    #002D7A 0%, #003DA5 20%, #F2F5F8 45%, #F2F5F8 55%, #C11031 80%, #A30D28 100%) !important;
+}
+html body[data-fids-banner="silk-acadian"] .fids-banner::after {
+  opacity: .15 !important;
+}
