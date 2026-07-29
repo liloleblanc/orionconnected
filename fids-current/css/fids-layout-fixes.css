@@ -6545,7 +6545,7 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
-    background-image: url("/logos/Backgrounds/fids-tris-uniform.png?v=1") !important;
-    background-size: 96px 96px !important;
+    background-image: url("/logos/Backgrounds/fids-tris-uniform.png?v=2") !important;
+    background-size: 136px 136px !important;
   }
 }
