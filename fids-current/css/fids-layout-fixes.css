@@ -6482,3 +6482,48 @@ html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-analog,
 html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-analog * {
   color: #ffffff !important;
 }
+
+/* ── v22703: THE WASH WAS ::BEFORE — v22701/22702 dimmed .fids-banner::after,
+   but a second silk layer rides ::before at .52 (v22640 era) and that was
+   the veil over the whole tricolore. On the acadian banner it drops to .12;
+   every other banner keeps its .52. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before {
+  opacity: .12 !important;
+}
+
+/* ── v22703: TIME BLOCK WHITE AGAIN (Nick: 'deeper flag enough to make the
+   text white again LOL'). The navy #1C2A39 was HIS pick in v22633 — white
+   measured 2.02:1 on the washed band and vanished. On the full-depth red
+   end white now measures ~6:1, so it comes back. Selector shape copies
+   v22633's exactly (same specificity, later in file wins). */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-time,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date,
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ── v22703: GOLD CLOCK (Nick: 'should the clock go deep yellow and the
+   numbers deep navy blue?'). The analog face fills with the star's gold and
+   its ticks, hands and pin take Nick's navy — the clock becomes a little
+   Stella Maris echo on the red end of the flag. The digital digits stay
+   white: navy digits on the deep red measure ~2:1 and would vanish; the
+   gold-and-navy lives in the clock where it reads at any size. */
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-face {
+  fill: #FAC120 !important;
+  stroke: #1C2A39 !important;
+  opacity: 1 !important;
+}
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-ticks line {
+  stroke: #1C2A39 !important;
+  opacity: .85 !important;
+}
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-hand {
+  stroke: #1C2A39 !important;
+}
+html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
+  fill: #1C2A39 !important;
+}
