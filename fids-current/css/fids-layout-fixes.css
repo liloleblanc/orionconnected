@@ -6591,7 +6591,7 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
    uppercase titles. Charcoal over the silver variant so the bar frames the
    light board instead of blending into it. Mist scope. */
 @media (min-width: 701px) {
-  html:not(#_) body[data-fids-theme="mist"] #fidsTable thead th {
+  html:not(#_) body[data-fids-theme] #fidsTable thead th {
     /* v22709 — DARK SILVER + BIGGER TEXT (Nick: 'Lets do dark silver and
        bigger text'): gunmetal-steel gloss between the silver and charcoal
        samples, titles up from 15px. */
@@ -6608,14 +6608,14 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 3px 6px rgba(0, 0, 0, .28) !important;
     text-shadow: 0 1px 0 rgba(255, 255, 255, .18) !important;
   }
-  html:not(#_) body[data-fids-theme="mist"] #fidsTable thead th:first-child {
+  html:not(#_) body[data-fids-theme] #fidsTable thead th:first-child {
     clip-path: inset(0 0 -12px 0 round 16px 0 0 16px);
   }
-  html:not(#_) body[data-fids-theme="mist"] #fidsTable thead th:last-child {
+  html:not(#_) body[data-fids-theme] #fidsTable thead th:last-child {
     border-right: none !important;
     clip-path: inset(0 0 -12px 0 round 0 16px 16px 0);
   }
-  html:not(#_) body[data-fids-theme="mist"] #fidsTable thead tr {
+  html:not(#_) body[data-fids-theme] #fidsTable thead tr {
     background: transparent !important;
   }
 }
