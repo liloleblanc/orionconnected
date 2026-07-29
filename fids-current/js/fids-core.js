@@ -10733,7 +10733,11 @@ var BOARD_AUTOFIT_ENABLED = false;
 // the size is right on the first painted frame, and again from the 5s autofit
 // pass as a backstop.
 function _axrFitBubbleNames() {
-  var names = document.querySelectorAll('.axr-bub-name');
+  // v22717 — the never-split policy now actually has its fitter everywhere:
+  // page-1 property name and the page-2/3 context name shrink to one line
+  // exactly like the bubble names (Nick: 'Names should not come across rows
+  // like that'). CSS gives them white-space:nowrap; this supplies the fit.
+  var names = document.querySelectorAll('.axr-bub-name, .axr-name, .axr-page-ctx');
   for (var i = 0; i < names.length; i++) {
     var el = names[i];
     var box = el.parentElement;
@@ -17125,7 +17129,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22714';
+var FIDS_BUILD_TAG = 'v22717';
 (function(){
   try {
     function _addTag(){
