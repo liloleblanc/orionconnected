@@ -6630,3 +6630,32 @@ html body[data-fids-ap="MCO"]:not([data-page="bids"]) #fidsBoard:not(#_) {
   background-size: 100vw auto !important;
   background-repeat: no-repeat !important;
 }
+
+/* ── v22711: BAGS CAROUSEL IDENTITY COLOURS (Nick: 'Bags I want different
+   colors for like Gate 1 maybe a pattern or colors or something then etc').
+   Each carousel number owns a colour: the big digit takes it, and the
+   decorative ribbon chevrons behind the white block flow in tints of the
+   same colour — so Carousel 1 reads blue from across the hall, Carousel 2
+   green, and so on. The digit is stamped onto body[data-bids-carousel] by
+   a fids-core keeper (CSS can't read text). Nine hues, chosen distinct at
+   a glance and dark enough on the white block; carousels past 9 keep the
+   stock navy. The label word and everything else stay untouched. */
+html body[data-bids-carousel="1"] { --crsl: #003DA5; }  /* Acadian blue  */
+html body[data-bids-carousel="2"] { --crsl: #0E7A3C; }  /* emerald       */
+html body[data-bids-carousel="3"] { --crsl: #C8102E; }  /* crimson       */
+html body[data-bids-carousel="4"] { --crsl: #6A3FA0; }  /* violet        */
+html body[data-bids-carousel="5"] { --crsl: #0E7E8A; }  /* deep teal     */
+html body[data-bids-carousel="6"] { --crsl: #C96A11; }  /* burnt orange  */
+html body[data-bids-carousel="7"] { --crsl: #A3145E; }  /* magenta       */
+html body[data-bids-carousel="8"] { --crsl: #4E6B12; }  /* olive         */
+html body[data-bids-carousel="9"] { --crsl: #7A4A16; }  /* bronze        */
+html body[data-bids-carousel] .bidsv2-carousel-number {
+  color: var(--crsl, #0E2748) !important;
+}
+html body[data-bids-carousel] .bidsv2-chevrons {
+  background:
+    linear-gradient(105deg, transparent 0%, transparent 28%, var(--crsl) 28%, var(--crsl) 32%, transparent 32%),
+    linear-gradient(105deg, transparent 0%, transparent 36%, color-mix(in srgb, var(--crsl) 45%, transparent) 36%, color-mix(in srgb, var(--crsl) 45%, transparent) 42%, transparent 42%),
+    linear-gradient(105deg, transparent 0%, transparent 22%, color-mix(in srgb, var(--crsl) 25%, transparent) 22%, color-mix(in srgb, var(--crsl) 25%, transparent) 25%, transparent 25%) !important;
+  opacity: .6 !important;
+}

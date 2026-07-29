@@ -17125,7 +17125,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22710';
+var FIDS_BUILD_TAG = 'v22711';
 (function(){
   try {
     function _addTag(){
@@ -32084,4 +32084,26 @@ setInterval(function () {
   } else { sync(); }
   setInterval(sync, 1000);
   window.addEventListener('resize', sync);
+})();
+
+// ── v22711: BAGS CAROUSEL COLOR CODING (Nick: 'Bags I want different colors
+// for like Gate 1 maybe a pattern or colors or something then etc').
+// CSS can't read the carousel digit out of the DOM, so this keeper mirrors
+// .bidsv2-carousel-number's text onto body[data-bids-carousel]; the per-
+// carousel palette lives in fids-layout-fixes.css. Same keeper shape as the
+// pattern sync above — re-stamped every second so screen switches and
+// re-renders can never strand a stale colour.
+(function () {
+  function stamp() {
+    try {
+      var el = document.querySelector('.bidsv2-carousel-number');
+      var v = el ? String(el.textContent || '').trim() : '';
+      if (/^\d{1,2}$/.test(v)) document.body.setAttribute('data-bids-carousel', v);
+      else document.body.removeAttribute('data-bids-carousel');
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', stamp);
+  } else { stamp(); }
+  setInterval(stamp, 1000);
 })();
