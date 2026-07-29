@@ -2384,8 +2384,13 @@ html.fids-stream .ticker { flex: 0 0 auto !important; }
 html.fids-stream body {
   --font-primary: 'AC Nord Display Bold', 'AC Nord Display', 'AC Nord Text', Arial, sans-serif !important;
 }
+/* v22718 — .axr exempt, same guard the three JS font overrides carry: the
+   stream nuke was the LAST un-guarded path and it flattened Fairmont's The
+   Seasons to AC Nord on the streamed screens (Nick's gate-4 photos: 'this
+   is not the font we chose for Fairmont'). Accor brand typography renders
+   per brand book everywhere, stream included. */
 html.fids-stream body,
-html.fids-stream body *:not(.ac-ico):not([class*="ac-ico"]) {
+html.fids-stream body *:not(.ac-ico):not([class*="ac-ico"]):not(.axr):not(.axr *) {
   font-family: 'AC Nord Display Bold', 'AC Nord Display', 'AC Nord Text', Arial, sans-serif !important;
 }
 html.fids-stream .ac-ico,
