@@ -6597,7 +6597,8 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
        samples, titles up from 15px. */
     background: linear-gradient(180deg, #9AA2AC 0%, #7C848E 22%, #626A74 62%, #565E68 100%) !important;
     color: #FFFFFF !important;
-    text-transform: uppercase !important;
+    /* v22709 — 'NonCAPS please': natural case, matching the row lettering */
+    text-transform: none !important;
     font-weight: 800 !important;
     letter-spacing: .04em !important;
     font-size: 19px !important;
