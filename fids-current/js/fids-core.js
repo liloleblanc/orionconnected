@@ -17125,7 +17125,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22713';
+var FIDS_BUILD_TAG = 'v22714';
 (function(){
   try {
     function _addTag(){
@@ -23591,7 +23591,12 @@ function _wxRadarAdd(m) {
     if (!ts) return;
     try {
       if (!m._container || !m._container.isConnected) return; // map already torn down
-      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { opacity: 0.55, zIndex: 2, maxZoom: 12 }).addTo(m);
+      // maxNativeZoom 7: RainViewer serves real tiles through z7 and a
+      // 'Zoom Level Not Supported' placeholder image beyond (measured:
+      // z8+ returns the identical 1370-byte card — Nick's PB923 big map
+      // was papered with them). Leaflet upscales the z7 tiles instead;
+      // radar blobs survive upscaling with no visible loss.
+      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { opacity: 0.55, zIndex: 2, maxNativeZoom: 7, maxZoom: 19 }).addTo(m);
     } catch (e) {}
   };
   if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }
