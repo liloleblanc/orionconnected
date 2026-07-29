@@ -6411,9 +6411,9 @@ html:not(#_) body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
    (background: #C7D2DD !important) which would otherwise reset the image;
    the base color still comes from that rule underneath. */
 html body[data-fids-theme="mist"]:not([data-page="bids"]) #fidsBoard:not(#_) {
-  background-image: url("/logos/Backgrounds/geo-hex-pastel.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/geo-hex-pastel.png?v=2") !important;
   background-attachment: fixed !important;
   background-position: center top !important;
-  background-size: 594px 456px !important;
+  background-size: 660px 456px !important;
   background-repeat: repeat !important;
 }
