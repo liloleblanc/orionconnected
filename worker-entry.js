@@ -370,7 +370,10 @@ export default {
       }
     }
     if (path.startsWith('/wxradar/')) {
-      const wm = path.slice('/wxradar/'.length).match(/^(\d{6,12})\/(\d+)\/(\d+)\/(\d+)\.png$/);
+      // Frame token: RainViewer moved from numeric timestamps to opaque hex
+      // tokens in the index's `path` field ("/v2/radar/9fbb5e443776") —
+      // accept both shapes, nothing else.
+      const wm = path.slice('/wxradar/'.length).match(/^([0-9a-f]{4,32})\/(\d+)\/(\d+)\/(\d+)\.png$/i);
       if (!wm) return new Response('Bad radar path', { status: 400 });
       // /2/1_1.png = color scheme 2 (universal blue), smoothed, snow shown.
       const upstream = WX_RADAR_TILE_BASE + wm[1] + '/256/' + wm[2] + '/' + wm[3] + '/' + wm[4] + '/2/1_1.png';

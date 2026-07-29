@@ -17125,7 +17125,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22712';
+var FIDS_BUILD_TAG = 'v22713';
 (function(){
   try {
     function _addTag(){
@@ -23598,7 +23598,10 @@ function _wxRadarAdd(m) {
   try {
     fetch('/wxradar/index').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
       var past = j && j.radar && j.radar.past;
-      var ts = (past && past.length) ? past[past.length - 1].time : 0;
+      // Frame id comes from the PATH ("/v2/radar/9fbb5e443776"), not the
+      // numeric time — RainViewer switched to opaque tokens.
+      var p = (past && past.length) ? past[past.length - 1] : null;
+      var ts = p ? String(p.path || '').split('/').pop() : '';
       if (ts) { _wxRadarIdx = { at: Date.now(), ts: ts }; add(ts); }
     }).catch(function () {});
   } catch (e) {}
