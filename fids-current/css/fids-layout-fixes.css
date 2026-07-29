@@ -6549,3 +6549,36 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
     background-size: 136px 136px !important;
   }
 }
+
+/* ── v22706: GOLD RAIL PER ROW (Nick's 4397048 gold-stripe upload: 'lets
+   just do this', arriving on the heels of 'one line like this for every
+   row'). Every flight row carries one thin gold line along its bottom
+   edge — the shimmer is a horizontal gradient cycling deep gold to pale
+   gleam, like the art's glinting stripes. Pure CSS, no asset. This block
+   retires the v22704/05 triangle tile: same selector set, later in the
+   file, and it overrides every background longhand the tile block set
+   (image, attachment, position, size, repeat, blend). The gold echoes the
+   Acadian star and the banner clock. */
+@media (min-width: 701px) {
+  html body[data-fids-ap]:not([data-fids-ap="MCO"]) #fidsTable tbody tr:not(#_),
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-departed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-final td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td,
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-flight-row {
+    background-image: linear-gradient(90deg,
+      #A9721F 0%, #D4A937 12%, #F7EA9C 26%, #C8932A 42%,
+      #EAD26D 58%, #FDF6C9 72%, #C08324 88%, #A9721F 100%) !important;
+    background-attachment: scroll !important;
+    background-position: center bottom !important;
+    background-size: 100% 4px !important;
+    background-repeat: no-repeat !important;
+    background-blend-mode: normal !important;
+  }
+  /* the BAGS body wrapper kept the old tile via the shared block — clear it */
+  html:not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) .bidsv2-body {
+    background-image: none !important;
+  }
+}
