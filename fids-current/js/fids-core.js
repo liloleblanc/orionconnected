@@ -17129,7 +17129,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22717';
+var FIDS_BUILD_TAG = 'v22718';
 (function(){
   try {
     function _addTag(){
@@ -26357,7 +26357,10 @@ function _processAccorData(data, destIata, langKey) {
       labels: Array.isArray(h.label) ? h.label.map(String) : [],
       factsheetUrl: h.factsheetUrl || ('https://all.accor.com/hotel/' + (h.id || '') + '/index.en.shtml'),
       hotelId: h.id || '',
-      description: h.description || '',
+      // Accor's own FR copy for Royal York ships a literal 'Vene z savourer'
+      // (Nick photographed it on the gate screen). Their typo, our display —
+      // repaired narrowly: exactly this broken word, nothing else touched.
+      description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'),
       destinationDescription: h.destinationDescription || '',
       // v218.99.41 — address + distance + rating for the new bottom strip layout
       // Short address (city/district only) — used on the compact mini-line
