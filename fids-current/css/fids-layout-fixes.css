@@ -6463,3 +6463,22 @@ html body[data-fids-banner="silk-acadian"] .fids-banner {
 html body[data-fids-banner="silk-acadian"] .fids-banner::after {
   opacity: .08 !important;
 }
+
+/* ── v22702: FLAG AT FULL DEPTH + WHITE INK (Nick: 'deeper flag enough to
+   make the text white again LOL'). Ends go darker again and the pure tones
+   hold to 30/70 — the tricolore now dominates the banner. That kills the
+   dark-ink-on-red readability, so the time block (label, clock, date,
+   analog face) flips to white on this banner regardless of the mist
+   light-board adaptation that was forcing it dark — hence the :not(#_)
+   weight. Departures/Départs and the star are already white/gold. */
+html body[data-fids-banner="silk-acadian"] .fids-banner {
+  background: linear-gradient(100deg,
+    #001A4D 0%, #003DA5 30%, #EDF1F6 46%, #EDF1F6 54%, #B50E2C 70%, #6E081A 100%) !important;
+}
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-time,
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-tlabel,
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-date,
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-analog,
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-analog * {
+  color: #ffffff !important;
+}
