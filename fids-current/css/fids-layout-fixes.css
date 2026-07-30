@@ -6734,3 +6734,18 @@ html body[data-fids-ap="MCO"]:not([data-page="__never"]) .bidsv2-screen:not(#_) 
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
+
+/* ── v22723: PLATES ON EVERY GATE LAYOUT (Nick: 'i dont see the plates' —
+   he was right: the swoosh only lived on the standard layout's rail
+   shelves, and a gate in BOARDING mode swaps to the lane view where those
+   shelves don't exist. Row 2's field cards — Flight / Destination /
+   Boarding / Departure / Status — are the one strip present in every
+   gate state, so the plates ride them too and can't disappear with a
+   layout change.) */
+.g8-wrap .g8-r2-field,
+.g8-wrap .g8-r2-flight {
+  background-image: url("/logos/Backgrounds/gate-swoosh.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
