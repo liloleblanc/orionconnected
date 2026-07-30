@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// worker/fids-proxy.js — v218
+// worker/fids-proxy.js — v219
 // Single canonical worker. Implements: ADB proxy, AI city/hotel backgrounds,
 // destination info, airport-config + airline-override + media-config/library.
 //
@@ -992,6 +992,370 @@ async function handleYyzFids(request, env, origin, direction) {
 }
 __name(handleYyzFids, "handleYyzFids");
 
+// ── PANYNJ (LGA / JFK / EWR) — Port Authority flight boards ─────────────
+// All three NY-area airports run the SAME Next.js platform with a GraphQL
+// endpoint at /api/graphql on each airport's own domain. Two wrinkles keep
+// the browser from calling it directly: no CORS headers, and the request
+// body must be LZ-String compressToEncodedURIComponent()-compressed JSON
+// sent as text/plain (their client does this in a custom Apollo fetch).
+// So the worker speaks their dialect server-side and hands the board plain
+// { list:[...] } rows.
+//
+// Upstream hosts are FIXED constants — the ?ap= param selects from this
+// map and nothing else reaches fetch() (same SSRF discipline as /maptiles,
+// /logoimg, /miafids).
+const PANYNJ_HOSTS = {
+  LGA: "www.laguardiaairport.com",
+  JFK: "www.jfkairport.com",
+  EWR: "www.newarkairport.com"
+};
+
+// Minimal LZ-String compressToEncodedURIComponent (pierrec/lz-string,
+// MIT). Only the compress direction — we never decode their format.
+const _LZ_URI_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
+function lzCompressToEncodedURIComponent(uncompressed) {
+  if (uncompressed == null) return "";
+  const getCharFromInt = (a) => _LZ_URI_CHARS.charAt(a);
+  const bitsPerChar = 6;
+  let i, value;
+  const context_dictionary = {};
+  const context_dictionaryToCreate = {};
+  let context_c = "";
+  let context_wc = "";
+  let context_w = "";
+  let context_enlargeIn = 2;
+  let context_dictSize = 3;
+  let context_numBits = 2;
+  const context_data = [];
+  let context_data_val = 0;
+  let context_data_position = 0;
+  for (let ii = 0; ii < uncompressed.length; ii += 1) {
+    context_c = uncompressed.charAt(ii);
+    if (!Object.prototype.hasOwnProperty.call(context_dictionary, context_c)) {
+      context_dictionary[context_c] = context_dictSize++;
+      context_dictionaryToCreate[context_c] = true;
+    }
+    context_wc = context_w + context_c;
+    if (Object.prototype.hasOwnProperty.call(context_dictionary, context_wc)) {
+      context_w = context_wc;
+    } else {
+      if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+        if (context_w.charCodeAt(0) < 256) {
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = context_data_val << 1;
+            if (context_data_position == bitsPerChar - 1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else context_data_position++;
+          }
+          value = context_w.charCodeAt(0);
+          for (i = 0; i < 8; i++) {
+            context_data_val = context_data_val << 1 | value & 1;
+            if (context_data_position == bitsPerChar - 1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else context_data_position++;
+            value = value >> 1;
+          }
+        } else {
+          value = 1;
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = context_data_val << 1 | value;
+            if (context_data_position == bitsPerChar - 1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else context_data_position++;
+            value = 0;
+          }
+          value = context_w.charCodeAt(0);
+          for (i = 0; i < 16; i++) {
+            context_data_val = context_data_val << 1 | value & 1;
+            if (context_data_position == bitsPerChar - 1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else context_data_position++;
+            value = value >> 1;
+          }
+        }
+        context_enlargeIn--;
+        if (context_enlargeIn == 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+        delete context_dictionaryToCreate[context_w];
+      } else {
+        value = context_dictionary[context_w];
+        for (i = 0; i < context_numBits; i++) {
+          context_data_val = context_data_val << 1 | value & 1;
+          if (context_data_position == bitsPerChar - 1) {
+            context_data_position = 0;
+            context_data.push(getCharFromInt(context_data_val));
+            context_data_val = 0;
+          } else context_data_position++;
+          value = value >> 1;
+        }
+      }
+      context_enlargeIn--;
+      if (context_enlargeIn == 0) {
+        context_enlargeIn = Math.pow(2, context_numBits);
+        context_numBits++;
+      }
+      context_dictionary[context_wc] = context_dictSize++;
+      context_w = String(context_c);
+    }
+  }
+  if (context_w !== "") {
+    if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+      if (context_w.charCodeAt(0) < 256) {
+        for (i = 0; i < context_numBits; i++) {
+          context_data_val = context_data_val << 1;
+          if (context_data_position == bitsPerChar - 1) {
+            context_data_position = 0;
+            context_data.push(getCharFromInt(context_data_val));
+            context_data_val = 0;
+          } else context_data_position++;
+        }
+        value = context_w.charCodeAt(0);
+        for (i = 0; i < 8; i++) {
+          context_data_val = context_data_val << 1 | value & 1;
+          if (context_data_position == bitsPerChar - 1) {
+            context_data_position = 0;
+            context_data.push(getCharFromInt(context_data_val));
+            context_data_val = 0;
+          } else context_data_position++;
+          value = value >> 1;
+        }
+      } else {
+        value = 1;
+        for (i = 0; i < context_numBits; i++) {
+          context_data_val = context_data_val << 1 | value;
+          if (context_data_position == bitsPerChar - 1) {
+            context_data_position = 0;
+            context_data.push(getCharFromInt(context_data_val));
+            context_data_val = 0;
+          } else context_data_position++;
+          value = 0;
+        }
+        value = context_w.charCodeAt(0);
+        for (i = 0; i < 16; i++) {
+          context_data_val = context_data_val << 1 | value & 1;
+          if (context_data_position == bitsPerChar - 1) {
+            context_data_position = 0;
+            context_data.push(getCharFromInt(context_data_val));
+            context_data_val = 0;
+          } else context_data_position++;
+          value = value >> 1;
+        }
+      }
+      context_enlargeIn--;
+      if (context_enlargeIn == 0) {
+        context_enlargeIn = Math.pow(2, context_numBits);
+        context_numBits++;
+      }
+      delete context_dictionaryToCreate[context_w];
+    } else {
+      value = context_dictionary[context_w];
+      for (i = 0; i < context_numBits; i++) {
+        context_data_val = context_data_val << 1 | value & 1;
+        if (context_data_position == bitsPerChar - 1) {
+          context_data_position = 0;
+          context_data.push(getCharFromInt(context_data_val));
+          context_data_val = 0;
+        } else context_data_position++;
+        value = value >> 1;
+      }
+    }
+    context_enlargeIn--;
+    if (context_enlargeIn == 0) {
+      context_enlargeIn = Math.pow(2, context_numBits);
+      context_numBits++;
+    }
+  }
+  value = 2;
+  for (i = 0; i < context_numBits; i++) {
+    context_data_val = context_data_val << 1 | value & 1;
+    if (context_data_position == bitsPerChar - 1) {
+      context_data_position = 0;
+      context_data.push(getCharFromInt(context_data_val));
+      context_data_val = 0;
+    } else context_data_position++;
+    value = value >> 1;
+  }
+  while (true) {
+    context_data_val = context_data_val << 1;
+    if (context_data_position == bitsPerChar - 1) {
+      context_data.push(getCharFromInt(context_data_val));
+      break;
+    } else context_data_position++;
+  }
+  return context_data.join("");
+}
+__name(lzCompressToEncodedURIComponent, "lzCompressToEncodedURIComponent");
+
+const PANYNJ_DEP_QUERY = `query GetDepartingFlights(
+  $departureAirport: String!
+  $departureDateTime: String!
+  $destinationAirport: String
+  $carrierCode: String
+  $limit: Int
+  $after: String
+) {
+  getDepartingFlights(
+    departureAirport: $departureAirport
+    departureDateTime: $departureDateTime
+    destinationAirport: $destinationAirport
+    carrierCode: $carrierCode
+    limit: $limit
+    after: $after
+  ) {
+    data {
+      dateScheduled
+      timeScheduled
+      dateRevised
+      timeRevised
+      destinationName
+      destinationAirportCode
+      airlineCode
+      airlineName
+      flightNumber
+      terminal
+      gate
+      status
+    }
+    paging {
+      next
+    }
+  }
+}
+`;
+const PANYNJ_ARR_QUERY = `query GetArrivingFlights(
+  $arrivalAirport: String!
+  $arrivalDateTime: String!
+  $originAirport: String
+  $carrierCode: String
+  $limit: Int
+  $after: String
+) {
+  getArrivingFlights(
+    arrivalAirport: $arrivalAirport
+    arrivalDateTime: $arrivalDateTime
+    originAirport: $originAirport
+    carrierCode: $carrierCode
+    limit: $limit
+    after: $after
+  ) {
+    data {
+      dateScheduled
+      timeScheduled
+      dateRevised
+      timeRevised
+      originName
+      originAirportCode
+      airlineCode
+      airlineName
+      flightNumber
+      terminal
+      gate
+      status
+      isInternationalFlight
+    }
+    paging {
+      next
+    }
+  }
+}
+`;
+
+// GET /flights/panynj?ap=LGA|JFK|EWR&direction=dep|arr
+// Returns { list:[...] } (today's full board, all pages merged) with CORS.
+// Edge-cached 60s per airport+direction so a wall of screens polling
+// together costs the Port Authority one paginated sweep.
+async function handlePanynjFids(request, env, origin, ap, direction) {
+  const host = PANYNJ_HOSTS[ap];
+  if (!host) return jsonResponse({ error: "Unknown PANYNJ airport", ap }, 400, origin);
+  const isArr = /^arr/i.test(direction || "");
+  // "Today" on the airport's own clock (America/New_York), not UTC — a
+  // 11 PM EDT board asking for the UTC date would show tomorrow.
+  let nyDate;
+  try {
+    nyDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+  } catch (e) {
+    nyDate = new Date().toISOString().slice(0, 10);
+  }
+  // Manual edge cache (the upstream call is a POST, which cf caching skips).
+  const cacheKey = new Request(`https://panynj-fids.cache/${ap}/${isArr ? "arr" : "dep"}/${nyDate}`);
+  const cache = caches.default;
+  try {
+    const hit = await cache.match(cacheKey);
+    if (hit) {
+      const body = await hit.text();
+      return new Response(body, {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60", "X-Panynj-Cache": "hit", ...corsHeaders(origin) }
+      });
+    }
+  } catch (e) {}
+  const opName = isArr ? "GetArrivingFlights" : "GetDepartingFlights";
+  const dataKey = isArr ? "getArrivingFlights" : "getDepartingFlights";
+  const query = isArr ? PANYNJ_ARR_QUERY : PANYNJ_DEP_QUERY;
+  const merged = [];
+  let after = "";
+  let firstErr = null;
+  // 500/page; 8 pages = 4000 rows. JFK arrivals measured 2879 rows on a
+  // July Wednesday (codeshares inflate ~4x), so 6 pages was uncomfortably
+  // close to clipping. The loop exits early when paging.next is empty.
+  for (let page = 0; page < 8; page++) {
+    const variables = isArr
+      ? { arrivalAirport: ap, arrivalDateTime: nyDate, limit: 500, after }
+      : { departureAirport: ap, departureDateTime: nyDate, limit: 500, after };
+    const body = lzCompressToEncodedURIComponent(JSON.stringify({ operationName: opName, variables, query }));
+    try {
+      const r = await fetch(`https://${host}/api/graphql`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          "Accept": "*/*",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+          "Origin": `https://${host}`,
+          "Referer": `https://${host}/flights`
+        },
+        body
+      });
+      if (!r.ok) {
+        if (!firstErr) firstErr = { page, status: r.status, body: (await r.text().catch(() => "")).slice(0, 200) };
+        break;
+      }
+      const j = await r.json().catch(() => null);
+      const block = j && j.data && j.data[dataKey];
+      const rows = block && Array.isArray(block.data) ? block.data : [];
+      merged.push(...rows);
+      after = (block && block.paging && block.paging.next) || "";
+      if (!after || !rows.length) break;
+    } catch (e) {
+      if (!firstErr) firstErr = { page, error: e && e.message };
+      break;
+    }
+  }
+  if (!merged.length && firstErr) {
+    return jsonResponse({ error: "PANYNJ feed fetch failed", ap, ...firstErr }, 502, origin);
+  }
+  const payload = JSON.stringify({ list: merged, ap, direction: isArr ? "arr" : "dep", date: nyDate });
+  try {
+    await cache.put(cacheKey, new Response(payload, {
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60" }
+    }));
+  } catch (e) {}
+  return new Response(payload, {
+    status: 200,
+    headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60", "X-Panynj-Cache": "miss", ...corsHeaders(origin) }
+  });
+}
+__name(handlePanynjFids, "handlePanynjFids");
+
 var fids_proxy_default = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -1844,6 +2208,16 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     if (path === "/flights/yyz") {
       const direction = url.searchParams.get("direction") || "dep";
       return handleYyzFids(request, env, origin, direction);
+    }
+
+    // GET /flights/panynj?ap=LGA|JFK|EWR&direction=dep|arr — Port Authority
+    // GraphQL boards, fetched server-side (their API has no CORS and wants
+    // an LZ-String-compressed body). Must also precede the generic
+    // /flights/ ADB passthrough below.
+    if (path === "/flights/panynj") {
+      const ap = String(url.searchParams.get("ap") || "").toUpperCase();
+      const direction = url.searchParams.get("direction") || "dep";
+      return handlePanynjFids(request, env, origin, ap, direction);
     }
 
     if (path.startsWith("/airports/") || path.startsWith("/flights/") || path.startsWith("/aircrafts/")) {
