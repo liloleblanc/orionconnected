@@ -17129,7 +17129,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22718';
+var FIDS_BUILD_TAG = 'v22719';
 (function(){
   try {
     function _addTag(){
@@ -17711,7 +17711,9 @@ function render() {
   // A/B/C, Tampa Airsides A/C/E/F); every other airport keeps the compact
   // layout with no such column.
   const _apUpBoard = (((document.getElementById('apSel') || {}).value) || '').toUpperCase();
-  const _isMcoBoard = _apUpBoard === 'MCO' || _apUpBoard === 'TPA' || _apUpBoard === 'YYZ';
+  // LGA/JFK/EWR (Port Authority feed) carry a real terminal per row, so they
+  // join the terminal-column club (LGA/EWR letters, JFK numbers).
+  const _isMcoBoard = ['MCO', 'TPA', 'YYZ', 'LGA', 'JFK', 'EWR'].indexOf(_apUpBoard) !== -1;
   const _airsideLabel = _apUpBoard === 'TPA' ? 'Airside' : 'Terminal';
   const _theadRow = document.querySelector('#fidsTable thead tr');
   if (_theadRow) {
@@ -18166,7 +18168,9 @@ function render() {
     const _isAirsideRow = _apUpRow === 'MCO' || _apUpRow === 'TPA';
     // YYZ also shows a Terminal column (T1/T3), but its gate names (B2C, D34…)
     // are real and must NOT be letter-stripped like MCO/TPA concourse gates.
-    const _showTermCol = _isAirsideRow || _apUpRow === 'YYZ';
+    // Same for LGA/JFK/EWR — the PANYNJ feed's gate numbers stand alone.
+    const _showTermCol = _isAirsideRow || _apUpRow === 'YYZ'
+      || _apUpRow === 'LGA' || _apUpRow === 'JFK' || _apUpRow === 'EWR';
     let _gateVal2 = (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—'));
     // MCO/TPA: the airside column already shows the concourse letter, so drop
     // a redundant leading letter from the gate itself (C243 -> 243, E71 -> 71).
@@ -19492,6 +19496,82 @@ function yyzToAdbFlight(f) {
   }
   return out;
 }
+// ── PANYNJ (LGA / JFK / EWR) — Port Authority GraphQL boards ────────────
+// All three NY-area airports share one platform; the fids-proxy worker's
+// /flights/panynj route speaks its dialect (LZ-compressed GraphQL, no CORS)
+// and returns raw rows. One mapper serves all three — only the home airport
+// identity differs.
+const PANYNJ_HOME = {
+  LGA: { iata: 'LGA', icao: 'KLGA', name: 'New York LaGuardia' },
+  JFK: { iata: 'JFK', icao: 'KJFK', name: 'New York JFK' },
+  EWR: { iata: 'EWR', icao: 'KEWR', name: 'Newark Liberty' }
+};
+// Vocabulary counted off the live boards: "On Time", "Delayed", "Cancelled",
+// "Departed", "Arrived", "En Route" (arrivals in the air), plus "Scheduled"
+// and "Landed" in the client bundle's own strings.
+function panynjStatus(s, isDep) {
+  const t = String(s || '').trim().toLowerCase();
+  if (t.includes('cancel')) return 'cancelled';
+  if (t.includes('divert')) return 'diverted';
+  if (t.includes('delay')) return 'delayed';
+  if (t.includes('depart')) return 'departed';
+  // The feed says "Arrived" on DEPARTURE rows too — meaning arrived at the
+  // destination. On a departures board that flight has departed.
+  if (t.includes('arriv') || t.includes('land')) return isDep ? 'departed' : 'arrived';
+  if (t.includes('board') || t.includes('final')) return 'boarding';
+  if (t.includes('route')) return 'enroute';
+  return 'scheduled';
+}
+// "2026-07-30" + "06:00 AM" → {local, utc} stamped with the Eastern offset
+// for that date. tpaTimeObj already does the ET math — LGA/JFK/EWR live in
+// the same zone as Tampa, so the 12h→24h parse is the only new work.
+function panynjTimeObj(dateStr, time12) {
+  const m = String(time12 || '').trim().match(/^(\d{1,2}):(\d{2})\s*([AP])\.?M\.?$/i);
+  if (!m || !dateStr) return null;
+  let h = parseInt(m[1], 10) % 12;
+  if (/p/i.test(m[3])) h += 12;
+  return tpaTimeObj(`${dateStr}T${String(h).padStart(2, '0')}:${m[2]}:00`);
+}
+function panynjToAdbFlight(f, direction, ap) {
+  if (!f || typeof f !== 'object') return null;
+  const isDep = direction === 'Departure';
+  const code = String(f.airlineCode || '').trim().toUpperCase();
+  const num = String(f.flightNumber == null ? '' : f.flightNumber).trim();
+  const number = (code + num) || num;
+  if (!number) return null;
+  const sched = panynjTimeObj(f.dateScheduled, f.timeScheduled);
+  if (!sched) return null;
+  const revisedRaw = f.timeRevised
+    ? panynjTimeObj(f.dateRevised || f.dateScheduled, f.timeRevised)
+    : null;
+  const revised = (revisedRaw && revisedRaw.local !== sched.local) ? revisedRaw : null;
+  const airline = { iata: code || null, icao: null, name: f.airlineName || null };
+  const home = PANYNJ_HOME[ap] || { iata: ap, icao: null, name: ap };
+  const otherCode = String((isDep ? f.destinationAirportCode : f.originAirportCode) || '')
+    .trim().toUpperCase() || null;
+  // "Istanbul, Turkey (IST)" → the board shows the city; the chip shows the
+  // code from `other.iata`, so the trailing parenthetical is pure noise.
+  const otherName = String((isDep ? f.destinationName : f.originName) || '')
+    .replace(/\s*\([A-Z]{3}\)\s*$/, '').trim() || null;
+  const other = { iata: otherCode, icao: null, name: otherName };
+  const homeSide = {
+    airport: home,
+    terminal: String(f.terminal || '').trim().toUpperCase() || null,   // LGA/EWR A/B/C, JFK 1/4/5/7/8
+    gate: String(f.gate || '').trim().toUpperCase() || null,
+    scheduledTime: sched,
+    ...(revised ? { revisedTime: revised } : {}),
+    airline, quality: ['Live']
+  };
+  const otherSide = { airport: other, scheduledTime: sched, ...(revised ? { revisedTime: revised } : {}), airline, quality: ['Live'] };
+  return {
+    number, callSign: null,
+    status: panynjStatus(f.status, isDep),
+    codeshareStatus: 'IsOperator', isCargo: false,
+    departure: isDep ? homeSide : otherSide,
+    arrival: isDep ? otherSide : homeSide
+  };
+}
+
 // ── MIA (Miami International) — AirIT WebFIDS ──────────────────────────
 // The worker's /miafids route reduces MIA's XML board to flat records; this
 // maps one of them into the ADB-native shape the rest of the pipeline eats.
@@ -19671,6 +19751,161 @@ async function adbFetch(iata, direction) {
       }
     } catch (e) {
       console.warn(`[FIDS] YYZ feed: ${e.message} — falling back to ADB scrape`);
+    }
+  }
+  // ── LGA / JFK / EWR: Port Authority boards via the worker proxy ─────
+  // Their GraphQL API sends no CORS header and wants an LZ-compressed
+  // body, so the fids-proxy worker translates; the browser reads plain
+  // { list:[...] } and maps rows with panynjToAdbFlight().
+  if (iata === 'LGA' || iata === 'JFK' || iata === 'EWR') {
+    const wantDep = direction === 'Departure';
+    const dir = wantDep ? 'dep' : 'arr';
+    const pjUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/panynj?ap=${iata}&direction=${dir}`;
+    try {
+      const r = await fetch(pjUrl, { headers: { 'Accept': 'application/json' } });
+      if (r.ok) {
+        const j = await r.json();
+        const rows = Array.isArray(j && j.list) ? j.list : [];
+        // The feed lists EVERY codeshare as its own row (a JFK Wednesday
+        // measured 2,646 departure rows). Physically-same movements share
+        // time + other airport (+ gate, when two real flights leave for the
+        // same city in the same minute). Picking the OPERATOR out of each
+        // bucket needs two signals together, measured against live data:
+        //   • number range — marketing codeshares mostly ride 3000–9999,
+        //     but not always (Volaris "Y4 2606" on Frontier metal), and
+        //     real operators also fly 3000+ (that same Frontier is F9 3423);
+        //   • operating presence — a real operator has dozens-to-hundreds
+        //     of rows at its airport, a pure-codeshare carrier a handful
+        //     (British Airways "flies" LGA five times on paper, zero in
+        //     metal — LGA has no transatlantic service at all).
+        // Rule: rows with number <3000 AND carrier presence ≥2 are the
+        // operator candidates (falling back to the whole bucket when none
+        // qualify); among candidates the carrier with the biggest presence
+        // wins, lowest number breaking ties. This resolves every observed
+        // case, including keeping Aeroméxico's REAL JFK flights while
+        // dropping its 30 Delta-metal codeshare rows.
+        const _numOf = (f) => parseInt(f.flightNumber, 10) || 1e9;
+        const _presence = {};
+        for (const f of rows) {
+          const c = String(f.airlineCode || '').toUpperCase();
+          _presence[c] = (_presence[c] || 0) + 1;
+        }
+        const _presOf = (f) => _presence[String(f.airlineCode || '').toUpperCase()] || 0;
+        // MAINLINE presence (rows numbered <1000) is the honest signal:
+        // raw row counts lie once codeshares inflate a marketing carrier
+        // past the operator (Qatar's 205 paper rows at JFK vs JetBlue's
+        // real fleet), while number ranges alone hand regional metal (AA
+        // Eagle 4479, UA Express 3656) to low-numbered codeshares (BA
+        // "1916", Avianca "2137"). Chain: mainline presence → raw presence
+        // → lowest number. One exclusion: a bucket containing a sub-1000
+        // flight drops its 7000+ rows first, so Aeroméxico 405 beats the
+        // Delta 8xxx riding on it despite Delta's fleet size.
+        const _lowPresence = {};
+        for (const f of rows) {
+          if (_numOf(f) < 1000) {
+            const c = String(f.airlineCode || '').toUpperCase();
+            _lowPresence[c] = (_lowPresence[c] || 0) + 1;
+          }
+        }
+        const _lowPresOf = (f) => _lowPresence[String(f.airlineCode || '').toUpperCase()] || 0;
+        const _beats = (f, a) => {
+          const lf = _lowPresOf(f), la = _lowPresOf(a);
+          if (lf !== la) return lf > la;
+          const pf = _presOf(f), pa = _presOf(a);
+          if (pf !== pa) return pf > pa;
+          return _numOf(f) < _numOf(a);
+        };
+        const _pickOperator = (b) => {
+          // A sub-1000 number in the bucket IS the operator: mainline
+          // international flights fly 1–999 (QR 706, VS 4, AM 405, BA 112)
+          // and marketing codeshares essentially never do — without this,
+          // JetBlue's codeshare "B6 6595" on Qatar's own Doha departure
+          // outweighs QR 706 on fleet size alone.
+          const low = b.filter((f) => _numOf(f) < 1000);
+          const cands = low.length ? low : b;
+          return cands.reduce((a, f) => (_beats(f, a) ? f : a));
+        };
+        const buckets = {};
+        for (const f of rows) {
+          const k = [f.dateScheduled, f.timeScheduled,
+            (wantDep ? f.destinationAirportCode : f.originAirportCode) || ''].join('|');
+          (buckets[k] = buckets[k] || []).push(f);
+        }
+        const keep = [];
+        for (const k in buckets) {
+          const b = buckets[k];
+          const byGate = {};
+          const gateless = [];
+          for (const f of b) {
+            const g = String(f.gate || '').trim();
+            if (g) (byGate[g] = byGate[g] || []).push(f);
+            else gateless.push(f);
+          }
+          const gates = Object.keys(byGate);
+          if (!gates.length) {
+            keep.push(_pickOperator(b));
+            continue;
+          }
+          // gateless rows (codeshares often omit the gate) join the subgroup
+          // whose operator candidate is strongest
+          if (gateless.length) {
+            let best = gates[0];
+            for (const g of gates) {
+              if (_beats(_pickOperator(byGate[g]), _pickOperator(byGate[best]))) best = g;
+            }
+            byGate[best].push(...gateless);
+          }
+          for (const g of gates) keep.push(_pickOperator(byGate[g]));
+        }
+        // Second pass: codeshare rows sometimes carry a DIFFERENT scheduled
+        // time than the operator's row (Air France "2102" at 1:45 for a
+        // Delta 1:59 departure; Qatar's 200 JetBlue-metal rows at JFK), so
+        // they never share a bucket and survive pass one. Physics closes
+        // the gap: two flights cannot leave the SAME GATE for the SAME CITY
+        // within 30 minutes — rows that do are one movement, and presence
+        // picks the operator again. Gateless strays get the same ±30 min
+        // same-destination test, dropped only against a carrier with 5x
+        // their presence (so a real flight never loses to a peer).
+        const _minsOf = (f) => {
+          const m = String(f.timeScheduled || '').match(/^(\d{1,2}):(\d{2})\s*([AP])M$/i);
+          if (!m) return null;
+          return ((parseInt(m[1], 10) % 12) + (/p/i.test(m[3]) ? 12 : 0)) * 60 + parseInt(m[2], 10);
+        };
+        const _otherOf = (f) => (wantDep ? f.destinationAirportCode : f.originAirportCode) || '';
+        const kept = [];
+        for (const f of keep) {
+          const fm = _minsOf(f), fg = String(f.gate || '').trim();
+          let winner = true;
+          for (const g of keep) {
+            if (g === f || _otherOf(g) !== _otherOf(f)) continue;
+            const gm = _minsOf(g);
+            if (fm == null || gm == null || Math.abs(fm - gm) > 30) continue;
+            const gg = String(g.gate || '').trim();
+            const sameGate = fg && gg && fg === gg;
+            // Gateless drop needs BOTH a crushing presence gap AND a
+            // codeshare-range number (≥2000): unassigned-gate rows are also
+            // what real international mainline flights look like hours out
+            // (VS 4 to Heathrow, QR 706 to Doha), and those must never lose
+            // to a bigger carrier that happens to fly the same city.
+            const crushed = _numOf(f) >= 2000
+              && Math.max(_lowPresOf(g), 1) >= Math.max(_lowPresOf(f), 1) * 5;
+            if ((sameGate || (!fg && crushed)) && _beats(g, f)) {
+              winner = false;
+              break;
+            }
+          }
+          if (winner) kept.push(f);
+        }
+        const list = kept.map(f => panynjToAdbFlight(f, direction, iata)).filter(Boolean);
+        console.log(`[FIDS] ${iata} PANYNJ feed ${direction}: ${list.length} flights (${rows.length} raw rows)`);
+        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+        console.warn(`[FIDS] ${iata} PANYNJ feed empty — falling back to ADB scrape`);
+      } else {
+        const _b = await r.text().catch(() => '');
+        console.warn(`[FIDS] ${iata} PANYNJ proxy HTTP ${r.status} — ${_b.slice(0, 200)} — falling back to ADB scrape`);
+      }
+    } catch (e) {
+      console.warn(`[FIDS] ${iata} PANYNJ feed: ${e.message} — falling back to ADB scrape`);
     }
   }
   // ── TPA: Tampa's own flight-status feed instead of AeroDataBox ──────
@@ -21379,6 +21614,8 @@ function mapADB(raw, mode) {
       'YYZ',  // Toronto Pearson T1 + T3
       'YUL',  // Montréal-Trudeau Domestic + Transborder + International
       'JFK',  // New York JFK T1, T4, T5, T7, T8
+      'LGA',  // New York LaGuardia Terminals A/B/C
+      'EWR',  // Newark Liberty Terminals A/B/C
       'LHR',  // London Heathrow T2, T3, T4, T5
       'ORD',  // Chicago O'Hare T1, T2, T3, T5
       'LAX',  // Los Angeles TBIT + multiple
