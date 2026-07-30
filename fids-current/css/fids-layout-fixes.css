@@ -6679,7 +6679,7 @@ html body[data-bids-carousel] .bidsv2-chevrons {
    (later in file) win the specificity tie everywhere — including the
    bids pages those older rules excluded. */
 html body[data-fids-theme]:not([data-page="__never"]) #fidsBoard:not(#_) {
-  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=2") !important;
   background-attachment: fixed !important;
   background-position: center bottom !important;
   background-size: 100vw auto !important;
@@ -6687,7 +6687,7 @@ html body[data-fids-theme]:not([data-page="__never"]) #fidsBoard:not(#_) {
 }
 html body[data-fids-theme="mist"]:not([data-page="__never"]) #fidsBoard:not(#_),
 html body[data-fids-ap="MCO"]:not([data-page="__never"]) #fidsBoard:not(#_) {
-  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=2") !important;
   background-attachment: fixed !important;
   background-position: center bottom !important;
   background-size: 100vw auto !important;
@@ -6701,7 +6701,7 @@ html body[data-fids-ap="MCO"]:not([data-page="__never"]) #fidsBoard:not(#_) {
    and this file loads after bids-v2.css, so the shorthand there can't
    reset it. Same light/dark split as the boards. */
 html body[data-fids-theme]:not([data-page="__never"]) .bidsv2-screen:not(#_) {
-  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=2") !important;
   background-attachment: fixed !important;
   background-position: center bottom !important;
   background-size: 100vw auto !important;
@@ -6713,7 +6713,7 @@ html body[data-fids-theme="light"]:not([data-page="__never"]) .bidsv2-screen:not
 html body[data-fids-theme="paper"]:not([data-page="__never"]) .bidsv2-screen:not(#_),
 html body[data-fids-theme="sky"]:not([data-page="__never"]) .bidsv2-screen:not(#_),
 html body[data-fids-ap="MCO"]:not([data-page="__never"]) .bidsv2-screen:not(#_) {
-  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=2") !important;
   background-attachment: fixed !important;
   background-position: center bottom !important;
   background-size: 100vw auto !important;
