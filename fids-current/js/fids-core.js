@@ -5389,7 +5389,35 @@ function aircraftCodeToIata(raw) {
                  // A350 family: 'A35K' is the ICAO code for the A350-1000 (e.g. B-LXA);
                  // bare '350'/'A35' (feed shorthand or upstream truncation) default to the
                  // -900 image — there is no aircraft/A35.png or 350.png, only 359/351.
-                 '350':'359', 'A35':'359', 'A35K':'351' };
+                 '350':'359', 'A35':'359', 'A35K':'351',
+                 // v22720 — ICAO type designators (what ADB's flight/reg lookups
+                 // actually return: 'B772' for AA069's 777-200). These are FOUR
+                 // chars, so they matched nothing above and fell through to the
+                 // first-3-alphanumerics fallback, which minted garbage codes
+                 // ('B772'→'B77', 'B38M'→'B38') with no art anywhere — the
+                 // image 404-walked its whole chain and hid, leaving 'Aircraft
+                 // image pending' beside a perfectly resolved type label
+                 // (Nick's MIA D25 screenshot). Map ICAO → our IATA file names.
+                 'B712':'717',
+                 'B733':'733', 'B734':'734', 'B735':'735', 'B736':'736',
+                 'B737':'73G', 'B738':'738', 'B739':'739',
+                 'B37M':'7M7', 'B38M':'7M8', 'B39M':'7M9',
+                 'B744':'744', 'B748':'748',
+                 'B752':'752', 'B753':'753',
+                 'B762':'762', 'B763':'763', 'B764':'764',
+                 'B772':'772', 'B773':'773', 'B77L':'77L', 'B77W':'77W',
+                 'B778':'778', 'B779':'779',
+                 'B788':'788', 'B789':'789', 'B78X':'78J',
+                 'A19N':'31N', 'A21N':'32Q',
+                 'A318':'318', 'A332':'332', 'A333':'333', 'A338':'338', 'A339':'339',
+                 'A388':'388',
+                 'E135':'ER3', 'E145':'ER4', 'E170':'E7W', 'E175':'E75',
+                 'E190':'E90', 'E195':'E95', 'E290':'290', 'E295':'295',
+                 'E75L':'E75', 'E75S':'E75',
+                 'AT43':'AT4', 'AT45':'AT5', 'AT46':'AT5',
+                 'AT72':'AT7', 'AT75':'AT7', 'AT76':'AT7',
+                 'CRJ2':'CR2', 'CRJ7':'CR7', 'CRJ9':'CR9', 'CRJX':'CRK',
+                 'BCS1':'221', 'BCS3':'223' };
   if (_REMAP[s]) return _REMAP[s];
   // Try without hyphens: "DHC-3" → "DHC3" → REMAP
   var sNoH = s.replace(/-/g, '');
@@ -11797,6 +11825,14 @@ const gView = document.getElementById('gateView');
                   _regSource: _todayReg ? 'today' : (inboundFlight._regSource || ''),
                   _aircraft: _todayAc || inboundFlight._aircraft || '',
                   _aircraftCode: _todayCd || inboundFlight._aircraftCode || '',
+                  // Provenance must travel WITH the field it describes: the
+                  // spread above copied the PLACEHOLDER row's _aircraftSource
+                  // over a type this very lookup just verified as today's, so
+                  // the render's history-guard (_inbNmHistorical) could discard
+                  // a fresh 'Boeing 777-200' because the stand-in row's source
+                  // said 'history'. Stamp the source of the value actually kept.
+                  _aircraftSource: _todayAc ? 'today' : (inboundFlight._aircraftSource || ''),
+                  _aircraftCodeSource: _todayCd ? 'today' : (inboundFlight._aircraftCodeSource || ''),
                   _inboundSource: 'flight-lookup',
                   _forOutbound: _capturedOutbound
                 });
@@ -17129,7 +17165,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22719';
+var FIDS_BUILD_TAG = 'v22720';
 (function(){
   try {
     function _addTag(){
