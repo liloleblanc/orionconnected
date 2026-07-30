@@ -5039,14 +5039,18 @@ const IATA_AIRCRAFT = {
   '330':'Airbus A330','332':'Airbus A330-200','333':'Airbus A330-300',
   '339':'Airbus A330-900neo','350':'Airbus A350','359':'Airbus A350-900',
   '351':'Airbus A350-1000','380':'Airbus A380','388':'Airbus A380-800',
-  '732':'Boeing 737-200','733':'Boeing 737-300','734':'Boeing 737-400','735':'Boeing 737-500','737':'Boeing 737 MAX 8','738':'Boeing 737-800','739':'Boeing 737-900',
+  '732':'Boeing 737-200','733':'Boeing 737-300','734':'Boeing 737-400','735':'Boeing 737-500','736':'Boeing 737-600','737':'Boeing 737 MAX 8','738':'Boeing 737-800','739':'Boeing 737-900',
+  '717':'Boeing 717-200','221':'Airbus A220-100','223':'Airbus A220-300','AT4':'ATR 42','AT5':'ATR 42-500',
   '73G':'Boeing 737-700','73H':'Boeing 737-800','73J':'Boeing 737-900ER',
   '7M7':'Boeing 737 MAX 7','7M8':'Boeing 737 MAX 8','7M9':'Boeing 737 MAX 9',
   '744':'Boeing 747-400','748':'Boeing 747-8',
   '752':'Boeing 757-200','753':'Boeing 757-300',
   '763':'Boeing 767-300','764':'Boeing 767-400',
-  '772':'Boeing 777-200','773':'Boeing 777-300',
+  '772':'Boeing 777-200','773':'Boeing 777-300','777':'Boeing 777',
   '77W':'Boeing 777-300ER','77L':'Boeing 777-200LR',
+  'M80':'McDonnell Douglas MD-80','M81':'McDonnell Douglas MD-81','M82':'McDonnell Douglas MD-82',
+  'M83':'McDonnell Douglas MD-83','M87':'McDonnell Douglas MD-87','M88':'McDonnell Douglas MD-88',
+  'M11':'McDonnell Douglas MD-11',
   '787':'Boeing 787','788':'Boeing 787-8','789':'Boeing 787-9','78J':'Boeing 787-10',
   'AT7':'ATR 72-600','CR9':'Mitsubishi CRJ-900','CR7':'Mitsubishi CRJ-700','CR2':'Bombardier CRJ-200','CR5':'Mitsubishi CRJ-550','CRJ':'Mitsubishi CRJ','CRK':'Mitsubishi CRJ-1000',
   // v218.99.60 — Long-form CRJ keys so when API returns "Bombardier CRJ-900"
@@ -5190,6 +5194,14 @@ function formatAircraft(raw) {
   // 1b. Try without hyphens (e.g. "DHC-3" → "DHC3")
   const noHyphen = upper.replace(/-/g, '');
   if (noHyphen !== upper && IATA_AIRCRAFT[noHyphen]) return IATA_AIRCRAFT[noHyphen];
+  // 1c. ICAO designators (B772, B38M, A21N, E75L…) — the label-side twin of
+  // the v22720 image fix: a code-only feed row used to print the raw ICAO
+  // string on the shelf. Route 4-char codes the dictionary doesn't know
+  // through the ICAO→IATA remap and name THAT.
+  if (/^[A-Z0-9]{4,5}$/.test(upper) && typeof aircraftCodeToIata === 'function') {
+    const viaIcao = aircraftCodeToIata(upper);
+    if (viaIcao && viaIcao !== upper && IATA_AIRCRAFT[viaIcao]) return IATA_AIRCRAFT[viaIcao];
+  }
   // 2. Strip manufacturer prefix, try the remainder as IATA
   //    "Boeing 737" → "737", "Airbus A320" → "A320"
   const stripped = upper.replace(/^(BOEING|AIRBUS|EMBRAER|BOMBARDIER|ATR|DASH|DE HAVILLAND CANADA|DE HAVILLAND)\s*/i, '').trim();
@@ -5424,6 +5436,35 @@ function aircraftCodeToIata(raw) {
   if (sNoH !== s && _REMAP[sNoH]) return _REMAP[sNoH];
   if (s.length === 3 && /^[A-Z0-9]{3}$/.test(s)) return s;
 
+  // ── Compact Boeing dialect (MIA WebFIDS: 'B7374', '7673W', '7773E',
+  // 'B777', '7478I'…) — 4-6 chars, no separators. MUST run before the
+  // generic family regexes: 'B7377' is a 737-700 in this dialect, but the
+  // MAX-7 regex below reads the trailing 7 as 'MAX 7' (a real mislabel the
+  // v22720 sweep caught on Southwest's -700s at Miami). Full-name forms
+  // ('737-800', '777-300ER') carry separators and never enter this branch.
+  if (/^B?7\d{2,3}[A-Z0-9]?$/.test(s)) {
+    var _cb = s.replace(/^B/, '');
+    if (/^7773E/.test(_cb)) return '77W';   // -300ER, the common widebody
+    if (/^777L/.test(_cb)) return '77L';
+    if (/^7773/.test(_cb)) return '773';
+    if (/^7772/.test(_cb)) return '772';
+    if (/^777/.test(_cb)) return '777';     // family generic; siblings find art
+    if (/^7674/.test(_cb)) return '764';
+    if (/^7672/.test(_cb)) return '762';
+    if (/^767/.test(_cb)) return '763';     // -300 = the overwhelmingly common 767
+    if (/^7573/.test(_cb)) return '753';
+    if (/^757/.test(_cb)) return '752';
+    if (/^7478/.test(_cb)) return '748';
+    if (/^747/.test(_cb)) return '744';
+    if (/^7879/.test(_cb)) return '789';
+    if (/^7878/.test(_cb)) return '788';
+    if (/^787/.test(_cb)) return '788';
+    if (/^717/.test(_cb)) return '717';
+    var _cb73 = _cb.match(/^737([3-9])/);
+    if (_cb73) return _cb73[1] === '7' ? '73G' : ('73' + _cb73[1]);
+    if (/^737/.test(_cb)) return '73G';
+  }
+
   // ── ATR (catch before manufacturer prefix strip since "ATR" IS the prefix) ──
   if (/ATR[\s-]*72/i.test(s)) return 'AT7';
   if (/ATR[\s-]*42[\s-]*500/i.test(s)) return 'AT5';
@@ -5558,6 +5599,10 @@ function aircraftCodeToIata(raw) {
   // ── Saab / other turboprops ──
   if (/SAAB[\s-]*340|SF3/i.test(s)) return 'SF3';
 
+  // ── MD-80 family ('MD83' at MIA — World Atlantic charters) ──
+  var _mMd8 = s.match(/^MD[\s-]*8(\d)?/);
+  if (_mMd8) return 'M8' + (_mMd8[1] || '0');            // honest code; no art → honest pending
+
   // Fall back to first 3 alphanumerics (strips "Boeing"/"Airbus" prefix residue)
   var m3 = s.replace(/[^A-Z0-9]/g,'').substring(0,3);
   return m3.length === 3 ? m3 : '';
@@ -5609,7 +5654,12 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     '73H':['738'], '738':['73H'],
     '739':['73J'], '73J':['739'],
     '733':['73C'], '73C':['733'],
-    '77L':['772']
+    '77L':['772'],
+    // '777' is the family generic (MIA's 'B777', ADB's bare 'Boeing 777') —
+    // its label reads plain 'Boeing 777', so ANY 777 variant's image agrees
+    // with it. There is no generic 777.png outside the AA folder, which left
+    // AF/LA/LX/TK 777s at Miami imageless (v22720 sweep).
+    '777':['77W','772','773']
   };
   var _variants = [eq].concat(FAMILY_SIBLINGS[eq] || []);
   // Try variant-specific → exact → siblings, ALL in the airline's livery folder
