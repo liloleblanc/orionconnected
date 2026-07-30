@@ -17215,7 +17215,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22723';
+var FIDS_BUILD_TAG = 'v22724';
 (function(){
   try {
     function _addTag(){
@@ -30893,7 +30893,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         var _gRow = el.closest ? el.closest('.g8-board-info-row') : null;
         var _gIsStatus = !!(_gCell && !_gCell.nextElementSibling);
         if (_gRow && !_gIsStatus) {
-          var _gCap = Math.max(40, _gRow.clientHeight * 0.62);
+          // v22724 cap raised 0.62 -> 0.72 (Nick: 'Just as big numbers that
+          // can take up the whole place but cannot exceed') — the width
+          // shrink-back below plus the new plate-height check are the
+          // 'cannot exceed' half of that sentence.
+          var _gCap = Math.max(40, _gRow.clientHeight * 0.72);
           var g = size, gGuard = 20;
           while (el.scrollWidth <= el.clientWidth * 0.94 && g < _gCap && gGuard-- > 0) {
             g = Math.min(_gCap, g + Math.max(1, g * 0.06));
@@ -30901,6 +30905,14 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
           }
           var gBack = 8;
           while (el.scrollWidth > el.clientWidth && g > 24 && gBack-- > 0) {
+            g -= Math.max(1, g * 0.05);
+            el.style.setProperty('font-size', g + 'px', 'important');
+          }
+          // Height backstop: the taller cap can push the title+value stack
+          // past the plate on short rows — walk back until the cell's own
+          // box genuinely holds its stack.
+          var _gTxt = el.parentElement, gBackH = 10;
+          while (_gCell && _gTxt && _gTxt.scrollHeight > _gCell.clientHeight + 1 && g > 24 && gBackH-- > 0) {
             g -= Math.max(1, g * 0.05);
             el.style.setProperty('font-size', g + 'px', 'important');
           }

@@ -6749,3 +6749,54 @@ html body[data-fids-ap="MCO"]:not([data-page="__never"]) .bidsv2-screen:not(#_) 
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
+
+/* ── v22724: EVERY AIRLINE'S PLATES, ONE KNOWING STEP OFF THE BACKGROUND
+   (Nick: 'There should multiple colors different airlines match the scene
+   slightly different than the background to give it a punch but not so
+   mich different just slightly and knowingly'). Until now the plates and
+   the column behind them wore the SAME accent mix (v22611), so the plates
+   read flat — texture with no punch. Now the surfaces split into two
+   tones of the airline's own colour: the background columns settle a step
+   deeper, and every plate (rail shelves, info pane, left-rail rows,
+   boarding cells) steps lighter and more saturated in the SAME hue —
+   clearly a plate, still the same scene. AC's approved untinted material
+   is untouched: its :is([data-gate-airline=…]):not(#_) rules outrank
+   everything below by specificity. */
+/* Background columns — a step deeper than before. */
+html body:not(#_) .g8-wrap .gad-aircraft-col,
+html body:not(#_) .g8-wrap .gad-map-col-v2 {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 40%, #6d727b) !important;
+}
+/* The plates — lighter and warmer in the same brand hue. */
+html body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:not(#_) .g8-bir-cell,
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 54%, #9aa0aa) !important;
+}
+/* The boarding bar's in-between gray joins the scene too — a faint brand
+   cast instead of neutral concrete, so the lighter cells pop against it. */
+html body:not(#_):not(#_) .g8-board-info-row {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 26%, #5d6169) !important;
+}
+/* AC's bar stays its approved neutral gray behind the untinted cells. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-board-info-row {
+  background-color: #5d6169 !important;
+}
+
+/* ── v22724: THE SWOOSH RIDES THE BOARDING CELLS ('i dont see the plates'
+   — root cause found: the v22723 fix put the arcs on the Row-2 strip,
+   but .g8-r2 is display:none on the gate (v218.99.12 moved that info to
+   the rails). The plates Nick was looking at in boarding mode are the
+   .g8-bir-cell slabs — the arcs now ride them, layered over the luxury
+   material. AC cells keep their pure approved material: the AC
+   background-image rule outranks this one. */
+html body .g8-bir-cell {
+  background-image: url("/logos/Backgrounds/gate-swoosh.png?v=1"), url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center, center !important;
+  background-size: cover, cover !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-blend-mode: normal, soft-light !important;
+}
