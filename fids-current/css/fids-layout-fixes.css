@@ -6719,3 +6719,18 @@ html body[data-fids-ap="MCO"]:not([data-page="__never"]) .bidsv2-screen:not(#_) 
   background-size: 100vw auto !important;
   background-repeat: no-repeat !important;
 }
+
+/* ── v22722: SWOOSH PLATES ON THE GATE SHELVES (Nick's airline-plate SVG:
+   'Would this look ok on blue airline colors on top of the already
+   existing blue like smaller plates?' → placement pick: gate screen
+   shelves). The texture is a COLOR-NEUTRAL bake of his plate's arcs —
+   lighter arcs lighten, darker arcs shade whatever brand color the rail
+   already painted — so every carrier's shelf becomes a tone-on-tone
+   plate of its own blue (or red, or teal) with no per-airline art. */
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf.v2-rc-shelf-fi,
+.g8-wrap .gad-map-col-v2 > .v2-rc-shelf.v2-rc-shelf-type {
+  background-image: url("/logos/Backgrounds/gate-swoosh.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
