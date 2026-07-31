@@ -6995,7 +6995,11 @@ html body:not(#_):not(#_) .g8-wrap .gad-aircraft-col {
 html .g8-wrap .gad-aircraft-col::after {
   content: none !important;
 }
-html body:not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+/* The :not(:is(...)) mirrors the v22730 rule's shape — without it that rule
+   outranks this one by a class and the texture disappears instead of moving
+   behind (measured: computed background-image came back as lux only). It
+   doubles as the AC exemption. */
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-aircraft-col {
   background-image:
     url('/logos/3d_globe_desktop.svg?v=2'),
     url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
