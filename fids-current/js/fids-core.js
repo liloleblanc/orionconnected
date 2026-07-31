@@ -10926,7 +10926,17 @@ function _fitFlightCells() {
       if (cell.dataset.fnFit === key) {
         var kept = parseFloat(cell.dataset.fnPx);
         if (kept > 0 && kept < base) cell.style.setProperty('font-size', kept + 'px', 'important');
-        return;
+        // Trust the memo, then CHECK it. Every fix here so far has been another
+        // property sneaking into the metrics without being in the key — size,
+        // then weight. 'AC 8020' survived even the weight key: it measures
+        // 151px in its 143px column at the remembered 26px, a size that
+        // genuinely fitted when it was chosen, because the display webfont
+        // finishes loading after the first fit and is wider than the fallback
+        // it was measured against. Rather than chase the next such property,
+        // verify the remembered size still fits and re-measure when it does
+        // not. One layout read on a cell already being read.
+        if (cell.scrollWidth <= cell.clientWidth + 1) return;
+        cell.style.removeProperty('font-size');
       }
       var size = base, guard = 16;
       var floorPx = Math.max(18, base * 0.68);
@@ -17455,7 +17465,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22760';
+var FIDS_BUILD_TAG = 'v22761';
 (function(){
   try {
     function _addTag(){
