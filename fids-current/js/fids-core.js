@@ -10991,10 +10991,19 @@ try {
       // which is exactly how a stale 'DL24…' turned up in a screenshot while
       // the audit reported the board clean.
       var _raf = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame : function (f) { return setTimeout(f, 16); };
+      // Row STATE changes are attribute mutations, not child mutations: a row
+      // going Delayed gains a class, keeps its cells and inserts nothing — so
+      // childList alone never woke the fitter, and the heavier face that state
+      // brings stayed unfitted until the next full render. That was the last
+      // gap the ink measurement could still see at v22762: 'AC 8020' over its
+      // 99px content box by 7.6px for 5 frames after its row turned Delayed.
+      // Watching 'class' and NOTHING else is what keeps this safe — the fitter
+      // writes an inline font-size, so observing 'style' would have it retrigger
+      // itself forever.
       new MutationObserver(function () {
         if (_ffTimer) return;
         _ffTimer = _raf(function () { _ffTimer = null; _fitFlightCells(); });
-      }).observe(tb, { childList: true, subtree: true });
+      }).observe(tb, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
       _fitFlightCells();
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _arm);
@@ -17491,7 +17500,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22762';
+var FIDS_BUILD_TAG = 'v22763';
 (function(){
   try {
     function _addTag(){
