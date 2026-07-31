@@ -10896,10 +10896,15 @@ function _fitFlightCells() {
     document.querySelectorAll('#fidsTable td.fids-cell-flight').forEach(function (cell) {
       var t = (cell.textContent || '').trim();
       if (!t || !cell.clientWidth) return;
-      var key = t + '|' + Math.round(cell.clientWidth);
-      if (cell.dataset.fnFit === key) return;
+      // The memo has to include the BASE type size, not just text+width: a row
+      // that turns Delayed re-renders with its own heavier styling at the same
+      // width with the same number, so a text+width key scored a hit and the
+      // cell was never re-fitted — which is why 'F929…' and 'WN49…' were still
+      // clipped on the delayed rows while every on-time row fitted fine.
       cell.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(cell).fontSize) || 28;
+      var key = t + '|' + Math.round(cell.clientWidth) + '|' + Math.round(base);
+      if (cell.dataset.fnFit === key) return;
       var size = base, guard = 16;
       var floorPx = Math.max(18, base * 0.68);
       while (cell.scrollWidth > cell.clientWidth + 1 && size > floorPx && guard-- > 0) {
@@ -17325,6 +17330,14 @@ function _dispIata(code) {
 
 function cityCode(iata, overrideCity, langOverride) {
   var code = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+  // v22753 — the v22736 fallback lived only in formatCityIata, so rows that
+  // render through THIS path still showed a bare city with no chip when the
+  // feed omitted the code ('Hartford' on the Tampa board, which we do know as
+  // BDL). Same unambiguous-only rule; ambiguous names stay code-less.
+  if (!code) {
+    var _cc = _iataFromCityName(overrideCity || '');
+    if (_cc) code = _cc;
+  }
   if (!code) return normalizeDisplayCity(overrideCity || '', '');
 
   var city = String(overrideCity || '').replace(/\s+/g, ' ').trim();
@@ -17418,7 +17431,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22752';
+var FIDS_BUILD_TAG = 'v22753';
 (function(){
   try {
     function _addTag(){
