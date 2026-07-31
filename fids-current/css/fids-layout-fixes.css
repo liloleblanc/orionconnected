@@ -6980,3 +6980,27 @@ html body:not(#_):not(#_) .g8-wrap .gad-aircraft-col {
   padding-bottom: clamp(6px, 0.8vh, 10px) !important;
   box-sizing: border-box !important;
 }
+
+/* ── v22738: THE DOT-GLOBE COMES OFF THE ICONS (Nick: 'get the fucking shit
+   off the icons its fucking discusting'). Measured on the live TPA A10 gate:
+   .gad-aircraft-col::after paints the globe texture at z-index 6, multiply,
+   0.78 opacity across the whole rail (0,131 → 442×879) — and every icon badge
+   sits inside that box (x 20–96, y 313–965), so the dots land directly on the
+   glyphs. The old comment even admits the content was deliberately NOT
+   z-raised, because raising the opaque shelves hid the texture entirely.
+   v22730 changed that calculus: the rows are transparent now and the COLUMN
+   carries the surface, so the texture can live in the column's own background
+   stack — visible across the whole rail exactly as before, but genuinely
+   behind everything instead of painted over the icons and the type. */
+html .g8-wrap .gad-aircraft-col::after {
+  content: none !important;
+}
+html body:not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+  background-image:
+    url('/logos/3d_globe_desktop.svg?v=2'),
+    url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center bottom, center !important;
+  background-size: 300% auto, cover !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-blend-mode: multiply, soft-light !important;
+}

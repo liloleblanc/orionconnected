@@ -4642,7 +4642,7 @@ const AIRLINE_ACCENT = {
   // operator at Miami (Nick: 'Thios airline is supposed to be added and its
   // not'). Navy taken from their aircraft titles; swap in the exact hex when
   // an official kit turns up, same arc Avelo followed.
-  'WL':'#0B3D91',
+  'WL':'#004280',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
@@ -16340,6 +16340,7 @@ const IATA_TO_WORDMARK = {
   'WN':'southwest',  'B6':'jetblue',
   'F9':'frontier',  // Frontier Airlines — official green wordmark + emblem from Nick's upload
   'XP':'avelo',     // Avelo Airlines — official wordmark set (white / black / purple) from Nick's upload
+  'WL':'world-atlantic',  // World Atlantic Airlines (Caribbean Sun) — official wordmark from Nick's Archive.zip
   'LL':'level',     // LEVEL — official wordmark set from Nick; dark lettering IS the brand (like Flair), so no COLOR_WORDMARKS entry
   // NK (Spirit) — ceased operations May 2 2026
   'AS':'alaska-airlines',  'HA':'hawaiian',
@@ -16606,7 +16607,13 @@ const WORDMARK_RASTER = {
                 // the colour original for light rows.
                 dark:  '/logos/airlines/canadian-regional/airinuit.svg' },
   'caribbean': { light: '/logos/airlines/asian-other/caribbean-wordmark-light.png',
-                 dark:  '/logos/airlines/asian-other/caribbean-wordmark-color.png' }
+                 dark:  '/logos/airlines/asian-other/caribbean-wordmark-color.png' },
+  // v22738 — World Atlantic: the supplied SVG wraps a raster, so it lives
+  // here. 'dark' is their own navy+green artwork for light surfaces; 'light'
+  // is the same letterforms in white for dark boards (alpha preserved, so the
+  // shapes are the airline's, not redrawn).
+  'world-atlantic': { light: '/logos/airlines/us-regional/world-atlantic-wordmark-light.png',
+                      dark:  '/logos/airlines/us-regional/world-atlantic-wordmark-color.png' }
 };
 function wordmarkSrc(base, forceVariant) {
   // v191: route through logoPath() so reorganized logos resolve correctly
@@ -17316,7 +17323,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22737';
+var FIDS_BUILD_TAG = 'v22738';
 (function(){
   try {
     function _addTag(){
