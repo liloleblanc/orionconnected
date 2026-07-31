@@ -10890,30 +10890,30 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
 // Called BOTH from the periodic pass and straight after the board paints: a
 // freshly rendered row would otherwise sit clipped until the next pass, which
 // is exactly the one stale 'DL24…' left on screen after the first fix.
-// Does the number actually fit its cell? Every previous version of this asked
-// scrollWidth > clientWidth + 1, and that question is wrong here in two ways
-// that happen to cancel almost all of the overflow out:
-//   - clientWidth INCLUDES padding, and these cells carry 22px each side, so
-//     the text really has clientWidth - 44 to live in, not clientWidth;
-//   - scrollWidth on an overflowing box adds only the leading padding, so it
-//     understates the overflow by the trailing 22px on top of that.
-// Net effect: a cell had to overflow by ~45px before the old test noticed.
-// Measured on Orlando at v22761 — WN4721 rendering 'WN47…' with an ink width
-// of 100.1px in a 99px content box, while scrollWidth said 144 against a
-// clientWidth of 143 and the loop exited satisfied. That is why the board kept
-// showing truncated numbers through four rounds of fixes that each measured
-// clean afterwards: the instrument and the fitter shared the same blind spot.
-// A Range over the cell's contents gives the true ink width, compared against
-// the real content box.
+// Does the number actually fit its cell?
+//
+// The long-standing test was scrollWidth > clientWidth + 1, and the fault was
+// never the two properties — both include the cell's padding, so they compare
+// like for like. It was the '+ 1'. These numbers miss their column by about a
+// pixel, not by ten: WN4721 measured scrollWidth 144 against clientWidth 143,
+// so the real overflow of 1.1px sat exactly inside the tolerance meant to
+// absorb rounding, the loop exited satisfied, and CSS drew the ellipsis. Every
+// audit I ran used the same tolerance, which is why four rounds of fixes each
+// measured clean while screenshots kept showing 'WN47…'.
+//
+// v22762 replaced this with a Range over the cell's contents measured against
+// the content box. That is a true reading of the INK, and it is exactly the
+// wrong instrument here: once text-overflow has clipped a cell, the rendered
+// text IS the truncated string, so the Range measures the clipped width, finds
+// it inside the box, and reports a fit. Circular. It let 'WN16…' render while
+// the probe called the board clean.
+//
+// scrollWidth is immune to that — it reports the full scrollable content width
+// whether or not the box is clipping — so the right fix was always to drop the
+// tolerance, not to change instrument. Letter-spacing's trailing 0.3px cannot
+// produce a false positive here because scrollWidth is integer-rounded.
 function _fnFits(cell) {
-  var cs = getComputedStyle(cell);
-  var avail = cell.clientWidth
-            - (parseFloat(cs.paddingLeft) || 0)
-            - (parseFloat(cs.paddingRight) || 0);
-  if (avail <= 0) return true;
-  var r = document.createRange();
-  r.selectNodeContents(cell);
-  return r.getBoundingClientRect().width <= avail + 0.5;
+  return cell.scrollWidth <= cell.clientWidth;
 }
 function _fitFlightCells() {
   if (typeof BOARD_AUTOFIT_ENABLED !== 'undefined' && BOARD_AUTOFIT_ENABLED) return;
@@ -17512,7 +17512,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22764';
+var FIDS_BUILD_TAG = 'v22765';
 (function(){
   try {
     function _addTag(){
