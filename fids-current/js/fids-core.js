@@ -17542,7 +17542,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22767';
+var FIDS_BUILD_TAG = 'v22768';
 (function(){
   try {
     function _addTag(){
@@ -32676,9 +32676,34 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
     });
     return;
   }
-  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
-  window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
-  _gateMapTileLayer().addTo(window._bigCraftMap);
+  // REUSE THE MAP when the route has not changed. This function used to
+  // remove() the Leaflet map and build a new one on EVERY update, which threw
+  // away the marker, the camera and the glide along with it — so the plane
+  // could only ever restart from the newly seeded position, which is the
+  // stepping Nick sees ('the aircraft is the one moving sideways'). Measured
+  // at v22767: the big map's glide came up, ran for ~25 s, then vanished with
+  // its map and never came back within the sample. Keeping the instance keeps
+  // its _acGlide, so _startGateMapGlide below resumes from where the plane
+  // actually is and eases the correction in instead of teleporting it.
+  var _bcKey = String(org) + '>' + String(dst);
+  var _bcReuse = false;
+  try {
+    _bcReuse = !!(window._bigCraftMap && window._bcRouteKey === _bcKey &&
+                  window._bigCraftMap.getContainer &&
+                  document.body.contains(window._bigCraftMap.getContainer()));
+  } catch (e) { _bcReuse = false; }
+  if (_bcReuse) {
+    // Drop only the overlays this function added last time — the map, its
+    // tiles, its camera and its glide all survive.
+    try { (window._bcOv || []).forEach(function (l) { try { window._bigCraftMap.removeLayer(l); } catch (er) {} }); } catch (e) {}
+    try { _stopGateMapGlide(window._bigCraftMap); } catch (e) {}   // marker is going away
+  } else {
+    try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
+    window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+    _gateMapTileLayer().addTo(window._bigCraftMap);
+  }
+  window._bcRouteKey = _bcKey;
+  window._bcOv = [];
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
   var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
@@ -32701,7 +32726,12 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   else if (nearDst < 0.06) zoom = 11;
   else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
-  window._bigCraftMap.setView([planeLat, planeLng], zoom);
+  // On a reused map only move the camera when the ZOOM BUCKET actually changes.
+  // Re-issuing setView every update snapped the whole scene back under a plane
+  // that was gliding fine — the glide's own follow logic keeps it in frame.
+  if (!_bcReuse || window._bigCraftMap.getZoom() !== zoom) {
+    window._bigCraftMap.setView([planeLat, planeLng], zoom);
+  }
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
   // (The old single ideal arc left any real-world deviation looking
@@ -32709,8 +32739,9 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var _pp = [planeLat, planeLng];
   var _bcA1 = _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
   var _bcA2 = _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
-  L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  var _bcO = L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  var _bcD = L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  try { window._bcOv.push(_bcA1, _bcA2, _bcO, _bcD); } catch (e) {}
   // (Removed the separate 'actual flown track' polyline — it was the SAME blue
   // as the assigned route arc above, so wherever the real path differed from
   // the great-circle it drew a second parallel line = the 'double line for the
@@ -32723,6 +32754,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
   var _bcPlaneMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+  try { window._bcOv.push(_bcPlaneMk); } catch (e) {}
   // SAME PROGRAMMING as the mini map (Nick: 'big screen and little screen need
   // same programming — it's not separate'): the identical glide engine now
   // dead-reckons the plane along the route on the BIG map too. The big plane
