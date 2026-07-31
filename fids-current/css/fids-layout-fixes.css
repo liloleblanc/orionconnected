@@ -6800,3 +6800,85 @@ html body .g8-bir-cell {
   background-repeat: no-repeat, no-repeat !important;
   background-blend-mode: normal, soft-light !important;
 }
+
+/* ── v22725: THE PLATES ACTUALLY READ AS PLATES (Nick, looking at the
+   preview: 'Theres no plates' — and he's right. The v22724 tone-step was
+   too polite: the rows still touched edge-to-edge and read as one flat
+   panel. Now every plate wears the full grammar of his Affinity mock:
+   AIR around it (margins expose the deeper background), rounded corners,
+   a glossy diagonal sheen sweeping the airline colour, the swoosh arcs
+   underneath, and a drop shadow lifting it off the column. AC's approved
+   brushed-metal look is restated explicitly at the end — untouched. */
+/* Left rail rows become individual glossy plates. */
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  margin: clamp(4px, 0.6vh, 9px) clamp(6px, 0.5vw, 12px) !important;
+  border-radius: clamp(8px, 1.1vh, 14px) !important;
+  border-bottom: 0 !important;
+  box-shadow: 0 3px 10px rgba(4, 10, 22, 0.40),
+              inset 0 1px 0 rgba(255, 255, 255, 0.32),
+              inset 0 -2px 6px rgba(0, 0, 0, 0.22) !important;
+  background-image:
+    linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0) 52%, rgba(0,0,0,0.16) 100%),
+    url("/logos/Backgrounds/gate-swoosh.png?v=1"),
+    url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center, center, center !important;
+  background-size: 100% 100%, cover, cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal, normal, soft-light !important;
+}
+/* Right card: the info pane and the fi/type shelves take the same gloss. */
+html body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  border-radius: clamp(8px, 1.1vh, 14px) !important;
+  box-shadow: 0 3px 10px rgba(4, 10, 22, 0.40),
+              inset 0 1px 0 rgba(255, 255, 255, 0.32),
+              inset 0 -2px 6px rgba(0, 0, 0, 0.22) !important;
+  background-image:
+    linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0) 52%, rgba(0,0,0,0.16) 100%),
+    url("/logos/Backgrounds/gate-swoosh.png?v=1"),
+    url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center, center, center !important;
+  background-size: 100% 100%, cover, cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal, normal, soft-light !important;
+}
+html body:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  margin: clamp(3px, 0.5vh, 8px) clamp(5px, 0.4vw, 10px) !important;
+  border-bottom: 0 !important;
+}
+/* Boarding cells: same gloss riding the v22724 colour + swoosh. */
+html body:not(#_) .g8-bir-cell {
+  border-radius: clamp(8px, 1.1vh, 12px) !important;
+  box-shadow: 0 3px 10px rgba(4, 10, 22, 0.40),
+              inset 0 1px 0 rgba(255, 255, 255, 0.32),
+              inset 0 -2px 6px rgba(0, 0, 0, 0.22) !important;
+  background-image:
+    linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0) 52%, rgba(0,0,0,0.16) 100%),
+    url("/logos/Backgrounds/gate-swoosh.png?v=1"),
+    url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center, center, center !important;
+  background-size: 100% 100%, cover, cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal, normal, soft-light !important;
+}
+/* AC: the approved brushed-metal grammar restated LAST — full-bleed rows,
+   plain lux material, no gloss/swoosh/margins. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell {
+  border-radius: 6px !important;
+}
