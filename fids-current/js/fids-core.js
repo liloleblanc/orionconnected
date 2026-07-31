@@ -4996,6 +4996,12 @@ function getAircraftCategory(code) {
 }
 function getBoardingLeadMins(aircraftCode) {
   var cat = getAircraftCategory(aircraftCode || '');
+  // v22747 — the Q400 boards in 20 minutes, not the generic regional 25
+  // (Nick, who works these gates: 'It's 20 minutes for the q400'). Covers
+  // every code the feeds use for the Dash 8-400 — DH4 (IATA), DH8D (ICAO) —
+  // and the -300/-100/-200 stay on the regional default.
+  var _acU = String(aircraftCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (_acU === 'DH4' || _acU === 'DH8D' || _acU === 'Q400' || /DHC8400|DASH8400/.test(_acU)) return 20;
   if (cat === 'regional') return 25;
   if (cat === 'widebody') return 45;
   // Narrowbody - check if small (A319/A320) or large (737/A321)
@@ -17405,7 +17411,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22746';
+var FIDS_BUILD_TAG = 'v22747';
 (function(){
   try {
     function _addTag(){
