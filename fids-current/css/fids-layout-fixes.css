@@ -7219,3 +7219,22 @@ html body[data-fids-theme] .bidsv2-screen > * {
   position: relative;
   z-index: 1;
 }
+/* ── v22751: THE MENU CAME BACK (Nick: 'the menu does not work whatsoever and
+   I'm stuck'). The blanket z-index:1 above put the control bar — which is a
+   direct child of #fidsBoard and owns every dropdown — on the SAME layer as
+   the table and the ticker that follow it, so later siblings painted straight
+   over its open panels. The bar looked dead because its menus were opening
+   underneath the board. The control bar and its panels now sit far above
+   everything; the rest of the blanket rule still keeps the drifting sky
+   behind the flights. */
+html body #fidsBoard > .ctrl,
+html body .mbar,
+html body .mbar-group,
+html body .mbar-group.open,
+html body .mbar-panel,
+html body #gmnOpts,
+html body #apPanel {
+  position: relative;
+  z-index: 4000 !important;
+}
+html body .mbar-panel { z-index: 4001 !important; }
