@@ -10908,12 +10908,42 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
 // it inside the box, and reports a fit. Circular. It let 'WN16…' render while
 // the probe called the board clean.
 //
-// scrollWidth is immune to that — it reports the full scrollable content width
-// whether or not the box is clipping — so the right fix was always to drop the
-// tolerance, not to change instrument. Letter-spacing's trailing 0.3px cannot
-// produce a false positive here because scrollWidth is integer-rounded.
+// And scrollWidth is not trustworthy here either. Caught by screenshotting and
+// dumping the DOM in the same instant on the same page: 'WN1188' painted as
+// 'WN11…' while reporting scrollWidth 143, clientWidth 143, no inline size, at
+// 28px — the cell says it fits and the pixels say otherwise. These are
+// table-cells with overflow:hidden, and Blink under-reports their scrollWidth,
+// sometimes by the whole overflow. That is the property both the fitter and
+// every probe I wrote had been asking all along.
+//
+// So measure the TEXT, not the box. A canvas 2D context given the cell's own
+// computed font returns the width the string WOULD need, which is what the
+// question actually is — independent of clipping, of table layout, and of
+// whatever Blink decides a table-cell's scroll area is. textContent still holds
+// the full string when CSS has clipped the display, so there is nothing
+// circular about reading it.
+var _fnCtx = null;
+function _fnInkWidth(cell, text) {
+  if (!_fnCtx) {
+    try { _fnCtx = document.createElement('canvas').getContext('2d'); } catch (e) { return -1; }
+  }
+  if (!_fnCtx) return -1;
+  var cs = getComputedStyle(cell);
+  _fnCtx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+  var w = _fnCtx.measureText(text).width;
+  var ls = parseFloat(cs.letterSpacing);
+  if (ls) w += ls * text.length;
+  return w;
+}
 function _fnFits(cell) {
-  return cell.scrollWidth <= cell.clientWidth;
+  var cs = getComputedStyle(cell);
+  var avail = cell.clientWidth
+            - (parseFloat(cs.paddingLeft) || 0)
+            - (parseFloat(cs.paddingRight) || 0);
+  if (avail <= 0) return true;
+  var w = _fnInkWidth(cell, (cell.textContent || '').trim());
+  if (w < 0) return cell.scrollWidth <= cell.clientWidth; // no canvas: old test
+  return w <= avail;
 }
 function _fitFlightCells() {
   if (typeof BOARD_AUTOFIT_ENABLED !== 'undefined' && BOARD_AUTOFIT_ENABLED) return;
@@ -17512,7 +17542,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22765';
+var FIDS_BUILD_TAG = 'v22766';
 (function(){
   try {
     function _addTag(){
