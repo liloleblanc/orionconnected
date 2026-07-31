@@ -7219,3 +7219,9 @@ html body[data-fids-ap="MCO"] .bidsv2-screen::after {
    to z-index:-1, which paints it behind ALL in-flow content by definition. It
    still shows because the board's own surface is transparent — the band it
    carries is a background-IMAGE, not a fill. */
+
+/* v22754 — build probe: no functional change. The previous four Workers
+   builds failed on both scripts with a commit that touched only app JS, and
+   the asset tree is well inside limits (3,387 files, none over 25 MiB), so
+   this exists purely to tell transient build-service failure apart from
+   something in our tree. */
