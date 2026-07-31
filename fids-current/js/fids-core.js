@@ -10583,7 +10583,16 @@ function gateAutofit(root) {
   // dancing. Status value excluded (two stacked bilingual lines).
   // Shared box-assign: binary-search the largest size that fits the given
   // box, strict (the browser ellipsizes on 1px of overflow), 1px slack.
-  function _boxAssign(el, availW, availH, colR, skipH) {
+  // strictContent (v22733): also require the element's own CONTENT to fit
+  // inside its own box. Needed wherever the box height is pinned by layout
+  // rather than by the text — there, offsetHeight never grows with the font,
+  // so the height test below silently passes at ANY size and the search
+  // happily picks the maximum. That is exactly how the aircraft-type panel
+  // ended up rendering a 43px two-line string inside a 42px flex box, with
+  // 'expected | prévu' clipped and colliding with the Operated-By row
+  // (Nick: 'these are not fitting correctly'). Opt-in, so the fitters whose
+  // boxes DO grow with their text keep their existing behaviour exactly.
+  function _boxAssign(el, availW, availH, colR, skipH, strictContent) {
     if (availH < 12 || availW < 30) return;
     // DON'T RE-DERIVE WHAT HASN'T CHANGED. This runs on every rebuild and on
     // the 5s heartbeat, and each pass re-measures — so a box that reads a pixel
@@ -10606,6 +10615,7 @@ function gateAutofit(root) {
       if (el.scrollWidth > el.clientWidth) return false;
       if (el.scrollWidth > availW) return false;
       if (!skipH && el.offsetHeight > availH) return false;
+      if (strictContent && el.scrollHeight > el.clientHeight + 2) return false;
       if (colR && el.getBoundingClientRect().right > colR) return false;
       return true;
     }
@@ -10711,10 +10721,10 @@ function gateAutofit(root) {
         // The Operated-By row is fitted FIRST so its measured height is the
         // real remainder for the type line — and capped, so a long operator
         // name can't eat the panel either.
-        _boxAssign(op, w, Math.floor(h * 0.42), null, false);
+        _boxAssign(op, w, Math.floor(h * 0.42), null, false, true);
       }
       var avail = op ? Math.floor(h - op.offsetHeight - 6) : Math.floor(h * 0.92);
-      _boxAssign(el, w, Math.max(14, avail), null, false);
+      _boxAssign(el, w, Math.max(14, avail), null, false, true);
     });
     // Image-pending pill fills its cloud shelf instead of whispering.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-aircraft-pending').forEach(function (el) {
@@ -17231,7 +17241,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22733';
+var FIDS_BUILD_TAG = 'v22734';
 (function(){
   try {
     function _addTag(){
