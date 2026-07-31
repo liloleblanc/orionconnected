@@ -17411,7 +17411,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22747';
+var FIDS_BUILD_TAG = 'v22748';
 (function(){
   try {
     function _addTag(){
@@ -24462,7 +24462,26 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     var dsq = dLat * dLat + dLng * dLng;
     if (dsq < bestDsq) { bestDsq = dsq; best = i; }
   }
-  var p = best / (n - 1);
+  var _seedP = best / (n - 1);
+  var p = _seedP;
+  // v22748 — EASE THE CORRECTION, DON'T SNAP IT (Nick: 'it seems to move but
+  // also moves sideways then up at times unrealistic'). Every real ADS-B fix
+  // restarts this glide, and the marker was being placed straight onto the
+  // corrected spot — a visible teleport whenever dead-reckoning had drifted.
+  // If we were already tracking the SAME route and the correction is small,
+  // resume from where the marker actually is and bleed the difference in over
+  // a few seconds, so a fix reads as the aircraft settling rather than jumping.
+  var _corr = 0;
+  try {
+    if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
+        _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
+        _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1] &&
+        Math.abs(_gateGlide.p - _seedP) < 0.15) {
+      p = _gateGlide.p;
+      _corr = _seedP - p;
+    }
+  } catch (e) {}
+  _gateGlide.o = o; _gateGlide.d = d;
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
   var lastTs = _nowFn();
   var lastArcIdx = -1;
@@ -24498,6 +24517,14 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
       var effSpeed = speedKts * Math.max(0.2, factor);
       p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
+      // Bleed in any outstanding position correction (~4s time constant).
+      if (_corr) {
+        var _cStep = _corr * Math.min(1, dtMs / 4000);
+        p = Math.min(0.995, p + _cStep);
+        _corr -= _cStep;
+        if (Math.abs(_corr) < 1e-6) _corr = 0;
+      }
+      _gateGlide.p = p;
       // Fractional position along the polyline → smooth sub-vertex motion.
       var fi = p * (n - 1);
       var i0 = Math.min(n - 2, Math.max(0, Math.floor(fi)));
@@ -24535,10 +24562,21 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
             // someone moving it carelessly' (Nick). animate:false = no tile
             // thrash. Fallback to the old setView if panInside is unavailable.
             try {
-              if (typeof map.panInside === 'function') {
-                map.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)], animate: false });
-              } else {
-                map.setView([lat, lng], map.getZoom(), { animate: false });
+              // v22748 — PAN SMOOTHLY. animate:false moved the whole map in a
+              // single frame, so the scene lurched sideways/up under a plane
+              // that was otherwise gliding fine — which is the 'moves sideways
+              // then up' Nick is describing. A slow eased pan (it fires only
+              // every few minutes) reads as a camera following the aircraft.
+              // Guarded so it can't stack: skip while a pan is already running.
+              if (!map._acFollowing) {
+                map._acFollowing = 1;
+                setTimeout(function () { try { map._acFollowing = 0; } catch (e) {} }, 2600);
+                if (typeof map.panInside === 'function') {
+                  map.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)],
+                    animate: true, duration: 2.2, easeLinearity: 0.2 });
+                } else {
+                  map.panTo([lat, lng], { animate: true, duration: 2.2, easeLinearity: 0.2 });
+                }
               }
             } catch (er2) {
               try { map.setView([lat, lng], map.getZoom(), { animate: false }); } catch (er3) {}

@@ -7150,3 +7150,59 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   margin-left: 0 !important;
   margin-right: 0 !important;
 }
+
+/* ── v22748: THE CLOUDS MOVE (Nick: 'Can the clouds actually move?'). The band
+   stays exactly where it is — this adds a second copy of the same art on a
+   fixed layer that drifts slowly across it, so the sky reads as alive without
+   the baked band ever leaving its place.
+   Two deliberate choices:
+   1. It drifts on TRANSFORM, not background-position. Transform is composited
+      on the GPU; animating background-position would repaint the full-width
+      460px band on every frame, and these screens are already encoding a
+      video stream around the clock.
+   2. It BREATHES back and forth rather than scrolling one way. The art's left
+      and right edges don't match exactly (measured: ~3/255 colour difference,
+      edge alpha 22 dark / 75 light), so an endless scroll would eventually
+      walk a faint seam across the screen. The layer is oversized 112% and
+      swings ±4%, which never exposes an edge.
+   Honoured: prefers-reduced-motion turns it off. */
+html body[data-fids-theme] #fidsBoard,
+html body[data-fids-theme] .bidsv2-screen { position: relative; }
+html body[data-fids-theme] #fidsBoard::after,
+html body[data-fids-theme] .bidsv2-screen::after {
+  content: '' !important;
+  position: fixed !important;
+  left: -6vw; right: -6vw; bottom: 0;
+  height: 460px;
+  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=4");
+  background-position: center bottom;
+  background-size: 112vw auto;
+  background-repeat: no-repeat;
+  opacity: .55;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+  animation: fidsCloudDrift 190s ease-in-out infinite alternate;
+}
+html body[data-fids-theme="mist"] #fidsBoard::after,
+html body[data-fids-theme="cream"] #fidsBoard::after,
+html body[data-fids-theme="light"] #fidsBoard::after,
+html body[data-fids-theme="paper"] #fidsBoard::after,
+html body[data-fids-theme="sky"] #fidsBoard::after,
+html body[data-fids-ap="MCO"] #fidsBoard::after,
+html body[data-fids-theme="mist"] .bidsv2-screen::after,
+html body[data-fids-theme="cream"] .bidsv2-screen::after,
+html body[data-fids-theme="light"] .bidsv2-screen::after,
+html body[data-fids-theme="paper"] .bidsv2-screen::after,
+html body[data-fids-theme="sky"] .bidsv2-screen::after,
+html body[data-fids-ap="MCO"] .bidsv2-screen::after {
+  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=4");
+}
+@keyframes fidsCloudDrift {
+  from { transform: translate3d(-4%, 0, 0); }
+  to   { transform: translate3d(4%, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html body[data-fids-theme] #fidsBoard::after,
+  html body[data-fids-theme] .bidsv2-screen::after { animation: none !important; }
+}
