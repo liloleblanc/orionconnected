@@ -10709,7 +10709,18 @@ function gateAutofit(root) {
     // line a budget that didn't exist, so its second line spilled out of the
     // panel and collided with the row below. Measure the panel, subtract the
     // Operated-By row's REAL height (not a 0.48 guess), fit what's left.
-    root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach(function (el) {
+    // v22735 — AND FIT IT TWICE. The panel is a flex column, so the type
+    // line and the Operated-By line divide its height BETWEEN them: the
+    // moment one is resized the other's box changes, and the size chosen
+    // during pass 1 is measured against geometry that no longer exists once
+    // pass 1 finishes. Probed live on Nick's Delta YHZ 57: the fitter had
+    // settled on 31.31px, leaving 50px of content inside a 41px box with
+    // overflow:hidden — 'expected | prévu' clipped and colliding with the
+    // row below, exactly what he reported. Pass 2 re-measures the settled
+    // boxes; the faKey memo is cleared first because its key (text + budget)
+    // is unchanged between the passes and would otherwise short-circuit the
+    // correction — which is why this never self-healed on the 5s heartbeat.
+    function _fitTypePanel(el) {
       var panel = el.closest('.v2-rc-acb') || el.closest('.v2-rc-shelf-type');
       if (!panel || panel.clientHeight < 24) return;
       el.style.setProperty('white-space', 'normal', 'important');
@@ -10717,14 +10728,20 @@ function gateAutofit(root) {
       var w = panel.clientWidth - (parseFloat(scs.paddingLeft) || 0) - (parseFloat(scs.paddingRight) || 0);
       var h = panel.clientHeight - (parseFloat(scs.paddingTop) || 0) - (parseFloat(scs.paddingBottom) || 0);
       var op = panel.querySelector('.v2-rc-acb-opby');
-      if (op) {
-        // The Operated-By row is fitted FIRST so its measured height is the
-        // real remainder for the type line — and capped, so a long operator
-        // name can't eat the panel either.
-        _boxAssign(op, w, Math.floor(h * 0.42), null, false, true);
-      }
+      try {
+        delete el.dataset.faKey;
+        if (op) delete op.dataset.faKey;
+      } catch (e) {}
+      // The Operated-By row is fitted FIRST so its measured height is the
+      // real remainder for the type line — and capped, so a long operator
+      // name can't eat the panel either.
+      if (op) _boxAssign(op, w, Math.floor(h * 0.42), null, false, true);
       var avail = op ? Math.floor(h - op.offsetHeight - 6) : Math.floor(h * 0.92);
       _boxAssign(el, w, Math.max(14, avail), null, false, true);
+    }
+    root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach(function (el) {
+      _fitTypePanel(el);
+      _fitTypePanel(el);
     });
     // Image-pending pill fills its cloud shelf instead of whispering.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-aircraft-pending').forEach(function (el) {
@@ -17241,7 +17258,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22734';
+var FIDS_BUILD_TAG = 'v22735';
 (function(){
   try {
     function _addTag(){
