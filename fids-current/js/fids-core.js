@@ -17215,7 +17215,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22728';
+var FIDS_BUILD_TAG = 'v22729';
 (function(){
   try {
     function _addTag(){
@@ -30908,14 +30908,16 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
             g -= Math.max(1, g * 0.05);
             el.style.setProperty('font-size', g + 'px', 'important');
           }
-          // Height backstop: the taller cap can push the title+value stack
-          // past the plate on short rows — walk back until the cell's own
-          // box genuinely holds its stack.
-          var _gTxt = el.parentElement, gBackH = 10;
-          while (_gCell && _gTxt && _gTxt.scrollHeight > _gCell.clientHeight + 1 && g > 24 && gBackH-- > 0) {
-            g -= Math.max(1, g * 0.05);
-            el.style.setProperty('font-size', g + 'px', 'important');
-          }
+        }
+        // Height backstop for EVERY cell — status included (v22729, Nick's
+        // WestJet shot: 'nothing alligns' — the two-line status stack
+        // spilled off its plate). Walk the value down until the cell's own
+        // box genuinely holds its title+value stack.
+        var _gTxt = el.parentElement, gBackH = 12;
+        var _gPx = parseFloat(el.style.fontSize) || parseFloat(getComputedStyle(el).fontSize) || 30;
+        while (_gCell && _gTxt && _gTxt.scrollHeight > _gCell.clientHeight + 1 && _gPx > 18 && gBackH-- > 0) {
+          _gPx -= Math.max(1, _gPx * 0.06);
+          el.style.setProperty('font-size', _gPx + 'px', 'important');
         }
       }
       el.dataset.fitW = _fp;

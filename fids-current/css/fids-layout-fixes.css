@@ -6836,25 +6836,22 @@ html body:not(#_) .g8-bir-cell::before {
   top: clamp(6px, 0.9vh, 11px) !important;
   bottom: clamp(6px, 0.9vh, 11px) !important;
   border-radius: clamp(10px, 1.4vh, 16px) !important;
-  background-color: transparent !important;
-  background-image:
-    url("/logos/Backgrounds/gate-swoosh.png?v=1"),
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--airline-accent, #D82F2E) 30%, #ffffff) 0%,
-      color-mix(in srgb, var(--airline-accent, #D82F2E) 55%, #ffffff) 10%,
-      color-mix(in srgb, var(--airline-accent, #D82F2E) 88%, #ffffff) 42%,
-      var(--airline-accent, #D82F2E) 49%,
-      color-mix(in srgb, var(--airline-accent, #D82F2E) 62%, #000000) 51%,
-      color-mix(in srgb, var(--airline-accent, #D82F2E) 78%, #000000) 74%,
-      color-mix(in srgb, var(--airline-accent, #D82F2E) 72%, #ffffff) 100%) !important;
-  background-position: center, center !important;
-  background-size: cover, 100% 100% !important;
+  /* v22729: REAL METAL (Nick: 'Itds supposed to be metal thats not metal
+     its what is there' — the hand-drawn gradient read as the same gloss
+     the UI already has). The plate surface is now his actual chrome
+     metal photograph, luminosity-blended over the airline colour: the
+     metal's photographic reflections carry the light, the airline hue
+     carries the colour. Verified live (Austrian red / prototype). */
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 72%, #79828e) !important;
+  background-image: url("/logos/Backgrounds/gate-metal-blue.png?v=1") !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
-  background-blend-mode: soft-light, normal !important;
+  background-blend-mode: luminosity !important;
   box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
-              inset 0 2px 1px rgba(255, 255, 255, 0.75),
-              inset 0 -2px 3px rgba(0, 0, 0, 0.45),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.22) !important;
+              inset 0 1px 1px rgba(255, 255, 255, 0.55),
+              inset 0 -2px 3px rgba(0, 0, 0, 0.5),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.18) !important;
   pointer-events: none !important;
   z-index: 0 !important;
 }
@@ -6870,4 +6867,17 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell::before {
   content: none !important;
+}
+
+/* ── v22729: CONTENT MOVES IN WITH THE PLATE (Nick's WestJet screenshot:
+   'nothing alligns COME ON' — dead right: the plate is inset from the
+   cell's edges but the cell's padding wasn't, so labels rode the plate's
+   top edge and two-line statuses spilled off its bottom. The cell's
+   padding now clears the plate inset on every side. AC keeps its
+   approved original padding. */
+html body:not(#_) .g8-bir-cell {
+  padding: clamp(14px, 2vh, 26px) clamp(18px, 1.5vw, 30px) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell {
+  padding: clamp(10px, 1.6vh, 22px) clamp(5px, 0.45vw, 11px) !important;
 }
