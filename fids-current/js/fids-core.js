@@ -17088,6 +17088,51 @@ function normalizeDisplayCity(raw, iata) {
   return (typeof tc === 'function') ? tc(s) : s;
 }
 
+// ── v22736: THE CODE CHIP WHEN THE FEED DOESN'T CARRY ONE ────────────────
+// Nick, on the live Tampa board: Breeze's 'Raleigh/Durham' and
+// 'Gulfport/Biloxi' rows showed NO airport code while every other row on the
+// same screen had one — 'They dont have a code no' confirmed the feed simply
+// omits it for those flights. The city name is resolved back to its IATA from
+// our own airport tables so those rows read like the rest of the board.
+//
+// AMBIGUOUS NAMES ARE NEVER GUESSED. 'Houston' is both IAH and HOU (Nick
+// asked about exactly this pair), 'Portland' is PDX and PWM, 'Columbus' and
+// 'Charleston' repeat too. Any name that resolves to more than one code is
+// poisoned in the index and stays code-less — a missing chip is a small
+// blemish, a WRONG airport code on a departure board is a passenger in the
+// wrong city.
+var _CITY2IATA = null;
+// Feed phrasings that aren't in our display tables at all (their airports had
+// no entry, which is why these rows arrived raw and code-less).
+var _CITY2IATA_ALIAS = {
+  gulfportbiloxi: 'GPT', gulfport: 'GPT',
+  bentonvillefayetteville: 'XNA', northwestarkansas: 'XNA',
+  pensacola: 'PNS', syracuse: 'SYR',
+  raleighdurham: 'RDU', raleighdurhamnc: 'RDU'
+};
+function _normCityKey(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+}
+function _iataFromCityName(name) {
+  var k = _normCityKey(name);
+  if (k.length < 3) return '';
+  if (!_CITY2IATA) {
+    _CITY2IATA = {};
+    var add = function (code, nm) {
+      var kk = _normCityKey(nm);
+      if (!kk || kk.length < 3) return;
+      if (!_CITY2IATA[kk]) _CITY2IATA[kk] = String(code).toUpperCase();
+      else if (_CITY2IATA[kk] !== String(code).toUpperCase()) _CITY2IATA[kk] = '!'; // ambiguous — never resolve
+    };
+    try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a && a.c && a.n) add(a.c, a.n); }); } catch (e) {}
+    try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
+    try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
+  }
+  if (_CITY2IATA_ALIAS[k]) return _CITY2IATA_ALIAS[k];
+  var hit = _CITY2IATA[k];
+  return (hit && hit !== '!') ? hit : '';
+}
+
 function formatCityIata(raw, iata, langOverride) {
   var rawStr = String(raw || '').replace(/\s+/g, ' ').trim();
   var code = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
@@ -17135,6 +17180,13 @@ function formatCityIata(raw, iata, langOverride) {
   }
 
   var city = normalizeDisplayCity(rawStr, code);
+  // v22736 — last resort: the feed gave a city but no code. Resolve it from
+  // the name (unambiguous matches only) so these rows stop being the only
+  // ones on the board without a chip.
+  if (!code) {
+    var _guess = _iataFromCityName(city);
+    if (_guess) code = _guess;
+  }
   return code ? (city + ' (' + code + ')') : city;
 }
 
@@ -17258,7 +17310,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22735';
+var FIDS_BUILD_TAG = 'v22736';
 (function(){
   try {
     function _addTag(){
@@ -23614,6 +23666,12 @@ const AP_LIST = [
   {c:'TPA',n:'Tampa'},{c:'FLL',n:'Fort Lauderdale'},{c:'PHL',n:'Philadelphia'},
   {c:'DTW',n:'Detroit'},{c:'MSP',n:'Minneapolis'},{c:'PIT',n:'Pittsburgh'},
   {c:'RDU',n:'Raleigh-Durham'},{c:'BDL',n:'Hartford'},{c:'BWI',n:'Baltimore'},
+  // v22736 — the Tampa destinations that had no entry here at all, which is
+  // why their rows arrived as raw feed strings with no code (Nick listed them
+  // off the live board: Gulfport/Biloxi, Bentonville/Fayetteville, Pensacola,
+  // Syracuse).
+  {c:'GPT',n:'Gulfport-Biloxi'},{c:'XNA',n:'Northwest Arkansas'},
+  {c:'PNS',n:'Pensacola'},{c:'SYR',n:'Syracuse'},
   // USA West
   {c:'LAX',n:'Los Angeles'},{c:'SFO',n:'San Francisco'},{c:'SEA',n:'Seattle'},
   {c:'ORD',n:"Chicago O'Hare"},{c:'MDW',n:'Chicago Midway'},{c:'DFW',n:'Dallas/Fort Worth'},
