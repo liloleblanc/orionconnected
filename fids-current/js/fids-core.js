@@ -17542,7 +17542,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22769';
+var FIDS_BUILD_TAG = 'v22770';
 (function(){
   try {
     function _addTag(){
@@ -32093,45 +32093,9 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 // (same Leaflet language as the mini map) beside the flight info table and
 // the aircraft. Honest by construction: with no live fix the plane glyph
 // sits at time-progress exactly like the mini map, captioned 'Estimated'.
-// The takeover is ONE SLIDE in the ad rotation, so this ran every time the
-// carousel moved on — roughly every 22 s, measured by wrapping it — and it
-// destroyed the Leaflet map along with the overlay. A map that is thrown away
-// every 22 s cannot show a moving aircraft: each time the slide came back the
-// plane was rebuilt at wherever it had really got to, and that restart is the
-// step Nick sees. The map element is now PARKED off-screen instead of removed,
-// so the instance, its marker and its glide keep running between appearances
-// and the plane is already in the right place when the slide returns.
-// Pass true to genuinely dispose of it (route change, screen teardown).
-function _bigCraftPark() {
-  try {
-    if (!window._bigCraftMap || !window._bigCraftMap.getContainer) return false;
-    var el = window._bigCraftMap.getContainer();
-    if (!el) return false;
-    var r = el.getBoundingClientRect();
-    var park = document.getElementById('bigCraftPark');
-    if (!park) {
-      park = document.createElement('div');
-      park.id = 'bigCraftPark';
-      // Off-screen but REAL SIZE — a 0x0 parent would make Leaflet's own
-      // size maths (and the glide's keep-in-view test) run against nothing.
-      park.style.cssText = 'position:fixed;left:-99999px;top:0;pointer-events:none;';
-      document.body.appendChild(park);
-    }
-    if (r.width > 8 && r.height > 8) {
-      park.style.width = Math.round(r.width) + 'px';
-      park.style.height = Math.round(r.height) + 'px';
-    }
-    park.appendChild(el);
-    window._bcMapEl = el;
-    return true;
-  } catch (e) { return false; }
-}
-function _bigCraftTeardown(dispose) {
+function _bigCraftTeardown() {
   try { (window._bigCraftTimers || []).forEach(function (id) { clearTimeout(id); clearInterval(id); }); window._bigCraftTimers = []; } catch (e) {}
-  if (dispose || !_bigCraftPark()) {
-    try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
-    try { window._bcMapEl = null; window._bcRouteKey = null; } catch (e) {}
-  }
+  try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
   try { if (window._bigCraftOverlay) { window._bigCraftOverlay.remove(); window._bigCraftOverlay = null; } } catch (e) {}
   try { document.querySelectorAll('.g8-bigcraft-active').forEach(function (w) { w.classList.remove('g8-bigcraft-active'); }); } catch (e) {}
 }
@@ -32184,23 +32148,11 @@ function _renderBigCraft(el, ctx) {
   _bcOv.innerHTML =
       '<div class="bigcraft-wrap bigcraft-wrap--maponly">'
     +   '<div class="bigcraft-mapcol">'
-    +     ((window._bcMapEl && window._bigCraftMap) ? '' : '<div class="bigcraft-map" id="bigCraftMap"></div>')
+    +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
     +     (ctx.estimated ? '<div class="bigcraft-est">Estimated position · Position estimée</div>' : '')
     +   '</div>'
     + '</div>';
   _bcWrapEl.appendChild(_bcOv);
-  // Put the parked map back at the FRONT of its column, ahead of the caption,
-  // and tell Leaflet its box moved. Without invalidateSize a re-parented map
-  // keeps drawing to its old dimensions.
-  try {
-    if (window._bcMapEl && window._bigCraftMap) {
-      var _mc = _bcOv.querySelector('.bigcraft-mapcol');
-      if (_mc) {
-        _mc.insertBefore(window._bcMapEl, _mc.firstChild);
-        setTimeout(function () { try { window._bigCraftMap.invalidateSize(); } catch (e) {} }, 60);
-      }
-    }
-  } catch (e) {}
   _bcWrapEl.classList.add('g8-bigcraft-active');
   window._bigCraftOverlay = _bcOv;
   // Free the old carousel content AFTER the grow finishes (overlay now opaque
@@ -32749,8 +32701,6 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
     try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
     window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
     _gateMapTileLayer().addTo(window._bigCraftMap);
-    // Remember the live element so the next rotation can park and restore it.
-    try { window._bcMapEl = window._bigCraftMap.getContainer(); } catch (e) {}
   }
   window._bcRouteKey = _bcKey;
   window._bcOv = [];
