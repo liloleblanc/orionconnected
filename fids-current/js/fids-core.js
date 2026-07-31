@@ -17542,7 +17542,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22766';
+var FIDS_BUILD_TAG = 'v22767';
 (function(){
   try {
     function _addTag(){
@@ -24530,15 +24530,9 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   _ov.push(_planeMk);
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
-  var _glSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
-             : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
-             // Fall back to the same live speed the info panel resolved (the
-             // separate _gateInboundLivePos cache is often empty even when the
-             // panel shows a speed — that left the glide seeded at 0 and the
-             // plane sat still while the numbers ticked). Last resort: a nominal
-             // cruise so an airborne plane always drifts rather than freezing.
-             : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
-             : 0;
+  // Shared with the big map, so both planes move on the same evidence (Nick:
+  // 'big screen and little screen need same programming — it's not separate').
+  var _glSpd = _acLiveSpeedKts();
   window._gatePlaneMk = _planeMk;
   try { console.log('[MAP-LIVE] plane @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'z' + zoom, 'glideKts', _glSpd); } catch (e) {}
   _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd);
@@ -24554,13 +24548,45 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 // initGateMapLive re-seeds it to the true position — a gentle correction, not
 // a jump. It ONLY nudges the marker + the two route arcs; it never re-inits,
 // re-centres, or re-renders the map, so it can't reintroduce the map thrash.
-var _gateGlide = { timer: null, raf: null };
+// The glide state lives ON THE MAP, not in one global. There are two maps on a
+// gate screen — the mini inbound map and the big aircraft map — and both start
+// a glide. With a single global slot, whichever started last won and the other
+// map's plane froze, because _startGateMapGlide opens with a stop. On the YQM
+// gate 4 screen the mini map is 0x0 and hidden, so the HIDDEN map's plane was
+// the one being animated while the big visible plane sat still and only jumped
+// when its own renderer repainted it — measured at v22766: 5,331 frames, the
+// visible marker moved 27 times, one of those a 365px teleport. That stepping
+// is what Nick is seeing: 'the aircraft is the one moving sideways, not the
+// map … and its doing it still'.
+function _acGlideState(map) {
+  if (!map) return null;
+  if (!map._acGlide) map._acGlide = { timer: null, raf: null };
+  return map._acGlide;
+}
 
-function _stopGateMapGlide() {
-  try { if (_gateGlide.timer) clearInterval(_gateGlide.timer); } catch (e) {}
-  try { if (_gateGlide.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(_gateGlide.raf); } catch (e) {}
-  _gateGlide.timer = null;
-  _gateGlide.raf = null;
+// No argument means the gate mini-map, which is all this ever meant — stopping
+// every glide from here is precisely what kept killing the big map's.
+function _stopGateMapGlide(map) {
+  var m = map || ((typeof gateMap !== 'undefined') ? gateMap : null);
+  var st = m && m._acGlide;
+  if (!st) return;
+  try { if (st.timer) clearInterval(st.timer); } catch (e) {}
+  try { if (st.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(st.raf); } catch (e) {}
+  st.timer = null;
+  st.raf = null;
+}
+
+// Both maps resolve the live ground speed the same way. The big map used to ask
+// only window._gateInbound._liveSpd, which is frequently absent — so its glide
+// never started at all, independently of the shared-slot bug above.
+function _acLiveSpeedKts() {
+  try {
+    if (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number' && window._gateInboundLivePos.speed > 0) return window._gateInboundLivePos.speed;
+    if (window._gateMapFix && typeof window._gateMapFix.speed === 'number' && window._gateMapFix.speed > 0) return window._gateMapFix.speed;
+    if (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) return window._gateTelemAnim.realSpd;
+    if (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0) return window._gateInbound._liveSpd;
+  } catch (e) {}
+  return 0;
 }
 
 // Great-circle path org→dst as plain [lat,lng] points (antimeridian-normalised),
@@ -24593,8 +24619,9 @@ function _gcNm(a, b) {
 }
 
 function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts) {
-  _stopGateMapGlide();
+  _stopGateMapGlide(map);
   if (!map || !marker || typeof L === 'undefined') return;
+  var G = _acGlideState(map);
   if (!(speedKts > 0)) { try { console.log('[GLIDE] not started — no live speed (marker stays put)'); } catch (e) {} return; }
   var route = _gcFullRoute(o, d, 120);
   var n = route.length;
@@ -24619,15 +24646,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // a few seconds, so a fix reads as the aircraft settling rather than jumping.
   var _corr = 0;
   try {
-    if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
-        _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
-        _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1] &&
-        Math.abs(_gateGlide.p - _seedP) < 0.15) {
-      p = _gateGlide.p;
+    if (G.o && G.d && typeof G.p === 'number' &&
+        G.o[0] === o[0] && G.o[1] === o[1] &&
+        G.d[0] === d[0] && G.d[1] === d[1] &&
+        Math.abs(G.p - _seedP) < 0.15) {
+      p = G.p;
       _corr = _seedP - p;
     }
   } catch (e) {}
-  _gateGlide.o = o; _gateGlide.d = d;
+  G.o = o; G.d = d;
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
   var lastTs = _nowFn();
   var lastArcIdx = -1;
@@ -24644,7 +24671,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // initGateMapLive re-seeds this to the true spot — a gentle correction.
   function frame() {
     try {
-      if (!marker._map) { _stopGateMapGlide(); return; }   // map/marker torn down
+      if (!marker._map) { _stopGateMapGlide(map); return; }   // map/marker torn down
       var now = _nowFn();
       var dtMs = now - lastTs;
       lastTs = now;
@@ -24670,7 +24697,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         _corr -= _cStep;
         if (Math.abs(_corr) < 1e-6) _corr = 0;
       }
-      _gateGlide.p = p;
+      G.p = p;
       // Fractional position along the polyline → smooth sub-vertex motion.
       var fi = p * (n - 1);
       var i0 = Math.min(n - 2, Math.max(0, Math.floor(fi)));
@@ -24731,13 +24758,13 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
           }
         }
       } catch (er) {}
-      if (typeof requestAnimationFrame === 'function') _gateGlide.raf = requestAnimationFrame(frame);
-    } catch (e) { _stopGateMapGlide(); }
+      if (typeof requestAnimationFrame === 'function') G.raf = requestAnimationFrame(frame);
+    } catch (e) { _stopGateMapGlide(map); }
   }
   if (typeof requestAnimationFrame === 'function') {
-    _gateGlide.raf = requestAnimationFrame(frame);
+    G.raf = requestAnimationFrame(frame);
   } else {
-    _gateGlide.timer = setInterval(frame, 250);  // fallback for no-rAF environments
+    G.timer = setInterval(frame, 250);  // fallback for no-rAF environments
   }
 }
 // ──────────────────────────────────────────────────────────────────────
@@ -32702,7 +32729,10 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // was a one-shot paint per slide — visibly frozen (Nick: 'no movement on
   // the aircraft').
   try {
-    var _bcGlSpd = (window._gateInbound && typeof window._gateInbound._liveSpd === 'number') ? window._gateInbound._liveSpd : 0;
+    // Same speed resolution as the mini map — asking only _gateInbound._liveSpd
+    // meant the big map's glide usually never started, because that field is
+    // frequently absent even while the panel is showing a live speed.
+    var _bcGlSpd = (typeof _acLiveSpeedKts === 'function') ? _acLiveSpeedKts() : 0;
     if (_bcGlSpd > 0 && typeof _startGateMapGlide === 'function') {
       _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bcPlaneMk, _bcA1, _bcA2, _bcGlSpd);
     }
