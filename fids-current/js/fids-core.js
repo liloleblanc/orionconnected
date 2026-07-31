@@ -10890,8 +10890,34 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
 // Called BOTH from the periodic pass and straight after the board paints: a
 // freshly rendered row would otherwise sit clipped until the next pass, which
 // is exactly the one stale 'DL24…' left on screen after the first fix.
+// Does the number actually fit its cell? Every previous version of this asked
+// scrollWidth > clientWidth + 1, and that question is wrong here in two ways
+// that happen to cancel almost all of the overflow out:
+//   - clientWidth INCLUDES padding, and these cells carry 22px each side, so
+//     the text really has clientWidth - 44 to live in, not clientWidth;
+//   - scrollWidth on an overflowing box adds only the leading padding, so it
+//     understates the overflow by the trailing 22px on top of that.
+// Net effect: a cell had to overflow by ~45px before the old test noticed.
+// Measured on Orlando at v22761 — WN4721 rendering 'WN47…' with an ink width
+// of 100.1px in a 99px content box, while scrollWidth said 144 against a
+// clientWidth of 143 and the loop exited satisfied. That is why the board kept
+// showing truncated numbers through four rounds of fixes that each measured
+// clean afterwards: the instrument and the fitter shared the same blind spot.
+// A Range over the cell's contents gives the true ink width, compared against
+// the real content box.
+function _fnFits(cell) {
+  var cs = getComputedStyle(cell);
+  var avail = cell.clientWidth
+            - (parseFloat(cs.paddingLeft) || 0)
+            - (parseFloat(cs.paddingRight) || 0);
+  if (avail <= 0) return true;
+  var r = document.createRange();
+  r.selectNodeContents(cell);
+  return r.getBoundingClientRect().width <= avail + 0.5;
+}
 function _fitFlightCells() {
   if (typeof BOARD_AUTOFIT_ENABLED !== 'undefined' && BOARD_AUTOFIT_ENABLED) return;
+  var _fits = _fnFits;
   try {
     document.querySelectorAll('#fidsTable td.fids-cell-flight').forEach(function (cell) {
       var t = (cell.textContent || '').trim();
@@ -10935,12 +10961,12 @@ function _fitFlightCells() {
         // it was measured against. Rather than chase the next such property,
         // verify the remembered size still fits and re-measure when it does
         // not. One layout read on a cell already being read.
-        if (cell.scrollWidth <= cell.clientWidth + 1) return;
+        if (_fits(cell)) return;
         cell.style.removeProperty('font-size');
       }
       var size = base, guard = 16;
       var floorPx = Math.max(18, base * 0.68);
-      while (cell.scrollWidth > cell.clientWidth + 1 && size > floorPx && guard-- > 0) {
+      while (!_fits(cell) && size > floorPx && guard-- > 0) {
         size = Math.max(floorPx, size - 1);
         cell.style.setProperty('font-size', size + 'px', 'important');
       }
@@ -17465,7 +17491,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22761';
+var FIDS_BUILD_TAG = 'v22762';
 (function(){
   try {
     function _addTag(){
