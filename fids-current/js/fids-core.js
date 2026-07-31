@@ -11009,6 +11009,18 @@ try {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _arm);
     else _arm();
     setInterval(_arm, 4000); // the table element is replaced on rebuilds
+    // The display face loads AFTER the first rows are measured, and it is wider
+    // than the fallback they were measured against — so the earliest numbers on
+    // screen are fitted to metrics that stop being true a moment later. The
+    // 350ms settle pass caught this, which is why it only ever showed as a
+    // ~260ms window ('AC 8020' at 106.6px of ink in a 99px box, 16 frames, on a
+    // board still filling to 7 rows). Re-fitting when the fonts actually finish
+    // removes the guesswork: measure once the metrics are final.
+    try {
+      if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+        document.fonts.ready.then(function () { _fitFlightCells(); });
+      }
+    } catch (e) {}
   })();
 } catch (e) {}
 
@@ -17500,7 +17512,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22763';
+var FIDS_BUILD_TAG = 'v22764';
 (function(){
   try {
     function _addTag(){
