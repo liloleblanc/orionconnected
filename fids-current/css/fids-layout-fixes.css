@@ -6895,12 +6895,17 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
         behind all of them without a seam;
      3. only the metal PLATES sit on top, each lifted by its own shadow.
    AC is excluded from this block entirely (its approved brushed-metal
-   grammar is untouched by selector, not by cascade luck). */
+   grammar is untouched by selector, not by cascade luck).
+   v22731: the double :not(#_) is REQUIRED, not decoration — the v22724 /
+   v22598 rules these must override carry ID weight from their own
+   :not(#_), so the first cut of this block lost the cascade and every
+   cell kept its background colour (verified live: cell still painted,
+   image already none). Measured, not assumed. */
 
 /* 1 — the single continuous sheet */
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-aircraft-col,
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2,
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-board-info-row {
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-aircraft-col,
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2,
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-board-info-row {
   background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 34%, #565c66) !important;
   background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
   background-position: center !important;
@@ -6910,13 +6915,13 @@ html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-
 }
 
 /* 2 — everything laid on that sheet is transparent, seamless */
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb,
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-bir-cell {
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb,
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-bir-cell {
   background-color: transparent !important;
   background-image: none !important;
   border-bottom: 0 !important;
@@ -6926,10 +6931,10 @@ html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-
 
 /* 3 — the aircraft-type panel becomes a piece too (it holds real data and
    was the one info panel with no plate under it). */
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
   position: relative !important;
 }
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
   content: '' !important;
   position: absolute !important;
   left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
@@ -6947,7 +6952,7 @@ html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-
   pointer-events: none !important;
   z-index: 0 !important;
 }
-html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb > * {
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb > * {
   position: relative;
   z-index: 1;
 }
