@@ -7183,7 +7183,7 @@ html body[data-fids-theme] .bidsv2-screen::after {
      disappeared (Nick: 'you can't see it'). */
   opacity: .85;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
   will-change: transform;
   animation: fidsCloudDrift 190s ease-in-out infinite alternate;
 }
@@ -7210,34 +7210,12 @@ html body[data-fids-ap="MCO"] .bidsv2-screen::after {
   html body[data-fids-theme] .bidsv2-screen::after { animation: none !important; }
 }
 
-/* ── v22749: THE DRIFTING SKY STAYS BEHIND THE FLIGHTS (Nick: 'doesn't not go
-   on top the actual flights'). The v22748 drift layer is a FIXED pseudo-
-   element, and a positioned element paints above ordinary in-flow content — so
-   the moving band was tinting straight over the lower flight rows. Lifting the
-   board's own children onto their own layer puts every row, the table and the
-   ticker above it, leaving the sky visible only where there is no content —
-   which is what it was always meant to be. */
-html body[data-fids-theme] #fidsBoard > *,
-html body[data-fids-theme] .bidsv2-screen > * {
-  position: relative;
-  z-index: 1;
-}
-/* ── v22751: THE MENU CAME BACK (Nick: 'the menu does not work whatsoever and
-   I'm stuck'). The blanket z-index:1 above put the control bar — which is a
-   direct child of #fidsBoard and owns every dropdown — on the SAME layer as
-   the table and the ticker that follow it, so later siblings painted straight
-   over its open panels. The bar looked dead because its menus were opening
-   underneath the board. The control bar and its panels now sit far above
-   everything; the rest of the blanket rule still keeps the drifting sky
-   behind the flights. */
-html body #fidsBoard > .ctrl,
-html body .mbar,
-html body .mbar-group,
-html body .mbar-group.open,
-html body .mbar-panel,
-html body #gmnOpts,
-html body #apPanel {
-  position: relative;
-  z-index: 4000 !important;
-}
-html body .mbar-panel { z-index: 4001 !important; }
+/* ── v22752: THE SKY GOES BEHIND THE ROWS WITHOUT TOUCHING ANYTHING ELSE.
+   Two earlier attempts at this broke the menu, and the second one broke it
+   worse — the control bar is a direct child of #fidsBoard, so any rule that
+   assigns z-index to those children puts the bar (and every dropdown it owns)
+   into the same stacking fight as the table. Nick was left unable to use the
+   board at all, twice. No content is touched now: the drift layer itself drops
+   to z-index:-1, which paints it behind ALL in-flow content by definition. It
+   still shows because the board's own surface is transparent — the band it
+   carries is a background-IMAGE, not a fill. */
