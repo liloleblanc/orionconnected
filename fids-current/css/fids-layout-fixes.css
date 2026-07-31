@@ -6881,3 +6881,73 @@ html body:not(#_) .g8-bir-cell {
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell {
   padding: clamp(10px, 1.6vh, 22px) clamp(5px, 0.45vw, 11px) !important;
 }
+
+/* ── v22730: ONE BACKGROUND, PIECES ON TOP OF IT (Nick: 'your background
+   should be one piece youre pieces will stand out from your backgtround').
+   The real structural fault, finally named: since v22596 EVERY cell
+   painted its own copy of the tinted material — so the "background" was
+   never a background, it was a mosaic of boxes, and a plate laid on a
+   box of the same colour can't stand out from anything. Now:
+     1. the COLUMN (and the boarding bar) carries ONE continuous surface —
+        a single sheet of material, uncut, spanning the whole column;
+     2. every cell, row and shelf goes fully TRANSPARENT — no colour, no
+        material, no divider borders, no shadow — so that one sheet runs
+        behind all of them without a seam;
+     3. only the metal PLATES sit on top, each lifted by its own shadow.
+   AC is excluded from this block entirely (its approved brushed-metal
+   grammar is untouched by selector, not by cascade luck). */
+
+/* 1 — the single continuous sheet */
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-aircraft-col,
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2,
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-board-info-row {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 34%, #565c66) !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light !important;
+}
+
+/* 2 — everything laid on that sheet is transparent, seamless */
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb,
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-bir-cell {
+  background-color: transparent !important;
+  background-image: none !important;
+  border-bottom: 0 !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
+}
+
+/* 3 — the aircraft-type panel becomes a piece too (it holds real data and
+   was the one info panel with no plate under it). */
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  position: relative !important;
+}
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
+  border-radius: clamp(10px, 1.4vh, 16px) !important;
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 72%, #79828e) !important;
+  background-image: url("/logos/Backgrounds/gate-metal-blue.png?v=1") !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: luminosity !important;
+  box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
+              inset 0 1px 1px rgba(255, 255, 255, 0.55),
+              inset 0 -2px 3px rgba(0, 0, 0, 0.5),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.18) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb > * {
+  position: relative;
+  z-index: 1;
+}
