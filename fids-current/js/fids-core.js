@@ -4638,6 +4638,11 @@ const AIRLINE_ACCENT = {
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83','XP':'#492C92','LL':'#00B7C8',
+  // v22737 — World Atlantic (Caribbean Sun Airlines), the MD-83 charter
+  // operator at Miami (Nick: 'Thios airline is supposed to be added and its
+  // not'). Navy taken from their aircraft titles; swap in the exact hex when
+  // an official kit turns up, same arc Avelo followed.
+  'WL':'#0B3D91',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
@@ -4956,6 +4961,7 @@ const AIRLINE_ZONES = {
   'Y4': { narrowbody: 3, widebody: 3, regional: 3, label: 'Group' },     // Volaris: Groups 1-3
   'XP': { narrowbody: 3, widebody: 3, regional: 3, label: 'Group' },     // Avelo: Numbered Groups
   'MX': { narrowbody: 4, widebody: 4, regional: 4, label: 'Group' },     // Breeze: Groups 1-4
+  'WL': { narrowbody: 2, widebody: 2, regional: 2, label: 'Group' },     // World Atlantic: charter, two calls
   'F8': { narrowbody: 3, widebody: 3, regional: 3, label: 'Zone' },      // Flair: Zones 1-3
   '3M': { narrowbody: 2, widebody: 2, regional: 2, label: 'Zone' },      // Silver: 1-2 Zones
   'TS': { narrowbody: 4, widebody: 4, regional: 4, label: 'Zone' },      // Air Transat: 4 Zones
@@ -17310,7 +17316,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22736';
+var FIDS_BUILD_TAG = 'v22737';
 (function(){
   try {
     function _addTag(){
@@ -19070,6 +19076,7 @@ const RFG_AIRCRAFT_BY_AL = {
   // NK (Spirit) — ceased operations May 2 2026
   'F9': ['320','321','32N','32Q'],
   'XP': ['73G','738'],               // Avelo flies only 737-700 and -800; both liveries are on disk
+  'WL': ['M83'],                     // World Atlantic — MD-83 charter fleet
   'HA': ['32Q','332','717','789'],   // Hawaiian — A321neo (32Q, mainland), A330-200, 717 (inter-island), 787-9 (long-haul)
 };
 const RFG_AIRCRAFT_DEFAULT = ['319','320','321','738','7M8','789','77W','DH4','CR9','E75'];
