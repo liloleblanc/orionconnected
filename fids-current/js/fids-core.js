@@ -10691,14 +10691,30 @@ function gateAutofit(root) {
     // RIGHT CARD type shelf ('Aircraft details pending' clipped mid-word on
     // production): wrap allowed, then the largest size whose wrapped lines
     // fit the shelf. Shares the shelf with the Operated-By row when present.
+    // v22732 — FIT THE PANEL, NOT THE SHELF (Nick: 'these are not fitting
+    // correctly', Delta YHZ 57: 'expected | prévu' rendered underneath
+    // 'Operated By'). The panel that actually holds this text is .v2-rc-acb,
+    // sized by the v22686 pass to match the info pane (measured 100px) —
+    // while its SHELF is far taller. Fitting to the shelf handed the type
+    // line a budget that didn't exist, so its second line spilled out of the
+    // panel and collided with the row below. Measure the panel, subtract the
+    // Operated-By row's REAL height (not a 0.48 guess), fit what's left.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach(function (el) {
-      var shelf = el.closest('.v2-rc-shelf-type'); if (!shelf) return;
+      var panel = el.closest('.v2-rc-acb') || el.closest('.v2-rc-shelf-type');
+      if (!panel || panel.clientHeight < 24) return;
       el.style.setProperty('white-space', 'normal', 'important');
-      var scs = window.getComputedStyle(shelf);
-      var w = shelf.clientWidth - (parseFloat(scs.paddingLeft) || 0) - (parseFloat(scs.paddingRight) || 0);
-      var h = shelf.clientHeight - (parseFloat(scs.paddingTop) || 0) - (parseFloat(scs.paddingBottom) || 0);
-      var op = shelf.querySelector('.v2-rc-acb-opby');
-      _boxAssign(el, w, Math.floor(h * (op ? 0.48 : 0.92)), null, false);
+      var scs = window.getComputedStyle(panel);
+      var w = panel.clientWidth - (parseFloat(scs.paddingLeft) || 0) - (parseFloat(scs.paddingRight) || 0);
+      var h = panel.clientHeight - (parseFloat(scs.paddingTop) || 0) - (parseFloat(scs.paddingBottom) || 0);
+      var op = panel.querySelector('.v2-rc-acb-opby');
+      if (op) {
+        // The Operated-By row is fitted FIRST so its measured height is the
+        // real remainder for the type line — and capped, so a long operator
+        // name can't eat the panel either.
+        _boxAssign(op, w, Math.floor(h * 0.42), null, false);
+      }
+      var avail = op ? Math.floor(h - op.offsetHeight - 6) : Math.floor(h * 0.92);
+      _boxAssign(el, w, Math.max(14, avail), null, false);
     });
     // Image-pending pill fills its cloud shelf instead of whispering.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-aircraft-pending').forEach(function (el) {
@@ -17215,7 +17231,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22731';
+var FIDS_BUILD_TAG = 'v22732';
 (function(){
   try {
     function _addTag(){
@@ -28572,9 +28588,26 @@ function buildAccorAdOnlyV6(ad) {
   // lists 'Mini Bar' among Faena New York's advantages, and with the longer
   // ones filtered out it became the hotel's ONE headline claim.
   var _dullAdvRx = /wi-?fi|internet|wireless|t[ée]l[ée]phone|telephone|mini[\s-]?bar|hair ?dry|s[èe]che-cheveux|iron(ing)?\b|fer [àa] repasser|kettle|bouilloire|coffee ?\/? ?tea|plateau (de )?th[ée]|wake[- ]?up|r[ée]veil|\btv\b|t[ée]l[ée]vision|television|\bsafe\b|coffre[- ]?fort|air ?condition|climatisation/i;
+  // v22732 — A POLICY FOOTNOTE IS NOT A HEADLINE (Nick, Sofitel New York on
+  // the Delta gate: 'wording and size fir this add is terrible'). Accor ships
+  // advantages with their small print attached — 'Pet friendly - please
+  // inquire about details.' — and that whole sentence was rendering as the
+  // card's biggest line, in caps, above the hotel's actual welcome. The tail
+  // from the first dash/comma that introduces a condition is cut, the
+  // trailing period goes, and anything that is ONLY small print is dropped.
+  var _adminTailRx = /\s*[-–—,:;(]+\s*(please|pls|kindly|contact|inquire|enquire|for (more )?(details|information|info)|upon request|on request|subject to|conditions? apply|additional (charge|fee)|extra (charge|fee)|surcharge|charges? (may )?apply|fees? (may )?apply|veuillez|nous contacter|sur demande|sous r[ée]serve|suppl[ée]ment|selon disponibilit)/i;
+  var _adminOnlyRx = /^(please|kindly|contact|inquire|enquire|subject to|conditions|veuillez|nous contacter)\b/i;
+  var _cleanAdv = function (a) {
+    var s = String(a || '').trim().replace(_adminTailRx, '').trim();
+    s = s.replace(/[\s.;,:–—-]+$/, '').trim();
+    return s;
+  };
   var _advs = (Array.isArray(ad.advantages) ? ad.advantages : [])
-    .map(function (a) { return String(a || '').trim(); })
-    .filter(function (a) { return a && a.length <= 60 && !_covidRx.test(a) && !_dullAdvRx.test(a); })
+    .map(_cleanAdv)
+    .filter(function (a) {
+      return a && a.length >= 3 && a.length <= 60
+        && !_covidRx.test(a) && !_dullAdvRx.test(a) && !_adminOnlyRx.test(a);
+    })
     .slice(0, 3);
   if (!_advs.length) {
     // No advantages from the feed → the hotel's own SELLABLE facilities, which

@@ -6956,3 +6956,27 @@ html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="A
   position: relative;
   z-index: 1;
 }
+
+/* ── v22732: THE PLATES FIT THEIR CONTENT (Nick: 'these are not fitting
+   correctly or fitted correctly please fix it', Delta YHZ 57). Measured
+   live on that gate: the right card's info panels are exactly 100px tall
+   with 4px of padding, but the plate under them was inset 6–11px — so
+   every label ('Flight | Vol', 'Departure | Départ') sat ABOVE the
+   plate's top edge instead of on it. The small fixed-height panels get a
+   plate that HUGS them (3px), which puts all their content on the metal;
+   the tall rail rows keep the roomier inset, where there is space for
+   it. */
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before {
+  left: 3px !important;
+  right: 3px !important;
+  top: 3px !important;
+  bottom: 3px !important;
+  border-radius: clamp(6px, 0.8vh, 10px) !important;
+}
+/* The last rail plate was flush against the screen edge (rail bottom =
+   viewport bottom, measured 1010/1010) so its shadow and lower bevel were
+   cut off. A few px of breathing room at the foot of the column. */
+html body:not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+  padding-bottom: clamp(6px, 0.8vh, 10px) !important;
+  box-sizing: border-box !important;
+}
