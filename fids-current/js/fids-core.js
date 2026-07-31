@@ -17231,7 +17231,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22732';
+var FIDS_BUILD_TAG = 'v22733';
 (function(){
   try {
     function _addTag(){
@@ -28595,7 +28595,11 @@ function buildAccorAdOnlyV6(ad) {
   // card's biggest line, in caps, above the hotel's actual welcome. The tail
   // from the first dash/comma that introduces a condition is cut, the
   // trailing period goes, and anything that is ONLY small print is dropped.
-  var _adminTailRx = /\s*[-–—,:;(]+\s*(please|pls|kindly|contact|inquire|enquire|for (more )?(details|information|info)|upon request|on request|subject to|conditions? apply|additional (charge|fee)|extra (charge|fee)|surcharge|charges? (may )?apply|fees? (may )?apply|veuillez|nous contacter|sur demande|sous r[ée]serve|suppl[ée]ment|selon disponibilit)/i;
+  // The [\s\S]*$ tail is load-bearing: without it the replace strips only the
+  // matched conditional word and leaves its sentence behind — 'Pet friendly -
+  // please inquire about details.' became 'Pet friendly inquire about
+  // details' (caught on the preview, not guessed).
+  var _adminTailRx = /\s*[-–—,:;(]+\s*(please|pls|kindly|contact|inquire|enquire|for (more )?(details|information|info)|upon request|on request|subject to|conditions? apply|additional (charge|fee)|extra (charge|fee)|surcharge|charges? (may )?apply|fees? (may )?apply|veuillez|nous contacter|sur demande|sous r[ée]serve|suppl[ée]ment|selon disponibilit)[\s\S]*$/i;
   var _adminOnlyRx = /^(please|kindly|contact|inquire|enquire|subject to|conditions|veuillez|nous contacter)\b/i;
   var _cleanAdv = function (a) {
     var s = String(a || '').trim().replace(_adminTailRx, '').trim();
