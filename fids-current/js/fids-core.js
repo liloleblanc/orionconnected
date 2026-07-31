@@ -17542,7 +17542,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22770';
+var FIDS_BUILD_TAG = 'v22771';
 (function(){
   try {
     function _addTag(){
@@ -24386,7 +24386,20 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
     } catch(e) { /* fallback to setView above */ }
   }
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);// THE AIRCRAFT ALWAYS RENDERS (Nick: 'so far see no airplane on the map').
+  // This was gated on `arc && p >= 0.02`, which hid the plane in two common
+  // cases: a flight that has not pushed back yet (progress under 2% — which is
+  // most of the time a gate screen is up, and exactly what Nick photographed),
+  // and any screen with the route overlay switched off, because the plane was
+  // positioned by sampling the ARC's vertices and no arc meant no plane.
+  // The geometry no longer depends on the arc being drawn, and a not-yet-
+  // departed aircraft sits at its origin, which is where it actually is.
+  var ll = null;
+  try { ll = arc ? arc.getLatLngs() : null; } catch (e) { ll = null; }
+  if (!ll || !ll.length) {
+    try { ll = _gcFullRoute(o, d, 100).map(function (q) { return { lat: q[0], lng: q[1] }; }); } catch (e) { ll = null; }
+  }
+  if(ll && ll.length){var pp=Math.max(0,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
