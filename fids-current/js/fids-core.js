@@ -4638,6 +4638,11 @@ const AIRLINE_ACCENT = {
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#002868',
   'HA':'#582C83','XP':'#492C92','LL':'#00B7C8',
+  // v22737 — World Atlantic (Caribbean Sun Airlines), the MD-83 charter
+  // operator at Miami (Nick: 'Thios airline is supposed to be added and its
+  // not'). Navy taken from their aircraft titles; swap in the exact hex when
+  // an official kit turns up, same arc Avelo followed.
+  'WL':'#004280',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
@@ -4956,6 +4961,7 @@ const AIRLINE_ZONES = {
   'Y4': { narrowbody: 3, widebody: 3, regional: 3, label: 'Group' },     // Volaris: Groups 1-3
   'XP': { narrowbody: 3, widebody: 3, regional: 3, label: 'Group' },     // Avelo: Numbered Groups
   'MX': { narrowbody: 4, widebody: 4, regional: 4, label: 'Group' },     // Breeze: Groups 1-4
+  'WL': { narrowbody: 2, widebody: 2, regional: 2, label: 'Group' },     // World Atlantic: charter, two calls
   'F8': { narrowbody: 3, widebody: 3, regional: 3, label: 'Zone' },      // Flair: Zones 1-3
   '3M': { narrowbody: 2, widebody: 2, regional: 2, label: 'Zone' },      // Silver: 1-2 Zones
   'TS': { narrowbody: 4, widebody: 4, regional: 4, label: 'Zone' },      // Air Transat: 4 Zones
@@ -4990,6 +4996,12 @@ function getAircraftCategory(code) {
 }
 function getBoardingLeadMins(aircraftCode) {
   var cat = getAircraftCategory(aircraftCode || '');
+  // v22747 — the Q400 boards in 20 minutes, not the generic regional 25
+  // (Nick, who works these gates: 'It's 20 minutes for the q400'). Covers
+  // every code the feeds use for the Dash 8-400 — DH4 (IATA), DH8D (ICAO) —
+  // and the -300/-100/-200 stay on the regional default.
+  var _acU = String(aircraftCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (_acU === 'DH4' || _acU === 'DH8D' || _acU === 'Q400' || /DHC8400|DASH8400/.test(_acU)) return 20;
   if (cat === 'regional') return 25;
   if (cat === 'widebody') return 45;
   // Narrowbody - check if small (A319/A320) or large (737/A321)
@@ -10583,7 +10595,16 @@ function gateAutofit(root) {
   // dancing. Status value excluded (two stacked bilingual lines).
   // Shared box-assign: binary-search the largest size that fits the given
   // box, strict (the browser ellipsizes on 1px of overflow), 1px slack.
-  function _boxAssign(el, availW, availH, colR, skipH) {
+  // strictContent (v22733): also require the element's own CONTENT to fit
+  // inside its own box. Needed wherever the box height is pinned by layout
+  // rather than by the text — there, offsetHeight never grows with the font,
+  // so the height test below silently passes at ANY size and the search
+  // happily picks the maximum. That is exactly how the aircraft-type panel
+  // ended up rendering a 43px two-line string inside a 42px flex box, with
+  // 'expected | prévu' clipped and colliding with the Operated-By row
+  // (Nick: 'these are not fitting correctly'). Opt-in, so the fitters whose
+  // boxes DO grow with their text keep their existing behaviour exactly.
+  function _boxAssign(el, availW, availH, colR, skipH, strictContent) {
     if (availH < 12 || availW < 30) return;
     // DON'T RE-DERIVE WHAT HASN'T CHANGED. This runs on every rebuild and on
     // the 5s heartbeat, and each pass re-measures — so a box that reads a pixel
@@ -10606,6 +10627,7 @@ function gateAutofit(root) {
       if (el.scrollWidth > el.clientWidth) return false;
       if (el.scrollWidth > availW) return false;
       if (!skipH && el.offsetHeight > availH) return false;
+      if (strictContent && el.scrollHeight > el.clientHeight + 2) return false;
       if (colR && el.getBoundingClientRect().right > colR) return false;
       return true;
     }
@@ -10620,6 +10642,27 @@ function gateAutofit(root) {
     if (_curPx && Math.abs(_curPx - _finPx) <= 1) _finPx = _curPx;
     fits(_finPx);
   }
+  // v22742 — FIT THE PLATE, NOT THE ROW (Nick: 'The text pops out of boxes …
+  // on any page it's not just this one'). Since the plates arrived, the box a
+  // passenger SEES is the ::before panel inset inside the row — but every
+  // fitter still budgeted against the row's full height, so a tall value (the
+  // two-line bilingual status) filled the row and overhung the plate. Audited
+  // live on PAL gate 2: 'Status'/'Statut' sat 6px above the plate's top edge
+  // and 'À l'heure' 6px below its bottom. This returns the plate's inset so
+  // every budget below can subtract it; rows with no plate return zeros and
+  // behave exactly as before.
+  function _plateInset(el) {
+    try {
+      var cs = window.getComputedStyle(el, '::before');
+      if (!cs || cs.content === 'none' || cs.content === 'normal') return null;
+      var hasPaint = /url\(|gradient/.test(cs.backgroundImage || '') || cs.backgroundColor !== 'rgba(0, 0, 0, 0)';
+      if (!hasPaint) return null;
+      var t = parseFloat(cs.top) || 0, b = parseFloat(cs.bottom) || 0;
+      var l = parseFloat(cs.left) || 0, r = parseFloat(cs.right) || 0;
+      if (t <= 0 && b <= 0 && l <= 0 && r <= 0) return null; // full-bleed = a background, not a plate
+      return { t: t, b: b, l: l, r: r };
+    } catch (e) { return null; }
+  }
   try {
     // LEFT RAIL titles first ('so much space is wasted') — each label line
     // fits its shelf width under a 0.2-row height cap, THEN the value fit
@@ -10627,7 +10670,9 @@ function gateAutofit(root) {
     root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title').forEach(function (el) {
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
-      _boxAssign(el, tc.clientWidth, Math.floor(row.clientHeight * 0.2), null, false);
+      var _pi = _plateInset(row);
+      var _rowH = row.clientHeight - (_pi ? (_pi.t + _pi.b) : 0);
+      _boxAssign(el, tc.clientWidth, Math.floor(_rowH * 0.2), null, false);
     });
     // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper).
     // Status value included since v22359 — its two stacked bilingual lines
@@ -10636,7 +10681,8 @@ function gateAutofit(root) {
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var title = row.querySelector('.v2-fi-title');
-      var availH = row.clientHeight - (title ? title.offsetHeight : 0) - 6;
+      var _pi2 = _plateInset(row);
+      var availH = row.clientHeight - (_pi2 ? (_pi2.t + _pi2.b) : 0) - (title ? title.offsetHeight : 0) - 6;
       var colR = Infinity;
       var col = el.closest('.gad-aircraft-col');
       if (col) {
@@ -10691,14 +10737,47 @@ function gateAutofit(root) {
     // RIGHT CARD type shelf ('Aircraft details pending' clipped mid-word on
     // production): wrap allowed, then the largest size whose wrapped lines
     // fit the shelf. Shares the shelf with the Operated-By row when present.
-    root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach(function (el) {
-      var shelf = el.closest('.v2-rc-shelf-type'); if (!shelf) return;
+    // v22732 — FIT THE PANEL, NOT THE SHELF (Nick: 'these are not fitting
+    // correctly', Delta YHZ 57: 'expected | prévu' rendered underneath
+    // 'Operated By'). The panel that actually holds this text is .v2-rc-acb,
+    // sized by the v22686 pass to match the info pane (measured 100px) —
+    // while its SHELF is far taller. Fitting to the shelf handed the type
+    // line a budget that didn't exist, so its second line spilled out of the
+    // panel and collided with the row below. Measure the panel, subtract the
+    // Operated-By row's REAL height (not a 0.48 guess), fit what's left.
+    // v22735 — AND FIT IT TWICE. The panel is a flex column, so the type
+    // line and the Operated-By line divide its height BETWEEN them: the
+    // moment one is resized the other's box changes, and the size chosen
+    // during pass 1 is measured against geometry that no longer exists once
+    // pass 1 finishes. Probed live on Nick's Delta YHZ 57: the fitter had
+    // settled on 31.31px, leaving 50px of content inside a 41px box with
+    // overflow:hidden — 'expected | prévu' clipped and colliding with the
+    // row below, exactly what he reported. Pass 2 re-measures the settled
+    // boxes; the faKey memo is cleared first because its key (text + budget)
+    // is unchanged between the passes and would otherwise short-circuit the
+    // correction — which is why this never self-healed on the 5s heartbeat.
+    function _fitTypePanel(el) {
+      var panel = el.closest('.v2-rc-acb') || el.closest('.v2-rc-shelf-type');
+      if (!panel || panel.clientHeight < 24) return;
       el.style.setProperty('white-space', 'normal', 'important');
-      var scs = window.getComputedStyle(shelf);
-      var w = shelf.clientWidth - (parseFloat(scs.paddingLeft) || 0) - (parseFloat(scs.paddingRight) || 0);
-      var h = shelf.clientHeight - (parseFloat(scs.paddingTop) || 0) - (parseFloat(scs.paddingBottom) || 0);
-      var op = shelf.querySelector('.v2-rc-acb-opby');
-      _boxAssign(el, w, Math.floor(h * (op ? 0.48 : 0.92)), null, false);
+      var scs = window.getComputedStyle(panel);
+      var w = panel.clientWidth - (parseFloat(scs.paddingLeft) || 0) - (parseFloat(scs.paddingRight) || 0);
+      var h = panel.clientHeight - (parseFloat(scs.paddingTop) || 0) - (parseFloat(scs.paddingBottom) || 0);
+      var op = panel.querySelector('.v2-rc-acb-opby');
+      try {
+        delete el.dataset.faKey;
+        if (op) delete op.dataset.faKey;
+      } catch (e) {}
+      // The Operated-By row is fitted FIRST so its measured height is the
+      // real remainder for the type line — and capped, so a long operator
+      // name can't eat the panel either.
+      if (op) _boxAssign(op, w, Math.floor(h * 0.42), null, false, true);
+      var avail = op ? Math.floor(h - op.offsetHeight - 6) : Math.floor(h * 0.92);
+      _boxAssign(el, w, Math.max(14, avail), null, false, true);
+    }
+    root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach(function (el) {
+      _fitTypePanel(el);
+      _fitTypePanel(el);
     });
     // Image-pending pill fills its cloud shelf instead of whispering.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-aircraft-pending').forEach(function (el) {
@@ -10794,6 +10873,64 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
   }
   return null;
 }
+// ── v22743: FLIGHT NUMBERS FIT INSTEAD OF CLIPPING ──────────────────────────
+// Nick photographed 'WN43…' / 'DL24…' on the Tampa board; the audit measured
+// it — DL2406 clipped by 7px, WN4041 by 10, WN4754 by 15 at 28px type. The
+// column holds a 5-character number but not the 6-character ones US carriers
+// fly all day, and nothing caught the overflow: the board autofit is switched
+// off, and this cell was deliberately removed from the legacy shrinker after
+// the two fitters oscillated against each other (Nick: 'still doing it').
+//
+// Widening the column was tried first and made it WORSE — the table
+// redistributed and the clipping grew to 24px — so the text is fitted instead.
+// Runs ONLY while the board autofit is off, so the oscillation that caused the
+// original removal cannot return: there is no second fitter to fight with.
+// Shrink-only, floored, memoised on text+width so a number settles once.
+//
+// Called BOTH from the periodic pass and straight after the board paints: a
+// freshly rendered row would otherwise sit clipped until the next pass, which
+// is exactly the one stale 'DL24…' left on screen after the first fix.
+function _fitFlightCells() {
+  if (typeof BOARD_AUTOFIT_ENABLED !== 'undefined' && BOARD_AUTOFIT_ENABLED) return;
+  try {
+    document.querySelectorAll('#fidsTable td.fids-cell-flight').forEach(function (cell) {
+      var t = (cell.textContent || '').trim();
+      if (!t || !cell.clientWidth) return;
+      var key = t + '|' + Math.round(cell.clientWidth);
+      if (cell.dataset.fnFit === key) return;
+      cell.style.removeProperty('font-size');
+      var base = parseFloat(getComputedStyle(cell).fontSize) || 28;
+      var size = base, guard = 16;
+      var floorPx = Math.max(18, base * 0.68);
+      while (cell.scrollWidth > cell.clientWidth + 1 && size > floorPx && guard-- > 0) {
+        size = Math.max(floorPx, size - 1);
+        cell.style.setProperty('font-size', size + 'px', 'important');
+      }
+      cell.dataset.fnFit = key;
+    });
+  } catch (e) {}
+}
+// Re-fit the moment the board's rows change. A MutationObserver covers every
+// render path without having to find and patch each one.
+try {
+  (function () {
+    var _ffTimer = null;
+    var _arm = function () {
+      var tb = document.querySelector('#fidsTable');
+      if (!tb || tb._ffObserved) return;
+      tb._ffObserved = true;
+      new MutationObserver(function () {
+        if (_ffTimer) clearTimeout(_ffTimer);
+        _ffTimer = setTimeout(function () { _fitFlightCells(); }, 60);
+      }).observe(tb, { childList: true, subtree: true });
+      _fitFlightCells();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _arm);
+    else _arm();
+    setInterval(_arm, 4000); // the table element is replaced on rebuilds
+  })();
+} catch (e) {}
+
 // TEMPORARY KILL SWITCH (Nick: 'is there a temporary fix cause I need to
 // go and this is not working right now'). false = the board renders at the
 // theme's own stock CSS sizes, exactly as it did before the fitter existed:
@@ -16291,6 +16428,7 @@ const IATA_TO_WORDMARK = {
   'WN':'southwest',  'B6':'jetblue',
   'F9':'frontier',  // Frontier Airlines — official green wordmark + emblem from Nick's upload
   'XP':'avelo',     // Avelo Airlines — official wordmark set (white / black / purple) from Nick's upload
+  'WL':'world-atlantic',  // World Atlantic Airlines (Caribbean Sun) — official wordmark from Nick's Archive.zip
   'LL':'level',     // LEVEL — official wordmark set from Nick; dark lettering IS the brand (like Flair), so no COLOR_WORDMARKS entry
   // NK (Spirit) — ceased operations May 2 2026
   'AS':'alaska-airlines',  'HA':'hawaiian',
@@ -16557,7 +16695,13 @@ const WORDMARK_RASTER = {
                 // the colour original for light rows.
                 dark:  '/logos/airlines/canadian-regional/airinuit.svg' },
   'caribbean': { light: '/logos/airlines/asian-other/caribbean-wordmark-light.png',
-                 dark:  '/logos/airlines/asian-other/caribbean-wordmark-color.png' }
+                 dark:  '/logos/airlines/asian-other/caribbean-wordmark-color.png' },
+  // v22738 — World Atlantic: the supplied SVG wraps a raster, so it lives
+  // here. 'dark' is their own navy+green artwork for light surfaces; 'light'
+  // is the same letterforms in white for dark boards (alpha preserved, so the
+  // shapes are the airline's, not redrawn).
+  'world-atlantic': { light: '/logos/airlines/us-regional/world-atlantic-wordmark-light.png',
+                      dark:  '/logos/airlines/us-regional/world-atlantic-wordmark-color.png' }
 };
 function wordmarkSrc(base, forceVariant) {
   // v191: route through logoPath() so reorganized logos resolve correctly
@@ -17045,6 +17189,51 @@ function normalizeDisplayCity(raw, iata) {
   return (typeof tc === 'function') ? tc(s) : s;
 }
 
+// ── v22736: THE CODE CHIP WHEN THE FEED DOESN'T CARRY ONE ────────────────
+// Nick, on the live Tampa board: Breeze's 'Raleigh/Durham' and
+// 'Gulfport/Biloxi' rows showed NO airport code while every other row on the
+// same screen had one — 'They dont have a code no' confirmed the feed simply
+// omits it for those flights. The city name is resolved back to its IATA from
+// our own airport tables so those rows read like the rest of the board.
+//
+// AMBIGUOUS NAMES ARE NEVER GUESSED. 'Houston' is both IAH and HOU (Nick
+// asked about exactly this pair), 'Portland' is PDX and PWM, 'Columbus' and
+// 'Charleston' repeat too. Any name that resolves to more than one code is
+// poisoned in the index and stays code-less — a missing chip is a small
+// blemish, a WRONG airport code on a departure board is a passenger in the
+// wrong city.
+var _CITY2IATA = null;
+// Feed phrasings that aren't in our display tables at all (their airports had
+// no entry, which is why these rows arrived raw and code-less).
+var _CITY2IATA_ALIAS = {
+  gulfportbiloxi: 'GPT', gulfport: 'GPT',
+  bentonvillefayetteville: 'XNA', northwestarkansas: 'XNA',
+  pensacola: 'PNS', syracuse: 'SYR',
+  raleighdurham: 'RDU', raleighdurhamnc: 'RDU'
+};
+function _normCityKey(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+}
+function _iataFromCityName(name) {
+  var k = _normCityKey(name);
+  if (k.length < 3) return '';
+  if (!_CITY2IATA) {
+    _CITY2IATA = {};
+    var add = function (code, nm) {
+      var kk = _normCityKey(nm);
+      if (!kk || kk.length < 3) return;
+      if (!_CITY2IATA[kk]) _CITY2IATA[kk] = String(code).toUpperCase();
+      else if (_CITY2IATA[kk] !== String(code).toUpperCase()) _CITY2IATA[kk] = '!'; // ambiguous — never resolve
+    };
+    try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a && a.c && a.n) add(a.c, a.n); }); } catch (e) {}
+    try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
+    try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
+  }
+  if (_CITY2IATA_ALIAS[k]) return _CITY2IATA_ALIAS[k];
+  var hit = _CITY2IATA[k];
+  return (hit && hit !== '!') ? hit : '';
+}
+
 function formatCityIata(raw, iata, langOverride) {
   var rawStr = String(raw || '').replace(/\s+/g, ' ').trim();
   var code = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
@@ -17092,6 +17281,13 @@ function formatCityIata(raw, iata, langOverride) {
   }
 
   var city = normalizeDisplayCity(rawStr, code);
+  // v22736 — last resort: the feed gave a city but no code. Resolve it from
+  // the name (unambiguous matches only) so these rows stop being the only
+  // ones on the board without a chip.
+  if (!code) {
+    var _guess = _iataFromCityName(city);
+    if (_guess) code = _guess;
+  }
   return code ? (city + ' (' + code + ')') : city;
 }
 
@@ -17215,7 +17411,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22720';
+var FIDS_BUILD_TAG = 'v22748';
 (function(){
   try {
     function _addTag(){
@@ -18975,6 +19171,7 @@ const RFG_AIRCRAFT_BY_AL = {
   // NK (Spirit) — ceased operations May 2 2026
   'F9': ['320','321','32N','32Q'],
   'XP': ['73G','738'],               // Avelo flies only 737-700 and -800; both liveries are on disk
+  'WL': ['M83'],                     // World Atlantic — MD-83 charter fleet
   'HA': ['32Q','332','717','789'],   // Hawaiian — A321neo (32Q, mainland), A330-200, 717 (inter-island), 787-9 (long-haul)
 };
 const RFG_AIRCRAFT_DEFAULT = ['319','320','321','738','7M8','789','77W','DH4','CR9','E75'];
@@ -23571,6 +23768,12 @@ const AP_LIST = [
   {c:'TPA',n:'Tampa'},{c:'FLL',n:'Fort Lauderdale'},{c:'PHL',n:'Philadelphia'},
   {c:'DTW',n:'Detroit'},{c:'MSP',n:'Minneapolis'},{c:'PIT',n:'Pittsburgh'},
   {c:'RDU',n:'Raleigh-Durham'},{c:'BDL',n:'Hartford'},{c:'BWI',n:'Baltimore'},
+  // v22736 — the Tampa destinations that had no entry here at all, which is
+  // why their rows arrived as raw feed strings with no code (Nick listed them
+  // off the live board: Gulfport/Biloxi, Bentonville/Fayetteville, Pensacola,
+  // Syracuse).
+  {c:'GPT',n:'Gulfport-Biloxi'},{c:'XNA',n:'Northwest Arkansas'},
+  {c:'PNS',n:'Pensacola'},{c:'SYR',n:'Syracuse'},
   // USA West
   {c:'LAX',n:'Los Angeles'},{c:'SFO',n:'San Francisco'},{c:'SEA',n:'Seattle'},
   {c:'ORD',n:"Chicago O'Hare"},{c:'MDW',n:'Chicago Midway'},{c:'DFW',n:'Dallas/Fort Worth'},
@@ -24259,7 +24462,26 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     var dsq = dLat * dLat + dLng * dLng;
     if (dsq < bestDsq) { bestDsq = dsq; best = i; }
   }
-  var p = best / (n - 1);
+  var _seedP = best / (n - 1);
+  var p = _seedP;
+  // v22748 — EASE THE CORRECTION, DON'T SNAP IT (Nick: 'it seems to move but
+  // also moves sideways then up at times unrealistic'). Every real ADS-B fix
+  // restarts this glide, and the marker was being placed straight onto the
+  // corrected spot — a visible teleport whenever dead-reckoning had drifted.
+  // If we were already tracking the SAME route and the correction is small,
+  // resume from where the marker actually is and bleed the difference in over
+  // a few seconds, so a fix reads as the aircraft settling rather than jumping.
+  var _corr = 0;
+  try {
+    if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
+        _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
+        _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1] &&
+        Math.abs(_gateGlide.p - _seedP) < 0.15) {
+      p = _gateGlide.p;
+      _corr = _seedP - p;
+    }
+  } catch (e) {}
+  _gateGlide.o = o; _gateGlide.d = d;
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
   var lastTs = _nowFn();
   var lastArcIdx = -1;
@@ -24295,6 +24517,14 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
       var effSpeed = speedKts * Math.max(0.2, factor);
       p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
+      // Bleed in any outstanding position correction (~4s time constant).
+      if (_corr) {
+        var _cStep = _corr * Math.min(1, dtMs / 4000);
+        p = Math.min(0.995, p + _cStep);
+        _corr -= _cStep;
+        if (Math.abs(_corr) < 1e-6) _corr = 0;
+      }
+      _gateGlide.p = p;
       // Fractional position along the polyline → smooth sub-vertex motion.
       var fi = p * (n - 1);
       var i0 = Math.min(n - 2, Math.max(0, Math.floor(fi)));
@@ -24332,10 +24562,21 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
             // someone moving it carelessly' (Nick). animate:false = no tile
             // thrash. Fallback to the old setView if panInside is unavailable.
             try {
-              if (typeof map.panInside === 'function') {
-                map.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)], animate: false });
-              } else {
-                map.setView([lat, lng], map.getZoom(), { animate: false });
+              // v22748 — PAN SMOOTHLY. animate:false moved the whole map in a
+              // single frame, so the scene lurched sideways/up under a plane
+              // that was otherwise gliding fine — which is the 'moves sideways
+              // then up' Nick is describing. A slow eased pan (it fires only
+              // every few minutes) reads as a camera following the aircraft.
+              // Guarded so it can't stack: skip while a pan is already running.
+              if (!map._acFollowing) {
+                map._acFollowing = 1;
+                setTimeout(function () { try { map._acFollowing = 0; } catch (e) {} }, 2600);
+                if (typeof map.panInside === 'function') {
+                  map.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)],
+                    animate: true, duration: 2.2, easeLinearity: 0.2 });
+                } else {
+                  map.panTo([lat, lng], { animate: true, duration: 2.2, easeLinearity: 0.2 });
+                }
               }
             } catch (er2) {
               try { map.setView([lat, lng], map.getZoom(), { animate: false }); } catch (er3) {}
@@ -28572,9 +28813,30 @@ function buildAccorAdOnlyV6(ad) {
   // lists 'Mini Bar' among Faena New York's advantages, and with the longer
   // ones filtered out it became the hotel's ONE headline claim.
   var _dullAdvRx = /wi-?fi|internet|wireless|t[ée]l[ée]phone|telephone|mini[\s-]?bar|hair ?dry|s[èe]che-cheveux|iron(ing)?\b|fer [àa] repasser|kettle|bouilloire|coffee ?\/? ?tea|plateau (de )?th[ée]|wake[- ]?up|r[ée]veil|\btv\b|t[ée]l[ée]vision|television|\bsafe\b|coffre[- ]?fort|air ?condition|climatisation/i;
+  // v22732 — A POLICY FOOTNOTE IS NOT A HEADLINE (Nick, Sofitel New York on
+  // the Delta gate: 'wording and size fir this add is terrible'). Accor ships
+  // advantages with their small print attached — 'Pet friendly - please
+  // inquire about details.' — and that whole sentence was rendering as the
+  // card's biggest line, in caps, above the hotel's actual welcome. The tail
+  // from the first dash/comma that introduces a condition is cut, the
+  // trailing period goes, and anything that is ONLY small print is dropped.
+  // The [\s\S]*$ tail is load-bearing: without it the replace strips only the
+  // matched conditional word and leaves its sentence behind — 'Pet friendly -
+  // please inquire about details.' became 'Pet friendly inquire about
+  // details' (caught on the preview, not guessed).
+  var _adminTailRx = /\s*[-–—,:;(]+\s*(please|pls|kindly|contact|inquire|enquire|for (more )?(details|information|info)|upon request|on request|subject to|conditions? apply|additional (charge|fee)|extra (charge|fee)|surcharge|charges? (may )?apply|fees? (may )?apply|veuillez|nous contacter|sur demande|sous r[ée]serve|suppl[ée]ment|selon disponibilit)[\s\S]*$/i;
+  var _adminOnlyRx = /^(please|kindly|contact|inquire|enquire|subject to|conditions|veuillez|nous contacter)\b/i;
+  var _cleanAdv = function (a) {
+    var s = String(a || '').trim().replace(_adminTailRx, '').trim();
+    s = s.replace(/[\s.;,:–—-]+$/, '').trim();
+    return s;
+  };
   var _advs = (Array.isArray(ad.advantages) ? ad.advantages : [])
-    .map(function (a) { return String(a || '').trim(); })
-    .filter(function (a) { return a && a.length <= 60 && !_covidRx.test(a) && !_dullAdvRx.test(a); })
+    .map(_cleanAdv)
+    .filter(function (a) {
+      return a && a.length >= 3 && a.length <= 60
+        && !_covidRx.test(a) && !_dullAdvRx.test(a) && !_adminOnlyRx.test(a);
+    })
     .slice(0, 3);
   if (!_advs.length) {
     // No advantages from the feed → the hotel's own SELLABLE facilities, which
@@ -30893,7 +31155,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         var _gRow = el.closest ? el.closest('.g8-board-info-row') : null;
         var _gIsStatus = !!(_gCell && !_gCell.nextElementSibling);
         if (_gRow && !_gIsStatus) {
-          var _gCap = Math.max(40, _gRow.clientHeight * 0.62);
+          // v22724 cap raised 0.62 -> 0.72 (Nick: 'Just as big numbers that
+          // can take up the whole place but cannot exceed') — the width
+          // shrink-back below plus the new plate-height check are the
+          // 'cannot exceed' half of that sentence.
+          var _gCap = Math.max(40, _gRow.clientHeight * 0.72);
           var g = size, gGuard = 20;
           while (el.scrollWidth <= el.clientWidth * 0.94 && g < _gCap && gGuard-- > 0) {
             g = Math.min(_gCap, g + Math.max(1, g * 0.06));
@@ -30905,9 +31171,35 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
             el.style.setProperty('font-size', g + 'px', 'important');
           }
         }
+        // Height backstop for EVERY cell — status included (v22729, Nick's
+        // WestJet shot: 'nothing alligns' — the two-line status stack
+        // spilled off its plate). Walk the value down until the cell's own
+        // box genuinely holds its title+value stack.
+        var _gTxt = el.parentElement, gBackH = 12;
+        var _gPx = parseFloat(el.style.fontSize) || parseFloat(getComputedStyle(el).fontSize) || 30;
+        while (_gCell && _gTxt && _gTxt.scrollHeight > _gCell.clientHeight + 1 && _gPx > 18 && gBackH-- > 0) {
+          _gPx -= Math.max(1, _gPx * 0.06);
+          el.style.setProperty('font-size', _gPx + 'px', 'important');
+        }
       }
       el.dataset.fitW = _fp;
     }
+    // ── v22743: FLIGHT NUMBERS STOP GETTING CUT ─────────────────────────────
+    // Nick photographed 'WN43…' / 'DL24…' on the Tampa board; the audit put
+    // numbers on it — DL2406 clipped by 7px, WN4041 by 10, WN4754 by 15 at
+    // 28px type. The column fits a 5-character number but not the 6-character
+    // ones US carriers fly all day, and nothing was catching the overflow:
+    // the board autofit is switched off, and this cell was deliberately taken
+    // out of the shrinker above after the two fitters oscillated against each
+    // other (Nick: 'still doing it').
+    //
+    // Widening the column was tried first and made it WORSE — the table
+    // redistributed and the clipping grew to 24px — so the fix is to fit the
+    // text instead. This runs ONLY while the board autofit is off, so the
+    // oscillation that caused the original removal cannot come back: there is
+    // no second fitter to fight with. Shrink-only, floored, and memoized on
+    // text+width so a given number in a given column settles once.
+    try { if (typeof _fitFlightCells === 'function') _fitFlightCells(); } catch (e) {}
     // Nick: 'the 1 and 2 should align, same size — they're not.' The shrink
     // pass above fits each lane numeral to ITS OWN column, so a wide glyph
     // ('2') ends up smaller than a narrow one ('1'). Re-equalize the priority
