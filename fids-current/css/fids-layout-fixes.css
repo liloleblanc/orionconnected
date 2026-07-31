@@ -7100,16 +7100,23 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   position: absolute !important;
   left: 3px !important; right: 3px !important; top: 3px !important; bottom: 3px !important;
   border-radius: clamp(6px, 0.8vh, 10px) !important;
-  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 62%, #6f757e) !important;
+  /* v22746 — AC's plates are BLACK/GREY, not red (Nick: 'They were supposed
+     to be black or gray'). The first cut mixed in --airline-accent like every
+     other carrier, which on AC means red. AC's approved identity is the dark
+     brushed metal, so the plate is a neutral graphite that reads as a lighter
+     panel on the charcoal sheet; the red stays where it belongs — the banner,
+     the gate tab and the accent rules. */
+  background-color: #565b63 !important;
   background-image: url("/logos/Backgrounds/gate-metal-blue.png?v=1") !important;
   background-position: center !important;
   background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
   background-blend-mode: luminosity !important;
+  filter: saturate(0.12) !important;
   box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
-              inset 0 1px 1px rgba(255, 255, 255, 0.55),
+              inset 0 1px 1px rgba(255, 255, 255, 0.50),
               inset 0 -2px 3px rgba(0, 0, 0, 0.5),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.18) !important;
+              inset 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
   pointer-events: none !important;
   z-index: 0 !important;
 }
