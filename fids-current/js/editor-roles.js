@@ -16,9 +16,16 @@
  *      default 'admin' so a solo operator is never locked out. Lower it
  *      (Regular/Manager) to lock down a public kiosk.
  *
- * Each Customize section is tagged in menu.html with data-sec="<cap>".
- * A section spans its tagged element through the sibling just before the
- * next data-sec element.
+ * Each Customize control is tagged in menu.html with data-sec="<cap>".
+ *
+ * v22757: this used to walk #smTab_customize's direct children in order and
+ * carry the last data-sec forward, so an untagged element inherited from the
+ * tagged one above it. That only holds while every control is a sibling in one
+ * flat panel — and the menu bar now re-parents runs of them into separate
+ * dropdowns, which would leave whole sections ungated (or, worse, gated by
+ * whatever happened to land above them). menu.html now stamps an EXPLICIT
+ * data-sec on every one of those children, so the gate is a straight query for
+ * [data-sec] wherever the element currently lives.
  * ─────────────────────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
@@ -74,11 +81,12 @@
       var rank = RANK[currentRole()];
       if (typeof rank !== 'number') return; // unknown → bail (panel unchanged)
 
-      var curCap = null;
-      var kids = panel.children;
+      // Every tagged element, wherever it currently lives — the menu bar moves
+      // these out of #smTab_customize and into its own dropdown panels.
+      var kids = document.querySelectorAll('[data-sec]');
       for (var i = 0; i < kids.length; i++) {
         var el = kids[i];
-        if (el.hasAttribute && el.hasAttribute('data-sec')) curCap = el.getAttribute('data-sec');
+        var curCap = el.getAttribute('data-sec');
         var need = (curCap && CAP_MIN.hasOwnProperty(curCap)) ? CAP_MIN[curCap] : 0;
         var allowed = rank >= need;
 

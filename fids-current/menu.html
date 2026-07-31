@@ -98,7 +98,7 @@
     <div id="smTab_customize" class="sm-tab-content">
 
       <!-- ─── 0. ACCESS LEVEL (admin only) ─── -->
-      <div data-sec="admin">
+      <div data-menu="admin" data-sec="admin">
         <div class="sm-label">Access Level <span style="color:#9ca3af;font-weight:400;font-size:10px;">(this screen, when not logged in)</span></div>
         <div class="sm-pills" style="margin-bottom:14px;">
           <button class="sm-pill" id="erLockViewer"   onclick="erSetLock('viewer')">Regular</button>
@@ -108,8 +108,8 @@
       </div>
 
       <!-- ─── 1. THEME ─── -->
-      <div class="sm-label" data-sec="look-basic">Theme</div>
-      <select class="sm-select" id="cuThemeSelect" style="margin-bottom:14px;" onchange="cuThemeChanged()">
+      <div data-menu="look" class="sm-label" data-sec="look-basic">Theme</div>
+      <select data-menu="look" data-sec="look-basic" class="sm-select" id="cuThemeSelect" style="margin-bottom:14px;" onchange="cuThemeChanged()">
         <option value="">Use airport default (Teal)</option>
         <optgroup label="Teal">
           <option value="tus-teal">Teal</option>
@@ -125,7 +125,7 @@
       </select>
 
       <!-- ─── 1a. DAY & NIGHT ─── -->
-      <div data-sec="look-basic" style="margin-bottom:14px;">
+      <div data-menu="look" data-sec="look-basic" style="margin-bottom:14px;">
         <div class="sm-label">Day &amp; night</div>
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#d1d5db;margin:2px 0 8px;cursor:pointer;">
           <input type="checkbox" id="cuDnEnabled" onchange="cuDayNightChanged()"> Switch theme automatically by time of day
@@ -158,8 +158,8 @@
       </div>
 
       <!-- ─── 1b. FONT ─── -->
-      <div class="sm-label" data-sec="look-adv">Font</div>
-      <select class="sm-select" id="cuFontSelect" style="margin-bottom:14px;" onchange="cuFontChanged()">
+      <div data-menu="look" class="sm-label" data-sec="look-adv">Font</div>
+      <select data-menu="look" data-sec="look-adv" class="sm-select" id="cuFontSelect" style="margin-bottom:14px;" onchange="cuFontChanged()">
         <option value="">Default (Possibility)</option>
         <option value="possibility">Possibility — brand (bold)</option>
         <option value="tr-tahoma">TR Tahoma — bold</option>
@@ -198,11 +198,11 @@
       </select>
 
       <!-- v218.99.13 — custom font upload -->
-      <div style="display:flex;gap:6px;margin-bottom:14px;align-items:center;">
+      <div data-menu="look" data-sec="look-adv" style="display:flex;gap:6px;margin-bottom:14px;align-items:center;">
         <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuOpenFontUpload()" style="flex:1;">+ Upload custom font…</button>
         <button class="sm-btn sm-btn-secondary sm-btn-sm" id="cuFontDeleteBtn" onclick="cuDeleteCurrentFont()" style="display:none;" title="Delete the currently selected custom font">Delete</button>
       </div>
-      <div id="cuFontUploadPanel" style="display:none;background:var(--console-surface);border:1px solid var(--console-border);padding:12px;border-radius:8px;margin-bottom:14px;">
+      <div data-menu="look" data-sec="look-adv" id="cuFontUploadPanel" style="display:none;background:var(--console-surface);border:1px solid var(--console-border);padding:12px;border-radius:8px;margin-bottom:14px;">
         <div class="sm-label">Font file</div>
         <input type="file" id="cuFontFile" accept=".woff,.woff2,.ttf,.otf" style="margin-bottom:10px;font-size:12px;color:var(--console-text-2);">
         <div class="sm-label">Display name</div>
@@ -215,15 +215,15 @@
       </div>
 
       <!-- ─── 1c. DISPLAY MODE (mobile / browser theme override) ─── -->
-      <div class="sm-label" data-sec="look-basic">Display Mode <span style="color:#9ca3af;font-weight:400;font-size:10px;">(mobile + light/dark)</span></div>
-      <div class="sm-pills" style="margin-bottom:14px;">
+      <div data-menu="look" class="sm-label" data-sec="look-basic">Display Mode <span style="color:#9ca3af;font-weight:400;font-size:10px;">(mobile + light/dark)</span></div>
+      <div data-menu="look" data-sec="look-basic" class="sm-pills" style="margin-bottom:14px;">
         <button class="sm-pill" id="cuModeAuto"  onclick="cuSetDisplayMode('auto')">Auto</button>
         <button class="sm-pill" id="cuModeLight" onclick="cuSetDisplayMode('light')">Light</button>
         <button class="sm-pill" id="cuModeDark"  onclick="cuSetDisplayMode('dark')">Dark</button>
       </div>
 
       <!-- ─── 2. CUSTOM COLORS (only when Theme = Custom or editing a preset) ─── -->
-      <div id="cuColorsWrap" data-sec="look-adv" style="display:none;border-top:1px solid #374151;padding-top:14px;margin-bottom:14px;">
+      <div data-menu="look" id="cuColorsWrap" data-sec="look-adv" style="display:none;border-top:1px solid #374151;padding-top:14px;margin-bottom:14px;">
         <div class="sm-label" style="display:flex;align-items:center;gap:8px;">
           Custom Colors
           <input class="sm-input" id="cuPresetName" placeholder="Preset name (optional)" style="flex:1;font-size:12px;height:28px;">
@@ -270,47 +270,47 @@
       </div>
 
       <!-- ─── 3. LAYOUT ─── -->
-      <div class="sm-label" data-sec="look-adv">Logo Position</div>
-      <div class="sm-pills" style="margin-bottom:14px;">
+      <div data-menu="layout" class="sm-label" data-sec="look-adv">Logo Position</div>
+      <div data-menu="layout" data-sec="look-adv" class="sm-pills" style="margin-bottom:14px;">
         <button class="sm-pill" id="cuPosDefault" onclick="cuSetPosition('')">Default</button>
         <button class="sm-pill" id="cuPosLeft"    onclick="cuSetPosition('left')">Left</button>
         <button class="sm-pill" id="cuPosCenter"  onclick="cuSetPosition('center')">Center</button>
         <button class="sm-pill" id="cuPosRight"   onclick="cuSetPosition('right')">Right</button>
       </div>
 
-      <div class="sm-label">Logo Size <span style="color:#9ca3af;font-weight:400;font-size:10px;">(also sets row height)</span></div>
-      <div class="sm-pills" style="margin-bottom:14px;">
+      <div data-menu="layout" data-sec="look-adv" class="sm-label">Logo Size <span style="color:#9ca3af;font-weight:400;font-size:10px;">(also sets row height)</span></div>
+      <div data-menu="layout" data-sec="look-adv" class="sm-pills" style="margin-bottom:14px;">
         <button class="sm-pill" id="cuSizeSmall"  onclick="cuSetSize('small')">Small</button>
         <button class="sm-pill" id="cuSizeMedium" onclick="cuSetSize('medium')">Medium</button>
         <button class="sm-pill" id="cuSizeLarge"  onclick="cuSetSize('large')">Large</button>
       </div>
 
       <!-- ─── 3b. GIDS GATE BLOCKS ─── -->
-      <div class="sm-label" data-sec="blocks">GIDS Gate Blocks
+      <div data-menu="layout" class="sm-label" data-sec="blocks">GIDS Gate Blocks
         <span style="color:#9ca3af;font-weight:400;font-size:10px;">(gate screen only)</span>
       </div>
-      <div id="cuGidsBlocks" style="margin-bottom:8px;"></div>
-      <div style="margin-bottom:14px;">
+      <div data-menu="layout" data-sec="blocks" id="cuGidsBlocks" style="margin-bottom:8px;"></div>
+      <div data-menu="layout" data-sec="blocks" style="margin-bottom:14px;">
         <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuResetGidsBlocks()">Reset blocks</button>
       </div>
 
       <!-- ─── 3c. TICKER MESSAGE ─── -->
-      <div class="sm-label" data-sec="look-basic">Ticker Message
+      <div data-menu="branding" class="sm-label" data-sec="look-basic">Ticker Message
         <span style="color:#9ca3af;font-weight:400;font-size:10px;">(scrolling bar, all screens)</span>
       </div>
-      <textarea id="cuTickerText" rows="3"
+      <textarea data-menu="branding" data-sec="look-basic" id="cuTickerText" rows="3"
         placeholder="Leave empty to use the default safety/info messages"
         style="width:100%;box-sizing:border-box;background:var(--console-surface,#1f2430);
                color:var(--console-text,#e5e7eb);border:1px solid var(--console-border,#374151);
                border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;
                resize:vertical;margin-bottom:8px;"></textarea>
-      <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <div data-menu="branding" data-sec="look-basic" style="display:flex;gap:8px;margin-bottom:14px;">
         <button class="sm-btn sm-btn-sm" onclick="cuSaveTicker()">Save message</button>
         <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuResetTicker()">Use default</button>
       </div>
 
       <!-- ─── 3c1. TEMPLATE DESIGNER (entry point) ─── -->
-      <a href="designer.html" class="dgn-menu-card" data-sec="look-adv">
+      <a data-menu="templates" href="designer.html" class="dgn-menu-card" data-sec="admin">
         <span class="dgn-menu-card-icon">✎</span>
         <span class="dgn-menu-card-text">
           <span class="dgn-menu-card-title">Open Template Designer</span>
@@ -318,7 +318,7 @@
         </span>
         <span class="dgn-menu-card-arrow">→</span>
       </a>
-      <button type="button" class="dgn-menu-card" data-sec="look-adv" id="dgnCaptureBtn"
+      <button data-menu="templates" type="button" class="dgn-menu-card" data-sec="admin" id="dgnCaptureBtn"
               style="border:0;width:100%;text-align:left;cursor:pointer;background:linear-gradient(135deg,#0f766e,#14b8a6);">
         <span class="dgn-menu-card-icon">⎘</span>
         <span class="dgn-menu-card-text">
@@ -329,15 +329,15 @@
       </button>
 
       <!-- ─── 3c2. LOGOS ─── -->
-      <div class="sm-label" data-sec="look-adv">Logos
+      <div data-menu="branding" class="sm-label" data-sec="look-adv">Logos
         <span style="color:#9ca3af;font-weight:400;font-size:10px;">(airport <span id="luAp">—</span> · no backend)</span>
       </div>
-      <div style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:8px;">
+      <div data-menu="branding" data-sec="look-adv" style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:8px;">
         Paste an image URL (PNG/SVG). Saved on this screen only — replaces
         the logo instantly, no upload needed.
       </div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--console-text-3,#9ca3af);text-transform:uppercase;margin-bottom:4px;">Airport logo</div>
-      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+      <div data-menu="branding" data-sec="look-adv" style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--console-text-3,#9ca3af);text-transform:uppercase;margin-bottom:4px;">Airport logo</div>
+      <div data-menu="branding" data-sec="look-adv" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
         <input type="text" id="luAirportLogo" placeholder="https://…/airport-logo.svg"
           style="flex:1;min-width:160px;box-sizing:border-box;background:var(--console-surface,#1f2430);
                  color:var(--console-text,#e5e7eb);border:1px solid var(--console-border,#374151);
@@ -345,8 +345,8 @@
         <button class="sm-btn sm-btn-sm" onclick="luSaveAirport()">Save</button>
         <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="luClearAirport()">Clear</button>
       </div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--console-text-3,#9ca3af);text-transform:uppercase;margin-bottom:4px;">Airline logo override</div>
-      <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">
+      <div data-menu="branding" data-sec="look-adv" style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--console-text-3,#9ca3af);text-transform:uppercase;margin-bottom:4px;">Airline logo override</div>
+      <div data-menu="branding" data-sec="look-adv" style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">
         <input type="text" id="luAlCode" placeholder="AC" maxlength="3" title="Airline code"
           style="width:56px;background:var(--console-surface,#1f2430);color:var(--console-text,#e5e7eb);
                  border:1px solid var(--console-border,#374151);border-radius:6px;padding:7px 8px;
@@ -356,15 +356,15 @@
                  border:1px solid var(--console-border,#374151);border-radius:6px;padding:7px 9px;font-size:12px;">
         <button class="sm-btn sm-btn-sm" onclick="luAddAirline()">Add</button>
       </div>
-      <div id="luFlash" style="font-size:11px;min-height:14px;margin-bottom:6px;"></div>
-      <div id="luList" style="margin-bottom:14px;"></div>
+      <div data-menu="branding" data-sec="look-adv" id="luFlash" style="font-size:11px;min-height:14px;margin-bottom:6px;"></div>
+      <div data-menu="branding" data-sec="look-adv" id="luList" style="margin-bottom:14px;"></div>
 
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--console-text-3,#9ca3af);text-transform:uppercase;margin-bottom:4px;">Media source (where logos &amp; wordmarks load from)</div>
-      <div style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:6px;">
+      <div data-menu="branding" data-sec="look-adv" style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--console-text-3,#9ca3af);text-transform:uppercase;margin-bottom:4px;">Media source (where logos &amp; wordmarks load from)</div>
+      <div data-menu="branding" data-sec="look-adv" style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:6px;">
         If your logos/wordmarks live on a separate host, put its address here.
         Fixes missing wordmarks. Leave empty to use this site.
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">
+      <div data-menu="branding" data-sec="look-adv" style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">
         <input type="text" id="mbBase" placeholder="https://media.orionconnected.com"
           style="flex:1;min-width:170px;background:var(--console-surface,#1f2430);color:var(--console-text,#e5e7eb);
                  border:1px solid var(--console-border,#374151);border-radius:6px;padding:7px 9px;font-size:12px;">
@@ -374,21 +374,21 @@
         <button class="sm-btn sm-btn-sm" onclick="mbSave()">Save</button>
         <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="mbClear()">Use this site</button>
       </div>
-      <div id="mbPreview" style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:14px;word-break:break-all;"></div>
+      <div data-menu="branding" data-sec="look-adv" id="mbPreview" style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:14px;word-break:break-all;"></div>
 
       <!-- ─── 3d. MIDDLE-SCREEN MEDIA (videos / images) ─── -->
-      <div class="sm-label" data-sec="admin">Middle-Screen Media
+      <div data-menu="branding" class="sm-label" data-sec="admin">Middle-Screen Media
         <span style="color:#9ca3af;font-weight:400;font-size:10px;">(GIDS centre — videos &amp; images)</span>
       </div>
-      <div style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:8px;">
+      <div data-menu="branding" data-sec="admin" style="font-size:11px;color:var(--console-text-muted,#9ca3af);margin-bottom:8px;">
         Paste a YouTube link or a direct video/image URL. Plays in the gate
         centre column. No upload/backend needed.
       </div>
-      <input type="text" id="lmUrl" placeholder="https://youtube.com/watch?v=…  or  https://…/clip.mp4"
+      <input data-menu="branding" data-sec="admin" type="text" id="lmUrl" placeholder="https://youtube.com/watch?v=…  or  https://…/clip.mp4"
         style="width:100%;box-sizing:border-box;background:var(--console-surface,#1f2430);
                color:var(--console-text,#e5e7eb);border:1px solid var(--console-border,#374151);
                border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:6px;">
-      <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+      <div data-menu="branding" data-sec="admin" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
         <input type="text" id="lmLabel" placeholder="Label (optional)"
           style="flex:1;min-width:120px;background:var(--console-surface,#1f2430);
                  color:var(--console-text,#e5e7eb);border:1px solid var(--console-border,#374151);
@@ -402,12 +402,12 @@
         </label>
         <button class="sm-btn sm-btn-sm" onclick="lmAdd()">Add</button>
       </div>
-      <div id="lmFlash" style="font-size:11px;min-height:14px;margin-bottom:6px;"></div>
-      <div id="lmList" style="margin-bottom:14px;"></div>
+      <div data-menu="branding" data-sec="admin" id="lmFlash" style="font-size:11px;min-height:14px;margin-bottom:6px;"></div>
+      <div data-menu="branding" data-sec="admin" id="lmList" style="margin-bottom:14px;"></div>
 
       <!-- ─── 4. DISPLAY OPTIONS ─── -->
-      <div class="sm-label" data-sec="display-opts">Display Options</div>
-      <div class="sm-field" style="margin-bottom:14px;">
+      <div data-menu="layout" class="sm-label" data-sec="display-opts">Display Options</div>
+      <div data-menu="layout" data-sec="display-opts" class="sm-field" style="margin-bottom:14px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
           <input type="checkbox" id="cuHidePrefix" style="width:16px;height:16px;cursor:pointer;" onchange="cuApplyAndSave()">
           <span style="font-size:13px;">Hide airline code in flight # ("1606" not "AC1606")</span>
@@ -423,25 +423,25 @@
       </div>
 
       <!-- ─── 5. BACKGROUND ─── -->
-      <div class="sm-label" data-sec="display-opts">Background</div>
-      <div class="sm-pills" style="margin-bottom:8px;">
+      <div data-menu="layout" class="sm-label" data-sec="display-opts">Background</div>
+      <div data-menu="layout" data-sec="display-opts" class="sm-pills" style="margin-bottom:8px;">
         <button class="sm-pill active" id="smBg_photo" onclick="menuSetBg('photo')">Photo</button>
         <button class="sm-pill" id="smBg_airline" onclick="menuSetBg('airline')">Airline</button>
         <button class="sm-pill" id="smBg_custom" onclick="menuSetBg('custom')">Custom</button>
         <button class="sm-pill" onclick="manageCustomBgUrls()" style="padding:4px 10px;">⚙ Manage URLs</button>
       </div>
-      <div id="smAirlineBgPickWrap" style="display:none;margin-bottom:14px;">
+      <div data-menu="layout" data-sec="display-opts" id="smAirlineBgPickWrap" style="display:none;margin-bottom:14px;">
         <select class="sm-select" id="smAirlineBgPick"
                 onchange="if(typeof setAirlineBgPick==='function')setAirlineBgPick(this.value);">
-          <option value="auto">Auto (rotate every 10s)</option>
+          <option value="auto">Auto (rotate every 45s)</option>
         </select>
       </div>
-      <div style="margin-bottom:14px;"></div>
+      <div data-menu="layout" data-sec="display-opts" style="margin-bottom:14px;"></div>
 
       <!-- (Legacy "Manage Video Collections" widget removed in v113 — videos are now managed in the Media tab Library/Assignments) -->
 
       <!-- ─── 7. RESET ─── -->
-      <div data-sec="admin" style="border-top:1px solid #374151;padding-top:14px;">
+      <div data-menu="admin" data-sec="admin" style="border-top:1px solid #374151;padding-top:14px;">
         <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuResetAll()">Reset all to airport default</button>
       </div>
 

@@ -108,145 +108,136 @@
     // ── build the bar ───────────────────────────────────────────────────
     var stw = ctrl.querySelector('.screen-type-wrap');
 
-    var gDisplay = group('Display');
-    move('screenTypeSel', gDisplay.panel, 'Screen type');
-    move('subScreenSel', gDisplay.panel);
-    var apBtn = document.getElementById('btnAirport');
-    if (apBtn) { gDisplay.panel.appendChild(apBtn); }
-    move('ctrlBgGroup', gDisplay.panel, 'Background');
-    // Font — mirror the console's canonical list (brand fonts + AC Nord +
-    // custom uploads) instead of the stale legacy #fontSel list; changes
-    // proxy through cuFontChanged() so persistence stays canonical.
-    (function () {
-      var sec = document.createElement('div'); sec.className = 'mbar-sec'; sec.textContent = 'Font';
-      gDisplay.panel.appendChild(sec);
-      var fsel = document.createElement('select'); fsel.className = 'mbar-theme';
-      gDisplay.panel.appendChild(fsel);
-      function syncFonts() {
-        var src = document.getElementById('cuFontSelect');
-        if (!src || !src.options.length) return;
-        if (fsel.innerHTML !== src.innerHTML) fsel.innerHTML = src.innerHTML;
-        fsel.value = src.value;
-      }
-      fsel.addEventListener('change', function () {
-        var c = document.getElementById('cuFontSelect');
-        if (c) { c.value = fsel.value; if (typeof window.cuFontChanged === 'function') window.cuFontChanged(); }
-      });
-      gDisplay.root.querySelector('.mbar-title').addEventListener('click', syncFonts);
-      setTimeout(syncFonts, 1800); // the console fragment loads async
-    })();
-
+    // v22757 — ONE PLACE PER JOB. The bar carried a 'Display' group and an
+    // 'Options' group that duplicated controls the console panels already own
+    // (screen type vs Display Type, quick theme vs Theme), so half the bar was a
+    // second route to the same setting and the two could disagree. Both are
+    // gone; their unique controls fold into Board. Customize — 72 controls in
+    // one dropdown — splits into Look, Layout, Branding, Templates and Admin,
+    // partitioned by the data-menu attribute menu.html stamps on each child.
+    // Every control keeps its original id and handler; nothing is
+    // re-implemented here, only re-parented.
     var gOps = group('Operations');
     move('testFlightBtn', gOps.panel);
     move('overrideBtn', gOps.panel);
     link(gOps.panel, 'Refresh live data', function () { if (typeof window.fetchLive === 'function') window.fetchLive(); });
 
-    var gOptions = group('Options');
-    // Theme lives RIGHT HERE — one click, no console detour (Nick).
-    // 'Custom' is NOT in this quick list (Nick: picking it here just turned
-    // the board black — the colour editor lives in the Customize dropdown,
-    // which was closed). Custom routes to Customize via the link below, so
-    // exactly ONE place edits colours.
-    (function () {
-      var sec = document.createElement('div'); sec.className = 'mbar-sec'; sec.textContent = 'Quick theme';
-      gOptions.panel.appendChild(sec);
-      var tsel = document.createElement('select'); tsel.className = 'mbar-theme';
-      [['', 'Airport default (Teal)'], ['tus-teal', 'Teal'], ['tus-teal-deep', 'Teal Deep'], ['mist', 'Mist (light)']].forEach(function (o) {
-        var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; tsel.appendChild(op);
-      });
-      function _syncFromSaved() {
-        try {
-          var ap = (document.getElementById('apSel') || {}).value || '';
-          var raw = ap && localStorage.getItem('fids_customize_' + ap);
-          var t = raw ? (JSON.parse(raw).theme || '') : '';
-          // a saved custom theme isn't in the quick list — leave selection alone
-          if (t !== 'custom') tsel.value = t;
-        } catch (e) {}
-      }
-      _syncFromSaved();
-      // stay in sync when the theme was changed from the Customize section
-      tsel.addEventListener('mousedown', _syncFromSaved);
-      tsel.addEventListener('change', function () {
-        // proxy through the console's own handler so persistence/apply stay canonical
-        var c = document.getElementById('cuThemeSelect');
-        if (c) { c.value = tsel.value; if (typeof window.cuThemeChanged === 'function') window.cuThemeChanged(); }
-      });
-      gOptions.panel.appendChild(tsel);
-      link(gOptions.panel, 'Custom colours… (opens Customize)', function () {
-        var titles = document.querySelectorAll('.mbar-title');
-        for (var i = 0; i < titles.length; i++) {
-          if (titles[i].textContent.replace('▾', '').trim() === 'Customize') { titles[i].click(); return; }
-        }
-        // mobile / section not built — fall back to the overlay console
-        if (typeof window.openOverlayMenu === 'function') window.openOverlayMenu();
-      });
-    })();
-    // ── FULL MENUS (Nick): the console's sections live IN the bar now — the
-    // console overlay itself is retired on desktop. The fragment loads async,
-    // so poll for it, then re-parent each tab's content into its own wide
-    // dropdown. Admin-gated sections appear/disappear with their console
-    // tab-button visibility (checked on every open + a slow poll).
+    // 'from' pulls a whole console tab; 'menu' pulls the run of
+    // #smTab_customize children stamped with that data-menu value.
+    var SECTIONS = [
+      { title: 'Board',     from: 'smTab_display', extra: ['screenTypeSel', 'subScreenSel', 'btnAirport', 'ctrlBgGroup'] },
+      { title: 'Search',    from: 'smTab_search' },
+      { title: 'Look',      menu: 'look' },
+      { title: 'Layout',    menu: 'layout' },
+      { title: 'Branding',  menu: 'branding' },
+      { title: 'Templates', menu: 'templates' },
+      { title: 'Airport',   from: 'smTab_airport', gateBtn: 'smTabAirport' },
+      { title: 'Media',     from: 'smTab_media',   gateBtn: 'smTabMedia' },
+      { title: 'Users',     from: 'smTab_users',   gateBtn: 'smTabUsers' },
+      { title: 'Admin',     menu: 'admin' }
+    ];
+
     if (window.innerWidth > 700) (function () {
-      var SECTIONS = [
-        { title: 'Board',     tab: 'smTab_display' },
-        { title: 'Search',    tab: 'smTab_search' },
-        { title: 'Customize', tab: 'smTab_customize' },
-        { title: 'Airport',   tab: 'smTab_airport', gateBtn: 'smTabAirport' },
-        { title: 'Media',     tab: 'smTab_media',   gateBtn: 'smTabMedia' },
-        { title: 'Users',     tab: 'smTab_users',   gateBtn: 'smTabUsers' }
-      ];
       var made = {};
-      function buildSections() {
+
+      // A control counts as present only if nothing between it and its panel is
+      // inline-hidden. Role gating (editor-roles) and the admin tab gating in
+      // menu.js both hide by inline display, so this sees exactly what a user of
+      // this role would see — and it does so without opening the dropdown, which
+      // a getBoundingClientRect test could not (a closed panel is display:none,
+      // so every descendant would measure as absent).
+      function liveIn(panel) {
+        var els = panel.querySelectorAll('button,select,input,textarea,a');
+        for (var i = 0; i < els.length; i++) {
+          var n = els[i], ok = true;
+          while (n && n !== panel) {
+            if (n.style && n.style.display === 'none') { ok = false; break; }
+            n = n.parentElement;
+          }
+          if (ok) return true;
+        }
+        return false;
+      }
+
+      function build() {
+        var custom = document.getElementById('smTab_customize');
         SECTIONS.forEach(function (s) {
-          if (made[s.tab]) return;
-          var content = document.getElementById(s.tab);
-          if (!content) return;
-          var g = group(s.title);
-          g.panel.classList.add('mbar-wide');
-          g.panel.appendChild(content);
-          ctrl.insertBefore(g.root, gOptions.root);
-          made[s.tab] = g;
-          if (s.gateBtn) g.root.style.display = 'none'; // until the gate says visible
-          // The console modules LOAD their data on tab ACTIVATION
-          // (smSwitchTab) — which the bar never fired, so Media opened to
-          // an empty shell (Nick: 'does not work for media, it stops
-          // there'). Fire the activation whenever the dropdown opens.
-          (function (tabKey, groupEl) {
-            groupEl.root.querySelector('.mbar-title').addEventListener('click', function () {
-              if (groupEl.root.classList.contains('open') && typeof window.smSwitchTab === 'function') {
+          if (made[s.title]) return;
+          var g, content, i;
+          if (s.from) {
+            content = document.getElementById(s.from);
+            if (!content) return;
+            g = group(s.title);
+            g.panel.classList.add('mbar-wide');
+            g.panel.appendChild(content);
+          } else {
+            if (!custom) return;
+            var run = custom.querySelectorAll(':scope > [data-menu="' + s.menu + '"]');
+            if (!run.length) return;
+            g = group(s.title);
+            g.panel.classList.add('mbar-wide');
+            for (i = 0; i < run.length; i++) g.panel.appendChild(run[i]);
+          }
+          (s.extra || []).forEach(function (id) { move(id, g.panel); });
+          ctrl.insertBefore(g.root, gOps.root);
+          made[s.title] = g;
+
+          // The console modules LOAD their data on tab ACTIVATION (smSwitchTab),
+          // which the bar never fired — so Media opened to an empty shell (Nick:
+          // 'does not work for media, it stops there'). Fire it on open.
+          (function (tabKey, grp) {
+            grp.root.querySelector('.mbar-title').addEventListener('click', function () {
+              if (grp.root.classList.contains('open') && typeof window.smSwitchTab === 'function') {
                 try { window.smSwitchTab(tabKey); } catch (e) {}
               }
             });
-          })(s.tab.replace('smTab_', ''), g);
+          })(s.from ? s.from.replace('smTab_', '') : 'customize', g);
         });
         // neuter the retired console opener so nothing can pop the empty shell
-        if (made['smTab_customize'] && typeof window.openOverlayMenu === 'function' && !window.openOverlayMenu._mbarNoop) {
+        if (made['Look'] && typeof window.openOverlayMenu === 'function' && !window.openOverlayMenu._mbarNoop) {
           var noop = function () {};
           noop._mbarNoop = true;
           window.openOverlayMenu = noop;
         }
       }
-      function syncAdminVisibility() {
+
+      // A section with nothing this role may see does not render AT ALL. Nick:
+      // 'if it's in the menu and it doesn't work then it needs out and if it
+      // needs in then it needs to work'. Opening Airport or Media as an empty
+      // box was the single biggest thing wrong with the old bar — they were
+      // present for everyone but their contents are admin-gated. Airport, Media
+      // and Users stay keyed to their console tab button (it tracks a real login
+      // token, which is stronger than reading the DOM); every other section is
+      // judged on whether anything inside it is actually there.
+      function syncVisibility() {
         SECTIONS.forEach(function (s) {
-          if (!s.gateBtn || !made[s.tab]) return;
-          var btn = document.getElementById(s.gateBtn);
-          var vis = btn && getComputedStyle(btn).display !== 'none';
-          made[s.tab].root.style.display = vis ? '' : 'none';
+          var g = made[s.title];
+          if (!g) return;
+          var vis;
+          if (s.gateBtn) {
+            var btn = document.getElementById(s.gateBtn);
+            vis = !!(btn && getComputedStyle(btn).display !== 'none');
+          } else {
+            vis = liveIn(g.panel);
+          }
+          g.root.style.display = vis ? '' : 'none';
         });
       }
+
       var tries = 0;
       var poll = setInterval(function () {
-        buildSections();
-        syncAdminVisibility();
-        if (++tries > 40 && made['smTab_customize']) clearInterval(poll);
+        // Re-run the role gate first: it decides what liveIn() will find, and
+        // its own one-shot poll may have fired before these panels existed.
+        try { if (window.EditorRoles && window.EditorRoles.apply) window.EditorRoles.apply(); } catch (e) {}
+        build();
+        syncVisibility();
+        if (++tries > 40 && made['Look']) clearInterval(poll);
       }, 500);
-      setInterval(syncAdminVisibility, 3000);
+      setInterval(syncVisibility, 3000);
     })();
 
-    // insert groups right after the Menu button
-    ctrl.insertBefore(gDisplay.root, ctrl.firstChild);
-    ctrl.insertBefore(gOps.root, gDisplay.root.nextSibling);
-    ctrl.insertBefore(gOptions.root, gOps.root.nextSibling);
+    // Operations anchors the right end of the titles; sections insert before it.
+    ctrl.insertBefore(gOps.root, ctrl.firstChild);
 
     // search stays inline in the bar (right of the titles); status info stays right.
     if (stw) stw.style.display = 'none'; // now-empty original wrapper
