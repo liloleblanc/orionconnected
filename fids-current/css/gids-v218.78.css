@@ -5404,3 +5404,52 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-tval-old {
    truncated response for this URL would otherwise wear the retired gate
    look (visible g8-r2 banner, unstyled rails) forever. */
 .g8-css-sentinel { height: 7px !important; }
+
+/* ── v22772 — Nick's gate-screen punch list (annotated /gids?ap=YQM&gate=4) ──
+   Three asks, in his words: the "Your Aircraft | Votre Avion" header wants a
+   BLACK METAL TOP, the Gate block "should have a shine", and the time block
+   "same thing darker maybe". */
+
+/* 1. BLACK METAL HEADER. The bar was a dark shade of the airline's own brand
+   colour (color-mix of --banner-bg with black), so on Air Canada it read as
+   dark red. It now uses the same brushed-metal system as the shelves below the
+   map — the silver grain multiplied onto a near-black tint — so the panel is
+   bookended by metal instead of by two different materials. Longhands, not the
+   shorthand: `background:` would wipe the texture back out. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-maptitle {
+  background-color: #15171b !important;
+  background-image: url('/textures/ac-silver-vertical.jpg?v=22451') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+}
+
+/* 2. SHINE ON THE GATE BLOCK. A single soft specular sweep across the tab,
+   angled with the banner's own skew. It sits UNDER the gate number and the
+   airport mark — the children are lifted to their own layer — so nothing has
+   to fight it for contrast. */
+html body .g8-wrap .g8-r1-right { position: relative !important; }
+html body .g8-wrap .g8-r1-right > * { position: relative !important; z-index: 2 !important; }
+html body .g8-wrap .g8-r1-right::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  background: linear-gradient(115deg,
+      rgba(255,255,255,0) 30%,
+      rgba(255,255,255,0.16) 44%,
+      rgba(255,255,255,0.30) 50%,
+      rgba(255,255,255,0.12) 57%,
+      rgba(255,255,255,0) 70%) !important;
+}
+
+/* 3. DARKER TIME BLOCK. The silk tab was a light translucent grey
+   (rgba(214,218,226,0.26)) which sat brighter than everything around it. Same
+   tab, dark fill — its copy is already white, so nothing else moves. */
+html body .octb-tab {
+  background: rgba(10,14,22,0.46) !important;
+  border-color: rgba(255,255,255,0.16) !important;
+}
