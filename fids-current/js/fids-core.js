@@ -10867,6 +10867,64 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
   }
   return null;
 }
+// ── v22743: FLIGHT NUMBERS FIT INSTEAD OF CLIPPING ──────────────────────────
+// Nick photographed 'WN43…' / 'DL24…' on the Tampa board; the audit measured
+// it — DL2406 clipped by 7px, WN4041 by 10, WN4754 by 15 at 28px type. The
+// column holds a 5-character number but not the 6-character ones US carriers
+// fly all day, and nothing caught the overflow: the board autofit is switched
+// off, and this cell was deliberately removed from the legacy shrinker after
+// the two fitters oscillated against each other (Nick: 'still doing it').
+//
+// Widening the column was tried first and made it WORSE — the table
+// redistributed and the clipping grew to 24px — so the text is fitted instead.
+// Runs ONLY while the board autofit is off, so the oscillation that caused the
+// original removal cannot return: there is no second fitter to fight with.
+// Shrink-only, floored, memoised on text+width so a number settles once.
+//
+// Called BOTH from the periodic pass and straight after the board paints: a
+// freshly rendered row would otherwise sit clipped until the next pass, which
+// is exactly the one stale 'DL24…' left on screen after the first fix.
+function _fitFlightCells() {
+  if (typeof BOARD_AUTOFIT_ENABLED !== 'undefined' && BOARD_AUTOFIT_ENABLED) return;
+  try {
+    document.querySelectorAll('#fidsTable td.fids-cell-flight').forEach(function (cell) {
+      var t = (cell.textContent || '').trim();
+      if (!t || !cell.clientWidth) return;
+      var key = t + '|' + Math.round(cell.clientWidth);
+      if (cell.dataset.fnFit === key) return;
+      cell.style.removeProperty('font-size');
+      var base = parseFloat(getComputedStyle(cell).fontSize) || 28;
+      var size = base, guard = 16;
+      var floorPx = Math.max(18, base * 0.68);
+      while (cell.scrollWidth > cell.clientWidth + 1 && size > floorPx && guard-- > 0) {
+        size = Math.max(floorPx, size - 1);
+        cell.style.setProperty('font-size', size + 'px', 'important');
+      }
+      cell.dataset.fnFit = key;
+    });
+  } catch (e) {}
+}
+// Re-fit the moment the board's rows change. A MutationObserver covers every
+// render path without having to find and patch each one.
+try {
+  (function () {
+    var _ffTimer = null;
+    var _arm = function () {
+      var tb = document.querySelector('#fidsTable');
+      if (!tb || tb._ffObserved) return;
+      tb._ffObserved = true;
+      new MutationObserver(function () {
+        if (_ffTimer) clearTimeout(_ffTimer);
+        _ffTimer = setTimeout(function () { _fitFlightCells(); }, 60);
+      }).observe(tb, { childList: true, subtree: true });
+      _fitFlightCells();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _arm);
+    else _arm();
+    setInterval(_arm, 4000); // the table element is replaced on rebuilds
+  })();
+} catch (e) {}
+
 // TEMPORARY KILL SWITCH (Nick: 'is there a temporary fix cause I need to
 // go and this is not working right now'). false = the board renders at the
 // theme's own stock CSS sizes, exactly as it did before the fitter existed:
@@ -17347,7 +17405,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22743';
+var FIDS_BUILD_TAG = 'v22744';
 (function(){
   try {
     function _addTag(){
@@ -31097,25 +31155,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // oscillation that caused the original removal cannot come back: there is
     // no second fitter to fight with. Shrink-only, floored, and memoized on
     // text+width so a given number in a given column settles once.
-    try {
-      if (typeof BOARD_AUTOFIT_ENABLED === 'undefined' || !BOARD_AUTOFIT_ENABLED) {
-        document.querySelectorAll('#fidsTable td.fids-cell-flight').forEach(function (cell) {
-          var t = (cell.textContent || '').trim();
-          if (!t || !cell.clientWidth) return;
-          var key = t + '|' + Math.round(cell.clientWidth);
-          if (cell.dataset.fnFit === key) return;
-          cell.style.removeProperty('font-size');
-          var base = parseFloat(getComputedStyle(cell).fontSize) || 28;
-          var size = base, guard = 14;
-          var floorPx = Math.max(18, base * 0.72);
-          while (cell.scrollWidth > cell.clientWidth + 1 && size > floorPx && guard-- > 0) {
-            size = Math.max(floorPx, size - 1);
-            cell.style.setProperty('font-size', size + 'px', 'important');
-          }
-          cell.dataset.fnFit = key;
-        });
-      }
-    } catch (e) {}
+    try { if (typeof _fitFlightCells === 'function') _fitFlightCells(); } catch (e) {}
     // Nick: 'the 1 and 2 should align, same size — they're not.' The shrink
     // pass above fits each lane numeral to ITS OWN column, so a wide glyph
     // ('2') ends up smaller than a narrow one ('1'). Re-equalize the priority
