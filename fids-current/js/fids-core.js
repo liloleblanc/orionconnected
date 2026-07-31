@@ -31082,6 +31082,40 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       }
       el.dataset.fitW = _fp;
     }
+    // ── v22743: FLIGHT NUMBERS STOP GETTING CUT ─────────────────────────────
+    // Nick photographed 'WN43…' / 'DL24…' on the Tampa board; the audit put
+    // numbers on it — DL2406 clipped by 7px, WN4041 by 10, WN4754 by 15 at
+    // 28px type. The column fits a 5-character number but not the 6-character
+    // ones US carriers fly all day, and nothing was catching the overflow:
+    // the board autofit is switched off, and this cell was deliberately taken
+    // out of the shrinker above after the two fitters oscillated against each
+    // other (Nick: 'still doing it').
+    //
+    // Widening the column was tried first and made it WORSE — the table
+    // redistributed and the clipping grew to 24px — so the fix is to fit the
+    // text instead. This runs ONLY while the board autofit is off, so the
+    // oscillation that caused the original removal cannot come back: there is
+    // no second fitter to fight with. Shrink-only, floored, and memoized on
+    // text+width so a given number in a given column settles once.
+    try {
+      if (typeof BOARD_AUTOFIT_ENABLED === 'undefined' || !BOARD_AUTOFIT_ENABLED) {
+        document.querySelectorAll('#fidsTable td.fids-cell-flight').forEach(function (cell) {
+          var t = (cell.textContent || '').trim();
+          if (!t || !cell.clientWidth) return;
+          var key = t + '|' + Math.round(cell.clientWidth);
+          if (cell.dataset.fnFit === key) return;
+          cell.style.removeProperty('font-size');
+          var base = parseFloat(getComputedStyle(cell).fontSize) || 28;
+          var size = base, guard = 14;
+          var floorPx = Math.max(18, base * 0.72);
+          while (cell.scrollWidth > cell.clientWidth + 1 && size > floorPx && guard-- > 0) {
+            size = Math.max(floorPx, size - 1);
+            cell.style.setProperty('font-size', size + 'px', 'important');
+          }
+          cell.dataset.fnFit = key;
+        });
+      }
+    } catch (e) {}
     // Nick: 'the 1 and 2 should align, same size — they're not.' The shrink
     // pass above fits each lane numeral to ITS OWN column, so a wide glyph
     // ('2') ends up smaller than a narrow one ('1'). Re-equalize the priority

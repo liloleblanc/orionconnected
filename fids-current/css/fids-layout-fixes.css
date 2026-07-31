@@ -7057,14 +7057,3 @@ html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="A
   padding-right: 0 !important;
 }
 
-/* ── v22743: FLIGHT NUMBERS STOP GETTING CUT (Nick's Tampa board photo showed
-   'WN43…', 'DL24…'; the audit measured it exactly — four cells clipped by
-   4–15px at 28px type: DL2406 by 7, WN4041 by 10, WN4754 by 15, DL2475 by 4).
-   The column is 10% of the table, which is enough for a 5-character number
-   but not for the 6-character ones US carriers use all day. The board's
-   autofit is deliberately switched off and this cell was removed from the
-   legacy shrinker (the two fought and oscillated), so nothing was left to
-   catch the overflow — the cell just clipped. Widening the column by two
-   points fixes it at full type size; the destination column has the slack. */
-html #fidsTable .col-flight { width: 12% !important; }
-html #fidsTable .col-dest { width: auto !important; }
