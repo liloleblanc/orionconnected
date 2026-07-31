@@ -17445,7 +17445,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22758';
+var FIDS_BUILD_TAG = 'v22759';
 (function(){
   try {
     function _addTag(){
@@ -17455,6 +17455,12 @@ var FIDS_BUILD_TAG = 'v22758';
       d.textContent = FIDS_BUILD_TAG;
       d.style.cssText = 'position:fixed;left:7px;bottom:1px;z-index:99999;font:600 10px/1.6 monospace;color:rgba(128,138,152,0.55);pointer-events:none;';
       document.body.appendChild(d);
+      // The ad-renderer diagnostics below were a debugging aid that never got
+      // switched off — they painted 'car-image/contain:<uuid>.jpg · top:img
+      // .ad-tech-media' across the bottom of live gate screens. The build tag
+      // stays (Nick reads it during preview reviews); the diagnostics now need
+      // ?addiag=1, so they are opt-in instead of on for every traveller.
+      if (!/[?&]addiag=1/.test(location.search)) return;
       setInterval(function(){
         try {
           var t = FIDS_BUILD_TAG + (window._adDiag ? ' · ' + window._adDiag : '');
