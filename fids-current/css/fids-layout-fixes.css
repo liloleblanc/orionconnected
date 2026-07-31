@@ -7057,3 +7057,89 @@ html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="A
   padding-right: 0 !important;
 }
 
+
+/* ── v22745: AIR CANADA GETS PLATES TOO (Nick: 'Why have there been no ac
+   plates installed?'). They were excluded on purpose — every plate rule since
+   v22730 carries a :not(:is([data-gate-airline="AC"]…)) guard, because the
+   brushed-metal AC branding was approved separately (task #29) and I did not
+   want to overwrite it without being asked. Asked and answered: AC now wears
+   the same plate grammar as every other carrier — one continuous sheet behind,
+   metal plates on top — in AC's own accent, so the approved material is still
+   what the plate is made of. Placed last and with matching :is()+:not(#_)
+   weight so it outranks its own exclusions. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-board-info-row {
+  background-color: #34373c !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux.jpg?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+/* The rows/cells go transparent so that sheet runs behind them unbroken. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-bir-cell {
+  background-color: transparent !important;
+  background-image: none !important;
+  border-bottom: 0 !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
+}
+/* The plates themselves — same recipe, same insets, AC's accent. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-bir-cell::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 3px !important; right: 3px !important; top: 3px !important; bottom: 3px !important;
+  border-radius: clamp(6px, 0.8vh, 10px) !important;
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 62%, #6f757e) !important;
+  background-image: url("/logos/Backgrounds/gate-metal-blue.png?v=1") !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: luminosity !important;
+  box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
+              inset 0 1px 1px rgba(255, 255, 255, 0.55),
+              inset 0 -2px 3px rgba(0, 0, 0, 0.5),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.18) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+/* The rail rows get the roomier inset the other carriers' rail plates use. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before {
+  left: clamp(8px, 0.7vw, 14px) !important;
+  right: clamp(8px, 0.7vw, 14px) !important;
+  top: clamp(6px, 0.9vh, 11px) !important;
+  bottom: clamp(6px, 0.9vh, 11px) !important;
+  border-radius: clamp(10px, 1.4vh, 16px) !important;
+}
+/* Content rides above its plate. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row > *,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > *,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb > *,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-bir-cell > * {
+  position: relative;
+  z-index: 1;
+}
+/* Same widths as everyone else: the shelf and table wrappers stop insetting. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
