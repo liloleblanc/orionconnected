@@ -10919,9 +10919,16 @@ try {
       var tb = document.querySelector('#fidsTable');
       if (!tb || tb._ffObserved) return;
       tb._ffObserved = true;
+      // Coalesce with requestAnimationFrame rather than a timeout: rAF still
+      // batches a bulk row insertion into one pass, but runs BEFORE the next
+      // paint, so a freshly rendered number is never shown unfitted. A 60ms
+      // debounce left a window where a repaint could be caught mid-flight —
+      // which is exactly how a stale 'DL24…' turned up in a screenshot while
+      // the audit reported the board clean.
+      var _raf = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame : function (f) { return setTimeout(f, 16); };
       new MutationObserver(function () {
-        if (_ffTimer) clearTimeout(_ffTimer);
-        _ffTimer = setTimeout(function () { _fitFlightCells(); }, 60);
+        if (_ffTimer) return;
+        _ffTimer = _raf(function () { _ffTimer = null; _fitFlightCells(); });
       }).observe(tb, { childList: true, subtree: true });
       _fitFlightCells();
     };
@@ -17411,7 +17418,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22748';
+var FIDS_BUILD_TAG = 'v22750';
 (function(){
   try {
     function _addTag(){
