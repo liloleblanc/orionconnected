@@ -10636,6 +10636,27 @@ function gateAutofit(root) {
     if (_curPx && Math.abs(_curPx - _finPx) <= 1) _finPx = _curPx;
     fits(_finPx);
   }
+  // v22742 — FIT THE PLATE, NOT THE ROW (Nick: 'The text pops out of boxes …
+  // on any page it's not just this one'). Since the plates arrived, the box a
+  // passenger SEES is the ::before panel inset inside the row — but every
+  // fitter still budgeted against the row's full height, so a tall value (the
+  // two-line bilingual status) filled the row and overhung the plate. Audited
+  // live on PAL gate 2: 'Status'/'Statut' sat 6px above the plate's top edge
+  // and 'À l'heure' 6px below its bottom. This returns the plate's inset so
+  // every budget below can subtract it; rows with no plate return zeros and
+  // behave exactly as before.
+  function _plateInset(el) {
+    try {
+      var cs = window.getComputedStyle(el, '::before');
+      if (!cs || cs.content === 'none' || cs.content === 'normal') return null;
+      var hasPaint = /url\(|gradient/.test(cs.backgroundImage || '') || cs.backgroundColor !== 'rgba(0, 0, 0, 0)';
+      if (!hasPaint) return null;
+      var t = parseFloat(cs.top) || 0, b = parseFloat(cs.bottom) || 0;
+      var l = parseFloat(cs.left) || 0, r = parseFloat(cs.right) || 0;
+      if (t <= 0 && b <= 0 && l <= 0 && r <= 0) return null; // full-bleed = a background, not a plate
+      return { t: t, b: b, l: l, r: r };
+    } catch (e) { return null; }
+  }
   try {
     // LEFT RAIL titles first ('so much space is wasted') — each label line
     // fits its shelf width under a 0.2-row height cap, THEN the value fit
@@ -10643,7 +10664,9 @@ function gateAutofit(root) {
     root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title').forEach(function (el) {
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
-      _boxAssign(el, tc.clientWidth, Math.floor(row.clientHeight * 0.2), null, false);
+      var _pi = _plateInset(row);
+      var _rowH = row.clientHeight - (_pi ? (_pi.t + _pi.b) : 0);
+      _boxAssign(el, tc.clientWidth, Math.floor(_rowH * 0.2), null, false);
     });
     // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper).
     // Status value included since v22359 — its two stacked bilingual lines
@@ -10652,7 +10675,8 @@ function gateAutofit(root) {
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var title = row.querySelector('.v2-fi-title');
-      var availH = row.clientHeight - (title ? title.offsetHeight : 0) - 6;
+      var _pi2 = _plateInset(row);
+      var availH = row.clientHeight - (_pi2 ? (_pi2.t + _pi2.b) : 0) - (title ? title.offsetHeight : 0) - 6;
       var colR = Infinity;
       var col = el.closest('.gad-aircraft-col');
       if (col) {
@@ -17323,7 +17347,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22741';
+var FIDS_BUILD_TAG = 'v22742';
 (function(){
   try {
     function _addTag(){
