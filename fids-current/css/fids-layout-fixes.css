@@ -7258,3 +7258,29 @@ html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
   text-decoration: none !important;
   opacity: 1 !important;
 }
+
+/* ── v22756: THE BOARDING WORD BECOMES READABLE ON THE BLUE ROWS. Nick: 'make
+   sure colors are approipriate such as delays etc'. Measured on the live
+   preview, board and gate both: the amber status word #FFB000 sits on the
+   standard row blue rgb(30,126,184) at 2.42:1 — under even the 3:1 floor that
+   large bold type gets, and the worst pairing on the board by some distance.
+   Everything else measured clean once the probe's background walk was
+   corrected: white body text 4.44:1, cancelled white on #D42341 5.10:1, the
+   dark ink on the delayed amber 9:1 and on the final-call orange 6.48:1.
+
+   Why the word gets lighter and not the row: that blue is mid-toned, so
+   nothing clears 4.5:1 against it — white itself only reaches 4.19 at best —
+   and the row colour is load-bearing brand. Lifting the amber to #FFE3A8 puts
+   it at 3.53:1, comfortably over the large-text floor, and it still reads as
+   gold next to the white cells beside it rather than as a second white.
+
+   Scoped hard: only Boarding and Final call, only on rows carrying no status
+   colour of their own, only on dark boards. Delayed, cancelled, final-call and
+   every light board keep the colours Nick already signed off — this is the one
+   pairing that failed, so it is the only one that moves. */
+html:not(#_):not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status.fids-status-boarding,
+html:not(#_):not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status.fids-status-boarding *,
+html:not(#_):not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status.fids-status-final,
+html:not(#_):not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status.fids-status-final * {
+  color: #FFE3A8 !important;
+}

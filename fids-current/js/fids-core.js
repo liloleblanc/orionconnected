@@ -10901,10 +10901,23 @@ function _fitFlightCells() {
       // width with the same number, so a text+width key scored a hit and the
       // cell was never re-fitted — which is why 'F929…' and 'WN49…' were still
       // clipped on the delayed rows while every on-time row fitted fine.
+      // v22756: clearing the inline size to read the BASE is required — but a
+      // memo hit used to return straight after that clear, which put the cell
+      // back to its unfitted size and left it clipped. The fit only survived
+      // until the next pass, so the board settled on 'WN26…' / 'AA21…' while
+      // carrying a memo key that claimed the cell was already done. Measured on
+      // Orlando at v22755: WN2605 overflowed its 143px column by 15px at 28px
+      // type with dataset.fnFit already set. Remember the size that was chosen
+      // and put it back on a hit, so the fit is idempotent instead of
+      // self-erasing.
       cell.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(cell).fontSize) || 28;
       var key = t + '|' + Math.round(cell.clientWidth) + '|' + Math.round(base);
-      if (cell.dataset.fnFit === key) return;
+      if (cell.dataset.fnFit === key) {
+        var kept = parseFloat(cell.dataset.fnPx);
+        if (kept > 0 && kept < base) cell.style.setProperty('font-size', kept + 'px', 'important');
+        return;
+      }
       var size = base, guard = 16;
       var floorPx = Math.max(18, base * 0.68);
       while (cell.scrollWidth > cell.clientWidth + 1 && size > floorPx && guard-- > 0) {
@@ -10912,6 +10925,7 @@ function _fitFlightCells() {
         cell.style.setProperty('font-size', size + 'px', 'important');
       }
       cell.dataset.fnFit = key;
+      cell.dataset.fnPx = size;
     });
   } catch (e) {}
 }
@@ -17431,7 +17445,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22755';
+var FIDS_BUILD_TAG = 'v22756';
 (function(){
   try {
     function _addTag(){
