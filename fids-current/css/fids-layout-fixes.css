@@ -7041,3 +7041,18 @@ html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="A
   bottom: 3px !important;
   border-radius: clamp(6px, 0.8vh, 10px) !important;
 }
+
+/* ── v22741: the last 27px. Tracing the pane's ancestor chain live showed a
+   THIRD box in the stack that the v22740 measurement didn't account for:
+     shelf-fi      l=1481.4 w=435.6  padding 10/10   (v22740, applied)
+     v2-rc-fi-table l=1491.4 w=415.6 padding 14/14   <- this one
+     v2-rc-fi-pane  l=1505.4 w=387.6 padding 13/13
+   The table wrapper's own side padding was pushing the plates a further 14px
+   in per side, which is why v22740 only closed part of the gap (35.4 -> 30.0
+   instead of 16.4). Zeroing its HORIZONTAL padding only — its vertical
+   spacing between the two panes is untouched — lands the right-hand plates at
+   the same width and the same 16px inset as the left rail's. */
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
