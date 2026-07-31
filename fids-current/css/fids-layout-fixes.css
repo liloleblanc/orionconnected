@@ -7008,3 +7008,36 @@ html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="A
   background-repeat: no-repeat, no-repeat !important;
   background-blend-mode: multiply, soft-light !important;
 }
+
+/* ── v22740: THE PLATES ARE ONE SET, NOT THREE (Nick, PAL gate 2: 'The plate
+   down here on the right are not the same size first of all and nothing in
+   the page aligns'). Measured live on that gate, viewport 1920:
+     left-rail plates   408.7 wide, inset 16.4px from the column edge
+     right info plates  370.9 wide, inset 35.4px      <- 38px narrower
+     right type plate   377.0 wide, inset 32.4px      <- and 6px off the two
+                                                         plates right above it
+   Two separate faults. The type plate was 6px larger because v22732 gave the
+   info panes a 3px plate inset and this one kept 0. And the right column's
+   plates were never mirrored against the left rail's at all — the shelf's own
+   side padding pushed them 19px further in on each side. Now: one inset for
+   every plate, and the right-hand panes span their shelf so both columns
+   carry the same plate width, equally inset from their outer edge. */
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+/* The type panel's plate takes the SAME 3px inset as the info panes, so the
+   three plates in that column are identical. (Its box is sized by the v22686
+   JS pass to match the info pane, so once the pane widens this follows.) */
+html body:not(#_):not(#_):not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
+  left: 3px !important;
+  right: 3px !important;
+  top: 3px !important;
+  bottom: 3px !important;
+  border-radius: clamp(6px, 0.8vh, 10px) !important;
+}
