@@ -209,7 +209,33 @@
       // and Users stay keyed to their console tab button (it tracks a real login
       // token, which is stronger than reading the DOM); every other section is
       // judged on whether anything inside it is actually there.
+      // An empty dropdown is not a working control, so it does not render. The
+      // Gate/Carousel pickers are populated only on screens that HAVE gates or
+      // carousels; on the main board they sat in Board as a select you could
+      // open onto nothing. Their own wrappers handle this on the console side,
+      // but move() re-parents the select itself out of its wrapper, so the bar
+      // has to make the same call. Reversible: the moment options arrive the
+      // select comes back.
+      function hideEmptySelects() {
+        SECTIONS.forEach(function (s) {
+          var g = made[s.title];
+          if (!g) return;
+          var sels = g.panel.querySelectorAll('select');
+          for (var i = 0; i < sels.length; i++) {
+            var sel = sels[i], empty = sel.options.length === 0;
+            if (empty && sel.style.display !== 'none') {
+              sel.dataset.mbHid = '1';
+              sel.style.display = 'none';
+            } else if (!empty && sel.dataset.mbHid === '1') {
+              sel.style.display = '';
+              delete sel.dataset.mbHid;
+            }
+          }
+        });
+      }
+
       function syncVisibility() {
+        hideEmptySelects();
         SECTIONS.forEach(function (s) {
           var g = made[s.title];
           if (!g) return;
