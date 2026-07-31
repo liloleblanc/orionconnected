@@ -6679,7 +6679,7 @@ html body[data-bids-carousel] .bidsv2-chevrons {
    (later in file) win the specificity tie everywhere — including the
    bids pages those older rules excluded. */
 html body[data-fids-theme]:not([data-page="__never"]) #fidsBoard:not(#_) {
-  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=5") !important;
+  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=6") !important;
   background-attachment: fixed !important;
   background-position: center bottom !important;
   background-size: 100vw auto !important;
@@ -6687,7 +6687,7 @@ html body[data-fids-theme]:not([data-page="__never"]) #fidsBoard:not(#_) {
 }
 html body[data-fids-theme="mist"]:not([data-page="__never"]) #fidsBoard:not(#_),
 html body[data-fids-ap="MCO"]:not([data-page="__never"]) #fidsBoard:not(#_) {
-  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=5") !important;
+  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=6") !important;
   background-attachment: fixed !important;
   background-position: center bottom !important;
   background-size: 100vw auto !important;
@@ -6701,7 +6701,7 @@ html body[data-fids-ap="MCO"]:not([data-page="__never"]) #fidsBoard:not(#_) {
    and this file loads after bids-v2.css, so the shorthand there can't
    reset it. Same light/dark split as the boards. */
 html body[data-fids-theme]:not([data-page="__never"]) .bidsv2-screen:not(#_) {
-  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=5") !important;
+  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=6") !important;
   background-attachment: fixed !important;
   background-position: center bottom !important;
   background-size: 100vw auto !important;
@@ -6713,7 +6713,7 @@ html body[data-fids-theme="light"]:not([data-page="__never"]) .bidsv2-screen:not
 html body[data-fids-theme="paper"]:not([data-page="__never"]) .bidsv2-screen:not(#_),
 html body[data-fids-theme="sky"]:not([data-page="__never"]) .bidsv2-screen:not(#_),
 html body[data-fids-ap="MCO"]:not([data-page="__never"]) .bidsv2-screen:not(#_) {
-  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=5") !important;
+  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=6") !important;
   background-attachment: fixed !important;
   background-position: center bottom !important;
   background-size: 100vw auto !important;
@@ -7174,13 +7174,16 @@ html body[data-fids-theme] .bidsv2-screen::after {
   position: fixed !important;
   left: -6vw; right: -6vw; bottom: 0;
   height: 460px;
-  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=5");
+  background-image: url("/logos/Backgrounds/cloud-hex-band-dark.png?v=6");
   background-position: center bottom;
   background-size: 112vw auto;
   background-repeat: no-repeat;
-  opacity: .55;
+  /* v22751 — more presence. Now that the sky sits BEHIND the rows it only
+     shows where there is no content, so at .55 it had effectively
+     disappeared (Nick: 'you can't see it'). */
+  opacity: .85;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
   will-change: transform;
   animation: fidsCloudDrift 190s ease-in-out infinite alternate;
 }
@@ -7196,7 +7199,7 @@ html body[data-fids-theme="light"] .bidsv2-screen::after,
 html body[data-fids-theme="paper"] .bidsv2-screen::after,
 html body[data-fids-theme="sky"] .bidsv2-screen::after,
 html body[data-fids-ap="MCO"] .bidsv2-screen::after {
-  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=5");
+  background-image: url("/logos/Backgrounds/cloud-hex-band-light.png?v=6");
 }
 @keyframes fidsCloudDrift {
   from { transform: translate3d(-4%, 0, 0); }
@@ -7207,15 +7210,12 @@ html body[data-fids-ap="MCO"] .bidsv2-screen::after {
   html body[data-fids-theme] .bidsv2-screen::after { animation: none !important; }
 }
 
-/* ── v22749: THE DRIFTING SKY STAYS BEHIND THE FLIGHTS (Nick: 'doesn't not go
-   on top the actual flights'). The v22748 drift layer is a FIXED pseudo-
-   element, and a positioned element paints above ordinary in-flow content — so
-   the moving band was tinting straight over the lower flight rows. Lifting the
-   board's own children onto their own layer puts every row, the table and the
-   ticker above it, leaving the sky visible only where there is no content —
-   which is what it was always meant to be. */
-html body[data-fids-theme] #fidsBoard > *,
-html body[data-fids-theme] .bidsv2-screen > * {
-  position: relative;
-  z-index: 1;
-}
+/* ── v22752: THE SKY GOES BEHIND THE ROWS WITHOUT TOUCHING ANYTHING ELSE.
+   Two earlier attempts at this broke the menu, and the second one broke it
+   worse — the control bar is a direct child of #fidsBoard, so any rule that
+   assigns z-index to those children puts the bar (and every dropdown it owns)
+   into the same stacking fight as the table. Nick was left unable to use the
+   board at all, twice. No content is touched now: the drift layer itself drops
+   to z-index:-1, which paints it behind ALL in-flow content by definition. It
+   still shows because the board's own surface is transparent — the band it
+   carries is a background-IMAGE, not a fill. */
