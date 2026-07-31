@@ -6801,3 +6801,58 @@ html body .g8-bir-cell {
   background-blend-mode: normal, soft-light !important;
 }
 
+
+/* ── v22727: THE SHINY PLATE RIDES **ON TOP** OF THE BACKGROUND (Nick,
+   spelling it out after v22725 painted over his design: 'the points was
+   to leave te background and have a matching similar shiny plate on top
+   of it' — which is also exactly his first ask: 'on top of the already
+   existing blue like smaller plates'). Nothing about the existing
+   surfaces changes. Each card grows an INSET PLATE — a ::before layer
+   floating a few px inside the card's edges, so the approved background
+   design stays visible as a frame around it. The plate: a slightly
+   lighter tone of the airline colour ('matching similar'), the REAL
+   chrome shine baked from Nick's metal gradients (gate-chrome-sheen.png,
+   colour-neutral so it rides any brand hue), his swoosh arcs beneath,
+   a bevel edge and a drop shadow. Content sits above via z-index. AC
+   keeps its approved look — no plates there. */
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body:not(#_) .g8-bir-cell {
+  position: relative !important;
+}
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:not(#_) .g8-bir-cell::before {
+  content: '' !important;
+  position: absolute !important;
+  left: clamp(5px, 0.5vw, 10px) !important;
+  right: clamp(5px, 0.5vw, 10px) !important;
+  top: clamp(4px, 0.6vh, 8px) !important;
+  bottom: clamp(4px, 0.6vh, 8px) !important;
+  border-radius: clamp(7px, 1vh, 12px) !important;
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 54%, #9aa0aa) !important;
+  background-image:
+    url("/logos/Backgrounds/gate-chrome-sheen.png?v=1"),
+    url("/logos/Backgrounds/gate-swoosh.png?v=1") !important;
+  background-position: center, center !important;
+  background-size: 100% 100%, cover !important;
+  background-repeat: no-repeat !important;
+  box-shadow: 0 2px 8px rgba(4, 10, 22, 0.42),
+              inset 0 1px 0 rgba(255, 255, 255, 0.38),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.14) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+/* Card content rides above its plate (same pattern as the v22611 tabs). */
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row > *,
+html body:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > *,
+html body:not(#_) .g8-bir-cell > * {
+  position: relative;
+  z-index: 1;
+}
+/* AC: no plates — the approved brushed-metal grammar stands alone. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-bir-cell::before {
+  content: none !important;
+}
