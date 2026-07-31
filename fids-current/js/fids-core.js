@@ -10911,8 +10911,18 @@ function _fitFlightCells() {
       // and put it back on a hit, so the fit is idempotent instead of
       // self-erasing.
       cell.style.removeProperty('font-size');
-      var base = parseFloat(getComputedStyle(cell).fontSize) || 28;
-      var key = t + '|' + Math.round(cell.clientWidth) + '|' + Math.round(base);
+      var _cs = getComputedStyle(cell);
+      var base = parseFloat(_cs.fontSize) || 28;
+      // WEIGHT belongs in the key for the same reason SIZE does. v22756 added
+      // the base size because a Delayed row re-renders heavier at the same
+      // width; but a row that goes Final call / Delayed changes font-WEIGHT at
+      // the SAME size, and bold is wider — so the key matched, the memo branch
+      // put back the size chosen for the lighter face, and the cell overflowed
+      // again. Measured at v22758: 'AC 8020' sat at 151px in its 143px column
+      // carrying dataset.fnPx=26 from a fit that genuinely fit when it ran.
+      // Letter-spacing rides along for the themes that set it per row state.
+      var key = t + '|' + Math.round(cell.clientWidth) + '|' + Math.round(base)
+              + '|' + (_cs.fontWeight || '') + '|' + (_cs.letterSpacing || '');
       if (cell.dataset.fnFit === key) {
         var kept = parseFloat(cell.dataset.fnPx);
         if (kept > 0 && kept < base) cell.style.setProperty('font-size', kept + 'px', 'important');
@@ -17445,7 +17455,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22759';
+var FIDS_BUILD_TAG = 'v22760';
 (function(){
   try {
     function _addTag(){
@@ -18571,8 +18581,17 @@ function render() {
     // 12 s language cycle (Nick at v22373: 'its still doing it'). One
     // task → one paint → the new language arrives already fitted.
     try { boardAutofit(true); } catch (e) {}
+    // ...except boardAutofit is a no-op while BOARD_AUTOFIT_ENABLED is false,
+    // which is how it ships — so the flight-number fitter was NOT part of that
+    // one-task guarantee. It only ran from the MutationObserver's rAF, which
+    // lands a frame LATE: measured on Orlando at v22758, every board page-flip
+    // painted 2-3 frames of unfitted numbers before the fit arrived. 23 cells
+    // caught mid-flash across 8233 frames — 'UA15…', 'WN47…', 'F924…' — each
+    // for ~35 ms, every ~25 s, forever, on a screen that never sleeps. Fit in
+    // the same task as the swap so no unfitted frame can be painted at all.
+    try { _fitFlightCells(); } catch (e) {}
     // settle pass for late layout (web fonts, images shifting metrics)
-    try { setTimeout(function () { boardAutofit(false); }, 350); } catch (e) {}
+    try { setTimeout(function () { boardAutofit(false); _fitFlightCells(); }, 350); } catch (e) {}
   }
   // Phase 4: expose flight lists to the Search tab
   try {
