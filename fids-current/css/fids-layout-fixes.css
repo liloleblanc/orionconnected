@@ -7490,3 +7490,40 @@ html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-
   position: absolute !important;
   z-index: 0 !important;
 }
+
+/* ── v22797 — THE BULLETS BECOME ONE SIZE (Nick: 'nothing is alligned the
+   icons are all different sizes and allignment is off its not right its
+   way off'). Exactly right, and the cause is v22791's own design: the
+   bullet was sized 1em so it would ride the value's font — but the rail
+   fitter sizes EACH value to its own width, so six plates produced six
+   icon sizes (huge leaf beside a tiny bell) and six left edges. The
+   bullet now has ONE fixed size and ONE fixed gap on every row, on every
+   carrier: identical orbs, every value starting on the same line. The
+   glyph and emblem inside size to the orb, not to the text. */
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet {
+  width: clamp(40px, 5.6vh, 64px) !important;
+  height: clamp(40px, 5.6vh, 64px) !important;
+  min-width: clamp(40px, 5.6vh, 64px) !important;
+  min-height: clamp(40px, 5.6vh, 64px) !important;
+  max-width: clamp(40px, 5.6vh, 64px) !important;
+  max-height: clamp(40px, 5.6vh, 64px) !important;
+  margin-right: clamp(8px, 0.9vw, 14px) !important;
+  vertical-align: middle !important;
+}
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-icon-wrap,
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-icon-badge,
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-emblem-wrap {
+  width: 100% !important; height: 100% !important;
+  min-width: 0 !important; min-height: 0 !important;
+  max-width: 100% !important; max-height: 100% !important;
+  padding: clamp(6px, 0.9vh, 11px) !important;
+}
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-emblem-wrap {
+  padding: clamp(4px, 0.6vh, 8px) !important;
+}
+/* Icon-font glyphs: a fixed size for the fixed orb (0.62em followed the
+   text size — the same drift, one level down). */
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .ac-ico,
+html body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet [class*="ac-ico"] {
+  font-size: clamp(20px, 3.1vh, 36px) !important;
+}
