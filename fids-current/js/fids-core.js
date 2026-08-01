@@ -7428,26 +7428,32 @@ function _buildV2MapCol(ctx, vars) {
       // phantom side column (v22591 regression). The 2-PANEL pattern Nick
       // asked for lives INSIDE the shelf: pane 1 = Flight/From, pane 2 =
       // Arrival/Status, each drawn as its own panel.
+      // v22782 — SHELF 10 IS A LEFT PLATE (Nick, three times over: 'it needs
+      // to match the left side', 'you're making puzzle pieces that don't fit
+      // and don't belong'). The inbound card was a miniature data table in its
+      // own v2-rc-* dialect — a different component than the six plates beside
+      // it, which is why no amount of resizing ever made it MATCH. It is now
+      // built from the LEFT RAIL'S OWN component: same v2-fi-row markup, same
+      // classes, wrapped in a display:contents .gad-aircraft-col so every rule
+      // that paints the left plates paints this one identically — orb, red
+      // header strip, metal plate, big value. One plate, one shelf, the
+      // left's grammar: title 'Incoming Flight | Vol entrant', value flight +
+      // origin. Arrival/status detail stays on the type shelf and the map's
+      // info bar; a shelf-10 plate carries one value like every other plate.
+      var _ibPlateVal = (_ibFltCompact || '\u2014')
+                      + (_ibCityCode ? ' <span class="v2-fi-sub">\u00b7 ' + _ibCityCode + '</span>' : '');
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
-        +   '<div class="v2-rc-fi-pane">'
-        +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
-        +       '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
-        +     '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
-        +       '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
-        +     '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-pane' + (_ibArrRowHtml ? '' : ' v2-rc-fi-pane-1') + '">'
-        +     (_ibArrRowHtml || '')
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi">'
+        +   '<div class="gad-aircraft-col" style="display:contents">'
+        +     '<div class="v2-fi-row" style="height:100%;box-sizing:border-box">'
+        +       '<div class="v2-fi-iconcol"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 14.6c.6.2 1 .8 1 1.4l-10-2.6-5.4 4.4-1.9-.5 3.4-4.4L3 11.4l1.5-1.2 5.2 1.4 4.5-3.7c.5-.4 1.2-.3 1.6.2.4.5.3 1.2-.2 1.6l-3.6 3 9 1.9z"/></svg></div>'
+        +       '<div class="v2-fi-textcol">'
+        +         '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol entrant' : 'Incoming Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Incoming Flight' : 'Vol entrant') + '</span></div>'
+        +         '<div class="v2-fi-value axr-one-line">' + _ibPlateVal + '</div>'
+        +       '</div>'
         +     '</div>'
         +   '</div>'
-        + '</div></div>';
+        + '</div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.
@@ -17542,7 +17548,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22781';
+var FIDS_BUILD_TAG = 'v22782';
 (function(){
   try {
     function _addTag(){
