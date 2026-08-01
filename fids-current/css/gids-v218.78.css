@@ -5726,13 +5726,16 @@ html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val .v2-fi-bullet
    NAVY --banner-bg gradient — the one surface ignoring Nick's 'background
    behind the blue panels teal'. It goes teal like everything behind the
    plates; the white leaf and glow stay. */
+/* v22795: ONE teal, uniform (Nick: 'its not uniform its not the same
+   colors') — the brand-hold panel matches the wrap's flat #00b2a9 exactly,
+   no gradient of its own. Just the soft white glow behind the leaf. */
 html body .g8-wrap.g8-airline-WS.g8-bigcraft-active .gad-map-col-v2 > .v2-rc-shelf-map {
   background:
-    radial-gradient(circle at 72% 38%, rgba(255,255,255,.14) 0%, transparent 34%),
-    linear-gradient(145deg, #00b2a9 0%, #00776f 100%) !important;
+    radial-gradient(circle at 72% 38%, rgba(255,255,255,.10) 0%, transparent 34%),
+    #00b2a9 !important;
 }
 html body .g8-wrap.g8-airline-WS.g8-bigcraft-active .gad-map-col-v2 .v2-rc-map-life {
   background:
-    radial-gradient(circle at 50% 52%, rgba(255,255,255,.14), transparent 42%),
-    linear-gradient(145deg, #00b2a9 0%, #00776f 100%) !important;
+    radial-gradient(circle at 50% 52%, rgba(255,255,255,.10), transparent 42%),
+    #00b2a9 !important;
 }

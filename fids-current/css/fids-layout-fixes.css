@@ -7353,7 +7353,12 @@ html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-
 html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
 html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
 html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
-  background-color: color-mix(in srgb, #0b5da8 48%, #8b9099) !important;
+  /* v22795: Nick — 'background is still not what i said its not uniform its
+     not the same colors'. The BACKGROUND surfaces (columns + shelves, the
+     frame the plates sit on) are ONE teal — the same #00b2a9 the wrap
+     already shows in the gaps — not the blue mix v22792 wrongly put here.
+     Blue belongs to the PLATES ONLY (the ::before layer below). */
+  background-color: #00b2a9 !important;
 }
 /* v22793: the VISIBLE metal plate is the v22727 ::before chrome layer
    (accent 72% + metal photo in luminosity) — the column colour above only
