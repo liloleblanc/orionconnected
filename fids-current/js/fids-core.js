@@ -17542,7 +17542,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22774';
+var FIDS_BUILD_TAG = 'v22775';
 (function(){
   try {
     function _addTag(){
@@ -32919,7 +32919,21 @@ setInterval(function () {
 // live geometry and only writes when it actually changes, so there is no
 // per-frame style churn.
 (function () {
-  var PERIODS = 10;              // horizontal rules per tile
+  // PERIODS MUST EQUAL THE NUMBER OF RULES IN THE BAKED TILE. The tile height
+  // is set to rowPitch * PERIODS, so when this matches the artwork, one rule
+  // lands on every row boundary at ANY row height — the pattern grows and
+  // shrinks with the rows on its own, forever, with no re-bake.
+  //
+  // It was 10, correct for the original art. v22755 re-baked the sheet at 1/3
+  // and tiled it 3x3, so the tile now carries THIRTY rules and 10 crammed
+  // three into every row (Nick: "That's not one per row"). The constant simply
+  // stopped matching the art.
+  //
+  // Only values that divide 30 by a whole number keep the lock: 30 = one per
+  // row, 15 = two, 10 = three. Anything else (20 would give one and a half)
+  // puts rules mid-row and re-introduces exactly the drift this exists to
+  // prevent — so this is not a free dial, it is a count.
+  var PERIODS = 30;              // horizontal rules per tile — match the art
   var last = '';
   function sync() {
     try {
