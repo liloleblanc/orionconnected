@@ -5525,3 +5525,41 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow 
   font-size: clamp(13px,1.8vh,20px) !important;
   line-height: 1.05 !important;
 }
+
+/* ── v22781 — fit the TWO-PANE info variant too. The v22780 type rules were
+   scoped to .v2-rc-fi-t4, but the live gate markup builds the 4-row shelf as
+   .v2-rc-fi-2pane — two stacked panes of two rows — so they matched nothing
+   and the shelf kept clipping (Nick, on the shot: "its not even the right
+   size"). Scope to the SHELF, not the table variant, and make every layer
+   split its box evenly: 2 panes share the shelf, 2 rows share each pane,
+   minmax(0,1fr) all the way down so no layer can inflate past its share. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-table {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-2pane {
+  display: grid !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  gap: clamp(2px,0.3vh,5px) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-pane {
+  display: grid !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-trow {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  font-size: clamp(9px,1.1vh,13px) !important;
+  line-height: 1.0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-tlbl span + span {
+  margin-top: 1px !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  font-size: clamp(13px,1.8vh,20px) !important;
+  line-height: 1.05 !important;
+}
