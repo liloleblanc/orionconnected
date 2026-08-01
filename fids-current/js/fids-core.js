@@ -7594,29 +7594,30 @@ function _buildV2MapCol(ctx, vars) {
       // (a second shelf child breaks the rail grid): pane 1 = Flight /
       // Destination, pane 2 = Departure / Status. Departure TIME stays
       // (Nick: 'who told you to remove the time').
+      // v22783 — the OUTBOUND fallback card becomes the same LEFT PLATE as the
+      // inbound one (v22782). This was the second emitter of the mini-table
+      // dialect — the screenshot that proved v22782 'unchanged' was in fact
+      // this card rendering. One component now, both variants.
+      // The time STAYS in the value line — Nick, previously, on this exact
+      // card: 'who told you to remove the time'. Status is not duplicated:
+      // this fallback shows the SAME outbound flight as the left rail, and
+      // status is left plate 3.
+      var _dPlateVal = (_dFltCompact || '\u2014')
+                     + '<span class="v2-fi-sub"> \u00b7 ' + (_dispIata(_dDest) || '\u2014')
+                     + (_dDepStr ? ' \u00b7 <span' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + _dDepStr + '</span>' : '')
+                     + '</span>';
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
-        +   '<div class="v2-rc-fi-pane">'
-        +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
-        +       '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
-        +     '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl"><span>Destination</span></div>'
-        +       '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
-        +     '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-pane">'
-        +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
-        +       '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
-        +     '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi">'
+        +   '<div class="gad-aircraft-col" style="display:contents">'
+        +     '<div class="v2-fi-row" style="height:100%;box-sizing:border-box">'
+        +       '<div class="v2-fi-iconcol"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 9.4c.6-.2 1-.8 1-1.4l-10 2.6-5.4-4.4-1.9.5 3.4 4.4L3 12.6l1.5 1.2 5.2-1.4 4.5 3.7c.5.4 1.2.3 1.6-.2.4-.5.3-1.2-.2-1.6l-3.6-3 9-1.9z"/></svg></div>'
+        +       '<div class="v2-fi-textcol">'
+        +         '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol' : 'Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+        +         '<div class="v2-fi-value axr-one-line">' + _dPlateVal + '</div>'
+        +       '</div>'
         +     '</div>'
         +   '</div>'
-        + '</div></div>';
+        + '</div>';
     } catch (e) {}
   }
 
@@ -17548,7 +17549,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22782';
+var FIDS_BUILD_TAG = 'v22783';
 (function(){
   try {
     function _addTag(){
