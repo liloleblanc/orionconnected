@@ -5720,3 +5720,19 @@ html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val .v2-fi-bullet
   margin-right: 0.3em !important;
   margin-top: 0.05em !important;
 }
+
+/* ── v22794 — WESTJET: the aircraft 'brand hold' panel (the emblem that
+   fills the right map slot while the big map runs in the centre) painted a
+   NAVY --banner-bg gradient — the one surface ignoring Nick's 'background
+   behind the blue panels teal'. It goes teal like everything behind the
+   plates; the white leaf and glow stay. */
+html body .g8-wrap.g8-airline-WS.g8-bigcraft-active .gad-map-col-v2 > .v2-rc-shelf-map {
+  background:
+    radial-gradient(circle at 72% 38%, rgba(255,255,255,.14) 0%, transparent 34%),
+    linear-gradient(145deg, #00b2a9 0%, #00776f 100%) !important;
+}
+html body .g8-wrap.g8-airline-WS.g8-bigcraft-active .gad-map-col-v2 .v2-rc-map-life {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(255,255,255,.14), transparent 42%),
+    linear-gradient(145deg, #00b2a9 0%, #00776f 100%) !important;
+}
