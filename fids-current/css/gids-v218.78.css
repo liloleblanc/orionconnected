@@ -5474,7 +5474,12 @@ html body .octb-tab {
    content-protection so the tracks actually hold. */
 html body .g8-wrap .gad-map-col-v2 {
   display: grid !important;
-  grid-template-rows: repeat(6, 1fr) !important;
+  /* NOT repeat(6, 1fr): in grid, 1fr means minmax(auto, 1fr), so CONTENT can
+     still inflate a track — measured doing exactly that (row 4 grew to 249px
+     and squeezed the map's three rows to 124.5 each, reproducing the flex
+     bug under a different engine). minmax(0, 1fr) is the rigid form: six
+     tracks, always equal, content clips inside them. */
+  grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
   grid-template-columns: 100% !important;
 }
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: 1 / span 3 !important; }
