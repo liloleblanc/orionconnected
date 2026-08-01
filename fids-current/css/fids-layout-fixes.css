@@ -7305,12 +7305,28 @@ html #fidsTable td.td-time-sched.is-revised {
   font-weight: 400 !important;
   position: relative !important;
 }
+/* v22774 — ONE TRIANGLE PER ROW, SIZED BY THE ROW (Nick: "one triangle per row
+   no matter the size, the tris grow with the row"). The arrow was a text glyph,
+   so it inherited the cell's font-size — and that size is set per-cell by the
+   flight-number/​time fitter, which lands anywhere from 22px to 28px depending
+   on how wide that particular number is. The marker therefore changed size row
+   to row for no reason the eye could explain.
+   Drawn as a border triangle off --fids-row-h instead, so it is one shape, one
+   size, on every row, and it scales with the density tier the board is running
+   — bigger rows, bigger triangle, automatically. currentColor keeps it in the
+   row's own ink on every theme and every status colour. */
 html #fidsTable td.td-time-sched.is-revised::after {
-  content: '\2192' !important;
+  content: '' !important;
   position: absolute !important;
-  right: 2px !important;
-  opacity: 0.55 !important;
-  font-weight: 400 !important;
+  right: 3px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-left: calc(var(--fids-row-h, 58px) * 0.17) solid currentColor !important;
+  border-top: calc(var(--fids-row-h, 58px) * 0.11) solid transparent !important;
+  border-bottom: calc(var(--fids-row-h, 58px) * 0.11) solid transparent !important;
+  opacity: 0.5 !important;
   pointer-events: none !important;
 }
 /* The cancelled-row rule that existed only to undo a DOUBLE strike is now
