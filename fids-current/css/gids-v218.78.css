@@ -5583,3 +5583,21 @@ html body .g8-wrap .v2-rc-shelf-fi .v2-fi-textcol { min-width: 0 !important; }
 html body .g8-wrap .v2-rc-shelf-fi .v2-fi-title { font-size: clamp(13px,2.0vh,24px) !important; }
 html body .g8-wrap .v2-rc-shelf-fi .v2-fi-value { font-size: clamp(26px,5.4vh,62px) !important; line-height: 1.05 !important; white-space: nowrap !important; }
 html body .g8-wrap .v2-rc-shelf-fi .v2-fi-value .v2-fi-sub { font-size: .52em !important; opacity: .85 !important; }
+
+/* ── v22785 — the plate wrapper is a plain flex box. display:contents (v22783)
+   plus an inline height:100% left the row 18px tall in a 156px shelf, with NO
+   stylesheet rule sizing v2-fi-row at all — the left plates get their height
+   from the LEFT COLUMN'S layout, not from the component. So the wrapper now
+   provides that layout inside the shelf: an ordinary flex box filling the
+   shelf, the row stretching to fill it. No exotic display values — these run
+   on kiosk browsers. */
+html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap {
+  display: flex !important;
+  width: 100% !important;
+  align-items: stretch !important;
+  min-height: 0 !important;
+}
+html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap > .v2-fi-row {
+  flex: 1 1 auto !important;
+  box-sizing: border-box !important;
+}
