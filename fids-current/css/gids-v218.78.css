@@ -5601,3 +5601,13 @@ html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap > .v2-fi-row {
   flex: 1 1 auto !important;
   box-sizing: border-box !important;
 }
+
+/* ── v22786 — the height CHAIN, explicitly. Diagnosis on the live page: the
+   value font computes 39.86px yet the row is 18px tall — the left component
+   positions its internals absolutely and gets its row height FROM THE RAIL'S
+   LAYOUT, never from content. Inside the shelf the row's auto height
+   collapsed to its padding and the absolute children painted past it into
+   overflow:hidden — the sliver. Give the row the height the rail would have:
+   wrap takes the shelf's box, row takes the wrap's. */
+html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap { height: 100% !important; }
+html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap > .v2-fi-row { height: 100% !important; }
