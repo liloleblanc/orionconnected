@@ -9713,7 +9713,11 @@ function uxgGateHtml(ctx) {
   // hard skewed Time/airport tabs. The gate tab is kept exactly as-is.
   // Kill-switch: localStorage fids_gate_banner_classic='1' restores the tabs.
   // (_silkBanner is computed earlier, before the logo width cap.)
+  // v22792 — WestJet's top band goes TEAL (Nick: 'background teal with top
+  // teals'). The banner is inline-!important, so the carve-out lives here
+  // at the source, same as Frontier's.
   var _silkDark = (airlineCode === 'F9') ? '#5AA0DE'
+    : (airlineCode === 'WS') ? '#00706a'
     : ((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF') ? _bannerSpec.r1 : '#0c1119');
   // Timebox ink adapts to the banner colour (Nick: 'Frontier — the font is all
   // white and it's light, needs to be blue'). Frontier's sky-blue band is too
@@ -17552,7 +17556,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22791';
+var FIDS_BUILD_TAG = 'v22792';
 (function(){
   try {
     function _addTag(){

@@ -5698,3 +5698,16 @@ html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-emblem-wr
   padding: 0.16em !important;
 }
 html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-emblem-wrap { padding: 0.1em !important; }
+
+/* ── v22792 — the STATUS bullet broke its line: .ac-ico-status is an icon
+   FONT glyph with its own clamp(43px,6.63vh,90px) !important size, so a
+   ~71px bell sat inside the 1em orb and shoved the value to the next line.
+   Inside a bullet the glyph sizes to the orb, not the old icon column. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .ac-ico,
+html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet [class*="ac-ico"] {
+  font-size: 0.62em !important;
+  width: auto !important; height: auto !important;
+  min-width: 0 !important; min-height: 0 !important;
+  max-width: 100% !important; max-height: 100% !important;
+  line-height: 1 !important;
+}

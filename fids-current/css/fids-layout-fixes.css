@@ -7339,18 +7339,19 @@ html #fidsTable td.td-time-sched.is-revised::after {
    approved-material rules: the whole shelf set re-colours; everything that
    rides --airline-accent (icon orbs, title rules, gate tab) stays teal
    untouched, and the wrap behind the columns is already accent teal. */
-html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
-html body[data-gate-airline="WS"]:not(#_) .g8-bir-cell,
-html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-aircraft-col,
-html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
-html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2,
-html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
-html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
-html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+/* v22792: the dotted-globe shelf rules carry DOUBLE :not(#_) specificity, so
+   this carve-out needs a triple to win the colour. background-image is left
+   alone on purpose — the approved globe/lux material continues, only the
+   base metal under it turns WestJet blue. (The teal TOP BAND is done in the
+   builder — the banner's inline style is itself !important, out of CSS
+   reach — via the same _silkDark carve-out Frontier uses.) */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-bir-cell,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   background-color: color-mix(in srgb, #0b5da8 48%, #8b9099) !important;
-}
-/* Top band teal: the banner field trades WestJet navy for deep teal, easing
-   into the accent teal that the gate tab already wears. */
-html body[data-gate-airline="WS"] .g8-wrap .g8-r1 {
-  background: linear-gradient(90deg, #00706a 0%, #00857e 70%, #00b2a9 93%, #00b2a9 100%) !important;
 }
