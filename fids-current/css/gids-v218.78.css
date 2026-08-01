@@ -5611,3 +5611,15 @@ html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap > .v2-fi-row {
    wrap takes the shelf's box, row takes the wrap's. */
 html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap { height: 100% !important; }
 html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap > .v2-fi-row { height: 100% !important; }
+
+/* ── v22787 — the cap. Even INLINE height:146px !important could not move the
+   wrapper: its measured 32.42px is exactly 3vh — a MAX-HEIGHT arriving through
+   the .gad-aircraft-col class the wrapper borrows for the left-plate skin.
+   height never beats max-height. Lift the cap for the plate context only. */
+html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap,
+html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap > .v2-fi-row,
+html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap .v2-fi-iconcol,
+html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap .v2-fi-textcol {
+  max-height: none !important;
+  min-height: 0 !important;
+}
