@@ -5623,3 +5623,49 @@ html body .g8-wrap .v2-rc-shelf-fi > .v2-fi-platewrap .v2-fi-textcol {
   max-height: none !important;
   min-height: 0 !important;
 }
+
+/* ── v22788 — SHELF 10'S PLATE, SELF-CONTAINED. Borrowing the left component's
+   classes dragged in a haunted inheritance: a 3vh cap that inline
+   height:146px!important could not beat, no transform, no zoom, no rule an
+   audit could name. Five commits argued with it and lost. So the plate now
+   owns fresh classes (v2p-*) and states the left's grammar explicitly —
+   brushed-metal plate, rounded, red rule under the bilingual title, red orb,
+   one big value — with ZERO inherited contracts. Deterministic on any kiosk. */
+html body .g8-wrap .v2-rc-shelf-fi { padding: clamp(5px,0.8vh,12px) clamp(8px,0.7vw,14px) !important; display: flex !important; }
+html body .g8-wrap .v2-rc-shelf-fi .v2p-wrap { display: flex !important; flex: 1 1 auto !important; min-height: 0 !important; }
+html body .g8-wrap .v2-rc-shelf-fi .v2p-plate {
+  display: flex !important; flex: 1 1 auto !important; align-items: center !important;
+  gap: clamp(8px,0.8vw,16px) !important; min-width: 0 !important;
+  padding: clamp(6px,1vh,12px) clamp(10px,1vw,18px) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(178deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 28%, rgba(0,0,0,0.25) 62%, rgba(255,255,255,0.08) 100%),
+    linear-gradient(90deg, #23262b 0%, #3a3e44 30%, #23262b 74%, #34383e 100%) !important;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.09) !important;
+}
+html body .g8-wrap .v2-rc-shelf-fi .v2p-icon {
+  flex: 0 0 auto !important;
+  width: clamp(40px,6.4vh,72px) !important; height: clamp(40px,6.4vh,72px) !important;
+  border-radius: 50% !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  color: #fff !important; font-size: clamp(20px,3.2vh,36px) !important;
+  background: radial-gradient(circle at 32% 28%, #f0525f 0%, #d81e3f 46%, #8f0f24 100%) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.45) !important;
+}
+html body .g8-wrap .v2-rc-shelf-fi .v2p-text { flex: 1 1 auto !important; min-width: 0 !important; }
+html body .g8-wrap .v2-rc-shelf-fi .v2p-title {
+  font-size: clamp(13px,1.9vh,22px) !important; font-weight: 800 !important;
+  color: #ff5a6e !important; letter-spacing: 0.02em !important;
+  border-bottom: 2px solid #d81e3f !important;
+  padding-bottom: clamp(2px,0.4vh,5px) !important; margin-bottom: clamp(3px,0.5vh,7px) !important;
+  white-space: nowrap !important; overflow: hidden !important;
+}
+html body .g8-wrap .v2-rc-shelf-fi .v2p-title .v2-fi-lbl-sep { opacity: .5 !important; margin: 0 .35em !important; }
+html body .g8-wrap .v2-rc-shelf-fi .v2p-title .v2-fi-lbl-fr { color: rgba(255,255,255,0.85) !important; font-weight: 700 !important; }
+html body .g8-wrap .v2-rc-shelf-fi .v2p-value {
+  font-size: clamp(28px,5.2vh,60px) !important; font-weight: 800 !important;
+  color: #fff !important; line-height: 1.02 !important;
+  white-space: nowrap !important; overflow: hidden !important;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
+}
+html body .g8-wrap .v2-rc-shelf-fi .v2p-value .v2-fi-sub { font-size: .5em !important; font-weight: 700 !important; opacity: .9 !important; }

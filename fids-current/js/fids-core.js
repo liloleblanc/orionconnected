@@ -6911,7 +6911,7 @@ function _buildV2AircraftCol(ctx, vars) {
         var _sec = (_p2 && _p2 !== _p1)
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
-        return '<div class="v2-fi-row">'
+        return '<div class="v2p-plate">'
           + '<div class="v2-fi-iconcol">' + icon + '</div>'
           + '<div class="v2-fi-textcol">'
           +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
@@ -7444,12 +7444,12 @@ function _buildV2MapCol(ctx, vars) {
                       + (_ibCityCode ? ' <span class="v2-fi-sub">\u00b7 ' + _ibCityCode + '</span>' : '');
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi">'
-        +   '<div class="gad-aircraft-col v2-fi-platewrap">'
-        +     '<div class="v2-fi-row">'
-        +       '<div class="v2-fi-iconcol"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 14.6c.6.2 1 .8 1 1.4l-10-2.6-5.4 4.4-1.9-.5 3.4-4.4L3 11.4l1.5-1.2 5.2 1.4 4.5-3.7c.5-.4 1.2-.3 1.6.2.4.5.3 1.2-.2 1.6l-3.6 3 9 1.9z"/></svg></div>'
-        +       '<div class="v2-fi-textcol">'
-        +         '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol entrant' : 'Incoming Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Incoming Flight' : 'Vol entrant') + '</span></div>'
-        +         '<div class="v2-fi-value axr-one-line">' + _ibPlateVal + '</div>'
+        +   '<div class="v2p-wrap">'
+        +     '<div class="v2p-plate">'
+        +       '<div class="v2p-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 14.6c.6.2 1 .8 1 1.4l-10-2.6-5.4 4.4-1.9-.5 3.4-4.4L3 11.4l1.5-1.2 5.2 1.4 4.5-3.7c.5-.4 1.2-.3 1.6.2.4.5.3 1.2-.2 1.6l-3.6 3 9 1.9z"/></svg></div>'
+        +       '<div class="v2p-text">'
+        +         '<div class="v2p-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol entrant' : 'Incoming Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Incoming Flight' : 'Vol entrant') + '</span></div>'
+        +         '<div class="v2p-value axr-one-line">' + _ibPlateVal + '</div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -7608,12 +7608,12 @@ function _buildV2MapCol(ctx, vars) {
                      + '</span>';
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi">'
-        +   '<div class="gad-aircraft-col v2-fi-platewrap">'
-        +     '<div class="v2-fi-row">'
-        +       '<div class="v2-fi-iconcol"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 9.4c.6-.2 1-.8 1-1.4l-10 2.6-5.4-4.4-1.9.5 3.4 4.4L3 12.6l1.5 1.2 5.2-1.4 4.5 3.7c.5.4 1.2.3 1.6-.2.4-.5.3-1.2-.2-1.6l-3.6-3 9-1.9z"/></svg></div>'
-        +       '<div class="v2-fi-textcol">'
-        +         '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol' : 'Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
-        +         '<div class="v2-fi-value axr-one-line">' + _dPlateVal + '</div>'
+        +   '<div class="v2p-wrap">'
+        +     '<div class="v2p-plate">'
+        +       '<div class="v2p-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 9.4c.6-.2 1-.8 1-1.4l-10 2.6-5.4-4.4-1.9.5 3.4 4.4L3 12.6l1.5 1.2 5.2-1.4 4.5 3.7c.5.4 1.2.3 1.6-.2.4-.5.3-1.2-.2-1.6l-3.6-3 9-1.9z"/></svg></div>'
+        +       '<div class="v2p-text">'
+        +         '<div class="v2p-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol' : 'Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+        +         '<div class="v2p-value axr-one-line">' + _dPlateVal + '</div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -17549,7 +17549,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22787';
+var FIDS_BUILD_TAG = 'v22788';
 (function(){
   try {
     function _addTag(){
