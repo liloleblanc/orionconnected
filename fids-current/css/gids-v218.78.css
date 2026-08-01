@@ -4429,7 +4429,10 @@ body, body.gids-page, body.gate-page{
 /* 4-row flight-info variant (Arrival row present): row 4 takes a ~45% bigger
    track so the first row's caps don't clip behind the shelf edge (Nick:
    'capped out… can't even see it'). The map row gives up the difference;
-   the class is stamped by the renderer since :has() dies on kiosk browsers. */
+   the class is stamped by the renderer since :has() dies on kiosk browsers.
+   v22779 — OVERRULED by Nick's six-shelf law ("the hardware never changes"):
+   the equal-track rule at the end of this file now outweighs this. Kept for
+   history; the clipping it dodged must be solved INSIDE the shelf. */
 .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
   grid-template-rows: repeat(3, minmax(0, 0.85fr)) minmax(0, 1.45fr) repeat(2, minmax(0, 1fr)) !important;
 }
@@ -5472,7 +5475,8 @@ html body .octb-tab {
    instead of 3, whatever the scenario) and everything still lands on the
    lines; the pattern never changes. min-height:0 is what disarms flex/grid's
    content-protection so the tracks actually hold. */
-html body .g8-wrap .gad-map-col-v2 {
+html body .g8-wrap .gad-map-col-v2,
+html body .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
   display: grid !important;
   /* NOT repeat(6, 1fr): in grid, 1fr means minmax(auto, 1fr), so CONTENT can
      still inflate a track — measured doing exactly that (row 4 grew to 249px
