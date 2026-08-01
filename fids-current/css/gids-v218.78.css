@@ -5453,3 +5453,35 @@ html body .octb-tab {
   background: rgba(10,14,22,0.46) !important;
   border-color: rgba(255,255,255,0.16) !important;
 }
+
+/* ── v22777 — THE SIX-SHELF GRID IS HARDWARE (Nick) ──────────────────────────
+   "What is on the left has to be on the right, it's a mirrored system …
+   the shelves can be filled with whatever as long as the pattern continues …
+   what I do mind is when the whole hardware no longer follows the model."
+
+   The right column was a FLEXBOX with ratios — and four generations of
+   competing flex values (3 / 2.6 / 1.5 / 2 / auto) accumulated in this file.
+   Flex also refuses to shrink a child below its content, so when the
+   flight-info table outgrew its share it stole 89px from the map and slid
+   every boundary off the grid. Measured: map 373px where 3 shelves = 462px,
+   info shelf 249px starting 88px above its line.
+
+   Under GRID the tracks are the law: six equal rows, spans declared per
+   shelf, and content cannot move a boundary — it fits inside or it clips.
+   That is Nick's model stated in CSS. Change a span here (map 2 shelves
+   instead of 3, whatever the scenario) and everything still lands on the
+   lines; the pattern never changes. min-height:0 is what disarms flex/grid's
+   content-protection so the tracks actually hold. */
+html body .g8-wrap .gad-map-col-v2 {
+  display: grid !important;
+  grid-template-rows: repeat(6, 1fr) !important;
+  grid-template-columns: 100% !important;
+}
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: 1 / span 3 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: 4 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: 5 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: 6 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
