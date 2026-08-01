@@ -5563,3 +5563,23 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-t
   font-size: clamp(13px,1.8vh,20px) !important;
   line-height: 1.05 !important;
 }
+
+/* ── v22784 — the shelf-10 plate FILLS its shelf. The v2-fi-row component
+   sizes itself for the left rail's flex column; dropped into the right
+   shelf it collapsed to its content height and sat as a sliver at the top
+   (v22783 screenshot). Pin it to the shelf's box exactly, pad like the left
+   rail pads its rows, and scale title/value off the same clamps the left
+   plates resolve to at this shelf height. */
+html body .g8-wrap .v2-rc-shelf-fi { padding: clamp(4px,0.7vh,10px) clamp(6px,0.6vw,12px) !important; display: flex !important; align-items: stretch !important; }
+html body .g8-wrap .v2-rc-shelf-fi .v2-fi-row {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden !important;
+}
+html body .g8-wrap .v2-rc-shelf-fi .v2-fi-textcol { min-width: 0 !important; }
+html body .g8-wrap .v2-rc-shelf-fi .v2-fi-title { font-size: clamp(13px,2.0vh,24px) !important; }
+html body .g8-wrap .v2-rc-shelf-fi .v2-fi-value { font-size: clamp(26px,5.4vh,62px) !important; line-height: 1.05 !important; white-space: nowrap !important; }
+html body .g8-wrap .v2-rc-shelf-fi .v2-fi-value .v2-fi-sub { font-size: .52em !important; opacity: .85 !important; }
