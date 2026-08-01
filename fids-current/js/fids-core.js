@@ -17542,7 +17542,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22775';
+var FIDS_BUILD_TAG = 'v22776';
 (function(){
   try {
     function _addTag(){
@@ -32912,12 +32912,21 @@ setInterval(function () {
 // edge, and every rule lands on a row boundary: the pattern stops competing
 // with the rows and starts drawing them.
 //
-// The numbers are MEASURED, not written down. Row pitch is 66px and the
-// first row starts at 165.5px on a 1080p board, but both come from the row
-// fitter and change with screen height — a hard-coded 660/165.5 would look
-// right on the screens I tested and drift on the next one. This reads the
-// live geometry and only writes when it actually changes, so there is no
-// per-frame style churn.
+// The numbers are MEASURED, not written down — and the reason is not screen
+// height. Row height is PREDETERMINED: a tier, set by data-fids-logo-size
+// (small 44 / medium 66 / large 90, !important) over a theme default of
+// 58-66. It does NOT vary with viewport height; verified at 1080, 1440 and
+// 900, all of which held 66px.
+//
+// Measuring still matters, because the declared tier is not the painted
+// pitch. On small the variable says 44px while rows actually sit 49.5px
+// apart once padding and the divider are in — so a formula built on
+// var(--fids-row-h) would be out by 12% on that tier alone. Reading the real
+// geometry is what makes one-rule-per-row survive a tier change:
+//   small  49.5px pitch -> tile 1485  -> spacing 49.5  -> 1 per row
+//   medium 66px         -> tile 1980  -> spacing 66    -> 1 per row
+//   large  90px         -> tile 2700  -> spacing 90    -> 1 per row
+// Only writes when the key changes, so there is no per-frame style churn.
 (function () {
   // PERIODS MUST EQUAL THE NUMBER OF RULES IN THE BAKED TILE. The tile height
   // is set to rowPitch * PERIODS, so when this matches the artwork, one rule
