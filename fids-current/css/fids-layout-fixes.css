@@ -7284,3 +7284,35 @@ html:not(#_):not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:not
 html:not(#_):not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status.fids-status-final * {
   color: #FFE3A8 !important;
 }
+
+/* ── v22773 — the strike on revised times goes away ──────────────────────────
+   Nick: the line through the old time "looks rough … something new entirely
+   but not that". Four treatments were rendered on the live Orlando board; this
+   is treatment 3, the safe one — it keeps BOTH times, which the board's two
+   columns are already built for, and simply stops defacing the old one.
+
+   The scheduled time is demoted rather than struck: no line, lighter weight,
+   half opacity. An arrow at the cell's trailing edge carries the eye to the
+   revised value in the next column, which is the job the strike was badly
+   doing. Nothing here changes geometry, so the row fitters are untouched.
+
+   Reversible in one block. Treatment 4 (revised time replaces the old one and
+   the Revised column goes) is the cleaner end state and ALSO makes the gate
+   panel's plates uniform — that one is a markup change, not this. */
+html #fidsTable td.td-time-sched.is-revised {
+  text-decoration: none !important;
+  opacity: 0.5 !important;
+  font-weight: 400 !important;
+  position: relative !important;
+}
+html #fidsTable td.td-time-sched.is-revised::after {
+  content: '\2192' !important;
+  position: absolute !important;
+  right: 2px !important;
+  opacity: 0.55 !important;
+  font-weight: 400 !important;
+  pointer-events: none !important;
+}
+/* The cancelled-row rule that existed only to undo a DOUBLE strike is now
+   moot — there is no strike to double up. Left in place deliberately: it also
+   restores full opacity on those rows, which still matters. */
