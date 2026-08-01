@@ -6911,7 +6911,7 @@ function _buildV2AircraftCol(ctx, vars) {
         var _sec = (_p2 && _p2 !== _p1)
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
-        return '<div class="v2p-plate">'
+        return '<div class="v2-fi-row">'
           + '<div class="v2-fi-iconcol">' + icon + '</div>'
           + '<div class="v2-fi-textcol">'
           +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
@@ -17549,7 +17549,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22788';
+var FIDS_BUILD_TAG = 'v22789';
 (function(){
   try {
     function _addTag(){
