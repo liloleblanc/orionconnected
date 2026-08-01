@@ -5673,3 +5673,28 @@ html body .g8-wrap .v2-rc-shelf-fi .v2p-value .v2-fi-sub { font-size: .5em !impo
 /* ── v22790 — Nick: no icon orb on the right-side plates. Text block keeps
    the red-ruled bilingual title + big value; flex collapses the gap. */
 html body .g8-wrap .v2-rc-shelf-fi .v2p-icon { display: none !important; }
+
+/* ── v22791 — LEFT RAIL ICONS AS BULLETS (Nick: 'they shrink theyre too big
+   they should technically be the same height and on the same line as the
+   time or data ... kinda like a bullet point the same [size] of the text').
+   The builder now puts the badge INSIDE .v2-fi-value (.v2-fi-bullet), so
+   1em = the value's own font size: same height as the text, on its line,
+   and the auto-fitter shrinks icon and text together. The old 25%/75%
+   icon column collapses — the text column takes the full row. */
+html body .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row.v2-fi-row-bullet {
+  grid-template-columns: 100% !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet {
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+  vertical-align: -0.08em !important; margin-right: 0.26em !important;
+  line-height: 1 !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-icon-wrap,
+html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-icon-badge,
+html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-emblem-wrap {
+  width: 1em !important; height: 1em !important;
+  min-width: 1em !important; min-height: 1em !important;
+  max-width: 1em !important; max-height: 1em !important;
+  padding: 0.16em !important;
+}
+html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .v2-fi-emblem-wrap { padding: 0.1em !important; }

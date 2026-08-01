@@ -6911,11 +6911,14 @@ function _buildV2AircraftCol(ctx, vars) {
         var _sec = (_p2 && _p2 !== _p1)
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
-        return '<div class="v2-fi-row">'
-          + '<div class="v2-fi-iconcol">' + icon + '</div>'
+        // v22791 — Nick: the icons are too big; they should be the SAME
+        // height as the value text and sit ON its line, like a bullet
+        // point. The badge moves inside .v2-fi-value (1em-sized in CSS) so
+        // the auto-fitter shrinks icon and text together.
+        return '<div class="v2-fi-row v2-fi-row-bullet">'
           + '<div class="v2-fi-textcol">'
           +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
-          +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
+          +   '<div class="v2-fi-value ' + (valCls || '') + '"><span class="v2-fi-bullet">' + icon + '</span>' + val + '</div>'
           + '</div>'
           + '</div>';
       }
@@ -17549,7 +17552,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22790';
+var FIDS_BUILD_TAG = 'v22791';
 (function(){
   try {
     function _addTag(){

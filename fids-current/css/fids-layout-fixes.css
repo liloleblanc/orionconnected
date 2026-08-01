@@ -7332,3 +7332,25 @@ html #fidsTable td.td-time-sched.is-revised::after {
 /* The cancelled-row rule that existed only to undo a DOUBLE strike is now
    moot — there is no strike to double up. Left in place deliberately: it also
    restores full opacity on those rows, which still matters. */
+
+/* ── v22791 — WESTJET GATES: BLUE metal shelves under a TEAL world (Nick:
+   'metal plates blue and background teal with top teals ... the icons
+   remain teal but the plate turn blue'). Same carve-out grammar as AC's
+   approved-material rules: the whole shelf set re-colours; everything that
+   rides --airline-accent (icon orbs, title rules, gate tab) stays teal
+   untouched, and the wrap behind the columns is already accent teal. */
+html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane,
+html body[data-gate-airline="WS"]:not(#_) .g8-bir-cell,
+html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body[data-gate-airline="WS"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  background-color: color-mix(in srgb, #0b5da8 48%, #8b9099) !important;
+}
+/* Top band teal: the banner field trades WestJet navy for deep teal, easing
+   into the accent teal that the gate tab already wears. */
+html body[data-gate-airline="WS"] .g8-wrap .g8-r1 {
+  background: linear-gradient(90deg, #00706a 0%, #00857e 70%, #00b2a9 93%, #00b2a9 100%) !important;
+}
