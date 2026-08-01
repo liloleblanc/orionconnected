@@ -7369,3 +7369,124 @@ html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-
 html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-bir-cell::before {
   background-color: color-mix(in srgb, #0b5da8 72%, #79828e) !important;
 }
+
+/* ── v22796 — ONE PLATE GRAMMAR ON THE ONE-TEAL BACKGROUND (Nick:
+   'background is all the same color please design accordingly this is
+   terrible'). The background became one flat teal in v22795 — but the
+   right column was still wearing three leftover dialects on top of it:
+     · the fallback flight card kept v22788's charcoal-and-red AC skin
+       (red 'Vol', red rule, smoked metal) beside the left rail's blue
+       chrome plates;
+     · the aircraft-type plate still mixed its chrome from the TEAL
+       accent — a teal plate on the teal background, camouflaged into a
+       dark sliver hugging one line of small text;
+     · the 'Your Aircraft' header and telemetry bars were near-black
+       slate, reading as holes punched in the teal, and the navy shelf
+       dividers sliced the one background into strips.
+   Now every piece that sits on the teal is the SAME WestJet-blue chrome
+   plate the left rail wears: same colour recipe, same metal, same teal
+   title rule, white ink. */
+
+/* 1 — the navy dividers go: one continuous teal sheet behind the column. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
+  border-bottom: 0 !important;
+}
+
+/* 2 — the fallback flight card joins the blue set (recipe verbatim from
+   the v22727/v22793 plate chrome). */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-fi .v2p-plate {
+  background-color: color-mix(in srgb, #0b5da8 72%, #79828e) !important;
+  background-image: url("/logos/Backgrounds/gate-metal-blue.png?v=1") !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: luminosity !important;
+  border-radius: clamp(10px, 1.4vh, 16px) !important;
+  box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
+              inset 0 1px 1px rgba(255, 255, 255, 0.55),
+              inset 0 -2px 3px rgba(0, 0, 0, 0.5),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.18) !important;
+}
+/* Its title drops the red for the left rail's grammar: teal rule, first
+   label in the accent teal, second in soft white. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-fi .v2p-title {
+  color: #6fe3db !important;
+  border-bottom-color: #00b2a9 !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-fi .v2p-title .v2-fi-lbl-fr {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+/* And its value scales up to the left rail's weight — beside the left's
+   big plates this one read tiny. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-fi .v2p-value {
+  font-size: clamp(30px, 6.6vh, 78px) !important;
+}
+
+/* 3 — the aircraft-type plate: blue chrome instead of the teal-on-teal
+   camouflage, FILLING its shelf like every other plate instead of
+   hugging one small line, with white ink sized to be read. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  flex: 1 1 auto !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
+  background-color: color-mix(in srgb, #0b5da8 72%, #79828e) !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  color: #ffffff !important;
+  font-size: clamp(18px, 3.2vh, 40px) !important;
+  white-space: normal !important;
+  line-height: 1.12 !important;
+  overflow: visible !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* 4 — the 'Your Aircraft' header and Speed/Altitude bars take the plate
+   blue: bars of the system, not holes in the teal. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  background: color-mix(in srgb, #0b5da8 80%, #04223f) !important;
+}
+
+/* 5 — the aircraft photo gets the same plate under it as every other
+   shelf: a framed card, not a cutout floating on the teal. The clouds
+   loop is clipped INTO the plate's face (it was full-bleed), so when it
+   plays it is the plate's sky and the livery rides on top. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  position: relative !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 13px !important; right: 13px !important; top: 3px !important; bottom: 3px !important;
+  border-radius: clamp(6px, 0.8vh, 10px) !important;
+  background-color: color-mix(in srgb, #0b5da8 72%, #79828e) !important;
+  background-image: url("/logos/Backgrounds/gate-metal-blue.png?v=1") !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: luminosity !important;
+  box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
+              inset 0 1px 1px rgba(255, 255, 255, 0.55),
+              inset 0 -2px 3px rgba(0, 0, 0, 0.5),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.18) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus > #gateCloudsBg {
+  inset: auto !important;
+  left: 13px !important; right: 13px !important; top: 3px !important; bottom: 3px !important;
+  width: auto !important; height: auto !important;
+  border-radius: clamp(6px, 0.8vh, 10px) !important;
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus > * {
+  position: relative;
+  z-index: 1;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus > #gateCloudsBg {
+  position: absolute !important;
+  z-index: 0 !important;
+}
