@@ -5494,3 +5494,34 @@ html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
   min-height: 0 !important;
   overflow: hidden !important;
 }
+
+/* ── v22780 — THE CARGO FITS THE SHELF (Nick: "No that wont work you need to
+   do better than that its not even the right size").
+   The 4-row info table was designed against the old stolen-height shelf
+   (249px) and nothing in the system fits HEIGHT — gateAutofit fits width
+   only — so inside the lawful 1/6 shelf its rows bled over each other.
+   Size the type from the geometry it actually gets: shelf ≈ (viewport −
+   banner)/6 ≈ 14.4vh, minus padding, four tracks of ~3.3vh. Value lines get
+   ~1.8vh, the two-line label stack ~1.1vh — comfortably inside a track, so
+   the shelf is FULL but nothing touches. Scoped to the 4-row variant; the
+   3-row table keeps its larger type. Each row clips itself as the last
+   resort, so a pathological string can never bleed into its neighbour. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 {
+  padding-top: clamp(3px,0.4vh,6px) !important;
+  padding-bottom: clamp(3px,0.4vh,6px) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  font-size: clamp(9px,1.1vh,13px) !important;
+  line-height: 1.0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow > .v2-rc-fi-tlbl span + span {
+  margin-top: 1px !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow > .v2-rc-fi-tval {
+  font-size: clamp(13px,1.8vh,20px) !important;
+  line-height: 1.05 !important;
+}

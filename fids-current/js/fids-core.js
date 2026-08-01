@@ -17542,7 +17542,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22779';
+var FIDS_BUILD_TAG = 'v22780';
 (function(){
   try {
     function _addTag(){
@@ -32998,6 +32998,30 @@ setInterval(function () {
   } else { sync(); }
   setInterval(sync, 1000);
   window.addEventListener('resize', sync);
+
+  // ── v22780: THE TWO GATE COLUMNS END ON THE SAME LINE ────────────────────
+  // Nick's mirror: left rail and right column share one six-shelf grid. The
+  // boundaries now do, but the column BOXES differed at the bottom (right
+  // ended 1077, left rail's last shelf 1068), so every right line sat 5-8px
+  // low. Same philosophy as the pattern lock above: measure the real thing —
+  // the left rail's last shelf bottom — and pad the right column so its grid
+  // ends exactly there. Converges because the column's outer box is set by
+  // the wrap, not by this padding.
+  function eqCols() {
+    try {
+      var col = document.querySelector('.gad-map-col-v2');
+      if (!col) return;
+      var rows = document.querySelectorAll('.gad-aircraft-col .v2-fi-row');
+      if (!rows.length) return;
+      var lastBot = rows[rows.length - 1].getBoundingClientRect().bottom;
+      var need = Math.round(col.getBoundingClientRect().bottom - lastBot);
+      if (need > 1 && need < 60) col.style.setProperty('padding-bottom', need + 'px', 'important');
+      else if (need <= 1) col.style.removeProperty('padding-bottom');
+    } catch (e) {}
+  }
+  eqCols();
+  setInterval(eqCols, 1000);
+  window.addEventListener('resize', eqCols);
 })();
 
 // ── v22711: BAGS CAROUSEL COLOR CODING (Nick: 'Bags I want different colors
