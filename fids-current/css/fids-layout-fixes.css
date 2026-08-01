@@ -7355,3 +7355,12 @@ html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-
 html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   background-color: color-mix(in srgb, #0b5da8 48%, #8b9099) !important;
 }
+/* v22793: the VISIBLE metal plate is the v22727 ::before chrome layer
+   (accent 72% + metal photo in luminosity) — the column colour above only
+   shows in the frame around it. The plate itself is what Nick calls the
+   plate, so it turns blue too; the metal photograph keeps the shine. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-bir-cell::before {
+  background-color: color-mix(in srgb, #0b5da8 72%, #79828e) !important;
+}

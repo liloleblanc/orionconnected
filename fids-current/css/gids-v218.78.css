@@ -5711,3 +5711,12 @@ html body .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet [class*="ac-ico"
   max-width: 100% !important; max-height: 100% !important;
   line-height: 1 !important;
 }
+
+/* ── v22793 — the STATUS value stacks its two languages as display:block
+   spans, so an inline bullet gets a line to itself. Floating it lets the
+   first language line sit beside it — the bullet look everywhere. */
+html body .g8-wrap .gad-aircraft-col .v2-fi-value.v2-fi-status-val .v2-fi-bullet {
+  float: left !important;
+  margin-right: 0.3em !important;
+  margin-top: 0.05em !important;
+}
