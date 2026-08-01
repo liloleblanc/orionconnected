@@ -7527,3 +7527,67 @@ html body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet .ac-ico,
 html body:not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet [class*="ac-ico"] {
   font-size: clamp(20px, 3.1vh, 36px) !important;
 }
+
+/* ── v22798 — THE RIGHT-COLUMN CARD JOINS EVERY AIRLINE'S PLATE SET (Nick,
+   on the Flair gate: 'Why is the panel on the right so tiny and the other
+   one black? but by itself?'). Correct on both counts: the v22796 redesign
+   of the fallback flight card was scoped to WestJet — the only gate on
+   screen at the time — so every other carrier still wore v22788's
+   charcoal-and-red AC skin at its old small size: one black plate, alone,
+   inside an airline-coloured scene. The card now takes the SAME accent
+   metal every other plate is cut from (the v22727 recipe on
+   var(--airline-accent)), with the rail's white-ink grammar and the
+   rail's value weight — on every carrier. WestJet's bespoke teal-ruled
+   version outranks this (three :not(#_) to two); AC keeps its approved
+   charcoal-and-red untouched. */
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .v2-rc-shelf-fi .v2p-plate {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 72%, #79828e) !important;
+  background-image: url("/logos/Backgrounds/gate-metal-blue.png?v=1") !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: luminosity !important;
+  border-radius: clamp(10px, 1.4vh, 16px) !important;
+  box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
+              inset 0 1px 1px rgba(255, 255, 255, 0.55),
+              inset 0 -2px 3px rgba(0, 0, 0, 0.5),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.18) !important;
+}
+/* Title in the rail's white ink — the red label and red rule were the AC
+   dialect. */
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .v2-rc-shelf-fi .v2p-title {
+  color: #ffffff !important;
+  border-bottom-color: rgba(255, 255, 255, 0.65) !important;
+}
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .v2-rc-shelf-fi .v2p-title .v2-fi-lbl-fr {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+/* And the rail's value weight — beside the big left plates this one read
+   tiny. */
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .v2-rc-shelf-fi .v2p-value {
+  font-size: clamp(30px, 6.6vh, 78px) !important;
+}
+/* The aircraft-type plate fills its shelf in the same accent metal. */
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  flex: 1 1 auto !important;
+}
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
+  background-color: color-mix(in srgb, var(--airline-accent, #D82F2E) 72%, #79828e) !important;
+}
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  color: #ffffff !important;
+  font-size: clamp(18px, 3.2vh, 40px) !important;
+  white-space: normal !important;
+  line-height: 1.12 !important;
+  overflow: visible !important;
+}
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+/* 'Your Aircraft' header and Speed/Altitude bars: a deep tone of the
+   airline's own colour instead of near-black slate — bars of the scene,
+   not holes in it. */
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  background: color-mix(in srgb, var(--airline-accent, #D82F2E) 80%, #04223f) !important;
+}
