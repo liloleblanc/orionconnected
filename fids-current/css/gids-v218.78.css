@@ -5669,3 +5669,7 @@ html body .g8-wrap .v2-rc-shelf-fi .v2p-value {
   text-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
 }
 html body .g8-wrap .v2-rc-shelf-fi .v2p-value .v2-fi-sub { font-size: .5em !important; font-weight: 700 !important; opacity: .9 !important; }
+
+/* ── v22790 — Nick: no icon orb on the right-side plates. Text block keeps
+   the red-ruled bilingual title + big value; flex collapses the gap. */
+html body .g8-wrap .v2-rc-shelf-fi .v2p-icon { display: none !important; }
