@@ -10686,7 +10686,10 @@ function gateAutofit(root) {
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var _pi = _plateInset(row);
       var _rowH = row.clientHeight - (_pi ? (_pi.t + _pi.b) : 0);
-      _boxAssign(el, tc.clientWidth, Math.floor(_rowH * 0.2), null, false);
+      // v22800: 0.2 → 0.26. The 20% cap squeezed every label to ~17px on a
+      // 1080 display (Nick: 'words are tiuny you cant fuyckign see it') —
+      // the CSS base size never got to apply. 26% clears the base.
+      _boxAssign(el, tc.clientWidth, Math.floor(_rowH * 0.26), null, false);
     });
     // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper).
     // Status value included since v22359 — its two stacked bilingual lines
@@ -17556,7 +17559,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22799';
+var FIDS_BUILD_TAG = 'v22800';
 (function(){
   try {
     function _addTag(){
