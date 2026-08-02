@@ -7626,3 +7626,13 @@ html body[data-gate-airline="PD"]:not(#_):not(#_) .g8-wrap .bigcraft-overlay .bi
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
+
+/* ── v22809 — the frame goes LIVE (Nick: 'i dont see it' — correct, the
+   frame treatment existed only in chat mockups; his screen had nothing
+   new to show). The Porter map pulls in so his waves art (v22808, on the
+   takeover face) forms a visible mat around it. Porter only, middle
+   screen only, exactly the experiment as asked. */
+html body[data-gate-airline="PD"]:not(#_):not(#_) .g8-wrap .bigcraft-wrap--maponly {
+  padding: clamp(26px, 4.2vh, 48px) !important;
+  box-sizing: border-box !important;
+}
