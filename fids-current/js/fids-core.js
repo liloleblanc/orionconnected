@@ -6915,10 +6915,27 @@ function _buildV2AircraftCol(ctx, vars) {
         // height as the value text and sit ON its line, like a bullet
         // point. The badge moves inside .v2-fi-value (1em-sized in CSS) so
         // the auto-fitter shrinks icon and text together.
-        return '<div class="v2-fi-row v2-fi-row-bullet">'
+        // v22804 — that bullet ask was made ON THE WESTJET GATE, but the
+        // builder applied it to every carrier, and the fallout ('the icons
+        // and the text is spilling left', 'It never was unique like this…
+        // fix the fucking problem') all traces to that spread. Bullets are
+        // now WestJet-only; every other carrier keeps the production
+        // icon-column rows it always had.
+        var _railBullets = false;
+        try { _railBullets = String(document.body.getAttribute('data-gate-airline') || '').toUpperCase() === 'WS'; } catch (e) {}
+        if (_railBullets) {
+          return '<div class="v2-fi-row v2-fi-row-bullet">'
+            + '<div class="v2-fi-textcol">'
+            +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
+            +   '<div class="v2-fi-value ' + (valCls || '') + '"><span class="v2-fi-bullet">' + icon + '</span>' + val + '</div>'
+            + '</div>'
+            + '</div>';
+        }
+        return '<div class="v2-fi-row">'
+          + '<div class="v2-fi-iconcol">' + icon + '</div>'
           + '<div class="v2-fi-textcol">'
           +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
-          +   '<div class="v2-fi-value ' + (valCls || '') + '"><span class="v2-fi-bullet">' + icon + '</span>' + val + '</div>'
+          +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
           + '</div>'
           + '</div>';
       }
@@ -17580,7 +17597,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22803';
+var FIDS_BUILD_TAG = 'v22804';
 (function(){
   try {
     function _addTag(){

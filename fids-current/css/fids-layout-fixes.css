@@ -7614,13 +7614,13 @@ html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airlin
        its approved brushed steel. */
 
 /* 1 — content moves INSIDE the plate: padding = plate inset + breathing. */
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+html body[data-gate-airline="WS"]:not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
   padding: calc(clamp(6px, 0.9vh, 11px) + clamp(4px, 0.6vh, 8px)) calc(clamp(8px, 0.7vw, 14px) + clamp(10px, 0.9vw, 18px)) !important;
   box-sizing: border-box !important;
 }
 
 /* 2 — labels at a size a traveller can read. */
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title {
+html body[data-gate-airline="WS"]:not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title {
   font-size: clamp(19px, 2.35vh, 30px) !important;
 }
 
@@ -7691,31 +7691,8 @@ html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airlin
   filter: brightness(0.55) saturate(0.9) !important;
 }
 
-/* ── v22802 — THE LEFT RAIL COPIES THE RIGHT CARDS (Nick, on the PAL gate:
-   'if we can copy the right side semi on the now that may work i hate
-   whats going on right now'). The right column's cards are the calm ones:
-   white label over a thin white rule, one big white value, no coloured
-   hardware. The left rail was still speaking the loud dialect — accent
-   labels, accent underlines, coloured orb bullets. The rail now speaks
-   the right card's grammar exactly: white bilingual label, white rule,
-   plain white value on the same metal. The orbs retire — the right cards
-   carry none. Status keeps its semantic ink (green/amber/red). WS keeps
-   its approved teal grammar; AC untouched. */
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not([data-gate-airline="WS"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not([data-gate-airline="WS"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-en,
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not([data-gate-airline="WS"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-lbl-2,
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not([data-gate-airline="WS"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-sep,
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not([data-gate-airline="WS"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title .v2-fi-code {
-  color: #ffffff !important;
-}
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not([data-gate-airline="WS"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title {
-  border-bottom-color: rgba(255, 255, 255, 0.65) !important;
-}
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not([data-gate-airline="WS"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title::after {
-  background: rgba(255, 255, 255, 0.65) !important;
-  border-color: rgba(255, 255, 255, 0.65) !important;
-}
-/* The orb bullets retire from the rail values. */
-html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not([data-gate-airline="WS"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-value .v2-fi-bullet {
-  display: none !important;
-}
+/* ── v22802 removed in v22804: the white-grammar restyle of the generic rail
+   is retired — Nick: the generic gates 'never [were] unique like this'.
+   Non-WS carriers return to their production look (amber labels, icon
+   column); WestJet keeps its bespoke set. */
+
