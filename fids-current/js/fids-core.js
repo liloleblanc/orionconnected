@@ -10711,6 +10711,24 @@ function gateAutofit(root) {
       }
       _boxAssign(el, tc.clientWidth, availH, colR);
     });
+    // v22803 — ONE label size, ONE value size across the rail (Nick:
+    // 'Theyre not aligned'). Every row fitted its own font, so six rows
+    // stacked six different type sizes — edges matched, sizes didn't.
+    // After the per-row fits, every label takes the smallest fitted label
+    // size and every value the smallest fitted value size (status keeps
+    // its own two-line size), the same uniform-size law the right-column
+    // panels already follow. Runs at the end of every fit pass, so no
+    // later per-row fit can leave the rail ragged.
+    try {
+      var _hzT = root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title');
+      var _hzTMin = Infinity;
+      _hzT.forEach(function (el) { var s = parseFloat(getComputedStyle(el).fontSize); if (s && s < _hzTMin) _hzTMin = s; });
+      if (isFinite(_hzTMin) && _hzT.length > 1) _hzT.forEach(function (el) { el.style.setProperty('font-size', _hzTMin + 'px', 'important'); });
+      var _hzV = root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-value:not(.v2-fi-status-val)');
+      var _hzVMin = Infinity;
+      _hzV.forEach(function (el) { var s = parseFloat(getComputedStyle(el).fontSize); if (s && s < _hzVMin) _hzVMin = s; });
+      if (isFinite(_hzVMin) && _hzV.length > 1) _hzV.forEach(function (el) { el.style.setProperty('font-size', _hzVMin + 'px', 'important'); });
+    } catch (e) {}
     // RIGHT CARD rows ('all spaces accounted for'): the value cell is a
     // FIXED flex box (its scroll/offset sizes never follow the font), so
     // the box IS the budget: width = the cell's own box (text-overflow
@@ -17562,7 +17580,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22802';
+var FIDS_BUILD_TAG = 'v22803';
 (function(){
   try {
     function _addTag(){
