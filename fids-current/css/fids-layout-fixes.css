@@ -7664,3 +7664,29 @@ html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airlin
 html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
   background: color-mix(in srgb, var(--banner-bg, var(--airline-accent, #D82F2E)) 80%, #04223f) !important;
 }
+
+/* ── v22801 — THE RIGHT-BOTTOM SECTION STOPS APOLOGIZING (Nick: 'I hate
+   hte right bottom section'). What he photographed: 'Aircraft image
+   pending | Image de l'appareil à venir' printed across a washed-gray
+   band, a dead empty strip under it, and on another gate an apology
+   line in the type plate. A traveller display never explains what it
+   is missing — it shows what it has:
+     · a shelf whose only content is a pending message does not render
+       (the JS now marks those with v2-rc-illus--pending /
+       v2-rc-actype--pending at build);
+     · the flight card grows to absorb the freed space — the column is
+       always full, never holed;
+     · the cloud band behind the livery drops to the scene's darkness
+       instead of glowing pale gray between two dark metal plates. */
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus.v2-rc-illus--pending {
+  display: none !important;
+}
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type:has(.v2-rc-actype--pending) {
+  display: none !important;
+}
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+  flex: 1 1 auto !important;
+}
+html body[data-gate-airline]:not([data-gate-airline="AC"]):not([data-gate-airline="ACA"]):not([data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus #gateCloudsBg {
+  filter: brightness(0.55) saturate(0.9) !important;
+}

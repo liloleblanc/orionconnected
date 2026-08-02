@@ -8144,8 +8144,11 @@ function _buildV2MapCol(ctx, vars) {
       var _pendingAircraftText = (_lang2b === 'es')
         ? _nbw('Aircraft details pending') + ' <span class="v2-rc-fi-sep">|</span> ' + _nbw('Datos del avión pendientes')
         : _nbw('Aircraft details pending') + ' <span class="v2-rc-fi-sep">|</span> ' + _nbw('Détails de l’appareil à venir');
+      // v22801: pending states carry a marker class so CSS can retire the
+      // shelf instead of showing apology copy (Nick: 'I hate the right
+      // bottom section' — 'Aircraft image pending' on a live display).
       var _typeCellHtml =
-          '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || _pendingAircraftText) + '</div>'
+          '<div class="v2-rc-acb-actype v2-rc-actype-val' + (_acTypeVal ? '' : ' v2-rc-actype--pending') + '">' + (_acTypeVal || _pendingAircraftText) + '</div>'
         + (_opByVal
             ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">Operated By <span class="v2-rc-fi-sep">|</span> ' + _opByL2 + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
             : '');
@@ -8158,7 +8161,7 @@ function _buildV2MapCol(ctx, vars) {
         if (_fV) _facingCls = (_fV === 'R') ? ' g8-plane-faces-right' : ' g8-plane-faces-left';
       } catch (e) {}
       _aircraftBlock =
-          '<div class="v2-rc-shelf v2-rc-shelf-illus' + _facingCls + '">'
+          '<div class="v2-rc-shelf v2-rc-shelf-illus' + _facingCls + (_acImg ? '' : ' v2-rc-illus--pending') + '">'
         +   '<div id="gateCloudsBg"></div>'
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
@@ -8173,12 +8176,12 @@ function _buildV2MapCol(ctx, vars) {
   // remove the two fixed shelves from the six-row right rail.
   if (!_aircraftBlock) {
     _aircraftBlock =
-        '<div class="v2-rc-shelf v2-rc-shelf-illus">'
+        '<div class="v2-rc-shelf v2-rc-shelf-illus v2-rc-illus--pending">'
       +   '<div id="gateCloudsBg"></div>'
       +   '<div class="v2-rc-aircraft-pending"><span style="white-space:nowrap;">Aircraft image pending</span> <span>|</span> <span style="white-space:nowrap;">Image de l’appareil à venir</span></div>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
-      +   '<div class="v2-rc-acb-actype v2-rc-actype-val">Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir</div>'
+      +   '<div class="v2-rc-acb-actype v2-rc-actype-val v2-rc-actype--pending">Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir</div>'
       + '</div></div>';
   }
 
@@ -17559,7 +17562,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22800';
+var FIDS_BUILD_TAG = 'v22801';
 (function(){
   try {
     function _addTag(){
