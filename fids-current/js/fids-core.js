@@ -1395,6 +1395,12 @@ function _fidsSyncUrl(t, s) {
 
 function changeScreenType(val) {
   screenType = val;
+  // v22814: the SCREEN TYPE dropdown always mirrors reality. The gids boot
+  // path called changeScreenType('gate') without setting the select, so the
+  // menu read 'Main Board' on a live gate (Nick: 'Proof im on the gate
+  // right now its showing main board its fucked up'). Sync here — the one
+  // place every caller passes through.
+  try { var _stSel = document.getElementById('screenTypeSel'); if (_stSel && _stSel.value !== val) _stSel.value = val; } catch (e) {}
   // Survive the self-update reloads: a screen put into gate/baggage mode via
   // the MENU (no URL param) was being dumped back to the main board on every
   // deploy (Nick: 'what happened to baggage… it's all over the place').
@@ -17431,7 +17437,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22813';
+var FIDS_BUILD_TAG = 'v22814';
 (function(){
   try {
     function _addTag(){
