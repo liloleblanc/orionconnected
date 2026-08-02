@@ -5225,7 +5225,7 @@ html body .g8-bir-cell .g8-bir-val {
    not something to disturb for a hairline. */
 html body[data-fids-ap="MCO"] #fidsBoard:not(#_),
 html body[data-fids-ap="MCO"] #fidsTable tbody tr:not(#_) {
-  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=2") !important;
+  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=3") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
   background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5308,7 +5308,7 @@ html body #fidsTable tbody tr:not(#_) > td {
    4.5 floor. On cancelled it only helps: multiply takes #A50D24 to
    (132,10,29), and the white lettering goes from 7.89:1 to 10.27:1. */
 html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-cancelled td {
-  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=2") !important;
+  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=3") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
   background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5344,7 +5344,7 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-cancelled 
 html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsBoard,
 html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr,
 html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td {
-  background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=2") !important;
+  background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=3") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
   background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5502,7 +5502,7 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td
 @media (min-width: 701px) {
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-final td,
   html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-gate-closed td {
-    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=2") !important;
+    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=3") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5511,7 +5511,7 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td
   }
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-diverted td,
   html:not(#_) body:not(.fids-light-board)[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-gate-closed td {
-    background-image: url("/logos/Backgrounds/fids-asanoha.png?v=2") !important;
+    background-image: url("/logos/Backgrounds/fids-asanoha.png?v=3") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5583,7 +5583,7 @@ html body .bidsv2-flight-row:not(#_) {
     background-blend-mode: multiply !important;
   }
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row.bidsv2-row-delayed {
-    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=2") !important;
+    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=3") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto var(--fids-pat-h, 660px) !important;
@@ -7272,4 +7272,31 @@ html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
    The v22812 blanket removal is gone. */
 html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-list {
   background-color: var(--fids-bg, #eef2f7) !important;
+}
+
+/* ── v22815 — ROWS ARE THE SIZE SETTING, THE PATTERN IS ONE TRIANGLE PER
+   ROW, BIDS ROWS CARRY NO PATTERN (Nick: 'Rows I hope theyre medium …
+   its probably small and all sizes'; 'Pattern is to be 1 triangle per
+   row no matter the size … its dictadted by text so yeah that aint
+   happening'; 'The bids I said no pattern on the data rows below there
+   is room that could have the patterns').
+   · Table rows treat CSS height as a MINIMUM: any wrapped cell grew its
+     row, so rows tracked text instead of the Small/Medium/Large setting.
+     Cells no longer wrap — a fixed --fids-row-h row is the law.
+   · The tile carries ten motif rules per sheet; sizing the sheet to
+     10 × --fids-row-h puts exactly ONE rule on every row at any size
+     setting. The art is the ORIGINAL geometry, inked 45% toward white.
+   · BIDS flight rows lose the pattern (four id-levels beats the MCO row
+     rules); the page background below/around the list keeps it. */
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr > td {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+html:not(#_):not(#_) body:not(#_) {
+  --fids-pat-h: calc(var(--fids-row-h, 64px) * 10);
+}
+html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row {
+  background-image: none !important;
+  background-blend-mode: normal !important;
 }
