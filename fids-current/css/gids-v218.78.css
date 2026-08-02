@@ -5475,8 +5475,8 @@ html body .octb-tab {
    instead of 3, whatever the scenario) and everything still lands on the
    lines; the pattern never changes. min-height:0 is what disarms flex/grid's
    content-protection so the tracks actually hold. */
-html body .g8-wrap .gad-map-col-v2,
-html body .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
   display: grid !important;
   /* NOT repeat(6, 1fr): in grid, 1fr means minmax(auto, 1fr), so CONTENT can
      still inflate a track — measured doing exactly that (row 4 grew to 249px
@@ -5486,11 +5486,11 @@ html body .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
   grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
   grid-template-columns: 100% !important;
 }
-html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: 1 / span 3 !important; }
-html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: 4 !important; }
-html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: 5 !important; }
-html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: 6 !important; }
-html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: 1 / span 3 !important; }
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: 4 !important; }
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: 5 !important; }
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: 6 !important; }
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
   min-height: 0 !important;
   overflow: hidden !important;
 }
@@ -5506,22 +5506,22 @@ html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
    the shelf is FULL but nothing touches. Scoped to the 4-row variant; the
    3-row table keeps its larger type. Each row clips itself as the last
    resort, so a pathological string can never bleed into its neighbour. */
-html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 {
   padding-top: clamp(3px,0.4vh,6px) !important;
   padding-bottom: clamp(3px,0.4vh,6px) !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow {
   min-height: 0 !important;
   overflow: hidden !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
   font-size: clamp(9px,1.1vh,13px) !important;
   line-height: 1.0 !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow > .v2-rc-fi-tlbl span + span {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow > .v2-rc-fi-tlbl span + span {
   margin-top: 1px !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow > .v2-rc-fi-tval {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow > .v2-rc-fi-tval {
   font-size: clamp(13px,1.8vh,20px) !important;
   line-height: 1.05 !important;
 }
@@ -5533,33 +5533,33 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow 
    size"). Scope to the SHELF, not the table variant, and make every layer
    split its box evenly: 2 panes share the shelf, 2 rows share each pane,
    minmax(0,1fr) all the way down so no layer can inflate past its share. */
-html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-table {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-table {
   height: 100% !important;
   min-height: 0 !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-2pane {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-2pane {
   display: grid !important;
   grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
   gap: clamp(2px,0.3vh,5px) !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-pane {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-pane {
   display: grid !important;
   grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
   min-height: 0 !important;
   overflow: hidden !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-trow {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-trow {
   min-height: 0 !important;
   overflow: hidden !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
   font-size: clamp(9px,1.1vh,13px) !important;
   line-height: 1.0 !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-tlbl span + span {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-tlbl span + span {
   margin-top: 1px !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-tval {
+html body[data-gate-airline="WS"] .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi4 .v2-rc-fi-trow > .v2-rc-fi-tval {
   font-size: clamp(13px,1.8vh,20px) !important;
   line-height: 1.05 !important;
 }

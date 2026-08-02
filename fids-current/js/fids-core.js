@@ -10800,11 +10800,15 @@ function gateAutofit(root) {
       var _hzT = root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title');
       var _hzTMin = Infinity;
       _hzT.forEach(function (el) { var s = parseFloat(getComputedStyle(el).fontSize); if (s && s < _hzTMin) _hzTMin = s; });
-      if (isFinite(_hzTMin) && _hzT.length > 1) _hzT.forEach(function (el) { el.style.setProperty('font-size', _hzTMin + 'px', 'important'); });
+      // v22806: write ONLY on change — an unconditional setProperty every
+      // fit pass dirtied style continuously and janked the cloud animation
+      // (Nick: 'cloud aniumation has been slowed down so much that it
+      // skips').
+      if (isFinite(_hzTMin) && _hzT.length > 1) _hzT.forEach(function (el) { if (parseFloat(el.style.fontSize) !== _hzTMin) el.style.setProperty('font-size', _hzTMin + 'px', 'important'); });
       var _hzV = root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-value:not(.v2-fi-status-val)');
       var _hzVMin = Infinity;
       _hzV.forEach(function (el) { var s = parseFloat(getComputedStyle(el).fontSize); if (s && s < _hzVMin) _hzVMin = s; });
-      if (isFinite(_hzVMin) && _hzV.length > 1) _hzV.forEach(function (el) { el.style.setProperty('font-size', _hzVMin + 'px', 'important'); });
+      if (isFinite(_hzVMin) && _hzV.length > 1) _hzV.forEach(function (el) { if (parseFloat(el.style.fontSize) !== _hzVMin) el.style.setProperty('font-size', _hzVMin + 'px', 'important'); });
     } catch (e) {}
     // RIGHT CARD rows ('all spaces accounted for'): the value cell is a
     // FIXED flex box (its scroll/offset sizes never follow the font), so
@@ -17657,7 +17661,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22805';
+var FIDS_BUILD_TAG = 'v22806';
 (function(){
   try {
     function _addTag(){

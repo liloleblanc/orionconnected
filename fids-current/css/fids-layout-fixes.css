@@ -7592,7 +7592,7 @@ html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus.v2-rc-il
 html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type:has(.v2-rc-actype--pending) {
   display: none !important;
 }
-html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+html body[data-gate-airline="WS"]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
   flex: 1 1 auto !important;
 }
 /* clouds filter removed in v22805 — production has none */
