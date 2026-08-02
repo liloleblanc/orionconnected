@@ -17556,7 +17556,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22798';
+var FIDS_BUILD_TAG = 'v22799';
 (function(){
   try {
     function _addTag(){
@@ -32182,6 +32182,36 @@ function _renderBigCraft(el, ctx) {
   _bcWrapEl.appendChild(_bcOv);
   _bcWrapEl.classList.add('g8-bigcraft-active');
   window._bigCraftOverlay = _bcOv;
+  // v22799 — the overlay FOLLOWS the window (Nick's Safari shot: 'It is
+  // spilling over'). Its box was measured ONCE at build time in fixed px;
+  // any resize/zoom after that reflowed the page under a stale box, so the
+  // big map hung past its frame and off the bottom of the screen. On every
+  // resize, re-anchor the overlay to the carousel slot's CURRENT rect and
+  // let Leaflet re-measure itself.
+  window._bigCraftAnchorEl = el;
+  try {
+    if (!window._bigCraftResizeWired) {
+      window._bigCraftResizeWired = true;
+      window.addEventListener('resize', function () {
+        clearTimeout(window._bigCraftResizeT);
+        window._bigCraftResizeT = setTimeout(function () {
+          try {
+            var ov = window._bigCraftOverlay, a = window._bigCraftAnchorEl;
+            if (!ov || !a || !document.body.contains(ov) || !document.body.contains(a)) return;
+            var w = ov.parentElement; if (!w) return;
+            var ar = a.getBoundingClientRect(), wr = w.getBoundingClientRect();
+            if (!ar.width || !ar.height) return;
+            ov.style.left = Math.round(ar.left - wr.left) + 'px';
+            ov.style.top = Math.round(ar.top - wr.top) + 'px';
+            ov.style.width = Math.round(ar.width) + 'px';
+            ov.style.height = Math.round(ar.height) + 'px';
+            var m = window._bigCraftMap;
+            if (m && m.invalidateSize) m.invalidateSize({ animate: false });
+          } catch (e) {}
+        }, 180);
+      });
+    }
+  } catch (e) {}
   // Free the old carousel content AFTER the grow finishes (overlay now opaque
   // over it) — no dark gap, and no stale video decoding behind the panel.
   try {
