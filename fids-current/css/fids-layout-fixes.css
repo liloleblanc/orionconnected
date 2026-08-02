@@ -7296,9 +7296,15 @@ html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr > td {
 html:not(#_):not(#_) body:not(#_) {
   --fids-pat-h: calc(var(--fids-row-h, 64px) * 10);
 }
-html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row {
-  background-image: none !important;
-  background-blend-mode: normal !important;
+@media (min-width: 701px) {
+  /* v22817: pattern-only kill, scoped to the MCO rules that carry it —
+     the broad version also erased the status gradients (production TPA
+     delayed = yellow gradient; preview had gone flat navy). */
+  html:not(#_):not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row,
+  html:not(#_):not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row.bidsv2-row-delayed {
+    background-image: none !important;
+    background-blend-mode: normal !important;
+  }
 }
 
 /* ── v22816 — THE SHIELD SHRINKS TO THE ROWS THAT EXIST (Nick, on the
