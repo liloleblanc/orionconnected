@@ -7613,3 +7613,16 @@ html body[data-gate-airline="PD"]:not(#_):not(#_) .g8-wrap .gad-media-col {
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
+
+/* ── v22808 — the waves reach the surface Nick actually SEES. The big-map
+   takeover (.bigcraft-overlay > .bigcraft-wrap, opaque #0b1322 so it can
+   cover the ad beneath) blankets the middle column most of the time — so
+   the v22807 waves on .gad-media-col were painted under an opaque lid
+   (Nick: 'I dont see it'). Porter only: the takeover's own face carries
+   the waves; the map keeps its frame on top. */
+html body[data-gate-airline="PD"]:not(#_):not(#_) .g8-wrap .bigcraft-overlay .bigcraft-wrap {
+  background-image: url("/logos/Backgrounds/porter-waves.jpg?v=1") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
