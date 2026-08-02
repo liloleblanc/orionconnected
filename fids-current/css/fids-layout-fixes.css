@@ -5225,7 +5225,7 @@ html body .g8-bir-cell .g8-bir-val {
    not something to disturb for a hairline. */
 html body[data-fids-ap="MCO"] #fidsBoard:not(#_),
 html body[data-fids-ap="MCO"] #fidsTable tbody tr:not(#_) {
-  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=2") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
   background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5308,7 +5308,7 @@ html body #fidsTable tbody tr:not(#_) > td {
    4.5 floor. On cancelled it only helps: multiply takes #A50D24 to
    (132,10,29), and the white lettering goes from 7.89:1 to 10.27:1. */
 html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-cancelled td {
-  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/fids-asanoha.png?v=2") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
   background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5344,7 +5344,7 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-cancelled 
 html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsBoard,
 html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr,
 html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td {
-  background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
+  background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=2") !important;
   background-attachment: fixed !important;
   background-position: center var(--fids-pat-y, 165.5px) !important;
   background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5502,7 +5502,7 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td
 @media (min-width: 701px) {
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-final td,
   html:not(#_) body.fids-light-board[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-gate-closed td {
-    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
+    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=2") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5511,7 +5511,7 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td
   }
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-diverted td,
   html:not(#_) body:not(.fids-light-board)[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-gate-closed td {
-    background-image: url("/logos/Backgrounds/fids-asanoha.png?v=1") !important;
+    background-image: url("/logos/Backgrounds/fids-asanoha.png?v=2") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5522,7 +5522,7 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:hover td,
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:active,
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.fids-row-clickable:active td {
-    background-image: url("/logos/Backgrounds/fids-asanoha-strong.png?v=1") !important;
+    background-image: url("/logos/Backgrounds/fids-asanoha-strong.png?v=2") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5575,7 +5575,7 @@ html body .bidsv2-flight-row:not(#_) {
 @media (min-width: 701px) {
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-body,
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row {
-    background-image: url("/logos/Backgrounds/fids-asanoha-bags.png?v=1") !important;
+    background-image: url("/logos/Backgrounds/fids-asanoha-bags.png?v=2") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto var(--fids-pat-h, 660px) !important;
@@ -5583,7 +5583,7 @@ html body .bidsv2-flight-row:not(#_) {
     background-blend-mode: multiply !important;
   }
   html:not(#_) body[data-fids-ap="MCO"]:not(#_) .bidsv2-flight-row.bidsv2-row-delayed {
-    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=1") !important;
+    background-image: url("/logos/Backgrounds/fids-asanoha-light.png?v=2") !important;
     background-attachment: fixed !important;
     background-position: center var(--fids-pat-y, 165.5px) !important;
     background-size: auto var(--fids-pat-h, 660px) !important;
@@ -7259,24 +7259,17 @@ html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
 }
 
 
-/* ── v22812 — THE PATTERN LEAVES EVERY DATA ROW; CLOUDS GO BACKGROUND-ONLY
-   (Nick: 'I asked foir that to be removed from all rows containing data' /
-   'remove the clouds from the board listings it only goes in teh
-   background both for FIDS and BIDS'). Five id-levels of override so no
-   existing pattern rule survives on a row. The cloud/hex band stays on
-   the page background; the LIST surfaces get an opaque backing so the
-   band can never read through translucent rows. */
-html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable tbody tr,
-html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable tbody tr > td,
-html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-body,
-html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row {
-  background-image: none !important;
-  background-blend-mode: normal !important;
-  background-attachment: scroll !important;
-}
-html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-body {
+
+/* ── v22813 — SAID BACK CORRECTLY THIS TIME (Nick: 'I said on the BIDS
+   DONOT HAVE clouds over the data ... you remove it entirely. NOT WHAT I
+   SAID. On teh FIDS ... you removed it which I didnt want removed').
+   · BIDS: the cloud band STAYS on the page — carousel side, margins,
+     bottom — only the DATA LIST carries an opaque shield so clouds never
+     sit under rows.
+   · FIDS: the pattern is BACK on the board and rows, in the smaller,
+     lighter cut (v2 art: motif at 1/3 scale, ink lifted toward white —
+     the pastel direction; tint tunable from here).
+   The v22812 blanket removal is gone. */
+html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-list {
   background-color: var(--fids-bg, #eef2f7) !important;
-}
-html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable {
-  background-color: var(--fids-bg, var(--body-bg, #101826)) !important;
 }
