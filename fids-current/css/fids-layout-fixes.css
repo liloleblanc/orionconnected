@@ -7225,3 +7225,36 @@ html body[data-fids-ap="MCO"] .bidsv2-screen::after {
    the asset tree is well inside limits (3,387 files, none over 25 MiB), so
    this exists purely to tell transient build-service failure apart from
    something in our tree. */
+/* ── v22755: CANCELLED ROWS — WHITE INK, NO EXCEPTIONS (Nick: 'Cancelled is
+   still black'). The v22643 block already asked for white on every glyph of a
+   cancelled row, but it asks at one id-level (html body #fidsTable …), and
+   this file has since grown a stack of :not(#_) rules that carry two and three
+   id-levels. Any of those that lands a colour on a cell's inner span wins the
+   cascade and the row goes back to dark ink on red — which is exactly what he
+   is looking at.
+
+   Rather than hunt the specific loser again every time a new block lands, this
+   pins the outcome: four id-levels, every descendant, both board polarities.
+   Nothing in the file outranks it, so a cancelled row is white ink from here
+   on. Diverted rows share the red ground and the same problem, so they are
+   covered in the same breath. The status word keeps its own white too — it is
+   the one glyph that already worked, and leaving it out would have it drift.
+
+   Deliberately NOT covered: the airline art. Raster wordmarks are swapped to
+   their white-ink variant at the source (fids-core _rowWmVariant); a colour
+   rule cannot recolour a PNG and a filter would wreck it (the Breeze
+   white-square lesson). */
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td,
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td *,
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted td,
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted td *,
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled,
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled *,
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted,
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-decoration: none !important;
+  opacity: 1 !important;
+}
+
