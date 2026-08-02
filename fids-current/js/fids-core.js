@@ -7462,18 +7462,48 @@ function _buildV2MapCol(ctx, vars) {
       // info bar; a shelf-10 plate carries one value like every other plate.
       var _ibPlateVal = (_ibFltCompact || '\u2014')
                       + (_ibCityCode ? ' <span class="v2-fi-sub">\u00b7 ' + _ibCityCode + '</span>' : '');
-      _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi">'
-        +   '<div class="v2p-wrap">'
-        +     '<div class="v2p-plate">'
-        +       '<div class="v2p-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 14.6c.6.2 1 .8 1 1.4l-10-2.6-5.4 4.4-1.9-.5 3.4-4.4L3 11.4l1.5-1.2 5.2 1.4 4.5-3.7c.5-.4 1.2-.3 1.6.2.4.5.3 1.2-.2 1.6l-3.6 3 9 1.9z"/></svg></div>'
-        +       '<div class="v2p-text">'
-        +         '<div class="v2p-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol entrant' : 'Incoming Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Incoming Flight' : 'Vol entrant') + '</span></div>'
-        +         '<div class="v2p-value axr-one-line">' + _ibPlateVal + '</div>'
-        +       '</div>'
-        +     '</div>'
-        +   '</div>'
-        + '</div>';
+      // v22805 \u2014 the v2p single-card was a WESTJET ask (v22782, made on the
+      // WS gate) that replaced the production two-pane table on every
+      // carrier. Nick, on PAL/Porter: 'sorry they dont match and now youve
+      // made the other ones like this'. WS keeps its card; every other
+      // carrier gets the PRODUCTION markup back, verbatim from main.
+      var _v2pWS1 = false;
+      try { _v2pWS1 = String(document.body.getAttribute('data-gate-airline') || '').toUpperCase() === 'WS'; } catch (e) {}
+      if (_v2pWS1) {
+        _inboundCard =
+            '<div class="v2-rc-shelf v2-rc-shelf-fi">'
+          +   '<div class="v2p-wrap">'
+          +     '<div class="v2p-plate">'
+          +       '<div class="v2p-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 14.6c.6.2 1 .8 1 1.4l-10-2.6-5.4 4.4-1.9-.5 3.4-4.4L3 11.4l1.5-1.2 5.2 1.4 4.5-3.7c.5-.4 1.2-.3 1.6.2.4.5.3 1.2-.2 1.6l-3.6 3 9 1.9z"/></svg></div>'
+          +       '<div class="v2p-text">'
+          +         '<div class="v2p-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol entrant' : 'Incoming Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Incoming Flight' : 'Vol entrant') + '</span></div>'
+          +         '<div class="v2p-value axr-one-line">' + _ibPlateVal + '</div>'
+          +       '</div>'
+          +     '</div>'
+          +   '</div>'
+          + '</div>';
+      } else {
+        _inboundCard =
+            '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
+          +   '<div class="v2-rc-fi-pane">'
+          +     '<div class="v2-rc-fi-trow">'
+          +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+          +       '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '\u2014') + '</div>'
+          +     '</div>'
+          +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+          +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
+          +       '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
+          +     '</div>'
+          +   '</div>'
+          +   '<div class="v2-rc-fi-pane' + (_ibArrRowHtml ? '' : ' v2-rc-fi-pane-1') + '">'
+          +     (_ibArrRowHtml || '')
+          +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+          +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
+          +       '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
+          +     '</div>'
+          +   '</div>'
+          + '</div></div>';
+      }
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.
@@ -7626,18 +7656,48 @@ function _buildV2MapCol(ctx, vars) {
                      + '<span class="v2-fi-sub"> \u00b7 ' + (_dispIata(_dDest) || '\u2014')
                      + (_dDepStr ? ' \u00b7 <span' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + _dDepStr + '</span>' : '')
                      + '</span>';
-      _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi">'
-        +   '<div class="v2p-wrap">'
-        +     '<div class="v2p-plate">'
-        +       '<div class="v2p-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 9.4c.6-.2 1-.8 1-1.4l-10 2.6-5.4-4.4-1.9.5 3.4 4.4L3 12.6l1.5 1.2 5.2-1.4 4.5 3.7c.5.4 1.2.3 1.6-.2.4-.5.3-1.2-.2-1.6l-3.6-3 9-1.9z"/></svg></div>'
-        +       '<div class="v2p-text">'
-        +         '<div class="v2p-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol' : 'Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
-        +         '<div class="v2p-value axr-one-line">' + _dPlateVal + '</div>'
-        +       '</div>'
-        +     '</div>'
-        +   '</div>'
-        + '</div>';
+      // v22805 — same retreat as the inbound card above: WS keeps the v2p
+      // card, every other carrier gets production's two-pane table back.
+      var _v2pWS2 = false;
+      try { _v2pWS2 = String(document.body.getAttribute('data-gate-airline') || '').toUpperCase() === 'WS'; } catch (e) {}
+      if (_v2pWS2) {
+        _inboundCard =
+            '<div class="v2-rc-shelf v2-rc-shelf-fi">'
+          +   '<div class="v2p-wrap">'
+          +     '<div class="v2p-plate">'
+          +       '<div class="v2p-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M21 9.4c.6-.2 1-.8 1-1.4l-10 2.6-5.4-4.4-1.9.5 3.4 4.4L3 12.6l1.5 1.2 5.2-1.4 4.5 3.7c.5.4 1.2.3 1.6-.2.4-.5.3-1.2-.2-1.6l-3.6-3 9-1.9z"/></svg></div>'
+          +       '<div class="v2p-text">'
+          +         '<div class="v2p-title"><span class="v2-fi-lbl-en">' + (_frF ? 'Vol' : 'Flight') + '</span><span class="v2-fi-lbl-sep">|</span><span class="v2-fi-lbl-fr">' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+          +         '<div class="v2p-value axr-one-line">' + _dPlateVal + '</div>'
+          +       '</div>'
+          +     '</div>'
+          +   '</div>'
+          + '</div>';
+      } else {
+        _inboundCard =
+            '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
+          +   '<div class="v2-rc-fi-pane">'
+          +     '<div class="v2-rc-fi-trow">'
+          +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+          +       '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
+          +     '</div>'
+          +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+          +       '<div class="v2-rc-fi-tlbl"><span>Destination</span></div>'
+          +       '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
+          +     '</div>'
+          +   '</div>'
+          +   '<div class="v2-rc-fi-pane">'
+          +     '<div class="v2-rc-fi-trow">'
+          +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
+          +       '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
+          +     '</div>'
+          +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+          +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
+          +       '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+          +     '</div>'
+          +   '</div>'
+          + '</div></div>';
+      }
     } catch (e) {}
   }
 
@@ -17597,7 +17657,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22804';
+var FIDS_BUILD_TAG = 'v22805';
 (function(){
   try {
     function _addTag(){
