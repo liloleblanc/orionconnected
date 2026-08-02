@@ -7300,3 +7300,26 @@ html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row {
   background-image: none !important;
   background-blend-mode: normal !important;
 }
+
+/* ── v22816 — THE SHIELD SHRINKS TO THE ROWS THAT EXIST (Nick, on the
+   one-flight TPA baggage board: 'You just shut off the main pattern
+   why? theres nothignn on the right at all now NOT WHAT I SAID. I SAID
+   ONACTIVE ROWS'). The v22813 shield covered the whole list COLUMN, so
+   the empty area under the last row went flat and the background art
+   cut off. Now each data row carries its OWN opaque underlay (a ::before
+   below the row's translucent tint), and the empty space below the data
+   shows the page's pattern and clouds as intended. */
+html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-list {
+  background-color: transparent !important;
+}
+html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row {
+  position: relative !important;
+  z-index: 0 !important;
+}
+html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: var(--fids-bg, #eef2f7) !important;
+  z-index: -1 !important;
+}
