@@ -7602,3 +7602,14 @@ html body[data-gate-airline="WS"]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2
    Non-WS carriers return to their production look (amber labels, icon
    column); WestJet keeps its bespoke set. */
 
+
+/* ── v22807 — EXPERIMENT (Nick: 'please try this in the middle screen only
+   and Porter only its an experiement'). His abstract blue-waves art
+   (vecteezy 554312) becomes the middle column's backdrop on Porter gates
+   alone. Nothing else changes; one rule, easy to keep or kill. */
+html body[data-gate-airline="PD"]:not(#_):not(#_) .g8-wrap .gad-media-col {
+  background-image: url("/logos/Backgrounds/porter-waves.jpg?v=1") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
