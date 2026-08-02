@@ -7258,3 +7258,25 @@ html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
   opacity: 1 !important;
 }
 
+
+/* ── v22812 — THE PATTERN LEAVES EVERY DATA ROW; CLOUDS GO BACKGROUND-ONLY
+   (Nick: 'I asked foir that to be removed from all rows containing data' /
+   'remove the clouds from the board listings it only goes in teh
+   background both for FIDS and BIDS'). Five id-levels of override so no
+   existing pattern rule survives on a row. The cloud/hex band stays on
+   the page background; the LIST surfaces get an opaque backing so the
+   band can never read through translucent rows. */
+html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable tbody tr,
+html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable tbody tr > td,
+html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-body,
+html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row {
+  background-image: none !important;
+  background-blend-mode: normal !important;
+  background-attachment: scroll !important;
+}
+html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-body {
+  background-color: var(--fids-bg, #eef2f7) !important;
+}
+html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable {
+  background-color: var(--fids-bg, var(--body-bg, #101826)) !important;
+}
