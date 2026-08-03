@@ -7695,6 +7695,14 @@ function _buildV2MapCol(ctx, vars) {
     // Missing / failed / empty lists are indeterminate and change nothing
     // (thin coverage must not hide honest tails). The pending first look
     // withholds for one render; the verdict rebuild settles it in seconds.
+    // v22823 — remember the tail through the verdict WAIT (only the wait):
+    // while verification is pending the reg is withheld from display, but
+    // its REGISTRY type is still the best model answer — the feed said
+    // 'A320' for C-FYJE (an A319), so falling back to the feed's model made
+    // the panel flip 319↔320 on every re-verify (Nick: 'keeps flip
+    // flopping'). A positive false verdict or a sanity purge clears this
+    // too — a refuted tail must not leave its type behind.
+    var _acRegPreVerdict = _acReg;
     try {
       if (_acReg && typeof _regFlightVerdict === 'function') {
         // Pass the inbound leg too — a turn's tail is listed under the flight
@@ -7711,6 +7719,7 @@ function _buildV2MapCol(ctx, vars) {
             if (window._gateInbound && window._gateInbound._reg === _acReg) { window._gateInbound._reg = ''; window._gateInbound._regSource = ''; }
           } catch (e2) {}
           _acReg = '';
+          _acRegPreVerdict = '';
         } else if (_rfv === null) {
           _acReg = '';   // unverified first look — never show an unproven tail
         }
@@ -7778,6 +7787,10 @@ function _buildV2MapCol(ctx, vars) {
     // sticky shelf above — 'Canadair CRJ-701ER | N632SK' stalking Porter and
     // WestJet gates alike. Any reg that cannot belong to this carrier is
     // dropped AND its sticky entry killed so it can never come back.
+    if (_acRegPreVerdict && typeof _equipSaneForCarrier === 'function'
+        && !_equipSaneForCarrier(vars.airlineCode, _opCode, _acRegPreVerdict, '')) {
+      _acRegPreVerdict = '';
+    }
     if (_acReg && typeof _equipSaneForCarrier === 'function'
         && !_equipSaneForCarrier(vars.airlineCode, _opCode, _acReg, '')) {
       _acReg = '';
@@ -7828,6 +7841,7 @@ function _buildV2MapCol(ctx, vars) {
         _equipCd = '';
         _equipNm = '';
         _acReg = '';
+        _acRegPreVerdict = '';
       }
     }
     // Jazz only flies regional metal (CRJ-900 / Dash 8-400 / E175) — never a
@@ -8063,7 +8077,10 @@ function _buildV2MapCol(ctx, vars) {
       // beats the scheduled equipment, which lies on swaps (MAX 8 vs the
       // -700 that C-FWSI actually is, per Nick).
       try {
-        var _regTrue = (_acReg && typeof _regTrueType === 'function') ? _regTrueType(_acReg) : '';
+        // The verdict-withheld tail still names the TYPE (see _acRegPreVerdict
+        // above) — display of the reg itself stays gated on verification.
+        var _regTypeSrc = _acReg || _acRegPreVerdict;
+        var _regTrue = (_regTypeSrc && typeof _regTrueType === 'function') ? _regTrueType(_regTypeSrc) : '';
         if (_regTrue) _acModel = _regTrue;
         // FINAL-SAY normalization: ADB's aircraft REGISTRY also mislabels AC
         // MAXes as '737-800', and this reg-true override runs AFTER the
@@ -17448,7 +17465,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22822';
+var FIDS_BUILD_TAG = 'v22823';
 (function(){
   try {
     function _addTag(){
@@ -29049,7 +29066,22 @@ function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
     var k = r + '|' + f + (f2 ? '+' + f2 : '') + '|' + day;
     var V = window._regFlightVerdicts;
     if (k in V) return V[k];
-    if (V['_p_' + k]) return null;
+    // v22823 — EVER-TRUE BRIDGE (Nick: 'keeps flip flopping between 320 and
+    // 319 its rediculous', C-FYJE at YQM gate 4, plane ARRIVED at the gate).
+    // The verdict key carries the LOCAL DAY, so at midnight a standing
+    // screen's verified tail goes pending again — and the pending branch
+    // hides the reg, dropping the panel to the feed's model (which for
+    // C-FYJE wrongly says A320) with 'expected | prévu', until the refetch
+    // lands seconds later and it snaps back to 'A319 | C-FYJE'. Watched
+    // live: 03:13:33 'A320 expected' → 03:13:36 verdict true → 'A319'.
+    // A tail this page has already POSITIVELY verified for this turn keeps
+    // showing through any later pending window (day rollover, cache miss);
+    // the refetch still runs, and a genuine FALSE still purges — this
+    // bridges the wait, it never overrides an answer. Day-less key, memory
+    // only: a fresh page still withholds unproven tails on first look.
+    window._regVerdictEverTrue = window._regVerdictEverTrue || {};
+    var ek = r + '|' + f + (f2 ? '+' + f2 : '');
+    if (V['_p_' + k]) return window._regVerdictEverTrue[ek] ? true : null;
     V['_p_' + k] = 1;
     adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev/proxy/flights/reg/' + encodeURIComponent(r) + '/' + day + '?dateLocalRole=Both')
       .then(function (resp) { return resp && resp.ok ? resp.json() : null; })
@@ -29063,6 +29095,10 @@ function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
         }
         V[k] = verdict;
         delete V['_p_' + k];
+        try {
+          if (verdict) window._regVerdictEverTrue[ek] = 1;
+          else delete window._regVerdictEverTrue[ek];
+        } catch (e) {}
         try { console.log('[REGVERIFY]', r, 'flies', f + (f2 ? ' or ' + f2 : ''), 'today?', verdict); } catch (e) {}
         // Either verdict changes what the shelf shows (pending withheld the
         // tail) — rebuild once so it settles now.
