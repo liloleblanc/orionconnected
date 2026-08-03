@@ -7337,3 +7337,37 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   white-space: normal !important;
   overflow: visible !important;
 }
+
+/* ── v22821 — THE BOTTOM PANELS MATCH (Nick: 'Im asking for the bottom
+   panels to at least match thats the one with the aircraft'). Measured on
+   YQM gate 4 @1920×1080: the left rail's six rows are 154.2px each and end
+   at y=1068.4 — the column carries clamp(6px,0.8vh,10px) bottom padding
+   from v22732. The right column had NO bottom padding, so its shelves ran
+   8.6px lower (y=1077), and the aircraft plate floated 107px tall in its
+   155.6px shelf — its bottom edge 12.7px above the left plates'. Same
+   bottom padding on the same fr-grid recomputes the two bottom shelves to
+   exactly the rail row height, landing them pixel-equal with the left
+   rail's bottom two rows; the plate then fills its shelf and wears the
+   rail rows' vertical insets, so both bottom plates share one top edge,
+   one bottom edge, one height. AC-scoped — tonight's complaint is the AC
+   gate; other carriers' pane-matched type plates (v22686) are untouched. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  padding-bottom: clamp(6px, 0.8vh, 10px) !important;
+  box-sizing: border-box !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  min-height: 0 !important;
+}
+/* Same vertical insets and radius as the rail rows' plates (v22745). The
+   horizontal 3px inset stays — the v22686 JS pass pins the panel's
+   left/width to the info panes, which v22740/41 already aligned to the
+   rail plates' width. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
+  top: clamp(6px, 0.9vh, 11px) !important;
+  bottom: clamp(6px, 0.9vh, 11px) !important;
+  border-radius: clamp(10px, 1.4vh, 16px) !important;
+}

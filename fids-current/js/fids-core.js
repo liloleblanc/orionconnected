@@ -10815,7 +10815,18 @@ function gateAutofit(root) {
       acb.style.setProperty('margin', '0', 'important');
       acb.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - host.left - hostPad)) + 'px', 'important');
       acb.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
-      acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
+      // v22821 — on AC the bottom plate matches the LEFT RAIL rows, not the
+      // info panes (Nick: 'the bottom panels to at least match'): the shelf
+      // is rail-row-sized once the column carries the rail's bottom padding,
+      // so the panel fills it and the stylesheet supplies the rail's plate
+      // insets. Copying the pane height here would pin it back to the pane's
+      // ~107px — this inline !important write beats any CSS rule.
+      var _acbGa = document.body.getAttribute('data-gate-airline') || '';
+      if (_acbGa === 'AC' || _acbGa === 'ACA' || _acbGa.indexOf('AIR CANADA') >= 0) {
+        acb.style.setProperty('height', '100%', 'important');
+      } else {
+        acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
+      }
       acb.style.setProperty('flex-direction', 'column', 'important');
       acb.style.setProperty('justify-content', 'center', 'important');
     });
@@ -17437,7 +17448,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22820';
+var FIDS_BUILD_TAG = 'v22821';
 (function(){
   try {
     function _addTag(){
