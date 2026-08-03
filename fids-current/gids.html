@@ -61,7 +61,7 @@
   <link rel="stylesheet" href="css/bids-v2.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-v216.css?v=312">
-  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=22754">
+  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=22819">
   <link rel="stylesheet" href="css/gids-v218.78.css?v=21905-118">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
@@ -391,16 +391,72 @@
 
 <div class="hdr">
   <div class="hdr-left">
-    <img id="hdrAirlineLogo" style="display:none;height:52px;margin-right:14px;" alt="">
-    <div class="hdr-board" id="hdrBoard">Arrivées</div>
+    <img id="legacy_hdrAirlineLogo" style="display:none;height:52px;margin-right:14px;" alt="">
+    <div class="hdr-board" id="legacy_hdrBoard">Arrivées</div>
   </div>
   <div class="hdr-center">
-    <div class="hdr-apname" id="hdrApName">Greater Moncton Roméo LeBlanc International Airport</div>
-    <div class="hdr-temp" id="hdrTemp"><div class="hdr-fc-day"><span class="fc-label">ACTUELLEMENT</span>  <span class="hdr-fc-now">34°F</span></div><div class="hdr-fc-day"><span class="fc-label">AVR 9 - JEU</span>  <span class="fc-temp">46°F/28°F</span></div><div class="hdr-fc-day"><span class="fc-label">AVR 10 - VEN</span>  <span class="fc-temp">54°F/32°F</span></div></div>
+    <div class="hdr-apname" id="legacy_hdrApName">Greater Moncton Roméo LeBlanc International Airport</div>
+    <div class="hdr-temp" id="legacy_hdrTemp"><div class="hdr-fc-day"><span class="fc-label">ACTUELLEMENT</span>  <span class="hdr-fc-now">34°F</span></div><div class="hdr-fc-day"><span class="fc-label">AVR 9 - JEU</span>  <span class="fc-temp">46°F/28°F</span></div><div class="hdr-fc-day"><span class="fc-label">AVR 10 - VEN</span>  <span class="fc-temp">54°F/32°F</span></div></div>
   </div>
   <div class="hdr-right">
-    <div class="hdr-clock" id="clock">11:41:30</div>
-    <div class="hdr-date" id="clockDate">WEDNESDAY, APR 8, 2026</div>
+    <div class="hdr-clock" id="legacyHdrClock">11:41:30</div>
+    <div class="hdr-date" id="legacyHdrClockDate">WEDNESDAY, APR 8, 2026</div>
+  </div>
+</div>
+
+<div class="fids-banner" id="fidsBanner">
+  <div class="fids-banner-chevrons" aria-hidden="true"></div>
+
+  <!-- Time + date, top-right corner. Analog clock (left) + 3-line digital
+       block matching the gate banner: label / big time / bilingual date
+       (Nick, Jul 2026). -->
+  <div class="fids-banner-time-block">
+    <svg class="fids-banner-analog" id="clockAnalog" viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="cl-face" cx="50" cy="50" r="46"></circle>
+      <g class="cl-ticks">
+        <line x1="50" y1="6" x2="50" y2="13"></line>
+        <line x1="94" y1="50" x2="87" y2="50"></line>
+        <line x1="50" y1="94" x2="50" y2="87"></line>
+        <line x1="6" y1="50" x2="13" y2="50"></line>
+      </g>
+      <line class="cl-hand cl-hour" id="clHour" x1="50" y1="50" x2="50" y2="29"></line>
+      <line class="cl-hand cl-min" id="clMin" x1="50" y1="50" x2="50" y2="17"></line>
+      <circle class="cl-pin" cx="50" cy="50" r="3.4"></circle>
+    </svg>
+    <div class="fids-banner-time-text">
+      <div class="fids-banner-digirow">
+        <div class="fids-banner-tlabel" id="clockLabel"></div>
+        <div class="fids-banner-time" id="clock">--:--</div>
+      </div>
+      <div class="fids-banner-date" id="clockDate"></div>
+    </div>
+  </div>
+
+  <!-- Center pill: airport identity (logo + IATA + name) -->
+  <div class="fids-airport-pill" id="fidsAirportPill">
+    <img class="fids-airport-logo-img" id="fidsAirportLogoImg" alt="" style="display:none;">
+    <div class="fids-airport-text">
+      <div class="fids-airport-iata" id="fidsAirportIata">YQM</div>
+      <div class="fids-airport-name" id="hdrApName">Greater Moncton</div>
+    </div>
+  </div>
+
+  <!-- Right side: board name (Departures / Arrivals) + plane icon -->
+  <div class="fids-banner-board">
+    <div class="fids-board-icon" id="fidsBoardIcon" aria-hidden="true">
+      <!-- Default: departure (plane lifting off). For arrivals, the icon
+           is swapped at runtime by fids-core.js to a separate landing icon. -->
+      <svg class="fids-icon-dep" viewBox="0 0 24 24"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>
+      <svg class="fids-icon-arr" viewBox="0 0 24 24"><path d="M2.5 19h19v2h-19zM9.68 13.27l4.27 1.14 5.89 1.58c.94.25 1.96-.31 2.16-1.27.21-.97-.41-1.92-1.36-2.18l-5.89-1.58-3.21-7.21-1.93-.51v6.92L4.81 8.84l-.5-1.86-1.45-.39v5.17l1.45.39 1.93.51 3.44.61z"/></svg>
+    </div>
+    <div class="fids-board-label" id="hdrBoard">Departures</div>
+  </div>
+
+  <!-- Hidden — kept for fids-core.js code paths that reference these IDs.
+       The data is not displayed; banner shows airport name via the pill. -->
+  <div style="display:none">
+    <img id="hdrAirlineLogo" alt="">
+    <div id="hdrTemp"></div>
   </div>
 </div>
 
