@@ -7358,6 +7358,10 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+  /* v22822 — the shelf's own 6px black border-top divider was the last
+     offset (measured on v22821: plate box started 920.2 in a shelf at
+     914.2). The left rows carry no divider, so neither does this shelf. */
+  border-top: 0 !important;
 }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
   min-height: 0 !important;
