@@ -4132,7 +4132,10 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:not(.v2-rc-fi
   min-height: 0 !important;
 }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow {
-  border-bottom: 1px solid color-mix(in srgb, var(--airline-accent, #d82f2e) 62%, transparent) !important;
+  /* v22820: the accent divider is GONE (Nick, on the AC gate: 'I want this
+     fixed that line is annoying me' — the red 1px rule under the revised
+     row). Rows separate by spacing alone. */
+  border-bottom: 0 !important;
 }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow-last,
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:last-child {
@@ -7320,4 +7323,17 @@ html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-list {
 }
 html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
   background-color: var(--fids-bg, #16345c) !important;
+}
+
+
+/* ── v22820 — AIRPLANE DATA AT READABLE SIZE ON AIR CANADA (Nick: 'that
+   and the size of the airplane data'). AC was excluded from the v22798
+   type-plate sizing to protect its approved look — colours stay exactly
+   as approved; only the TYPE gets the same readable scale the other
+   carriers received. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  font-size: clamp(20px, 3.4vh, 42px) !important;
+  line-height: 1.1 !important;
+  white-space: normal !important;
+  overflow: visible !important;
 }
