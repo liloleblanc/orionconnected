@@ -7338,12 +7338,16 @@ html:not(#_):not(#_) body:not(.fids-light-board):not(#_) .bidsv2-flight-row:not(
    v22825 — one shade lighter and warmed with a brown tint (Nick: 'make
    these one row lighter and add a brown tint please'): the cool blue-grey
    bases shift to a light warm greige pair, same zebra step, navy ink
-   contrast still comfortable. */
+   contrast still comfortable.
+   v22826 — GRAY-brown, a bit darker (Nick: 'light gray one darker than
+   the other … a bit darker both gray if possible not too dark but a gray
+   brown tint'): the beige lean comes out, both steps drop one notch —
+   light warm grays, still clearly light, navy ink untouched. */
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
-  background-color: #D8D0C6 !important;
+  background-color: #C9C2BA !important;
 }
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted):nth-child(odd) {
-  background-color: #CEC5B9 !important;
+  background-color: #BDB5AC !important;
 }
 
 
