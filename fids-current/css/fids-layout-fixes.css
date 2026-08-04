@@ -7334,12 +7334,16 @@ html:not(#_):not(#_) body:not(.fids-light-board):not(#_) .bidsv2-flight-row:not(
    rows are exempt above), which is exactly what the 6:18 screenshot
    shows. Light boards now get their own opaque bases — the mist canvas
    with the original 5%/9.5% row tints pre-blended, so the zebra reads
-   the same and the hex band still cannot bleed through the rows. */
+   the same and the hex band still cannot bleed through the rows.
+   v22825 — one shade lighter and warmed with a brown tint (Nick: 'make
+   these one row lighter and add a brown tint please'): the cool blue-grey
+   bases shift to a light warm greige pair, same zebra step, navy ink
+   contrast still comfortable. */
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
-  background-color: #BEC9D5 !important;
+  background-color: #D8D0C6 !important;
 }
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted):nth-child(odd) {
-  background-color: #B6C2CE !important;
+  background-color: #CEC5B9 !important;
 }
 
 
