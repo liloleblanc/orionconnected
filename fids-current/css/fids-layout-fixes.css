@@ -4132,7 +4132,10 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:not(.v2-rc-fi
   min-height: 0 !important;
 }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow {
-  border-bottom: 1px solid color-mix(in srgb, var(--airline-accent, #d82f2e) 62%, transparent) !important;
+  /* v22820: the accent divider is GONE (Nick, on the AC gate: 'I want this
+     fixed that line is annoying me' — the red 1px rule under the revised
+     row). Rows separate by spacing alone. */
+  border-bottom: 0 !important;
 }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow-last,
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:last-child {
@@ -7318,6 +7321,82 @@ html:not(#_):not(#_) body:not(#_) {
 html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-list {
   background-color: transparent !important;
 }
-html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
+html:not(#_):not(#_) body:not(.fids-light-board):not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
   background-color: var(--fids-bg, #16345c) !important;
+}
+/* v22824 — THE SHIELD MUST NOT PAINT LIGHT BOARDS BLACK (Nick: 'the
+   screens are black … the baggage screen especially', YouTube stream).
+   Mist's light --fids-bg is scoped :not([data-page="bids"]) — the baggage
+   page never receives it — so on the stream (theme=mist) the shield's
+   var(--fids-bg) resolved to the BASE dark #0a0e1a: opaque near-black
+   rows under the light-board's dark ink and brand-colour wordmarks.
+   Scheduled rows went black; Delayed/Cancelled kept their blocks (state
+   rows are exempt above), which is exactly what the 6:18 screenshot
+   shows. Light boards now get their own opaque bases — the mist canvas
+   with the original 5%/9.5% row tints pre-blended, so the zebra reads
+   the same and the hex band still cannot bleed through the rows.
+   v22825 — one shade lighter and warmed with a brown tint (Nick: 'make
+   these one row lighter and add a brown tint please'): the cool blue-grey
+   bases shift to a light warm greige pair, same zebra step, navy ink
+   contrast still comfortable.
+   v22826 — GRAY-brown, a bit darker (Nick: 'light gray one darker than
+   the other … a bit darker both gray if possible not too dark but a gray
+   brown tint'): the beige lean comes out, both steps drop one notch —
+   light warm grays, still clearly light, navy ink untouched. */
+html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
+  background-color: #C9C2BA !important;
+}
+html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted):nth-child(odd) {
+  background-color: #BDB5AC !important;
+}
+
+
+/* ── v22820 — AIRPLANE DATA AT READABLE SIZE ON AIR CANADA (Nick: 'that
+   and the size of the airplane data'). AC was excluded from the v22798
+   type-plate sizing to protect its approved look — colours stay exactly
+   as approved; only the TYPE gets the same readable scale the other
+   carriers received. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  font-size: clamp(20px, 3.4vh, 42px) !important;
+  line-height: 1.1 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+/* ── v22821 — THE BOTTOM PANELS MATCH (Nick: 'Im asking for the bottom
+   panels to at least match thats the one with the aircraft'). Measured on
+   YQM gate 4 @1920×1080: the left rail's six rows are 154.2px each and end
+   at y=1068.4 — the column carries clamp(6px,0.8vh,10px) bottom padding
+   from v22732. The right column had NO bottom padding, so its shelves ran
+   8.6px lower (y=1077), and the aircraft plate floated 107px tall in its
+   155.6px shelf — its bottom edge 12.7px above the left plates'. Same
+   bottom padding on the same fr-grid recomputes the two bottom shelves to
+   exactly the rail row height, landing them pixel-equal with the left
+   rail's bottom two rows; the plate then fills its shelf and wears the
+   rail rows' vertical insets, so both bottom plates share one top edge,
+   one bottom edge, one height. AC-scoped — tonight's complaint is the AC
+   gate; other carriers' pane-matched type plates (v22686) are untouched. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  padding-bottom: clamp(6px, 0.8vh, 10px) !important;
+  box-sizing: border-box !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  /* v22822 — the shelf's own 6px black border-top divider was the last
+     offset (measured on v22821: plate box started 920.2 in a shelf at
+     914.2). The left rows carry no divider, so neither does this shelf. */
+  border-top: 0 !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  min-height: 0 !important;
+}
+/* Same vertical insets and radius as the rail rows' plates (v22745). The
+   horizontal 3px inset stays — the v22686 JS pass pins the panel's
+   left/width to the info panes, which v22740/41 already aligned to the
+   rail plates' width. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
+  top: clamp(6px, 0.9vh, 11px) !important;
+  bottom: clamp(6px, 0.9vh, 11px) !important;
+  border-radius: clamp(10px, 1.4vh, 16px) !important;
 }
