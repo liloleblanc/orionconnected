@@ -992,6 +992,58 @@ async function handleYyzFids(request, env, origin, direction) {
 }
 __name(handleYyzFids, "handleYyzFids");
 
+// ════════════════════════════════════════════════════════════════════
+// YUL (Montréal-Trudeau) — ADM Salesforce apex feed CORS proxy
+// ════════════════════════════════════════════════════════════════════
+// ADM's site is a Salesforce LWR app; the flight list comes from a guest
+// apex call (getFlights) that sends no CORS header and sits behind a WAF
+// that dislikes browser-fingerprint headers (a bare curl-style request
+// passes; a headless browser's does not). This route makes the call
+// SERVER-SIDE with minimal headers, merges yesterday+today+tomorrow, and
+// returns { list:[...] } to the board — mapped there by yulToAdbFlight().
+const YUL_APEX_URL = "https://www.admtl.com/en-CA/webruntime/api/apex/execute?language=en-CA&asGuest=true&htmlEncode=false";
+const YUL_APEX_CLASS = "@udd/01pMm00000AWKuH";
+
+// GET /flights/yul?direction=dep|arr  (or Departure|Arrival)
+async function handleYulFids(request, env, origin, direction) {
+  const page = /^arr/i.test(direction || "") ? "arrivals" : "departures";
+  const body = JSON.stringify({
+    namespace: "", classname: YUL_APEX_CLASS, method: "getFlights",
+    isContinuation: false, params: { language: "en-CA", page }, cacheable: false
+  });
+  try {
+    const r = await fetch(YUL_APEX_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body,
+      cf: { cacheTtl: 30, cacheEverything: true }
+    });
+    if (!r.ok) {
+      const t = (await r.text().catch(() => "")).slice(0, 200);
+      return jsonResponse({ error: "YUL feed fetch failed", status: r.status, body: t }, 502, origin);
+    }
+    const j = await r.json().catch(() => null);
+    const rv = j && j.returnValue;
+    if (!rv) return jsonResponse({ error: "YUL feed shape unexpected" }, 502, origin);
+    // Yesterday catches red-eyes still on the board after midnight;
+    // tomorrow fills the bottom of the evening list — same day-merge idea
+    // as the YYZ route.
+    const merged = []
+      .concat(rv.flightsForYesterday || [], rv.flightsForToday || [], rv.flightsForTomorrow || []);
+    return new Response(JSON.stringify({ list: merged }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=30",
+        ...corsHeaders(origin)
+      }
+    });
+  } catch (e) {
+    return jsonResponse({ error: "YUL feed fetch failed", detail: e && e.message }, 502, origin);
+  }
+}
+__name(handleYulFids, "handleYulFids");
+
 // ── PANYNJ (LGA / JFK / EWR) — Port Authority flight boards ─────────────
 // All three NY-area airports run the SAME Next.js platform with a GraphQL
 // endpoint at /api/graphql on each airport's own domain. Two wrinkles keep
@@ -2208,6 +2260,15 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     if (path === "/flights/yyz") {
       const direction = url.searchParams.get("direction") || "dep";
       return handleYyzFids(request, env, origin, direction);
+    }
+
+    // ── YUL native feed CORS proxy ─────────────────────────────────────────
+    // GET /flights/yul?direction=dep|arr — ADM's guest apex getFlights call,
+    // made server-side (no CORS upstream, WAF-sensitive headers), returned
+    // as { list:[...] }. Must precede the generic /flights/ ADB passthrough.
+    if (path === "/flights/yul") {
+      const direction = url.searchParams.get("direction") || "dep";
+      return handleYulFids(request, env, origin, direction);
     }
 
     // GET /flights/panynj?ap=LGA|JFK|EWR&direction=dep|arr — Port Authority

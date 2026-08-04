@@ -17472,7 +17472,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22833';
+var FIDS_BUILD_TAG = 'v22834';
 (function(){
   try {
     function _addTag(){
@@ -19840,6 +19840,76 @@ function yyzToAdbFlight(f) {
   }
   return out;
 }
+
+// ── YUL (Montréal-Trudeau) — ADM apex feed ──────────────────────────────
+// The fids-proxy /flights/yul route makes ADM's guest getFlights apex call
+// server-side (no CORS upstream, WAF-sensitive headers) and returns raw
+// rows; this maps each into the ADB-native shape the board parses.
+// Status vocabulary counted off the live feed: On time / Delayed / Early /
+// Cancelled / Departed / Arrived.
+function yulStatus(s) {
+  const t = String(s || '').trim().toLowerCase();
+  if (t.includes('cancel')) return 'cancelled';
+  if (t.includes('divert')) return 'diverted';
+  if (t.includes('delay')) return 'delayed';
+  if (t.includes('early')) return 'early';
+  if (t.includes('depart')) return 'departed';
+  if (t.includes('arriv') || t.includes('land')) return 'arrived';
+  return 'scheduled';
+}
+// "AC7738" → "AC" (two-char IATA airline designator, letter+digit forms too)
+function yulAirlineIata(number) {
+  const m = String(number || '').trim().toUpperCase().match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?\d/);
+  return m ? m[1] : '';
+}
+function yulToAdbFlight(f) {
+  if (!f || typeof f !== 'object') return null;
+  const isDep = String(f.ArrivalOrDeparture || '').toUpperCase() !== 'A';
+  const number = String(f.PublicDisplayFlightNumber || '').trim().toUpperCase();
+  if (!number || !f.ScheduledTime) return null;
+  const airline = { iata: yulAirlineIata(number) || null, icao: null, name: f.AirlineName || null };
+  // ScheduledTime is Montréal-local ISO ("2026-08-04T07:30:00") — same
+  // Eastern-zone math as Tampa/PANYNJ, so tpaTimeObj stamps the offset.
+  const sched = tpaTimeObj(f.ScheduledTime);
+  if (!sched) return null;
+  // Revised: the feed keeps HH:mm strings — actual block time wins, then
+  // the estimate (feed spells it "Formated"), then the generic updated
+  // time. Rebuilt on the scheduled DATE; a shift of more than 12h in
+  // either direction is read as a midnight crossing.
+  let revised = null;
+  const revHm = String(f.FormattedActualBlockTime || f.FormatedEstimatedBlockTime || f.FormattedUpdatedTime || '').trim();
+  const schHm = String(f.FormattedScheduledTime || '').trim();
+  if (/^\d{1,2}:\d{2}$/.test(revHm) && revHm !== schHm) {
+    const day = String(f.ScheduledTime).slice(0, 10);
+    const schMin = parseInt(schHm.slice(0, 2), 10) * 60 + parseInt(schHm.slice(-2), 10);
+    const revMin = parseInt(revHm.split(':')[0], 10) * 60 + parseInt(revHm.split(':')[1], 10);
+    let d = new Date(day + 'T00:00:00');
+    if (revMin - schMin < -720) d.setDate(d.getDate() + 1);      // 23:50 → 00:20
+    else if (revMin - schMin > 720) d.setDate(d.getDate() - 1);  // 00:10 → 23:40
+    const dayAdj = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    revised = tpaTimeObj(dayAdj + 'T' + revHm.padStart(5, '0') + ':00');
+  }
+  // "Dubai Int **" — ADM marks some names with asterisks; strip them.
+  const otherName = String(f.AirportNameTranslated || f.AirportName || '').replace(/\s*\*+\s*$/, '').trim();
+  const other = { iata: String(f.AirportIataCode || '').toUpperCase() || null, icao: null, name: otherName || null };
+  const home = { iata: 'YUL', icao: 'CYUL', name: 'Montréal-Trudeau' };
+  const homeSide = {
+    airport: home,
+    terminal: null,                                  // single-terminal airport
+    gate: String(f.TerminalGate || '').trim() || null,
+    scheduledTime: sched,
+    ...(revised ? { revisedTime: revised } : {}),
+    airline, quality: ['Live']
+  };
+  const otherSide = { airport: other, scheduledTime: sched, ...(revised ? { revisedTime: revised } : {}), airline, quality: ['Live'] };
+  return {
+    number, callSign: null,
+    status: yulStatus(f.OperationalStatusDescription),
+    codeshareStatus: 'IsOperator', isCargo: false,
+    departure: isDep ? homeSide : otherSide,
+    arrival: isDep ? otherSide : homeSide
+  };
+}
 // ── PANYNJ (LGA / JFK / EWR) — Port Authority GraphQL boards ────────────
 // All three NY-area airports share one platform; the fids-proxy worker's
 // /flights/panynj route speaks its dialect (LZ-compressed GraphQL, no CORS)
@@ -20095,6 +20165,33 @@ async function adbFetch(iata, direction) {
       }
     } catch (e) {
       console.warn(`[FIDS] YYZ feed: ${e.message} — falling back to ADB scrape`);
+    }
+  }
+  // ── YUL: Montréal-Trudeau's ADM apex feed via the worker proxy ──────
+  // ADM's Salesforce endpoint has no CORS and a WAF that rejects browser
+  // fingerprints; the fids-proxy /flights/yul route calls it server-side
+  // and returns { list:[...] } mapped here with yulToAdbFlight().
+  if (iata === 'YUL') {
+    const wantDep = direction === 'Departure';
+    const dir = wantDep ? 'dep' : 'arr';
+    const yulUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/yul?direction=${dir}`;
+    try {
+      const r = await fetch(yulUrl, { headers: { 'Accept': 'application/json' } });
+      if (r.ok) {
+        const j = await r.json();
+        const rows = Array.isArray(j && j.list) ? j.list : [];
+        const list = rows
+          .filter(f => (String(f.ArrivalOrDeparture || '').toUpperCase() !== 'A') === wantDep)
+          .map(yulToAdbFlight).filter(Boolean);
+        console.log(`[FIDS] YUL feed ${direction}: ${list.length} flights`);
+        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+        console.warn('[FIDS] YUL feed empty — falling back to ADB scrape');
+      } else {
+        const _b = await r.text().catch(() => '');
+        console.warn(`[FIDS] YUL proxy HTTP ${r.status} — ${_b.slice(0, 200)} — falling back to ADB scrape`);
+      }
+    } catch (e) {
+      console.warn(`[FIDS] YUL feed: ${e.message} — falling back to ADB scrape`);
     }
   }
   // ── LGA / JFK / EWR: Port Authority boards via the worker proxy ─────
