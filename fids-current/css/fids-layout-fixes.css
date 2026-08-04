@@ -7342,12 +7342,24 @@ html:not(#_):not(#_) body:not(.fids-light-board):not(#_) .bidsv2-flight-row:not(
    v22826 — GRAY-brown, a bit darker (Nick: 'light gray one darker than
    the other … a bit darker both gray if possible not too dark but a gray
    brown tint'): the beige lean comes out, both steps drop one notch —
-   light warm grays, still clearly light, navy ink untouched. */
+   light warm grays, still clearly light, navy ink untouched.
+   v22827 — a bit lighter again, and the SAME warm-gray zebra goes on the
+   departures/arrivals table (Nick: 'make it a bit lighter in color and
+   also apply it to the departures/arrivals'). Both steps rise one notch;
+   the FIDS rules below mirror the pair on light boards only — state rows
+   (delayed/cancelled/diverted/final/departed/arrived/gate-closed) keep
+   their blocks and history fades, dark boards untouched. */
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
-  background-color: #C9C2BA !important;
+  background-color: #D2CCC4 !important;
 }
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted):nth-child(odd) {
-  background-color: #BDB5AC !important;
+  background-color: #C8C1B8 !important;
+}
+html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) {
+  background: #D2CCC4 !important;
+}
+html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed):nth-child(even) {
+  background: #C8C1B8 !important;
 }
 
 
