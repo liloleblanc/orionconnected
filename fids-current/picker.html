@@ -215,10 +215,14 @@
     if (e.key === 'Escape') goBack();
   });
 
-  // ── Guard: if no mode set, redirect to entry ──────────────────────────
+  // ── Guard: if no mode set, default LIVE ───────────────────────────────
+  // v22832 — the silent default was 'demo', so a direct navigation (or a
+  // device whose session storage cleared) dropped every board into demo
+  // data (Nick: 'it should never go in demo mode'). Live needs no auth for
+  // viewing; demo is now only ever explicit — the Enter Demo button on the
+  // entry page or ?mode=demo on a board URL.
   if (!sessionStorage.getItem('fids_mode')) {
-    // Allow demo mode by default if navigated directly
-    sessionStorage.setItem('fids_mode', 'demo');
+    sessionStorage.setItem('fids_mode', 'live');
   }
 </script>
 </body>
