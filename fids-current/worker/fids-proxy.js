@@ -1044,6 +1044,52 @@ async function handleYulFids(request, env, origin, direction) {
 }
 __name(handleYulFids, "handleYulFids");
 
+// ════════════════════════════════════════════════════════════════════
+// YHU (Montréal Saint-Hubert / MET) — terminal API CORS proxy
+// ════════════════════════════════════════════════════════════════════
+// The MET terminal's Next.js site exposes a clean JSON API
+// (metmtl.com/api/flights/departure|arrival) but sends no CORS header,
+// so the board can't read it directly. Fetched server-side and the
+// flightsByDate map flattened to { list:[...] } — mapped in the board
+// by yhuToAdbFlight(). The feed carries real carousel numbers on
+// arrivals, which become baggage belts.
+const YHU_FEED_BASE = "https://metmtl.com/api/flights";
+
+// GET /flights/yhu?direction=dep|arr  (or Departure|Arrival)
+async function handleYhuFids(request, env, origin, direction) {
+  const seg = /^arr/i.test(direction || "") ? "arrival" : "departure";
+  try {
+    const r = await fetch(`${YHU_FEED_BASE}/${seg}`, {
+      headers: { "Accept": "application/json" },
+      cf: { cacheTtl: 30, cacheEverything: true }
+    });
+    if (!r.ok) {
+      const t = (await r.text().catch(() => "")).slice(0, 200);
+      return jsonResponse({ error: "YHU feed fetch failed", status: r.status, body: t }, 502, origin);
+    }
+    const j = await r.json().catch(() => null);
+    const byDate = j && j.flightsByDate;
+    if (!byDate || typeof byDate !== "object") {
+      return jsonResponse({ error: "YHU feed shape unexpected" }, 502, origin);
+    }
+    const merged = [];
+    for (const day of Object.keys(byDate).sort()) {
+      if (Array.isArray(byDate[day])) merged.push(...byDate[day]);
+    }
+    return new Response(JSON.stringify({ list: merged }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=30",
+        ...corsHeaders(origin)
+      }
+    });
+  } catch (e) {
+    return jsonResponse({ error: "YHU feed fetch failed", detail: e && e.message }, 502, origin);
+  }
+}
+__name(handleYhuFids, "handleYhuFids");
+
 // ── PANYNJ (LGA / JFK / EWR) — Port Authority flight boards ─────────────
 // All three NY-area airports run the SAME Next.js platform with a GraphQL
 // endpoint at /api/graphql on each airport's own domain. Two wrinkles keep
@@ -2269,6 +2315,15 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     if (path === "/flights/yul") {
       const direction = url.searchParams.get("direction") || "dep";
       return handleYulFids(request, env, origin, direction);
+    }
+
+    // ── YHU native feed CORS proxy ─────────────────────────────────────────
+    // GET /flights/yhu?direction=dep|arr — the MET terminal's JSON API,
+    // fetched server-side (no CORS upstream). Must precede the generic
+    // /flights/ ADB passthrough.
+    if (path === "/flights/yhu") {
+      const direction = url.searchParams.get("direction") || "dep";
+      return handleYhuFids(request, env, origin, direction);
     }
 
     // GET /flights/panynj?ap=LGA|JFK|EWR&direction=dep|arr — Port Authority

@@ -17472,7 +17472,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22834';
+var FIDS_BUILD_TAG = 'v22835';
 (function(){
   try {
     function _addTag(){
@@ -19910,6 +19910,69 @@ function yulToAdbFlight(f) {
     arrival: isDep ? otherSide : homeSide
   };
 }
+
+// ── YHU (Montréal Saint-Hubert / MET) — terminal JSON API ───────────────
+// The fids-proxy /flights/yhu route flattens metmtl.com's flightsByDate
+// into raw rows; this maps each into the ADB-native shape. The feed's
+// status vocabulary: On time / Delayed / Delayed (Estimated) / Cancelled /
+// Arrived (+ safety for departed/diverted phrasing). Arrivals carry REAL
+// carousel numbers — they become baggage belts on the BIDS board.
+function yhuStatus(s) {
+  const t = String(s || '').trim().toLowerCase();
+  if (t.includes('cancel')) return 'cancelled';
+  if (t.includes('divert')) return 'diverted';
+  if (t.includes('delay')) return 'delayed';
+  if (t.includes('early')) return 'early';
+  if (t.includes('depart')) return 'departed';
+  if (t.includes('arriv') || t.includes('land')) return 'arrived';
+  if (t.includes('board')) return 'boarding';
+  return 'scheduled';
+}
+function yhuToAdbFlight(f) {
+  if (!f || typeof f !== 'object' || !f.flightId || !f.flightState) return null;
+  const id = f.flightId, st = f.flightState, props = st.properties || {};
+  const isDep = String(id.flightKind || '').toLowerCase() !== 'arrival';
+  const alIata = String((id.airlineDesignator || {}).iata || '').toUpperCase();
+  const number = (alIata + String(id.flightNumber || '')).trim();
+  if (!number || !st.scheduledTime) return null;
+  const airline = { iata: alIata || null, icao: String((id.airlineDesignator || {}).icao || '').toUpperCase() || null, name: null };
+  // Saint-Hubert is Eastern like Tampa/PANYNJ/YUL — tpaTimeObj stamps the offset.
+  const sched = tpaTimeObj(st.scheduledTime);
+  if (!sched) return null;
+  // mostConfidentTime is the airport's own pick of actual > estimate > sched.
+  const mct = props.mostConfidentTime || props.actualTime || props.estimatedTime || null;
+  const revised = (mct && mct !== st.scheduledTime) ? tpaTimeObj(mct) : null;
+  // DEP: destination = last stop; ARR: origin = first stop (route.stops
+  // lists the other end; multi-stop legs keep the flip data like YYZ).
+  const stops = Array.isArray((st.route || {}).stops) ? st.route.stops : [];
+  const otherR = isDep ? stops[stops.length - 1] : stops[0];
+  const other = otherR
+    ? { iata: String(otherR.iata || '').toUpperCase() || null, icao: String(otherR.icao || '').toUpperCase() || null, name: null }
+    : { iata: null, icao: null, name: null };
+  const home = { iata: 'YHU', icao: 'CYHU', name: 'Montréal Saint-Hubert' };
+  const belt = (!isDep && props.carousel != null && props.carousel !== '') ? String(props.carousel) : '';
+  const homeSide = {
+    airport: home,
+    terminal: null,
+    gate: null,                                       // MET publishes no gate field
+    ...(belt ? { baggageBelt: belt } : {}),           // real belt on arrivals
+    scheduledTime: sched,
+    ...(revised ? { revisedTime: revised } : {}),
+    airline, quality: ['Live']
+  };
+  const otherSide = { airport: other, scheduledTime: sched, ...(revised ? { revisedTime: revised } : {}), airline, quality: ['Live'] };
+  const out = {
+    number, callSign: null,
+    status: yhuStatus(props.status || props.remarkDescription),
+    codeshareStatus: 'IsOperator', isCargo: false,
+    departure: isDep ? homeSide : otherSide,
+    arrival: isDep ? otherSide : homeSide
+  };
+  if (stops.length > 1) {
+    out._stops = stops.map(r => ({ iata: String((r && r.iata) || '').toUpperCase(), city: '' })).filter(x => x.iata);
+  }
+  return out;
+}
 // ── PANYNJ (LGA / JFK / EWR) — Port Authority GraphQL boards ────────────
 // All three NY-area airports share one platform; the fids-proxy worker's
 // /flights/panynj route speaks its dialect (LZ-compressed GraphQL, no CORS)
@@ -20192,6 +20255,33 @@ async function adbFetch(iata, direction) {
       }
     } catch (e) {
       console.warn(`[FIDS] YUL feed: ${e.message} — falling back to ADB scrape`);
+    }
+  }
+  // ── YHU: Saint-Hubert's MET terminal API via the worker proxy ───────
+  // Clean JSON upstream but no CORS; /flights/yhu flattens flightsByDate
+  // server-side and rows map here with yhuToAdbFlight(). Real carousel
+  // numbers ride along on arrivals.
+  if (iata === 'YHU') {
+    const wantDep = direction === 'Departure';
+    const dir = wantDep ? 'dep' : 'arr';
+    const yhuUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/yhu?direction=${dir}`;
+    try {
+      const r = await fetch(yhuUrl, { headers: { 'Accept': 'application/json' } });
+      if (r.ok) {
+        const j = await r.json();
+        const rows = Array.isArray(j && j.list) ? j.list : [];
+        const list = rows
+          .filter(f => (String(((f || {}).flightId || {}).flightKind || '').toLowerCase() !== 'arrival') === wantDep)
+          .map(yhuToAdbFlight).filter(Boolean);
+        console.log(`[FIDS] YHU feed ${direction}: ${list.length} flights`);
+        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+        console.warn('[FIDS] YHU feed empty — falling back to ADB scrape');
+      } else {
+        const _b = await r.text().catch(() => '');
+        console.warn(`[FIDS] YHU proxy HTTP ${r.status} — ${_b.slice(0, 200)} — falling back to ADB scrape`);
+      }
+    } catch (e) {
+      console.warn(`[FIDS] YHU feed: ${e.message} — falling back to ADB scrape`);
     }
   }
   // ── LGA / JFK / EWR: Port Authority boards via the worker proxy ─────
