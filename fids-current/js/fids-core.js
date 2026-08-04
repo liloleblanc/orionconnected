@@ -17473,7 +17473,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22837';
+var FIDS_BUILD_TAG = 'v22838';
 (function(){
   try {
     function _addTag(){
@@ -19894,10 +19894,15 @@ function yulToAdbFlight(f) {
   const otherName = String(f.AirportNameTranslated || f.AirportName || '').replace(/\s*\*+\s*$/, '').trim();
   const other = { iata: String(f.AirportIataCode || '').toUpperCase() || null, icao: null, name: otherName || null };
   const home = { iata: 'YUL', icao: 'CYUL', name: 'Montréal-Trudeau' };
+  // The worker enriches the baggage-hall window of arrivals with
+  // Terminal_Belt__c from ADM's flight-details apex — a REAL carousel
+  // number (Nick proved it on the website: WS2903 -> belt 10).
+  const yulBelt = (!isDep && f.TerminalBelt != null && f.TerminalBelt !== '') ? String(f.TerminalBelt) : '';
   const homeSide = {
     airport: home,
     terminal: null,                                  // single-terminal airport
     gate: String(f.TerminalGate || '').trim() || null,
+    ...(yulBelt ? { baggageBelt: yulBelt } : {}),
     scheduledTime: sched,
     ...(revised ? { revisedTime: revised } : {}),
     airline, quality: ['Live']
