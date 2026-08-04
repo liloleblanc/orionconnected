@@ -7350,18 +7350,19 @@ html:not(#_):not(#_) body:not(.fids-light-board):not(#_) .bidsv2-flight-row:not(
    (delayed/cancelled/diverted/final/departed/arrived/gate-closed) keep
    their blocks and history fades, dark boards untouched.
    v22828 — one more notch lighter (Nick: 'a bit ligher if possible
-   sorry'): same warm gray-brown family, both steps up. */
+   sorry'): same warm gray-brown family, both steps up.
+   v22829 - lighter again (Nick: 'lighter actually sorry'). */
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
-  background-color: #DDD8D1 !important;
+  background-color: #E7E3DD !important;
 }
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted):nth-child(odd) {
-  background-color: #D3CDC5 !important;
+  background-color: #DDD7D0 !important;
 }
 html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) {
-  background: #DDD8D1 !important;
+  background: #E7E3DD !important;
 }
 html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed):nth-child(even) {
-  background: #D3CDC5 !important;
+  background: #DDD7D0 !important;
 }
 
 
