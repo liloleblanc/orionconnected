@@ -265,6 +265,17 @@ function getAirlineAdImages(airlineCode) {
   return entry.adImages;
 }
 
+// v22839 — shared 401 rescue for admin writes: an expired 24h token made
+// every save die with a bare 'Save failed: HTTP 401' (Nick hit it saving
+// YHU info). Clear the stale token and pop the login modal so the path
+// back is visible; the caller's form keeps its values.
+function _fidsSaveAuthRescue(res) {
+  if (!res || res.status !== 401) return false;
+  try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+  try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
+  return true;
+}
+
 // Admin-only write — caller must have a valid Bearer token in
 // sessionStorage.fids_token. Returns { success, config } on success.
 async function saveMediaConfig(cfg) {
@@ -279,6 +290,7 @@ async function saveMediaConfig(cfg) {
     body: JSON.stringify(cfg)
   });
   if (!res.ok) {
+    if (_fidsSaveAuthRescue(res)) throw new Error('Your login expired — sign in, then save again');
     var err = '';
     try { err = (await res.json()).error || ''; } catch (e) {}
     throw new Error('Save failed: HTTP ' + res.status + (err ? ' — ' + err : ''));
@@ -444,6 +456,7 @@ async function saveMediaAssignments(cfg) {
     body: JSON.stringify(cfg)
   });
   if (!res.ok) {
+    if (_fidsSaveAuthRescue(res)) throw new Error('Your login expired — sign in, then save again');
     var err = ''; try { err = (await res.json()).error || ''; } catch (e) {}
     throw new Error('Save failed: HTTP ' + res.status + (err ? ' — ' + err : ''));
   }
@@ -17473,7 +17486,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22838';
+var FIDS_BUILD_TAG = 'v22839';
 (function(){
   try {
     function _addTag(){
