@@ -7342,12 +7342,27 @@ html:not(#_):not(#_) body:not(.fids-light-board):not(#_) .bidsv2-flight-row:not(
    v22826 — GRAY-brown, a bit darker (Nick: 'light gray one darker than
    the other … a bit darker both gray if possible not too dark but a gray
    brown tint'): the beige lean comes out, both steps drop one notch —
-   light warm grays, still clearly light, navy ink untouched. */
+   light warm grays, still clearly light, navy ink untouched.
+   v22827 — a bit lighter again, and the SAME warm-gray zebra goes on the
+   departures/arrivals table (Nick: 'make it a bit lighter in color and
+   also apply it to the departures/arrivals'). Both steps rise one notch;
+   the FIDS rules below mirror the pair on light boards only — state rows
+   (delayed/cancelled/diverted/final/departed/arrived/gate-closed) keep
+   their blocks and history fades, dark boards untouched.
+   v22828 — one more notch lighter (Nick: 'a bit ligher if possible
+   sorry'): same warm gray-brown family, both steps up.
+   v22829 - lighter again (Nick: 'lighter actually sorry'). */
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
-  background-color: #C9C2BA !important;
+  background-color: #E7E3DD !important;
 }
 html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted):nth-child(odd) {
-  background-color: #BDB5AC !important;
+  background-color: #DDD7D0 !important;
+}
+html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) {
+  background-color: #E7E3DD !important;
+}
+html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed):nth-child(even) {
+  background-color: #DDD7D0 !important;
 }
 
 
@@ -7399,4 +7414,32 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   top: clamp(6px, 0.9vh, 11px) !important;
   bottom: clamp(6px, 0.9vh, 11px) !important;
   border-radius: clamp(10px, 1.4vh, 16px) !important;
+}
+
+/* ── v22830 — THE SILVER RAIL REACHES THE STATUS CELL (Nick: 'for final
+   call the silver lining in between rows does not reach'). Two erosions:
+   (a) the v22827 warm-gray rules used the `background` SHORTHAND on the
+   FIDS rows — a shorthand resets background-image, so normal rows lost
+   the v22706 rail on light boards; they are background-color longhands
+   now. (b) the v22655/56 status-cell colour blocks are shorthands too,
+   so on every state row the rail stopped at the status cell — the one
+   cell whose colour rule out-classed the rail selector. The rail's image
+   longhands return on those cells below; their block colours are
+   untouched (image longhands never touch the shorthand's colour). */
+@media (min-width: 701px) {
+  html:not(#_):not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-final td.td-status,
+  html:not(#_):not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-delayed td.td-status,
+  html:not(#_):not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-cancelled td.td-status,
+  html:not(#_):not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-diverted td.td-status,
+  html:not(#_):not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-departed td.td-status,
+  html:not(#_):not(#_) body[data-fids-ap]:not([data-fids-ap="MCO"]):not(#_) #fidsTable tbody tr.row-gate-closed td.td-status {
+    background-image: linear-gradient(90deg,
+      #707C89 0%, #B4BEC8 18%, #8A95A1 38%, #C9D1D8 55%,
+      #95A0AB 75%, #707C89 100%) !important;
+    background-attachment: scroll !important;
+    background-position: center bottom !important;
+    background-size: 100% 4px !important;
+    background-repeat: no-repeat !important;
+    background-blend-mode: normal !important;
+  }
 }
