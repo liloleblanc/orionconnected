@@ -7443,3 +7443,18 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
     background-blend-mode: normal !important;
   }
 }
+
+/* ── v22831 — FIDS AND BIDS TICKERS ALIGN (Nick's measured 'orlando
+   screens dont allign' gap). Probed live at 1080p: the FIDS ticker band
+   is fixed-px — 16px vertical padding + the 18px text line = 59.0px tall
+   — while the BIDS band was clamp(34px, 4.6vh, 52px) = 49.7px, a 9.3px
+   mismatch where the two boards hang side by side, and vh-driven so it
+   drifts with panel resolution. The BIDS band now carries the FIDS
+   ticker's own fixed geometry — 59px band, 18px scroll text — so the
+   bands share a top edge on every wall at every resolution. */
+html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
+  height: 59px !important;
+}
+html .bidsv2-screen .bidsv2-ticker-track span {
+  font-size: 18px !important;
+}
