@@ -1090,6 +1090,92 @@ async function handleYhuFids(request, env, origin, direction) {
 }
 __name(handleYhuFids, "handleYhuFids");
 
+// ════════════════════════════════════════════════════════════════════
+// YTZ (Toronto Billy Bishop) — server-rendered board scrape
+// ════════════════════════════════════════════════════════════════════
+// Billy Bishop publishes no JSON API: the departures/arrivals pages carry
+// the full board as server-rendered <tr class='item Today|Tomorrow'> rows
+// (one "New Time" column, city names only, Porter/AC logo per row,
+// codeshares as duplicate rows). This route fetches the page server-side,
+// parses the rows, stamps each with its Toronto calendar date, and
+// returns { list:[...] } — mapped in the board by ytzToAdbFlight().
+const YTZ_PAGE = {
+  dep: "https://www.billybishopairport.com/flights/departures/",
+  arr: "https://www.billybishopairport.com/flights/arrivals/"
+};
+
+// Scraped cells may carry arbitrary markup from the page; a single-pass
+// tag strip is not a sanitizer (<scr<script>ipt> survives it — CodeQL).
+// Tags are stripped until the string stops changing, then any leftover
+// angle brackets are dropped outright: board-bound text has no business
+// containing them.
+function ytzCellText(raw) {
+  let t = String(raw || "");
+  let prev;
+  do { prev = t; t = t.replace(/<[^>]*>/g, " "); } while (t !== prev);
+  return t.replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
+}
+__name(ytzCellText, "ytzCellText");
+
+function ytzTorontoDate(offsetDays) {
+  const now = new Date(Date.now() + (offsetDays || 0) * 86400000);
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
+  const g = (t) => (p.find((x) => x.type === t) || {}).value;
+  return `${g("year")}-${g("month")}-${g("day")}`;
+}
+__name(ytzTorontoDate, "ytzTorontoDate");
+
+// GET /flights/ytz?direction=dep|arr  (or Departure|Arrival)
+async function handleYtzFids(request, env, origin, direction) {
+  const seg = /^arr/i.test(direction || "") ? "arr" : "dep";
+  try {
+    const r = await fetch(YTZ_PAGE[seg], {
+      headers: { "Accept": "text/html", "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36" },
+      cf: { cacheTtl: 30, cacheEverything: true }
+    });
+    if (!r.ok) {
+      const t = (await r.text().catch(() => "")).slice(0, 200);
+      return jsonResponse({ error: "YTZ page fetch failed", status: r.status, body: t }, 502, origin);
+    }
+    const html = await r.text();
+    const dates = { Today: ytzTorontoDate(0), Tomorrow: ytzTorontoDate(1) };
+    const list = [];
+    const rowRe = /<tr class='item (Today|Tomorrow)' data-flightNo='([^']*)' data-origin='([^']*)'>([\s\S]*?)<\/tr>/g;
+    let m;
+    while ((m = rowRe.exec(html))) {
+      const tds = [];
+      const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
+      let t;
+      while ((t = tdRe.exec(m[4]))) tds.push(t[1]);
+      // Cells: [day, time, logo, flightNo, city, status]
+      const logo = /aircanada-logo/.test(m[4]) ? "AC" : "PD";
+      list.push({
+        day: m[1],
+        date: dates[m[1]] || dates.Today,
+        // Time is a strict HH:MM extraction — nothing else can ride along.
+        time: (ytzCellText(tds[1]).match(/\b\d{1,2}:\d{2}\b/) || [""])[0],
+        flightNo: String(m[2] || "").trim().toUpperCase(),
+        city: String(m[3] || "").trim(),
+        status: ytzCellText(tds[5]),
+        operatorLogo: logo,
+        kind: seg
+      });
+    }
+    if (!list.length) return jsonResponse({ error: "YTZ page parsed to zero rows" }, 502, origin);
+    return new Response(JSON.stringify({ list }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=30",
+        ...corsHeaders(origin)
+      }
+    });
+  } catch (e) {
+    return jsonResponse({ error: "YTZ page fetch failed", detail: e && e.message }, 502, origin);
+  }
+}
+__name(handleYtzFids, "handleYtzFids");
+
 // ── PANYNJ (LGA / JFK / EWR) — Port Authority flight boards ─────────────
 // All three NY-area airports run the SAME Next.js platform with a GraphQL
 // endpoint at /api/graphql on each airport's own domain. Two wrinkles keep
@@ -2324,6 +2410,15 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     if (path === "/flights/yhu") {
       const direction = url.searchParams.get("direction") || "dep";
       return handleYhuFids(request, env, origin, direction);
+    }
+
+    // ── YTZ native board scrape ────────────────────────────────────────────
+    // GET /flights/ytz?direction=dep|arr — Billy Bishop's server-rendered
+    // board rows, parsed server-side. Must precede the generic /flights/
+    // ADB passthrough.
+    if (path === "/flights/ytz") {
+      const direction = url.searchParams.get("direction") || "dep";
+      return handleYtzFids(request, env, origin, direction);
     }
 
     // GET /flights/panynj?ap=LGA|JFK|EWR&direction=dep|arr — Port Authority
