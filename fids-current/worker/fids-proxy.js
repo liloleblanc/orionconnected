@@ -1104,6 +1104,19 @@ const YTZ_PAGE = {
   arr: "https://www.billybishopairport.com/flights/arrivals/"
 };
 
+// Scraped cells may carry arbitrary markup from the page; a single-pass
+// tag strip is not a sanitizer (<scr<script>ipt> survives it — CodeQL).
+// Tags are stripped until the string stops changing, then any leftover
+// angle brackets are dropped outright: board-bound text has no business
+// containing them.
+function ytzCellText(raw) {
+  let t = String(raw || "");
+  let prev;
+  do { prev = t; t = t.replace(/<[^>]*>/g, " "); } while (t !== prev);
+  return t.replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
+}
+__name(ytzCellText, "ytzCellText");
+
 function ytzTorontoDate(offsetDays) {
   const now = new Date(Date.now() + (offsetDays || 0) * 86400000);
   const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
@@ -1139,10 +1152,11 @@ async function handleYtzFids(request, env, origin, direction) {
       list.push({
         day: m[1],
         date: dates[m[1]] || dates.Today,
-        time: String(tds[1] || "").replace(/<[^>]*>/g, "").trim(),
+        // Time is a strict HH:MM extraction — nothing else can ride along.
+        time: (ytzCellText(tds[1]).match(/\b\d{1,2}:\d{2}\b/) || [""])[0],
         flightNo: String(m[2] || "").trim().toUpperCase(),
         city: String(m[3] || "").trim(),
-        status: String(tds[5] || "").replace(/<[^>]*>/g, "").trim(),
+        status: ytzCellText(tds[5]),
         operatorLogo: logo,
         kind: seg
       });
