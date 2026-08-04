@@ -7321,8 +7321,25 @@ html:not(#_):not(#_) body:not(#_) {
 html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-list {
   background-color: transparent !important;
 }
-html:not(#_):not(#_) body:not(#_):not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
+html:not(#_):not(#_) body:not(.fids-light-board):not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
   background-color: var(--fids-bg, #16345c) !important;
+}
+/* v22824 — THE SHIELD MUST NOT PAINT LIGHT BOARDS BLACK (Nick: 'the
+   screens are black … the baggage screen especially', YouTube stream).
+   Mist's light --fids-bg is scoped :not([data-page="bids"]) — the baggage
+   page never receives it — so on the stream (theme=mist) the shield's
+   var(--fids-bg) resolved to the BASE dark #0a0e1a: opaque near-black
+   rows under the light-board's dark ink and brand-colour wordmarks.
+   Scheduled rows went black; Delayed/Cancelled kept their blocks (state
+   rows are exempt above), which is exactly what the 6:18 screenshot
+   shows. Light boards now get their own opaque bases — the mist canvas
+   with the original 5%/9.5% row tints pre-blended, so the zebra reads
+   the same and the hex band still cannot bleed through the rows. */
+html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted) {
+  background-color: #BEC9D5 !important;
+}
+html:not(#_):not(#_) body.fids-light-board:not(#_) .bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted):nth-child(odd) {
+  background-color: #B6C2CE !important;
 }
 
 
