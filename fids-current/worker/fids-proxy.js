@@ -1030,6 +1030,40 @@ async function handleYulFids(request, env, origin, direction) {
     // as the YYZ route.
     const merged = []
       .concat(rv.flightsForYesterday || [], rv.flightsForToday || [], rv.flightsForTomorrow || []);
+    // ── BELT ENRICHMENT (arrivals only). The list call carries no carousel,
+    // but ADM's flight-details apex (getFlightHeroDetails' sibling) returns
+    // Terminal_Belt__c per flight — Nick proved it on the website. One
+    // details call per arrival is too many for the whole day, so only the
+    // baggage-hall window is enriched: arrivals scheduled within the last
+    // 5h or next 3h (what a carousel screen actually shows), nearest first,
+    // capped at 40 to stay under the Workers subrequest budget.
+    if (page === "arrivals" && merged.length) {
+      const now = Date.now();
+      const cand = merged
+        .map((f) => {
+          const t = Date.parse(String(f.ScheduledTime || "") + "-04:00");
+          return { f, dt: isNaN(t) ? Infinity : t - now };
+        })
+        .filter((x) => x.dt > -5 * 3600000 && x.dt < 3 * 3600000)
+        .sort((a, b) => Math.abs(a.dt) - Math.abs(b.dt))
+        .slice(0, 40);
+      await Promise.all(cand.map(async (x) => {
+        try {
+          const dr = await fetch(YUL_APEX_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({
+              namespace: "", classname: "@udd/01pMm00000AWKuF", method: "getFlightDetails",
+              isContinuation: false, params: { flightNo: x.f.UniqueDisplayNo }, cacheable: false
+            })
+          });
+          if (!dr.ok) return;
+          const dj = await dr.json().catch(() => null);
+          const belt = dj && dj.returnValue && dj.returnValue.Terminal_Belt__c;
+          if (belt != null && belt !== "") x.f.TerminalBelt = String(belt);
+        } catch (e) { /* best-effort — a missing belt is just an unenriched row */ }
+      }));
+    }
     return new Response(JSON.stringify({ list: merged }), {
       status: 200,
       headers: {
