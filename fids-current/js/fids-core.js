@@ -13390,6 +13390,7 @@ var _BIDS_FIT = { key: '', n: 0, capped: false };
 const AP = {
   YYZ:{ name:'Toronto Pearson International Airport',                tz:'America/Toronto'    },
   YTZ:{ name:'Billy Bishop Toronto City Airport',                   tz:'America/Toronto'    },
+  YHU:{ name:'Montréal Saint-Hubert Airport (MET)',                 tz:'America/Toronto'    },
   YUL:{ name:'Montréal-Trudeau International Airport',               tz:'America/Toronto'    },
   YVR:{ name:'Vancouver International Airport',                      tz:'America/Vancouver'  },
   YYC:{ name:'Calgary International Airport',                        tz:'America/Edmonton'   },
@@ -17472,7 +17473,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22836';
+var FIDS_BUILD_TAG = 'v22837';
 (function(){
   try {
     function _addTag(){
@@ -24088,7 +24089,7 @@ document.addEventListener('click', function(e) {
 // ── AIRPORT AUTOCOMPLETE ─────────────────────────────────────────────────
 const AP_LIST = [
   // Canada
-  {c:'YYZ',n:'Toronto Pearson'},{c:'YTZ',n:'Toronto Billy Bishop'},{c:'YUL',n:'Montréal-Trudeau'},
+  {c:'YYZ',n:'Toronto Pearson'},{c:'YTZ',n:'Toronto Billy Bishop'},{c:'YUL',n:'Montréal-Trudeau'},{c:'YHU',n:'Montréal Saint-Hubert (MET)'},
   {c:'YVR',n:'Vancouver'},{c:'YYC',n:'Calgary'},{c:'YEG',n:'Edmonton'},{c:'YOW',n:'Ottawa'},
   {c:'YQM',n:'Moncton'},{c:'YHZ',n:'Halifax'},{c:'YQB',n:'Québec City'},{c:'YWG',n:'Winnipeg'},
   {c:'YYJ',n:'Victoria'},{c:'YSJ',n:'Saint John NB'},{c:'YYT',n:"St. John's NL"},{c:'YQT',n:'Thunder Bay'},
