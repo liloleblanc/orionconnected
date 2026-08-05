@@ -17486,7 +17486,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22849';
+var FIDS_BUILD_TAG = 'v22850';
 (function(){
   try {
     function _addTag(){
@@ -29700,16 +29700,23 @@ function _adBackdropHtml(blurUrl) {
       // accent via a masked multiply layer; rebuilt only on accent change.
       if (f.dataset.acc !== _bdAcc) {
         f.dataset.acc = _bdAcc;
-        // v22848 — Nick's stream-frame upload ('change the middle frame to
-        // this one and make it match color of course'): silver bake of his
-        // media-player frame art, one whole-frame accent tint. The old
-        // clip-path second-line split targeted the previous art's band
-        // geometry and doesn't map to this design.
-        var _fa = '/logos/Backgrounds/ad-frame-stream.png?v=22848';
+        // v22850 — the WALL frame keeps its original silver art ('the
+        // other frame is missing'): Nick's stream frame belongs around
+        // the AD, not here. Restored to the pre-v22848 recipe.
+        var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
         var _wMask = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
+        // Second line in the carrier's second colour, same as the ad frame.
+        var _wSec = '';
+        try {
+          var _wAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
+          if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
+          else _wSec = '#AEB4BC';
+        } catch (e) { _wSec = '#AEB4BC'; }
         f.innerHTML =
             '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
-          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.85;' + _wMask + '"></div>';
+          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
+          + '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.92;'
+          +   'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _wMask + '"></div>';
       }
     } catch (e) {}
   }
@@ -29766,13 +29773,10 @@ var AIRLINE_ACCENT2 = {
   'F9': '#8CC9AE', 'WG': '#BCC1C8'
 };
 function _adTechFrameHtml() {
-  // v22849 — retired. Nick's stream-frame art rides the WALL frame (the
-  // 'middle frame'); drawing it a second time around each ad doubled the
-  // lines through the creative. Every call site concatenates this string,
-  // so empty means no per-ad frame at all.
-  return '';
-  // ONE complete frame per ad, in the airline's SECOND colour — the same
-  // silver art with a masked multiply layer, like the wall frame.
+  // v22850 — Nick's stream frame goes HERE, around the ad ('thats not
+  // around the add and the other frame is missing'): this per-ad frame
+  // draws his media-player art, accent-tinted; the wall frame keeps the
+  // original silver art.
   var _fAcc = '';
   try {
     var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
@@ -29797,7 +29801,7 @@ function _adTechFrameHtml() {
   var _fa = '/logos/Backgrounds/ad-frame-stream.png?v=22848';
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
   var _tint = '';
-  var _fTint = _fAcc || _fPri;
+  var _fTint = _fPri || _fAcc;   // the airline's PRIMARY colour ('match color of course')
   if (_fTint) {
     _tint += '<div style="position:absolute;inset:0;background:' + _fTint + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>';
   }
