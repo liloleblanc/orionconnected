@@ -7960,3 +7960,19 @@ html.fids-portrait:not(#_) #fidsTable thead th.col-airline { font-size: 0 !impor
    'Philadelphia (PHL)' were still ellipsizing. */
 html.fids-portrait #fidsTable colgroup col.col-term   { width: 72px !important; }
 html.fids-portrait #fidsTable colgroup col.col-status { width: 268px !important; }
+
+/* ── v22878 — FILTERED-BOARD CHIP. A monitor showing 9 of the airport's 40
+   departures has to say WHY, or it reads as a broken board from across the
+   hall. Sits under the Departures/Départs label, same bilingual swap. */
+.fids-board-filter {
+  display: block;
+  font-size: clamp(13px, 1.05vw, 19px);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  opacity: 0.86;
+  line-height: 1.1;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+html.fids-portrait .fids-board-filter { font-size: 14px !important; }

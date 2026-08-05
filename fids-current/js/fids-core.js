@@ -17512,7 +17512,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22877';
+var FIDS_BUILD_TAG = 'v22878';
 (function(){
   try {
     function _addTag(){
@@ -23064,7 +23064,43 @@ var _BOARD_LABEL_BI = {
 };
 function _boardLabelBilingual(key) {
   var pair = _BOARD_LABEL_BI[key] || _BOARD_LABEL_BI.dep;
-  return '<span class="fbl-en">' + pair[0] + '</span><span class="fbl-fr">' + pair[1] + '</span>';
+  return '<span class="fbl-en">' + pair[0] + '</span><span class="fbl-fr">' + pair[1] + '</span>'
+       + _boardFilterChipHtml();
+}
+
+// v22878 — a monitor filtered to one terminal / carrier / region has to SAY
+// so. Without it, a screen showing 9 of the airport's 40 departures reads as
+// a broken board, not a deliberate one, and there is no way for staff to
+// tell the two apart from across a hall.
+var _BOARD_REGION_BI = {
+  DOM:   ['Domestic',      'Intérieur'],
+  TRANS: ['Transborder',   'Transfrontalier'],
+  INTL:  ['International', 'International']
+};
+function _boardFilterChipHtml() {
+  try {
+    var en = [], fr = [];
+    if (filterTerminal) {
+      var t = String(filterTerminal).trim().toUpperCase().replace(/^T/, '');
+      en.push('Terminal ' + t); fr.push('Aérogare ' + t);
+    }
+    if (filterRegion) {
+      String(filterRegion).toUpperCase().split(',').forEach(function (r) {
+        var p = _BOARD_REGION_BI[r.trim()];
+        if (p) { en.push(p[0]); fr.push(p[1]); }
+      });
+    }
+    if (filterAirline) {
+      var code = String(filterAirline).trim().toUpperCase();
+      var nm = (typeof AIRLINE_NAME !== 'undefined' && (AIRLINE_NAME[code] || '')) || code;
+      en.push(nm); fr.push(nm);
+    }
+    if (!en.length) return '';
+    return '<span class="fids-board-filter">'
+         +   '<span class="fbl-en">' + en.join(' · ') + '</span>'
+         +   '<span class="fbl-fr">' + fr.join(' · ') + '</span>'
+         + '</span>';
+  } catch (e) { return ''; }
 }
 
 // ── Shared clock format (Nick, Jul 2026) — the SAME words + format on every
@@ -23235,9 +23271,98 @@ function startPaging() {
   pageTimer = setInterval(tick_carousel, LANG_DWELL_MS);
 }
 
+// ── COUNTRY / REGION CLASSIFICATION ──────────────────────────────
+// Nick: 'display the monitors by terminal, (filter) by airline or by
+// domestic, international transborder'. Nothing in the feeds carries a
+// country — not ADB, not the native airport APIs, not the proxy — so the
+// board has to classify destinations itself.
+//
+// The US set below was DERIVED, not typed: every code in the engine's own
+// COORDS table that falls inside the contiguous / Alaska / Hawaii boxes,
+// minus an explicit Mexico + Caribbean exclusion list (the boxes overlap
+// northern Mexico and the Bahamas, so a bounding box alone mislabels
+// Mexicali, Bimini and Havana as American). Puerto Rico, the USVI, Guam
+// and American Samoa are kept — they are domestic US traffic.
+const _US_IATA = new Set((
+  'ABE ABI ABL ABQ ABR ABY ACK ACT ACV ACY ADK ADQ AET AEX AGN AGS AIA AIN AKB AKI AKK AKN AKP ALB ' +
+  'ALO ALS ALW ALZ AMA ANC ANI ANV AOO AOS APN ARC ART ASE ATK ATL ATT ATW ATY AUG AUK AUS AVL AVP ' +
+  'AZA AZO BDL BED BET BFD BFF BFI BFL BGM BGR BHB BHM BID BIH BIL BIS BJC BKC BKF BKG BKH BKW BLD ' +
+  'BLI BLV BMI BNA BOI BOS BPT BQK BQN BRD BRL BRO BRW BTI BTM BTR BTT BTV BUF BUR BWI BYW BZN CAE ' +
+  'CAK CCR CDB CDC CDR CDV CEC CEM CEZ CGA CGI CHA CHO CHS CHU CID CIK CIU CKB CKD CKX CLD CLE CLL ' +
+  'CLP CLT CMH CMI CMX CNM CNY COD COS COU CPR CPX CRP CRW CSG CVG CVN CWA CWS CYF CYM CYS CYT DAB ' +
+  'DAL DAY DBQ DCA DDC DEC DEN DFW DHB DHN DIK DIO DLG DLH DOV DRG DRO DSI DSM DTR DTW DUJ DUT DVL ' +
+  'EAA EAR EAT EAU ECP EDA EEK EGE EGX EKO ELD ELI ELM ELP ELV EMK ENA ERI ESC ESD EUG EVV EWB EWN ' +
+  'EWR EXI EYW FAI FAR FAT FAY FBS FCA FLG FLL FLO FNR FNT FOD FRD FSD FSM FTW FWA FYU GAL GAM GCC ' +
+  'GCK GCN GDV GEG GFK GGG GGW GJT GKN GLH GLV GNU GNV GPT GRB GRI GRK GRR GSO GSP GST GTF GTR GUC ' +
+  'GUP GYY HCR HDH HDN HGR HHH HHR HIB HII HLN HNH HNL HNM HNS HOB HOM HOT HOU HPB HPN HRL HRO HSL ' +
+  'HSV HTS HUS HVN HVR HYA HYG HYL HYS IAD IAG IAH IAN ICT IDA IGG IKO ILG ILI ILM IMT IND INL IPL ' +
+  'IPT IRC IRK ISP ITH ITO IWD JAC JAN JAX JBR JFK JHM JLN JMS JNU JRA JRF JST KAE KAL KBC KCC KCG ' +
+  'KCQ KEB KEH KFP KGK KGX KKA KKB KKH KKI KLG KLN KLW KMO KMY KNK KNW KOA KOT KOY KOZ KPB KPN KPR ' +
+  'KPV KPY KQA KSM KTB KTN KTS KUK KVC KVL KWK KWN KWP KWT KXA KYK KYU KZB LAF LAL LAN LAR LAS LAW ' +
+  'LAX LBB LBE LBF LBL LCH LCK LEB LEX LFT LGA LGB LIH LIT LKE LMA LNK LNS LNY LPS LRD LRU LSE LUK ' +
+  'LUP LUR LWB LWS LYH MAF MAZ MBL MBS MCE MCG MCI MCK MCN MCO MCW MDT MDW MEI MEM MFE MFR MGC MGM ' +
+  'MGW MHK MHT MIA MKE MKG MKK MKL MLB MLI MLL MLU MLY MMH MNT MOB MOT MOU MQT MRI MRY MSL MSN MSO ' +
+  'MSP MSS MSY MTJ MTM MTP MUE MVY MWA MWL MYK MYL MYR MYU NCN NIB NKI NLG NME NPT NRR NUI NUL NUP ' +
+  'NYS OAJ OAK OBU OCE OGD OGG OGS OKC OLF OLH OLM OMA OME ONT OOK OPF ORD ORF ORH ORI ORT ORV OTH ' +
+  'OTS OTZ OWB PAE PAH PAK PBG PBI PDB PDK PDT PDX PEC PGA PGD PGM PGV PHF PHL PHO PHX PIA PIB PIE ' +
+  'PIH PIP PIR PIT PIZ PKA PKB PLN PNS PPV PQI PQS PRC PSC PSE PSG PSM PSP PTA PTD PTH PTU PUB PUW ' +
+  'PVD PVU PWM RAP RBY RCE RDD RDM RDU RDV RFD RHI RIC RIW RKD RKS RMP RNO ROA ROC ROW RSH RSJ RST ' +
+  'RSW RUT SAF SAN SAT SAV SBA SBD SBN SBP SBY SCC SCE SCK SCM SDF SDP SDY SEA SFB SFO SGF SGU SGY ' +
+  'SHD SHG SHH SHR SHV SIG SIT SJC SJT SJU SKK SLC SLE SLK SLN SLQ SMF SMK SMN SMX SNA SNP SOV SOW ' +
+  'SPI SPS SQL SRQ SRV SSW STC STG STL STS SUN SUX SVA SVC SVS SWF SWO SXP SYB SYR TAL TBN TCT TEB ' +
+  'TEK TEX TIW TKE TKF TKJ TLA TLH TLT TNC TNK TOG TOL TPA TRI TSM TSS TTN TUL TUP TUS TVC TVF TWA ' +
+  'TWF TXK TYR TYS UGI UIN UNK UPP USA UST UTO VAK VCT VDZ VEE VEL VLD VPS VQS VRB WAA WBB WBQ WDN ' +
+  'WFB WHD WKK WLK WMO WNA WRG WSN WST WSX WTK WTL WWP WWT WYS XNA XWA YAK YKM '
+).split(' ').filter(Boolean));
+
+// Canada is recognised by RULE, not by list, so a regional code we have
+// never seen still lands correctly. Canadian IATA codes are Y-prefixed,
+// but so are ~23 Chinese ones (YNT Yantai, YIH Yichang …) and two
+// American (YAK Yakutat, YKM Yakima) — hence the coordinate box, which
+// the Chinese codes fail and the Americans are excluded from by name.
+const _US_Y_IATA = new Set(['YAK', 'YKM', 'YNG', 'YIP', 'YUM', 'YKN']);
+function airportCountry(iata) {
+  const c = String(iata || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{3}$/.test(c)) return '';
+  if (_US_IATA.has(c)) return 'US';
+  if (c.charAt(0) === 'Y' && !_US_Y_IATA.has(c)) {
+    let p = null;
+    try { p = (typeof COORDS !== 'undefined' && COORDS[c]) || null; } catch (e) {}
+    // Unknown Y-code: on a Canadian network a code we have no coordinate
+    // for is overwhelmingly a Canadian regional strip, so default to CA
+    // rather than dumping it into 'international'.
+    if (!p) return 'CA';
+    if (p[0] >= 40 && p[0] <= 84 && p[1] >= -142 && p[1] <= -51) return 'CA';
+  }
+  return '';
+}
+
+// dom / trans / intl, relative to the board's OWN airport. 'Transborder'
+// is the Canada–US term specifically — at a US airport the same flights
+// are just international, which is why the pairing is checked both ways.
+// An unknown destination country resolves to 'intl': a board filtered to
+// International must never HIDE a flight it failed to classify.
+function flightRegionKey(f, homeIata) {
+  let loc = String((f && f._locIata) || '').toUpperCase();
+  if (!loc) {
+    const m = String((f && (f.dest || f.origin)) || '').match(/\(([A-Z]{3})\)\s*$/);
+    if (m) loc = m[1];
+  }
+  const home = airportCountry(homeIata);
+  const dst  = airportCountry(loc);
+  if (!dst) return 'intl';
+  if (home && dst === home) return 'dom';
+  if ((home === 'CA' && dst === 'US') || (home === 'US' && dst === 'CA')) return 'trans';
+  return 'intl';
+}
+
 // ── SEARCH + FILTERS ──────────────────────────────────────────────────────
 let searchQuery = '';
 let filterAirline = '', filterTerminal = '', filterStatus = '', filterTimeFrom = '', filterTimeTo = '';
+// v22878 — a MONITOR-level filter, set from the URL and never cleared by
+// the operator UI: 'dom' | 'trans' | 'intl' (comma-separate for more
+// than one, e.g. ?region=dom,trans).
+let filterRegion = '';
 let filterDrawerOpen = false;
 
 function onSearch(q) {
@@ -23255,7 +23380,7 @@ function clearSearch() {
 }
 
 function updateFilterCount() {
-  const n = [filterAirline, filterTerminal, filterStatus, filterTimeFrom, filterTimeTo, searchQuery]
+  const n = [filterAirline, filterTerminal, filterStatus, filterTimeFrom, filterTimeTo, filterRegion, searchQuery]
     .filter(Boolean).length;
   const el = $el('filterCount');
   el.textContent = n;
@@ -23319,9 +23444,22 @@ function applySearch(flights) {
     });
   }
 
-  // Terminal filter
+  // Terminal filter. Accepts '1' or 'T1' either way round — the feeds are
+  // inconsistent about the prefix and a kiosk URL should not have to know
+  // which dialect its airport speaks.
   if (filterTerminal) {
-    list = list.filter(f => (f.terminal||'').toString().toUpperCase() === filterTerminal.toUpperCase());
+    const _tWant = filterTerminal.toString().trim().toUpperCase().replace(/^T/, '');
+    list = list.filter(f => (f.terminal||'').toString().trim().toUpperCase().replace(/^T/, '') === _tWant);
+  }
+
+  // Region filter — domestic / transborder / international (Nick).
+  if (filterRegion) {
+    const _rWant = new Set(String(filterRegion).toUpperCase().split(',')
+      .map(s => s.trim())
+      .map(s => (s === 'DOMESTIC' ? 'DOM' : s === 'TRANSBORDER' ? 'TRANS' : s === 'INTERNATIONAL' ? 'INTL' : s))
+      .filter(Boolean));
+    const _home = (document.getElementById('apSel') || {}).value || '';
+    list = list.filter(f => _rWant.has(flightRegionKey(f, _home).toUpperCase()));
   }
 
   // Status filter (less aggressive)
@@ -24092,6 +24230,20 @@ try {
     var _apSelEl = document.getElementById('apSel');
     if (_apSelEl) _apSelEl.value = _initAp;
   }
+  // v22878 — PER-MONITOR FILTERS (Nick: 'I can display the monitors by
+  // terminal, (filter) by airline or by domestic, internationa transborder').
+  // The URL is the right home for these: each screen already gets its own
+  // one, they survive the kiosk's own reload, and nothing in the operator UI
+  // can knock a wall display off its assignment by accident.
+  //   ?terminal=1        ?terminal=T3
+  //   ?airline=AC        ?airline=WS
+  //   ?region=dom        ?region=trans      ?region=dom,trans
+  var _pTerm = (_initParams.get('terminal') || _initParams.get('term') || '').trim();
+  if (_pTerm) filterTerminal = _pTerm;
+  var _pAir = (_initParams.get('airline') || _initParams.get('al') || '').trim().toUpperCase();
+  if (_pAir) filterAirline = _pAir;
+  var _pReg = (_initParams.get('region') || '').trim().toUpperCase();
+  if (_pReg) filterRegion = _pReg;
 } catch(e) {}
 
 // v218.38: defer the initial onApChange until window.FIDS_CUSTOMIZE
