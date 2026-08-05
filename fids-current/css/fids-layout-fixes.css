@@ -3039,7 +3039,7 @@ html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.68e
    bigger'). */
 html .g8-bir-val .g8-bir-mer { font-size: 0.58em; font-weight: 800; opacity: 0.72; margin-left: 0.08em; }
 html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
-html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }
+html .g8-bir-val .g8-r2-strike { text-decoration: none; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }  /* v22852: dimmed, never barred */
 html .g8-bir-val .g8-r2-revised { color: #b45309; }
 /* the STATUS cell stacks EN over FR — exactly two lines, each nowrap.
    Free wrapping let 'Gate closed | Porte fermée' become four giant lines
@@ -4050,7 +4050,7 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t2 {
    revision (green earlier / amber later; bright variants on AC's dark
    luxury shelf). */
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval .v2-rc-tval-old {
-  text-decoration: line-through;
+  text-decoration: none;   /* v22852: dimmed, never barred */
   opacity: .72;
 }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-early { color: #0e7c4a; }
@@ -7458,3 +7458,255 @@ html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
 html .bidsv2-screen .bidsv2-ticker-track span {
   font-size: 18px !important;
 }
+
+/* ── v22841 — AC GATE RESKIN, PASS 1 (Nick: 'I HATE THOSE panels lol all
+   of them but start with this' + 'We really need to get rid of that
+   line', with his two Vecteezy uploads).
+   · PANELS: every AC plate surface — the left-rail rows, the right-column
+     shelves, the closed-gate boarding info row — drops the glossy brushed
+     metal for his dark paper-layers art (ac-paper-layers.jpg): matte
+     layered black with a hex-mesh band, no diagonal sheen.
+   · LINES: every red rule ON or BETWEEN panels dies — plate title
+     underlines, the right-column row dividers, the thick red bar under
+     the info row, and any accent frame on the aircraft image. Spacing
+     separates, like the morning's v22820 fix.
+   · HEADER: the 'Votre Avion | Your Aircraft' bar keeps its exact shape
+     and size but wears the oval-mirror art (ac-oval-mirror.jpg) — black
+     pill, silver rim — per 'finished the same shape and size as now but
+     covered with this'.
+   AC-scoped only: every other airline renders exactly as before. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  background: #101418 url('/textures/ac-paper-layers.jpg?v=22841') center / cover no-repeat !important;
+  background-blend-mode: normal !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map) {
+  background: #101418 url('/textures/ac-paper-layers.jpg?v=22841') center / cover no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-board-info-row {
+  background: #101418 url('/textures/ac-paper-layers.jpg?v=22841') center / cover no-repeat !important;
+  border-bottom: none !important;
+}
+/* v22852 — the pass-1 'every red rule dies' block is withdrawn (Nick:
+   'make sure the lines red for ac go back'): the plate title underlines
+   return in AC red. The one red line that stays dead is the boarding
+   bar's (handled by the v22844 rule below). */
+/* v22853 — EXCEPT the right pane's row dividers. Those rules draw at the
+   trow boundary, which lands MID-TEXT on the big values — 'Sao Paulo'
+   and the times read as BARRED, and over a green status ink the crossing
+   line reads green (Nick: 'the line in between shoudnt be green and the
+   barred times for original times should not be barred'). The right
+   pane separates by spacing; the left plates keep their underlines. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  border-bottom: none !important;
+  border-top: none !important;
+}
+/* the 'Votre Avion | Your Aircraft' bar: same geometry, mirror skin.
+   v22845 (Nick: 'the your aircraft is not looking good either'): mapping
+   the mirror PHOTO onto the bar — squashed whole (v22841), then the
+   top-half bake (v22843) — left a floating arc that never finished. The
+   mirror look is now built natively at the bar's own geometry: black
+   glass face with a soft top-left sheen, ringed by a silver rim that
+   follows the bar's own rounded corners — same shape and size as now,
+   wearing the mirror's finish. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle {
+  background: radial-gradient(130% 200% at 28% 0%, #2c2f35 0%, #16181d 52%, #0a0c0f 100%) !important;
+  border: clamp(2px, 0.28vh, 3px) solid #B9BEC6 !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35),
+              inset 0 -1px 2px rgba(0, 0, 0, 0.55),
+              0 2px 8px rgba(3, 8, 18, 0.5) !important;
+}
+
+/* ── v22842 — AC RESKIN PASS 2: paint the right layer. Pass 1 put the
+   paper-layers art on the row/shelf elements — but the plates' REAL
+   painter is the v22746 ::before recipe (gate-metal-blue.png, luminosity
+   blend, gloss insets) sitting above them. Same selectors, later in the
+   file: the ::before keeps its exact geometry (insets, radius) and swaps
+   to Nick's paper-layers art, matte — no blend, no saturation filter, no
+   glossy inset highlights. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-bir-cell::before {
+  background-color: #101418 !important;
+  background-image: url('/textures/ac-paper-band.jpg?v=22855') !important;  /* v22855 (Nick): 'stretched to see more black that middle line' - the art's black center band IS the plate */
+  background-position: center !important;
+  /* v22852 (Nick: 'the graphic in the panel can you stretch it by
+     height') — the whole art squeezed into each plate instead of
+     cover-cropping to a sliver of it. */
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  filter: none !important;
+  /* v22857 (Nick: 'panels seem dark on dark ... a line around the
+     panel itself to deferitiate') — a silver hairline ring around each
+     plate + a brighter inner edge lift them off the dark sheet. */
+  box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+              0 0 0 1.5px rgba(170, 178, 190, 0.55) !important;
+}
+
+/* ── v22846 — THE 'BLACK BACKGROUND WITH A LINE' BEHIND THE PLANE (Nick:
+   'its a black background with a line through it' + 'if you put the gif
+   at 100% it may get rid of the background'). The Your-Aircraft panel's
+   clouds backdrop (#gateCloudsBg) ran at 0.85 opacity under a top/bottom
+   fade mask — the dark plate bled through the whole picture and hardened
+   into a dark band at the masked edges. Per Nick's own call: the gif runs
+   at 100%, no fade mask, so the clouds fill the panel clean.
+   (The v22843 media-wall experiment — backdrop cover + frame removal —
+   was withdrawn in v22845: not what Nick asked for.) */
+html body:not(#_):not(#_) #gateCloudsBg,
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg {
+  /* v22855: global (Nick: 'Including the removal the line at aircraft') */
+  opacity: 1 !important;
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+}
+
+/* ── v22847 — THE LINE ITSELF (Nick's upload of the Vecteezy source: 'this
+   is what youre seeing the line'). The AC sheet behind both columns is
+   ac-shelf-lux.jpg — that luxury-abstract art carries a thin silver
+   DIAGONAL LINE across its lower half, and everywhere the sheet peeks out
+   (behind the aircraft through the semi-opaque clouds, between the rail
+   plates) the line rode with it. The sheet is re-baked without the line
+   (the art's clean upper gradient, stretched to the same frame —
+   ac-shelf-lux-clean.jpg) and every AC sheet surface points at the clean
+   file. Same finish, no line. Other carriers untouched. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-clean.jpg?v=22847") !important;
+}
+
+/* ── v22844 — THE BOARDING SCREEN'S RED STRIP (Nick: 'that line is still
+   there it needs removed'). Probed live on the boarding-mode A64: the info
+   row's own red border-bottom IS gone (v22841) — the visible red band is
+   the AC-red .g8-wrap/.g8-r4 page background showing through the row's
+   margin-bottom gap. Gap closed for AC: no gap, no line. And the row's
+   v22841 paper-layers dress never actually applied — the v22660 sheet rule
+   carries a double :not(#_) that outranked it — so it returns here at
+   matching weight, later in the file. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-board-info-row {
+  margin-bottom: 0 !important;
+  background-color: #101418 !important;
+  background-image: url('/textures/ac-paper-layers-soft.jpg?v=22854') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  border-bottom: none !important;
+}
+
+/* ── v22855 — THE DESIGN GOES TO EVERY AIRLINE (Nick's white panoramic
+   mosaic upload: 'For other airlines could you use this and color it
+   accordingly? so this deisign will go for all airlines · Including the
+   removal the line at aircraft and the frames'). Non-AC plates drop the
+   metal recipe for the mosaic art multiplied over the airline accent —
+   each carrier's plates in its own colour, same geometry as before. The
+   clouds-backdrop fix and the stream ad-frame are already global. AC
+   keeps its own black paper-band dress. */
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_) .g8-bir-cell::before {
+  background-color: color-mix(in srgb, var(--airline-accent, #6b7684) 62%, #171d26) !important;
+  background-image: url('/textures/airline-panel-mosaic.jpg?v=22855') !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: multiply !important;
+  filter: none !important;
+  /* v22858 (Nick: 'wonderful actually don thise for all') — same
+     silver hairline ring + brighter inner edge as the AC plates. */
+  box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+              0 0 0 1.5px rgba(170, 178, 190, 0.55) !important;
+}
+/* Ink on the tinted plates: light, with the same shadow AC wears. The
+   bright status inks below keep their own colours on top of this. */
+html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row :is(.v2-fi-title, .v2-fi-title span, .v2-fi-value, .v2-fi-value span),
+html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(div, span, p, b, strong, small) {
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.78) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived) span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived),
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-ontime, .v2-rc-status-early, .v2-rc-status-enroute, .v2-rc-status-arrived) {
+  color: #34d399 !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final) span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final),
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-delayed, .v2-rc-status-diverted) {
+  color: #fbbf24 !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled,
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled {
+  color: #f87171 !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
+  color: #93c5fd !important;
+}
+
+/* ── v22856 — SPEED/ALTITUDE BAR: FROZEN GEOMETRY (Nick's crop: 'can you
+   also fix this panel it keeps glitching and change sizes' — the shot
+   shows 'pieds' wrapped under '36,000'). The v22590 min-height let the
+   bar GROW whenever the value+unit line wrapped (French units are long),
+   so its height flapped with every telemetry repaint. Now: hard height,
+   nothing wraps, overflow clipped — the bar cannot change size, period. */
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  height: clamp(52px, 7.6vh, 96px) !important;
+  min-height: 0 !important;
+  max-height: clamp(52px, 7.6vh, 96px) !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mstat {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-val,
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl,
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl2 {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* ── v22860 — WESTJET IN NAVY (Nick: 'Westjet can you make the background
+   behind the panels navy blue and same fr the frame' + 'oh and the lines
+   deviders'). The sheet behind both columns, the divider lines, and the
+   frames all take WestJet's own navy; the teal stays on the plates and
+   accents. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-board-info-row {
+  /* v22864 (Nick): 'too gray sorry the same as the mdidle' - the middle
+     frame's light blue, not gray */
+  background-color: #7FA8D8 !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-clean.jpg?v=22860") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title {
+  border-bottom-color: #2F84DE !important;  /* v22861: 'make the line blue stand out' */
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow-last {
+  border-bottom-color: #2F84DE !important;  /* v22861: 'make the line blue stand out' */
+}
+
+/* ── v22862 — THE BOARDING STRIP GAP CLOSES FOR EVERYONE (Nick's WS B15
+   crop: 'issue with spacing here'). The v22844 margin-bottom:0 was
+   AC-scoped, so on every other airline the info row's margin gap still
+   showed the page background as a dark band under the cells. */
+html body:not(#_):not(#_) .g8-board-info-row {
+  margin-bottom: 0 !important;
+}
+
+/* v22866 — the v22865 white chip was withdrawn (Nick: 'no i dont want
+   a white chip that was never an issue'). */
+

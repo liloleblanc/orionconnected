@@ -1579,7 +1579,8 @@ body[data-fids-airline-style="emblem"] .fids-cell-airline {
 /* ── Sched/Revised dual-column treatment (Phase 4 — added later) ────────── */
 /* Scheduled time strikes through when there's a revision */
 #fidsTable td.td-time-sched.is-revised {
-  text-decoration: line-through;
+  /* v22852 (Nick): original times are dimmed, never barred */
+  text-decoration: none;
   opacity: 0.55;
   font-weight: 500;
 }

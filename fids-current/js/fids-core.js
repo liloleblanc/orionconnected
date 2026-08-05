@@ -6251,7 +6251,7 @@ function renderMobileGateHtml(ctx) {
     +     '<div style="text-align:left;min-width:0;flex:1;">'
     +       '<div style="' + FS.hero + 'color:' + T.ink + ';">' + (_homeIata || '—') + '</div>'
     +       '<div style="' + FS.label + 'color:' + T.muted + ';margin-top:10px;">' + TL('departsLbl') + '</div>'
-    +       '<div style="' + FS.value + 'color:' + T.ink + ';' + (isRevised ? 'text-decoration:line-through;opacity:0.5;' : '') + '">' + schedTime + '</div>'
+    +       '<div style="' + FS.value + 'color:' + T.ink + ';' + (isRevised ? 'opacity:0.5;' : '') + '">' + schedTime + '</div>'
     +       (isRevised ? '<div style="' + FS.value + 'color:#e0820a;">' + currentFlight.upd + '</div>' : '')
     +     '</div>'
     +     '<div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;padding:0 6px;">' + _planeSvg + (durationStr ? '<div style="' + FS.label + 'color:' + T.muted2 + ';margin-top:8px;white-space:nowrap;">' + durationStr + '</div>' : '') + '</div>'
@@ -10182,7 +10182,7 @@ function uxgGateHtml(ctx) {
                   // when a revision exists. Both dep and arr use this for consistency.
                   function _timeCell(sched, rev) {
                     if (rev) {
-                      return '<div style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.45);text-decoration:line-through;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sched + '</div>'
+                      return '<div style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.45);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sched + '</div>'
                            + '<div style="font-size:18px;font-weight:700;color:#f59e0b;line-height:1.15;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + rev + '</div>';
                     }
                     return '<div style="font-size:18px;font-weight:700;color:#fff;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sched + '</div>';
@@ -10227,7 +10227,7 @@ function uxgGateHtml(ctx) {
                       _topLineHtml +=
                         '<div style="' + _rowBox + '">'
                         +   '<span style="' + _rowLabelSty + '">' + TL('scheduled') + '</span>'
-                        +   '<span style="font-size:28px;font-weight:700;display:block;line-height:1.2;color:rgba(255,255,255,0.5);text-decoration:line-through;">' + (_schedArrStr || '\u2014') + '</span>'
+                        +   '<span style="font-size:28px;font-weight:700;display:block;line-height:1.2;color:rgba(255,255,255,0.5);">' + (_schedArrStr || '\u2014') + '</span>'
                         + '</div>';
                       _topLineHtml +=
                         '<div style="' + _rowBox + '">'
@@ -10811,12 +10811,29 @@ function gateAutofit(root) {
         delete el.dataset.faKey;
         if (op) delete op.dataset.faKey;
       } catch (e) {}
-      // The Operated-By row is fitted FIRST so its measured height is the
-      // real remainder for the type line — and capped, so a long operator
-      // name can't eat the panel either.
-      if (op) _boxAssign(op, w, Math.floor(h * 0.42), null, false, true);
-      var avail = op ? Math.floor(h - op.offsetHeight - 6) : Math.floor(h * 0.92);
-      _boxAssign(el, w, Math.max(14, avail), null, false, true);
+      // v22857 — THE TYPE LINE IS THE HERO (Nick's crop: tiny 'Airbus
+      // A320' under a huge Operated-By, 'not the first time i mention
+      // thise'). The old order fitted Operated-By FIRST at up to 42% of
+      // the panel; the type block — which wraps to three lines with
+      // 'expected | prévu' and the registration — got the scraps and
+      // collapsed. Now the type line takes the bigger share first and
+      // Operated-By fits into the real remainder, capped below the type.
+      var typeBudget = op ? Math.floor(h * 0.62) : Math.floor(h * 0.92);
+      _boxAssign(el, w, Math.max(14, typeBudget), null, false, true);
+      var opAvail = Math.max(12, Math.floor(h - el.offsetHeight - 6));
+      if (op) _boxAssign(op, w, Math.min(opAvail, Math.floor(h * 0.30)), null, false, true);
+      // v22866 — width can still squeeze a long type+registration line
+      // below the Operated-By row's size (Nick's Alaska 'Embraer 175 |
+      // N633QX' crop: 'seriously cannot see that at all'). The hierarchy
+      // is enforced by measurement: the Operated-By row may never render
+      // larger than 85% of the type line's settled size.
+      try {
+        var _tFs = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+        if (op && _tFs > 0) {
+          var _oFs = parseFloat(window.getComputedStyle(op).fontSize) || 0;
+          if (_oFs > _tFs * 0.85) op.style.setProperty('font-size', Math.max(12, Math.floor(_tFs * 0.85)) + 'px', 'important');
+        }
+      } catch (e) {}
     }
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach(function (el) {
       _fitTypePanel(el);
@@ -17486,7 +17503,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22840';
+var FIDS_BUILD_TAG = 'v22866';
 (function(){
   try {
     function _addTag(){
@@ -26003,13 +26020,19 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       if (!_pend || Math.abs(_pend[0] - _gx) > 2 || Math.abs(_pend[1] - _gy) > 2
           || Math.abs(_pend[2] - _gw) > 2 || Math.abs(_pend[3] - _gh) > 2) {
         _PENDING[_mkey] = [_gx, _gy, _gw, _gh];
-        continue;                      // unconfirmed — stay hidden
+        // v22852 (Nick: 'the timing seems off it appears after the add') —
+        // show the frame on the FIRST valid measure instead of holding it
+        // hidden through the two-pass confirmation. The rect is not
+        // committed yet: if the confirmed rect lands elsewhere it re-applies
+        // once, but the frame arrives WITH the ad, not a beat later.
+        _apply(_gx + ',' + _gy + ',' + _gw + ',' + _gh);
+        continue;                      // unconfirmed — visible, not frozen
       }
       _GEOM_CACHE[_mkey] = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
       _apply(_GEOM_CACHE[_mkey]);
     }
   }
-  setInterval(_tick, 600);
+  setInterval(_tick, 300);   // v22852: half the first-paint latency of 600ms
 })();
 
 var _nativeVideoEl = null;
@@ -29700,6 +29723,9 @@ function _adBackdropHtml(blurUrl) {
       // accent via a masked multiply layer; rebuilt only on accent change.
       if (f.dataset.acc !== _bdAcc) {
         f.dataset.acc = _bdAcc;
+        // v22850 — the WALL frame keeps its original silver art ('the
+        // other frame is missing'): Nick's stream frame belongs around
+        // the AD, not here. Restored to the pre-v22848 recipe.
         var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
         var _wMask = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
         // Second line in the carrier's second colour, same as the ad frame.
@@ -29709,9 +29735,11 @@ function _adBackdropHtml(blurUrl) {
           if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
           else _wSec = '#AEB4BC';
         } catch (e) { _wSec = '#AEB4BC'; }
+        // v22860 — WestJet's frame is NAVY (Nick), not the teal accent.
+        var _wTint = (_wAl === 'WS') ? '#003366' : _bdAcc;
         f.innerHTML =
             '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
-          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
+          + '<div style="position:absolute;inset:0;background:' + _wTint + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
           + '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.92;'
           +   'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _wMask + '"></div>';
       }
@@ -29770,8 +29798,10 @@ var AIRLINE_ACCENT2 = {
   'F9': '#8CC9AE', 'WG': '#BCC1C8'
 };
 function _adTechFrameHtml() {
-  // ONE complete frame per ad, in the airline's SECOND colour — the same
-  // silver art with a masked multiply layer, like the wall frame.
+  // v22850 — Nick's stream frame goes HERE, around the ad ('thats not
+  // around the add and the other frame is missing'): this per-ad frame
+  // draws his media-player art, accent-tinted; the wall frame keeps the
+  // original silver art.
   var _fAcc = '';
   try {
     var _fAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
@@ -29788,26 +29818,18 @@ function _adTechFrameHtml() {
     var _fAl2 = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
     if (_fAl2 && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl2]) _fPri = AIRLINE_ACCENT[_fAl2];
   } catch (e) {}
-  var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
+  // v22848 — Nick's stream-frame upload ('please change the middle frame
+  // to this one and make it match color of course'): the silver bake of
+  // his media-player frame, re-hued by the airline accent. One tint layer
+  // over the whole art — the old three-band clip-path split targeted the
+  // previous art's concentric-line geometry and doesn't map to this one.
+  var _fa = '/logos/Backgrounds/ad-frame-stream.png?v=22851';
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
   var _tint = '';
-  if (_fPri) {
-    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;' + _maskCss + '"></div>';
-  }
-  if (_fAcc) {
-    _tint += '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.92;'
-      + 'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _maskCss + '"></div>';
-  }
-  // v22687 — Nick: 'put the middle frame and inner outer frame the
-  // different color'. The art's motif is three concentric lines. Two tints
-  // gave outer=primary, middle+inner=secondary; a third layer, clipped one
-  // band further in (the outer band clips at 1.9%/1.3%, so the inner line
-  // starts at double that), re-applies the PRIMARY on the innermost line.
-  // Net: outer primary · middle secondary · inner primary — the middle
-  // frame differs from the inner and outer pair.
-  if (_fPri && _fAcc) {
-    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;'
-      + 'clip-path:inset(3.8% 2.6% 3.8% 2.6%);' + _maskCss + '"></div>';
+  var _fTint = _fPri || _fAcc;   // the airline's PRIMARY colour ('match color of course')
+  try { if (String(window._gateCurrentAirline || '').toUpperCase() === 'WS') _fTint = '#003366'; } catch (e) {}   // v22860: WestJet frames in navy (Nick)
+  if (_fTint) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fTint + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>';
   }
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
