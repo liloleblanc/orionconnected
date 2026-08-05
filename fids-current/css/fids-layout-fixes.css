@@ -7458,3 +7458,49 @@ html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
 html .bidsv2-screen .bidsv2-ticker-track span {
   font-size: 18px !important;
 }
+
+/* ── v22841 — AC GATE RESKIN, PASS 1 (Nick: 'I HATE THOSE panels lol all
+   of them but start with this' + 'We really need to get rid of that
+   line', with his two Vecteezy uploads).
+   · PANELS: every AC plate surface — the left-rail rows, the right-column
+     shelves, the closed-gate boarding info row — drops the glossy brushed
+     metal for his dark paper-layers art (ac-paper-layers.jpg): matte
+     layered black with a hex-mesh band, no diagonal sheen.
+   · LINES: every red rule ON or BETWEEN panels dies — plate title
+     underlines, the right-column row dividers, the thick red bar under
+     the info row, and any accent frame on the aircraft image. Spacing
+     separates, like the morning's v22820 fix.
+   · HEADER: the 'Votre Avion | Your Aircraft' bar keeps its exact shape
+     and size but wears the oval-mirror art (ac-oval-mirror.jpg) — black
+     pill, silver rim — per 'finished the same shape and size as now but
+     covered with this'.
+   AC-scoped only: every other airline renders exactly as before. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  background: #101418 url('/textures/ac-paper-layers.jpg?v=22841') center / cover no-repeat !important;
+  background-blend-mode: normal !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map) {
+  background: #101418 url('/textures/ac-paper-layers.jpg?v=22841') center / cover no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) .g8-board-info-row {
+  background: #101418 url('/textures/ac-paper-layers.jpg?v=22841') center / cover no-repeat !important;
+  border-bottom: none !important;
+}
+/* every red rule on/between AC panels: gone */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-title,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .v2-rc-aircraft-img,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .v2-rc-aircraft-img img {
+  border-bottom: none !important;
+  border-top: none !important;
+}
+/* the 'Votre Avion | Your Aircraft' bar: same geometry, mirror skin */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle {
+  background: #000 url('/textures/ac-oval-mirror.jpg?v=22841') center / 100% 100% no-repeat !important;
+  border: none !important;
+}
