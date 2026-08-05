@@ -7504,3 +7504,25 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background: #000 url('/textures/ac-oval-mirror.jpg?v=22841') center / 100% 100% no-repeat !important;
   border: none !important;
 }
+
+/* ── v22842 — AC RESKIN PASS 2: paint the right layer. Pass 1 put the
+   paper-layers art on the row/shelf elements — but the plates' REAL
+   painter is the v22746 ::before recipe (gate-metal-blue.png, luminosity
+   blend, gloss insets) sitting above them. Same selectors, later in the
+   file: the ::before keeps its exact geometry (insets, radius) and swaps
+   to Nick's paper-layers art, matte — no blend, no saturation filter, no
+   glossy inset highlights. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-bir-cell::before {
+  background-color: #101418 !important;
+  background-image: url('/textures/ac-paper-layers.jpg?v=22842') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  filter: none !important;
+  box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.10) !important;
+}
