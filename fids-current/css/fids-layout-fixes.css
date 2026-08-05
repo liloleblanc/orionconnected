@@ -7916,3 +7916,28 @@ html.fids-portrait #fidsTable thead th.col-airline { font-size: 0 !important; }
 /* the board icon was laid out at x=-45 (off-canvas) — pull the label
    block in so it lands on screen */
 html.fids-portrait #fidsBanner .fids-banner-board { left: 12px !important; width: 330px !important; }
+
+
+/* ── v22875 — PORTRAIT DROPS BOTH TIME COLUMNS (Nick: 'remove the 2 times
+   simply have this is the last 2 columns merge into1 Such as
+   Delayed-10:30, On Time 10:45 etc'). The effective time now rides inside
+   the status cell as a real .fids-status-rev span, so Scheduled joins
+   Revised at zero width and their ~250px goes to Destination and Status.
+   Zeroed rather than display:none — dropping a cell shifts every colgroup
+   width one column to the left. */
+html.fids-portrait #fidsTable colgroup col.col-time { width: 0 !important; }
+html.fids-portrait #fidsTable th.col-time,
+html.fids-portrait #fidsTable td.td-time,
+html.fids-portrait #fidsTable td.td-time * {
+  width: 0 !important; max-width: 0 !important; min-width: 0 !important;
+  padding-left: 0 !important; padding-right: 0 !important;
+  font-size: 0 !important; letter-spacing: 0 !important;
+  overflow: hidden !important; white-space: nowrap !important;
+}
+/* the merged column carries two values now, so it gets the width back */
+html.fids-portrait #fidsTable colgroup col.col-status { width: 300px !important; }
+html.fids-portrait #fidsTable td.td-status .fids-status-rev {
+  font-weight: 700 !important;
+  opacity: 0.92;
+  white-space: nowrap !important;
+}

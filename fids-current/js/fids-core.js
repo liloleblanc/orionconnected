@@ -17512,7 +17512,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22875';
+var FIDS_BUILD_TAG = 'v22876';
 (function(){
   try {
     function _addTag(){
@@ -18622,8 +18622,19 @@ function render() {
     var _revAttr = _revDisplay ? ' data-rev="' + String(_revDisplay).replace(/"/g, '&quot;') + '"' : '';
     var _portraitBoard = false;
     try { _portraitBoard = document.documentElement.classList.contains('fids-portrait'); } catch (e) {}
-    var _revInline = (_portraitBoard && _revDisplay)
-      ? '<span class="fids-status-rev"> · ' + _revDisplay + '</span>' : '';
+    // v22875 — PORTRAIT MERGES BOTH TIME COLUMNS INTO THE STATUS CELL
+    // (Nick: 'remove the 2 times simply have this is the last 2 columns
+    // merge into 1 Such as Delayed-10:30, On Time 10:45'). The one time a
+    // passenger needs is the EFFECTIVE one: the revised time when the
+    // flight has been revised, the scheduled time otherwise. Cancelled and
+    // diverted rows carry no time at all — there is nothing to be on time
+    // for. Scheduled and Revised then collapse to zero width in the CSS.
+    var _effTimeTxt = '';
+    if (!isCanc && !isDiv) {
+      try { _effTimeTxt = _hasRevision ? fmt12(f.upd) : fmt12(f.time); } catch (e) { _effTimeTxt = ''; }
+    }
+    var _revInline = (_portraitBoard && _effTimeTxt)
+      ? '<span class="fids-status-rev"> · ' + _effTimeTxt + '</span>' : '';
     const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '')
       + _stLongAttrs + '"' + _revAttr + '>' + stCellHtml + _revInline + '</td>';
 
