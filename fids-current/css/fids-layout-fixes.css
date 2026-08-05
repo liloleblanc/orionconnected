@@ -7710,3 +7710,32 @@ html body:not(#_):not(#_) .g8-board-info-row {
 /* v22866 — the v22865 white chip was withdrawn (Nick: 'no i dont want
    a white chip that was never an issue'). */
 
+
+/* ── v22867 — PORTRAIT / ROTATED KIOSK MODE (Nick: 'a display done for a
+   flipped monitor 90degree so upright ... more for FIDS and BAGS').
+   ?rot=90 / ?rot=270: the page lays out at 100vh × 100vw (portrait
+   coordinates on a landscape viewport) and paints rotated — the monitor
+   is physically turned but the OS stays landscape. True-portrait screens
+   (OS rotated) skip the transform and just get html.fids-portrait. */
+html.fids-rot90, html.fids-rot270 {
+  overflow: hidden !important;
+}
+html.fids-rot90 body, html.fids-rot270 body {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vh !important;
+  height: 100vw !important;
+  transform-origin: top left !important;
+  overflow: hidden !important;
+}
+html.fids-rot90 body  { transform: rotate(90deg) translateY(-100%) !important; }
+html.fids-rot270 body { transform: rotate(-90deg) translateX(-100%) !important; }
+
+/* Portrait polish, both paths: the banner was tuned for a wide screen —
+   in a 1080-wide column it gets a trimmer height so the extra vertical
+   real estate goes to ROWS. First cut; iterated on Nick's eye. */
+html.fids-portrait .fids-banner { height: clamp(84px, 7vh, 120px) !important; }
+html.fids-portrait .fids-board-label { font-size: clamp(24px, 2.4vw, 34px) !important; }
+html.fids-portrait #fidsTable thead th { font-size: 14px !important; padding: 4px 10px !important; }
+html.fids-portrait #fidsTable td { padding-left: 10px !important; padding-right: 10px !important; }

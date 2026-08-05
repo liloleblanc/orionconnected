@@ -48,6 +48,27 @@
     } catch (e) {}
   })();
   </script>
+  <script>
+  /* v22867 — PORTRAIT / ROTATED KIOSK MODE (Nick: upright monitors for
+     FIDS and BAGS). Two paths, both landing on html.fids-portrait:
+     · true portrait (OS rotated): auto-detected, width >= 800 so phones
+       keep their own mobile layout;
+     · ?rot=90 / ?rot=270 (monitor physically turned, OS untouched): the
+       whole page is laid out portrait and painted rotated via CSS. */
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search);
+      var rot = q.get('rot');
+      var de = document.documentElement;
+      if (rot === '90' || rot === '270') {
+        de.classList.add('fids-rot' + rot, 'fids-portrait');
+      } else if (q.get('orient') === 'portrait'
+                 || (window.innerHeight > window.innerWidth && window.innerWidth >= 800)) {
+        de.classList.add('fids-portrait');
+      }
+    } catch (e) {}
+  })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
@@ -61,7 +82,7 @@
   <link rel="stylesheet" href="css/bids-v2.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-v216.css?v=312">
-  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=22866">
+  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=22867">
   <link rel="stylesheet" href="css/gids-v218.78.css?v=22852">
   <link rel="stylesheet" href="css/accor-slide.css?v=79">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
@@ -693,7 +714,7 @@
 <script src="js/fids-v2.js?v=319"></script>
 <script src="js/gids-layout.js?v=1"></script>
 <script src="data/airline-colors.js?v=24"></script>
-<script src="js/fids-core.js?v=22866"></script>
+<script src="js/fids-core.js?v=22867"></script>
 <script src="js/gate-visual-integrity-v22354.js?v=22559"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
