@@ -7682,8 +7682,9 @@ html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl2 {
 html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
 html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
 html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-board-info-row {
-  /* v22863 (Nick): 'light like the border in the middle' + 'gray blue' */
-  background-color: #8AA3BF !important;
+  /* v22864 (Nick): 'too gray sorry the same as the mdidle' - the middle
+     frame's light blue, not gray */
+  background-color: #7FA8D8 !important;
   background-image: url("/logos/Backgrounds/ac-shelf-lux-clean.jpg?v=22860") !important;
   background-position: center !important;
   background-size: cover !important;
