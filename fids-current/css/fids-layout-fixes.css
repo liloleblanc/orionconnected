@@ -7775,11 +7775,17 @@ html.fids-portrait #fidsAirportPill .fids-airport-logo-img { width: 100% !import
 html.fids-portrait .fids-banner-time-block { left: auto !important; right: 6px !important; width: 440px !important; }
 html.fids-portrait #clockAnalog { display: none !important; }
 html.fids-portrait .fids-banner-time-text { transform: scale(0.62) !important; transform-origin: right center !important; }
-html.fids-portrait #fidsTable th.col-airline { width: 170px !important; }
-html.fids-portrait #fidsTable th.col-flight { width: 112px !important; min-width: 0 !important; }
-html.fids-portrait #fidsTable th.col-wx { width: 92px !important; }
-html.fids-portrait #fidsTable th.col-gate { width: 82px !important; }
-html.fids-portrait #fidsTable th.col-time { width: 112px !important; }
-html.fids-portrait #fidsTable th.col-time-rev { width: 112px !important; }
-html.fids-portrait #fidsTable th.col-status { width: 172px !important; }
+/* The widths live on <col> elements (not th) and their clamp MINIMUMS
+   total ~1100px — wider than a 1080 portrait screen — so Destination
+   (width:auto) was starved to 0. Portrait budget: 838px of fixed columns,
+   ~242px left for Destination. */
+html.fids-portrait #fidsTable colgroup col.col-airline  { width: 170px !important; }
+html.fids-portrait #fidsTable colgroup col.col-flight   { width: 104px !important; }
+html.fids-portrait #fidsTable colgroup col.col-wx       { width: 96px  !important; min-width: 0 !important; }
+html.fids-portrait #fidsTable colgroup col.col-gate     { width: 80px  !important; }
+html.fids-portrait #fidsTable colgroup col.col-time     { width: 112px !important; }
+html.fids-portrait #fidsTable colgroup col.col-time-rev { width: 112px !important; }
+html.fids-portrait #fidsTable colgroup col.col-status   { width: 164px !important; }
+html.fids-portrait #fidsTable colgroup col.col-dest     { width: auto  !important; }
 html.fids-portrait #fidsTable td { font-size: 19px !important; }
+html.fids-portrait #fidsTable td.td-status, html.fids-portrait #fidsTable td.td-status * { font-size: 17px !important; }
