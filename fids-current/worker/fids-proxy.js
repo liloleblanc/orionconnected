@@ -1001,6 +1001,12 @@ __name(handleYyzFids, "handleYyzFids");
 // passes; a headless browser's does not). This route makes the call
 // SERVER-SIDE with minimal headers, merges yesterday+today+tomorrow, and
 // returns { list:[...] } to the board — mapped there by yulToAdbFlight().
+// ADM's WAF is inverted from the usual: it 403s requests that carry a
+// BROWSER User-Agent (or none at all, which is what Workers' fetch sends)
+// and lets a plain curl-style agent straight through. Measured against the
+// live endpoint: no UA -> 403, browser UA + Origin/Referer -> 403,
+// "curl/8.5.0" -> 200. Send exactly that and nothing browser-ish.
+const YUL_APEX_UA = "curl/8.5.0";
 const YUL_APEX_URL = "https://www.admtl.com/en-CA/webruntime/api/apex/execute?language=en-CA&asGuest=true&htmlEncode=false";
 const YUL_APEX_CLASS = "@udd/01pMm00000AWKuH";
 
@@ -1014,7 +1020,7 @@ async function handleYulFids(request, env, origin, direction) {
   try {
     const r = await fetch(YUL_APEX_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      headers: { "Content-Type": "application/json", "Accept": "application/json", "User-Agent": YUL_APEX_UA },
       body,
       cf: { cacheTtl: 30, cacheEverything: true }
     });
@@ -1051,7 +1057,7 @@ async function handleYulFids(request, env, origin, direction) {
         try {
           const dr = await fetch(YUL_APEX_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            headers: { "Content-Type": "application/json", "Accept": "application/json", "User-Agent": YUL_APEX_UA },
             body: JSON.stringify({
               namespace: "", classname: "@udd/01pMm00000AWKuF", method: "getFlightDetails",
               isContinuation: false, params: { flightNo: x.f.UniqueDisplayNo }, cacheable: false
