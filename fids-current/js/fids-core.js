@@ -17486,7 +17486,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22847';
+var FIDS_BUILD_TAG = 'v22848';
 (function(){
   try {
     function _addTag(){
@@ -29700,20 +29700,16 @@ function _adBackdropHtml(blurUrl) {
       // accent via a masked multiply layer; rebuilt only on accent change.
       if (f.dataset.acc !== _bdAcc) {
         f.dataset.acc = _bdAcc;
-        var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
+        // v22848 — Nick's stream-frame upload ('change the middle frame to
+        // this one and make it match color of course'): silver bake of his
+        // media-player frame art, one whole-frame accent tint. The old
+        // clip-path second-line split targeted the previous art's band
+        // geometry and doesn't map to this design.
+        var _fa = '/logos/Backgrounds/ad-frame-stream.png?v=22848';
         var _wMask = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
-        // Second line in the carrier's second colour, same as the ad frame.
-        var _wSec = '';
-        try {
-          var _wAl = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
-          if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
-          else _wSec = '#AEB4BC';
-        } catch (e) { _wSec = '#AEB4BC'; }
         f.innerHTML =
             '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
-          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
-          + '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.92;'
-          +   'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _wMask + '"></div>';
+          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.85;' + _wMask + '"></div>';
       }
     } catch (e) {}
   }
@@ -29788,26 +29784,17 @@ function _adTechFrameHtml() {
     var _fAl2 = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
     if (_fAl2 && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl2]) _fPri = AIRLINE_ACCENT[_fAl2];
   } catch (e) {}
-  var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
+  // v22848 — Nick's stream-frame upload ('please change the middle frame
+  // to this one and make it match color of course'): the silver bake of
+  // his media-player frame, re-hued by the airline accent. One tint layer
+  // over the whole art — the old three-band clip-path split targeted the
+  // previous art's concentric-line geometry and doesn't map to this one.
+  var _fa = '/logos/Backgrounds/ad-frame-stream.png?v=22848';
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
   var _tint = '';
-  if (_fPri) {
-    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;' + _maskCss + '"></div>';
-  }
-  if (_fAcc) {
-    _tint += '<div style="position:absolute;inset:0;background:' + _fAcc + ';mix-blend-mode:multiply;opacity:.92;'
-      + 'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _maskCss + '"></div>';
-  }
-  // v22687 — Nick: 'put the middle frame and inner outer frame the
-  // different color'. The art's motif is three concentric lines. Two tints
-  // gave outer=primary, middle+inner=secondary; a third layer, clipped one
-  // band further in (the outer band clips at 1.9%/1.3%, so the inner line
-  // starts at double that), re-applies the PRIMARY on the innermost line.
-  // Net: outer primary · middle secondary · inner primary — the middle
-  // frame differs from the inner and outer pair.
-  if (_fPri && _fAcc) {
-    _tint += '<div style="position:absolute;inset:0;background:' + _fPri + ';mix-blend-mode:multiply;opacity:.82;'
-      + 'clip-path:inset(3.8% 2.6% 3.8% 2.6%);' + _maskCss + '"></div>';
+  var _fTint = _fAcc || _fPri;
+  if (_fTint) {
+    _tint += '<div style="position:absolute;inset:0;background:' + _fTint + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>';
   }
   return '<div class="ad-tech-frame" style="position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;'
     + 'visibility:hidden;pointer-events:none;z-index:3;isolation:isolate;">'
