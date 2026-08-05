@@ -7941,3 +7941,22 @@ html.fids-portrait #fidsTable td.td-status .fids-status-rev {
   opacity: 0.92;
   white-space: nowrap !important;
 }
+
+/* ── v22877 — PORTRAIT HEADER ROW. The v22874 header rules were losing to
+   fids-layout-fixes.css:6602's own `html:not(#_) body[data-fids-theme]
+   #fidsTable thead th`, which carries TWO id-weights to our one — so the
+   labels stayed at row size and 'Ligne aérienne' clipped to 'Ligne aéri'.
+   Matched id-weight here and the header behaves.
+   The carrier column loses its label entirely: Pearson's board has none,
+   and the emblem tile is the label. */
+html.fids-portrait:not(#_) #fidsTable thead th {
+  font-size: 13px !important;
+  letter-spacing: 0.2px !important;
+  padding: 4px 10px !important;
+}
+html.fids-portrait:not(#_) #fidsTable thead th.col-airline { font-size: 0 !important; }
+/* Terminal holds one character ('T1'/'T3'), so it only needs its header;
+   the width that frees goes to Destination, where 'Washington (DCA)' and
+   'Philadelphia (PHL)' were still ellipsizing. */
+html.fids-portrait #fidsTable colgroup col.col-term   { width: 72px !important; }
+html.fids-portrait #fidsTable colgroup col.col-status { width: 268px !important; }
