@@ -2465,6 +2465,10 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // changing no board behaviour. Delete once we have the answer.
     if (path === "/diag/porter") {
       const PORTER_CANDIDATES = [
+        // Nick's Network tab: the XHR is same-origin and the referring page
+        // is /en-ca/manage-flights/flight-status — so this is the likeliest.
+        "https://www.flyporter.com/en-ca/manage-flights/flight-status/getflightsfeed?removeGroupCarrierCodes=true",
+        "https://www.flyporter.com/en-ca/manage-flights/getflightsfeed?removeGroupCarrierCodes=true",
         "https://www.flyporter.com/en-ca/api/getflightsfeed?removeGroupCarrierCodes=true",
         "https://www.flyporter.com/api/getflightsfeed?removeGroupCarrierCodes=true",
         "https://www.flyporter.com/en-ca/travel-information/flight-status/getflightsfeed?removeGroupCarrierCodes=true",
@@ -2480,7 +2484,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               "Accept": "application/json, text/plain, */*",
               "Accept-Language": "en-CA,en;q=0.9",
               "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
-              "Referer": "https://www.flyporter.com/en-ca/travel-information/flight-status"
+              "Referer": "https://www.flyporter.com/en-ca/manage-flights/flight-status"
             }
           });
           const body = await r.text().catch(() => "");
