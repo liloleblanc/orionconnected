@@ -7537,18 +7537,20 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
               inset 0 0 0 1px rgba(255, 255, 255, 0.10) !important;
 }
 
-/* ── v22845 — THE LINE IS THE CLOUDS BACKDROP (Nick: 'I also ASKED for
-   the line in the airplane to be removed thats it' + 'Im telling you its
-   a background behind you need to take it out'). The 'line' rides the
-   Your-Aircraft panel's drifting-clouds backdrop (#gateCloudsBg,
-   clouds-loop.gif) — the animation carries a bright sun-ray/contrail
-   streak that reads as a stray line through the plane. The whole clouds
-   backdrop comes OFF for AC; the aircraft sits directly on the plate.
+/* ── v22846 — THE 'BLACK BACKGROUND WITH A LINE' BEHIND THE PLANE (Nick:
+   'its a black background with a line through it' + 'if you put the gif
+   at 100% it may get rid of the background'). The Your-Aircraft panel's
+   clouds backdrop (#gateCloudsBg) ran at 0.85 opacity under a top/bottom
+   fade mask — the dark plate bled through the whole picture and hardened
+   into a dark band at the masked edges. Per Nick's own call: the gif runs
+   at 100%, no fade mask, so the clouds fill the panel clean.
    (The v22843 media-wall experiment — backdrop cover + frame removal —
-   was withdrawn here: not what Nick asked for.) */
+   was withdrawn in v22845: not what Nick asked for.) */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) #gateCloudsBg,
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg {
-  display: none !important;
+  opacity: 1 !important;
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
 }
 
 /* ── v22844 — THE BOARDING SCREEN'S RED STRIP (Nick: 'that line is still
