@@ -17486,7 +17486,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22848';
+var FIDS_BUILD_TAG = 'v22849';
 (function(){
   try {
     function _addTag(){
@@ -29766,6 +29766,11 @@ var AIRLINE_ACCENT2 = {
   'F9': '#8CC9AE', 'WG': '#BCC1C8'
 };
 function _adTechFrameHtml() {
+  // v22849 — retired. Nick's stream-frame art rides the WALL frame (the
+  // 'middle frame'); drawing it a second time around each ad doubled the
+  // lines through the creative. Every call site concatenates this string,
+  // so empty means no per-ad frame at all.
+  return '';
   // ONE complete frame per ad, in the airline's SECOND colour — the same
   // silver art with a masked multiply layer, like the wall frame.
   var _fAcc = '';
