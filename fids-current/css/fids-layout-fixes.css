@@ -7697,3 +7697,11 @@ html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-
 html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow-last {
   border-bottom-color: #2F84DE !important;  /* v22861: 'make the line blue stand out' */
 }
+
+/* ── v22862 — THE BOARDING STRIP GAP CLOSES FOR EVERYONE (Nick's WS B15
+   crop: 'issue with spacing here'). The v22844 margin-bottom:0 was
+   AC-scoped, so on every other airline the info row's margin gap still
+   showed the page background as a dark band under the cells. */
+html body:not(#_):not(#_) .g8-board-info-row {
+  margin-bottom: 0 !important;
+}
