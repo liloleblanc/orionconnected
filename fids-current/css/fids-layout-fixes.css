@@ -7490,8 +7490,20 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 }
 /* v22852 — the pass-1 'every red rule dies' block is withdrawn (Nick:
    'make sure the lines red for ac go back'): the plate title underlines
-   and row rules return in AC red. The one red line that stays dead is
-   the boarding bar's (handled by the v22844 rule below). */
+   return in AC red. The one red line that stays dead is the boarding
+   bar's (handled by the v22844 rule below). */
+/* v22853 — EXCEPT the right pane's row dividers. Those rules draw at the
+   trow boundary, which lands MID-TEXT on the big values — 'Sao Paulo'
+   and the times read as BARRED, and over a green status ink the crossing
+   line reads green (Nick: 'the line in between shoudnt be green and the
+   barred times for original times should not be barred'). The right
+   pane separates by spacing; the left plates keep their underlines. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval {
+  border-bottom: none !important;
+  border-top: none !important;
+}
 /* the 'Votre Avion | Your Aircraft' bar: same geometry, mirror skin.
    v22845 (Nick: 'the your aircraft is not looking good either'): mapping
    the mirror PHOTO onto the bar — squashed whole (v22841), then the
