@@ -7739,3 +7739,18 @@ html.fids-portrait .fids-banner { height: clamp(84px, 7vh, 120px) !important; }
 html.fids-portrait .fids-board-label { font-size: clamp(24px, 2.4vw, 34px) !important; }
 html.fids-portrait #fidsTable thead th { font-size: 14px !important; padding: 4px 10px !important; }
 html.fids-portrait #fidsTable td { padding-left: 10px !important; padding-right: 10px !important; }
+
+/* ── v22868 — PORTRAIT BANNER (first true-portrait shot: the board label,
+   time block, logo and clock all collided at 1080 wide). Compact single
+   row: no analog clock, smaller digits and logo, tighter padding. */
+html.fids-portrait .fids-banner { padding: 0 16px !important; }
+html.fids-portrait .fids-banner-analog { display: none !important; }
+html.fids-portrait .fids-banner-time { font-size: clamp(24px, 3vw, 34px) !important; }
+html.fids-portrait .fids-banner-tlabel { font-size: 13px !important; }
+html.fids-portrait .fids-banner-date { font-size: 14px !important; }
+html.fids-portrait .fids-airport-logo-img { height: 52px !important; }
+html.fids-portrait .fids-airport-logo { padding: 6px 10px !important; }
+/* columns: give Flight # room (numbers were truncating), slim Weather */
+html.fids-portrait #fidsTable td.td-flight, html.fids-portrait #fidsTable th.col-flight { min-width: 110px !important; }
+html.fids-portrait #fidsTable td.td-wx { padding-left: 4px !important; padding-right: 4px !important; }
+html.fids-portrait #fidsTable td.td-status, html.fids-portrait #fidsTable th.col-status { padding-right: 12px !important; }
