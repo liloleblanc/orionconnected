@@ -10811,12 +10811,17 @@ function gateAutofit(root) {
         delete el.dataset.faKey;
         if (op) delete op.dataset.faKey;
       } catch (e) {}
-      // The Operated-By row is fitted FIRST so its measured height is the
-      // real remainder for the type line — and capped, so a long operator
-      // name can't eat the panel either.
-      if (op) _boxAssign(op, w, Math.floor(h * 0.42), null, false, true);
-      var avail = op ? Math.floor(h - op.offsetHeight - 6) : Math.floor(h * 0.92);
-      _boxAssign(el, w, Math.max(14, avail), null, false, true);
+      // v22857 — THE TYPE LINE IS THE HERO (Nick's crop: tiny 'Airbus
+      // A320' under a huge Operated-By, 'not the first time i mention
+      // thise'). The old order fitted Operated-By FIRST at up to 42% of
+      // the panel; the type block — which wraps to three lines with
+      // 'expected | prévu' and the registration — got the scraps and
+      // collapsed. Now the type line takes the bigger share first and
+      // Operated-By fits into the real remainder, capped below the type.
+      var typeBudget = op ? Math.floor(h * 0.62) : Math.floor(h * 0.92);
+      _boxAssign(el, w, Math.max(14, typeBudget), null, false, true);
+      var opAvail = Math.max(12, Math.floor(h - el.offsetHeight - 6));
+      if (op) _boxAssign(op, w, Math.min(opAvail, Math.floor(h * 0.30)), null, false, true);
     }
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach(function (el) {
       _fitTypePanel(el);
@@ -17486,7 +17491,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22856';
+var FIDS_BUILD_TAG = 'v22857';
 (function(){
   try {
     function _addTag(){

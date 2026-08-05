@@ -7541,8 +7541,12 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-repeat: no-repeat !important;
   background-blend-mode: normal !important;
   filter: none !important;
+  /* v22857 (Nick: 'panels seem dark on dark ... a line around the
+     panel itself to deferitiate') — a silver hairline ring around each
+     plate + a brighter inner edge lift them off the dark sheet. */
   box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.10) !important;
+              inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+              0 0 0 1.5px rgba(170, 178, 190, 0.55) !important;
 }
 
 /* ── v22846 — THE 'BLACK BACKGROUND WITH A LINE' BEHIND THE PLANE (Nick:
