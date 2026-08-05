@@ -7532,7 +7532,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-bir-cell::before {
   background-color: #101418 !important;
-  background-image: url('/textures/ac-paper-layers.jpg?v=22842') !important;
+  background-image: url('/textures/ac-paper-layers-soft.jpg?v=22854') !important;  /* v22854: glint lines damped - they read as bars through the values */
   background-position: center !important;
   /* v22852 (Nick: 'the graphic in the panel can you stretch it by
      height') — the whole art squeezed into each plate instead of
@@ -7586,7 +7586,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-board-info-row {
   margin-bottom: 0 !important;
   background-color: #101418 !important;
-  background-image: url('/textures/ac-paper-layers.jpg?v=22844') !important;
+  background-image: url('/textures/ac-paper-layers-soft.jpg?v=22854') !important;
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
