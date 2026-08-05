@@ -7642,3 +7642,27 @@ html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-
 html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
   color: #93c5fd !important;
 }
+
+/* ── v22856 — SPEED/ALTITUDE BAR: FROZEN GEOMETRY (Nick's crop: 'can you
+   also fix this panel it keeps glitching and change sizes' — the shot
+   shows 'pieds' wrapped under '36,000'). The v22590 min-height let the
+   bar GROW whenever the value+unit line wrapped (French units are long),
+   so its height flapped with every telemetry repaint. Now: hard height,
+   nothing wraps, overflow clipped — the bar cannot change size, period. */
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  height: clamp(52px, 7.6vh, 96px) !important;
+  min-height: 0 !important;
+  max-height: clamp(52px, 7.6vh, 96px) !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mstat {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-val,
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl,
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl2 {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
