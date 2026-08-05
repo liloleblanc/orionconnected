@@ -7500,16 +7500,19 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   border-top: none !important;
 }
 /* the 'Votre Avion | Your Aircraft' bar: same geometry, mirror skin.
-   v22843 (Nick: 'you had to put the rounded top to the rounded top of the
-   panel … so like half the image top … to make it fit it will need to be
-   streched'): the full asset squashed the whole oval into the bar. The
-   texture is now a bake of just the oval's TOP HALF (margins cropped, so
-   the silver arc starts at the very first pixel) stretched across the
-   bar — the mirror's rounded top rides exactly on the panel's rounded
-   top, sides sweeping down and out of the bar's bottom edge. */
+   v22845 (Nick: 'the your aircraft is not looking good either'): mapping
+   the mirror PHOTO onto the bar — squashed whole (v22841), then the
+   top-half bake (v22843) — left a floating arc that never finished. The
+   mirror look is now built natively at the bar's own geometry: black
+   glass face with a soft top-left sheen, ringed by a silver rim that
+   follows the bar's own rounded corners — same shape and size as now,
+   wearing the mirror's finish. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle {
-  background: #000 url('/textures/ac-oval-mirror-top.jpg?v=22843') center top / 100% 100% no-repeat !important;
-  border: none !important;
+  background: radial-gradient(130% 200% at 28% 0%, #2c2f35 0%, #16181d 52%, #0a0c0f 100%) !important;
+  border: clamp(2px, 0.28vh, 3px) solid #B9BEC6 !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35),
+              inset 0 -1px 2px rgba(0, 0, 0, 0.55),
+              0 2px 8px rgba(3, 8, 18, 0.5) !important;
 }
 
 /* ── v22842 — AC RESKIN PASS 2: paint the right layer. Pass 1 put the
@@ -7534,36 +7537,17 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
               inset 0 0 0 1px rgba(255, 255, 255, 0.10) !important;
 }
 
-/* ── v22843 — AC RESKIN PASS 3: THE MEDIA WALL (Nick: 'that texture is
-   still in the background' + 'that line'). Pass 2 reskinned the plates but
-   the CENTER panel kept its old dress: the wave art (adback-waves2) and
-   halftone spots (adback-spots) painted as inline-styled layers inside
-   .ad-panel-backdrop, and the silver frame art re-tinted by the airline
-   accent — which on AC tints RED — as both .ad-outer-frame (the wall
-   frame, z 60) and .ad-tech-frame (the band hugging the advert). For AC:
-   · WALL: the backdrop's ::after covers the wave/spots layers edge to
-     edge with the paper-layers art (the layers themselves are inline-
-     styled divs rebuilt by JS, so a cover layer above them is the stable
-     override).
-   · REFLECTION: the blurred current-ad layer (.ad-bd-blur) is re-raised
-     above the cover at low opacity — the ad still breathes into the wall
-     ('the ad to still reflect in the background like it did before'),
-     just quietly, over paper instead of waves.
-   · LINES: both red-tinted frames off entirely — that IS 'that line'. */
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-media-col > .ad-panel-backdrop::after {
-  content: '' !important;
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 5 !important;
-  background: #0c0f13 url('/textures/ac-paper-layers.jpg?v=22843') center / cover no-repeat !important;
-}
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-media-col > .ad-panel-backdrop > .ad-bd-blur {
-  z-index: 6 !important;
-  opacity: 0.22 !important;
-}
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-media-col > .ad-outer-frame,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .ad-tech-frame,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) #fidsMediaFrame .ad-tech-frame {
+/* ── v22845 — THE LINE IS THE CLOUDS BACKDROP (Nick: 'I also ASKED for
+   the line in the airplane to be removed thats it' + 'Im telling you its
+   a background behind you need to take it out'). The 'line' rides the
+   Your-Aircraft panel's drifting-clouds backdrop (#gateCloudsBg,
+   clouds-loop.gif) — the animation carries a bright sun-ray/contrail
+   streak that reads as a stray line through the plane. The whole clouds
+   backdrop comes OFF for AC; the aircraft sits directly on the plate.
+   (The v22843 media-wall experiment — backdrop cover + frame removal —
+   was withdrawn here: not what Nick asked for.) */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) #gateCloudsBg,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg {
   display: none !important;
 }
 
