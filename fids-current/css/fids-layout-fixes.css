@@ -7706,3 +7706,18 @@ html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-
 html body:not(#_):not(#_) .g8-board-info-row {
   margin-bottom: 0 !important;
 }
+
+/* ── v22865 — OPERATED-BY LOGO ON A WHITE CHIP (Nick's Alaska crop:
+   'seriously cannot see that at all' — Horizon Air's dark script vanished
+   on the plate). The operator wordmark now sits on a white rounded chip
+   with a soft shadow, so dark scripts (Horizon), red scripts (Jazz,
+   rouge) and everything else read on every airline's plate colour. */
+html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-opby-logo {
+  background: #fff !important;
+  border-radius: clamp(6px, 0.9vh, 10px) !important;
+  padding: clamp(3px, 0.5vh, 6px) clamp(8px, 0.8vw, 14px) !important;
+  height: clamp(30px, 4.2vh, 56px) !important;
+  max-width: 260px !important;
+  box-sizing: content-box !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
