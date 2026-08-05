@@ -17491,7 +17491,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22859';
+var FIDS_BUILD_TAG = 'v22860';
 (function(){
   try {
     function _addTag(){
@@ -29723,9 +29723,11 @@ function _adBackdropHtml(blurUrl) {
           if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
           else _wSec = '#AEB4BC';
         } catch (e) { _wSec = '#AEB4BC'; }
+        // v22860 — WestJet's frame is NAVY (Nick), not the teal accent.
+        var _wTint = (_wAl === 'WS') ? '#003366' : _bdAcc;
         f.innerHTML =
             '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
-          + '<div style="position:absolute;inset:0;background:' + _bdAcc + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
+          + '<div style="position:absolute;inset:0;background:' + _wTint + ';mix-blend-mode:multiply;opacity:.82;' + _wMask + '"></div>'
           + '<div style="position:absolute;inset:0;background:' + _wSec + ';mix-blend-mode:multiply;opacity:.92;'
           +   'clip-path:inset(1.9% 1.3% 1.9% 1.3%);' + _wMask + '"></div>';
       }
@@ -29813,6 +29815,7 @@ function _adTechFrameHtml() {
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
   var _tint = '';
   var _fTint = _fPri || _fAcc;   // the airline's PRIMARY colour ('match color of course')
+  try { if (String(window._gateCurrentAirline || '').toUpperCase() === 'WS') _fTint = '#003366'; } catch (e) {}   // v22860: WestJet frames in navy (Nick)
   if (_fTint) {
     _tint += '<div style="position:absolute;inset:0;background:' + _fTint + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>';
   }

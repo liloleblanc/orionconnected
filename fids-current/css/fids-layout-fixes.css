@@ -7673,3 +7673,26 @@ html body:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl2 {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
+
+/* ── v22860 — WESTJET IN NAVY (Nick: 'Westjet can you make the background
+   behind the panels navy blue and same fr the frame' + 'oh and the lines
+   deviders'). The sheet behind both columns, the divider lines, and the
+   frames all take WestJet's own navy; the teal stays on the plates and
+   accents. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-board-info-row {
+  background-color: #003366 !important;
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-clean.jpg?v=22860") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title {
+  border-bottom-color: #0E4D8F !important;
+}
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow-last {
+  border-bottom-color: #0E4D8F !important;
+}
