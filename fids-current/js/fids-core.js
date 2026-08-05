@@ -1494,9 +1494,18 @@ function updateSubScreens() {
     locations = [...new Set(flights.map(f => f.gate).filter(g => g && g !== '—'))].sort();
   }
   if (!locations.length) {
-    // No belt/gate data — use flight numbers as sub-screen identifiers
-    locations = [...new Set(flights.map(f => f.flight).filter(Boolean))].sort();
-    useGate = false;
+    // No belt/gate data. On a BAGGAGE board, falling back to flight numbers
+    // invents a "Carousel AC123" per flight — which is exactly what YUL
+    // rendered ('Carousel 2T413', one flight on screen). A baggage hall has
+    // belts, never flight numbers: fall back to ONE unnumbered screen that
+    // lists every arrival instead. Gate screens keep the old behaviour.
+    if (isBag) {
+      locations = ['—'];
+      useGate = false;
+    } else {
+      locations = [...new Set(flights.map(f => f.flight).filter(Boolean))].sort();
+      useGate = false;
+    }
   }
   if (!locations.length) {
     subSel.innerHTML = '<option value="">N/A</option>';
@@ -17503,7 +17512,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22871';
+var FIDS_BUILD_TAG = 'v22872';
 (function(){
   try {
     function _addTag(){
@@ -22278,6 +22287,8 @@ function mapADB(raw, mode) {
       'MCO',  // Orlando Terminals A / B / C — never fabricate a carousel
       'TPA'   // Tampa Airsides A/C/E/F — real claim # comes from the feed
     ]);
+    // Airports whose OWN feed supplies the carousel number (not ADB's guess).
+    const _NATIVE_BELT_AIRPORTS = new Set(['YUL', 'YHU', 'MCO']);
 
     let _belt = f.arrival?.baggageBelt || null;
     if (mode === 'arr') {
@@ -22314,7 +22325,14 @@ function mapADB(raw, mode) {
         if (_termNorm) {
           _belt = _termNorm + '-' + String(_belt);
         } else {
-          if (_MULTI_TERMINAL_AIRPORTS.has(_apForBelt)) {
+          // A belt that came from the AIRPORT'S OWN feed is authoritative
+          // and globally numbered — YUL's ADM apex returns belts 1..22 for
+          // the whole hall, so 'belt 20' is unambiguous without a terminal.
+          // The null-it rule exists for ADB's guessy bare belts at
+          // multi-terminal airports; native-feed airports are exempt or the
+          // real carousel data gets thrown away (measured: all 40 YUL belts
+          // nulled, board fell through to the flight-number fallback).
+          if (_MULTI_TERMINAL_AIRPORTS.has(_apForBelt) && !_NATIVE_BELT_AIRPORTS.has(_apForBelt)) {
             _belt = null;
           } else {
             _belt = String(_belt);
