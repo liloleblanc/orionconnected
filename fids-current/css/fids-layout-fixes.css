@@ -7618,8 +7618,11 @@ html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline
   background-repeat: no-repeat !important;
   background-blend-mode: multiply !important;
   filter: none !important;
+  /* v22858 (Nick: 'wonderful actually don thise for all') — same
+     silver hairline ring + brighter inner edge as the AC plates. */
   box-shadow: 0 4px 14px rgba(3, 8, 18, 0.55),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.10) !important;
+              inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+              0 0 0 1.5px rgba(170, 178, 190, 0.55) !important;
 }
 /* Ink on the tinted plates: light, with the same shadow AC wears. The
    bright status inks below keep their own colours on top of this. */
