@@ -931,12 +931,28 @@ function _acGetToken() {
 }
 
 // ── authFetch wrapper — works whether or not Auth module is loaded ───
+// v22839 — 401 RESCUE (Nick: 'Whenever I try to save info for YHU I get
+// Save failed: HTTP 401'). The token lives 24h; when it dies, every save
+// on the device fails with a bare HTTP 401 and no way back short of
+// knowing to re-login. A 401 now clears the stale token and pops the
+// login modal on the spot — the form keeps its values, so it's sign in
+// and hit Save again. Not airport-specific: YHU was just what he was
+// editing when the token aged out.
 async function _acFetch(url, opts) {
   opts = opts || {};
   opts.headers = opts.headers || {};
   var token = _acGetToken();
   if (token) opts.headers['Authorization'] = 'Bearer ' + token;
-  return fetch(url, opts);
+  var res = await fetch(url, opts);
+  if (res && res.status === 401) {
+    try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+    try { if (typeof Auth !== 'undefined' && Auth.logout) Auth.logout(); } catch (e) {}
+    try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
+    try {
+      _acFlash('Your login expired — sign in, then hit Save again / Session expirée — reconnectez-vous puis sauvegardez', true);
+    } catch (e) {}
+  }
+  return res;
 }
 
 // ── Show/hide a small flash message in the admin panel ────────────────

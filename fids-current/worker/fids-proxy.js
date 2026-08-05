@@ -1196,6 +1196,45 @@ async function handleYtzFids(request, env, origin, direction) {
       });
     }
     if (!list.length) return jsonResponse({ error: "YTZ page parsed to zero rows" }, 502, origin);
+    // ── GATE ENRICHMENT via FlightAware AeroAPI (departures only). Billy
+    // Bishop's own board publishes no gates, but FlightAware carries them
+    // (Nick confirmed on the site). Runs ONLY when the AEROAPI_KEY secret
+    // exists on the worker — without it this whole block is a no-op, so
+    // the route deploys safely before the account exists. Cost control:
+    // one scheduled_departures sweep (max 2 pages) per 15 minutes, cached
+    // in KV — roughly 200 page-results/day ≈ a dollar or two a day at
+    // AeroAPI's published per-page rates, and $0 while there is no key.
+    if (seg === "dep" && env.AEROAPI_KEY) {
+      try {
+        const gkey = "ytz-gates-v1";
+        let gates = null;
+        const cached = await env.CITY_BG_CACHE.get(gkey, { type: "json" }).catch(() => null);
+        if (cached && cached.at && Date.now() - cached.at < 15 * 60000) gates = cached.map;
+        if (!gates) {
+          gates = {};
+          const ar = await fetch("https://aeroapi.flightaware.com/aeroapi/airports/CYTZ/flights/scheduled_departures?max_pages=2", {
+            headers: { "x-apikey": env.AEROAPI_KEY, "Accept": "application/json" }
+          });
+          if (ar.ok) {
+            const aj = await ar.json().catch(() => null);
+            const flights = (aj && aj.scheduled_departures) || [];
+            for (const f of flights) {
+              const no = String(f.ident_iata || f.ident || "").replace(/\s+/g, "").toUpperCase();
+              if (no && f.gate_origin) gates[no] = String(f.gate_origin);
+            }
+            await env.CITY_BG_CACHE.put(gkey, JSON.stringify({ at: Date.now(), map: gates }), { expirationTtl: 6 * 3600 }).catch(() => {});
+          } else if (cached && cached.map) {
+            gates = cached.map;  // stale beats nothing when AeroAPI hiccups
+          }
+        }
+        if (gates) {
+          for (const row of list) {
+            const g = gates[String(row.flightNo || "").replace(/\s+/g, "")];
+            if (g) row.gate = g;
+          }
+        }
+      } catch (e) { /* best-effort — gates are an enrichment, never a failure */ }
+    }
     return new Response(JSON.stringify({ list }), {
       status: 200,
       headers: {
