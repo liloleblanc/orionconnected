@@ -2454,6 +2454,50 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
 
+    // ── PORTER GATE FEED PROBE (diagnostic) ────────────────────────────────
+    // GET /diag/porter — Nick found Porter's flight status XHR
+    // (getflightsfeed?removeGroupCarrierCodes=true, 83.5 kB) which carries
+    // YTZ gate numbers. flyporter.com sits behind Cloudflare bot protection
+    // and 403s every request from our dev container — including paths that
+    // don't exist — so the shield blocks at the edge. This probe answers the
+    // one open question: can a request from CLOUDFLARE'S OWN network get
+    // through? It tries the likely paths and reports status + a peek at each,
+    // changing no board behaviour. Delete once we have the answer.
+    if (path === "/diag/porter") {
+      const PORTER_CANDIDATES = [
+        "https://www.flyporter.com/en-ca/api/getflightsfeed?removeGroupCarrierCodes=true",
+        "https://www.flyporter.com/api/getflightsfeed?removeGroupCarrierCodes=true",
+        "https://www.flyporter.com/en-ca/travel-information/flight-status/getflightsfeed?removeGroupCarrierCodes=true",
+        "https://www.flyporter.com/umbraco/api/flightstatus/getflightsfeed?removeGroupCarrierCodes=true",
+        "https://www.flyporter.com/Api/FlightStatus/GetFlightsFeed?removeGroupCarrierCodes=true",
+        "https://www.flyporter.com/en-ca/travel-information/flight-status"
+      ];
+      const results = [];
+      for (const u of PORTER_CANDIDATES) {
+        try {
+          const r = await fetch(u, {
+            headers: {
+              "Accept": "application/json, text/plain, */*",
+              "Accept-Language": "en-CA,en;q=0.9",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+              "Referer": "https://www.flyporter.com/en-ca/travel-information/flight-status"
+            }
+          });
+          const body = await r.text().catch(() => "");
+          results.push({
+            url: u,
+            status: r.status,
+            contentType: r.headers.get("content-type") || "",
+            bytes: body.length,
+            peek: body.slice(0, 180).replace(/\s+/g, " ")
+          });
+        } catch (e) {
+          results.push({ url: u, error: String(e && e.message).slice(0, 120) });
+        }
+      }
+      return jsonResponse({ probe: "porter-gate-feed", results }, 200, origin);
+    }
+
     // ── MCO native FIDS feed ───────────────────────────────────────────────
     // GET /flights/mco?direction=dep|arr — normalized vendor feed in
     // ADB-native shape. Must be matched BEFORE the generic /flights/ ADB
