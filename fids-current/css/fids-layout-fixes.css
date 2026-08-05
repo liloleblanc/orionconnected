@@ -7754,3 +7754,32 @@ html.fids-portrait .fids-airport-logo { padding: 6px 10px !important; }
 html.fids-portrait #fidsTable td.td-flight, html.fids-portrait #fidsTable th.col-flight { min-width: 110px !important; }
 html.fids-portrait #fidsTable td.td-wx { padding-left: 4px !important; padding-right: 4px !important; }
 html.fids-portrait #fidsTable td.td-status, html.fids-portrait #fidsTable th.col-status { padding-right: 12px !important; }
+
+/* ── v22869 — PORTRAIT PASS 3, measured on the live portrait probe:
+   · the three banner blocks (board label / airport pill / time block) are
+     ABSOLUTE and tuned for 1920 — at 1080 they stack on top of each
+     other. Explicit portrait rects: label left, pill center, time right
+     (scaled, no analog clock).
+   · the columns' fixed widths already sum past 1080, so table-layout
+     fixed handed DESTINATION 0px — the one column a passenger reads
+     first. Portrait column budget: every fixed column slimmed, the
+     remainder (~240px) goes to Destination. */
+html.fids-portrait #fidsBanner .fids-banner-board { left: 0 !important; width: 340px !important; }
+html.fids-portrait #fidsBanner .fids-board-label { font-size: 24px !important; }
+html.fids-portrait #fidsAirportPill {
+  left: 350px !important; right: auto !important;
+  width: 270px !important; height: 76px !important;
+  top: 50% !important; transform: translateY(-50%) !important;
+}
+html.fids-portrait #fidsAirportPill .fids-airport-logo-img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+html.fids-portrait .fids-banner-time-block { left: auto !important; right: 6px !important; width: 440px !important; }
+html.fids-portrait #clockAnalog { display: none !important; }
+html.fids-portrait .fids-banner-time-text { transform: scale(0.62) !important; transform-origin: right center !important; }
+html.fids-portrait #fidsTable th.col-airline { width: 170px !important; }
+html.fids-portrait #fidsTable th.col-flight { width: 112px !important; min-width: 0 !important; }
+html.fids-portrait #fidsTable th.col-wx { width: 92px !important; }
+html.fids-portrait #fidsTable th.col-gate { width: 82px !important; }
+html.fids-portrait #fidsTable th.col-time { width: 112px !important; }
+html.fids-portrait #fidsTable th.col-time-rev { width: 112px !important; }
+html.fids-portrait #fidsTable th.col-status { width: 172px !important; }
+html.fids-portrait #fidsTable td { font-size: 19px !important; }
