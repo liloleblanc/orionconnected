@@ -7860,3 +7860,57 @@ html.fids-portrait #fidsTable th.col-status {
   overflow: hidden !important;
 }
 html.fids-portrait #fidsTable { max-width: 100% !important; }
+
+/* ── v22874 — PEARSON PORTRAIT, PASS 2 (measured on the 1080×1920 probe).
+   Three real defects, each with its geometry:
+
+   1. THE CLOCK PAINTED OFF THE RIGHT EDGE ('7:22P', 'Mercredi 5' cut).
+      Measured: .fids-banner-time-text is 584px wide inside a 470px block,
+      and v22871's scale(0.56) has transform-origin:right — so the scale
+      pinned the element's ALREADY-OVERFLOWED right edge (x=1127) in place
+      instead of pulling it back inside. Scaling can't fix an overflow it
+      anchors to. Drop the transform and set honest font sizes so the
+      block's natural width is inside its 470px. (v22868 tried clamp()
+      here and lost the cascade — computed was still 84px/30px — hence the
+      specificity boosters.)
+   2. LONG FRENCH STATUSES CLIP once the revised time joins them
+      ('Embarquement · 7…'). The st-longtext fitter pins those at 18px via
+      an INLINE !important, which no stylesheet can outrank — so let the
+      cell WRAP instead of fighting for the font size. Two tight lines
+      always beat a cut word.
+   3. The board icon sits at x=-45, entirely off-canvas, and the emblem
+      column's 'Airline'/'Ligne aérienne' header clips to 'Ligne aéri'.
+      Pearson's board has no carrier header at all — the tile says it. */
+
+/* 1 — real sizes, no scale */
+html.fids-portrait:not(#_):not(#_) .fids-banner-time-text {
+  transform: none !important;
+  width: auto !important;
+  max-width: 100% !important;
+}
+html.fids-portrait:not(#_):not(#_) .fids-banner-time  { font-size: 46px !important; line-height: 1.02 !important; }
+html.fids-portrait:not(#_):not(#_) .fids-banner-date  { font-size: 16px !important; line-height: 1.15 !important; }
+html.fids-portrait:not(#_):not(#_) .fids-banner-tlabel { font-size: 13px !important; line-height: 1.15 !important; }
+html.fids-portrait:not(#_):not(#_) .fids-banner-digirow { justify-content: flex-end !important; }
+html.fids-portrait .fids-banner-time-block { right: 12px !important; width: 400px !important; text-align: right !important; }
+
+/* 2 — the status cell wraps rather than cuts */
+html.fids-portrait #fidsTable td.td-status,
+html.fids-portrait #fidsTable td.td-status * {
+  white-space: normal !important;
+  line-height: 1.1 !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+html.fids-portrait #fidsTable td.td-status[data-rev]::after {
+  font-size: 15px !important;
+  opacity: 0.92;
+}
+
+/* 3 — headers: no carrier label over the emblem tile, and a size that
+   fits 'Terminal' / 'Destination' in both languages */
+html.fids-portrait #fidsTable thead th { font-size: 13px !important; letter-spacing: 0.2px !important; }
+html.fids-portrait #fidsTable thead th.col-airline { font-size: 0 !important; }
+/* the board icon was laid out at x=-45 (off-canvas) — pull the label
+   block in so it lands on screen */
+html.fids-portrait #fidsBanner .fids-banner-board { left: 12px !important; width: 330px !important; }
