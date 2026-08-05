@@ -7631,22 +7631,22 @@ html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-s
   color: #fff !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.78) !important;
 }
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived) span,
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived),
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-ontime, .v2-rc-status-early, .v2-rc-status-enroute, .v2-rc-status-arrived) {
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived) span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived),
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-ontime, .v2-rc-status-early, .v2-rc-status-enroute, .v2-rc-status-arrived) {
   color: #34d399 !important;
 }
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final) span,
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final),
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-delayed, .v2-rc-status-diverted) {
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final) span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final),
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-delayed, .v2-rc-status-diverted) {
   color: #fbbf24 !important;
 }
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled span,
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled,
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled {
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled,
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled {
   color: #f87171 !important;
 }
-html body[data-gate-airline]:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
   color: #93c5fd !important;
 }
 
