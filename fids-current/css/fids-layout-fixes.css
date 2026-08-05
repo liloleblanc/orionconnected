@@ -7779,13 +7779,22 @@ html.fids-portrait .fids-banner-time-text { transform: scale(0.62) !important; t
    total ~1100px — wider than a 1080 portrait screen — so Destination
    (width:auto) was starved to 0. Portrait budget: 838px of fixed columns,
    ~242px left for Destination. */
-html.fids-portrait #fidsTable colgroup col.col-airline  { width: 170px !important; }
-html.fids-portrait #fidsTable colgroup col.col-flight   { width: 104px !important; }
-html.fids-portrait #fidsTable colgroup col.col-wx       { width: 96px  !important; min-width: 0 !important; }
-html.fids-portrait #fidsTable colgroup col.col-gate     { width: 80px  !important; }
-html.fids-portrait #fidsTable colgroup col.col-time     { width: 112px !important; }
-html.fids-portrait #fidsTable colgroup col.col-time-rev { width: 112px !important; }
-html.fids-portrait #fidsTable colgroup col.col-status   { width: 164px !important; }
+html.fids-portrait #fidsTable colgroup col.col-airline  { width: 158px !important; }
+html.fids-portrait #fidsTable colgroup col.col-flight   { width: 100px !important; }
+html.fids-portrait #fidsTable colgroup col.col-wx       { width: 88px  !important; min-width: 0 !important; }
+html.fids-portrait #fidsTable colgroup col.col-gate     { width: 88px  !important; }
+html.fids-portrait #fidsTable colgroup col.col-time     { width: 126px !important; }
+html.fids-portrait #fidsTable colgroup col.col-time-rev { width: 126px !important; }
+html.fids-portrait #fidsTable colgroup col.col-status   { width: 160px !important; }
 html.fids-portrait #fidsTable colgroup col.col-dest     { width: auto  !important; }
 html.fids-portrait #fidsTable td { font-size: 19px !important; }
+/* v22871 — the time cells clipped at 19px ('2:29 …'); times and statuses
+   step down one notch in portrait so both read in full. */
+html.fids-portrait #fidsTable td.td-time, html.fids-portrait #fidsTable td.td-time *,
+html.fids-portrait #fidsTable td.td-time-rev, html.fids-portrait #fidsTable td.td-time-rev * { font-size: 17px !important; }
 html.fids-portrait #fidsTable td.td-status, html.fids-portrait #fidsTable td.td-status * { font-size: 17px !important; }
+html.fids-portrait #fidsTable td.td-gate, html.fids-portrait #fidsTable td.td-gate * { font-size: 18px !important; }
+/* the banner's absolute blocks must not paint past the right edge */
+html.fids-portrait #fidsBanner { overflow: hidden !important; }
+html.fids-portrait .fids-banner-time-block { right: 10px !important; width: 470px !important; }
+html.fids-portrait .fids-banner-time-text { transform: scale(0.56) !important; }
