@@ -17486,7 +17486,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22850';
+var FIDS_BUILD_TAG = 'v22851';
 (function(){
   try {
     function _addTag(){
@@ -29798,7 +29798,7 @@ function _adTechFrameHtml() {
   // his media-player frame, re-hued by the airline accent. One tint layer
   // over the whole art — the old three-band clip-path split targeted the
   // previous art's concentric-line geometry and doesn't map to this one.
-  var _fa = '/logos/Backgrounds/ad-frame-stream.png?v=22848';
+  var _fa = '/logos/Backgrounds/ad-frame-stream.png?v=22851';
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
   var _tint = '';
   var _fTint = _fPri || _fAcc;   // the airline's PRIMARY colour ('match color of course')
