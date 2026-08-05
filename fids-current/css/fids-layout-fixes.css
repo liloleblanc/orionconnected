@@ -7553,6 +7553,20 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
           mask-image: none !important;
 }
 
+/* ── v22847 — THE LINE ITSELF (Nick's upload of the Vecteezy source: 'this
+   is what youre seeing the line'). The AC sheet behind both columns is
+   ac-shelf-lux.jpg — that luxury-abstract art carries a thin silver
+   DIAGONAL LINE across its lower half, and everywhere the sheet peeks out
+   (behind the aircraft through the semi-opaque clouds, between the rail
+   plates) the line rode with it. The sheet is re-baked without the line
+   (the art's clean upper gradient, stretched to the same frame —
+   ac-shelf-lux-clean.jpg) and every AC sheet surface points at the clean
+   file. Same finish, no line. Other carriers untouched. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-clean.jpg?v=22847") !important;
+}
+
 /* ── v22844 — THE BOARDING SCREEN'S RED STRIP (Nick: 'that line is still
    there it needs removed'). Probed live on the boarding-mode A64: the info
    row's own red border-bottom IS gone (v22841) — the visible red band is
