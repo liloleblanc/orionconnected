@@ -7834,14 +7834,9 @@ html.fids-portrait #fidsTable td.td-time-rev * {
   overflow: hidden !important; white-space: nowrap !important;
 }
 /* ...and re-attach it to the status word, Pearson-style */
-html.fids-portrait #fidsTable td.td-status[data-rev]::after {
-  content: " · " attr(data-rev);
-  font-size: 17px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.2px !important;
-  white-space: nowrap !important;
-  opacity: 0.96;
-}
+/* v22874: superseded — the revised time is now a real .fids-status-rev
+   span in the cell, because a pseudo-element is invisible to the column
+   fitter's textContent probe and the column came out too narrow. */
 
 /* 3 — the reclaimed width, redistributed. 692px fixed, ~388px to
    Destination (was ~242px, where long city names were ellipsizing). */
@@ -7882,17 +7877,22 @@ html.fids-portrait #fidsTable { max-width: 100% !important; }
       column's 'Airline'/'Ligne aérienne' header clips to 'Ligne aéri'.
       Pearson's board has no carrier header at all — the tile says it. */
 
-/* 1 — real sizes, no scale */
-html.fids-portrait:not(#_):not(#_) .fids-banner-time-text {
-  transform: none !important;
-  width: auto !important;
-  max-width: 100% !important;
+/* 1 — scale the POSITIONED BLOCK, not the text inside it. v22871 scaled
+   .fids-banner-time-text, whose 584px content already overflowed its
+   470px parent, and transform-origin:right then pinned that overflowed
+   edge at x=1127 instead of pulling it back. The block itself is the
+   absolutely-positioned box: anchoring it at right:12px and scaling
+   about its own right edge shrinks it INWARD, and the result no longer
+   depends on winning a font-size fight against theme CSS. */
+html.fids-portrait .fids-banner-time-block {
+  left: auto !important;
+  right: 12px !important;
+  width: 620px !important;
+  transform: scale(0.52) !important;
+  transform-origin: right center !important;
 }
-html.fids-portrait:not(#_):not(#_) .fids-banner-time  { font-size: 46px !important; line-height: 1.02 !important; }
-html.fids-portrait:not(#_):not(#_) .fids-banner-date  { font-size: 16px !important; line-height: 1.15 !important; }
-html.fids-portrait:not(#_):not(#_) .fids-banner-tlabel { font-size: 13px !important; line-height: 1.15 !important; }
-html.fids-portrait:not(#_):not(#_) .fids-banner-digirow { justify-content: flex-end !important; }
-html.fids-portrait .fids-banner-time-block { right: 12px !important; width: 400px !important; text-align: right !important; }
+html.fids-portrait .fids-banner-time-text { transform: none !important; }
+html.fids-portrait .fids-banner-digirow { justify-content: flex-end !important; }
 
 /* 2 — the status cell wraps rather than cuts */
 html.fids-portrait #fidsTable td.td-status,
@@ -7902,8 +7902,10 @@ html.fids-portrait #fidsTable td.td-status * {
   word-break: normal !important;
   overflow-wrap: break-word !important;
 }
-html.fids-portrait #fidsTable td.td-status[data-rev]::after {
-  font-size: 15px !important;
+/* the revised time is a real <span> now (see fids-core.js) so the column
+   fitter can measure it; the v22873 ::after is retired */
+html.fids-portrait #fidsTable td.td-status .fids-status-rev {
+  font-weight: 700 !important;
   opacity: 0.92;
 }
 

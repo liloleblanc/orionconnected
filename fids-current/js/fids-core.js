@@ -17512,7 +17512,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22874';
+var FIDS_BUILD_TAG = 'v22875';
 (function(){
   try {
     function _addTag(){
@@ -18611,9 +18611,21 @@ function render() {
     // PORTRAIT can render Pearson's one-cell form ("DELAYED – 22:15", Nick's
     // photo) and reclaim the whole Revised column for Destination. Landscape
     // ignores the attribute entirely and keeps its two separate columns.
+    // v22874 — it has to be a REAL span, not a CSS ::after. The column
+    // fitter sizes td.td-status by probing td.textContent, and a
+    // pseudo-element is invisible to that probe: the column came out too
+    // narrow for its own contents and the fitter's inline
+    // 'white-space:nowrap !important' then clipped them
+    // ('Embarquement · 7…'). Inline !important outranks every stylesheet,
+    // so the fix is to make the text measurable rather than to fight the
+    // cascade.
     var _revAttr = _revDisplay ? ' data-rev="' + String(_revDisplay).replace(/"/g, '&quot;') + '"' : '';
+    var _portraitBoard = false;
+    try { _portraitBoard = document.documentElement.classList.contains('fids-portrait'); } catch (e) {}
+    var _revInline = (_portraitBoard && _revDisplay)
+      ? '<span class="fids-status-rev"> · ' + _revDisplay + '</span>' : '';
     const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '')
-      + _stLongAttrs + '"' + _revAttr + '>' + stCellHtml + '</td>';
+      + _stLongAttrs + '"' + _revAttr + '>' + stCellHtml + _revInline + '</td>';
 
     let cells;
     if (isDep) {
