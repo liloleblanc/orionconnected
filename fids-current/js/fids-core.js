@@ -6251,7 +6251,7 @@ function renderMobileGateHtml(ctx) {
     +     '<div style="text-align:left;min-width:0;flex:1;">'
     +       '<div style="' + FS.hero + 'color:' + T.ink + ';">' + (_homeIata || '—') + '</div>'
     +       '<div style="' + FS.label + 'color:' + T.muted + ';margin-top:10px;">' + TL('departsLbl') + '</div>'
-    +       '<div style="' + FS.value + 'color:' + T.ink + ';' + (isRevised ? 'text-decoration:line-through;opacity:0.5;' : '') + '">' + schedTime + '</div>'
+    +       '<div style="' + FS.value + 'color:' + T.ink + ';' + (isRevised ? 'opacity:0.5;' : '') + '">' + schedTime + '</div>'
     +       (isRevised ? '<div style="' + FS.value + 'color:#e0820a;">' + currentFlight.upd + '</div>' : '')
     +     '</div>'
     +     '<div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;padding:0 6px;">' + _planeSvg + (durationStr ? '<div style="' + FS.label + 'color:' + T.muted2 + ';margin-top:8px;white-space:nowrap;">' + durationStr + '</div>' : '') + '</div>'
@@ -10182,7 +10182,7 @@ function uxgGateHtml(ctx) {
                   // when a revision exists. Both dep and arr use this for consistency.
                   function _timeCell(sched, rev) {
                     if (rev) {
-                      return '<div style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.45);text-decoration:line-through;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sched + '</div>'
+                      return '<div style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.45);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sched + '</div>'
                            + '<div style="font-size:18px;font-weight:700;color:#f59e0b;line-height:1.15;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + rev + '</div>';
                     }
                     return '<div style="font-size:18px;font-weight:700;color:#fff;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sched + '</div>';
@@ -10227,7 +10227,7 @@ function uxgGateHtml(ctx) {
                       _topLineHtml +=
                         '<div style="' + _rowBox + '">'
                         +   '<span style="' + _rowLabelSty + '">' + TL('scheduled') + '</span>'
-                        +   '<span style="font-size:28px;font-weight:700;display:block;line-height:1.2;color:rgba(255,255,255,0.5);text-decoration:line-through;">' + (_schedArrStr || '\u2014') + '</span>'
+                        +   '<span style="font-size:28px;font-weight:700;display:block;line-height:1.2;color:rgba(255,255,255,0.5);">' + (_schedArrStr || '\u2014') + '</span>'
                         + '</div>';
                       _topLineHtml +=
                         '<div style="' + _rowBox + '">'
@@ -17486,7 +17486,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22851';
+var FIDS_BUILD_TAG = 'v22852';
 (function(){
   try {
     function _addTag(){
@@ -26003,13 +26003,19 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       if (!_pend || Math.abs(_pend[0] - _gx) > 2 || Math.abs(_pend[1] - _gy) > 2
           || Math.abs(_pend[2] - _gw) > 2 || Math.abs(_pend[3] - _gh) > 2) {
         _PENDING[_mkey] = [_gx, _gy, _gw, _gh];
-        continue;                      // unconfirmed — stay hidden
+        // v22852 (Nick: 'the timing seems off it appears after the add') —
+        // show the frame on the FIRST valid measure instead of holding it
+        // hidden through the two-pass confirmation. The rect is not
+        // committed yet: if the confirmed rect lands elsewhere it re-applies
+        // once, but the frame arrives WITH the ad, not a beat later.
+        _apply(_gx + ',' + _gy + ',' + _gw + ',' + _gh);
+        continue;                      // unconfirmed — visible, not frozen
       }
       _GEOM_CACHE[_mkey] = _gx + ',' + _gy + ',' + _gw + ',' + _gh;
       _apply(_GEOM_CACHE[_mkey]);
     }
   }
-  setInterval(_tick, 600);
+  setInterval(_tick, 300);   // v22852: half the first-paint latency of 600ms
 })();
 
 var _nativeVideoEl = null;

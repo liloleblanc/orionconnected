@@ -1724,7 +1724,8 @@ body, body.gids-page, body.gate-page{
 
 /* Strike-through and revised time pair inside .v2-fi-value */
 .gad-aircraft-col .v2-fi-value .g8-r2-strike {
-  text-decoration: line-through;
+  /* v22852 (Nick): original times are dimmed, never barred */
+  text-decoration: none;
   opacity: 0.5;
   margin-right: 0.3em;
 }
@@ -5393,7 +5394,8 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-rev2 > .v2-rc-fi-tval {
 }
 /* The superseded original time: struck but full-size and readable. */
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-tval-old {
-  text-decoration: line-through !important;
+  /* v22852 (Nick): original times are dimmed, never barred */
+  text-decoration: none !important;
   opacity: .72 !important;
 }
 

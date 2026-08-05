@@ -979,7 +979,7 @@ body.uxg-gate-mode.uxg-controls-collapsed .ctrl { transform:none; opacity:1; poi
 .g8-inb-status.enroute { background:#3b82f6; }
 .g8-inb-status.delayed { background:#d97706; }
 .g8-inb-status.scheduled { background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.9); }
-.g8-inb-strike { text-decoration:line-through; text-decoration-thickness:2px; opacity:.3; margin-right:6px; font-size:0.75em; }
+.g8-inb-strike { text-decoration:none; opacity:.3; margin-right:6px; font-size:0.75em; }  /* v22852: dimmed, never barred */
 .g8-inb-revised-time { color:#fbbf24; }
 
 /* Boarding (v9: bigger text) */
@@ -1421,7 +1421,7 @@ body.uxg-gate-mode .g8-wrap * { font-family: inherit; }
 
 /* ── ROW 2: Dep Time+Weather | Arr Time+Weather | Aircraft Info ─ */
 .uxg-time-huge { font-size: clamp(58px, 5.5vw, 96px); font-weight: 900; line-height: 0.92; letter-spacing:-0.01em; color:#fff; font-variant-numeric: tabular-nums; }
-.uxg-time-crossed { text-decoration: line-through; text-decoration-thickness: 3px; color: #f97316; }
+.uxg-time-crossed { text-decoration: none; color: #f97316; }  /* v22852: dimmed by colour, never barred */
 .uxg-delayed-label { font-size: clamp(18px, 1.5vw, 26px); font-weight: 700; color: #f97316; letter-spacing: 0.06em; margin-top: 4px; }
 .uxg-revised-time { font-size: clamp(58px, 5.5vw, 96px); font-weight: 900; line-height: 0.92; color: #fff; font-variant-numeric: tabular-nums; }
 .uxg-revised-label { font-size: clamp(14px, 1.1vw, 20px); font-weight: 700; color: rgba(255,255,255,0.6); letter-spacing: 0.12em; }

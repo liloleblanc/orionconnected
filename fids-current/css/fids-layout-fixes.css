@@ -3039,7 +3039,7 @@ html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.68e
    bigger'). */
 html .g8-bir-val .g8-bir-mer { font-size: 0.58em; font-weight: 800; opacity: 0.72; margin-left: 0.08em; }
 html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
-html .g8-bir-val .g8-r2-strike { text-decoration: line-through; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }
+html .g8-bir-val .g8-r2-strike { text-decoration: none; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }  /* v22852: dimmed, never barred */
 html .g8-bir-val .g8-r2-revised { color: #b45309; }
 /* the STATUS cell stacks EN over FR — exactly two lines, each nowrap.
    Free wrapping let 'Gate closed | Porte fermée' become four giant lines
@@ -4050,7 +4050,7 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t2 {
    revision (green earlier / amber later; bright variants on AC's dark
    luxury shelf). */
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval .v2-rc-tval-old {
-  text-decoration: line-through;
+  text-decoration: none;   /* v22852: dimmed, never barred */
   opacity: .72;
 }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval span.v2-rc-status-early { color: #0e7c4a; }
@@ -7488,17 +7488,10 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background: #101418 url('/textures/ac-paper-layers.jpg?v=22841') center / cover no-repeat !important;
   border-bottom: none !important;
 }
-/* every red rule on/between AC panels: gone */
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tval,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-title,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .v2-rc-aircraft-img,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .v2-rc-aircraft-img img {
-  border-bottom: none !important;
-  border-top: none !important;
-}
+/* v22852 — the pass-1 'every red rule dies' block is withdrawn (Nick:
+   'make sure the lines red for ac go back'): the plate title underlines
+   and row rules return in AC red. The one red line that stays dead is
+   the boarding bar's (handled by the v22844 rule below). */
 /* the 'Votre Avion | Your Aircraft' bar: same geometry, mirror skin.
    v22845 (Nick: 'the your aircraft is not looking good either'): mapping
    the mirror PHOTO onto the bar — squashed whole (v22841), then the
@@ -7529,7 +7522,10 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-color: #101418 !important;
   background-image: url('/textures/ac-paper-layers.jpg?v=22842') !important;
   background-position: center !important;
-  background-size: cover !important;
+  /* v22852 (Nick: 'the graphic in the panel can you stretch it by
+     height') — the whole art squeezed into each plate instead of
+     cover-cropping to a sliver of it. */
+  background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
   background-blend-mode: normal !important;
   filter: none !important;
