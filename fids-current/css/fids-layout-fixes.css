@@ -7566,3 +7566,22 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) #fidsMediaFrame .ad-tech-frame {
   display: none !important;
 }
+
+/* ── v22844 — THE BOARDING SCREEN'S RED STRIP (Nick: 'that line is still
+   there it needs removed'). Probed live on the boarding-mode A64: the info
+   row's own red border-bottom IS gone (v22841) — the visible red band is
+   the AC-red .g8-wrap/.g8-r4 page background showing through the row's
+   margin-bottom gap. Gap closed for AC: no gap, no line. And the row's
+   v22841 paper-layers dress never actually applied — the v22660 sheet rule
+   carries a double :not(#_) that outranked it — so it returns here at
+   matching weight, later in the file. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-board-info-row {
+  margin-bottom: 0 !important;
+  background-color: #101418 !important;
+  background-image: url('/textures/ac-paper-layers.jpg?v=22844') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  border-bottom: none !important;
+}
