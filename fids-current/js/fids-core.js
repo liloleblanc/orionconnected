@@ -17512,7 +17512,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22872';
+var FIDS_BUILD_TAG = 'v22873';
 (function(){
   try {
     function _addTag(){
@@ -18394,6 +18394,12 @@ function render() {
       if (_userCfgForStyle && Object.prototype.hasOwnProperty.call(_userCfgForStyle, 'airlineStyle')) _airlineStyleForRow = _userCfgForStyle.airlineStyle;
       else if (_curCfgForStyle && Object.prototype.hasOwnProperty.call(_curCfgForStyle, 'airlineStyle')) _airlineStyleForRow = _curCfgForStyle.airlineStyle;
     } catch (e) {}
+    // v22873 — PORTRAIT IS ALWAYS EMBLEM-ONLY. In a 1080-wide column the
+    // wordmark artwork shrinks to an illegible smudge; Pearson's own upright
+    // boards (Nick's photo) show a square carrier tile and the flight number,
+    // no lettering. Overrides whatever the airport/user config asked for,
+    // because the config was chosen for a landscape screen.
+    try { if (document.documentElement.classList.contains('fids-portrait')) _airlineStyleForRow = 'emblem'; } catch (e) {}
     // Airline name in the carrier's natural brand colour (not forced black).
     // setTheme() forces .fids-airline-name to rowText with !important, so the
     // inline override also needs !important to win.
@@ -18601,8 +18607,13 @@ function render() {
     var _stLongAttrs = _stPlainLen >= 15
       ? ' st-longtext" style="font-size:18px !important;letter-spacing:0.2px !important;'
       : '';
+    // v22873 — the revised time rides along on the status cell as data-rev so
+    // PORTRAIT can render Pearson's one-cell form ("DELAYED – 22:15", Nick's
+    // photo) and reclaim the whole Revised column for Destination. Landscape
+    // ignores the attribute entirely and keeps its two separate columns.
+    var _revAttr = _revDisplay ? ' data-rev="' + String(_revDisplay).replace(/"/g, '&quot;') + '"' : '';
     const statusCellHtml = '<td class="td-status' + (stCellCls ? ' ' + stCellCls : '')
-      + _stLongAttrs + '">' + stCellHtml + '</td>';
+      + _stLongAttrs + '"' + _revAttr + '>' + stCellHtml + '</td>';
 
     let cells;
     if (isDep) {

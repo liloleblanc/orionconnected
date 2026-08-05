@@ -7798,3 +7798,65 @@ html.fids-portrait #fidsTable td.td-gate, html.fids-portrait #fidsTable td.td-ga
 html.fids-portrait #fidsBanner { overflow: hidden !important; }
 html.fids-portrait .fids-banner-time-block { right: 10px !important; width: 470px !important; }
 html.fids-portrait .fids-banner-time-text { transform: scale(0.56) !important; }
+
+/* ── v22873 — PEARSON-STYLE PORTRAIT (Nick's photo of Toronto Pearson's own
+   upright departure board: 'thisis similar itspearson how about we do
+   this'). Three structural changes, portrait only — landscape boards are
+   untouched:
+
+   1. EMBLEM-ONLY carrier column. Pearson shows a square carrier tile and
+      the flight number, no lettering; at 1080 wide our wordmark artwork
+      was shrinking to an illegible smudge anyway. The JS forces
+      airlineStyle='emblem' under .fids-portrait, so the wordmark slot is
+      empty and the column can drop from 158px to 90px.
+   2. REVISED TIME MOVES INTO THE STATUS CELL, Pearson's one-cell form
+      ('Delayed - 22:15'). The Revised column collapses to zero and its
+      126px goes to Destination.
+   3. Weather stays (Nick: 'plys the weather as well') — it's the one
+      column Pearson doesn't have that our boards do. */
+
+/* 1 — emblem column: tile only, no wordmark slot taking width */
+html.fids-portrait #fidsTable colgroup col.col-airline { width: 90px !important; }
+html.fids-portrait #fidsTable td.td-airline { padding-left: 12px !important; padding-right: 6px !important; }
+html.fids-portrait #fidsTable td.td-airline .fids-airline-wordmark-slot:empty { display: none !important; }
+html.fids-portrait #fidsTable td.td-airline .fids-cell-airline { justify-content: flex-start !important; gap: 0 !important; }
+
+/* 2 — collapse the Revised column (kept in the grid so the <col> indexes
+   still line up; zeroed rather than display:none, which would shift every
+   colgroup width one column to the left) */
+html.fids-portrait #fidsTable colgroup col.col-time-rev { width: 0 !important; }
+html.fids-portrait #fidsTable th.col-time-rev,
+html.fids-portrait #fidsTable td.td-time-rev,
+html.fids-portrait #fidsTable td.td-time-rev * {
+  width: 0 !important; max-width: 0 !important; min-width: 0 !important;
+  padding-left: 0 !important; padding-right: 0 !important;
+  font-size: 0 !important; letter-spacing: 0 !important;
+  overflow: hidden !important; white-space: nowrap !important;
+}
+/* ...and re-attach it to the status word, Pearson-style */
+html.fids-portrait #fidsTable td.td-status[data-rev]::after {
+  content: " · " attr(data-rev);
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.2px !important;
+  white-space: nowrap !important;
+  opacity: 0.96;
+}
+
+/* 3 — the reclaimed width, redistributed. 692px fixed, ~388px to
+   Destination (was ~242px, where long city names were ellipsizing). */
+html.fids-portrait #fidsTable colgroup col.col-flight { width: 108px !important; }
+html.fids-portrait #fidsTable colgroup col.col-wx     { width: 84px  !important; min-width: 0 !important; }
+html.fids-portrait #fidsTable colgroup col.col-gate   { width: 92px  !important; }
+html.fids-portrait #fidsTable colgroup col.col-time   { width: 118px !important; }
+html.fids-portrait #fidsTable colgroup col.col-status { width: 200px !important; }
+html.fids-portrait #fidsTable colgroup col.col-dest   { width: auto  !important; }
+
+/* the Status column is the last one on the board — nothing may paint past
+   the right edge of a 1080 screen */
+html.fids-portrait #fidsTable td.td-status,
+html.fids-portrait #fidsTable th.col-status {
+  padding-right: 14px !important;
+  overflow: hidden !important;
+}
+html.fids-portrait #fidsTable { max-width: 100% !important; }
