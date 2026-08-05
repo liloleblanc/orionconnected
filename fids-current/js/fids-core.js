@@ -10822,6 +10822,18 @@ function gateAutofit(root) {
       _boxAssign(el, w, Math.max(14, typeBudget), null, false, true);
       var opAvail = Math.max(12, Math.floor(h - el.offsetHeight - 6));
       if (op) _boxAssign(op, w, Math.min(opAvail, Math.floor(h * 0.30)), null, false, true);
+      // v22866 — width can still squeeze a long type+registration line
+      // below the Operated-By row's size (Nick's Alaska 'Embraer 175 |
+      // N633QX' crop: 'seriously cannot see that at all'). The hierarchy
+      // is enforced by measurement: the Operated-By row may never render
+      // larger than 85% of the type line's settled size.
+      try {
+        var _tFs = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+        if (op && _tFs > 0) {
+          var _oFs = parseFloat(window.getComputedStyle(op).fontSize) || 0;
+          if (_oFs > _tFs * 0.85) op.style.setProperty('font-size', Math.max(12, Math.floor(_tFs * 0.85)) + 'px', 'important');
+        }
+      } catch (e) {}
     }
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach(function (el) {
       _fitTypePanel(el);
@@ -17491,7 +17503,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22865';
+var FIDS_BUILD_TAG = 'v22866';
 (function(){
   try {
     function _addTag(){
