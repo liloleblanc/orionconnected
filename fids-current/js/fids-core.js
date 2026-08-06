@@ -17859,7 +17859,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22952';
+var FIDS_BUILD_TAG = 'v22953';
 (function(){
   try {
     function _addTag(){
@@ -26293,6 +26293,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _myGen = _gateGlide.gen;   // claimed below, after the last early return
   var lastArcIdx = -1;
   var _hdg = null;               // last rendered heading, for slew limiting
+  var _subX = 0, _subY = 0;      // v22953 — sub-pixel Leaflet rounds off the marker
 
   function bearingBetween(A, B) {
     var dLng = (B[1] - A[1]) * Math.PI / 180;
@@ -26377,6 +26378,31 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       var lat = A[0] + (B[0] - A[0]) * frac;
       var lng = A[1] + (B[1] - A[1]) * frac;
       marker.setLatLng([lat, lng]);
+      // ── v22953 — PUT BACK THE SUB-PIXEL LEAFLET THROWS AWAY.
+      // Nick: "still moving wobbling", after the rate and rotation fixes.
+      //
+      // Leaflet's Marker._setPos does
+      //     L.DomUtil.setPosition(this._icon, map.latLngToLayerPoint(ll).round())
+      // — note .round(). Marker positions are snapped to WHOLE PIXELS.
+      //
+      // Measured on Nick's own recording, the marker advances about 0.14px per
+      // frame. Against a whole-pixel grid that means it holds still for six or
+      // seven frames and then jumps a full pixel, over and over. A staircase,
+      // not a glide — and with the icon rotating on top of it, that reads
+      // exactly as wobble. It is worst precisely where he is looking, on a
+      // zoomed gate map where the aircraft crawls.
+      //
+      // No amount of fixing the MOTION model helps, because the model was
+      // already producing the right sub-pixel answer and Leaflet was throwing
+      // the fraction away at the last step. So take the fraction back and
+      // apply it to the icon as a transform, which is not rounded.
+      try {
+        if (map.latLngToLayerPoint) {
+          var _lp = map.latLngToLayerPoint([lat, lng]);
+          _subX = _lp.x - Math.round(_lp.x);
+          _subY = _lp.y - Math.round(_lp.y);
+        }
+      } catch (er) { _subX = 0; _subY = 0; }
       try {
         var div = (marker._icon && marker._icon.querySelector) ? marker._icon.querySelector('div') : null;
         if (div) {
@@ -26395,7 +26421,10 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
             if (_dh < -_lim) _dh = -_lim;
             _hdg = (_hdg + _dh + 360) % 360;
           }
-          div.style.transform = 'rotate(' + _hdg.toFixed(2) + 'deg)';
+          // translate FIRST, then rotate: the offset is in map space, so it
+          // must not be spun by the aircraft's own heading.
+          div.style.transform = 'translate(' + _subX.toFixed(3) + 'px,' + _subY.toFixed(3) + 'px) '
+                              + 'rotate(' + _hdg.toFixed(2) + 'deg)';
         }
         frame._last = now;
       } catch (er) {}
