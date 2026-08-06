@@ -9427,3 +9427,51 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) !important;
 }
 
+
+/* ── v22941 — THE 'YOUR AIRCRAFT' EMBLEM: CENTRED, AND USING THE PANEL.
+   Nick: 'those are too small the panels need to be much bigger there is room
+   no reason for it to be this small the logo is off centred'.
+
+   Measured on production v22940, YQM gate 4, 1920x1080:
+     .v2-rc-map-life       x1481 y144  436 x 368   (inset:0 over the shelf)
+     .v2-rc-maptitle       x1481 y144  436 x  52   (the 'Your Aircraft' bar)
+     .v2-rc-map-life-emblem x1538 y192  322 x 272   natural 1556x1521
+
+   TWO SEPARATE FAULTS, both visible in his shot.
+
+   1. OFF CENTRE — and it is a real offset, not an illusion. .v2-rc-map-life
+      is inset:0, so it covers the title bar as well, and its flex centring
+      therefore centres the emblem on the FULL 368px panel. The emblem lands
+      at y192..464, centre 328. The area actually available to it is y196..512,
+      centre 354. So it rides 26px high and its top four pixels tuck under the
+      title bar. Inset the layer past the title and the centring is correct by
+      construction rather than by a nudge.
+
+   2. WASTED GUTTERS — the box is 74% of WIDTH by 74% of HEIGHT, which on a
+      436x368 panel is 322x272: aspect 1.184. The emblem art is 1556x1521,
+      aspect 1.023. object-fit:contain therefore letterboxes it, and 43.7px of
+      the box — 22px down each side — is empty. A square box has nothing to
+      letterbox, so every pixel of the box becomes emblem.
+
+   Together: ink goes from 278x272 to about 297x290 AND the dead side gutters
+   disappear, which is most of what reads as 'too small'.
+
+   Being straight about the ceiling: the emblem is limited by its SHELF, not by
+   this rule. Below the title there are 316px of height against 436px of width,
+   so a round mark cannot exceed ~300px however it is sized. The four shelves
+   already occupy 924px of the ~936px under the banner. Making this panel
+   genuinely taller means taking height from one of the other three — that is
+   a layout decision, so it is Nick's call, not one to make silently here. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-map-life:not(#_):not(#_) {
+  /* Same clamps the title itself uses, so this tracks it at every viewport
+     instead of hard-coding the 52px measured at 1080p. */
+  --rc-maptitle-h: calc(clamp(15px, 2.3vh, 27px) * 1.35 + 2 * clamp(4px, 0.7vh, 10px));
+  inset: var(--rc-maptitle-h) 0 0 0 !important;
+}
+html body .g8-wrap .v2-rc-map-life-emblem:not(#_):not(#_) {
+  /* Square, height-driven: the shelf is the binding dimension. */
+  height: min(94%, 420px) !important;
+  width: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  max-width: 94% !important;
+}
