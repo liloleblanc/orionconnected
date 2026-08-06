@@ -8096,3 +8096,40 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-size: cover !important;
   background-position: center !important;
 }
+
+/* ── v22894 — RIGHT SURFACE THIS TIME (Nick: 'You didnt put it in the right
+   spot'). v22892 textured .g8-bir-cell (the horizontal 5-plate strip, which
+   only appears on the BOARDING layout) and v22893 textured the shelf BEHIND
+   the rail plates — where the plates and the Your Aircraft panel cover
+   almost all of it.
+
+   The panels Nick is actually looking at are .v2-fi-row in the left column:
+   Flight / Destination / Status / Boarding / Departure / Arrival. Their face
+   is .v2-fi-row::before, which is what carries ac-paper-band.jpg today.
+
+   Split top-half / bottom-half so both textures are judged at the same size
+   on the same screen:
+     rows 1-3 (Flight, Destination, Status)     → A = brush / fibre
+     rows 4-6 (Boarding, Departure, Arrival)    → B = flowing curves */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(-n+3)::before {
+  background-image: url('/textures/ac-brush-plate.jpg?v=22894') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #16161a !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(n+4)::before {
+  background-image: url('/textures/ac-curves-plate.jpg?v=22894') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #16161a !important;
+}
+/* Shelf reverted — v22893 put the textures somewhere they are almost
+   entirely hidden, which taught us nothing and only added a texture load. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-clean.jpg?v=22847") !important;
+}
