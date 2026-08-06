@@ -8859,3 +8859,28 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cel
   color: var(--plate-bad, #f87171) !important;
   text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
 }
+
+/* ── v22913 — THE REST OF THE RIGHT-HAND COLUMN (Nick: 'you have the other
+   side of AC to do youre not done', 'and the votre avion your aircraft and
+   speed'). The v22903 panel list covered the flight pane, the aircraft
+   block, the telemetry strip and the stat tiles, but not the two surfaces
+   that frame them: the 'Your Aircraft | Votre Avion' title bar and the
+   speed/altitude bar. Both are panels, so both take the plate. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-maptitle,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-mapstats,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-keystats {
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex) !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: var(--plate-blend, normal) !important;
+  filter: none !important;
+}
+/* Their ink follows the plate too, so the bright-plate carriers do not put
+   white on near-white the way the boarding strip did before v22912. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap
+  :is(.v2-rc-maptitle, .v2-rc-mapstats, .v2-rc-keystats) :is(div, span, p, b, strong, small) {
+  color: var(--plate-ink, #fff) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
