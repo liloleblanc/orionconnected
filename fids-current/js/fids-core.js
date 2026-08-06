@@ -4814,6 +4814,15 @@ function getAirlineAccent(code) {
 function acExpressMatrix(fn) {
   if (isNaN(fn)) return null;
   if (fn >= 7000 && fn <= 7299) return { op:'PB', opName:'PAL Airlines' };
+  // v22929 — AC77xx is PAL too (Nick, on AC7753 YQM->YOW: 'it had the aircraft
+  // right on 7753 haha it was just showing a jazz plane instead of PAL').
+  // The type was already correct — a Dash 8-400 — but 7753 fell in NO band, so
+  // _opCode came out empty and the LIVERY fell back to the default Jazz-painted
+  // Express aircraft. Deliberately scoped to the 7700-7799 block that Nick
+  // named rather than the whole 7300-7949 gap: an invented band is what put
+  // 'Operated by PAL Airlines' on AC7053 to Vancouver. If PAL flies more of
+  // the gap, widen it on evidence, one block at a time.
+  if (fn >= 7700 && fn <= 7799) return { op:'PB', opName:'PAL Airlines' };
   if (fn >= 7950 && fn <= 8249) return { op:'QK', opName:'Jazz Aviation' };
   if (fn >= 8250 && fn <= 8999) return { op:'QK', opName:'Jazz Aviation' };
   return null;
@@ -17600,7 +17609,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22928';
+var FIDS_BUILD_TAG = 'v22929';
 (function(){
   try {
     function _addTag(){
