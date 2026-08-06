@@ -8015,3 +8015,32 @@ html.fids-rot90  .g8-wrap,   html.fids-rot270 .g8-wrap {
   max-height: 100vw !important;
 }
 html.fids-rot90 body, html.fids-rot270 body { min-height: 100vw !important; }
+
+/* ── v22885 — PORTRAIT TYPOGRAPHY MUST OUTRANK THE WIDE-SCREEN MEDIA
+   BLOCKS. Measured under ?rot=90 on a 1655×1050 screen: every cell came
+   out 28px and every column overflowed (status 'Dernier appel · 8:4…',
+   destination 'Ponta Delg…', flight 'AC11…').
+
+   The cause is structural, not a typo. Under rot the PAGE is portrait but
+   the VIEWPORT is still physically landscape, and a CSS transform does not
+   change what a media query measures — so the ≥1600px typography blocks
+   fire on a page laid out 1050 wide. Several of those carry two id-weights
+   (`html:not(#_) body[data-fids-theme] #fidsTable td`) against the portrait
+   rules' one, so they win on specificity too.
+
+   Re-asserted here with matching id-weight. Sizes are unchanged from the
+   portrait block above — this is the same design winning the cascade, not
+   a new one. The column fitter re-measures from these, so the widths come
+   right on their own once the type does. */
+html.fids-portrait:not(#_):not(#_) #fidsTable td { font-size: 19px !important; }
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-status,
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-status * { font-size: 17px !important; }
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-gate,
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-gate * { font-size: 18px !important; }
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-time,
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-time *,
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-time-rev,
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-time-rev * { font-size: 0 !important; }
+html.fids-portrait:not(#_):not(#_) #fidsTable thead th { font-size: 13px !important; }
+html.fids-portrait:not(#_):not(#_) #fidsTable thead th.col-airline { font-size: 0 !important; }
+html.fids-portrait:not(#_):not(#_) #fidsBanner .fids-board-filter { font-size: 22px !important; }
