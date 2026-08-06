@@ -8731,3 +8731,74 @@ html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airli
   --plate-tex: url('/textures/plate-blue-panel.jpg?v=22908'); }
 html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_) {
   --plate-tex: url('/textures/plate-navy-gold.jpg?v=22908'); }
+
+/* ── v22909 — NO BLACK PLATE UNDER A COLOURED BRAND (Nick: 'whereever you
+   put black with color thats a no no'), AND DELTA OFF UNITED'S BLUE (Nick:
+   'you change Delta to the united colors that doesnt work').
+
+   Both are mine. v22906 dropped Hawaiian onto the black engraving while the
+   rest of that screen carried Hawaiian's purple, and v22908 handed Delta
+   plate-blue-modern, which is United's blue — the codebase itself says so:
+   'UA':'#0033A0'.
+
+   Two changes:
+
+   1. The default plate is no longer black. A carrier with no artwork of its
+      own now gets the engraving TINTED IN ITS OWN ACCENT, screen-blended, so
+      a coloured brand never sits on a black panel. Screen rather than
+      multiply because the engraving is a dark field with lighter strokes —
+      multiply would crush every carrier back to the same near-black, which
+      is the trap v22902 fell into.
+
+   2. The v22908 rotation is withdrawn: United returns to blue-modern and
+      Porter to blue-panel, where they belong.
+
+   Delta is left on the tinted default, in Delta's own navy. That is the
+   honest answer rather than a third borrowed plate: Delta is navy AND RED,
+   and not one of the fourteen textures has red in it. A red-on-navy texture
+   is all it would take. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_) {
+  --plate-base: color-mix(in srgb, var(--airline-accent, #6b7684) 34%, #0b0e14);
+  --plate-blend: screen;
+}
+/* Carriers WITH their own artwork keep it flat and untinted — the texture is
+   the point, and an accent wash over it would be the v22902 mistake again. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"],
+             [data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"],
+             [data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"],
+             [data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"],
+             [data-gate-airline="AS"],[data-gate-airline="ASA"],[data-gate-airline*="ALASKA"],
+             [data-gate-airline="KL"],[data-gate-airline="KLM"],
+             [data-gate-airline="CX"],[data-gate-airline="CPA"],[data-gate-airline*="CATHAY"],
+             [data-gate-airline="EI"],[data-gate-airline="EIN"],[data-gate-airline*="AER LINGUS"],
+             [data-gate-airline="BR"],[data-gate-airline="EVA"],[data-gate-airline*="EVA AIR"],
+             [data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],
+             [data-gate-airline="LH"],[data-gate-airline="DLH"],[data-gate-airline*="LUFTHANSA"],
+             [data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"],
+             [data-gate-airline="QR"],[data-gate-airline="QTR"],[data-gate-airline*="QATAR"],
+             [data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_) {
+  --plate-base: #0b0e14;
+  --plate-blend: normal;
+}
+/* v22908 withdrawn — United and Porter return to their own plates, and Delta
+   takes the accent tint above rather than a third carrier's artwork. */
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-blue-modern.jpg?v=22909'); }
+html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-blue-panel.jpg?v=22909'); }
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22909'); }
+
+/* The panel rule hard-coded 'normal'; it now follows the variable so the
+   tinted default can actually blend. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-equip-panel, .gad-panel, .g8-wx-panel, .v2-rc-keystat, .v2-rc-mstat) {
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex) !important;
+  background-blend-mode: var(--plate-blend, normal) !important;
+}
