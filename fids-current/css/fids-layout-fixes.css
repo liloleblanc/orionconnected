@@ -9020,3 +9020,39 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-color: transparent !important;
   background-image: none !important;
 }
+
+/* ── v22919 — THE GLOBE, THE MISSING LINES, AND THE SCALE. Three faults from
+   one capture (Nick: 'You didn't put the lines on the right side and there's
+   a globe stuck in the way in the right air Canada why are the backgrounds
+   so big you stretched them too much').
+
+   1. THE GLOBE, and the missing lines, are the same element. Probed live,
+      .v2-rc-shelf-map computes to
+
+        radial-gradient(circle at 72% 38%, color(srgb 0.847 0.184 0.180 ...))
+
+      — a large red circle. v22918's transparency rule carried
+      :not(.v2-rc-shelf-map), so that one shelf kept painting, and it sits
+      exactly where the right column's lines should show. Clearing it fixes
+      both complaints at once.
+
+   2. THE SCALE. The artwork's waves span the whole 16:9 frame, so at 1920
+      wide a single feature is most of the screen. The pattern is now baked
+      at half size and MIRROR-tiled 2x2: plain repetition would show a hard
+      seam because this artwork does not tile, but mirroring makes every
+      join continuous. Same design, half the feature size, no seam and no
+      stretching — measured mean and stddev are unchanged from the full-size
+      bake (12/11 for AC, 13-29-62 for WestJet). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ac-back-lines2.jpg?v=22919') !important;
+}
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ws-back-navy2.jpg?v=22919') !important;
+}
+/* The map shelf stops painting its red circle, so the lines behind it show.
+   Its own map tiles are children and keep rendering normally. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
+  background-color: transparent !important;
+  background-image: none !important;
+}
