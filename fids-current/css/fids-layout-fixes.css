@@ -8714,3 +8714,20 @@ html body:not(#_):not(#_) .g8-wrap .g8-r1-logoslot {
 html body:not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star {
   flex-shrink: 1 !important;
 }
+
+/* ── v22908 — DELTA OFF THE CHEVRON PLATE (Nick: 'Delta needs change').
+   Delta is navy and red; plate-navy-gold's chevrons read gold, which is
+   neither. Delta takes the deep navy instead — the cleanest, least
+   decorated blue in the set, closest to Delta's own.
+
+   A three-way rotation rather than leaving a plate stranded:
+     Delta   navy-gold  ->  blue-modern   (deep navy)
+     United  blue-modern ->  blue-panel   (mid blue with arcs, United blue)
+     Porter  blue-panel  ->  navy-gold    (navy with a warm accent)
+   KLM keeps blue-grad, which is already KLM's bright blue. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-blue-modern.jpg?v=22908'); }
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"]):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-blue-panel.jpg?v=22908'); }
+html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-navy-gold.jpg?v=22908'); }
