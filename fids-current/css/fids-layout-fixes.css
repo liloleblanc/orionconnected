@@ -8913,3 +8913,33 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
   background: #07122a url('/textures/ws-back-navy.jpg?v=22914') center / cover no-repeat !important;
   background-blend-mode: normal !important;
 }
+
+/* ── v22915 — DELTA'S BADGES INVERT (Nick: 'if you made the Delta icons
+   white with red middle and red line it would look better').
+
+   The badges are inline-styled in fids-core.js — background from
+   var(--airline-accent) with color:#fff driving the glyph, which the SVGs
+   pick up as currentColor — so only !important can reach them. Delta's
+   accent is navy, which is why they were navy-on-navy against the plate.
+
+   White badge, Delta red glyph, and the plate title rules in the same red.
+   The GENERIC_PLANE fallback hard-codes fill:#fff inline, so fill is forced
+   alongside color or that one icon would stay white on white. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) .g8-wrap
+  :is(.v2-fi-icon-wrap, .v2-fi-icon-badge, .v2-fi-emblem-wrap) {
+  background: #ffffff !important;
+  color: #E01933 !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14) !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) .g8-wrap
+  :is(.v2-fi-icon-wrap, .v2-fi-icon-badge, .v2-fi-emblem-wrap) svg,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) .g8-wrap
+  :is(.v2-fi-icon-wrap, .v2-fi-icon-badge, .v2-fi-emblem-wrap) svg path {
+  fill: #E01933 !important;
+  color: #E01933 !important;
+}
+/* The rule under each plate title, and its counterpart in the right pane. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-bir-cell .g8-bir-title {
+  border-bottom-color: #E01933 !important;
+}
