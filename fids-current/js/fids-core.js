@@ -17512,7 +17512,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22878';
+var FIDS_BUILD_TAG = 'v22879';
 (function(){
   try {
     function _addTag(){
@@ -23095,6 +23095,7 @@ function _boardFilterChipHtml() {
       var nm = (typeof AIRLINE_NAME !== 'undefined' && (AIRLINE_NAME[code] || '')) || code;
       en.push(nm); fr.push(nm);
     }
+    try { document.body.classList.toggle('has-board-filter', en.length > 0); } catch (e2) {}
     if (!en.length) return '';
     return '<span class="fids-board-filter">'
          +   '<span class="fbl-en">' + en.join(' · ') + '</span>'

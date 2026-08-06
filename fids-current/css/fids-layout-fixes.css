@@ -7975,4 +7975,23 @@ html.fids-portrait #fidsTable colgroup col.col-status { width: 268px !important;
   margin-top: 2px;
   white-space: nowrap;
 }
-html.fids-portrait .fids-board-filter { font-size: 14px !important; }
+/* The bilingual spans carry their OWN size (measured: 49.9px landscape,
+   32px portrait) from the board-label rules, so sizing the chip container
+   does nothing — the child spans have to be named directly. */
+html:not(#_) #fidsBanner .fids-board-filter .fbl-en,
+html:not(#_) #fidsBanner .fids-board-filter .fbl-fr {
+  font-size: 20px !important;
+  line-height: 1.06 !important;
+  letter-spacing: 0.4px !important;
+  white-space: nowrap !important;
+}
+html.fids-portrait:not(#_) #fidsBanner .fids-board-filter .fbl-en,
+html.fids-portrait:not(#_) #fidsBanner .fids-board-filter .fbl-fr {
+  font-size: 13px !important;
+}
+/* Two extra lines do not fit a banner sized for two: measured, the label
+   block alone is already 210px inside a 128px banner and the chip pushed
+   'Departures' off the top. A filtered board gets a taller banner rather
+   than a squeezed one — vertical space is the thing portrait has most of. */
+body.has-board-filter #fidsBanner { height: 176px !important; }
+html.fids-portrait body.has-board-filter #fidsBanner { height: 158px !important; }
