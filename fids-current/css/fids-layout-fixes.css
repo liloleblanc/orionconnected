@@ -9331,3 +9331,52 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
+
+/* ── v22933 — FOUR FROM NICK'S 13:24 SHOT.
+
+   1. MAPLE LEAF OFF-CENTRE ('maple leaf is not centered either'). The emblem
+      is an <img> inside .v2-rc-map-life; nothing was centring it, so it sat
+      wherever its intrinsic box landed. Centred on both axes explicitly. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life-emblem {
+  margin: 0 auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
+}
+
+/* 2. 'remove expected | prévu from the aircraft'. The qualifier earns its
+      keep on a board row, but in this panel the type already reads as a
+      single line and the tag only crowds it. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype .v2-rc-reg-expected {
+  display: none !important;
+}
+
+/* 3. '...and have a line in between like above please also make the line as
+      equal thick as the other side'. A rule above the Operated By row, in the
+      same 2px the plate titles and the right-pane separators use, so all
+      three read as one system rather than three weights. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby {
+  border-top: 2px solid var(--airline-accent, #D82F2E) !important;
+  padding-top: clamp(5px, 0.7vh, 10px) !important;
+  margin-top: clamp(5px, 0.7vh, 10px) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby {
+  border-top-color: #D82F2E !important;
+}
+
+/* 4. 'Air Canada in specific needs bigger in the gate'. The wordmark is the
+      first child of the logo slot and was capped well under the band height.
+      Raised for AC only — the other carriers' wordmarks are already
+      calibrated (that was the whole of PR #459) and must not move. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot > img:first-child {
+  height: clamp(52px, 7.6vh, 96px) !important;
+  max-height: clamp(52px, 7.6vh, 96px) !important;
+  width: auto !important;
+  max-width: min(46vw, 900px) !important;
+  object-fit: contain !important;
+}
