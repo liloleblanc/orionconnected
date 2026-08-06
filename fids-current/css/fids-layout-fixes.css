@@ -8529,23 +8529,38 @@ html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(
 
 /* Default — unlisted carriers keep the tinted engraving from v22901. */
 html body[data-gate-airline]:not(#_) {
-  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22903');
+  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22904');
   --plate-ink: #ffffff;
   --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
   --plate-ok: #34d399;  --plate-warn: #fbbf24;
   --plate-bad: #f87171;  --plate-info: #93c5fd;
   --plate-base: #0b0e14;
 }
+/* v22904 — Nick's three later uploads join the palette, and WestJet finally
+   gets the right one. The aqua mesh IS WestJet's teal, which is what
+   'thats not the right Westjet choice' was pointing at; that frees the
+   deep teal→navy for Transat, whose brand it actually is, and cascades
+   blue-modern to United and blue-panel to Porter. Nothing is unused now —
+   the two plates the shuffle releases go to Alaska and KLM, whose liveries
+   they match almost exactly, and the emerald+gold to the green carriers. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_) {
-  --plate-tex: url('/textures/plate-teal-navy.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-aqua-mesh.jpg?v=22904'); }
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) {
-  --plate-tex: url('/textures/plate-navy-gold.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-navy-gold.jpg?v=22904'); }
 html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"]):not(#_) {
-  --plate-tex: url('/textures/plate-blue-panel.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-blue-modern.jpg?v=22904'); }
 html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_) {
-  --plate-tex: url('/textures/plate-blue-grad.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-blue-panel.jpg?v=22904'); }
 html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"]):not(#_) {
-  --plate-tex: url('/textures/plate-teal-gold.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-teal-navy.jpg?v=22904'); }
+html body:is([data-gate-airline="AS"],[data-gate-airline="ASA"],[data-gate-airline*="ALASKA"]):not(#_) {
+  --plate-tex: url('/textures/plate-teal-gold.jpg?v=22904'); }
+html body:is([data-gate-airline="KL"],[data-gate-airline="KLM"],[data-gate-airline*="KLM"]):not(#_) {
+  --plate-tex: url('/textures/plate-blue-grad.jpg?v=22904'); }
+html body:is([data-gate-airline="CX"],[data-gate-airline="CPA"],[data-gate-airline*="CATHAY"],
+             [data-gate-airline="EI"],[data-gate-airline="EIN"],[data-gate-airline*="AER LINGUS"],
+             [data-gate-airline="BR"],[data-gate-airline="EVA"],[data-gate-airline*="EVA AIR"]):not(#_) {
+  --plate-tex: url('/textures/plate-emerald-gold.jpg?v=22904'); }
 
 /* The five bright plates. Ink flips to near-black with a white lift, and
    the status colours darken to match — the light-on-light green and amber
@@ -8562,15 +8577,15 @@ html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airli
   --plate-base: #cfd3d8;
 }
 html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_) {
-  --plate-tex: url('/textures/plate-silver.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-silver.jpg?v=22904'); }
 html body:is([data-gate-airline="LH"],[data-gate-airline="DLH"],[data-gate-airline*="LUFTHANSA"]):not(#_) {
-  --plate-tex: url('/textures/plate-gold-wave.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-gold-wave.jpg?v=22904'); }
 html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"]):not(#_) {
-  --plate-tex: url('/textures/plate-gold-curve.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-gold-curve.jpg?v=22904'); }
 html body:is([data-gate-airline="QR"],[data-gate-airline="QTR"],[data-gate-airline*="QATAR"]):not(#_) {
-  --plate-tex: url('/textures/plate-wave.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-wave.jpg?v=22904'); }
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_) {
-  --plate-tex: url('/textures/plate-blue-grey.jpg?v=22903'); }
+  --plate-tex: url('/textures/plate-blue-grey.jpg?v=22904'); }
 
 /* ── ALL PANELS. Nick: 'remember its all panels'. The five surfaces the
    texture already reached, plus the ones it had been missing — the equipment
