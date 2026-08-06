@@ -9131,3 +9131,22 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8
 html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last > .v2-rc-fi-tval {
   border-bottom: none !important;
 }
+
+/* ── v22922 — THE OTHER GLOBE (Nick: 'The globe? wtf!?'). Fair. v22919
+   cleared a red radial-gradient on .v2-rc-shelf-map and I reported the globe
+   gone. There is a SECOND one, one level further in: .v2-rc-map-life carries
+
+     radial-gradient(circle at 50% 52%, rgba(255,255,255,0.12) ...)
+
+   at 436x368 — a soft white halo behind the airline emblem. It was invisible
+   against the old flat shelf and only reads as a globe now that a patterned
+   background sits behind it.
+
+   Cleared on the two carriers whose backgrounds carry Nick's line artwork,
+   where the halo competes with it. Carriers still on a flat shelf keep the
+   halo, since there it does the job it was written for. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  background-image: none !important;
+  background-color: transparent !important;
+}
