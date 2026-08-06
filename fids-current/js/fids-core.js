@@ -17564,7 +17564,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22889';
+var FIDS_BUILD_TAG = 'v22890';
 (function(){
   try {
     function _addTag(){
@@ -25629,14 +25629,25 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // line and the drawn line the same line, so the seed lands exactly on the
   // marker and there is nothing to slide sideways to.
   var _pl = [planeLat, planeLng];
-  var _legA = _gcFullRoute(o, _pl, 60);
-  var _legB = _gcFullRoute(_pl, d, 60);
+  var _nmA = _gcNm(o, _pl), _nmB = _gcNm(_pl, d);
+  var totalNm = _nmA + _nmB;
+  if (!(totalNm > 0)) return;
+  // Split the vertices IN PROPORTION TO LEG LENGTH. Progress p advances at
+  // speed/totalNm — i.e. p is assumed uniform in DISTANCE — but the frame
+  // loop walks the vertex ARRAY, so p is really uniform in vertex index. A
+  // fixed 60/60 split makes those two disagree whenever the legs differ in
+  // length, and the marker then moves at the wrong speed: measured on PD784
+  // inbound to YYZ, 3 metres in 20 seconds against a true 236 kt, because
+  // half the vertices were crammed into the short final leg.
+  var _vA = Math.max(2, Math.min(116, Math.round(118 * (_nmA / totalNm))));
+  var _vB = Math.max(2, 118 - _vA);
+  var _legA = _gcFullRoute(o, _pl, _vA);
+  var _legB = _gcFullRoute(_pl, d, _vB);
   var route = _legA.concat(_legB.slice(1));
   var n = route.length;
   if (n < 2) return;
-  var totalNm = _gcNm(o, _pl) + _gcNm(_pl, d);
-  if (!(totalNm > 0)) return;
-  // The seed is the junction: the aircraft's own position, exactly.
+  // The seed is the junction: the aircraft's own position, exactly — and
+  // with a proportional split it also equals the true distance fraction.
   var _seedP = (_legA.length - 1) / (n - 1);
   var p = _seedP;
   // v22748 — EASE THE CORRECTION, DON'T SNAP IT (Nick: 'it seems to move but
