@@ -8926,15 +8926,15 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
    The GENERIC_PLANE fallback hard-codes fill:#fff inline, so fill is forced
    alongside color or that one icon would stay white on white. */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) .g8-wrap
-  :is(.v2-fi-icon-wrap, .v2-fi-icon-badge, .v2-fi-emblem-wrap) {
+  .v2-fi-icon-badge {
   background: #ffffff !important;
   color: #E01933 !important;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14) !important;
 }
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) .g8-wrap
-  :is(.v2-fi-icon-wrap, .v2-fi-icon-badge, .v2-fi-emblem-wrap) svg,
+  .v2-fi-icon-badge svg,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) .g8-wrap
-  :is(.v2-fi-icon-wrap, .v2-fi-icon-badge, .v2-fi-emblem-wrap) svg path {
+  .v2-fi-icon-badge svg path {
   fill: #E01933 !important;
   color: #E01933 !important;
 }
@@ -8942,4 +8942,28 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-bir-cell .g8-bir-title {
   border-bottom-color: #E01933 !important;
+}
+
+/* ── v22916 — THE EMBLEM IS NOT A GLYPH (Nick: 'Endeavor is it cant see the
+   logo only the red' and 'the icon does not go like that it is 3d and
+   shiny'). Both are the same mistake in v22915: that rule matched
+   .v2-fi-emblem-wrap alongside the glyph badges and forced fill on every
+   svg path inside it.
+
+   .v2-fi-emblem-wrap carries the AIRLINE LOGO — Delta's 3D shiny orb from
+   PR #459, and the operator logo on a Delta Connection flight. Forcing a
+   fill flattened both into a red silhouette, which is exactly 'only the
+   red'.
+
+   The inversion now applies ONLY to .v2-fi-icon-badge, the plate glyphs
+   (flight, destination, boarding, departure, status). The emblem is reset
+   to its own styling so the orb keeps its gradient and depth. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap svg,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap svg path,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap img {
+  background: revert !important;
+  color: revert !important;
+  fill: revert !important;
+  box-shadow: revert !important;
 }
