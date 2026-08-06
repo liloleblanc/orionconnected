@@ -9175,3 +9175,40 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) {
   border-bottom-color: #D82F2E !important;
 }
+
+/* ── v22925 — TEXT CLIPPED IN THE RIGHT PANE (Nick: 'the text clipped this is
+   not OK'). My regression, from v22921/v22923. Measured on the live YQM gate
+   at his viewport (1920x950):
+
+     Flight | Vol      padding-bottom 6.65px -> scrollH 36 vs clientH 31  (5px lost)
+     AC7992            padding-bottom 6.65px -> 34 vs 31                  (3px lost)
+     Arrival | Arrivée padding-bottom 6.65px -> 34 vs 31                  (3px lost)
+     From | De         padding-bottom 0      -> 37 vs 37                  (clean)
+     Status | Statut   padding-bottom 0      -> 37 vs 37                  (clean)
+
+   Every clipped cell is one carrying the padding and no other. v22921 put
+   'border-bottom + padding-bottom' on the CELLS; v22923 moved the border to
+   the row and set the cells to border-bottom:none but left the padding
+   there. The cells are fixed-height flex boxes with overflow:hidden, so the
+   leftover padding shrinks the content box and the first line loses its top.
+
+   The padding belongs with the border, on the row. Removing it from the
+   cells restores the full line box — no panel needs to grow. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow > .v2-rc-fi-tval {
+  padding-bottom: 0 !important;
+}
+
+/* ── v22925b — THE LOGO PANEL IS NOT A TEXTURE SURFACE (Nick: 'Lets not use
+   the redlines on the very top with the maple leaf as this is logo
+   material'). Correct — v22919 made that shelf transparent so the background
+   lines would show through the right column, and they ended up running
+   straight across the carrier's emblem. The emblem panel gets its own flat
+   dark ground back; the lines keep running everywhere else. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  background-color: #0b0d10 !important;
+  background-image: none !important;
+}
