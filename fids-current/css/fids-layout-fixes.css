@@ -8649,7 +8649,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map),
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-board-info-row {
-  background: #101418 url('/textures/ac-lines-shelf.jpg?v=22905') center / cover no-repeat !important;
+  background: #101418 url('/textures/ac-lines-plate.jpg?v=22910') center / cover no-repeat !important;
   background-blend-mode: normal !important;
 }
 
@@ -8802,3 +8802,12 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
   background-image: var(--plate-tex) !important;
   background-blend-mode: var(--plate-blend, normal) !important;
 }
+
+/* ── v22910 — THE BACK IS THE PANEL ITSELF (Nick: 'that is not the background
+   i asked for' / 'the front yes the back no'). He asked for the current front
+   panel to go in the back. v22905 instead RE-CUT the engraving at a portrait
+   aspect for the shelf — a different window of the source, so a different
+   picture. Same mistake he caught before: 'thats not the same file?'.
+
+   The shelf now carries ac-lines-plate.jpg, the exact file that was on the
+   front, cover-fitted so it fills the column without distorting. */
