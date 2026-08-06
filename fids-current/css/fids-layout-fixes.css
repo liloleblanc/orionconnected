@@ -8151,10 +8151,39 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
      engraving, clearly above the row it sits on. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-bir-cell::before {
-  background-image: url('/textures/ac-lines-plate.jpg?v=22895') !important;
+  background-image: url('/textures/ac-lines-plate.jpg?v=22896') !important;
   background-size: 100% 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
   background-blend-mode: normal !important;
   background-color: #1c1c20 !important;
+}
+
+/* ── v22896 — DARKER, AND A FOURTH CANDIDATE (Nick: 'the background is
+   actually gray so darker works best', plus a line-curve upload).
+
+   The correction matters and I had it backwards: the shelf behind these
+   plates computes to rgb(52,55,60) — luminance ~56 — so a plate reads by
+   sitting BELOW its surround, not above it. v22895 lifted the engraving to
+   mean 46 to avoid 'dark on dark', which was solving a problem that only
+   exists on a black backing. Both candidates are now re-baked dark:
+   engraved lines mean 16, ripple mean 21, against a ~56 shelf.
+
+   Split so both get judged at plate size:
+     rows 1-3 → engraved lines
+     rows 4-6 → line-curve ripple
+
+   Both bakes use the gentle two-step reduction: dense line art dropped to
+   plate size in one jump beats against the pixel grid, and that moire
+   CRAWLS on a moving display and wastes stream bitrate. The ripple takes a
+   smaller source region as well, since its ridges are much denser. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(n+4)::before {
+  background-image: url('/textures/ac-ripple-plate.jpg?v=22896') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: #101014 !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(-n+3)::before {
+  background-color: #101014 !important;
 }
