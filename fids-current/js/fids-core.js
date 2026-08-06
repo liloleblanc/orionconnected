@@ -2703,6 +2703,44 @@ async function _gateNumbersPoll() {
         try { window._lastGateKey = ''; render(); } catch (e2) {}
       }
     } catch (e4) {}
+    // ── v22887 — ADS-B TELEMETRY (airplanes.live) ────────────────────────
+    // AeroDataBox's livePosition is returning altitude 0 for EVERY aircraft
+    // — measured tonight on AC174 at 498 kt over Saskatchewan and AC792 at
+    // 491 over Utah, both reported as 0 ft. The guard below ("speed and
+    // altitude appear together or not at all — never one without a genuine
+    // airborne altitude") then correctly discards the whole reading, which
+    // is why the gate SPD/ALT panel has been blank. The source that used to
+    // fill this was removed with the note 'gate SPD/ALT now come from
+    // AeroDataBox only'; AeroDataBox is not actually supplying it.
+    //
+    // airplanes.live is free, needs no key, and sends
+    // access-control-allow-origin:* so the browser calls it directly — no
+    // fids-proxy deploy in the loop. Measured position age is ~0.1 s against
+    // AeroDataBox's ~9 minutes, which is also what makes runway
+    // identification possible at all.
+    //
+    // Registration is the join: it is exact, and _reg is already resolved by
+    // the block above. Callsign is the fallback. One request per 60 s poll.
+    var _adsb = null;
+    try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt); } catch (e) {}
+    if (_adsb) {
+      if (typeof _adsb.alt === 'number') inb._liveAlt = _adsb.alt;
+      if (typeof _adsb.spd === 'number') inb._liveSpd = _adsb.spd;
+      if (typeof _adsb.lat === 'number' && typeof _adsb.lng === 'number') {
+        inb._liveLat = _adsb.lat; inb._liveLng = _adsb.lng;
+        window._gateInboundLivePos = { lat: _adsb.lat, lng: _adsb.lng, speed: _adsb.spd, altitude: _adsb.alt };
+      }
+      if (typeof _adsb.track === 'number') inb._liveTrack = _adsb.track;
+      if (typeof _adsb.vs === 'number') inb._liveVs = _adsb.vs;
+      if (_adsb.onGround === true) inb._liveOnGround = true;
+      // ADS-B knows the exact sub-type (B38M where the schedule feed says
+      // nothing) and the live tail — both better than what we had.
+      if (!inb._reg && _adsb.reg) inb._reg = _adsb.reg;
+      try { _gateTelemSetReal(_adsb.spd, _adsb.alt); } catch (e) {}
+      try { console.log('[ADSB]', flt, '→ spd', _adsb.spd, 'alt', _adsb.alt, 'trk', _adsb.track, 'age', _adsb.age + 's'); } catch (e) {}
+      return;   // fresher than anything AeroDataBox can offer
+    }
+
     var _lp = inbData.livePosition || {};
     var _spd = (typeof _lp.speed === 'number') ? _lp.speed : null;
     var _alt = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
@@ -17512,7 +17550,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22886';
+var FIDS_BUILD_TAG = 'v22887';
 (function(){
   try {
     function _addTag(){
@@ -21530,6 +21568,90 @@ function _crossTrackKm(plat, plng, alat, alng, blat, blng) {
   var ex = px - (ax + t * dx), ey = py - (ay + t * dy);
   return Math.sqrt(ex * ex + ey * ey);
 }
+// ── v22887 — ADS-B LIVE TELEMETRY (airplanes.live) ──────────────────────
+// Restores the secondary position source that the note below says was
+// removed in favour of AeroDataBox. AeroDataBox is not delivering it:
+// every livePosition sampled reports altitude 0, including aircraft at
+// cruise, so the "no altitude means no reading" guard in the gate panel
+// discards the lot and SPD/ALT renders blank.
+//
+// airplanes.live: free, no key, access-control-allow-origin:* (so the
+// browser calls it directly and no fids-proxy deploy is involved), and a
+// measured position age around 0.1 s versus AeroDataBox's ~9 minutes.
+//
+// Rate discipline: one lookup per 60 s gate poll, plus a 45 s cache, so a
+// wall of screens on one gate makes one request per minute between them.
+var _ADSB_BASE = 'https://api.airplanes.live/v2';
+var _adsbCache = Object.create(null);
+var _ADSB_TTL_MS = 45000;
+
+async function _adsbFetchOne(path) {
+  var key = String(path);
+  var hit = _adsbCache[key];
+  if (hit && (Date.now() - hit.at) < _ADSB_TTL_MS) return hit.ac;
+  var ctl = null, timer = null;
+  try {
+    // A stalled community endpoint must never hold up the gate poll.
+    if (typeof AbortController === 'function') {
+      ctl = new AbortController();
+      timer = setTimeout(function () { try { ctl.abort(); } catch (e) {} }, 4000);
+    }
+    var r = await fetch(_ADSB_BASE + path, ctl ? { signal: ctl.signal, cache: 'no-store' } : { cache: 'no-store' });
+    if (timer) clearTimeout(timer);
+    if (!r.ok) { _adsbCache[key] = { at: Date.now(), ac: null }; return null; }
+    var j = await r.json();
+    var ac = (j && Array.isArray(j.ac) && j.ac.length) ? j.ac[0] : null;
+    _adsbCache[key] = { at: Date.now(), ac: ac };
+    return ac;
+  } catch (e) {
+    if (timer) clearTimeout(timer);
+    _adsbCache[key] = { at: Date.now(), ac: null };   // don't retry a dead endpoint every poll
+    return null;
+  }
+}
+
+// Registration first — it is an exact identifier and _reg is already
+// resolved by the time the gate poll runs. Callsign second: ADS-B carries
+// the ICAO callsign (ROU1908), not the IATA flight number (RV1908), so a
+// bare flight number is only tried when it already looks like a callsign.
+async function _adsbTelemetry(reg, callSign, flightNo) {
+  var tries = [];
+  var _r = String(reg || '').trim().toUpperCase();
+  if (/^[A-Z0-9-]{4,10}$/.test(_r)) tries.push('/reg/' + encodeURIComponent(_r));
+  var _cs = String(callSign || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (/^[A-Z]{3}\d{1,4}[A-Z]?$/.test(_cs)) tries.push('/callsign/' + encodeURIComponent(_cs));
+  var _fn = String(flightNo || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (_fn && _fn !== _cs && /^[A-Z]{3}\d{1,4}[A-Z]?$/.test(_fn)) tries.push('/callsign/' + encodeURIComponent(_fn));
+  for (var i = 0; i < tries.length; i++) {
+    var ac = await _adsbFetchOne(tries[i]);
+    if (!ac) continue;
+    // alt_baro is the number a board should show; it reads 'ground' (a
+    // STRING) while the aircraft is on the surface, which is also the most
+    // reliable on-ground signal in the feed.
+    var rawAlt = ac.alt_baro;
+    var onGround = (rawAlt === 'ground');
+    var alt = (typeof rawAlt === 'number') ? Math.round(rawAlt)
+            : ((typeof ac.alt_geom === 'number') ? Math.round(ac.alt_geom) : null);
+    var spd = (typeof ac.gs === 'number') ? Math.round(ac.gs) : null;
+    if (alt === null && spd === null && !onGround) continue;
+    return {
+      alt: onGround ? 0 : alt,
+      spd: spd,
+      lat: (typeof ac.lat === 'number') ? ac.lat : null,
+      lng: (typeof ac.lon === 'number') ? ac.lon : null,
+      track: (typeof ac.track === 'number') ? ac.track : null,
+      vs: (typeof ac.baro_rate === 'number') ? ac.baro_rate : null,
+      onGround: onGround,
+      reg: ac.r || null,
+      type: ac.t || null,
+      desc: ac.desc || null,
+      age: (typeof ac.seen_pos === 'number') ? ac.seen_pos : null
+    };
+  }
+  return null;
+}
+try { if (typeof window !== 'undefined') { window._adsbTelemetry = _adsbTelemetry; window._adsbFetchOne = _adsbFetchOne; } } catch (e) {}
+
 // adsb.lol secondary position source removed — gate SPD/ALT now come from AeroDataBox only.
 
 async function loadFlight(flightNumber, dateStr, airportIata) {
