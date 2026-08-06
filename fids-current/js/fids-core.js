@@ -17575,7 +17575,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22926';
+var FIDS_BUILD_TAG = 'v22927';
 (function(){
   try {
     function _addTag(){
@@ -25802,14 +25802,43 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // If we were already tracking the SAME route and the correction is small,
   // resume from where the marker actually is and bleed the difference in over
   // a few seconds, so a fix reads as the aircraft settling rather than jumping.
+  // v22927 — two faults in the resume test, both of which only bite on
+  // approach, which is exactly where Nick saw them (': it did a turn to line
+  // up for the runway and started to go backwards ... its bouncing left and
+  // right not a lot but noticeable').
+  //
+  // 1. The tolerance was a FRACTION of the route (0.15). But the route is
+  //    rebuilt through the live position on every fix, so totalNm shrinks as
+  //    the aircraft nears the field — 0.15 of 400nm is 60nm, 0.15 of 12nm is
+  //    under two. Late in the approach an ordinary correction blows the test,
+  //    the resume is skipped, and the marker is planted straight onto _seedP:
+  //    a snap. Measuring the tolerance in NAUTICAL MILES keeps it meaning the
+  //    same thing at every stage of the flight.
+  //
+  // 2. _corr was applied with its sign. Dead reckoning runs AHEAD of truth
+  //    whenever the aircraft slows — and it slows a lot on final, from cruise
+  //    to about 110kt — so the next fix lands BEHIND the marker and the
+  //    correction dragged it backwards. A landing aircraft never reverses.
+  //    Now a negative correction is not applied: the marker HOLDS station and
+  //    lets the real aircraft catch up, which reads as slowing down rather
+  //    than reversing.
   var _corr = 0;
+  var _holdForTruth = false;
   try {
     if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
         _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
-        _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1] &&
-        Math.abs(_gateGlide.p - _seedP) < 0.15) {
-      p = _gateGlide.p;
-      _corr = _seedP - p;
+        _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1]) {
+      var _dp = _seedP - _gateGlide.p;
+      var _corrNm = Math.abs(_dp) * totalNm;
+      if (_corrNm < 40) {
+        p = _gateGlide.p;
+        if (_dp >= 0) {
+          _corr = _dp;                 // truth is ahead — ease forward into it
+        } else {
+          _corr = 0;                   // truth is behind — do not rewind
+          _holdForTruth = true;        // freeze until the aircraft reaches us
+        }
+      }
     }
   } catch (e) {}
   _gateGlide.o = o; _gateGlide.d = d;
@@ -25847,6 +25876,11 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
       else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
       var effSpeed = speedKts * Math.max(0.2, factor);
+      // v22927 — while holding for truth, the marker does not advance. Dead
+      // reckoning had already carried it past the real aircraft, so moving on
+      // would only widen the gap the next fix has to undo. It resumes as soon
+      // as a fix arrives that is ahead of it.
+      if (_holdForTruth) effSpeed = 0;
       p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
       // Bleed in any outstanding position correction (~4s time constant).
       if (_corr) {
