@@ -9380,3 +9380,35 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   max-width: min(46vw, 900px) !important;
   object-fit: contain !important;
 }
+
+/* ── v22934 — THE GLYPH BADGES ARE ORBS AGAIN (Nick: 'the icons orbs were not
+   fixed'). v22915 inverted Delta's plate badges to a white ground with a red
+   glyph, which is what he asked for — but it set a FLAT white fill, so they
+   read as paper discs next to the 3D emblem orbs from PR #459. The colour was
+   right and the material was wrong.
+
+   The sheen is rebuilt the way an orb actually works: a bright specular
+   off-centre high, a soft mid, a shaded lower edge, then an inset rim to give
+   the sphere an edge and a drop shadow to lift it off the plate. The glyph
+   stays Delta red and the ground stays white. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge {
+  background:
+    radial-gradient(circle at 34% 26%,
+      #ffffff 0%,
+      #fdfdfe 26%,
+      #eef1f5 52%,
+      #d7dde6 78%,
+      #c2cad6 100%) !important;
+  box-shadow:
+    inset 0 -3px 6px rgba(120, 132, 150, 0.34),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+    0 3px 8px rgba(0, 0, 0, 0.42) !important;
+  color: #E01933 !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge svg,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge svg path {
+  fill: #E01933 !important;
+  color: #E01933 !important;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) !important;
+}
