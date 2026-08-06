@@ -8825,3 +8825,37 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
 
    Cover-fitted, on #0a0a0a so the surround matches the artwork's own black
    rather than the old #101418. */
+
+/* ── v22912 — INK ON THE BOARDING STRIP. Caught on a live AF359/C34 capture:
+   the boarding layout's five-plate strip took the bright silk texture from
+   v22903, but the ink rule beside it only covered the rail layout's
+   .v2-fi-row plates and the right-hand shelf. The strip's own text kept the
+   old white, so 'AF359' and 'Paris' were rendering white on a plate
+   measuring ~190 luminance — a contrast ratio of 1.9:1, which is not
+   readable at any distance, let alone across a gate hold.
+
+   The strip now takes --plate-ink like every other panel, and its status
+   line takes the plate's status colours so the bright-plate carriers get the
+   darkened set rather than the light-on-light green and amber. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-title, .g8-bir-val, .g8-bir-l1, .g8-bir-l2, .g8-bir-text,
+      .g8-bir-code-t, .g8-bir-mer, .g8-bir-sep, .g8-bir-title span, .g8-bir-val span) {
+  color: var(--plate-ink, #fff) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+/* Status keeps its own semantic colour, but from the plate's set. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-st2, .g8-bir-stwrap):is(.ontime, .early, .enroute, .arrived, .boarding) {
+  color: var(--plate-ok, #34d399) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-st2, .g8-bir-stwrap):is(.delayed, .final) {
+  color: var(--plate-warn, #fbbf24) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-st2, .g8-bir-stwrap).cancelled {
+  color: var(--plate-bad, #f87171) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
