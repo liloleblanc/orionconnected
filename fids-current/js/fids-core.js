@@ -17682,7 +17682,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22942';
+var FIDS_BUILD_TAG = 'v22941';
 (function(){
   try {
     function _addTag(){
