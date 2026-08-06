@@ -17512,7 +17512,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22879';
+var FIDS_BUILD_TAG = 'v22880';
 (function(){
   try {
     function _addTag(){
@@ -23072,37 +23072,41 @@ function _boardLabelBilingual(key) {
 // so. Without it, a screen showing 9 of the airport's 40 departures reads as
 // a broken board, not a deliberate one, and there is no way for staff to
 // tell the two apart from across a hall.
-var _BOARD_REGION_BI = {
-  DOM:   ['Domestic',      'Intérieur'],
-  TRANS: ['Transborder',   'Transfrontalier'],
-  INTL:  ['International', 'International']
-};
+// v22880 — the chip speaks the SAME 9 languages as the rest of the board
+// (Nick: 'You may as well reinstall the already exisiting multigual
+// languages'). It follows the language rotation rather than stacking a
+// hardcoded EN/FR pair, which also keeps it to a single line — the stacked
+// version was two extra lines in a banner sized for two.
+var _BOARD_REGION_KEY = { DOM: 'f-domestic', TRANS: 'f-transborder', INTL: 'f-international' };
 function _boardFilterChipHtml() {
   try {
-    var en = [], fr = [];
+    var _tr = function (k, fb) {
+      try { if (typeof window.fidsT === 'function') return window.fidsT(k, lang); } catch (e2) {}
+      return fb;
+    };
+    var parts = [];
     if (filterTerminal) {
-      var t = String(filterTerminal).trim().toUpperCase().replace(/^T/, '');
-      en.push('Terminal ' + t); fr.push('Aérogare ' + t);
+      parts.push(_tr('terminal', 'Terminal') + ' '
+               + String(filterTerminal).trim().toUpperCase().replace(/^T/, ''));
     }
     if (filterRegion) {
       String(filterRegion).toUpperCase().split(',').forEach(function (r) {
-        var p = _BOARD_REGION_BI[r.trim()];
-        if (p) { en.push(p[0]); fr.push(p[1]); }
+        var k = _BOARD_REGION_KEY[r.trim()];
+        if (k) parts.push(_tr(k, r.trim()));
       });
     }
+    // An airline's own name is its brand — it is not translated on a board
+    // any more than 'Air Canada' becomes 'Canada Air' in French.
     if (filterAirline) {
       var code = String(filterAirline).trim().toUpperCase();
-      var nm = (typeof AIRLINE_NAME !== 'undefined' && (AIRLINE_NAME[code] || '')) || code;
-      en.push(nm); fr.push(nm);
+      parts.push((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code);
     }
-    try { document.body.classList.toggle('has-board-filter', en.length > 0); } catch (e2) {}
-    if (!en.length) return '';
-    return '<span class="fids-board-filter">'
-         +   '<span class="fbl-en">' + en.join(' · ') + '</span>'
-         +   '<span class="fbl-fr">' + fr.join(' · ') + '</span>'
-         + '</span>';
+    try { document.body.classList.toggle('has-board-filter', parts.length > 0); } catch (e2) {}
+    if (!parts.length) return '';
+    return '<span class="fids-board-filter">' + parts.join(' · ') + '</span>';
   } catch (e) { return ''; }
 }
+
 
 // ── Shared clock format (Nick, Jul 2026) — the SAME words + format on every
 // screen (gate / FIDS / BIDS):

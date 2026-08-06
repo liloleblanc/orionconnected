@@ -7975,23 +7975,21 @@ html.fids-portrait #fidsTable colgroup col.col-status { width: 268px !important;
   margin-top: 2px;
   white-space: nowrap;
 }
-/* The bilingual spans carry their OWN size (measured: 49.9px landscape,
-   32px portrait) from the board-label rules, so sizing the chip container
-   does nothing — the child spans have to be named directly. */
-html:not(#_) #fidsBanner .fids-board-filter .fbl-en,
-html:not(#_) #fidsBanner .fids-board-filter .fbl-fr {
-  font-size: 20px !important;
-  line-height: 1.06 !important;
+/* v22880: the chip is a single translated line now (it follows the board's
+   language rotation), so it no longer needs the .fbl-en/.fbl-fr stack — but
+   it DOES still need an explicit size, because it inherits the board
+   label's (measured: ~50px landscape, 32px portrait) otherwise. */
+html:not(#_) #fidsBanner .fids-board-filter {
+  font-size: 22px !important;
+  line-height: 1.08 !important;
   letter-spacing: 0.4px !important;
   white-space: nowrap !important;
 }
-html.fids-portrait:not(#_) #fidsBanner .fids-board-filter .fbl-en,
-html.fids-portrait:not(#_) #fidsBanner .fids-board-filter .fbl-fr {
-  font-size: 13px !important;
+html.fids-portrait:not(#_) #fidsBanner .fids-board-filter {
+  font-size: 14px !important;
 }
-/* Two extra lines do not fit a banner sized for two: measured, the label
-   block alone is already 210px inside a 128px banner and the chip pushed
-   'Departures' off the top. A filtered board gets a taller banner rather
-   than a squeezed one — vertical space is the thing portrait has most of. */
-body.has-board-filter #fidsBanner { height: 176px !important; }
-html.fids-portrait body.has-board-filter #fidsBanner { height: 158px !important; }
+/* One extra line still needs room: measured, the label block alone is
+   already 210px inside a 128px banner. A filtered board gets a slightly
+   taller banner rather than a squeezed one. */
+body.has-board-filter #fidsBanner { height: 152px !important; }
+html.fids-portrait body.has-board-filter #fidsBanner { height: 140px !important; }

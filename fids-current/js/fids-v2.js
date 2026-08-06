@@ -39,6 +39,14 @@
 
     'st-cancelled':   { en:'Cancelled',   fr:'Annulé',        es:'Cancelado',      de:'Annulliert',       it:'Cancellato',       pt:'Cancelado',        ja:'欠航',     zh:'取消',     ar:'ملغاة' },
     'st-diverted':    { en:'Diverted',    fr:'Dérouté',       es:'Desviado',       de:'Umgeleitet',       it:'Dirottato',        pt:'Desviado',         ja:'目的地変更', zh:'改航', ar:'محول' },
+    // v22880 — filtered-board chip (Nick: 'You may as well reinstall the
+    // already exisiting multigual languages'). Same 9-language table as
+    // every other board word, so a filtered monitor speaks whatever the
+    // rotation is currently showing instead of a hardcoded EN/FR pair.
+    terminal:         { en:'Terminal',      fr:'Aérogare',        es:'Terminal',       de:'Terminal',        it:'Terminal',       pt:'Terminal',      ja:'ターミナル', zh:'航站楼',   ar:'المبنى' },
+    'f-domestic':      { en:'Domestic',      fr:'Intérieur',       es:'Nacional',       de:'Inland',          it:'Nazionali',      pt:'Doméstico',     ja:'国内線',     zh:'国内',     ar:'داخلي' },
+    'f-transborder':   { en:'Transborder',   fr:'Transfrontalier', es:'Transfronterizo', de:'Transborder',    it:'Transfrontaliero', pt:'Transfronteiriço', ja:'米国線', zh:'美国航线', ar:'عبر الحدود' },
+    'f-international': { en:'International', fr:'International',   es:'Internacional',  de:'International',   it:'Internazionali', pt:'Internacional', ja:'国際線',     zh:'国际',     ar:'دولي' },
     now:              { en:'Now',         fr:'Maintenant',    es:'Ahora',          de:'Jetzt',            it:'Ora',              pt:'Agora',            ja:'変更',     zh:'现改为',   ar:'الآن' }
   };
 
