@@ -17620,7 +17620,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22935';
+var FIDS_BUILD_TAG = 'v22936';
 (function(){
   try {
     function _addTag(){
@@ -25894,7 +25894,6 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   //    lets the real aircraft catch up, which reads as slowing down rather
   //    than reversing.
   var _corr = 0;
-  var _holdForTruth = false;
   try {
     if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
         _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
@@ -25903,12 +25902,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       var _corrNm = Math.abs(_dp) * totalNm;
       if (_corrNm < 40) {
         p = _gateGlide.p;
-        if (_dp >= 0) {
-          _corr = _dp;                 // truth is ahead — ease forward into it
-        } else {
-          _corr = 0;                   // truth is behind — do not rewind
-          _holdForTruth = true;        // freeze until the aircraft reaches us
-        }
+        // v22936 — take the correction in BOTH directions again; the frame
+        // loop eases a backwards one over 20s so it is absorbed, not seen.
+        _corr = _dp;
       }
     }
   } catch (e) {}
@@ -25947,16 +25943,28 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
       else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
       var effSpeed = speedKts * Math.max(0.2, factor);
-      // v22927 — while holding for truth, the marker does not advance. Dead
-      // reckoning had already carried it past the real aircraft, so moving on
-      // would only widen the gap the next fix has to undo. It resumes as soon
-      // as a fix arrives that is ahead of it.
-      if (_holdForTruth) effSpeed = 0;
+      // v22936 — the v22927 freeze is WITHDRAWN. Setting effSpeed to 0 while
+      // waiting for truth to catch up looked right on paper and was wrong in
+      // the air: _seedP is fixed for the life of this glide, so once the hold
+      // engaged nothing could ever clear it and the aircraft simply stopped
+      // (Nick: 'now its not moving at all'). A frozen aeroplane is a worse lie
+      // than a slightly-ahead one.
+      //
+      // The marker always advances. The backwards correction is handled below
+      // by easing it in slowly instead of refusing it.
       p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
-      // Bleed in any outstanding position correction (~4s time constant).
+      // Bleed in any outstanding position correction. Forward corrections ease
+      // over ~4s as before. BACKWARD ones ease over ~20s: dead reckoning runs
+      // ahead whenever the aircraft slows, so the next fix legitimately lands
+      // behind the marker, and the old 4s constant made that read as a visible
+      // slide in reverse (Nick: 'its going back and forth ... swaying left to
+      // right to backwards'). Spread over 20s it is slower than the forward
+      // travel, so the marker still nets forward and the correction is absorbed
+      // rather than seen.
       if (_corr) {
-        var _cStep = _corr * Math.min(1, dtMs / 4000);
-        p = Math.min(0.995, p + _cStep);
+        var _tau = (_corr < 0) ? 20000 : 4000;
+        var _cStep = _corr * Math.min(1, dtMs / _tau);
+        p = Math.min(0.995, Math.max(0, p + _cStep));
         _corr -= _cStep;
         if (Math.abs(_corr) < 1e-6) _corr = 0;
       }
