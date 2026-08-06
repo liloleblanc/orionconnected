@@ -8884,3 +8884,32 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8
   color: var(--plate-ink, #fff) !important;
   text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
 }
+
+/* ── v22914 — WESTJET'S BACKGROUND GOES DEEP NAVY (Nick: 'Westjet ther
+   background thast not correct it should be lets mayve it deep navy blue
+   dark'). It was #7FA8D8 — a LIGHT blue — soft-light blended over the AC
+   luxury shelf, left over from the v22864 pass.
+
+   Rather than a flat fill, WestJet now gets the same wave-line design Nick
+   supplied for Air Canada, recoloured into WestJet's navy: the line
+   structure drives how far each pixel travels from a deep base navy toward
+   a lighter one, so the two carriers share a family look and differ only in
+   colour. Measured mean RGB 13/29/62 — properly dark, and the teal stays
+   where it belongs, on the plates and accents. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_):not(#_) .g8-board-info-row,
+html body:is([data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-board-info-row {
+  background-color: #07122a !important;
+  background-image: url('/textures/ws-back-navy.jpg?v=22914') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map) {
+  background: #07122a url('/textures/ws-back-navy.jpg?v=22914') center / cover no-repeat !important;
+  background-blend-mode: normal !important;
+}
