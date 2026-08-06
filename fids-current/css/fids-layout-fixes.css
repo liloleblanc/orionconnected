@@ -8075,3 +8075,24 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-blend-mode: normal !important;
   background-color: #16161a !important;
 }
+
+/* ── v22893 — SAME TRIAL ON THE SIDE SHELVES (Nick: 'Not liking B so far I
+   would need to see them on the other side panels too'). One texture per
+   side, so both get judged at full size rather than in a 370px plate:
+
+     LEFT  (aircraft column) → brush / fibre   = A
+     RIGHT (map column)      → flowing curves  = B
+
+   Baked darker than the plates on purpose — these sit BEHIND artwork,
+   plates and the rail, so they have to stay background. Measured mean
+   luminance: shelves 45 / 43, against plates 73 / 59. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+  background-image: url("/logos/Backgrounds/ac-brush-shelf.jpg?v=22893") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  background-image: url("/logos/Backgrounds/ac-curves-shelf.jpg?v=22893") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
