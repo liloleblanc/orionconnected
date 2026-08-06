@@ -7993,3 +7993,25 @@ html.fids-portrait:not(#_) #fidsBanner .fids-board-filter {
    taller banner rather than a squeezed one. */
 body.has-board-filter #fidsBanner { height: 152px !important; }
 html.fids-portrait body.has-board-filter #fidsBanner { height: 140px !important; }
+
+/* ── v22884 — ROTATED KIOSKS ONLY FILLED PART OF THE SCREEN (Nick's photo
+   of a ?rot=90 board: the flights ran up the right-hand side and ~600px of
+   the screen sat empty).
+
+   Measured on a 1655×1050 viewport with rot=90: <body> was correct at
+   1050×1655 and its transform put it exactly over the screen — but
+   #fidsBoard came out 1050px tall, not 1655. fids.css sizes it
+   `height: 100vh`, and a CSS transform does not change what vh MEANS: it
+   still resolves against the real, landscape viewport. So the board filled
+   1050 of the page's 1655, and the remaining 605px was dead space.
+
+   Under rotation the axes swap for every full-page container, exactly as
+   they already do on <body>: page height is the viewport's WIDTH. */
+html.fids-rot90  #fidsBoard, html.fids-rot270 #fidsBoard,
+html.fids-rot90  .g8-wrap,   html.fids-rot270 .g8-wrap {
+  width:  100vh !important;
+  height: 100vw !important;
+  min-height: 100vw !important;
+  max-height: 100vw !important;
+}
+html.fids-rot90 body, html.fids-rot270 body { min-height: 100vw !important; }
