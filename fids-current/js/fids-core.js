@@ -1414,6 +1414,31 @@ function changeScreenType(val) {
   // right now its showing main board its fucked up'). Sync here — the one
   // place every caller passes through.
   try { var _stSel = document.getElementById('screenTypeSel'); if (_stSel && _stSel.value !== val) _stSel.value = val; } catch (e) {}
+  // v22939 — AND THE DISPLAY-TYPE PILLS. v22814 fixed the legacy <select>
+  // and stopped there; the redesigned menu's FIDS/GIDS/BIDS pills are a
+  // second copy of the same state and they were never wired to it. So the
+  // exact fault came back on a different control (Nick: 'Not on the right
+  // setting ffs this all happened before').
+  //
+  // Measured on the live branch, /gids?ap=YYZ&gate=D36 (v22938):
+  //   screenType 'gate' · screenTypeSel 'gate' · uxg-gate-mode true
+  //   pills      FIDS:ACTIVE  GIDS:-  BIDS:-
+  // and calling _syncMenu() by hand flipped them to GIDS:ACTIVE. So the
+  // state was right and nothing ever pushed it to the pills: menu.js syncs
+  // once when the fragment lands — BEFORE the gids boot path flips
+  // screenType — and menubar.js, which owns the top-bar dropdown Nick
+  // actually opens, never calls _syncMenu at all.
+  //
+  // Fixed where the value changes, not where it is displayed, so any future
+  // copy of this state syncs for free.
+  try {
+    ['main', 'gate', 'baggage'].forEach(function (t) {
+      var _pill = document.getElementById('smDisplay_' + t);
+      if (_pill) _pill.classList.toggle('active', t === val);
+    });
+    var _dLabel = document.getElementById('menuDisplayLabel');
+    if (_dLabel) _dLabel.textContent = ({ main: 'FIDS', gate: 'GIDS', baggage: 'BIDS' })[val] || 'FIDS';
+  } catch (e) {}
   // Survive the self-update reloads: a screen put into gate/baggage mode via
   // the MENU (no URL param) was being dumped back to the main board on every
   // deploy (Nick: 'what happened to baggage… it's all over the place').
@@ -8036,6 +8061,17 @@ function _buildV2MapCol(ctx, vars) {
       // rule). Airline-specific pins above (AC 737→MAX, TS→neo) already ran.
       if (!_imgEq && _equipNm && typeof aircraftCodeToIata === 'function') {
         try { _imgEq = aircraftCodeToIata(_equipNm) || ''; } catch (e) { _imgEq = ''; }
+        // v22935 — and the Rouge paint has to survive THIS path too (Nick:
+        // 'wrong aircraft livery'). The suffix above is applied to _liveryEq,
+        // but that branch is guarded on _liveryEq being truthy — and it is
+        // empty whenever the flight carries no equipment CODE, which is the
+        // exact case this fallback exists to cover. So a Rouge flight with
+        // only a scheduled equipment NAME fell through here and got the
+        // mainline art: measured on AC1987/AC1984 at YQM gate 4, _opCode was
+        // 'RV' and the browser still requested AC/320.png, never 320r.png.
+        if (_imgEq && _opCode === 'RV') {
+          try { _imgEq = _rougeLiveryEq(_imgEq); } catch (e) {}
+        }
       }
       if (typeof aircraftImgTag === 'function' && _imgEq) {
         _acImg = aircraftImgTag(_liveryAirline, _imgEq, {
@@ -8912,8 +8948,19 @@ function uxgGateHtml(ctx) {
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
     // Swap those brands for a colored cut here, like the SkyTeam invert below.
     var _BW_EMBLEM = { 'UA': '/logos/airlines/us-major/united-globe-only.svg' };
+    // v22939 — AIRLINE_EMBLEM_FILES is a hand-kept list and most of the world
+    // is not on it. Korean Air is not, so on Nick's YYZ/C35 boarding screen
+    // this strip rendered as a bare white band: no rondelle, just the two
+    // words floating in a white slab under a fully textured banner.
+    // /logos/symbols/airlines/ already ships 73 carrier symbols (KE among
+    // them, the taegeuk in #051766 — which reads correctly on white). Fall
+    // through to it before giving up. The onerror below already hides a miss,
+    // so a carrier with no symbol lands exactly where it does today.
+    var _bwSym = /^[A-Z0-9]{2}$/.test(String(airlineCode || '').toUpperCase())
+      ? '/logos/symbols/airlines/' + String(airlineCode).toUpperCase() + '.svg' : null;
     var _bwEmb = _BW_EMBLEM[airlineCode]
-      || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+      || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode])
+      || _bwSym || null;
     // The strip is WHITE like the printed sign — swap the banner's metallic
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
     // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
@@ -9859,6 +9906,32 @@ function uxgGateHtml(ctx) {
       + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:76%;max-height:82%;max-width:100%;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
+
+  // ── v22939 — PUBLISH THE GATE ACCENT AT DOCUMENT SCOPE.
+  // Every brand variable below is written INLINE on .g8-wrap, so it only
+  // exists inside the wrap's subtree. Anything that reads --airline-accent
+  // from :root or <body> got fids.css:891's hard-coded `--airline-accent:
+  // #0033A1` instead — United blue, on every carrier's gate.
+  //
+  // Measured on a live Korean Air gate (YYZ/C35, branch v22938):
+  //   body --airline-accent  #0033A1        <- United
+  //   body --plate-base      color-mix(in srgb, #0033A1 34%, #0b0e14)
+  // The tinted default plate — the panel behind the flight data on every
+  // carrier that has no texture of its own — was being mixed with United's
+  // blue rather than the carrier's own colour. That is the whole of #73, and
+  // it is why the untextured carriers all shared one wrong tone.
+  //
+  // The variables are authored here, so they are published here, to the
+  // element every scope can see.
+  try {
+    var _rootStyle = document.documentElement.style;
+    _rootStyle.setProperty('--airline-accent', accent);
+    _rootStyle.setProperty('--accent-lane',
+      _hexIsLight(accent) ? 'color-mix(in srgb, ' + accent + ' 55%, #141a14)' : accent);
+    _rootStyle.setProperty('--banner-bg',
+      (_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF')
+        ? _bannerSpec.r1 : '#0c1119');
+  } catch (e) {}
 
   return '<div class="g8-wrap'
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
@@ -17609,7 +17682,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22929';
+var FIDS_BUILD_TAG = 'v22940';
 (function(){
   try {
     function _addTag(){
@@ -25537,6 +25610,32 @@ function _gateMapWatchResize(mb) {
       });
       window._gateMapRO.observe(mb);
     }
+    // v22932 — the observer alone is not enough (Nick: 'i moved the window of
+    // the GIDS and the map did not move it stayed stationary in the corner
+    // untill it refreshed'). A ResizeObserver only fires when the OBSERVED BOX
+    // changes; a window move, a devicePixelRatio change, or a resize that the
+    // box absorbs without changing its own computed pixel size never reaches
+    // it. Leaflet then keeps drawing its panes at the offsets it measured
+    // last, which is the map sitting stranded in a corner until something else
+    // forces a re-measure.
+    //
+    // So watch the WINDOW too, debounced, and re-measure a moment later as
+    // well — the second pass catches a resize that is still settling when the
+    // first one fires.
+    if (!window._gateMapWinResize) {
+      window._gateMapWinResize = function () {
+        clearTimeout(window._gateMapWinT);
+        window._gateMapWinT = setTimeout(function () {
+          try { if (gateMap) gateMap.invalidateSize(); } catch (e4) {}
+          setTimeout(function () {
+            try { if (gateMap) gateMap.invalidateSize(); } catch (e5) {}
+          }, 400);
+        }, 120);
+      };
+      window.addEventListener('resize', window._gateMapWinResize);
+      window.addEventListener('orientationchange', window._gateMapWinResize);
+      try { window.addEventListener('pageshow', window._gateMapWinResize); } catch (e6) {}
+    }
   } catch (e) {}
 }
 
@@ -25750,9 +25849,61 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 // initGateMapLive re-seeds it to the true position — a gentle correction, not
 // a jump. It ONLY nudges the marker + the two route arcs; it never re-inits,
 // re-centres, or re-renders the map, so it can't reintroduce the map thrash.
-var _gateGlide = { timer: null, raf: null };
+// ── v22939 — GLIDE REBUILT (Nick: 'its bad coding ... its always been like
+// that it needs replaced simple its also going backwards').
+//
+// He is right, and his 31s screen recording proves it. Tracking the marker
+// through all 270 map-visible frames of that clip (background-subtracted
+// centroid; the map tiles are confirmed static, global pan 0px for the whole
+// clip, so screen motion IS marker motion):
+//
+//   net travel          38.7 px over 26.9 s   -> +0.144 px per 100ms frame
+//   reversals >0.5px    20 in 26.9 s          -> one every ~1.3 s
+//   worst reversal      -7.02 px              -> 49x a normal forward step
+//   icon orientation    104 deg range, std 17.9 deg,
+//                       39 swings >3 deg per 100ms, worst 78.9 deg
+//
+// A great-circle heading changes by a fraction of a degree over 27 seconds.
+// The icon was swinging through a hundred. That rocking IS the 'swaying left
+// to right', and the -7px steps are the 'backwards'.
+//
+// My earlier probes said the motion was clean because they sampled
+// _gateGlide.p — the MODEL — which is smooth, and then compared the marker's
+// wander to the route's full 1736px length instead of to the 0.144px step it
+// actually moves per frame. 6px of wander is invisible against 1736; it is
+// enormous against 0.144. The number was right and the yardstick was wrong.
+//
+// THE DESIGN FAULT. _startGateMapGlide is called from two places — the gate
+// map (initGateMapLive) and the big-craft map — and both share this one
+// module-level object. _stopGateMapGlide can only cancel ONE rAF handle, but
+// every frame re-assigns _gateGlide.raf, so if two loops are ever alive on the
+// same tick the slot keeps the last writer and the other loop is orphaned. It
+// then runs forever with its own p, its own route and its own idea of the
+// heading, writing the same marker. Two writers alternating frame to frame
+// produce exactly the measured signature: reversals that don't propagate,
+// oscillation between a handful of discrete angles, footprint flicker.
+//
+// So the model is replaced rather than patched again:
+//
+//   1. GENERATION TOKEN. Every start claims a new generation; a frame whose
+//      generation is stale returns without rescheduling. Orphans die on their
+//      next tick no matter what happened to the rAF handle.
+//   2. POSITION IS A PURE FUNCTION OF TIME, p(t) = p0 + rate*(t - t0), not an
+//      accumulator nudged each frame. A non-decreasing function of a
+//      monotonic clock cannot go backwards. That is a guarantee, not a tuning.
+//   3. A FIX RE-ANCHORS, IT DOES NOT DISPLACE. A new ADS-B position keeps the
+//      currently drawn p and changes the RATE to converge on truth. Error is
+//      absorbed by flying slower or faster, never by moving the marker.
+//      Rate is clamped at >= 0, so 'truth is behind us' reads as slowing down.
+//   4. HEADING IS SLEW-LIMITED and taken from a fixed look-ahead along the
+//      route rather than the next vertex. An aircraft cannot rotate 78 degrees
+//      in 100ms; now neither can the icon.
+var _gateGlide = { timer: null, raf: null, gen: 0 };
 
 function _stopGateMapGlide() {
+  // Bumping the generation is what actually stops things — clearing the
+  // handles below is only tidiness, and was never sufficient on its own.
+  _gateGlide.gen = (_gateGlide.gen + 1) | 0;
   try { if (_gateGlide.timer) clearInterval(_gateGlide.timer); } catch (e) {}
   try { if (_gateGlide.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(_gateGlide.raf); } catch (e) {}
   _gateGlide.timer = null;
@@ -25856,29 +26007,56 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   //    Now a negative correction is not applied: the marker HOLDS station and
   //    lets the real aircraft catch up, which reads as slowing down rather
   //    than reversing.
-  var _corr = 0;
-  var _holdForTruth = false;
+  // v22939 — the fix RE-ANCHORS. If we were already tracking this same route,
+  // the marker keeps the position it is currently drawn at (no displacement of
+  // any size, in either direction) and the outstanding error is handed to the
+  // rate solver below, which flies it off over _CONVERGE_MS. Nothing here can
+  // move the marker, so nothing here can make it jump or reverse.
+  var _errP = 0;                       // route-fraction still owed to truth
   try {
     if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
         _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
         _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1]) {
       var _dp = _seedP - _gateGlide.p;
-      var _corrNm = Math.abs(_dp) * totalNm;
-      if (_corrNm < 40) {
+      // Tolerance in NAUTICAL MILES, not route fraction: the route is rebuilt
+      // through the live position on every fix, so totalNm shrinks on approach
+      // and a fixed fraction stops meaning the same thing (v22927).
+      if (Math.abs(_dp) * totalNm < 40) {
         p = _gateGlide.p;
-        if (_dp >= 0) {
-          _corr = _dp;                 // truth is ahead — ease forward into it
-        } else {
-          _corr = 0;                   // truth is behind — do not rewind
-          _holdForTruth = true;        // freeze until the aircraft reaches us
-        }
+        _errP = _dp;
       }
     }
   } catch (e) {}
   _gateGlide.o = o; _gateGlide.d = d;
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
-  var lastTs = _nowFn();
+
+  // ── The time-parameterised model ──────────────────────────────────────
+  var _CONVERGE_MS = 45000;      // horizon over which a fix error is flown off
+  var _MAX_SLEW_DPS = 3;         // deg/sec — the icon's rotation rate ceiling
+  var _t0 = _nowFn();            // anchor time
+  var _p0 = p;                   // anchor position (what is drawn right now)
+  var _baseRate = speedKts / 3600000 / totalNm;   // route-fraction per ms
+  // Flight-phase profile — accelerating off the origin, bleeding speed down
+  // the glideslope. Evaluated ONCE, at this glide's anchor, and folded into
+  // the rate. It deliberately is not re-evaluated per frame: a multiplier that
+  // changes under an accumulating position is exactly what made the old model
+  // non-monotone, and applying it as a warp of travelled distance has the same
+  // defect (on the glideslope d(ease)/d(u) is -2.33, so past ~0.25 of route
+  // travelled the product turns over and p would fall). A glide only lives
+  // until the next fix — about a minute — so the profile is essentially
+  // constant across it anyway, and it still emerges across successive glides
+  // as the anchor walks down the route. The Ground Speed / Altitude NUMBERS
+  // are untouched either way: those stay the real feed.
+  var _phase = 1;
+  if (_p0 < 0.12)      _phase = 0.62 + 0.38 * (_p0 / 0.12);
+  else if (_p0 > 0.82) _phase = Math.max(0.35, 1 - 0.42 * ((_p0 - 0.82) / 0.18));
+  // Converge on truth by adjusting the RATE. Clamped at zero: when truth is
+  // behind the marker the aircraft slows, it never reverses.
+  var _rate = Math.max(0, _baseRate * _phase + (_errP / _CONVERGE_MS));
+  var _myGen = _gateGlide.gen;   // claimed below, after the last early return
   var lastArcIdx = -1;
+  var _hdg = null;               // last rendered heading, for slew limiting
+
   function bearingBetween(A, B) {
     var dLng = (B[1] - A[1]) * Math.PI / 180;
     var lat1 = A[0] * Math.PI / 180, lat2 = B[0] * Math.PI / 180;
@@ -25886,44 +26064,46 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
     return Math.atan2(y, x) * 180 / Math.PI;
   }
+  // Heading from a LOOK-AHEAD along the route, not from the next vertex. With
+  // 118 vertices the adjacent-vertex bearing is computed over a few hundred
+  // metres, where rounding and the origin/plane/destination junction dominate;
+  // that is what let it swing 78 degrees between two frames. Six vertices
+  // ahead is a long enough baseline for the answer to be the route's heading.
+  function headingAt(i0) {
+    var A = route[i0], B = route[Math.min(n - 1, i0 + 6)];
+    if (A[0] === B[0] && A[1] === B[1]) B = route[Math.min(n - 1, i0 + 1)];
+    return bearingBetween(A, B);
+  }
   // Continuous animation-frame glide: the plane advances smoothly EVERY frame,
   // interpolating BETWEEN route vertices (no 1-second stepping / vertex snap),
   // so it reads as a real gliding aircraft. When the next real ADS-B fix lands,
   // initGateMapLive re-seeds this to the true spot — a gentle correction.
   function frame() {
     try {
+      // A stale generation means another glide has taken over (or everything
+      // was torn down). Return WITHOUT rescheduling — this is what makes an
+      // orphaned loop die instead of fighting the live one for the marker.
+      if (_myGen !== _gateGlide.gen) return;
       if (!marker._map) { _stopGateMapGlide(); return; }   // map/marker torn down
+
       var now = _nowFn();
-      var dtMs = now - lastTs;
-      lastTs = now;
-      // Clamp dt so a backgrounded tab (rAF paused) doesn't teleport the plane
-      // on return — cap each step at 2s of travel.
-      if (dtMs > 2000) dtMs = 2000;
-      if (dtMs < 0) dtMs = 0;
-      var dtH = dtMs / 3600000;
-      // The MOTION model adjusts its ASSUMED speed by flight phase so the plane
-      // eases along a realistic profile — accelerating off the origin and
-      // bleeding speed down the glideslope into the destination instead of
-      // sailing in at cruise. The Ground Speed / Altitude NUMBERS are untouched:
-      // they stay the real feed.
-      var factor = 1;
-      if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
-      else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
-      var effSpeed = speedKts * Math.max(0.2, factor);
-      // v22927 — while holding for truth, the marker does not advance. Dead
-      // reckoning had already carried it past the real aircraft, so moving on
-      // would only widen the gap the next fix has to undo. It resumes as soon
-      // as a fix arrives that is ahead of it.
-      if (_holdForTruth) effSpeed = 0;
-      p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
-      // Bleed in any outstanding position correction (~4s time constant).
-      if (_corr) {
-        var _cStep = _corr * Math.min(1, dtMs / 4000);
-        p = Math.min(0.995, p + _cStep);
-        _corr -= _cStep;
-        if (Math.abs(_corr) < 1e-6) _corr = 0;
+      var elapsed = now - _t0;
+      if (!(elapsed > 0)) elapsed = 0;   // a non-monotonic clock cannot rewind us
+
+      // POSITION IS A PURE FUNCTION OF ELAPSED TIME. _rate is fixed for the
+      // life of this glide and clamped >= 0, and elapsed only grows, so p can
+      // only grow. There is no accumulator to drift and nothing to subtract.
+      p = Math.min(0.995, _p0 + _rate * elapsed);
+
+      // Publish, and never publish a value lower than the last one: a belt to
+      // the braces, so even a future caller mutating _gateGlide.p cannot make
+      // the next re-seed read backwards.
+      if (!(typeof _gateGlide.p === 'number') || p >= _gateGlide.p || _gateGlide.gen !== _myGen) {
+        _gateGlide.p = p;
+      } else {
+        p = _gateGlide.p;
       }
-      _gateGlide.p = p;
+
       // Fractional position along the polyline → smooth sub-vertex motion.
       var fi = p * (n - 1);
       var i0 = Math.min(n - 2, Math.max(0, Math.floor(fi)));
@@ -25935,7 +26115,25 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       marker.setLatLng([lat, lng]);
       try {
         var div = (marker._icon && marker._icon.querySelector) ? marker._icon.querySelector('div') : null;
-        if (div) div.style.transform = 'rotate(' + bearingBetween(A, B) + 'deg)';
+        if (div) {
+          // Slew-limited heading. The target comes from the look-ahead; the
+          // rendered angle chases it at no more than _MAX_SLEW_DPS. Measured
+          // on Nick's clip the old code swung 78 degrees in a single 100ms
+          // frame and ranged over 104 degrees in 27 seconds — this caps that
+          // at 3 deg/sec, which is already faster than a jet's standard turn.
+          var _tgt = headingAt(i0);
+          if (_hdg === null) { _hdg = _tgt; }
+          else {
+            var _dh = ((_tgt - _hdg + 540) % 360) - 180;   // shortest way round
+            var _lim = _MAX_SLEW_DPS * ((now - (frame._last || now)) / 1000);
+            if (!(_lim > 0)) _lim = 0.05;
+            if (_dh >  _lim) _dh =  _lim;
+            if (_dh < -_lim) _dh = -_lim;
+            _hdg = (_hdg + _dh + 360) % 360;
+          }
+          div.style.transform = 'rotate(' + _hdg.toFixed(2) + 'deg)';
+        }
+        frame._last = now;
       } catch (er) {}
       // Redraw the solid-behind / dashed-ahead split only when we cross a vertex
       // (cheap) — the marker itself glides every frame.
@@ -25984,13 +26182,25 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
           }
         }
       } catch (er) {}
+      // Reschedule only while we are still the live generation.
+      if (_myGen !== _gateGlide.gen) return;
       if (typeof requestAnimationFrame === 'function') _gateGlide.raf = requestAnimationFrame(frame);
     } catch (e) { _stopGateMapGlide(); }
   }
+  // Claim the generation LAST, after every early return above, so an aborted
+  // start cannot silently kill the glide that is already running.
+  _gateGlide.gen = (_gateGlide.gen + 1) | 0;
+  _myGen = _gateGlide.gen;
+  _gateGlide.p = _p0;
   if (typeof requestAnimationFrame === 'function') {
     _gateGlide.raf = requestAnimationFrame(frame);
   } else {
-    _gateGlide.timer = setInterval(frame, 250);  // fallback for no-rAF environments
+    // The interval fallback needs the same generation check; frame() returns
+    // early on a stale generation, so clear the timer it belongs to as well.
+    _gateGlide.timer = setInterval(function () {
+      if (_myGen !== _gateGlide.gen) { try { clearInterval(_gateGlide.timer); } catch (e) {} return; }
+      frame();
+    }, 250);
   }
 }
 // ──────────────────────────────────────────────────────────────────────

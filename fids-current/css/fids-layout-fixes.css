@@ -3074,16 +3074,41 @@ html .g8-board-hdr-next {
   color: #ffffff !important;
   border-bottom: none !important;
 }
-html .g8-board-hdr-now, html .g8-board-col.now { background: var(--banner-bg, #0b0f16) !important; }
+/* v22939 — the lane panels are made of the same material as the rest of the
+   screen. They were the last two surfaces the v22903 plate system never
+   reached: measured on a live Korean Air gate (YYZ/C35, v22938) the columns
+   came back `rgb(12,17,25)` and `rgb(0,37,108)` with `background-image:
+   none`, so the takeover read as two flat placeholder rectangles bolted
+   under a fully textured banner. That contrast is the defect, not the
+   colours — the black/accent split is Nick's own gate-sign reference.
+   soft-light keeps the tone exactly (black stays black, the accent stays
+   the accent) and only lays the plate's line structure over it. */
+html .g8-board-hdr-now, html .g8-board-col.now {
+  background-color: var(--banner-bg, #0b0f16) !important;
+  background-image: var(--plate-tex) !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light !important;
+}
 /* --accent-lane = the accent, pre-darkened by JS when the brand colour is
    too light for white lettering (Flair lime, Southwest yellow). */
-html .g8-board-hdr-next, html .g8-board-col.next { background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important; }
+html .g8-board-hdr-next, html .g8-board-col.next {
+  background-color: var(--accent-lane, var(--airline-accent, #D82F2E)) !important;
+  background-image: var(--plate-tex) !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light !important;
+}
 html .g8-board-col.next { border-left: none !important; }
 /* Frontier (Nick): 'gray on the left for boarding now' — the Boarding-now
    panel/header go slate gray (white lettering still reads); the Boarding-next
    panel keeps its brand blue. */
+/* background-COLOR, not the shorthand: the shorthand would reset the plate
+   texture the rule above sets and drop Frontier back to a flat slab. */
 html body[data-gate-airline="F9"] .g8-board-hdr-now,
-html body[data-gate-airline="F9"] .g8-board-col.now { background: #5B646F !important; }
+html body[data-gate-airline="F9"] .g8-board-col.now { background-color: #5B646F !important; }
 html .g8-board-col .g8-board-grp-label,
 html .g8-board-col .g8-board-grp-num,
 html .g8-board-col .g8-board-arrow,
@@ -9231,3 +9256,174 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-c
   padding-bottom: 1px !important;
   margin-bottom: 1px !important;
 }
+
+/* ── v22930 — THE GLOBE, FOUND AT LAST (Nick: 'globe is still there i dont
+   understand this get rid of it'). Neither do I, until now — and the reason
+   four sweeps missed it is worth writing down.
+
+   It is not a radial-gradient and not a circle. It is an ASSET:
+   /logos/3d_globe_desktop.svg, painted on PSEUDO-ELEMENTS —
+
+     line ~1515  .gad-aircraft-col::after   background-size: 300% auto
+     line ~1488  .gad-map-col-v2::before    (QK/RV/F8/PB)
+     line ~7007  .gad-aircraft-col          background-image, globe + lux
+
+   v22918 set .gad-aircraft-col itself to background-image: none for AC and
+   WestJet, which killed the third one — but a rule on an ELEMENT does not
+   touch its ::before or ::after, so the 300% globe watermark survived every
+   pass. Every DOM sweep I ran enumerated elements, and pseudo-elements are
+   not in the DOM, so it was invisible to the probe as well as to me.
+
+   That 300% is also 'way too wide background pattern': a globe scaled to
+   three times the column width.
+
+   Cleared on the two carriers carrying Nick's own line artwork. Everyone
+   else keeps it — it is deliberate design there, not a bug. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col::after,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2::after {
+  background-image: none !important;
+  content: none !important;
+}
+
+/* ── v22930b — PATTERN NARROWED AGAIN, AND WESTJET'S LINES GO NAVY. Nick:
+   'Way too wide background pattern / lines should be westjet navy'.
+   Mirror-tiled 4x4 rather than 2x2, so each feature is a QUARTER of its
+   former size, and WestJet's ramp now runs from a deep base to WestJet's own
+   navy on the crests. Measured: WS mean RGB 10/26/54, AC 27/12/12 — the
+   tones are unchanged, only the scale and the hue of the strokes. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ws-back-navy4.jpg?v=22930') !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ac-back-lines-red4.jpg?v=22930') !important;
+}
+
+/* ── v22931 — AC BACKGROUND GOES FLAT BLACK (Nick: 'put the AC background
+   black i just noticed it clashes with the contents a bit'). The red line
+   artwork stays in the repo but stops painting behind Air Canada's gate —
+   with a full-bleed ad in the middle column and red plate furniture either
+   side, a red-striped ground is one red too many. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+
+/* ── v22931b — THE STAR ALLIANCE TILE, BACK TO FULL SIZE (Nick: 'the Star
+   Alliance logo is now smaller and the frame is too high for the image').
+   Both halves of that are one regression of mine, from v22907.
+
+   That block added padding-right to .g8-r1-logoslot to keep the alliance mark
+   off the panel seam, and — 'belt and braces' — flex-shrink: 1 on the mark
+   itself. Together those are the bug: the padding narrows the content box,
+   the mark is now permitted to shrink into it, and object-fit: contain then
+   scales the artwork down to the narrower WIDTH while the tile's HEIGHT stays
+   pinned at clamp(64px, 8.6vh, 98px). A smaller logo inside a box that never
+   got shorter is exactly 'the frame is too high for the image'.
+
+   The flex-shrink is withdrawn. The gutter stays — it is what stopped the
+   oneworld lockup straddling the seam — but the wordmark absorbs it now,
+   which is what should have happened in the first place: it is type and can
+   rescale, where the tile is fixed artwork and cannot. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star {
+  flex-shrink: 0 !important;
+}
+/* And the tile hugs its artwork: width follows the aspect at the pinned
+   height, so no letterbox can open up above or below it. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .g8-r1-silk .g8-r1-star.g8-r1-alliance-star,
+html body:not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-star {
+  width: auto !important;
+  min-width: 0 !important;
+  object-fit: contain !important;
+  flex-shrink: 0 !important;
+}
+
+/* ── v22932 — THE LINES COME BACK, IN BLACK (Nick: 'where did the background
+   go with the line its just black now'). v22931 read 'put the AC background
+   black' as remove-the-image; what he wanted was the RED gone, not the line
+   design. Same artwork, no red ramp — grey strokes on black, mirror-tiled
+   4x4 like the rest. Measured mean RGB 12/12/12, sd 10: black to the eye,
+   with the structure still there. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #000000 !important;
+  background-image: url('/textures/ac-back-lines-black4.jpg?v=22932') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* ── v22933 — (the maple-leaf centring that stood here is WITHDRAWN in
+   v22938: it turned .v2-rc-map-life from a passive watermark into a flex
+   layer, and every stacking problem after it — emblem over the map, black
+   WestJet mark in front of the tiles, altimeter pushed up and hidden — traces
+   back to that. The panel is left exactly as it was before I touched it.) */
+
+/* 2. 'remove expected | prévu from the aircraft'. The qualifier earns its
+      keep on a board row, but in this panel the type already reads as a
+      single line and the tag only crowds it. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype .v2-rc-reg-expected {
+  display: none !important;
+}
+
+/* 3. '...and have a line in between like above please also make the line as
+      equal thick as the other side'. A rule above the Operated By row, in the
+      same 2px the plate titles and the right-pane separators use, so all
+      three read as one system rather than three weights. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby {
+  border-top: 2px solid var(--airline-accent, #D82F2E) !important;
+  padding-top: clamp(5px, 0.7vh, 10px) !important;
+  margin-top: clamp(5px, 0.7vh, 10px) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby {
+  border-top-color: #D82F2E !important;
+}
+
+/* 4. 'Air Canada in specific needs bigger in the gate'. The wordmark is the
+      first child of the logo slot and was capped well under the band height.
+      Raised for AC only — the other carriers' wordmarks are already
+      calibrated (that was the whole of PR #459) and must not move. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot > img:first-child {
+  height: clamp(52px, 7.6vh, 96px) !important;
+  max-height: clamp(52px, 7.6vh, 96px) !important;
+  width: auto !important;
+  max-width: min(46vw, 900px) !important;
+  object-fit: contain !important;
+}
+
+/* ── v22934 — THE GLYPH BADGES ARE ORBS AGAIN (Nick: 'the icons orbs were not
+   fixed'). v22915 inverted Delta's plate badges to a white ground with a red
+   glyph, which is what he asked for — but it set a FLAT white fill, so they
+   read as paper discs next to the 3D emblem orbs from PR #459. The colour was
+   right and the material was wrong.
+
+   The sheen is rebuilt the way an orb actually works: a bright specular
+   off-centre high, a soft mid, a shaded lower edge, then an inset rim to give
+   the sphere an edge and a drop shadow to lift it off the plate. The glyph
+   stays Delta red and the ground stays white. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge {
+  background:
+    radial-gradient(circle at 34% 26%,
+      #ffffff 0%,
+      #fdfdfe 26%,
+      #eef1f5 52%,
+      #d7dde6 78%,
+      #c2cad6 100%) !important;
+  box-shadow:
+    inset 0 -3px 6px rgba(120, 132, 150, 0.34),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+    0 3px 8px rgba(0, 0, 0, 0.42) !important;
+  color: #E01933 !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge svg,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge svg path {
+  fill: #E01933 !important;
+  color: #E01933 !important;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) !important;
+}
+

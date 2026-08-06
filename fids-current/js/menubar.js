@@ -82,6 +82,15 @@
         var was = g.classList.contains('open');
         closeAll();
         if (!was) g.classList.add('open');
+        // v22939 — repaint the moved controls from live state before showing
+        // them. The sidebar syncs on openOverlayMenu(); this bar hosts the
+        // same controls and never did, so whatever they were seeded with at
+        // fragment-load time is what Nick saw — a GIDS screen reporting FIDS.
+        // Cheap, and it means the panel cannot show a stale value no matter
+        // which code path last changed it.
+        if (!was && typeof window._syncMenu === 'function') {
+          try { window._syncMenu(); } catch (err) {}
+        }
         armHide();
       });
       g.appendChild(b); g.appendChild(p);
