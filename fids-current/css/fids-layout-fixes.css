@@ -8187,3 +8187,24 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(-n+3)::before {
   background-color: #101014 !important;
 }
+
+/* ── v22897 — THE ENGRAVED-LINE PLATE, EVERYWHERE. Nick re-sent the
+   artistic-line zip (byte-identical, md5 ad4d7f8f…) to settle which of the
+   four candidates he meant. That one wins; brush, curves and ripple are all
+   retired, and the nth-child A/B scaffolding comes out with them.
+
+   Kept dark on purpose: the shelf behind computes to rgb(52,55,60), so the
+   plate reads by sitting below its surround (Nick: 'the background is
+   actually gray so darker works best'). Plate mean 16 against a ~56 shelf.
+
+   The last selector in the file wins on equal specificity, so this single
+   rule overrides the v22896 split without needing more :not(#_) weight. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22897') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #101014 !important;
+}
