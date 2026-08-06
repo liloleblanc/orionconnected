@@ -302,6 +302,19 @@ function menuCopyScreenUrl() {
 
 // Options come from the flights actually on the board right now, so a
 // terminal or carrier that this airport does not have never appears.
+//
+// Built with createElement + textContent, never innerHTML: the current
+// values reach this function from the QUERY STRING, so string-concatenating
+// them into markup is an injection through a URL somebody could hand an
+// operator. CodeQL flagged exactly that on the first cut of this function
+// (three high-severity 'DOM text reinterpreted as HTML' alerts). The
+// airline names are feed-derived too, which is no safer.
+function _menuOption(value, label) {
+  var o = document.createElement('option');
+  o.value = value;
+  o.textContent = label;
+  return o;
+}
 function _menuFillScreenFilters() {
   var terms = [], airs = {};
   try {
@@ -320,11 +333,12 @@ function _menuFillScreenFilters() {
   if (tSel) {
     var tCur = (typeof filterTerminal !== 'undefined' ? filterTerminal : '')
       .toString().toUpperCase().replace(/^T/, '');
-    tSel.innerHTML = '<option value="">All terminals</option>'
-      + terms.map(function (t) { return '<option value="' + t + '">Terminal ' + t + '</option>'; }).join('');
+    tSel.textContent = '';
+    tSel.appendChild(_menuOption('', 'All terminals'));
+    terms.forEach(function (t) { tSel.appendChild(_menuOption(t, 'Terminal ' + t)); });
     // A terminal filter set from a URL for an airport whose board has no
     // terminal column would vanish from the list and silently reset — keep it.
-    if (tCur && terms.indexOf(tCur) === -1) tSel.innerHTML += '<option value="' + tCur + '">Terminal ' + tCur + '</option>';
+    if (tCur && terms.indexOf(tCur) === -1) tSel.appendChild(_menuOption(tCur, 'Terminal ' + tCur));
     tSel.value = tCur;
     tSel.parentElement.style.display = (terms.length || tCur) ? '' : 'none';
   }
@@ -333,9 +347,10 @@ function _menuFillScreenFilters() {
   if (aSel) {
     var aCur = (typeof filterAirline !== 'undefined' ? filterAirline : '').toString().toUpperCase();
     var codes = Object.keys(airs).sort(function (x, y) { return airs[x].localeCompare(airs[y]); });
-    aSel.innerHTML = '<option value="">All airlines</option>'
-      + codes.map(function (c) { return '<option value="' + c + '">' + airs[c] + '</option>'; }).join('');
-    if (aCur && codes.indexOf(aCur) === -1) aSel.innerHTML += '<option value="' + aCur + '">' + aCur + '</option>';
+    aSel.textContent = '';
+    aSel.appendChild(_menuOption('', 'All airlines'));
+    codes.forEach(function (c) { aSel.appendChild(_menuOption(c, airs[c])); });
+    if (aCur && codes.indexOf(aCur) === -1) aSel.appendChild(_menuOption(aCur, aCur));
     aSel.value = aCur;
   }
 
@@ -343,7 +358,7 @@ function _menuFillScreenFilters() {
   if (rSel) {
     var rCur = (typeof filterRegion !== 'undefined' ? filterRegion : '').toString().toLowerCase();
     if (rCur && !Array.prototype.some.call(rSel.options, function (o) { return o.value === rCur; })) {
-      rSel.innerHTML += '<option value="' + rCur + '">' + rCur + '</option>';
+      rSel.appendChild(_menuOption(rCur, rCur));
     }
     rSel.value = rCur;
   }
@@ -355,6 +370,7 @@ function _menuFillScreenFilters() {
     if (b) b.classList.toggle('active', rot === r);
   });
 }
+
 
 function menuToggleLang(l) {
   if (typeof toggleLang === 'function') toggleLang(l);
