@@ -9150,3 +9150,28 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-image: none !important;
   background-color: transparent !important;
 }
+
+/* ── v22923 — ONE CONTINUOUS RULE (Nick: 'make the line go all the way
+   across as one line'). v22921 drew the border on the two CELLS, so it came
+   out as two segments with the grid's column gap between them.
+
+   It can move to the row now that the DOM probe has settled what the row
+   actually is: line ~2046 declares .v2-rc-fi-trow as display: contents,
+   which would generate no box and paint no border — but in this two-pane
+   layout it computes to grid (measured), so a border on the row spans the
+   full width in one piece.
+
+   Scoped to .v2-rc-fi-pane, the layout that was verified. The t4 and
+   bigcraft tables keep the cell-drawn borders they already had, since those
+   are the layouts where the row may still be display: contents. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) > .v2-rc-fi-tlbl,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) > .v2-rc-fi-tval {
+  border-bottom: none !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) {
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+  padding-bottom: clamp(5px, 0.7vh, 10px) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) {
+  border-bottom-color: #D82F2E !important;
+}
