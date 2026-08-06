@@ -8044,3 +8044,1134 @@ html.fids-portrait:not(#_):not(#_) #fidsTable td.td-time-rev * { font-size: 0 !i
 html.fids-portrait:not(#_):not(#_) #fidsTable thead th { font-size: 13px !important; }
 html.fids-portrait:not(#_):not(#_) #fidsTable thead th.col-airline { font-size: 0 !important; }
 html.fids-portrait:not(#_):not(#_) #fidsBanner .fids-board-filter { font-size: 22px !important; }
+
+/* ── v22892 — AC PLATE TEXTURE A/B (Nick: 'i want to see what this one looks
+   like as well maybe just do one panel in each'). A side-by-side trial on
+   the live board, not a commitment:
+
+     panel 1 (Flight)      → brush / fibre   [Vecteezy dark abstract brush]
+     panel 2 (Destination) → flowing curves  [Vecteezy dark gray curves]
+     panels 3-5            → unchanged, as the control
+
+   Both are baked from Nick's art rather than used raw: the sources are
+   near-black, and these plates already drew a 'dark on dark' complaint
+   once. Mid-tones lifted so the plates sit clearly above the row —
+   measured mean luminance: fibre 73, curves 59, row 29. background-size
+   is 100% 100% so every plate shows the whole crop and they read as a
+   matched set rather than five random windows onto one image. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-bir-cell:nth-child(1)::before {
+  background-image: url('/textures/ac-brush-plate.jpg?v=22892') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #16161a !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-bir-cell:nth-child(2)::before {
+  background-image: url('/textures/ac-curves-plate.jpg?v=22892') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #16161a !important;
+}
+
+/* ── v22893 — SAME TRIAL ON THE SIDE SHELVES (Nick: 'Not liking B so far I
+   would need to see them on the other side panels too'). One texture per
+   side, so both get judged at full size rather than in a 370px plate:
+
+     LEFT  (aircraft column) → brush / fibre   = A
+     RIGHT (map column)      → flowing curves  = B
+
+   Baked darker than the plates on purpose — these sit BEHIND artwork,
+   plates and the rail, so they have to stay background. Measured mean
+   luminance: shelves 45 / 43, against plates 73 / 59. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+  background-image: url("/logos/Backgrounds/ac-brush-shelf.jpg?v=22893") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  background-image: url("/logos/Backgrounds/ac-curves-shelf.jpg?v=22893") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+/* ── v22894 — RIGHT SURFACE THIS TIME (Nick: 'You didnt put it in the right
+   spot'). v22892 textured .g8-bir-cell (the horizontal 5-plate strip, which
+   only appears on the BOARDING layout) and v22893 textured the shelf BEHIND
+   the rail plates — where the plates and the Your Aircraft panel cover
+   almost all of it.
+
+   The panels Nick is actually looking at are .v2-fi-row in the left column:
+   Flight / Destination / Status / Boarding / Departure / Arrival. Their face
+   is .v2-fi-row::before, which is what carries ac-paper-band.jpg today.
+
+   Split top-half / bottom-half so both textures are judged at the same size
+   on the same screen:
+     rows 1-3 (Flight, Destination, Status)     → A = brush / fibre
+     rows 4-6 (Boarding, Departure, Arrival)    → B = flowing curves */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(-n+3)::before {
+  background-image: url('/textures/ac-brush-plate.jpg?v=22894') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #16161a !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(n+4)::before {
+  background-image: url('/textures/ac-curves-plate.jpg?v=22894') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #16161a !important;
+}
+/* Shelf reverted — v22893 put the textures somewhere they are almost
+   entirely hidden, which taught us nothing and only added a texture load. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  background-image: url("/logos/Backgrounds/ac-shelf-lux-clean.jpg?v=22847") !important;
+}
+
+/* ── v22895 — THIRD TEXTURE, ALL SIX PLATES (Nick: 'neither sorry try this'
+   — the artistic-line / engraved source). Brush and curves are both out;
+   this one gets the whole rail rather than half, since a split only made
+   sense while two candidates were in play.
+
+   Two things had to be handled in the bake, neither optional:
+
+   · The source is 1px white hairlines on pure black. Reduced to plate size
+     in one step they alias into a moire that CRAWLS on a moving display and
+     eats bitrate on the YouTube stream. Halved twice with smoothing on, so
+     the filter can average them into soft striations.
+   · Pure black is exactly the 'dark on dark' Nick rejected before, and the
+     first bake came out at mean 29 — no better than what it replaces.
+     Re-baked to mean 46 (min 29, max 114): charcoal plate, silver
+     engraving, clearly above the row it sits on. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-bir-cell::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22896') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #1c1c20 !important;
+}
+
+/* ── v22896 — DARKER, AND A FOURTH CANDIDATE (Nick: 'the background is
+   actually gray so darker works best', plus a line-curve upload).
+
+   The correction matters and I had it backwards: the shelf behind these
+   plates computes to rgb(52,55,60) — luminance ~56 — so a plate reads by
+   sitting BELOW its surround, not above it. v22895 lifted the engraving to
+   mean 46 to avoid 'dark on dark', which was solving a problem that only
+   exists on a black backing. Both candidates are now re-baked dark:
+   engraved lines mean 16, ripple mean 21, against a ~56 shelf.
+
+   Split so both get judged at plate size:
+     rows 1-3 → engraved lines
+     rows 4-6 → line-curve ripple
+
+   Both bakes use the gentle two-step reduction: dense line art dropped to
+   plate size in one jump beats against the pixel grid, and that moire
+   CRAWLS on a moving display and wastes stream bitrate. The ripple takes a
+   smaller source region as well, since its ridges are much denser. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(n+4)::before {
+  background-image: url('/textures/ac-ripple-plate.jpg?v=22896') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: #101014 !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(-n+3)::before {
+  background-color: #101014 !important;
+}
+
+/* ── v22897 — THE ENGRAVED-LINE PLATE, EVERYWHERE. Nick re-sent the
+   artistic-line zip (byte-identical, md5 ad4d7f8f…) to settle which of the
+   four candidates he meant. That one wins; brush, curves and ripple are all
+   retired, and the nth-child A/B scaffolding comes out with them.
+
+   Kept dark on purpose: the shelf behind computes to rgb(52,55,60), so the
+   plate reads by sitting below its surround (Nick: 'the background is
+   actually gray so darker works best'). Plate mean 16 against a ~56 shelf.
+
+   The last selector in the file wins on equal specificity, so this single
+   rule overrides the v22896 split without needing more :not(#_) weight. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22897') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #101014 !important;
+}
+
+/* ── v22898 — BOTH OF NICK'S LAST TWO, RE-CUT AND SPLIT FOR VERIFICATION
+   (Nick: 'thats not the same file?' then 'I had 2 different file to
+   verify'). He was right that the plates did not look like his art, and
+   the cause was mine: v22896 cropped a 1250x442 window from the CALM
+   MIDDLE of each source. Faithful and undistorted, but it threw away the
+   curvature that makes the designs recognisable, so the engraving read as
+   plain diagonal hatching and the ripple read as flat black.
+
+   Both are now cut as the widest possible band at the plate's own 2.83:1
+   aspect, so the whole sweep survives. Still no stretching — the crop
+   matches the plate shape, so nothing is squashed.
+
+     rows 1-3 → artistic-line engraving  (file 1 of the two)
+     rows 4-6 → line-curve ripple        (file 2 of the two)  */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(-n+3)::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22898') !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-color: #101014 !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(n+4)::before {
+  background-image: url('/textures/ac-ripple-plate.jpg?v=22898') !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-color: #101014 !important;
+}
+
+/* ── v22899 — TEXTURE 1 EVERYWHERE (Nick: '1 you may put it everywhere').
+   The artistic-line engraving on every AC plate surface, both layouts, no
+   more nth-child split. Dark against the grey shelf, as established.
+
+   Scoped to AC only. The other carriers keep the per-airline tinted mosaic
+   from PR #459 — that was deliberate, approved work, and 'everywhere' in
+   context meant every AC plate, not every airline. Nick's separate 'and a
+   few' note is still open and gets asked rather than assumed. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22899') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #101014 !important;
+}
+
+/* ── v22900 — YOUR AIRCRAFT + THE TELEMETRY STRIP (Nick: 'including the
+   Your aircraft panel and the altimeter'). Same engraved plate on the
+   right-hand column so the whole AC gate screen is one material:
+
+     .v2-rc-fi-pane  — the Your Aircraft flight-info pane
+     .v2-rc-acb      — the aircraft/livery block beneath it
+     .v2-rc-telem    — the SPD/ALT strip ('the altimeter')
+
+   The telem strip had no AC plate rule at all before this — it inherited
+   whatever sat behind it — which is why it never matched the plates it
+   sits among. background-size 100% 100% keeps every surface showing the
+   same crop, so they read as cut from one sheet rather than as separate
+   windows onto the art. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22900') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #101014 !important;
+}
+/* The telemetry strip paints directly (no ::before layer of its own). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22900') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: #101014 !important;
+}
+
+/* ── v22901 — ONE MATERIAL, TINTED PER CARRIER (Nick sent eleven textures
+   'for you to decide'). Decision, and the measurement behind it:
+
+   These plates carry WHITE text and sit on a grey shelf (~56 luminance), so
+   a plate has to land well BELOW 56 or the text stops reading. Measured
+   mean luminance of the eleven:
+
+     artistic lines 10 · navy+gold chevrons 38 · elegant teal/navy 62
+     blue gradient 64 · dark-blue panel 56 · teal+gold 103 · golden curved
+     134 · golden wave 143 · smooth wave 159 · blue-grey glossy 186 ·
+     grey/white banner 208
+
+   Eight of eleven are ABOVE the shelf, several far above — as plates they
+   would put white text on near-white. The dark-blue panel (#11) is the
+   best of the coloured ones and would be my pick if every carrier were
+   blue, but it is wrong for American, Lufthansa or anyone else whose brand
+   is not.
+
+   So: the artistic-line engraving becomes the shared MATERIAL, tinted with
+   each carrier's own accent. Same structure as the AC plates Nick just
+   approved, in each airline's colour, reusing the per-airline tinting
+   already proven in PR #459.
+
+   'screen' rather than 'multiply': the engraving is a dark field with
+   lighter strokes, so multiply would crush every carrier's plate to the
+   same near-black and only the hairlines would carry colour. Screen keeps
+   the tint as the plate and lets the engraving read as light strokes over
+   it. */
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before {
+  background-color: color-mix(in srgb, var(--airline-accent, #6b7684) 32%, #0b0e14) !important;
+  background-image: url('/textures/ac-lines-plate.jpg?v=22901') !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: screen !important;
+}
+/* Telemetry strip too, so non-AC carriers match AC's coverage. */
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-color: color-mix(in srgb, var(--airline-accent, #6b7684) 32%, #0b0e14) !important;
+  background-image: url('/textures/ac-lines-plate.jpg?v=22901') !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: screen !important;
+}
+
+/* ── v22902 — A TEXTURE PER CARRIER (Nick: 'Its for different airlines and
+   tones can be adjusted'). The eleven uploads are a palette to distribute,
+   not one material to choose between, so each goes to the carrier whose
+   livery it suits.
+
+   Tones adjusted BY MEASUREMENT rather than by eye: every plate is scaled
+   so its mean luminance lands on 34, comfortably under the ~56 grey shelf
+   the plates sit on, which is what keeps white text readable. Sources
+   ranged from 39 to 209 before normalisation — the grey/white banner was
+   six times too bright to use raw.
+
+   All cut as the widest band at the plate's own 2.83:1 aspect, so nothing
+   is stretched, and reduced in two steps so fine line art cannot alias
+   into a crawling moire on a moving display.
+
+   Carriers not listed here keep the tinted engraving from v22901. */
+
+/* Westjet — the dark-blue ribbon panel — closest to WestJet's own blue */
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-blue-panel.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Porter — navy with a gold edge, matching Porter's navy livery */
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-navy-gold.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* United — deep blue gradient for United's blue */
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-blue-grad.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Delta — teal-into-navy, Delta's navy without borrowing their red */
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-teal-navy.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* American — the grey/white banner, darkened — American's silver livery */
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-silver.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Lufthansa — gold wave for Lufthansa's yellow */
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-gold-wave.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Emirates — gold curve for Emirates' gold */
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-gold-curve.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Transat — blue-grey glossy for Air Transat's blue */
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-blue-grey.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Air France — smooth wave, neutral against Air France's blue-white-red */
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-wave.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Qatar — teal and gold — the closest to Qatar's grey-and-burgundy palette */
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-teal-gold.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── v22903 — NICK'S FILES, UNRETOUCHED (Nick: 'Theyre so dark', 'You need
+   to fix this Im sure thats not what they look like'). Both true, and the
+   cause was mine. Every bake up to v22902 pushed the artwork down toward
+   the grey shelf's tone so WHITE text would stay legible on it. Measured,
+   the damage was severe — the plates arrived at mean/stddev:
+
+     v22902 bake:  silver 34/4 · gold-wave 47/6 · blue-grey 27/14
+     Nick's file:  silver 209/28 · gold-wave 159/27 · blue-grey 193/41
+
+   A brightness multiply scales the SPREAD by the same factor it scales the
+   mean, so darkening a 209-mean source to 34 also flattened its contrast
+   six-fold. That is why they 'all look the same': they had been reduced to
+   near-identical dark grey fields with the design barely surviving.
+
+   The artwork was the wrong thing to sacrifice. These files are now cropped
+   and nothing else — the widest band at the plate's own 2.83:1 aspect, two-
+   step downscale so fine line art cannot alias into a crawling moire, no
+   tone edit whatsoever.
+
+   Legibility is solved on the INK instead, which is where it belonged.
+   Measured mean luminance of the two zones the text actually occupies
+   (left 2-34%, right 62-98%):
+
+     silver 191/229 · blue-grey 179/199 · gold-wave 170/159
+     wave 161/166 · gold-curve 145/131        -> DARK ink
+     teal-navy 62/63 · blue-panel 53/52 · navy-gold 56/28
+     blue-grad 16/19 · teal-gold 148/85       -> WHITE ink
+
+   Carrier match corrected too — Nick: 'like you used dark teal with Delta
+   thats not good' and 'thats not the right Westjet choice'. WestJet is the
+   teal carrier, so plate-teal-navy is theirs; Delta takes the navy plate
+   with the red/gold chevron, which is the widget; and the shuffle frees
+   plate-blue-panel for United and plate-blue-grad for Porter.
+
+   Written as custom properties rather than eleven copies of a selector
+   list, so 'remember its all panels' is one list to extend, not eleven. */
+
+/* Default — unlisted carriers keep the tinted engraving from v22901. */
+html body[data-gate-airline]:not(#_) {
+  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22904');
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+  --plate-base: #0b0e14;
+}
+/* v22904 — Nick's three later uploads join the palette, and WestJet finally
+   gets the right one. The aqua mesh IS WestJet's teal, which is what
+   'thats not the right Westjet choice' was pointing at; that frees the
+   deep teal→navy for Transat, whose brand it actually is, and cascades
+   blue-modern to United and blue-panel to Porter. Nothing is unused now —
+   the two plates the shuffle releases go to Alaska and KLM, whose liveries
+   they match almost exactly, and the emerald+gold to the green carriers. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_) {
+  --plate-tex: url('/textures/plate-aqua-mesh.jpg?v=22904'); }
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) {
+  --plate-tex: url('/textures/plate-navy-gold.jpg?v=22904'); }
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"]):not(#_) {
+  --plate-tex: url('/textures/plate-blue-modern.jpg?v=22904'); }
+html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_) {
+  --plate-tex: url('/textures/plate-blue-panel.jpg?v=22904'); }
+html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"]):not(#_) {
+  --plate-tex: url('/textures/plate-teal-navy.jpg?v=22904'); }
+html body:is([data-gate-airline="AS"],[data-gate-airline="ASA"],[data-gate-airline*="ALASKA"]):not(#_) {
+  --plate-tex: url('/textures/plate-teal-gold.jpg?v=22904'); }
+html body:is([data-gate-airline="KL"],[data-gate-airline="KLM"],[data-gate-airline*="KLM"]):not(#_) {
+  --plate-tex: url('/textures/plate-blue-grad.jpg?v=22904'); }
+html body:is([data-gate-airline="CX"],[data-gate-airline="CPA"],[data-gate-airline*="CATHAY"],
+             [data-gate-airline="EI"],[data-gate-airline="EIN"],[data-gate-airline*="AER LINGUS"],
+             [data-gate-airline="BR"],[data-gate-airline="EVA"],[data-gate-airline*="EVA AIR"]):not(#_) {
+  --plate-tex: url('/textures/plate-emerald-gold.jpg?v=22904'); }
+
+/* The five bright plates. Ink flips to near-black with a white lift, and
+   the status colours darken to match — the light-on-light green and amber
+   above would be unreadable on artwork this bright. */
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_),
+html body:is([data-gate-airline="LH"],[data-gate-airline="DLH"],[data-gate-airline*="LUFTHANSA"]):not(#_),
+html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"]):not(#_),
+html body:is([data-gate-airline="QR"],[data-gate-airline="QTR"],[data-gate-airline*="QATAR"]):not(#_),
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_) {
+  --plate-ink: #12161d;
+  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
+  --plate-ok: #056f4a;  --plate-warn: #8a5200;
+  --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
+  --plate-base: #cfd3d8;
+}
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_) {
+  --plate-tex: url('/textures/plate-silver.jpg?v=22904'); }
+html body:is([data-gate-airline="LH"],[data-gate-airline="DLH"],[data-gate-airline*="LUFTHANSA"]):not(#_) {
+  --plate-tex: url('/textures/plate-gold-wave.jpg?v=22904'); }
+html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"]):not(#_) {
+  --plate-tex: url('/textures/plate-gold-curve.jpg?v=22904'); }
+html body:is([data-gate-airline="QR"],[data-gate-airline="QTR"],[data-gate-airline*="QATAR"]):not(#_) {
+  --plate-tex: url('/textures/plate-wave.jpg?v=22904'); }
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_) {
+  --plate-tex: url('/textures/plate-blue-grey.jpg?v=22904'); }
+
+/* ── ALL PANELS. Nick: 'remember its all panels'. The five surfaces the
+   texture already reached, plus the ones it had been missing — the equipment
+   panel, the generic gad panel, the weather panel, and the two stat tiles. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-equip-panel,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-panel,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-wx-panel,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-keystat,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-mstat {
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex) !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  filter: none !important;
+}
+
+/* Ink follows the plate. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row :is(.v2-fi-title, .v2-fi-title span, .v2-fi-value, .v2-fi-value span),
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(div, span, p, b, strong, small),
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap :is(.gad-equip-panel, .gad-panel, .g8-wx-panel, .v2-rc-keystat, .v2-rc-mstat, .v2-rc-telem) :is(div, span, p, b, strong, small) {
+  color: var(--plate-ink, #fff) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived) span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-ontime, .v2-rc-status-early, .v2-rc-status-enroute, .v2-rc-status-arrived) {
+  color: var(--plate-ok, #34d399) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final) span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-delayed, .v2-rc-status-diverted) {
+  color: var(--plate-warn, #fbbf24) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled {
+  color: var(--plate-bad, #f87171) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
+  color: var(--plate-info, #93c5fd) !important;
+}
+
+/* ── v22905 — AIR CANADA: FRONT AND BACK SWAP (Nick: 'the current front
+   panel put that in the back and use this as the front'). The engraved-line
+   plate moves off the front plates and onto the shelf behind them; the new
+   black halftone takes the front.
+
+   The shelf is a tall column and the plates are a 2.83:1 band, so the
+   engraving is re-cut for the shelf rather than reused — a portrait window
+   scaled in two steps, so the hairlines cannot alias into a moire that
+   crawls on a moving display. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) {
+  --plate-tex: url('/textures/ac-front-black.jpg?v=22905');
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map),
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-board-info-row {
+  background: #0a0a0a url('/textures/ac-back-lines.jpg?v=22911') center / cover no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* The AC front plates were painted by six earlier version blocks, each with
+   its own specificity ladder. Rather than out-weigh every one, the whole set
+   is re-pointed at the variable so the swap above is the single source of
+   truth for what AC's front plate carries. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-equip-panel, .gad-panel, .g8-wx-panel, .v2-rc-keystat, .v2-rc-mstat) {
+  background-color: #0b0e14 !important;
+  background-image: var(--plate-tex) !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  filter: none !important;
+}
+
+/* ── v22906 — HAWAIIAN IS NOT ALASKA. Nick: 'Hawaiian is def not the right
+   color sorry its teal with purple its not their colors'. Exactly right, and
+   the cause was v22904 above: binding Alaska to the teal plate caught every
+   Hawaiian flight too, because Hawaiian's flights are AS-marketed and the
+   data-gate-airline attribute was still carrying the raw 'AS'. Every other
+   surface on the screen already remaps those to HA, so the plate went teal
+   while the logo and the #582C83 accent stayed purple.
+
+   Fixed at the source in fids-core.js so the attribute agrees with the rest
+   of the screen — which repairs every present and future per-carrier rule,
+   not only this one. Hawaiian then falls to the default plate: none of the
+   fourteen textures is purple, and a neutral engraving is honest where a
+   borrowed teal was not. */
+html body:is([data-gate-airline="HA"],[data-gate-airline="HAL"],[data-gate-airline*="HAWAIIAN"]):not(#_) {
+  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22906');
+}
+
+/* ── v22907 — THE ALLIANCE MARK STOPS STRADDLING THE SEAM (Nick: 'the one
+   world logo is in between 2 panels its clear'). Exactly the failure: the
+   logo slot is capped at
+
+     calc(100vw - rcw - 2*tab-w + 30px)
+
+   and that trailing '+ 30px' is a deliberate overhang INTO the time tab.
+   For a compact square mark it never showed, but oneworld is a wide
+   horizontal lockup sized up to 660px by the v22601 block, so it lays out
+   right across the panel join — and because the SVG is transparent, the
+   divider between the two panels runs visibly through the middle of it.
+
+   Fixed with a reserved gutter rather than a narrower slot. Padding shrinks
+   the content box, so the flex children (both flex: 0 1 auto) scale down to
+   fit and the mark lands wholly inside the wordmark panel; pulling the
+   max-width in instead would have clipped it against the slot's
+   overflow: hidden. The wordmark keeps every pixel it had up to the gutter. */
+html body:not(#_):not(#_) .g8-wrap .g8-r1-logoslot {
+  box-sizing: border-box !important;
+  padding-right: clamp(34px, 3.4vw, 62px) !important;
+}
+/* Belt and braces: the mark itself may not sit flush against the gutter. */
+html body:not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star {
+  flex-shrink: 1 !important;
+}
+
+/* ── v22908 — DELTA OFF THE CHEVRON PLATE (Nick: 'Delta needs change').
+   Delta is navy and red; plate-navy-gold's chevrons read gold, which is
+   neither. Delta takes the deep navy instead — the cleanest, least
+   decorated blue in the set, closest to Delta's own.
+
+   A three-way rotation rather than leaving a plate stranded:
+     Delta   navy-gold  ->  blue-modern   (deep navy)
+     United  blue-modern ->  blue-panel   (mid blue with arcs, United blue)
+     Porter  blue-panel  ->  navy-gold    (navy with a warm accent)
+   KLM keeps blue-grad, which is already KLM's bright blue. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-blue-modern.jpg?v=22908'); }
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"]):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-blue-panel.jpg?v=22908'); }
+html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-navy-gold.jpg?v=22908'); }
+
+/* ── v22909 — NO BLACK PLATE UNDER A COLOURED BRAND (Nick: 'whereever you
+   put black with color thats a no no'), AND DELTA OFF UNITED'S BLUE (Nick:
+   'you change Delta to the united colors that doesnt work').
+
+   Both are mine. v22906 dropped Hawaiian onto the black engraving while the
+   rest of that screen carried Hawaiian's purple, and v22908 handed Delta
+   plate-blue-modern, which is United's blue — the codebase itself says so:
+   'UA':'#0033A0'.
+
+   Two changes:
+
+   1. The default plate is no longer black. A carrier with no artwork of its
+      own now gets the engraving TINTED IN ITS OWN ACCENT, screen-blended, so
+      a coloured brand never sits on a black panel. Screen rather than
+      multiply because the engraving is a dark field with lighter strokes —
+      multiply would crush every carrier back to the same near-black, which
+      is the trap v22902 fell into.
+
+   2. The v22908 rotation is withdrawn: United returns to blue-modern and
+      Porter to blue-panel, where they belong.
+
+   Delta is left on the tinted default, in Delta's own navy. That is the
+   honest answer rather than a third borrowed plate: Delta is navy AND RED,
+   and not one of the fourteen textures has red in it. A red-on-navy texture
+   is all it would take. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_) {
+  --plate-base: color-mix(in srgb, var(--airline-accent, #6b7684) 34%, #0b0e14);
+  --plate-blend: screen;
+}
+/* Carriers WITH their own artwork keep it flat and untinted — the texture is
+   the point, and an accent wash over it would be the v22902 mistake again. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"],
+             [data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"],
+             [data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"],
+             [data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"],
+             [data-gate-airline="AS"],[data-gate-airline="ASA"],[data-gate-airline*="ALASKA"],
+             [data-gate-airline="KL"],[data-gate-airline="KLM"],
+             [data-gate-airline="CX"],[data-gate-airline="CPA"],[data-gate-airline*="CATHAY"],
+             [data-gate-airline="EI"],[data-gate-airline="EIN"],[data-gate-airline*="AER LINGUS"],
+             [data-gate-airline="BR"],[data-gate-airline="EVA"],[data-gate-airline*="EVA AIR"],
+             [data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],
+             [data-gate-airline="LH"],[data-gate-airline="DLH"],[data-gate-airline*="LUFTHANSA"],
+             [data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"],
+             [data-gate-airline="QR"],[data-gate-airline="QTR"],[data-gate-airline*="QATAR"],
+             [data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_) {
+  --plate-base: #0b0e14;
+  --plate-blend: normal;
+}
+/* v22908 withdrawn — United and Porter return to their own plates, and Delta
+   takes the accent tint above rather than a third carrier's artwork. */
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-blue-modern.jpg?v=22909'); }
+html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-blue-panel.jpg?v=22909'); }
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22909'); }
+
+/* The panel rule hard-coded 'normal'; it now follows the variable so the
+   tinted default can actually blend. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-equip-panel, .gad-panel, .g8-wx-panel, .v2-rc-keystat, .v2-rc-mstat) {
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex) !important;
+  background-blend-mode: var(--plate-blend, normal) !important;
+}
+
+/* ── v22910 — THE BACK IS THE PANEL ITSELF (Nick: 'that is not the background
+   i asked for' / 'the front yes the back no'). He asked for the current front
+   panel to go in the back. v22905 instead RE-CUT the engraving at a portrait
+   aspect for the shelf — a different window of the source, so a different
+   picture. Same mistake he caught before: 'thats not the same file?'.
+
+   The shelf now carries ac-lines-plate.jpg, the exact file that was on the
+   front, cover-fitted so it fills the column without distorting. */
+
+/* ── v22911 — AC BACK PANEL IS NICK'S BLACKBG01 (the .eps he sent after
+   'that is not the background i asked for'). Rendered from the vector at
+   5120x2880 and reduced in two steps to 1600x900, keeping the full 16:9
+   frame — no crop, so it is the artwork as drawn, not a window onto it.
+
+   The two-step matters here more than anywhere: this design is nothing but
+   fine hairlines, which is the exact pattern that beats against a pixel grid
+   and produces a moire that CRAWLS on a moving display and burns stream
+   bitrate. Measured, mean 12 and stddev 11 — a genuinely black panel that
+   still carries its line structure.
+
+   Cover-fitted, on #0a0a0a so the surround matches the artwork's own black
+   rather than the old #101418. */
+
+/* ── v22912 — INK ON THE BOARDING STRIP. Caught on a live AF359/C34 capture:
+   the boarding layout's five-plate strip took the bright silk texture from
+   v22903, but the ink rule beside it only covered the rail layout's
+   .v2-fi-row plates and the right-hand shelf. The strip's own text kept the
+   old white, so 'AF359' and 'Paris' were rendering white on a plate
+   measuring ~190 luminance — a contrast ratio of 1.9:1, which is not
+   readable at any distance, let alone across a gate hold.
+
+   The strip now takes --plate-ink like every other panel, and its status
+   line takes the plate's status colours so the bright-plate carriers get the
+   darkened set rather than the light-on-light green and amber. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-title, .g8-bir-val, .g8-bir-l1, .g8-bir-l2, .g8-bir-text,
+      .g8-bir-code-t, .g8-bir-mer, .g8-bir-sep, .g8-bir-title span, .g8-bir-val span) {
+  color: var(--plate-ink, #fff) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+/* Status keeps its own semantic colour, but from the plate's set. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-st2, .g8-bir-stwrap):is(.ontime, .early, .enroute, .arrived, .boarding) {
+  color: var(--plate-ok, #34d399) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-st2, .g8-bir-stwrap):is(.delayed, .final) {
+  color: var(--plate-warn, #fbbf24) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-st2, .g8-bir-stwrap).cancelled {
+  color: var(--plate-bad, #f87171) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+
+/* ── v22913 — THE REST OF THE RIGHT-HAND COLUMN (Nick: 'you have the other
+   side of AC to do youre not done', 'and the votre avion your aircraft and
+   speed'). The v22903 panel list covered the flight pane, the aircraft
+   block, the telemetry strip and the stat tiles, but not the two surfaces
+   that frame them: the 'Your Aircraft | Votre Avion' title bar and the
+   speed/altitude bar. Both are panels, so both take the plate. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-maptitle,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-mapstats,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-keystats {
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex) !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: var(--plate-blend, normal) !important;
+  filter: none !important;
+}
+/* Their ink follows the plate too, so the bright-plate carriers do not put
+   white on near-white the way the boarding strip did before v22912. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap
+  :is(.v2-rc-maptitle, .v2-rc-mapstats, .v2-rc-keystats) :is(div, span, p, b, strong, small) {
+  color: var(--plate-ink, #fff) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+
+/* ── v22914 — WESTJET'S BACKGROUND GOES DEEP NAVY (Nick: 'Westjet ther
+   background thast not correct it should be lets mayve it deep navy blue
+   dark'). It was #7FA8D8 — a LIGHT blue — soft-light blended over the AC
+   luxury shelf, left over from the v22864 pass.
+
+   Rather than a flat fill, WestJet now gets the same wave-line design Nick
+   supplied for Air Canada, recoloured into WestJet's navy: the line
+   structure drives how far each pixel travels from a deep base navy toward
+   a lighter one, so the two carriers share a family look and differ only in
+   colour. Measured mean RGB 13/29/62 — properly dark, and the teal stays
+   where it belongs, on the plates and accents. */
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="WS"]:not(#_):not(#_):not(#_):not(#_) .g8-board-info-row,
+html body:is([data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-board-info-row {
+  background-color: #07122a !important;
+  background-image: url('/textures/ws-back-navy.jpg?v=22914') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map) {
+  background: #07122a url('/textures/ws-back-navy.jpg?v=22914') center / cover no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── v22915 — DELTA'S BADGES INVERT (Nick: 'if you made the Delta icons
+   white with red middle and red line it would look better').
+
+   The badges are inline-styled in fids-core.js — background from
+   var(--airline-accent) with color:#fff driving the glyph, which the SVGs
+   pick up as currentColor — so only !important can reach them. Delta's
+   accent is navy, which is why they were navy-on-navy against the plate.
+
+   White badge, Delta red glyph, and the plate title rules in the same red.
+   The GENERIC_PLANE fallback hard-codes fill:#fff inline, so fill is forced
+   alongside color or that one icon would stay white on white. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) .g8-wrap
+  .v2-fi-icon-badge {
+  background: #ffffff !important;
+  color: #E01933 !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14) !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) .g8-wrap
+  .v2-fi-icon-badge svg,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_) .g8-wrap
+  .v2-fi-icon-badge svg path {
+  fill: #E01933 !important;
+  color: #E01933 !important;
+}
+/* The rule under each plate title, and its counterpart in the right pane. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_) .g8-bir-cell .g8-bir-title {
+  border-bottom-color: #E01933 !important;
+}
+
+/* ── v22916 — THE EMBLEM IS NOT A GLYPH (Nick: 'Endeavor is it cant see the
+   logo only the red' and 'the icon does not go like that it is 3d and
+   shiny'). Both are the same mistake in v22915: that rule matched
+   .v2-fi-emblem-wrap alongside the glyph badges and forced fill on every
+   svg path inside it.
+
+   .v2-fi-emblem-wrap carries the AIRLINE LOGO — Delta's 3D shiny orb from
+   PR #459, and the operator logo on a Delta Connection flight. Forcing a
+   fill flattened both into a red silhouette, which is exactly 'only the
+   red'.
+
+   The inversion now applies ONLY to .v2-fi-icon-badge, the plate glyphs
+   (flight, destination, boarding, departure, status). The emblem is reset
+   to its own styling so the orb keeps its gradient and depth. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap svg,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap svg path,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap img {
+  background: revert !important;
+  color: revert !important;
+  fill: revert !important;
+  box-shadow: revert !important;
+}
+
+/* ── v22917 — AC'S LEFT COLUMN (Nick: 'Left side to AC is not done'). v22911
+   put the BLACKBG01 artwork on the right-hand shelf and the boarding info
+   row, but not on .gad-aircraft-col — the left column's own background,
+   which is the surface behind the six flight plates. WestJet's v22914 rule
+   covered it; Air Canada's did not. Same artwork, same fit. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  background-color: #0a0a0a !important;
+  background-image: url('/textures/ac-back-lines.jpg?v=22917') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── v22918 — ONE BACKGROUND, AT ITS OWN ASPECT (Nick: 'why is that
+   background so strecteched out' / 'NO'). v22917 put the 16:9 artwork on
+   .gad-aircraft-col with cover. That column is TALL and NARROW, so cover
+   scaled the image roughly fourfold to reach the height and threw most of
+   the width away — the hairlines came out thick and smeared. Same fault in
+   the v22914 WestJet rule.
+
+   The gate screen is 1920x1080, which is the artwork's own 16:9. So the
+   background goes on .g8-wrap ONCE, where cover is a 1:1 fit and nothing is
+   scaled or stretched, and the columns go transparent to let it through.
+   One continuous panel behind the plates instead of four zoomed copies. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #0a0a0a !important;
+  background-image: url('/textures/ac-back-lines.jpg?v=22918') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #07122a !important;
+  background-image: url('/textures/ws-back-navy.jpg?v=22918') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+/* The columns stop painting their own copy and let the one behind show. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* ── v22919 — THE GLOBE, THE MISSING LINES, AND THE SCALE. Three faults from
+   one capture (Nick: 'You didn't put the lines on the right side and there's
+   a globe stuck in the way in the right air Canada why are the backgrounds
+   so big you stretched them too much').
+
+   1. THE GLOBE, and the missing lines, are the same element. Probed live,
+      .v2-rc-shelf-map computes to
+
+        radial-gradient(circle at 72% 38%, color(srgb 0.847 0.184 0.180 ...))
+
+      — a large red circle. v22918's transparency rule carried
+      :not(.v2-rc-shelf-map), so that one shelf kept painting, and it sits
+      exactly where the right column's lines should show. Clearing it fixes
+      both complaints at once.
+
+   2. THE SCALE. The artwork's waves span the whole 16:9 frame, so at 1920
+      wide a single feature is most of the screen. The pattern is now baked
+      at half size and MIRROR-tiled 2x2: plain repetition would show a hard
+      seam because this artwork does not tile, but mirroring makes every
+      join continuous. Same design, half the feature size, no seam and no
+      stretching — measured mean and stddev are unchanged from the full-size
+      bake (12/11 for AC, 13-29-62 for WestJet). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ac-back-lines2.jpg?v=22919') !important;
+}
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ws-back-navy2.jpg?v=22919') !important;
+}
+/* The map shelf stops painting its red circle, so the lines behind it show.
+   Its own map tiles are children and keep rendering normally. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* ── v22920 — RED LINES, AND THE PLATE PATTERN AT ITS OWN SIZE (Nick: 'the
+   lines painted red on top of whatever and yes they panel backgrounds need
+   to shrink the effect is lost and a blurb is born').
+
+   1. RED LINES. The wave design is recoloured with a gamma of 3.2 so only
+      the crests reach Air Canada red and the field stays black. A linear
+      ramp was tried first and measured mean RGB 67/19/19 — that is a red
+      panel, not red lines on black. With the gamma it lands at 27/12/11.
+
+   2. THE BLURB. Measured, ac-front-black.jpg carries a stddev of 2 — the
+      halftone is that fine by design. The plates were painting it at
+      background-size: 100% 100%, which DOWNSCALES an 872px-wide texture into
+      a plate roughly 430px wide, averaging every dot away. That is the lost
+      effect, and the flat grey left behind is the blurb.
+
+      The fix is not to shrink the image further — that only flattens it more
+      (a 3x2 mirror-tile was tried and measured stddev 3). It is to stop
+      scaling it at all: background-size: auto with repeat renders the
+      halftone at its native pixel size, dots intact, however small the panel
+      is. Only Air Canada's plates take this — the pictorial artwork on the
+      other carriers is composed to fill its plate and must keep 100% 100%. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ac-back-lines-red.jpg?v=22920') !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-equip-panel, .gad-panel, .g8-wx-panel, .v2-rc-keystat, .v2-rc-mstat, .v2-rc-maptitle, .v2-rc-mapstats, .v2-rc-keystats) {
+  background-size: auto !important;
+  background-repeat: repeat !important;
+  background-position: center !important;
+}
+
+
+/* ── v22921 — THE SEPARATION RULES RETURN TO THE RIGHT PANE (Nick: 'I meant
+   the separation like the pic I sent as example for the flight info on the
+   right') — the red rules between Flight and Destination, and Departure and
+   Status, in his reference shot.
+
+   v22853 removed them for a real reason: they drew at the trow boundary and
+   landed MID-TEXT, so long city names and times read as barred, and over a
+   green status ink the crossing line took the green. Measured on a live pane
+   before restoring anything (AC419 at D32), the rows now carry
+   padding-bottom 3.24px and the deepest text sits 3-4px above each boundary,
+   so a rule at the boundary no longer crosses a glyph.
+
+   Three things the DOM probe corrected about how to draw it:
+
+   1. The table is .v2-rc-fi-2pane and its children are .v2-rc-fi-pane, so the
+      rows are GRANDCHILDREN. A '.v2-rc-fi-table > .v2-rc-fi-trow' selector
+      matches nothing at all.
+   2. The row is display: contents in some layouts, so a border on the ROW is
+      never painted. It has to go on the cells, which is what the pre-existing
+      rule at line ~2048 does — that one computes to '0px none' today, so it
+      is being overridden downstream and needs out-weighing.
+   3. --airline-accent computes to #0033A1 on an Air Canada gate, which is
+      United's blue. So Air Canada names its red explicitly here rather than
+      inheriting a variable that is wrong for it. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) > .v2-rc-fi-tlbl,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) > .v2-rc-fi-tval {
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+  padding-bottom: clamp(5px, 0.7vh, 10px) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) > .v2-rc-fi-tval {
+  border-bottom-color: #D82F2E !important;
+}
+/* Closing row of each pane carries no rule. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last > .v2-rc-fi-tlbl,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last > .v2-rc-fi-tval {
+  border-bottom: none !important;
+}
+
+/* ── v22922 — THE OTHER GLOBE (Nick: 'The globe? wtf!?'). Fair. v22919
+   cleared a red radial-gradient on .v2-rc-shelf-map and I reported the globe
+   gone. There is a SECOND one, one level further in: .v2-rc-map-life carries
+
+     radial-gradient(circle at 50% 52%, rgba(255,255,255,0.12) ...)
+
+   at 436x368 — a soft white halo behind the airline emblem. It was invisible
+   against the old flat shelf and only reads as a globe now that a patterned
+   background sits behind it.
+
+   Cleared on the two carriers whose backgrounds carry Nick's line artwork,
+   where the halo competes with it. Carriers still on a flat shelf keep the
+   halo, since there it does the job it was written for. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+/* ── v22923 — ONE CONTINUOUS RULE (Nick: 'make the line go all the way
+   across as one line'). v22921 drew the border on the two CELLS, so it came
+   out as two segments with the grid's column gap between them.
+
+   It can move to the row now that the DOM probe has settled what the row
+   actually is: line ~2046 declares .v2-rc-fi-trow as display: contents,
+   which would generate no box and paint no border — but in this two-pane
+   layout it computes to grid (measured), so a border on the row spans the
+   full width in one piece.
+
+   Scoped to .v2-rc-fi-pane, the layout that was verified. The t4 and
+   bigcraft tables keep the cell-drawn borders they already had, since those
+   are the layouts where the row may still be display: contents. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) > .v2-rc-fi-tlbl,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) > .v2-rc-fi-tval {
+  border-bottom: none !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) {
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+  padding-bottom: clamp(5px, 0.7vh, 10px) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child) {
+  border-bottom-color: #D82F2E !important;
+}
