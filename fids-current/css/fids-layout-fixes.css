@@ -9231,3 +9231,50 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-c
   padding-bottom: 1px !important;
   margin-bottom: 1px !important;
 }
+
+/* ── v22930 — THE GLOBE, FOUND AT LAST (Nick: 'globe is still there i dont
+   understand this get rid of it'). Neither do I, until now — and the reason
+   four sweeps missed it is worth writing down.
+
+   It is not a radial-gradient and not a circle. It is an ASSET:
+   /logos/3d_globe_desktop.svg, painted on PSEUDO-ELEMENTS —
+
+     line ~1515  .gad-aircraft-col::after   background-size: 300% auto
+     line ~1488  .gad-map-col-v2::before    (QK/RV/F8/PB)
+     line ~7007  .gad-aircraft-col          background-image, globe + lux
+
+   v22918 set .gad-aircraft-col itself to background-image: none for AC and
+   WestJet, which killed the third one — but a rule on an ELEMENT does not
+   touch its ::before or ::after, so the 300% globe watermark survived every
+   pass. Every DOM sweep I ran enumerated elements, and pseudo-elements are
+   not in the DOM, so it was invisible to the probe as well as to me.
+
+   That 300% is also 'way too wide background pattern': a globe scaled to
+   three times the column width.
+
+   Cleared on the two carriers carrying Nick's own line artwork. Everyone
+   else keeps it — it is deliberate design there, not a bug. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col::after,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2::after {
+  background-image: none !important;
+  content: none !important;
+}
+
+/* ── v22930b — PATTERN NARROWED AGAIN, AND WESTJET'S LINES GO NAVY. Nick:
+   'Way too wide background pattern / lines should be westjet navy'.
+   Mirror-tiled 4x4 rather than 2x2, so each feature is a QUARTER of its
+   former size, and WestJet's ramp now runs from a deep base to WestJet's own
+   navy on the crests. Measured: WS mean RGB 10/26/54, AC 27/12/12 — the
+   tones are unchanged, only the scale and the hue of the strokes. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ws-back-navy4.jpg?v=22930') !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ac-back-lines-red4.jpg?v=22930') !important;
+}
