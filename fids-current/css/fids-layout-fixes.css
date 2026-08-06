@@ -8671,3 +8671,20 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-blend-mode: normal !important;
   filter: none !important;
 }
+
+/* ── v22906 — HAWAIIAN IS NOT ALASKA. Nick: 'Hawaiian is def not the right
+   color sorry its teal with purple its not their colors'. Exactly right, and
+   the cause was v22904 above: binding Alaska to the teal plate caught every
+   Hawaiian flight too, because Hawaiian's flights are AS-marketed and the
+   data-gate-airline attribute was still carrying the raw 'AS'. Every other
+   surface on the screen already remaps those to HA, so the plate went teal
+   while the logo and the #582C83 accent stayed purple.
+
+   Fixed at the source in fids-core.js so the attribute agrees with the rest
+   of the screen — which repairs every present and future per-carrier rule,
+   not only this one. Hawaiian then falls to the default plate: none of the
+   fourteen textures is purple, and a neutral engraving is honest where a
+   borrowed teal was not. */
+html body:is([data-gate-airline="HA"],[data-gate-airline="HAL"],[data-gate-airline*="HAWAIIAN"]):not(#_) {
+  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22906');
+}

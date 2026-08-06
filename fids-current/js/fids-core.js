@@ -12526,7 +12526,18 @@ const gView = document.getElementById('gateView');
       window._gateCurrentFlight = currentFlight;
       // Per-airline gate skin hook (Nick's brushed-metal AC): CSS keys off
       // body[data-gate-airline="XX"], refreshed every gate render.
-      try { document.body.setAttribute('data-gate-airline', String(currentFlight.airline || '').toUpperCase()); } catch (e) {}
+      // v22906: honour the Hawaiian rebrand here too. Every other surface —
+      // logo, banner, emblem, board row — already maps an AS-marketed
+      // Hawaiian-branded flight to HA, but this attribute did not, so the
+      // gate skin was styling those flights as Alaska while the rest of the
+      // screen carried Hawaiian's purple (Nick: 'Hawaiian is def not the
+      // right color ... its teal with purple its not their colors').
+      try {
+        var _skinCode = String(currentFlight.airline || '').toUpperCase();
+        if (_skinCode === 'AS' && typeof isHawaiianBrandedFlight === 'function'
+            && isHawaiianBrandedFlight(currentFlight, window._gateIata || locIata)) _skinCode = 'HA';
+        document.body.setAttribute('data-gate-airline', _skinCode);
+      } catch (e) {}
       // Defensive: nuke any stranded floating "DESTINATION City" label from
       // older deploys / interrupted video playback. This element used to be
       // appended to document.body and could survive across renders.
@@ -17564,7 +17575,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22905';
+var FIDS_BUILD_TAG = 'v22906';
 (function(){
   try {
     function _addTag(){
