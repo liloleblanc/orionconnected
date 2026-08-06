@@ -8235,3 +8235,52 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-repeat: no-repeat !important;
   background-color: #101014 !important;
 }
+
+/* ── v22899 — TEXTURE 1 EVERYWHERE (Nick: '1 you may put it everywhere').
+   The artistic-line engraving on every AC plate surface, both layouts, no
+   more nth-child split. Dark against the grey shelf, as established.
+
+   Scoped to AC only. The other carriers keep the per-airline tinted mosaic
+   from PR #459 — that was deliberate, approved work, and 'everywhere' in
+   context meant every AC plate, not every airline. Nick's separate 'and a
+   few' note is still open and gets asked rather than assumed. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22899') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #101014 !important;
+}
+
+/* ── v22900 — YOUR AIRCRAFT + THE TELEMETRY STRIP (Nick: 'including the
+   Your aircraft panel and the altimeter'). Same engraved plate on the
+   right-hand column so the whole AC gate screen is one material:
+
+     .v2-rc-fi-pane  — the Your Aircraft flight-info pane
+     .v2-rc-acb      — the aircraft/livery block beneath it
+     .v2-rc-telem    — the SPD/ALT strip ('the altimeter')
+
+   The telem strip had no AC plate rule at all before this — it inherited
+   whatever sat behind it — which is why it never matched the plates it
+   sits among. background-size 100% 100% keeps every surface showing the
+   same crop, so they read as cut from one sheet rather than as separate
+   windows onto the art. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22900') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #101014 !important;
+}
+/* The telemetry strip paints directly (no ::before layer of its own). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22900') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: #101014 !important;
+}
