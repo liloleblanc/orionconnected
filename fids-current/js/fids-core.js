@@ -17709,7 +17709,33 @@ const SLbi = k => { const o = SS[k] || {}; const en = o.en || k; return (o.fr &&
 const TLbi = k => { const o = LS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
 
 // ── LANGUAGE ROTATION — flips between selected languages ─────────────────
+// ── v22949 — LANGUAGE ROTATION REMOVED (Nick: "It should be taken out",
+// "We want to get away from the rotation entirely").
+//
+// This timer flipped `lang` on its own 30-second beat while the main board's
+// paging clock flipped it too. Two owners, one value — the same shape as the
+// glide bug fixed this morning, and it produced Nick's own report recorded
+// below: "15 seconds English, 1 second French depending on phase offset".
+//
+// It also does nothing useful any more. The gate has been
+// bilingual-simultaneous since v22158, and the block at the bottom of the old
+// loop is empty precisely because rebuilding the gate on every flip made the
+// screen bounce. So on the gate it flipped a hidden variable and repainted
+// nothing; on the main board the paging clock already owned the language.
+//
+// Airports run screen A in one language and screen B in the other — nothing
+// waits for a flip. The gate, being a single screen, shows both at once.
+// Neither case wants a timer.
+//
+// The function is kept as a no-op so the two call sites (toggleLang, boot)
+// need no surgery, and it now PINS the index instead of advancing it: `lang`
+// is always langs[0], stable for the life of the screen.
 function startLangRotation() {
+  if (langRotateTimer) { clearInterval(langRotateTimer); langRotateTimer = null; }
+  langIdx = 0;
+  lang = langs[0];
+}
+function _startLangRotation_WITHDRAWN() {
   if (langRotateTimer) clearInterval(langRotateTimer);
   if (langs.length <= 1) return;
   langRotateTimer = setInterval(() => {
@@ -17833,7 +17859,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22948';
+var FIDS_BUILD_TAG = 'v22949';
 (function(){
   try {
     function _addTag(){
