@@ -9475,3 +9475,51 @@ html body .g8-wrap .v2-rc-map-life-emblem:not(#_):not(#_) {
   aspect-ratio: 1 / 1 !important;
   max-width: 94% !important;
 }
+
+/* ── v22942 — USE THE ROOM IN THE FLIGHT-INFO PANE (Nick: 'lots of room',
+   pointing at the boxed Flight/From/Arrival/Status block on YQM gate 4).
+
+   Measured on production v22940, 1920x1080:
+     .v2-rc-shelf-fi   436 x 247
+     .v2-rc-fi-pane    416 x 106   (two of them = 212 of the 247 -> 35px spare)
+     .v2-rc-fi-trow    390 x  49
+     .v2-rc-fi-tlbl    109 wide, font-size 17px
+     .v2-rc-fi-tval    270 wide, font-size 32.94px, line-height 34.26px
+
+   The value size resolves from clamp(22px, 3.05vh, 35px) — 3.05vh is 32.94px
+   at 1080p, and the whole thing is capped at 35px however big the screen is.
+   That cap is why this block reads small on a 436px-wide column while the LEFT
+   rail's equivalent values are enormous: the left rail is fitted to its cell,
+   this one is pinned to a fixed ceiling.
+
+   Raised to clamp(24px, 3.7vh, 44px) — 39.96px at 1080p, +21% — and the label
+   from 17px to clamp(17px, 1.95vh, 23px). The rows take the shelf's 35px of
+   spare height so the bigger type is not cramped in a 49px row.
+
+   The risk here is the one Nick has caught before ('the text clipped this is
+   not OK'): the longest strings in this pane are 'Early | En avance' and
+   'Toronto | YYZ', and a value column is only 270px. So this is deliberately
+   +21% rather than the +50% the vertical space alone would allow, and it is
+   verified by measuring scrollWidth against clientWidth on the live branch
+   before it is called done — not by eye. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow > .v2-rc-fi-tval {
+  font-size: clamp(24px, 3.7vh, 44px) !important;
+  line-height: 1.06 !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  font-size: clamp(17px, 1.95vh, 23px) !important;
+  line-height: 1.08 !important;
+}
+/* Let the panes share the shelf's spare 35px instead of leaving it dead at the
+   bottom, so the larger type gets the height it needs. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap .gad-map-col-v2 .v2-rc-shelf-fi .v2-rc-fi-pane {
+  height: auto !important;
+  align-content: center !important;
+}
