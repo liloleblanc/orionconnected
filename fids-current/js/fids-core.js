@@ -17564,7 +17564,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22890';
+var FIDS_BUILD_TAG = 'v22891';
 (function(){
   try {
     function _addTag(){
@@ -21710,6 +21710,48 @@ function _adsbCached(reg, callSign, flightNo, maxAgeMs) {
   return best;
 }
 try { if (typeof window !== 'undefined') window._adsbCached = _adsbCached; } catch (e) {}
+
+// ── v22891 — SURROUNDING TRAFFIC (Nick: 'we should put the aircraft in the
+// immediate area'). One area query returns EVERY aircraft near the point,
+// so this is cheaper than the per-flight telemetry lookups already running:
+// one request per screen per 25 s regardless of how many aircraft are up.
+// Drawn only at airport-level zoom — at cruise it would be meaningless
+// specks over Saskatchewan.
+var _adsbAreaCache = Object.create(null);
+var _adsbAreaInflight = Object.create(null);
+function _adsbAreaCached(lat, lng, nm) {
+  if (typeof lat !== 'number' || typeof lng !== 'number') return null;
+  // Round the key so a drifting map centre reuses one cache slot instead of
+  // minting a new request every tick.
+  var key = lat.toFixed(1) + ',' + lng.toFixed(1) + ',' + Math.round(nm);
+  var now = Date.now();
+  var hit = _adsbAreaCache[key];
+  if (hit && (now - hit.at) < 25000) return hit.ac;
+  if (!_adsbAreaInflight[key] || (now - _adsbAreaInflight[key]) > 15000) {
+    _adsbAreaInflight[key] = now;
+    (async function () {
+      var ctl = null, timer = null;
+      try {
+        if (typeof AbortController === 'function') {
+          ctl = new AbortController();
+          timer = setTimeout(function () { try { ctl.abort(); } catch (e) {} }, 5000);
+        }
+        var r = await fetch(_ADSB_BASE + '/point/' + lat.toFixed(4) + '/' + lng.toFixed(4) + '/' + Math.round(nm),
+                            ctl ? { signal: ctl.signal, cache: 'no-store' } : { cache: 'no-store' });
+        if (timer) clearTimeout(timer);
+        var list = [];
+        if (r.ok) { var j = await r.json(); list = (j && Array.isArray(j.ac)) ? j.ac : []; }
+        _adsbAreaCache[key] = { at: Date.now(), ac: list };
+        if (list.length) { try { if (typeof initGateMapLive === 'function') initGateMapLive(); } catch (e) {} }
+      } catch (e) {
+        if (timer) clearTimeout(timer);
+        _adsbAreaCache[key] = { at: Date.now(), ac: [] };   // don't hammer a dead endpoint
+      }
+    })();
+  }
+  return hit ? hit.ac : null;
+}
+try { if (typeof window !== 'undefined') window._adsbAreaCached = _adsbAreaCached; } catch (e) {}
 try { if (typeof window !== 'undefined') { window._adsbTelemetry = _adsbTelemetry; window._adsbFetchOne = _adsbFetchOne; } } catch (e) {}
 
 // adsb.lol secondary position source removed — gate SPD/ALT now come from AeroDataBox only.
@@ -25536,6 +25578,63 @@ function initGateMapLive(org,dst,planeLat,planeLng){
              // cruise so an airborne plane always drifts rather than freezing.
              : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
              : 0;
+  // ── v22891 — SURROUNDING TRAFFIC ────────────────────────────────────
+  // Every other aircraft in the immediate area, drawn small and muted so the
+  // subject flight stays the thing you look at. Only at airport-level zoom
+  // (>= 9): at cruise these would be meaningless specks, and the radius
+  // needed to fill a cruise view would pull in hundreds of contacts.
+  try {
+    if (zoom >= 9) {
+      // Radius from what the map is actually showing, so the traffic fills
+      // the view rather than clustering in the middle or spilling far
+      // outside it. ~60 NM per zoom step below 12, clamped to sane bounds.
+      var _areaNm = Math.max(6, Math.min(70, Math.round(250 / Math.pow(1.6, zoom - 9))));
+      var _near = _adsbAreaCached(planeLat, planeLng, _areaNm);
+      if (_near && _near.length) {
+        // Don't draw the subject twice — match on hex, registration and
+        // callsign, since which one we hold varies by feed.
+        var _selfKeys = {};
+        try {
+          var _ibSelf = window._gatePanelInbound || window._gateInbound || {};
+          [_ibSelf._reg, _ibSelf._callSign, _ibSelf.flight].forEach(function (k) {
+            if (k) _selfKeys[String(k).toUpperCase().replace(/\s+/g, '')] = 1;
+          });
+        } catch (e) {}
+        var _drawn = 0;
+        for (var _ti = 0; _ti < _near.length && _drawn < 60; _ti++) {
+          var _ac = _near[_ti];
+          if (!_ac || typeof _ac.lat !== 'number' || typeof _ac.lon !== 'number') continue;
+          var _idr = String(_ac.r || '').toUpperCase();
+          var _idf = String(_ac.flight || '').toUpperCase().replace(/\s+/g, '');
+          if (_selfKeys[_idr] || _selfKeys[_idf]) continue;
+          // On-ground traffic reads as clutter at anything wider than a
+          // ground view — at z13+ it is the apron, which is worth seeing.
+          var _onG = (_ac.alt_baro === 'ground');
+          if (_onG && zoom < 13) continue;
+          var _trk = (typeof _ac.track === 'number') ? _ac.track : 0;
+          var _lbl = (_idf || _idr || '').slice(0, 8);
+          var _tMk = L.marker([_ac.lat, _ac.lon], {
+            zIndexOffset: 400,
+            interactive: false,
+            icon: L.divIcon({
+              className: '',
+              iconSize: [22, 22], iconAnchor: [11, 11],
+              html: '<div style="transform:rotate(' + _trk + 'deg);width:22px;height:22px;line-height:22px;'
+                  + 'text-align:center;font-size:15px;color:' + (_onG ? '#94a3b8' : '#cbd5e1') + ';'
+                  + 'opacity:' + (_onG ? 0.5 : 0.75) + ';text-shadow:0 1px 3px rgba(0,0,0,0.8);">\u2708</div>'
+                  + (zoom >= 11 && _lbl ? '<div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);'
+                     + 'font-size:9px;font-weight:700;letter-spacing:0.2px;color:#cbd5e1;opacity:0.7;'
+                     + 'white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,0.9);">' + _lbl + '</div>' : '')
+            })
+          }).addTo(gateMap);
+          _ov.push(_tMk);
+          _drawn++;
+        }
+        try { console.log('[ADSB-AREA]', _drawn, 'of', _near.length, 'contacts within', _areaNm, 'nm @z' + zoom); } catch (e) {}
+      }
+    }
+  } catch (e) {}
+
   // ── v22888 — NO DEAD RECKONING ON THE GROUND ────────────────────────
   // The glide moves the plane ALONG ITS GREAT-CIRCLE ROUTE at its own
   // ground speed. That is right in the air and wrong on the ground: a
