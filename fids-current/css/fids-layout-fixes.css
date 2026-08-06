@@ -8688,3 +8688,29 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="HA"],[data-gate-airline="HAL"],[data-gate-airline*="HAWAIIAN"]):not(#_) {
   --plate-tex: url('/textures/ac-lines-plate.jpg?v=22906');
 }
+
+/* ── v22907 — THE ALLIANCE MARK STOPS STRADDLING THE SEAM (Nick: 'the one
+   world logo is in between 2 panels its clear'). Exactly the failure: the
+   logo slot is capped at
+
+     calc(100vw - rcw - 2*tab-w + 30px)
+
+   and that trailing '+ 30px' is a deliberate overhang INTO the time tab.
+   For a compact square mark it never showed, but oneworld is a wide
+   horizontal lockup sized up to 660px by the v22601 block, so it lays out
+   right across the panel join — and because the SVG is transparent, the
+   divider between the two panels runs visibly through the middle of it.
+
+   Fixed with a reserved gutter rather than a narrower slot. Padding shrinks
+   the content box, so the flex children (both flex: 0 1 auto) scale down to
+   fit and the mark lands wholly inside the wordmark panel; pulling the
+   max-width in instead would have clipped it against the slot's
+   overflow: hidden. The wordmark keeps every pixel it had up to the gutter. */
+html body:not(#_):not(#_) .g8-wrap .g8-r1-logoslot {
+  box-sizing: border-box !important;
+  padding-right: clamp(34px, 3.4vw, 62px) !important;
+}
+/* Belt and braces: the mark itself may not sit flush against the gutter. */
+html body:not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star {
+  flex-shrink: 1 !important;
+}
