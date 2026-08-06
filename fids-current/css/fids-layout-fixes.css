@@ -8332,3 +8332,160 @@ html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline
   background-repeat: no-repeat !important;
   background-blend-mode: screen !important;
 }
+
+/* ── v22902 — A TEXTURE PER CARRIER (Nick: 'Its for different airlines and
+   tones can be adjusted'). The eleven uploads are a palette to distribute,
+   not one material to choose between, so each goes to the carrier whose
+   livery it suits.
+
+   Tones adjusted BY MEASUREMENT rather than by eye: every plate is scaled
+   so its mean luminance lands on 34, comfortably under the ~56 grey shelf
+   the plates sit on, which is what keeps white text readable. Sources
+   ranged from 39 to 209 before normalisation — the grey/white banner was
+   six times too bright to use raw.
+
+   All cut as the widest band at the plate's own 2.83:1 aspect, so nothing
+   is stretched, and reduced in two steps so fine line art cannot alias
+   into a crawling moire on a moving display.
+
+   Carriers not listed here keep the tinted engraving from v22901. */
+
+/* Westjet — the dark-blue ribbon panel — closest to WestJet's own blue */
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="WS"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-blue-panel.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Porter — navy with a gold edge, matching Porter's navy livery */
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-navy-gold.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* United — deep blue gradient for United's blue */
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="UA"],[data-gate-airline*="UNITED"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-blue-grad.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Delta — teal-into-navy, Delta's navy without borrowing their red */
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-teal-navy.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* American — the grey/white banner, darkened — American's silver livery */
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="AA"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-silver.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Lufthansa — gold wave for Lufthansa's yellow */
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="LH"],[data-gate-airline*="LUFTHANSA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-gold-wave.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Emirates — gold curve for Emirates' gold */
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="EK"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-gold-curve.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Transat — blue-grey glossy for Air Transat's blue */
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="TS"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-blue-grey.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Air France — smooth wave, neutral against Air France's blue-white-red */
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="AF"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-wave.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* Qatar — teal and gold — the closest to Qatar's grey-and-burgundy palette */
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-image: url('/textures/plate-teal-gold.jpg?v=22902') !important;
+  background-color: #0b0e14 !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
