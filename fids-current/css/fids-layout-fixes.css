@@ -9439,3 +9439,23 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
   position: relative !important;
   z-index: 2 !important;
 }
+
+/* ── v22937 — THE EMBLEM GOES BEHIND THE MAP (Nick: 'why is it in front of the
+   map??'). .v2-rc-map-life is a watermark layer inside the map shelf — it is
+   meant to fill that panel when there is nothing else to show, not to sit over
+   a live route map. It had no stacking order of its own, so once it carried a
+   real emblem it painted over the tiles.
+
+   Given an explicit z-index BELOW the map, it now only shows through where the
+   map is not drawing — which is exactly the 'nothing else to show' case it
+   exists for — and a live map covers it completely. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  position: relative !important;
+  z-index: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 #gateMapBox,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .leaflet-container,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map > *:not(.v2-rc-map-life) {
+  position: relative !important;
+  z-index: 3 !important;
+}
