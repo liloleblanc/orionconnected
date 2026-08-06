@@ -7679,8 +7679,44 @@ function _buildV2MapCol(ctx, vars) {
         var _dss = (typeof SS !== 'undefined' && SS[_dk]) ? SS[_dk] : null;
         if (_dss) { _dStEn = _dss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); _dStFr = _dss.fr; }
       } catch (e) {}
-      var _dStShow = (_dStFr && _dStFr !== _dStEn)
-        ? (_dStEn + ' <span class="v2-rc-fi-sep">|</span> ' + _dStFr) : (_dStEn || _dStLabel || '—');
+      // ── v22944 — THE STATUS FOLLOWS THE SELECTED LANGUAGES.
+      // This cell hard-coded English + French and consulted nothing, even
+      // though `langs` is a user choice with a picker in the menu and the
+      // status words already exist in nine languages. A screen set to French
+      // only, or to Spanish, still read 'Delayed | En retard'.
+      //
+      // It is also what pins the column width. Measured on the branch, YQM
+      // gate 4: 'Delayed | En retard' needs 263.7px of a 270px value column
+      // and has ALREADY been auto-shrunk from 32.94px to 29.94px to fit — 6.3
+      // pixels of headroom on the longest string. One selected language is
+      // about half that, which is where the room Nick is pointing at comes
+      // from. The size follows the choice; it is not a separate knob.
+      // TWO AT A TIME, ONE IF THAT IS ALL THAT IS PICKED (Nick). The cap is
+      // what makes the column safe: two words is the widest this cell can ever
+      // be asked to render, which is the case the 270px column was already
+      // sized for. Without it a screen set to four languages would produce a
+      // string nothing could fit, and the fitter would shrink the status into
+      // illegibility to cope.
+      function _stByLangs(obj, fallback) {
+        var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
+          ? langs : ['en', 'fr'];
+        var seen = Object.create(null), parts = [];
+        for (var _li = 0; _li < picked.length && parts.length < 2; _li++) {
+          var w = obj && obj[picked[_li]];
+          if (!w) continue;
+          w = String(w).replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+          var k = w.toLowerCase();
+          if (seen[k]) continue;   // never print 'Delayed | Delayed'
+          seen[k] = 1;
+          parts.push(w);
+        }
+        if (!parts.length) return fallback || '—';
+        return parts.join(' <span class="v2-rc-fi-sep">|</span> ');
+      }
+      var _dStShow = _dss
+        ? _stByLangs(_dss, _dStEn || _dStLabel)
+        : ((_dStFr && _dStFr !== _dStEn)
+            ? (_dStEn + ' <span class="v2-rc-fi-sep">|</span> ' + _dStFr) : (_dStEn || _dStLabel || '—'));
       // The raw API status can still read 'scheduled' after a delay, so the card
       // showed 'Scheduled' in an orange (delayed) pill next to a bumped time
       // (Nick: 'Scheduled should be delayed for that flight'). Whenever the
@@ -7688,7 +7724,11 @@ function _buildV2MapCol(ctx, vars) {
       // force the label AND class to Delayed so the card is self-consistent and
       // matches the left rail.
       if (_dStCls === 'delayed' || _dDepDelayed) {
-        _dStShow = 'Delayed <span class="v2-rc-fi-sep">|</span> En retard';
+        // v22944 — this branch hard-coded the English/French pair outright, so
+        // it overrode the language choice for the one status that matters most.
+        _dStShow = _stByLangs({ en:'Delayed', fr:'En retard', es:'Retrasado',
+          de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误',
+          ar:'متأخر' }, 'Delayed');
         _dStCls = 'delayed';
       }
       // Flight·To + Status only (no departing-in row — it's on the left).
@@ -17682,7 +17722,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22943';
+var FIDS_BUILD_TAG = 'v22944';
 (function(){
   try {
     function _addTag(){
