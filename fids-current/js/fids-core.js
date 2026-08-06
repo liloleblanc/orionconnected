@@ -2319,6 +2319,15 @@ function getDedicatedRenderKey() {
     const second = gateFlights[1];
     return JSON.stringify({
       screenType, subScreenVal, iata, lang,
+      // v22948 — the render key must know the LANGUAGE SET, not just the one
+      // language currently showing. `lang` is langs[langIdx], the word being
+      // rotated right now; every gate label is built from `langs`, the whole
+      // selection. Toggling Spanish on changes `langs` and usually leaves
+      // `lang` alone, so the key was identical, the render was skipped as
+      // "nothing changed", and the screen kept markup built from the OLD
+      // selection. Measured on the branch: with langs = es+fr the gate still
+      // rendered English — a language that was not even selected.
+      langsKey: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '',
       first: first ? { flight:first.flight, status:first.status, upd:first.upd, time:first.time, gate:first.gate, airline:first.airline, loc:first._locIata, sort:first._sortTs } : null,
       second: second ? { flight:second.flight, status:second.status, upd:second.upd, time:second.time, gate:second.gate, airline:second.airline, loc:second._locIata, sort:second._sortTs } : null
     });
@@ -2327,7 +2336,7 @@ function getDedicatedRenderKey() {
     const arrFlights = (data.arr || []).filter(f => f._belt === subScreenVal || f.flight === subScreenVal).map(f => ({
       flight:f.flight, status:f.status, time:f.time, airline:f.airline, loc:f._locIata, sort:f._sortTs
     }));
-    return JSON.stringify({screenType, subScreenVal, iata, lang, flights:arrFlights});
+    return JSON.stringify({screenType, subScreenVal, iata, lang, langsKey: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '', flights:arrFlights});
   }
   return JSON.stringify({screenType:'main'});
 }
@@ -17824,7 +17833,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22947';
+var FIDS_BUILD_TAG = 'v22948';
 (function(){
   try {
     function _addTag(){
