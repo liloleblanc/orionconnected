@@ -9212,3 +9212,22 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-color: #0b0d10 !important;
   background-image: none !important;
 }
+
+/* ── v22926 — THE LAST PIXEL. v22925 cleared the stray cell padding and took
+   9 of the 10 cells to zero overflow, but 'Flight | Vol' still measured
+   scrollH 32 against clientH 31 — one pixel, which still slices the top of
+   the first line.
+
+   The remainder is the label's own underline furniture at line ~2062:
+   a 1px border plus padding-bottom 2px plus margin-bottom 2px, five pixels
+   of it, under the English word inside a 31px box.
+
+   Trimmed to 1px + 1px, recovering two — one to clear the overflow and one
+   of headroom. Deliberately NOT solved by tightening line-height: these
+   labels include 'Départ', whose 'p' descender would then be the thing that
+   clips, which is a worse bug than the one being fixed. Scoped to
+   .v2-rc-fi-pane so the t4 and bigcraft tables keep their own spacing. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span:first-child {
+  padding-bottom: 1px !important;
+  margin-bottom: 1px !important;
+}
