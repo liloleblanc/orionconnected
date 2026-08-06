@@ -84,13 +84,17 @@
            next kiosk. -->
       <div class="sm-label" style="margin-top:16px;">Orientation</div>
       <div class="sm-pills" style="margin-bottom:10px;">
-        <button class="sm-pill active" id="menuRot_0"   onclick="menuSetOrientation('0')">Landscape</button>
-        <button class="sm-pill"        id="menuRot_90"  onclick="menuSetOrientation('90')">Upright ↻</button>
-        <button class="sm-pill"        id="menuRot_270" onclick="menuSetOrientation('270')">Upright ↺</button>
+        <button class="sm-pill active" id="menuRot_0"   onclick="menuSetOrientation('0')">Auto</button>
+        <button class="sm-pill"        id="menuRot_up"  onclick="menuSetOrientation('up')">Force Upright</button>
+        <button class="sm-pill"        id="menuRot_90"  onclick="menuSetOrientation('90')">Turned ↻</button>
+        <button class="sm-pill"        id="menuRot_270" onclick="menuSetOrientation('270')">Turned ↺</button>
       </div>
       <div style="font-size:11px;color:#9ca3af;margin:-4px 0 12px;line-height:1.4;">
-        For a monitor you physically turned. If the computer is already set to portrait,
-        leave this on Landscape — the board detects that on its own.
+        <b>Auto</b> — the board works out its own shape. Right for nearly every screen.<br>
+        <b>Force Upright</b> — the screen IS portrait but the board didn't notice. Use this
+        if an upright monitor is still showing the wide layout.<br>
+        <b>Turned ↻ / ↺</b> — the monitor is physically rotated but the computer is still
+        set to landscape.
       </div>
 
       <div class="sm-label">Show Only</div>

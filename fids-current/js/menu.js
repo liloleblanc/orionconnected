@@ -244,8 +244,15 @@ function _menuSyncUrl() {
 // reported innerWidth/innerHeight. Changing it means reloading.
 function menuSetOrientation(rot) {
   var u = _menuScreenUrl();
+  u.searchParams.delete('rot');
+  u.searchParams.delete('orient');
   if (rot === '90' || rot === '270') u.searchParams.set('rot', rot);
-  else u.searchParams.delete('rot');
+  // 'Force Upright' is the escape hatch for a screen that IS portrait but
+  // whose viewport did not read as one when the page loaded — a rotator
+  // iframe, a window opened landscape and moved, a kiosk shell that reports
+  // its pre-rotation size. Auto-detection cannot see any of those; an
+  // explicit flag can.
+  else if (rot === 'up') u.searchParams.set('orient', 'portrait');
   if (typeof closeOverlayMenu === 'function') closeOverlayMenu();
   setTimeout(function () { window.location.href = u.toString(); }, 200);
 }
@@ -363,9 +370,12 @@ function _menuFillScreenFilters() {
     rSel.value = rCur;
   }
 
-  var rot = '';
-  try { rot = new URLSearchParams(window.location.search).get('rot') || '0'; } catch (e) { rot = '0'; }
-  ['0', '90', '270'].forEach(function (r) {
+  var rot = '0';
+  try {
+    var qp = new URLSearchParams(window.location.search);
+    rot = qp.get('rot') || (qp.get('orient') === 'portrait' ? 'up' : '0');
+  } catch (e) {}
+  ['0', 'up', '90', '270'].forEach(function (r) {
     var b = document.getElementById('menuRot_' + r);
     if (b) b.classList.toggle('active', rot === r);
   });
