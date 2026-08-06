@@ -9332,22 +9332,11 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-repeat: no-repeat !important;
 }
 
-/* ── v22933 — FOUR FROM NICK'S 13:24 SHOT.
-
-   1. MAPLE LEAF OFF-CENTRE ('maple leaf is not centered either'). The emblem
-      is an <img> inside .v2-rc-map-life; nothing was centring it, so it sat
-      wherever its intrinsic box landed. Centred on both axes explicitly. */
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life-emblem {
-  margin: 0 auto !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  display: block !important;
-}
+/* ── v22933 — (the maple-leaf centring that stood here is WITHDRAWN in
+   v22938: it turned .v2-rc-map-life from a passive watermark into a flex
+   layer, and every stacking problem after it — emblem over the map, black
+   WestJet mark in front of the tiles, altimeter pushed up and hidden — traces
+   back to that. The panel is left exactly as it was before I touched it.) */
 
 /* 2. 'remove expected | prévu from the aircraft'. The qualifier earns its
       keep on a board row, but in this panel the type already reads as a
@@ -9413,49 +9402,3 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) !important;
 }
 
-/* ── v22935 — THE EMBLEM STAYS OUT OF THE ALTIMETER (Nick: 'when we have the
-   altimeter like this the logo needs to go above it it cant cover it').
-   v22933 centred the emblem by making .v2-rc-map-life a flex container, but
-   never bounded the image inside it — so a tall mark (Delta's widget) grows
-   past its own box and lands on the Speed/Altitude strip below.
-
-   The panel now clips to itself and the emblem is capped at 100% of it, so
-   it can only ever sit ABOVE the telemetry, never across it. */
-html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
-  overflow: hidden !important;
-  min-height: 0 !important;
-  padding: clamp(4px, 0.8vh, 12px) !important;
-  box-sizing: border-box !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life-emblem {
-  max-height: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  width: auto !important;
-}
-/* The telemetry strip keeps its own row and cannot be overlapped. */
-html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats,
-html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
-  position: relative !important;
-  z-index: 2 !important;
-}
-
-/* ── v22937 — THE EMBLEM GOES BEHIND THE MAP (Nick: 'why is it in front of the
-   map??'). .v2-rc-map-life is a watermark layer inside the map shelf — it is
-   meant to fill that panel when there is nothing else to show, not to sit over
-   a live route map. It had no stacking order of its own, so once it carried a
-   real emblem it painted over the tiles.
-
-   Given an explicit z-index BELOW the map, it now only shows through where the
-   map is not drawing — which is exactly the 'nothing else to show' case it
-   exists for — and a live map covers it completely. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
-  position: relative !important;
-  z-index: 0 !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 #gateMapBox,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .leaflet-container,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map > *:not(.v2-rc-map-life) {
-  position: relative !important;
-  z-index: 3 !important;
-}
