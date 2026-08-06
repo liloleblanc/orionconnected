@@ -8044,3 +8044,34 @@ html.fids-portrait:not(#_):not(#_) #fidsTable td.td-time-rev * { font-size: 0 !i
 html.fids-portrait:not(#_):not(#_) #fidsTable thead th { font-size: 13px !important; }
 html.fids-portrait:not(#_):not(#_) #fidsTable thead th.col-airline { font-size: 0 !important; }
 html.fids-portrait:not(#_):not(#_) #fidsBanner .fids-board-filter { font-size: 22px !important; }
+
+/* ── v22892 — AC PLATE TEXTURE A/B (Nick: 'i want to see what this one looks
+   like as well maybe just do one panel in each'). A side-by-side trial on
+   the live board, not a commitment:
+
+     panel 1 (Flight)      → brush / fibre   [Vecteezy dark abstract brush]
+     panel 2 (Destination) → flowing curves  [Vecteezy dark gray curves]
+     panels 3-5            → unchanged, as the control
+
+   Both are baked from Nick's art rather than used raw: the sources are
+   near-black, and these plates already drew a 'dark on dark' complaint
+   once. Mid-tones lifted so the plates sit clearly above the row —
+   measured mean luminance: fibre 73, curves 59, row 29. background-size
+   is 100% 100% so every plate shows the whole crop and they read as a
+   matched set rather than five random windows onto one image. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-bir-cell:nth-child(1)::before {
+  background-image: url('/textures/ac-brush-plate.jpg?v=22892') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #16161a !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-bir-cell:nth-child(2)::before {
+  background-image: url('/textures/ac-curves-plate.jpg?v=22892') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #16161a !important;
+}
