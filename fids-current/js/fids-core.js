@@ -17730,7 +17730,17 @@ function toggleLang(l) {
     langs.splice(idx, 1);
     if (langIdx >= langs.length) langIdx = 0;
   } else {
+    // v22946 — TWO AT A TIME, ONE IF NEEDED (Nick). There was a floor of one
+    // and no ceiling at all, so a screen could be put into four or nine
+    // languages. The gate status cell renders its selected languages side by
+    // side in a 270px column that is sized for exactly two words — measured,
+    // 'Delayed | En retard' already needs 263.7px of it — so a third would
+    // force the fitter to shrink the status into illegibility to cope.
+    // Picking a third replaces the OLDEST rather than being ignored, so the
+    // button always does something visible instead of silently refusing.
     langs.push(l);
+    while (langs.length > 2) langs.shift();
+    if (langIdx >= langs.length) langIdx = 0;
   }
   lang = langs[langIdx];
   updateLangButtons();
@@ -17752,7 +17762,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22945';
+var FIDS_BUILD_TAG = 'v22946';
 (function(){
   try {
     function _addTag(){

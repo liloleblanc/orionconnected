@@ -64,6 +64,27 @@
         <button class="sm-pill" id="smDisplay_baggage" onclick="menuChangeDisplay('baggage')">BIDS</button>
       </div>
 
+      <!-- v22946 — LANGUAGES. This block was missing entirely: _syncMenu() has
+           always looked for menuLang_en .. menuLang_ar and got null every
+           time, and menuToggleLang()/toggleLang() were both already wired and
+           reachable. So the setting existed and worked, with no way to reach
+           it (Nick: 'whweres the langauige options').
+           Pick one or two — the second click adds, a third replaces the
+           oldest. The cap lives in toggleLang() so it holds however the value
+           is set, not just from these buttons. -->
+      <div class="sm-label">Languages <span style="opacity:.6;font-weight:600;">— pick 1 or 2</span></div>
+      <div class="sm-pills" id="smLangPills" style="margin-bottom:10px;flex-wrap:wrap;">
+        <button class="sm-pill" id="menuLang_en" onclick="menuToggleLang('en')">EN</button>
+        <button class="sm-pill" id="menuLang_fr" onclick="menuToggleLang('fr')">FR</button>
+        <button class="sm-pill" id="menuLang_es" onclick="menuToggleLang('es')">ES</button>
+        <button class="sm-pill" id="menuLang_de" onclick="menuToggleLang('de')">DE</button>
+        <button class="sm-pill" id="menuLang_it" onclick="menuToggleLang('it')">IT</button>
+        <button class="sm-pill" id="menuLang_pt" onclick="menuToggleLang('pt')">PT</button>
+        <button class="sm-pill" id="menuLang_ja" onclick="menuToggleLang('ja')">日本語</button>
+        <button class="sm-pill" id="menuLang_zh" onclick="menuToggleLang('zh')">中文</button>
+        <button class="sm-pill" id="menuLang_ar" onclick="menuToggleLang('ar')">العربية</button>
+      </div>
+
       <div id="smSubScreenWrap" style="display:none;">
         <div class="sm-label">Gate / Carousel</div>
         <select class="sm-select" id="menuSubScreen" onchange="menuChangeSubScreen(this.value)"></select>
