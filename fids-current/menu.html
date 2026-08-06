@@ -76,6 +76,52 @@
         <button class="sm-pill active" id="menuMode_rotate" onclick="menuSetViewMode('rotate')">Rotate</button>
       </div>
 
+      <!-- ─── SCREEN SETUP (Nick: 'We cant have that in the menu?') ───
+           Orientation + the three per-monitor filters, so a screen can be
+           set up by clicking instead of by hand-editing its URL. Every
+           control still WRITES that URL (address bar, via replaceState),
+           so 'Copy Screen URL' hands you exactly what to paste into the
+           next kiosk. -->
+      <div class="sm-label" style="margin-top:16px;">Orientation</div>
+      <div class="sm-pills" style="margin-bottom:10px;">
+        <button class="sm-pill active" id="menuRot_0"   onclick="menuSetOrientation('0')">Auto</button>
+        <button class="sm-pill"        id="menuRot_up"  onclick="menuSetOrientation('up')">Force Upright</button>
+        <button class="sm-pill"        id="menuRot_90"  onclick="menuSetOrientation('90')">Turned ↻</button>
+        <button class="sm-pill"        id="menuRot_270" onclick="menuSetOrientation('270')">Turned ↺</button>
+      </div>
+      <div style="font-size:11px;color:#9ca3af;margin:-4px 0 12px;line-height:1.4;">
+        <b>Auto</b> — the board works out its own shape. Right for nearly every screen.<br>
+        <b>Force Upright</b> — the screen IS portrait but the board didn't notice. Use this
+        if an upright monitor is still showing the wide layout.<br>
+        <b>Turned ↻ / ↺</b> — the monitor is physically rotated but the computer is still
+        set to landscape.
+      </div>
+
+      <div class="sm-label">Show Only</div>
+      <div class="sm-field" style="margin-bottom:8px;">
+        <select class="sm-select" id="menuFilterTerminal" onchange="menuSetScreenFilter('terminal', this.value)"></select>
+      </div>
+      <div class="sm-field" style="margin-bottom:8px;">
+        <select class="sm-select" id="menuFilterAirline" onchange="menuSetScreenFilter('airline', this.value)"></select>
+      </div>
+      <div class="sm-field" style="margin-bottom:8px;">
+        <select class="sm-select" id="menuFilterRegion" onchange="menuSetScreenFilter('region', this.value)">
+          <option value="">All traffic</option>
+          <option value="dom">Domestic only</option>
+          <option value="trans">Transborder only</option>
+          <option value="intl">International only</option>
+          <option value="dom,trans">Domestic + Transborder</option>
+        </select>
+      </div>
+      <div class="sm-pills" style="margin-bottom:6px;">
+        <button class="sm-pill" onclick="menuCopyScreenUrl()" id="menuCopyUrlBtn">Copy Screen URL</button>
+        <button class="sm-pill" onclick="menuClearScreenFilters()">Clear Filters</button>
+      </div>
+      <div style="font-size:11px;color:#9ca3af;line-height:1.4;">
+        Filters apply to this screen straight away. Paste the copied URL into another
+        kiosk to set it up the same way.
+      </div>
+
     </div>
 
     <div id="smTab_search" class="sm-tab-content">

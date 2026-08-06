@@ -133,6 +133,9 @@ function _syncMenu() {
     if (btn) btn.classList.toggle('active', (typeof viewMode !== 'undefined' ? viewMode : 'rotate') === m);
   });
 
+  // Screen setup — orientation pills + the three filter selects
+  try { _menuFillScreenFilters(); } catch (e) {}
+
   // Languages
   if (typeof langs !== 'undefined') {
     ['en','fr','es','de','it','pt','ja','zh','ar'].forEach(function(l) {
@@ -209,6 +212,175 @@ function menuSetViewMode(m) {
   if (typeof setViewMode === 'function') setViewMode(m);
   _syncMenu();
 }
+
+// ━━━ SCREEN SETUP — orientation + per-monitor filters ━━━━━━━━━━━━━━━━━━
+// Nick: 'We cant have that in the menu?'. Same three filters the URL takes,
+// driven by clicks instead. Every control writes the URL back into the
+// address bar, so the menu and the URL are never two ways of saying
+// different things — and 'Copy Screen URL' hands over exactly what to paste
+// into the next kiosk.
+
+function _menuScreenUrl() {
+  var u = new URL(window.location.href);
+  function set(k, v) { if (v) u.searchParams.set(k, v); else u.searchParams.delete(k); }
+  try {
+    set('ap', (document.getElementById('apSel') || {}).value || '');
+    set('terminal', typeof filterTerminal !== 'undefined' ? filterTerminal : '');
+    set('airline',  typeof filterAirline  !== 'undefined' ? filterAirline  : '');
+    set('region',   typeof filterRegion   !== 'undefined' ? filterRegion   : '');
+    // the aliases the docs also accept — one spelling in the bar, not two
+    u.searchParams.delete('term');
+    u.searchParams.delete('al');
+  } catch (e) {}
+  return u;
+}
+
+function _menuSyncUrl() {
+  try { history.replaceState(null, '', _menuScreenUrl().toString()); } catch (e) {}
+}
+
+// Orientation is the one control that cannot apply live: ?rot= is read by an
+// inline script in the document HEAD, before layout, because it swaps the
+// reported innerWidth/innerHeight. Changing it means reloading.
+function menuSetOrientation(rot) {
+  var u = _menuScreenUrl();
+  u.searchParams.delete('rot');
+  u.searchParams.delete('orient');
+  if (rot === '90' || rot === '270') u.searchParams.set('rot', rot);
+  // 'Force Upright' is the escape hatch for a screen that IS portrait but
+  // whose viewport did not read as one when the page loaded — a rotator
+  // iframe, a window opened landscape and moved, a kiosk shell that reports
+  // its pre-rotation size. Auto-detection cannot see any of those; an
+  // explicit flag can.
+  else if (rot === 'up') u.searchParams.set('orient', 'portrait');
+  if (typeof closeOverlayMenu === 'function') closeOverlayMenu();
+  setTimeout(function () { window.location.href = u.toString(); }, 200);
+}
+
+function menuSetScreenFilter(kind, val) {
+  val = (val || '').trim();
+  try {
+    if (kind === 'terminal') filterTerminal = val;
+    else if (kind === 'airline') filterAirline = val.toUpperCase();
+    else if (kind === 'region') filterRegion = val;
+  } catch (e) { return; }
+  _menuSyncUrl();
+  try { if (typeof currentPage !== 'undefined') currentPage = 0; } catch (e) {}
+  try { if (typeof updateFilterCount === 'function') updateFilterCount(); } catch (e) {}
+  try { if (typeof render === 'function') render(); } catch (e) {}
+  _syncMenu();
+}
+
+function menuClearScreenFilters() {
+  try { filterTerminal = ''; filterAirline = ''; filterRegion = ''; } catch (e) {}
+  _menuSyncUrl();
+  try { if (typeof updateFilterCount === 'function') updateFilterCount(); } catch (e) {}
+  try { if (typeof render === 'function') render(); } catch (e) {}
+  _syncMenu();
+}
+
+function menuCopyScreenUrl() {
+  var url = _menuScreenUrl().toString();
+  var btn = document.getElementById('menuCopyUrlBtn');
+  function done(ok) {
+    if (!btn) return;
+    var old = btn.textContent;
+    btn.textContent = ok ? 'Copied ✓' : url;
+    setTimeout(function () { btn.textContent = old; }, ok ? 1600 : 6000);
+  }
+  // Kiosks are often served over plain http or run an old browser, where
+  // navigator.clipboard is simply absent — fall back to the textarea trick,
+  // and if even that fails show the URL so it can be read off the screen.
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(false); });
+      return;
+    }
+  } catch (e) {}
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    done(ok);
+  } catch (e) { done(false); }
+}
+
+// Options come from the flights actually on the board right now, so a
+// terminal or carrier that this airport does not have never appears.
+//
+// Built with createElement + textContent, never innerHTML: the current
+// values reach this function from the QUERY STRING, so string-concatenating
+// them into markup is an injection through a URL somebody could hand an
+// operator. CodeQL flagged exactly that on the first cut of this function
+// (three high-severity 'DOM text reinterpreted as HTML' alerts). The
+// airline names are feed-derived too, which is no safer.
+function _menuOption(value, label) {
+  var o = document.createElement('option');
+  o.value = value;
+  o.textContent = label;
+  return o;
+}
+function _menuFillScreenFilters() {
+  var terms = [], airs = {};
+  try {
+    var all = (data.dep || []).concat(data.arr || []);
+    var tSeen = {};
+    all.forEach(function (f) {
+      var t = (f.terminal || '').toString().trim().toUpperCase().replace(/^T/, '');
+      if (t && t !== '—' && !tSeen[t]) { tSeen[t] = 1; terms.push(t); }
+      var a = (f.airline || '').toString().trim().toUpperCase();
+      if (a) airs[a] = (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[a]) || a;
+    });
+  } catch (e) {}
+  terms.sort();
+
+  var tSel = document.getElementById('menuFilterTerminal');
+  if (tSel) {
+    var tCur = (typeof filterTerminal !== 'undefined' ? filterTerminal : '')
+      .toString().toUpperCase().replace(/^T/, '');
+    tSel.textContent = '';
+    tSel.appendChild(_menuOption('', 'All terminals'));
+    terms.forEach(function (t) { tSel.appendChild(_menuOption(t, 'Terminal ' + t)); });
+    // A terminal filter set from a URL for an airport whose board has no
+    // terminal column would vanish from the list and silently reset — keep it.
+    if (tCur && terms.indexOf(tCur) === -1) tSel.appendChild(_menuOption(tCur, 'Terminal ' + tCur));
+    tSel.value = tCur;
+    tSel.parentElement.style.display = (terms.length || tCur) ? '' : 'none';
+  }
+
+  var aSel = document.getElementById('menuFilterAirline');
+  if (aSel) {
+    var aCur = (typeof filterAirline !== 'undefined' ? filterAirline : '').toString().toUpperCase();
+    var codes = Object.keys(airs).sort(function (x, y) { return airs[x].localeCompare(airs[y]); });
+    aSel.textContent = '';
+    aSel.appendChild(_menuOption('', 'All airlines'));
+    codes.forEach(function (c) { aSel.appendChild(_menuOption(c, airs[c])); });
+    if (aCur && codes.indexOf(aCur) === -1) aSel.appendChild(_menuOption(aCur, aCur));
+    aSel.value = aCur;
+  }
+
+  var rSel = document.getElementById('menuFilterRegion');
+  if (rSel) {
+    var rCur = (typeof filterRegion !== 'undefined' ? filterRegion : '').toString().toLowerCase();
+    if (rCur && !Array.prototype.some.call(rSel.options, function (o) { return o.value === rCur; })) {
+      rSel.appendChild(_menuOption(rCur, rCur));
+    }
+    rSel.value = rCur;
+  }
+
+  var rot = '0';
+  try {
+    var qp = new URLSearchParams(window.location.search);
+    rot = qp.get('rot') || (qp.get('orient') === 'portrait' ? 'up' : '0');
+  } catch (e) {}
+  ['0', 'up', '90', '270'].forEach(function (r) {
+    var b = document.getElementById('menuRot_' + r);
+    if (b) b.classList.toggle('active', rot === r);
+  });
+}
+
 
 function menuToggleLang(l) {
   if (typeof toggleLang === 'function') toggleLang(l);
