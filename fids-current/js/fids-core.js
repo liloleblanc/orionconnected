@@ -17859,7 +17859,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22950';
+var FIDS_BUILD_TAG = 'v22951';
 (function(){
   try {
     function _addTag(){
@@ -26209,7 +26209,22 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
 
   // ── The time-parameterised model ──────────────────────────────────────
   var _CONVERGE_MS = 45000;      // horizon over which a fix error is flown off
-  var _MAX_SLEW_DPS = 3;         // deg/sec — the icon's rotation rate ceiling
+  // v22951 — 3 deg/sec was too slow, and it was a patch for a problem that no
+  // longer exists. It went in this morning because the icon was swinging 78
+  // degrees in a single 100ms frame — but that was TWO GLIDE LOOPS fighting
+  // over one marker (fixed by the generation token) compounded by the
+  // unclamped correction rate (fixed in v22950). With both root causes gone,
+  // a hard ceiling of 3 deg/sec only stops the nose keeping up with the path,
+  // which is what Nick sees as "the aircraft is flying sideways".
+  //
+  // Nick's own reference implementation rotates off ADJACENT path points and
+  // applies it instantly, with no smoothing whatsoever — and it is right to,
+  // because a marker moving at an honest speed never turns violently. 60
+  // deg/sec keeps that behaviour for anything real (a jet's standard rate
+  // turn is 3 deg/sec through the AIR, and the sharpest bend in a 118-vertex
+  // great circle is far gentler) while still refusing a single-frame snap if
+  // something upstream ever misbehaves again.
+  var _MAX_SLEW_DPS = 60;        // deg/sec — a backstop now, not a smoother
   var _t0 = _nowFn();            // anchor time
   var _p0 = p;                   // anchor position (what is drawn right now)
   var _baseRate = speedKts / 3600000 / totalNm;   // route-fraction per ms
