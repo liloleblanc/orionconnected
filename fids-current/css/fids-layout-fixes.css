@@ -8489,3 +8489,133 @@ html body:is([data-gate-airline="QR"],[data-gate-airline*="QATAR"]):not(#_):not(
   background-repeat: no-repeat !important;
   background-blend-mode: normal !important;
 }
+
+/* ── v22903 — NICK'S FILES, UNRETOUCHED (Nick: 'Theyre so dark', 'You need
+   to fix this Im sure thats not what they look like'). Both true, and the
+   cause was mine. Every bake up to v22902 pushed the artwork down toward
+   the grey shelf's tone so WHITE text would stay legible on it. Measured,
+   the damage was severe — the plates arrived at mean/stddev:
+
+     v22902 bake:  silver 34/4 · gold-wave 47/6 · blue-grey 27/14
+     Nick's file:  silver 209/28 · gold-wave 159/27 · blue-grey 193/41
+
+   A brightness multiply scales the SPREAD by the same factor it scales the
+   mean, so darkening a 209-mean source to 34 also flattened its contrast
+   six-fold. That is why they 'all look the same': they had been reduced to
+   near-identical dark grey fields with the design barely surviving.
+
+   The artwork was the wrong thing to sacrifice. These files are now cropped
+   and nothing else — the widest band at the plate's own 2.83:1 aspect, two-
+   step downscale so fine line art cannot alias into a crawling moire, no
+   tone edit whatsoever.
+
+   Legibility is solved on the INK instead, which is where it belonged.
+   Measured mean luminance of the two zones the text actually occupies
+   (left 2-34%, right 62-98%):
+
+     silver 191/229 · blue-grey 179/199 · gold-wave 170/159
+     wave 161/166 · gold-curve 145/131        -> DARK ink
+     teal-navy 62/63 · blue-panel 53/52 · navy-gold 56/28
+     blue-grad 16/19 · teal-gold 148/85       -> WHITE ink
+
+   Carrier match corrected too — Nick: 'like you used dark teal with Delta
+   thats not good' and 'thats not the right Westjet choice'. WestJet is the
+   teal carrier, so plate-teal-navy is theirs; Delta takes the navy plate
+   with the red/gold chevron, which is the widget; and the shuffle frees
+   plate-blue-panel for United and plate-blue-grad for Porter.
+
+   Written as custom properties rather than eleven copies of a selector
+   list, so 'remember its all panels' is one list to extend, not eleven. */
+
+/* Default — unlisted carriers keep the tinted engraving from v22901. */
+html body[data-gate-airline]:not(#_) {
+  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22903');
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+  --plate-base: #0b0e14;
+}
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_) {
+  --plate-tex: url('/textures/plate-teal-navy.jpg?v=22903'); }
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) {
+  --plate-tex: url('/textures/plate-navy-gold.jpg?v=22903'); }
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"]):not(#_) {
+  --plate-tex: url('/textures/plate-blue-panel.jpg?v=22903'); }
+html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_) {
+  --plate-tex: url('/textures/plate-blue-grad.jpg?v=22903'); }
+html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"]):not(#_) {
+  --plate-tex: url('/textures/plate-teal-gold.jpg?v=22903'); }
+
+/* The five bright plates. Ink flips to near-black with a white lift, and
+   the status colours darken to match — the light-on-light green and amber
+   above would be unreadable on artwork this bright. */
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_),
+html body:is([data-gate-airline="LH"],[data-gate-airline="DLH"],[data-gate-airline*="LUFTHANSA"]):not(#_),
+html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"]):not(#_),
+html body:is([data-gate-airline="QR"],[data-gate-airline="QTR"],[data-gate-airline*="QATAR"]):not(#_),
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_) {
+  --plate-ink: #12161d;
+  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
+  --plate-ok: #056f4a;  --plate-warn: #8a5200;
+  --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
+  --plate-base: #cfd3d8;
+}
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_) {
+  --plate-tex: url('/textures/plate-silver.jpg?v=22903'); }
+html body:is([data-gate-airline="LH"],[data-gate-airline="DLH"],[data-gate-airline*="LUFTHANSA"]):not(#_) {
+  --plate-tex: url('/textures/plate-gold-wave.jpg?v=22903'); }
+html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"]):not(#_) {
+  --plate-tex: url('/textures/plate-gold-curve.jpg?v=22903'); }
+html body:is([data-gate-airline="QR"],[data-gate-airline="QTR"],[data-gate-airline*="QATAR"]):not(#_) {
+  --plate-tex: url('/textures/plate-wave.jpg?v=22903'); }
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_) {
+  --plate-tex: url('/textures/plate-blue-grey.jpg?v=22903'); }
+
+/* ── ALL PANELS. Nick: 'remember its all panels'. The five surfaces the
+   texture already reached, plus the ones it had been missing — the equipment
+   panel, the generic gad panel, the weather panel, and the two stat tiles. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-equip-panel,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-panel,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-wx-panel,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-keystat,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-mstat {
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex) !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  filter: none !important;
+}
+
+/* Ink follows the plate. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row :is(.v2-fi-title, .v2-fi-title span, .v2-fi-value, .v2-fi-value span),
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf:not(.v2-rc-shelf-map) :is(div, span, p, b, strong, small),
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap :is(.gad-equip-panel, .gad-panel, .g8-wx-panel, .v2-rc-keystat, .v2-rc-mstat, .v2-rc-telem) :is(div, span, p, b, strong, small) {
+  color: var(--plate-ink, #fff) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived) span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.ontime, .early, .enroute, .arrived),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-ontime, .v2-rc-status-early, .v2-rc-status-enroute, .v2-rc-status-arrived) {
+  color: var(--plate-ok, #34d399) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final) span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val:is(.delayed, .final),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval:is(.v2-rc-status-delayed, .v2-rc-status-diverted) {
+  color: var(--plate-warn, #fbbf24) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled span,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-status-val.cancelled,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled {
+  color: var(--plate-bad, #f87171) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
+  color: var(--plate-info, #93c5fd) !important;
+}
