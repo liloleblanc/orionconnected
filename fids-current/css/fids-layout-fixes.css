@@ -8634,3 +8634,40 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-c
 html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding {
   color: var(--plate-info, #93c5fd) !important;
 }
+
+/* ── v22905 — AIR CANADA: FRONT AND BACK SWAP (Nick: 'the current front
+   panel put that in the back and use this as the front'). The engraved-line
+   plate moves off the front plates and onto the shelf behind them; the new
+   black halftone takes the front.
+
+   The shelf is a tall column and the plates are a 2.83:1 band, so the
+   engraving is re-cut for the shelf rather than reused — a portrait window
+   scaled in two steps, so the hairlines cannot alias into a moire that
+   crawls on a moving display. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_) {
+  --plate-tex: url('/textures/ac-front-black.jpg?v=22905');
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map),
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-board-info-row {
+  background: #101418 url('/textures/ac-lines-shelf.jpg?v=22905') center / cover no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* The AC front plates were painted by six earlier version blocks, each with
+   its own specificity ladder. Rather than out-weigh every one, the whole set
+   is re-pointed at the variable so the swap above is the single source of
+   truth for what AC's front plate carries. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-equip-panel, .gad-panel, .g8-wx-panel, .v2-rc-keystat, .v2-rc-mstat) {
+  background-color: #0b0e14 !important;
+  background-image: var(--plate-tex) !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  filter: none !important;
+}
