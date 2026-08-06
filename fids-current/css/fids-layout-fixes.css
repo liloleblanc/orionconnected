@@ -8133,3 +8133,28 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
   background-image: url("/logos/Backgrounds/ac-shelf-lux-clean.jpg?v=22847") !important;
 }
+
+/* ── v22895 — THIRD TEXTURE, ALL SIX PLATES (Nick: 'neither sorry try this'
+   — the artistic-line / engraved source). Brush and curves are both out;
+   this one gets the whole rail rather than half, since a split only made
+   sense while two candidates were in play.
+
+   Two things had to be handled in the bake, neither optional:
+
+   · The source is 1px white hairlines on pure black. Reduced to plate size
+     in one step they alias into a moire that CRAWLS on a moving display and
+     eats bitrate on the YouTube stream. Halved twice with smoothing on, so
+     the filter can average them into soft striations.
+   · Pure black is exactly the 'dark on dark' Nick rejected before, and the
+     first bake came out at mean 29 — no better than what it replaces.
+     Re-baked to mean 46 (min 29, max 114): charcoal plate, silver
+     engraving, clearly above the row it sits on. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-bir-cell::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22895') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  background-color: #1c1c20 !important;
+}
