@@ -8208,3 +8208,30 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-blend-mode: normal !important;
   background-color: #101014 !important;
 }
+
+/* ── v22898 — BOTH OF NICK'S LAST TWO, RE-CUT AND SPLIT FOR VERIFICATION
+   (Nick: 'thats not the same file?' then 'I had 2 different file to
+   verify'). He was right that the plates did not look like his art, and
+   the cause was mine: v22896 cropped a 1250x442 window from the CALM
+   MIDDLE of each source. Faithful and undistorted, but it threw away the
+   curvature that makes the designs recognisable, so the engraving read as
+   plain diagonal hatching and the ripple read as flat black.
+
+   Both are now cut as the widest possible band at the plate's own 2.83:1
+   aspect, so the whole sweep survives. Still no stretching — the crop
+   matches the plate shape, so nothing is squashed.
+
+     rows 1-3 → artistic-line engraving  (file 1 of the two)
+     rows 4-6 → line-curve ripple        (file 2 of the two)  */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(-n+3)::before {
+  background-image: url('/textures/ac-lines-plate.jpg?v=22898') !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-color: #101014 !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row:nth-child(n+4)::before {
+  background-image: url('/textures/ac-ripple-plate.jpg?v=22898') !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-color: #101014 !important;
+}
