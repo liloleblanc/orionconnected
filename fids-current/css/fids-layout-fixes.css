@@ -9317,3 +9317,17 @@ html body:not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-all
   object-fit: contain !important;
   flex-shrink: 0 !important;
 }
+
+/* ── v22932 — THE LINES COME BACK, IN BLACK (Nick: 'where did the background
+   go with the line its just black now'). v22931 read 'put the AC background
+   black' as remove-the-image; what he wanted was the RED gone, not the line
+   design. Same artwork, no red ramp — grey strokes on black, mirror-tiled
+   4x4 like the rest. Measured mean RGB 12/12/12, sd 10: black to the eye,
+   with the structure still there. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #000000 !important;
+  background-image: url('/textures/ac-back-lines-black4.jpg?v=22932') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}

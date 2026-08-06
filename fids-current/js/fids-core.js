@@ -17609,7 +17609,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22931';
+var FIDS_BUILD_TAG = 'v22932';
 (function(){
   try {
     function _addTag(){
@@ -25536,6 +25536,32 @@ function _gateMapWatchResize(mb) {
         try { if (gateMap) gateMap.invalidateSize(); } catch (e3) {}
       });
       window._gateMapRO.observe(mb);
+    }
+    // v22932 — the observer alone is not enough (Nick: 'i moved the window of
+    // the GIDS and the map did not move it stayed stationary in the corner
+    // untill it refreshed'). A ResizeObserver only fires when the OBSERVED BOX
+    // changes; a window move, a devicePixelRatio change, or a resize that the
+    // box absorbs without changing its own computed pixel size never reaches
+    // it. Leaflet then keeps drawing its panes at the offsets it measured
+    // last, which is the map sitting stranded in a corner until something else
+    // forces a re-measure.
+    //
+    // So watch the WINDOW too, debounced, and re-measure a moment later as
+    // well — the second pass catches a resize that is still settling when the
+    // first one fires.
+    if (!window._gateMapWinResize) {
+      window._gateMapWinResize = function () {
+        clearTimeout(window._gateMapWinT);
+        window._gateMapWinT = setTimeout(function () {
+          try { if (gateMap) gateMap.invalidateSize(); } catch (e4) {}
+          setTimeout(function () {
+            try { if (gateMap) gateMap.invalidateSize(); } catch (e5) {}
+          }, 400);
+        }, 120);
+      };
+      window.addEventListener('resize', window._gateMapWinResize);
+      window.addEventListener('orientationchange', window._gateMapWinResize);
+      try { window.addEventListener('pageshow', window._gateMapWinResize); } catch (e6) {}
     }
   } catch (e) {}
 }
