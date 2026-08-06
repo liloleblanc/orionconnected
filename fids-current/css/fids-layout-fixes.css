@@ -9412,3 +9412,30 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   color: #E01933 !important;
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) !important;
 }
+
+/* ── v22935 — THE EMBLEM STAYS OUT OF THE ALTIMETER (Nick: 'when we have the
+   altimeter like this the logo needs to go above it it cant cover it').
+   v22933 centred the emblem by making .v2-rc-map-life a flex container, but
+   never bounded the image inside it — so a tall mark (Delta's widget) grows
+   past its own box and lands on the Speed/Altitude strip below.
+
+   The panel now clips to itself and the emblem is capped at 100% of it, so
+   it can only ever sit ABOVE the telemetry, never across it. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  overflow: hidden !important;
+  min-height: 0 !important;
+  padding: clamp(4px, 0.8vh, 12px) !important;
+  box-sizing: border-box !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life-emblem {
+  max-height: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  width: auto !important;
+}
+/* The telemetry strip keeps its own row and cannot be overlapped. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  position: relative !important;
+  z-index: 2 !important;
+}

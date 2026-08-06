@@ -8036,6 +8036,17 @@ function _buildV2MapCol(ctx, vars) {
       // rule). Airline-specific pins above (AC 737→MAX, TS→neo) already ran.
       if (!_imgEq && _equipNm && typeof aircraftCodeToIata === 'function') {
         try { _imgEq = aircraftCodeToIata(_equipNm) || ''; } catch (e) { _imgEq = ''; }
+        // v22935 — and the Rouge paint has to survive THIS path too (Nick:
+        // 'wrong aircraft livery'). The suffix above is applied to _liveryEq,
+        // but that branch is guarded on _liveryEq being truthy — and it is
+        // empty whenever the flight carries no equipment CODE, which is the
+        // exact case this fallback exists to cover. So a Rouge flight with
+        // only a scheduled equipment NAME fell through here and got the
+        // mainline art: measured on AC1987/AC1984 at YQM gate 4, _opCode was
+        // 'RV' and the browser still requested AC/320.png, never 320r.png.
+        if (_imgEq && _opCode === 'RV') {
+          try { _imgEq = _rougeLiveryEq(_imgEq); } catch (e) {}
+        }
       }
       if (typeof aircraftImgTag === 'function' && _imgEq) {
         _acImg = aircraftImgTag(_liveryAirline, _imgEq, {
@@ -17609,7 +17620,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22934';
+var FIDS_BUILD_TAG = 'v22935';
 (function(){
   try {
     function _addTag(){
