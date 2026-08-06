@@ -17575,7 +17575,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22923';
+var FIDS_BUILD_TAG = 'v22924';
 (function(){
   try {
     function _addTag(){
@@ -21639,14 +21639,49 @@ async function _adsbFetchOne(path) {
 // resolved by the time the gate poll runs. Callsign second: ADS-B carries
 // the ICAO callsign (ROU1908), not the IATA flight number (RV1908), so a
 // bare flight number is only tried when it already looks like a callsign.
+// v22924 — IATA flight numbers are not callsigns. Measured on a live YQM gate:
+// the inbound resolves as 'WS812' with reg '(pending)', and spd/alt come back
+// null every time. The reason is here — 'WS812' has a TWO-letter prefix, so it
+// fails the three-letter callsign guard below and no lookup is ever attempted.
+// ADS-B carries the ICAO callsign ('WJA812'). CALLSIGN_TO_IATA already maps
+// ICAO->IATA for 74 carriers, so inverting it once gives the conversion.
+var _IATA_TO_CALLSIGN = (function () {
+  var m = Object.create(null);
+  try {
+    for (var k in CALLSIGN_TO_IATA) {
+      var v = CALLSIGN_TO_IATA[k];
+      if (v && !m[v]) m[v] = k;   // first wins; the table lists mainline first
+    }
+  } catch (e) {}
+  return m;
+})();
+// 'WS812' -> 'WJA812'. Handles the numeric-letter IATA codes too (B6, F8, 3H).
+function _icaoCallsign(s) {
+  var t = String(s || '').trim().toUpperCase().replace(/[\s-]+/g, '');
+  var m = t.match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])(\d{1,4}[A-Z]{0,2})$/);
+  if (!m) return '';
+  var icao = _IATA_TO_CALLSIGN[m[1]];
+  return icao ? icao + m[2] : '';
+}
 async function _adsbTelemetry(reg, callSign, flightNo) {
   var tries = [];
   var _r = String(reg || '').trim().toUpperCase();
   if (/^[A-Z0-9-]{4,10}$/.test(_r)) tries.push('/reg/' + encodeURIComponent(_r));
+  // {0,2} not {0,1}: real callsigns carry two trailing letters (DLH3CF,
+  // SXS2VN were both live over FRA during verification and both were skipped).
   var _cs = String(callSign || '').trim().toUpperCase().replace(/\s+/g, '');
-  if (/^[A-Z]{3}\d{1,4}[A-Z]?$/.test(_cs)) tries.push('/callsign/' + encodeURIComponent(_cs));
+  if (/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(_cs)) tries.push('/callsign/' + encodeURIComponent(_cs));
   var _fn = String(flightNo || '').trim().toUpperCase().replace(/\s+/g, '');
-  if (_fn && _fn !== _cs && /^[A-Z]{3}\d{1,4}[A-Z]?$/.test(_fn)) tries.push('/callsign/' + encodeURIComponent(_fn));
+  if (_fn && _fn !== _cs && /^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(_fn)) tries.push('/callsign/' + encodeURIComponent(_fn));
+  // Then the converted forms — this is what makes a gate whose inbound is only
+  // known by its IATA number resolvable at all.
+  var _seen = Object.create(null);
+  tries.forEach(function (t) { _seen[t] = 1; });
+  [_icaoCallsign(_cs), _icaoCallsign(_fn)].forEach(function (c) {
+    if (!c) return;
+    var path = '/callsign/' + encodeURIComponent(c);
+    if (!_seen[path]) { _seen[path] = 1; tries.push(path); }
+  });
   for (var i = 0; i < tries.length; i++) {
     var ac = await _adsbFetchOne(tries[i]);
     if (!ac) continue;
