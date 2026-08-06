@@ -8967,3 +8967,18 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   fill: revert !important;
   box-shadow: revert !important;
 }
+
+/* ── v22917 — AC'S LEFT COLUMN (Nick: 'Left side to AC is not done'). v22911
+   put the BLACKBG01 artwork on the right-hand shelf and the boarding info
+   row, but not on .gad-aircraft-col — the left column's own background,
+   which is the surface behind the six flight plates. WestJet's v22914 rule
+   covered it; Air Canada's did not. Same artwork, same fit. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  background-color: #0a0a0a !important;
+  background-image: url('/textures/ac-back-lines.jpg?v=22917') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
