@@ -2728,7 +2728,9 @@ async function _gateNumbersPoll() {
       if (typeof _adsb.spd === 'number') inb._liveSpd = _adsb.spd;
       if (typeof _adsb.lat === 'number' && typeof _adsb.lng === 'number') {
         inb._liveLat = _adsb.lat; inb._liveLng = _adsb.lng;
-        window._gateInboundLivePos = { lat: _adsb.lat, lng: _adsb.lng, speed: _adsb.spd, altitude: _adsb.alt };
+        // onGround rides along so the map glide can be suppressed — see the
+        // dead-reckoning guard in the map tick.
+        window._gateInboundLivePos = { lat: _adsb.lat, lng: _adsb.lng, speed: _adsb.spd, altitude: _adsb.alt, onGround: _adsb.onGround === true };
       }
       if (typeof _adsb.track === 'number') inb._liveTrack = _adsb.track;
       if (typeof _adsb.vs === 'number') inb._liveVs = _adsb.vs;
@@ -17550,7 +17552,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22887';
+var FIDS_BUILD_TAG = 'v22888';
 (function(){
   try {
     function _addTag(){
@@ -25476,6 +25478,26 @@ function initGateMapLive(org,dst,planeLat,planeLng){
              // cruise so an airborne plane always drifts rather than freezing.
              : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
              : 0;
+  // ── v22888 — NO DEAD RECKONING ON THE GROUND ────────────────────────
+  // The glide moves the plane ALONG ITS GREAT-CIRCLE ROUTE at its own
+  // ground speed. That is right in the air and wrong on the ground: a
+  // taxiing aircraft is on taxiways, not on the line to its destination,
+  // so extrapolating 60 s of movement along the departure bearing walks
+  // the icon straight off the airport. Nick watched one leave Pearson via
+  // Dixon Road and drive past T1.
+  //
+  // It only surfaced with v22887: AeroDataBox almost never returned a
+  // usable on-ground position, so the glide had nothing to extrapolate
+  // from. Live ADS-B supplies one every poll, which made a latent bug in
+  // the glide visible rather than creating it.
+  //
+  // On the ground the marker holds its last REAL fix and jumps to the
+  // next one. Taxi movement is slow enough that stepping between true
+  // positions reads better than a smooth ride through a building.
+  try {
+    var _lpG = window._gateInboundLivePos;
+    if (_lpG && _lpG.onGround === true) _glSpd = 0;
+  } catch (e) {}
   window._gatePlaneMk = _planeMk;
   try { console.log('[MAP-LIVE] plane @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'z' + zoom, 'glideKts', _glSpd); } catch (e) {}
   _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd);
