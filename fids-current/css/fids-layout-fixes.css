@@ -3074,16 +3074,41 @@ html .g8-board-hdr-next {
   color: #ffffff !important;
   border-bottom: none !important;
 }
-html .g8-board-hdr-now, html .g8-board-col.now { background: var(--banner-bg, #0b0f16) !important; }
+/* v22939 — the lane panels are made of the same material as the rest of the
+   screen. They were the last two surfaces the v22903 plate system never
+   reached: measured on a live Korean Air gate (YYZ/C35, v22938) the columns
+   came back `rgb(12,17,25)` and `rgb(0,37,108)` with `background-image:
+   none`, so the takeover read as two flat placeholder rectangles bolted
+   under a fully textured banner. That contrast is the defect, not the
+   colours — the black/accent split is Nick's own gate-sign reference.
+   soft-light keeps the tone exactly (black stays black, the accent stays
+   the accent) and only lays the plate's line structure over it. */
+html .g8-board-hdr-now, html .g8-board-col.now {
+  background-color: var(--banner-bg, #0b0f16) !important;
+  background-image: var(--plate-tex) !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light !important;
+}
 /* --accent-lane = the accent, pre-darkened by JS when the brand colour is
    too light for white lettering (Flair lime, Southwest yellow). */
-html .g8-board-hdr-next, html .g8-board-col.next { background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important; }
+html .g8-board-hdr-next, html .g8-board-col.next {
+  background-color: var(--accent-lane, var(--airline-accent, #D82F2E)) !important;
+  background-image: var(--plate-tex) !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light !important;
+}
 html .g8-board-col.next { border-left: none !important; }
 /* Frontier (Nick): 'gray on the left for boarding now' — the Boarding-now
    panel/header go slate gray (white lettering still reads); the Boarding-next
    panel keeps its brand blue. */
+/* background-COLOR, not the shorthand: the shorthand would reset the plate
+   texture the rule above sets and drop Frontier back to a flat slab. */
 html body[data-gate-airline="F9"] .g8-board-hdr-now,
-html body[data-gate-airline="F9"] .g8-board-col.now { background: #5B646F !important; }
+html body[data-gate-airline="F9"] .g8-board-col.now { background-color: #5B646F !important; }
 html .g8-board-col .g8-board-grp-label,
 html .g8-board-col .g8-board-grp-num,
 html .g8-board-col .g8-board-arrow,

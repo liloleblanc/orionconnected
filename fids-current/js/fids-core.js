@@ -1414,6 +1414,31 @@ function changeScreenType(val) {
   // right now its showing main board its fucked up'). Sync here — the one
   // place every caller passes through.
   try { var _stSel = document.getElementById('screenTypeSel'); if (_stSel && _stSel.value !== val) _stSel.value = val; } catch (e) {}
+  // v22939 — AND THE DISPLAY-TYPE PILLS. v22814 fixed the legacy <select>
+  // and stopped there; the redesigned menu's FIDS/GIDS/BIDS pills are a
+  // second copy of the same state and they were never wired to it. So the
+  // exact fault came back on a different control (Nick: 'Not on the right
+  // setting ffs this all happened before').
+  //
+  // Measured on the live branch, /gids?ap=YYZ&gate=D36 (v22938):
+  //   screenType 'gate' · screenTypeSel 'gate' · uxg-gate-mode true
+  //   pills      FIDS:ACTIVE  GIDS:-  BIDS:-
+  // and calling _syncMenu() by hand flipped them to GIDS:ACTIVE. So the
+  // state was right and nothing ever pushed it to the pills: menu.js syncs
+  // once when the fragment lands — BEFORE the gids boot path flips
+  // screenType — and menubar.js, which owns the top-bar dropdown Nick
+  // actually opens, never calls _syncMenu at all.
+  //
+  // Fixed where the value changes, not where it is displayed, so any future
+  // copy of this state syncs for free.
+  try {
+    ['main', 'gate', 'baggage'].forEach(function (t) {
+      var _pill = document.getElementById('smDisplay_' + t);
+      if (_pill) _pill.classList.toggle('active', t === val);
+    });
+    var _dLabel = document.getElementById('menuDisplayLabel');
+    if (_dLabel) _dLabel.textContent = ({ main: 'FIDS', gate: 'GIDS', baggage: 'BIDS' })[val] || 'FIDS';
+  } catch (e) {}
   // Survive the self-update reloads: a screen put into gate/baggage mode via
   // the MENU (no URL param) was being dumped back to the main board on every
   // deploy (Nick: 'what happened to baggage… it's all over the place').
@@ -8923,8 +8948,19 @@ function uxgGateHtml(ctx) {
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
     // Swap those brands for a colored cut here, like the SkyTeam invert below.
     var _BW_EMBLEM = { 'UA': '/logos/airlines/us-major/united-globe-only.svg' };
+    // v22939 — AIRLINE_EMBLEM_FILES is a hand-kept list and most of the world
+    // is not on it. Korean Air is not, so on Nick's YYZ/C35 boarding screen
+    // this strip rendered as a bare white band: no rondelle, just the two
+    // words floating in a white slab under a fully textured banner.
+    // /logos/symbols/airlines/ already ships 73 carrier symbols (KE among
+    // them, the taegeuk in #051766 — which reads correctly on white). Fall
+    // through to it before giving up. The onerror below already hides a miss,
+    // so a carrier with no symbol lands exactly where it does today.
+    var _bwSym = /^[A-Z0-9]{2}$/.test(String(airlineCode || '').toUpperCase())
+      ? '/logos/symbols/airlines/' + String(airlineCode).toUpperCase() + '.svg' : null;
     var _bwEmb = _BW_EMBLEM[airlineCode]
-      || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+      || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode])
+      || _bwSym || null;
     // The strip is WHITE like the printed sign — swap the banner's metallic
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
     // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
@@ -9870,6 +9906,32 @@ function uxgGateHtml(ctx) {
       + '<img src="' + _apLogoTop + '" alt="' + _apNameTop + '" style="height:76%;max-height:82%;max-width:100%;width:auto;object-fit:contain;mix-blend-mode:multiply;transform:skewX(24deg);transform-origin:bottom right;" onerror="this.parentNode.style.display=\'none\'">'
       + '</div>'
     : '';
+
+  // ── v22939 — PUBLISH THE GATE ACCENT AT DOCUMENT SCOPE.
+  // Every brand variable below is written INLINE on .g8-wrap, so it only
+  // exists inside the wrap's subtree. Anything that reads --airline-accent
+  // from :root or <body> got fids.css:891's hard-coded `--airline-accent:
+  // #0033A1` instead — United blue, on every carrier's gate.
+  //
+  // Measured on a live Korean Air gate (YYZ/C35, branch v22938):
+  //   body --airline-accent  #0033A1        <- United
+  //   body --plate-base      color-mix(in srgb, #0033A1 34%, #0b0e14)
+  // The tinted default plate — the panel behind the flight data on every
+  // carrier that has no texture of its own — was being mixed with United's
+  // blue rather than the carrier's own colour. That is the whole of #73, and
+  // it is why the untextured carriers all shared one wrong tone.
+  //
+  // The variables are authored here, so they are published here, to the
+  // element every scope can see.
+  try {
+    var _rootStyle = document.documentElement.style;
+    _rootStyle.setProperty('--airline-accent', accent);
+    _rootStyle.setProperty('--accent-lane',
+      _hexIsLight(accent) ? 'color-mix(in srgb, ' + accent + ' 55%, #141a14)' : accent);
+    _rootStyle.setProperty('--banner-bg',
+      (_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF')
+        ? _bannerSpec.r1 : '#0c1119');
+  } catch (e) {}
 
   return '<div class="g8-wrap'
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
@@ -17620,7 +17682,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22938';
+var FIDS_BUILD_TAG = 'v22939';
 (function(){
   try {
     function _addTag(){
