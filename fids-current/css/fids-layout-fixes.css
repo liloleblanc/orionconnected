@@ -9091,3 +9091,37 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-repeat: repeat !important;
   background-position: center !important;
 }
+
+/* ── v22921 — THE SEPARATION RULES RETURN TO THE RIGHT PANE (Nick: 'I meant
+   the separation like the pic I sent as example for the flight info on the
+   right'). These are the red lines between Flight and Destination, and
+   between Departure and Status, in the reference shot.
+
+   v22853 killed them for a real reason — they drew at the trow boundary and
+   landed MID-TEXT, so 'Sao Paulo' and the times read as barred, and over a
+   green status ink the crossing line took the green. So before restoring
+   them I measured where the text actually ends inside each row on a live
+   pane (AC419 at D32):
+
+     Flight   row 534-583, deepest text 579   -> 4px clear
+     From     row 583-631, deepest text 627   -> 4px clear
+     Arrival  row 648-697, deepest text 694   -> 3px clear
+     Status   row 697-745, deepest text 741   -> 4px clear
+
+   The rows now carry padding-bottom 3.24px, so nothing overflows and a
+   border at the boundary no longer crosses anything. 3px is still thin for
+   a descender on a different string, so the padding is raised to give the
+   rule real headroom rather than trusting the margin.
+
+   The colour follows the carrier accent, so this is Air Canada red on AC and
+   each airline's own on the rest — and it is drawn on the ROW, never on the
+   value, so no status ink can tint it the way the green did. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow {
+  padding-bottom: clamp(7px, 0.85vh, 12px) !important;
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+}
+/* Last row of each pane closes the group — no rule under it. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow-last,
+html body[data-gate-airline]:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow:last-child {
+  border-bottom: none !important;
+}
