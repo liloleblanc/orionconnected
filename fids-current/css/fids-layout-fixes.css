@@ -8982,3 +8982,41 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-repeat: no-repeat !important;
   background-blend-mode: normal !important;
 }
+
+/* ── v22918 — ONE BACKGROUND, AT ITS OWN ASPECT (Nick: 'why is that
+   background so strecteched out' / 'NO'). v22917 put the 16:9 artwork on
+   .gad-aircraft-col with cover. That column is TALL and NARROW, so cover
+   scaled the image roughly fourfold to reach the height and threw most of
+   the width away — the hairlines came out thick and smeared. Same fault in
+   the v22914 WestJet rule.
+
+   The gate screen is 1920x1080, which is the artwork's own 16:9. So the
+   background goes on .g8-wrap ONCE, where cover is a 1:1 fit and nothing is
+   scaled or stretched, and the columns go transparent to let it through.
+   One continuous panel behind the plates instead of four zoomed copies. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #0a0a0a !important;
+  background-image: url('/textures/ac-back-lines.jpg?v=22918') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #07122a !important;
+  background-image: url('/textures/ws-back-navy.jpg?v=22918') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+/* The columns stop painting their own copy and let the one behind show. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
