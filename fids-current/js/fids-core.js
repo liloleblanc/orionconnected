@@ -7490,11 +7490,41 @@ function _buildV2MapCol(ctx, vars) {
              + '<div class="v2-rc-r2lbl2">' + _t2(wordObj) + '</div></div>';
       }
 
-      // Status — bilingual inline (EN | FR), never switches (matches the left).
-      var _stEn = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey] && _ST_SHORT[_stKey].en) || _stShort;
-      var _stFr = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey] && _ST_SHORT[_stKey].fr) || _stEn;
-      var _stShow = (_stFr && _stFr !== _stEn)
-        ? (_stEn + ' <span class="v2-rc-fi-sep">|</span> ' + _stFr) : _stEn;
+      // ── v22945 — THE INBOUND CARD'S STATUS FOLLOWS THE SELECTED LANGUAGES.
+      // The old comment here read "bilingual inline (EN | FR), never
+      // switches", and it meant it: this cell took .en and .fr off the status
+      // table and ignored `langs` entirely, even though `langs` is a user
+      // choice with a picker in the menu and _ST_SHORT already carries nine
+      // languages. This is the card on Nick's YQM gate 4 shot — the one with
+      // From/Revised — so it is the one that was actually printing
+      // "Delayed | En retard" on a screen that had not asked for both.
+      //
+      // Two at a time, one if that is all that is picked (Nick). The cap is
+      // what keeps the column honest: two words is the widest this cell can be
+      // asked to render, and its 270px column is already sized for exactly
+      // that. Four selected languages would otherwise build a string nothing
+      // could fit, and the fitter would shrink the status into illegibility.
+      var _stWords = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey]) || null;
+      var _stEn = (_stWords && _stWords.en) || _stShort;
+      var _stFr = (_stWords && _stWords.fr) || _stEn;
+      var _stShow = (function () {
+        var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
+          ? langs : ['en', 'fr'];
+        var seen = Object.create(null), parts = [];
+        for (var _li = 0; _li < picked.length && parts.length < 2; _li++) {
+          var w = _stWords && _stWords[picked[_li]];
+          if (!w) continue;
+          var k = String(w).toLowerCase();
+          if (seen[k]) continue;          // never print 'Delayed | Delayed'
+          seen[k] = 1;
+          parts.push(w);
+        }
+        if (parts.length) return parts.join(' <span class="v2-rc-fi-sep">|</span> ');
+        // No table entry for the selected languages — keep the old pair rather
+        // than rendering an empty status cell.
+        return (_stFr && _stFr !== _stEn)
+          ? (_stEn + ' <span class="v2-rc-fi-sep">|</span> ' + _stFr) : _stEn;
+      })();
       // ONE flight-info shelf: Flight·From + Status (bilingual). No ETA row —
       // that lives on the left/departure side.
       // Nick's approved reference (Jul 2026): a clean 3-row LABEL | VALUE
@@ -17722,7 +17752,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22944';
+var FIDS_BUILD_TAG = 'v22945';
 (function(){
   try {
     function _addTag(){
