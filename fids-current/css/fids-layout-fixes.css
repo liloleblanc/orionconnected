@@ -8649,7 +8649,7 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf:not(.v2-rc-shelf-map),
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_) .g8-board-info-row {
-  background: #101418 url('/textures/ac-lines-plate.jpg?v=22910') center / cover no-repeat !important;
+  background: #0a0a0a url('/textures/ac-back-lines.jpg?v=22911') center / cover no-repeat !important;
   background-blend-mode: normal !important;
 }
 
@@ -8811,3 +8811,17 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
 
    The shelf now carries ac-lines-plate.jpg, the exact file that was on the
    front, cover-fitted so it fills the column without distorting. */
+
+/* ── v22911 — AC BACK PANEL IS NICK'S BLACKBG01 (the .eps he sent after
+   'that is not the background i asked for'). Rendered from the vector at
+   5120x2880 and reduced in two steps to 1600x900, keeping the full 16:9
+   frame — no crop, so it is the artwork as drawn, not a window onto it.
+
+   The two-step matters here more than anywhere: this design is nothing but
+   fine hairlines, which is the exact pattern that beats against a pixel grid
+   and produces a moire that CRAWLS on a moving display and burns stream
+   bitrate. Measured, mean 12 and stddev 11 — a genuinely black panel that
+   still carries its line structure.
+
+   Cover-fitted, on #0a0a0a so the surround matches the artwork's own black
+   rather than the old #101418. */
