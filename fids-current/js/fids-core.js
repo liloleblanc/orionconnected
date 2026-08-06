@@ -17859,7 +17859,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22951';
+var FIDS_BUILD_TAG = 'v22952';
 (function(){
   try {
     function _addTag(){
@@ -26152,6 +26152,29 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _legB = _gcFullRoute(_pl, d, _vB);
   var route = _legA.concat(_legB.slice(1));
   var n = route.length;
+  // ── v22952 — WALK THE ROUTE BY DISTANCE, NOT BY VERTEX INDEX.
+  // Nick: "its still kind of going not straight", and his Turf.js reference
+  // names the fix: turf.along() samples the line by DISTANCE.
+  //
+  // p is a fraction of distance flown — it advances at speed/totalNm. But the
+  // frame loop mapped it straight onto the vertex array (fi = p * (n-1)),
+  // i.e. treated it as a fraction of INDEX. Those are only the same thing if
+  // the vertices are evenly spaced in distance, and great-circle vertices are
+  // not: L.Polyline.Arc spaces them by arc parameter, and this route is two
+  // arcs (origin->plane, plane->destination) concatenated, each with its own
+  // spacing. The v22889 comment already spotted half of this and fixed the
+  // BETWEEN-legs case by splitting vertices proportionally; within a leg the
+  // mismatch remained.
+  //
+  // The visible result is a marker that speeds up and slows down along the
+  // path and does not sit where the drawn line says it should — "not going
+  // straight". Measuring cumulative distance once, here, makes the lookup an
+  // honest turf.along().
+  var _cum = new Array(n);
+  _cum[0] = 0;
+  for (var _ci = 1; _ci < n; _ci++) _cum[_ci] = _cum[_ci - 1] + _gcNm(route[_ci - 1], route[_ci]);
+  var _routeNm = _cum[n - 1] || 1;
+  var _segHint = 0;   // p only grows, so the segment search never rewinds
   if (n < 2) return;
   // The seed is the junction: the aircraft's own position, exactly — and
   // with a proportional split it also equals the true distance fraction.
@@ -26283,10 +26306,29 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // metres, where rounding and the origin/plane/destination junction dominate;
   // that is what let it swing 78 degrees between two frames. Six vertices
   // ahead is a long enough baseline for the answer to be the route's heading.
-  function headingAt(i0) {
-    var A = route[i0], B = route[Math.min(n - 1, i0 + 6)];
-    if (A[0] === B[0] && A[1] === B[1]) B = route[Math.min(n - 1, i0 + 1)];
-    return bearingBetween(A, B);
+  // v22952 — look ahead a fixed DISTANCE, not a fixed number of vertices.
+  // "Six vertices" is a different distance on every part of the route once the
+  // vertices are unevenly spaced, so the heading was computed over a baseline
+  // that changed as the aircraft flew. Nick's Turf reference looks ahead 0.5%
+  // of the total route; same idea here, with a floor so a short leg still gets
+  // a usable baseline.
+  function headingAtNm(nmNow) {
+    var _ahead = Math.max(0.5, _routeNm * 0.005);
+    var _t0 = Math.min(_routeNm, nmNow);
+    var _t1 = Math.min(_routeNm, nmNow + _ahead);
+    if (_t1 - _t0 < 1e-6) { _t0 = Math.max(0, _routeNm - _ahead); _t1 = _routeNm; }
+    return bearingBetween(_ptAtNm(_t0), _ptAtNm(_t1));
+  }
+  // Point at a given distance along the route — the same walk the frame loop
+  // does, but standalone so the heading can sample ahead of the marker.
+  function _ptAtNm(nm) {
+    var k = 0;
+    while (k < n - 2 && _cum[k + 1] < nm) k++;
+    var seg = _cum[k + 1] - _cum[k];
+    var f = (seg > 1e-9) ? ((nm - _cum[k]) / seg) : 0;
+    if (f < 0) f = 0; else if (f > 1) f = 1;
+    var A = route[k], B = route[k + 1];
+    return [A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f];
   }
   // Continuous animation-frame glide: the plane advances smoothly EVERY frame,
   // interpolating BETWEEN route vertices (no 1-second stepping / vertex snap),
@@ -26318,11 +26360,19 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         p = _gateGlide.p;
       }
 
-      // Fractional position along the polyline → smooth sub-vertex motion.
-      var fi = p * (n - 1);
-      var i0 = Math.min(n - 2, Math.max(0, Math.floor(fi)));
+      // v22952 — position by DISTANCE along the route (turf.along), not by
+      // vertex index. Walk the cumulative table to the segment containing
+      // p * routeNm, then interpolate inside it. _segHint only moves forward,
+      // which p guarantees, so this stays O(1) per frame in practice.
+      var _target = p * _routeNm;
+      var i0 = _segHint;
+      if (i0 > n - 2) i0 = n - 2;
+      while (i0 < n - 2 && _cum[i0 + 1] < _target) i0++;
+      _segHint = i0;
       var i1 = i0 + 1;
-      var frac = fi - i0;
+      var _segNm = _cum[i1] - _cum[i0];
+      var frac = (_segNm > 1e-9) ? ((_target - _cum[i0]) / _segNm) : 0;
+      if (frac < 0) frac = 0; else if (frac > 1) frac = 1;
       var A = route[i0], B = route[i1];
       var lat = A[0] + (B[0] - A[0]) * frac;
       var lng = A[1] + (B[1] - A[1]) * frac;
@@ -26335,7 +26385,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
           // on Nick's clip the old code swung 78 degrees in a single 100ms
           // frame and ranged over 104 degrees in 27 seconds — this caps that
           // at 3 deg/sec, which is already faster than a jet's standard turn.
-          var _tgt = headingAt(i0);
+          var _tgt = headingAtNm(_target);
           if (_hdg === null) { _hdg = _tgt; }
           else {
             var _dh = ((_tgt - _hdg + 540) % 360) - 180;   // shortest way round
