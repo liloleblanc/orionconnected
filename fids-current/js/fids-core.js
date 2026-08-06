@@ -7563,7 +7563,7 @@ function _buildV2MapCol(ctx, vars) {
               '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
             +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
             +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _ibArrSchedStr + '</span></div>'
-            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Révisé' : 'Revised') + '</span><span>' + (_frF ? 'Revised' : 'Révisé') + '</span></div>'
+            +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('revised', _frF) + '</div>'
             +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _ibArrRevStr + '</div>'
             + '</div>';
         } else {
@@ -7583,18 +7583,18 @@ function _buildV2MapCol(ctx, vars) {
           '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
         +   '<div class="v2-rc-fi-pane">'
         +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('flight', _frF) + '</div>'
         +       '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
         +     '</div>'
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'De' : 'From') + '</span><span>' + (_frF ? 'From' : 'De') + '</span></div>'
+        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('from', _frF) + '</div>'
         +       '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
         +     '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-pane' + (_ibArrRowHtml ? '' : ' v2-rc-fi-pane-1') + '">'
         +     (_ibArrRowHtml || '')
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
+        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('status', _frF) + '</div>'
         +       '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +     '</div>'
         +   '</div>'
@@ -7783,7 +7783,7 @@ function _buildV2MapCol(ctx, vars) {
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
         +   '<div class="v2-rc-fi-pane">'
         +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Vol' : 'Flight') + '</span><span>' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('flight', _frF) + '</div>'
         +       '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
         +     '</div>'
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
@@ -7793,11 +7793,11 @@ function _buildV2MapCol(ctx, vars) {
         +   '</div>'
         +   '<div class="v2-rc-fi-pane">'
         +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Départ' : 'Departure') + '</span><span>' + (_frF ? 'Departure' : 'Départ') + '</span></div>'
+        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('departure', _frF) + '</div>'
         +       '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
         +     '</div>'
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? 'Statut' : 'Status') + '</span><span>' + (_frF ? 'Status' : 'Statut') + '</span></div>'
+        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('status', _frF) + '</div>'
         +       '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
         +     '</div>'
         +   '</div>'
@@ -8415,7 +8415,7 @@ function _buildV2MapCol(ctx, vars) {
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
     +     '<div class="v2-rc-map-life" aria-hidden="true">' + _mapLifeHtml + '</div>'
-    +     '<div class="v2-rc-maptitle">' + (_frF ? 'Votre Avion' : 'Your Aircraft') + ' <span class="v2-rc-maptitle-sep">|</span> <span class="v2-rc-maptitle2">' + (_frF ? 'Your Aircraft' : 'Votre Avion') + '</span></div>'
+    +     '<div class="v2-rc-maptitle">' + _gateLbl('yourAc', _frF, function(w,i){ return i ? '<span class="v2-rc-maptitle2">'+w+'</span>' : w; }, ' <span class="v2-rc-maptitle-sep">|</span> ') + '</div>'
     +     _telemBar
     +   '</div>'
     + '</div>';
@@ -9037,7 +9037,7 @@ function uxgGateHtml(ctx) {
     var _bwStar = starHtml ? starHtml.replace('star-3d-tile.jpg', 'star-3d-symbol.webp') : '';
     return '<div class="g8-board-welcome">'
       + (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="g8-bw-text">' + (_frF ? 'Bienvenue' : 'Welcome') + ' <span class="g8-bw-sep">\u00b7</span> ' + (_frF ? 'Welcome' : 'Bienvenue') + '</div>'
+      + '<div class="g8-bw-text">' + _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ') + '</div>'
       + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
       + '</div>';
   }
@@ -9143,7 +9143,7 @@ function uxgGateHtml(ctx) {
           ? '<div class="g8-bir-cell">'
             + _birFlightBadge
             + '<div class="g8-bir-text">'
-            +   '<div class="g8-bir-title"><span class="g8-bir-l1">' + (_frF ? 'Vol' : 'Flight') + '</span> <span class="g8-bir-sep">|</span> <span class="g8-bir-l2">' + (_frF ? 'Flight' : 'Vol') + '</span></div>'
+            +   '<div class="g8-bir-title">' + _gateLbl('flight', _frF, function(w,i){ return '<span class="g8-bir-l'+(i+1)+'">'+w+'</span>'; }, ' <span class="g8-bir-sep">|</span> ') + '</div>'
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
           : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
@@ -9171,8 +9171,8 @@ function uxgGateHtml(ctx) {
   // priority queue on Lanes 1\u20222 (always shown while boarding); RIGHT half =
   // the row band being called for everyone else on Lanes 3\u20224.
   function _pdLanesBodyHtml(rowsVal) {
-    var _prioT = _frF ? 'Priorit\u00e9 <span class="g8-bir-sep">|</span> Priority' : 'Priority <span class="g8-bir-sep">|</span> Priorit\u00e9';
-    var _rowsLbl = _frF ? 'Rang\u00e9es <span class="g8-bir-sep">|</span> Rows' : 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
+    var _prioT = _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
+    var _rowsLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
     return '<div class="g8-board-body g8-lanes-pd">'
       + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">Porter Reserve</div></div><div class="g8-board-lane">' + TL('useLanes') + ' 1 \u2022 2</div></div>'
       + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
@@ -9236,7 +9236,7 @@ function uxgGateHtml(ctx) {
       // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
       var _pdRows = /DH4|DH8|Q400|DASH/i.test(String(equipRaw || '')) ? 20 : 29;
       var _pdBand = Math.ceil(_pdRows / 3);
-      _grpLbl = _frF ? 'Rang\u00e9es <span class="g8-bir-sep">|</span> Rows' : 'Rows <span class="g8-bir-sep">|</span> Rang\u00e9es';
+      _grpLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
       if (lateBoarding) {
         nowVal = '1\u2013' + _pdBand;
         nextVal = '\u2014';
@@ -9303,8 +9303,8 @@ function uxgGateHtml(ctx) {
            })();
       var _fcNext, _fcNextLbl = 'Zones';
       if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
-      else if (airlineCode === 'PD') { _fcNextLbl = _frF ? 'Rang\u00e9es <span class="g8-bir-sep">|</span> Rows' : 'Rows <span class="g8-bir-sep">|</span> Rangées'; _fcNext = (_frF ? 'Toutes <span class="g8-bir-sep">|</span> All' : 'All <span class="g8-bir-sep">|</span> Toutes'); }
-      else _fcNext = (_frF ? 'Toutes <span class="g8-bir-sep">|</span> All' : 'All <span class="g8-bir-sep">|</span> Toutes');
+      else if (airlineCode === 'PD') { _fcNextLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); }
+      else _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
       // FINAL CALL replaces the Welcome strip (Nick) — one call-out where
       // the welcome sat, more room for the lane panels below.
       finalHtml = '<div class="g8-final active">'
@@ -9313,7 +9313,7 @@ function uxgGateHtml(ctx) {
         + (_fcAcFam
           ? _acLanesBodyHtml(_fcExpress ? '3 • 4' : '3 • 4 • 5 • 6')
           : airlineCode === 'PD'
-          ? _pdLanesBodyHtml(_frF ? 'Toutes <span class="g8-bir-sep">|</span> All' : 'All <span class="g8-bir-sep">|</span> Toutes')
+          ? _pdLanesBodyHtml_gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ')
           : '<div class="g8-board-body">'
             + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
             + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
@@ -10148,7 +10148,7 @@ function uxgGateHtml(ctx) {
           return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
             + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
             +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">'
-            +     (_frF ? 'Heure <span style="opacity:.6">|</span> Time' : 'Time <span style="opacity:.6">|</span> Heure') + '</span>'
+            +     _gateLbl('time', _frF, function(w){ return w; }, ' <span style="opacity:.6">|</span> ') + '</span>'
             +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
@@ -10173,7 +10173,7 @@ function uxgGateHtml(ctx) {
               +   'onload="if(this.naturalWidth){this.parentNode.style.visibility=\'visible\';}else{this.parentNode.style.display=\'none\';}">'
               + '</span>';
           })()
-    +     '<span class="g8-bilbl"><span class="g8-bilbl-en">' + (_frF ? _gateLbl2 : 'Gate') + '</span><span class="g8-bilbl-sep">/</span><span class="g8-bilbl-2">' + (_frF ? 'Gate' : _gateLbl2) + '</span></span>'
+    +     '<span class="g8-bilbl">' + _gateLbl('gate', _frF, function(w,i){ return '<span class="g8-bilbl-'+(i?'2':'en')+'">'+w+'</span>'; }, '<span class="g8-bilbl-sep">/</span>') + '</span>'
     +     '<span class="g8-r1-gate" style="font-size:' + (function(g){var n=String(g||'').length; return n>=5?'clamp(56px,7vh,84px)':(n===4?'clamp(78px,9.5vh,110px)':'clamp(96px,13vh,138px)');})(gateVal) + ' !important;line-height:0.92 !important;">' + gateVal + '</span>'
     +   '</div>'
     + '</div>'
@@ -17760,9 +17760,71 @@ function updateLangButtons() {
 // ── TICKER — interleaves selected languages ──────────────────────────────
 // Baggage-hall ticker messages (Nick: 'the ticker info messages on bags').
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
+// ── v22947 — GATE LABELS FOLLOW THE SELECTED LANGUAGES ───────────────────
+// Nick: "Doesnt work. Its still all English French."
+//
+// Every gate label was written as `_frF ? 'Vol' : 'Flight'` — twenty of those
+// ternaries plus forty-nine loose French strings. `_frF` is FRENCH-FIRST
+// AIRPORT: it only decides which of English and French comes first. It never
+// decided WHICH languages, so both were emitted unconditionally and `langs`
+// was ignored on every label on the screen. Setting a gate to Spanish moved
+// one word, which is exactly what he was looking at.
+//
+// One table, one helper, and the call sites stop hard-coding a language pair.
+var _GATE_LBL = {
+  flight:    { en:'Flight',        fr:'Vol',            es:'Vuelo',        de:'Flug',        it:'Volo',        pt:'Voo',        ja:'便',        zh:'航班',   ar:'رحلة' },
+  from:      { en:'From',          fr:'De',             es:'Desde',        de:'Von',         it:'Da',          pt:'De',         ja:'出発地',    zh:'出发地', ar:'من' },
+  to:        { en:'To',            fr:'À',              es:'A',            de:'Nach',        it:'A',           pt:'Para',       ja:'行き先',    zh:'目的地', ar:'إلى' },
+  dest:      { en:'Destination',   fr:'Destination',    es:'Destino',      de:'Ziel',        it:'Destinazione',pt:'Destino',    ja:'目的地',    zh:'目的地', ar:'الوجهة' },
+  status:    { en:'Status',        fr:'Statut',         es:'Estado',       de:'Status',      it:'Stato',       pt:'Estado',     ja:'状況',      zh:'状态',   ar:'الحالة' },
+  departure: { en:'Departure',     fr:'Départ',         es:'Salida',       de:'Abflug',      it:'Partenza',    pt:'Partida',    ja:'出発',      zh:'出发',   ar:'المغادرة' },
+  arrival:   { en:'Arrival',       fr:'Arrivée',        es:'Llegada',      de:'Ankunft',     it:'Arrivo',      pt:'Chegada',    ja:'到着',      zh:'到达',   ar:'الوصول' },
+  boarding:  { en:'Boarding',      fr:'Embarquement',   es:'Embarque',     de:'Boarding',    it:'Imbarco',     pt:'Embarque',   ja:'搭乗',      zh:'登机',   ar:'الصعود' },
+  revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'مُعدل' },
+  gate:      { en:'Gate',          fr:'Porte',          es:'Puerta',       de:'Gate',        it:'Gate',        pt:'Portão',     ja:'ゲート',    zh:'登机口', ar:'البوابة' },
+  yourAc:    { en:'Your Aircraft', fr:'Votre Avion',    es:'Su Aeronave',  de:'Ihr Flugzeug',it:'Il Tuo Aereo',pt:'Sua Aeronave',ja:'ご搭乗機', zh:'您的航机', ar:'طائرتك' },
+  operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
+  welcome:   { en:'Welcome',       fr:'Bienvenue',      es:'Bienvenido',   de:'Willkommen',  it:'Benvenuto',   pt:'Bem-vindo',  ja:'ようこそ',  zh:'欢迎',   ar:'أهلاً' },
+  priority:  { en:'Priority',      fr:'Priorité',       es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
+  rows:      { en:'Rows',          fr:'Rangées',        es:'Filas',        de:'Reihen',      it:'File',        pt:'Fileiras',   ja:'列',        zh:'排',     ar:'صفوف' },
+  time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
+  all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' }
+};
+
+// Returns the selected languages' words for `key`, at most two, de-duplicated.
+// frFirst only reorders — it is the French-first-airport flag and has never
+// been a language choice. sep/wrap let each call site keep its own markup.
+function _gateLbl(key, frFirst, wrap, sep) {
+  var o = _GATE_LBL[key];
+  if (!o) return '';
+  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
+    ? langs.slice() : ['en', 'fr'];
+  if (frFirst) {
+    var _fi = picked.indexOf('fr');
+    if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
+  }
+  var seen = Object.create(null), parts = [];
+  for (var i = 0; i < picked.length && parts.length < 2; i++) {
+    var w = o[picked[i]];
+    if (!w) continue;
+    var k = String(w).toLowerCase();
+    if (seen[k]) continue;          // 'Gate | Gate' helps nobody
+    seen[k] = 1;
+    parts.push(w);
+  }
+  if (!parts.length) parts.push(o.en);
+  if (typeof wrap === 'function') return parts.map(wrap).join(sep || '');
+  return parts.join(sep || ' ');
+}
+// The gate rail's two-span label cell — primary over secondary.
+function _gateLblSpans(key, frFirst) {
+  return _gateLbl(key, frFirst, function (w) { return '<span>' + w + '</span>'; }, '');
+}
+try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._GATE_LBL = _GATE_LBL; } } catch (e) {}
+
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22946';
+var FIDS_BUILD_TAG = 'v22947';
 (function(){
   try {
     function _addTag(){
