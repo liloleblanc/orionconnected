@@ -7189,12 +7189,24 @@ function _buildV2MapCol(ctx, vars) {
       // by-number window cache. Feed it through the sticky smoother so the panel
       // doesn't blink off on polls where ADB omits the position.
       var _wpC = (window._gateInboundLivePos && typeof window._gateInboundLivePos === 'object') ? window._gateInboundLivePos : null;
-      var _candAlt = (typeof _ib._liveAlt === 'number') ? _ib._liveAlt
+      // v22889 — ADS-B FIRST. The 60-second gate poll mutates the inbound
+      // object it fetched; the renderer frequently holds a DIFFERENT object
+      // for the same flight, so those mutations never arrived and SPD/ALT
+      // rendered blank while live data was demonstrably reaching the page.
+      // Reading the shared cache removes that coupling entirely.
+      var _adsbC = null;
+      try { _adsbC = _adsbCached(_ib._reg, _ib._callSign, _ib.flight); } catch (e) {}
+      var _candAlt = (_adsbC && typeof _adsbC.alt === 'number') ? _adsbC.alt
+                   : (typeof _ib._liveAlt === 'number') ? _ib._liveAlt
                    : (_wpC && typeof _wpC.altitude === 'number' ? _wpC.altitude : null);
-      var _candSpd = (typeof _ib._liveSpd === 'number') ? _ib._liveSpd
+      var _candSpd = (_adsbC && typeof _adsbC.spd === 'number') ? _adsbC.spd
+                   : (typeof _ib._liveSpd === 'number') ? _ib._liveSpd
                    : (_wpC && typeof _wpC.speed === 'number' ? _wpC.speed : null);
-      var _candLat = (typeof _ib._liveLat === 'number') ? _ib._liveLat : null;
-      var _candLng = (typeof _ib._liveLng === 'number') ? _ib._liveLng : null;
+      var _candLat = (_adsbC && typeof _adsbC.lat === 'number') ? _adsbC.lat
+                   : (typeof _ib._liveLat === 'number') ? _ib._liveLat : null;
+      var _candLng = (_adsbC && typeof _adsbC.lng === 'number') ? _adsbC.lng
+                   : (typeof _ib._liveLng === 'number') ? _ib._liveLng : null;
+      if (_adsbC && _adsbC.onGround === true) _ib._liveOnGround = true;
       var _arrivedLikeIb = /arriv|land|cancel/i.test(String(_ib.status || ''));
       if (_ib._liveOnGround === true || _arrivedLikeIb) { _candAlt = null; _candSpd = null; }
       // Physically impossible for this airframe → someone else's fix. Show
@@ -17552,7 +17564,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22888';
+var FIDS_BUILD_TAG = 'v22889';
 (function(){
   try {
     function _addTag(){
@@ -21636,7 +21648,7 @@ async function _adsbTelemetry(reg, callSign, flightNo) {
             : ((typeof ac.alt_geom === 'number') ? Math.round(ac.alt_geom) : null);
     var spd = (typeof ac.gs === 'number') ? Math.round(ac.gs) : null;
     if (alt === null && spd === null && !onGround) continue;
-    return {
+    var _res = {
       alt: onGround ? 0 : alt,
       spd: spd,
       lat: (typeof ac.lat === 'number') ? ac.lat : null,
@@ -21647,11 +21659,57 @@ async function _adsbTelemetry(reg, callSign, flightNo) {
       reg: ac.r || null,
       type: ac.t || null,
       desc: ac.desc || null,
-      age: (typeof ac.seen_pos === 'number') ? ac.seen_pos : null
+      age: (typeof ac.seen_pos === 'number') ? ac.seen_pos : null,
+      at: Date.now()
     };
+    // Publish under every identifier the caller might hold. The gate RENDER
+    // reads this directly rather than trusting that the 60-second poll
+    // happened to mutate the same inbound object the renderer is holding —
+    // it often is not the same object, which is why SPD/ALT stayed blank
+    // even with live data arriving.
+    try {
+      window._adsbLast = window._adsbLast || Object.create(null);
+      if (_r)  window._adsbLast[_r]  = _res;
+      if (_cs) window._adsbLast[_cs] = _res;
+      if (_fn) window._adsbLast[_fn] = _res;
+      if (_res.reg) window._adsbLast[String(_res.reg).toUpperCase()] = _res;
+    } catch (e2) {}
+    return _res;
   }
   return null;
 }
+
+// Sync read for the render path, with a fire-and-forget refresh. The render
+// cannot await, so it takes whatever is cached and kicks a lookup when that
+// is stale; the lookup re-renders once on success. Throttled per key so a
+// 10-second render tick cannot become a 10-second request rate.
+var _adsbInflight = Object.create(null);
+function _adsbCached(reg, callSign, flightNo, maxAgeMs) {
+  var keys = [reg, callSign, flightNo].map(function (k) {
+    return String(k || '').trim().toUpperCase().replace(/\s+/g, '');
+  }).filter(Boolean);
+  var now = Date.now(), best = null;
+  try {
+    var store = window._adsbLast || {};
+    for (var i = 0; i < keys.length; i++) {
+      var v = store[keys[i]];
+      if (v && (now - v.at) < (maxAgeMs || 90000)) { best = v; break; }
+    }
+  } catch (e) {}
+  if (!best && keys.length) {
+    var ik = keys.join('|');
+    if (!_adsbInflight[ik] || (now - _adsbInflight[ik]) > 20000) {
+      _adsbInflight[ik] = now;
+      try {
+        _adsbTelemetry(reg, callSign, flightNo).then(function (r) {
+          if (r) { try { window._lastGateKey = ''; if (typeof render === 'function') render(); } catch (e) {} }
+        }, function () {});
+      } catch (e) {}
+    }
+  }
+  return best;
+}
+try { if (typeof window !== 'undefined') window._adsbCached = _adsbCached; } catch (e) {}
 try { if (typeof window !== 'undefined') { window._adsbTelemetry = _adsbTelemetry; window._adsbFetchOne = _adsbFetchOne; } } catch (e) {}
 
 // adsb.lol secondary position source removed — gate SPD/ALT now come from AeroDataBox only.
@@ -25555,19 +25613,31 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   _stopGateMapGlide();
   if (!map || !marker || typeof L === 'undefined') return;
   if (!(speedKts > 0)) { try { console.log('[GLIDE] not started — no live speed (marker stays put)'); } catch (e) {} return; }
-  var route = _gcFullRoute(o, d, 120);
+  // v22889 — GLIDE ALONG THE LINE THAT IS ACTUALLY DRAWN (Nick: 'the plane
+  // is very non linear its wobbling sideways and its not the map').
+  //
+  // The map draws TWO arcs — origin→plane solid, plane→destination dashed —
+  // so the drawn route bends THROUGH the aircraft's real position. The glide
+  // used the ideal origin→destination arc instead, which is a different
+  // line: a real aircraft is never exactly on it. So each fix placed the
+  // marker on its true spot and the glide immediately slid it sideways onto
+  // the ideal arc, then walked along that. Every 60 seconds, another sideways
+  // pull. The motion was lateral because the ERROR is lateral — the two lines
+  // differ across-track, not along-track.
+  //
+  // Building the glide path as origin→plane→destination makes the animated
+  // line and the drawn line the same line, so the seed lands exactly on the
+  // marker and there is nothing to slide sideways to.
+  var _pl = [planeLat, planeLng];
+  var _legA = _gcFullRoute(o, _pl, 60);
+  var _legB = _gcFullRoute(_pl, d, 60);
+  var route = _legA.concat(_legB.slice(1));
   var n = route.length;
   if (n < 2) return;
-  var totalNm = _gcNm(o, d);
+  var totalNm = _gcNm(o, _pl) + _gcNm(_pl, d);
   if (!(totalNm > 0)) return;
-  // Seed progress from the real fix: the nearest route vertex.
-  var best = 0, bestDsq = Infinity;
-  for (var i = 0; i < n; i++) {
-    var dLat = route[i][0] - planeLat, dLng = route[i][1] - planeLng;
-    var dsq = dLat * dLat + dLng * dLng;
-    if (dsq < bestDsq) { bestDsq = dsq; best = i; }
-  }
-  var _seedP = best / (n - 1);
+  // The seed is the junction: the aircraft's own position, exactly.
+  var _seedP = (_legA.length - 1) / (n - 1);
   var p = _seedP;
   // v22748 — EASE THE CORRECTION, DON'T SNAP IT (Nick: 'it seems to move but
   // also moves sideways then up at times unrealistic'). Every real ADS-B fix
