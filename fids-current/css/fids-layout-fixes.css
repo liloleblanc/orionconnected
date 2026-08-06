@@ -8284,3 +8284,51 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-repeat: no-repeat !important;
   background-color: #101014 !important;
 }
+
+/* ── v22901 — ONE MATERIAL, TINTED PER CARRIER (Nick sent eleven textures
+   'for you to decide'). Decision, and the measurement behind it:
+
+   These plates carry WHITE text and sit on a grey shelf (~56 luminance), so
+   a plate has to land well BELOW 56 or the text stops reading. Measured
+   mean luminance of the eleven:
+
+     artistic lines 10 · navy+gold chevrons 38 · elegant teal/navy 62
+     blue gradient 64 · dark-blue panel 56 · teal+gold 103 · golden curved
+     134 · golden wave 143 · smooth wave 159 · blue-grey glossy 186 ·
+     grey/white banner 208
+
+   Eight of eleven are ABOVE the shelf, several far above — as plates they
+   would put white text on near-white. The dark-blue panel (#11) is the
+   best of the coloured ones and would be my pick if every carrier were
+   blue, but it is wrong for American, Lufthansa or anyone else whose brand
+   is not.
+
+   So: the artistic-line engraving becomes the shared MATERIAL, tinted with
+   each carrier's own accent. Same structure as the AC plates Nick just
+   approved, in each airline's colour, reusing the per-airline tinting
+   already proven in PR #459.
+
+   'screen' rather than 'multiply': the engraving is a dark field with
+   lighter strokes, so multiply would crush every carrier's plate to the
+   same near-black and only the hairlines would carry colour. Screen keeps
+   the tint as the plate and lets the engraving read as light strokes over
+   it. */
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before {
+  background-color: color-mix(in srgb, var(--airline-accent, #6b7684) 32%, #0b0e14) !important;
+  background-image: url('/textures/ac-lines-plate.jpg?v=22901') !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: screen !important;
+}
+/* Telemetry strip too, so non-AC carriers match AC's coverage. */
+html body[data-gate-airline]:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"])):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
+  background-color: color-mix(in srgb, var(--airline-accent, #6b7684) 32%, #0b0e14) !important;
+  background-image: url('/textures/ac-lines-plate.jpg?v=22901') !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: screen !important;
+}
