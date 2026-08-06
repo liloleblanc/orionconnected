@@ -9278,3 +9278,42 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
   background-image: url('/textures/ac-back-lines-red4.jpg?v=22930') !important;
 }
+
+/* ── v22931 — AC BACKGROUND GOES FLAT BLACK (Nick: 'put the AC background
+   black i just noticed it clashes with the contents a bit'). The red line
+   artwork stays in the repo but stops painting behind Air Canada's gate —
+   with a full-bleed ad in the middle column and red plate furniture either
+   side, a red-striped ground is one red too many. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+
+/* ── v22931b — THE STAR ALLIANCE TILE, BACK TO FULL SIZE (Nick: 'the Star
+   Alliance logo is now smaller and the frame is too high for the image').
+   Both halves of that are one regression of mine, from v22907.
+
+   That block added padding-right to .g8-r1-logoslot to keep the alliance mark
+   off the panel seam, and — 'belt and braces' — flex-shrink: 1 on the mark
+   itself. Together those are the bug: the padding narrows the content box,
+   the mark is now permitted to shrink into it, and object-fit: contain then
+   scales the artwork down to the narrower WIDTH while the tile's HEIGHT stays
+   pinned at clamp(64px, 8.6vh, 98px). A smaller logo inside a box that never
+   got shorter is exactly 'the frame is too high for the image'.
+
+   The flex-shrink is withdrawn. The gutter stays — it is what stopped the
+   oneworld lockup straddling the seam — but the wordmark absorbs it now,
+   which is what should have happened in the first place: it is type and can
+   rescale, where the tile is fixed artwork and cannot. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star {
+  flex-shrink: 0 !important;
+}
+/* And the tile hugs its artwork: width follows the aspect at the pinned
+   height, so no letterbox can open up above or below it. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .g8-r1-silk .g8-r1-star.g8-r1-alliance-star,
+html body:not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-star {
+  width: auto !important;
+  min-width: 0 !important;
+  object-fit: contain !important;
+  flex-shrink: 0 !important;
+}
