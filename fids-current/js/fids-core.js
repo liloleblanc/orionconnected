@@ -17859,7 +17859,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22949';
+var FIDS_BUILD_TAG = 'v22950';
 (function(){
   try {
     function _addTag(){
@@ -26229,7 +26229,29 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   else if (_p0 > 0.82) _phase = Math.max(0.35, 1 - 0.42 * ((_p0 - 0.82) / 0.18));
   // Converge on truth by adjusting the RATE. Clamped at zero: when truth is
   // behind the marker the aircraft slows, it never reverses.
-  var _rate = Math.max(0, _baseRate * _phase + (_errP / _CONVERGE_MS));
+  // v22950 — CLAMP THE CORRECTION. Folding the fix error into the rate was
+  // right in principle and unbounded in practice, and on a short leg it is
+  // ruinous. Nick, on a YQM gate: "the aircraft is flying sideways", then
+  // "not seeing it land either its not even on screen anymore".
+  //
+  // The arithmetic, on YYZ->YQM (~600nm) at 400kt:
+  //   honest cruise rate   400 / 3600 / 600      = 1.85e-4 route-fraction/sec
+  //   a 40nm correction    (40/600) / 45s        = 1.48e-3     -> 8x faster
+  // The marker sprints eight times too fast, overruns the route, and leaves
+  // the map. It also explains the sideways nose: heading comes from a
+  // six-vertex look-ahead while the slew limiter turns at 3 deg/sec, so at
+  // eight times speed the aircraft tears through vertices faster than its
+  // nose can follow and visibly crabs along the path.
+  //
+  // One cause, both symptoms. The correction is now capped at 1.6x the honest
+  // rate: an error still gets flown off, just never faster than an aircraft
+  // could plausibly be going. Nick's own reference implementation makes the
+  // same point by having no correction term at all — progress is purely
+  // elapsed/duration. This keeps the correction but bounds it.
+  var _MAX_RATE_MULT = 1.6;
+  var _rateRaw = _baseRate * _phase + (_errP / _CONVERGE_MS);
+  var _rateCap = Math.max(_baseRate, _baseRate * _phase) * _MAX_RATE_MULT;
+  var _rate = Math.max(0, Math.min(_rateRaw, _rateCap));
   var _myGen = _gateGlide.gen;   // claimed below, after the last early return
   var lastArcIdx = -1;
   var _hdg = null;               // last rendered heading, for slew limiting
