@@ -7710,3 +7710,286 @@ html body:not(#_):not(#_) .g8-board-info-row {
 /* v22866 — the v22865 white chip was withdrawn (Nick: 'no i dont want
    a white chip that was never an issue'). */
 
+
+/* ── v22867 — PORTRAIT / ROTATED KIOSK MODE (Nick: 'a display done for a
+   flipped monitor 90degree so upright ... more for FIDS and BAGS').
+   ?rot=90 / ?rot=270: the page lays out at 100vh × 100vw (portrait
+   coordinates on a landscape viewport) and paints rotated — the monitor
+   is physically turned but the OS stays landscape. True-portrait screens
+   (OS rotated) skip the transform and just get html.fids-portrait. */
+html.fids-rot90, html.fids-rot270 {
+  overflow: hidden !important;
+}
+html.fids-rot90 body, html.fids-rot270 body {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vh !important;
+  height: 100vw !important;
+  transform-origin: top left !important;
+  overflow: hidden !important;
+}
+html.fids-rot90 body  { transform: rotate(90deg) translateY(-100%) !important; }
+html.fids-rot270 body { transform: rotate(-90deg) translateX(-100%) !important; }
+
+/* Portrait polish, both paths: the banner was tuned for a wide screen —
+   in a 1080-wide column it gets a trimmer height so the extra vertical
+   real estate goes to ROWS. First cut; iterated on Nick's eye. */
+html.fids-portrait .fids-banner { height: clamp(84px, 7vh, 120px) !important; }
+html.fids-portrait .fids-board-label { font-size: clamp(24px, 2.4vw, 34px) !important; }
+html.fids-portrait #fidsTable thead th { font-size: 14px !important; padding: 4px 10px !important; }
+html.fids-portrait #fidsTable td { padding-left: 10px !important; padding-right: 10px !important; }
+
+/* ── v22868 — PORTRAIT BANNER (first true-portrait shot: the board label,
+   time block, logo and clock all collided at 1080 wide). Compact single
+   row: no analog clock, smaller digits and logo, tighter padding. */
+html.fids-portrait .fids-banner { padding: 0 16px !important; }
+html.fids-portrait .fids-banner-analog { display: none !important; }
+html.fids-portrait .fids-banner-time { font-size: clamp(24px, 3vw, 34px) !important; }
+html.fids-portrait .fids-banner-tlabel { font-size: 13px !important; }
+html.fids-portrait .fids-banner-date { font-size: 14px !important; }
+html.fids-portrait .fids-airport-logo-img { height: 52px !important; }
+html.fids-portrait .fids-airport-logo { padding: 6px 10px !important; }
+/* columns: give Flight # room (numbers were truncating), slim Weather */
+html.fids-portrait #fidsTable td.td-flight, html.fids-portrait #fidsTable th.col-flight { min-width: 110px !important; }
+html.fids-portrait #fidsTable td.td-wx { padding-left: 4px !important; padding-right: 4px !important; }
+html.fids-portrait #fidsTable td.td-status, html.fids-portrait #fidsTable th.col-status { padding-right: 12px !important; }
+
+/* ── v22869 — PORTRAIT PASS 3, measured on the live portrait probe:
+   · the three banner blocks (board label / airport pill / time block) are
+     ABSOLUTE and tuned for 1920 — at 1080 they stack on top of each
+     other. Explicit portrait rects: label left, pill center, time right
+     (scaled, no analog clock).
+   · the columns' fixed widths already sum past 1080, so table-layout
+     fixed handed DESTINATION 0px — the one column a passenger reads
+     first. Portrait column budget: every fixed column slimmed, the
+     remainder (~240px) goes to Destination. */
+html.fids-portrait #fidsBanner .fids-banner-board { left: 0 !important; width: 340px !important; }
+html.fids-portrait #fidsBanner .fids-board-label { font-size: 24px !important; }
+html.fids-portrait #fidsAirportPill {
+  left: 350px !important; right: auto !important;
+  width: 270px !important; height: 76px !important;
+  top: 50% !important; transform: translateY(-50%) !important;
+}
+html.fids-portrait #fidsAirportPill .fids-airport-logo-img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+html.fids-portrait .fids-banner-time-block { left: auto !important; right: 6px !important; width: 440px !important; }
+html.fids-portrait #clockAnalog { display: none !important; }
+html.fids-portrait .fids-banner-time-text { transform: scale(0.62) !important; transform-origin: right center !important; }
+/* The widths live on <col> elements (not th) and their clamp MINIMUMS
+   total ~1100px — wider than a 1080 portrait screen — so Destination
+   (width:auto) was starved to 0. Portrait budget: 838px of fixed columns,
+   ~242px left for Destination. */
+html.fids-portrait #fidsTable colgroup col.col-airline  { width: 158px !important; }
+html.fids-portrait #fidsTable colgroup col.col-flight   { width: 100px !important; }
+html.fids-portrait #fidsTable colgroup col.col-wx       { width: 88px  !important; min-width: 0 !important; }
+html.fids-portrait #fidsTable colgroup col.col-gate     { width: 88px  !important; }
+html.fids-portrait #fidsTable colgroup col.col-time     { width: 126px !important; }
+html.fids-portrait #fidsTable colgroup col.col-time-rev { width: 126px !important; }
+html.fids-portrait #fidsTable colgroup col.col-status   { width: 160px !important; }
+html.fids-portrait #fidsTable colgroup col.col-dest     { width: auto  !important; }
+html.fids-portrait #fidsTable td { font-size: 19px !important; }
+/* v22871 — the time cells clipped at 19px ('2:29 …'); times and statuses
+   step down one notch in portrait so both read in full. */
+html.fids-portrait #fidsTable td.td-time, html.fids-portrait #fidsTable td.td-time *,
+html.fids-portrait #fidsTable td.td-time-rev, html.fids-portrait #fidsTable td.td-time-rev * { font-size: 17px !important; }
+html.fids-portrait #fidsTable td.td-status, html.fids-portrait #fidsTable td.td-status * { font-size: 17px !important; }
+html.fids-portrait #fidsTable td.td-gate, html.fids-portrait #fidsTable td.td-gate * { font-size: 18px !important; }
+/* the banner's absolute blocks must not paint past the right edge */
+html.fids-portrait #fidsBanner { overflow: hidden !important; }
+html.fids-portrait .fids-banner-time-block { right: 10px !important; width: 470px !important; }
+html.fids-portrait .fids-banner-time-text { transform: scale(0.56) !important; }
+
+/* ── v22873 — PEARSON-STYLE PORTRAIT (Nick's photo of Toronto Pearson's own
+   upright departure board: 'thisis similar itspearson how about we do
+   this'). Three structural changes, portrait only — landscape boards are
+   untouched:
+
+   1. EMBLEM-ONLY carrier column. Pearson shows a square carrier tile and
+      the flight number, no lettering; at 1080 wide our wordmark artwork
+      was shrinking to an illegible smudge anyway. The JS forces
+      airlineStyle='emblem' under .fids-portrait, so the wordmark slot is
+      empty and the column can drop from 158px to 90px.
+   2. REVISED TIME MOVES INTO THE STATUS CELL, Pearson's one-cell form
+      ('Delayed - 22:15'). The Revised column collapses to zero and its
+      126px goes to Destination.
+   3. Weather stays (Nick: 'plys the weather as well') — it's the one
+      column Pearson doesn't have that our boards do. */
+
+/* 1 — emblem column: tile only, no wordmark slot taking width */
+html.fids-portrait #fidsTable colgroup col.col-airline { width: 90px !important; }
+html.fids-portrait #fidsTable td.td-airline { padding-left: 12px !important; padding-right: 6px !important; }
+html.fids-portrait #fidsTable td.td-airline .fids-airline-wordmark-slot:empty { display: none !important; }
+html.fids-portrait #fidsTable td.td-airline .fids-cell-airline { justify-content: flex-start !important; gap: 0 !important; }
+
+/* 2 — collapse the Revised column (kept in the grid so the <col> indexes
+   still line up; zeroed rather than display:none, which would shift every
+   colgroup width one column to the left) */
+html.fids-portrait #fidsTable colgroup col.col-time-rev { width: 0 !important; }
+html.fids-portrait #fidsTable th.col-time-rev,
+html.fids-portrait #fidsTable td.td-time-rev,
+html.fids-portrait #fidsTable td.td-time-rev * {
+  width: 0 !important; max-width: 0 !important; min-width: 0 !important;
+  padding-left: 0 !important; padding-right: 0 !important;
+  font-size: 0 !important; letter-spacing: 0 !important;
+  overflow: hidden !important; white-space: nowrap !important;
+}
+/* ...and re-attach it to the status word, Pearson-style */
+/* v22874: superseded — the revised time is now a real .fids-status-rev
+   span in the cell, because a pseudo-element is invisible to the column
+   fitter's textContent probe and the column came out too narrow. */
+
+/* 3 — the reclaimed width, redistributed. 692px fixed, ~388px to
+   Destination (was ~242px, where long city names were ellipsizing). */
+html.fids-portrait #fidsTable colgroup col.col-flight { width: 108px !important; }
+html.fids-portrait #fidsTable colgroup col.col-wx     { width: 84px  !important; min-width: 0 !important; }
+html.fids-portrait #fidsTable colgroup col.col-gate   { width: 92px  !important; }
+html.fids-portrait #fidsTable colgroup col.col-time   { width: 118px !important; }
+html.fids-portrait #fidsTable colgroup col.col-status { width: 200px !important; }
+html.fids-portrait #fidsTable colgroup col.col-dest   { width: auto  !important; }
+
+/* the Status column is the last one on the board — nothing may paint past
+   the right edge of a 1080 screen */
+html.fids-portrait #fidsTable td.td-status,
+html.fids-portrait #fidsTable th.col-status {
+  padding-right: 14px !important;
+  overflow: hidden !important;
+}
+html.fids-portrait #fidsTable { max-width: 100% !important; }
+
+/* ── v22874 — PEARSON PORTRAIT, PASS 2 (measured on the 1080×1920 probe).
+   Three real defects, each with its geometry:
+
+   1. THE CLOCK PAINTED OFF THE RIGHT EDGE ('7:22P', 'Mercredi 5' cut).
+      Measured: .fids-banner-time-text is 584px wide inside a 470px block,
+      and v22871's scale(0.56) has transform-origin:right — so the scale
+      pinned the element's ALREADY-OVERFLOWED right edge (x=1127) in place
+      instead of pulling it back inside. Scaling can't fix an overflow it
+      anchors to. Drop the transform and set honest font sizes so the
+      block's natural width is inside its 470px. (v22868 tried clamp()
+      here and lost the cascade — computed was still 84px/30px — hence the
+      specificity boosters.)
+   2. LONG FRENCH STATUSES CLIP once the revised time joins them
+      ('Embarquement · 7…'). The st-longtext fitter pins those at 18px via
+      an INLINE !important, which no stylesheet can outrank — so let the
+      cell WRAP instead of fighting for the font size. Two tight lines
+      always beat a cut word.
+   3. The board icon sits at x=-45, entirely off-canvas, and the emblem
+      column's 'Airline'/'Ligne aérienne' header clips to 'Ligne aéri'.
+      Pearson's board has no carrier header at all — the tile says it. */
+
+/* 1 — scale the POSITIONED BLOCK, not the text inside it. v22871 scaled
+   .fids-banner-time-text, whose 584px content already overflowed its
+   470px parent, and transform-origin:right then pinned that overflowed
+   edge at x=1127 instead of pulling it back. The block itself is the
+   absolutely-positioned box: anchoring it at right:12px and scaling
+   about its own right edge shrinks it INWARD, and the result no longer
+   depends on winning a font-size fight against theme CSS. */
+html.fids-portrait .fids-banner-time-block {
+  left: auto !important;
+  right: 12px !important;
+  width: 620px !important;
+  transform: scale(0.52) !important;
+  transform-origin: right center !important;
+}
+html.fids-portrait .fids-banner-time-text { transform: none !important; }
+html.fids-portrait .fids-banner-digirow { justify-content: flex-end !important; }
+
+/* 2 — the status cell wraps rather than cuts */
+html.fids-portrait #fidsTable td.td-status,
+html.fids-portrait #fidsTable td.td-status * {
+  white-space: normal !important;
+  line-height: 1.1 !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+/* the revised time is a real <span> now (see fids-core.js) so the column
+   fitter can measure it; the v22873 ::after is retired */
+html.fids-portrait #fidsTable td.td-status .fids-status-rev {
+  font-weight: 700 !important;
+  opacity: 0.92;
+}
+
+/* 3 — headers: no carrier label over the emblem tile, and a size that
+   fits 'Terminal' / 'Destination' in both languages */
+html.fids-portrait #fidsTable thead th { font-size: 13px !important; letter-spacing: 0.2px !important; }
+html.fids-portrait #fidsTable thead th.col-airline { font-size: 0 !important; }
+/* the board icon was laid out at x=-45 (off-canvas) — pull the label
+   block in so it lands on screen */
+html.fids-portrait #fidsBanner .fids-banner-board { left: 12px !important; width: 330px !important; }
+
+
+/* ── v22875 — PORTRAIT DROPS BOTH TIME COLUMNS (Nick: 'remove the 2 times
+   simply have this is the last 2 columns merge into1 Such as
+   Delayed-10:30, On Time 10:45 etc'). The effective time now rides inside
+   the status cell as a real .fids-status-rev span, so Scheduled joins
+   Revised at zero width and their ~250px goes to Destination and Status.
+   Zeroed rather than display:none — dropping a cell shifts every colgroup
+   width one column to the left. */
+html.fids-portrait #fidsTable colgroup col.col-time { width: 0 !important; }
+html.fids-portrait #fidsTable th.col-time,
+html.fids-portrait #fidsTable td.td-time,
+html.fids-portrait #fidsTable td.td-time * {
+  width: 0 !important; max-width: 0 !important; min-width: 0 !important;
+  padding-left: 0 !important; padding-right: 0 !important;
+  font-size: 0 !important; letter-spacing: 0 !important;
+  overflow: hidden !important; white-space: nowrap !important;
+}
+/* the merged column carries two values now, so it gets the width back */
+html.fids-portrait #fidsTable colgroup col.col-status { width: 300px !important; }
+html.fids-portrait #fidsTable td.td-status .fids-status-rev {
+  font-weight: 700 !important;
+  opacity: 0.92;
+  white-space: nowrap !important;
+}
+
+/* ── v22877 — PORTRAIT HEADER ROW. The v22874 header rules were losing to
+   fids-layout-fixes.css:6602's own `html:not(#_) body[data-fids-theme]
+   #fidsTable thead th`, which carries TWO id-weights to our one — so the
+   labels stayed at row size and 'Ligne aérienne' clipped to 'Ligne aéri'.
+   Matched id-weight here and the header behaves.
+   The carrier column loses its label entirely: Pearson's board has none,
+   and the emblem tile is the label. */
+html.fids-portrait:not(#_) #fidsTable thead th {
+  font-size: 13px !important;
+  letter-spacing: 0.2px !important;
+  padding: 4px 10px !important;
+}
+html.fids-portrait:not(#_) #fidsTable thead th.col-airline { font-size: 0 !important; }
+/* Terminal holds one character ('T1'/'T3'), so it only needs its header;
+   the width that frees goes to Destination, where 'Washington (DCA)' and
+   'Philadelphia (PHL)' were still ellipsizing. */
+html.fids-portrait #fidsTable colgroup col.col-term   { width: 72px !important; }
+html.fids-portrait #fidsTable colgroup col.col-status { width: 268px !important; }
+
+/* ── v22878 — FILTERED-BOARD CHIP. A monitor showing 9 of the airport's 40
+   departures has to say WHY, or it reads as a broken board from across the
+   hall. Sits under the Departures/Départs label, same bilingual swap. */
+.fids-board-filter {
+  display: block;
+  font-size: clamp(13px, 1.05vw, 19px);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  opacity: 0.86;
+  line-height: 1.1;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+/* v22880: the chip is a single translated line now (it follows the board's
+   language rotation), so it no longer needs the .fbl-en/.fbl-fr stack — but
+   it DOES still need an explicit size, because it inherits the board
+   label's (measured: ~50px landscape, 32px portrait) otherwise. */
+html:not(#_) #fidsBanner .fids-board-filter {
+  font-size: 22px !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0.4px !important;
+  white-space: nowrap !important;
+}
+html.fids-portrait:not(#_) #fidsBanner .fids-board-filter {
+  font-size: 14px !important;
+}
+/* One extra line still needs room: measured, the label block alone is
+   already 210px inside a 128px banner. A filtered board gets a slightly
+   taller banner rather than a squeezed one. */
+body.has-board-filter #fidsBanner { height: 152px !important; }
+html.fids-portrait body.has-board-filter #fidsBanner { height: 140px !important; }

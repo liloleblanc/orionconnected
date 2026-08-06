@@ -48,6 +48,36 @@
     } catch (e) {}
   })();
   </script>
+  <script>
+  /* v22867 — PORTRAIT / ROTATED KIOSK MODE (Nick: upright monitors for
+     FIDS and BAGS). Two paths, both landing on html.fids-portrait:
+     · true portrait (OS rotated): auto-detected, width >= 800 so phones
+       keep their own mobile layout;
+     · ?rot=90 / ?rot=270 (monitor physically turned, OS untouched): the
+       whole page is laid out portrait and painted rotated via CSS. */
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search);
+      var rot = q.get('rot');
+      var de = document.documentElement;
+      if (rot === '90' || rot === '270') {
+        de.classList.add('fids-rot' + rot, 'fids-portrait');
+        // v22868 — the layout code sizes from window.innerWidth/Height,
+        // which still report the LANDSCAPE viewport in rot mode. The page
+        // is laid out portrait (100vh x 100vw), so the reported axes swap:
+        // kiosks never resize, so fixed getters are safe.
+        var w0 = window.innerWidth, h0 = window.innerHeight;
+        try {
+          Object.defineProperty(window, 'innerWidth',  { get: function () { return h0; } });
+          Object.defineProperty(window, 'innerHeight', { get: function () { return w0; } });
+        } catch (e2) {}
+      } else if (q.get('orient') === 'portrait'
+                 || (window.innerHeight > window.innerWidth && window.innerWidth >= 800)) {
+        de.classList.add('fids-portrait');
+      }
+    } catch (e) {}
+  })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
@@ -61,7 +91,7 @@
   <link rel="stylesheet" href="css/bids-v2.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-v216.css?v=312">
-  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=22866">
+  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=22880">
   <link rel="stylesheet" href="css/accor-slide.css?v=79">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
@@ -708,9 +738,9 @@
 <script src="/mapcdn/leaflet.js?v=22485"></script>
 <script src="/mapcdn/leaflet-arc.js?v=22485"></script>
 <script src="js/gids-layout.js?v=1"></script>
-<script src="js/fids-v2.js?v=319"></script>
+<script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=5"></script>
-<script src="js/fids-core.js?v=22866"></script>
+<script src="js/fids-core.js?v=22880"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
