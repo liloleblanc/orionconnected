@@ -4814,6 +4814,15 @@ function getAirlineAccent(code) {
 function acExpressMatrix(fn) {
   if (isNaN(fn)) return null;
   if (fn >= 7000 && fn <= 7299) return { op:'PB', opName:'PAL Airlines' };
+  // v22929 — AC77xx is PAL too (Nick, on AC7753 YQM->YOW: 'it had the aircraft
+  // right on 7753 haha it was just showing a jazz plane instead of PAL').
+  // The type was already correct — a Dash 8-400 — but 7753 fell in NO band, so
+  // _opCode came out empty and the LIVERY fell back to the default Jazz-painted
+  // Express aircraft. Deliberately scoped to the 7700-7799 block that Nick
+  // named rather than the whole 7300-7949 gap: an invented band is what put
+  // 'Operated by PAL Airlines' on AC7053 to Vancouver. If PAL flies more of
+  // the gap, widen it on evidence, one block at a time.
+  if (fn >= 7700 && fn <= 7799) return { op:'PB', opName:'PAL Airlines' };
   if (fn >= 7950 && fn <= 8249) return { op:'QK', opName:'Jazz Aviation' };
   if (fn >= 8250 && fn <= 8999) return { op:'QK', opName:'Jazz Aviation' };
   return null;
@@ -7746,7 +7755,15 @@ function _buildV2MapCol(ctx, vars) {
     var _currentRegSource = String((_cf && _cf._regSource) || '');
     var _inboundRegSource = String((_anyInb && _ib2 && _ib2._regSource) || '');
     var _currentReg = /^history/i.test(_currentRegSource) ? '' : ((_cf && _cf._reg) || '');
-    var _inboundReg = /^history/i.test(_inboundRegSource) ? '' : ((_anyInb && _ib2 && _ib2._reg) || '');
+    // v22928 — and never borrow a tail from an inbound that was only matched
+    // by GATE. This line is where the wrong aeroplane got in: the departure
+    // AC7995 has no tail of its own, so it took the gate-matched arrival's
+    // C-FUJA, and the type then resolved FROM that tail — an E175 — over the
+    // CRJ-900 the feed had correctly given for AC7995 itself. Nick: 'this is
+    // 2 different aircraft'. The feed was right; the borrowing was not.
+    var _inboundIdentityOk = !(_ib2 && _ib2._identityUnverified);
+    var _inboundReg = (/^history/i.test(_inboundRegSource) || !_inboundIdentityOk)
+      ? '' : ((_anyInb && _ib2 && _ib2._reg) || '');
     // v218.99.32 — Registration folded into aircraft block (two-column)
     var _acReg = _currentReg || _inboundReg;
     // Keep a confirmed tail through a thin provider poll, but never preserve a
@@ -12100,6 +12117,23 @@ const gView = document.getElementById('gateView');
         && /^(reg-lookup|flight-lookup)$/.test(String(window._gateInbound._inboundSource || ''))
         && window._gateInbound._forOutbound === currentFlight.flight) ? window._gateInbound : null;
       const inboundFlight = _verifiedInbound || _gateMatchFallback;
+      // v22928 — A SHARED GATE IS NOT A SHARED AIRFRAME (Nick, on YQM gate 4:
+      // 'this is 2 different aircraft'). _gateMatchFallback picks the most
+      // recent arrival at this gate, which is fine for showing that something
+      // is inbound — but it was also supplying the aircraft IDENTITY, and the
+      // two are unrelated. Measured on that gate: the departure AC7995 carries
+      // _aircraft 'Mitsubishi CRJ-900' / CR9, while the gate-matched arrival
+      // AC7992 is reg C-FUJA, which ADS-B confirms is an E75S flown as
+      // JZA7992 — genuinely a Jazz E175. The panel showed AC7995 in its header
+      // and that other aeroplane's type and operator underneath.
+      //
+      // Only a VERIFIED link (reg-lookup / flight-lookup tied to this
+      // outbound) is evidence of continuity. When the pairing is just a gate
+      // match, the flag below tells the aircraft block to describe the
+      // DEPARTURE from its own record rather than borrowing the arrival's.
+      try {
+        if (inboundFlight) inboundFlight._identityUnverified = !_verifiedInbound;
+      } catch (e) {}
       // PANEL PARITY for the 60 s numbers poll: when the loadFlight linking
       // never lands (quota, timing), the panel still shows the gate-match
       // fallback — but window._gateInbound stays null, so the poll idled and
@@ -17575,7 +17609,7 @@ function updateLangButtons() {
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22924';
+var FIDS_BUILD_TAG = 'v22929';
 (function(){
   try {
     function _addTag(){
@@ -25802,14 +25836,43 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // If we were already tracking the SAME route and the correction is small,
   // resume from where the marker actually is and bleed the difference in over
   // a few seconds, so a fix reads as the aircraft settling rather than jumping.
+  // v22927 — two faults in the resume test, both of which only bite on
+  // approach, which is exactly where Nick saw them (': it did a turn to line
+  // up for the runway and started to go backwards ... its bouncing left and
+  // right not a lot but noticeable').
+  //
+  // 1. The tolerance was a FRACTION of the route (0.15). But the route is
+  //    rebuilt through the live position on every fix, so totalNm shrinks as
+  //    the aircraft nears the field — 0.15 of 400nm is 60nm, 0.15 of 12nm is
+  //    under two. Late in the approach an ordinary correction blows the test,
+  //    the resume is skipped, and the marker is planted straight onto _seedP:
+  //    a snap. Measuring the tolerance in NAUTICAL MILES keeps it meaning the
+  //    same thing at every stage of the flight.
+  //
+  // 2. _corr was applied with its sign. Dead reckoning runs AHEAD of truth
+  //    whenever the aircraft slows — and it slows a lot on final, from cruise
+  //    to about 110kt — so the next fix lands BEHIND the marker and the
+  //    correction dragged it backwards. A landing aircraft never reverses.
+  //    Now a negative correction is not applied: the marker HOLDS station and
+  //    lets the real aircraft catch up, which reads as slowing down rather
+  //    than reversing.
   var _corr = 0;
+  var _holdForTruth = false;
   try {
     if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
         _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
-        _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1] &&
-        Math.abs(_gateGlide.p - _seedP) < 0.15) {
-      p = _gateGlide.p;
-      _corr = _seedP - p;
+        _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1]) {
+      var _dp = _seedP - _gateGlide.p;
+      var _corrNm = Math.abs(_dp) * totalNm;
+      if (_corrNm < 40) {
+        p = _gateGlide.p;
+        if (_dp >= 0) {
+          _corr = _dp;                 // truth is ahead — ease forward into it
+        } else {
+          _corr = 0;                   // truth is behind — do not rewind
+          _holdForTruth = true;        // freeze until the aircraft reaches us
+        }
+      }
     }
   } catch (e) {}
   _gateGlide.o = o; _gateGlide.d = d;
@@ -25847,6 +25910,11 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       if (p < 0.12)       factor = 0.45 + 0.55 * (p / 0.12);        // climb-out accel
       else if (p > 0.82)  factor = 1 - 0.72 * ((p - 0.82) / 0.18);  // glideslope decel
       var effSpeed = speedKts * Math.max(0.2, factor);
+      // v22927 — while holding for truth, the marker does not advance. Dead
+      // reckoning had already carried it past the real aircraft, so moving on
+      // would only widen the gap the next fix has to undo. It resumes as soon
+      // as a fix arrives that is ahead of it.
+      if (_holdForTruth) effSpeed = 0;
       p = Math.min(0.995, p + (effSpeed * dtH) / totalNm);
       // Bleed in any outstanding position correction (~4s time constant).
       if (_corr) {
