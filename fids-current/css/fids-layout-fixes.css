@@ -9056,3 +9056,38 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   background-color: transparent !important;
   background-image: none !important;
 }
+
+/* ── v22920 — RED LINES, AND THE PLATE PATTERN AT ITS OWN SIZE (Nick: 'the
+   lines painted red on top of whatever and yes they panel backgrounds need
+   to shrink the effect is lost and a blurb is born').
+
+   1. RED LINES. The wave design is recoloured with a gamma of 3.2 so only
+      the crests reach Air Canada red and the field stays black. A linear
+      ramp was tried first and measured mean RGB 67/19/19 — that is a red
+      panel, not red lines on black. With the gamma it lands at 27/12/11.
+
+   2. THE BLURB. Measured, ac-front-black.jpg carries a stddev of 2 — the
+      halftone is that fine by design. The plates were painting it at
+      background-size: 100% 100%, which DOWNSCALES an 872px-wide texture into
+      a plate roughly 430px wide, averaging every dot away. That is the lost
+      effect, and the flat grey left behind is the blurb.
+
+      The fix is not to shrink the image further — that only flattens it more
+      (a 3x2 mirror-tile was tried and measured stddev 3). It is to stop
+      scaling it at all: background-size: auto with repeat renders the
+      halftone at its native pixel size, dots intact, however small the panel
+      is. Only Air Canada's plates take this — the pictorial artwork on the
+      other carriers is composed to fill its plate and must keep 100% 100%. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-image: url('/textures/ac-back-lines-red.jpg?v=22920') !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-equip-panel, .gad-panel, .g8-wx-panel, .v2-rc-keystat, .v2-rc-mstat, .v2-rc-maptitle, .v2-rc-mapstats, .v2-rc-keystats) {
+  background-size: auto !important;
+  background-repeat: repeat !important;
+  background-position: center !important;
+}
