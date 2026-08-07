@@ -7361,10 +7361,12 @@ function _buildV2MapCol(ctx, vars) {
       var _candSpd = (_adsbC && typeof _adsbC.spd === 'number') ? _adsbC.spd
                    : (typeof _ib._liveSpd === 'number') ? _ib._liveSpd
                    : (_wpC && typeof _wpC.speed === 'number' ? _wpC.speed : null);
-      var _candLat = (_adsbC && typeof _adsbC.lat === 'number') ? _adsbC.lat
-                   : (typeof _ib._liveLat === 'number') ? _ib._liveLat : null;
-      var _candLng = (_adsbC && typeof _adsbC.lng === 'number') ? _adsbC.lng
-                   : (typeof _ib._liveLng === 'number') ? _ib._liveLng : null;
+      // Position comes from the shared resolver (_gateLiveFix), so the big
+      // takeover map cannot resolve it differently. Behaviour is unchanged
+      // here — that helper IS this precedence, lifted out to one place.
+      var _candFix = (typeof _gateLiveFix === 'function') ? _gateLiveFix(_ib) : null;
+      var _candLat = _candFix ? _candFix.lat : null;
+      var _candLng = _candFix ? _candFix.lng : null;
       if (_adsbC && _adsbC.onGround === true) _ib._liveOnGround = true;
       var _arrivedLikeIb = /arriv|land|cancel/i.test(String(_ib.status || ''));
       if (_ib._liveOnGround === true || _arrivedLikeIb) { _candAlt = null; _candSpd = null; }
@@ -18124,7 +18126,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22994';
+var FIDS_BUILD_TAG = 'v22995';
 (function(){
   try {
     function _addTag(){
@@ -22111,6 +22113,31 @@ function _gateStickyFix(key, lat, lng, alt, spd) {
   if (_gateFixCache && _gateFixCache.key !== key) _gateFixCache = null;
   return null;
 }
+// ── ONE answer to 'where is this airplane' ────────────────────────────────
+// The mini map resolved the position as ADS-B cache first, feed field second.
+// The big map read ONLY the feed field — it never consulted the cache. So
+// whenever ADS-B held a fresher fix than the feed (the normal case, and the
+// entire reason the cache exists), the two maps plotted the same aircraft in
+// two different places. Nick: 'the little map and big map not synced at all,
+// very smooth just not accurate' — smooth because the sticky fix interpolates
+// between polls, inaccurate because one of the two was reading a stale field.
+//
+// Both callers resolve through here now, so a disagreement is no longer
+// expressible. This answers WHICH SOURCE only: each map keeps its own
+// honesty gates (physical plausibility, route corridor, leg window,
+// on-ground) on top of the position it gets back.
+function _gateLiveFix(row) {
+  if (!row) return null;
+  var c = null;
+  try { c = (typeof _adsbCached === 'function') ? _adsbCached(row._reg, row._callSign, row.flight) : null; } catch (e) {}
+  var lat = (c && typeof c.lat === 'number') ? c.lat
+          : (typeof row._liveLat === 'number') ? row._liveLat : null;
+  var lng = (c && typeof c.lng === 'number') ? c.lng
+          : (typeof row._liveLng === 'number') ? row._liveLng : null;
+  if (lat === null || lng === null) return null;
+  return { lat: lat, lng: lng, onGround: !!(c && c.onGround === true) };
+}
+
 // ── Actual-track recorder + deviation helper ──────────────────────────────
 // We record the airframe's real positions as it flies, then draw that flown
 // track on the gate map: GREEN where it follows the assigned route, AMBER where
@@ -31508,9 +31535,17 @@ function _map3dFlightCtx(allowEstimated) {
       return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
     };
     var prog = -1;
-    var liveLat = (typeof inb._liveLat === 'number') ? inb._liveLat : null;
-    var liveLng = (typeof inb._liveLng === 'number') ? inb._liveLng : null;
-    var fixOk = liveLat !== null && liveLng !== null && !inb._liveOnGround && _liveFixPhysOk(inb);
+    // Same resolver the mini map uses — ADS-B cache first, feed field second.
+    // Reading _liveLat alone here is what put the two maps in different
+    // places (see _gateLiveFix).
+    var _lfix = (typeof _gateLiveFix === 'function') ? _gateLiveFix(inb) : null;
+    var liveLat = _lfix ? _lfix.lat : ((typeof inb._liveLat === 'number') ? inb._liveLat : null);
+    var liveLng = _lfix ? _lfix.lng : ((typeof inb._liveLng === 'number') ? inb._liveLng : null);
+    // The cache also knows when the airframe is down — the mini map honours
+    // that (_ib._liveOnGround = true), so the big map must too, or it keeps a
+    // glyph in the air after the feed catches up.
+    var _onGnd = !!inb._liveOnGround || !!(_lfix && _lfix.onGround);
+    var fixOk = liveLat !== null && liveLng !== null && !_onGnd && _liveFixPhysOk(inb);
     if (fixOk) {
       // Corridor gate: the fix must sit near this route, or it's someone
       // else's airplane. Compare against the direct path with slack.
