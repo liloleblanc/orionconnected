@@ -9774,3 +9774,50 @@ html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8
   margin-bottom: 1px !important;
   padding-bottom: 1px !important;
 }
+
+/* ── v22994: THE COUNTDOWN FILLS ITS PANEL (Nick: 'it has to fill the
+   entire thing GOT IT?'). The numeral was capped at 160px by a vw clamp
+   while its panel is ~500px tall, so the takeover read as a small block
+   floating in an empty field.
+   Sized in CONTAINER units, not viewport units: vh tracks the window, but
+   this panel is whatever is left under the banner, the plate strip and the
+   welcome band — so vh would overflow on a short screen and under-fill on a
+   tall one. cqh measures the panel itself, so the countdown grows to the
+   room it actually has, on any screen. The px clamps stay as the fallback
+   for anything without container queries. */
+html body:not(#_):not(#_) .g8-countdown .g8-cd-body {
+  container-type: size;
+  justify-content: space-evenly !important;
+  padding: clamp(6px, 1.2vh, 18px) clamp(16px, 2vw, 40px) !important;
+}
+/* …and it carries the SAME plate the rest of the takeover carries. Measured:
+   .g8-cd-body painted `background-image: none` on a transparent background, so
+   the countdown was showing the bare .g8-r4 canvas (`var(--airline-accent)` —
+   Delta red) under the shell's 15–30% black wash. It was the only surface in
+   the boarding shell with no plate treatment: .g8-board-hdr-now and
+   .g8-board-col.now both take --banner-bg + --plate-tex with soft-light. Same
+   declarations here, so the countdown reads as the same sign as the boarding
+   takeover instead of a washed accent slab. */
+html body:not(#_):not(#_) .g8-countdown .g8-cd-body {
+  background-color: var(--banner-bg, #0b0f16) !important;
+  background-image: var(--plate-tex) !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light !important;
+}
+html body:not(#_):not(#_) .g8-countdown .g8-cd-value {
+  font-size: clamp(150px, 34vh, 1000px) !important;
+  font-size: clamp(28px, min(72cqh, 48cqw), 1000px) !important;
+  line-height: 0.88 !important;
+}
+html body:not(#_):not(#_) .g8-countdown .g8-cd-label {
+  font-size: clamp(34px, 6.4vh, 190px) !important;
+  font-size: clamp(14px, min(13cqh, 7cqw), 190px) !important;
+  line-height: 1.04 !important;
+}
+html body:not(#_):not(#_) .g8-countdown .g8-cd-unit {
+  font-size: clamp(30px, 5.4vh, 160px) !important;
+  font-size: clamp(13px, min(11cqh, 6cqw), 160px) !important;
+  line-height: 1.04 !important;
+}

@@ -18124,7 +18124,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22993';
+var FIDS_BUILD_TAG = 'v22994';
 (function(){
   try {
     function _addTag(){
@@ -28502,6 +28502,42 @@ function ensureBrandInName(name, brandCode) {
   return name;
 }
 
+// Accor signs its properties with the whole postal address in the name —
+// 'Fairmont Century Plaza Los Angeles at Beverly Hills'. On a card the brand
+// wordmark already says Fairmont and the subtitle line already says the city,
+// so the headline was repeating both and running to three lines. Nick, on that
+// exact slide: 'I said Century Plaza not this whole paragraph.'
+//
+// So: cut the headline at the location tail — the city (already in the
+// subtitle) or an ' at <district>' clause, whichever comes first. The cut is
+// only taken when it lands PAST the first word, which is what protects the
+// properties whose name legitimately opens with a place: 'Toronto Centre',
+// 'Vancouver Airport', 'Paris Tour Eiffel' and 'Montréal Golden Mile' all cut
+// at index 0 and are therefore left alone. The full name is kept on `nameFull`
+// for the QR bubble.
+function stripHotelLocationTail(name, city) {
+  if (!name) return name;
+  var _fold = function (s) {
+    return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  };
+  var hay = _fold(name);
+  var cuts = [];
+  if (city) {
+    var needle = _fold(city);
+    if (needle.length > 2) {
+      var ci = hay.indexOf(needle);
+      if (ci > 0) cuts.push(ci);
+    }
+  }
+  var ai = hay.indexOf(' at ');
+  if (ai > 0) cuts.push(ai);
+  if (!cuts.length) return name;
+  var cut = Math.min.apply(null, cuts);
+  var head = name.slice(0, cut).replace(/[\s,·:–—-]+$/, '').trim();
+  // Never trim a name away to nothing (or to a bare article).
+  return head.length >= 3 ? head : name;
+}
+
 function fetchAccorHotels(destIata) {
   if (!destIata) return;
   // Language for THIS fetch (the current board rotation language).
@@ -29215,7 +29251,7 @@ function _processAccorData(data, destIata, langKey) {
       bgSize: photoUrl ? 'cover' : 'auto',
       bgPos: photoUrl ? 'center' : 'auto',
       photos: photos,   // full set for hero rotation
-      headline: hotelName,
+      headline: stripHotelLocationTail(hotelName, city),
       nameFull: ensureBrandInName(_rawName, brand),  // full name incl. brand (for QR bubble / page context)
       sub: subtitle,
       brandLabel: brandName,
