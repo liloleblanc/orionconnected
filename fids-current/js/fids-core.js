@@ -18029,7 +18029,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22967';
+var FIDS_BUILD_TAG = 'v22968';
 (function(){
   try {
     function _addTag(){
@@ -23708,6 +23708,12 @@ function onApChange() {
       window.history.replaceState(null, '', _apUrl);
     } catch (e) {}
   }
+  // v22968 — apply THIS airport's saved language choice on the in-page
+  // switch too (Nick: 'it does not save the language to an airport btw').
+  // The v22961 restore ran only on the boot path (changeScreenType), so
+  // picking a new airport from the menu/control picker kept the previous
+  // airport's languages and the saved set looked like it never took.
+  try { _restoreApLangs(); } catch (e) {}
   const apData = AP[iata] || { name: iata };
   // Legacy hdrApName still updated (some other code paths read it),
   // but the v2 banner now displays this through .fids-airport-name.
