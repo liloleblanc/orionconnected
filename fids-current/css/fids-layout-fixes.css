@@ -9509,9 +9509,12 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge .ac-ico,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge svg,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge svg path {
+  /* v22967 — the ac-ico glyphs are icon-FONT glyphs (font.css ::before +
+     content), NOT mask-painted: `background:#fff` here painted every span's
+     BOX solid white — the white squares on the red orbs at MCO gate 76.
+     Their ink is `color`; svg ink is `fill`. No background. */
   fill: #ffffff !important;
   color: #ffffff !important;
-  background: #ffffff !important;   /* the ac-ico glyphs are mask-painted — their ink IS the background */
   filter: drop-shadow(0 1px 1px rgba(90, 6, 18, 0.5)) !important;
 }
 /* The flight cell's widget img: no invert games — the asset itself is now the
