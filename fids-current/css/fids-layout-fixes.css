@@ -3055,7 +3055,7 @@ html .g8-bir-cell:last-child .g8-bir-val {
      Nick kept photographing was built into the numbers, appearing and
      disappearing with wherever the row height landed. 3.3vh × 2 × 1.05 =
      6.9vh fits the worst case with margin, at every viewport. */
-  font-size: clamp(18px, 3.3vh, 46px);
+  font-size: clamp(22px, 4.6vh, 62px);
   display: flex;
   flex-direction: column;
   line-height: 1.05;
@@ -9704,3 +9704,41 @@ html body[data-gate-airline="DL"]:not(#_) .g8-board-info-row { background-positi
 html body[data-gate-airline="TS"]:not(#_) .g8-board-info-row { background-position: center 42% !important; }  /* aqua wing sweep */
 html body[data-gate-airline="AF"]:not(#_) .g8-board-info-row { background-position: center 30% !important; }  /* tricolore streaks left, clean blue right */
 html body[data-gate-airline="EK"]:not(#_) .g8-board-info-row { background-position: center 72% !important; }  /* red/white wave crossing */
+
+/* ── v22992: THE STATUS PLATE GETS THE WIDTH ITS WORDS NEED ──────────────
+   Nick, United 44: 'way too small this is not how it was figure it out'.
+   Right — and the reason is width, not height. The strip is five EQUAL
+   cells, but they do not carry equal words: the time plates hold '3:46 PM'
+   while the status plate holds 'Embarquement' or 'En retard' stacked over
+   its English twin. Forced into the same width, the only way the status
+   could fit was to shrink to roughly a third of its neighbours, which is
+   what he is looking at.
+   The status plate is widened and the two time plates - whose values are
+   short and were sitting in loose boxes - give up exactly that room. No
+   value gets smaller; the status gets much bigger. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child {
+  flex: 1.62 1 0 !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:nth-child(3),
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:nth-child(4) {
+  flex: 0.84 1 0 !important;
+}
+
+/* ── v22992b: GIVE THE TWO-LINE STATUS THE HEIGHT IT NEEDS ───────────────
+   Measured on the strip: the row leaves 107px inside a cell, the title
+   eats ~37 of it, so a TWO-line stack gets ~35px a line while the
+   one-line values beside it run at 61px. No amount of width fixes that —
+   the status is the only cell stacking two lines, and it was losing on
+   vertical room, which is why it read as a third the size of its
+   neighbours. The strip gains a little height (it has room above the
+   lanes), and the status cell's own label is tightened, so both lines
+   come up to the size Nick expects without leaving the plate. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row {
+  min-height: clamp(118px, 17vh, 206px) !important;
+  max-height: clamp(138px, 19.5vh, 238px) !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-title {
+  font-size: clamp(12px, 1.6vh, 19px) !important;
+  margin-bottom: clamp(2px, 0.3vh, 4px) !important;
+  padding-bottom: 2px !important;
+}
