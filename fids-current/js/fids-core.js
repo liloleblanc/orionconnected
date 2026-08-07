@@ -13507,13 +13507,20 @@ const gView = document.getElementById('gateView');
 
     // Bilingual column titles — 'Flight | Vol' etc. (Nick), never a
     // rotating single language, '#' clutter dropped so titles fit one line.
+    // v22962 — headers follow `langs` (the airport picker chose the second
+    // language and English was pinned first — the SIXTH airport-keyed picker
+    // found; Nick's paste had EN/FR headers over Spanish values).
     function _bidsHdr(key) {
-      var l2 = 'fr';
-      try { l2 = (typeof boardLangsFor === 'function' ? (boardLangsFor(iata)[1] || 'fr') : (langs && langs[1]) || 'fr'); } catch (e) {}
       var o = (typeof LS !== 'undefined' && LS[key]) || {};
-      var a = String(o.en || key).replace(/\s*#\s*$/, '');
-      var b = String(o[l2] || '').replace(/\s*#\s*$/, '');
-      return (b && b !== a) ? (a + ' <span class="bidsv2-hsep">|</span> ' + b) : a;
+      var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+      var out = [], seen = {};
+      for (var i = 0; i < picked.length; i++) {
+        var w = String(o[picked[i]] || (i === 0 ? (o.en || key) : '')).replace(/\s*#\s*$/, '');
+        if (!w || seen[w.toLowerCase()]) continue;
+        seen[w.toLowerCase()] = 1;
+        out.push(w);
+      }
+      return out.join(' <span class="bidsv2-hsep">|</span> ') || String(o.en || key);
     }
     // MCO: remind travellers which terminal this carousel sits in. The belt
     // key is "A-9"-style, so the prefix is the terminal letter; fall back to
@@ -17314,6 +17321,7 @@ function mkLogo(code, faName) {
 // ── LANGUAGE STRINGS & THEME SYSTEM ──────────────────────────────────────
 const LS = {
   dep:     { en:'Departures',fr:'Départs',es:'Salidas',de:'Abflüge',it:'Partenze',pt:'Partidas',ja:'出発',zh:'出发',ar:'المغادرات' },
+  bagClaim:{ en:'Baggage claim',fr:'Retrait des bagages',es:'Recogida de equipaje',de:'Gepäckausgabe',it:'Ritiro bagagli',pt:'Recolha de bagagem',ja:'手荷物受取所',zh:'行李提取',ar:'استلام الأمتعة' },
   arr:     { en:'Arrivals',fr:'Arrivées',es:'Llegadas',de:'Ankünfte',it:'Arrivi',pt:'Chegadas',ja:'到着',zh:'到达',ar:'الوصول' },
   sdep:    { en:'Arrivals',fr:'Arrivées',es:'Llegadas',de:'Ankünfte',it:'Arrivi',pt:'Chegadas',ja:'到着',zh:'到达',ar:'الوصول' },
   sarr:    { en:'Departures',fr:'Départs',es:'Salidas',de:'Abflüge',it:'Partenze',pt:'Partidas',ja:'出発',zh:'出发',ar:'المغادرات' },
@@ -17987,7 +17995,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22961';
+var FIDS_BUILD_TAG = 'v22962';
 (function(){
   try {
     function _addTag(){
@@ -23739,15 +23747,23 @@ function _bilingualDate(now, tz) {
 // Bilingual board label (Nick: 'it should be 2 languages at once'). English
 // over French, stacked — both show at once and the longer French line
 // ('Retrait des bagages') no longer clips against the flag's white band.
-var _BOARD_LABEL_BI = {
-  dep: ['Departures', 'Départs'],
-  arr: ['Arrivals', 'Arrivées'],
-  baggage: ['Baggage claim', 'Retrait des bagages']
-};
+// v22962 — the stacked label follows the SELECTED languages (Nick's BIDS
+// paste: 'Baggage claim / Retrait des bagages' hardcoded EN/FR while the
+// values ran Spanish). Words come from LS like every other label; one
+// language selected = one line.
 function _boardLabelBilingual(key) {
-  var pair = _BOARD_LABEL_BI[key] || _BOARD_LABEL_BI.dep;
-  return '<span class="fbl-en">' + pair[0] + '</span><span class="fbl-fr">' + pair[1] + '</span>'
-       + _boardFilterChipHtml();
+  var _k = (key === 'baggage') ? 'bagClaim' : (key === 'arr' ? 'arr' : 'dep');
+  var o = (typeof LS !== 'undefined' && LS[_k]) || {};
+  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+  var out = [], seen = {};
+  for (var i = 0; i < picked.length; i++) {
+    var w = o[picked[i]] || (i === 0 ? o.en : '');
+    if (!w || seen[w]) continue;
+    seen[w] = 1;
+    out.push('<span class="' + (out.length ? 'fbl-fr' : 'fbl-en') + '">' + w + '</span>');
+  }
+  if (!out.length) out.push('<span class="fbl-en">' + (o.en || key) + '</span>');
+  return out.join('') + _boardFilterChipHtml();
 }
 
 // v22878 — a monitor filtered to one terminal / carrier / region has to SAY
