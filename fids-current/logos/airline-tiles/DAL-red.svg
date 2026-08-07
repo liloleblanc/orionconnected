@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<!-- v22971: Nick — 'the Delta icon should all be the same color … simply red
+     please'. The old DAL.svg was the navy square + two-tone red widget
+     ('blue and red'). White tile, ONE flat Delta red, same geometry. -->
+<path fill="#ffffff" d="M0 0h100v100H0z"/>
+<g fill="#E01933">
+<path d="M84.738 73.574 50 56.844V20.047Zm2.762 6.38L50 64.12v15.832Zm0 0"/>
+<path d="M15.262 73.57 50 20.047v36.797ZM12.5 79.953H50V64.121Zm0 0"/>
+</g>
+</svg>
