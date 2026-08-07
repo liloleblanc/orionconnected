@@ -6605,7 +6605,7 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
   // renders full-bleed in its own colours instead of a flat silhouette padded
   // inside an accent circle. Filling the badge edge to edge is also what makes
   // it read bigger.
-  'DL': '/logos/airline-tiles/DL-glossy.svg?v=22961'
+  'DL': '/logos/airline-tiles/DL-glossy.svg?v=22966'
 };
 
 function _buildV2AircraftCol(ctx, vars) {
@@ -9126,11 +9126,23 @@ function uxgGateHtml(ctx) {
       : /ontime|early|scheduled/.test(_stK) ? ' g8-bir-st-ok' : '';
     // EN and FR each get their OWN line — free wrapping let 'Gate closed |
     // Porte fermée' break into four giant lines and balloon the whole row.
-    var _stTxt = _stP
-      ? (_frF
-          ? '<span class="g8-bir-st2">' + _stP.fr + '</span><span class="g8-bir-st2">' + _stP.en + '</span>'
-          : '<span class="g8-bir-st2">' + _stP.en + '</span><span class="g8-bir-st2">' + _stP.fr + '</span>')
-      : '';
+    // v22965 — the status VALUE follows the languages (Nick's MCO shot: an
+    // en+es gate reading 'Delayed / En retard' — French, not selected). Same
+    // stack, words from the selected languages, de-duplicated.
+    var _stTxt = '';
+    if (_stP) {
+      var _svPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+      if (_frF) { var _svf = _svPick.indexOf('fr'); if (_svf > 0) { _svPick.splice(_svf, 1); _svPick.unshift('fr'); } }
+      var _svW = [], _svSeen = {};
+      for (var _svi = 0; _svi < _svPick.length && _svW.length < 2; _svi++) {
+        var _svw = _stP[_svPick[_svi]];
+        if (!_svw || _svSeen[String(_svw).toLowerCase()]) continue;
+        _svSeen[String(_svw).toLowerCase()] = 1;
+        _svW.push(_svw);
+      }
+      if (!_svW.length && _stP.en) _svW.push(_stP.en);
+      _stTxt = _svW.map(function (w) { return '<span class="g8-bir-st2">' + w + '</span>'; }).join('');
+    }
     // Flair brand palette (Nick): airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
     var _birF8 = (airlineCode === 'F8');
@@ -13507,13 +13519,20 @@ const gView = document.getElementById('gateView');
 
     // Bilingual column titles — 'Flight | Vol' etc. (Nick), never a
     // rotating single language, '#' clutter dropped so titles fit one line.
+    // v22962 — headers follow `langs` (the airport picker chose the second
+    // language and English was pinned first — the SIXTH airport-keyed picker
+    // found; Nick's paste had EN/FR headers over Spanish values).
     function _bidsHdr(key) {
-      var l2 = 'fr';
-      try { l2 = (typeof boardLangsFor === 'function' ? (boardLangsFor(iata)[1] || 'fr') : (langs && langs[1]) || 'fr'); } catch (e) {}
       var o = (typeof LS !== 'undefined' && LS[key]) || {};
-      var a = String(o.en || key).replace(/\s*#\s*$/, '');
-      var b = String(o[l2] || '').replace(/\s*#\s*$/, '');
-      return (b && b !== a) ? (a + ' <span class="bidsv2-hsep">|</span> ' + b) : a;
+      var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+      var out = [], seen = {};
+      for (var i = 0; i < picked.length; i++) {
+        var w = String(o[picked[i]] || (i === 0 ? (o.en || key) : '')).replace(/\s*#\s*$/, '');
+        if (!w || seen[w.toLowerCase()]) continue;
+        seen[w.toLowerCase()] = 1;
+        out.push(w);
+      }
+      return out.join(' <span class="bidsv2-hsep">|</span> ') || String(o.en || key);
     }
     // MCO: remind travellers which terminal this carousel sits in. The belt
     // key is "A-9"-style, so the prefix is the terminal letter; fall back to
@@ -17314,6 +17333,7 @@ function mkLogo(code, faName) {
 // ── LANGUAGE STRINGS & THEME SYSTEM ──────────────────────────────────────
 const LS = {
   dep:     { en:'Departures',fr:'Départs',es:'Salidas',de:'Abflüge',it:'Partenze',pt:'Partidas',ja:'出発',zh:'出发',ar:'المغادرات' },
+  bagClaim:{ en:'Baggage claim',fr:'Retrait des bagages',es:'Recogida de equipaje',de:'Gepäckausgabe',it:'Ritiro bagagli',pt:'Recolha de bagagem',ja:'手荷物受取所',zh:'行李提取',ar:'استلام الأمتعة' },
   arr:     { en:'Arrivals',fr:'Arrivées',es:'Llegadas',de:'Ankünfte',it:'Arrivi',pt:'Chegadas',ja:'到着',zh:'到达',ar:'الوصول' },
   sdep:    { en:'Arrivals',fr:'Arrivées',es:'Llegadas',de:'Ankünfte',it:'Arrivi',pt:'Chegadas',ja:'到着',zh:'到达',ar:'الوصول' },
   sarr:    { en:'Departures',fr:'Départs',es:'Salidas',de:'Abflüge',it:'Partenze',pt:'Partidas',ja:'出発',zh:'出发',ar:'المغادرات' },
@@ -17840,9 +17860,31 @@ const TLbi = k => { const o = LS[k] || {}; const en = o.en || k; return (o.fr &&
 // need no surgery, and it now PINS the index instead of advancing it: `lang`
 // is always langs[0], stable for the life of the screen.
 function startLangRotation() {
+  // v22964 — PARTIAL RESTORE, and it is my regression to own. v22949 removed
+  // this timer as dead weight; it was load-bearing on exactly one surface: a
+  // MAIN board pinned to Departures or Arrivals. There the paging clock is
+  // off (dep/arr view modes clear pageTimer), so this timer was the only
+  // thing alternating a two-language board between its languages — its own
+  // comment said "it now only serves screens the paging clock doesn't cover"
+  // and I removed it anyway. Nick, on a fixed hall board: "Its not rotating
+  // to the second language."
+  //
+  // Restored SCOPED to that one case: main board, no paging clock, two
+  // languages selected. The gate stays bilingual-simultaneous (never flips),
+  // one selected language stays static everywhere, and the rotate view mode
+  // keeps its own clock.
   if (langRotateTimer) { clearInterval(langRotateTimer); langRotateTimer = null; }
   langIdx = 0;
   lang = langs[0];
+  if (langs.length <= 1) return;
+  langRotateTimer = setInterval(function () {
+    if (screenType !== 'main') return;                                   // gate/bags: simultaneous
+    if (typeof pageTimer !== 'undefined' && pageTimer) return;           // rotate mode owns it
+    langIdx = (langIdx + 1) % langs.length;
+    lang = langs[langIdx];
+    updateTicker();
+    if (data.dep.length || data.arr.length) render();
+  }, 15000);
 }
 function _startLangRotation_WITHDRAWN() {
   if (langRotateTimer) clearInterval(langRotateTimer);
@@ -17987,7 +18029,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22961';
+var FIDS_BUILD_TAG = 'v22967';
 (function(){
   try {
     function _addTag(){
@@ -23739,15 +23781,23 @@ function _bilingualDate(now, tz) {
 // Bilingual board label (Nick: 'it should be 2 languages at once'). English
 // over French, stacked — both show at once and the longer French line
 // ('Retrait des bagages') no longer clips against the flag's white band.
-var _BOARD_LABEL_BI = {
-  dep: ['Departures', 'Départs'],
-  arr: ['Arrivals', 'Arrivées'],
-  baggage: ['Baggage claim', 'Retrait des bagages']
-};
+// v22962 — the stacked label follows the SELECTED languages (Nick's BIDS
+// paste: 'Baggage claim / Retrait des bagages' hardcoded EN/FR while the
+// values ran Spanish). Words come from LS like every other label; one
+// language selected = one line.
 function _boardLabelBilingual(key) {
-  var pair = _BOARD_LABEL_BI[key] || _BOARD_LABEL_BI.dep;
-  return '<span class="fbl-en">' + pair[0] + '</span><span class="fbl-fr">' + pair[1] + '</span>'
-       + _boardFilterChipHtml();
+  var _k = (key === 'baggage') ? 'bagClaim' : (key === 'arr' ? 'arr' : 'dep');
+  var o = (typeof LS !== 'undefined' && LS[_k]) || {};
+  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+  var out = [], seen = {};
+  for (var i = 0; i < picked.length; i++) {
+    var w = o[picked[i]] || (i === 0 ? o.en : '');
+    if (!w || seen[w]) continue;
+    seen[w] = 1;
+    out.push('<span class="' + (out.length ? 'fbl-fr' : 'fbl-en') + '">' + w + '</span>');
+  }
+  if (!out.length) out.push('<span class="fbl-en">' + (o.en || key) + '</span>');
+  return out.join('') + _boardFilterChipHtml();
 }
 
 // v22878 — a monitor filtered to one terminal / carrier / region has to SAY
@@ -23800,7 +23850,14 @@ function _ocClockLabel(city) {
   // Two stacked rows (Nick, gate layout on FIDS/BIDS too): 'Time in <City>'
   // over 'Heure à <City>'. Used only by the FIDS/BIDS banner clocks; the gate
   // builds its own label inline.
-  return '<span class="cl-l1">Time in ' + city + '</span><span class="cl-l2">Heure à ' + city + '</span>';
+  // v22963 — follows `langs` (Nick: 'FIDS Time in Orlando / Heure à
+  // Orlando'). The GATE clock was converted in v22954; this is the shared
+  // FIDS/BIDS one, which still hardcoded the pair.
+  var _fFirst = false;
+  try { _fFirst = (typeof frFirstAirport === 'function') && frFirstAirport((document.getElementById('apSel') || {}).value || ''); } catch (e) {}
+  return _gateLbl('timeIn', _fFirst, function (w, i) {
+    return '<span class="cl-l' + (i + 1) + '">' + w + ' ' + city + '</span>';
+  }, '');
 }
 // Single 12h time '10:29PM' (Nick: 'one time format') — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)

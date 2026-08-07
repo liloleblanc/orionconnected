@@ -1,16 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320">
-<!-- v22961: RED glossy orb, WHITE widget (Nick: 'the actual delta icon is 2
-     colors this needs to be changed' + his spec 'Delta icons white with red
-     middle'). Previous art: white orb + the native two-tone widget embedded
-     as base64. Same sphere grammar, Delta-red glass, single white mark. -->
+<!-- v22966: Nick — "the Delta icon should all be the same color ... simply
+     red please". White glossy sphere (the original tile material), widget in
+     ONE flat Delta red. No two-tone, no white-on-red inversion. -->
 <defs>
-<radialGradient id="s" cx="50%" cy="36%" r="65%"><stop offset="0%" stop-color="#ff6d7d"/><stop offset="30%" stop-color="#f23a4e"/><stop offset="58%" stop-color="#E01933"/><stop offset="100%" stop-color="#8f0f24"/></radialGradient>
-<radialGradient id="g" cx="50%" cy="20%" r="42%"><stop offset="0%" stop-color="#fff" stop-opacity=".8"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<radialGradient id="s" cx="50%" cy="36%" r="65%"><stop offset="0%" stop-color="#ffffff"/><stop offset="52%" stop-color="#eef0f2"/><stop offset="100%" stop-color="#ccd0d6"/></radialGradient>
+<radialGradient id="g" cx="50%" cy="20%" r="42%"><stop offset="0%" stop-color="#fff" stop-opacity=".85"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
 </defs>
-<circle cx="160" cy="160" r="150" fill="#7a0c1f"/>
+<circle cx="160" cy="160" r="150" fill="#b4b9c1"/>
 <circle cx="160" cy="160" r="146" fill="url(#s)"/>
 <ellipse cx="160" cy="92" rx="118" ry="72" fill="url(#g)"/>
-<g transform="translate(83.5,88) scale(0.74)" fill="#ffffff">
+<g transform="translate(83.5,88) scale(0.74)" fill="#E01933">
   <path d="M185.7,137.6l-89.3-43V0L185.7,137.6z M192.8,154l-96.4-40.7V154H192.8z"/>
   <polygon points="7.1,137.6 96.4,0 96.4,94.6 7.1,137.6"/>
   <polygon points="0,154 96.4,154 96.4,113.3 0,154"/>
