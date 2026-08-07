@@ -5062,7 +5062,9 @@ var AIRLINE_BACKGROUNDS = {
     '/logos/Backgrounds/DL/deltabackground6.png',
     '/logos/Backgrounds/DL/deltabackground7.png',
     '/logos/Backgrounds/DL/deltabackground8.png',
-    '/logos/Backgrounds/DL/deltabackground9.png'
+    '/logos/Backgrounds/DL/deltabackground9.png',
+    // Nick's pick (Aug 7): red papercut waves on Delta navy.
+    '/logos/Backgrounds/DL/deltabackground10.png'
   ],
   'UA': [
     '/logos/Backgrounds/UA/united-background.jpg',
