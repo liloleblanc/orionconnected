@@ -9944,7 +9944,7 @@ function uxgGateHtml(ctx) {
     'QK': '/logos/airline-tiles/ACA.svg',                                         // Jazz under AC family — use AC icon
     'RV': '/logos/airline-tiles/ACA.svg',                                         // Rouge under AC family — use AC icon
     'AA': '/logos/airlines/us-major/american-flight-symbol.svg',                   // AA flight symbol (red+blue gradients)
-    'DL': '/logos/airlines/us-major/delta-widget.svg',                             // Delta widget (red gradient)
+    'DL': '/logos/airlines/us-major/delta-widget-red.svg',                         // Delta widget, ONE flat red (Nick: 'simply red please')
     'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',                         // Pualani figurehead
     'UA': '/logos/airlines/us-major/united-globe-only.svg',                        // United Globe
     'WS': '/logos/airline-tiles/WJA.svg',                                          // WestJet white emblem on teal square
@@ -16842,7 +16842,7 @@ const IATA_TO_TILE_ICAO = {
   'MO':'MPE',  'YP':'PCM',  'BQ':'PSC',
   'JV':'BLS',  'WT':'WSG',  'NSA':'NSA',   // Bearskin / Wasaya / North Star — brand square + white emblem
   // US carriers
-  'UA':'UAL-sq',  'DL':'DAL',  'AA':'AAL',  'WN':'SWA',   // UAL-sq: square vector tile (UAL.svg is an embedded PNG — wrong look per Nick)
+  'UA':'UAL-sq',  'DL':'DAL-red',  'AA':'AAL',  'WN':'SWA',   // UAL-sq: square vector tile. DAL-red: white tile + ONE flat red widget (Nick: 'simply red please' — the navy DAL tile read blue-and-red)
   // NK (Spirit) — ceased operations May 2 2026
   'B6':'JBU',  'AS':'ASA',  'F9':'FFT',  'G4':'AAY',  'HA':'HAL',
   'SY':'SCX',  'OO':'SKW',  'YV':'ASH',
@@ -17233,7 +17233,7 @@ const IATA_TO_EMBLEM = {
   // US majors — these render wordmark-alone (TILE_SKIP_WORDMARK_ONLY), but the
   // wordmark text by itself loses the iconic brand symbol. Show the symbol in
   // the emblem slot ALONGSIDE the existing wordmark (wordmark text untouched).
-  'DL': '/logos/airlines/us-major/delta-widget.svg',           // Delta red/blue widget
+  'DL': '/logos/airlines/us-major/delta-widget-red.svg',       // Delta widget, ONE flat red (Nick: 'simply red please')
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
   'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
   'UA': '/logos/airlines/us-major/united-globe-only.svg',      // United globe
@@ -18029,7 +18029,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22970';
+var FIDS_BUILD_TAG = 'v22971';
 (function(){
   try {
     function _addTag(){
@@ -32374,7 +32374,20 @@ function _buildGateAdSlideList() {
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
         bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
-        headline: 'Welcome aboard · Bienvenue à bord',
+        // v22971 — the Welcome slide follows the selected languages (Nick:
+        // 'the Welcome' — it sat hardcoded EN/FR on any-language screens).
+        headline: (function () {
+          var _WA = { en:'Welcome aboard', fr:'Bienvenue à bord', es:'Bienvenido a bordo', de:'Willkommen an Bord', it:'Benvenuti a bordo', pt:'Bem-vindo a bordo', ja:'ご搭乗ありがとうございます', zh:'欢迎登机', ar:'أهلاً بكم على متن الرحلة' };
+          try {
+            var _ls = (Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+            var _w = [], _seen = {};
+            for (var _wi2 = 0; _wi2 < _ls.length; _wi2++) {
+              var _t = _WA[_ls[_wi2]] || _WA.en;
+              if (!_t || _seen[_t]) continue; _seen[_t] = 1; _w.push(_t);
+            }
+            return _w.join(' · ');
+          } catch (e) { return _WA.en + ' · ' + _WA.fr; }
+        })(),
         sub: (_fb && _fb.name) ? _fb.name : '',
         logo: _fbLogo
       } }];
@@ -34300,17 +34313,30 @@ function _wxFetchDaily(iata, onReady) {
 }
 // Labels keyed by the ICON actually shown — icon and wording can never
 // disagree (Nick saw a sun captioned 'Nuageux').
+// v22971 — the weather card follows the SELECTED LANGUAGES (Nick: 'Weather
+// has not been changed'). The old table was en/fr pairs; every condition now
+// carries the full set the language picker offers. it/pt/ja/zh/ar reviewed
+// as plain condition words, not idioms.
 var _WXLBL = {
-  'clear-day': ['Sunny', 'Ensoleillé'], 'clear-night': ['Clear', 'Dégagé'],
-  'partly-cloudy-day': ['Partly cloudy', 'Partiellement nuageux'],
-  'partly-cloudy-night': ['Partly cloudy', 'Partiellement nuageux'],
-  'overcast-day': ['Overcast', 'Couvert'], 'overcast': ['Overcast', 'Couvert'],
-  'cloudy': ['Cloudy', 'Nuageux'], 'fog': ['Fog', 'Brouillard'], 'mist': ['Mist', 'Brume'],
-  'drizzle': ['Drizzle', 'Bruine'], 'rain': ['Rain', 'Pluie'], 'extreme-rain': ['Heavy rain', 'Pluie forte'],
-  'snow': ['Snow', 'Neige'], 'extreme-snow': ['Heavy snow', 'Neige forte'],
-  'sleet': ['Freezing rain', 'Pluie verglaçante'], 'hail': ['Ice pellets', 'Grésil'],
-  'thunderstorms-day-rain': ['Thunderstorm', 'Orage'], 'thunderstorms-rain': ['Thunderstorm', 'Orage'],
-  'wind': ['Windy', 'Venteux']
+  'clear-day':   { en:'Sunny', fr:'Ensoleillé', es:'Soleado', de:'Sonnig', it:'Soleggiato', pt:'Ensolarado', ja:'晴れ', zh:'晴', ar:'مشمس' },
+  'clear-night': { en:'Clear', fr:'Dégagé', es:'Despejado', de:'Klar', it:'Sereno', pt:'Limpo', ja:'快晴', zh:'晴朗', ar:'صافٍ' },
+  'partly-cloudy-day':   { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'多云', ar:'غائم جزئياً' },
+  'partly-cloudy-night': { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'多云', ar:'غائم جزئياً' },
+  'overcast-day': { en:'Overcast', fr:'Couvert', es:'Cubierto', de:'Bedeckt', it:'Coperto', pt:'Encoberto', ja:'曇天', zh:'阴天', ar:'ملبد بالغيوم' },
+  'overcast':     { en:'Overcast', fr:'Couvert', es:'Cubierto', de:'Bedeckt', it:'Coperto', pt:'Encoberto', ja:'曇天', zh:'阴天', ar:'ملبد بالغيوم' },
+  'cloudy': { en:'Cloudy', fr:'Nuageux', es:'Nublado', de:'Bewölkt', it:'Nuvoloso', pt:'Nublado', ja:'曇り', zh:'阴', ar:'غائم' },
+  'fog':    { en:'Fog', fr:'Brouillard', es:'Niebla', de:'Nebel', it:'Nebbia', pt:'Nevoeiro', ja:'霧', zh:'雾', ar:'ضباب' },
+  'mist':   { en:'Mist', fr:'Brume', es:'Neblina', de:'Dunst', it:'Foschia', pt:'Névoa', ja:'もや', zh:'薄雾', ar:'سديم' },
+  'drizzle': { en:'Drizzle', fr:'Bruine', es:'Llovizna', de:'Nieselregen', it:'Pioviggine', pt:'Chuvisco', ja:'霧雨', zh:'毛毛雨', ar:'رذاذ' },
+  'rain':    { en:'Rain', fr:'Pluie', es:'Lluvia', de:'Regen', it:'Pioggia', pt:'Chuva', ja:'雨', zh:'雨', ar:'مطر' },
+  'extreme-rain': { en:'Heavy rain', fr:'Pluie forte', es:'Lluvia fuerte', de:'Starkregen', it:'Pioggia forte', pt:'Chuva forte', ja:'大雨', zh:'大雨', ar:'مطر غزير' },
+  'snow':         { en:'Snow', fr:'Neige', es:'Nieve', de:'Schnee', it:'Neve', pt:'Neve', ja:'雪', zh:'雪', ar:'ثلج' },
+  'extreme-snow': { en:'Heavy snow', fr:'Neige forte', es:'Nieve intensa', de:'Starker Schneefall', it:'Neve intensa', pt:'Neve forte', ja:'大雪', zh:'大雪', ar:'ثلوج كثيفة' },
+  'sleet': { en:'Freezing rain', fr:'Pluie verglaçante', es:'Lluvia helada', de:'Gefrierender Regen', it:'Pioggia gelata', pt:'Chuva congelante', ja:'着氷性の雨', zh:'冻雨', ar:'مطر متجمد' },
+  'hail':  { en:'Ice pellets', fr:'Grésil', es:'Granizo', de:'Graupel', it:'Grandine', pt:'Granizo', ja:'ひょう', zh:'冰雹', ar:'برد' },
+  'thunderstorms-day-rain': { en:'Thunderstorm', fr:'Orage', es:'Tormenta', de:'Gewitter', it:'Temporale', pt:'Trovoada', ja:'雷雨', zh:'雷暴', ar:'عاصفة رعدية' },
+  'thunderstorms-rain':     { en:'Thunderstorm', fr:'Orage', es:'Tormenta', de:'Gewitter', it:'Temporale', pt:'Trovoada', ja:'雷雨', zh:'雷暴', ar:'عاصفة رعدية' },
+  'wind': { en:'Windy', fr:'Venteux', es:'Ventoso', de:'Windig', it:'Ventoso', pt:'Ventoso', ja:'強風', zh:'大风', ar:'عاصف' }
 };
 function _renderWxCard(el) {
   try {
@@ -34329,45 +34355,50 @@ function _renderWxCard(el) {
       night = hh < 6 || hh >= 21;
     } catch (e3) {}
     var ic = _wxAnimIcon(cur.code, night);
-    var _lblPair = _WXLBL[ic] || ['', ''];
-    var cond = _lblPair[0] + (_lblPair[1] && _lblPair[1] !== _lblPair[0] ? ' <span class="v2-rc-fi-sep">|</span> ' + _lblPair[1] : '');
     var dT = function (v) { return (typeof displayTemp === 'function') ? displayTemp(Math.round(v)) : Math.round(v) + '°C'; };
-    // Day names BILINGUAL like everything else on the board (Nick: 'it's
-    // not bilingual, such as days — it's terrible'). FR first at the
-    // Québec/French-first airports, same rule the rest of the gate uses.
-    // FULL day names, both languages (Nick: 'it needs to be full words … and
-    // clear' — the abbreviated + tiny-grey second line read badly).
-    var _dEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    var _dFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    // FULL month names, both languages (Nick: 'Friday | July 24 / Vendredi |
-    // 24 juillet'). English date reads 'Month Day', French date 'Day month'.
-    var _moEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    var _moFr = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
     var _wxFrF = false;
     try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
-    // Day cell, all centred (Nick's exact spec): English day + date ABOVE the
-    // icon, French day + date BELOW it —
-    //     Friday          (EN day)
-    //     July 24         (EN date)
-    //     [icon]
-    //     Vendredi        (FR day)
-    //     24 juillet      (FR date)
-    // English is always on top, French always on the bottom (his instruction),
-    // regardless of the airport's usual language order.
-    var _dayTopEn = function (d) {
-      return '<div class="wxc-d">' + _dEn[d.getDay()] + '</div>'
-        + '<div class="wxc-dt">' + _moEn[d.getMonth()] + ' ' + d.getDate() + '</div>';
+    // v22971 — THE CARD FOLLOWS THE SELECTED LANGUAGES (Nick: 'Weather has
+    // not been changed'). This card was its own hardcoded EN/FR world —
+    // condition pair, day/month name arrays, _mlbl(en,fr) — one more retired
+    // language picker. Everything now resolves from `langs` (≤2, de-duped,
+    // fr-first at the French-first airports) like the rest of the build.
+    var _wxLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+    if (_wxFrF) { var _wf = _wxLangs.indexOf('fr'); if (_wf > 0) { _wxLangs.splice(_wf, 1); _wxLangs.unshift('fr'); } }
+    var _wxSep = ' <span class="v2-rc-fi-sep">|</span> ';
+    var _wxPair = function (obj) {
+      var w = [], seen = {};
+      for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
+        var t = obj[_wxLangs[_wi]] || obj.en;
+        if (!t || seen[String(t).toLowerCase()]) continue;
+        seen[String(t).toLowerCase()] = 1; w.push(t);
+      }
+      return w.join(_wxSep);
     };
-    var _dayBotFr = function (d) {
-      return '<div class="wxc-d wxc-d-fr">' + _dFr[d.getDay()] + '</div>'
-        + '<div class="wxc-dt wxc-dt-fr">' + d.getDate() + ' ' + _moFr[d.getMonth()] + '</div>';
+    var cond = _wxPair(_WXLBL[ic] || { en: '' });
+    // Day cells keep Nick's approved layout — first language's day + date
+    // ABOVE the icon, second language's BELOW — via each language's own
+    // locale (single language selected → no bottom line).
+    var _WX_LOCALE = { en:'en-US', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt-BR', ja:'ja', zh:'zh-CN', ar:'ar' };
+    var _dayLine = function (d, lg, extraCls) {
+      var loc = _WX_LOCALE[lg] || 'en-US';
+      var day = d.toLocaleDateString(loc, { weekday: 'long' });
+      day = day.charAt(0).toUpperCase() + day.slice(1);
+      var date = (lg === 'en')
+        ? d.toLocaleDateString(loc, { month: 'long' }) + ' ' + d.getDate()
+        : d.toLocaleDateString(loc, { day: 'numeric', month: 'long' });
+      return '<div class="wxc-d' + extraCls + '">' + day + '</div>'
+        + '<div class="wxc-dt' + extraCls.replace('wxc-d-fr', 'wxc-dt-fr') + '">' + date + '</div>';
     };
-    // Meta labels bilingual like the rest of the card (Nick: 'half french half
-    // not' — Feels like/Wind/Humidity were English-only under a bilingual
-    // condition line). FR first at the French-first airports.
-    var _mlbl = function (en, fr) {
-      return _wxFrF ? (fr + ' <span class="v2-rc-fi-sep">|</span> ' + en)
-                    : (en + ' <span class="v2-rc-fi-sep">|</span> ' + fr);
+    var _dayTopEn = function (d) { return _dayLine(d, _wxLangs[0], ''); };
+    var _dayBotFr = function (d) { return _wxLangs[1] ? _dayLine(d, _wxLangs[1], ' wxc-d-fr') : ''; };
+    var _mlbl = function (key) {
+      var M = {
+        feels: { en:'Feels like', fr:'Ressenti', es:'Sensación', de:'Gefühlt', it:'Percepita', pt:'Sensação', ja:'体感', zh:'体感', ar:'الإحساس' },
+        wind:  { en:'Wind', fr:'Vent', es:'Viento', de:'Wind', it:'Vento', pt:'Vento', ja:'風', zh:'风', ar:'الرياح' },
+        hum:   { en:'Humidity', fr:'Humidité', es:'Humedad', de:'Luftfeuchte', it:'Umidità', pt:'Umidade', ja:'湿度', zh:'湿度', ar:'الرطوبة' }
+      };
+      return _wxPair(M[key] || { en: key });
     };
 
     // 7-DAY outlook: prefer the daily route; fall back to 48h hourly rollup.
@@ -34444,28 +34475,24 @@ function _renderWxCard(el) {
         '<div class="wxc-globe" aria-hidden="true"></div>'
       + '<div class="wxcard-main">'
       +   '<div class="wxc-head">'
-      +     '<div><div class="wxc-kicker">' + (_wxFrF
-                ? 'Météo à l\'arrivée <span class="v2-rc-fi-sep">|</span> Arrival Weather'
-                : 'Arrival Weather <span class="v2-rc-fi-sep">|</span> Météo à l\'arrivée') + '</div>'
+      +     '<div><div class="wxc-kicker">' + _wxPair({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter am Ziel', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' }) + '</div>'
       +     '<div class="wxc-city">' + city + ' <span class="wxc-bar">|</span> <span class="wxc-iata">' + _dispIata(dest) + '</span></div></div>'
       +   '</div>'
       +   '<div class="wxc-hero">'
       +     '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
       +     '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
       +     '<div class="wxc-meta">'
-      +       (typeof cur.feelsLike === 'number' ? '<span>' + _mlbl('Feels like', 'Ressenti') + ' <b>' + dT(cur.feelsLike) + '</b></span>' : '')
-      +       (typeof cur.windSpeed === 'number' ? '<span>' + _mlbl('Wind', 'Vent') + ' <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
-      +       (typeof cur.humidity === 'number' ? '<span>' + _mlbl('Humidity', 'Humidité') + ' <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
+      +       (typeof cur.feelsLike === 'number' ? '<span>' + _mlbl('feels') + ' <b>' + dT(cur.feelsLike) + '</b></span>' : '')
+      +       (typeof cur.windSpeed === 'number' ? '<span>' + _mlbl('wind') + ' <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
+      +       (typeof cur.humidity === 'number' ? '<span>' + _mlbl('hum') + ' <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
       +     '</div></div>'
       +   '</div>'
       + '</div>';
     var _wxStripsHtml =
-        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + (_wxFrF
-            ? 'PROCHAINES HEURES <span class="v2-rc-fi-sep">|</span> NEXT HOURS'
-            : 'NEXT HOURS <span class="v2-rc-fi-sep">|</span> PROCHAINES HEURES') + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
-      + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + (_wxFrF
-            ? 'PRÉVISIONS ' + nDays + ' JOURS <span class="v2-rc-fi-sep">|</span> ' + nDays + '-DAY'
-            : nDays + '-DAY <span class="v2-rc-fi-sep">|</span> PRÉVISIONS') + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
+        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
+      + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
+            en: nDays + '-DAY', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
+          }) + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
     var _wxHtml = '<div class="wxcard-wrap wxcard-col">' + _wxMainHtml + _wxStripsHtml + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
