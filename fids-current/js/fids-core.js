@@ -18029,7 +18029,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22972';
+var FIDS_BUILD_TAG = 'v22973';
 (function(){
   try {
     function _addTag(){
@@ -34174,24 +34174,39 @@ function _renderBigCraft(el, ctx) {
   } catch (e4) {}
   // v22972 — NEVER SIT DARK (Nick's clip: 'it also goes on the blank screen
   // and does nothing at times'). If the big map has ZERO loaded tiles 8s
-  // after the takeover mounts (tile host unreachable, Leaflet missing, map
+  // into the slide's visit (tile host unreachable, Leaflet missing, map
   // build threw), the overlay is an empty dark panel for its whole ~40s
   // dwell. Tear it down and hand the slot to the next slide, exactly the
-  // way the rotation tick advances (index + auth flag), so the screen shows
-  // real content instead. Registered in _bigCraftTimers so a normal slide
-  // change cancels it.
+  // way the rotation tick advances (index + auth flag).
+  //
+  // The deadline is anchored to the slide VISIT, not this render call:
+  // gate rebuilds repaint the same slide every few seconds, each repaint
+  // re-enters here and _bigCraftTeardown clears the pending timer — a
+  // plain 8s setTimeout gets reset forever and never fires (measured on
+  // the branch: tiles blocked, overlay held the full 45s dwell). The
+  // visit start survives repaints; each re-arm only waits out whatever is
+  // LEFT of the original 8s.
+  var _bcNow = Date.now();
+  if (!window._bigCraftVisitStart
+      || window._bigCraftVisitSlot !== window._gateAdCurrentIdx
+      || (_bcNow - window._bigCraftVisitStart) > 120000) {
+    window._bigCraftVisitStart = _bcNow;
+    window._bigCraftVisitSlot = window._gateAdCurrentIdx;
+  }
+  var _bcWait = Math.max(1000, 8000 - (_bcNow - window._bigCraftVisitStart));
   (window._bigCraftTimers = window._bigCraftTimers || []).push(setTimeout(function () {
     try {
       if (window._bigCraftOverlay !== _bcOv || !_bcOv.isConnected) return;
       var _wm = _bcOv.querySelector('#bigCraftMap');
       if (_wm && _wm.querySelectorAll('img.leaflet-tile-loaded').length > 0) return;
+      window._bigCraftVisitStart = null;
       _bigCraftTeardown();
       if (typeof _gateAdIndex === 'number') _gateAdIndex = _gateAdIndex + 1;
       window._gateAdAuthChange = true;
       try { renderGateAd(_gateAdIndex); } catch (e5) {}
       window._gateAdAuthChange = false;
     } catch (e6) {}
-  }, 8000));
+  }, _bcWait));
 }
 
 // ── ARRIVAL WEATHER scene (Nick approved section 2, Jul 2026) ───────────────
