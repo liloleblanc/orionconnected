@@ -6605,7 +6605,7 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
   // renders full-bleed in its own colours instead of a flat silhouette padded
   // inside an accent circle. Filling the badge edge to edge is also what makes
   // it read bigger.
-  'DL': '/logos/airline-tiles/DL-glossy.svg?v=22961'
+  'DL': '/logos/airline-tiles/DL-glossy.svg?v=22966'
 };
 
 function _buildV2AircraftCol(ctx, vars) {
@@ -18029,7 +18029,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22965';
+var FIDS_BUILD_TAG = 'v22966';
 (function(){
   try {
     function _addTag(){
