@@ -18064,7 +18064,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22977';
+var FIDS_BUILD_TAG = 'v22978';
 (function(){
   try {
     function _addTag(){
@@ -26191,7 +26191,12 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // tile layers) — otherwise reused arcs/markers/planes would pile up.
   var _ov = (gateMap._fidsOverlays = gateMap._fidsOverlays || []);
   var _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
-  var _a2 = _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(_a2)_ov.push(_a2);
+  // Runway-aligned final when we have the data — same shape the glide flies.
+  var _rwyP = _runwayFinalPath(_pp, d, dst);
+  var _a2 = null;
+  if (_rwyP) { try { _a2 = L.polyline(_rwyP, {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap); } catch (e) { _a2 = null; } }
+  if (!_a2) _a2 = _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
+  if(_a2)_ov.push(_a2);
   _ov.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
   _ov.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
   var planePos=L.latLng(planeLat,planeLng);
@@ -26292,7 +26297,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   } catch (e) {}
   window._gatePlaneMk = _planeMk;
   try { console.log('[MAP-LIVE] plane @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'z' + zoom, 'glideKts', _glSpd); } catch (e) {}
-  _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd);
+  _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd, dst);
   setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
 }
 
@@ -26395,7 +26400,68 @@ function _gcNm(a, b) {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts) {
+// ── RUNWAY-ALIGNED FINAL (Nick's DL5140 video: 'its not even aligned at a
+// runway') ─────────────────────────────────────────────────────────────────
+// The remaining leg used to run straight into the AIRPORT PIN, crossing the
+// airfield diagonally. With real runway thresholds (airport-runways.js, from
+// OurAirports), the leg now joins a runway centerline a few miles out and
+// lands ALONG the runway: plane → centerline join → threshold → touchdown.
+// The runway END is chosen by whichever landing direction best matches the
+// aircraft's inbound track — the same call a controller would make absent
+// wind data. Airports without runway data keep the old straight leg.
+function _gcBrgDeg(A, B) {
+  var dLng = (B[1] - A[1]) * Math.PI / 180;
+  var la1 = A[0] * Math.PI / 180, la2 = B[0] * Math.PI / 180;
+  var y = Math.sin(dLng) * Math.cos(la2);
+  var x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+function _gcDestPt(A, brgDeg, nm) {
+  var R = 3440.065, dr = nm / R, br = brgDeg * Math.PI / 180;
+  var la1 = A[0] * Math.PI / 180, lo1 = A[1] * Math.PI / 180;
+  var la2 = Math.asin(Math.sin(la1) * Math.cos(dr) + Math.cos(la1) * Math.sin(dr) * Math.cos(br));
+  var lo2 = lo1 + Math.atan2(Math.sin(br) * Math.sin(dr) * Math.cos(la1), Math.cos(dr) - Math.sin(la1) * Math.sin(la2));
+  return [la2 * 180 / Math.PI, ((lo2 * 180 / Math.PI + 540) % 360) - 180];
+}
+function _runwayFinalPath(pl, d, destIata) {
+  try {
+    var rws = (typeof AIRPORT_RUNWAYS !== 'undefined' && AIRPORT_RUNWAYS[String(destIata || '').toUpperCase()]) || null;
+    if (!rws || !rws.length) return null;
+    var distNm = _gcNm(pl, d);
+    // Only shape a leg that is genuinely an arrival into the field. Beyond
+    // ~90nm the pin-vs-runway difference is invisible at map scale anyway.
+    if (!(distNm > 0.3) || distNm > 90) return null;
+    var inb = _gcBrgDeg(pl, d);
+    var best = null;
+    for (var i = 0; i < rws.length; i++) {
+      var le = [rws[i][0], rws[i][1]], he = [rws[i][2], rws[i][3]];
+      var ends = [[le, he], [he, le]];
+      for (var j = 0; j < 2; j++) {
+        var t = ends[j][0], f = ends[j][1];
+        var hdg = _gcBrgDeg(t, f);
+        var diff = Math.abs(((inb - hdg + 540) % 360) - 180);
+        if (!best || diff < best.diff) best = { t: t, f: f, hdg: hdg, diff: diff };
+      }
+    }
+    if (!best) return null;
+    var dT = _gcNm(pl, best.t);
+    if (!(dT > 0.05)) return null;
+    // Touchdown ~a third down the runway, along the landing direction.
+    var rwNm = _gcNm(best.t, best.f);
+    var tdz = _gcDestPt(best.t, best.hdg, Math.min(rwNm * 0.35, rwNm));
+    // Short final already: fly straight to the threshold and land.
+    if (dT < 1.2) return [pl, best.t, tdz];
+    // Join the extended centerline at up to 8nm out (never beyond ~60% of
+    // what's left, so the join point is always AHEAD of the aircraft).
+    var joinNm = Math.min(8, dT * 0.6);
+    var faf = _gcDestPt(best.t, (best.hdg + 180) % 360, joinNm);
+    var head = _gcFullRoute(pl, faf, 24);
+    head.push(best.t, tdz);
+    return head;
+  } catch (e) { return null; }
+}
+
+function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts, destIata) {
   _stopGateMapGlide();
   if (!map || !marker || typeof L === 'undefined') return;
   if (!(speedKts > 0)) { try { console.log('[GLIDE] not started — no live speed (marker stays put)'); } catch (e) {} return; }
@@ -26428,7 +26494,11 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _vA = Math.max(2, Math.min(116, Math.round(118 * (_nmA / totalNm))));
   var _vB = Math.max(2, 118 - _vA);
   var _legA = _gcFullRoute(o, _pl, _vA);
-  var _legB = _gcFullRoute(_pl, d, _vB);
+  // Runway-aligned final (Nick's DL5140 video): once inbound, the remaining
+  // leg lands along a real runway instead of running into the airport pin.
+  // The frame loop redraws a1/a2 from this same route, so the drawn dashed
+  // line and the animated line stay one line.
+  var _legB = _runwayFinalPath(_pl, d, destIata) || _gcFullRoute(_pl, d, _vB);
   var route = _legA.concat(_legB.slice(1));
   var n = route.length;
   // ── v22952 — WALK THE ROUTE BY DISTANCE, NOT BY VERTEX INDEX.
@@ -26455,9 +26525,11 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _routeNm = _cum[n - 1] || 1;
   var _segHint = 0;   // p only grows, so the segment search never rewinds
   if (n < 2) return;
-  // The seed is the junction: the aircraft's own position, exactly — and
-  // with a proportional split it also equals the true distance fraction.
-  var _seedP = (_legA.length - 1) / (n - 1);
+  // The seed is the junction: the aircraft's own position, exactly. Read it
+  // off the cumulative-distance table rather than the vertex index — exact
+  // for any vertex layout, including the runway-shaped final whose leg no
+  // longer holds the proportional-split assumption.
+  var _seedP = _cum[_legA.length - 1] / _routeNm;
   var p = _seedP;
   // v22748 — EASE THE CORRECTION, DON'T SNAP IT (Nick: 'it seems to move but
   // also moves sideways then up at times unrealistic'). Every real ADS-B fix
@@ -34826,7 +34898,11 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // 'off course' with the plane floating beside the route.)
   var _pp = [planeLat, planeLng];
   var _bcA1 = _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
-  var _bcA2 = _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
+  // Runway-aligned final on the big map too (Nick's video was this surface).
+  var _bcRwyP = _runwayFinalPath(_pp, d, dst);
+  var _bcA2 = null;
+  if (_bcRwyP) { try { _bcA2 = L.polyline(_bcRwyP, {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap); } catch (e) { _bcA2 = null; } }
+  if (!_bcA2) _bcA2 = _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   // (Removed the separate 'actual flown track' polyline — it was the SAME blue
@@ -34849,7 +34925,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   try {
     var _bcGlSpd = (window._gateInbound && typeof window._gateInbound._liveSpd === 'number') ? window._gateInbound._liveSpd : 0;
     if (_bcGlSpd > 0 && typeof _startGateMapGlide === 'function') {
-      _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bcPlaneMk, _bcA1, _bcA2, _bcGlSpd);
+      _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bcPlaneMk, _bcA1, _bcA2, _bcGlSpd, dst);
     }
   } catch (e) {}
   setTimeout(function(){if(window._bigCraftMap)window._bigCraftMap.invalidateSize();},500);
