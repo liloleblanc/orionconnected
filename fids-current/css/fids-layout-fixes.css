@@ -9009,14 +9009,18 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
    The inversion now applies ONLY to .v2-fi-icon-badge, the plate glyphs
    (flight, destination, boarding, departure, status). The emblem is reset
    to its own styling so the orb keeps its gradient and depth. */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap,
+/* v22987: the WRAP is no longer in this list (Nick's YYZ A6 shot, 'Is
+   this a joke?' — the Flight orb rendered charcoal in a row of red).
+   This revert protected the old DL-glossy sphere's own colours; the
+   glossy file is retired (v22982), the badge is inline-painted the same
+   accent red as its neighbours, and reverting the wrap's background was
+   exactly what un-painted it. Art colours inside (svg/img — operator
+   logos on Delta Connection) stay protected. */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap svg,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap svg path,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap img {
-  background: revert !important;
   color: revert !important;
   fill: revert !important;
-  box-shadow: revert !important;
 }
 
 /* ── v22917 — AC'S LEFT COLUMN (Nick: 'Left side to AC is not done'). v22911
