@@ -7020,12 +7020,23 @@ function _buildV2AircraftCol(ctx, vars) {
       var _li2 = 'fr';
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
+      // v22956 — the left rail follows `langs` like every other surface.
+      // _L2 picked French-or-Spanish BY AIRPORT and never consulted the
+      // user's selection — a fourth parallel label system (after the right
+      // rail, the boarding row, and the banner). Nick's screenshot: right
+      // rail correctly English-only, left rail still 'Flight | Vol'.
+      function _railPair(key) {
+        var _s = _gateLbl(key, _frF, function (w) { return w; }, '\u0001');
+        var _a = _s.split('\u0001');
+        return [_a[0] || '', _a[1] || ''];
+      }
       function _shelf(icon, en, second, val, valCls) {
         // v223 — Nick's exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
         // Québec airports: French first on every pair (Nick).
+        // v22956 — labels arrive langs-resolved (French-first already applied
+        // by _gateLbl); re-swapping here would undo it.
         var _p1 = en, _p2 = second;
-        if (_frF && second && second !== en) { _p1 = second; _p2 = en; }
         var _sec = (_p2 && _p2 !== _p1)
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
@@ -7081,7 +7092,8 @@ function _buildV2AircraftCol(ctx, vars) {
       // ('DEN' beside 'Reno') — if the city flips and the chip can't flip
       // with it, drop the chip entirely.
       var _destChipHtml = _dfChip || (_dfCity ? '' : _destIataDisp);
-      var _destLabel = 'Destination' + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ')
+        + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -7118,21 +7130,31 @@ function _buildV2AircraftCol(ctx, vars) {
         if (_ss) {
           var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
           // Status STACKED — EN over FR (per Nick).
-          _stBiling = _frF
-            ? '<span class="v2-fi-st2">' + _ss.fr + '</span><span class="v2-fi-st2">' + _enTC + '</span>'
-            : '<span class="v2-fi-st2">' + _enTC + '</span><span class="v2-fi-st2">' + _ss.fr + '</span>';
+          // v22956 — stacked in the SELECTED languages, not hard EN/FR.
+          var _stPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+          if (_frF) { var _sfi = _stPick.indexOf('fr'); if (_sfi > 0) { _stPick.splice(_sfi, 1); _stPick.unshift('fr'); } }
+          var _stW = [], _stSeen = {};
+          for (var _swi = 0; _swi < _stPick.length && _stW.length < 2; _swi++) {
+            var _sw = _ss[_stPick[_swi]];
+            if (!_sw) continue;
+            _sw = String(_sw).replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+            if (_stSeen[_sw.toLowerCase()]) continue;
+            _stSeen[_sw.toLowerCase()] = 1;
+            _stW.push(_sw);
+          }
+          _stBiling = _stW.map(function (w) { return '<span class="v2-fi-st2">' + w + '</span>'; }).join('') || ('<span class="v2-fi-st2">' + _enTC + '</span>');
         }
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
+        + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
-        + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
-        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgArrive), 'Arrival', _L2('Arrivée','Llegada'), (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
+        + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}
@@ -9155,11 +9177,11 @@ function uxgGateHtml(ctx) {
             +   '<div class="g8-bir-title">' + _gateLbl('flight', _frF, function(w,i){ return '<span class="g8-bir-l'+(i+1)+'">'+w+'</span>'; }, ' <span class="g8-bir-sep">|</span> ') + '</div>'
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
-          : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
-      + _cell('ac-ico-dest', 'Destination', (locIata ? '<span class="g8-bir-code-t">' + _dispIata(locIata) + '</span>' : ''), _bDest, true)
-      + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', _birMerid(boardTimeHtml))
-      + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', _birMerid(depTimeHtml))
-      + _cell('ac-ico-status', 'Status', 'Statut', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
+          : _cell('ac-ico-flight', _gateLbl('flight', _frF, function(w){return w;}, ' | '), '', currentFlight.flight || '', true))
+      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | '), (locIata ? '<span class="g8-bir-code-t">' + _dispIata(locIata) + '</span>' : ''), _bDest, true)
+      + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(boardTimeHtml), true)
+      + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(depTimeHtml), true)
+      + _cell('ac-ico-status', _gateLbl('status', _frF, function(w){return w;}, ' | '), '', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
       + '</div>';
   }
 
@@ -10144,7 +10166,7 @@ function uxgGateHtml(ctx) {
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
               + '<div class="octb octb-tab">'
               +   '<div class="octb-top">'
-              +     '<div class="octb-lbls"><span class="octb-en">Time in ' + _e(_tbCity) + '</span><span class="octb-fr">Heure à ' + _e(_tbCity) + '</span></div>'
+              +     '<div class="octb-lbls">' + _gateLbl('timeIn', false, function(w,i){ return '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; }, '') + '</div>'
               +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
               +   '</div>'
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
@@ -12455,7 +12477,16 @@ const gView = document.getElementById('gateView');
                 + '|' + (_ovMsg ? 'O:1' : '')
                 + '|' + (currentFlight._aircraftPending ? 'P:1' : '');
       } catch(e) {}
-      var _gateKey = (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag;
+      // v22957 — THE LANGUAGES BELONG IN THIS KEY. This is the guard that was
+      // actually eating language changes, found after six wrong guesses. Every
+      // label on the gate is baked into the HTML this key protects, so a
+      // language toggle with unchanged flight data read as "nothing changed"
+      // and the rebuild was skipped. The first toggle after load only ever
+      // repainted because something ELSE in the key (a status tick, an inbound
+      // poll) happened to change at the same moment — which is why the screen
+      // looked "one click behind" instead of simply stuck.
+      var _langTag = (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '';
+      var _gateKey = (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag;
       if (window._lastGateKey !== _gateKey) {
         window._lastGateKey = _gateKey;
 
@@ -17783,6 +17814,13 @@ function toggleLang(l) {
   startLangRotation();
   const testBtn = document.getElementById('testFlightBtn');
   if (testBtn) testBtn.textContent = TL('addFlight');
+  // v22957 — the v22955 double-render workaround is WITHDRAWN. It forced two
+  // passes on the theory that a second pass repainted the banner; measured on
+  // the live gate it did not (the clock still lagged one toggle behind with
+  // both passes running). The real eater was _gateKey in the gate rebuild
+  // guard, which signed flight data but not languages — fixed there, where
+  // the state actually lives. One render is enough once the key is honest.
+  try { dedicatedRenderKey = null; } catch (e) {}
   if (data.dep.length || data.arr.length) render();
 }
 function updateLangButtons() {
@@ -17822,6 +17860,7 @@ var _GATE_LBL = {
   welcome:   { en:'Welcome',       fr:'Bienvenue',      es:'Bienvenido',   de:'Willkommen',  it:'Benvenuto',   pt:'Bem-vindo',  ja:'ようこそ',  zh:'欢迎',   ar:'أهلاً' },
   priority:  { en:'Priority',      fr:'Priorité',       es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
   rows:      { en:'Rows',          fr:'Rangées',        es:'Filas',        de:'Reihen',      it:'File',        pt:'Fileiras',   ja:'列',        zh:'排',     ar:'صفوف' },
+  timeIn:    { en:'Time in',       fr:'Heure à',        es:'Hora en',      de:'Zeit in',     it:'Ora a',       pt:'Hora em',    ja:'現地時刻',  zh:'当地时间', ar:'التوقيت في' },
   time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
   all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' }
 };
@@ -17859,7 +17898,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22953';
+var FIDS_BUILD_TAG = 'v22957';
 (function(){
   try {
     function _addTag(){
