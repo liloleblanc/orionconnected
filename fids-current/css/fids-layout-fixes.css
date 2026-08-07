@@ -9719,9 +9719,19 @@ html body[data-gate-airline="EK"]:not(#_) .g8-board-info-row { background-positi
 html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child {
   flex: 1.62 1 0 !important;
 }
+/* v22993c — the time plates only give up a little now. The first cut took
+   too much and truncated their OWN labels ('Boarding | Embar…'); the
+   status gained its size from height, not from starving its neighbours. */
 html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:nth-child(3),
 html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:nth-child(4) {
   flex: 0.84 1 0 !important;
+}
+/* v22993d — the strip's LABELS come down a touch so the narrower time
+   plates still print 'Boarding | Embarquement' in full. The label is the
+   secondary line; giving it a couple of points is what lets the status
+   value keep the width it needs without truncating anyone's caption. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-title {
+  font-size: clamp(11px, 1.5vh, 18px) !important;
 }
 
 /* ── v22992b: GIVE THE TWO-LINE STATUS THE HEIGHT IT NEEDS ───────────────
@@ -9734,11 +9744,33 @@ html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:nth-child(4) {
    lanes), and the status cell's own label is tightened, so both lines
    come up to the size Nick expects without leaving the plate. */
 html body:not(#_):not(#_):not(#_) .g8-board-info-row {
-  min-height: clamp(118px, 17vh, 206px) !important;
-  max-height: clamp(138px, 19.5vh, 238px) !important;
+  min-height: clamp(140px, 20vh, 244px) !important;
+  max-height: clamp(160px, 22.5vh, 272px) !important;
+}
+/* v22993 (Nick: 'It fits in the other panel upright no reason not to fit
+   here') — exactly right, and the difference was never the words, it was
+   the room. The UPRIGHT rail gives each plate ~150px and its status runs
+   at rail size; this strip was handing its cells 43px of padding out of a
+   107px budget. The padding comes down so the value keeps that height,
+   which is what lets the two stacked lines reach rail size instead of
+   being shrunk to fit the leftovers. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell {
+  padding: clamp(9px, 1.25vh, 16px) clamp(16px, 1.4vw, 28px) !important;
 }
 html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-title {
   font-size: clamp(12px, 1.6vh, 19px) !important;
   margin-bottom: clamp(2px, 0.3vh, 4px) !important;
   padding-bottom: 2px !important;
+}
+
+/* v22993b — the two status lines set solid (1.0) instead of 1.05, and the
+   label gives up its last few pixels. Both go straight into the value, so
+   the stacked status reaches the size it has in the upright rail. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-val {
+  line-height: 1.0 !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-title {
+  font-size: clamp(11px, 1.4vh, 17px) !important;
+  margin-bottom: 1px !important;
+  padding-bottom: 1px !important;
 }
