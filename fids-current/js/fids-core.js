@@ -5082,6 +5082,10 @@ var AIRLINE_BACKGROUNDS = {
     // UAE-flag wave art; source carried baked-in National Day lettering
     // top-left, cropped out of frame in the composed render.
     '/logos/Backgrounds/EK/emiratesbackground.png'
+  ],
+  'F8': [
+    // Nick's pick (Aug 7): smooth lime-green gradient — Flair's brand green.
+    '/logos/Backgrounds/F8/flairbackground.png'
   ]
 };
 
