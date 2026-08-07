@@ -1582,7 +1582,11 @@ function _cuReadForm() {
 
 function _cuPaintForm(prefs) {
   var theme = document.getElementById('cuThemeSelect');
-  if (theme) theme.value = prefs.themePresetId ? ('preset:' + prefs.themePresetId) : (prefs.theme || '');
+  // A preset id only speaks for the selection while the theme IS 'custom' —
+  // a leftover id next to theme:'tus-teal' must not repaint the select back
+  // to the preset (that repaint is what un-did picking the teal scenes).
+  if (theme) theme.value = (prefs.theme === 'custom' && prefs.themePresetId)
+    ? ('preset:' + prefs.themePresetId) : (prefs.theme || '');
   cuSetPositionUI(prefs.logoPosition || '');
   var hp = document.getElementById('cuHidePrefix');
   if (hp) hp.checked = !!prefs.hideAirlinePrefix;
@@ -1923,7 +1927,14 @@ function cuApplyAndSave() {
   // wholesale save dropped theme:'mist').
   var saved = {};
   try { saved = JSON.parse(localStorage.getItem(_cuStorageKey()) || '{}') || {}; } catch (e) {}
-  var prefs = Object.assign({}, saved, _cuReadForm());
+  var form = _cuReadForm();
+  var prefs = Object.assign({}, saved, form);
+  // Picking a NON-preset theme must retire a stale saved preset id. The
+  // merge kept themePresetId forever, and the Customize repaint paths give
+  // it priority over prefs.theme — so choosing Teal / Teal Deep flipped
+  // back to the old custom preset on the next menu open (Nick: 'the 2
+  // premade scenes dont seem to work').
+  if (form.theme && !form.themePresetId) delete prefs.themePresetId;
   // Explicitly choosing "Use airport default" is the ONE case that clears it.
   if (_cuThemeExplicitDefault) { prefs.theme = ''; delete prefs.themePresetId; _cuThemeExplicitDefault = false; }
   _cuSave(prefs);
@@ -2466,7 +2477,11 @@ function cuDeleteActivePreset() {
         var prefs = raw ? JSON.parse(raw) : {};
         var sel = document.getElementById('cuThemeSelect');
         if (sel) {
-          if (prefs.themePresetId) {
+          // Same guard as _cuPaintForm: only honor themePresetId while the
+          // saved theme is 'custom'. A stale id next to a built-in theme
+          // used to force the select (and then the SAVE below) back to the
+          // preset, silently undoing a Teal / Teal Deep pick.
+          if (prefs.theme === 'custom' && prefs.themePresetId) {
             sel.value = 'preset:' + prefs.themePresetId;
             cuThemeChanged();
           } else if (prefs.theme) {
