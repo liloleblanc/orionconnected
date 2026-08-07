@@ -3055,7 +3055,7 @@ html .g8-bir-cell:last-child .g8-bir-val {
      Nick kept photographing was built into the numbers, appearing and
      disappearing with wherever the row height landed. 3.3vh × 2 × 1.05 =
      6.9vh fits the worst case with margin, at every viewport. */
-  font-size: clamp(18px, 3.3vh, 46px);
+  font-size: clamp(22px, 4.6vh, 62px);
   display: flex;
   flex-direction: column;
   line-height: 1.05;
@@ -9519,6 +9519,13 @@ html body .g8-wrap .v2-rc-map-life-emblem:not(#_):not(#_) {
    which is the 'theyre blue' fix, and the widget swaps to the
    monochrome-white asset so it is one colour, not two. ── */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge,
+/* v22990 - THE EMBLEM ORB WAS NEVER IN THIS LIST. That is the whole of
+   "its still 2 different colors", asked about ten times: the five glyph
+   badges got this glossy red SPHERE while the airline emblem badge kept
+   a FLAT disc of the same red. Same hex, different material, so they
+   read as two colours side by side - and every previous fix corrected
+   the colour, which was never what differed. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge {
   background:
     radial-gradient(circle at 34% 26%,
@@ -9698,86 +9705,72 @@ html body[data-gate-airline="TS"]:not(#_) .g8-board-info-row { background-positi
 html body[data-gate-airline="AF"]:not(#_) .g8-board-info-row { background-position: center 30% !important; }  /* tricolore streaks left, clean blue right */
 html body[data-gate-airline="EK"]:not(#_) .g8-board-info-row { background-position: center 72% !important; }  /* red/white wave crossing */
 
-/* ── v22988: NICK'S ARTWORK **IS** THE PLATE TEXTURE ─────────────────────
-   Nick: 'The backgrounds for plate textures?' — and before that, 'The idea
-   for this was to replace the plate', then 'theres nothing done ABSOLUTELY
-   NOTHING'. He was right every time, and this is why:
+/* ── v22992: THE STATUS PLATE GETS THE WIDTH ITS WORDS NEED ──────────────
+   Nick, United 44: 'way too small this is not how it was figure it out'.
+   Right — and the reason is width, not height. The strip is five EQUAL
+   cells, but they do not carry equal words: the time plates hold '3:46 PM'
+   while the status plate holds 'Embarquement' or 'En retard' stacked over
+   its English twin. Forced into the same width, the only way the status
+   could fit was to shrink to roughly a third of its neighbours, which is
+   what he is looking at.
+   The status plate is widened and the two time plates - whose values are
+   short and were sitting in loose boxes - give up exactly that room. No
+   value gets smaller; the status gets much bigger. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child {
+  flex: 1.62 1 0 !important;
+}
+/* v22993c — the time plates only give up a little now. The first cut took
+   too much and truncated their OWN labels ('Boarding | Embar…'); the
+   status gained its size from height, not from starving its neighbours. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:nth-child(3),
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:nth-child(4) {
+  flex: 0.84 1 0 !important;
+}
+/* v22993d — the strip's LABELS come down a touch so the narrower time
+   plates still print 'Boarding | Embarquement' in full. The label is the
+   secondary line; giving it a couple of points is what lets the status
+   value keep the width it needs without truncating anyone's caption. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-title {
+  font-size: clamp(11px, 1.5vh, 18px) !important;
+}
 
-   the plate faces are painted by the v22904 --plate-tex system, whose
-   ALL-PANELS rule carries SEVEN :not(#_) bumps — specificity (7,1,3).
-   Every artwork rule written against the ::before faces in v22981/v22985
-   measured (1,2,3) and lost silently, so the plates kept rendering the
-   stock /textures/plate-*.jpg engravings and nothing he sent ever appeared
-   on them. Those dead rules are deleted, not stacked higher.
+/* ── v22992b: GIVE THE TWO-LINE STATUS THE HEIGHT IT NEEDS ───────────────
+   Measured on the strip: the row leaves 107px inside a cell, the title
+   eats ~37 of it, so a TWO-line stack gets ~35px a line while the
+   one-line values beside it run at 61px. No amount of width fixes that —
+   the status is the only cell stacking two lines, and it was losing on
+   vertical room, which is why it read as a third the size of its
+   neighbours. The strip gains a little height (it has room above the
+   lanes), and the status cell's own label is tightened, so both lines
+   come up to the size Nick expects without leaving the plate. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row {
+  min-height: clamp(140px, 20vh, 244px) !important;
+  max-height: clamp(160px, 22.5vh, 272px) !important;
+}
+/* v22993 (Nick: 'It fits in the other panel upright no reason not to fit
+   here') — exactly right, and the difference was never the words, it was
+   the room. The UPRIGHT rail gives each plate ~150px and its status runs
+   at rail size; this strip was handing its cells 43px of padding out of a
+   107px budget. The padding comes down so the value keeps that height,
+   which is what lets the two stacked lines reach rail size instead of
+   being shrunk to fit the leftovers. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell {
+  padding: clamp(9px, 1.25vh, 16px) clamp(16px, 1.4vw, 28px) !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-title {
+  font-size: clamp(12px, 1.6vh, 19px) !important;
+  margin-bottom: clamp(2px, 0.3vh, 4px) !important;
+  padding-bottom: 2px !important;
+}
 
-   The supported extension point is the variable, exactly as its own
-   comment says ('one list to extend, not eleven'), so each carrier's
-   --plate-tex now points at a texture CUT FROM HIS ARTWORK at the plate
-   format the system expects (872x308, 2.83:1) — not the 16:9 original
-   squashed by the rule's background-size:100% 100%, which is what made
-   the earlier attempt look stretched. Focal band per artwork: Delta the
-   red wave crossing, Transat the wing, Air France the tricolore streaks
-   with its clean blue field for the values, Emirates the flag curve,
-   Flair the lime sweep.
-
-   Ink follows measured luminance of each cut, not assumption:
-   DL 25 · AF 53 · EK 47 · TS 65 -> WHITE ink; F8 118 -> DARK ink. That
-   moves AF and EK OFF the bright-plate list (their stock plates were pale,
-   their artwork is not) and puts F8 on it. */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-dl-waves.jpg?v=22988');
-  --plate-base: #0a1a33;
-  --plate-blend: normal;
+/* v22993b — the two status lines set solid (1.0) instead of 1.05, and the
+   label gives up its last few pixels. Both go straight into the value, so
+   the stacked status reaches the size it has in the upright rail. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-val {
+  line-height: 1.0 !important;
 }
-html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-ts-wing.jpg?v=22988');
-  --plate-base: #12192a;
-  --plate-blend: normal;
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-title {
+  font-size: clamp(11px, 1.4vh, 17px) !important;
+  margin-bottom: 1px !important;
+  padding-bottom: 1px !important;
 }
-/* AF + EK: artwork is DARK — white ink, bright status colours. This
-   overrides their membership in the v22904 bright-plate group above. */
-html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-af-tricolore.jpg?v=22988');
-  --plate-base: #0a3d8f;
-  --plate-blend: normal;
-  --plate-ink: #ffffff;
-  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
-  --plate-ok: #34d399;  --plate-warn: #fbbf24;
-  --plate-bad: #f87171;  --plate-info: #93c5fd;
-}
-html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-ek-uae.jpg?v=22988');
-  --plate-base: #03170c;
-  --plate-blend: normal;
-  --plate-ink: #ffffff;
-  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
-  --plate-ok: #34d399;  --plate-warn: #fbbf24;
-  --plate-bad: #f87171;  --plate-info: #93c5fd;
-}
-/* Flair: the lime cut is the one BRIGHT plate here — dark ink, darkened
-   status colours, same treatment the v22904 bright group uses. */
-html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-f8-lime.jpg?v=22988');
-  --plate-base: #7ac21e;
-  --plate-blend: normal;
-  --plate-ink: #12161d;
-  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
-  --plate-ok: #056f4a;  --plate-warn: #8a5200;
-  --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
-}
-/* The boarding strip's own value/title inks are set by their own rules,
-   not by --plate-ink — carry the variable through so the strip plates
-   read correctly on Flair's bright face and the four dark ones. */
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-title .g8-bir-l1,
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-title .g8-bir-sep,
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-val {
-  color: var(--plate-ink, #fff) !important;
-  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.5)) !important;
-}
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-title .g8-bir-l2 {
-  color: color-mix(in srgb, var(--plate-ink, #fff) 62%, transparent) !important;
-}
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-cell:last-child .g8-bir-val.g8-bir-st-boarding { color: var(--plate-info, #93c5fd) !important; }
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-cell:last-child .g8-bir-val.g8-bir-st-delayed  { color: var(--plate-warn, #fbbf24) !important; }
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-cell:last-child .g8-bir-val.g8-bir-st-cancelled { color: var(--plate-bad, #f87171) !important; }
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-cell:last-child .g8-bir-val.g8-bir-st-ok { color: var(--plate-ok, #34d399) !important; }

@@ -3178,13 +3178,7 @@ const AIRLINE_BRAND = {
   'PB': { bg1:'#0a2a4a', bg2:'#06203a', bg3:'#0e335a', accent:'#e37222', name:'PAL Airlines' },
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
-  // v22989 - Nick: 'the top colors are also wrong'. The grounds were a
-  // purple-leaning near-black (#1a1a2e/#0a0a1e/#2a2a4e) that belongs to no
-  // Delta palette; the header band read as a generic mid-blue. These are
-  // Delta Blue (#003268) and Delta Red (#E01933), the airline's own two
-  // colours - which is also the 'red to white no other color' rule for the
-  // orbs, since the accent is what paints them.
-  'DL': { bg1:'#003268', bg2:'#001B3D', bg3:'#00478F', accent:'#E01933', name:'Delta' },
+  'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
   'UA': { bg1:'#0C2340', bg2:'#071A33', bg3:'#0033A0', accent:'#0033A0', name:'United' },  // official Rhapsody/United Blue (Nick)
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
@@ -18130,7 +18124,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22989';
+var FIDS_BUILD_TAG = 'v22993';
 (function(){
   try {
     function _addTag(){
@@ -33572,9 +33566,21 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // WestJet shot: 'nothing alligns' — the two-line status stack
         // spilled off its plate). Walk the value down until the cell's own
         // box genuinely holds its title+value stack.
-        var _gTxt = el.parentElement, gBackH = 18;
+        var _gTxt = el.parentElement, gBackH = 26;
         var _gPx = parseFloat(el.style.fontSize) || parseFloat(getComputedStyle(el).fontSize) || 30;
-        while (_gCell && _gTxt && _gTxt.scrollHeight > _gCell.clientHeight + 1 && _gPx > 14 && gBackH-- > 0) {
+        // v22991 — MEASURE AGAINST THE BOX THE TEXT ACTUALLY GETS. This
+        // compared the stack to _gCell.clientHeight, which INCLUDES the
+        // cell's padding — clamp(14px,2vh,26px) top and bottom, so up to
+        // 52px the text can never occupy. The backstop therefore called a
+        // stack "fitting" while it was already 30-50px past the plate, and
+        // the second line of a two-line status sat outside the box. That is
+        // the spill Nick has photographed on WestJet, on Air Transat and now
+        // on United ('those fucking numbers now spilling out').
+        var _gCellCs = window.getComputedStyle(_gCell);
+        var _gAvailH = _gCell.clientHeight
+          - (parseFloat(_gCellCs.paddingTop) || 0)
+          - (parseFloat(_gCellCs.paddingBottom) || 0);
+        while (_gCell && _gTxt && _gAvailH > 0 && _gTxt.scrollHeight > _gAvailH + 1 && _gPx > 12 && gBackH-- > 0) {
           _gPx -= Math.max(1, _gPx * 0.06);
           el.style.setProperty('font-size', _gPx + 'px', 'important');
         }
