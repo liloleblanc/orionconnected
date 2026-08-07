@@ -8868,19 +8868,35 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cel
   color: var(--plate-ink, #fff) !important;
   text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
 }
-/* Status keeps its own semantic colour, but from the plate's set. */
+/* Status keeps its own semantic colour, but from the plate's set.
+   v22968 — these exceptions were written against class names the JS never
+   emits (.ontime/.delayed/.cancelled). The strip's status wrap actually
+   carries .g8-bir-st-ok/-boarding/-delayed/-cancelled/-final (see _stCls in
+   fids-core), so the ink rule above always won and EVERY status rendered
+   plate-white — measured on the live DL gate: a Delayed value computing
+   rgb(255,255,255). Match the real classes, and color the inner .g8-bir-st2
+   spans directly (the ink rule targets them as `.g8-bir-val span`, so an
+   inherited color on the wrap alone loses). Old names kept for any legacy
+   markup. Groups follow the base scheme at .g8-bir-st-*: ok green,
+   boarding/delayed amber, final/cancelled red. */
 html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
-  :is(.g8-bir-st2, .g8-bir-stwrap):is(.ontime, .early, .enroute, .arrived, .boarding) {
+  :is(.g8-bir-st2, .g8-bir-stwrap):is(.g8-bir-st-ok, .ontime, .early, .enroute, .arrived),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-stwrap.g8-bir-st-ok, .g8-bir-stwrap.ontime, .g8-bir-stwrap.early, .g8-bir-stwrap.enroute, .g8-bir-stwrap.arrived) .g8-bir-st2 {
   color: var(--plate-ok, #34d399) !important;
   text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
 }
 html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
-  :is(.g8-bir-st2, .g8-bir-stwrap):is(.delayed, .final) {
+  :is(.g8-bir-st2, .g8-bir-stwrap):is(.g8-bir-st-delayed, .g8-bir-st-boarding, .delayed, .boarding),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-stwrap.g8-bir-st-delayed, .g8-bir-stwrap.g8-bir-st-boarding, .g8-bir-stwrap.delayed, .g8-bir-stwrap.boarding) .g8-bir-st2 {
   color: var(--plate-warn, #fbbf24) !important;
   text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
 }
 html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
-  :is(.g8-bir-st2, .g8-bir-stwrap).cancelled {
+  :is(.g8-bir-st2, .g8-bir-stwrap):is(.g8-bir-st-cancelled, .g8-bir-st-final, .cancelled, .final),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell
+  :is(.g8-bir-stwrap.g8-bir-st-cancelled, .g8-bir-stwrap.g8-bir-st-final, .g8-bir-stwrap.cancelled, .g8-bir-stwrap.final) .g8-bir-st2 {
   color: var(--plate-bad, #f87171) !important;
   text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
 }
