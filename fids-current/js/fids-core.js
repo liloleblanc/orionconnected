@@ -3168,12 +3168,23 @@ const AIRLINE_BRAND = {
   'WS': { bg1:'#003366', bg2:'#001a33', bg3:'#004488', accent:'#00b2a9', name:'WestJet' },
   // Transat repainted from Nick's wing artwork (Aug 7: 'these are the actual
   // colors') — deep navy field, mid-navy lift, teal accent from the wing.
-  'TS': { bg1:'#1e293e', bg2:'#12192a', bg3:'#2b4267', accent:'#3c9abe', name:'Air Transat' },
+  // v22989 - repainted around Transat's OWN brand blue (#00B3F0, taken from
+  // the official TSC tile) after Nick: 'transat colors overall are all wrong
+  // ... the icons should be that light teal blue'. The grounds move off the
+  // near-black navy onto Transat's deep brand blue so the gate reads as the
+  // airline, and the accent that paints every orb IS the light teal blue.
+  'TS': { bg1:'#0B3C63', bg2:'#062741', bg3:'#12557F', accent:'#00B3F0', name:'Air Transat' },
   'PD': { bg1:'#002244', bg2:'#001122', bg3:'#003355', accent:'#1a3a6b', name:'Porter Airlines' },
   'PB': { bg1:'#0a2a4a', bg2:'#06203a', bg3:'#0e335a', accent:'#e37222', name:'PAL Airlines' },
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
-  'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
+  // v22989 - Nick: 'the top colors are also wrong'. The grounds were a
+  // purple-leaning near-black (#1a1a2e/#0a0a1e/#2a2a4e) that belongs to no
+  // Delta palette; the header band read as a generic mid-blue. These are
+  // Delta Blue (#003268) and Delta Red (#E01933), the airline's own two
+  // colours - which is also the 'red to white no other color' rule for the
+  // orbs, since the accent is what paints them.
+  'DL': { bg1:'#003268', bg2:'#001B3D', bg3:'#00478F', accent:'#E01933', name:'Delta' },
   'UA': { bg1:'#0C2340', bg2:'#071A33', bg3:'#0033A0', accent:'#0033A0', name:'United' },  // official Rhapsody/United Blue (Nick)
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
@@ -6977,7 +6988,15 @@ function _buildV2AircraftCol(ctx, vars) {
         // emblem is an opaque square tile render as a CIRCLE in the tile's
         // own background colour with just the mark padded inside — the mark
         // file is derived from the airline's own tile art, never redrawn.
-        var BADGE_TILE_BRANDS = { 'MX': { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' } };
+        var BADGE_TILE_BRANDS = {
+          'MX': { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' },
+          // v22989 (Nick: 'no icon on the orb ... the icons should be that
+          // light teal blue with white'): Transat had NO emblem registered
+          // at all, so its orb fell through to the generic plane. TSC.svg is
+          // the official Transat tile - #00B3F0 ground, white star - which is
+          // exactly the colourway he asked for.
+          'TS': { bg: '#00B3F0', icon: '/logos/airline-tiles/TSC-star-white.svg' }
+        };
         var _tileBrand = BADGE_TILE_BRANDS[code] || null;
         // DL removed (Nick: 'still not the right color its not even round'):
         // native=true meant transparent badge + full-bleed art, which was
@@ -6997,17 +7016,28 @@ function _buildV2AircraftCol(ctx, vars) {
         // from the shared .v2-fi-emblem-wrap rule), so it matches its neighbours.
         var COLOR_ON_WHITE = { 'AA': true, 'DL': true };
         var onWhite = !!COLOR_ON_WHITE[code] && !_tileBrand && !native;
+        // v22989 — ONE ACCENT PER GATE, NEVER TWO (Nick: 'its still 2
+        // different colors holy fuck' / 'Delta orbs need to be either red to
+        // white no other color'). The emblem badge fell back to #0078D2 (a
+        // BLUE, chosen for American) while the five glyph badges beside it
+        // fell back to #D82F2E (red) — so any gate where --airline-accent
+        // failed to resolve rendered ONE blue orb in a row of red ones,
+        // which is exactly the two-colour rail he photographed. The fallback
+        // is now the carrier's OWN brand accent, so every badge on a given
+        // gate resolves to the same colour with or without the CSS variable.
+        var _accFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[code] && AIRLINE_BRAND[code].accent) || '#D82F2E';
+        var ACC = 'var(--airline-accent,' + _accFb + ')';
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
         var BADGE = _tileBrand
           ? BADGE_BASE + 'background:' + _tileBrand.bg + ';padding:clamp(8px,1.1vh,14px);'
           : native
             ? BADGE_BASE + 'background:transparent;padding:0;'
             : onWhite
-              ? BADGE_BASE + 'background:var(--airline-accent,#0078D2);padding:clamp(6px,0.9vh,13px);'
-              : BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(2px,0.3vh,4px);';
+              ? BADGE_BASE + 'background:' + ACC + ';padding:clamp(6px,0.9vh,13px);'
+              : BADGE_BASE + 'background:' + ACC + ';padding:clamp(2px,0.3vh,4px);';
         if (!path) {
           var GENERIC_PLANE = '<svg viewBox="0 0 24 24" style="width:100%;height:100%;fill:#fff;"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
-          return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + BADGE_BASE + 'background:var(--airline-accent,#D82F2E);padding:clamp(5px,0.7vh,10px);">'
+          return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + BADGE_BASE + 'background:' + ACC + ';padding:clamp(5px,0.7vh,10px);">'
             + GENERIC_PLANE
             + '</div>';
         }
@@ -7072,9 +7102,13 @@ function _buildV2AircraftCol(ctx, vars) {
       // badge itself is the plain green dot (handled in _emblemImg).
       // Breeze (Nick: 'keep the color consistent so the rest same color'):
       // every badge matches the flight rondelle's tile navy.
+      // Same single-accent rule as the emblem badge above (v22989): the
+      // glyph orbs fall back to the carrier's own brand accent, so they can
+      // never diverge from the emblem orb sitting beside them.
+      var _railAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_alCodeEmb] && AIRLINE_BRAND[_alCodeEmb].accent) || '#D82F2E';
       var _railBadgeBg = (_alCodeEmb === 'F8') ? '#141414'
         : (_alCodeEmb === 'MX') ? '#001633'
-        : 'var(--airline-accent,#D82F2E)';
+        : 'var(--airline-accent,' + _railAccFb + ')';
       var _railBadgeInk = (_alCodeEmb === 'F8') ? '#7AFF94' : '#fff';
       var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _railBadgeBg + ';color:' + _railBadgeInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       function _badge(svg) {
@@ -9687,7 +9721,7 @@ function uxgGateHtml(ctx) {
     'HA': { h: 118, w: 500 },
     'PD': { h: 80, w: 320 },
     'PB': { h: 128, w: 470 },
-    'TS': { h: 118, w: 520 },
+    'TS': { h: 156, w: 690 },   // v22989 - Nick: 'the top logo is too small as well'
     'NZ': { h: 120, w: 540 },
     'BA': { h: 120, w: 540 },
     'AF': { h: 118, w: 520 },
@@ -18096,7 +18130,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22988';
+var FIDS_BUILD_TAG = 'v22989';
 (function(){
   try {
     function _addTag(){
