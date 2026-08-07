@@ -18096,7 +18096,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22984';
+var FIDS_BUILD_TAG = 'v22985';
 (function(){
   try {
     function _addTag(){
@@ -33498,6 +33498,35 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
           while (el.scrollWidth > el.clientWidth && g > 24 && gBack-- > 0) {
             g -= Math.max(1, g * 0.05);
             el.style.setProperty('font-size', g + 'px', 'important');
+          }
+        } else if (_gRow && _gIsStatus) {
+          // v22985 — THE STATUS STACK GROWS TO FILL ITS PLATE like every
+          // other value (Nick: 'you shrink it … ITS been done before').
+          // The exclusion above left the two-line stack at its CSS base,
+          // which is sized to the row's WORST case — correct as a floor,
+          // small on a tall row. Measure this cell's real free height
+          // (cell minus padding minus the title) and grow the stack to the
+          // largest size that fits BOTH that height and the column width.
+          var _gTxtS = el.parentElement;
+          var _gTitleS = _gTxtS ? _gTxtS.querySelector('.g8-bir-title') : null;
+          var _gcs = window.getComputedStyle(_gCell);
+          var _availH = _gCell.clientHeight
+            - (parseFloat(_gcs.paddingTop) || 0) - (parseFloat(_gcs.paddingBottom) || 0)
+            - (_gTitleS ? _gTitleS.offsetHeight + (parseFloat(window.getComputedStyle(_gTitleS).marginBottom) || 0) : 0);
+          var _gLines = Math.max(1, el.querySelectorAll('.g8-bir-st2').length);
+          if (_availH > 20) {
+            var _sHCap = Math.floor(_availH / (_gLines * 1.08));
+            var s2 = parseFloat(el.style.fontSize) || parseFloat(window.getComputedStyle(el).fontSize) || 24;
+            var _sgUp = 24;
+            while (s2 < _sHCap && el.scrollWidth <= el.clientWidth && _sgUp-- > 0) {
+              s2 = Math.min(_sHCap, s2 + Math.max(1, s2 * 0.08));
+              el.style.setProperty('font-size', s2 + 'px', 'important');
+            }
+            var _sgDn = 12;
+            while (el.scrollWidth > el.clientWidth && s2 > 14 && _sgDn-- > 0) {
+              s2 -= Math.max(1, s2 * 0.06);
+              el.style.setProperty('font-size', s2 + 'px', 'important');
+            }
           }
         }
         // Height backstop for EVERY cell — status included (v22729, Nick's

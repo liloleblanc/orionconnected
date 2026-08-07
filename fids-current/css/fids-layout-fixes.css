@@ -9693,3 +9693,63 @@ html body[data-gate-airline="DL"]:not(#_) .g8-board-info-row { background-positi
 html body[data-gate-airline="TS"]:not(#_) .g8-board-info-row { background-position: center 42% !important; }  /* aqua wing sweep */
 html body[data-gate-airline="AF"]:not(#_) .g8-board-info-row { background-position: center 30% !important; }  /* tricolore streaks left, clean blue right */
 html body[data-gate-airline="EK"]:not(#_) .g8-board-info-row { background-position: center 72% !important; }  /* red/white wave crossing */
+
+/* ── v22985: THE PLATE **WEARS** THE ARTWORK (Nick: 'The idea for this was
+   to replace the plate', then 'theres nothing done ABSOLUTELY NOTHING' —
+   correct: the v22727 inset chrome plates paint OVER the column/strip
+   surface, so artwork applied to the surface was hidden behind every
+   plate. For the five artwork airlines the plate's own face is now the
+   artwork — bevel, inset and shadow unchanged, chrome-metal face swapped
+   for the art. Every plate on the boarding strip, the left rail rows and
+   the right panes visibly carries it. */
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="DL"]:not(#_) .g8-bir-cell::before {
+  background-color: #0a1a33 !important;
+  background-image: url("/logos/Backgrounds/DL/deltabackground10.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center 62% !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="TS"]:not(#_) .g8-bir-cell::before {
+  background-color: #12192a !important;
+  background-image: url("/logos/Backgrounds/TS/transatbackground.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center 45% !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="AF"]:not(#_) .g8-bir-cell::before {
+  background-color: #0a3d8f !important;
+  background-image: url("/logos/Backgrounds/AF/airfrancebackground.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center 30% !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="EK"]:not(#_) .g8-bir-cell::before {
+  background-color: #03170c !important;
+  background-image: url("/logos/Backgrounds/EK/emiratesbackground.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center 72% !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-cell::before {
+  background-color: #7ac21e !important;
+  background-image: url("/logos/Backgrounds/F8/flairbackground.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-blend-mode: normal !important;
+}
+/* Flair's lime plate face needs DARK inks on the strip (white everywhere
+   else stays for the four dark artworks). */
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-title .g8-bir-l1 { color: #101418 !important; }
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-title .g8-bir-l2 { color: rgba(16,20,24,0.6) !important; }
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-title .g8-bir-sep { color: #101418 !important; }
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-val { color: #101418 !important; text-shadow: none !important; }
