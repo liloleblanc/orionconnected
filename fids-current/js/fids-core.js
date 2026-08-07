@@ -5072,6 +5072,16 @@ var AIRLINE_BACKGROUNDS = {
   'TS': [
     // Nick's wing artwork composed on its own navy palette (Aug 7).
     '/logos/Backgrounds/TS/transatbackground.png'
+  ],
+  'AF': [
+    // Nick's pick (Aug 7): tricolore streaks on true AF blue — the clean
+    // right-side field is where gate text lands.
+    '/logos/Backgrounds/AF/airfrancebackground.png'
+  ],
+  'EK': [
+    // UAE-flag wave art; source carried baked-in National Day lettering
+    // top-left, cropped out of frame in the composed render.
+    '/logos/Backgrounds/EK/emiratesbackground.png'
   ]
 };
 
@@ -9037,8 +9047,9 @@ function uxgGateHtml(ctx) {
     'LO':'star','MS':'star','ET':'star','SA':'star','A3':'star','OZ':'star',
     'TG':'star','CA':'star','ZH':'star','AI':'star','JP':'star','OU':'star',
     'HR':'star','NZ':'star','CM':'star','EW':'star',
-    // AC family inherits Star
-    'QK':'star','RV':'star','RJ':'star','ZX':'star','9M':'star','9L':'star',
+    // AC family inherits Star (RJ is NOT AC family — it's Royal Jordanian,
+    // oneworld, listed below; it was wrongly swept in with the feeders)
+    'QK':'star','RV':'star','ZX':'star','9M':'star','9L':'star',
     // Oneworld members
     'AA':'oneworld','BA':'oneworld','CX':'oneworld','QF':'oneworld','JL':'oneworld',
     'IB':'oneworld','AY':'oneworld','QR':'oneworld','RJ':'oneworld','S7':'oneworld',
@@ -16656,7 +16667,7 @@ const CALLSIGN_TO_IATA = {
   'AEE':'A3', 'CTN':'OU', 'ASL':'JU', 'THY':'TK',
   // ── Middle East / Asia ──
   'UAE':'EK', 'QTR':'QR', 'ETD':'EY', 'GFA':'GF',
-  'OMA':'WY', 'SVA':'SV', 'MEA':'ME',
+  'OMA':'WY', 'SVA':'SV', 'MEA':'ME', 'RJA':'RJ',
   // ── Africa ──
   'SAA':'SA', 'ETH':'ET', 'MSR':'MS', 'RAM':'AT'
 };
@@ -16676,8 +16687,11 @@ const _AIRLINE_NAME_OVERRIDE = {
   'AC':'Air Canada','WS':'WestJet','PD':'Porter','F8':'Flair',
   'TS':'Air Transat','PB':'PAL Airlines','MO':'Calm Air',
   'YP':'Perimeter','3H':'Air Inuit','BQ':'Pascan','7F':'First Air',
-  'QK':'Air Canada','RV':'Air Canada','RJ':'Air Canada','ZX':'Air Canada',
+  'QK':'Air Canada','RV':'Air Canada','ZX':'Air Canada',
   '9M':'Air Canada','9L':'Air Canada','SP':'PAL Airlines',
+  // RJ is Royal Jordanian (oneworld) — it was wrongly listed as an AC
+  // feeder, which painted an Amman flight in Air Canada branding (Nick).
+  'RJ':'Royal Jordanian',
   '9X':'Mokulele','W8':'Cargojet',
   'UA':'United','DL':'Delta','AA':'American','WN':'Southwest',
   'B6':'JetBlue','AS':'Alaska','F9':'Frontier',
@@ -16731,8 +16745,9 @@ const AIRLINE_NAME = {
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
   'JV':'BEARSKIN',    'WT':'WASAYA',      'NSA':'NORTH STAR AIR',
-  'QK':'AIR CANADA',  'RV':'AIR CANADA',  'RJ':'AIR CANADA',  'ZX':'AIR CANADA',
+  'QK':'AIR CANADA',  'RV':'AIR CANADA',  'ZX':'AIR CANADA',
   '9M':'AIR CANADA',  '9L':'AIR CANADA',  'SP':'PAL AIRLINES',
+  'RJ':'ROYAL JORDANIAN',
   '9X':'MOKULELE',    'W8':'CARGOJET',
   'UA':'UNITED',      'DL':'DELTA',       'AA':'AMERICAN',    'WN':'SOUTHWEST',
   'B6':'JETBLUE',     'AS':'ALASKA',      'F9':'FRONTIER',
@@ -16887,7 +16902,7 @@ const IATA_TO_TILE_ICAO = {
   'PC':'PGT',  'TK':'THY',  'TO':'TVF',  'HV':'TRA',  'EW':'EWG',
   // Middle East / Africa
   'EK':'UAE',  'QR':'QTR',  'EY':'ETD',  'GF':'GFA',  'WY':'OMA',
-  'SV':'SVA',  'ME':'MEA',  'SA':'SAA',  'ET':'ETH',  'MS':'MSR',
+  'SV':'SVA',  'ME':'MEA',  'SA':'SAA',  'ET':'ETH',  'MS':'MSR',  'RJ':'RJA',
   'AT':'RAM',  'WB':'RWD',  'KQ':'KQA',
   // Asia / Pacific
   'SQ':'SIA',  'NH':'ANA',  'JL':'JAL',  'CX':'CPA',  'QF':'QFA',
@@ -18068,7 +18083,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22979';
+var FIDS_BUILD_TAG = 'v22980';
 (function(){
   try {
     function _addTag(){
@@ -20038,7 +20053,9 @@ const CALLSIGN_ICAO = {
   'WEN':'WR','WJA':'WS','KRS':'KV','SVR':'ZX','TIF':'4N','PTR':'PD',
 };
 
-const PARENT = {'QK':'AC','ZX':'AC','9M':'AC','9L':'AC','RV':'AC','RJ':'AC','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','PTR':'PD','P3':'PD','Q6':'Y4','4C':'LA'};
+// RJ removed from the AC family — Royal Jordanian is its own carrier; the
+// bogus mapping dressed an Amman flight in Air Canada branding (Nick, Aug 7).
+const PARENT = {'QK':'AC','ZX':'AC','9M':'AC','9L':'AC','RV':'AC','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','PTR':'PD','P3':'PD','Q6':'Y4','4C':'LA'};
 const FILTER_OUT = new Set([
   // ── Major cargo carriers (IATA + ICAO) ──
   'W8','CJT','FX','FDX','5X','GTI','CLX','MPH','ABX','ATN','POC','QT','TCN',
