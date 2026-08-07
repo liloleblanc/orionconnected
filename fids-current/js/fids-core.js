@@ -18126,7 +18126,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22995';
+var FIDS_BUILD_TAG = 'v22996';
 (function(){
   try {
     function _addTag(){
@@ -32037,7 +32037,9 @@ function renderGateAd(index) {
     // include framing controls in the dedupe key so adjustments re-render live
     var _frameKey = fit + zoom + posX + posY;
     var customKey = 'custom|' + slot + '|' + (item.id || '') + '|' + _frameKey;
-    if (el._lastKey !== customKey) {
+    // `|| !el.firstChild` — same hazard as the standard path below: a matching
+    // memo on an EMPTIED element would skip the paint and leave the slot blank.
+    if (el._lastKey !== customKey || !el.firstChild) {
       el._lastKey = customKey;
       el.style.background = '#000';
       el.style.position = 'relative';
@@ -32084,7 +32086,14 @@ function renderGateAd(index) {
   // plus a longer prefix separates a 3-page deck from a 6-page one and one
   // hotel from another.
   var newKey = slot + '|' + (html ? (html.length + '|' + html.substring(0, 220)) : '');
-  if (el._lastKey === newKey) return;
+  // `&& el.firstChild` — the memo says "this slide is already painted", so
+  // skipping is only safe while something is actually ON the panel. The
+  // bigcraft takeover empties this element under its overlay; when the
+  // rotation came back round to the slide that had been showing before it,
+  // the key matched, this returned, and NOTHING was ever written. The panel
+  // then sat flat and empty for the slide's entire dwell — measured at 17.4 s
+  // on Nick's clip, ending only when the next takeover grew in over it.
+  if (el._lastKey === newKey && el.firstChild) return;
   el._lastKey = newKey;
   el.style.background = 'transparent';
   el.style.backgroundSize = '';
@@ -34480,7 +34489,16 @@ function _renderBigCraft(el, ctx) {
   try {
     var _bcPrevEl = el;
     (window._bigCraftTimers = window._bigCraftTimers || []).push(setTimeout(function () {
-      try { if (window._bigCraftOverlay === _bcOv) _bcPrevEl.innerHTML = ''; } catch (e) {}
+      try {
+        if (window._bigCraftOverlay === _bcOv) {
+          _bcPrevEl.innerHTML = '';
+          // Emptying the slot INVALIDATES the repaint memo. renderGateAd skips
+          // a repaint whose key matches _lastKey; leaving the old key on an
+          // empty element makes the next visit to that same slide a no-op and
+          // the panel stays blank for its whole dwell (see the guards there).
+          _bcPrevEl._lastKey = null;
+        }
+      } catch (e) {}
     }, 720));
   } catch (e) {}
   // THE SAME MAP AS THE MINI, ENLARGED (Nick: 'literally the same as now
