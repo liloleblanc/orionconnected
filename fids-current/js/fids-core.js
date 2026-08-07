@@ -18096,7 +18096,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22985';
+var FIDS_BUILD_TAG = 'v22986';
 (function(){
   try {
     function _addTag(){
@@ -33462,7 +33462,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       // two-line 'Embarquement/Boarding' status clipped by its plate.
       var _fpCell = el.closest ? el.closest('.g8-bir-cell') : null;
       var _fp = el.clientWidth + 'x' + (_fpCell ? _fpCell.clientHeight : 0) + ':' + (el.textContent || '').length + ':' + (el.textContent || '').slice(0, 24);
-      if (el.dataset.fitW === _fp || !el.clientWidth) continue;
+      // A value that is VISIBLY TRUNCATED right now always gets another
+      // pass, memo or not — a stale stamp taken during unstable geometry
+      // could freeze an ellipsized value forever (Nick's WestJet boarding
+      // plate stuck at 'WS1…' for WS152).
+      var _fpClipped = el.scrollWidth > el.clientWidth + 1;
+      if ((el.dataset.fitW === _fp && !_fpClipped) || !el.clientWidth) continue;
       el.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(el).fontSize) || 16;
       var size = base, guard = 16;
