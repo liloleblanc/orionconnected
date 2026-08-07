@@ -7020,12 +7020,23 @@ function _buildV2AircraftCol(ctx, vars) {
       var _li2 = 'fr';
       try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
       function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
+      // v22956 — the left rail follows `langs` like every other surface.
+      // _L2 picked French-or-Spanish BY AIRPORT and never consulted the
+      // user's selection — a fourth parallel label system (after the right
+      // rail, the boarding row, and the banner). Nick's screenshot: right
+      // rail correctly English-only, left rail still 'Flight | Vol'.
+      function _railPair(key) {
+        var _s = _gateLbl(key, _frF, function (w) { return w; }, '\u0001');
+        var _a = _s.split('\u0001');
+        return [_a[0] || '', _a[1] || ''];
+      }
       function _shelf(icon, en, second, val, valCls) {
         // v223 — Nick's exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
         // Québec airports: French first on every pair (Nick).
+        // v22956 — labels arrive langs-resolved (French-first already applied
+        // by _gateLbl); re-swapping here would undo it.
         var _p1 = en, _p2 = second;
-        if (_frF && second && second !== en) { _p1 = second; _p2 = en; }
         var _sec = (_p2 && _p2 !== _p1)
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
@@ -7081,7 +7092,8 @@ function _buildV2AircraftCol(ctx, vars) {
       // ('DEN' beside 'Reno') — if the city flips and the chip can't flip
       // with it, drop the chip entirely.
       var _destChipHtml = _dfChip || (_dfCity ? '' : _destIataDisp);
-      var _destLabel = 'Destination' + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ')
+        + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -7118,21 +7130,31 @@ function _buildV2AircraftCol(ctx, vars) {
         if (_ss) {
           var _enTC = _ss.en.replace(/\b\w/g, function(c){ return c.toUpperCase(); }); // Title Case the EN
           // Status STACKED — EN over FR (per Nick).
-          _stBiling = _frF
-            ? '<span class="v2-fi-st2">' + _ss.fr + '</span><span class="v2-fi-st2">' + _enTC + '</span>'
-            : '<span class="v2-fi-st2">' + _enTC + '</span><span class="v2-fi-st2">' + _ss.fr + '</span>';
+          // v22956 — stacked in the SELECTED languages, not hard EN/FR.
+          var _stPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+          if (_frF) { var _sfi = _stPick.indexOf('fr'); if (_sfi > 0) { _stPick.splice(_sfi, 1); _stPick.unshift('fr'); } }
+          var _stW = [], _stSeen = {};
+          for (var _swi = 0; _swi < _stPick.length && _stW.length < 2; _swi++) {
+            var _sw = _ss[_stPick[_swi]];
+            if (!_sw) continue;
+            _sw = String(_sw).replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+            if (_stSeen[_sw.toLowerCase()]) continue;
+            _stSeen[_sw.toLowerCase()] = 1;
+            _stW.push(_sw);
+          }
+          _stBiling = _stW.map(function (w) { return '<span class="v2-fi-st2">' + w + '</span>'; }).join('') || ('<span class="v2-fi-st2">' + _enTC + '</span>');
         }
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
 
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + _shelf(_emblemHtml || _badge(_svgPlane), 'Flight', _L2('Vol','Vuelo'), (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
+        + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
-        + _shelf(_badge(_svgStatus), 'Status', _L2('Statut','Estado'), _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
-        + _shelf(_badge(_svgBoarding), _brdShortEn, _brdShortL2, (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgDepart), _depShortEn, _depShortL2, (_amPm(_depShow) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgArrive), 'Arrival', _L2('Arrivée','Llegada'), (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
+        + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}
@@ -17894,7 +17916,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22955';
+var FIDS_BUILD_TAG = 'v22956';
 (function(){
   try {
     function _addTag(){
