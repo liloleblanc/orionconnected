@@ -1406,8 +1406,29 @@ function _fidsSyncUrl(t, s) {
   } catch (e) {}
 }
 
+// v22961 — restore the airport's saved language choice (see toggleLang's
+// save). Lives in changeScreenType because EVERY boot path passes through it
+// — gids.html/bids.html call it directly on URL-param boots, and the saved
+// screen-state restore calls it too. Idempotent: applies only when a saved
+// set exists and differs from what is showing.
+function _restoreApLangs() {
+  try {
+    var _apL = (document.getElementById('apSel') || {}).value || '';
+    if (!_apL) return;
+    var _savedL = localStorage.getItem('fids_langs_' + _apL.toUpperCase());
+    if (!_savedL) return;
+    var _arrL = _savedL.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 2);
+    if (!_arrL.length || _arrL.join(',') === langs.join(',')) return;
+    langs = _arrL;
+    langIdx = 0;
+    lang = langs[0];
+    if (typeof updateLangButtons === 'function') updateLangButtons();
+    if (typeof updateTicker === 'function') updateTicker();
+  } catch (e) {}
+}
 function changeScreenType(val) {
   screenType = val;
+  try { _restoreApLangs(); } catch (e) {}
   // v22814: the SCREEN TYPE dropdown always mirrors reality. The gids boot
   // path called changeScreenType('gate') without setting the select, so the
   // menu read 'Main Board' on a live gate (Nick: 'Proof im on the gate
@@ -6584,7 +6605,7 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
   // renders full-bleed in its own colours instead of a flat silhouette padded
   // inside an accent circle. Filling the badge edge to edge is also what makes
   // it read bigger.
-  'DL': '/logos/airline-tiles/DL-glossy.svg?v=22539'
+  'DL': '/logos/airline-tiles/DL-glossy.svg?v=22961'
 };
 
 function _buildV2AircraftCol(ctx, vars) {
@@ -17866,6 +17887,15 @@ function toggleLang(l) {
     if (langIdx >= langs.length) langIdx = 0;
   }
   lang = langs[langIdx];
+  // v22961 — REMEMBER THE CHOICE PER AIRPORT (Nick: 'everytime i switch
+  // screens ... it resets the language choice ... for that airport everytime
+  // you coming in it remembers the settings'). gids/fids/bids are separate
+  // pages, so every screen switch is a fresh boot and `langs` went back to
+  // the default. Saved on every toggle, restored at boot below.
+  try {
+    var _lsAp = (document.getElementById('apSel') || {}).value || '';
+    if (_lsAp) localStorage.setItem('fids_langs_' + _lsAp.toUpperCase(), langs.join(','));
+  } catch (e) {}
   updateLangButtons();
   updateTicker();
   startLangRotation();
@@ -17957,7 +17987,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22960';
+var FIDS_BUILD_TAG = 'v22961';
 (function(){
   try {
     function _addTag(){
