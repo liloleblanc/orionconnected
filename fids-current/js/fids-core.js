@@ -16243,8 +16243,59 @@ function tioIcon(weatherCode, size) {
 // into our flat-icon sprite cell names.
 if (typeof window !== 'undefined') window.TIO_ICON = TIO_ICON;
 
+// v22959 — weather labels follow the FIRST selected language (Nick: 'weather
+// same thign'). The old resolver was `lang === 'fr' ? FR : EN` — nothing else
+// existed and nothing else was consulted. Spanish and German tables added;
+// Italian/Portuguese/Japanese/Chinese/Arabic fall back to English until their
+// tables are written, which is stated here rather than pretended otherwise.
+const TIO_LABEL_ES = {
+  0:'Despejado', 1:'Mayormente despejado', 2:'Parcialmente nublado', 3:'Nublado',
+  45:'Niebla', 48:'Niebla helada',
+  51:'Llovizna ligera', 53:'Llovizna', 55:'Llovizna fuerte',
+  56:'Llovizna helada', 57:'Llovizna helada fuerte',
+  61:'Lluvia ligera', 63:'Lluvia', 65:'Lluvia fuerte',
+  66:'Lluvia helada', 67:'Lluvia helada fuerte',
+  71:'Nieve ligera', 73:'Nieve', 75:'Nieve fuerte',
+  77:'Granos de nieve',
+  80:'Chubascos ligeros', 81:'Chubascos', 82:'Chubascos fuertes',
+  85:'Chubascos de nieve', 86:'Chubascos de nieve fuertes',
+  95:'Tormenta', 96:'Tormenta con granizo', 99:'Tormenta fuerte',
+  1000:'Despejado', 1001:'Nublado', 1100:'Mayormente despejado', 1101:'Parcialmente nublado',
+  1102:'Mayormente nublado', 1103:'Parcialmente nublado',
+  2000:'Niebla', 2100:'Niebla ligera',
+  3000:'Viento ligero', 3001:'Ventoso', 3002:'Viento fuerte',
+  4000:'Llovizna', 4001:'Lluvia', 4200:'Lluvia ligera', 4201:'Lluvia fuerte',
+  5000:'Nieve', 5001:'Copos', 5100:'Nieve ligera', 5101:'Nieve fuerte',
+  6000:'Llovizna helada', 6001:'Lluvia helada', 6200:'Lluvia helada ligera', 6201:'Lluvia helada fuerte',
+  7000:'Granizo', 7101:'Granizo fuerte', 7102:'Granizo ligero',
+  8000:'Tormenta'
+};
+const TIO_LABEL_DE = {
+  0:'Klar', 1:'Überwiegend klar', 2:'Teilweise bewölkt', 3:'Bewölkt',
+  45:'Nebel', 48:'Raureifnebel',
+  51:'Leichter Nieselregen', 53:'Nieselregen', 55:'Starker Nieselregen',
+  56:'Gefrierender Nieselregen', 57:'Starker gefr. Nieselregen',
+  61:'Leichter Regen', 63:'Regen', 65:'Starker Regen',
+  66:'Gefrierender Regen', 67:'Starker gefr. Regen',
+  71:'Leichter Schneefall', 73:'Schneefall', 75:'Starker Schneefall',
+  77:'Schneegriesel',
+  80:'Leichte Schauer', 81:'Schauer', 82:'Starke Schauer',
+  85:'Schneeschauer', 86:'Starke Schneeschauer',
+  95:'Gewitter', 96:'Gewitter mit Hagel', 99:'Schweres Gewitter',
+  1000:'Klar', 1001:'Bewölkt', 1100:'Überwiegend klar', 1101:'Teilweise bewölkt',
+  1102:'Überwiegend bewölkt', 1103:'Teilweise bewölkt',
+  2000:'Nebel', 2100:'Leichter Nebel',
+  3000:'Leichter Wind', 3001:'Windig', 3002:'Starker Wind',
+  4000:'Nieselregen', 4001:'Regen', 4200:'Leichter Regen', 4201:'Starker Regen',
+  5000:'Schneefall', 5001:'Schneeflocken', 5100:'Leichter Schneefall', 5101:'Starker Schneefall',
+  6000:'Gefr. Nieselregen', 6001:'Gefrierender Regen', 6200:'Leichter gefr. Regen', 6201:'Starker gefr. Regen',
+  7000:'Hagel', 7101:'Starker Hagel', 7102:'Leichter Hagel',
+  8000:'Gewitter'
+};
 function tioLabel(weatherCode) {
-  const labels = (typeof lang !== 'undefined' && lang === 'fr') ? TIO_LABEL_FR : TIO_LABEL;
+  var _first = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs[0] : 'en';
+  var _byLang = { fr: TIO_LABEL_FR, es: TIO_LABEL_ES, de: TIO_LABEL_DE };
+  var labels = _byLang[_first] || TIO_LABEL;
   if (labels[weatherCode]) return labels[weatherCode];
   if (TIO_LABEL[weatherCode]) return TIO_LABEL[weatherCode];
   return '';
@@ -17901,7 +17952,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22958';
+var FIDS_BUILD_TAG = 'v22959';
 (function(){
   try {
     function _addTag(){
@@ -23735,16 +23786,43 @@ function _ocClockTime(now, tz) {
   return en + ' | ' + String(parseInt(H, 10)) + 'h ' + M;
 }
 function _ocClockDate(now, tz) {
+  // v22959 — the banner date follows the SELECTED languages (Nick: 'The date
+  // on top still doesnt work'). This hardcoded en-US + fr-CA — the sixth
+  // fixed-language surface found. Intl does the words; the per-language
+  // format rules Nick approved are kept: EN 'Thursday, July 23' (comma, no
+  // ordinal); FR 'Jeudi 23 juillet' (capitalised weekday, no comma, no 'le');
+  // other locales take their natural weekday-month-day form, capitalised.
   var eo = { weekday: 'long', month: 'long', day: 'numeric' };
   var wo = { weekday: 'long' }, dd = { day: 'numeric' }, mo = { month: 'long' };
   if (tz) { eo.timeZone = tz; wo.timeZone = tz; dd.timeZone = tz; mo.timeZone = tz; }
-  // Nick: 'Thursday, July 23 | Jeudi 23 juillet' — EN comma, no ordinal; FR
-  // capitalised weekday, no comma, no 'le'.
-  var en = now.toLocaleDateString('en-US', eo);
-  var fw = now.toLocaleDateString('fr-CA', wo);
-  var fr = (fw.charAt(0).toUpperCase() + fw.slice(1)) + ' '
-         + now.toLocaleDateString('fr-CA', dd) + ' ' + now.toLocaleDateString('fr-CA', mo);
-  return en + ' <span class="cl-sep">|</span> ' + fr;
+  var _locale = { en:'en-US', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt', ja:'ja', zh:'zh', ar:'ar' };
+  function _one(l) {
+    try {
+      if (l === 'fr') {
+        var fw = now.toLocaleDateString('fr-CA', wo);
+        return (fw.charAt(0).toUpperCase() + fw.slice(1)) + ' '
+             + now.toLocaleDateString('fr-CA', dd) + ' ' + now.toLocaleDateString('fr-CA', mo);
+      }
+      var d = now.toLocaleDateString(_locale[l] || 'en-US', eo);
+      return d.charAt(0).toUpperCase() + d.slice(1);
+    } catch (e) { return now.toLocaleDateString('en-US', eo); }
+  }
+  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+  try {
+    var _ap = (document.getElementById('apSel') || {}).value || '';
+    if (typeof frFirstAirport === 'function' && frFirstAirport(_ap)) {
+      var _fi = picked.indexOf('fr');
+      if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
+    }
+  } catch (e) {}
+  var out = [], seen = {};
+  for (var i = 0; i < picked.length && out.length < 2; i++) {
+    var w = _one(picked[i]);
+    if (!w || seen[w]) continue;
+    seen[w] = 1;
+    out.push(w);
+  }
+  return out.join(' <span class="cl-sep">|</span> ') || _one('en');
 }
 
 // ── CLOCK — airport local time ────────────────────────────────────────────
