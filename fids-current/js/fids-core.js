@@ -17995,7 +17995,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22962';
+var FIDS_BUILD_TAG = 'v22963';
 (function(){
   try {
     function _addTag(){
@@ -23816,7 +23816,14 @@ function _ocClockLabel(city) {
   // Two stacked rows (Nick, gate layout on FIDS/BIDS too): 'Time in <City>'
   // over 'Heure à <City>'. Used only by the FIDS/BIDS banner clocks; the gate
   // builds its own label inline.
-  return '<span class="cl-l1">Time in ' + city + '</span><span class="cl-l2">Heure à ' + city + '</span>';
+  // v22963 — follows `langs` (Nick: 'FIDS Time in Orlando / Heure à
+  // Orlando'). The GATE clock was converted in v22954; this is the shared
+  // FIDS/BIDS one, which still hardcoded the pair.
+  var _fFirst = false;
+  try { _fFirst = (typeof frFirstAirport === 'function') && frFirstAirport((document.getElementById('apSel') || {}).value || ''); } catch (e) {}
+  return _gateLbl('timeIn', _fFirst, function (w, i) {
+    return '<span class="cl-l' + (i + 1) + '">' + w + ' ' + city + '</span>';
+  }, '');
 }
 // Single 12h time '10:29PM' (Nick: 'one time format') — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
