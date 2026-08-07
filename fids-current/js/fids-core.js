@@ -18042,7 +18042,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22974';
+var FIDS_BUILD_TAG = 'v22975';
 (function(){
   try {
     function _addTag(){
@@ -23557,21 +23557,32 @@ function applyAirportConfigToBoard(iata) {
       // and highlights render identically on custom themes.
       var _nsF = ':not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed)';
       var _nsB = ':not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted)';
+      // v22975 — ARMORED, AND background-color NOT the shorthand. Measured on
+      // prod with Nick's own colors (his iPad shot: rows stayed white/grey,
+      // text went blue): the plain-row background lost to the airport texture
+      // rules, which are armored to 3 ID-specificity (html:not(#_) …
+      // :not(#_)). The user's explicit color choice is the HIGHEST-intent
+      // layer, so these rules carry 4 — they cannot lose to any theme rule.
+      // background-color (not `background:`) so the asanoha pattern
+      // (background-image, multiply blend) still reads over the chosen
+      // colors instead of being reset — custom colors join the texture
+      // system, they don't fight it.
+      var _CA = 'html:not(#_):not(#_) body[data-fids-theme="custom"]:not(#_):not(#_) ';
       _styleEl.textContent =
-        'body[data-fids-theme="custom"] #fidsTable, body[data-fids-theme="custom"] .bidsv2-screen { background:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.text || '#fff') + ' !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-banner { background:' + (_cc.hdr || _cc.bg || '#0a1628') + ' !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-airport-name, body[data-fids-theme="custom"] .bidsv2-footer-date { color:' + (_cc.hdrText || '#fff') + ' !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-logo, body[data-fids-theme="custom"] .bidsv2-status-arrived { color:' + (_cc.accent || '#eab308') + ' !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-carousel-block { background:' + (_cc.rowOdd || '#fff') + ' !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-carousel-label, body[data-fids-theme="custom"] .bidsv2-carousel-number, body[data-fids-theme="custom"] .bidsv2-clock { color:' + (_cc.bg || '#0a1628') + ' !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-list-header, body[data-fids-theme="custom"] .bidsv2-airline-name, body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-status-other, body[data-fids-theme="custom"] .bidsv2-footer-msg { color:' + (_cc.text || '#fff') + ' !important; opacity:.75; }' +
-        'body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' { background:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; border-bottom-color:' + (_cc.accent || 'rgba(255,255,255,.12)') + '33 !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ':nth-child(odd) { background:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
-        'body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-flight-row' + _nsB + ' .bidsv2-col-status { color:' + (_cc.text || '#fff') + ' !important; }' +
-        'body[data-fids-theme="custom"] #fidsTable tbody tr' + _nsF + ' { background:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
-        'body[data-fids-theme="custom"] #fidsTable tbody tr' + _nsF + ':nth-child(even) { background:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; }' +
-        'body[data-fids-theme="custom"] #fidsTable thead th { background:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.hdrText || '#fff') + ' !important; }' +
-        'body[data-fids-theme="custom"] #fidsTable tbody tr' + _nsF + ' td { color:' + (_cc.text || '#fff') + ' !important; }';
+        _CA + '#fidsTable, ' + _CA + '.bidsv2-screen { background-color:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.text || '#fff') + ' !important; }' +
+        _CA + '.bidsv2-banner { background-color:' + (_cc.hdr || _cc.bg || '#0a1628') + ' !important; }' +
+        _CA + '.bidsv2-airport-name, ' + _CA + '.bidsv2-footer-date { color:' + (_cc.hdrText || '#fff') + ' !important; }' +
+        _CA + '.bidsv2-logo, ' + _CA + '.bidsv2-status-arrived { color:' + (_cc.accent || '#eab308') + ' !important; }' +
+        _CA + '.bidsv2-carousel-block { background-color:' + (_cc.rowOdd || '#fff') + ' !important; }' +
+        _CA + '.bidsv2-carousel-label, ' + _CA + '.bidsv2-carousel-number, ' + _CA + '.bidsv2-clock { color:' + (_cc.bg || '#0a1628') + ' !important; }' +
+        _CA + '.bidsv2-list-header, ' + _CA + '.bidsv2-airline-name, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-status-other, ' + _CA + '.bidsv2-footer-msg { color:' + (_cc.text || '#fff') + ' !important; opacity:.75; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ' { background-color:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; border-bottom-color:' + (_cc.accent || 'rgba(255,255,255,.12)') + '33 !important; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) { background-color:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-flight-num, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-from, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-time, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-status { color:' + (_cc.text || '#fff') + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ' { background-color:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) { background-color:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; }' +
+        _CA + '#fidsTable thead th { background-color:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.hdrText || '#fff') + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ' td { color:' + (_cc.text || '#fff') + ' !important; }';
       document.head.appendChild(_styleEl);
       console.log('[FIDS Theme APPLY] custom colors restored:', _cc);
     } else {
