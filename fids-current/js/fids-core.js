@@ -6550,7 +6550,12 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
         'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // Standard emblem used outside the one gate-flight badge override below
-        'DL':  '/logos/airlines/us-major/delta-widget.svg',
+        // v22960 — SINGLE-COLOUR widget (Nick: 'the actual delta icon is 2
+        // colors this needs to be changed'). The native widget is two-tone
+        // red; the monochrome-white one reads as ONE mark and sits on the red
+        // orb the badges now wear — his spec, literally: 'Delta icons white
+        // with red middle'.
+        'DL':  '/logos/airlines/us-major/delta-widget-monochrome-white.svg',
         'AA':  '/logos/airlines/us-major/american-flight-symbol.svg',
         'HA':  '/logos/airlines/us-major/hawaiian-pualani.svg',
         'F9':  '/logos/airlines/us-major/frontier-emblem.svg',
@@ -17952,7 +17957,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22959';
+var FIDS_BUILD_TAG = 'v22960';
 (function(){
   try {
     function _addTag(){

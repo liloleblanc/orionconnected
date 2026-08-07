@@ -9475,3 +9475,60 @@ html body .g8-wrap .v2-rc-map-life-emblem:not(#_):not(#_) {
   aspect-ratio: 1 / 1 !important;
   max-width: 94% !important;
 }
+
+/* ── v22960 — DELTA BADGES: RED ORBS, WHITE MARKS (Nick: 'The icons for
+   Delta are still not 3d and glowing and the actual delta icon is 2 colors
+   this needs to be changed also the boarding delta theyre blue').
+
+   His original spec, read literally this time: 'Delta icons WHITE with RED
+   MIDDLE'. v22934 built the inverse — white discs with red glyphs — which is
+   why it never looked right to him. This flips it: every Delta badge is a
+   red glossy sphere (specular high, shaded lower edge, inset rim, drop
+   shadow — the same material grammar as the approved PR #459 orbs) with the
+   glyph in white. The boarding row's navy discs take the same treatment,
+   which is the 'theyre blue' fix, and the widget swaps to the
+   monochrome-white asset so it is one colour, not two. ── */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge {
+  background:
+    radial-gradient(circle at 34% 26%,
+      #ff6d7d 0%,
+      #f23a4e 26%,
+      #E01933 55%,
+      #b3122a 80%,
+      #8f0f24 100%) !important;
+  box-shadow:
+    inset 0 -3px 7px rgba(80, 4, 16, 0.55),
+    inset 0 2px 3px rgba(255, 255, 255, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 3px 8px rgba(0, 0, 0, 0.45) !important;
+  color: #ffffff !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge svg,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge svg path,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge .ac-ico,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge svg,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge svg path {
+  fill: #ffffff !important;
+  color: #ffffff !important;
+  background: #ffffff !important;   /* the ac-ico glyphs are mask-painted — their ink IS the background */
+  filter: drop-shadow(0 1px 1px rgba(90, 6, 18, 0.5)) !important;
+}
+/* The flight cell's widget img: no invert games — the asset itself is now the
+   monochrome-white file, so just make sure no earlier filter re-tints it. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge img {
+  filter: drop-shadow(0 1px 1px rgba(90, 6, 18, 0.5)) !important;
+}
+/* Gloss highlight on top — the sphere's glass. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge {
+  position: relative;
+  overflow: hidden;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge::after {
+  content: "";
+  position: absolute;
+  left: 12%; right: 12%; top: 5%; height: 44%;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.04));
+  pointer-events: none;
+}
