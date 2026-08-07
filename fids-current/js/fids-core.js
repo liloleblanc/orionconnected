@@ -12477,7 +12477,16 @@ const gView = document.getElementById('gateView');
                 + '|' + (_ovMsg ? 'O:1' : '')
                 + '|' + (currentFlight._aircraftPending ? 'P:1' : '');
       } catch(e) {}
-      var _gateKey = (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag;
+      // v22957 — THE LANGUAGES BELONG IN THIS KEY. This is the guard that was
+      // actually eating language changes, found after six wrong guesses. Every
+      // label on the gate is baked into the HTML this key protects, so a
+      // language toggle with unchanged flight data read as "nothing changed"
+      // and the rebuild was skipped. The first toggle after load only ever
+      // repainted because something ELSE in the key (a status tick, an inbound
+      // poll) happened to change at the same moment — which is why the screen
+      // looked "one click behind" instead of simply stuck.
+      var _langTag = (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '';
+      var _gateKey = (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag;
       if (window._lastGateKey !== _gateKey) {
         window._lastGateKey = _gateKey;
 
@@ -17805,41 +17814,14 @@ function toggleLang(l) {
   startLangRotation();
   const testBtn = document.getElementById('testFlightBtn');
   if (testBtn) testBtn.textContent = TL('addFlight');
-  // ── v22955 — A LANGUAGE CHANGE FORCES A FULL REBUILD.
-  // Nick: German+Spanish "doesnt work at all on Gate". It did work — the
-  // screen was just one click behind, showing a language he had already
-  // deselected.
-  //
-  // Instrumented on the live gate, toggling de then es from en+fr:
-  //   +de  render(langs=fr+de) key=fr+de >>RDS >>RDS render key   clock CORRECT
-  //   +es  render(langs=de+es) key=de+es >>RDS                    clock STALE
-  // renderDedicatedScreen ran both times with the right languages. The
-  // difference is that the first toggle happened to get a SECOND render pass
-  // behind it, and that second pass is what actually repainted the banner.
-  // The banner clock is built inside the g8-wrap HTML, so the wrap is being
-  // reused on a single pass.
-  //
-  // I have not identified the cache doing the reusing, and I am not going to
-  // guess at it again tonight — five wrong theories on this codebase today,
-  // each of which cost a build. What is MEASURED is that two passes repaint
-  // and one does not. So: clear the dedicated render key, so the next render
-  // cannot be skipped as "nothing changed", and schedule a second pass on the
-  // following frame — making deterministic the thing that was previously an
-  // accident of timing.
-  //
-  // This matches how Nick's original build behaved: click a language and the
-  // page rebuilt with whatever was chosen. It is heavier than it needs to be,
-  // and the honest fix is to find the reuse and invalidate it properly. Left
-  // as a marker for that.
+  // v22957 — the v22955 double-render workaround is WITHDRAWN. It forced two
+  // passes on the theory that a second pass repainted the banner; measured on
+  // the live gate it did not (the clock still lagged one toggle behind with
+  // both passes running). The real eater was _gateKey in the gate rebuild
+  // guard, which signed flight data but not languages — fixed there, where
+  // the state actually lives. One render is enough once the key is honest.
   try { dedicatedRenderKey = null; } catch (e) {}
-  if (data.dep.length || data.arr.length) {
-    render();
-    try {
-      var _reflow = function () { try { dedicatedRenderKey = null; render(); } catch (e) {} };
-      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(_reflow);
-      else setTimeout(_reflow, 30);
-    } catch (e) {}
-  }
+  if (data.dep.length || data.arr.length) render();
 }
 function updateLangButtons() {
   ['en','fr','es','de','it','pt','ja','zh','ar'].forEach(l => {
@@ -17916,7 +17898,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22956';
+var FIDS_BUILD_TAG = 'v22957';
 (function(){
   try {
     function _addTag(){
