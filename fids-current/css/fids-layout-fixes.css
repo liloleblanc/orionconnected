@@ -2994,7 +2994,10 @@ html body .g8-wrap .g8-r1-silk .g8-r1-apband-silk img {
   max-height: 72% !important;
   max-width: 100% !important;
 }
-html .g8-bir-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+/* min-height:0 + overflow:hidden — the text column can NEVER paint past
+   its plate, whatever the fitters do (v22983, Nick's TS A66 + AC A28
+   shots: the two-line status escaped the box again). */
+html .g8-bir-text { min-width: 0; min-height: 0; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 html .g8-bir-title {
   font-size: clamp(14px, 2vh, 24px);
   font-weight: 800;
@@ -3045,10 +3048,17 @@ html .g8-bir-val .g8-r2-revised { color: #b45309; }
    Free wrapping let 'Gate closed | Porte fermée' become four giant lines
    and balloon the whole row (Nick: 'why is it so thick'). */
 html .g8-bir-cell:last-child .g8-bir-val {
-  font-size: clamp(24px, 4.2vh, 60px);
+  /* v22983 — SIZED TO THE ROW'S WORST CASE, NOT ITS BEST. The row floats
+     between 14.5vh and 17vh; at the SHORT end the cell offers ~8vh for the
+     value (padding 3.2vh + title ≈3.3vh come off first), and the old
+     4.2vh × 2 lines × 1.08 = 9.1vh stack could NOT fit — the overflow
+     Nick kept photographing was built into the numbers, appearing and
+     disappearing with wherever the row height landed. 3.3vh × 2 × 1.05 =
+     6.9vh fits the worst case with margin, at every viewport. */
+  font-size: clamp(18px, 3.3vh, 46px);
   display: flex;
   flex-direction: column;
-  line-height: 1.08;
+  line-height: 1.05;
   white-space: nowrap;
   text-overflow: clip;
 }
@@ -9551,3 +9561,195 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.04));
   pointer-events: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v22981: BRANDED SHELF COVERS (Nick, Aug 7: 'The idea for this was to
+   replace the plate … those airlines right now have terrible shelves
+   covers plates whatever you want to call it'). The artwork he supplied
+   per airline becomes the gate shelf/plate cover, exactly the treatment
+   AC's luxury panel gets above: left rail rows, right column shelves and
+   the boarding bar. Same :not(#_) bump so these win over the charcoal
+   data-URI rule in the gids css that loads after this file.
+   background-position picks each artwork's quiet zone so values stay
+   readable. Inks lift to light on the dark covers; Flair's lime is
+   bright, so its inks go dark instead. */
+
+/* ── DELTA — red papercut waves on navy (quiet zone: top center) ── */
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
+html body[data-gate-airline="DL"]:not(#_) .g8-board-info-row {
+  background-color: #0a1a33 !important;
+  background-image: url("/logos/Backgrounds/DL/deltabackground10.png?v=1") !important;
+  background-position: center top !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── AIR TRANSAT — wing on navy (quiet zone: left) ── */
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
+html body[data-gate-airline="TS"]:not(#_) .g8-board-info-row {
+  background-color: #12192a !important;
+  background-image: url("/logos/Backgrounds/TS/transatbackground.png?v=1") !important;
+  background-position: left center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── AIR FRANCE — tricolore streaks (quiet zone: right, clean blue) ── */
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
+html body[data-gate-airline="AF"]:not(#_) .g8-board-info-row {
+  background-color: #0a3d8f !important;
+  background-image: url("/logos/Backgrounds/AF/airfrancebackground.png?v=1") !important;
+  background-position: right center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── EMIRATES — UAE waves on dark green (quiet zone: top) ── */
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
+html body[data-gate-airline="EK"]:not(#_) .g8-board-info-row {
+  background-color: #03170c !important;
+  background-image: url("/logos/Backgrounds/EK/emiratesbackground.png?v=1") !important;
+  background-position: center top !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── FLAIR — lime gradient (bright cover → dark inks below) ── */
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
+html body[data-gate-airline="F8"]:not(#_) .g8-board-info-row {
+  background-color: #7ac21e !important;
+  background-image: url("/logos/Backgrounds/F8/flairbackground.png?v=1") !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+/* ── Ink lifts: light ink on the four dark covers (same palette as AC's
+   luxury shelf), status colors bright enough for dark grounds. ── */
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-rtitle,
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval,
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-actype-val,
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-reg-expected {
+  color: #edf1f7 !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived { color: #34d399 !important; }
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed { color: #fbbf24 !important; }
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled { color: #f87171 !important; }
+html body:is([data-gate-airline="DL"],[data-gate-airline="TS"],[data-gate-airline="AF"],[data-gate-airline="EK"]):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding { color: #93c5fd !important; }
+
+/* Flair: dark inks on the bright lime cover. */
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-rtitle,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-actype-val,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-reg-expected {
+  color: #101418 !important;
+}
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-ontime,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-arrived { color: #0b3d20 !important; }
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed { color: #7c3a00 !important; }
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled { color: #7f1d1d !important; }
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding { color: #1e3a8a !important; }
+
+/* ── v22984: THE ARTWORK MUST BE VISIBLE ON THE BOARDING STRIP (Nick's DL
+   C88 shot: 'what the fuck was done here?' — nothing readable changed,
+   because cover-cropping a 16:9 artwork onto the 1920×~150 strip shows a
+   single horizontal slice, and the 'quiet zone' positions above picked
+   the FLAT part of each art. The strip now takes the slice where the
+   art actually lives; the tall side shelves keep the quiet zones. */
+html body[data-gate-airline="DL"]:not(#_) .g8-board-info-row { background-position: center 62% !important; }  /* red wave band */
+html body[data-gate-airline="TS"]:not(#_) .g8-board-info-row { background-position: center 42% !important; }  /* aqua wing sweep */
+html body[data-gate-airline="AF"]:not(#_) .g8-board-info-row { background-position: center 30% !important; }  /* tricolore streaks left, clean blue right */
+html body[data-gate-airline="EK"]:not(#_) .g8-board-info-row { background-position: center 72% !important; }  /* red/white wave crossing */
+
+/* ── v22985: THE PLATE **WEARS** THE ARTWORK (Nick: 'The idea for this was
+   to replace the plate', then 'theres nothing done ABSOLUTELY NOTHING' —
+   correct: the v22727 inset chrome plates paint OVER the column/strip
+   surface, so artwork applied to the surface was hidden behind every
+   plate. For the five artwork airlines the plate's own face is now the
+   artwork — bevel, inset and shadow unchanged, chrome-metal face swapped
+   for the art. Every plate on the boarding strip, the left rail rows and
+   the right panes visibly carries it. */
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="DL"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="DL"]:not(#_) .g8-bir-cell::before {
+  background-color: #0a1a33 !important;
+  background-image: url("/logos/Backgrounds/DL/deltabackground10.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center 62% !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="TS"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="TS"]:not(#_) .g8-bir-cell::before {
+  background-color: #12192a !important;
+  background-image: url("/logos/Backgrounds/TS/transatbackground.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center 45% !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="AF"]:not(#_) .g8-bir-cell::before {
+  background-color: #0a3d8f !important;
+  background-image: url("/logos/Backgrounds/AF/airfrancebackground.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center 30% !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="EK"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="EK"]:not(#_) .g8-bir-cell::before {
+  background-color: #03170c !important;
+  background-image: url("/logos/Backgrounds/EK/emiratesbackground.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center 72% !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before,
+html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane::before,
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-cell::before {
+  background-color: #7ac21e !important;
+  background-image: url("/logos/Backgrounds/F8/flairbackground.png?v=1") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-blend-mode: normal !important;
+}
+/* Flair's lime plate face needs DARK inks on the strip (white everywhere
+   else stays for the four dark artworks). */
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-title .g8-bir-l1 { color: #101418 !important; }
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-title .g8-bir-l2 { color: rgba(16,20,24,0.6) !important; }
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-title .g8-bir-sep { color: #101418 !important; }
+html body[data-gate-airline="F8"]:not(#_) .g8-bir-val { color: #101418 !important; text-shadow: none !important; }

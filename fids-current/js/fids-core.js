@@ -5062,7 +5062,9 @@ var AIRLINE_BACKGROUNDS = {
     '/logos/Backgrounds/DL/deltabackground6.png',
     '/logos/Backgrounds/DL/deltabackground7.png',
     '/logos/Backgrounds/DL/deltabackground8.png',
-    '/logos/Backgrounds/DL/deltabackground9.png'
+    '/logos/Backgrounds/DL/deltabackground9.png',
+    // Nick's pick (Aug 7): red papercut waves on Delta navy.
+    '/logos/Backgrounds/DL/deltabackground10.png'
   ],
   'UA': [
     '/logos/Backgrounds/UA/united-background.jpg',
@@ -5072,6 +5074,20 @@ var AIRLINE_BACKGROUNDS = {
   'TS': [
     // Nick's wing artwork composed on its own navy palette (Aug 7).
     '/logos/Backgrounds/TS/transatbackground.png'
+  ],
+  'AF': [
+    // Nick's pick (Aug 7): tricolore streaks on true AF blue — the clean
+    // right-side field is where gate text lands.
+    '/logos/Backgrounds/AF/airfrancebackground.png'
+  ],
+  'EK': [
+    // UAE-flag wave art; source carried baked-in National Day lettering
+    // top-left, cropped out of frame in the composed render.
+    '/logos/Backgrounds/EK/emiratesbackground.png'
+  ],
+  'F8': [
+    // Nick's pick (Aug 7): smooth lime-green gradient — Flair's brand green.
+    '/logos/Backgrounds/F8/flairbackground.png'
   ]
 };
 
@@ -6963,7 +6979,14 @@ function _buildV2AircraftCol(ctx, vars) {
         // file is derived from the airline's own tile art, never redrawn.
         var BADGE_TILE_BRANDS = { 'MX': { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' } };
         var _tileBrand = BADGE_TILE_BRANDS[code] || null;
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true };  // supplied full-colour art keeps its native colours
+        // DL removed (Nick: 'still not the right color its not even round'):
+        // native=true meant transparent badge + full-bleed art, which was
+        // right for the old glossy-sphere file but wrong for the monochrome
+        // widget — it rendered as a bare white mark on the dark plate, square
+        // and unbadged. DL now takes the COLOR_ON_WHITE path below: the same
+        // round glossy accent orb (Delta red) as every other icon, white
+        // widget centered inside.
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true };  // supplied full-colour art keeps its native colours
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
@@ -9037,8 +9060,9 @@ function uxgGateHtml(ctx) {
     'LO':'star','MS':'star','ET':'star','SA':'star','A3':'star','OZ':'star',
     'TG':'star','CA':'star','ZH':'star','AI':'star','JP':'star','OU':'star',
     'HR':'star','NZ':'star','CM':'star','EW':'star',
-    // AC family inherits Star
-    'QK':'star','RV':'star','RJ':'star','ZX':'star','9M':'star','9L':'star',
+    // AC family inherits Star (RJ is NOT AC family — it's Royal Jordanian,
+    // oneworld, listed below; it was wrongly swept in with the feeders)
+    'QK':'star','RV':'star','ZX':'star','9M':'star','9L':'star',
     // Oneworld members
     'AA':'oneworld','BA':'oneworld','CX':'oneworld','QF':'oneworld','JL':'oneworld',
     'IB':'oneworld','AY':'oneworld','QR':'oneworld','RJ':'oneworld','S7':'oneworld',
@@ -16656,7 +16680,7 @@ const CALLSIGN_TO_IATA = {
   'AEE':'A3', 'CTN':'OU', 'ASL':'JU', 'THY':'TK',
   // ── Middle East / Asia ──
   'UAE':'EK', 'QTR':'QR', 'ETD':'EY', 'GFA':'GF',
-  'OMA':'WY', 'SVA':'SV', 'MEA':'ME',
+  'OMA':'WY', 'SVA':'SV', 'MEA':'ME', 'RJA':'RJ',
   // ── Africa ──
   'SAA':'SA', 'ETH':'ET', 'MSR':'MS', 'RAM':'AT'
 };
@@ -16676,8 +16700,11 @@ const _AIRLINE_NAME_OVERRIDE = {
   'AC':'Air Canada','WS':'WestJet','PD':'Porter','F8':'Flair',
   'TS':'Air Transat','PB':'PAL Airlines','MO':'Calm Air',
   'YP':'Perimeter','3H':'Air Inuit','BQ':'Pascan','7F':'First Air',
-  'QK':'Air Canada','RV':'Air Canada','RJ':'Air Canada','ZX':'Air Canada',
+  'QK':'Air Canada','RV':'Air Canada','ZX':'Air Canada',
   '9M':'Air Canada','9L':'Air Canada','SP':'PAL Airlines',
+  // RJ is Royal Jordanian (oneworld) — it was wrongly listed as an AC
+  // feeder, which painted an Amman flight in Air Canada branding (Nick).
+  'RJ':'Royal Jordanian',
   '9X':'Mokulele','W8':'Cargojet',
   'UA':'United','DL':'Delta','AA':'American','WN':'Southwest',
   'B6':'JetBlue','AS':'Alaska','F9':'Frontier',
@@ -16731,8 +16758,9 @@ const AIRLINE_NAME = {
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
   'JV':'BEARSKIN',    'WT':'WASAYA',      'NSA':'NORTH STAR AIR',
-  'QK':'AIR CANADA',  'RV':'AIR CANADA',  'RJ':'AIR CANADA',  'ZX':'AIR CANADA',
+  'QK':'AIR CANADA',  'RV':'AIR CANADA',  'ZX':'AIR CANADA',
   '9M':'AIR CANADA',  '9L':'AIR CANADA',  'SP':'PAL AIRLINES',
+  'RJ':'ROYAL JORDANIAN',
   '9X':'MOKULELE',    'W8':'CARGOJET',
   'UA':'UNITED',      'DL':'DELTA',       'AA':'AMERICAN',    'WN':'SOUTHWEST',
   'B6':'JETBLUE',     'AS':'ALASKA',      'F9':'FRONTIER',
@@ -16887,7 +16915,7 @@ const IATA_TO_TILE_ICAO = {
   'PC':'PGT',  'TK':'THY',  'TO':'TVF',  'HV':'TRA',  'EW':'EWG',
   // Middle East / Africa
   'EK':'UAE',  'QR':'QTR',  'EY':'ETD',  'GF':'GFA',  'WY':'OMA',
-  'SV':'SVA',  'ME':'MEA',  'SA':'SAA',  'ET':'ETH',  'MS':'MSR',
+  'SV':'SVA',  'ME':'MEA',  'SA':'SAA',  'ET':'ETH',  'MS':'MSR',  'RJ':'RJA',
   'AT':'RAM',  'WB':'RWD',  'KQ':'KQA',
   // Asia / Pacific
   'SQ':'SIA',  'NH':'ANA',  'JL':'JAL',  'CX':'CPA',  'QF':'QFA',
@@ -18068,7 +18096,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22979';
+var FIDS_BUILD_TAG = 'v22986';
 (function(){
   try {
     function _addTag(){
@@ -20038,7 +20066,9 @@ const CALLSIGN_ICAO = {
   'WEN':'WR','WJA':'WS','KRS':'KV','SVR':'ZX','TIF':'4N','PTR':'PD',
 };
 
-const PARENT = {'QK':'AC','ZX':'AC','9M':'AC','9L':'AC','RV':'AC','RJ':'AC','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','PTR':'PD','P3':'PD','Q6':'Y4','4C':'LA'};
+// RJ removed from the AC family — Royal Jordanian is its own carrier; the
+// bogus mapping dressed an Amman flight in Air Canada branding (Nick, Aug 7).
+const PARENT = {'QK':'AC','ZX':'AC','9M':'AC','9L':'AC','RV':'AC','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','PTR':'PD','P3':'PD','Q6':'Y4','4C':'LA'};
 const FILTER_OUT = new Set([
   // ── Major cargo carriers (IATA + ICAO) ──
   'W8','CJT','FX','FDX','5X','GTI','CLX','MPH','ABX','ATN','POC','QT','TCN',
@@ -33432,7 +33462,12 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       // two-line 'Embarquement/Boarding' status clipped by its plate.
       var _fpCell = el.closest ? el.closest('.g8-bir-cell') : null;
       var _fp = el.clientWidth + 'x' + (_fpCell ? _fpCell.clientHeight : 0) + ':' + (el.textContent || '').length + ':' + (el.textContent || '').slice(0, 24);
-      if (el.dataset.fitW === _fp || !el.clientWidth) continue;
+      // A value that is VISIBLY TRUNCATED right now always gets another
+      // pass, memo or not — a stale stamp taken during unstable geometry
+      // could freeze an ellipsized value forever (Nick's WestJet boarding
+      // plate stuck at 'WS1…' for WS152).
+      var _fpClipped = el.scrollWidth > el.clientWidth + 1;
+      if ((el.dataset.fitW === _fp && !_fpClipped) || !el.clientWidth) continue;
       el.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(el).fontSize) || 16;
       var size = base, guard = 16;
@@ -33468,6 +33503,35 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
           while (el.scrollWidth > el.clientWidth && g > 24 && gBack-- > 0) {
             g -= Math.max(1, g * 0.05);
             el.style.setProperty('font-size', g + 'px', 'important');
+          }
+        } else if (_gRow && _gIsStatus) {
+          // v22985 — THE STATUS STACK GROWS TO FILL ITS PLATE like every
+          // other value (Nick: 'you shrink it … ITS been done before').
+          // The exclusion above left the two-line stack at its CSS base,
+          // which is sized to the row's WORST case — correct as a floor,
+          // small on a tall row. Measure this cell's real free height
+          // (cell minus padding minus the title) and grow the stack to the
+          // largest size that fits BOTH that height and the column width.
+          var _gTxtS = el.parentElement;
+          var _gTitleS = _gTxtS ? _gTxtS.querySelector('.g8-bir-title') : null;
+          var _gcs = window.getComputedStyle(_gCell);
+          var _availH = _gCell.clientHeight
+            - (parseFloat(_gcs.paddingTop) || 0) - (parseFloat(_gcs.paddingBottom) || 0)
+            - (_gTitleS ? _gTitleS.offsetHeight + (parseFloat(window.getComputedStyle(_gTitleS).marginBottom) || 0) : 0);
+          var _gLines = Math.max(1, el.querySelectorAll('.g8-bir-st2').length);
+          if (_availH > 20) {
+            var _sHCap = Math.floor(_availH / (_gLines * 1.08));
+            var s2 = parseFloat(el.style.fontSize) || parseFloat(window.getComputedStyle(el).fontSize) || 24;
+            var _sgUp = 24;
+            while (s2 < _sHCap && el.scrollWidth <= el.clientWidth && _sgUp-- > 0) {
+              s2 = Math.min(_sHCap, s2 + Math.max(1, s2 * 0.08));
+              el.style.setProperty('font-size', s2 + 'px', 'important');
+            }
+            var _sgDn = 12;
+            while (el.scrollWidth > el.clientWidth && s2 > 14 && _sgDn-- > 0) {
+              s2 -= Math.max(1, s2 * 0.06);
+              el.style.setProperty('font-size', s2 + 'px', 'important');
+            }
           }
         }
         // Height backstop for EVERY cell — status included (v22729, Nick's
