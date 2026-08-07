@@ -4164,12 +4164,25 @@ function resolveFairmontLockupFile(hotelName) {
   if (!norm) return null;
   var padded = ' ' + norm + ' ';
   var best = null, bestLen = 0;
+  // v22974 — a fuzzy key must not steal a DIFFERENT property. 'Fairmont
+  // Century Plaza' (no pack art of its own) contains the whole word 'plaza',
+  // and the loose pass handed it The Plaza New York's lockup (Nick: 'Century
+  // Plaza in LAX is showing as the Fairmont The Plaza'). A key only counts
+  // when the word immediately BEFORE the matched span is brand filler
+  // ('the fairmont …', 'le …') or nothing — a distinguishing word there
+  // ('century plaza', 'copley plaza') means this is some other property, so
+  // the key is skipped and the name falls through to its longer key or to
+  // the runtime generator, which bakes the REAL name.
+  var _FILLER = { '': 1, 'the': 1, 'a': 1, 'an': 1, 'le': 1, 'la': 1, 'les': 1, 'fairmont': 1, 'hotel': 1, 'managed': 1 };
   for (var key in FAIRMONT_PROPERTY_LOCKUPS) {
     if (!Object.prototype.hasOwnProperty.call(FAIRMONT_PROPERTY_LOCKUPS, key)) continue;
     var nk = _fairmontNorm(key);
     if (!nk) continue;
     if (norm === nk) return FAIRMONT_PROPERTY_LOCKUPS[key];   // exact — best possible
-    if (nk.length > bestLen && padded.indexOf(' ' + nk + ' ') !== -1) {
+    var _at = padded.indexOf(' ' + nk + ' ');
+    if (_at !== -1 && nk.length > bestLen) {
+      var _beforeWord = padded.slice(0, _at).trim().split(' ').pop() || '';
+      if (!_FILLER[_beforeWord]) continue;
       best = FAIRMONT_PROPERTY_LOCKUPS[key]; bestLen = nk.length;
     }
   }
@@ -18029,7 +18042,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22973';
+var FIDS_BUILD_TAG = 'v22974';
 (function(){
   try {
     function _addTag(){
