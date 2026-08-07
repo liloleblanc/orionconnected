@@ -9519,6 +9519,13 @@ html body .g8-wrap .v2-rc-map-life-emblem:not(#_):not(#_) {
    which is the 'theyre blue' fix, and the widget swaps to the
    monochrome-white asset so it is one colour, not two. ── */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge,
+/* v22990 - THE EMBLEM ORB WAS NEVER IN THIS LIST. That is the whole of
+   "its still 2 different colors", asked about ten times: the five glyph
+   badges got this glossy red SPHERE while the airline emblem badge kept
+   a FLAT disc of the same red. Same hex, different material, so they
+   read as two colours side by side - and every previous fix corrected
+   the colour, which was never what differed. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge {
   background:
     radial-gradient(circle at 34% 26%,
@@ -9698,86 +9705,105 @@ html body[data-gate-airline="TS"]:not(#_) .g8-board-info-row { background-positi
 html body[data-gate-airline="AF"]:not(#_) .g8-board-info-row { background-position: center 30% !important; }  /* tricolore streaks left, clean blue right */
 html body[data-gate-airline="EK"]:not(#_) .g8-board-info-row { background-position: center 72% !important; }  /* red/white wave crossing */
 
-/* ── v22988: NICK'S ARTWORK **IS** THE PLATE TEXTURE ─────────────────────
-   Nick: 'The backgrounds for plate textures?' — and before that, 'The idea
-   for this was to replace the plate', then 'theres nothing done ABSOLUTELY
-   NOTHING'. He was right every time, and this is why:
+/* ── v22990: ONE BACKGROUND, QUIET PLATES ON TOP OF IT ───────────────────
+   Nick, at the MCO 73 Delta gate: 'Are you fucking kidding me?? What a
+   joke'. Correct. v22988 put his artwork on the --plate-tex variable, so
+   EVERY plate rendered its own squashed copy of the same crop — ten
+   identical red slashes stamped down the screen — while the columns behind
+   them still carried the generic ac-shelf-lux texture. His artwork was
+   never a background at all, which is the exact inversion of the rule he
+   gave months ago: 'your background should be one piece youre pieces will
+   stand out from your backgtround'.
 
-   the plate faces are painted by the v22904 --plate-tex system, whose
-   ALL-PANELS rule carries SEVEN :not(#_) bumps — specificity (7,1,3).
-   Every artwork rule written against the ::before faces in v22981/v22985
-   measured (1,2,3) and lost silently, so the plates kept rendering the
-   stock /textures/plate-*.jpg engravings and nothing he sent ever appeared
-   on them. Those dead rules are deleted, not stacked higher.
+   So the relationship is put the right way round:
+     1. the ARTWORK is ONE continuous piece behind the whole gate — the
+        left rail, the right column and the boarding strip share it, cover,
+        no repeat, one image;
+     2. the PLATES stop carrying imagery entirely and become quiet panels —
+        the carrier's dark brand tone under a soft directional sheen — so
+        they stand out FROM the artwork and the data stays the loudest
+        thing on the screen.
+   The plate material is a gradient, not a file: --plate-tex is consumed as
+   a background-image, so this needs no baked texture and cannot regress to
+   a mis-cut asset. */
 
-   The supported extension point is the variable, exactly as its own
-   comment says ('one list to extend, not eleven'), so each carrier's
-   --plate-tex now points at a texture CUT FROM HIS ARTWORK at the plate
-   format the system expects (872x308, 2.83:1) — not the 16:9 original
-   squashed by the rule's background-size:100% 100%, which is what made
-   the earlier attempt look stretched. Focal band per artwork: Delta the
-   red wave crossing, Transat the wing, Air France the tricolore streaks
-   with its clean blue field for the values, Emirates the flag curve,
-   Flair the lime sweep.
+/* ---- 1. the artwork, one piece, behind everything ---- */
+html body[data-gate-airline="DL"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="DL"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="DL"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-info-row {
+  background-color: #0a1a33 !important;
+  background-image: url('/logos/Backgrounds/DL/deltabackground10.png?v=22990') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="TS"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="TS"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="TS"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-info-row {
+  background-color: #062741 !important;
+  background-image: url('/logos/Backgrounds/TS/transatbackground.png?v=22990') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="AF"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="AF"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="AF"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-info-row {
+  background-color: #0a3d8f !important;
+  background-image: url('/logos/Backgrounds/AF/airfrancebackground.png?v=22990') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="EK"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="EK"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="EK"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-info-row {
+  background-color: #03170c !important;
+  background-image: url('/logos/Backgrounds/EK/emiratesbackground.png?v=22990') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+html body[data-gate-airline="F8"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body[data-gate-airline="F8"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body[data-gate-airline="F8"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-info-row {
+  background-color: #7ac21e !important;
+  background-image: url('/logos/Backgrounds/F8/flairbackground.png?v=22990') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
 
-   Ink follows measured luminance of each cut, not assumption:
-   DL 25 · AF 53 · EK 47 · TS 65 -> WHITE ink; F8 118 -> DARK ink. That
-   moves AF and EK OFF the bright-plate list (their stock plates were pale,
-   their artwork is not) and puts F8 on it. */
+/* ---- 2. quiet plates: brand tone + sheen, no imagery ---- */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-dl-waves.jpg?v=22988');
-  --plate-base: #0a1a33;
-  --plate-blend: normal;
+  --plate-tex: linear-gradient(157deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 34%, rgba(0,0,0,0.20) 100%);
+  --plate-base: #08152b;  --plate-blend: normal;
 }
 html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-ts-wing.jpg?v=22988');
-  --plate-base: #12192a;
-  --plate-blend: normal;
+  --plate-tex: linear-gradient(157deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.04) 34%, rgba(0,0,0,0.20) 100%);
+  --plate-base: #06263F;  --plate-blend: normal;
 }
-/* AF + EK: artwork is DARK — white ink, bright status colours. This
-   overrides their membership in the v22904 bright-plate group above. */
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-af-tricolore.jpg?v=22988');
-  --plate-base: #0a3d8f;
-  --plate-blend: normal;
-  --plate-ink: #ffffff;
-  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
-  --plate-ok: #34d399;  --plate-warn: #fbbf24;
-  --plate-bad: #f87171;  --plate-info: #93c5fd;
+  --plate-tex: linear-gradient(157deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.04) 34%, rgba(0,0,0,0.22) 100%);
+  --plate-base: #08306E;  --plate-blend: normal;
+  --plate-ink: #ffffff;  --plate-ink-sh: 0 1px 3px rgba(0,0,0,0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;  --plate-bad: #f87171;  --plate-info: #93c5fd;
 }
 html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-ek-uae.jpg?v=22988');
-  --plate-base: #03170c;
-  --plate-blend: normal;
-  --plate-ink: #ffffff;
-  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
-  --plate-ok: #34d399;  --plate-warn: #fbbf24;
-  --plate-bad: #f87171;  --plate-info: #93c5fd;
+  --plate-tex: linear-gradient(157deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 34%, rgba(0,0,0,0.22) 100%);
+  --plate-base: #04240F;  --plate-blend: normal;
+  --plate-ink: #ffffff;  --plate-ink-sh: 0 1px 3px rgba(0,0,0,0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;  --plate-bad: #f87171;  --plate-info: #93c5fd;
 }
-/* Flair: the lime cut is the one BRIGHT plate here — dark ink, darkened
-   status colours, same treatment the v22904 bright group uses. */
+/* Flair's ground is bright, so its plates go bright too and take dark ink. */
 html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-f8-lime.jpg?v=22988');
-  --plate-base: #7ac21e;
-  --plate-blend: normal;
-  --plate-ink: #12161d;
-  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
-  --plate-ok: #056f4a;  --plate-warn: #8a5200;
-  --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
+  --plate-tex: linear-gradient(157deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.12) 36%, rgba(0,0,0,0.10) 100%);
+  --plate-base: #EAF7D2;  --plate-blend: normal;
+  --plate-ink: #12161d;  --plate-ink-sh: 0 1px 0 rgba(255,255,255,0.55);
+  --plate-ok: #056f4a;  --plate-warn: #8a5200;  --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
 }
-/* The boarding strip's own value/title inks are set by their own rules,
-   not by --plate-ink — carry the variable through so the strip plates
-   read correctly on Flair's bright face and the four dark ones. */
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-title .g8-bir-l1,
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-title .g8-bir-sep,
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-val {
-  color: var(--plate-ink, #fff) !important;
-  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.5)) !important;
-}
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-title .g8-bir-l2 {
-  color: color-mix(in srgb, var(--plate-ink, #fff) 62%, transparent) !important;
-}
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-cell:last-child .g8-bir-val.g8-bir-st-boarding { color: var(--plate-info, #93c5fd) !important; }
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-cell:last-child .g8-bir-val.g8-bir-st-delayed  { color: var(--plate-warn, #fbbf24) !important; }
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-cell:last-child .g8-bir-val.g8-bir-st-cancelled { color: var(--plate-bad, #f87171) !important; }
-html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-bir-cell:last-child .g8-bir-val.g8-bir-st-ok { color: var(--plate-ok, #34d399) !important; }
