@@ -2994,7 +2994,10 @@ html body .g8-wrap .g8-r1-silk .g8-r1-apband-silk img {
   max-height: 72% !important;
   max-width: 100% !important;
 }
-html .g8-bir-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+/* min-height:0 + overflow:hidden — the text column can NEVER paint past
+   its plate, whatever the fitters do (v22983, Nick's TS A66 + AC A28
+   shots: the two-line status escaped the box again). */
+html .g8-bir-text { min-width: 0; min-height: 0; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 html .g8-bir-title {
   font-size: clamp(14px, 2vh, 24px);
   font-weight: 800;
@@ -3045,10 +3048,17 @@ html .g8-bir-val .g8-r2-revised { color: #b45309; }
    Free wrapping let 'Gate closed | Porte fermée' become four giant lines
    and balloon the whole row (Nick: 'why is it so thick'). */
 html .g8-bir-cell:last-child .g8-bir-val {
-  font-size: clamp(24px, 4.2vh, 60px);
+  /* v22983 — SIZED TO THE ROW'S WORST CASE, NOT ITS BEST. The row floats
+     between 14.5vh and 17vh; at the SHORT end the cell offers ~8vh for the
+     value (padding 3.2vh + title ≈3.3vh come off first), and the old
+     4.2vh × 2 lines × 1.08 = 9.1vh stack could NOT fit — the overflow
+     Nick kept photographing was built into the numbers, appearing and
+     disappearing with wherever the row height landed. 3.3vh × 2 × 1.05 =
+     6.9vh fits the worst case with margin, at every viewport. */
+  font-size: clamp(18px, 3.3vh, 46px);
   display: flex;
   flex-direction: column;
-  line-height: 1.08;
+  line-height: 1.05;
   white-space: nowrap;
   text-overflow: clip;
 }
