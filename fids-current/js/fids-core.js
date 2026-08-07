@@ -17848,9 +17848,31 @@ const TLbi = k => { const o = LS[k] || {}; const en = o.en || k; return (o.fr &&
 // need no surgery, and it now PINS the index instead of advancing it: `lang`
 // is always langs[0], stable for the life of the screen.
 function startLangRotation() {
+  // v22964 — PARTIAL RESTORE, and it is my regression to own. v22949 removed
+  // this timer as dead weight; it was load-bearing on exactly one surface: a
+  // MAIN board pinned to Departures or Arrivals. There the paging clock is
+  // off (dep/arr view modes clear pageTimer), so this timer was the only
+  // thing alternating a two-language board between its languages — its own
+  // comment said "it now only serves screens the paging clock doesn't cover"
+  // and I removed it anyway. Nick, on a fixed hall board: "Its not rotating
+  // to the second language."
+  //
+  // Restored SCOPED to that one case: main board, no paging clock, two
+  // languages selected. The gate stays bilingual-simultaneous (never flips),
+  // one selected language stays static everywhere, and the rotate view mode
+  // keeps its own clock.
   if (langRotateTimer) { clearInterval(langRotateTimer); langRotateTimer = null; }
   langIdx = 0;
   lang = langs[0];
+  if (langs.length <= 1) return;
+  langRotateTimer = setInterval(function () {
+    if (screenType !== 'main') return;                                   // gate/bags: simultaneous
+    if (typeof pageTimer !== 'undefined' && pageTimer) return;           // rotate mode owns it
+    langIdx = (langIdx + 1) % langs.length;
+    lang = langs[langIdx];
+    updateTicker();
+    if (data.dep.length || data.arr.length) render();
+  }, 15000);
 }
 function _startLangRotation_WITHDRAWN() {
   if (langRotateTimer) clearInterval(langRotateTimer);
@@ -17995,7 +18017,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22963';
+var FIDS_BUILD_TAG = 'v22964';
 (function(){
   try {
     function _addTag(){
