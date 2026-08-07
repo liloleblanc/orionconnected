@@ -6979,7 +6979,14 @@ function _buildV2AircraftCol(ctx, vars) {
         // file is derived from the airline's own tile art, never redrawn.
         var BADGE_TILE_BRANDS = { 'MX': { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' } };
         var _tileBrand = BADGE_TILE_BRANDS[code] || null;
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true };  // supplied full-colour art keeps its native colours
+        // DL removed (Nick: 'still not the right color its not even round'):
+        // native=true meant transparent badge + full-bleed art, which was
+        // right for the old glossy-sphere file but wrong for the monochrome
+        // widget — it rendered as a bare white mark on the dark plate, square
+        // and unbadged. DL now takes the COLOR_ON_WHITE path below: the same
+        // round glossy accent orb (Delta red) as every other icon, white
+        // widget centered inside.
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true };  // supplied full-colour art keeps its native colours
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
@@ -18089,7 +18096,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22981';
+var FIDS_BUILD_TAG = 'v22982';
 (function(){
   try {
     function _addTag(){
