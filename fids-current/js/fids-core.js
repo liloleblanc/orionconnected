@@ -17783,7 +17783,41 @@ function toggleLang(l) {
   startLangRotation();
   const testBtn = document.getElementById('testFlightBtn');
   if (testBtn) testBtn.textContent = TL('addFlight');
-  if (data.dep.length || data.arr.length) render();
+  // ── v22955 — A LANGUAGE CHANGE FORCES A FULL REBUILD.
+  // Nick: German+Spanish "doesnt work at all on Gate". It did work — the
+  // screen was just one click behind, showing a language he had already
+  // deselected.
+  //
+  // Instrumented on the live gate, toggling de then es from en+fr:
+  //   +de  render(langs=fr+de) key=fr+de >>RDS >>RDS render key   clock CORRECT
+  //   +es  render(langs=de+es) key=de+es >>RDS                    clock STALE
+  // renderDedicatedScreen ran both times with the right languages. The
+  // difference is that the first toggle happened to get a SECOND render pass
+  // behind it, and that second pass is what actually repainted the banner.
+  // The banner clock is built inside the g8-wrap HTML, so the wrap is being
+  // reused on a single pass.
+  //
+  // I have not identified the cache doing the reusing, and I am not going to
+  // guess at it again tonight — five wrong theories on this codebase today,
+  // each of which cost a build. What is MEASURED is that two passes repaint
+  // and one does not. So: clear the dedicated render key, so the next render
+  // cannot be skipped as "nothing changed", and schedule a second pass on the
+  // following frame — making deterministic the thing that was previously an
+  // accident of timing.
+  //
+  // This matches how Nick's original build behaved: click a language and the
+  // page rebuilt with whatever was chosen. It is heavier than it needs to be,
+  // and the honest fix is to find the reuse and invalidate it properly. Left
+  // as a marker for that.
+  try { dedicatedRenderKey = null; } catch (e) {}
+  if (data.dep.length || data.arr.length) {
+    render();
+    try {
+      var _reflow = function () { try { dedicatedRenderKey = null; render(); } catch (e) {} };
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(_reflow);
+      else setTimeout(_reflow, 30);
+    } catch (e) {}
+  }
 }
 function updateLangButtons() {
   ['en','fr','es','de','it','pt','ja','zh','ar'].forEach(l => {
@@ -17860,7 +17894,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22954';
+var FIDS_BUILD_TAG = 'v22955';
 (function(){
   try {
     function _addTag(){
