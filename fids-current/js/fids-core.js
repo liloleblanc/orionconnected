@@ -33566,9 +33566,21 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // WestJet shot: 'nothing alligns' — the two-line status stack
         // spilled off its plate). Walk the value down until the cell's own
         // box genuinely holds its title+value stack.
-        var _gTxt = el.parentElement, gBackH = 18;
+        var _gTxt = el.parentElement, gBackH = 26;
         var _gPx = parseFloat(el.style.fontSize) || parseFloat(getComputedStyle(el).fontSize) || 30;
-        while (_gCell && _gTxt && _gTxt.scrollHeight > _gCell.clientHeight + 1 && _gPx > 14 && gBackH-- > 0) {
+        // v22991 — MEASURE AGAINST THE BOX THE TEXT ACTUALLY GETS. This
+        // compared the stack to _gCell.clientHeight, which INCLUDES the
+        // cell's padding — clamp(14px,2vh,26px) top and bottom, so up to
+        // 52px the text can never occupy. The backstop therefore called a
+        // stack "fitting" while it was already 30-50px past the plate, and
+        // the second line of a two-line status sat outside the box. That is
+        // the spill Nick has photographed on WestJet, on Air Transat and now
+        // on United ('those fucking numbers now spilling out').
+        var _gCellCs = window.getComputedStyle(_gCell);
+        var _gAvailH = _gCell.clientHeight
+          - (parseFloat(_gCellCs.paddingTop) || 0)
+          - (parseFloat(_gCellCs.paddingBottom) || 0);
+        while (_gCell && _gTxt && _gAvailH > 0 && _gTxt.scrollHeight > _gAvailH + 1 && _gPx > 12 && gBackH-- > 0) {
           _gPx -= Math.max(1, _gPx * 0.06);
           el.style.setProperty('font-size', _gPx + 'px', 'important');
         }
