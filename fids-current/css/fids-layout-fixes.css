@@ -9682,3 +9682,14 @@ html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tva
 html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-delayed { color: #7c3a00 !important; }
 html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-cancelled { color: #7f1d1d !important; }
 html body[data-gate-airline="F8"]:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-status-boarding { color: #1e3a8a !important; }
+
+/* ── v22984: THE ARTWORK MUST BE VISIBLE ON THE BOARDING STRIP (Nick's DL
+   C88 shot: 'what the fuck was done here?' — nothing readable changed,
+   because cover-cropping a 16:9 artwork onto the 1920×~150 strip shows a
+   single horizontal slice, and the 'quiet zone' positions above picked
+   the FLAT part of each art. The strip now takes the slice where the
+   art actually lives; the tall side shelves keep the quiet zones. */
+html body[data-gate-airline="DL"]:not(#_) .g8-board-info-row { background-position: center 62% !important; }  /* red wave band */
+html body[data-gate-airline="TS"]:not(#_) .g8-board-info-row { background-position: center 42% !important; }  /* aqua wing sweep */
+html body[data-gate-airline="AF"]:not(#_) .g8-board-info-row { background-position: center 30% !important; }  /* tricolore streaks left, clean blue right */
+html body[data-gate-airline="EK"]:not(#_) .g8-board-info-row { background-position: center 72% !important; }  /* red/white wave crossing */
