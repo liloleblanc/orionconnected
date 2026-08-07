@@ -9155,11 +9155,11 @@ function uxgGateHtml(ctx) {
             +   '<div class="g8-bir-title">' + _gateLbl('flight', _frF, function(w,i){ return '<span class="g8-bir-l'+(i+1)+'">'+w+'</span>'; }, ' <span class="g8-bir-sep">|</span> ') + '</div>'
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
-          : _cell('ac-ico-flight', 'Flight', 'Vol', currentFlight.flight || ''))
-      + _cell('ac-ico-dest', 'Destination', (locIata ? '<span class="g8-bir-code-t">' + _dispIata(locIata) + '</span>' : ''), _bDest, true)
-      + _cell('ac-ico-boarding', 'Boarding', 'Embarquement', _birMerid(boardTimeHtml))
-      + _cell('ac-ico-depart', 'Departure', 'D\u00e9part', _birMerid(depTimeHtml))
-      + _cell('ac-ico-status', 'Status', 'Statut', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
+          : _cell('ac-ico-flight', _gateLbl('flight', _frF, function(w){return w;}, ' | '), '', currentFlight.flight || '', true))
+      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | '), (locIata ? '<span class="g8-bir-code-t">' + _dispIata(locIata) + '</span>' : ''), _bDest, true)
+      + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(boardTimeHtml), true)
+      + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(depTimeHtml), true)
+      + _cell('ac-ico-status', _gateLbl('status', _frF, function(w){return w;}, ' | '), '', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
       + '</div>';
   }
 
@@ -10144,7 +10144,7 @@ function uxgGateHtml(ctx) {
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
               + '<div class="octb octb-tab">'
               +   '<div class="octb-top">'
-              +     '<div class="octb-lbls"><span class="octb-en">Time in ' + _e(_tbCity) + '</span><span class="octb-fr">Heure à ' + _e(_tbCity) + '</span></div>'
+              +     '<div class="octb-lbls">' + _gateLbl('timeIn', false, function(w,i){ return '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; }, '') + '</div>'
               +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
               +   '</div>'
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
@@ -17822,6 +17822,7 @@ var _GATE_LBL = {
   welcome:   { en:'Welcome',       fr:'Bienvenue',      es:'Bienvenido',   de:'Willkommen',  it:'Benvenuto',   pt:'Bem-vindo',  ja:'ようこそ',  zh:'欢迎',   ar:'أهلاً' },
   priority:  { en:'Priority',      fr:'Priorité',       es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
   rows:      { en:'Rows',          fr:'Rangées',        es:'Filas',        de:'Reihen',      it:'File',        pt:'Fileiras',   ja:'列',        zh:'排',     ar:'صفوف' },
+  timeIn:    { en:'Time in',       fr:'Heure à',        es:'Hora en',      de:'Zeit in',     it:'Ora a',       pt:'Hora em',    ja:'現地時刻',  zh:'当地时间', ar:'التوقيت في' },
   time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
   all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' }
 };
@@ -17859,7 +17860,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22953';
+var FIDS_BUILD_TAG = 'v22954';
 (function(){
   try {
     function _addTag(){
