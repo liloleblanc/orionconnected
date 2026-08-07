@@ -3166,7 +3166,9 @@ function getBoardingCountdown(depTs) {
 const AIRLINE_BRAND = {
   'AC': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Air Canada' },
   'WS': { bg1:'#003366', bg2:'#001a33', bg3:'#004488', accent:'#00b2a9', name:'WestJet' },
-  'TS': { bg1:'#003366', bg2:'#001833', bg3:'#004080', accent:'#ff6600', name:'Air Transat' },
+  // Transat repainted from Nick's wing artwork (Aug 7: 'these are the actual
+  // colors') — deep navy field, mid-navy lift, teal accent from the wing.
+  'TS': { bg1:'#1e293e', bg2:'#12192a', bg3:'#2b4267', accent:'#3c9abe', name:'Air Transat' },
   'PD': { bg1:'#002244', bg2:'#001122', bg3:'#003355', accent:'#1a3a6b', name:'Porter Airlines' },
   'PB': { bg1:'#0a2a4a', bg2:'#06203a', bg3:'#0e335a', accent:'#e37222', name:'PAL Airlines' },
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
@@ -5066,6 +5068,10 @@ var AIRLINE_BACKGROUNDS = {
     '/logos/Backgrounds/UA/united-background.jpg',
     '/logos/Backgrounds/UA/united-background2.png',
     '/logos/Backgrounds/UA/unitedbackground3.png'
+  ],
+  'TS': [
+    // Nick's wing artwork composed on its own navy palette (Aug 7).
+    '/logos/Backgrounds/TS/transatbackground.png'
   ]
 };
 
@@ -6611,14 +6617,12 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
 // the first/top round Flight icon on the gate display — never in the main FIDS
 // all-flights airline cell (which has its own IATA_TO_* logo system).
 var GATE_TOP_ROUND_EMBLEM_FILES = {
-  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
-  // Delta gets the treatment United has (Nick: 'same for the Delta icon shiny
-  // orb'). DL-glossy is the same family of art — the widget and wordmark on a
-  // glossy sphere — so it goes in the round emblem slot and, like United's,
-  // renders full-bleed in its own colours instead of a flat silhouette padded
-  // inside an accent circle. Filling the badge edge to edge is also what makes
-  // it read bigger.
-  'DL': '/logos/airline-tiles/DL-glossy.svg?v=22966'
+  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350'
+  // DL-glossy removed (Nick, Aug 7: 'They should all match … as long as they
+  // are all consistent') — the glossy orb was the one multi-tone chip in a
+  // row of red accent orbs with white glyphs. With no override the Flight
+  // badge falls back to AIRLINE_EMBLEM_FILES' monochrome-white widget on the
+  // same red orb as every other icon on the rail.
 };
 
 function _buildV2AircraftCol(ctx, vars) {
@@ -18064,7 +18068,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22978';
+var FIDS_BUILD_TAG = 'v22979';
 (function(){
   try {
     function _addTag(){
