@@ -8384,18 +8384,19 @@ function _buildV2MapCol(ctx, vars) {
             + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
           : '<b>' + _opNm6 + '</b>';
       }
-      var _opByL2 = (_lang2b === 'es') ? 'Operado por' : 'Exploité par';
+      // v22958 — follows `langs` (Nick: 'Also operated by I think'). _lang2b
+      // was the FIFTH airport-keyed second-language picker found this session.
+      var _frF8 = (typeof frFirstAirport === 'function') && frFirstAirport(vars.iata);
+      var _opByLbl = _gateLbl('operatedBy', _frF8, function (w) { return w; }, ' <span class="v2-rc-fi-sep">|</span> ');
       // Bottom shelf: STACKED bilingual label (EN over FR) beside the value —
       //   Operated By: / Exploté Par:  [LOGO]    Aircraft: / Appareil:  A319 | reg
       // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
       // BOTTOM (only if operated by another carrier): Operated By + logo, centered.
-      var _pendingAircraftText = (_lang2b === 'es')
-        ? _nbw('Aircraft details pending') + ' <span class="v2-rc-fi-sep">|</span> ' + _nbw('Datos del avión pendientes')
-        : _nbw('Aircraft details pending') + ' <span class="v2-rc-fi-sep">|</span> ' + _nbw('Détails de l’appareil à venir');
+      var _pendingAircraftText = _gateLbl('acPending', _frF8, _nbw, ' <span class="v2-rc-fi-sep">|</span> ');
       var _typeCellHtml =
           '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || _pendingAircraftText) + '</div>'
         + (_opByVal
-            ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">Operated By <span class="v2-rc-fi-sep">|</span> ' + _opByL2 + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
+            ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">' + _opByLbl + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
             : '');
       // Facing class baked at build time from the manifest — the clouds are
       // mirrored correctly on the FIRST painted frame, no onload race.
@@ -8410,7 +8411,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div id="gateCloudsBg"></div>'
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
-              : '<div class="v2-rc-aircraft-pending"><span style="white-space:nowrap;">Aircraft image pending</span> <span>|</span> <span style="white-space:nowrap;">Image de l’appareil à venir</span></div>')
+              : '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>')
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
         +   _typeCellHtml
@@ -8423,7 +8424,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus">'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<div class="v2-rc-aircraft-pending"><span style="white-space:nowrap;">Aircraft image pending</span> <span>|</span> <span style="white-space:nowrap;">Image de l’appareil à venir</span></div>'
+      +   '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
       +   '<div class="v2-rc-acb-actype v2-rc-actype-val">Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir</div>'
@@ -17856,6 +17857,8 @@ var _GATE_LBL = {
   revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'مُعدل' },
   gate:      { en:'Gate',          fr:'Porte',          es:'Puerta',       de:'Gate',        it:'Gate',        pt:'Portão',     ja:'ゲート',    zh:'登机口', ar:'البوابة' },
   yourAc:    { en:'Your Aircraft', fr:'Votre Avion',    es:'Su Aeronave',  de:'Ihr Flugzeug',it:'Il Tuo Aereo',pt:'Sua Aeronave',ja:'ご搭乗機', zh:'您的航机', ar:'طائرتك' },
+  acPending: { en:'Aircraft details pending', fr:'Détails de l\u2019appareil à venir', es:'Datos del avión pendientes', de:'Flugzeugdaten folgen', it:'Dettagli dell\u2019aereo in arrivo', pt:'Detalhes da aeronave pendentes', ja:'機材情報は準備中', zh:'机型信息即将显示', ar:'تفاصيل الطائرة قريباً' },
+  acImgPending:{ en:'Aircraft image pending', fr:'Image de l\u2019appareil à venir', es:'Imagen del avión pendiente', de:'Flugzeugbild folgt', it:'Immagine dell\u2019aereo in arrivo', pt:'Imagem da aeronave pendente', ja:'機体画像は準備中', zh:'机型图片即将显示', ar:'صورة الطائرة قريباً' },
   operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
   welcome:   { en:'Welcome',       fr:'Bienvenue',      es:'Bienvenido',   de:'Willkommen',  it:'Benvenuto',   pt:'Bem-vindo',  ja:'ようこそ',  zh:'欢迎',   ar:'أهلاً' },
   priority:  { en:'Priority',      fr:'Priorité',       es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
@@ -17898,7 +17901,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22957';
+var FIDS_BUILD_TAG = 'v22958';
 (function(){
   try {
     function _addTag(){
