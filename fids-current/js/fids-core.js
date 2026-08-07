@@ -18029,7 +18029,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22967';
+var FIDS_BUILD_TAG = 'v22970';
 (function(){
   try {
     function _addTag(){
@@ -23353,12 +23353,27 @@ function applyAirportConfigToBoard(iata) {
     return undefined;
   }
 
-  // Board language rotation per airport. An explicit user/admin `langs` config
-  // wins; otherwise fall back to the airport's regional default (English +
-  // Spanish for Bolivia/LATAM, English + French elsewhere).
+  // Board languages per airport, layered: the operator's own saved choice
+  // (fids_langs_<IATA>, written by toggleLang) wins, then an explicit
+  // user/admin `langs` config, then the regional default.
+  // v22970 — the saved layer is NEW. This function runs on every airport
+  // switch AND re-runs when the async admin config lands, and it wrote
+  // config-default langs unconditionally — so it clobbered the v22961
+  // restore on every path (Nick: 'it does not save the language to an
+  // airport btw'; measured: switch back to an airport saved de+es → en,fr).
   try {
     var _cfgLangs = _pref('langs');
-    langs = (Array.isArray(_cfgLangs) && _cfgLangs.length) ? _cfgLangs.slice() : boardLangsFor(iata);
+    var _savedSet = null;
+    try {
+      var _sv = localStorage.getItem('fids_langs_' + String(iata || '').toUpperCase());
+      if (_sv) {
+        _savedSet = _sv.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 2);
+        if (!_savedSet.length) _savedSet = null;
+      }
+    } catch (e2) {}
+    langs = _savedSet ? _savedSet
+      : (Array.isArray(_cfgLangs) && _cfgLangs.length) ? _cfgLangs.slice()
+      : boardLangsFor(iata);
     if (langIdx >= langs.length) langIdx = 0;
     lang = langs[langIdx] || langs[0] || 'en';
   } catch (e) {}
@@ -23708,6 +23723,12 @@ function onApChange() {
       window.history.replaceState(null, '', _apUrl);
     } catch (e) {}
   }
+  // v22968 — apply THIS airport's saved language choice on the in-page
+  // switch too (Nick: 'it does not save the language to an airport btw').
+  // The v22961 restore ran only on the boot path (changeScreenType), so
+  // picking a new airport from the menu/control picker kept the previous
+  // airport's languages and the saved set looked like it never took.
+  try { _restoreApLangs(); } catch (e) {}
   const apData = AP[iata] || { name: iata };
   // Legacy hdrApName still updated (some other code paths read it),
   // but the v2 banner now displays this through .fids-airport-name.
