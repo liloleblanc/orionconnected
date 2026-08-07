@@ -7426,7 +7426,9 @@ function _buildV2MapCol(ctx, vars) {
         early:{en:'Early',fr:'En avance',es:'Adelantado'}, cancelled:{en:'Cancelled',fr:'Annulé',es:'Cancelado'},
         arrived:{en:'Arrived',fr:'Arrivé',es:'Aterrizado'}, ontime:{en:'On time',fr:"À l'heure",es:'A tiempo'}
       };
-      var _stShort = (_ST_SHORT[_stKey] && (_ST_SHORT[_stKey][_ibLang] || _ST_SHORT[_stKey].en)) || _stWord;
+      // A language the short table doesn't carry (ja/zh/ar/de/it/pt) falls
+      // through to the full nine-language word, not to English.
+      var _stShort = (_ST_SHORT[_stKey] && _ST_SHORT[_stKey][_ibLang]) || _stWord;
 
       // Origin display: "Calgary (YYC)"
       var _origCity = '';
@@ -7582,7 +7584,12 @@ function _buildV2MapCol(ctx, vars) {
           ? langs : ['en', 'fr'];
         var seen = Object.create(null), parts = [];
         for (var _li = 0; _li < picked.length && parts.length < 2; _li++) {
-          var w = _stWords && _stWords[picked[_li]];
+          // _ST_SHORT only carries en/fr/es — for every other selected
+          // language (ja/zh/ar/de/it/pt) fall through to the full
+          // nine-language table instead of dropping the word, which was
+          // what forced Japanese/Arabic screens back to 'Scheduled | Prévu'.
+          var w = (_stWords && _stWords[picked[_li]])
+               || (_ST_I18N[_stKey] && _ST_I18N[_stKey][picked[_li]]);
           if (!w) continue;
           var k = String(w).toLowerCase();
           if (seen[k]) continue;          // never print 'Delayed | Delayed'
@@ -7623,15 +7630,16 @@ function _buildV2MapCol(ctx, vars) {
       // share one textured panel, Arrival+Status share the other.
       var _ibArrRowHtml = '';
       if (_ibArrSchedStr) {
-        var _ibArrLblEn = (_stKey === 'arrived') ? 'Arrived' : 'Arrival';
-        var _ibArrLblFr = (_stKey === 'arrived') ? 'Arrivé' : 'Arrivée';
+        // Label follows the selected languages like every other row —
+        // 'Arrival | Arrivée' was hard-coded En/Fr on ja/ar screens.
+        var _ibArrLblKey = (_stKey === 'arrived') ? 'arrived' : 'arrival';
         if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
           // Nick's approved sketch: 'Arrival 5:28PM    Revised 5:27PM' —
           // one line, two pairs; revised inked green earlier/amber later.
           var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-early' : 'v2-rc-status-delayed';
           _ibArrRowHtml =
               '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
-            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
+            +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
             +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _ibArrSchedStr + '</span></div>'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('revised', _frF) + '</div>'
             +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _ibArrRevStr + '</div>'
@@ -7639,7 +7647,7 @@ function _buildV2MapCol(ctx, vars) {
         } else {
           _ibArrRowHtml =
               '<div class="v2-rc-fi-trow">'
-            +   '<div class="v2-rc-fi-tlbl"><span>' + (_frF ? _ibArrLblFr : _ibArrLblEn) + '</span><span>' + (_frF ? _ibArrLblEn : _ibArrLblFr) + '</span></div>'
+            +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
             +   '<div class="v2-rc-fi-tval">' + _ibArrSchedStr + '</div>'
             + '</div>';
         }
@@ -12469,7 +12477,9 @@ const gView = document.getElementById('gateView');
         const inFlight = inboundFlight.flight || '';
         const inTime = inboundFlight.time || '';
         const inStatus = inboundFlight.status || 'scheduled';
-        const inStEn = (SS[inStatus] || {}).en || inStatus.toUpperCase();
+        // Status word in the current rotation language (same source TL()
+        // reads) — was pinned to English regardless of the picked languages.
+        const inStEn = (SS[inStatus] || {})[lang] || (SS[inStatus] || {}).en || inStatus.toUpperCase();
         // Estimate minutes until arrival
         let etaStr = '';
         if (inboundFlight._sortTs) {
@@ -17994,6 +18004,7 @@ var _GATE_LBL = {
   status:    { en:'Status',        fr:'Statut',         es:'Estado',       de:'Status',      it:'Stato',       pt:'Estado',     ja:'状況',      zh:'状态',   ar:'الحالة' },
   departure: { en:'Departure',     fr:'Départ',         es:'Salida',       de:'Abflug',      it:'Partenza',    pt:'Partida',    ja:'出発',      zh:'出发',   ar:'المغادرة' },
   arrival:   { en:'Arrival',       fr:'Arrivée',        es:'Llegada',      de:'Ankunft',     it:'Arrivo',      pt:'Chegada',    ja:'到着',      zh:'到达',   ar:'الوصول' },
+  arrived:   { en:'Arrived',       fr:'Arrivé',         es:'Llegó',        de:'Angekommen',  it:'Arrivato',    pt:'Chegou',     ja:'到着済',    zh:'已到达', ar:'وصل' },
   boarding:  { en:'Boarding',      fr:'Embarquement',   es:'Embarque',     de:'Boarding',    it:'Imbarco',     pt:'Embarque',   ja:'搭乗',      zh:'登机',   ar:'الصعود' },
   revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'مُعدل' },
   gate:      { en:'Gate',          fr:'Porte',          es:'Puerta',       de:'Gate',        it:'Gate',        pt:'Portão',     ja:'ゲート',    zh:'登机口', ar:'البوابة' },
@@ -18042,7 +18053,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22975';
+var FIDS_BUILD_TAG = 'v22976';
 (function(){
   try {
     function _addTag(){
@@ -34139,7 +34150,26 @@ function _renderBigCraft(el, ctx) {
   var _bcDelayed = !!(inb._revTs && inb._sortTs && inb._revTs > inb._sortTs);
   if (_bcDelayed && (stKey === 'scheduled' || stKey === 'ontime' || stKey === '')) stKey = 'delayed';
   var ss = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
-  var stShow = ss ? (ss.en.replace(/\b\w/g, function (c) { return c.toUpperCase(); }) + ' <span class="v2-rc-fi-sep">|</span> ' + ss.fr) : (inb.status || '—');
+  // Status follows the selected languages like the small card it mirrors —
+  // this cell hard-coded 'ss.en | ss.fr' and kept reading English/French on
+  // Japanese/Arabic screens. Same two-word cap as the rail cards.
+  var stShow = (function () {
+    if (!ss) return inb.status || '—';
+    var _cap = function (w) { return String(w).replace(/\b\w/g, function (c) { return c.toUpperCase(); }); };
+    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en', 'fr'];
+    var seen = Object.create(null), parts = [];
+    for (var i = 0; i < picked.length && parts.length < 2; i++) {
+      var w = ss[picked[i]];
+      if (!w) continue;
+      w = _cap(w);
+      var k = w.toLowerCase();
+      if (seen[k]) continue;
+      seen[k] = 1;
+      parts.push(w);
+    }
+    if (!parts.length) parts.push(_cap(ss.en));
+    return parts.join(' <span class="v2-rc-fi-sep">|</span> ');
+  })();
   var stCls = /delay|retard/i.test(stKey) ? 'delayed' : (/cancel/i.test(stKey) ? 'cancelled' : 'scheduled');
   var acImg = '';
   try { var im = document.querySelector('.v2-rc-shelf-illus img, .g8-aircraft-img'); if (im && im.src) acImg = im.src; } catch (e) {}
