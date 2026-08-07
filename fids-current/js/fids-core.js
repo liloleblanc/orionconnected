@@ -9126,11 +9126,23 @@ function uxgGateHtml(ctx) {
       : /ontime|early|scheduled/.test(_stK) ? ' g8-bir-st-ok' : '';
     // EN and FR each get their OWN line — free wrapping let 'Gate closed |
     // Porte fermée' break into four giant lines and balloon the whole row.
-    var _stTxt = _stP
-      ? (_frF
-          ? '<span class="g8-bir-st2">' + _stP.fr + '</span><span class="g8-bir-st2">' + _stP.en + '</span>'
-          : '<span class="g8-bir-st2">' + _stP.en + '</span><span class="g8-bir-st2">' + _stP.fr + '</span>')
-      : '';
+    // v22965 — the status VALUE follows the languages (Nick's MCO shot: an
+    // en+es gate reading 'Delayed / En retard' — French, not selected). Same
+    // stack, words from the selected languages, de-duplicated.
+    var _stTxt = '';
+    if (_stP) {
+      var _svPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+      if (_frF) { var _svf = _svPick.indexOf('fr'); if (_svf > 0) { _svPick.splice(_svf, 1); _svPick.unshift('fr'); } }
+      var _svW = [], _svSeen = {};
+      for (var _svi = 0; _svi < _svPick.length && _svW.length < 2; _svi++) {
+        var _svw = _stP[_svPick[_svi]];
+        if (!_svw || _svSeen[String(_svw).toLowerCase()]) continue;
+        _svSeen[String(_svw).toLowerCase()] = 1;
+        _svW.push(_svw);
+      }
+      if (!_svW.length && _stP.en) _svW.push(_stP.en);
+      _stTxt = _svW.map(function (w) { return '<span class="g8-bir-st2">' + w + '</span>'; }).join('');
+    }
     // Flair brand palette (Nick): airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
     var _birF8 = (airlineCode === 'F8');
@@ -18017,7 +18029,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22964';
+var FIDS_BUILD_TAG = 'v22965';
 (function(){
   try {
     function _addTag(){
