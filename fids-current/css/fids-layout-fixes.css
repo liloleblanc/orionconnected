@@ -10240,3 +10240,73 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
   background-color: #061024 !important;   /* dark dark navy */
   background-image: none !important;
 }
+
+/* ── v23056: AIR-FRANCE-STYLE FLYING AIRCRAFT (Nick's reference clip) ──────
+   Everything here is gated behind body.gate-acsky, set only by ?acsky=1.
+   With the flag off, not one rule below matches and the gate screen is
+   byte-for-byte what it is today.
+
+   MEASURED off the AF clip, frame by frame, rather than eyeballed:
+     · the aircraft render is STATIC, but floats ~60px vertically on a
+       ~15s loop, eased (fast through the middle, slow at the ends);
+     · the sky and its cloud banks do NOT move — 0px shift over 15s, and
+       forcing a shift made the match WORSE, so they are a still image;
+     · ONE cloud layer drifts, ~16px per 15s at 960px wide (≈32px at 1080p),
+       and it sits IN FRONT of the aircraft, crossing the wings.
+   The depth comes from that foreground parallax against a still background —
+   less motion, placed precisely, not more. */
+
+/* The float. ease-in-out is doing the real work: linear reads mechanical,
+   which is exactly the difference between theirs and a cheap imitation. */
+@keyframes g8AcFloat {
+  0%, 100% { transform: translateY(calc(var(--ac-float, 26px) * -0.5)); }
+  50%      { transform: translateY(calc(var(--ac-float, 26px) *  0.5)); }
+}
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus .g8-aircraft-img {
+  animation: g8AcFloat 15s ease-in-out infinite !important;
+  will-change: transform;
+}
+/* Float scaled to the aircraft: a Dash 8 must not bob as far as a 777, or it
+   reads as bouncing rather than flying. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 26px; }
+@media (min-height: 900px) {
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 34px; }
+}
+
+/* The foreground cloud layer — the piece we were missing entirely. It is a
+   seamlessly tiling strip (verified: edge-to-edge pixel difference 0.10 vs a
+   typical neighbour difference of 0.07), so animating background-position by
+   exactly one tile width loops forever with no seam and no jump. */
+@keyframes g8FgDrift {
+  from { background-position-x: 0; }
+  to   { background-position-x: -1200px; }   /* exactly one tile at this size */
+}
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  position: absolute !important;
+  left: 0 !important; right: 0 !important;
+  top: 34% !important; bottom: -6% !important;   /* crosses the fuselage/wings */
+  background-image: url('/textures/gate-fg-clouds.png?v=23056') !important;
+  background-repeat: repeat-x !important;
+  background-size: 1200px 100% !important;
+  opacity: .72 !important;
+  pointer-events: none !important;
+  z-index: 3 !important;                          /* ABOVE the aircraft */
+  animation: g8FgDrift 90s linear infinite !important;  /* ~13px/s — glacial */
+  will-change: background-position;
+  display: block !important;
+}
+/* Drift with the nose, like the existing backdrop already does. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right > #gateCloudsFg {
+  animation-direction: reverse !important;
+}
+/* With the flag OFF the element must occupy nothing at all. */
+html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display: none !important; }
+
+/* Respect a reduced-motion preference — an airport screen shouldn't be the
+   one surface that ignores it. */
+@media (prefers-reduced-motion: reduce) {
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus .g8-aircraft-img,
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+    animation: none !important;
+  }
+}

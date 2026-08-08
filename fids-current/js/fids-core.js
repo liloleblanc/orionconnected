@@ -8526,6 +8526,7 @@ function _buildV2MapCol(ctx, vars) {
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
               : '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>')
+        +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
         +   _typeCellHtml
@@ -8539,6 +8540,7 @@ function _buildV2MapCol(ctx, vars) {
         '<div class="v2-rc-shelf v2-rc-shelf-illus">'
       +   '<div id="gateCloudsBg"></div>'
       +   '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>'
+      +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
       +   '<div class="v2-rc-acb-actype v2-rc-actype-val">Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir</div>'
@@ -12913,6 +12915,18 @@ const gView = document.getElementById('gateView');
         if (_skinCode === 'AS' && typeof isHawaiianBrandedFlight === 'function'
             && isHawaiianBrandedFlight(currentFlight, window._gateIata || locIata)) _skinCode = 'HA';
         document.body.setAttribute('data-gate-airline', _skinCode);
+      } catch (e) {}
+      // v23056 — AIR-FRANCE-STYLE FLYING AIRCRAFT, behind ?acsky=1.
+      // Measured off Nick's AF reference clip: the aircraft render is STATIC
+      // but floats ~60px vertically on a ~15s ease-in-out loop, the sky and
+      // its cloud banks never move at all, and a THIRD layer of cloud drifts
+      // slowly (~32px/15s) IN FRONT of the aircraft. That foreground parallax
+      // against a still background is what reads as depth — not more motion,
+      // less of it, placed precisely. Off by default; nothing changes for any
+      // existing screen until the flag is on.
+      try {
+        var _skyOn = /[?&]acsky=1\b/.test(window.location.search);
+        document.body.classList.toggle('gate-acsky', _skyOn);
       } catch (e) {}
       // Defensive: nuke any stranded floating "DESTINATION City" label from
       // older deploys / interrupted video playback. This element used to be
@@ -18196,7 +18210,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23055';
+var FIDS_BUILD_TAG = 'v23056';
 (function(){
   try {
     function _addTag(){
