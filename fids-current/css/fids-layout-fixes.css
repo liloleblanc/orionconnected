@@ -9884,7 +9884,7 @@ html body:not(#_):not(#_) .g8-board-body .g8-board-col .g8-board-lane {
    contrast on the bake: DL 4.54:1, WS 3.05:1 on the sweep itself with the
    text field above it darker). */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-dl-scallops.jpg?v=23003');
+  --plate-tex: url('/textures/plate-dl-scallops.jpg?v=23006');
   --plate-base: #0a1a33;
   --plate-blend: normal;
 }
