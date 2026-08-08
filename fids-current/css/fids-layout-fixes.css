@@ -9903,7 +9903,7 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
 /* Porter: his dark-blue silk wave ('one is porter'). Dark plate, white ink
    by default; worst-case white text on the bake 4.66:1. */
 html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-pd-silk.jpg?v=23005');
+  --plate-tex: url('/textures/plate-pd-silk.jpg?v=23008');
   --plate-base: #0e1f3d;
   --plate-blend: normal;
 }
