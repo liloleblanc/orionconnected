@@ -850,7 +850,25 @@ const LIVE_USER = '';
 const LIVE_PASS = '';
 
 let LIVE_MODE = false;
-let GATE_BG_MODE = 'photo'; // 'photo', 'airline', or 'custom'
+// 'airline', 'photo', or 'custom'.
+//
+// DEFAULT IS 'airline' (was 'photo'). Every carrier background Nick supplied
+// — Delta, Air France, Emirates, Flair, Transat, AA, AC, United — is painted
+// ONLY in airline mode, and nothing selects that mode on its own. A screen
+// that had never had the pill flipped by hand showed the plain brand gradient
+// and none of the artwork, which is why the answer to 'why do we still not
+// have a background' was: the files ship, they resolve 200, and the renderer
+// is simply never asked to paint them.
+//
+// It also explains why it can look fixed on one URL and not another: the
+// choice is remembered in localStorage, which is PER ORIGIN, so a preview
+// deployment starts with no stored preference and fell back to 'photo'.
+//
+// An explicit choice still wins and is still sticky — this only changes what
+// happens when nobody has chosen. Carriers with no artwork are unaffected in
+// substance: their slide list is the three sky scenes plus the logo
+// watermark, which is a branded look rather than a bare gradient.
+let GATE_BG_MODE = 'airline';
 // Restore last-used mode from localStorage so the pill stays sticky across reloads.
 try {
   var _savedBgMode = localStorage.getItem('fids_gate_bg_mode');
@@ -1979,6 +1997,27 @@ function tryLoadImage(bgDiv, url) {
 
 async function setGateBg(bgDiv, locIata) {
   if (!bgDiv) return;
+  // #gateBgDiv ships with an inline `display:none` — it was hidden on purpose
+  // back when the only background was a CITY PHOTO and that photo belonged in
+  // the welcome panel, not behind the whole screen. The airline BRAND scenes
+  // came later and reuse the same element, so every carrier background was
+  // being painted faithfully onto an element nobody could see.
+  //
+  // Doing it here rather than in the markup covers all three entry points at
+  // once — first render, a mode switch from the menu, and the rotation tick —
+  // since each of them ends up calling this function. Photo/custom keep the
+  // old behaviour exactly: hidden here, shown in the welcome panel.
+  if (bgDiv.id === 'gateBgDiv') {
+    bgDiv.style.display = (GATE_BG_MODE === 'airline') ? '' : 'none';
+  }
+  // …and the gate columns have to let it through. On the three-column gate
+  // EVERY pixel is covered by a column, so a visible background layer alone
+  // still shows nothing — measured: all three columns compute opaque. This
+  // class is the hook the stylesheet uses to turn them into translucent
+  // panels over the brand scene, and only while airline mode is on.
+  try {
+    document.body.classList.toggle('g8-airline-bg', GATE_BG_MODE === 'airline');
+  } catch (e) {}
   bgDiv.dataset.bgmode = GATE_BG_MODE;
   bgDiv.className = bgDiv.className.replace(/g5-sky-\w+|g5-bg-\w+/g, '').trim();
   bgDiv.classList.add('no-photo');
@@ -18126,7 +18165,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22995';
+var FIDS_BUILD_TAG = 'v23000';
 (function(){
   try {
     function _addTag(){
@@ -32037,7 +32076,9 @@ function renderGateAd(index) {
     // include framing controls in the dedupe key so adjustments re-render live
     var _frameKey = fit + zoom + posX + posY;
     var customKey = 'custom|' + slot + '|' + (item.id || '') + '|' + _frameKey;
-    if (el._lastKey !== customKey) {
+    // `|| !el.firstChild` — same hazard as the standard path below: a matching
+    // memo on an EMPTIED element would skip the paint and leave the slot blank.
+    if (el._lastKey !== customKey || !el.firstChild) {
       el._lastKey = customKey;
       el.style.background = '#000';
       el.style.position = 'relative';
@@ -32084,7 +32125,14 @@ function renderGateAd(index) {
   // plus a longer prefix separates a 3-page deck from a 6-page one and one
   // hotel from another.
   var newKey = slot + '|' + (html ? (html.length + '|' + html.substring(0, 220)) : '');
-  if (el._lastKey === newKey) return;
+  // `&& el.firstChild` — the memo says "this slide is already painted", so
+  // skipping is only safe while something is actually ON the panel. The
+  // bigcraft takeover empties this element under its overlay; when the
+  // rotation came back round to the slide that had been showing before it,
+  // the key matched, this returned, and NOTHING was ever written. The panel
+  // then sat flat and empty for the slide's entire dwell — measured at 17.4 s
+  // on Nick's clip, ending only when the next takeover grew in over it.
+  if (el._lastKey === newKey && el.firstChild) return;
   el._lastKey = newKey;
   el.style.background = 'transparent';
   el.style.backgroundSize = '';
@@ -34480,7 +34528,16 @@ function _renderBigCraft(el, ctx) {
   try {
     var _bcPrevEl = el;
     (window._bigCraftTimers = window._bigCraftTimers || []).push(setTimeout(function () {
-      try { if (window._bigCraftOverlay === _bcOv) _bcPrevEl.innerHTML = ''; } catch (e) {}
+      try {
+        if (window._bigCraftOverlay === _bcOv) {
+          _bcPrevEl.innerHTML = '';
+          // Emptying the slot INVALIDATES the repaint memo. renderGateAd skips
+          // a repaint whose key matches _lastKey; leaving the old key on an
+          // empty element makes the next visit to that same slide a no-op and
+          // the panel stays blank for its whole dwell (see the guards there).
+          _bcPrevEl._lastKey = null;
+        }
+      } catch (e) {}
     }, 720));
   } catch (e) {}
   // THE SAME MAP AS THE MINI, ENLARGED (Nick: 'literally the same as now
