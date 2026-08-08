@@ -852,23 +852,10 @@ const LIVE_PASS = '';
 let LIVE_MODE = false;
 // 'airline', 'photo', or 'custom'.
 //
-// DEFAULT IS 'airline' (was 'photo'). Every carrier background Nick supplied
-// — Delta, Air France, Emirates, Flair, Transat, AA, AC, United — is painted
-// ONLY in airline mode, and nothing selects that mode on its own. A screen
-// that had never had the pill flipped by hand showed the plain brand gradient
-// and none of the artwork, which is why the answer to 'why do we still not
-// have a background' was: the files ship, they resolve 200, and the renderer
-// is simply never asked to paint them.
-//
-// It also explains why it can look fixed on one URL and not another: the
-// choice is remembered in localStorage, which is PER ORIGIN, so a preview
-// deployment starts with no stored preference and fell back to 'photo'.
-//
-// An explicit choice still wins and is still sticky — this only changes what
-// happens when nobody has chosen. Carriers with no artwork are unaffected in
-// substance: their slide list is the three sky scenes plus the logo
-// watermark, which is a branded look rather than a bare gradient.
-let GATE_BG_MODE = 'airline';
+// 'photo', 'airline', or 'custom'. Airline brand scenes are OPT-IN from the
+// menu only — they never paint behind the gate by default (Nick, Aug 8:
+// 'THEY DON'T GO IN THE BACK OF THE GIDS PANEL').
+let GATE_BG_MODE = 'photo';
 // Restore last-used mode from localStorage so the pill stays sticky across reloads.
 try {
   var _savedBgMode = localStorage.getItem('fids_gate_bg_mode');
@@ -1997,27 +1984,6 @@ function tryLoadImage(bgDiv, url) {
 
 async function setGateBg(bgDiv, locIata) {
   if (!bgDiv) return;
-  // #gateBgDiv ships with an inline `display:none` — it was hidden on purpose
-  // back when the only background was a CITY PHOTO and that photo belonged in
-  // the welcome panel, not behind the whole screen. The airline BRAND scenes
-  // came later and reuse the same element, so every carrier background was
-  // being painted faithfully onto an element nobody could see.
-  //
-  // Doing it here rather than in the markup covers all three entry points at
-  // once — first render, a mode switch from the menu, and the rotation tick —
-  // since each of them ends up calling this function. Photo/custom keep the
-  // old behaviour exactly: hidden here, shown in the welcome panel.
-  if (bgDiv.id === 'gateBgDiv') {
-    bgDiv.style.display = (GATE_BG_MODE === 'airline') ? '' : 'none';
-  }
-  // …and the gate columns have to let it through. On the three-column gate
-  // EVERY pixel is covered by a column, so a visible background layer alone
-  // still shows nothing — measured: all three columns compute opaque. This
-  // class is the hook the stylesheet uses to turn them into translucent
-  // panels over the brand scene, and only while airline mode is on.
-  try {
-    document.body.classList.toggle('g8-airline-bg', GATE_BG_MODE === 'airline');
-  } catch (e) {}
   bgDiv.dataset.bgmode = GATE_BG_MODE;
   bgDiv.className = bgDiv.className.replace(/g5-sky-\w+|g5-bg-\w+/g, '').trim();
   bgDiv.classList.add('no-photo');
@@ -5097,16 +5063,14 @@ var AIRLINE_BACKGROUNDS = {
     '/logos/Backgrounds/AC/EM-Air-Canada-AD-1A.jpg',        // "Your Somewhere Is Out There" campaign
     '/logos/Backgrounds/AC/EM-Air-Canada-AD-2A1.jpg'        // "The World Is Not An Oyster" campaign
   ],
+  // ONLY REAL SCENE ART BELONGS IN A REGISTRY. deltabackground 1-9 are pages
+  // from a corporate slide deck — 'RELISH EACH JOURNEY', 'CORE VALUES', '180
+  // MILLION TRAVELERS WORLDWIDE' — headline + body copy, not backgrounds.
+  // The moment airline mode became the default the rotation opened on slide
+  // 0 and put a PowerPoint page behind the gate (Nick: 'there's words now in
+  // the background, I'm so confused what are you doing?'). The files stay on
+  // disk; they are just never painted as scenery.
   'DL': [
-    '/logos/Backgrounds/DL/deltabackground.png',
-    '/logos/Backgrounds/DL/deltabackground2.png',
-    '/logos/Backgrounds/DL/deltabackground3.png',
-    '/logos/Backgrounds/DL/deltabackground4.png',
-    '/logos/Backgrounds/DL/deltabackground5.png',
-    '/logos/Backgrounds/DL/deltabackground6.png',
-    '/logos/Backgrounds/DL/deltabackground7.png',
-    '/logos/Backgrounds/DL/deltabackground8.png',
-    '/logos/Backgrounds/DL/deltabackground9.png',
     // Nick's pick (Aug 7): red papercut waves on Delta navy.
     '/logos/Backgrounds/DL/deltabackground10.png'
   ],
@@ -18165,7 +18129,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23000';
+var FIDS_BUILD_TAG = 'v23001';
 (function(){
   try {
     function _addTag(){
