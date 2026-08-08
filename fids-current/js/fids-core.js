@@ -9992,7 +9992,7 @@ function uxgGateHtml(ctx) {
     // United — black / United Blue / Runway Gray (matching the actual livery)
     'UA': { r1: '#0C2340', r1Text: '#FFFFFF', r2: '#0033A0', body: '#E9EBEE', bodyText: '#0C2340' },
     // WestJet — WHITE banner / teal swoosh / white body (matches their white fuselage)
-    'WS': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
+    'WS': { r1: '#0B2E55', r1Text: '#FFFFFF', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
     'PD': { r1: '#12294D', r1Text: '#FFFFFF', r2: '#1A3A6B', body: '#FFFFFF', bodyText: '#002244' }
   };
@@ -18167,7 +18167,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23009';
+var FIDS_BUILD_TAG = 'v23010';
 (function(){
   try {
     function _addTag(){
