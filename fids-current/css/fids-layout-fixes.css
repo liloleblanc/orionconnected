@@ -10018,9 +10018,14 @@ html .octb-tab.octb-stack {
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: clamp(1px, 0.3vh, 5px) !important;
+  gap: min(0.3vh, 1.2cqh) !important;
   background: rgba(6, 10, 18, 0.22) !important;
-  padding: clamp(5px, 0.9vh, 12px) clamp(24px, 2.2vw, 46px) 0 !important;
+  padding: min(0.9vh, 2.5cqh) clamp(24px, 2.2vw, 46px) 0 !important;
+  /* v23037 — the stack is sized by the TAB's own height (cqh), not the
+     viewport: on Nick's screen the vh sum overran the banner and cut the
+     date row in half ('Ummmmm'). Budget: 15+36+15+14cqh + gaps < 100. */
+  container-type: size !important;
+  overflow: hidden !important;
 }
 /* The wedge filler right of the tab matches the new glass, not the old gray. */
 html .octb-attached .octb-tab.octb-stack::after {
@@ -10029,20 +10034,20 @@ html .octb-attached .octb-tab.octb-stack::after {
 /* Bigger, centred type. Labels are direct children now (no .octb-top row). */
 html .octb-tab.octb-stack .octb-en,
 html .octb-tab.octb-stack .octb-fr {
-  font-size: clamp(16px, 2.3vh, 32px) !important;
+  font-size: min(2.3vh, 32px, 15cqh) !important;
   line-height: 1.05 !important;
   text-align: center !important;
   color: #ffffff !important;
 }
 html .octb-tab.octb-stack .octb-clock {
-  font-size: clamp(38px, 5.8vh, 82px) !important;
+  font-size: min(5.8vh, 82px, 36cqh) !important;
   line-height: 1.0 !important;
 }
 html .octb-tab.octb-stack .octb-date {
-  font-size: clamp(14px, 2vh, 28px) !important;
+  font-size: min(2vh, 28px, 14cqh) !important;
   text-align: center !important;
   text-align-last: center !important;
-  margin-top: clamp(1px, 0.35vh, 5px) !important;
+  margin-top: min(0.35vh, 1.2cqh) !important;
 }
 /* The date's mid-gap can shrink a touch now that it's the narrow stack. */
 html .octb-tab.octb-stack .octb-date .cl-sep {
