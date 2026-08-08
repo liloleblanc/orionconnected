@@ -9912,13 +9912,13 @@ function uxgGateHtml(ctx) {
   // fill the band). Scale the calibrated size up and widen the vw cap so wide
   // wordmarks actually grow to the band height.
   if (_silkBanner) {
-    _logoH = Math.round(_logoH * 1.55);
+    _logoH = Math.round(_logoH * 1.7);
     _sz = { h: _sz.h, w: Math.round((_sz.w || 480) * 1.6) };
     // Ceiling so tall/wide wordmarks (e.g. Porter) fill the band without
     // overrunning the ~118px banner (Nick: 'some airline logos are way too big
     // now, passing the border'). 96px fills it with breathing room; compact
     // marks that were already smaller are untouched (Math.min).
-    _logoH = Math.min(_logoH, 96);
+    _logoH = Math.min(_logoH, 106);
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
@@ -18167,7 +18167,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23034';
+var FIDS_BUILD_TAG = 'v23035';
 (function(){
   try {
     function _addTag(){

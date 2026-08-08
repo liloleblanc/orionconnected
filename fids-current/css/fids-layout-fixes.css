@@ -662,9 +662,9 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
 }
 .g8-r1-star {
   width: auto !important;
-  height: 92px !important;
-  max-height: 92px !important;
-  max-width: 116px !important;
+  height: 108px !important;
+  max-height: 108px !important;
+  max-width: 140px !important;
   object-fit: contain !important;
   opacity: 0.95 !important;
 }
@@ -677,9 +677,9 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
     max-width: 480px !important;
   }
   .g8-r1-star {
-    height: 76px !important;
-    max-height: 76px !important;
-    max-width: 98px !important;
+    height: 88px !important;
+    max-height: 88px !important;
+    max-width: 118px !important;
   }
 }
 
