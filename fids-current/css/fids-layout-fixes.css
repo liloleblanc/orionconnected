@@ -9965,6 +9965,7 @@ html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airli
    ≠ cover on the wrap). The wrap already carries the current 4x-tiled line
    bake behind the whole screen — the column just needs to be TRANSPARENT so
    that one canvas shows through both sides at one gauge, seamlessly. */
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
   background: transparent !important;
 }
