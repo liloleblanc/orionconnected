@@ -9934,7 +9934,7 @@ html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airli
 /* American: Nick's red/blue chevrons on silver-white ('use this for
    american'). Bright plate — dark ink, darkened status colours. */
 html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-aa-fusion.jpg?v=23032');
+  --plate-tex: url('/textures/plate-aa-fusion.jpg?v=23033');
   --plate-base: #E8EAEE;
   --plate-blend: normal;
   --plate-ink: #101820;
