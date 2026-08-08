@@ -9866,3 +9866,65 @@ html body:not(#_):not(#_) .g8-board-body .g8-board-col .g8-board-lane {
   font-size: clamp(28px, 3.6vh, 52px) !important;
   font-size: clamp(13px, min(8cqh, 13cqw), 52px) !important;
 }
+
+/* ── v23003: NICK'S ARTWORK BACK ON THE PLATES — ALL OF IT ────────────────
+   The #487 revert was asked for as 'revert the Delta background redesign'
+   and it ALSO disconnected the v22988 artwork plate wiring for every
+   carrier — DL, TS, AF, EK, F8 all silently fell back to stock engravings.
+   Nick, tonight: 'Delta doesnt have the new pattern I gave you', 'you never
+   did the flair ones'. He is right; the artwork files were sitting unused
+   in /textures/ the whole time.
+
+   Restored verbatim from #485 (same bases, same measured ink decisions),
+   with two changes: Delta now points at the plate cut from the scallop
+   artwork he supplied tonight ('use one of these for Delta'), and WestJet
+   joins with the wave plate cut crisp from his teal/charcoal artwork — no
+   opacity wash this time, the recolour maps the ground into the navy
+   family and keeps the sweep at full saturation (worst-case white-text
+   contrast on the bake: DL 4.54:1, WS 3.05:1 on the sweep itself with the
+   text field above it darker). */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-dl-scallops.jpg?v=23003');
+  --plate-base: #0a1a33;
+  --plate-blend: normal;
+}
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-ws-wave.jpg?v=23003');
+  --plate-base: #0e2438;
+  --plate-blend: normal;
+}
+html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-ts-wing.jpg?v=23003');
+  --plate-base: #12192a;
+  --plate-blend: normal;
+}
+/* AF + EK: artwork is DARK — white ink, bright status colours. */
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-af-tricolore.jpg?v=23003');
+  --plate-base: #0a3d8f;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-ek-uae.jpg?v=23003');
+  --plate-base: #03170c;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+/* Flair: the lime cut is the one BRIGHT plate — dark ink, darkened status
+   colours, same treatment the v22904 bright group uses. */
+html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-f8-lime.jpg?v=23003');
+  --plate-base: #7ac21e;
+  --plate-blend: normal;
+  --plate-ink: #12161d;
+  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
+  --plate-ok: #056f4a;  --plate-warn: #8a5200;
+  --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
+}
