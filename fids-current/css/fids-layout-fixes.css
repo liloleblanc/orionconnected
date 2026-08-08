@@ -9893,12 +9893,12 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
    Flair: darkest region L0.22 gives 4.66:1 against the navy ink. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
   --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23021');
-  --plate-base: #4da4d4;
+  --plate-base: #0e2438;
   --plate-blend: normal;
-  --plate-ink: #0e2438;
-  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.45);
-  --plate-ok: #056f4a;  --plate-warn: #E8A400;
-  --plate-bad: #a51d1d;  --plate-info: #123f8f;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
 }
 /* Porter: his dark-blue silk wave ('one is porter'). Dark plate, white ink
    by default; worst-case white text on the bake 4.66:1. */
@@ -9960,6 +9960,11 @@ html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airli
    same engraving the left side wears. The logo/map shelf keeps its flat
    ground (v22925b, his call) and the front plates keep the black halftone
    (v22905, also his call) — this only restores the lines BEHIND. */
+/* v23022 — SAME THICKNESS AS THE LEFT (Nick). Painting the column with its
+   own copy of the artwork rescaled the strokes (cover on a quarter-width box
+   ≠ cover on the wrap). The wrap already carries the current 4x-tiled line
+   bake behind the whole screen — the column just needs to be TRANSPARENT so
+   that one canvas shows through both sides at one gauge, seamlessly. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
-  background: #0a0a0a url('/textures/ac-back-lines.jpg?v=23004') center / cover no-repeat !important;
+  background: transparent !important;
 }
