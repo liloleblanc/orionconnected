@@ -8612,7 +8612,7 @@ html body:is([data-gate-airline="QR"],[data-gate-airline="QTR"],[data-gate-airli
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_) {
   --plate-ink: #12161d;
   --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
-  --plate-ok: #056f4a;  --plate-warn: #8a5200;
+  --plate-ok: #056f4a;  --plate-warn: #E8A400;
   --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
   --plate-base: #cfd3d8;
 }
@@ -9865,4 +9865,142 @@ html body:not(#_):not(#_) .g8-board-body .g8-board-col .g8-board-grp-label {
 html body:not(#_):not(#_) .g8-board-body .g8-board-col .g8-board-lane {
   font-size: clamp(28px, 3.6vh, 52px) !important;
   font-size: clamp(13px, min(8cqh, 13cqw), 52px) !important;
+}
+
+/* ── v23003: NICK'S ARTWORK BACK ON THE PLATES — ALL OF IT ────────────────
+   The #487 revert was asked for as 'revert the Delta background redesign'
+   and it ALSO disconnected the v22988 artwork plate wiring for every
+   carrier — DL, TS, AF, EK, F8 all silently fell back to stock engravings.
+   Nick, tonight: 'Delta doesnt have the new pattern I gave you', 'you never
+   did the flair ones'. He is right; the artwork files were sitting unused
+   in /textures/ the whole time.
+
+   Restored verbatim from #485 (same bases, same measured ink decisions),
+   with two changes: Delta now points at the plate cut from the scallop
+   artwork he supplied tonight ('use one of these for Delta'), and WestJet
+   joins with the wave plate cut crisp from his teal/charcoal artwork — no
+   opacity wash this time, the recolour maps the ground into the navy
+   family and keeps the sweep at full saturation (worst-case white-text
+   contrast on the bake: DL 4.54:1, WS 3.05:1 on the sweep itself with the
+   text field above it darker). */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-dl-scallops.jpg?v=23028');
+  --plate-base: #0a1a33;
+  --plate-blend: normal;
+}
+/* WestJet: Nick swapped the wave for his light-blue arc artwork ('one is
+   porter other is werstjet'). BRIGHT plate — same dark-ink treatment as
+   Flair: darkest region L0.22 gives 4.66:1 against the navy ink. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23021');
+  --plate-base: #0e2438;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+/* Porter: his dark-blue silk wave ('one is porter'). Dark plate, white ink
+   by default; worst-case white text on the bake 4.66:1. */
+html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-pd-silk.jpg?v=23026');
+  --plate-base: #0c1626;
+  --plate-blend: normal;
+}
+html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-ts-wing.jpg?v=23003');
+  --plate-base: #12192a;
+  --plate-blend: normal;
+}
+/* AF + EK: artwork is DARK — white ink, bright status colours. */
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-af-tricolore.jpg?v=23003');
+  --plate-base: #0a3d8f;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-ek-uae.jpg?v=23003');
+  --plate-base: #03170c;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+/* American: Nick's red/blue chevrons on silver-white ('use this for
+   american'). Bright plate — dark ink, darkened status colours. */
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-aa-chevron.jpg?v=23027');
+  --plate-base: #E8EAEE;
+  --plate-blend: normal;
+  --plate-ink: #101820;
+  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
+  --plate-ok: #056f4a;  --plate-warn: #B45309;
+  --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
+}
+/* Flair: the lime cut is the one BRIGHT plate — dark ink, darkened status
+   colours, same treatment the v22904 bright group uses. */
+html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-f8-lime.jpg?v=23021');
+  --plate-base: #7ac21e;
+  --plate-blend: normal;
+  --plate-ink: #12161d;
+  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
+  --plate-ok: #056f4a;  --plate-warn: #E8A400;
+  --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
+}
+
+/* ── v23004: THE RED LINES REACH THE RIGHT COLUMN (Nick: 'I asked you
+   several times to have the red lines on the right as well to be the same
+   — not done').
+
+   The machinery was all there and fighting itself: v22919 made the right
+   shelves TRANSPARENT so the engraved red lines could show through from a
+   canvas behind them, v22925b re-opaqued just the logo shelf — but the
+   canvas itself lost its paint to the gids accent-canvas rule that loads
+   last, so the transparent shelves ended up showing flat colour instead of
+   the lines. Measured on the fixture: every candidate line rule
+   (ac-back-lines v22911, paper-layers, shelf-lux, silver-vertical) is
+   overridden; the shelf computes background none/transparent.
+
+   One opaque paint on the COLUMN canvas, under those transparent shelves,
+   same engraving the left side wears. The logo/map shelf keeps its flat
+   ground (v22925b, his call) and the front plates keep the black halftone
+   (v22905, also his call) — this only restores the lines BEHIND. */
+/* v23022 — SAME THICKNESS AS THE LEFT (Nick). Painting the column with its
+   own copy of the artwork rescaled the strokes (cover on a quarter-width box
+   ≠ cover on the wrap). The wrap already carries the current 4x-tiled line
+   bake behind the whole screen — the column just needs to be TRANSPARENT so
+   that one canvas shows through both sides at one gauge, seamlessly. */
+/* AC only: its column ink is white, so the columns can sit clear over the
+   line canvas. WestJet is NOT here — its panels carry dark navy ink on
+   light grounds, and clearing them put dark logos on the dark canvas
+   (Nick, correctly furious). WS keeps its own panel grounds; the white-line
+   canvas reads in the margins and gaps. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+  background: transparent !important;
+}
+/* WestJet lines in WHITE (Nick: 'do white lines maybe') — the navy-on-navy
+   strokes vanished against the dark ground; same artwork, strokes lifted to
+   white over the deep navy. One canvas behind both columns, one gauge. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #081A2E !important;
+  background-image: url('/textures/ws-back-white4.jpg?v=23024') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* ── v23028: THE RED LINE REACHES THE RIGHT COLUMN'S LABELS (Nick: 'no
+   line on the right'). The left plates underline every title with the
+   Delta red; the right column's flight table had no line under its labels.
+   Same red, same weight, under each label cell on the right. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  border-bottom: 3px solid #C8102E !important;
+  padding-bottom: 3px !important;
 }

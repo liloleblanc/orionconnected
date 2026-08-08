@@ -2031,6 +2031,8 @@ async function setGateBg(bgDiv, locIata) {
     var _airlineCode = (window._gateCurrentAirline || (_currentFlight && _currentFlight.airline) || '').toUpperCase();
     // Hawaiian brand override (mirrors gate-screen behavior at line ~3193)
     if (_airlineCode === 'AS' && isHawaiianBrandedFlight(_currentFlight, locIata)) _airlineCode = 'HA';
+    // Endeavor -> Delta, same fold as the gate itself (see uxgGateHtml).
+    if (_airlineCode === '9E') _airlineCode = 'DL';
     // No flight yet — neutral dark gradient, don't assume a carrier.
     if (!_airlineCode) {
       bgDiv.classList.add('no-photo');
@@ -8687,6 +8689,11 @@ function uxgGateHtml(ctx) {
   // Hawaiian brand override: AS flights on ex-HA equipment or Hawaii routes still wear
   // the Pualani livery — display them as HA so all downstream brand assets follow suit.
   if (isHawaiianBrandedFlight(currentFlight, locIata)) airlineCode = 'HA';
+  // Delta Connection fold (Nick, repeatedly): Endeavor-coded flights (9E)
+  // are DELTA on the passenger side — the whole gate brands as Delta
+  // (colours, logos, plates, backgrounds). 'Operated by Endeavor Air'
+  // still names the operator from the flight row's own code.
+  if (airlineCode === '9E') airlineCode = 'DL';
   const accent = getAirlineAccent(airlineCode);
   window._gateAccent = accent;
   // v218.96: stash the active airline so the slide builder can resolve
@@ -9312,9 +9319,9 @@ function uxgGateHtml(ctx) {
   // 3 \u2022 4 \u2022 5 \u2022 6, also Lane 2).
   function _acLanesBodyHtml(zonesVal) {
     return '<div class="g8-board-body g8-lanes3">'
-      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">Priority</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">Prioritaire</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
-      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">Zones</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
+      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
+      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
+      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">' + _gateLbl('zones', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
       + '</div>';
   }
 
@@ -9326,8 +9333,8 @@ function uxgGateHtml(ctx) {
     var _prioT = _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
     var _rowsLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
     return '<div class="g8-board-body g8-lanes-pd">'
-      + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">Porter Reserve</div></div><div class="g8-board-lane">' + TL('useLanes') + ' 1 \u2022 2</div></div>'
-      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLanes') + ' 3 \u2022 4</div></div>'
+      + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">Porter Reserve</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
+      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
       + '</div>';
   }
 
@@ -9420,8 +9427,8 @@ function uxgGateHtml(ctx) {
           ? _pdLanesBodyHtml(nowVal)
           : _bHdr
             + '<div class="g8-board-body">'
-            + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-            + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+            + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
+            + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
             + '</div>')
       + '</div>';
   }
@@ -9467,8 +9474,8 @@ function uxgGateHtml(ctx) {
           : airlineCode === 'PD'
           ? _pdLanesBodyHtml_gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ')
           : '<div class="g8-board-body">'
-            + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + TL('useLane') + ' 1</div></div>'
-            + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + TL('useLane') + ' 2</div></div>'
+            + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
+            + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
             + '</div>')
         + '</div>';
     }
@@ -9985,9 +9992,9 @@ function uxgGateHtml(ctx) {
     // United — black / United Blue / Runway Gray (matching the actual livery)
     'UA': { r1: '#0C2340', r1Text: '#FFFFFF', r2: '#0033A0', body: '#E9EBEE', bodyText: '#0C2340' },
     // WestJet — WHITE banner / teal swoosh / white body (matches their white fuselage)
-    'WS': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
+    'WS': { r1: '#081D33', r1Text: '#FFFFFF', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
-    'PD': { r1: '#FFFFFF', r1Text: '#0F172A', r2: '#1A3A6B', body: '#FFFFFF', bodyText: '#002244' }
+    'PD': { r1: '#0C1420', r1Text: '#FFFFFF', r2: '#1A3A6B', body: '#FFFFFF', bodyText: '#002244' }
   };
   // Airline colour DATABASE (data/airline-colors.js) is the source of truth —
   // merge it over the built-in defaults so edits there win.
@@ -18093,6 +18100,9 @@ var _GATE_LBL = {
   rows:      { en:'Rows',          fr:'Rangées',        es:'Filas',        de:'Reihen',      it:'File',        pt:'Fileiras',   ja:'列',        zh:'排',     ar:'صفوف' },
   timeIn:    { en:'Time in',       fr:'Heure à',        es:'Hora en',      de:'Zeit in',     it:'Ora a',       pt:'Hora em',    ja:'現地時刻',  zh:'当地时间', ar:'التوقيت في' },
   time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
+  zones:     { en:'Zones',         fr:'Zones',          es:'Zonas',        de:'Zonen',       it:'Zone',        pt:'Zonas',      ja:'ゾーン',    zh:'区域',   ar:'مناطق' },
+  useLane:   { en:'Use Lane',      fr:'Utilisez la voie', es:'Use carril',  de:'Spur nutzen', it:'Usa corsia',  pt:'Use faixa',  ja:'レーン',    zh:'通道',   ar:'استخدم الممر' },
+  useLanes:  { en:'Use Lanes',     fr:'Utilisez les voies', es:'Use carriles', de:'Spuren nutzen', it:'Usa corsie', pt:'Use faixas', ja:'レーン',  zh:'通道',   ar:'ممرات' },
   all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' }
 };
 
@@ -18121,6 +18131,34 @@ function _gateLbl(key, frFirst, wrap, sep) {
   if (typeof wrap === 'function') return parts.map(wrap).join(sep || '');
   return parts.join(sep || ' ');
 }
+// Lane line as a bilingual pair with the lane number in BOTH halves
+// ('Use Lane 1 | Utilisez la voie 1') — same language pick + dedup as
+// _gateLbl, because 'Use Lane 1' alone on an otherwise fully bilingual
+// sign was the one monolingual string left (Nick: 'needs to be in 2
+// languages i mentioned this').
+function _gateLaneLbl(nums, plural, frFirst) {
+  var o = _GATE_LBL[plural ? 'useLanes' : 'useLane'];
+  if (!o) return '';
+  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
+    ? langs.slice() : ['en', 'fr'];
+  if (frFirst) {
+    var _fi = picked.indexOf('fr');
+    if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
+  }
+  var seen = Object.create(null), parts = [];
+  for (var i = 0; i < picked.length && parts.length < 2; i++) {
+    var w = o[picked[i]];
+    if (!w) continue;
+    var k = String(w).toLowerCase();
+    if (seen[k]) continue;
+    seen[k] = 1;
+    parts.push(w + ' ' + nums);
+  }
+  if (!parts.length) parts.push(o.en + ' ' + nums);
+  return parts.join(' <span class="g8-bir-sep">|</span> ');
+}
+try { if (typeof window !== 'undefined') window._gateLaneLbl = _gateLaneLbl; } catch (e) {}
+
 // The gate rail's two-span label cell — primary over secondary.
 function _gateLblSpans(key, frFirst) {
   return _gateLbl(key, frFirst, function (w) { return '<span>' + w + '</span>'; }, '');
@@ -18129,7 +18167,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23002';
+var FIDS_BUILD_TAG = 'v23028';
 (function(){
   try {
     function _addTag(){
