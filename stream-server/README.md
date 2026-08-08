@@ -69,9 +69,14 @@ choice and the admin config, so it survives a browser-profile wipe or a droplet
 rebuild. Without it, `MCO` would fall back to the regional default of
 English + French.
 
-`langs` is deliberately separate from the temperature unit: Orlando stays in
-**°F** on English + Spanish. (Adding `MCO` to the Spanish-board list would have
-been the shorter change, but that list also drives Celsius.)
+`langs` deliberately does **not** touch the temperature unit — measured
+identical on `MCO` with and without the param. Adding `MCO` to the
+Spanish-board list would have been the shorter change, but that list also
+drives `boardMetricFor()`, so it would have moved the temperature as a side
+effect of a language setting.
+
+Only these codes are accepted: `en fr es de it pt ja zh ar`. Anything else in
+the param is ignored and the board falls back to its regional default.
 
 ### Switching stream 2 to Orlando
 

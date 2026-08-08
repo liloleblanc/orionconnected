@@ -18196,7 +18196,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23054';
+var FIDS_BUILD_TAG = 'v23055';
 (function(){
   try {
     function _addTag(){
@@ -23565,14 +23565,28 @@ function applyAirportConfigToBoard(iata) {
   // flip a US board to Celsius.
   // Accepts ?langs=en,es (or ?lang=en,es), two codes max, same shape as the
   // saved layer.
+  //
+  // The param is resolved by MATCHING each token against this fixed list and
+  // keeping the list's own constant — the URL's string is never carried
+  // forward. A regex .filter() would have read the same but passes the
+  // original (attacker-controlled) string through, since a predicate doesn't
+  // transform what it keeps; taint analysis is right not to treat that as a
+  // sanitizer, and `langs` does reach rendered markup. Matching to a constant
+  // means only these nine two-letter literals can ever enter, whatever the
+  // URL says. Keep in sync with the language keys in _GATE_LBL.
+  var _URL_LANG_OK = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
   var _urlLangs = null;
   try {
     var _lq = new URLSearchParams(window.location.search);
     var _lraw = _lq.get('langs') || _lq.get('lang') || '';
     if (_lraw) {
-      _urlLangs = _lraw.toLowerCase().split(/[,+\s]+/)
-        .filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 2);
-      if (!_urlLangs.length) _urlLangs = null;
+      var _picked = [];
+      String(_lraw).toLowerCase().split(/[,+\s]+/).forEach(function (tok) {
+        if (_picked.length >= 2) return;
+        var _i = _URL_LANG_OK.indexOf(tok);
+        if (_i >= 0 && _picked.indexOf(_URL_LANG_OK[_i]) < 0) _picked.push(_URL_LANG_OK[_i]);
+      });
+      if (_picked.length) _urlLangs = _picked;
     }
   } catch (e3) {}
   try {
