@@ -10217,32 +10217,8 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-val b {
   font-weight: 800 !important;
 }
 
-/* ── v23047: WESTJET'S COLOUR LEAF NEEDS A LIGHT GROUND (Nick: 'I asked for
-   colored logo Westjet both on welcome and screens small').
-
-   The emblem map now serves the real two-tone leaf — navy #003C71 + teal
-   #00AAA6 — everywhere instead of the flat white mono cut. That reads on
-   the white boarding strip as-is, but the rail's round icon badge is
-   WestJet teal, and a teal leaf on a teal orb is the same dark-on-dark
-   mistake as before. So on WestJet gates only, the badge carrying the
-   airline emblem is re-grounded white with a soft teal ring: the leaf keeps
-   its true brand colours and sits on something that shows them.
-
-   v23048 — THE ORB STAYS AS IT WAS. Nick: 'I DIDNT SAY THE ORB WHAT???????'
-   Correct — he asked for the colour logo, not a badge redesign. The white
-   re-grounding is withdrawn; the badges keep exactly the teal they had. Only
-   the MARK changed. */
-/* Never let a whitening filter flatten the colour leaf back to one tone. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_) img[src*="WestJet-leaf-colour"] {
-  filter: none !important;
-  mix-blend-mode: normal !important;
-  opacity: 1 !important;
-}
-/* The leaf is a wide swoosh, not a square glyph — give it the room the mono
-   cut did not need so it does not render as a sliver in the round badge. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-icon-badge img[src*="WestJet-leaf-colour"],
-html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-ico img[src*="WestJet-leaf-colour"] {
-  width: 74% !important;
-  height: 74% !important;
-  object-fit: contain !important;
-}
+/* ── v23049: WESTJET — the round rail ORB keeps its white mono leaf.
+   v23047 swapped the shared emblem map to the colour leaf, which also
+   repainted the orb; Nick: 'the orb had white leave it white'. The emblem
+   map is back to mono white and the colour leaf is used only on the welcome
+   card, so no rule is needed here. */

@@ -6609,15 +6609,13 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
         'RV':  '/logos/airlines/canadian/AC.TO.svg',
-        // v23047 — the COLOUR leaf, not the mono white one (Nick: 'I asked for
-        // colored logo Westjet both on welcome and screens small'). This map
-        // feeds every WestJet emblem surface at once — the rail badges, the
-        // boarding welcome strip, the board info row and the map life chip —
-        // so the colour mark lands on all of them, not just the welcome card.
-        // The badges these sit on are untouched — only the MARK changes.
-        
-        'WS':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg?v=23047',
-        'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg?v=23047',
+        // v23049 — BACK TO THE WHITE MONO LEAF. v23047 pointed this at the
+        // colour leaf, which also repainted the round rail orb; Nick: 'the orb
+        // had white leave it white'. This map feeds the orb, so it stays mono
+        // white. The colour leaf is applied ONLY on the welcome card, via
+        // _FB_WELCOME_LOGO.
+        'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
+        'WR':  '/logos/symbols/airlines-mono/WS.svg',
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
@@ -18179,7 +18177,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23048';
+var FIDS_BUILD_TAG = 'v23049';
 (function(){
   try {
     function _addTag(){
