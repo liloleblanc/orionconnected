@@ -6,14 +6,19 @@ encodes it, systemd keeps it alive forever.
 
 ## Quick start
 
-1. **Create the droplet** — DigitalOcean → Ubuntu 24.04, Basic, 2 vCPU / 2–4 GB
-   (the $18–24/mo size; 1 GB is too tight for 1080p Chrome).
+1. **Create the server** — Hetzner Cloud → Ubuntu 24.04, shared vCPU, 2 vCPU /
+   4 GB (a CX22-class box; 1 GB is too tight for 1080p Chrome).
+
+   > Both live streams run on **Hetzner** — [console.hetzner.cloud](https://console.hetzner.cloud).
+   > Earlier versions of this file said DigitalOcean; that is out of date and
+   > sent us to the wrong panel. Hetzner's web terminal is the `>_` button on
+   > the server's page, so no SSH client is needed to change anything.
 
 2. **Enable YouTube live** — YouTube Studio → **Create → Go Live**. First time
    only, YouTube takes ~24 h to unlock live streaming, so do this a day ahead.
    Then copy the **Stream key** (Stream tab).
 
-3. **On the droplet** (SSH in as root), run:
+3. **On the server** (SSH as root, or use Hetzner's `>_` web console), run:
 
    ```bash
    wget -O setup.sh https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/setup.sh
@@ -21,7 +26,7 @@ encodes it, systemd keeps it alive forever.
    ```
 
    (If the repo is private and that URL 401s, just paste the contents of
-   `setup.sh` into a file on the droplet and `sudo bash setup.sh`.)
+   `setup.sh` into a file on the server and `sudo bash setup.sh`.)
 
    Paste your stream key when prompted. That's it — YouTube goes live within a
    minute.
@@ -65,7 +70,7 @@ native feed, so this is purely a URL change — no code or feed work.
 
 An unattended streamer has nobody to press the language toggle, so the board's
 languages have to come from the URL. `langs` outranks the saved-per-airport
-choice and the admin config, so it survives a browser-profile wipe or a droplet
+choice and the admin config, so it survives a browser-profile wipe or a server
 rebuild. Without it, `MCO` would fall back to the regional default of
 English + French.
 
@@ -80,7 +85,7 @@ the param is ignored and the board falls back to its regional default.
 
 ### Switching stream 2 to Orlando
 
-On that droplet:
+On that server (Hetzner → the TPA server → `>_` console):
 
 ```bash
 sudo nano /opt/fids-stream/config.env      # set STREAM_URL + MUSIC_URL
@@ -130,4 +135,4 @@ silence.
 - The board updates itself live — no need to reload; ffmpeg captures whatever
   Chrome shows.
 - If the picture is black: `journalctl -u fids-stream -f` and check Chrome
-  launched. On a 1 GB droplet Chrome can OOM — size up to 2 GB+.
+  launched. On a 1 GB server Chrome can OOM — size up to 4 GB.

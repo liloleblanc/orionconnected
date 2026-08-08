@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# Orion FIDS → YouTube Live — one-shot installer for an Ubuntu droplet.
+# Orion FIDS → YouTube Live — one-shot installer for an Ubuntu server (Hetzner Cloud).
 #
 # What it does: installs Google Chrome + ffmpeg + a virtual display, then sets
 # up a systemd service that runs the FIDS board (stream mode) full-screen in
 # headless Chrome and pushes it to YouTube 24/7. Auto-starts on boot and
 # auto-restarts if anything hiccups.
 #
-# Run it (as root) on the droplet:
+# Run it (as root) on the server — SSH, or Hetzner's `>_` web console:
 #     sudo bash setup.sh
 #
 # Requirements: Ubuntu 22.04 or 24.04, ~2 GB RAM (2 vCPU / 2-4 GB recommended
@@ -36,7 +36,7 @@ _saved() {  # read one KEY="value" line from the saved config, if present
 #
 # &langs=en,es pins the board's two languages for an unattended screen. A
 # streamer has no operator to press the language toggle, and the URL param
-# outranks the saved/admin layers, so it survives a profile wipe or a droplet
+# outranks the saved/admin layers, so it survives a profile wipe or a server
 # rebuild. Omit it and the board falls back to its regional default
 # (en,fr in Canada; en,es only for the airports in ES_BOARD_AIRPORTS).
 #
@@ -53,7 +53,7 @@ ORLANDO_URL="https://fids.orionconnected.com/rotate.html?ap=MCO&mode=live&stream
 # The station Nick uses for the stream's background audio.
 ORION_RADIO="https://audio-edge-w4d68.yul.o.radiomast.io/ref-128k-mp3-stereo"
 
-# Capture size + framerate + bitrate. Defaults (below) suit a 1 vCPU droplet:
+# Capture size + framerate + bitrate. Defaults (below) suit a 1 vCPU server:
 # 720p @ 20 fps. On a 2+ vCPU box run once with 1080p and it sticks:
 #   WIDTH=1920 HEIGHT=1080 FRAMERATE=30 VIDEO_BITRATE=6000k bash setup.sh
 WIDTH="${WIDTH:-$(_saved WIDTH)}";                 WIDTH="${WIDTH:-1280}"
