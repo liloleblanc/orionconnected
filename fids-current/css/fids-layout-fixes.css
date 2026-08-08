@@ -10222,3 +10222,21 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-val b {
    repainted the orb; Nick: 'the orb had white leave it white'. The emblem
    map is back to mono white and the colour leaf is used only on the welcome
    card, so no rule is needed here. */
+
+/* ── v23052: DARK NAVY BEHIND THE LEAF ON THE SMALL MAP (Nick: 'behind
+   background on small map when the leaf comes on it should be navy back' —
+   'dark dark navy').
+
+   The map-life panel is the hold state that shows the carrier mark while
+   there is no aircraft to draw. On WestJet it was sitting on the near-black
+   #0b0d10 the v22923 rule gives it, which reads as a dead grey-black hole
+   next to a navy screen. It takes a deep WestJet navy instead — darker than
+   the banner so the colour leaf's teal and navy both stand off it.
+
+   Scoped to the map-life panel, NOT the orb and NOT the map shelf itself, so
+   the live route map is unaffected. Highest specificity in the file so it
+   beats the v22923 near-black. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  background-color: #061024 !important;   /* dark dark navy */
+  background-image: none !important;
+}
