@@ -10054,3 +10054,28 @@ html .octb-tab.octb-stack .octb-date {
 html .octb-tab.octb-stack .octb-date .cl-sep {
   margin: 0 clamp(8px, 1vw, 22px) !important;
 }
+
+/* ── v23039: WESTJET DIVIDER LINES WHITE (Nick: 'WESTJET STRIPES WHITE' →
+   'THE DEVIDDER LINES'). v22861 put them in WestJet blue #2F84DE to 'stand
+   out'; on the navy sheet they don't. Every divider on a WS gate — the left
+   plates' title underline, the right pane's row rules, and the label-stack
+   underline — goes white. Highest specificity in the file so it beats the
+   v22925-era per-airline rules that carry seven :not(#_) bumps. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child),
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-lblstack,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-trow {
+  border-bottom-color: #FFFFFF !important;
+  /* SAME SIZE both columns (Nick: 'White Same size please'). The left
+     plates' title rule is clamp(2px,0.32vh,4px); the right pane's rows were
+     a flat 2px, so at his viewport the right lines ran thinner. One gauge. */
+  border-bottom-width: clamp(2px, 0.32vh, 4px) !important;
+  border-bottom-style: solid !important;
+}
+/* Closing rows still carry no line. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last > .v2-rc-fi-tval {
+  border-bottom: none !important;
+}
