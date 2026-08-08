@@ -9884,7 +9884,7 @@ html body:not(#_):not(#_) .g8-board-body .g8-board-col .g8-board-lane {
    contrast on the bake: DL 4.54:1, WS 3.05:1 on the sweep itself with the
    text field above it darker). */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-dl-scallops.jpg?v=23006');
+  --plate-tex: url('/textures/plate-dl-scallops.jpg?v=23028');
   --plate-base: #0a1a33;
   --plate-blend: normal;
 }
@@ -9994,4 +9994,13 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
+}
+
+/* ── v23028: THE RED LINE REACHES THE RIGHT COLUMN'S LABELS (Nick: 'no
+   line on the right'). The left plates underline every title with the
+   Delta red; the right column's flight table had no line under its labels.
+   Same red, same weight, under each label cell on the right. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  border-bottom: 3px solid #C8102E !important;
+  padding-bottom: 3px !important;
 }
