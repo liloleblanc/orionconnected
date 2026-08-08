@@ -6609,6 +6609,11 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
         'RV':  '/logos/airlines/canadian/AC.TO.svg',
+        // v23049 — BACK TO THE WHITE MONO LEAF. v23047 pointed this at the
+        // colour leaf, which also repainted the round rail orb; Nick: 'the orb
+        // had white leave it white'. This map feeds the orb, so it stays mono
+        // white. The colour leaf is applied ONLY on the welcome card, via
+        // _FB_WELCOME_LOGO.
         'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
         'WR':  '/logos/symbols/airlines-mono/WS.svg',
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
@@ -8546,7 +8551,16 @@ function _buildV2MapCol(ctx, vars) {
   // enlarged into the centre, leave the carrier's own static emblem in this
   // temporarily vacant shelf — a brand hold, not another loading animation.
   var _mapLifeCode = String((vars && vars.airlineCode) || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-  var _mapLifeSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
+  // v23051 — WestJet's COLOUR leaf on the small map chip too (Nick: 'THE
+  // MIDDLE AND THE RIGHT SMALL MAP'). Same pattern as the welcome strip: the
+  // override is per-surface, so the shared emblem map — and therefore the
+  // round rail ORB — keeps its mono white leaf.
+  var _MAPLIFE_EMBLEM = {
+    'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+    'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+  };
+  var _mapLifeSrc = _MAPLIFE_EMBLEM[_mapLifeCode]
+    || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
   var _mapLifeHtml = _mapLifeSrc
     ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
       + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
@@ -9164,7 +9178,17 @@ function uxgGateHtml(ctx) {
     // WHITE-path emblems vanish on the white strip (Nick: United missing its
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
     // Swap those brands for a colored cut here, like the SkyTeam invert below.
-    var _BW_EMBLEM = { 'UA': '/logos/airlines/us-major/united-globe-only.svg' };
+    // v23050 — WestJet's COLOUR leaf on the welcome strip (Nick: 'why did you
+    // take it away from the middle, it was right'). This override is the
+    // WELCOME surface only, so the colour mark lands here while the round rail
+    // ORB keeps the mono white leaf it has always had ('the orb had white
+    // leave it white'). The strip's ground is white, so the leaf's navy and
+    // teal both read on it.
+    var _BW_EMBLEM = {
+      'UA': '/logos/airlines/us-major/united-globe-only.svg',
+      'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+      'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+    };
     // v22939 — AIRLINE_EMBLEM_FILES is a hand-kept list and most of the world
     // is not on it. Korean Air is not, so on Nick's YYZ/C35 boarding screen
     // this strip rendered as a bare white band: no rondelle, just the two
@@ -9912,13 +9936,13 @@ function uxgGateHtml(ctx) {
   // fill the band). Scale the calibrated size up and widen the vw cap so wide
   // wordmarks actually grow to the band height.
   if (_silkBanner) {
-    _logoH = Math.round(_logoH * 1.55);
+    _logoH = Math.round(_logoH * 1.7);
     _sz = { h: _sz.h, w: Math.round((_sz.w || 480) * 1.6) };
     // Ceiling so tall/wide wordmarks (e.g. Porter) fill the band without
     // overrunning the ~118px banner (Nick: 'some airline logos are way too big
     // now, passing the border'). 96px fills it with breathing room; compact
     // marks that were already smaller are untouched (Math.min).
-    _logoH = Math.min(_logoH, 96);
+    _logoH = Math.min(_logoH, 106);
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
@@ -10291,12 +10315,17 @@ function uxgGateHtml(ctx) {
             // grammar, so the two read as one connected unit. Content is
             // justified across the width: label (left) ↔ clock (right), date
             // spanning below.
+            // v23036 — Nick's mockup: STACKED, centred. English label on top,
+            // the big clock under it, the second-language label under that,
+            // then the bilingual date. ('Please rearrange the time like this
+            // and bigger and change the gray theres too muchngray')
+            var _tbL = ['', ''];
+            _gateLbl('timeIn', false, function(w,i){ _tbL[i?1:0] = '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; return ''; }, '');
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
-              + '<div class="octb octb-tab">'
-              +   '<div class="octb-top">'
-              +     '<div class="octb-lbls">' + _gateLbl('timeIn', false, function(w,i){ return '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; }, '') + '</div>'
-              +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
-              +   '</div>'
+              + '<div class="octb octb-tab octb-stack">'
+              +   _tbL[0]
+              +   '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
+              +   _tbL[1]
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
               + '</div>'
               + '</div>';
@@ -18167,7 +18196,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23028';
+var FIDS_BUILD_TAG = 'v23055';
 (function(){
   try {
     function _addTag(){
@@ -23526,6 +23555,40 @@ function applyAirportConfigToBoard(iata) {
   // config-default langs unconditionally — so it clobbered the v22961
   // restore on every path (Nick: 'it does not save the language to an
   // airport btw'; measured: switch back to an airport saved de+es → en,fr).
+  // v23054 — a `?langs=` URL param now sits ABOVE all of that, for unattended
+  // kiosk/stream screens (Nick: the Orlando live stream on English+Spanish).
+  // A headless streamer has no operator to press the language toggle, and
+  // pinning it in the URL is deterministic — it survives a profile wipe, a
+  // droplet rebuild and an admin-config change, none of which localStorage or
+  // the saved-per-airport layer do. Deliberately NOT done by adding MCO to
+  // ES_BOARD_AIRPORTS: that set also drives boardMetricFor(), so it would
+  // flip a US board to Celsius.
+  // Accepts ?langs=en,es (or ?lang=en,es), two codes max, same shape as the
+  // saved layer.
+  //
+  // The param is resolved by MATCHING each token against this fixed list and
+  // keeping the list's own constant — the URL's string is never carried
+  // forward. A regex .filter() would have read the same but passes the
+  // original (attacker-controlled) string through, since a predicate doesn't
+  // transform what it keeps; taint analysis is right not to treat that as a
+  // sanitizer, and `langs` does reach rendered markup. Matching to a constant
+  // means only these nine two-letter literals can ever enter, whatever the
+  // URL says. Keep in sync with the language keys in _GATE_LBL.
+  var _URL_LANG_OK = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
+  var _urlLangs = null;
+  try {
+    var _lq = new URLSearchParams(window.location.search);
+    var _lraw = _lq.get('langs') || _lq.get('lang') || '';
+    if (_lraw) {
+      var _picked = [];
+      String(_lraw).toLowerCase().split(/[,+\s]+/).forEach(function (tok) {
+        if (_picked.length >= 2) return;
+        var _i = _URL_LANG_OK.indexOf(tok);
+        if (_i >= 0 && _picked.indexOf(_URL_LANG_OK[_i]) < 0) _picked.push(_URL_LANG_OK[_i]);
+      });
+      if (_picked.length) _urlLangs = _picked;
+    }
+  } catch (e3) {}
   try {
     var _cfgLangs = _pref('langs');
     var _savedSet = null;
@@ -23536,7 +23599,8 @@ function applyAirportConfigToBoard(iata) {
         if (!_savedSet.length) _savedSet = null;
       }
     } catch (e2) {}
-    langs = _savedSet ? _savedSet
+    langs = _urlLangs ? _urlLangs.slice()
+      : _savedSet ? _savedSet
       : (Array.isArray(_cfgLangs) && _cfgLangs.length) ? _cfgLangs.slice()
       : boardLangsFor(iata);
     if (langIdx >= langs.length) langIdx = 0;
@@ -26284,20 +26348,47 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // heavy satellite tiles each time (Nick: 'restarting/glitchy').
   var _liveRouteKey = 'live|' + String(org).toUpperCase() + '>' + String(dst).toUpperCase();
   var _liveReuse = false;
+  var _liveDetached = false;
   try {
-    _liveReuse = !!(gateMap && gateMap._fidsRouteKey === _liveRouteKey
-      && gateMap.getContainer && gateMap.getContainer() && gateMap.getContainer().isConnected);
-  } catch (e) { _liveReuse = false; }
+    var _lc = (gateMap && gateMap.getContainer) ? gateMap.getContainer() : null;
+    var _sameRoute = !!(gateMap && gateMap._fidsRouteKey === _liveRouteKey);
+    _liveReuse = !!(_sameRoute && _lc && _lc.isConnected);
+    // v23042 — the panel rebuild DETACHES #gateMapBox for a moment and puts it
+    // straight back (see the save/re-attach pair in the gate renderer). A 10 s
+    // live tick landing inside that window used to see a disconnected
+    // container, conclude the map was gone, and tear it down — which is the
+    // rest of Nick's 'it comes and goes': the map really did vanish and
+    // reload its whole tile set. A detached-but-same-route map is mid-move,
+    // not dead, so skip this tick and let the re-attach finish.
+    _liveDetached = !!(_sameRoute && _lc && !_lc.isConnected);
+  } catch (e) { _liveReuse = false; _liveDetached = false; }
+  if (_liveDetached) { try { setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300); } catch (e) {} return; }
   // ANTI-JITTER (Nick: 'the map's going crazy'): on the SAME live map, HOLD the
   // previous zoom when the plane has barely moved — otherwise ADS-B jitter near
   // a zoom-tier boundary flips the zoom in and out on every 10s tick. And if
   // essentially nothing changed, SKIP the whole redraw (no overlay clear, no
   // setView) so the map sits still instead of thrashing.
-  if (_liveReuse && gateMap._fidsLastView) {
-    var _lv = gateMap._fidsLastView;
+  // v23042 — THE ZOOM HOLD HAS TO SURVIVE A REBUILD (Nick: 'still bobbling',
+  // 'it comes and goes'). The hold lived only on the map INSTANCE, so it was
+  // lost the moment the right column re-rendered and detached the container:
+  // _liveReuse went false, the map was torn down, and the fresh build
+  // recomputed the raw distance tier. On the YUL→YHZ leg that tier sits right
+  // on the 0.06 boundary, so successive rebuilds alternated z11 / z9 — a
+  // two-level jump that dumps the whole tile cache and repaints from blank
+  // every cycle. Remembering the view per ROUTE, on window, means a rebuilt
+  // map re-seeds exactly where the old one was and the tiles stay warm.
+  var _lv = null;
+  try {
+    if (_liveReuse && gateMap._fidsLastView) _lv = gateMap._fidsLastView;
+    else if (window._GATE_MAP_VIEW && window._GATE_MAP_VIEW.key === _liveRouteKey) _lv = window._GATE_MAP_VIEW;
+  } catch (e) {}
+  if (_lv) {
     var _dLat = Math.abs(_lv.lat - planeLat), _dLng = Math.abs(_lv.lng - planeLng);
     if (_dLat < 0.05 && _dLng < 0.05) zoom = _lv.zoom;                 // hold zoom, no flap
-    if (_dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return;   // nothing changed → skip
+    // Hysteresis: even on a real move, never let one tick jump more than a
+    // single zoom level. A 2-level jump is what reads as the map 'going'.
+    if (zoom !== _lv.zoom) zoom = _lv.zoom + (zoom > _lv.zoom ? 1 : -1);
+    if (_liveReuse && _dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return; // nothing changed → skip
   }
   if (_liveReuse) {
     try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
@@ -26311,6 +26402,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     _gateMapWatchResize(mb);
   }
   gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
+  try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e) {}
   gateMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
@@ -28508,14 +28600,27 @@ var ACCOR_BRAND_COLORS = {
   'RIX':'#B88D5B','HB':'#0057b8','JO':'#2E4057','N25':'#050033','EMB':'#B88D5B'
 };
 
-var ACCOR_BRAND_NAMES = {
-  'FAI':'Fairmont','SOF':'Sofitel','PUL':'Pullman','MGH':'MGallery','NOV':'Novotel',
-  'MER':'Mercure','SWI':'Swissôtel','MOV':'Mövenpick','IBS':'ibis','IBB':'ibis budget',
-  'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','SOU':'Handwritten Collection','ADA':'Adagio',
-  'GRA':'Grand Mercure','BAN':'Banyan Tree','MAN':'Mantis','SEQ':'SO/','RAH':'Raffles',
-  'RAF':'Raffles','SO':'SO/','HYD':'Hyde','SLS':'SLS','DEL':'Delano','MON':'Mondrian',
-  'RIX':'Rixos','HB':'Hoxton','JO':'JO&JOE','N25':'25hours','EMB':'Emblème'
-};
+// v23046 — this used to be a second `var ACCOR_BRAND_NAMES = {…}`, which
+// silently REPLACED the fuller map declared earlier in the file. Everything
+// only the first map knew — Faena, Orient Express, Mama Shelter, TRIBE, Art
+// Series, 21c, Angsana, MGallery's MGA alias — resolved to '' from here on.
+// That is why 'Faena New York' printed as 'Faena Faena': the de-duplication
+// code looks the brand up by code, got nothing back, and never recognised
+// that the name it had trimmed down WAS the brand.
+// Merged instead of replaced: these entries still win for the codes they
+// define, and the earlier map's extra codes survive.
+(function () {
+  var _later = {
+    'FAI':'Fairmont','SOF':'Sofitel','PUL':'Pullman','MGH':'MGallery','NOV':'Novotel',
+    'MER':'Mercure','SWI':'Swissôtel','MOV':'Mövenpick','IBS':'ibis','IBB':'ibis budget',
+    'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','SOU':'Handwritten Collection','ADA':'Adagio',
+    'GRA':'Grand Mercure','BAN':'Banyan Tree','MAN':'Mantis','SEQ':'SO/','RAH':'Raffles',
+    'RAF':'Raffles','SO':'SO/','HYD':'Hyde','SLS':'SLS','DEL':'Delano','MON':'Mondrian',
+    'RIX':'Rixos','HB':'Hoxton','JO':'JO&JOE','N25':'25hours','EMB':'Emblème'
+  };
+  if (typeof ACCOR_BRAND_NAMES === 'undefined' || !ACCOR_BRAND_NAMES) ACCOR_BRAND_NAMES = {};
+  for (var _k in _later) { if (Object.prototype.hasOwnProperty.call(_later, _k)) ACCOR_BRAND_NAMES[_k] = _later[_k]; }
+})();
 
 // Brand Corner API cache
 var ACCOR_BRAND_CACHE = {};
@@ -28583,7 +28688,7 @@ function ensureBrandInName(name, brandCode) {
 // 'Vancouver Airport', 'Paris Tour Eiffel' and 'Montréal Golden Mile' all cut
 // at index 0 and are therefore left alone. The full name is kept on `nameFull`
 // for the QR bubble.
-function stripHotelLocationTail(name, city) {
+function stripHotelLocationTail(name, city, brandCode) {
   if (!name) return name;
   var _fold = function (s) {
     return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -28603,7 +28708,27 @@ function stripHotelLocationTail(name, city) {
   var cut = Math.min.apply(null, cuts);
   var head = name.slice(0, cut).replace(/[\s,·:–—-]+$/, '').trim();
   // Never trim a name away to nothing (or to a bare article).
-  return head.length >= 3 ? head : name;
+  if (head.length < 3) return name;
+  // …and never trim it down to JUST the brand word. 'Faena New York' cut at
+  // the city leaves 'Faena', which the logo slot is already printing — Nick
+  // saw it as 'Faena Faena'. Properties whose whole identity is the city
+  // keep the city (Faena New York, Delano Miami Beach, SO/ Paris).
+  try {
+    var _hf = _fold(head);
+    var _bn = (typeof ACCOR_BRAND_NAMES !== 'undefined' && brandCode)
+      ? (ACCOR_BRAND_NAMES[String(brandCode).toUpperCase()] || '') : '';
+    if (_bn && _hf === _fold(_bn)) return name;
+    // Belt and braces: recognise the brand by NAME as well as by code, so a
+    // catalog code we don't carry can't reintroduce 'Faena Faena'.
+    var _known = ['Faena','Fairmont','Sofitel','Pullman','Novotel','Mercure','Raffles',
+      'Delano','Mondrian','Hyde','SLS','Rixos','Hoxton','Adagio','Mantis','Banyan Tree',
+      'Swissôtel','Mövenpick','MGallery','Orient Express','Mama Shelter','TRIBE','25hours',
+      'Angsana','Art Series','Emblems Collection','Emblème','Grand Mercure','SO/','JO&JOE'];
+    for (var _ki = 0; _ki < _known.length; _ki++) {
+      if (_hf === _fold(_known[_ki])) return name;
+    }
+  } catch (e) {}
+  return head;
 }
 
 function fetchAccorHotels(destIata) {
@@ -29319,7 +29444,7 @@ function _processAccorData(data, destIata, langKey) {
       bgSize: photoUrl ? 'cover' : 'auto',
       bgPos: photoUrl ? 'center' : 'auto',
       photos: photos,   // full set for hero rotation
-      headline: stripHotelLocationTail(hotelName, city),
+      headline: stripHotelLocationTail(hotelName, city, brand),
       nameFull: ensureBrandInName(_rawName, brand),  // full name incl. brand (for QR bubble / page context)
       sub: subtitle,
       brandLabel: brandName,
@@ -30686,7 +30811,20 @@ function buildGateAdHtml(ad) {
   // white) to a clean white silhouette. The only light-background ad (Flair
   // lime) sets ad.fg to a dark colour — there we leave the logo as-is.
   var _adLightBg = !!ad.fg;
-  var _stdLogoFilter = _adLightBg ? '' : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
+  // v23053 — a logo chosen SPECIFICALLY for its colour is exempt (Nick: 'the
+  // midle leaf is still not changed'). The welcome card was already being
+  // served WestJet-leaf-colour.svg — this filter was flattening it straight
+  // back to a white silhouette, so the file swap looked like it had done
+  // nothing. Files the logo-treatment table marks 'no_filter' keep their art;
+  // everything else still gets whitened as before.
+  var _adKeepColour = false;
+  try {
+    var _lf = String(ad.logo || '').split('/').pop().replace(/\.[a-z0-9]+(\?.*)?$/i, '');
+    _adKeepColour = (typeof LOGO_TREATMENT !== 'undefined' && LOGO_TREATMENT[_lf] === 'no_filter');
+  } catch (e) {}
+  var _stdLogoFilter = (_adLightBg || _adKeepColour)
+    ? (_adKeepColour ? 'filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));' : '')
+    : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
   var _stdLogoHtml = ad.logo
     ? '<div style="flex-shrink:0;width:100%;margin-bottom:clamp(20px,3vh,40px);height:clamp(120px,20vh,230px);display:flex;align-items:center;justify-content:center;">'
       // Height-driven: the logo fills the tall box. Width is a VIEWPORT cap
@@ -32671,7 +32809,14 @@ function _buildGateAdSlideList() {
       // standard ad renderer's white-force filter (Nick's Breeze A17: giant
       // white square over the Welcome slide). Those brands show their WHITE
       // wordmark here instead — already white, so the filter is an identity.
-      var _FB_WELCOME_LOGO = { 'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg' };
+      // WestJet: the COLOUR leaf, not the mono white one (Nick: 'instead of
+      // white logo put the color logo'). The teal/navy leaf reads on the
+      // navy welcome card.
+      var _FB_WELCOME_LOGO = {
+        'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg',
+        'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+      };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
         bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',

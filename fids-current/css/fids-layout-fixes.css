@@ -662,9 +662,9 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
 }
 .g8-r1-star {
   width: auto !important;
-  height: 92px !important;
-  max-height: 92px !important;
-  max-width: 116px !important;
+  height: 108px !important;
+  max-height: 108px !important;
+  max-width: 140px !important;
   object-fit: contain !important;
   opacity: 0.95 !important;
 }
@@ -677,9 +677,9 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-word
     max-width: 480px !important;
   }
   .g8-r1-star {
-    height: 76px !important;
-    max-height: 76px !important;
-    max-width: 98px !important;
+    height: 88px !important;
+    max-height: 88px !important;
+    max-width: 118px !important;
   }
 }
 
@@ -9888,9 +9888,11 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   --plate-base: #0a1a33;
   --plate-blend: normal;
 }
-/* WestJet: Nick swapped the wave for his light-blue arc artwork ('one is
-   porter other is werstjet'). BRIGHT plate — same dark-ink treatment as
-   Flair: darkest region L0.22 gives 4.66:1 against the navy ink. */
+/* WestJet: Nick's arc artwork ('one is porter other is werstjet') — the
+   TEAL bake he approved. v23036 briefly swapped this for white-on-navy
+   after 'WESTJET STRIPES WHITE'; that was the wrong surface (Nick: 'what
+   happened tp the fucking westjet plates') — reverted v23038. The white
+   stripes live on the background canvas (white5), not the plates. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
   --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23021');
   --plate-base: #0e2438;
@@ -9934,7 +9936,7 @@ html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airli
 /* American: Nick's red/blue chevrons on silver-white ('use this for
    american'). Bright plate — dark ink, darkened status colours. */
 html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-aa-chevron.jpg?v=23027');
+  --plate-tex: url('/textures/plate-aa-fusion.jpg?v=23034');
   --plate-base: #E8EAEE;
   --plate-blend: normal;
   --plate-ink: #101820;
@@ -9985,12 +9987,13 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
   background: transparent !important;
 }
-/* WestJet lines in WHITE (Nick: 'do white lines maybe') — the navy-on-navy
-   strokes vanished against the dark ground; same artwork, strokes lifted to
-   white over the deep navy. One canvas behind both columns, one gauge. */
+/* WestJet lines in WHITE (Nick: 'do white lines maybe', then 'WESTJET
+   STRIPES WHITE') — the white4 bake only lifted strokes to L0.52, which
+   still read gray-blue; measured zero pixels above L0.6. white5 drives the
+   stroke cores to actual white (max L0.99) over the same deep navy. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
   background-color: #081A2E !important;
-  background-image: url('/textures/ws-back-white4.jpg?v=23024') !important;
+  background-image: url('/textures/ws-back-white5.jpg?v=23036') !important;
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
@@ -10003,4 +10006,237 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
   border-bottom: 3px solid #C8102E !important;
   padding-bottom: 3px !important;
+}
+
+/* ── v23036: TIME TAB REARRANGED TO NICK'S MOCKUP (Nick: 'Please rearrange
+   the time like this and bigger and change the gray theres too muchngray').
+   Stacked and centred: 'Time in Halifax' on top, the BIG clock under it,
+   the second-language label under that, then the bilingual date. Everything
+   a size up, and the milky gray tab background (rgba(214,218,226,.26))
+   swapped for near-clear dark glass so the airline banner shows through
+   instead of gray. End-of-file so these win the earlier octb rules. */
+html .octb-tab.octb-stack {
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: min(0.3vh, 1.2cqh) !important;
+  background: rgba(6, 10, 18, 0.22) !important;
+  padding: min(0.9vh, 2.5cqh) clamp(24px, 2.2vw, 46px) 0 !important;
+  /* v23037 — the stack is sized by the TAB's own height (cqh), not the
+     viewport: on Nick's screen the vh sum overran the banner and cut the
+     date row in half ('Ummmmm'). Budget: 15+36+15+14cqh + gaps < 100. */
+  container-type: size !important;
+  overflow: hidden !important;
+}
+/* The wedge filler right of the tab matches the new glass, not the old gray. */
+html .octb-attached .octb-tab.octb-stack::after {
+  background: rgba(6, 10, 18, 0.22) !important;
+}
+/* Bigger, centred type. Labels are direct children now (no .octb-top row). */
+html .octb-tab.octb-stack .octb-en,
+html .octb-tab.octb-stack .octb-fr {
+  font-size: min(2.3vh, 32px, 15cqh) !important;
+  line-height: 1.05 !important;
+  text-align: center !important;
+  color: #ffffff !important;
+}
+html .octb-tab.octb-stack .octb-clock {
+  font-size: min(5.8vh, 82px, 36cqh) !important;
+  line-height: 1.0 !important;
+}
+html .octb-tab.octb-stack .octb-date {
+  font-size: min(2vh, 28px, 14cqh) !important;
+  text-align: center !important;
+  text-align-last: center !important;
+  margin-top: min(0.35vh, 1.2cqh) !important;
+}
+/* The date's mid-gap can shrink a touch now that it's the narrow stack. */
+html .octb-tab.octb-stack .octb-date .cl-sep {
+  margin: 0 clamp(8px, 1vw, 22px) !important;
+}
+
+/* ── v23039: WESTJET DIVIDER LINES WHITE (Nick: 'WESTJET STRIPES WHITE' →
+   'THE DEVIDDER LINES'). v22861 put them in WestJet blue #2F84DE to 'stand
+   out'; on the navy sheet they don't. Every divider on a WS gate — the left
+   plates' title underline, the right pane's row rules, and the label-stack
+   underline — goes white. Highest specificity in the file so it beats the
+   v22925-era per-airline rules that carry seven :not(#_) bumps. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child),
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-lblstack,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-trow {
+  border-bottom-color: #FFFFFF !important;
+  /* SAME SIZE both columns (Nick: 'White Same size please'). The left
+     plates' title rule is clamp(2px,0.32vh,4px); the right pane's rows were
+     a flat 2px, so at his viewport the right lines ran thinner. One gauge. */
+  border-bottom-width: clamp(2px, 0.32vh, 4px) !important;
+  border-bottom-style: solid !important;
+}
+/* THE SMALLER LINES TOO (Nick: 'dont miss the smaller lines') — the
+   word-width underline under each label's first word was a 1px
+   rgba(20,24,30,0.32) hairline, near-invisible on the navy. Same white,
+   same gauge as every other divider. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-tlbl span:first-child,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mstat .v2-rc-ms-lbl {
+  border-bottom-color: #FFFFFF !important;
+  border-bottom-width: clamp(2px, 0.32vh, 4px) !important;
+  border-bottom-style: solid !important;
+}
+/* Closing rows still carry no line. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last > .v2-rc-fi-tval {
+  border-bottom: none !important;
+}
+
+/* ── v23041: ONE DIVIDER GAUGE ON EVERY GATE (Nick: 'This is every gate
+   make sure the lines match for fuck sakes devider lines').
+
+   The left plates' title underline has always been clamp(2px,0.32vh,4px);
+   the right column's row rules were a flat 2px and the label underlines a
+   1px hairline. Three gauges on one screen. Every divider on both columns
+   now takes the left column's clamp, for ALL carriers — each keeps its own
+   colour, only the WEIGHT is unified. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow:not(.v2-rc-fi-trow-last),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-lblstack,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-trow:not(:last-child),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-tlbl span:first-child {
+  border-bottom-width: clamp(2px, 0.32vh, 4px) !important;
+  border-bottom-style: solid !important;
+}
+
+/* ── v23041: THE CLOCK TAB AND THE MAP SHELF TAKE THE CARRIER'S OWN COLOUR
+   (Nick: 'the clock COLOR in this case NAVY blue same for behind the small
+   map'). --banner-bg is the carrier's r1 from airline-colors.js — WestJet
+   navy #003366, Porter #112855, United #0033A0 — so this is per-airline by
+   construction, not a WestJet special case. Replaces the neutral glass. */
+html .octb-tab.octb-stack,
+html .octb-attached .octb-tab.octb-stack::after {
+  background: var(--banner-bg, rgba(6, 10, 18, 0.22)) !important;
+}
+/* v23044 — A DIFFERENT SHADE, NOT THE SAME ONE (Nick, circling the tab:
+   'I said different colors not the same make sure you get edges too').
+   Painting it --banner-bg made it exactly the banner's blue, so the tab
+   dissolved into the band. It now takes a DEEPER cut of the same carrier
+   colour — clearly its own block, still unmistakably United blue / WestJet
+   navy / AC black — and wears a defined light edge on every visible side so
+   the shape reads even where the two tones are close. */
+/* The clock tab wears the SAME plate artwork the gate plates wear (Nick:
+   'for united it could also use the same banner as the plate for the
+   clock'). --plate-tex is already per-carrier, so the tab picks up United's
+   blue-modern plate, WestJet's arcs, Delta's scallops — whatever that gate
+   is running — over the deeper carrier tone, which stays visible where the
+   art is light. */
+html .octb-tab.octb-stack {
+  background-color: color-mix(in srgb, var(--banner-bg, #0c1119) 58%, #000000 42%) !important;
+  background-image: var(--plate-tex, none) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  border-top: 2px solid rgba(255, 255, 255, 0.72) !important;
+  border-left: 5px solid rgba(255, 255, 255, 0.92) !important;
+  border-right: 5px solid rgba(255, 255, 255, 0.92) !important;
+  /* BOTH top corners (Nick, circling the square right corner: 'dont skip
+     corners'). The attached variant squared this one off so it could butt
+     the gate tab; the tab reads as its own panel now, so it gets a matching
+     radius on both sides and the filler wedge is retired. */
+  border-radius: 20px 20px 0 0 !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.40), inset 0 0 0 1px rgba(255, 255, 255, 0.10) !important;
+}
+html .octb-attached .octb-tab.octb-stack {
+  border-radius: 20px 20px 0 0 !important;
+  border-left: 5px solid rgba(255, 255, 255, 0.92) !important;
+  border-right: 5px solid rgba(255, 255, 255, 0.92) !important;
+}
+html .octb-attached .octb-tab.octb-stack::after {
+  display: none !important;
+}
+/* Scrim so the clock stays white-on-dark wherever the plate art runs light
+   (United's blue-modern has bright sweeps; the AA silver plate is bright
+   throughout). Sits under the type, over the artwork. */
+html .octb-tab.octb-stack::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: color-mix(in srgb, var(--banner-bg, #0c1119) 55%, #000000 45%) !important;
+  opacity: 0.62 !important;
+  border-radius: 16px 16px 0 0 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+html .octb-tab.octb-stack > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+/* Same treatment for the map shelf so the two read as one family. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map {
+  background-color: color-mix(in srgb, var(--banner-bg, #0c1119) 58%, #000000 42%) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map {
+  background-color: var(--banner-bg, #0c1119) !important;
+}
+
+/* ── v23044: THE 'OPERATED BY' MARK — VISIBLE, AND NOT TINY (Nick: 'Ive
+   asked you a million times' + 'and its fucking tiny WOW').
+
+   Two faults in one element. The operator wordmarks are dark-ink brand SVGs
+   (SkyWest navy #003DA5, Endeavor, Jazz…) dropped straight onto the dark
+   gate panel, so they read as a smudge — the same dark-on-dark mistake as
+   the shelf logos. And only PAL ever got a size rule, so every other
+   operator rendered at the generic caption height.
+
+   Whitened to flat white ink via brightness(0)+invert(1), which is exact
+   for any single-colour mark regardless of its brand hue, and sized to the
+   PAL gauge so they all land the same. Text fallbacks (the <b> emitted when
+   the logo 404s) go white too. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap img.v2-rc-opby-logo,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-acb-opby-logo img,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-aircraft-op-inline img,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-fi-val.v2-rc-opby-val img {
+  filter: brightness(0) invert(1) !important;
+  opacity: 1 !important;
+  max-height: clamp(40px, 5.6vh, 78px) !important;
+  max-width: min(64%, 320px) !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+/* The name fallback when there is no logo file. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-acb-opby-logo,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-acb-opby-logo b,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-val,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-val b {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-size: clamp(20px, 2.7vh, 38px) !important;
+  font-weight: 800 !important;
+}
+
+/* ── v23049: WESTJET — the round rail ORB keeps its white mono leaf.
+   v23047 swapped the shared emblem map to the colour leaf, which also
+   repainted the orb; Nick: 'the orb had white leave it white'. The emblem
+   map is back to mono white and the colour leaf is used only on the welcome
+   card, so no rule is needed here. */
+
+/* ── v23052: DARK NAVY BEHIND THE LEAF ON THE SMALL MAP (Nick: 'behind
+   background on small map when the leaf comes on it should be navy back' —
+   'dark dark navy').
+
+   The map-life panel is the hold state that shows the carrier mark while
+   there is no aircraft to draw. On WestJet it was sitting on the near-black
+   #0b0d10 the v22923 rule gives it, which reads as a dead grey-black hole
+   next to a navy screen. It takes a deep WestJet navy instead — darker than
+   the banner so the colour leaf's teal and navy both stand off it.
+
+   Scoped to the map-life panel, NOT the orb and NOT the map shelf itself, so
+   the live route map is unaffected. Highest specificity in the file so it
+   beats the v22923 near-black. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  background-color: #061024 !important;   /* dark dark navy */
+  background-image: none !important;
 }
