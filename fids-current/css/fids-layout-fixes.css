@@ -10122,3 +10122,39 @@ html .octb-attached .octb-tab.octb-stack::after {
 html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map {
   background-color: var(--banner-bg, #0c1119) !important;
 }
+
+/* ── v23044: THE 'OPERATED BY' MARK — VISIBLE, AND NOT TINY (Nick: 'Ive
+   asked you a million times' + 'and its fucking tiny WOW').
+
+   Two faults in one element. The operator wordmarks are dark-ink brand SVGs
+   (SkyWest navy #003DA5, Endeavor, Jazz…) dropped straight onto the dark
+   gate panel, so they read as a smudge — the same dark-on-dark mistake as
+   the shelf logos. And only PAL ever got a size rule, so every other
+   operator rendered at the generic caption height.
+
+   Whitened to flat white ink via brightness(0)+invert(1), which is exact
+   for any single-colour mark regardless of its brand hue, and sized to the
+   PAL gauge so they all land the same. Text fallbacks (the <b> emitted when
+   the logo 404s) go white too. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap img.v2-rc-opby-logo,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-acb-opby-logo img,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-aircraft-op-inline img,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-fi-val.v2-rc-opby-val img {
+  filter: brightness(0) invert(1) !important;
+  opacity: 1 !important;
+  max-height: clamp(40px, 5.6vh, 78px) !important;
+  max-width: min(64%, 320px) !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+/* The name fallback when there is no logo file. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-acb-opby-logo,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-acb-opby-logo b,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-val,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-val b {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-size: clamp(20px, 2.7vh, 38px) !important;
+  font-weight: 800 !important;
+}
