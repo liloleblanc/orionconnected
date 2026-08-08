@@ -1997,6 +1997,19 @@ function tryLoadImage(bgDiv, url) {
 
 async function setGateBg(bgDiv, locIata) {
   if (!bgDiv) return;
+  // #gateBgDiv ships with an inline `display:none` — it was hidden on purpose
+  // back when the only background was a CITY PHOTO and that photo belonged in
+  // the welcome panel, not behind the whole screen. The airline BRAND scenes
+  // came later and reuse the same element, so every carrier background was
+  // being painted faithfully onto an element nobody could see.
+  //
+  // Doing it here rather than in the markup covers all three entry points at
+  // once — first render, a mode switch from the menu, and the rotation tick —
+  // since each of them ends up calling this function. Photo/custom keep the
+  // old behaviour exactly: hidden here, shown in the welcome panel.
+  if (bgDiv.id === 'gateBgDiv') {
+    bgDiv.style.display = (GATE_BG_MODE === 'airline') ? '' : 'none';
+  }
   bgDiv.dataset.bgmode = GATE_BG_MODE;
   bgDiv.className = bgDiv.className.replace(/g5-sky-\w+|g5-bg-\w+/g, '').trim();
   bgDiv.classList.add('no-photo');
@@ -18144,7 +18157,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22998';
+var FIDS_BUILD_TAG = 'v22999';
 (function(){
   try {
     function _addTag(){
