@@ -18172,7 +18172,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23045';
+var FIDS_BUILD_TAG = 'v23046';
 (function(){
   try {
     function _addTag(){
@@ -28541,14 +28541,27 @@ var ACCOR_BRAND_COLORS = {
   'RIX':'#B88D5B','HB':'#0057b8','JO':'#2E4057','N25':'#050033','EMB':'#B88D5B'
 };
 
-var ACCOR_BRAND_NAMES = {
-  'FAI':'Fairmont','SOF':'Sofitel','PUL':'Pullman','MGH':'MGallery','NOV':'Novotel',
-  'MER':'Mercure','SWI':'Swissôtel','MOV':'Mövenpick','IBS':'ibis','IBB':'ibis budget',
-  'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','SOU':'Handwritten Collection','ADA':'Adagio',
-  'GRA':'Grand Mercure','BAN':'Banyan Tree','MAN':'Mantis','SEQ':'SO/','RAH':'Raffles',
-  'RAF':'Raffles','SO':'SO/','HYD':'Hyde','SLS':'SLS','DEL':'Delano','MON':'Mondrian',
-  'RIX':'Rixos','HB':'Hoxton','JO':'JO&JOE','N25':'25hours','EMB':'Emblème'
-};
+// v23046 — this used to be a second `var ACCOR_BRAND_NAMES = {…}`, which
+// silently REPLACED the fuller map declared earlier in the file. Everything
+// only the first map knew — Faena, Orient Express, Mama Shelter, TRIBE, Art
+// Series, 21c, Angsana, MGallery's MGA alias — resolved to '' from here on.
+// That is why 'Faena New York' printed as 'Faena Faena': the de-duplication
+// code looks the brand up by code, got nothing back, and never recognised
+// that the name it had trimmed down WAS the brand.
+// Merged instead of replaced: these entries still win for the codes they
+// define, and the earlier map's extra codes survive.
+(function () {
+  var _later = {
+    'FAI':'Fairmont','SOF':'Sofitel','PUL':'Pullman','MGH':'MGallery','NOV':'Novotel',
+    'MER':'Mercure','SWI':'Swissôtel','MOV':'Mövenpick','IBS':'ibis','IBB':'ibis budget',
+    'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','SOU':'Handwritten Collection','ADA':'Adagio',
+    'GRA':'Grand Mercure','BAN':'Banyan Tree','MAN':'Mantis','SEQ':'SO/','RAH':'Raffles',
+    'RAF':'Raffles','SO':'SO/','HYD':'Hyde','SLS':'SLS','DEL':'Delano','MON':'Mondrian',
+    'RIX':'Rixos','HB':'Hoxton','JO':'JO&JOE','N25':'25hours','EMB':'Emblème'
+  };
+  if (typeof ACCOR_BRAND_NAMES === 'undefined' || !ACCOR_BRAND_NAMES) ACCOR_BRAND_NAMES = {};
+  for (var _k in _later) { if (Object.prototype.hasOwnProperty.call(_later, _k)) ACCOR_BRAND_NAMES[_k] = _later[_k]; }
+})();
 
 // Brand Corner API cache
 var ACCOR_BRAND_CACHE = {};
@@ -28642,9 +28655,19 @@ function stripHotelLocationTail(name, city, brandCode) {
   // saw it as 'Faena Faena'. Properties whose whole identity is the city
   // keep the city (Faena New York, Delano Miami Beach, SO/ Paris).
   try {
+    var _hf = _fold(head);
     var _bn = (typeof ACCOR_BRAND_NAMES !== 'undefined' && brandCode)
       ? (ACCOR_BRAND_NAMES[String(brandCode).toUpperCase()] || '') : '';
-    if (_bn && _fold(head) === _fold(_bn)) return name;
+    if (_bn && _hf === _fold(_bn)) return name;
+    // Belt and braces: recognise the brand by NAME as well as by code, so a
+    // catalog code we don't carry can't reintroduce 'Faena Faena'.
+    var _known = ['Faena','Fairmont','Sofitel','Pullman','Novotel','Mercure','Raffles',
+      'Delano','Mondrian','Hyde','SLS','Rixos','Hoxton','Adagio','Mantis','Banyan Tree',
+      'Swissôtel','Mövenpick','MGallery','Orient Express','Mama Shelter','TRIBE','25hours',
+      'Angsana','Art Series','Emblems Collection','Emblème','Grand Mercure','SO/','JO&JOE'];
+    for (var _ki = 0; _ki < _known.length; _ki++) {
+      if (_hf === _fold(_known[_ki])) return name;
+    }
   } catch (e) {}
   return head;
 }

@@ -10126,16 +10126,52 @@ html .octb-attached .octb-tab.octb-stack::after {
    colour — clearly its own block, still unmistakably United blue / WestJet
    navy / AC black — and wears a defined light edge on every visible side so
    the shape reads even where the two tones are close. */
+/* The clock tab wears the SAME plate artwork the gate plates wear (Nick:
+   'for united it could also use the same banner as the plate for the
+   clock'). --plate-tex is already per-carrier, so the tab picks up United's
+   blue-modern plate, WestJet's arcs, Delta's scallops — whatever that gate
+   is running — over the deeper carrier tone, which stays visible where the
+   art is light. */
 html .octb-tab.octb-stack {
-  background: color-mix(in srgb, var(--banner-bg, #0c1119) 58%, #000000 42%) !important;
+  background-color: color-mix(in srgb, var(--banner-bg, #0c1119) 58%, #000000 42%) !important;
+  background-image: var(--plate-tex, none) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
   border-top: 2px solid rgba(255, 255, 255, 0.72) !important;
   border-left: 5px solid rgba(255, 255, 255, 0.92) !important;
-  border-right: 2px solid rgba(255, 255, 255, 0.55) !important;
-  box-shadow: -10px 0 24px rgba(0, 0, 0, 0.40), inset 0 0 0 1px rgba(255, 255, 255, 0.10) !important;
+  border-right: 5px solid rgba(255, 255, 255, 0.92) !important;
+  /* BOTH top corners (Nick, circling the square right corner: 'dont skip
+     corners'). The attached variant squared this one off so it could butt
+     the gate tab; the tab reads as its own panel now, so it gets a matching
+     radius on both sides and the filler wedge is retired. */
+  border-radius: 20px 20px 0 0 !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.40), inset 0 0 0 1px rgba(255, 255, 255, 0.10) !important;
+}
+html .octb-attached .octb-tab.octb-stack {
+  border-radius: 20px 20px 0 0 !important;
+  border-left: 5px solid rgba(255, 255, 255, 0.92) !important;
+  border-right: 5px solid rgba(255, 255, 255, 0.92) !important;
 }
 html .octb-attached .octb-tab.octb-stack::after {
-  background: color-mix(in srgb, var(--banner-bg, #0c1119) 58%, #000000 42%) !important;
-  border-top: 2px solid rgba(255, 255, 255, 0.72) !important;
+  display: none !important;
+}
+/* Scrim so the clock stays white-on-dark wherever the plate art runs light
+   (United's blue-modern has bright sweeps; the AA silver plate is bright
+   throughout). Sits under the type, over the artwork. */
+html .octb-tab.octb-stack::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: color-mix(in srgb, var(--banner-bg, #0c1119) 55%, #000000 45%) !important;
+  opacity: 0.62 !important;
+  border-radius: 16px 16px 0 0 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+html .octb-tab.octb-stack > * {
+  position: relative !important;
+  z-index: 1 !important;
 }
 /* Same treatment for the map shelf so the two read as one family. */
 html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map {
