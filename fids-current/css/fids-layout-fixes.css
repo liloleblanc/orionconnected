@@ -9931,6 +9931,17 @@ html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airli
   --plate-ok: #34d399;  --plate-warn: #fbbf24;
   --plate-bad: #f87171;  --plate-info: #93c5fd;
 }
+/* American: Nick's red/blue chevrons on silver-white ('use this for
+   american'). Bright plate — dark ink, darkened status colours. */
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-aa-chevron.jpg?v=23027');
+  --plate-base: #E8EAEE;
+  --plate-blend: normal;
+  --plate-ink: #101820;
+  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
+  --plate-ok: #056f4a;  --plate-warn: #B45309;
+  --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
+}
 /* Flair: the lime cut is the one BRIGHT plate — dark ink, darkened status
    colours, same treatment the v22904 bright group uses. */
 html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
