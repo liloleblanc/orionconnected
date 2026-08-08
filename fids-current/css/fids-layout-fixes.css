@@ -9892,7 +9892,7 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
    porter other is werstjet'). BRIGHT plate — same dark-ink treatment as
    Flair: darkest region L0.22 gives 4.66:1 against the navy ink. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23017');
+  --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23021');
   --plate-base: #4da4d4;
   --plate-blend: normal;
   --plate-ink: #0e2438;
@@ -9903,7 +9903,7 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
 /* Porter: his dark-blue silk wave ('one is porter'). Dark plate, white ink
    by default; worst-case white text on the bake 4.66:1. */
 html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-pd-silk.jpg?v=23014');
+  --plate-tex: url('/textures/plate-pd-silk.jpg?v=23021');
   --plate-base: #0c1626;
   --plate-blend: normal;
 }
@@ -9934,7 +9934,7 @@ html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airli
 /* Flair: the lime cut is the one BRIGHT plate — dark ink, darkened status
    colours, same treatment the v22904 bright group uses. */
 html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-f8-lime.jpg?v=23016');
+  --plate-tex: url('/textures/plate-f8-lime.jpg?v=23021');
   --plate-base: #7ac21e;
   --plate-blend: normal;
   --plate-ink: #12161d;
