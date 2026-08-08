@@ -8578,8 +8578,13 @@ html body[data-gate-airline]:not(#_) {
    blue-modern to United and blue-panel to Porter. Nothing is unused now —
    the two plates the shuffle releases go to Alaska and KLM, whose liveries
    they match almost exactly, and the emerald+gold to the green carriers. */
+/* v23002 — Nick's wave artwork as the WestJet shelf panels. Baked from his
+   supplied teal/charcoal wave (vecteezy closeup), recoloured into the WestJet
+   navy/teal family and blended 60% over the deep-navy plate base — measured
+   white-text contrast on the finished bake: 4.65:1 worst-case, 11.6:1 mean.
+   Same 872x308 plate format as every other carrier texture. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_) {
-  --plate-tex: url('/textures/plate-aqua-mesh.jpg?v=22904'); }
+  --plate-tex: url('/textures/plate-ws-wave.jpg?v=23002'); }
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_) {
   --plate-tex: url('/textures/plate-navy-gold.jpg?v=22904'); }
 html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"]):not(#_) {
