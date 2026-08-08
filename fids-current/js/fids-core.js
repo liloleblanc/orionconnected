@@ -8551,7 +8551,16 @@ function _buildV2MapCol(ctx, vars) {
   // enlarged into the centre, leave the carrier's own static emblem in this
   // temporarily vacant shelf — a brand hold, not another loading animation.
   var _mapLifeCode = String((vars && vars.airlineCode) || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-  var _mapLifeSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
+  // v23051 — WestJet's COLOUR leaf on the small map chip too (Nick: 'THE
+  // MIDDLE AND THE RIGHT SMALL MAP'). Same pattern as the welcome strip: the
+  // override is per-surface, so the shared emblem map — and therefore the
+  // round rail ORB — keeps its mono white leaf.
+  var _MAPLIFE_EMBLEM = {
+    'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+    'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+  };
+  var _mapLifeSrc = _MAPLIFE_EMBLEM[_mapLifeCode]
+    || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
   var _mapLifeHtml = _mapLifeSrc
     ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
       + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
@@ -18187,7 +18196,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23050';
+var FIDS_BUILD_TAG = 'v23051';
 (function(){
   try {
     function _addTag(){
