@@ -9169,7 +9169,17 @@ function uxgGateHtml(ctx) {
     // WHITE-path emblems vanish on the white strip (Nick: United missing its
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
     // Swap those brands for a colored cut here, like the SkyTeam invert below.
-    var _BW_EMBLEM = { 'UA': '/logos/airlines/us-major/united-globe-only.svg' };
+    // v23050 — WestJet's COLOUR leaf on the welcome strip (Nick: 'why did you
+    // take it away from the middle, it was right'). This override is the
+    // WELCOME surface only, so the colour mark lands here while the round rail
+    // ORB keeps the mono white leaf it has always had ('the orb had white
+    // leave it white'). The strip's ground is white, so the leaf's navy and
+    // teal both read on it.
+    var _BW_EMBLEM = {
+      'UA': '/logos/airlines/us-major/united-globe-only.svg',
+      'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+      'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+    };
     // v22939 — AIRLINE_EMBLEM_FILES is a hand-kept list and most of the world
     // is not on it. Korean Air is not, so on Nick's YYZ/C35 boarding screen
     // this strip rendered as a bare white band: no rondelle, just the two
@@ -18177,7 +18187,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23049';
+var FIDS_BUILD_TAG = 'v23050';
 (function(){
   try {
     function _addTag(){
