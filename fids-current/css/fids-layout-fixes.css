@@ -9892,7 +9892,7 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
    porter other is werstjet'). BRIGHT plate — same dark-ink treatment as
    Flair: darkest region L0.22 gives 4.66:1 against the navy ink. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23007');
+  --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23017');
   --plate-base: #4da4d4;
   --plate-blend: normal;
   --plate-ink: #0e2438;
