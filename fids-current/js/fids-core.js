@@ -850,7 +850,25 @@ const LIVE_USER = '';
 const LIVE_PASS = '';
 
 let LIVE_MODE = false;
-let GATE_BG_MODE = 'photo'; // 'photo', 'airline', or 'custom'
+// 'airline', 'photo', or 'custom'.
+//
+// DEFAULT IS 'airline' (was 'photo'). Every carrier background Nick supplied
+// — Delta, Air France, Emirates, Flair, Transat, AA, AC, United — is painted
+// ONLY in airline mode, and nothing selects that mode on its own. A screen
+// that had never had the pill flipped by hand showed the plain brand gradient
+// and none of the artwork, which is why the answer to 'why do we still not
+// have a background' was: the files ship, they resolve 200, and the renderer
+// is simply never asked to paint them.
+//
+// It also explains why it can look fixed on one URL and not another: the
+// choice is remembered in localStorage, which is PER ORIGIN, so a preview
+// deployment starts with no stored preference and fell back to 'photo'.
+//
+// An explicit choice still wins and is still sticky — this only changes what
+// happens when nobody has chosen. Carriers with no artwork are unaffected in
+// substance: their slide list is the three sky scenes plus the logo
+// watermark, which is a branded look rather than a bare gradient.
+let GATE_BG_MODE = 'airline';
 // Restore last-used mode from localStorage so the pill stays sticky across reloads.
 try {
   var _savedBgMode = localStorage.getItem('fids_gate_bg_mode');
@@ -18126,7 +18144,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22996';
+var FIDS_BUILD_TAG = 'v22997';
 (function(){
   try {
     function _addTag(){
