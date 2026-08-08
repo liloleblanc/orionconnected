@@ -18172,7 +18172,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23042';
+var FIDS_BUILD_TAG = 'v23043';
 (function(){
   try {
     function _addTag(){
@@ -26289,10 +26289,21 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // heavy satellite tiles each time (Nick: 'restarting/glitchy').
   var _liveRouteKey = 'live|' + String(org).toUpperCase() + '>' + String(dst).toUpperCase();
   var _liveReuse = false;
+  var _liveDetached = false;
   try {
-    _liveReuse = !!(gateMap && gateMap._fidsRouteKey === _liveRouteKey
-      && gateMap.getContainer && gateMap.getContainer() && gateMap.getContainer().isConnected);
-  } catch (e) { _liveReuse = false; }
+    var _lc = (gateMap && gateMap.getContainer) ? gateMap.getContainer() : null;
+    var _sameRoute = !!(gateMap && gateMap._fidsRouteKey === _liveRouteKey);
+    _liveReuse = !!(_sameRoute && _lc && _lc.isConnected);
+    // v23042 — the panel rebuild DETACHES #gateMapBox for a moment and puts it
+    // straight back (see the save/re-attach pair in the gate renderer). A 10 s
+    // live tick landing inside that window used to see a disconnected
+    // container, conclude the map was gone, and tear it down — which is the
+    // rest of Nick's 'it comes and goes': the map really did vanish and
+    // reload its whole tile set. A detached-but-same-route map is mid-move,
+    // not dead, so skip this tick and let the re-attach finish.
+    _liveDetached = !!(_sameRoute && _lc && !_lc.isConnected);
+  } catch (e) { _liveReuse = false; _liveDetached = false; }
+  if (_liveDetached) { try { setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300); } catch (e) {} return; }
   // ANTI-JITTER (Nick: 'the map's going crazy'): on the SAME live map, HOLD the
   // previous zoom when the plane has barely moved — otherwise ADS-B jitter near
   // a zoom-tier boundary flips the zoom in and out on every 10s tick. And if
