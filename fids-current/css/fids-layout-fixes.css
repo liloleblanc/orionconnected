@@ -10216,3 +10216,37 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-val b {
   font-size: clamp(20px, 2.7vh, 38px) !important;
   font-weight: 800 !important;
 }
+
+/* ── v23047: WESTJET'S COLOUR LEAF NEEDS A LIGHT GROUND (Nick: 'I asked for
+   colored logo Westjet both on welcome and screens small').
+
+   The emblem map now serves the real two-tone leaf — navy #003C71 + teal
+   #00AAA6 — everywhere instead of the flat white mono cut. That reads on
+   the white boarding strip as-is, but the rail's round icon badge is
+   WestJet teal, and a teal leaf on a teal orb is the same dark-on-dark
+   mistake as before. So on WestJet gates only, the badge carrying the
+   airline emblem is re-grounded white with a soft teal ring: the leaf keeps
+   its true brand colours and sits on something that shows them.
+   Scoped to the emblem badge — the plain glyph badges (bell, ticket, plane)
+   keep the teal orb they already wear. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-icon-badge:has(img[src*="WestJet-leaf-colour"]),
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-ico:has(img[src*="WestJet-leaf-colour"]),
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-icon-wrap:has(img[src*="WestJet-leaf-colour"]) {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  box-shadow: 0 2px 8px rgba(5, 15, 30, 0.35), inset 0 0 0 2px rgba(0, 170, 166, 0.85) !important;
+}
+/* Never let a whitening filter flatten the colour leaf back to one tone. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) img[src*="WestJet-leaf-colour"] {
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+/* The leaf is a wide swoosh, not a square glyph — give it the room the mono
+   cut did not need so it does not render as a sliver in the round badge. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-icon-badge img[src*="WestJet-leaf-colour"],
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-ico img[src*="WestJet-leaf-colour"] {
+  width: 74% !important;
+  height: 74% !important;
+  object-fit: contain !important;
+}
