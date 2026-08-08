@@ -9888,9 +9888,23 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   --plate-base: #0a1a33;
   --plate-blend: normal;
 }
+/* WestJet: Nick swapped the wave for his light-blue arc artwork ('one is
+   porter other is werstjet'). BRIGHT plate — same dark-ink treatment as
+   Flair: darkest region L0.22 gives 4.66:1 against the navy ink. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-ws-wave.jpg?v=23003');
-  --plate-base: #0e2438;
+  --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23005');
+  --plate-base: #4da4d4;
+  --plate-blend: normal;
+  --plate-ink: #0e2438;
+  --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.45);
+  --plate-ok: #056f4a;  --plate-warn: #8a5200;
+  --plate-bad: #a51d1d;  --plate-info: #123f8f;
+}
+/* Porter: his dark-blue silk wave ('one is porter'). Dark plate, white ink
+   by default; worst-case white text on the bake 4.66:1. */
+html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-pd-silk.jpg?v=23005');
+  --plate-base: #0e1f3d;
   --plate-blend: normal;
 }
 html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
