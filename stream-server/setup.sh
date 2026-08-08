@@ -33,8 +33,25 @@ _saved() {  # read one KEY="value" line from the saved config, if present
 # (Departures → Gates → Bags → Gates — gates shown between each) and dwell= is
 # seconds per screen. For a single fixed board, point STREAM_URL at
 # fids.html / gids.html / bids.html directly instead.
+#
+# &langs=en,es pins the board's two languages for an unattended screen. A
+# streamer has no operator to press the language toggle, and the URL param
+# outranks the saved/admin layers, so it survives a profile wipe or a droplet
+# rebuild. Omit it and the board falls back to its regional default
+# (en,fr in Canada; en,es only for the airports in ES_BOARD_AIRPORTS).
+#
+# The two live streams:
+#   1. Moncton  (YQM) — English + French, the default below
+#   2. Orlando  (MCO) — English + Spanish, see ORLANDO_URL under "Presets"
 STREAM_URL="${STREAM_URL:-$(_saved STREAM_URL)}"
-STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/rotate.html?ap=YQM&mode=live&stream=1&theme=mist&rotate=fids,gids,bids,gids&dwell=60}"
+STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/rotate.html?ap=YQM&mode=live&stream=1&theme=mist&langs=en,fr&rotate=fids,gids,bids,gids&dwell=60}"
+
+# ── Presets ───────────────────────────────────────────────────────────────
+# Stream 2 — ORLANDO, English + Spanish (was Tampa). Use with:
+#   STREAM_URL="$ORLANDO_URL" MUSIC_URL="$ORION_RADIO" bash setup.sh
+ORLANDO_URL="https://fids.orionconnected.com/rotate.html?ap=MCO&mode=live&stream=1&theme=mist&langs=en,es&rotate=fids,gids,bids,gids&dwell=60"
+# The station Nick uses for the stream's background audio.
+ORION_RADIO="https://audio-edge-w4d68.yul.o.radiomast.io/ref-128k-mp3-stereo"
 
 # Capture size + framerate + bitrate. Defaults (below) suit a 1 vCPU droplet:
 # 720p @ 20 fps. On a 2+ vCPU box run once with 1080p and it sticks:

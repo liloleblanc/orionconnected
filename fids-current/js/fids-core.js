@@ -18196,7 +18196,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23053';
+var FIDS_BUILD_TAG = 'v23054';
 (function(){
   try {
     function _addTag(){
@@ -23555,6 +23555,26 @@ function applyAirportConfigToBoard(iata) {
   // config-default langs unconditionally — so it clobbered the v22961
   // restore on every path (Nick: 'it does not save the language to an
   // airport btw'; measured: switch back to an airport saved de+es → en,fr).
+  // v23054 — a `?langs=` URL param now sits ABOVE all of that, for unattended
+  // kiosk/stream screens (Nick: the Orlando live stream on English+Spanish).
+  // A headless streamer has no operator to press the language toggle, and
+  // pinning it in the URL is deterministic — it survives a profile wipe, a
+  // droplet rebuild and an admin-config change, none of which localStorage or
+  // the saved-per-airport layer do. Deliberately NOT done by adding MCO to
+  // ES_BOARD_AIRPORTS: that set also drives boardMetricFor(), so it would
+  // flip a US board to Celsius.
+  // Accepts ?langs=en,es (or ?lang=en,es), two codes max, same shape as the
+  // saved layer.
+  var _urlLangs = null;
+  try {
+    var _lq = new URLSearchParams(window.location.search);
+    var _lraw = _lq.get('langs') || _lq.get('lang') || '';
+    if (_lraw) {
+      _urlLangs = _lraw.toLowerCase().split(/[,+\s]+/)
+        .filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 2);
+      if (!_urlLangs.length) _urlLangs = null;
+    }
+  } catch (e3) {}
   try {
     var _cfgLangs = _pref('langs');
     var _savedSet = null;
@@ -23565,7 +23585,8 @@ function applyAirportConfigToBoard(iata) {
         if (!_savedSet.length) _savedSet = null;
       }
     } catch (e2) {}
-    langs = _savedSet ? _savedSet
+    langs = _urlLangs ? _urlLangs.slice()
+      : _savedSet ? _savedSet
       : (Array.isArray(_cfgLangs) && _cfgLangs.length) ? _cfgLangs.slice()
       : boardLangsFor(iata);
     if (langIdx >= langs.length) langIdx = 0;

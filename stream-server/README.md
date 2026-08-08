@@ -49,19 +49,76 @@ edit `STREAM_URL` in `/opt/fids-stream/config.env`, then
 - Baggage board: `.../bids.html?ap=YQM&mode=live&stream=1&theme=mist`
 - Darker theme: swap `theme=mist` for `theme=tus-teal-deep`
 - Sharper text: raise `VIDEO_BITRATE` in `config.env` to `6000k`
+- Languages: `&langs=en,es` — see below
 
-## Add background music (optional)
+## The two streams
 
-YouTube gets a silent audio track by default. To loop royalty-free music
-instead, drop an `.mp3` at `/opt/fids-stream/music.mp3` and in `run.sh` replace
-the `-f lavfi -i anullsrc=...` line with:
+| # | Airport | Languages | `STREAM_URL` |
+|---|---------|-----------|--------------|
+| 1 | Moncton `YQM` | English + French | `.../rotate.html?ap=YQM&mode=live&stream=1&theme=mist&langs=en,fr&rotate=fids,gids,bids,gids&dwell=60` |
+| 2 | **Orlando `MCO`** | **English + Spanish** | `.../rotate.html?ap=MCO&mode=live&stream=1&theme=mist&langs=en,es&rotate=fids,gids,bids,gids&dwell=60` |
 
+Stream 2 used to run Tampa (`TPA`); it's Orlando now. Both airports have a
+native feed, so this is purely a URL change — no code or feed work.
+
+### Why `&langs=`
+
+An unattended streamer has nobody to press the language toggle, so the board's
+languages have to come from the URL. `langs` outranks the saved-per-airport
+choice and the admin config, so it survives a browser-profile wipe or a droplet
+rebuild. Without it, `MCO` would fall back to the regional default of
+English + French.
+
+`langs` is deliberately separate from the temperature unit: Orlando stays in
+**°F** on English + Spanish. (Adding `MCO` to the Spanish-board list would have
+been the shorter change, but that list also drives Celsius.)
+
+### Switching stream 2 to Orlando
+
+On that droplet:
+
+```bash
+sudo nano /opt/fids-stream/config.env      # set STREAM_URL + MUSIC_URL
+sudo systemctl restart fids-stream
 ```
-  -stream_loop -1 -i /opt/fids-stream/music.mp3 \
+
+Or in one shot, without hand-editing:
+
+```bash
+STREAM_URL="https://fids.orionconnected.com/rotate.html?ap=MCO&mode=live&stream=1&theme=mist&langs=en,es&rotate=fids,gids,bids,gids&dwell=60" \
+MUSIC_URL="https://audio-edge-w4d68.yul.o.radiomast.io/ref-128k-mp3-stereo" \
+sudo -E bash setup.sh
 ```
 
-Then `systemctl restart fids-stream`. (Use music you're licensed to stream, or
-YouTube may mute/claim the video.)
+Both values are remembered in `config.env`, so later runs of `setup.sh` keep
+them unless you pass new ones.
+
+## Background music
+
+YouTube gets a silent audio track by default. Two ways to change that —
+`MUSIC_URL` wins if both are set:
+
+**A live radio stream** (what stream 2 uses). Set `MUSIC_URL` to a **direct**
+audio stream — Icecast/SHOUTcast/HLS/`.mp3` — not a YouTube, Spotify or web
+page link:
+
+```bash
+MUSIC_URL="https://audio-edge-w4d68.yul.o.radiomast.io/ref-128k-mp3-stereo" \
+sudo -E bash setup.sh
+```
+
+ffmpeg reconnects automatically if the station drops, and `-shortest` is
+deliberately omitted so audio trouble can never end the video run.
+
+**Local files** — drop audio into `/opt/fids-stream/music/`. They're normalized
+to a common format once, then shuffled into a single seamless loop; each
+`systemctl restart fids-stream` reshuffles the order.
+
+Pass `MUSIC_URL=""` to clear a saved station and fall back to files, then
+silence.
+
+> Only stream audio you're licensed to rebroadcast — YouTube Content ID mutes
+> or strikes copyrighted music.
 
 ## Notes
 
