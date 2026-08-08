@@ -9965,7 +9965,19 @@ html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airli
    ≠ cover on the wrap). The wrap already carries the current 4x-tiled line
    bake behind the whole screen — the column just needs to be TRANSPARENT so
    that one canvas shows through both sides at one gauge, seamlessly. */
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],
+             [data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
   background: transparent !important;
+}
+/* WestJet lines in WHITE (Nick: 'do white lines maybe') — the navy-on-navy
+   strokes vanished against the dark ground; same artwork, strokes lifted to
+   white over the deep navy. One canvas behind both columns, one gauge. */
+html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: #081A2E !important;
+  background-image: url('/textures/ws-back-white4.jpg?v=23024') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
 }
