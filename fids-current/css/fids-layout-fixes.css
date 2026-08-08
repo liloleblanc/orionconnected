@@ -9888,11 +9888,12 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   --plate-base: #0a1a33;
   --plate-blend: normal;
 }
-/* WestJet: Nick swapped the wave for his light-blue arc artwork ('one is
-   porter other is werstjet'). BRIGHT plate — same dark-ink treatment as
-   Flair: darkest region L0.22 gives 4.66:1 against the navy ink. */
+/* WestJet: Nick's arc artwork ('one is porter other is werstjet'), rebaked
+   v23036 with the arc STRIPES in WHITE on the deep navy ground (Nick:
+   'WESTJET STRIPES WHITE' — the teal wash wasn't it). Ground worst-case
+   L0.23 keeps white ink at 3.7:1 with the shadow. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23021');
+  --plate-tex: url('/textures/plate-ws-arcs-white.jpg?v=23036');
   --plate-base: #0e2438;
   --plate-blend: normal;
   --plate-ink: #ffffff;
@@ -9985,12 +9986,13 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
   background: transparent !important;
 }
-/* WestJet lines in WHITE (Nick: 'do white lines maybe') — the navy-on-navy
-   strokes vanished against the dark ground; same artwork, strokes lifted to
-   white over the deep navy. One canvas behind both columns, one gauge. */
+/* WestJet lines in WHITE (Nick: 'do white lines maybe', then 'WESTJET
+   STRIPES WHITE') — the white4 bake only lifted strokes to L0.52, which
+   still read gray-blue; measured zero pixels above L0.6. white5 drives the
+   stroke cores to actual white (max L0.99) over the same deep navy. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
   background-color: #081A2E !important;
-  background-image: url('/textures/ws-back-white4.jpg?v=23024') !important;
+  background-image: url('/textures/ws-back-white5.jpg?v=23036') !important;
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
@@ -10003,4 +10005,46 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow > .v2-rc-fi-tlbl {
   border-bottom: 3px solid #C8102E !important;
   padding-bottom: 3px !important;
+}
+
+/* ── v23036: TIME TAB REARRANGED TO NICK'S MOCKUP (Nick: 'Please rearrange
+   the time like this and bigger and change the gray theres too muchngray').
+   Stacked and centred: 'Time in Halifax' on top, the BIG clock under it,
+   the second-language label under that, then the bilingual date. Everything
+   a size up, and the milky gray tab background (rgba(214,218,226,.26))
+   swapped for near-clear dark glass so the airline banner shows through
+   instead of gray. End-of-file so these win the earlier octb rules. */
+html .octb-tab.octb-stack {
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(1px, 0.3vh, 5px) !important;
+  background: rgba(6, 10, 18, 0.22) !important;
+  padding: clamp(5px, 0.9vh, 12px) clamp(24px, 2.2vw, 46px) 0 !important;
+}
+/* The wedge filler right of the tab matches the new glass, not the old gray. */
+html .octb-attached .octb-tab.octb-stack::after {
+  background: rgba(6, 10, 18, 0.22) !important;
+}
+/* Bigger, centred type. Labels are direct children now (no .octb-top row). */
+html .octb-tab.octb-stack .octb-en,
+html .octb-tab.octb-stack .octb-fr {
+  font-size: clamp(16px, 2.3vh, 32px) !important;
+  line-height: 1.05 !important;
+  text-align: center !important;
+  color: #ffffff !important;
+}
+html .octb-tab.octb-stack .octb-clock {
+  font-size: clamp(38px, 5.8vh, 82px) !important;
+  line-height: 1.0 !important;
+}
+html .octb-tab.octb-stack .octb-date {
+  font-size: clamp(14px, 2vh, 28px) !important;
+  text-align: center !important;
+  text-align-last: center !important;
+  margin-top: clamp(1px, 0.35vh, 5px) !important;
+}
+/* The date's mid-gap can shrink a touch now that it's the narrow stack. */
+html .octb-tab.octb-stack .octb-date .cl-sep {
+  margin: 0 clamp(8px, 1vw, 22px) !important;
 }

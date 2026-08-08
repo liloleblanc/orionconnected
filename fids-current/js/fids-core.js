@@ -10291,12 +10291,17 @@ function uxgGateHtml(ctx) {
             // grammar, so the two read as one connected unit. Content is
             // justified across the width: label (left) ↔ clock (right), date
             // spanning below.
+            // v23036 — Nick's mockup: STACKED, centred. English label on top,
+            // the big clock under it, the second-language label under that,
+            // then the bilingual date. ('Please rearrange the time like this
+            // and bigger and change the gray theres too muchngray')
+            var _tbL = ['', ''];
+            _gateLbl('timeIn', false, function(w,i){ _tbL[i?1:0] = '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; return ''; }, '');
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
-              + '<div class="octb octb-tab">'
-              +   '<div class="octb-top">'
-              +     '<div class="octb-lbls">' + _gateLbl('timeIn', false, function(w,i){ return '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; }, '') + '</div>'
-              +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
-              +   '</div>'
+              + '<div class="octb octb-tab octb-stack">'
+              +   _tbL[0]
+              +   '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
+              +   _tbL[1]
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
               + '</div>'
               + '</div>';
@@ -18167,7 +18172,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23035';
+var FIDS_BUILD_TAG = 'v23036';
 (function(){
   try {
     function _addTag(){
