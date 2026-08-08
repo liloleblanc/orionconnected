@@ -9928,3 +9928,24 @@ html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airli
   --plate-ok: #056f4a;  --plate-warn: #8a5200;
   --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
 }
+
+/* ── v23004: THE RED LINES REACH THE RIGHT COLUMN (Nick: 'I asked you
+   several times to have the red lines on the right as well to be the same
+   — not done').
+
+   The machinery was all there and fighting itself: v22919 made the right
+   shelves TRANSPARENT so the engraved red lines could show through from a
+   canvas behind them, v22925b re-opaqued just the logo shelf — but the
+   canvas itself lost its paint to the gids accent-canvas rule that loads
+   last, so the transparent shelves ended up showing flat colour instead of
+   the lines. Measured on the fixture: every candidate line rule
+   (ac-back-lines v22911, paper-layers, shelf-lux, silver-vertical) is
+   overridden; the shelf computes background none/transparent.
+
+   One opaque paint on the COLUMN canvas, under those transparent shelves,
+   same engraving the left side wears. The logo/map shelf keeps its flat
+   ground (v22925b, his call) and the front plates keep the black halftone
+   (v22905, also his call) — this only restores the lines BEHIND. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
+  background: #0a0a0a url('/textures/ac-back-lines.jpg?v=23004') center / cover no-repeat !important;
+}
