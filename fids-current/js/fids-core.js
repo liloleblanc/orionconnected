@@ -18196,7 +18196,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23052';
+var FIDS_BUILD_TAG = 'v23053';
 (function(){
   try {
     function _addTag(){
@@ -30776,7 +30776,20 @@ function buildGateAdHtml(ad) {
   // white) to a clean white silhouette. The only light-background ad (Flair
   // lime) sets ad.fg to a dark colour — there we leave the logo as-is.
   var _adLightBg = !!ad.fg;
-  var _stdLogoFilter = _adLightBg ? '' : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
+  // v23053 — a logo chosen SPECIFICALLY for its colour is exempt (Nick: 'the
+  // midle leaf is still not changed'). The welcome card was already being
+  // served WestJet-leaf-colour.svg — this filter was flattening it straight
+  // back to a white silhouette, so the file swap looked like it had done
+  // nothing. Files the logo-treatment table marks 'no_filter' keep their art;
+  // everything else still gets whitened as before.
+  var _adKeepColour = false;
+  try {
+    var _lf = String(ad.logo || '').split('/').pop().replace(/\.[a-z0-9]+(\?.*)?$/i, '');
+    _adKeepColour = (typeof LOGO_TREATMENT !== 'undefined' && LOGO_TREATMENT[_lf] === 'no_filter');
+  } catch (e) {}
+  var _stdLogoFilter = (_adLightBg || _adKeepColour)
+    ? (_adKeepColour ? 'filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));' : '')
+    : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
   var _stdLogoHtml = ad.logo
     ? '<div style="flex-shrink:0;width:100%;margin-bottom:clamp(20px,3vh,40px);height:clamp(120px,20vh,230px);display:flex;align-items:center;justify-content:center;">'
       // Height-driven: the logo fills the tall box. Width is a VIEWPORT cap
