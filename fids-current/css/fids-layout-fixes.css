@@ -9888,12 +9888,13 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   --plate-base: #0a1a33;
   --plate-blend: normal;
 }
-/* WestJet: Nick's arc artwork ('one is porter other is werstjet'), rebaked
-   v23036 with the arc STRIPES in WHITE on the deep navy ground (Nick:
-   'WESTJET STRIPES WHITE' — the teal wash wasn't it). Ground worst-case
-   L0.23 keeps white ink at 3.7:1 with the shadow. */
+/* WestJet: Nick's arc artwork ('one is porter other is werstjet') — the
+   TEAL bake he approved. v23036 briefly swapped this for white-on-navy
+   after 'WESTJET STRIPES WHITE'; that was the wrong surface (Nick: 'what
+   happened tp the fucking westjet plates') — reverted v23038. The white
+   stripes live on the background canvas (white5), not the plates. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-ws-arcs-white.jpg?v=23036');
+  --plate-tex: url('/textures/plate-ws-arcs.jpg?v=23021');
   --plate-base: #0e2438;
   --plate-blend: normal;
   --plate-ink: #ffffff;
