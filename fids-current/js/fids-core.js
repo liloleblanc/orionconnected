@@ -2010,6 +2010,14 @@ async function setGateBg(bgDiv, locIata) {
   if (bgDiv.id === 'gateBgDiv') {
     bgDiv.style.display = (GATE_BG_MODE === 'airline') ? '' : 'none';
   }
+  // …and the gate columns have to let it through. On the three-column gate
+  // EVERY pixel is covered by a column, so a visible background layer alone
+  // still shows nothing — measured: all three columns compute opaque. This
+  // class is the hook the stylesheet uses to turn them into translucent
+  // panels over the brand scene, and only while airline mode is on.
+  try {
+    document.body.classList.toggle('g8-airline-bg', GATE_BG_MODE === 'airline');
+  } catch (e) {}
   bgDiv.dataset.bgmode = GATE_BG_MODE;
   bgDiv.className = bgDiv.className.replace(/g5-sky-\w+|g5-bg-\w+/g, '').trim();
   bgDiv.classList.add('no-photo');
@@ -18157,7 +18165,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v22999';
+var FIDS_BUILD_TAG = 'v23000';
 (function(){
   try {
     function _addTag(){

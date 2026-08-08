@@ -9861,3 +9861,50 @@ html body:not(#_):not(#_) .g8-board-body .g8-board-col .g8-board-lane {
   font-size: clamp(28px, 3.6vh, 52px) !important;
   font-size: clamp(13px, min(8cqh, 13cqw), 52px) !important;
 }
+
+/* ── v23000: THE BRAND SCENE IS ACTUALLY VISIBLE (Nick: 'why do we still not
+   have a background').
+
+   Three things had to be true and only the first two were fixed in v22997 and
+   v22999: the mode had to ASK for the artwork, the layer had to be VISIBLE,
+   and the columns had to LET IT THROUGH. On the three-column gate every pixel
+   belongs to a column, and measuring the computed values showed all three
+   opaque — so a visible background layer under them still showed nothing.
+   That is why this kept reading as 'no background' after each earlier fix.
+
+   The columns become translucent panels over the scene, but only in airline
+   mode — photo/custom are untouched.
+
+   The veil opacity is measured, not picked. White type over a 0.75 veil,
+   worst case across all 39 shipped scenes (the brightest 1.5% of each, which
+   is where legibility actually breaks):
+
+       veil 0.70  -> 2.96:1   fails
+       veil 0.72  -> 3.14:1
+       veil 0.75  -> 3.45:1   <- chosen
+       veil 0.82  -> 4.47:1   scene barely reads at 18%
+
+   3.0:1 is the bar that applies here: every string on these columns is large
+   display type (the smallest is the ~20px bold field label, well past the
+   18.66px bold threshold, and most of it is 40-120px). 0.75 clears it on the
+   worst scene by half a point and still shows the artwork at 25%.
+
+   Backgrounds go through background-COLOR so any plate texture the columns
+   carry keeps painting on top of the scene rather than being wiped. */
+html body.g8-airline-bg:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col,
+html body.g8-airline-bg:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body.g8-airline-bg:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gad-aircraft-col,
+html body.g8-airline-bg:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gad-map-col-v2 {
+  background-color: rgba(11, 18, 32, 0.75) !important;
+  background-image: none !important;
+}
+html body.g8-airline-bg:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-media-col,
+html body.g8-airline-bg:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gad-media-col {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+/* The centre column's ad slot keeps its own opaque artwork when a slide is
+   painted; when it is empty the scene shows instead of a void. */
+html body.g8-airline-bg:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gad-media-col #gateAdCarousel:empty {
+  background: transparent !important;
+}
