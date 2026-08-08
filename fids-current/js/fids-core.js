@@ -18172,7 +18172,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23041';
+var FIDS_BUILD_TAG = 'v23042';
 (function(){
   try {
     function _addTag(){
@@ -26298,11 +26298,27 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // a zoom-tier boundary flips the zoom in and out on every 10s tick. And if
   // essentially nothing changed, SKIP the whole redraw (no overlay clear, no
   // setView) so the map sits still instead of thrashing.
-  if (_liveReuse && gateMap._fidsLastView) {
-    var _lv = gateMap._fidsLastView;
+  // v23042 — THE ZOOM HOLD HAS TO SURVIVE A REBUILD (Nick: 'still bobbling',
+  // 'it comes and goes'). The hold lived only on the map INSTANCE, so it was
+  // lost the moment the right column re-rendered and detached the container:
+  // _liveReuse went false, the map was torn down, and the fresh build
+  // recomputed the raw distance tier. On the YUL→YHZ leg that tier sits right
+  // on the 0.06 boundary, so successive rebuilds alternated z11 / z9 — a
+  // two-level jump that dumps the whole tile cache and repaints from blank
+  // every cycle. Remembering the view per ROUTE, on window, means a rebuilt
+  // map re-seeds exactly where the old one was and the tiles stay warm.
+  var _lv = null;
+  try {
+    if (_liveReuse && gateMap._fidsLastView) _lv = gateMap._fidsLastView;
+    else if (window._GATE_MAP_VIEW && window._GATE_MAP_VIEW.key === _liveRouteKey) _lv = window._GATE_MAP_VIEW;
+  } catch (e) {}
+  if (_lv) {
     var _dLat = Math.abs(_lv.lat - planeLat), _dLng = Math.abs(_lv.lng - planeLng);
     if (_dLat < 0.05 && _dLng < 0.05) zoom = _lv.zoom;                 // hold zoom, no flap
-    if (_dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return;   // nothing changed → skip
+    // Hysteresis: even on a real move, never let one tick jump more than a
+    // single zoom level. A 2-level jump is what reads as the map 'going'.
+    if (zoom !== _lv.zoom) zoom = _lv.zoom + (zoom > _lv.zoom ? 1 : -1);
+    if (_liveReuse && _dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return; // nothing changed → skip
   }
   if (_liveReuse) {
     try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
@@ -26316,6 +26332,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     _gateMapWatchResize(mb);
   }
   gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
+  try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e) {}
   gateMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
