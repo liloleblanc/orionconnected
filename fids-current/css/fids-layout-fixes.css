@@ -10091,3 +10091,34 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow-last > .v2-rc-fi-tval {
   border-bottom: none !important;
 }
+
+/* ── v23041: ONE DIVIDER GAUGE ON EVERY GATE (Nick: 'This is every gate
+   make sure the lines match for fuck sakes devider lines').
+
+   The left plates' title underline has always been clamp(2px,0.32vh,4px);
+   the right column's row rules were a flat 2px and the label underlines a
+   1px hairline. Three gauges on one screen. Every divider on both columns
+   now takes the left column's clamp, for ALL carriers — each keeps its own
+   colour, only the WEIGHT is unified. */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow:not(.v2-rc-fi-trow-last):not(:last-child),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow:not(.v2-rc-fi-trow-last),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-lblstack,
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-trow:not(:last-child),
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-tlbl span:first-child {
+  border-bottom-width: clamp(2px, 0.32vh, 4px) !important;
+  border-bottom-style: solid !important;
+}
+
+/* ── v23041: THE CLOCK TAB AND THE MAP SHELF TAKE THE CARRIER'S OWN COLOUR
+   (Nick: 'the clock COLOR in this case NAVY blue same for behind the small
+   map'). --banner-bg is the carrier's r1 from airline-colors.js — WestJet
+   navy #003366, Porter #112855, United #0033A0 — so this is per-airline by
+   construction, not a WestJet special case. Replaces the neutral glass. */
+html .octb-tab.octb-stack,
+html .octb-attached .octb-tab.octb-stack::after {
+  background: var(--banner-bg, rgba(6, 10, 18, 0.22)) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map {
+  background-color: var(--banner-bg, #0c1119) !important;
+}

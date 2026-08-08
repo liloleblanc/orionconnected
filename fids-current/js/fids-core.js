@@ -18172,7 +18172,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23040';
+var FIDS_BUILD_TAG = 'v23041';
 (function(){
   try {
     function _addTag(){
@@ -28588,7 +28588,7 @@ function ensureBrandInName(name, brandCode) {
 // 'Vancouver Airport', 'Paris Tour Eiffel' and 'Montréal Golden Mile' all cut
 // at index 0 and are therefore left alone. The full name is kept on `nameFull`
 // for the QR bubble.
-function stripHotelLocationTail(name, city) {
+function stripHotelLocationTail(name, city, brandCode) {
   if (!name) return name;
   var _fold = function (s) {
     return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -28608,7 +28608,17 @@ function stripHotelLocationTail(name, city) {
   var cut = Math.min.apply(null, cuts);
   var head = name.slice(0, cut).replace(/[\s,·:–—-]+$/, '').trim();
   // Never trim a name away to nothing (or to a bare article).
-  return head.length >= 3 ? head : name;
+  if (head.length < 3) return name;
+  // …and never trim it down to JUST the brand word. 'Faena New York' cut at
+  // the city leaves 'Faena', which the logo slot is already printing — Nick
+  // saw it as 'Faena Faena'. Properties whose whole identity is the city
+  // keep the city (Faena New York, Delano Miami Beach, SO/ Paris).
+  try {
+    var _bn = (typeof ACCOR_BRAND_NAMES !== 'undefined' && brandCode)
+      ? (ACCOR_BRAND_NAMES[String(brandCode).toUpperCase()] || '') : '';
+    if (_bn && _fold(head) === _fold(_bn)) return name;
+  } catch (e) {}
+  return head;
 }
 
 function fetchAccorHotels(destIata) {
@@ -29324,7 +29334,7 @@ function _processAccorData(data, destIata, langKey) {
       bgSize: photoUrl ? 'cover' : 'auto',
       bgPos: photoUrl ? 'center' : 'auto',
       photos: photos,   // full set for hero rotation
-      headline: stripHotelLocationTail(hotelName, city),
+      headline: stripHotelLocationTail(hotelName, city, brand),
       nameFull: ensureBrandInName(_rawName, brand),  // full name incl. brand (for QR bubble / page context)
       sub: subtitle,
       brandLabel: brandName,
@@ -32676,7 +32686,14 @@ function _buildGateAdSlideList() {
       // standard ad renderer's white-force filter (Nick's Breeze A17: giant
       // white square over the Welcome slide). Those brands show their WHITE
       // wordmark here instead — already white, so the filter is an identity.
-      var _FB_WELCOME_LOGO = { 'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg' };
+      // WestJet: the COLOUR leaf, not the mono white one (Nick: 'instead of
+      // white logo put the color logo'). The teal/navy leaf reads on the
+      // navy welcome card.
+      var _FB_WELCOME_LOGO = {
+        'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg',
+        'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+      };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
         bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
