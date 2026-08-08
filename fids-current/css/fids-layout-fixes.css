@@ -8612,7 +8612,7 @@ html body:is([data-gate-airline="QR"],[data-gate-airline="QTR"],[data-gate-airli
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_) {
   --plate-ink: #12161d;
   --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
-  --plate-ok: #056f4a;  --plate-warn: #8a5200;
+  --plate-ok: #056f4a;  --plate-warn: #E8A400;
   --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
   --plate-base: #cfd3d8;
 }
@@ -9897,7 +9897,7 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
   --plate-blend: normal;
   --plate-ink: #0e2438;
   --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.45);
-  --plate-ok: #056f4a;  --plate-warn: #8a5200;
+  --plate-ok: #056f4a;  --plate-warn: #E8A400;
   --plate-bad: #a51d1d;  --plate-info: #123f8f;
 }
 /* Porter: his dark-blue silk wave ('one is porter'). Dark plate, white ink
@@ -9934,12 +9934,12 @@ html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airli
 /* Flair: the lime cut is the one BRIGHT plate — dark ink, darkened status
    colours, same treatment the v22904 bright group uses. */
 html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-f8-lime.jpg?v=23003');
+  --plate-tex: url('/textures/plate-f8-lime.jpg?v=23016');
   --plate-base: #7ac21e;
   --plate-blend: normal;
   --plate-ink: #12161d;
   --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
-  --plate-ok: #056f4a;  --plate-warn: #8a5200;
+  --plate-ok: #056f4a;  --plate-warn: #E8A400;
   --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
 }
 
