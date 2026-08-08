@@ -6614,8 +6614,8 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // feeds every WestJet emblem surface at once — the rail badges, the
         // boarding welcome strip, the board info row and the map life chip —
         // so the colour mark lands on all of them, not just the welcome card.
-        // The badges these sit on are re-grounded white for WS in the CSS so
-        // the leaf's teal (#00AAA6) doesn't vanish into a teal orb.
+        // The badges these sit on are untouched — only the MARK changes.
+        
         'WS':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg?v=23047',
         'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg?v=23047',
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
@@ -18179,7 +18179,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23047';
+var FIDS_BUILD_TAG = 'v23048';
 (function(){
   try {
     function _addTag(){
