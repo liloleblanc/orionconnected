@@ -17724,8 +17724,28 @@ let lang = 'en';
 const ES_BOARD_AIRPORTS = new Set([
   'LPB','VVI','CBB','SRZ','UYU','TJA','SRE','POI','TDD','CIJ','RIB','GYA','BVL'
 ]);
+// v23076 — per-airport language DEFAULT, baked into the code.
+//
+// Orlando is meant to run English+Spanish. Until now that only happened via
+// `?langs=en,es` in the stream URL or a saved choice in the browser's Local
+// Storage — and the streaming box wipes its Chrome profile on every restart,
+// so the saved choice vanished and the board fell back to English/French
+// (measured: "Flight | Vol" on the live BAGS board). Fixing that on the server
+// meant editing a config over a console that drops line breaks.
+//
+// A default that lives in the code needs no URL param, no Local Storage and no
+// server access: it is simply what the board serves. The URL param and the
+// saved choice still sit above it, so anyone can still override per screen.
+//
+// Deliberately NOT done by adding MCO to ES_BOARD_AIRPORTS: that set also
+// drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
+const BOARD_LANG_DEFAULTS = {
+  MCO: ['en', 'es']
+};
 function boardLangsFor(iata) {
-  return ES_BOARD_AIRPORTS.has(String(iata || '').toUpperCase()) ? ['en','es'] : ['en','fr'];
+  var _k = String(iata || '').toUpperCase();
+  if (BOARD_LANG_DEFAULTS[_k]) return BOARD_LANG_DEFAULTS[_k].slice();
+  return ES_BOARD_AIRPORTS.has(_k) ? ['en','es'] : ['en','fr'];
 }
 // Metric (Celsius) for Spanish-language stations; Canada keeps the C/F flip.
 function boardMetricFor(iata) {
@@ -18313,7 +18333,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23075';
+var FIDS_BUILD_TAG = 'v23076';
 (function(){
   try {
     function _addTag(){
