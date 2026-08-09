@@ -10305,7 +10305,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   left: 0 !important; right: auto !important;
   width: calc(100% + 600px) !important;
   top: 12% !important; bottom: -4% !important;   /* crosses the fuselage/wings */
-  background-image: url('/textures/gate-fg-clouds.png?v=23064') !important;
+  background-image: url('/textures/gate-fg-clouds.png?v=23065') !important;
   background-repeat: repeat-x !important;
   /* A 1200px tile through a 436px slot showed one flat slice and read as
      nothing. Half-size tile puts 2-3 cloud masses across the panel, and the
@@ -10374,15 +10374,19 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid {
   display: none !important;
 }
-html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus {
-  background-image: url('/textures/gate-sky-still.jpg?v=23064') !important;
-  background-size: cover !important;
-  background-position: center 38% !important;
-  background-repeat: no-repeat !important;
-}
-/* The old GIF backdrop would fight the video — hide it while the flag is on. */
+/* v23065 — the sky plate went on the SHELF in v23064 and never appeared: the
+   shelf already paints its own dark background with !important, so the sky
+   lost the cascade and Nick got grey smudges on black. It belongs on
+   #gateCloudsBg, the backdrop element that already sits at inset:0, z-index 0
+   behind the aircraft — the same slot the old cloud GIF used. */
+html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
-  display: none !important;
+  display: block !important;
+  background: url('/textures/gate-sky-still.jpg?v=23065') center 38% / cover no-repeat !important;
+  opacity: 1 !important;
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+  z-index: 0 !important;
 }
 html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid { display: none !important; }
 
