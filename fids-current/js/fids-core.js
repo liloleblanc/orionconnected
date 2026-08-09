@@ -1398,7 +1398,28 @@ let subScreenVal = '';
 // Default row/logo density: without a saved pref the body attribute was
 // never set, the row-height cap never applied, and fresh boards rendered
 // ~90px rows (Nick: 'rows are much bigger than they used to be').
-try { if (document.body && !document.body.dataset.fidsLogoSize) document.body.dataset.fidsLogoSize = 'medium'; } catch (e) {}
+// v23077 — the default is now PER-AIRPORT, for the same reason as
+// BOARD_LANG_DEFAULTS. A chosen density lives in Local Storage
+// (fids_customize_<IATA>.logoSize), and the streaming box deletes its Chrome
+// profile on every restart, so Orlando kept coming back at 'medium' — 98px
+// BAGS rows, which is what Nick saw as "too big". Nothing on the board was
+// wrong; the saved choice had simply been erased, and re-setting it by hand
+// means the Hetzner console, which splits pasted lines mid-command.
+//
+// A default that lives in the code survives the wipe. A saved pref still wins:
+// menu.js only calls _applyLogoSize when fids_customize_<IATA> exists, and the
+// guard below only fills in an UNSET attribute — so any screen can still be
+// customised, and every airport not listed here is untouched.
+var BOARD_DENSITY_DEFAULTS = {
+  MCO: 'small'          // 68px BAGS rows / 52px board rows
+};
+try {
+  if (document.body && !document.body.dataset.fidsLogoSize) {
+    var _densAp = '';
+    try { _densAp = String(new URLSearchParams(window.location.search).get('ap') || '').toUpperCase(); } catch (e2) {}
+    document.body.dataset.fidsLogoSize = BOARD_DENSITY_DEFAULTS[_densAp] || 'medium';
+  }
+} catch (e) {}
 
 let gateControlsHideTimer = null;
 function scheduleGateControlsAutoHide() {
@@ -18333,7 +18354,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23076';
+var FIDS_BUILD_TAG = 'v23077';
 (function(){
   try {
     function _addTag(){
