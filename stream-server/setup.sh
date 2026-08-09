@@ -134,12 +134,21 @@ sleep 2
 
 # Full-screen kiosk Chrome pointed at the stream board. --disable-gpu et al.
 # keep a 1-core box from wasting cycles on (failing) GPU init.
-# FRESH PROFILE + no disk cache: rotate.html and the board HTML carry no cache
-# token, and Chrome's persistent profile was pinning OLD copies across restarts —
-# so deploys (new rotator/JS) never reached the stream. Wiping the profile and
-# shrinking the cache means every restart, and every in-session self-update
-# reload, pulls the latest from the server.
-rm -rf /opt/fids-stream/chrome-profile
+# CACHES ONLY — never the whole profile. rotate.html and the board HTML carry
+# no cache token, and Chrome's persistent profile was pinning OLD copies across
+# restarts, so deploys never reached the stream. The first fix for that was
+# `rm -rf chrome-profile`, which ALSO deleted Local Storage — and Local Storage
+# is where a board keeps its Customize design (theme, palette, row size) and its
+# saved per-airport languages. So every restart silently reset the BAGS board to
+# the stock look and dropped Orlando back to English/French.
+#
+# Deleting the cache directories does the whole job the stale-deploy fix needed
+# and leaves the design alone. --disk-cache-size=1 below already keeps the disk
+# cache at nothing; this clears whatever a previous run left behind.
+rm -rf /opt/fids-stream/chrome-profile/Default/Cache \
+       /opt/fids-stream/chrome-profile/Default/"Code Cache" \
+       /opt/fids-stream/chrome-profile/GPUCache \
+       /opt/fids-stream/chrome-profile/ShaderCache 2>/dev/null || true
 "$CHROME_BIN" \
   --kiosk --no-sandbox --no-first-run --no-default-browser-check \
   --user-data-dir=/opt/fids-stream/chrome-profile --disk-cache-size=1 \
