@@ -10305,7 +10305,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   left: 0 !important; right: auto !important;
   width: calc(100% + 600px) !important;
   top: 12% !important; bottom: -4% !important;   /* crosses the fuselage/wings */
-  background-image: url('/textures/gate-fg-clouds.png?v=23062') !important;
+  background-image: url('/textures/gate-fg-clouds.png?v=23064') !important;
   background-repeat: repeat-x !important;
   /* A 1200px tile through a 436px slot showed one flat slice and read as
      nothing. Half-size tile puts 2-3 cloud masses across the panel, and the
@@ -10364,13 +10364,21 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display
    Using the sun-flare clip: sparser cirrus so the aircraft reads against it,
    and its light comes from the top-left, matching the AF composition.
    Still flag-only — none of this exists without ?acsky=1. */
+/* v23064 — THE SKY IS NOW SET (Nick: 'we need a set background'). This also
+   matches what the AF reference actually does: its sky and cloud banks never
+   move — measured 0px over 15s, and forcing a shift made the match WORSE.
+   A moving sky plus a moving foreground was two competing motions, which is
+   why it read as busy. Now: still sky, one drifting layer, floating aircraft.
+   The video element is left in the markup but hidden, so nothing else in the
+   shelf has to change. */
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid {
-  position: absolute !important; inset: 0 !important;
-  width: 100% !important; height: 100% !important;
-  object-fit: cover !important;
-  z-index: 0 !important;                 /* BEHIND the aircraft */
-  pointer-events: none !important;
-  display: block !important;
+  display: none !important;
+}
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus {
+  background-image: url('/textures/gate-sky-still.jpg?v=23064') !important;
+  background-size: cover !important;
+  background-position: center 38% !important;
+  background-repeat: no-repeat !important;
 }
 /* The old GIF backdrop would fight the video — hide it while the flag is on. */
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
@@ -10387,13 +10395,20 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid { display: 
    three (68% of the tile is fully transparent, 15% fully opaque, crisp edges
    with the real shading intact). Mirror-tiled, so the repeat is seam-free by
    construction: measured seam 0.00 against a neighbour difference of 3.76. */
+/* v23064 — the clouds were the SAME SIZE as the aircraft and nearly opaque, so
+   at 9s into Nick's recording the A319 had disappeared behind them entirely.
+   A foreground layer should veil the plane, never swallow it: the tile drops
+   from 1000px to 420px so each puff is roughly a third of the fuselage, the
+   key is sheerer (peak alpha 158/255, 77% of the tile fully clear), and the
+   band sits low so it crosses the belly and wings rather than the whole
+   aircraft. */
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  background-size: 1000px 100% !important;
-  opacity: 1 !important;
-  top: 2% !important; bottom: -4% !important;
+  background-size: 420px 100% !important;
+  opacity: .8 !important;
+  top: 46% !important; bottom: -8% !important;
 }
-@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
+@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-420px,0,0); } }
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  width: calc(100% + 1000px) !important;
-  animation: g8FgDrift2 130s linear infinite !important;
+  width: calc(100% + 420px) !important;
+  animation: g8FgDrift2 70s linear infinite !important;
 }
