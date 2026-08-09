@@ -10430,13 +10430,23 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid { display: 
    difference of 1.64.
    This is the shape the smoke clips could not give: defined puffs, like the
    AF reference, instead of a diffuse veil. */
+/* v23069 — THE PANEL IS THE LIMIT, NOT THE ARTWORK. Five foreground sources
+   were tried (procedural, keyed cumulus, smoke-on-black, passing wisps,
+   green-screen cumulus) and every one read as clutter. At 436x156 the
+   aircraft is ~250px long, so any cloud big enough to see is the same scale
+   as the plane: there is no room for near and far, and 'foreground' just
+   becomes 'something on top of the aircraft'. The AF reference has 1080px of
+   height to separate its layers; this has 156.
+   So the foreground retreats to a low, faint band near the bottom edge — it
+   gives a hint of depth under the belly and never crosses the livery. A real
+   foreground pass needs a bigger stage, not a better cloud. */
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  background-size: 900px 100% !important;
-  opacity: .72 !important;
-  top: 14% !important; bottom: -6% !important;
+  background-size: 620px 100% !important;
+  opacity: .34 !important;
+  top: 62% !important; bottom: -10% !important;
 }
-@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-900px,0,0); } }
+@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-620px,0,0); } }
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  width: calc(100% + 900px) !important;
+  width: calc(100% + 620px) !important;
   animation: g8FgDrift2 120s linear infinite !important;
 }
