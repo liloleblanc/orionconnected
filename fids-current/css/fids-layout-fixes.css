@@ -10305,7 +10305,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   left: 0 !important; right: auto !important;
   width: calc(100% + 600px) !important;
   top: 12% !important; bottom: -4% !important;   /* crosses the fuselage/wings */
-  background-image: url('/textures/gate-fg-clouds.png?v=23061') !important;
+  background-image: url('/textures/gate-fg-clouds.png?v=23062') !important;
   background-repeat: repeat-x !important;
   /* A 1200px tile through a 436px slot showed one flat slice and read as
      nothing. Half-size tile puts 2-3 cloud masses across the panel, and the
@@ -10361,13 +10361,18 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid { display: 
    white cumulus kept, blue sky taken to full transparency, then mirror-tiled
    so the repeat is seam-free by construction (measured seam 0.00 against a
    typical neighbour difference of 2.96). */
+/* v23062 — the foreground is now keyed from Nick's TIMELAPSE clip: bold
+   cumulus against deep saturated blue gives the cleanest separation of the
+   three (68% of the tile is fully transparent, 15% fully opaque, crisp edges
+   with the real shading intact). Mirror-tiled, so the repeat is seam-free by
+   construction: measured seam 0.00 against a neighbour difference of 3.76. */
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  background-size: 900px 100% !important;
-  opacity: .95 !important;
-  top: 6% !important; bottom: -2% !important;
+  background-size: 1000px 100% !important;
+  opacity: 1 !important;
+  top: 2% !important; bottom: -4% !important;
 }
-@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-900px,0,0); } }
+@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  width: calc(100% + 900px) !important;
+  width: calc(100% + 1000px) !important;
   animation: g8FgDrift2 75s linear infinite !important;
 }
