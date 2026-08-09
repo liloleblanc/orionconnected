@@ -27,6 +27,57 @@ console.log('%c[FIDS BUILD ' + FIDS_BUILD + '] loaded ' + new Date().toISOString
   console.log('[FIDS] GATE_LAYOUT_V2 =', window.GATE_LAYOUT_V2);
 })();
 
+// ── HIDDEN-BOARD CPU BRAKE ───────────────────────────────────────────────
+// rotate.html loads EVERY board in its own iframe and keeps them all alive,
+// toggling only which one is visible (that's deliberate — reloading between
+// screens re-splashed and drifted the timer). The cost is that a
+// ?rotate=fids,gids,bids display runs THREE boards' worth of timers when only
+// one is on screen. On the Hetzner streaming box — 4 shared cores running two
+// 1080p Chrome+ffmpeg pipelines — that idle work pushed the load average past
+// the core count (5.25 on 4 cores) and starved the encoders, which is what
+// YouTube reports as "not receiving enough video".
+//
+// The expensive part isn't painting (a hidden iframe isn't painted); it's the
+// cosmetic janitors below, which walk the whole document and read
+// getComputedStyle / getBoundingClientRect on a 250ms–3s heartbeat. Those reads
+// force style+layout on the hidden document, so they cost full price whether or
+// not anyone can see the result.
+//
+// So: those janitors skip while the board is hidden, and every one of them runs
+// a single catch-up pass the moment it comes back — well inside rotate.html's
+// 0.45s cross-fade, so a board is never seen mid-repair. DATA polling is NOT
+// paused: flights, gates and weather keep refreshing while hidden, so a board
+// fades in current, not stale.
+//
+// Safety property: `visible` only ever flips on an {oc:…} message from the
+// rotator. A standalone display, or a single-board stream, never receives one
+// and therefore behaves exactly as before.
+(function () {
+  var visible = true;
+  var onShow = [];
+  window._ocIdle = function () { return !visible; };
+  window._ocOnShow = function (fn) { try { if (typeof fn === 'function') onShow.push(fn); } catch (e) {} };
+  // Drop-in for setInterval on work that only matters when pixels are on
+  // screen: skips while hidden, and registers the SAME function for the
+  // catch-up pass so nothing is left un-repaired when the board returns.
+  window._ocEvery = function (fn, ms) {
+    window._ocOnShow(fn);
+    return setInterval(function () {
+      if (!visible) return;
+      try { fn(); } catch (e) {}
+    }, ms);
+  };
+  window.addEventListener('message', function (ev) {
+    var d = ev && ev.data;
+    if (!d || (d.oc !== 'active' && d.oc !== 'inactive')) return;
+    var next = (d.oc === 'active');
+    if (next === visible) return;
+    visible = next;
+    if (!visible) return;
+    for (var i = 0; i < onShow.length; i++) { try { onShow[i](); } catch (e) {} }
+  });
+})();
+
 // ── NULL-SAFE ELEMENT HELPER (some controls only exist on certain pages) ─
 function $el(id) { return document.getElementById(id) || {classList:{toggle:()=>{},add:()=>{},remove:()=>{}},textContent:'',style:{}}; }
 
@@ -11761,7 +11812,7 @@ function boardAutofit(full) {
 }
 // Standing refit — covers the BAGS render, destination flips changing text
 // lengths, and window resizes, same rhythm as the gate's fit heartbeat.
-try { setInterval(function () { boardAutofit(false); }, 5000); } catch (e) {}
+try { _ocEvery(function () { boardAutofit(false); }, 5000); } catch (e) {}
 try { window.addEventListener('resize', function () { setTimeout(function () { boardAutofit(true); }, 120); }); } catch (e) {}
 
 // ── Banner style registry (Nick: merged time+airport banner, "changeable by
@@ -18262,7 +18313,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23074';
+var FIDS_BUILD_TAG = 'v23075';
 (function(){
   try {
     function _addTag(){
@@ -25748,11 +25799,16 @@ try {
 updateTicker();
 startLangRotation();
 tick();
-setInterval(tick, 1000);
+// Clock + the 30s status refresh are the two most expensive standing jobs on a
+// board (per-second Intl formatting and DOM writes; a full table re-render).
+// Both skip while the rotator has this board hidden and catch up the instant it
+// comes back — at the START of the 0.45s cross-fade, so the clock is already
+// correct and the rows already current before anything is visible.
+_ocEvery(tick, 1000);
 startPaging();
 
 // Status refresh every 30s
-setInterval(() => { if (screenType === 'main' && (data.dep.length || data.arr.length)) render(); }, 30 * 1000);
+_ocEvery(() => { if (screenType === 'main' && (data.dep.length || data.arr.length)) render(); }, 30 * 1000);
 
 // Demo: rebuild every 60s so statuses evolve with clock
 // Preserves manually added test flights
@@ -27284,11 +27340,11 @@ function _gateMapTick() {
   initGateMap(routeOrg, routeDst, renderProg);
 }
 
-setInterval(_gateMapTick, 10000);
+_ocEvery(_gateMapTick, 10000);
 setTimeout(_gateMapTick, 2000);
 
 // Hotel logo strip rotation — fade between brand slides every 6 seconds
-setInterval(tickHotelStrip, 6000);
+_ocEvery(tickHotelStrip, 6000);
 
 
 
@@ -28201,7 +28257,7 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       _apply(_GEOM_CACHE[_mkey]);
     }
   }
-  setInterval(_tick, 300);   // v22852: half the first-paint latency of 600ms
+  _ocEvery(_tick, 300);   // v22852: half the first-paint latency of 600ms
 })();
 
 var _nativeVideoEl = null;
@@ -32032,7 +32088,7 @@ function _adBackdropHtml(blurUrl) {
       }
     }).observe(document.documentElement, { childList: true, subtree: true });
   } catch (e) {}
-  setInterval(_ensureOuterFrame, 1500);
+  _ocEvery(_ensureOuterFrame, 1500);
   _ensureOuterFrame();
 })();
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
@@ -33579,7 +33635,7 @@ function normalizeCityIataTextNodes(root) {
 if (typeof window !== 'undefined') {
   window.normalizeCityIataTextNodes = normalizeCityIataTextNodes;
   document.addEventListener('DOMContentLoaded', function(){ normalizeCityIataTextNodes(document); });
-  setInterval(function(){ normalizeCityIataTextNodes(document); }, 2000);
+  _ocEvery(function(){ normalizeCityIataTextNodes(document); }, 2000);
 }
 
 
@@ -33614,7 +33670,7 @@ function normalizeGateHeaderCityNames(root) {
 if (typeof window !== 'undefined') {
   window.normalizeGateHeaderCityNames = normalizeGateHeaderCityNames;
   document.addEventListener('DOMContentLoaded', function(){ normalizeGateHeaderCityNames(document); });
-  setInterval(function(){ normalizeGateHeaderCityNames(document); }, 1500);
+  _ocEvery(function(){ normalizeGateHeaderCityNames(document); }, 1500);
 }
 
 
@@ -33658,7 +33714,7 @@ function normalizeAirportCodesEverywhere(root) {
 if (typeof window !== 'undefined') {
   window.normalizeAirportCodesEverywhere = normalizeAirportCodesEverywhere;
   document.addEventListener('DOMContentLoaded', function(){ normalizeAirportCodesEverywhere(document); });
-  setInterval(function(){ normalizeAirportCodesEverywhere(document); }, 1500);
+  _ocEvery(function(){ normalizeAirportCodesEverywhere(document); }, 1500);
 }
 
 
@@ -33689,7 +33745,7 @@ function tagGidsHeaderBrightness_v21862() {
 if (typeof window !== 'undefined') {
   window.tagGidsHeaderBrightness_v21862 = tagGidsHeaderBrightness_v21862;
   document.addEventListener('DOMContentLoaded', tagGidsHeaderBrightness_v21862);
-  setInterval(tagGidsHeaderBrightness_v21862, 1200);
+  _ocEvery(tagGidsHeaderBrightness_v21862, 1200);
 }
 
 
@@ -33741,7 +33797,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   window.repairAirportNameLabels_v21877 = repairAirportNameLabels_v21877;
   document.addEventListener('DOMContentLoaded', function(){ repairAirportNameLabels_v21877(document); });
   window.addEventListener('load', function(){ repairAirportNameLabels_v21877(document); });
-  setInterval(function(){ repairAirportNameLabels_v21877(document); }, 1000);
+  _ocEvery(function(){ repairAirportNameLabels_v21877(document); }, 1000);
 })();
 
 
@@ -33967,7 +34023,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   setTimeout(_scanAndUpgrade, 500);
   setTimeout(_scanAndUpgrade, 1500);
   // Continuous: every 2s catches re-rendered slides
-  setInterval(_scanAndUpgrade, 2000);
+  _ocEvery(_scanAndUpgrade, 2000);
   // Refit once webfonts land — the early passes measure with the fallback
   // font, and the width+text fingerprint then blocks the refit forever,
   // leaving values ellipsized ('AC6…') after the real font widens them.
@@ -34054,7 +34110,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   _scanLockups();
   setTimeout(_scanLockups, 60);
   setTimeout(_scanLockups, 300);
-  setInterval(_scanLockups, 3000); // slow backstop only
+  _ocEvery(_scanLockups, 3000); // slow backstop only
 })();
 
 
@@ -34163,7 +34219,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   // re-render painted page 1 at full opacity and then ghost-crossfaded forward
   // to the real page — the visible jump.
   window._axrPageSync = check;
-  setInterval(check, 250);
+  _ocEvery(check, 250);
 })();
 
 
@@ -34199,7 +34255,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     } catch(e) {}
   }
   document.addEventListener('DOMContentLoaded', fixVisibleGateLabels);
-  setInterval(fixVisibleGateLabels, 1000);
+  _ocEvery(fixVisibleGateLabels, 1000);
 })();
 
 /* V16 Accor layout safety net: keep ad text inside panel bounds. */
@@ -34224,7 +34280,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       if(t.indexOf('FAIRMONT') >= 0){ el.classList.add('accor6-brand-fairmont'); }
     });
   }
-  setInterval(lockAccorAd, 250);
+  _ocEvery(lockAccorAd, 250);
   document.addEventListener('DOMContentLoaded', lockAccorAd);
 })();
 
@@ -34275,7 +34331,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   function run(){ if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(function(){ fitAccorPanel(); fixUnlabeledControls(); }); }
   document.addEventListener('DOMContentLoaded', run);
   new MutationObserver(run).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','src']});
-  setInterval(run,1000);
+  _ocEvery(run,1000);
 })();
 
 /* V21 Accor layout hard-lock: prevents legacy rescue patches from re-expanding text/logos. */
@@ -34343,7 +34399,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     }
   }
   window.addEventListener('load', lockAccor);
-  setInterval(lockAccor, 500);
+  _ocEvery(lockAccor, 500);
 })();
 
 // ── SELF-UPDATE ─────────────────────────────────────────────────────────
