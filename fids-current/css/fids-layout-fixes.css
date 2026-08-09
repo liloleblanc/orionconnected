@@ -10240,3 +10240,238 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
   background-color: #061024 !important;   /* dark dark navy */
   background-image: none !important;
 }
+
+/* ── v23056: AIR-FRANCE-STYLE FLYING AIRCRAFT (Nick's reference clip) ──────
+   Everything here is gated behind body.gate-acsky, set only by ?acsky=1.
+   With the flag off, not one rule below matches and the gate screen is
+   byte-for-byte what it is today.
+
+   MEASURED off the AF clip, frame by frame, rather than eyeballed:
+     · the aircraft render is STATIC, but floats ~60px vertically on a
+       ~15s loop, eased (fast through the middle, slow at the ends);
+     · the sky and its cloud banks do NOT move — 0px shift over 15s, and
+       forcing a shift made the match WORSE, so they are a still image;
+     · ONE cloud layer drifts, ~16px per 15s at 960px wide (≈32px at 1080p),
+       and it sits IN FRONT of the aircraft, crossing the wings.
+   The depth comes from that foreground parallax against a still background —
+   less motion, placed precisely, not more. */
+
+/* The float. ease-in-out is doing the real work: linear reads mechanical,
+   which is exactly the difference between theirs and a cheap imitation. */
+@keyframes g8AcFloat {
+  0%, 100% { transform: translateY(calc(var(--ac-float, 26px) * -0.5)); }
+  50%      { transform: translateY(calc(var(--ac-float, 26px) *  0.5)); }
+}
+/* The float rides the WRAPPER, not the <img>. gids-v218.78.css:4309 sets
+   `transform: none !important` on .g8-aircraft-img, and per the cascade an
+   !important declaration beats a CSS animation outright — measured on v23056
+   and v23057 as exactly 0px of travel with the animation correctly applied.
+   The wrapper carries no transform rule, so the float lands there instead and
+   the image keeps its own sizing untouched. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img {
+  animation: g8AcFloat 9s ease-in-out infinite !important;
+  will-change: transform;
+}
+/* Float scaled to the aircraft: a Dash 8 must not bob as far as a 777, or it
+   reads as bouncing rather than flying. */
+/* v23060 — RETUNED TO THE REAL CONTAINER. The AF reference is a full 1920x1080
+   hero; this panel is ~436x108. Lifting AF's 60px travel into it gave ~34% of
+   the aircraft's own height instead of AF's ~12% — roughly 3x too much, which
+   read as bobbing rather than flying. Matched to the ratio, not the pixels. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 11px; }
+@media (min-height: 900px) {
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 14px; }
+}
+
+/* The foreground cloud layer — the piece we were missing entirely. It is a
+   seamlessly tiling strip (verified: edge-to-edge pixel difference 0.10 vs a
+   typical neighbour difference of 0.07), so animating background-position by
+   exactly one tile width loops forever with no seam and no jump. */
+/* Animating background-position-x looked right but does nothing: measured on
+   v23058 the animation was RUNNING (currentTime advancing 8333 -> 11333ms)
+   while the computed background-position-x stayed at its initial 0%. Chrome
+   simply ignored that keyframe property here. transform is universally
+   animatable and GPU-composited, so the whole layer slides instead — and
+   because the tile repeats every 1200px, sliding by exactly 1200px lands on
+   an identical image, so the loop is invisible. */
+@keyframes g8FgDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-600px, 0, 0); }    /* exactly one tile */
+}
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  position: absolute !important;
+  /* One extra tile of slack on the right so sliding a full tile-width left
+     never exposes a bare edge. */
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 600px) !important;
+  top: 12% !important; bottom: -4% !important;   /* crosses the fuselage/wings */
+  background-image: url('/textures/gate-fg-clouds.png?v=23068') !important;
+  background-repeat: repeat-x !important;
+  /* A 1200px tile through a 436px slot showed one flat slice and read as
+     nothing. Half-size tile puts 2-3 cloud masses across the panel, and the
+     opacity has to carry against the existing cloud GIF behind the plane. */
+  background-size: 600px 100% !important;
+  opacity: .9 !important;
+  pointer-events: none !important;
+  z-index: 3 !important;                          /* ABOVE the aircraft */
+  animation: g8FgDrift 90s linear infinite !important;  /* ~13px/s — glacial */
+  will-change: transform;
+  display: block !important;
+}
+/* v23063 — DIRECTION WAS BACKWARDS (Nick: 'wrong way for most ... seems like
+   the airplane is on a conveyor belt, some things move some things the wrong
+   way'). He is right, and his recording shows it exactly: on a RIGHT-facing
+   Rouge A319 the background video's clouds correctly ran LEFT (past the nose)
+   while this foreground ran RIGHT (with it). Two layers crossing over one
+   aircraft reads as a conveyor, not as flight.
+   The world must move OPPOSITE to the way the nose points:
+     nose RIGHT -> clouds LEFT      nose LEFT -> clouds RIGHT
+   Both source clips drift LEFT natively (measured -40px in 4s on each), so a
+   right-facing plane needs them as-shot, and a left-facing plane needs both
+   layers flipped. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  animation-direction: reverse !important;      /* default = nose LEFT -> clouds RIGHT */
+}
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right > #gateCloudsFg {
+  animation-direction: normal !important;       /* nose RIGHT -> clouds LEFT */
+}
+/* The sky video drifts LEFT as shot: correct for a right-facing plane, so it
+   is mirrored ONLY for the left-facing default. */
+/* Mirror the drift so the wisps always travel OPPOSITE the nose. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateFgVid {
+  transform: scaleX(-1) !important;
+}
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right > #gateFgVid {
+  transform: none !important;
+}
+/* With the flag OFF the element must occupy nothing at all. */
+html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display: none !important; }
+
+/* Respect a reduced-motion preference — an airport screen shouldn't be the
+   one surface that ignores it. */
+@media (prefers-reduced-motion: reduce) {
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus .g8-aircraft-img,
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+    animation: none !important;
+  }
+}
+
+/* ── v23061: REAL SKY BEHIND THE AIRCRAFT (Nick's Vecteezy footage) ────────
+   The procedural clouds I generated were the weak link — Nick supplied two
+   licensed sky clips instead. Neither looped (first-vs-last frame differed by
+   40/255, a hard cut), so both were rebuilt as CROSSFADE loops rather than
+   boomerangs, which would visibly reverse the cloud flow. Verified seams:
+   1.2/255 and 1.5/255.
+   Using the sun-flare clip: sparser cirrus so the aircraft reads against it,
+   and its light comes from the top-left, matching the AF composition.
+   Still flag-only — none of this exists without ?acsky=1. */
+/* v23064 — THE SKY IS NOW SET (Nick: 'we need a set background'). This also
+   matches what the AF reference actually does: its sky and cloud banks never
+   move — measured 0px over 15s, and forcing a shift made the match WORSE.
+   A moving sky plus a moving foreground was two competing motions, which is
+   why it read as busy. Now: still sky, one drifting layer, floating aircraft.
+   The video element is left in the markup but hidden, so nothing else in the
+   shelf has to change. */
+/* v23071 — THE CLOUDS ACTUALLY MOVE NOW (Nick: 'why is it that none of
+   anything i send makes it in here?'). He was right: every clip he sent was
+   an ANIMATION, and I was pulling one frame out of each and discarding the
+   motion, because an early attempt at alpha-channel video failed (this ffmpeg
+   silently drops alpha) and I never went back to it.
+   No alpha is needed. His fog clip is white-on-black, so mix-blend-mode:
+   screen composites it directly: black renders fully transparent, white fully
+   opaque — a luminance key performed live by the compositor, motion intact.
+   Measured on the encoded loop: 100% of the first frame is black (so nothing
+   but the wisps ever shows) and the loop seam is 0.0/255. */
+/* v23073 — FOREGROUND OFF IN THIS PANEL. Nick: 'this is absolutely terrible',
+   and he is right — screen blend only ever LIGHTENS, so a full-frame cumulus
+   video at 85% bleached the whole panel and buried the aircraft in white haze.
+   That is the seventh foreground treatment to fail the same way, and the
+   evidence has been consistent since v23069: at 436x156 there is no room for
+   a near layer and a far layer, so anything in front of the aircraft is just
+   something on top of the aircraft.
+   What remains is what actually works at this size: a still sky and a gentle
+   float. The video element stays in the markup, off, for the bigger stage. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateFgVid {
+  display: none !important;
+}
+html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateFgVid { display: none !important; }
+/* The static drifting tile is retired — the real animation replaces it. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  display: none !important;
+}
+/* v23065 — the sky plate went on the SHELF in v23064 and never appeared: the
+   shelf already paints its own dark background with !important, so the sky
+   lost the cascade and Nick got grey smudges on black. It belongs on
+   #gateCloudsBg, the backdrop element that already sits at inset:0, z-index 0
+   behind the aircraft — the same slot the old cloud GIF used. */
+html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
+  display: block !important;
+  background: url('/textures/gate-sky-still.jpg?v=23070') center 38% / cover no-repeat !important;
+  opacity: 1 !important;
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+  z-index: 0 !important;
+}
+
+
+/* The foreground tile is now REAL cloud, keyed out of the same footage:
+   white cumulus kept, blue sky taken to full transparency, then mirror-tiled
+   so the repeat is seam-free by construction (measured seam 0.00 against a
+   typical neighbour difference of 2.96). */
+/* v23062 — the foreground is now keyed from Nick's TIMELAPSE clip: bold
+   cumulus against deep saturated blue gives the cleanest separation of the
+   three (68% of the tile is fully transparent, 15% fully opaque, crisp edges
+   with the real shading intact). Mirror-tiled, so the repeat is seam-free by
+   construction: measured seam 0.00 against a neighbour difference of 3.76. */
+/* v23064 — the clouds were the SAME SIZE as the aircraft and nearly opaque, so
+   at 9s into Nick's recording the A319 had disappeared behind them entirely.
+   A foreground layer should veil the plane, never swallow it: the tile drops
+   from 1000px to 420px so each puff is roughly a third of the fuselage, the
+   key is sheerer (peak alpha 158/255, 77% of the tile fully clear), and the
+   band sits low so it crosses the belly and wings rather than the whole
+   aircraft. */
+/* v23066 — the foreground is now built from Nick's SMOKE-ON-BLACK overlay
+   clip, which is a better fit than any keyed sky. Measured on the source:
+   ~50% pure black, ~50% mid-tones, and only 1% anything approaching solid —
+   so it can VEIL the aircraft but is physically incapable of swallowing it,
+   which is what went wrong with every keyed-cumulus attempt. Black also means
+   luminance converts straight to alpha: no blue spill, no muddy edges. */
+/* v23067 — Nick: 'for the front though where the clouds pass through is
+   exactly what it needs'. Agreed, and this fog/smoke overlay is the closest
+   yet: discrete wisps drifting across an otherwise empty black frame, with
+   real gaps between them, rather than a fog bank. Measured on the tile: 75%
+   fully clear, 18% soft veil, 8% approaching solid.
+   Two frames are combined at a half-width offset so several wisps cross the
+   panel at different points instead of one blob repeating, then mirror-tiled
+   (seam 0.00 against a neighbour difference of 0.67). Source peaks at only
+   140/255 so it is normalised up first, or the veil is invisible. */
+/* v23068 — REAL CUMULUS at last, keyed from Nick's clouds-on-green-screen
+   clip. Green is harder than black for a translucent subject (a pixel that is
+   30% cloud is 70% green, so alpha and spill are entangled), but standard
+   spill suppression - clamping green to the mean of red and blue - cleaned it
+   completely: residual green measured -3, i.e. none. Tile is 61% clear, 27%
+   soft, 12% opaque, mirror-tiled with a seam of 0.00 against a neighbour
+   difference of 1.64.
+   This is the shape the smoke clips could not give: defined puffs, like the
+   AF reference, instead of a diffuse veil. */
+/* v23069 — THE PANEL IS THE LIMIT, NOT THE ARTWORK. Five foreground sources
+   were tried (procedural, keyed cumulus, smoke-on-black, passing wisps,
+   green-screen cumulus) and every one read as clutter. At 436x156 the
+   aircraft is ~250px long, so any cloud big enough to see is the same scale
+   as the plane: there is no room for near and far, and 'foreground' just
+   becomes 'something on top of the aircraft'. The AF reference has 1080px of
+   height to separate its layers; this has 156.
+   So the foreground retreats to a low, faint band near the bottom edge — it
+   gives a hint of depth under the belly and never crosses the livery. A real
+   foreground pass needs a bigger stage, not a better cloud. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  background-size: 620px 100% !important;
+  opacity: .34 !important;
+  top: 62% !important; bottom: -10% !important;
+}
+@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-620px,0,0); } }
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  width: calc(100% + 620px) !important;
+  animation: g8FgDrift2 120s linear infinite !important;
+}

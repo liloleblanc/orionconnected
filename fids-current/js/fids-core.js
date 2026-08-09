@@ -8526,6 +8526,10 @@ function _buildV2MapCol(ctx, vars) {
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
               : '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>')
+        +   (/[?&]acsky=1\b/.test(window.location.search)
+              ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
+                + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
+        +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
         +   _typeCellHtml
@@ -8539,6 +8543,10 @@ function _buildV2MapCol(ctx, vars) {
         '<div class="v2-rc-shelf v2-rc-shelf-illus">'
       +   '<div id="gateCloudsBg"></div>'
       +   '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>'
+      +   (/[?&]acsky=1\b/.test(window.location.search)
+            ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
+              + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
+      +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
       +   '<div class="v2-rc-acb-actype v2-rc-actype-val">Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir</div>'
@@ -12913,6 +12921,19 @@ const gView = document.getElementById('gateView');
         if (_skinCode === 'AS' && typeof isHawaiianBrandedFlight === 'function'
             && isHawaiianBrandedFlight(currentFlight, window._gateIata || locIata)) _skinCode = 'HA';
         document.body.setAttribute('data-gate-airline', _skinCode);
+      } catch (e) {}
+      // v23056 — AIR-FRANCE-STYLE FLYING AIRCRAFT, behind ?acsky=1.
+      // Measured off Nick's AF reference clip: the aircraft render is STATIC
+      // but floats ~60px vertically on a ~15s ease-in-out loop, the sky and
+      // its cloud banks never move at all, and a THIRD layer of cloud drifts
+      // slowly (~32px/15s) IN FRONT of the aircraft. That foreground parallax
+      // against a still background is what reads as depth — not more motion,
+      // less of it, placed precisely. Off by default; nothing changes for any
+      // existing screen until the flag is on.
+      try {
+        var _skyOn = /[?&]acsky=1\b/.test(window.location.search);
+        document.body.classList.toggle('gate-acsky', _skyOn);
+        if (_skyOn && typeof _acSkyPhaseStart === 'function') _acSkyPhaseStart();
       } catch (e) {}
       // Defensive: nuke any stranded floating "DESTINATION City" label from
       // older deploys / interrupted video playback. This element used to be
@@ -18188,6 +18209,51 @@ function _gateLaneLbl(nums, plural, frFirst) {
 }
 try { if (typeof window !== 'undefined') window._gateLaneLbl = _gateLaneLbl; } catch (e) {}
 
+// ── v23057 — KEEP THE FLYING-AIRCRAFT ANIMATION IN PHASE ACROSS REBUILDS.
+// The gate replaces its own DOM on every telemetry tick, so a CSS animation
+// on a rebuilt node restarts at 0% every few seconds and never visibly
+// advances — measured on v23056: animation applied (g8AcFloat, 15s) but
+// travel exactly 0px over 24 samples. The map and the ad carousel solve this
+// by detaching and re-attaching the live node; that machinery is delicate and
+// this effect does not need it.
+//
+// Instead the phase is anchored to wall-clock: a NEGATIVE animation-delay of
+// (now mod duration) starts a freshly-created element already that far into
+// its cycle. A rebuild is then invisible — the aircraft keeps floating from
+// where it was, rather than snapping back to the top of the loop.
+var _acSkyPhaseTimer = null;
+function _acSkyPhaseApply() {
+  try {
+    if (!document.body || !document.body.classList.contains('gate-acsky')) return;
+    var t = Date.now() / 1000;
+    var pairs = [
+      ['.v2-rc-shelf-illus .v2-rc-aircraft-img', 9], // float, matches g8AcFloat
+      ['.v2-rc-shelf-illus > #gateCloudsFg',  90]    // drift, matches g8FgDrift
+    ];
+    for (var i = 0; i < pairs.length; i++) {
+      var el = document.querySelector(pairs[i][0]);
+      if (!el || !el.isConnected) continue;
+      if (el.dataset && el.dataset.skyPhased === '1') continue;
+      el.style.animationDelay = '-' + (t % pairs[i][1]).toFixed(2) + 's';
+      if (el.dataset) el.dataset.skyPhased = '1';
+    }
+    // v23063 — the sky clip is a TIMELAPSE, so at 1x its clouds boil past far
+    // faster than anything at cruise (Nick: 'not going at the right speed').
+    // Quarter speed reads as real weather rather than a fast-forward.
+    var _sv = document.querySelector('.v2-rc-shelf-illus > #gateFgVid');
+    if (_sv && _sv.isConnected && _sv.playbackRate !== 0.25) {
+      try { _sv.playbackRate = 0.25; } catch (e2) {}
+    }
+  } catch (e) {}
+}
+function _acSkyPhaseStart() {
+  _acSkyPhaseApply();
+  if (_acSkyPhaseTimer) return;
+  // Cheap: two querySelectors every 2s, and it no-ops once both are marked.
+  _acSkyPhaseTimer = setInterval(_acSkyPhaseApply, 2000);
+}
+try { if (typeof window !== 'undefined') { window._acSkyPhaseStart = _acSkyPhaseStart; } } catch (e) {}
+
 // The gate rail's two-span label cell — primary over secondary.
 function _gateLblSpans(key, frFirst) {
   return _gateLbl(key, frFirst, function (w) { return '<span>' + w + '</span>'; }, '');
@@ -18196,7 +18262,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23055';
+var FIDS_BUILD_TAG = 'v23074';
 (function(){
   try {
     function _addTag(){
