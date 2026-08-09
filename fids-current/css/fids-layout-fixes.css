@@ -10382,7 +10382,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid {
 html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   display: block !important;
-  background: url('/textures/gate-sky-still.jpg?v=23065') center 38% / cover no-repeat !important;
+  background: url('/textures/gate-sky-still.jpg?v=23070') center 38% / cover no-repeat !important;
   opacity: 1 !important;
   -webkit-mask-image: none !important;
           mask-image: none !important;
