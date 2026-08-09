@@ -10305,7 +10305,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   left: 0 !important; right: auto !important;
   width: calc(100% + 600px) !important;
   top: 12% !important; bottom: -4% !important;   /* crosses the fuselage/wings */
-  background-image: url('/textures/gate-fg-clouds.png?v=23067') !important;
+  background-image: url('/textures/gate-fg-clouds.png?v=23068') !important;
   background-repeat: repeat-x !important;
   /* A 1200px tile through a 436px slot showed one flat slice and read as
      nothing. Half-size tile puts 2-3 cloud masses across the panel, and the
@@ -10421,13 +10421,22 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid { display: 
    panel at different points instead of one blob repeating, then mirror-tiled
    (seam 0.00 against a neighbour difference of 0.67). Source peaks at only
    140/255 so it is normalised up first, or the veil is invisible. */
+/* v23068 — REAL CUMULUS at last, keyed from Nick's clouds-on-green-screen
+   clip. Green is harder than black for a translucent subject (a pixel that is
+   30% cloud is 70% green, so alpha and spill are entangled), but standard
+   spill suppression - clamping green to the mean of red and blue - cleaned it
+   completely: residual green measured -3, i.e. none. Tile is 61% clear, 27%
+   soft, 12% opaque, mirror-tiled with a seam of 0.00 against a neighbour
+   difference of 1.64.
+   This is the shape the smoke clips could not give: defined puffs, like the
+   AF reference, instead of a diffuse veil. */
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  background-size: 780px 100% !important;
-  opacity: .6 !important;
-  top: 0 !important; bottom: 0 !important;   /* wisps cross the whole frame */
+  background-size: 900px 100% !important;
+  opacity: .72 !important;
+  top: 14% !important; bottom: -6% !important;
 }
-@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-780px,0,0); } }
+@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-900px,0,0); } }
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  width: calc(100% + 780px) !important;
-  animation: g8FgDrift2 105s linear infinite !important;
+  width: calc(100% + 900px) !important;
+  animation: g8FgDrift2 120s linear infinite !important;
 }
