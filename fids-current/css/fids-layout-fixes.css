@@ -10283,13 +10283,23 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 26px; }
    seamlessly tiling strip (verified: edge-to-edge pixel difference 0.10 vs a
    typical neighbour difference of 0.07), so animating background-position by
    exactly one tile width loops forever with no seam and no jump. */
+/* Animating background-position-x looked right but does nothing: measured on
+   v23058 the animation was RUNNING (currentTime advancing 8333 -> 11333ms)
+   while the computed background-position-x stayed at its initial 0%. Chrome
+   simply ignored that keyframe property here. transform is universally
+   animatable and GPU-composited, so the whole layer slides instead — and
+   because the tile repeats every 1200px, sliding by exactly 1200px lands on
+   an identical image, so the loop is invisible. */
 @keyframes g8FgDrift {
-  from { background-position-x: 0; }
-  to   { background-position-x: -1200px; }   /* exactly one tile at this size */
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-1200px, 0, 0); }   /* exactly one tile */
 }
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   position: absolute !important;
-  left: 0 !important; right: 0 !important;
+  /* One extra tile of slack on the right so sliding a full tile-width left
+     never exposes a bare edge. */
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 1200px) !important;
   top: 34% !important; bottom: -6% !important;   /* crosses the fuselage/wings */
   background-image: url('/textures/gate-fg-clouds.png?v=23056') !important;
   background-repeat: repeat-x !important;
@@ -10298,7 +10308,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   pointer-events: none !important;
   z-index: 3 !important;                          /* ABOVE the aircraft */
   animation: g8FgDrift 90s linear infinite !important;  /* ~13px/s — glacial */
-  will-change: background-position;
+  will-change: transform;
   display: block !important;
 }
 /* Drift with the nose, like the existing backdrop already does. */
