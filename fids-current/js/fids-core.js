@@ -18227,7 +18227,7 @@ function _acSkyPhaseApply() {
     if (!document.body || !document.body.classList.contains('gate-acsky')) return;
     var t = Date.now() / 1000;
     var pairs = [
-      ['.v2-rc-shelf-illus .v2-rc-aircraft-img', 19], // float, matches g8AcFloat
+      ['.v2-rc-shelf-illus .v2-rc-aircraft-img', 9], // float, matches g8AcFloat
       ['.v2-rc-shelf-illus > #gateCloudsFg',  90]    // drift, matches g8FgDrift
     ];
     for (var i = 0; i < pairs.length; i++) {
@@ -18262,7 +18262,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23073';
+var FIDS_BUILD_TAG = 'v23074';
 (function(){
   try {
     function _addTag(){
