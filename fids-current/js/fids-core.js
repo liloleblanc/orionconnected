@@ -18237,6 +18237,13 @@ function _acSkyPhaseApply() {
       el.style.animationDelay = '-' + (t % pairs[i][1]).toFixed(2) + 's';
       if (el.dataset) el.dataset.skyPhased = '1';
     }
+    // v23063 — the sky clip is a TIMELAPSE, so at 1x its clouds boil past far
+    // faster than anything at cruise (Nick: 'not going at the right speed').
+    // Quarter speed reads as real weather rather than a fast-forward.
+    var _sv = document.querySelector('.v2-rc-shelf-illus > #gateSkyVid');
+    if (_sv && _sv.isConnected && _sv.playbackRate !== 0.25) {
+      try { _sv.playbackRate = 0.25; } catch (e2) {}
+    }
   } catch (e) {}
 }
 function _acSkyPhaseStart() {
@@ -18255,7 +18262,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23062';
+var FIDS_BUILD_TAG = 'v23063';
 (function(){
   try {
     function _addTag(){

@@ -10318,9 +10318,30 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   will-change: transform;
   display: block !important;
 }
-/* Drift with the nose, like the existing backdrop already does. */
+/* v23063 — DIRECTION WAS BACKWARDS (Nick: 'wrong way for most ... seems like
+   the airplane is on a conveyor belt, some things move some things the wrong
+   way'). He is right, and his recording shows it exactly: on a RIGHT-facing
+   Rouge A319 the background video's clouds correctly ran LEFT (past the nose)
+   while this foreground ran RIGHT (with it). Two layers crossing over one
+   aircraft reads as a conveyor, not as flight.
+   The world must move OPPOSITE to the way the nose points:
+     nose RIGHT -> clouds LEFT      nose LEFT -> clouds RIGHT
+   Both source clips drift LEFT natively (measured -40px in 4s on each), so a
+   right-facing plane needs them as-shot, and a left-facing plane needs both
+   layers flipped. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  animation-direction: reverse !important;      /* default = nose LEFT -> clouds RIGHT */
+}
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right > #gateCloudsFg {
-  animation-direction: reverse !important;
+  animation-direction: normal !important;       /* nose RIGHT -> clouds LEFT */
+}
+/* The sky video drifts LEFT as shot: correct for a right-facing plane, so it
+   is mirrored ONLY for the left-facing default. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid {
+  transform: scaleX(-1) !important;
+}
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right > #gateSkyVid {
+  transform: none !important;
 }
 /* With the flag OFF the element must occupy nothing at all. */
 html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display: none !important; }
@@ -10374,5 +10395,5 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
 @keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   width: calc(100% + 1000px) !important;
-  animation: g8FgDrift2 75s linear infinite !important;
+  animation: g8FgDrift2 130s linear infinite !important;
 }
