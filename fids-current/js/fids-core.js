@@ -12927,6 +12927,7 @@ const gView = document.getElementById('gateView');
       try {
         var _skyOn = /[?&]acsky=1\b/.test(window.location.search);
         document.body.classList.toggle('gate-acsky', _skyOn);
+        if (_skyOn && typeof _acSkyPhaseStart === 'function') _acSkyPhaseStart();
       } catch (e) {}
       // Defensive: nuke any stranded floating "DESTINATION City" label from
       // older deploys / interrupted video playback. This element used to be
@@ -18202,6 +18203,44 @@ function _gateLaneLbl(nums, plural, frFirst) {
 }
 try { if (typeof window !== 'undefined') window._gateLaneLbl = _gateLaneLbl; } catch (e) {}
 
+// ── v23057 — KEEP THE FLYING-AIRCRAFT ANIMATION IN PHASE ACROSS REBUILDS.
+// The gate replaces its own DOM on every telemetry tick, so a CSS animation
+// on a rebuilt node restarts at 0% every few seconds and never visibly
+// advances — measured on v23056: animation applied (g8AcFloat, 15s) but
+// travel exactly 0px over 24 samples. The map and the ad carousel solve this
+// by detaching and re-attaching the live node; that machinery is delicate and
+// this effect does not need it.
+//
+// Instead the phase is anchored to wall-clock: a NEGATIVE animation-delay of
+// (now mod duration) starts a freshly-created element already that far into
+// its cycle. A rebuild is then invisible — the aircraft keeps floating from
+// where it was, rather than snapping back to the top of the loop.
+var _acSkyPhaseTimer = null;
+function _acSkyPhaseApply() {
+  try {
+    if (!document.body || !document.body.classList.contains('gate-acsky')) return;
+    var t = Date.now() / 1000;
+    var pairs = [
+      ['.v2-rc-shelf-illus .g8-aircraft-img', 15],   // float, matches g8AcFloat
+      ['.v2-rc-shelf-illus > #gateCloudsFg',  90]    // drift, matches g8FgDrift
+    ];
+    for (var i = 0; i < pairs.length; i++) {
+      var el = document.querySelector(pairs[i][0]);
+      if (!el || !el.isConnected) continue;
+      if (el.dataset && el.dataset.skyPhased === '1') continue;
+      el.style.animationDelay = '-' + (t % pairs[i][1]).toFixed(2) + 's';
+      if (el.dataset) el.dataset.skyPhased = '1';
+    }
+  } catch (e) {}
+}
+function _acSkyPhaseStart() {
+  _acSkyPhaseApply();
+  if (_acSkyPhaseTimer) return;
+  // Cheap: two querySelectors every 2s, and it no-ops once both are marked.
+  _acSkyPhaseTimer = setInterval(_acSkyPhaseApply, 2000);
+}
+try { if (typeof window !== 'undefined') { window._acSkyPhaseStart = _acSkyPhaseStart; } } catch (e) {}
+
 // The gate rail's two-span label cell — primary over secondary.
 function _gateLblSpans(key, frFirst) {
   return _gateLbl(key, frFirst, function (w) { return '<span>' + w + '</span>'; }, '');
@@ -18210,7 +18249,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23056';
+var FIDS_BUILD_TAG = 'v23057';
 (function(){
   try {
     function _addTag(){
