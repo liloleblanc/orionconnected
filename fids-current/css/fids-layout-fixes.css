@@ -10269,14 +10269,18 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
    The wrapper carries no transform rule, so the float lands there instead and
    the image keeps its own sizing untouched. */
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img {
-  animation: g8AcFloat 15s ease-in-out infinite !important;
+  animation: g8AcFloat 19s ease-in-out infinite !important;
   will-change: transform;
 }
 /* Float scaled to the aircraft: a Dash 8 must not bob as far as a 777, or it
    reads as bouncing rather than flying. */
-html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 26px; }
+/* v23060 — RETUNED TO THE REAL CONTAINER. The AF reference is a full 1920x1080
+   hero; this panel is ~436x108. Lifting AF's 60px travel into it gave ~34% of
+   the aircraft's own height instead of AF's ~12% — roughly 3x too much, which
+   read as bobbing rather than flying. Matched to the ratio, not the pixels. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 9px; }
 @media (min-height: 900px) {
-  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 34px; }
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 12px; }
 }
 
 /* The foreground cloud layer — the piece we were missing entirely. It is a
@@ -10292,19 +10296,22 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 26px; }
    an identical image, so the loop is invisible. */
 @keyframes g8FgDrift {
   from { transform: translate3d(0, 0, 0); }
-  to   { transform: translate3d(-1200px, 0, 0); }   /* exactly one tile */
+  to   { transform: translate3d(-600px, 0, 0); }    /* exactly one tile */
 }
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   position: absolute !important;
   /* One extra tile of slack on the right so sliding a full tile-width left
      never exposes a bare edge. */
   left: 0 !important; right: auto !important;
-  width: calc(100% + 1200px) !important;
-  top: 34% !important; bottom: -6% !important;   /* crosses the fuselage/wings */
+  width: calc(100% + 600px) !important;
+  top: 12% !important; bottom: -4% !important;   /* crosses the fuselage/wings */
   background-image: url('/textures/gate-fg-clouds.png?v=23056') !important;
   background-repeat: repeat-x !important;
-  background-size: 1200px 100% !important;
-  opacity: .72 !important;
+  /* A 1200px tile through a 436px slot showed one flat slice and read as
+     nothing. Half-size tile puts 2-3 cloud masses across the panel, and the
+     opacity has to carry against the existing cloud GIF behind the plane. */
+  background-size: 600px 100% !important;
+  opacity: .9 !important;
   pointer-events: none !important;
   z-index: 3 !important;                          /* ABOVE the aircraft */
   animation: g8FgDrift 90s linear infinite !important;  /* ~13px/s — glacial */
