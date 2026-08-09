@@ -8528,7 +8528,7 @@ function _buildV2MapCol(ctx, vars) {
               : '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>')
         +   (/[?&]acsky=1\b/.test(window.location.search)
               ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
-                + 'src="/textures/gate-fg-clouds.mp4?v=23071"></video>' : '')
+                + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
         +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
@@ -8545,7 +8545,7 @@ function _buildV2MapCol(ctx, vars) {
       +   '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>'
       +   (/[?&]acsky=1\b/.test(window.location.search)
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
-              + 'src="/textures/gate-fg-clouds.mp4?v=23071"></video>' : '')
+              + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
@@ -18262,7 +18262,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23071';
+var FIDS_BUILD_TAG = 'v23072';
 (function(){
   try {
     function _addTag(){
