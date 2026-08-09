@@ -10262,7 +10262,13 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
   0%, 100% { transform: translateY(calc(var(--ac-float, 26px) * -0.5)); }
   50%      { transform: translateY(calc(var(--ac-float, 26px) *  0.5)); }
 }
-html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus .g8-aircraft-img {
+/* The float rides the WRAPPER, not the <img>. gids-v218.78.css:4309 sets
+   `transform: none !important` on .g8-aircraft-img, and per the cascade an
+   !important declaration beats a CSS animation outright — measured on v23056
+   and v23057 as exactly 0px of travel with the animation correctly applied.
+   The wrapper carries no transform rule, so the float lands there instead and
+   the image keeps its own sizing untouched. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img {
   animation: g8AcFloat 15s ease-in-out infinite !important;
   will-change: transform;
 }
