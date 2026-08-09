@@ -10337,10 +10337,11 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right > 
 }
 /* The sky video drifts LEFT as shot: correct for a right-facing plane, so it
    is mirrored ONLY for the left-facing default. */
-html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid {
+/* Mirror the drift so the wisps always travel OPPOSITE the nose. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateFgVid {
   transform: scaleX(-1) !important;
 }
-html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right > #gateSkyVid {
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right > #gateFgVid {
   transform: none !important;
 }
 /* With the flag OFF the element must occupy nothing at all. */
@@ -10371,7 +10372,29 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display
    why it read as busy. Now: still sky, one drifting layer, floating aircraft.
    The video element is left in the markup but hidden, so nothing else in the
    shelf has to change. */
-html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid {
+/* v23071 — THE CLOUDS ACTUALLY MOVE NOW (Nick: 'why is it that none of
+   anything i send makes it in here?'). He was right: every clip he sent was
+   an ANIMATION, and I was pulling one frame out of each and discarding the
+   motion, because an early attempt at alpha-channel video failed (this ffmpeg
+   silently drops alpha) and I never went back to it.
+   No alpha is needed. His fog clip is white-on-black, so mix-blend-mode:
+   screen composites it directly: black renders fully transparent, white fully
+   opaque — a luminance key performed live by the compositor, motion intact.
+   Measured on the encoded loop: 100% of the first frame is black (so nothing
+   but the wisps ever shows) and the loop seam is 0.0/255. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateFgVid {
+  position: absolute !important; inset: 0 !important;
+  width: 100% !important; height: 100% !important;
+  object-fit: cover !important;
+  mix-blend-mode: screen !important;     /* black -> transparent, live */
+  opacity: .85 !important;
+  z-index: 3 !important;                 /* in FRONT of the aircraft */
+  pointer-events: none !important;
+  display: block !important;
+}
+html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateFgVid { display: none !important; }
+/* The static drifting tile is retired — the real animation replaces it. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   display: none !important;
 }
 /* v23065 — the sky plate went on the SHELF in v23064 and never appeared: the
@@ -10388,7 +10411,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
           mask-image: none !important;
   z-index: 0 !important;
 }
-html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid { display: none !important; }
+
 
 /* The foreground tile is now REAL cloud, keyed out of the same footage:
    white cumulus kept, blue sky taken to full transparency, then mirror-tiled

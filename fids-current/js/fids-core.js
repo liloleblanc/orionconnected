@@ -8527,8 +8527,8 @@ function _buildV2MapCol(ctx, vars) {
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
               : '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>')
         +   (/[?&]acsky=1\b/.test(window.location.search)
-              ? '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" '
-                + 'src="/textures/gate-sky-loop.mp4?v=23061"></video>' : '')
+              ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
+                + 'src="/textures/gate-fg-clouds.mp4?v=23071"></video>' : '')
         +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
@@ -8544,8 +8544,8 @@ function _buildV2MapCol(ctx, vars) {
       +   '<div id="gateCloudsBg"></div>'
       +   '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>'
       +   (/[?&]acsky=1\b/.test(window.location.search)
-            ? '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" '
-              + 'src="/textures/gate-sky-loop.mp4?v=23061"></video>' : '')
+            ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
+              + 'src="/textures/gate-fg-clouds.mp4?v=23071"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
@@ -18240,7 +18240,7 @@ function _acSkyPhaseApply() {
     // v23063 — the sky clip is a TIMELAPSE, so at 1x its clouds boil past far
     // faster than anything at cruise (Nick: 'not going at the right speed').
     // Quarter speed reads as real weather rather than a fast-forward.
-    var _sv = document.querySelector('.v2-rc-shelf-illus > #gateSkyVid');
+    var _sv = document.querySelector('.v2-rc-shelf-illus > #gateFgVid');
     if (_sv && _sv.isConnected && _sv.playbackRate !== 0.25) {
       try { _sv.playbackRate = 0.25; } catch (e2) {}
     }
@@ -18262,7 +18262,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23070';
+var FIDS_BUILD_TAG = 'v23071';
 (function(){
   try {
     function _addTag(){
