@@ -10305,7 +10305,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   left: 0 !important; right: auto !important;
   width: calc(100% + 600px) !important;
   top: 12% !important; bottom: -4% !important;   /* crosses the fuselage/wings */
-  background-image: url('/textures/gate-fg-clouds.png?v=23065') !important;
+  background-image: url('/textures/gate-fg-clouds.png?v=23066') !important;
   background-repeat: repeat-x !important;
   /* A 1200px tile through a 436px slot showed one flat slice and read as
      nothing. Half-size tile puts 2-3 cloud masses across the panel, and the
@@ -10406,13 +10406,19 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid { display: 
    key is sheerer (peak alpha 158/255, 77% of the tile fully clear), and the
    band sits low so it crosses the belly and wings rather than the whole
    aircraft. */
+/* v23066 — the foreground is now built from Nick's SMOKE-ON-BLACK overlay
+   clip, which is a better fit than any keyed sky. Measured on the source:
+   ~50% pure black, ~50% mid-tones, and only 1% anything approaching solid —
+   so it can VEIL the aircraft but is physically incapable of swallowing it,
+   which is what went wrong with every keyed-cumulus attempt. Black also means
+   luminance converts straight to alpha: no blue spill, no muddy edges. */
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  background-size: 420px 100% !important;
-  opacity: .8 !important;
-  top: 46% !important; bottom: -8% !important;
+  background-size: 560px 100% !important;
+  opacity: .55 !important;
+  top: 38% !important; bottom: -10% !important;
 }
-@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-420px,0,0); } }
+@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-560px,0,0); } }
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
-  width: calc(100% + 420px) !important;
-  animation: g8FgDrift2 70s linear infinite !important;
+  width: calc(100% + 560px) !important;
+  animation: g8FgDrift2 95s linear infinite !important;
 }
