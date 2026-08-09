@@ -10305,7 +10305,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   left: 0 !important; right: auto !important;
   width: calc(100% + 600px) !important;
   top: 12% !important; bottom: -4% !important;   /* crosses the fuselage/wings */
-  background-image: url('/textures/gate-fg-clouds.png?v=23056') !important;
+  background-image: url('/textures/gate-fg-clouds.png?v=23061') !important;
   background-repeat: repeat-x !important;
   /* A 1200px tile through a 436px slot showed one flat slice and read as
      nothing. Half-size tile puts 2-3 cloud masses across the panel, and the
@@ -10332,4 +10332,42 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display
   html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
     animation: none !important;
   }
+}
+
+/* ── v23061: REAL SKY BEHIND THE AIRCRAFT (Nick's Vecteezy footage) ────────
+   The procedural clouds I generated were the weak link — Nick supplied two
+   licensed sky clips instead. Neither looped (first-vs-last frame differed by
+   40/255, a hard cut), so both were rebuilt as CROSSFADE loops rather than
+   boomerangs, which would visibly reverse the cloud flow. Verified seams:
+   1.2/255 and 1.5/255.
+   Using the sun-flare clip: sparser cirrus so the aircraft reads against it,
+   and its light comes from the top-left, matching the AF composition.
+   Still flag-only — none of this exists without ?acsky=1. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid {
+  position: absolute !important; inset: 0 !important;
+  width: 100% !important; height: 100% !important;
+  object-fit: cover !important;
+  z-index: 0 !important;                 /* BEHIND the aircraft */
+  pointer-events: none !important;
+  display: block !important;
+}
+/* The old GIF backdrop would fight the video — hide it while the flag is on. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
+  display: none !important;
+}
+html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateSkyVid { display: none !important; }
+
+/* The foreground tile is now REAL cloud, keyed out of the same footage:
+   white cumulus kept, blue sky taken to full transparency, then mirror-tiled
+   so the repeat is seam-free by construction (measured seam 0.00 against a
+   typical neighbour difference of 2.96). */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  background-size: 900px 100% !important;
+  opacity: .95 !important;
+  top: 6% !important; bottom: -2% !important;
+}
+@keyframes g8FgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-900px,0,0); } }
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  width: calc(100% + 900px) !important;
+  animation: g8FgDrift2 75s linear infinite !important;
 }
