@@ -10382,15 +10382,17 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display
    opaque — a luminance key performed live by the compositor, motion intact.
    Measured on the encoded loop: 100% of the first frame is black (so nothing
    but the wisps ever shows) and the loop seam is 0.0/255. */
+/* v23073 — FOREGROUND OFF IN THIS PANEL. Nick: 'this is absolutely terrible',
+   and he is right — screen blend only ever LIGHTENS, so a full-frame cumulus
+   video at 85% bleached the whole panel and buried the aircraft in white haze.
+   That is the seventh foreground treatment to fail the same way, and the
+   evidence has been consistent since v23069: at 436x156 there is no room for
+   a near layer and a far layer, so anything in front of the aircraft is just
+   something on top of the aircraft.
+   What remains is what actually works at this size: a still sky and a gentle
+   float. The video element stays in the markup, off, for the bigger stage. */
 html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateFgVid {
-  position: absolute !important; inset: 0 !important;
-  width: 100% !important; height: 100% !important;
-  object-fit: cover !important;
-  mix-blend-mode: screen !important;     /* black -> transparent, live */
-  opacity: .85 !important;
-  z-index: 3 !important;                 /* in FRONT of the aircraft */
-  pointer-events: none !important;
-  display: block !important;
+  display: none !important;
 }
 html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateFgVid { display: none !important; }
 /* The static drifting tile is retired — the real animation replaces it. */
