@@ -10526,6 +10526,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
 @keyframes g8SkyMid   { from { transform: translate3d(0,0,0); } to { transform: translate3d(-700px,0,0); } }
 @keyframes g8SkyFront { from { transform: translate3d(0,0,0); } to { transform: translate3d(-900px,0,0); } }
 @keyframes g8SkyRush  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-760px,0,0); } }
+@keyframes g8SkyFast  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1800px,0,0); } }
 
 /* ── BACK: the still plate, drifting slowest ─────────────────────────────── */
 html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
@@ -10534,7 +10535,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   position: absolute !important;
   left: 0 !important; right: auto !important; top: 0 !important; bottom: 0 !important;
   width: calc(100% + 1000px) !important;      /* one tile of slack to slide into */
-  background: url('/textures/gate-sky-back-v2.jpg?v=23079') 0 50% / 1000px 100% repeat-x !important;
+  background: url('/textures/gate-sky-back-v2.jpg?v=23080') 0 50% / 1000px 100% repeat-x !important;
   opacity: 1 !important;
   -webkit-mask-image: none !important;
           mask-image: none !important;
@@ -10562,7 +10563,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 700px) !important;
   top: 34% !important; bottom: -12% !important;
-  background: url('/textures/gate-clouds-mid-v2.png?v=23079') 0 50% / 700px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-mid-v2.png?v=23080') 0 50% / 700px 100% repeat-x !important;
   opacity: .62 !important;
   pointer-events: none !important;
   animation: g8SkyMid 130s linear infinite !important;
@@ -10572,6 +10573,41 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after 
      layer alone would snap back to the top of its loop on every telemetry
      rebuild while the other two carried on. */
   animation-delay: var(--g8-mid-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* ── FAST: sparse close cloud passing BEHIND the aircraft. ────────────────
+   Nick, in order: "You need a layer behind the plane those are close clouds
+   and theyre fast" ... "the fast layer is not a lot its just a few" ... "the
+   background now is perfect dont change it just add a bit".
+
+   So this is ADDED, not carved out of what is already there. The back plate
+   and the soft cumulus band are the background he signed off on and are
+   untouched; this is a third element in the same stacking context —
+   #gateCloudsBg::before, sibling to the ::after band — which means it is
+   behind the aircraft by construction, with no new markup.
+
+   SPARSE by design. The band asset is a continuous row of cloud, which at
+   112px/s would be a wall of white. This tile is 1800px of mostly empty sky
+   with three isolated clumps scattered across it: measured mean alpha
+   coverage 21.5/255, about 8%. Through a 436px shelf you see roughly a
+   quarter of the tile, so usually one clump is crossing and sometimes none —
+   "just a few".
+
+   16s over a 1800px tile = 112px/s, a 4-second crossing. That is the fastest
+   thing on the shelf and it is what carries the sense of speed. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 1800px) !important;
+  top: 8% !important; bottom: -18% !important;   /* crosses the belly, not the tail */
+  background: url('/textures/gate-clouds-fast-v2.png?v=23080') 0 50% / 1800px 100% repeat-x !important;
+  opacity: .5 !important;
+  pointer-events: none !important;
+  animation: g8SkyFast 16s linear infinite !important;
+  animation-delay: var(--g8-fast-delay, 0s) !important;
   animation-direction: var(--g8-dir, reverse) !important;
   will-change: transform;
 }
@@ -10586,10 +10622,21 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   position: absolute !important;
   left: 0 !important; right: auto !important;
   width: calc(100% + 900px) !important;
-  top: 58% !important; bottom: -16% !important;
-  background: url('/textures/gate-clouds-front-v2.png?v=23079') 0 50% / 900px 100% repeat-x !important;
-  background-image: url('/textures/gate-clouds-front-v2.png?v=23079') !important;
-  opacity: .30 !important;
+  /* FULL height. This was top:58% — inherited from the abandoned v23073
+     treatment, which deliberately retreated the foreground to a low band near
+     the bottom edge. Carried over unexamined, it put BOTH front layers
+     entirely below the fuselage: measured, the shelf spans y 760-914 and this
+     element sat at y 852-938, so every "front" cloud passed UNDER the
+     aircraft. Nick: "I dont see any clouds in front the plane though" — there
+     were none; they were beneath it. The artwork's own alpha is feathered top
+     and bottom, so at full height its dense part lands across the fuselage,
+     which is where a near-field cloud belongs. */
+  top: 0 !important; bottom: 0 !important;
+  background: url('/textures/gate-clouds-front-v2.png?v=23080') 0 50% / 900px 100% repeat-x !important;
+  background-image: url('/textures/gate-clouds-front-v2.png?v=23080') !important;
+  /* "same for the front but less" — the front stays quick but stops
+     competing with the layer behind the plane, which is now the hero. */
+  opacity: .16 !important;
   pointer-events: none !important;
   z-index: 3 !important;                       /* ABOVE the aircraft */
   animation: g8SkyFront 14s linear infinite !important;
@@ -10613,9 +10660,9 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg::after 
   position: absolute !important;
   left: 0 !important; right: auto !important;
   width: calc(100% + 760px) !important;
-  top: -30% !important; bottom: -30% !important;   /* taller than the slot: it sweeps the whole frame */
-  background: url('/textures/gate-clouds-rush-v2.png?v=23079') 0 50% / 760px 100% repeat-x !important;
-  opacity: .26 !important;
+  top: -35% !important; bottom: -35% !important;   /* overshoots the (now full-height) parent so it sweeps edge to edge */
+  background: url('/textures/gate-clouds-rush-v2.png?v=23080') 0 50% / 760px 100% repeat-x !important;
+  opacity: .13 !important;
   pointer-events: none !important;
   animation: g8SkyRush 6.5s linear infinite !important;
   animation-delay: var(--g8-rush-delay, 0s) !important;
