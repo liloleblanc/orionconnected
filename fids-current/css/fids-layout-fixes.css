@@ -9884,8 +9884,13 @@ html body:not(#_):not(#_) .g8-board-body .g8-board-col .g8-board-lane {
    contrast on the bake: DL 4.54:1, WS 3.05:1 on the sweep itself with the
    text field above it darker). */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-dl-scallops.jpg?v=23028');
-  --plate-base: #0a1a33;
+  /* v23088 — Nick's red/blue curved ribbon layers, replacing the scallops.
+     Measured luma 12..117 across the bake, so the default WHITE ink lands at
+     4.56:1 worst case — essentially identical to the scallop plate it
+     replaces (4.54:1) and still over the 4.5:1 body-text bar. Dark ink would
+     be 0.98:1 here, so the white default is not optional on this artwork. */
+  --plate-tex: url('/textures/plate-dl-ribbons.jpg?v=23088');
+  --plate-base: #101b30;
   --plate-blend: normal;
 }
 /* WestJet: Nick's arc artwork ('one is porter other is werstjet') — the
@@ -9935,11 +9940,16 @@ html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airli
   --plate-ok: #34d399;  --plate-warn: #fbbf24;
   --plate-bad: #f87171;  --plate-info: #93c5fd;
 }
-/* American: Nick's red/blue chevrons on silver-white ('use this for
-   american'). Bright plate — dark ink, darkened status colours. */
+/* American: Nick's steel-blue gradient (v23088), replacing the chevrons.
+   The plate is no longer near-white but it is still LIGHT — measured luma
+   130..200, which puts white ink at 1.65:1 (unusable) and the existing dark
+   #101820 ink at 5.30:1. So the dark-ink treatment and the darkened status
+   colours below stay exactly as they were; only --plate-base moves, from the
+   old silver #E8EAEE to the artwork's own mid blue, so any uncovered edge
+   matches instead of flashing white. */
 html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-aa-fusion.jpg?v=23034');
-  --plate-base: #E8EAEE;
+  --plate-tex: url('/textures/plate-aa-gradient.jpg?v=23088');
+  --plate-base: #7BA5BE;
   --plate-blend: normal;
   --plate-ink: #101820;
   --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
