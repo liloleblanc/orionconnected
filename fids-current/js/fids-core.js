@@ -18318,9 +18318,12 @@ function _acSkyPhaseApply() {
   try {
     if (!document.body || !document.body.classList.contains('gate-acsky')) return;
     var t = Date.now() / 1000;
+    // Durations MUST match the CSS keyframes exactly, or the negative delay
+    // lands the layer at the wrong point in its cycle and the rebuild shows a
+    // visible jump. v23078 durations: g8SkyBack 260s, g8SkyMid 130s,
+    // g8SkyFront 60s, g8AcFloat 9s.
     var pairs = [
-      ['.v2-rc-shelf-illus .v2-rc-aircraft-img', 9], // float, matches g8AcFloat
-      ['.v2-rc-shelf-illus > #gateCloudsFg',  90]    // drift, matches g8FgDrift
+      ['.v2-rc-shelf-illus .v2-rc-aircraft-img', 9]   // float, matches g8AcFloat
     ];
     for (var i = 0; i < pairs.length; i++) {
       var el = document.querySelector(pairs[i][0]);
@@ -18329,6 +18332,24 @@ function _acSkyPhaseApply() {
       el.style.animationDelay = '-' + (t % pairs[i][1]).toFixed(2) + 's';
       if (el.dataset) el.dataset.skyPhased = '1';
     }
+    // The three sky layers CANNOT be phased through el.style.animationDelay.
+    // Each one's CSS uses the `animation` SHORTHAND with !important, which
+    // resets animation-delay to 0s at !important weight — and an inline style
+    // carries no !important, so it loses. (Measured: the back plate reported
+    // animationDelay '0s' with the inline style set, while the mid layer,
+    // which already used a custom property, correctly reported '-41.01s'.
+    // The v23056 foreground had the same shorthand, so its phase anchoring
+    // was silently dead too.) One custom property per layer, set on the SHELF
+    // so all three inherit it, is what actually lands.
+    try {
+      var _shelfEl = document.querySelector('.v2-rc-shelf-illus');
+      if (_shelfEl && _shelfEl.isConnected && !(_shelfEl.dataset && _shelfEl.dataset.skyPhased === '1')) {
+        _shelfEl.style.setProperty('--g8-back-delay',  '-' + (t % 260).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-mid-delay',   '-' + (t % 130).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %  60).toFixed(2) + 's');
+        if (_shelfEl.dataset) _shelfEl.dataset.skyPhased = '1';
+      }
+    } catch (e4) {}
     // v23063 — the sky clip is a TIMELAPSE, so at 1x its clouds boil past far
     // faster than anything at cruise (Nick: 'not going at the right speed').
     // Quarter speed reads as real weather rather than a fast-forward.
@@ -18354,7 +18375,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23077';
+var FIDS_BUILD_TAG = 'v23078';
 (function(){
   try {
     function _addTag(){

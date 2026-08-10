@@ -10475,3 +10475,151 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   width: calc(100% + 620px) !important;
   animation: g8FgDrift2 120s linear infinite !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v23078 — THREE-LAYER SKY (Nick: "some in front some in back surprise me")
+   Still flag-only: nothing here exists without ?acsky=1.
+
+   The v23056-v23073 attempts all failed the same way, and the cause was never
+   the artwork. They drove the scene from VIDEO — a timelapse whose clouds
+   boiled past at the wrong speed, drifted the wrong way relative to the nose,
+   and fought the layer above it ("seems like the airplane is on a conveyor
+   belt, some things move some things the wrong way"). Chasing that with
+   playbackRate, direction flips and seven foreground treatments never fixed
+   it, because two independently-moving footage layers over one aircraft can
+   never agree on a single wind.
+
+   This is the inversion: THE SOURCE IS COMPLETELY STILL. Nick's sky4/Sky3/
+   sky5 clips measure 0.09-0.14 mean frame-to-frame luma change against
+   Sky1's 2.018 — they are plates, not footage. So all three layers are single
+   baked images, and every pixel of motion comes from one CSS transform per
+   layer. Nothing can drift the wrong way, because nothing in the images
+   drifts at all; the only motion is the one we author.
+
+   Three speeds make the depth (far is slow, near is fast):
+       back  1000px tile / 260s  =  3.8 px/s
+       mid    700px tile / 130s  =  5.4 px/s
+       front  900px tile /  60s  = 15.0 px/s
+
+   Each layer slides by EXACTLY one tile width, and every tile is mirror-
+   tiled ([image | hflip(image)]), so the wrap lands on an identical column
+   and the loop is invisible by construction. The sources were trimmed 8px on
+   every edge before mirroring — the encoder leaves a dirty last column, and
+   mirroring doubled it into a bright vertical stripe down the whole shelf.
+
+   The cloud cut-outs are keyed on the RED channel, not luma: blue sky sits at
+   red 60-110 and white cloud at 220-255, so a continuous ramp separates them
+   while keeping soft edges. A hard threshold (lumakey) turned the same
+   cumulus into flat grey paper islands. Alpha is then feathered to zero top
+   and bottom so no layer shows a rectangular edge.
+
+   COST: three images, zero video. The whole scene is GPU-composited
+   transforms, so it adds no decode work to the streaming box — which matters,
+   because two 1080p encoders on four shared cores is what took the streams
+   down in the first place.
+
+   Direction follows the existing rule: the world moves OPPOSITE the nose.
+   nose RIGHT -> layers LEFT (normal) | nose LEFT -> layers RIGHT (reverse).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes g8SkyBack  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
+@keyframes g8SkyMid   { from { transform: translate3d(0,0,0); } to { transform: translate3d(-700px,0,0); } }
+@keyframes g8SkyFront { from { transform: translate3d(0,0,0); } to { transform: translate3d(-900px,0,0); } }
+
+/* ── BACK: the still plate, drifting slowest ─────────────────────────────── */
+html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
+  display: block !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important; top: 0 !important; bottom: 0 !important;
+  width: calc(100% + 1000px) !important;      /* one tile of slack to slide into */
+  background: url('/textures/gate-sky-back-v2.jpg?v=23078') 0 50% / 1000px 100% repeat-x !important;
+  opacity: 1 !important;
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+  z-index: 0 !important;
+  animation: g8SkyBack 260s linear infinite !important;
+  /* The `animation` SHORTHAND resets delay and direction, and it is
+     !important — so an inline el.style.animationDelay loses to it outright,
+     and so does any lower-specificity direction rule. (The v23056 foreground
+     had the same shape, which means its phase anchoring never actually
+     applied.) Both therefore come in as inherited custom properties, declared
+     AFTER the shorthand: JS can set --g8-*-delay on the shelf, and the facing
+     class sets --g8-dir, with no specificity fight in either case. */
+  animation-delay: var(--g8-back-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* ── MID: cumulus BEHIND the aircraft. A ::after inside #gateCloudsBg, so it
+   inherits that element's stacking context and cannot rise above the plane —
+   no extra markup, and no way for it to end up in front by accident. It sits
+   low in the frame, where a cruising aircraft's cloud deck belongs. ─────── */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 700px) !important;
+  top: 34% !important; bottom: -12% !important;
+  background: url('/textures/gate-clouds-mid-v2.png?v=23078') 0 50% / 700px 100% repeat-x !important;
+  opacity: .62 !important;
+  pointer-events: none !important;
+  animation: g8SkyMid 130s linear infinite !important;
+  /* A pseudo-element has no .style, so the wall-clock phase anchoring cannot
+     set animation-delay on it directly. It reads the delay from a custom
+     property on its host instead, which JS CAN set — without this the mid
+     layer alone would snap back to the top of its loop on every telemetry
+     rebuild while the other two carried on. */
+  animation-delay: var(--g8-mid-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* ── FRONT: a near-field wisp OVER the aircraft. Deliberately faint and low —
+   it crosses the belly and never the tail or the wordmark. The previous
+   attempts put full-size cumulus here, which at 436x156 is the same scale as
+   the plane, so "foreground" just became "something parked on the aircraft".
+   Squashed and blurred, it reads as speed instead of clutter. ───────────── */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  display: block !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 900px) !important;
+  top: 58% !important; bottom: -16% !important;
+  background: url('/textures/gate-clouds-front-v2.png?v=23078') 0 50% / 900px 100% repeat-x !important;
+  background-image: url('/textures/gate-clouds-front-v2.png?v=23078') !important;
+  opacity: .30 !important;
+  pointer-events: none !important;
+  z-index: 3 !important;                       /* ABOVE the aircraft */
+  animation: g8SkyFront 60s linear infinite !important;
+  animation-delay: var(--g8-front-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* The world moves opposite the nose — same convention as v23063, but declared
+   ONCE on the shelf as an inherited custom property. Targeting the three
+   layers directly did not work: the back-plate rule also matches through
+   `.gad-map-col-v2`, which is more specific, so an !important direction rule
+   at lower specificity lost and every layer drifted the wrong way on a
+   left-facing aircraft. A custom property inherits instead of competing. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus {
+  --g8-dir: reverse;                           /* default: nose LEFT -> world RIGHT */
+}
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right {
+  --g8-dir: normal;                            /* nose RIGHT -> world LEFT */
+}
+
+/* The video path stays dead — this scene needs no decode. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateFgVid { display: none !important; }
+
+/* Flag off: none of it exists. */
+html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg,
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after,
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+    animation: none !important;
+  }
+}
