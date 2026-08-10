@@ -10535,7 +10535,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   position: absolute !important;
   left: 0 !important; right: auto !important; top: 0 !important; bottom: 0 !important;
   width: calc(100% + 1000px) !important;      /* one tile of slack to slide into */
-  background: url('/textures/gate-sky-back-v2.jpg?v=23081') 0 50% / 1000px 100% repeat-x !important;
+  background: url('/textures/gate-sky-back-v2.jpg?v=23082') 0 50% / 1000px 100% repeat-x !important;
   opacity: 1 !important;
   -webkit-mask-image: none !important;
           mask-image: none !important;
@@ -10563,7 +10563,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 700px) !important;
   top: 34% !important; bottom: -12% !important;
-  background: url('/textures/gate-clouds-mid-v2.png?v=23081') 0 50% / 700px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-mid-v2.png?v=23082') 0 50% / 700px 100% repeat-x !important;
   opacity: .62 !important;
   pointer-events: none !important;
   animation: g8SkyMid 130s linear infinite !important;
@@ -10603,7 +10603,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::before
   left: 0 !important; right: auto !important;
   width: calc(100% + 1800px) !important;
   top: 8% !important; bottom: -18% !important;   /* crosses the belly, not the tail */
-  background: url('/textures/gate-clouds-fast-v2.png?v=23081') 0 50% / 1800px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-fast-v2.png?v=23082') 0 50% / 1800px 100% repeat-x !important;
   opacity: .5 !important;
   pointer-events: none !important;
   animation: g8SkyFast 16s linear infinite !important;
@@ -10632,8 +10632,8 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
      and bottom, so at full height its dense part lands across the fuselage,
      which is where a near-field cloud belongs. */
   top: 0 !important; bottom: 0 !important;
-  background: url('/textures/gate-clouds-front-v2.png?v=23081') 0 50% / 900px 100% repeat-x !important;
-  background-image: url('/textures/gate-clouds-front-v2.png?v=23081') !important;
+  background: url('/textures/gate-clouds-front-v2.png?v=23082') 0 50% / 900px 100% repeat-x !important;
+  background-image: url('/textures/gate-clouds-front-v2.png?v=23082') !important;
   /* "same for the front but less" — the front stays quick but stops
      competing with the layer behind the plane, which is now the hero. */
   opacity: .16 !important;
@@ -10661,7 +10661,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 760px) !important;
   top: -35% !important; bottom: -35% !important;   /* overshoots the (now full-height) parent so it sweeps edge to edge */
-  background: url('/textures/gate-clouds-rush-v2.png?v=23081') 0 50% / 760px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-rush-v2.png?v=23082') 0 50% / 760px 100% repeat-x !important;
   opacity: .13 !important;
   pointer-events: none !important;
   animation: g8SkyRush 6.5s linear infinite !important;
@@ -10695,4 +10695,24 @@ html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display
   html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
     animation: none !important;
   }
+}
+
+/* v23082 — CARTOON VARIANT of the fast layer, behind ?acsky=1&sky=cartoon.
+   Nick sent a flat vector sky clip and, shown it keyed over the approved
+   background, said "I dont think it looks bad at all". Rather than guess which
+   look wins, both ship and one URL flag swaps between them.
+
+   ONLY the fast layer's artwork changes. The back plate, the cumulus band, the
+   front wisp and the rush smear are byte-identical in both modes, so this is a
+   like-for-like comparison of the one layer in question, not two builds.
+
+   No clump-cropping here and so no square problem to solve: the cartoon clouds
+   are already discrete shapes with their own clean edges, which is exactly the
+   sparsity the photographic version has to fake by cutting windows out of a
+   continuous row. Coverage 13.0% against the photo version's 6.8% — denser,
+   but every mass is a whole cloud. Flat vector art also survives the 640->1800
+   upscale that would leave photographic cloud mushy. */
+html body.gate-acsky.gate-acsky-cartoon:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::before {
+  background-image: url('/textures/gate-clouds-fast-cartoon.png?v=23082') !important;
+  opacity: .55 !important;
 }

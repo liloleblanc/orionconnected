@@ -13005,6 +13005,14 @@ const gView = document.getElementById('gateView');
       try {
         var _skyOn = /[?&]acsky=1\b/.test(window.location.search);
         document.body.classList.toggle('gate-acsky', _skyOn);
+        // ?sky=cartoon swaps ONLY the fast layer's artwork — photographic
+        // cumulus clumps vs Nick's flat vector clouds. Everything else (the
+        // approved back plate, the cumulus band, front and rush) is identical
+        // either way, so this is a like-for-like A/B on the one layer in
+        // question rather than two divergent builds. Matched to a literal, so
+        // nothing from the URL reaches the DOM.
+        document.body.classList.toggle('gate-acsky-cartoon',
+          _skyOn && /[?&]sky=cartoon\b/.test(window.location.search));
         if (_skyOn && typeof _acSkyPhaseStart === 'function') _acSkyPhaseStart();
       } catch (e) {}
       // Defensive: nuke any stranded floating "DESTINATION City" label from
@@ -18377,7 +18385,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23081';
+var FIDS_BUILD_TAG = 'v23082';
 (function(){
   try {
     function _addTag(){
