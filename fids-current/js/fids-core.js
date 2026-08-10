@@ -18434,7 +18434,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23105';
+var FIDS_BUILD_TAG = 'v23106';
 (function(){
   try {
     function _addTag(){
@@ -26585,8 +26585,12 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
       _estOv.push(L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
-      // Center on plane during cruise
-      if (p >= 0.12 && p <= 0.88) {
+      // v23106 — center on the plane through DESCENT AND APPROACH too, not
+      // just cruise: the phase table above frames the DESTINATION for
+      // p>0.88 while the estimated plane still paints miles away — the
+      // camera 'zooms out and the aircraft does not show on the map'
+      // (Nick). The field stays in frame anyway once the plane is close.
+      if (p >= 0.12 && p < 0.995) {
         gateMap.setView(planePos, zoom);
       }
   }setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},500);}
@@ -27462,11 +27466,21 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
             if (v.hdg === null || v.hdg === undefined) { v.hdg = _tgt; }
             else {
               var _dh = ((_tgt - v.hdg + 540) % 360) - 180;   // shortest way round
-              var _lim = _MAX_SLEW_DPS * (_dtMs / 1000);
-              if (!(_lim > 0)) _lim = 0.05;
-              if (_dh >  _lim) _dh =  _lim;
-              if (_dh < -_lim) _dh = -_lim;
-              v.hdg = (v.hdg + _dh + 360) % 360;
+              // v23106 — SNAP a large discrepancy, slew a small one (Nick's
+              // video: the plane joins pointing north and pans round for
+              // seconds before lining up with its own track). On this route
+              // the real per-frame turn is a fraction of a degree; a gap
+              // beyond 35° is a bad seed or a surface re-join, not a turn —
+              // holding the wrong nose while the slew catches up is exactly
+              // the 'flying sideways' Nick keeps filming.
+              if (Math.abs(_dh) > 35) { v.hdg = _tgt; }
+              else {
+                var _lim = _MAX_SLEW_DPS * (_dtMs / 1000);
+                if (!(_lim > 0)) _lim = 0.05;
+                if (_dh >  _lim) _dh =  _lim;
+                if (_dh < -_lim) _dh = -_lim;
+                v.hdg = (v.hdg + _dh + 360) % 360;
+              }
             }
             // translate FIRST, then rotate: the offset is in map space, so it
             // must not be spun by the aircraft's own heading.
@@ -27488,7 +27502,12 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
           if (vmap.getSize && vmap.latLngToContainerPoint && vmap.getZoom) {
             var _sz = vmap.getSize();
             var _pt = vmap.latLngToContainerPoint([lat, lng]);
-            if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.42 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.42) {
+            // v23106 — 42% let the plane sit in the corner for most of a
+            // bigcraft dwell (measured: 19s of drift barely reached 12%
+            // off-centre; the video shows it sliding right off the frame
+            // before a pan ever fired). 28% keeps it in the middle of the
+            // picture while still letting it visibly cross the map.
+            if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.28 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.28) {
               try {
                 // v22748 — PAN SMOOTHLY: a slow eased pan (it fires only every
                 // few minutes) reads as a camera following the aircraft.
@@ -27497,7 +27516,10 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
                   vmap._acFollowing = 1;
                   (function (m) { setTimeout(function () { try { m._acFollowing = 0; } catch (e) {} }, 2600); })(vmap);
                   if (typeof vmap.panInside === 'function') {
-                    vmap.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)],
+                    // v23106 — pan the plane back toward the MIDDLE (34%
+                    // padding), not just barely on-screen: with the old 16%
+                    // the plane hugged the frame edge between pans.
+                    vmap.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.34), Math.round(_sz.y * 0.34)],
                       animate: true, duration: 2.2, easeLinearity: 0.2 });
                   } else {
                     vmap.panTo([lat, lng], { animate: true, duration: 2.2, easeLinearity: 0.2 });
@@ -35715,6 +35737,23 @@ function _gcAddArc(map, from, to, opts) {
   return a;
 }
 function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('bigCraftMap');if(!mb)return;
+  // v23106 — THE LIVE VIEW OUTRANKS THE ESTIMATE on the big surface too
+  // (mini got this in v23104). A slide repaint that lands during a poll gap
+  // has no live fix, falls into this estimated builder, and used to
+  // remove() a big map whose glide was flying happily — the plane vanished
+  // and the camera snapped to the phase view mid-approach.
+  try {
+    var _bgO = _lookupAirport(org), _bgD = _lookupAirport(dst);
+    var _bgv = (typeof _gateGlide !== 'undefined' && _gateGlide.views && _gateGlide.views.big) || null;
+    if (_bgv && _bgv.marker && window._bigCraftMap && _bgv.marker._map === window._bigCraftMap &&
+        window._bigCraftMap.getContainer && window._bigCraftMap.getContainer() === mb &&
+        typeof _gateGlideSameLeg === 'function' && _bgO && _bgD &&
+        ((_gateGlideSameLeg(_gateGlide.o, _bgO) && _gateGlideSameLeg(_gateGlide.d, _bgD)) ||
+         (_gateGlideSameLeg(_gateGlide.o, _bgD) && _gateGlideSameLeg(_gateGlide.d, _bgO)))) {
+      try { console.log('[BIGMAP-EST] live glide healthy on this leg — estimate redraw skipped'); } catch (e0) {}
+      return;
+    }
+  } catch (eBG) {}
   // Resolve airport coords. If either is unknown, kick off async lookup
   // and retry — the map will populate as soon as both coords arrive.
   var o=_lookupAirport(org), d=_lookupAirport(dst);
@@ -35794,8 +35833,11 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
       L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
-      // Center on plane during cruise
-      if (p >= 0.12 && p <= 0.88) {
+      // v23106 — same as the mini est map: keep the camera ON THE PLANE
+      // through descent/approach; the destination-framed phases left the
+      // estimated plane off-screen (Nick's 31s clip: static camera on the
+      // field, plane sliding out of the corner).
+      if (p >= 0.12 && p < 0.995) {
         window._bigCraftMap.setView(planePos, zoom);
       }
   }setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[14,14],maxZoom:11});}catch(e){}}}},500);}
@@ -35819,6 +35861,37 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
     });
     return;
   }
+  // v23106 — RE-ANCHOR THE BIG SURFACE IN PLACE, same contract as the mini
+  // (v23102). The slide repaint re-enters this builder every few seconds;
+  // each entry used to remove() the whole big map and rebuild marker, arcs
+  // and camera from scratch — a visible hitch per repaint on the surface
+  // Nick films ('still choppy'). While the running glide already owns a
+  // healthy marker on THIS map for THIS leg, hand it the fresh fix and
+  // keep every DOM node alive.
+  try {
+    var _bmv = (typeof _gateGlide !== 'undefined' && _gateGlide.views && _gateGlide.views.big) || null;
+    if (_bmv && _bmv.marker && window._bigCraftMap && _bmv.marker._map === window._bigCraftMap &&
+        window._bigCraftMap.getContainer && window._bigCraftMap.getContainer() === mb &&
+        _bmv.a1 && _bmv.a2 &&
+        typeof _gateGlideSameLeg === 'function' &&
+        _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
+      try {
+        var _bcpt = window._bigCraftMap.latLngToContainerPoint([planeLat, planeLng]);
+        var _bcsz = window._bigCraftMap.getSize();
+        if (_bcpt.x < 0 || _bcpt.y < 0 || _bcpt.x > _bcsz.x || _bcpt.y > _bcsz.y) {
+          window._bigCraftMap.flyTo([planeLat, planeLng], window._bigCraftMap.getZoom(), { duration: 1.6 });
+        }
+      } catch (eBC1) {}
+      var _bcIpSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
+        : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
+        : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 && (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
+        : 0;
+      try { console.log('[BIGMAP] in-place re-anchor @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'glideKts', _bcIpSpd); } catch (eBC2) {}
+      _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bmv.marker, _bmv.a1, _bmv.a2, _bcIpSpd, dst);
+      setTimeout(function(){ if (window._bigCraftMap) window._bigCraftMap.invalidateSize(); }, 500);
+      return;
+    }
+  } catch (eBIP) {}
   try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
   window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
   _bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);
