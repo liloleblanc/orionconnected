@@ -2870,6 +2870,22 @@ async function _gateNumbersPoll() {
     // the block above. Callsign is the fallback. One request per 60 s poll.
     var _adsb = null;
     try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt); } catch (e) {}
+    // v23103 — THE TAIL IS NOT THE FLIGHT. Registration matching finds the
+    // airframe wherever it is — including mid-air on its PREVIOUS leg.
+    // Nick's gate 4: AC1984 hadn't left Toronto (departs ~90 min later) yet
+    // the panel showed 926 kph / 37,000 ft — the tail's real state on
+    // another flight, displayed as this one's. Until this leg's departure
+    // window opens, the fix is not THIS flight's telemetry: discard it and
+    // clear anything a previous poll wrote.
+    try {
+      var _depGateT = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : null;
+      if (_adsb && _depGateT && Date.now() < _depGateT - 20 * 60000 && _adsb.onGround !== true) {
+        try { console.log('[ADSB]', flt, 'tail is airborne on a PREVIOUS leg (this one departs later) — fix ignored'); } catch (e) {}
+        _adsb = null;
+        try { _gateTelemSetReal(null, null); } catch (e) {}
+        try { window._gateInboundLivePos = null; } catch (e) {}
+      }
+    } catch (e) {}
     if (_adsb) {
       if (typeof _adsb.alt === 'number') inb._liveAlt = _adsb.alt;
       if (typeof _adsb.spd === 'number') inb._liveSpd = _adsb.spd;
@@ -18418,7 +18434,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23102';
+var FIDS_BUILD_TAG = 'v23103';
 (function(){
   try {
     function _addTag(){
@@ -26381,7 +26397,21 @@ function _wxRadarAdd(m) {
       // z8+ returns the identical 1370-byte card — Nick's PB923 big map
       // was papered with them). Leaflet upscales the z7 tiles instead;
       // radar blobs survive upscaling with no visible loss.
-      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { opacity: 0.55, zIndex: 2, maxNativeZoom: 7, maxZoom: 19 }).addTo(m);
+      // v23103 — the radar draws in its own blurred pane (Nick: 'I would
+      // like to see those squares tighter together I dont want to see
+      // squares actually'). RainViewer's low-zoom tiles are coarse blocks;
+      // blurring each tile img separately would show seams at tile edges,
+      // so the PANE is blurred as one composite — the blocks melt into
+      // soft weather shapes at every zoom.
+      try {
+        if (!m.getPane('wxradar')) {
+          m.createPane('wxradar');
+          var _wp = m.getPane('wxradar');
+          _wp.className += ' g8-wx-radar-pane';
+          _wp.style.zIndex = 350;
+        }
+      } catch (ep) {}
+      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.5, maxNativeZoom: 7, maxZoom: 19 }).addTo(m);
     } catch (e) {}
   };
   if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }
