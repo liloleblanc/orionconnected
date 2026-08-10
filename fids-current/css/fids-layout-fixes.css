@@ -10524,9 +10524,9 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
 
 @keyframes g8SkyBack  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
 @keyframes g8SkyMid   { from { transform: translate3d(0,0,0); } to { transform: translate3d(-700px,0,0); } }
-@keyframes g8SkyFront { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1600px,0,0); } }
+@keyframes g8SkyFront { from { transform: translate3d(0,0,0); } to { transform: translate3d(-2600px,0,0); } }
 @keyframes g8SkyRush  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-760px,0,0); } }
-@keyframes g8SkyFast  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-600px,0,0); } }
+@keyframes g8SkyFast  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
 
 /* ── BACK: the still plate, drifting slowest ─────────────────────────────── */
 html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
@@ -10535,7 +10535,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   position: absolute !important;
   left: 0 !important; right: auto !important; top: 0 !important; bottom: 0 !important;
   width: calc(100% + 1000px) !important;      /* one tile of slack to slide into */
-  background: url('/textures/gate-sky-back-v2.jpg?v=23085') 0 50% / 1000px 100% repeat-x !important;
+  background: url('/textures/gate-sky-back-v2.jpg?v=23086') 0 50% / 1000px 100% repeat-x !important;
   opacity: 1 !important;
   -webkit-mask-image: none !important;
           mask-image: none !important;
@@ -10563,7 +10563,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 700px) !important;
   top: 34% !important; bottom: -12% !important;
-  background: url('/textures/gate-clouds-mid-v2.png?v=23085') 0 50% / 700px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-mid-v2.png?v=23086') 0 50% / 700px 100% repeat-x !important;
   opacity: .72 !important;
   pointer-events: none !important;
   animation: g8SkyMid 130s linear infinite !important;
@@ -10601,7 +10601,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::before
   content: '' !important;
   position: absolute !important;
   left: 0 !important; right: auto !important;
-  width: calc(100% + 600px) !important;
+  width: calc(100% + 1000px) !important;
   /* v23083 — Nick: "for it to be in the background and or front but more
      distance to it so smaller and then have the fast moving real clouds in
      the front". So the two artworks swap jobs. The cartoon clouds become
@@ -10609,11 +10609,11 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::before
      roughly a third the size and therefore reads as far away, drifting at
      12px/s — barely faster than the back plate. Distance is sold by size and
      slowness together; either one alone just looks like a small fast cloud. */
-  top: 12% !important; bottom: 26% !important;   /* sits near the horizon band */
-  background: url('/textures/gate-clouds-fast-cartoon.png?v=23085') 0 50% / 600px 100% repeat-x !important;
+  top: 34% !important; bottom: 4% !important;    /* dropped below the fuselage line */
+  background: url('/textures/gate-clouds-fast-cartoon.png?v=23086') 0 50% / 1000px 100% repeat-x !important;
   opacity: .58 !important;
   pointer-events: none !important;
-  animation: g8SkyFast 50s linear infinite !important;
+  animation: g8SkyFast 26s linear infinite !important;
   animation-delay: var(--g8-fast-delay, 0s) !important;
   animation-direction: var(--g8-dir, reverse) !important;
   will-change: transform;
@@ -10628,7 +10628,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   display: block !important;
   position: absolute !important;
   left: 0 !important; right: auto !important;
-  width: calc(100% + 1600px) !important;
+  width: calc(100% + 2600px) !important;
   /* FULL height. This was top:58% — inherited from the abandoned v23073
      treatment, which deliberately retreated the foreground to a low band near
      the bottom edge. Carried over unexamined, it put BOTH front layers
@@ -10650,14 +10650,14 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
      the "fast moving real clouds in the front" Nick asked for. The elliptical
      feathering that fixed the square edges is what makes them usable here:
      they cross the fuselage constantly, so a hard edge would be obvious. */
-  background: url('/textures/gate-clouds-fast-v2.png?v=23085') 0 50% / 1600px 100% repeat-x !important;
-  background-image: url('/textures/gate-clouds-fast-v2.png?v=23085') !important;
+  background: url('/textures/gate-clouds-fast-v2.png?v=23086') 0 50% / 2600px 100% repeat-x !important;
+  background-image: url('/textures/gate-clouds-fast-v2.png?v=23086') !important;
   /* "same for the front but less" — the front stays quick but stops
      competing with the layer behind the plane, which is now the hero. */
   opacity: .64 !important;
   pointer-events: none !important;
   z-index: 3 !important;                       /* ABOVE the aircraft */
-  animation: g8SkyFront 8s linear infinite !important;
+  animation: g8SkyFront 13s linear infinite !important;
   animation-delay: var(--g8-front-delay, 0s) !important;
   animation-direction: var(--g8-dir, reverse) !important;
   will-change: transform;
@@ -10679,7 +10679,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 760px) !important;
   top: -35% !important; bottom: -35% !important;   /* overshoots the (now full-height) parent so it sweeps edge to edge */
-  background: url('/textures/gate-clouds-rush-v2.png?v=23085') 0 50% / 760px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-rush-v2.png?v=23086') 0 50% / 760px 100% repeat-x !important;
   opacity: .28 !important;
   pointer-events: none !important;
   animation: g8SkyRush 5s linear infinite !important;
