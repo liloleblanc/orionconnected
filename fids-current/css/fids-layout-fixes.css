@@ -9900,9 +9900,15 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
      its confusing". Purple was the problem, not the red: at hue 245 deg it sat
      close enough to red to fight it. Pushed to 228 deg — Delta navy — which
      lets the red read as an accent instead of a competitor, and white text
-     improves as a side effect (4.05:1 -> 5.20:1). The drawn diagonals also
-     came down: 7px/2.4px at full strength to 5px/1.6px at .40/.85, after "oh
-     it does actually but its too much".
+     improves as a side effect (4.05:1 -> 5.20:1).
+
+     v23097 — the drawn red diagonals are GONE ("i thnink you need to remove
+     the diagonal red"). They were toned twice first — 7px/2.4px at full
+     strength, then 5px/1.6px at .40/.85 — and toning was the wrong instinct
+     both times: with the divider rules already carrying Delta's red, a second
+     red at a different angle was always going to compete with them however
+     faint it got. The plate is now the navy artwork alone, and the only red on
+     a Delta gate is the one line per row.
 
      v23092 — "is it psosible to add a tint of blue to delta" then "a bit more
      blue", and "make sure that the lines are red on both sides".
@@ -9917,7 +9923,7 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
      Final composite: mean luminance 0.026, white text 13.77:1 on average and
      3.70:1 at the single brightest point, with 0.00% of the plate under the
      3.0:1 large-text bar. */
-  --plate-tex: url('/textures/plate-dl-navy.jpg?v=23096');
+  --plate-tex: url('/textures/plate-dl-navy.jpg?v=23097');
   --plate-base: #141D50;
   --plate-blend: normal;
 }
@@ -9940,7 +9946,7 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
    about 18:1 worst case against the old bake's 4.66:1. The previous
    plate-pd-silk.jpg is left in place as a one-line rollback. */
 html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-pd-lines.jpg?v=23096');
+  --plate-tex: url('/textures/plate-pd-lines.jpg?v=23097');
   --plate-base: #0c1626;
   --plate-blend: normal;
 }
@@ -9976,7 +9982,7 @@ html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airli
    old silver #E8EAEE to the artwork's own mid blue, so any uncovered edge
    matches instead of flashing white. */
 html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-aa-gradient.jpg?v=23096');
+  --plate-tex: url('/textures/plate-aa-gradient.jpg?v=23097');
   --plate-base: #7BA5BE;
   --plate-blend: normal;
   /* v23089 — Nick: "Can we put the tet for American a blue sky blue almost
@@ -10588,7 +10594,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   position: absolute !important;
   left: 0 !important; right: auto !important; top: 0 !important; bottom: 0 !important;
   width: calc(100% + 1000px) !important;      /* one tile of slack to slide into */
-  background: url('/textures/gate-sky-back-v2.jpg?v=23096') 0 50% / 1000px 100% repeat-x !important;
+  background: url('/textures/gate-sky-back-v2.jpg?v=23097') 0 50% / 1000px 100% repeat-x !important;
   opacity: 1 !important;
   -webkit-mask-image: none !important;
           mask-image: none !important;
@@ -10616,7 +10622,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 700px) !important;
   top: 34% !important; bottom: -12% !important;
-  background: url('/textures/gate-clouds-mid-v2.png?v=23096') 0 50% / 700px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-mid-v2.png?v=23097') 0 50% / 700px 100% repeat-x !important;
   opacity: .72 !important;
   pointer-events: none !important;
   animation: g8SkyMid 130s linear infinite !important;
@@ -10663,7 +10669,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::before
      12px/s — barely faster than the back plate. Distance is sold by size and
      slowness together; either one alone just looks like a small fast cloud. */
   top: 34% !important; bottom: 4% !important;    /* dropped below the fuselage line */
-  background: url('/textures/gate-clouds-fast-cartoon.png?v=23096') 0 50% / 1000px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-fast-cartoon.png?v=23097') 0 50% / 1000px 100% repeat-x !important;
   opacity: .58 !important;
   pointer-events: none !important;
   animation: g8SkyFast 26s linear infinite !important;
@@ -10703,8 +10709,8 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
      the "fast moving real clouds in the front" Nick asked for. The elliptical
      feathering that fixed the square edges is what makes them usable here:
      they cross the fuselage constantly, so a hard edge would be obvious. */
-  background: url('/textures/gate-clouds-fast-v2.png?v=23096') 0 50% / 2600px 100% repeat-x !important;
-  background-image: url('/textures/gate-clouds-fast-v2.png?v=23096') !important;
+  background: url('/textures/gate-clouds-fast-v2.png?v=23097') 0 50% / 2600px 100% repeat-x !important;
+  background-image: url('/textures/gate-clouds-fast-v2.png?v=23097') !important;
   /* "same for the front but less" — the front stays quick but stops
      competing with the layer behind the plane, which is now the hero. */
   opacity: .64 !important;
@@ -10732,7 +10738,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 760px) !important;
   top: -35% !important; bottom: -35% !important;   /* overshoots the (now full-height) parent so it sweeps edge to edge */
-  background: url('/textures/gate-clouds-rush-v2.png?v=23096') 0 50% / 760px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-rush-v2.png?v=23097') 0 50% / 760px 100% repeat-x !important;
   opacity: .28 !important;
   pointer-events: none !important;
   animation: g8SkyRush 5s linear infinite !important;

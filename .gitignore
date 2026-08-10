@@ -8,3 +8,9 @@
 # macOS Finder metadata
 .DS_Store
 **/.DS_Store
+
+# tooling installed ad hoc during sessions — never part of the site
+node_modules/
+package.json
+package-lock.json
+probe.js
