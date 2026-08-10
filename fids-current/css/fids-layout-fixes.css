@@ -10475,3 +10475,243 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   width: calc(100% + 620px) !important;
   animation: g8FgDrift2 120s linear infinite !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v23078 — THREE-LAYER SKY (Nick: "some in front some in back surprise me")
+   Still flag-only: nothing here exists without ?acsky=1.
+
+   The v23056-v23073 attempts all failed the same way, and the cause was never
+   the artwork. They drove the scene from VIDEO — a timelapse whose clouds
+   boiled past at the wrong speed, drifted the wrong way relative to the nose,
+   and fought the layer above it ("seems like the airplane is on a conveyor
+   belt, some things move some things the wrong way"). Chasing that with
+   playbackRate, direction flips and seven foreground treatments never fixed
+   it, because two independently-moving footage layers over one aircraft can
+   never agree on a single wind.
+
+   This is the inversion: THE SOURCE IS COMPLETELY STILL. Nick's sky4/Sky3/
+   sky5 clips measure 0.09-0.14 mean frame-to-frame luma change against
+   Sky1's 2.018 — they are plates, not footage. So all three layers are single
+   baked images, and every pixel of motion comes from one CSS transform per
+   layer. Nothing can drift the wrong way, because nothing in the images
+   drifts at all; the only motion is the one we author.
+
+   Three speeds make the depth (far is slow, near is fast):
+       back  1000px tile / 260s  =  3.8 px/s
+       mid    700px tile / 130s  =  5.4 px/s
+       front  900px tile /  60s  = 15.0 px/s
+
+   Each layer slides by EXACTLY one tile width, and every tile is mirror-
+   tiled ([image | hflip(image)]), so the wrap lands on an identical column
+   and the loop is invisible by construction. The sources were trimmed 8px on
+   every edge before mirroring — the encoder leaves a dirty last column, and
+   mirroring doubled it into a bright vertical stripe down the whole shelf.
+
+   The cloud cut-outs are keyed on the RED channel, not luma: blue sky sits at
+   red 60-110 and white cloud at 220-255, so a continuous ramp separates them
+   while keeping soft edges. A hard threshold (lumakey) turned the same
+   cumulus into flat grey paper islands. Alpha is then feathered to zero top
+   and bottom so no layer shows a rectangular edge.
+
+   COST: three images, zero video. The whole scene is GPU-composited
+   transforms, so it adds no decode work to the streaming box — which matters,
+   because two 1080p encoders on four shared cores is what took the streams
+   down in the first place.
+
+   Direction follows the existing rule: the world moves OPPOSITE the nose.
+   nose RIGHT -> layers LEFT (normal) | nose LEFT -> layers RIGHT (reverse).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes g8SkyBack  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
+@keyframes g8SkyMid   { from { transform: translate3d(0,0,0); } to { transform: translate3d(-700px,0,0); } }
+@keyframes g8SkyFront { from { transform: translate3d(0,0,0); } to { transform: translate3d(-2600px,0,0); } }
+@keyframes g8SkyRush  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-760px,0,0); } }
+@keyframes g8SkyFast  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
+
+/* ── BACK: the still plate, drifting slowest ─────────────────────────────── */
+html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
+  display: block !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important; top: 0 !important; bottom: 0 !important;
+  width: calc(100% + 1000px) !important;      /* one tile of slack to slide into */
+  background: url('/textures/gate-sky-back-v2.jpg?v=23086') 0 50% / 1000px 100% repeat-x !important;
+  opacity: 1 !important;
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+  z-index: 0 !important;
+  animation: g8SkyBack 260s linear infinite !important;
+  /* The `animation` SHORTHAND resets delay and direction, and it is
+     !important — so an inline el.style.animationDelay loses to it outright,
+     and so does any lower-specificity direction rule. (The v23056 foreground
+     had the same shape, which means its phase anchoring never actually
+     applied.) Both therefore come in as inherited custom properties, declared
+     AFTER the shorthand: JS can set --g8-*-delay on the shelf, and the facing
+     class sets --g8-dir, with no specificity fight in either case. */
+  animation-delay: var(--g8-back-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* ── MID: cumulus BEHIND the aircraft. A ::after inside #gateCloudsBg, so it
+   inherits that element's stacking context and cannot rise above the plane —
+   no extra markup, and no way for it to end up in front by accident. It sits
+   low in the frame, where a cruising aircraft's cloud deck belongs. ─────── */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 700px) !important;
+  top: 34% !important; bottom: -12% !important;
+  background: url('/textures/gate-clouds-mid-v2.png?v=23086') 0 50% / 700px 100% repeat-x !important;
+  opacity: .72 !important;
+  pointer-events: none !important;
+  animation: g8SkyMid 130s linear infinite !important;
+  /* A pseudo-element has no .style, so the wall-clock phase anchoring cannot
+     set animation-delay on it directly. It reads the delay from a custom
+     property on its host instead, which JS CAN set — without this the mid
+     layer alone would snap back to the top of its loop on every telemetry
+     rebuild while the other two carried on. */
+  animation-delay: var(--g8-mid-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* ── FAST: sparse close cloud passing BEHIND the aircraft. ────────────────
+   Nick, in order: "You need a layer behind the plane those are close clouds
+   and theyre fast" ... "the fast layer is not a lot its just a few" ... "the
+   background now is perfect dont change it just add a bit".
+
+   So this is ADDED, not carved out of what is already there. The back plate
+   and the soft cumulus band are the background he signed off on and are
+   untouched; this is a third element in the same stacking context —
+   #gateCloudsBg::before, sibling to the ::after band — which means it is
+   behind the aircraft by construction, with no new markup.
+
+   SPARSE by design. The band asset is a continuous row of cloud, which at
+   112px/s would be a wall of white. This tile is 1800px of mostly empty sky
+   with three isolated clumps scattered across it: measured mean alpha
+   coverage 21.5/255, about 8%. Through a 436px shelf you see roughly a
+   quarter of the tile, so usually one clump is crossing and sometimes none —
+   "just a few".
+
+   16s over a 1800px tile = 112px/s, a 4-second crossing. That is the fastest
+   thing on the shelf and it is what carries the sense of speed. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 1000px) !important;
+  /* v23083 — Nick: "for it to be in the background and or front but more
+     distance to it so smaller and then have the fast moving real clouds in
+     the front". So the two artworks swap jobs. The cartoon clouds become
+     DISTANT scenery: a 600px tile instead of 1800px, which makes each cloud
+     roughly a third the size and therefore reads as far away, drifting at
+     12px/s — barely faster than the back plate. Distance is sold by size and
+     slowness together; either one alone just looks like a small fast cloud. */
+  top: 34% !important; bottom: 4% !important;    /* dropped below the fuselage line */
+  background: url('/textures/gate-clouds-fast-cartoon.png?v=23086') 0 50% / 1000px 100% repeat-x !important;
+  opacity: .58 !important;
+  pointer-events: none !important;
+  animation: g8SkyFast 26s linear infinite !important;
+  animation-delay: var(--g8-fast-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* ── FRONT: a near-field wisp OVER the aircraft. Deliberately faint and low —
+   it crosses the belly and never the tail or the wordmark. The previous
+   attempts put full-size cumulus here, which at 436x156 is the same scale as
+   the plane, so "foreground" just became "something parked on the aircraft".
+   Squashed and blurred, it reads as speed instead of clutter. ───────────── */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+  display: block !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 2600px) !important;
+  /* FULL height. This was top:58% — inherited from the abandoned v23073
+     treatment, which deliberately retreated the foreground to a low band near
+     the bottom edge. Carried over unexamined, it put BOTH front layers
+     entirely below the fuselage: measured, the shelf spans y 760-914 and this
+     element sat at y 852-938, so every "front" cloud passed UNDER the
+     aircraft. Nick: "I dont see any clouds in front the plane though" — there
+     were none; they were beneath it. The artwork's own alpha is feathered top
+     and bottom, so at full height its dense part lands across the fuselage,
+     which is where a near-field cloud belongs. */
+  /* v23085 — Nick: "put them closer to the plane and faster put the clouds
+     in front brigher". Closer is two things at once: the masses grow (1300px
+     tile -> 1600px, so each cloud is ~23% larger) and the band tightens onto
+     the fuselage instead of spanning the full slot, which puts the dense part
+     of the feathered alpha right across the aircraft rather than spread over
+     empty sky above and below it. */
+  top: 4% !important; bottom: 4% !important;
+  /* v23083 — this was a soft blurred wisp; it is now the real photographic
+     cloud clumps, in front and quick (1300px tile / 12s = 108px/s), which is
+     the "fast moving real clouds in the front" Nick asked for. The elliptical
+     feathering that fixed the square edges is what makes them usable here:
+     they cross the fuselage constantly, so a hard edge would be obvious. */
+  background: url('/textures/gate-clouds-fast-v2.png?v=23086') 0 50% / 2600px 100% repeat-x !important;
+  background-image: url('/textures/gate-clouds-fast-v2.png?v=23086') !important;
+  /* "same for the front but less" — the front stays quick but stops
+     competing with the layer behind the plane, which is now the hero. */
+  opacity: .64 !important;
+  pointer-events: none !important;
+  z-index: 3 !important;                       /* ABOVE the aircraft */
+  animation: g8SkyFront 13s linear infinite !important;
+  animation-delay: var(--g8-front-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* ── RUSH: the nearest layer, whipping past. Nick: "you dont get the full
+   effect until you have the fast moving clouds in front."
+   He is right — 15px/s is not a near field, it is just another background.
+   This runs at 117px/s, so a streak crosses the whole 436px shelf in under
+   four seconds, and THAT is what reads as speed.
+   At that rate a crisp cloud strobes, so the artwork is smeared hard along X
+   (28px box blur horizontally, 4px vertically) before it is mirror-tiled. The
+   smear IS the motion blur a real near-field cloud would have; it also means
+   there is no recognisable shape to notice repeating.
+   Another ::after, so still no new markup and still nothing to decode. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 760px) !important;
+  top: -35% !important; bottom: -35% !important;   /* overshoots the (now full-height) parent so it sweeps edge to edge */
+  background: url('/textures/gate-clouds-rush-v2.png?v=23086') 0 50% / 760px 100% repeat-x !important;
+  opacity: .28 !important;
+  pointer-events: none !important;
+  animation: g8SkyRush 5s linear infinite !important;
+  animation-delay: var(--g8-rush-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* The world moves opposite the nose — same convention as v23063, but declared
+   ONCE on the shelf as an inherited custom property. Targeting the three
+   layers directly did not work: the back-plate rule also matches through
+   `.gad-map-col-v2`, which is more specific, so an !important direction rule
+   at lower specificity lost and every layer drifted the wrong way on a
+   left-facing aircraft. A custom property inherits instead of competing. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus {
+  --g8-dir: reverse;                           /* default: nose LEFT -> world RIGHT */
+}
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-right {
+  --g8-dir: normal;                            /* nose RIGHT -> world LEFT */
+}
+
+/* The video path stays dead — this scene needs no decode. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateFgVid { display: none !important; }
+
+/* Flag off: none of it exists. */
+html body:not(.gate-acsky) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg,
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after,
+  html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
+    animation: none !important;
+  }
+}
+
