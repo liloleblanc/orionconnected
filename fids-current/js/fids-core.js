@@ -18418,7 +18418,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23100';
+var FIDS_BUILD_TAG = 'v23101';
 (function(){
   try {
     function _addTag(){
@@ -35016,6 +35016,24 @@ function _bigCraftTeardown() {
   try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
   try { if (window._bigCraftOverlay) { window._bigCraftOverlay.remove(); window._bigCraftOverlay = null; } } catch (e) {}
   try { document.querySelectorAll('.g8-bigcraft-active').forEach(function (w) { w.classList.remove('g8-bigcraft-active'); }); } catch (e) {}
+  // v23101 — REBUILD THE MINI MAP THE MOMENT IT IS REVEALED. The bigcraft
+  // class hides #gateMapBox for the slide's whole dwell; if a gate re-render
+  // emptied the box during that window, the hidden-container guard (v23099)
+  // rightly deferred the rebuild — but nothing ran it at the reveal, so the
+  // rail sat on the emblem hold for up to a full 10s tick and then popped in
+  // re-framed (Nick's video: map 'cutting out' through the hotel ad, then
+  // 'bobbling' back). Reset the change guards and run the map tick now, on
+  // the visible box; the v23099 route-key reuse makes it cheap when the map
+  // survived and instant-from-cache when it didn't.
+  try {
+    var _mb = document.getElementById('gateMapBox');
+    if (_mb && (!_mb.firstChild || !gateMap || !gateMap.getContainer || gateMap.getContainer() !== _mb)) {
+      window._lastMapPosKey = null; window._lastMapProgKey = null;
+    }
+    if (typeof window._gateMapRetry === 'function') {
+      setTimeout(function () { try { window._gateMapRetry(); } catch (e2) {} }, 120);
+    }
+  } catch (e) {}
 }
 function _renderBigCraft(el, ctx) {
   // Nick: ONE panel that GROWS into the screen — never the same content
