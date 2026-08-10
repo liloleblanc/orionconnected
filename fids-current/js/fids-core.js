@@ -13005,14 +13005,6 @@ const gView = document.getElementById('gateView');
       try {
         var _skyOn = /[?&]acsky=1\b/.test(window.location.search);
         document.body.classList.toggle('gate-acsky', _skyOn);
-        // ?sky=cartoon swaps ONLY the fast layer's artwork — photographic
-        // cumulus clumps vs Nick's flat vector clouds. Everything else (the
-        // approved back plate, the cumulus band, front and rush) is identical
-        // either way, so this is a like-for-like A/B on the one layer in
-        // question rather than two divergent builds. Matched to a literal, so
-        // nothing from the URL reaches the DOM.
-        document.body.classList.toggle('gate-acsky-cartoon',
-          _skyOn && /[?&]sky=cartoon\b/.test(window.location.search));
         if (_skyOn && typeof _acSkyPhaseStart === 'function') _acSkyPhaseStart();
       } catch (e) {}
       // Defensive: nuke any stranded floating "DESTINATION City" label from
@@ -18329,7 +18321,7 @@ function _acSkyPhaseApply() {
     // Durations MUST match the CSS keyframes exactly, or the negative delay
     // lands the layer at the wrong point in its cycle and the rebuild shows a
     // visible jump. v23080 durations: g8SkyBack 260s, g8SkyMid 130s,
-    // g8SkyFast 16s, g8SkyFront 14s, g8SkyRush 6.5s, g8AcFloat 9s.
+    // g8SkyFast 50s, g8SkyFront 12s, g8SkyRush 6.5s, g8AcFloat 9s.
     var pairs = [
       ['.v2-rc-shelf-illus .v2-rc-aircraft-img', 9]   // float, matches g8AcFloat
     ];
@@ -18354,8 +18346,8 @@ function _acSkyPhaseApply() {
       if (_shelfEl && _shelfEl.isConnected && !(_shelfEl.dataset && _shelfEl.dataset.skyPhased === '1')) {
         _shelfEl.style.setProperty('--g8-back-delay',  '-' + (t % 260).toFixed(2) + 's');
         _shelfEl.style.setProperty('--g8-mid-delay',   '-' + (t % 130).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-fast-delay',  '-' + (t %  16).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %  14).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-fast-delay',  '-' + (t %  50).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %  12).toFixed(2) + 's');
         _shelfEl.style.setProperty('--g8-rush-delay',  '-' + (t % 6.5).toFixed(2) + 's');
         if (_shelfEl.dataset) _shelfEl.dataset.skyPhased = '1';
       }
@@ -18385,7 +18377,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23082';
+var FIDS_BUILD_TAG = 'v23084';
 (function(){
   try {
     function _addTag(){
