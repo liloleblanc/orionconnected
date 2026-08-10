@@ -9964,8 +9964,16 @@ html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airli
      deg) and full saturation and walking the lightness down, #002745 is the
      BLUEST value that still clears the 4.5:1 body-text bar, at 4.51:1. So it
      is literally the orb colour, as dark as it has to be and no darker.
-     For reference along the same hue: #004375 is 3.02:1 — large text only. */
-  --plate-ink: #002745;
+     v23090 — "a bit lighter please on the blue its almost black". Moved to
+     #004375, still the same 206 deg hue at full saturation. This is the
+     LIGHTEST value on that hue that stays readable: 3.02:1, clearing the
+     3.0:1 large-text bar the flight number, destination and times sit at,
+     while giving up the 4.5:1 body bar the small labels would prefer. The
+     white text-shadow below is doing real work at this level — do not remove
+     it. One step lighter (#004A7E) is 2.72:1 and fails even the large-text
+     bar, so there is no headroom left: a brighter blue needs a DARKER plate,
+     not a lighter ink. */
+  --plate-ink: #004375;
   --plate-ink-sh: 0 1px 0 rgba(255, 255, 255, 0.55);
   --plate-ok: #056f4a;  --plate-warn: #B45309;
   --plate-bad: #a51d1d;  --plate-info: #1b4bb8;
