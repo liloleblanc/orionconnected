@@ -18321,7 +18321,7 @@ function _acSkyPhaseApply() {
     // Durations MUST match the CSS keyframes exactly, or the negative delay
     // lands the layer at the wrong point in its cycle and the rebuild shows a
     // visible jump. v23080 durations: g8SkyBack 260s, g8SkyMid 130s,
-    // g8SkyFast 50s, g8SkyFront 12s, g8SkyRush 6.5s, g8AcFloat 9s.
+    // g8SkyFast 50s, g8SkyFront 8s, g8SkyRush 5s, g8AcFloat 9s.
     var pairs = [
       ['.v2-rc-shelf-illus .v2-rc-aircraft-img', 9]   // float, matches g8AcFloat
     ];
@@ -18347,8 +18347,8 @@ function _acSkyPhaseApply() {
         _shelfEl.style.setProperty('--g8-back-delay',  '-' + (t % 260).toFixed(2) + 's');
         _shelfEl.style.setProperty('--g8-mid-delay',   '-' + (t % 130).toFixed(2) + 's');
         _shelfEl.style.setProperty('--g8-fast-delay',  '-' + (t %  50).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %  12).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-rush-delay',  '-' + (t % 6.5).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %   8).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-rush-delay',  '-' + (t %   5).toFixed(2) + 's');
         if (_shelfEl.dataset) _shelfEl.dataset.skyPhased = '1';
       }
     } catch (e4) {}
@@ -18377,7 +18377,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23084';
+var FIDS_BUILD_TAG = 'v23085';
 (function(){
   try {
     function _addTag(){
