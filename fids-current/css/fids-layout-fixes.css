@@ -10280,9 +10280,13 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-fi-val.v2-rc-opby-val 
      image — and the browser resolves that circle to 0x0. The mark was
      white, loaded, and zero pixels tall. An explicit height breaks the
      circle; the absolute cap keeps a wide wordmark from crowding the row. */
-  height: clamp(40px, 5.6vh, 78px) !important;
-  max-height: clamp(40px, 5.6vh, 78px) !important;
-  max-width: 320px !important;
+  /* v23100 — sized to sit BESIDE the stacked two-line label (Nick's layout)
+     rather than under a centered one: two label lines are ~52px tall, and
+     the absolute width cap leaves room for the widest operator wordmark
+     next to 'Operated By:' in a 350px shelf. */
+  height: clamp(32px, 4.6vh, 60px) !important;
+  max-height: clamp(32px, 4.6vh, 60px) !important;
+  max-width: 200px !important;
   width: auto !important;
   object-fit: contain !important;
 }
@@ -10293,13 +10297,26 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-val {
   flex: 0 0 auto !important;
   min-width: 0 !important;
 }
-/* And the row STACKS: the nowrap bilingual label alone is ~330px of the
-   350px shelf, so label and wordmark side by side can only overflow (the
-   centering then clips BOTH ends — 'erated By | Exploité par'). Label above,
-   operator mark below, both centered; nothing can clip. */
+/* v23100 — Nick's layout: the two language labels STACK on the left, each
+   on its own line with a colon, and the operator mark sits to the RIGHT of
+   the pair. Stacked lines are half the width of the old inline
+   'Operated By | Exploité par', so label and mark fit side by side without
+   the clipping that killed the inline row. */
 html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby {
-  flex-direction: column !important;
-  gap: clamp(3px, 0.45vh, 7px) !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: clamp(8px, 1vw, 18px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby-lbl {
+  text-align: left !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-lline {
+  display: block !important;
+  line-height: 1.3 !important;
+  white-space: nowrap !important;
 }
 /* The name fallback when there is no logo file. */
 html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-acb-opby-logo,
