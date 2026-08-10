@@ -10902,3 +10902,9 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
    that is still drawing itself. */
 #bigCraftMap { transition: opacity 0.45s ease; }
 #bigCraftMap.bc-loading { opacity: 0 !important; }
+
+/* ── v23103 — RADAR WITHOUT THE SQUARES (Nick: 'i dont want to see squares
+   actually'). RainViewer low-zoom tiles are coarse blocks; the whole radar
+   pane is blurred as one composite so they read as soft weather. Blurring
+   per-tile would seam at tile edges — the pane blur cannot. */
+.g8-wx-radar-pane { filter: blur(3px) saturate(0.92); }
