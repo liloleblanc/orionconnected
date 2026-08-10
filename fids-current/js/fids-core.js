@@ -2917,7 +2917,7 @@ try {
         // race, hidden-container rebuild — must not sit empty. Reset the
         // pos/prog guards so this very tick rebuilds it plane-and-all.
         try {
-          if (typeof gateMap !== 'undefined' && gateMap && gateMap._fidsRouteKey
+          if (typeof gateMap !== 'undefined' && gateMap && gateMap._fidsLive === true
               && (!window._gatePlaneMk || !window._gatePlaneMk._map)) {
             console.log('[MAP-WATCHDOG] live map lost its plane marker — forcing rebuild');
             window._lastMapPosKey = null; window._lastMapProgKey = null;
@@ -13072,6 +13072,12 @@ const gView = document.getElementById('gateView');
       function tryInitMap() {
         var mb = document.getElementById('gateMapBox');
         if (!mb) return;
+        // v23099 — never rebuild while the box is HIDDEN (the bigcraft ad
+        // slide display:nones it for its whole dwell). A map built in a 0x0
+        // box loads ~2 tiles, and the reveal then tears it down AGAIN — the
+        // measured 2.5s of solid grey in Nick's video. Skip: the tick after
+        // the reveal rebuilds once, on a visible box.
+        if (mb.offsetParent === null) return;
         // Ensure the map container is visible and has dimensions
         if (mb.offsetHeight < 10) {
           mb.style.minHeight = '250px';
@@ -26377,8 +26383,28 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     });
     return;
   }
-  try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(gateMap);
-  _gateMapWatchResize(mb);
+  // v23099 — REUSE the map instance on the same route (the discipline the
+  // live path already had). Every call used to remove() + recreate map and
+  // tile layer, so each gate re-render repainted from Leaflet's grey ground
+  // — measured 2.5s of solid grey per rebuild in Nick's video. The key is
+  // shared with initGateMapLive, so est↔live handoffs ALSO keep the tiles;
+  // only the tracked overlays are swapped.
+  var _estKey = String(org).toUpperCase() + '>' + String(dst).toUpperCase();
+  var _estReuse = false;
+  try {
+    _estReuse = !!(gateMap && gateMap._fidsRouteKey === _estKey &&
+      gateMap.getContainer && gateMap.getContainer() === mb && mb.isConnected);
+  } catch (e) { _estReuse = false; }
+  if (_estReuse) {
+    try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
+    gateMap._fidsOverlays = [];
+  } else {
+    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(gateMap);
+    gateMap._fidsRouteKey = _estKey;
+    gateMap._fidsOverlays = [];
+    _gateMapWatchResize(mb);
+  }
+  gateMap._fidsLive = false;   // estimate map — the marker watchdog must not police it
   // Calculate total route distance for zoom scaling
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
   // Base cruise zoom depends on route length (short=7, medium=6, long=5, transcon=4)
@@ -26426,7 +26452,8 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
     } catch(e) { /* fallback to setView above */ }
   }
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var _estOv=(gateMap._fidsOverlays=gateMap._fidsOverlays||[]);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(arc)_estOv.push(arc); }_estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -26436,7 +26463,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+      _estOv.push(L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
       // Center on plane during cruise
       if (p >= 0.12 && p <= 0.88) {
         gateMap.setView(planePos, zoom);
@@ -26544,7 +26571,10 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 
   // REUSE the map when the route is unchanged — tearing it down reloaded the
   // heavy satellite tiles each time (Nick: 'restarting/glitchy').
-  var _liveRouteKey = 'live|' + String(org).toUpperCase() + '>' + String(dst).toUpperCase();
+  // v23099 — same key namespace as initGateMap (no 'live|' prefix), so an
+  // est→live handoff on the same route REUSES the instance and its tiles.
+  // Liveness for the marker watchdog is the separate _fidsLive flag.
+  var _liveRouteKey = String(org).toUpperCase() + '>' + String(dst).toUpperCase();
   var _liveReuse = false;
   var _liveDetached = false;
   try {
@@ -26586,7 +26616,10 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     // Hysteresis: even on a real move, never let one tick jump more than a
     // single zoom level. A 2-level jump is what reads as the map 'going'.
     if (zoom !== _lv.zoom) zoom = _lv.zoom + (zoom > _lv.zoom ? 1 : -1);
-    if (_liveReuse && _dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return; // nothing changed → skip
+    // Skip only when the instance being reused is already LIVE — a reused
+    // EST instance (same key namespace since v23099) still carries the
+    // static overlays and must fall through to the redraw below.
+    if (_liveReuse && gateMap._fidsLive === true && _dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return; // nothing changed → skip
   }
   if (_liveReuse) {
     try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
@@ -26599,6 +26632,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     gateMap._fidsOverlays = [];
     _gateMapWatchResize(mb);
   }
+  gateMap._fidsLive = true;   // live map — the marker watchdog polices this one
   gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
   try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e) {}
   gateMap.setView([planeLat, planeLng], zoom);
@@ -26637,6 +26671,12 @@ function initGateMapLive(org,dst,planeLat,planeLng){
              // plane sat still while the numbers ticked). Last resort: a nominal
              // cruise so an airborne plane always drifts rather than freezing.
              : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
+             // v23099 — last resort: the speed the LAST glide anchored with
+             // (fresh within 5 min). Every cache above can transiently read 0
+             // across an ad-slide swap; the aircraft did not stop flying.
+             // The on-ground guard below still zeroes a taxiing aircraft.
+             : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 &&
+                (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
              : 0;
   // ── v22891 — SURROUNDING TRAFFIC ────────────────────────────────────
   // Every other aircraft in the immediate area, drawn small and muted so the
@@ -26787,6 +26827,12 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 // BEHIND where the big map had it — the loop had been killed and the re-seed
 // used an older fix), and a surface going away just detaches its view.
 var _gateGlide = { timer: null, raf: null, gen: 0, views: {} };
+// Same-leg test for the resume/join paths: endpoints within ~55m count as the
+// same airport. Bit-exact float equality silently failed on re-resolved
+// coordinate arrays, and every silent failure became a raw-fix re-seed.
+function _gateGlideSameLeg(A, B) {
+  return !!(A && B && Math.abs(A[0] - B[0]) < 5e-4 && Math.abs(A[1] - B[1]) < 5e-4);
+}
 
 function _stopGateMapGlide() {
   // Bumping the generation is what actually stops things — clearing the
@@ -26903,8 +26949,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     // caches), join it as a view so both markers show the one truth.
     try {
       if (_gateGlide.raf && _gateGlide.o && _gateGlide.d &&
-          _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
-          _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1]) {
+          _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
         _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
           hdg: null, seg: 0, arcIdx: -1, last: 0 };
         try { console.log('[GLIDE] no live speed — joined the running glide as "' + _viewKey + '"'); } catch (e) {}
@@ -26933,6 +26978,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _nmA = _gcNm(o, _pl), _nmB = _gcNm(_pl, d);
   var totalNm = _nmA + _nmB;
   if (!(totalNm > 0)) return;
+  // Remember the last real speed — a rebuild whose caches read 0 for an
+  // airborne aircraft can dead-reckon on this instead of freezing (v23099).
+  try { _gateGlide.lastSpd = speedKts; _gateGlide.lastSpdAt = Date.now(); } catch (e) {}
   // Split the vertices IN PROPORTION TO LEG LENGTH. Progress p advances at
   // speed/totalNm — i.e. p is assumed uniform in DISTANCE — but the frame
   // loop walks the vertex ARRAY, so p is really uniform in vertex index. A
@@ -27015,9 +27063,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _errP = 0;                       // route-fraction still owed to truth
   var _sameLeg = false;
   try {
-    if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
-        _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
-        _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1]) {
+    // v23099 — leg identity by PROXIMITY, not bit-exact float equality: the
+    // endpoint arrays are re-resolved on every rebuild, and any recompute or
+    // alternate lookup path that moved them a hair silently disabled this
+    // resume — the marker was then planted on the raw-fix seed, which is the
+    // measured backwards jump. And a FRESHNESS bound: resuming p from a glide
+    // that stopped rendering minutes ago would teleport the marker forward.
+    var _fresh = !(_gateGlide.at > 0) || (Date.now() - _gateGlide.at) < 90000;
+    if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' && _fresh &&
+        _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
       _sameLeg = true;
       var _dp = _seedP - _gateGlide.p;
       // Tolerance in NAUTICAL MILES, not route fraction: the route is rebuilt
@@ -27179,6 +27233,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       } else {
         p = _gateGlide.p;
       }
+      _gateGlide.at = Date.now();   // freshness stamp for the resume test
 
       // v22952 — position by DISTANCE along the route (turf.along), not by
       // vertex index. Walk the cumulative table to the segment containing
@@ -35537,7 +35592,12 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // was a one-shot paint per slide — visibly frozen (Nick: 'no movement on
   // the aircraft').
   try {
-    var _bcGlSpd = (window._gateInbound && typeof window._gateInbound._liveSpd === 'number') ? window._gateInbound._liveSpd : 0;
+    var _bcGlSpd = (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0) ? window._gateInbound._liveSpd
+      // v23099 — same last-anchored-speed fallback as the mini map; this
+      // cache reading 0 is why the big marker was a one-shot frozen paint.
+      : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 &&
+         (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
+      : 0;
     // v23099 — call even at speed 0: the engine now JOINS a running same-leg
     // glide as a second view (the two surfaces resolve speed from different
     // caches, so one often has it while the other reads 0 — that was half of
