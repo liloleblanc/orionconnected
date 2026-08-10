@@ -2497,6 +2497,19 @@ function _gateTelemModel() {
   var T = window._gateTelemAnim;
   if (T.realAlt === null && T.realSpd === null) return null;
   var spd = T.realSpd, alt = T.realAlt;
+  // v23100 — ON THE GROUND THE TREND IS DEAD. After touchdown the bridge
+  // kept carrying the last measured altitude rate (a baro→ground blip can
+  // even measure a CLIMB) while the speed honoured the real zero — Nick's
+  // video: 'Speed 0 kph / Altitude 1,576 ft' and RISING, at the gate. On
+  // the ground the digits are the real anchor with no trend: speed as
+  // reported, altitude 0 — the displayed number eases down and stays.
+  try {
+    var _gp = window._gateInboundLivePos;
+    if ((_gp && _gp.onGround === true) ||
+        (window._gateInbound && window._gateInbound._liveOnGround === true)) {
+      return { spd: (typeof spd === 'number' ? spd : 0), alt: 0 };
+    }
+  } catch (e) {}
   // TREND BRIDGE — the map glide's rule applied to the digits (Nick:
   // 'calculate approx, then adjust with the pings'). Between real fixes,
   // continue the RATE measured between the last two fixes, so a plane on
@@ -8576,7 +8589,12 @@ function _buildV2MapCol(ctx, vars) {
       // v22958 — follows `langs` (Nick: 'Also operated by I think'). _lang2b
       // was the FIFTH airport-keyed second-language picker found this session.
       var _frF8 = (typeof frFirstAirport === 'function') && frFirstAirport(vars.iata);
-      var _opByLbl = _gateLbl('operatedBy', _frF8, function (w) { return w; }, ' <span class="v2-rc-fi-sep">|</span> ');
+      // v23100 — Nick's layout: each language on its OWN line with a colon,
+      // the operator mark to the right of the pair —
+      //   Airbus A319 | C-FZUG
+      //   Operated By:      [LOGO]
+      //   Opéré par:
+      var _opByLbl = _gateLbl('operatedBy', _frF8, function (w) { return '<span class="v2-rc-opby-lline">' + w + ':</span>'; }, '');
       // Bottom shelf: STACKED bilingual label (EN over FR) beside the value —
       //   Operated By: / Exploté Par:  [LOGO]    Aircraft: / Appareil:  A319 | reg
       // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
@@ -9583,7 +9601,12 @@ function uxgGateHtml(ctx) {
         + (_fcAcFam
           ? _acLanesBodyHtml(_fcExpress ? '3 • 4' : '3 • 4 • 5 • 6')
           : airlineCode === 'PD'
-          ? _pdLanesBodyHtml_gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ')
+          /* v23100 — was `_pdLanesBodyHtml_gateLbl('all', …)`: a botched edit
+             glued the two identifiers together, so Porter FINAL CALL threw a
+             ReferenceError and the whole gate render died (Nick: 'gate 3 in
+             moncton does not load'). The rows value is the 'All | Tous'
+             label _fcNext already computed for PD above. */
+          ? _pdLanesBodyHtml(_fcNext)
           : '<div class="g8-board-body">'
             + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
             + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
@@ -18395,7 +18418,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23099';
+var FIDS_BUILD_TAG = 'v23100';
 (function(){
   try {
     function _addTag(){
@@ -26304,6 +26327,31 @@ function _gateMapTileLayer() {
   return t;
 }
 
+// v23100 — THE BIG MAP ENTERS FINISHED, NOT GREY (Nick: 'look at the map and
+// how it comes in that is terrible'). The bigcraft slide rebuilds its map
+// from nothing at every entry, so the audience watched Leaflet's grey ground
+// fill in tile by tile. The container now starts hidden (bc-loading) and
+// fades in over ~0.45s once the tile layer reports every visible tile
+// painted. Fail-open: the class is cleared by a 2.5s fallback no matter
+// what, and a path that never calls this helper simply shows the map the
+// old way — the fade can only ever be cosmetic, never a blank screen.
+function _bcFadeInWhenReady(tileLayer) {
+  try {
+    var el = document.getElementById('bigCraftMap');
+    if (!el) return tileLayer;
+    el.classList.add('bc-loading');
+    var _shown = false;
+    var show = function () {
+      if (_shown) return;
+      _shown = true;
+      try { el.classList.remove('bc-loading'); } catch (e) {}
+    };
+    tileLayer.once('load', function () { requestAnimationFrame(show); });
+    setTimeout(show, 2500);
+  } catch (e) {}
+  return tileLayer;
+}
+
 // v218.99.9 — overlay flags previously came from gate-theme; system removed.
 // v22712 — weather flips ON: the route map carries live precipitation
 // radar (backlog #27, Nick: 'Did you want to start working on weather on
@@ -32081,6 +32129,21 @@ function _map3dFlightCtx(allowEstimated) {
       var dTot = _hav(oC, dC);
       if (dTot > 1 && (dOrg + dDst) > Math.max(dTot * 1.25, dTot + 160)) fixOk = false;
     }
+    // v23100 — THE OUTBOUND LEG MUST NOT ADOPT THE INBOUND AIRCRAFT'S FIX.
+    // The outbound fallback's tail is usually the same physical airframe as
+    // the still-flying inbound turn (C-FZUG was AC1656 inbound AND AC1617
+    // outbound), and a fix on approach sits inside the outbound corridor
+    // because it is close to the route's ORIGIN. The big map then drew the
+    // outbound route with the glyph riding the inbound aircraft — nose
+    // toward the outbound city, dot tracking the approach, re-stepped on
+    // every fix (Nick's video: 'the plane is flying sideways', TPA gate,
+    // nose to Montreal while descending from Toronto). Until the outbound
+    // has actually departed, its leg has no live position by definition.
+    if (fixOk && _legOut) {
+      var _outDeparted = /depart|airborne|enroute|en-route|active/i.test(String(inb.status || '')) ||
+        (inb._sortTs && Date.now() > inb._sortTs + 15 * 60000);
+      if (!_outDeparted) fixOk = false;
+    }
     if (fixOk) {
       var dOrg2 = _hav(oC, [liveLat, liveLng]);
       var dDst2 = _hav([liveLat, liveLng], dC);
@@ -35524,7 +35587,8 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
     });
     return;
   }
-  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(window._bigCraftMap);
+  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);
+  /* (fade helper defined once, below at its first use in source order) */
   // Calculate total route distance for zoom scaling
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
   // Base cruise zoom depends on route length (short=7, medium=6, long=5, transcon=4)
@@ -35610,7 +35674,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   }
   try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
   window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
-  _gateMapTileLayer().addTo(window._bigCraftMap);
+  _bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
   var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
