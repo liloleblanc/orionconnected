@@ -31903,7 +31903,17 @@ function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
     if (V['_p_' + k]) return window._regVerdictEverTrue[ek] ? true : null;
     V['_p_' + k] = 1;
     adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev/proxy/flights/reg/' + encodeURIComponent(r) + '/' + day + '?dateLocalRole=Both')
-      .then(function (resp) { return resp && resp.ok ? resp.json() : null; })
+      // v23099 — the proxy answers 204 NO CONTENT for many Canadian regional
+      // tails (measured: C-GJZV, C-GWSZ, C-FSJJ). resp.ok is TRUE on a 204,
+      // and resp.json() on the empty body REJECTS — so the answer fell into
+      // the network-failure catch below, which resolved the verdict without
+      // ever repainting. The reg then sat verified IN MEMORY while the row
+      // stayed blank until an unrelated feed change forced a rebuild — and
+      // the verdict key carries the local day, so the trap re-armed at every
+      // midnight and page load. That is Nick's 'REG doesn't show up anymore'.
+      // An empty body now reads as null → indeterminate → verdict true, down
+      // the SUCCESS path with its repaint.
+      .then(function (resp) { return resp && resp.ok ? resp.json().catch(function () { return null; }) : null; })
       .then(function (arr) {
         var verdict = true;
         if (Array.isArray(arr) && arr.length) {
@@ -31920,10 +31930,23 @@ function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
         } catch (e) {}
         try { console.log('[REGVERIFY]', r, 'flies', f + (f2 ? ' or ' + f2 : ''), 'today?', verdict); } catch (e) {}
         // Either verdict changes what the shelf shows (pending withheld the
-        // tail) — rebuild once so it settles now.
+        // tail) — rebuild once so it settles now. The gate render
+        // short-circuits on an unchanged _gateKey, and that key carries no
+        // verdict state, so the key is cleared to make this rebuild REAL
+        // (it used to be a silent no-op on a quiet gate).
+        try { window._lastGateKey = ''; } catch (e) {}
         try { if (typeof renderDedicatedScreen === 'function') setTimeout(function () { try { renderDedicatedScreen(); } catch (e2) {} }, 0); } catch (e) {}
       })
-      .catch(function () { V[k] = true; delete V['_p_' + k]; });
+      .catch(function () {
+        // Genuine network failure: indeterminate → fail open, and REPAINT —
+        // this branch used to resolve the verdict without ever rebuilding,
+        // leaving a verified tail invisible until something unrelated moved.
+        V[k] = true;
+        delete V['_p_' + k];
+        try { window._regVerdictEverTrue[ek] = 1; } catch (e) {}
+        try { window._lastGateKey = ''; } catch (e) {}
+        try { if (typeof renderDedicatedScreen === 'function') setTimeout(function () { try { renderDedicatedScreen(); } catch (e2) {} }, 0); } catch (e) {}
+      });
     return null;
   } catch (e) { return true; }
 }
