@@ -2917,7 +2917,7 @@ try {
         // race, hidden-container rebuild — must not sit empty. Reset the
         // pos/prog guards so this very tick rebuilds it plane-and-all.
         try {
-          if (typeof gateMap !== 'undefined' && gateMap && gateMap._fidsRouteKey
+          if (typeof gateMap !== 'undefined' && gateMap && gateMap._fidsLive === true
               && (!window._gatePlaneMk || !window._gatePlaneMk._map)) {
             console.log('[MAP-WATCHDOG] live map lost its plane marker — forcing rebuild');
             window._lastMapPosKey = null; window._lastMapProgKey = null;
@@ -7285,7 +7285,10 @@ function _buildV2AircraftCol(ctx, vars) {
       // A REVISED (later) departure means the flight is delayed — reflect that
       // in the status label AND colour even if the raw feed still says
       // "scheduled" (that's why the departure time already shows orange).
-      var _delayedByRev = _depRev;
+      // v23099 — unless the revision is EARLY (g8-rev-early direction marker):
+      // an early flight was being forced into the delayed class, so the left
+      // plate read 'Early | En Avance' in amber beside a green revised time.
+      var _delayedByRev = _depRev && String(_fiDep || '').indexOf('g8-rev-early') === -1;
       if (_delayedByRev) {
         var _rawCls = String(_fiStCls || '').toLowerCase();
         if (_rawCls.indexOf('cancel') === -1 && _rawCls.indexOf('divert') === -1
@@ -8824,7 +8827,11 @@ function uxgGateHtml(ctx) {
           { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
       } catch (e) {}
     }
-    depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised">' + (_to12h(_revDepHHMM) || '\u2014') + '</span>';
+    // v23099 \u2014 the revised time carries the DIRECTION of the change so the
+    // left plates can colour it like the status word (amber late, green
+    // early). Nick: 'the appropriate time has to change colours accordingly'.
+    var _revDirCls = (stKey === 'early') ? ' g8-rev-early' : '';
+    depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised' + _revDirCls + '">' + (_to12h(_revDepHHMM) || '\u2014') + '</span>';
   }
 
   // Arr time display
@@ -8842,7 +8849,7 @@ function uxgGateHtml(ctx) {
           var newArrMins = parseInt(arrParts[0])*60 + parseInt(arrParts[1]) + delayMins;
           var newArrH24 = String(Math.floor(newArrMins/60) % 24).padStart(2,'0');
           var newArrM = String(newArrMins % 60).padStart(2,'0');
-          arrHtml = '<span class="g8-r2-strike">' + _to12h(_cleanArr) + '</span><span class="g8-r2-revised">' + _to12h(newArrH24 + ':' + newArrM) + '</span>';
+          arrHtml = '<span class="g8-r2-strike">' + _to12h(_cleanArr) + '</span><span class="g8-r2-revised' + ((stKey === 'early') ? ' g8-rev-early' : '') + '">' + _to12h(newArrH24 + ':' + newArrM) + '</span>';
         }
       }
     }
@@ -8940,7 +8947,7 @@ function uxgGateHtml(ctx) {
       var origBd = new Date(origBoardTs);
       var origBoardStr = origBd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
       if (origBoardStr !== boardTimeHtml) {
-        boardTimeHtml = '<span class="g8-r2-strike">' + origBoardStr + '</span><span class="g8-r2-revised">' + boardTimeHtml + '</span>';
+        boardTimeHtml = '<span class="g8-r2-strike">' + origBoardStr + '</span><span class="g8-r2-revised' + ((stKey === 'early') ? ' g8-rev-early' : '') + '">' + boardTimeHtml + '</span>';
       }
     }
   }
@@ -13065,6 +13072,12 @@ const gView = document.getElementById('gateView');
       function tryInitMap() {
         var mb = document.getElementById('gateMapBox');
         if (!mb) return;
+        // v23099 — never rebuild while the box is HIDDEN (the bigcraft ad
+        // slide display:nones it for its whole dwell). A map built in a 0x0
+        // box loads ~2 tiles, and the reveal then tears it down AGAIN — the
+        // measured 2.5s of solid grey in Nick's video. Skip: the tick after
+        // the reveal rebuilds once, on a visible box.
+        if (mb.offsetParent === null) return;
         // Ensure the map container is visible and has dimensions
         if (mb.offsetHeight < 10) {
           mb.style.minHeight = '250px';
@@ -18382,7 +18395,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23098';
+var FIDS_BUILD_TAG = 'v23099';
 (function(){
   try {
     function _addTag(){
@@ -21549,7 +21562,17 @@ async function adbFetch(iata, direction) {
     const dir = direction === 'Departure' ? 'dep' : 'arr';
     const mcoUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/mco?direction=${dir}`;
     try {
-      const r = await fetch(mcoUrl);
+      // v23099 — ONE RETRY, SHORT BACKOFF. On a freshly rebooted stream box
+      // localStorage is empty (run.sh still wipes the profile), so a single
+      // dropped request used to blank the board for a whole 5-minute poll
+      // cycle with no error anywhere — Nick: 'MCO is down again'. Measured:
+      // the feed itself is healthy (872 dep / 761 arr, CORS correct); the
+      // board just gave up on the first miss.
+      let r = await fetch(mcoUrl).catch(function () { return null; });
+      if (!r || !r.ok) {
+        await new Promise(function (rs) { setTimeout(rs, 4000); });
+        r = await fetch(mcoUrl);
+      }
       if (r.ok) {
         const json = await r.json();
         let list = direction === 'Departure' ? (json.departures || []) : (json.arrivals || []);
@@ -21674,8 +21697,13 @@ async function adbFetch(iata, direction) {
       if (window._mcoLastGood && window._mcoLastGood[dir]) return window._mcoLastGood[dir];
       try {
         var _ls = JSON.parse(localStorage.getItem('fids_mco_lastgood_' + dir) || 'null');
-        if (_ls && _ls.out && (Date.now() - _ls.ts) < 15 * 60000) {
-          console.warn('[FIDS] MCO: GOAA down — serving localStorage last-good (' + Math.round((Date.now() - _ls.ts) / 1000) + 's old)');
+        // v23099 — the cap was 15 minutes, after which an outage flipped the
+        // board to EMPTY. A stale GOAA list beats a blank public display:
+        // the row pipeline already drops past flights, so a few-hours-old
+        // list still reads correctly, and the GOAA-only rule (never ADB for
+        // the list) is preserved. 3-hour ceiling so a day-old list can't show.
+        if (_ls && _ls.out && (Date.now() - _ls.ts) < 180 * 60000) {
+          console.warn('[FIDS] MCO: GOAA down — serving localStorage last-good (' + Math.round((Date.now() - _ls.ts) / 60000) + 'min old)');
           return _ls.out;
         }
       } catch (e2) {}
@@ -26337,7 +26365,7 @@ function _mapPlaneIcon() {
   } catch (e) {}
   return '/logos/map-plane-jet.png';
 }
-function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;try{if(typeof _stopGateMapGlide==='function')_stopGateMapGlide();}catch(e){}var mb=document.getElementById('gateMapBox');if(!mb)return;
+function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;/* v23099 — this static/estimate map replaces the MINI surface only; detach that view and leave the shared glide running for the big map (the old blanket stop froze the big marker every time the gate re-rendered). */try{if(typeof _gateGlide!=='undefined'&&_gateGlide&&_gateGlide.views)delete _gateGlide.views.mini;}catch(e){}var mb=document.getElementById('gateMapBox');if(!mb)return;
   // Resolve airport coords. If either is unknown, kick off async lookup
   // and retry — the map will populate as soon as both coords arrive.
   var o=_lookupAirport(org), d=_lookupAirport(dst);
@@ -26370,8 +26398,28 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     });
     return;
   }
-  try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(gateMap);
-  _gateMapWatchResize(mb);
+  // v23099 — REUSE the map instance on the same route (the discipline the
+  // live path already had). Every call used to remove() + recreate map and
+  // tile layer, so each gate re-render repainted from Leaflet's grey ground
+  // — measured 2.5s of solid grey per rebuild in Nick's video. The key is
+  // shared with initGateMapLive, so est↔live handoffs ALSO keep the tiles;
+  // only the tracked overlays are swapped.
+  var _estKey = String(org).toUpperCase() + '>' + String(dst).toUpperCase();
+  var _estReuse = false;
+  try {
+    _estReuse = !!(gateMap && gateMap._fidsRouteKey === _estKey &&
+      gateMap.getContainer && gateMap.getContainer() === mb && mb.isConnected);
+  } catch (e) { _estReuse = false; }
+  if (_estReuse) {
+    try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
+    gateMap._fidsOverlays = [];
+  } else {
+    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(gateMap);
+    gateMap._fidsRouteKey = _estKey;
+    gateMap._fidsOverlays = [];
+    _gateMapWatchResize(mb);
+  }
+  gateMap._fidsLive = false;   // estimate map — the marker watchdog must not police it
   // Calculate total route distance for zoom scaling
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
   // Base cruise zoom depends on route length (short=7, medium=6, long=5, transcon=4)
@@ -26419,7 +26467,8 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
     } catch(e) { /* fallback to setView above */ }
   }
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var _estOv=(gateMap._fidsOverlays=gateMap._fidsOverlays||[]);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(arc)_estOv.push(arc); }_estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -26429,7 +26478,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+      _estOv.push(L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
       // Center on plane during cruise
       if (p >= 0.12 && p <= 0.88) {
         gateMap.setView(planePos, zoom);
@@ -26537,7 +26586,10 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 
   // REUSE the map when the route is unchanged — tearing it down reloaded the
   // heavy satellite tiles each time (Nick: 'restarting/glitchy').
-  var _liveRouteKey = 'live|' + String(org).toUpperCase() + '>' + String(dst).toUpperCase();
+  // v23099 — same key namespace as initGateMap (no 'live|' prefix), so an
+  // est→live handoff on the same route REUSES the instance and its tiles.
+  // Liveness for the marker watchdog is the separate _fidsLive flag.
+  var _liveRouteKey = String(org).toUpperCase() + '>' + String(dst).toUpperCase();
   var _liveReuse = false;
   var _liveDetached = false;
   try {
@@ -26579,7 +26631,10 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     // Hysteresis: even on a real move, never let one tick jump more than a
     // single zoom level. A 2-level jump is what reads as the map 'going'.
     if (zoom !== _lv.zoom) zoom = _lv.zoom + (zoom > _lv.zoom ? 1 : -1);
-    if (_liveReuse && _dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return; // nothing changed → skip
+    // Skip only when the instance being reused is already LIVE — a reused
+    // EST instance (same key namespace since v23099) still carries the
+    // static overlays and must fall through to the redraw below.
+    if (_liveReuse && gateMap._fidsLive === true && _dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return; // nothing changed → skip
   }
   if (_liveReuse) {
     try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
@@ -26592,6 +26647,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     gateMap._fidsOverlays = [];
     _gateMapWatchResize(mb);
   }
+  gateMap._fidsLive = true;   // live map — the marker watchdog polices this one
   gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
   try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e) {}
   gateMap.setView([planeLat, planeLng], zoom);
@@ -26630,6 +26686,12 @@ function initGateMapLive(org,dst,planeLat,planeLng){
              // plane sat still while the numbers ticked). Last resort: a nominal
              // cruise so an airborne plane always drifts rather than freezing.
              : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
+             // v23099 — last resort: the speed the LAST glide anchored with
+             // (fresh within 5 min). Every cache above can transiently read 0
+             // across an ad-slide swap; the aircraft did not stop flying.
+             // The on-ground guard below still zeroes a taxiing aircraft.
+             : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 &&
+                (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
              : 0;
   // ── v22891 — SURROUNDING TRAFFIC ────────────────────────────────────
   // Every other aircraft in the immediate area, drawn small and muted so the
@@ -26772,7 +26834,20 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 //   4. HEADING IS SLEW-LIMITED and taken from a fixed look-ahead along the
 //      route rather than the next vertex. An aircraft cannot rotate 78 degrees
 //      in 100ms; now neither can the icon.
-var _gateGlide = { timer: null, raf: null, gen: 0 };
+// v23099 — ONE MODEL, MANY VIEWS. The singleton grows a `views` table keyed
+// 'mini' / 'big'. The generation token still guarantees a single live loop —
+// but that loop now renders EVERY attached surface's marker from the same
+// p(t), so the two maps agree by construction. Starting one surface no longer
+// silently freezes the other (Nick's video: the mini marker reappearing
+// BEHIND where the big map had it — the loop had been killed and the re-seed
+// used an older fix), and a surface going away just detaches its view.
+var _gateGlide = { timer: null, raf: null, gen: 0, views: {} };
+// Same-leg test for the resume/join paths: endpoints within ~55m count as the
+// same airport. Bit-exact float equality silently failed on re-resolved
+// coordinate arrays, and every silent failure became a raw-fix re-seed.
+function _gateGlideSameLeg(A, B) {
+  return !!(A && B && Math.abs(A[0] - B[0]) < 5e-4 && Math.abs(A[1] - B[1]) < 5e-4);
+}
 
 function _stopGateMapGlide() {
   // Bumping the generation is what actually stops things — clearing the
@@ -26875,9 +26950,30 @@ function _runwayFinalPath(pl, d, destIata) {
 }
 
 function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts, destIata) {
-  _stopGateMapGlide();
+  // v23099 — the unconditional kill that used to sit here is gone. Claiming
+  // the generation at the END of this function already supersedes any older
+  // loop; killing at ENTRY meant an ABORTED start (no marker, speed 0) took
+  // down a healthy glide and started nothing — one of the ways Nick's maps
+  // froze. Now an early return leaves whatever is running untouched.
   if (!map || !marker || typeof L === 'undefined') return;
-  if (!(speedKts > 0)) { try { console.log('[GLIDE] not started — no live speed (marker stays put)'); } catch (e) {} return; }
+  var _viewKey = (typeof window !== 'undefined' && map === window._bigCraftMap) ? 'big' : 'mini';
+  if (!(speedKts > 0)) {
+    // No dead reckoning without a live speed (on ground / no data) — but if
+    // a glide for this SAME leg is already flying (the other surface started
+    // it with a real speed; the two surfaces resolve speed from different
+    // caches), join it as a view so both markers show the one truth.
+    try {
+      if (_gateGlide.raf && _gateGlide.o && _gateGlide.d &&
+          _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
+        _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
+          hdg: null, seg: 0, arcIdx: -1, last: 0 };
+        try { console.log('[GLIDE] no live speed — joined the running glide as "' + _viewKey + '"'); } catch (e) {}
+        return;
+      }
+    } catch (e) {}
+    try { console.log('[GLIDE] not started — no live speed (marker stays put)'); } catch (e) {}
+    return;
+  }
   // v22889 — GLIDE ALONG THE LINE THAT IS ACTUALLY DRAWN (Nick: 'the plane
   // is very non linear its wobbling sideways and its not the map').
   //
@@ -26897,6 +26993,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _nmA = _gcNm(o, _pl), _nmB = _gcNm(_pl, d);
   var totalNm = _nmA + _nmB;
   if (!(totalNm > 0)) return;
+  // Remember the last real speed — a rebuild whose caches read 0 for an
+  // airborne aircraft can dead-reckon on this instead of freezing (v23099).
+  try { _gateGlide.lastSpd = speedKts; _gateGlide.lastSpdAt = Date.now(); } catch (e) {}
   // Split the vertices IN PROPORTION TO LEG LENGTH. Progress p advances at
   // speed/totalNm — i.e. p is assumed uniform in DISTANCE — but the frame
   // loop walks the vertex ARRAY, so p is really uniform in vertex index. A
@@ -26977,10 +27076,18 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // rate solver below, which flies it off over _CONVERGE_MS. Nothing here can
   // move the marker, so nothing here can make it jump or reverse.
   var _errP = 0;                       // route-fraction still owed to truth
+  var _sameLeg = false;
   try {
-    if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
-        _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
-        _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1]) {
+    // v23099 — leg identity by PROXIMITY, not bit-exact float equality: the
+    // endpoint arrays are re-resolved on every rebuild, and any recompute or
+    // alternate lookup path that moved them a hair silently disabled this
+    // resume — the marker was then planted on the raw-fix seed, which is the
+    // measured backwards jump. And a FRESHNESS bound: resuming p from a glide
+    // that stopped rendering minutes ago would teleport the marker forward.
+    var _fresh = !(_gateGlide.at > 0) || (Date.now() - _gateGlide.at) < 90000;
+    if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' && _fresh &&
+        _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
+      _sameLeg = true;
       var _dp = _seedP - _gateGlide.p;
       // Tolerance in NAUTICAL MILES, not route fraction: the route is rebuilt
       // through the live position on every fix, so totalNm shrinks on approach
@@ -26992,6 +27099,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     }
   } catch (e) {}
   _gateGlide.o = o; _gateGlide.d = d;
+  // v23099 — attach THIS surface's view; keep the other surface's on a
+  // same-leg re-anchor (its marker keeps flying the shared model). A leg
+  // CHANGE drops foreign views — their routes no longer exist, and their
+  // surfaces re-attach on their own next init.
+  try {
+    if (!_sameLeg) _gateGlide.views = {};
+    _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
+      hdg: null, seg: 0, arcIdx: -1, last: 0 };
+  } catch (e) {}
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
 
   // ── The time-parameterised model ──────────────────────────────────────
@@ -27055,9 +27171,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _rateCap = Math.max(_baseRate, _baseRate * _phase) * _MAX_RATE_MULT;
   var _rate = Math.max(0, Math.min(_rateRaw, _rateCap));
   var _myGen = _gateGlide.gen;   // claimed below, after the last early return
-  var lastArcIdx = -1;
-  var _hdg = null;               // last rendered heading, for slew limiting
-  var _subX = 0, _subY = 0;      // v22953 — sub-pixel Leaflet rounds off the marker
+  // v23099 — heading, sub-pixel offset, segment hint and arc split are all
+  // PER-VIEW now (each surface has its own marker, zoom and arcs); they live
+  // on the view objects in _gateGlide.views, not in this closure.
 
   function bearingBetween(A, B) {
     var dLng = (B[1] - A[1]) * Math.PI / 180;
@@ -27105,7 +27221,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // was torn down). Return WITHOUT rescheduling — this is what makes an
       // orphaned loop die instead of fighting the live one for the marker.
       if (_myGen !== _gateGlide.gen) return;
-      if (!marker._map) { _stopGateMapGlide(); return; }   // map/marker torn down
+      // v23099 — prune views whose map/marker were torn down (ad-slide swap,
+      // gate rebuild). The loop only dies when NO surface is left showing.
+      var _vKeys = Object.keys(_gateGlide.views), _liveViews = [];
+      for (var _vi = 0; _vi < _vKeys.length; _vi++) {
+        var _vv = _gateGlide.views[_vKeys[_vi]];
+        if (!_vv || !_vv.marker || !_vv.marker._map) { delete _gateGlide.views[_vKeys[_vi]]; continue; }
+        _liveViews.push(_vv);
+      }
+      if (!_liveViews.length) { _stopGateMapGlide(); return; }
 
       var now = _nowFn();
       var elapsed = now - _t0;
@@ -27114,7 +27238,13 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // POSITION IS A PURE FUNCTION OF ELAPSED TIME. _rate is fixed for the
       // life of this glide and clamped >= 0, and elapsed only grows, so p can
       // only grow. There is no accumulator to drift and nothing to subtract.
-      p = Math.min(0.995, _p0 + _rate * elapsed);
+      // v23099 — the cap is 0.05nm short of the route END, not 0.995 of the
+      // whole route: 0.5% of a 400nm leg is 2nm, which parked the marker two
+      // miles short of the runway forever — the runway-aligned final could
+      // mathematically never be drawn ('The aircraft does not do runways').
+      // The route already terminates at the touchdown point, so letting p
+      // reach it cannot overrun anything.
+      p = Math.min(Math.max(0.9, 1 - 0.05 / _routeNm), _p0 + _rate * elapsed);
 
       // Publish, and never publish a value lower than the last one: a belt to
       // the braces, so even a future caller mutating _gateGlide.p cannot make
@@ -27124,121 +27254,107 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       } else {
         p = _gateGlide.p;
       }
+      _gateGlide.at = Date.now();   // freshness stamp for the resume test
 
       // v22952 — position by DISTANCE along the route (turf.along), not by
       // vertex index. Walk the cumulative table to the segment containing
-      // p * routeNm, then interpolate inside it. _segHint only moves forward,
-      // which p guarantees, so this stays O(1) per frame in practice.
+      // p * routeNm, then interpolate inside it. The hint only moves forward,
+      // which p guarantees; it rewinds only if a view joined with a stale one.
       var _target = p * _routeNm;
-      var i0 = _segHint;
-      if (i0 > n - 2) i0 = n - 2;
-      while (i0 < n - 2 && _cum[i0 + 1] < _target) i0++;
-      _segHint = i0;
-      var i1 = i0 + 1;
-      var _segNm = _cum[i1] - _cum[i0];
-      var frac = (_segNm > 1e-9) ? ((_target - _cum[i0]) / _segNm) : 0;
-      if (frac < 0) frac = 0; else if (frac > 1) frac = 1;
-      var A = route[i0], B = route[i1];
-      var lat = A[0] + (B[0] - A[0]) * frac;
-      var lng = A[1] + (B[1] - A[1]) * frac;
-      marker.setLatLng([lat, lng]);
-      // ── v22953 — PUT BACK THE SUB-PIXEL LEAFLET THROWS AWAY.
-      // Nick: "still moving wobbling", after the rate and rotation fixes.
-      //
-      // Leaflet's Marker._setPos does
-      //     L.DomUtil.setPosition(this._icon, map.latLngToLayerPoint(ll).round())
-      // — note .round(). Marker positions are snapped to WHOLE PIXELS.
-      //
-      // Measured on Nick's own recording, the marker advances about 0.14px per
-      // frame. Against a whole-pixel grid that means it holds still for six or
-      // seven frames and then jumps a full pixel, over and over. A staircase,
-      // not a glide — and with the icon rotating on top of it, that reads
-      // exactly as wobble. It is worst precisely where he is looking, on a
-      // zoomed gate map where the aircraft crawls.
-      //
-      // No amount of fixing the MOTION model helps, because the model was
-      // already producing the right sub-pixel answer and Leaflet was throwing
-      // the fraction away at the last step. So take the fraction back and
-      // apply it to the icon as a transform, which is not rounded.
-      try {
-        if (map.latLngToLayerPoint) {
-          var _lp = map.latLngToLayerPoint([lat, lng]);
-          _subX = _lp.x - Math.round(_lp.x);
-          _subY = _lp.y - Math.round(_lp.y);
-        }
-      } catch (er) { _subX = 0; _subY = 0; }
-      try {
-        var div = (marker._icon && marker._icon.querySelector) ? marker._icon.querySelector('div') : null;
-        if (div) {
-          // Slew-limited heading. The target comes from the look-ahead; the
-          // rendered angle chases it at no more than _MAX_SLEW_DPS. Measured
-          // on Nick's clip the old code swung 78 degrees in a single 100ms
-          // frame and ranged over 104 degrees in 27 seconds — this caps that
-          // at 3 deg/sec, which is already faster than a jet's standard turn.
-          var _tgt = headingAtNm(_target);
-          if (_hdg === null) { _hdg = _tgt; }
-          else {
-            var _dh = ((_tgt - _hdg + 540) % 360) - 180;   // shortest way round
-            var _lim = _MAX_SLEW_DPS * ((now - (frame._last || now)) / 1000);
-            if (!(_lim > 0)) _lim = 0.05;
-            if (_dh >  _lim) _dh =  _lim;
-            if (_dh < -_lim) _dh = -_lim;
-            _hdg = (_hdg + _dh + 360) % 360;
+      var _dtMs = now - (frame._last || now);
+      frame._last = now;
+      var lat = null, lng = null, i0 = 0, i1 = 1;
+      for (var _ri = 0; _ri < _liveViews.length; _ri++) {
+        var v = _liveViews[_ri];
+        var vmap = v.map, vmarker = v.marker;
+        i0 = v.seg;
+        if (!(i0 >= 0) || i0 > n - 2 || _cum[i0] > _target) i0 = 0;
+        while (i0 < n - 2 && _cum[i0 + 1] < _target) i0++;
+        v.seg = i0;
+        i1 = i0 + 1;
+        var _segNm = _cum[i1] - _cum[i0];
+        var frac = (_segNm > 1e-9) ? ((_target - _cum[i0]) / _segNm) : 0;
+        if (frac < 0) frac = 0; else if (frac > 1) frac = 1;
+        var A = route[i0], B = route[i1];
+        lat = A[0] + (B[0] - A[0]) * frac;
+        lng = A[1] + (B[1] - A[1]) * frac;
+        vmarker.setLatLng([lat, lng]);
+        // ── v22953 — PUT BACK THE SUB-PIXEL LEAFLET THROWS AWAY.
+        // Leaflet's Marker._setPos rounds marker positions to WHOLE PIXELS.
+        // Measured on Nick's recording the marker advances ~0.14px/frame, so
+        // whole pixels turn the glide into a staircase — hold six frames,
+        // jump a pixel — which with rotation on top reads as wobble. The
+        // fraction Leaflet throws away is applied back as a transform (not
+        // rounded), per view because each map has its own projection state.
+        var _subX = 0, _subY = 0;
+        try {
+          if (vmap.latLngToLayerPoint) {
+            var _lp = vmap.latLngToLayerPoint([lat, lng]);
+            _subX = _lp.x - Math.round(_lp.x);
+            _subY = _lp.y - Math.round(_lp.y);
           }
-          // translate FIRST, then rotate: the offset is in map space, so it
-          // must not be spun by the aircraft's own heading.
-          div.style.transform = 'translate(' + _subX.toFixed(3) + 'px,' + _subY.toFixed(3) + 'px) '
-                              + 'rotate(' + _hdg.toFixed(2) + 'deg)';
-        }
-        frame._last = now;
-      } catch (er) {}
-      // Redraw the solid-behind / dashed-ahead split only when we cross a vertex
-      // (cheap) — the marker itself glides every frame.
-      if (i0 !== lastArcIdx) {
-        lastArcIdx = i0;
-        try { if (a1 && a1.setLatLngs) a1.setLatLngs(route.slice(0, i1)); } catch (er) {}
-        try { if (a2 && a2.setLatLngs) a2.setLatLngs(route.slice(i0)); } catch (er) {}
-      }
-      // FOLLOW THE PLANE — keep it in view. At a tight approach/departure zoom
-      // the plane otherwise glides straight off the little map window and
-      // 'disappears' (Nick), because the view stays centred on the last real
-      // fix from minutes ago. Re-centre (no animation, so no tile thrash) only
-      // once it drifts past ~38% from centre, so it still visibly moves across
-      // the map between recentres instead of being pinned dead-centre.
-      try {
-        if (map.getSize && map.latLngToContainerPoint && map.getZoom) {
-          var _sz = map.getSize();
-          var _pt = map.latLngToContainerPoint([lat, lng]);
-          if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.42 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.42) {
-            // Nudge the map only enough to keep the plane on-screen (panInside),
-            // instead of SNAPPING it back to dead-centre. The snap made the
-            // aircraft lurch out then jump back — 'bobbling left and right like
-            // someone moving it carelessly' (Nick). animate:false = no tile
-            // thrash. Fallback to the old setView if panInside is unavailable.
-            try {
-              // v22748 — PAN SMOOTHLY. animate:false moved the whole map in a
-              // single frame, so the scene lurched sideways/up under a plane
-              // that was otherwise gliding fine — which is the 'moves sideways
-              // then up' Nick is describing. A slow eased pan (it fires only
-              // every few minutes) reads as a camera following the aircraft.
-              // Guarded so it can't stack: skip while a pan is already running.
-              if (!map._acFollowing) {
-                map._acFollowing = 1;
-                setTimeout(function () { try { map._acFollowing = 0; } catch (e) {} }, 2600);
-                if (typeof map.panInside === 'function') {
-                  map.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)],
-                    animate: true, duration: 2.2, easeLinearity: 0.2 });
-                } else {
-                  map.panTo([lat, lng], { animate: true, duration: 2.2, easeLinearity: 0.2 });
-                }
-              }
-            } catch (er2) {
-              try { map.setView([lat, lng], map.getZoom(), { animate: false }); } catch (er3) {}
+        } catch (er) { _subX = 0; _subY = 0; }
+        try {
+          var div = (vmarker._icon && vmarker._icon.querySelector) ? vmarker._icon.querySelector('div') : null;
+          if (div) {
+            // Slew-limited heading from the fixed-distance look-ahead: the
+            // rendered angle chases the route heading at no more than
+            // _MAX_SLEW_DPS, per view (each icon turns from its own angle).
+            var _tgt = headingAtNm(_target);
+            if (v.hdg === null || v.hdg === undefined) { v.hdg = _tgt; }
+            else {
+              var _dh = ((_tgt - v.hdg + 540) % 360) - 180;   // shortest way round
+              var _lim = _MAX_SLEW_DPS * (_dtMs / 1000);
+              if (!(_lim > 0)) _lim = 0.05;
+              if (_dh >  _lim) _dh =  _lim;
+              if (_dh < -_lim) _dh = -_lim;
+              v.hdg = (v.hdg + _dh + 360) % 360;
             }
-            gateMap._fidsLastView = { lat: lat, lng: lng, zoom: map.getZoom() };
+            // translate FIRST, then rotate: the offset is in map space, so it
+            // must not be spun by the aircraft's own heading.
+            div.style.transform = 'translate(' + _subX.toFixed(3) + 'px,' + _subY.toFixed(3) + 'px) '
+                                + 'rotate(' + v.hdg.toFixed(2) + 'deg)';
           }
+        } catch (er) {}
+        // Redraw the solid-behind / dashed-ahead split only when we cross a
+        // vertex (cheap) — the marker itself glides every frame.
+        if (i0 !== v.arcIdx) {
+          v.arcIdx = i0;
+          try { if (v.a1 && v.a1.setLatLngs) v.a1.setLatLngs(route.slice(0, i1)); } catch (er) {}
+          try { if (v.a2 && v.a2.setLatLngs) v.a2.setLatLngs(route.slice(i0)); } catch (er) {}
         }
-      } catch (er) {}
+        // FOLLOW THE PLANE — keep it in view. Re-centre (eased pan, no tile
+        // thrash) only once it drifts past ~42% from centre, so it visibly
+        // crosses the map between recentres instead of being pinned.
+        try {
+          if (vmap.getSize && vmap.latLngToContainerPoint && vmap.getZoom) {
+            var _sz = vmap.getSize();
+            var _pt = vmap.latLngToContainerPoint([lat, lng]);
+            if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.42 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.42) {
+              try {
+                // v22748 — PAN SMOOTHLY: a slow eased pan (it fires only every
+                // few minutes) reads as a camera following the aircraft.
+                // Guarded so it can't stack: skip while a pan is running.
+                if (!vmap._acFollowing) {
+                  vmap._acFollowing = 1;
+                  (function (m) { setTimeout(function () { try { m._acFollowing = 0; } catch (e) {} }, 2600); })(vmap);
+                  if (typeof vmap.panInside === 'function') {
+                    vmap.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)],
+                      animate: true, duration: 2.2, easeLinearity: 0.2 });
+                  } else {
+                    vmap.panTo([lat, lng], { animate: true, duration: 2.2, easeLinearity: 0.2 });
+                  }
+                }
+              } catch (er2) {
+                try { vmap.setView([lat, lng], vmap.getZoom(), { animate: false }); } catch (er3) {}
+              }
+              // Save the followed view PER MAP — the old code wrote the mini
+              // map's saved view even when the big map's glide was panning.
+              try { vmap._fidsLastView = { lat: lat, lng: lng, zoom: vmap.getZoom() }; } catch (er4) {}
+            }
+          }
+        } catch (er) {}
+      }
       // Reschedule only while we are still the live generation.
       if (_myGen !== _gateGlide.gen) return;
       if (typeof requestAnimationFrame === 'function') _gateGlide.raf = requestAnimationFrame(frame);
@@ -27324,13 +27440,31 @@ function _gateMapTick() {
     // but ADB sometimes leaves the status field as 'scheduled' for short-
     // haul flights even after the aircraft has actually departed. Trusting
     // the time-based calculation is more reliable than the status field.
+    // v23099 — A LIVE AIRBORNE FIX NEAR THE FIELD OVERRIDES THE CLOCK. prog
+    // is derived from the GATE-arrival time, so it crosses 0.99 while a
+    // short-haul is still on final — the map flipped to the at-gate pins
+    // view during the exact minutes the runway-aligned approach renders
+    // ('The aircraft does not do runways'). While the aircraft is measurably
+    // in the air within ~25nm of the field, it has not landed.
+    var _liveFinal = false;
+    try {
+      if (prog >= 0.99 && inb.status !== 'arrived' && inb.status !== 'landed') {
+        var _lvF = window._gateInboundLivePos || window._gateMapFix;
+        var _apCF = _lookupAirport(apIata);
+        if (_lvF && _apCF && typeof _lvF.lat === 'number' && typeof _lvF.lng === 'number' &&
+            !(_lvF.onGround === true) && (((_lvF.altitude || _lvF.alt) || 0) > 0) &&
+            _gcNm([_lvF.lat, _lvF.lng], _apCF) < 25) {
+          _liveFinal = true;
+        }
+      }
+    } catch (e) {}
     var actuallyAirborne = (
       depTs !== null &&
       now >= depTs &&
       inb.status !== 'cancelled' &&
-      prog > 0.02 && prog < 0.99
+      prog > 0.02 && (prog < 0.99 || _liveFinal)
     );
-    var inboundLanded = (inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
+    var inboundLanded = !_liveFinal && (inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
 
     if (inboundLanded) {
       // Plane is at our gate — show its UPCOMING outbound route.
@@ -31784,7 +31918,17 @@ function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
     if (V['_p_' + k]) return window._regVerdictEverTrue[ek] ? true : null;
     V['_p_' + k] = 1;
     adbPacedFetch('https://fids-proxy.n-leblanc1984.workers.dev/proxy/flights/reg/' + encodeURIComponent(r) + '/' + day + '?dateLocalRole=Both')
-      .then(function (resp) { return resp && resp.ok ? resp.json() : null; })
+      // v23099 — the proxy answers 204 NO CONTENT for many Canadian regional
+      // tails (measured: C-GJZV, C-GWSZ, C-FSJJ). resp.ok is TRUE on a 204,
+      // and resp.json() on the empty body REJECTS — so the answer fell into
+      // the network-failure catch below, which resolved the verdict without
+      // ever repainting. The reg then sat verified IN MEMORY while the row
+      // stayed blank until an unrelated feed change forced a rebuild — and
+      // the verdict key carries the local day, so the trap re-armed at every
+      // midnight and page load. That is Nick's 'REG doesn't show up anymore'.
+      // An empty body now reads as null → indeterminate → verdict true, down
+      // the SUCCESS path with its repaint.
+      .then(function (resp) { return resp && resp.ok ? resp.json().catch(function () { return null; }) : null; })
       .then(function (arr) {
         var verdict = true;
         if (Array.isArray(arr) && arr.length) {
@@ -31801,10 +31945,23 @@ function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
         } catch (e) {}
         try { console.log('[REGVERIFY]', r, 'flies', f + (f2 ? ' or ' + f2 : ''), 'today?', verdict); } catch (e) {}
         // Either verdict changes what the shelf shows (pending withheld the
-        // tail) — rebuild once so it settles now.
+        // tail) — rebuild once so it settles now. The gate render
+        // short-circuits on an unchanged _gateKey, and that key carries no
+        // verdict state, so the key is cleared to make this rebuild REAL
+        // (it used to be a silent no-op on a quiet gate).
+        try { window._lastGateKey = ''; } catch (e) {}
         try { if (typeof renderDedicatedScreen === 'function') setTimeout(function () { try { renderDedicatedScreen(); } catch (e2) {} }, 0); } catch (e) {}
       })
-      .catch(function () { V[k] = true; delete V['_p_' + k]; });
+      .catch(function () {
+        // Genuine network failure: indeterminate → fail open, and REPAINT —
+        // this branch used to resolve the verdict without ever rebuilding,
+        // leaving a verified tail invisible until something unrelated moved.
+        V[k] = true;
+        delete V['_p_' + k];
+        try { window._regVerdictEverTrue[ek] = 1; } catch (e) {}
+        try { window._lastGateKey = ''; } catch (e) {}
+        try { if (typeof renderDedicatedScreen === 'function') setTimeout(function () { try { renderDedicatedScreen(); } catch (e2) {} }, 0); } catch (e) {}
+      });
     return null;
   } catch (e) { return true; }
 }
@@ -31966,7 +32123,18 @@ function _map3dFlightCtx(allowEstimated) {
       if (!fidsInboundAirborne(inb)) prog = 0;
     }
     // Landed / at the gate → nothing to plot; the slide skips itself.
-    if (prog >= 0.99 || inb.status === 'arrived' || inb.status === 'landed') return null;
+    // v23099 — unless a LIVE airborne fix sits within ~25nm of the field:
+    // the clock crosses 0.99 while a short-haul is still on final, and this
+    // null-out was skipping the big slide during the only minutes the
+    // runway-aligned approach can render. Feed-confirmed arrivals still end
+    // the slide immediately.
+    var _bigLiveFinal = false;
+    try {
+      _bigLiveFinal = !!(prog >= 0.99 && fixOk &&
+        inb.status !== 'arrived' && inb.status !== 'landed' &&
+        _hav([liveLat, liveLng], dC) < 46);   // km ≈ 25nm
+    } catch (e) {}
+    if ((prog >= 0.99 && !_bigLiveFinal) || inb.status === 'arrived' || inb.status === 'landed') return null;
     // HONESTY RULE (Nick, Jul 2026): callers that plot a confident aircraft
     // (the retired 3D view) get NOTHING without a real live fix. The BIG
     // Your-Aircraft slide passes allowEstimated=true and renders the same
@@ -35497,8 +35665,17 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // was a one-shot paint per slide — visibly frozen (Nick: 'no movement on
   // the aircraft').
   try {
-    var _bcGlSpd = (window._gateInbound && typeof window._gateInbound._liveSpd === 'number') ? window._gateInbound._liveSpd : 0;
-    if (_bcGlSpd > 0 && typeof _startGateMapGlide === 'function') {
+    var _bcGlSpd = (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0) ? window._gateInbound._liveSpd
+      // v23099 — same last-anchored-speed fallback as the mini map; this
+      // cache reading 0 is why the big marker was a one-shot frozen paint.
+      : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 &&
+         (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
+      : 0;
+    // v23099 — call even at speed 0: the engine now JOINS a running same-leg
+    // glide as a second view (the two surfaces resolve speed from different
+    // caches, so one often has it while the other reads 0 — that was half of
+    // 'the maps don't agree'). With no running glide and no speed it no-ops.
+    if (typeof _startGateMapGlide === 'function') {
       _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bcPlaneMk, _bcA1, _bcA2, _bcGlSpd, dst);
     }
   } catch (e) {}
