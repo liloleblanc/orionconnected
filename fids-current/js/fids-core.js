@@ -27223,7 +27223,13 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // POSITION IS A PURE FUNCTION OF ELAPSED TIME. _rate is fixed for the
       // life of this glide and clamped >= 0, and elapsed only grows, so p can
       // only grow. There is no accumulator to drift and nothing to subtract.
-      p = Math.min(0.995, _p0 + _rate * elapsed);
+      // v23099 — the cap is 0.05nm short of the route END, not 0.995 of the
+      // whole route: 0.5% of a 400nm leg is 2nm, which parked the marker two
+      // miles short of the runway forever — the runway-aligned final could
+      // mathematically never be drawn ('The aircraft does not do runways').
+      // The route already terminates at the touchdown point, so letting p
+      // reach it cannot overrun anything.
+      p = Math.min(Math.max(0.9, 1 - 0.05 / _routeNm), _p0 + _rate * elapsed);
 
       // Publish, and never publish a value lower than the last one: a belt to
       // the braces, so even a future caller mutating _gateGlide.p cannot make
@@ -27419,13 +27425,31 @@ function _gateMapTick() {
     // but ADB sometimes leaves the status field as 'scheduled' for short-
     // haul flights even after the aircraft has actually departed. Trusting
     // the time-based calculation is more reliable than the status field.
+    // v23099 — A LIVE AIRBORNE FIX NEAR THE FIELD OVERRIDES THE CLOCK. prog
+    // is derived from the GATE-arrival time, so it crosses 0.99 while a
+    // short-haul is still on final — the map flipped to the at-gate pins
+    // view during the exact minutes the runway-aligned approach renders
+    // ('The aircraft does not do runways'). While the aircraft is measurably
+    // in the air within ~25nm of the field, it has not landed.
+    var _liveFinal = false;
+    try {
+      if (prog >= 0.99 && inb.status !== 'arrived' && inb.status !== 'landed') {
+        var _lvF = window._gateInboundLivePos || window._gateMapFix;
+        var _apCF = _lookupAirport(apIata);
+        if (_lvF && _apCF && typeof _lvF.lat === 'number' && typeof _lvF.lng === 'number' &&
+            !(_lvF.onGround === true) && (((_lvF.altitude || _lvF.alt) || 0) > 0) &&
+            _gcNm([_lvF.lat, _lvF.lng], _apCF) < 25) {
+          _liveFinal = true;
+        }
+      }
+    } catch (e) {}
     var actuallyAirborne = (
       depTs !== null &&
       now >= depTs &&
       inb.status !== 'cancelled' &&
-      prog > 0.02 && prog < 0.99
+      prog > 0.02 && (prog < 0.99 || _liveFinal)
     );
-    var inboundLanded = (inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
+    var inboundLanded = !_liveFinal && (inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
 
     if (inboundLanded) {
       // Plane is at our gate — show its UPCOMING outbound route.
@@ -32061,7 +32085,18 @@ function _map3dFlightCtx(allowEstimated) {
       if (!fidsInboundAirborne(inb)) prog = 0;
     }
     // Landed / at the gate → nothing to plot; the slide skips itself.
-    if (prog >= 0.99 || inb.status === 'arrived' || inb.status === 'landed') return null;
+    // v23099 — unless a LIVE airborne fix sits within ~25nm of the field:
+    // the clock crosses 0.99 while a short-haul is still on final, and this
+    // null-out was skipping the big slide during the only minutes the
+    // runway-aligned approach can render. Feed-confirmed arrivals still end
+    // the slide immediately.
+    var _bigLiveFinal = false;
+    try {
+      _bigLiveFinal = !!(prog >= 0.99 && fixOk &&
+        inb.status !== 'arrived' && inb.status !== 'landed' &&
+        _hav([liveLat, liveLng], dC) < 46);   // km ≈ 25nm
+    } catch (e) {}
+    if ((prog >= 0.99 && !_bigLiveFinal) || inb.status === 'arrived' || inb.status === 'landed') return null;
     // HONESTY RULE (Nick, Jul 2026): callers that plot a confident aircraft
     // (the retired 3D view) get NOTHING without a real live fix. The BIG
     // Your-Aircraft slide passes allowEstimated=true and renders the same
