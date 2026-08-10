@@ -10525,6 +10525,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
 @keyframes g8SkyBack  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
 @keyframes g8SkyMid   { from { transform: translate3d(0,0,0); } to { transform: translate3d(-700px,0,0); } }
 @keyframes g8SkyFront { from { transform: translate3d(0,0,0); } to { transform: translate3d(-900px,0,0); } }
+@keyframes g8SkyRush  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-760px,0,0); } }
 
 /* ── BACK: the still plate, drifting slowest ─────────────────────────────── */
 html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
@@ -10533,7 +10534,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   position: absolute !important;
   left: 0 !important; right: auto !important; top: 0 !important; bottom: 0 !important;
   width: calc(100% + 1000px) !important;      /* one tile of slack to slide into */
-  background: url('/textures/gate-sky-back-v2.jpg?v=23078') 0 50% / 1000px 100% repeat-x !important;
+  background: url('/textures/gate-sky-back-v2.jpg?v=23079') 0 50% / 1000px 100% repeat-x !important;
   opacity: 1 !important;
   -webkit-mask-image: none !important;
           mask-image: none !important;
@@ -10561,7 +10562,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 700px) !important;
   top: 34% !important; bottom: -12% !important;
-  background: url('/textures/gate-clouds-mid-v2.png?v=23078') 0 50% / 700px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-mid-v2.png?v=23079') 0 50% / 700px 100% repeat-x !important;
   opacity: .62 !important;
   pointer-events: none !important;
   animation: g8SkyMid 130s linear infinite !important;
@@ -10586,13 +10587,38 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
   left: 0 !important; right: auto !important;
   width: calc(100% + 900px) !important;
   top: 58% !important; bottom: -16% !important;
-  background: url('/textures/gate-clouds-front-v2.png?v=23078') 0 50% / 900px 100% repeat-x !important;
-  background-image: url('/textures/gate-clouds-front-v2.png?v=23078') !important;
+  background: url('/textures/gate-clouds-front-v2.png?v=23079') 0 50% / 900px 100% repeat-x !important;
+  background-image: url('/textures/gate-clouds-front-v2.png?v=23079') !important;
   opacity: .30 !important;
   pointer-events: none !important;
   z-index: 3 !important;                       /* ABOVE the aircraft */
-  animation: g8SkyFront 60s linear infinite !important;
+  animation: g8SkyFront 14s linear infinite !important;
   animation-delay: var(--g8-front-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+
+/* ── RUSH: the nearest layer, whipping past. Nick: "you dont get the full
+   effect until you have the fast moving clouds in front."
+   He is right — 15px/s is not a near field, it is just another background.
+   This runs at 117px/s, so a streak crosses the whole 436px shelf in under
+   four seconds, and THAT is what reads as speed.
+   At that rate a crisp cloud strobes, so the artwork is smeared hard along X
+   (28px box blur horizontally, 4px vertically) before it is mirror-tiled. The
+   smear IS the motion blur a real near-field cloud would have; it also means
+   there is no recognisable shape to notice repeating.
+   Another ::after, so still no new markup and still nothing to decode. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 760px) !important;
+  top: -30% !important; bottom: -30% !important;   /* taller than the slot: it sweeps the whole frame */
+  background: url('/textures/gate-clouds-rush-v2.png?v=23079') 0 50% / 760px 100% repeat-x !important;
+  opacity: .26 !important;
+  pointer-events: none !important;
+  animation: g8SkyRush 6.5s linear infinite !important;
+  animation-delay: var(--g8-rush-delay, 0s) !important;
   animation-direction: var(--g8-dir, reverse) !important;
   will-change: transform;
 }

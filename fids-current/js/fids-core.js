@@ -18346,7 +18346,8 @@ function _acSkyPhaseApply() {
       if (_shelfEl && _shelfEl.isConnected && !(_shelfEl.dataset && _shelfEl.dataset.skyPhased === '1')) {
         _shelfEl.style.setProperty('--g8-back-delay',  '-' + (t % 260).toFixed(2) + 's');
         _shelfEl.style.setProperty('--g8-mid-delay',   '-' + (t % 130).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %  60).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %  14).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-rush-delay',  '-' + (t % 6.5).toFixed(2) + 's');
         if (_shelfEl.dataset) _shelfEl.dataset.skyPhased = '1';
       }
     } catch (e4) {}
@@ -18375,7 +18376,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23078';
+var FIDS_BUILD_TAG = 'v23079';
 (function(){
   try {
     function _addTag(){
