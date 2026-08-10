@@ -26344,7 +26344,7 @@ function _mapPlaneIcon() {
   } catch (e) {}
   return '/logos/map-plane-jet.png';
 }
-function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;try{if(typeof _stopGateMapGlide==='function')_stopGateMapGlide();}catch(e){}var mb=document.getElementById('gateMapBox');if(!mb)return;
+function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;/* v23099 — this static/estimate map replaces the MINI surface only; detach that view and leave the shared glide running for the big map (the old blanket stop froze the big marker every time the gate re-rendered). */try{if(typeof _gateGlide!=='undefined'&&_gateGlide&&_gateGlide.views)delete _gateGlide.views.mini;}catch(e){}var mb=document.getElementById('gateMapBox');if(!mb)return;
   // Resolve airport coords. If either is unknown, kick off async lookup
   // and retry — the map will populate as soon as both coords arrive.
   var o=_lookupAirport(org), d=_lookupAirport(dst);
@@ -26779,7 +26779,14 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 //   4. HEADING IS SLEW-LIMITED and taken from a fixed look-ahead along the
 //      route rather than the next vertex. An aircraft cannot rotate 78 degrees
 //      in 100ms; now neither can the icon.
-var _gateGlide = { timer: null, raf: null, gen: 0 };
+// v23099 — ONE MODEL, MANY VIEWS. The singleton grows a `views` table keyed
+// 'mini' / 'big'. The generation token still guarantees a single live loop —
+// but that loop now renders EVERY attached surface's marker from the same
+// p(t), so the two maps agree by construction. Starting one surface no longer
+// silently freezes the other (Nick's video: the mini marker reappearing
+// BEHIND where the big map had it — the loop had been killed and the re-seed
+// used an older fix), and a surface going away just detaches its view.
+var _gateGlide = { timer: null, raf: null, gen: 0, views: {} };
 
 function _stopGateMapGlide() {
   // Bumping the generation is what actually stops things — clearing the
@@ -26882,9 +26889,31 @@ function _runwayFinalPath(pl, d, destIata) {
 }
 
 function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts, destIata) {
-  _stopGateMapGlide();
+  // v23099 — the unconditional kill that used to sit here is gone. Claiming
+  // the generation at the END of this function already supersedes any older
+  // loop; killing at ENTRY meant an ABORTED start (no marker, speed 0) took
+  // down a healthy glide and started nothing — one of the ways Nick's maps
+  // froze. Now an early return leaves whatever is running untouched.
   if (!map || !marker || typeof L === 'undefined') return;
-  if (!(speedKts > 0)) { try { console.log('[GLIDE] not started — no live speed (marker stays put)'); } catch (e) {} return; }
+  var _viewKey = (typeof window !== 'undefined' && map === window._bigCraftMap) ? 'big' : 'mini';
+  if (!(speedKts > 0)) {
+    // No dead reckoning without a live speed (on ground / no data) — but if
+    // a glide for this SAME leg is already flying (the other surface started
+    // it with a real speed; the two surfaces resolve speed from different
+    // caches), join it as a view so both markers show the one truth.
+    try {
+      if (_gateGlide.raf && _gateGlide.o && _gateGlide.d &&
+          _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
+          _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1]) {
+        _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
+          hdg: null, seg: 0, arcIdx: -1, last: 0 };
+        try { console.log('[GLIDE] no live speed — joined the running glide as "' + _viewKey + '"'); } catch (e) {}
+        return;
+      }
+    } catch (e) {}
+    try { console.log('[GLIDE] not started — no live speed (marker stays put)'); } catch (e) {}
+    return;
+  }
   // v22889 — GLIDE ALONG THE LINE THAT IS ACTUALLY DRAWN (Nick: 'the plane
   // is very non linear its wobbling sideways and its not the map').
   //
@@ -26984,10 +27013,12 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // rate solver below, which flies it off over _CONVERGE_MS. Nothing here can
   // move the marker, so nothing here can make it jump or reverse.
   var _errP = 0;                       // route-fraction still owed to truth
+  var _sameLeg = false;
   try {
     if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' &&
         _gateGlide.o[0] === o[0] && _gateGlide.o[1] === o[1] &&
         _gateGlide.d[0] === d[0] && _gateGlide.d[1] === d[1]) {
+      _sameLeg = true;
       var _dp = _seedP - _gateGlide.p;
       // Tolerance in NAUTICAL MILES, not route fraction: the route is rebuilt
       // through the live position on every fix, so totalNm shrinks on approach
@@ -26999,6 +27030,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     }
   } catch (e) {}
   _gateGlide.o = o; _gateGlide.d = d;
+  // v23099 — attach THIS surface's view; keep the other surface's on a
+  // same-leg re-anchor (its marker keeps flying the shared model). A leg
+  // CHANGE drops foreign views — their routes no longer exist, and their
+  // surfaces re-attach on their own next init.
+  try {
+    if (!_sameLeg) _gateGlide.views = {};
+    _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
+      hdg: null, seg: 0, arcIdx: -1, last: 0 };
+  } catch (e) {}
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
 
   // ── The time-parameterised model ──────────────────────────────────────
@@ -27062,9 +27102,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _rateCap = Math.max(_baseRate, _baseRate * _phase) * _MAX_RATE_MULT;
   var _rate = Math.max(0, Math.min(_rateRaw, _rateCap));
   var _myGen = _gateGlide.gen;   // claimed below, after the last early return
-  var lastArcIdx = -1;
-  var _hdg = null;               // last rendered heading, for slew limiting
-  var _subX = 0, _subY = 0;      // v22953 — sub-pixel Leaflet rounds off the marker
+  // v23099 — heading, sub-pixel offset, segment hint and arc split are all
+  // PER-VIEW now (each surface has its own marker, zoom and arcs); they live
+  // on the view objects in _gateGlide.views, not in this closure.
 
   function bearingBetween(A, B) {
     var dLng = (B[1] - A[1]) * Math.PI / 180;
@@ -27112,7 +27152,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // was torn down). Return WITHOUT rescheduling — this is what makes an
       // orphaned loop die instead of fighting the live one for the marker.
       if (_myGen !== _gateGlide.gen) return;
-      if (!marker._map) { _stopGateMapGlide(); return; }   // map/marker torn down
+      // v23099 — prune views whose map/marker were torn down (ad-slide swap,
+      // gate rebuild). The loop only dies when NO surface is left showing.
+      var _vKeys = Object.keys(_gateGlide.views), _liveViews = [];
+      for (var _vi = 0; _vi < _vKeys.length; _vi++) {
+        var _vv = _gateGlide.views[_vKeys[_vi]];
+        if (!_vv || !_vv.marker || !_vv.marker._map) { delete _gateGlide.views[_vKeys[_vi]]; continue; }
+        _liveViews.push(_vv);
+      }
+      if (!_liveViews.length) { _stopGateMapGlide(); return; }
 
       var now = _nowFn();
       var elapsed = now - _t0;
@@ -27134,118 +27182,103 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
 
       // v22952 — position by DISTANCE along the route (turf.along), not by
       // vertex index. Walk the cumulative table to the segment containing
-      // p * routeNm, then interpolate inside it. _segHint only moves forward,
-      // which p guarantees, so this stays O(1) per frame in practice.
+      // p * routeNm, then interpolate inside it. The hint only moves forward,
+      // which p guarantees; it rewinds only if a view joined with a stale one.
       var _target = p * _routeNm;
-      var i0 = _segHint;
-      if (i0 > n - 2) i0 = n - 2;
-      while (i0 < n - 2 && _cum[i0 + 1] < _target) i0++;
-      _segHint = i0;
-      var i1 = i0 + 1;
-      var _segNm = _cum[i1] - _cum[i0];
-      var frac = (_segNm > 1e-9) ? ((_target - _cum[i0]) / _segNm) : 0;
-      if (frac < 0) frac = 0; else if (frac > 1) frac = 1;
-      var A = route[i0], B = route[i1];
-      var lat = A[0] + (B[0] - A[0]) * frac;
-      var lng = A[1] + (B[1] - A[1]) * frac;
-      marker.setLatLng([lat, lng]);
-      // ── v22953 — PUT BACK THE SUB-PIXEL LEAFLET THROWS AWAY.
-      // Nick: "still moving wobbling", after the rate and rotation fixes.
-      //
-      // Leaflet's Marker._setPos does
-      //     L.DomUtil.setPosition(this._icon, map.latLngToLayerPoint(ll).round())
-      // — note .round(). Marker positions are snapped to WHOLE PIXELS.
-      //
-      // Measured on Nick's own recording, the marker advances about 0.14px per
-      // frame. Against a whole-pixel grid that means it holds still for six or
-      // seven frames and then jumps a full pixel, over and over. A staircase,
-      // not a glide — and with the icon rotating on top of it, that reads
-      // exactly as wobble. It is worst precisely where he is looking, on a
-      // zoomed gate map where the aircraft crawls.
-      //
-      // No amount of fixing the MOTION model helps, because the model was
-      // already producing the right sub-pixel answer and Leaflet was throwing
-      // the fraction away at the last step. So take the fraction back and
-      // apply it to the icon as a transform, which is not rounded.
-      try {
-        if (map.latLngToLayerPoint) {
-          var _lp = map.latLngToLayerPoint([lat, lng]);
-          _subX = _lp.x - Math.round(_lp.x);
-          _subY = _lp.y - Math.round(_lp.y);
-        }
-      } catch (er) { _subX = 0; _subY = 0; }
-      try {
-        var div = (marker._icon && marker._icon.querySelector) ? marker._icon.querySelector('div') : null;
-        if (div) {
-          // Slew-limited heading. The target comes from the look-ahead; the
-          // rendered angle chases it at no more than _MAX_SLEW_DPS. Measured
-          // on Nick's clip the old code swung 78 degrees in a single 100ms
-          // frame and ranged over 104 degrees in 27 seconds — this caps that
-          // at 3 deg/sec, which is already faster than a jet's standard turn.
-          var _tgt = headingAtNm(_target);
-          if (_hdg === null) { _hdg = _tgt; }
-          else {
-            var _dh = ((_tgt - _hdg + 540) % 360) - 180;   // shortest way round
-            var _lim = _MAX_SLEW_DPS * ((now - (frame._last || now)) / 1000);
-            if (!(_lim > 0)) _lim = 0.05;
-            if (_dh >  _lim) _dh =  _lim;
-            if (_dh < -_lim) _dh = -_lim;
-            _hdg = (_hdg + _dh + 360) % 360;
+      var _dtMs = now - (frame._last || now);
+      frame._last = now;
+      var lat = null, lng = null, i0 = 0, i1 = 1;
+      for (var _ri = 0; _ri < _liveViews.length; _ri++) {
+        var v = _liveViews[_ri];
+        var vmap = v.map, vmarker = v.marker;
+        i0 = v.seg;
+        if (!(i0 >= 0) || i0 > n - 2 || _cum[i0] > _target) i0 = 0;
+        while (i0 < n - 2 && _cum[i0 + 1] < _target) i0++;
+        v.seg = i0;
+        i1 = i0 + 1;
+        var _segNm = _cum[i1] - _cum[i0];
+        var frac = (_segNm > 1e-9) ? ((_target - _cum[i0]) / _segNm) : 0;
+        if (frac < 0) frac = 0; else if (frac > 1) frac = 1;
+        var A = route[i0], B = route[i1];
+        lat = A[0] + (B[0] - A[0]) * frac;
+        lng = A[1] + (B[1] - A[1]) * frac;
+        vmarker.setLatLng([lat, lng]);
+        // ── v22953 — PUT BACK THE SUB-PIXEL LEAFLET THROWS AWAY.
+        // Leaflet's Marker._setPos rounds marker positions to WHOLE PIXELS.
+        // Measured on Nick's recording the marker advances ~0.14px/frame, so
+        // whole pixels turn the glide into a staircase — hold six frames,
+        // jump a pixel — which with rotation on top reads as wobble. The
+        // fraction Leaflet throws away is applied back as a transform (not
+        // rounded), per view because each map has its own projection state.
+        var _subX = 0, _subY = 0;
+        try {
+          if (vmap.latLngToLayerPoint) {
+            var _lp = vmap.latLngToLayerPoint([lat, lng]);
+            _subX = _lp.x - Math.round(_lp.x);
+            _subY = _lp.y - Math.round(_lp.y);
           }
-          // translate FIRST, then rotate: the offset is in map space, so it
-          // must not be spun by the aircraft's own heading.
-          div.style.transform = 'translate(' + _subX.toFixed(3) + 'px,' + _subY.toFixed(3) + 'px) '
-                              + 'rotate(' + _hdg.toFixed(2) + 'deg)';
-        }
-        frame._last = now;
-      } catch (er) {}
-      // Redraw the solid-behind / dashed-ahead split only when we cross a vertex
-      // (cheap) — the marker itself glides every frame.
-      if (i0 !== lastArcIdx) {
-        lastArcIdx = i0;
-        try { if (a1 && a1.setLatLngs) a1.setLatLngs(route.slice(0, i1)); } catch (er) {}
-        try { if (a2 && a2.setLatLngs) a2.setLatLngs(route.slice(i0)); } catch (er) {}
-      }
-      // FOLLOW THE PLANE — keep it in view. At a tight approach/departure zoom
-      // the plane otherwise glides straight off the little map window and
-      // 'disappears' (Nick), because the view stays centred on the last real
-      // fix from minutes ago. Re-centre (no animation, so no tile thrash) only
-      // once it drifts past ~38% from centre, so it still visibly moves across
-      // the map between recentres instead of being pinned dead-centre.
-      try {
-        if (map.getSize && map.latLngToContainerPoint && map.getZoom) {
-          var _sz = map.getSize();
-          var _pt = map.latLngToContainerPoint([lat, lng]);
-          if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.42 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.42) {
-            // Nudge the map only enough to keep the plane on-screen (panInside),
-            // instead of SNAPPING it back to dead-centre. The snap made the
-            // aircraft lurch out then jump back — 'bobbling left and right like
-            // someone moving it carelessly' (Nick). animate:false = no tile
-            // thrash. Fallback to the old setView if panInside is unavailable.
-            try {
-              // v22748 — PAN SMOOTHLY. animate:false moved the whole map in a
-              // single frame, so the scene lurched sideways/up under a plane
-              // that was otherwise gliding fine — which is the 'moves sideways
-              // then up' Nick is describing. A slow eased pan (it fires only
-              // every few minutes) reads as a camera following the aircraft.
-              // Guarded so it can't stack: skip while a pan is already running.
-              if (!map._acFollowing) {
-                map._acFollowing = 1;
-                setTimeout(function () { try { map._acFollowing = 0; } catch (e) {} }, 2600);
-                if (typeof map.panInside === 'function') {
-                  map.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)],
-                    animate: true, duration: 2.2, easeLinearity: 0.2 });
-                } else {
-                  map.panTo([lat, lng], { animate: true, duration: 2.2, easeLinearity: 0.2 });
-                }
-              }
-            } catch (er2) {
-              try { map.setView([lat, lng], map.getZoom(), { animate: false }); } catch (er3) {}
+        } catch (er) { _subX = 0; _subY = 0; }
+        try {
+          var div = (vmarker._icon && vmarker._icon.querySelector) ? vmarker._icon.querySelector('div') : null;
+          if (div) {
+            // Slew-limited heading from the fixed-distance look-ahead: the
+            // rendered angle chases the route heading at no more than
+            // _MAX_SLEW_DPS, per view (each icon turns from its own angle).
+            var _tgt = headingAtNm(_target);
+            if (v.hdg === null || v.hdg === undefined) { v.hdg = _tgt; }
+            else {
+              var _dh = ((_tgt - v.hdg + 540) % 360) - 180;   // shortest way round
+              var _lim = _MAX_SLEW_DPS * (_dtMs / 1000);
+              if (!(_lim > 0)) _lim = 0.05;
+              if (_dh >  _lim) _dh =  _lim;
+              if (_dh < -_lim) _dh = -_lim;
+              v.hdg = (v.hdg + _dh + 360) % 360;
             }
-            gateMap._fidsLastView = { lat: lat, lng: lng, zoom: map.getZoom() };
+            // translate FIRST, then rotate: the offset is in map space, so it
+            // must not be spun by the aircraft's own heading.
+            div.style.transform = 'translate(' + _subX.toFixed(3) + 'px,' + _subY.toFixed(3) + 'px) '
+                                + 'rotate(' + v.hdg.toFixed(2) + 'deg)';
           }
+        } catch (er) {}
+        // Redraw the solid-behind / dashed-ahead split only when we cross a
+        // vertex (cheap) — the marker itself glides every frame.
+        if (i0 !== v.arcIdx) {
+          v.arcIdx = i0;
+          try { if (v.a1 && v.a1.setLatLngs) v.a1.setLatLngs(route.slice(0, i1)); } catch (er) {}
+          try { if (v.a2 && v.a2.setLatLngs) v.a2.setLatLngs(route.slice(i0)); } catch (er) {}
         }
-      } catch (er) {}
+        // FOLLOW THE PLANE — keep it in view. Re-centre (eased pan, no tile
+        // thrash) only once it drifts past ~42% from centre, so it visibly
+        // crosses the map between recentres instead of being pinned.
+        try {
+          if (vmap.getSize && vmap.latLngToContainerPoint && vmap.getZoom) {
+            var _sz = vmap.getSize();
+            var _pt = vmap.latLngToContainerPoint([lat, lng]);
+            if (Math.abs(_pt.x - _sz.x / 2) > _sz.x * 0.42 || Math.abs(_pt.y - _sz.y / 2) > _sz.y * 0.42) {
+              try {
+                // v22748 — PAN SMOOTHLY: a slow eased pan (it fires only every
+                // few minutes) reads as a camera following the aircraft.
+                // Guarded so it can't stack: skip while a pan is running.
+                if (!vmap._acFollowing) {
+                  vmap._acFollowing = 1;
+                  (function (m) { setTimeout(function () { try { m._acFollowing = 0; } catch (e) {} }, 2600); })(vmap);
+                  if (typeof vmap.panInside === 'function') {
+                    vmap.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.16), Math.round(_sz.y * 0.16)],
+                      animate: true, duration: 2.2, easeLinearity: 0.2 });
+                  } else {
+                    vmap.panTo([lat, lng], { animate: true, duration: 2.2, easeLinearity: 0.2 });
+                  }
+                }
+              } catch (er2) {
+                try { vmap.setView([lat, lng], vmap.getZoom(), { animate: false }); } catch (er3) {}
+              }
+              // Save the followed view PER MAP — the old code wrote the mini
+              // map's saved view even when the big map's glide was panning.
+              try { vmap._fidsLastView = { lat: lat, lng: lng, zoom: vmap.getZoom() }; } catch (er4) {}
+            }
+          }
+        } catch (er) {}
+      }
       // Reschedule only while we are still the live generation.
       if (_myGen !== _gateGlide.gen) return;
       if (typeof requestAnimationFrame === 'function') _gateGlide.raf = requestAnimationFrame(frame);
@@ -35505,7 +35538,11 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // the aircraft').
   try {
     var _bcGlSpd = (window._gateInbound && typeof window._gateInbound._liveSpd === 'number') ? window._gateInbound._liveSpd : 0;
-    if (_bcGlSpd > 0 && typeof _startGateMapGlide === 'function') {
+    // v23099 — call even at speed 0: the engine now JOINS a running same-leg
+    // glide as a second view (the two surfaces resolve speed from different
+    // caches, so one often has it while the other reads 0 — that was half of
+    // 'the maps don't agree'). With no running glide and no speed it no-ops.
+    if (typeof _startGateMapGlide === 'function') {
       _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bcPlaneMk, _bcA1, _bcA2, _bcGlSpd, dst);
     }
   } catch (e) {}
