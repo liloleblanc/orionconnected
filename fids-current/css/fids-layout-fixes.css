@@ -9896,7 +9896,7 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
      Result: mean luminance 0.042 -> 0.050, 1.18x lighter, white text 4.58:1 —
      still above the body-text bar and above the 4.54:1 of the scallop plate it
      replaces. Dark ink would be 0.98:1 here, so white is not optional. */
-  --plate-tex: url('/textures/plate-dl-ribbons.jpg?v=23089');
+  --plate-tex: url('/textures/plate-dl-ribbons.jpg?v=23090');
   --plate-base: #101b30;
   --plate-blend: normal;
 }
@@ -9919,7 +9919,7 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
    about 18:1 worst case against the old bake's 4.66:1. The previous
    plate-pd-silk.jpg is left in place as a one-line rollback. */
 html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-pd-lines.jpg?v=23089');
+  --plate-tex: url('/textures/plate-pd-lines.jpg?v=23090');
   --plate-base: #0c1626;
   --plate-blend: normal;
 }
@@ -9955,7 +9955,7 @@ html body:is([data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airli
    old silver #E8EAEE to the artwork's own mid blue, so any uncovered edge
    matches instead of flashing white. */
 html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-aa-gradient.jpg?v=23089');
+  --plate-tex: url('/textures/plate-aa-gradient.jpg?v=23090');
   --plate-base: #7BA5BE;
   --plate-blend: normal;
   /* v23089 — Nick: "Can we put the tet for American a blue sky blue almost
@@ -10561,7 +10561,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   position: absolute !important;
   left: 0 !important; right: auto !important; top: 0 !important; bottom: 0 !important;
   width: calc(100% + 1000px) !important;      /* one tile of slack to slide into */
-  background: url('/textures/gate-sky-back-v2.jpg?v=23089') 0 50% / 1000px 100% repeat-x !important;
+  background: url('/textures/gate-sky-back-v2.jpg?v=23090') 0 50% / 1000px 100% repeat-x !important;
   opacity: 1 !important;
   -webkit-mask-image: none !important;
           mask-image: none !important;
@@ -10589,7 +10589,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 700px) !important;
   top: 34% !important; bottom: -12% !important;
-  background: url('/textures/gate-clouds-mid-v2.png?v=23089') 0 50% / 700px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-mid-v2.png?v=23090') 0 50% / 700px 100% repeat-x !important;
   opacity: .72 !important;
   pointer-events: none !important;
   animation: g8SkyMid 130s linear infinite !important;
@@ -10636,7 +10636,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::before
      12px/s — barely faster than the back plate. Distance is sold by size and
      slowness together; either one alone just looks like a small fast cloud. */
   top: 34% !important; bottom: 4% !important;    /* dropped below the fuselage line */
-  background: url('/textures/gate-clouds-fast-cartoon.png?v=23089') 0 50% / 1000px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-fast-cartoon.png?v=23090') 0 50% / 1000px 100% repeat-x !important;
   opacity: .58 !important;
   pointer-events: none !important;
   animation: g8SkyFast 26s linear infinite !important;
@@ -10676,8 +10676,8 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
      the "fast moving real clouds in the front" Nick asked for. The elliptical
      feathering that fixed the square edges is what makes them usable here:
      they cross the fuselage constantly, so a hard edge would be obvious. */
-  background: url('/textures/gate-clouds-fast-v2.png?v=23089') 0 50% / 2600px 100% repeat-x !important;
-  background-image: url('/textures/gate-clouds-fast-v2.png?v=23089') !important;
+  background: url('/textures/gate-clouds-fast-v2.png?v=23090') 0 50% / 2600px 100% repeat-x !important;
+  background-image: url('/textures/gate-clouds-fast-v2.png?v=23090') !important;
   /* "same for the front but less" — the front stays quick but stops
      competing with the layer behind the plane, which is now the hero. */
   opacity: .64 !important;
@@ -10705,7 +10705,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg::after 
   left: 0 !important; right: auto !important;
   width: calc(100% + 760px) !important;
   top: -35% !important; bottom: -35% !important;   /* overshoots the (now full-height) parent so it sweeps edge to edge */
-  background: url('/textures/gate-clouds-rush-v2.png?v=23089') 0 50% / 760px 100% repeat-x !important;
+  background: url('/textures/gate-clouds-rush-v2.png?v=23090') 0 50% / 760px 100% repeat-x !important;
   opacity: .28 !important;
   pointer-events: none !important;
   animation: g8SkyRush 5s linear infinite !important;
