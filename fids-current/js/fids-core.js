@@ -18395,7 +18395,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23098';
+var FIDS_BUILD_TAG = 'v23099';
 (function(){
   try {
     function _addTag(){
@@ -21562,7 +21562,17 @@ async function adbFetch(iata, direction) {
     const dir = direction === 'Departure' ? 'dep' : 'arr';
     const mcoUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/mco?direction=${dir}`;
     try {
-      const r = await fetch(mcoUrl);
+      // v23099 — ONE RETRY, SHORT BACKOFF. On a freshly rebooted stream box
+      // localStorage is empty (run.sh still wipes the profile), so a single
+      // dropped request used to blank the board for a whole 5-minute poll
+      // cycle with no error anywhere — Nick: 'MCO is down again'. Measured:
+      // the feed itself is healthy (872 dep / 761 arr, CORS correct); the
+      // board just gave up on the first miss.
+      let r = await fetch(mcoUrl).catch(function () { return null; });
+      if (!r || !r.ok) {
+        await new Promise(function (rs) { setTimeout(rs, 4000); });
+        r = await fetch(mcoUrl);
+      }
       if (r.ok) {
         const json = await r.json();
         let list = direction === 'Departure' ? (json.departures || []) : (json.arrivals || []);
@@ -21687,8 +21697,13 @@ async function adbFetch(iata, direction) {
       if (window._mcoLastGood && window._mcoLastGood[dir]) return window._mcoLastGood[dir];
       try {
         var _ls = JSON.parse(localStorage.getItem('fids_mco_lastgood_' + dir) || 'null');
-        if (_ls && _ls.out && (Date.now() - _ls.ts) < 15 * 60000) {
-          console.warn('[FIDS] MCO: GOAA down — serving localStorage last-good (' + Math.round((Date.now() - _ls.ts) / 1000) + 's old)');
+        // v23099 — the cap was 15 minutes, after which an outage flipped the
+        // board to EMPTY. A stale GOAA list beats a blank public display:
+        // the row pipeline already drops past flights, so a few-hours-old
+        // list still reads correctly, and the GOAA-only rule (never ADB for
+        // the list) is preserved. 3-hour ceiling so a day-old list can't show.
+        if (_ls && _ls.out && (Date.now() - _ls.ts) < 180 * 60000) {
+          console.warn('[FIDS] MCO: GOAA down — serving localStorage last-good (' + Math.round((Date.now() - _ls.ts) / 60000) + 'min old)');
           return _ls.out;
         }
       } catch (e2) {}
