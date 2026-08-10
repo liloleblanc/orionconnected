@@ -9601,7 +9601,12 @@ function uxgGateHtml(ctx) {
         + (_fcAcFam
           ? _acLanesBodyHtml(_fcExpress ? '3 • 4' : '3 • 4 • 5 • 6')
           : airlineCode === 'PD'
-          ? _pdLanesBodyHtml_gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ')
+          /* v23100 — was `_pdLanesBodyHtml_gateLbl('all', …)`: a botched edit
+             glued the two identifiers together, so Porter FINAL CALL threw a
+             ReferenceError and the whole gate render died (Nick: 'gate 3 in
+             moncton does not load'). The rows value is the 'All | Tous'
+             label _fcNext already computed for PD above. */
+          ? _pdLanesBodyHtml(_fcNext)
           : '<div class="g8-board-body">'
             + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
             + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
