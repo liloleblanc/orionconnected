@@ -13003,7 +13003,12 @@ const gView = document.getElementById('gateView');
       // less of it, placed precisely. Off by default; nothing changes for any
       // existing screen until the flag is on.
       try {
-        var _skyOn = /[?&]acsky=1\b/.test(window.location.search);
+        // v23087 — ON BY DEFAULT on every gate, every airport, after Nick
+        // approved the five-layer scene ("Yes this is it!!!"). ?acsky=0 turns
+        // it off again on any single screen without a deploy, which is the
+        // rollback lever if one display ever has trouble with it. ?acsky=1
+        // still parses and is now simply redundant.
+        var _skyOn = !/[?&]acsky=0\b/.test(window.location.search);
         document.body.classList.toggle('gate-acsky', _skyOn);
         if (_skyOn && typeof _acSkyPhaseStart === 'function') _acSkyPhaseStart();
       } catch (e) {}
@@ -18377,7 +18382,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23086';
+var FIDS_BUILD_TAG = 'v23087';
 (function(){
   try {
     function _addTag(){
