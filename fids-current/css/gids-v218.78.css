@@ -4746,8 +4746,29 @@ body, body.gids-page, body.gate-page{
 /* Clouds drift follows the plane's heading. Facing varies by aircraft type,
    not airline (AC mainline faces left, AC regional faces right), so it's
    auto-detected per image by a canvas scan that adds .g8-plane-faces-right to
-   the illustration shelf. Mirror the clouds to match. */
-.g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-faces-right #gateCloudsBg {
+   the illustration shelf. Mirror the clouds to match.
+
+   v23098 — SCOPED TO body:not(.gate-acsky). This mirror is correct only for
+   the old STATIC cloud backdrop, where flipping a still image was the only way
+   to reverse its apparent drift. Under the five-layer sky it broke the scene
+   on every right-facing aircraft, in two ways at once:
+
+     1. `transform: scaleX(-1) !important` REPLACES the animated translate.
+        !important beats a CSS animation outright, so the back plate froze —
+        measured 0.0 px/s over 8s on a right-facing shelf while the left-facing
+        one ran at 3.8 px/s. Computed transform was matrix(-1,0,0,1,0,0): a
+        mirror, with no translation at all.
+     2. #gateCloudsBg is the PARENT of the cumulus band (::after) and the fast
+        sparse layer (::before). Mirroring the parent visually reverses both
+        children, so those two drifted against the nose while #gateCloudsFg —
+        not a child of it — kept drifting correctly. Front and back disagreeing
+        is precisely the conveyor-belt reading (Nick: "the plane that goes
+        flying right bound.. the background animation is going the wroing way").
+
+   The new scene reverses direction properly via --g8-dir on the shelf, so it
+   needs no mirror. Keeping the rule for the flag-off path means ?acsky=0 still
+   behaves exactly as it always did. */
+html body:not(.gate-acsky) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-faces-right #gateCloudsBg {
   transform: scaleX(-1) !important;
 }
 
