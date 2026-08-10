@@ -18418,7 +18418,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23101';
+var FIDS_BUILD_TAG = 'v23102';
 (function(){
   try {
     function _addTag(){
@@ -26461,6 +26461,12 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
   if (_estReuse) {
     try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
     gateMap._fidsOverlays = [];
+  } else if (gateMap && gateMap.getContainer && gateMap.getContainer() === mb && mb.isConnected) {
+    // v23102 — same never-destroy rule as the live path: a route change
+    // swaps overlays and retargets the living map; it never blanks it.
+    try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
+    gateMap._fidsRouteKey = _estKey;
+    gateMap._fidsOverlays = [];
   } else {
     try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(gateMap);
     gateMap._fidsRouteKey = _estKey;
@@ -26684,8 +26690,60 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     // static overlays and must fall through to the redraw below.
     if (_liveReuse && gateMap._fidsLive === true && _dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return; // nothing changed → skip
   }
+  // v23102 — RE-ANCHOR IN PLACE (Nick: 'I want a smooth gliding plane not
+  // this bobbling crap', 'it flashed 3 times'). On a same-leg live refresh
+  // the code below wipes every overlay, rebuilds marker + arcs, and snap-
+  // setViews the camera — once per ADS-B fix. Three flashes = three wipes.
+  // When the running glide already owns a healthy marker on THIS map, hand
+  // it the fresh fix instead: the model re-anchors (fix error folded into
+  // the rate), the frame loop keeps driving the SAME DOM nodes and redraws
+  // the arcs from the new route, and the camera is left to the glide's own
+  // eased pan-follow. Nothing is destroyed, so nothing can flash; nothing
+  // snaps, so nothing can bob.
+  if (_liveReuse && gateMap._fidsLive === true) {
+    try {
+      var _mv = (typeof _gateGlide !== 'undefined' && _gateGlide.views && _gateGlide.views.mini) || null;
+      if (_mv && _mv.marker && _mv.marker._map === gateMap && _mv.a1 && _mv.a2 &&
+          _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
+        gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
+        try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e0) {}
+        // Camera: intervene only when the plane is OFF the visible window or
+        // the zoom tier genuinely moved — and then ease, never jump.
+        try {
+          var _cpt = gateMap.latLngToContainerPoint([planeLat, planeLng]);
+          var _csz = gateMap.getSize();
+          var _offView = _cpt.x < 0 || _cpt.y < 0 || _cpt.x > _csz.x || _cpt.y > _csz.y;
+          if (_offView || zoom !== gateMap.getZoom()) {
+            gateMap.flyTo([planeLat, planeLng], zoom, { duration: 1.6 });
+          }
+        } catch (e1) {}
+        var _ipSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
+          : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
+          : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
+          : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 && (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
+          : 0;
+        try { var _lpIp = window._gateInboundLivePos; if (_lpIp && _lpIp.onGround === true) _ipSpd = 0; } catch (e2) {}
+        window._gatePlaneMk = _mv.marker;
+        try { console.log('[MAP-LIVE] in-place re-anchor @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'glideKts', _ipSpd); } catch (e3) {}
+        _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _mv.marker, _mv.a1, _mv.a2, _ipSpd, dst);
+        setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 500);
+        return;
+      }
+    } catch (eIP) {}
+  }
   if (_liveReuse) {
     try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
+    gateMap._fidsOverlays = [];
+  } else if (gateMap && gateMap.getContainer && gateMap.getContainer() === mb && mb.isConnected) {
+    // v23102 — NEVER DESTROY A LIVING INSTANCE. A route-key change (the
+    // est↔live flip during the landing transition) used to remove() the
+    // whole map: measured on MCO gate 50, tiles 9→0 and a dead panel for
+    // ~9s, three times in three minutes — Nick: 'it flashed 3 times'. Same
+    // container → keep the map and its warm tiles, swap the overlays,
+    // retarget the view below. The old tiles stay visible while the new
+    // area's tiles load over them; nothing ever blanks.
+    try { (gateMap._fidsOverlays || []).forEach(function (l) { try { gateMap.removeLayer(l); } catch (e2) {} }); } catch (e) {}
+    gateMap._fidsRouteKey = _liveRouteKey;
     gateMap._fidsOverlays = [];
   } else {
     try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
@@ -27513,6 +27571,25 @@ function _gateMapTick() {
       prog > 0.02 && (prog < 0.99 || _liveFinal)
     );
     var inboundLanded = !_liveFinal && (inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
+    // v23102 — DEBOUNCE the clock-derived landing: a single missing poll or
+    // onGround blip flipped airborne↔at-gate once a minute on approach, and
+    // every flip re-routed the map (the measured flash cycle). A landing the
+    // FEED confirms flips immediately; a landing inferred from the clock
+    // must hold for 20s before the at-gate view takes over.
+    if (inboundLanded && inb.status !== 'arrived' && inb.status !== 'landed') {
+      try {
+        var _ldKey = String(inbReg || '') + '|' + String(inb.flight || '');
+        var _ldSt = window._gateLandedSticky;
+        if (!_ldSt || _ldSt.key !== _ldKey) {
+          window._gateLandedSticky = { key: _ldKey, at: Date.now() };
+          inboundLanded = false;
+        } else if (Date.now() - _ldSt.at < 20000) {
+          inboundLanded = false;
+        }
+      } catch (e) {}
+    } else if (!inboundLanded) {
+      try { window._gateLandedSticky = null; } catch (e) {}
+    }
 
     if (inboundLanded) {
       // Plane is at our gate — show its UPCOMING outbound route.
