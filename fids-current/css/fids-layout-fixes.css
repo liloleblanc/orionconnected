@@ -10894,3 +10894,11 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-trow > .v2-rc-fi-tlbl {
   border-bottom: none !important;
 }
+
+/* ── v23100 — THE BIG MAP ENTERS FINISHED (Nick: 'look at the map and how it
+   comes in that is terrible'). Hidden while its tiles paint, then a short
+   fade. The class is added and removed by _bcFadeInWhenReady, which clears
+   it on tile-load or a 2.5s fallback — this rule can only ever hide a map
+   that is still drawing itself. */
+#bigCraftMap { transition: opacity 0.45s ease; }
+#bigCraftMap.bc-loading { opacity: 0 !important; }
