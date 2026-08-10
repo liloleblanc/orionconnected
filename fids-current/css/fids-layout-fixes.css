@@ -10908,3 +10908,18 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
    pane is blurred as one composite so they read as soft weather. Blurring
    per-tile would seam at tile edges — the pane blur cannot. */
 .g8-wx-radar-pane { filter: blur(3px) saturate(0.92); }
+
+/* ── v23105 — THE WHITE GRID LINES (Nick's circled screenshot: white vertical +
+   horizontal lines carving the map into big squares). Those are tile seams: the
+   glide camera pans the map almost continuously, the tile pane sits at fractional
+   pixel positions, and the container background bleeds through hairline gaps
+   between the 256px tiles. Fix: each base tile draws 1px oversize so neighbours
+   overlap the gap, and the blend mode goes back to normal so the overlap paints
+   over instead of adding brighter lines (Leaflet 1.9 ships plus-lighter). Scoped
+   to the base tile pane only — the radar pane's overzoomed tiles carry scaled
+   inline sizes that a forced 257px would corrupt. */
+html body .leaflet-tile-pane img.leaflet-tile {
+  mix-blend-mode: normal !important;
+  width: 257px !important;
+  height: 257px !important;
+}
