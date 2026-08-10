@@ -10907,7 +10907,12 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
    actually'). RainViewer low-zoom tiles are coarse blocks; the whole radar
    pane is blurred as one composite so they read as soft weather. Blurring
    per-tile would seam at tile edges — the pane blur cannot. */
-.g8-wx-radar-pane { filter: blur(3px) saturate(0.92); }
+/* v23108 — 3px was heavy-handed (Nick: 'Why are the clouds too blurry?').
+   It went in while chasing the map 'squares', which turned out to be tile
+   seams (fixed properly in v23105) — the radar only needs enough softening
+   to melt the upscaled RainViewer blocks together, not a frosted-glass
+   wash over the weather. */
+.g8-wx-radar-pane { filter: blur(1.2px) saturate(0.95); }
 
 /* ── v23105 — THE WHITE GRID LINES (Nick's circled screenshot: white vertical +
    horizontal lines carving the map into big squares). Those are tile seams: the
