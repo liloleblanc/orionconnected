@@ -18434,7 +18434,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23103';
+var FIDS_BUILD_TAG = 'v23104';
 (function(){
   try {
     function _addTag(){
@@ -26411,7 +26411,11 @@ function _wxRadarAdd(m) {
           _wp.style.zIndex = 350;
         }
       } catch (ep) {}
-      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.5, maxNativeZoom: 7, maxZoom: 19 }).addTo(m);
+      // v23104 — no radar at continental zooms (Nick: 'the map still has
+      // squares'): at z<=5 RainViewer cells are sub-blur speckle covering
+      // the whole map. The overlay only appears once the view is close
+      // enough for weather shapes to mean something.
+      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.5, minZoom: 6, maxNativeZoom: 7, maxZoom: 19 }).addTo(m);
     } catch (e) {}
   };
   if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }
@@ -26443,7 +26447,25 @@ function _mapPlaneIcon() {
   } catch (e) {}
   return '/logos/map-plane-jet.png';
 }
-function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;/* v23099 — this static/estimate map replaces the MINI surface only; detach that view and leave the shared glide running for the big map (the old blanket stop froze the big marker every time the gate re-rendered). */try{if(typeof _gateGlide!=='undefined'&&_gateGlide&&_gateGlide.views)delete _gateGlide.views.mini;}catch(e){}var mb=document.getElementById('gateMapBox');if(!mb)return;
+function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;
+  /* v23104 — THE LIVE VIEW OUTRANKS THE ESTIMATE. This check must run BEFORE
+     the mini-view detach below, or the view is already gone when we look.
+     While a healthy same-leg live glide is flying on this map, an estimate
+     redraw is only ever a downgrade (camera yanked to the continental pins
+     view, plane hidden under the origin pin, then back on the next good
+     poll — Nick: 'still doing it, quite often now'). Skip it. */
+  try {
+    var _lgO = _lookupAirport(org), _lgD = _lookupAirport(dst);
+    var _lgv = (typeof _gateGlide !== 'undefined' && _gateGlide.views && _gateGlide.views.mini) || null;
+    if (_lgv && _lgv.marker && typeof gateMap !== 'undefined' && gateMap && _lgv.marker._map === gateMap &&
+        typeof _gateGlideSameLeg === 'function' && _lgO && _lgD &&
+        ((_gateGlideSameLeg(_gateGlide.o, _lgO) && _gateGlideSameLeg(_gateGlide.d, _lgD)) ||
+         (_gateGlideSameLeg(_gateGlide.o, _lgD) && _gateGlideSameLeg(_gateGlide.d, _lgO)))) {
+      try { console.log('[MAP-EST] live glide healthy on this leg — estimate redraw skipped'); } catch (e0) {}
+      return;
+    }
+  } catch (eLG) {}
+  /* v23099 — this static/estimate map replaces the MINI surface only; detach that view and leave the shared glide running for the big map (the old blanket stop froze the big marker every time the gate re-rendered). */try{if(typeof _gateGlide!=='undefined'&&_gateGlide&&_gateGlide.views)delete _gateGlide.views.mini;}catch(e){}var mb=document.getElementById('gateMapBox');if(!mb)return;
   // Resolve airport coords. If either is unknown, kick off async lookup
   // and retry — the map will populate as soon as both coords arrive.
   var o=_lookupAirport(org), d=_lookupAirport(dst);
