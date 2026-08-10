@@ -8675,6 +8675,21 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-c
   color: var(--plate-info, #93c5fd) !important;
 }
 
+/* v23099 — REVISED TIMES COLOUR LIKE THE STATUS WORD (Nick: 'when a delay
+   happens or a change the appropriate time has to change colours
+   accordingly'). The blanket ink rule above paints every span in the left
+   plates plate-ink, and the revised-time orange (gids-v218.78.css) loses to
+   it — so a delayed departure showed its new time in plain white while only
+   'Delayed | En retard' coloured. Same specificity tier as the status-word
+   overrides: amber for a late revision, green when the flight runs early
+   (the g8-rev-early direction class set where the span is built). */
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value .g8-r2-revised {
+  color: var(--plate-warn, #fbbf24) !important;
+}
+html body[data-gate-airline]:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-value .g8-r2-revised.g8-rev-early {
+  color: var(--plate-ok, #34d399) !important;
+}
+
 /* ── v22905 — AIR CANADA: FRONT AND BACK SWAP (Nick: 'the current front
    panel put that in the back and use this as the front'). The engraved-line
    plate moves off the front plates and onto the shelf behind them; the new
@@ -10259,11 +10274,32 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-aircraft-op-inline img
 html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-fi-val.v2-rc-opby-val img {
   filter: brightness(0) invert(1) !important;
   opacity: 1 !important;
+  /* v23099 — EXPLICIT height, ABSOLUTE max-width (Nick: 'the Jazz logo is
+     missing'). height:auto + a PERCENTAGE max-width sized the image off its
+     own span — a shrink-to-fit flex item whose width comes back from the
+     image — and the browser resolves that circle to 0x0. The mark was
+     white, loaded, and zero pixels tall. An explicit height breaks the
+     circle; the absolute cap keeps a wide wordmark from crowding the row. */
+  height: clamp(40px, 5.6vh, 78px) !important;
   max-height: clamp(40px, 5.6vh, 78px) !important;
-  max-width: min(64%, 320px) !important;
+  max-width: 320px !important;
   width: auto !important;
-  height: auto !important;
   object-fit: contain !important;
+}
+/* The logo's span must not be flex-squeezed to nothing by the nowrap label
+   beside it — the label yields instead (it has its own fitter). */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-acb-opby-logo,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-opby-val {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+/* And the row STACKS: the nowrap bilingual label alone is ~330px of the
+   350px shelf, so label and wordmark side by side can only overflow (the
+   centering then clips BOTH ends — 'erated By | Exploité par'). Label above,
+   operator mark below, both centered; nothing can clip. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby {
+  flex-direction: column !important;
+  gap: clamp(3px, 0.45vh, 7px) !important;
 }
 /* The name fallback when there is no logo file. */
 html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-acb-opby-logo,

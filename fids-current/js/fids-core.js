@@ -7285,7 +7285,10 @@ function _buildV2AircraftCol(ctx, vars) {
       // A REVISED (later) departure means the flight is delayed — reflect that
       // in the status label AND colour even if the raw feed still says
       // "scheduled" (that's why the departure time already shows orange).
-      var _delayedByRev = _depRev;
+      // v23099 — unless the revision is EARLY (g8-rev-early direction marker):
+      // an early flight was being forced into the delayed class, so the left
+      // plate read 'Early | En Avance' in amber beside a green revised time.
+      var _delayedByRev = _depRev && String(_fiDep || '').indexOf('g8-rev-early') === -1;
       if (_delayedByRev) {
         var _rawCls = String(_fiStCls || '').toLowerCase();
         if (_rawCls.indexOf('cancel') === -1 && _rawCls.indexOf('divert') === -1
@@ -8824,7 +8827,11 @@ function uxgGateHtml(ctx) {
           { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
       } catch (e) {}
     }
-    depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised">' + (_to12h(_revDepHHMM) || '\u2014') + '</span>';
+    // v23099 \u2014 the revised time carries the DIRECTION of the change so the
+    // left plates can colour it like the status word (amber late, green
+    // early). Nick: 'the appropriate time has to change colours accordingly'.
+    var _revDirCls = (stKey === 'early') ? ' g8-rev-early' : '';
+    depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised' + _revDirCls + '">' + (_to12h(_revDepHHMM) || '\u2014') + '</span>';
   }
 
   // Arr time display
@@ -8842,7 +8849,7 @@ function uxgGateHtml(ctx) {
           var newArrMins = parseInt(arrParts[0])*60 + parseInt(arrParts[1]) + delayMins;
           var newArrH24 = String(Math.floor(newArrMins/60) % 24).padStart(2,'0');
           var newArrM = String(newArrMins % 60).padStart(2,'0');
-          arrHtml = '<span class="g8-r2-strike">' + _to12h(_cleanArr) + '</span><span class="g8-r2-revised">' + _to12h(newArrH24 + ':' + newArrM) + '</span>';
+          arrHtml = '<span class="g8-r2-strike">' + _to12h(_cleanArr) + '</span><span class="g8-r2-revised' + ((stKey === 'early') ? ' g8-rev-early' : '') + '">' + _to12h(newArrH24 + ':' + newArrM) + '</span>';
         }
       }
     }
@@ -8940,7 +8947,7 @@ function uxgGateHtml(ctx) {
       var origBd = new Date(origBoardTs);
       var origBoardStr = origBd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
       if (origBoardStr !== boardTimeHtml) {
-        boardTimeHtml = '<span class="g8-r2-strike">' + origBoardStr + '</span><span class="g8-r2-revised">' + boardTimeHtml + '</span>';
+        boardTimeHtml = '<span class="g8-r2-strike">' + origBoardStr + '</span><span class="g8-r2-revised' + ((stKey === 'early') ? ' g8-rev-early' : '') + '">' + boardTimeHtml + '</span>';
       }
     }
   }
