@@ -14,3 +14,5 @@ node_modules/
 package.json
 package-lock.json
 probe.js
+# local test symlink to leaflet (prod serves /mapcdn from the worker)
+fids-current/mapcdn
