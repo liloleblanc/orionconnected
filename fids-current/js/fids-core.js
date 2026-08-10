@@ -18434,7 +18434,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23106';
+var FIDS_BUILD_TAG = 'v23107';
 (function(){
   try {
     function _addTag(){
@@ -26440,10 +26440,25 @@ function _wxRadarAdd(m) {
 // Otter, Caravan, PC-12); everything else gets the jet.
 function _mapPlaneIcon() {
   try {
+    // v23107 — LOOK EVERYWHERE THE TYPE ACTUALLY LIVES (Nick, PD472: the
+    // panel listed a Dash 8 while the map drew the jet default). This only
+    // read the OUTBOUND row's display string; for regionals the type is
+    // routinely known on the INBOUND row, the row's code field, or the
+    // verified-tail cache instead. An airline flying both DH8s and E195s
+    // makes the jet fallback a coin-flip lie — exhaust the real sources
+    // first.
     var cf = window._gateCurrentFlight || {};
-    var raw = String(cf._aircraft || cf.aircraft || '');
-    var eq = (typeof aircraftCodeToIata === 'function') ? String(aircraftCodeToIata(raw) || raw) : raw;
-    if (/^(DH[1-8]|DHT|DHC|AT[4-7]|ATR|BEK|BE[1H9]|B19|SF3|SW4|J3[12]|C08|CNA|CN1|PC2|EM2)/i.test(eq.toUpperCase())) return '/logos/map-plane-prop.png';
+    var inb = window._gateInbound || {};
+    var _srcs = [cf._aircraftCode, cf._aircraft, cf.aircraft,
+                 (inb._reg && typeof _regTrueType === 'function') ? _regTrueType(inb._reg) : '',
+                 inb._aircraftCode, inb._aircraft];
+    for (var _si = 0; _si < _srcs.length; _si++) {
+      var raw = String(_srcs[_si] || '');
+      if (!raw) continue;
+      var eq = (typeof aircraftCodeToIata === 'function') ? String(aircraftCodeToIata(raw) || raw) : raw;
+      if (/^(DH[1-8]|DHT|DHC|AT[4-7]|ATR|BEK|BE[1H9]|B19|SF3|SW4|J3[12]|C08|CNA|CN1|PC2|EM2)/i.test(eq.toUpperCase())
+          || /DASH ?8|DHC-?[68]|Q ?400|TWIN OTTER|ATR ?[47]2/i.test(raw)) return '/logos/map-plane-prop.png';
+    }
   } catch (e) {}
   return '/logos/map-plane-jet.png';
 }
