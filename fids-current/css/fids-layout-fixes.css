@@ -10936,3 +10936,50 @@ html body .leaflet-tile-pane img.leaflet-tile {
   width: 257px !important;
   height: 257px !important;
 }
+
+/* ── v23113 — DELTA HEADER + CLOCK TAKE THE PLATE ARTWORK ────────────────
+   Nick: 'The gate top should match the same color as the plates' and 'the
+   clock should have the same pattern except with a red tint that can be
+   dark red or burgandy'.
+
+   The header strip and the gate badge now carry the SAME wave plate the
+   flight plates use, so the top of the screen belongs to the same family.
+   The clock carries that identical wave pattern re-inked burgundy — the
+   ramp is driven by the plate's own luma, so every crest and trough lands
+   exactly where Nick drew it. White ink: 11.0:1 worst case on the red. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1, .g8-wrap .g8-r1) {
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  --airline-accent: #0F1B3D !important;   /* the badge is painted inline from this */
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right {
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.octb, .octb-tab, .octb-stack) {
+  background-color: #21070B !important;
+  background-image: url('/textures/plate-dl-waves-red.jpg?v=23113') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-blend-mode: normal !important;
+}
+/* v23113 — the welcome-slide mark keeps its own colour on Delta (the ad
+   renderer forces marks white; Nick wants the red widget there). */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gad-ad-logo,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) img[src*="delta-emblem-colour"] {
+  filter: none !important;
+}
+/* v23113 — Nick: 'the line between the map and or well outside the shellves
+   small lines around red'. The hairline rules that outline the right-column
+   shelves take Delta red instead of the neutral border. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap :is(.v2-rc-shelf, .v2-rc-shelf-map, .v2-rc-shelf-fi, .v2-rc-shelf-type, .v2-rc-fi-pane, .v2-rc-acb) {
+  border: 2px solid #E01933 !important;
+  border-radius: 10px !important;
+}

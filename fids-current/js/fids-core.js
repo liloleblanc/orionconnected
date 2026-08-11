@@ -8674,7 +8674,11 @@ function _buildV2MapCol(ctx, vars) {
   // round rail ORB — keeps its mono white leaf.
   var _MAPLIFE_EMBLEM = {
     'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-    'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+    'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+    // v23113 — Nick: 'the red emblem goes in the small map space when map not
+    // there'. His colour widget, not the mono banner mark.
+    'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+    'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
   };
   var _mapLifeSrc = _MAPLIFE_EMBLEM[_mapLifeCode]
     || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
@@ -9266,7 +9270,9 @@ function uxgGateHtml(ctx) {
   // airline+alliance lockup — a separate mark would show the alliance twice.
   // (UA removed — Nick wants United's globe+wordmark with the Star Alliance
   // mark shown SEPARATELY, like every other Star carrier.)
-  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1 };
+  // v23113 — Delta joins KLM here: Nick's lockup already CONTAINS SkyTeam, so
+  // the separate alliance mark would print it twice (measured on the render).
+  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1, 'DL': 1, 'DAL': 1 };
   // Per-carrier alliance-mark override (Nick's official asset): United uses
   // the official 2011 Star Alliance lockup, black backing stripped so the
   // white mark floats on the banner.
@@ -9844,7 +9850,7 @@ function uxgGateHtml(ctx) {
     'QK': '/logos/airlines/canadian/air-canada-white.svg',                       // Jazz under AC
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
-    'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
+    'DL': '/logos/airlines/us-major/delta-skyteam-lockup-white.svg',             // v23113 — Nick's own lockup: colour widget + WHITE wordmark + SkyTeam
     // Official COMBINED airline+alliance lockups (Nick: 'there are multiple
     // logos for alliance partners — use them'). Carriers with a combined
     // lockup skip the separate alliance mark (see _COMBINED_ALLIANCE_LOCKUP).
@@ -10277,6 +10283,15 @@ function uxgGateHtml(ctx) {
   // ~16%, which sits UNDER the skewed gate tab so no black wedge shows at the
   // seam. Result: solid black wordmark+time field, red only at the gate.
   var _silkGrad = 'linear-gradient(90deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 84%, var(--airline-accent,#1aa) 93%, var(--airline-accent,#1aa) 100%)';
+  // v23113 — Nick: 'The gate top should match the same color as the plates'.
+  // The banner writes its field as an INLINE !important background, which no
+  // stylesheet can override, so the swap happens here: Delta's top strip
+  // carries the same plate artwork the flight plates use.
+  try {
+    if (/^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) {
+      _silkGrad = "url('/textures/plate-dl-waves.jpg?v=23113') center/cover no-repeat, " + _silkDark;
+    }
+  } catch (e) {}
 
   // Silk drops the airport LOGO (Nick's redesign): the centre now holds a
   // centred local-time block instead. Classic banner keeps the airport band.
@@ -33418,7 +33433,11 @@ function _buildGateAdSlideList() {
       var _FB_WELCOME_LOGO = {
         'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg',
         'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+        // v23113 — Nick: 'the logo in the middle as well for the welcome =
+        // red'. His colour widget, not the white-forced mono mark.
+        'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
       };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
