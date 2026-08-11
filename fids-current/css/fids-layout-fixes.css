@@ -9938,8 +9938,16 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
      Final composite: mean luminance 0.026, white text 13.77:1 on average and
      3.70:1 at the single brightest point, with 0.00% of the plate under the
      3.0:1 large-text bar. */
-  --plate-tex: url('/textures/plate-dl-navy.jpg?v=23098');
-  --plate-base: #141D50;
+  /* v23112 — Nick's wavy-lines artwork ('could i ask again... Delta plate').
+     Straight navy waves: no purple ancestry to tone, no drawn red to compete
+     with the row rules. The bake needed NO correction — measured mean
+     luminance 0.0137, white text 16.74:1 on average, 12.59:1 at the single
+     brightest pixel, 0.00% of the plate under the 3.0:1 large-text bar,
+     the cleanest-reading Delta plate baked so far. Mean RGB (2, 17, 93)
+     sits in Delta navy, so the red row rules stay the only red on the
+     gate. */
+  --plate-tex: url('/textures/plate-dl-waves.jpg?v=23112');
+  --plate-base: #061152;
   --plate-blend: normal;
 }
 /* WestJet: Nick's arc artwork ('one is porter other is werstjet') — the
