@@ -10945,7 +10945,10 @@ html body .leaflet-tile-pane img.leaflet-tile {
      clock box   #56102A  burgundy — his value, not the bright red I had
                           over-corrected to
      gate badge  #11063C  same indigo as the strip, white type
-   Each box keeps a hairline white edge the way his mock shows them.
+   COLOURS ONLY — the square corners in his mock were his drawing tool, not
+   a request ('You didnt need to actually change the shape no the panels
+   were fine / I coudnt round them'), so every existing shape, radius and
+   edge is left exactly as it was.
    White ink: 17.4:1 on the indigo, 11.9:1 on the burgundy. */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
   --airline-accent: #11063C !important;
@@ -10957,16 +10960,25 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right {
   background-color: #11063C !important;
   background-image: none !important;
-  border-left: 2px solid rgba(255,255,255,0.92) !important;
 }
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.octb, .octb-tab, .octb-stack) {
   background-color: #56102A !important;
   background-image: none !important;
-  border: 2px solid rgba(255,255,255,0.92) !important;
-  border-radius: 8px !important;
 }
 /* v23113 — the welcome-slide mark keeps its own colour on Delta (the ad
    renderer forces marks white; Nick wants the red widget there). */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.gad-ad-logo, img[src*="delta-emblem-colour"]) {
   filter: none !important;
+}
+/* v23113 — Nick: 'there is also white around the shelves entirely left and
+   right'. A white hairline around every shelf in BOTH columns — the left
+   flight plates and the right-hand panels — exactly as his rendition shows
+   them. Border only: no radius, no size change, so nothing reflows. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap :is(.gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
+               .gad-map-col-v2 > .v2-rc-shelf,
+               .gad-map-col-v2 .v2-rc-shelf-map,
+               .gad-map-col-v2 .v2-rc-fi-pane,
+               .gad-map-col-v2 .v2-rc-acb) {
+  border: 2px solid rgba(255,255,255,0.92) !important;
 }
