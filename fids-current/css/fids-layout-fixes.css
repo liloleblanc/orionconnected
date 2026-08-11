@@ -11454,3 +11454,43 @@ html body .g8-wrap.g8-takeover .g8-r1-gate {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23120 — PORTER: cream banner, navy ink (Nick: 'with Porter a Cream
+   colored background for the upper and blue font').
+
+   The spec colours were right but two shared layers were washing them out:
+   1. The banner-silk overlay runs mix-blend-mode:SCREEN — screening gray
+      silk over cream lightens it to the silvery blue we rendered. On
+      Porter it flips to MULTIPLY at low opacity: the texture stays as a
+      whisper in the cream instead of erasing it.
+   2. The silk logo height (12.5vh) was cut for emblem+wordmark lockups;
+      porter.svg is LETTERS ONLY, so that height rendered a skyscraper
+      'porter' clipping out the top of the band. Wordmark-only height.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body .g8-wrap.g8-airline-PD .g8-r1::after,
+html body .g8-wrap.g8-airline-PD .g8-r1::before,
+html body .g8-wrap.g8-airline-PD .g8-r1-timebox::before,
+html body .g8-wrap.g8-airline-PD .octb-wrap::before {
+  mix-blend-mode: multiply !important;
+  opacity: 0.12 !important;
+}
+html body .g8-wrap.g8-airline-PD .g8-r1-silk .g8-r1-logo,
+html body .g8-wrap.g8-airline-PD .g8-r1-silk .g8-r1-logoslot img:not(.g8-r1-star) {
+  height: clamp(44px, 6.6vh, 64px) !important;
+  max-height: 64px !important;
+}
+/* The gate tab keeps Porter navy solid — overlay art reads wrong on it. */
+html body .g8-wrap.g8-airline-PD .g8-r1-right::before {
+  opacity: 0.18 !important;
+}
+
+/* Porter's cream is the UPPER only (Nick). The lane sign's left panel and
+   the countdown stage inherit --banner-bg, which is now the cream — white
+   type on cream is unreadable and neither surface is 'the upper'. They pin
+   to Porter's Blue Zodiac navy, the colour they were before. */
+html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-hdr-now,
+html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.now,
+html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-countdown .g8-cd-body {
+  background-color: #112855 !important;
+}

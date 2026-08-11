@@ -10115,7 +10115,7 @@ function uxgGateHtml(ctx) {
     // HA override REMOVED Jul 2026 (Nick: banner wordmark must be WHITE, icon
     // keeps its colors) — HA flows through the emblem+wordmark pair: native
     // Pualani beside hawaiian-wordmark-light.svg (white lettering).
-    'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
+    'PD': '/logos/airlines/canadian/porter.svg',                                 // NAVY wordmark for the cream banner (v23120)
     'PB': '/logos/airlines/canadian-regional/pal-airlines-swoosh-white.svg?v=2', // PAL — gold swoosh + white wordmark; v2 = ink-normalized (was 31% empty canvas → read tiny)
     // BA override REMOVED Jul 2026 (Nick: 'British Airways is not correct') —
     // BA now flows through the emblem+wordmark path: Speedmarque tile +
@@ -10401,7 +10401,11 @@ function uxgGateHtml(ctx) {
     // WestJet — WHITE banner / teal swoosh / white body (matches their white fuselage)
     'WS': { r1: '#081D33', r1Text: '#FFFFFF', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
-    'PD': { r1: '#0C1420', r1Text: '#FFFFFF', r2: '#1A3A6B', body: '#FFFFFF', bodyText: '#002244' }
+    // v23120 (Nick: 'with Porter a Cream colored background for the upper and
+    // blue font') — Porter's own identity: navy type on warm latte cream.
+    // r1Text is the official wordmark navy (#152C53, sampled from porter.svg)
+    // so the banner text and the logo are literally the same ink.
+    'PD': { r1: '#EFE8DA', r1Text: '#152C53', r2: '#152C53', body: '#FFFFFF', bodyText: '#002244' }
   };
   // Airline colour DATABASE (data/airline-colors.js) is the source of truth —
   // merge it over the built-in defaults so edits there win.
@@ -10577,7 +10581,17 @@ function uxgGateHtml(ctx) {
        // was used here — so the state is marked on the wrap instead.
        + ((finalActive || boardActive || showCountdown) ? ' g8-takeover' : '')
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
-       + (_bannerSpec && _bannerSpec.r1 === '#FFFFFF' ? ' g8-banner-light' : '')
+       + ((function () {
+           // light-banner = LUMINANCE, not the literal '#FFFFFF' — Porter's
+           // cream banner needs the same dark-ink treatment as a white one.
+           try {
+             var _m = /^#([0-9a-f]{6})$/i.exec((_bannerSpec && _bannerSpec.r1) || '');
+             if (!_m) return '';
+             var _h = _m[1];
+             var _lum = 0.2126 * parseInt(_h.slice(0, 2), 16) + 0.7152 * parseInt(_h.slice(2, 4), 16) + 0.0722 * parseInt(_h.slice(4, 6), 16);
+             return _lum > 170 ? ' g8-banner-light' : '';
+           } catch (e) { return ''; }
+         })())
        + (_wmSymbol ? ' g8-wrap-watermark' : '')
        + (airlineCode ? ' g8-airline-' + airlineCode : '')
        + (iata ? ' g8-ap-' + String(iata).toUpperCase() : '')
@@ -18789,7 +18803,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23119';
+var FIDS_BUILD_TAG = 'v23120';
 (function(){
   try {
     function _addTag(){
