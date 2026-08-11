@@ -10936,3 +10936,89 @@ html body .leaflet-tile-pane img.leaflet-tile {
   width: 257px !important;
   height: 257px !important;
 }
+
+
+/* ── v23113 — DELTA TOP BAR, NICK'S RENDITION ────────────────────────────
+   Colours sampled pixel-for-pixel out of the image he sent ('thats my
+   rendition / thats what i want / color wise'):
+     top strip   #11063C  deep indigo, FLAT — no wave art, no gradient
+     clock box   #56102A  burgundy — his value, not the bright red I had
+                          over-corrected to
+     gate badge  #11063C  same indigo as the strip, white type
+   COLOURS ONLY — the square corners in his mock were his drawing tool, not
+   a request ('You didnt need to actually change the shape no the panels
+   were fine / I coudnt round them'), so every existing shape, radius and
+   edge is left exactly as it was.
+   White ink: 17.4:1 on the indigo, 11.9:1 on the burgundy. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  --airline-accent: #11063C !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1, .g8-wrap .g8-r1) {
+  background-color: #11063C !important;
+  background-image: none !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right {
+  background-color: #11063C !important;
+  background-image: none !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1-timebox, .octb, .octb-tab, .octb-stack) {
+  /* v23113b — Nick: 'clock is purple thats not red'. #56102A sampled from
+     his mock was landing at #201733 on screen: a translucent overlay on the
+     box was mixing it with the indigo strip behind. The colour is forced on
+     every layer of the clock and the overlays are cleared, so what renders
+     is the red itself and not a blend of it. */
+  background-color: #C8102E !important;
+  background-image: none !important;
+  background-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1-timebox, .octb, .octb-tab, .octb-stack)::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1-timebox, .octb, .octb-tab, .octb-stack)::after {
+  background: none !important;
+  opacity: 0 !important;
+}
+/* v23113 — the welcome-slide mark keeps its own colour on Delta (the ad
+   renderer forces marks white; Nick wants the red widget there). */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.gad-ad-logo, img[src*="delta-emblem-colour"]) {
+  filter: none !important;
+}
+/* v23113 — Nick: 'there is also white around the shelves entirely left and
+   right', then 'no white around the actual inside panels ONLY OUTSIDE'.
+   So it is ONE white edge around the OUTSIDE of each column — the left
+   plate stack and the right-hand stack — and nothing on the individual
+   panels inside. Border only: no radius, no size change, nothing reflows. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap :is(.gad-aircraft-col, .gad-map-col-v2) {
+  border: 2px solid rgba(255,255,255,0.92) !important;
+}
+
+/* ── v23114 — MONCTON SKYLINE BACKGROUND (YQM ONLY, TEST) ────────────────
+   Nick: 'i want to test one more thing in the Moncton only as background
+   right now its clouds and geometric patterns FIDS and BAGS can you work
+   this in?' His pastel line-art of the Moncton waterfront replaces the
+   cloud+hex band on Moncton's boards and baggage screens — and ONLY there;
+   every other airport keeps the band exactly as it is.
+
+   The art is dark line work on cream, which would have been a bright slab
+   on a navy board, so it is baked twice: the dark-board version keeps only
+   the LINES (alpha driven by how dark each pixel is) re-inked moonlit
+   slate, and the light-board version keeps his pastels but sheer. Both sit
+   bottom-centre at the same size as the band they replace, so nothing in
+   the layout moves. The 'MONCTON, NB' caption strip is trimmed off the
+   bottom of the art — the boards have their own ticker there. */
+html body[data-fids-ap="YQM"]:not([data-page="__never"]) #fidsBoard:not(#_),
+html body[data-fids-ap="YQM"]:not([data-page="__never"]) .bidsv2-screen:not(#_) {
+  background-image: url("/logos/Backgrounds/moncton-skyline-dark.webp?v=23114") !important;
+  background-attachment: fixed !important;
+  background-position: center bottom !important;
+  background-size: 100vw auto !important;
+  background-repeat: no-repeat !important;
+}
+html body[data-fids-ap="YQM"][data-fids-theme="mist"]:not([data-page="__never"]) #fidsBoard:not(#_),
+html body[data-fids-ap="YQM"][data-fids-theme="cream"]:not([data-page="__never"]) #fidsBoard:not(#_),
+html body[data-fids-ap="YQM"][data-fids-theme="light"]:not([data-page="__never"]) #fidsBoard:not(#_),
+html body[data-fids-ap="YQM"][data-fids-theme="mist"]:not([data-page="__never"]) .bidsv2-screen:not(#_),
+html body[data-fids-ap="YQM"][data-fids-theme="cream"]:not([data-page="__never"]) .bidsv2-screen:not(#_),
+html body[data-fids-ap="YQM"][data-fids-theme="light"]:not([data-page="__never"]) .bidsv2-screen:not(#_) {
+  background-image: url("/logos/Backgrounds/moncton-skyline-light.webp?v=23114") !important;
+}
