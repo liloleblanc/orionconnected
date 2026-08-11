@@ -11980,28 +11980,21 @@ html body:not(#_):not(#_) .g8-wrap .gad-aircraft-col {
    Integer units now: map 2, flight-info 2, illustration 1, type 1 = the
    same six units, the same 121px module, top and bottom flush with the
    left rail. */
-/* The column is a GRID, not flex — and the .gad-map-col-fi4 variant
-   re-templates it to `repeat(3, 0.85fr) 1.45fr repeat(2, 1fr)`, which is
-   precisely what knocked it off the left's module (measured 288 / 192 /
-   120 / 120 against a uniform 121 rail). Back to six EQUAL rows, with the
-   flight-info shelf taking two of them — so it is both on the grid AND
-   roomier than the 1.45fr hack it replaces. */
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
-  grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
-}
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
-  grid-row: 1 / 3 !important;
-}
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
-  grid-row: 3 / 5 !important;
-}
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
-  grid-row: 5 / 6 !important;
-}
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
-  grid-row: 6 / 7 !important;
-}
+/* v23138 — THE RIGHT-COLUMN GRID OVERRIDE IS WITHDRAWN ENTIRELY.
+
+   Nick is right that the map should be three panels — that is his own
+   six-and-six spec. But measured, it cannot be three panels AND keep a
+   working flight-info shelf at this column width: giving the map a third
+   module leaves the info shelf 240px for four rows, its value cells come
+   out 96px wide, and 'Scheduled | Prévu' (145px) cannot fit at any size
+   the fitter is allowed to use. Wrapping needs 56px in a 45px row. Every
+   arrangement I measured either clipped the values or shrank the map.
+
+   So the column goes back to EXACTLY what it was before tonight — map 288,
+   info 192, aircraft 120, type 120 — which scans clean. The trade (map
+   size vs info-shelf rows vs column width) is a layout decision, and it is
+   Nick's to make, not mine to keep guessing at. */
+
 
 /* ═══════════════════════════════════════════════════════════════════════
    v23135 — 'I think the gray or beige looks better than the red for AC
@@ -12054,3 +12047,33 @@ html[data-fids-url-screen="gate"] body:not(.uxg-gate-mode),
 html[data-fids-url-screen="baggage"] body:not(.uxg-bag-mode) {
   background: #0b1119 !important;
 }
+
+/* v23138 — GIVE THE MAP BACK ITS PIXELS (Nick: 'with the altimeter its now
+   1 and half seriously' / 'You cant see it'). Measured on the 3-module map
+   shelf: 364px of shelf, but the title bar (35px) and the altimeter (64px)
+   both sit ON the map, leaving 2.2 modules of unobstructed map. Both bars
+   are slimmed to the smallest size their type still reads at, which returns
+   ~30px — every pixel of it to the visible map. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  min-height: clamp(38px, 5.1vh, 64px) !important;
+  padding: clamp(2px, 0.35vh, 6px) clamp(8px, 0.8vw, 16px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-val {
+  font-size: clamp(18px, 2.4vh, 36px) !important;
+  line-height: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl {
+  font-size: clamp(11px, 1.35vh, 18px) !important;
+  line-height: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl2 {
+  font-size: clamp(9px, 1.05vh, 13px) !important;
+  line-height: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle {
+  padding: clamp(2px, 0.35vh, 6px) clamp(8px, 0.8vw, 16px) !important;
+  font-size: clamp(13px, 1.85vh, 22px) !important;
+  line-height: 1.15 !important;
+}
+
+

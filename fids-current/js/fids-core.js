@@ -3049,6 +3049,26 @@ try {
             }
           }
         } catch (e3) {}
+        // v23138 — THE MAP MUST EXIST WHENEVER THE AIRCRAFT DOES (Nick, with
+        // a shot of the airline emblem filling the map slot while the bar
+        // read 32,000 ft: 'this just cant happen sorry'). The emblem is a
+        // watermark UNDER the map — so what he photographed is an EMPTY map
+        // container, i.e. the map died (or never built) while telemetry kept
+        // running. The two existing watchdogs only police a live map's
+        // marker and its motion; neither notices the map itself being gone.
+        //
+        // If this gate has an inbound and the box holds no Leaflet container,
+        // clear the pos/prog guards so THIS tick rebuilds it from scratch.
+        try {
+          var _mbW = document.getElementById('gateMapBox');
+          if (_mbW && _mbW.offsetParent !== null && window._gateInbound
+              && !_mbW.querySelector('.leaflet-container')) {
+            console.log('[MAP-WATCHDOG] map container EMPTY while an inbound is tracked — rebuilding');
+            try { if (typeof gateMap !== 'undefined' && gateMap) { gateMap.remove(); } } catch (e4) {}
+            try { gateMap = null; } catch (e5) {}
+            window._lastMapPosKey = null; window._lastMapProgKey = null;
+          }
+        } catch (e6) {}
         window._gateMapRetry();
       }
     } catch (e) {}
@@ -19039,7 +19059,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23137';
+var FIDS_BUILD_TAG = 'v23138';
 (function(){
   try {
     function _addTag(){
