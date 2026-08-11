@@ -10936,3 +10936,98 @@ html body .leaflet-tile-pane img.leaflet-tile {
   width: 257px !important;
   height: 257px !important;
 }
+
+/* ── v23113 — DELTA: GREY CANVAS, BLUE-GREY PANELS, RED CLOCK ────────────
+   Nick: 'something is throwing it off i think its the background can you
+   try to put the background gray and add some darker blue gray to the
+   panels?' and 'The top right should be the same color as the bottom and
+   the time should be red'.
+
+   The side columns are brushed metal mixing --body-bg with --airline-accent
+   at 18%; with Delta's accent at #003366 that mix is what made the whole
+   canvas read blue and fight the navy plates sitting on it. Delta now mixes
+   toward a neutral grey instead, keeping the same brushed-metal grain.
+
+     1. canvas  -> neutral grey (same metal treatment, no blue tint)
+     2. panels  -> darker blue-grey, so they read as furniture on the grey
+     3. badge   -> the top-right gate block takes that same blue-grey as the
+                   bottom panels (it was the last navy block in the header)
+     4. clock   -> Delta red, texture off, so the one warm accent is the time
+
+   White ink measures 12.9:1 on the panel blue-grey and 5.25:1 on the red. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --dl-canvas:   #99A0A8;
+  --dl-panel:    #26323F;
+  --dl-panel-lo: #1B2530;
+  --dl-red:      #E01933;
+}
+/* 1 — the two side columns ARE the canvas Nick is looking at */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-wrap .gad-aircraft-col, .g8-wrap .gad-map-col-v2),
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  background-color: var(--dl-canvas) !important;
+}
+/* 2 — panel surfaces sitting on that grey */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  :is(.g8-wrap .gad-map-col-v2 > .v2-rc-shelf, .g8-wrap .v2-rc-fi-pane, .g8-wrap .v2-rc-acb,
+      .g8-wrap .v2-rc-telem, .g8-wrap .v2-rc-shelf-map) {
+  background-color: var(--dl-panel) !important;
+  background-image: linear-gradient(168deg, var(--dl-panel) 0%, var(--dl-panel-lo) 100%) !important;
+}
+/* 3 — top-right gate badge = the bottom panels */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right {
+  background: linear-gradient(168deg, var(--dl-panel) 0%, var(--dl-panel-lo) 100%) !important;
+}
+/* 4 — the clock reads red (kill the plate texture and any tint layer) */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.octb, .octb-tab, .octb-stack) {
+  background-color: var(--dl-red) !important;
+  background-image: none !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.octb, .octb-tab, .octb-stack)::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.octb, .octb-tab, .octb-stack)::after {
+  background: none !important;
+  opacity: 0 !important;
+}
+/* 3b — the badge is painted by an INLINE style reading --airline-accent, and
+   inline !important outranks any stylesheet, so the only way to move it is
+   the variable itself. On Delta that accent is #003366 navy — the same navy
+   that was tinting the canvas — so pointing it at the panel blue-grey both
+   fixes the badge and stops the last navy leak into the columns. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --airline-accent: #26323F;
+}
+/* 1b — the columns carry blue artwork over the grey; swap it for a soft grey
+   metal so the canvas actually reads grey instead of brand blue. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-wrap .gad-aircraft-col, .g8-wrap .gad-map-col-v2) {
+  background-image:
+    linear-gradient(122deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.06) 30%,
+      rgba(255,255,255,0.22) 47%, rgba(255,255,255,0.08) 55%, rgba(255,255,255,0) 82%),
+    linear-gradient(180deg, #A7AEB6 0%, #8B939B 62%, #7C848C 100%) !important;
+}
+/* 3c — the accent is set INLINE on .g8-wrap (not body), which is where the
+   badge inherits it from; an !important author declaration is the only way
+   past an inline custom property. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  --airline-accent: #26323F !important;
+}
+/* 2b — the right-column panes also pull --plate-tex, which painted the wave
+   artwork back over the blue-grey. The waves stay where Nick wants them —
+   the left flight plates — while the right-hand furniture reads as flat
+   blue-grey panels. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap :is(.v2-rc-fi-pane, .v2-rc-acb, .v2-rc-telem, .v2-rc-maptitle, .v2-rc-mapstats,
+               .v2-rc-keystats, .v2-rc-keystat, .v2-rc-mstat, .gad-equip-panel, .gad-panel,
+               .v2-rc-shelf, .v2-rc-shelf-type) {
+  background-color: var(--dl-panel) !important;
+  background-image: linear-gradient(168deg, var(--dl-panel) 0%, var(--dl-panel-lo) 100%) !important;
+  background-blend-mode: normal !important;
+}
+/* 2c — and the wave artwork on those panes is painted by ::before overlays,
+   which is what kept coming back through the flat colour above. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap :is(.v2-rc-fi-pane, .v2-rc-acb, .v2-rc-telem, .v2-rc-maptitle, .v2-rc-mapstats,
+               .v2-rc-keystats, .v2-rc-keystat, .v2-rc-mstat, .v2-rc-shelf, .v2-rc-shelf-type,
+               .gad-equip-panel, .gad-panel)::before {
+  background-image: none !important;
+  background-color: transparent !important;
+  opacity: 0 !important;
+}
