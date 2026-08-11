@@ -11285,3 +11285,38 @@ html body:not(#_):not(#_):not(#_) .g8-bir-shelves .v2-fi-title {
   text-align: center !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.25) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23116 — A SENTENCE NEVER BREAKS (Nick: "dont ever let a sentence break
+   thats a fine within Canadian law. 'Use Lane 2 | Utilisez la voie 2' is
+   OK; breaking inside 'Utilisez la voie 2' is a fine; stacking the two
+   whole lines is acceptable").
+
+   Each language on a lane sign is one indivisible unit. Inline they read
+   'Use Lane 2 | Utilisez la voie 2'; when the fitter measures that a
+   single line doesn't fit, .g8-lane-stacked flips them to whole stacked
+   lines and drops the pipe — never a wrap inside a language. The titles'
+   language halves get the same nowrap armour: their only legal break
+   point is between the languages.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body .g8-board-lane .g8-lane-p {
+  white-space: nowrap !important;
+  display: inline !important;
+}
+html body .g8-board-lane.g8-lane-stacked .g8-lane-p {
+  display: block !important;
+  text-align: center !important;
+}
+html body .g8-board-lane.g8-lane-stacked .g8-lane-sep {
+  display: none !important;
+}
+/* Bilingual titles/labels: each language half is unbreakable, so any wrap
+   can only land between the halves. */
+html body .v2-fi-title .v2-fi-lbl-en,
+html body .v2-fi-title .v2-fi-lbl-2,
+html body .g8-bir-title .g8-bir-l1,
+html body .g8-bir-title .g8-bir-l2,
+html body .g8-board-grp-label,
+html body .g8-bw-clk-lbl {
+  white-space: nowrap !important;
+}

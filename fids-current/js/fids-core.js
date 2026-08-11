@@ -9420,11 +9420,23 @@ function uxgGateHtml(ctx) {
       var _bwL2 = _bwLangs[1] || _bwL1;                 // one language \u2192 repeat
       // Status word for the strip: the same normalized vocabulary the plates
       // use, one word per language, sentence case.
-      var _bwStKey = String(_stripState || '');
-      // v23115c — the status pair is on EVERY screen (Nick: 'The status sign
-      // follows all screens'), not only the abnormal ones. It always shows
-      // the live status word, coloured by state.
-      var _bwAbn = !!_bwStKey;
+      // v23116 — the pair is the SCHEDULE state, never the phase (Nick: 'it
+      // literally says already boarding status is not boarding again WOW its
+      // On Time'). The centre announces the phase (Welcome / Now Boarding);
+      // the flanks answer the other question a passenger has — is it on
+      // time? On Time green, Delayed amber, Cancelled/Diverted red. A
+      // revised departure counts as delayed even while the phase is
+      // 'boarding'.
+      var _bwStKey = 'ontime';
+      try {
+        var _bwRaw = '';
+        try { _bwRaw = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus((currentFlight && currentFlight.status) || '') : ''; } catch (e0) {}
+        _bwRaw = _bwRaw + ' ' + String(_stripState || '');
+        if (/cancel/.test(_bwRaw)) _bwStKey = 'cancelled';
+        else if (/divert/.test(_bwRaw)) _bwStKey = 'diverted';
+        else if (/delay/.test(_bwRaw) || (currentFlight && currentFlight.upd)) _bwStKey = 'delayed';
+      } catch (e) {}
+      var _bwAbn = true;
       var _bwStWord = function (lang) {
         try {
           var _o = (typeof SS !== 'undefined') ? (SS[_bwStKey] || SS[_bwStKey.replace(/ /g, '')]) : null;
@@ -18657,7 +18669,14 @@ function _gateLaneLbl(nums, plural, frFirst) {
     parts.push(w + ' ' + nums);
   }
   if (!parts.length) parts.push(o.en + ' ' + nums);
-  return parts.join(' <span class="g8-bir-sep">|</span> ');
+  // v23116 — A SENTENCE NEVER BREAKS (Nick: 'dont ever let a sentence break
+  // thats a fine within Canadian law'). Each language's line is one nowrap
+  // unit; when both don't fit side by side the sign STACKS them whole —
+  // 'Use Lane 2' over 'Utilisez la voie 2' — and the pipe disappears. The
+  // stacking decision is made by the lane-line guard in the gate fitter,
+  // which measures the rendered box; this just gives it the units.
+  return parts.map(function (w) { return '<span class="g8-lane-p">' + w + '</span>'; })
+    .join('<span class="g8-lane-sep"> <span class="g8-bir-sep">|</span> </span>');
 }
 try { if (typeof window !== 'undefined') window._gateLaneLbl = _gateLaneLbl; } catch (e) {}
 
@@ -18737,7 +18756,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23115';
+var FIDS_BUILD_TAG = 'v23116';
 (function(){
   try {
     function _addTag(){
@@ -34682,6 +34701,32 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // different sizes across the pages of a single ad (Nick: 'ALL THE SECTIONS
     // NEED TO BE UNIFORM EVERYWHERE'). Ad type is fixed by role and wraps.
     try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
+    // v23116 — LANE-LINE LANGUAGE GUARD (Nick: 'dont ever let a sentence
+    // break thats a fine within Canadian law'). Each language on a lane sign
+    // is one nowrap unit; if both units don't fit on one line, the sign
+    // stacks them whole (class flips the sep off and the units to blocks).
+    // Measured against the SINGLE-LINE width: un-stack first so the test is
+    // honest, then re-stack only if that single line genuinely overflows.
+    try {
+      document.querySelectorAll('.g8-board-lane').forEach(function (ln) {
+        if (!ln.querySelector('.g8-lane-p')) return;
+        // Force ONE line for the measurement — inline units wrap between
+        // themselves without ever overflowing, so scrollWidth alone can't
+        // see that the single-line form doesn't fit (the same blindness
+        // that hid '12:30p…' from the value fitter).
+        ln.classList.remove('g8-lane-stacked');
+        // Measure against the COLUMN, not the label's own box — the label
+        // grows past its column instead of overflowing itself (measured:
+        // scrollWidth == clientWidth == 484 inside a 417px column), so the
+        // honest test is the single-line width vs the space the column has.
+        var _lnPrev = ln.style.whiteSpace;
+        ln.style.whiteSpace = 'nowrap';
+        var _lnAvail = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
+        var _lnOver = ln.scrollWidth > _lnAvail - 8;
+        ln.style.whiteSpace = _lnPrev || '';
+        if (_lnOver) ln.classList.add('g8-lane-stacked');
+      });
+    } catch (e) {}
     var ones = document.querySelectorAll('.axr-one-line,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable .fids-airline-name,'
