@@ -9540,6 +9540,13 @@ function uxgGateHtml(ctx) {
       if (!_mot) return '<span class="g8-cd-mark">' + _still + '</span>';
       return '<span class="g8-cd-mark has-motion">'
         + '<video class="g8-cd-mark-vid" src="' + _mot + '" autoplay loop muted playsinline'
+        // v23127 — wall-clock phase for the CLIP too (Nick: 'only spins a
+        // quarter turn then flips back'): the gate rebuilds this DOM every
+        // telemetry tick and a fresh <video> restarts at 0s — a few seconds
+        // of swing, then a snap back, forever. Seeking each new element to
+        // (now mod duration) makes the rebuild land mid-loop invisibly —
+        // the same negative-delay trick the CSS animations ride.
+        +   ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%this.duration}catch(e){}"'
         +   ' onerror="try{this.parentNode.classList.remove(\'has-motion\');this.remove();}catch(e){}"></video>'
         + _still
         + '</span>';
@@ -9875,9 +9882,14 @@ function uxgGateHtml(ctx) {
              moncton does not load'). The rows value is the 'All | Tous'
              label _fcNext already computed for PD above. */
           ? _pdLanesBodyHtml(_fcNext)
-          : '<div class="g8-board-body">'
-            + '<div class="g8-board-col now"><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
-            + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
+          // v23127 — STANDARD SIGN (Nick: 'most airlines have wrong boarding
+          // format all together... 1 and 2 is priority and 3 and 4 is
+          // everyone else'). Two halves like Porter's: left = Priority on
+          // lanes 1·2, right = the called zones on lanes 3·4. Carriers with
+          // their own sign (AC, PD) keep theirs.
+          : '<div class="g8-board-body g8-lanes-std">'
+            + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1 &#8226; 2</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 &#8226; 2', true) + '</div></div>'
+            + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 &#8226; 4', true) + '</div></div>'
             + '</div>')
         + '</div>';
     }
@@ -10126,7 +10138,9 @@ function uxgGateHtml(ctx) {
     // BA override REMOVED Jul 2026 (Nick: 'British Airways is not correct') —
     // BA now flows through the emblem+wordmark path: Speedmarque tile +
     // official-blue BRITISH AIRWAYS lettering.
-    '4Y': '/logos/airlines/european/discover-airlines-emblem.svg'               // Discover Airlines (Lufthansa Group, ICAO OCN)
+    // 4Y override REMOVED (v23127) — emblem-only rendered as a blank tail
+    // chip with no name. Discover flows through the standard emblem+wordmark
+    // path now, like BA/HA: tail emblem beside the DISCOVER lettering.
   };
   // Per-airline size overrides for banner logo
   var BANNER_SIZE_OVERRIDE = {
@@ -10157,7 +10171,7 @@ function uxgGateHtml(ctx) {
     // banner. Same ink on screen as before, from a box scaled by those
     // fractions.
     'B6': { h: 71, w: 440 },
-    '4Y': { h: 120, w: 120 }
+    // 4Y size override removed with the logo override (v23127)
   };
   var _bannerBrandCode = (typeof gatePreferredBrandCode === 'function')
     ? gatePreferredBrandCode(airlineCode, _opCode, currentFlight)
@@ -13310,8 +13324,17 @@ const gView = document.getElementById('gateView');
       // 'seen the plane pass 4 times in front of the terminal taking off'). The
       // glide already tracks real progress; a status change never needs a full
       // rebuild.
+      // v23127 — FLIGHT-FIRST identity (Nick's video: PD205's map vanishing
+      // mid-approach, replaced by the emblem card). The id was reg-first: the
+      // record starts as 'PD205', an ADS-B poll learns the tail and the id
+      // becomes 'C-G...', the next feed refresh rebuilds the record without
+      // the tail and it flaps back — and every flap counted as a NEW inbound,
+      // which is the branch that calls gateMap.remove(). The same physical
+      // flight was tearing its own map down over and over. Flight number
+      // first: it never flaps; the reg only identifies reg-lookup records
+      // that have no flight number at all.
       var _newInbId = inboundFlight
-        ? String(inboundFlight._reg || inboundFlight.registration || inboundFlight.flight || 'inb')
+        ? String(inboundFlight.flight || inboundFlight._reg || inboundFlight.registration || 'inb')
         : 'none';
       // When the flight changes, clear the PREVIOUS flight's stale inbound /
       // live data BEFORE assigning this render's inbound. This block used to
@@ -18853,7 +18876,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23126';
+var FIDS_BUILD_TAG = 'v23128';
 (function(){
   try {
     function _addTag(){
@@ -33889,7 +33912,12 @@ function _buildGateAdSlideList() {
         // v23123 — Nick: 'the logo in the middle as well for the welcome =
         // red'. His colour widget, not the white-forced mono mark.
         'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
-        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
+        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+        // v23127 — Discover (Nick: 'no airline name white tail??? terrible'):
+        // the white-force turned their yellow+blue tail into a blank white
+        // silhouette. Native colours.
+        '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',
+        'OCN': '/logos/airlines/european/discover-airlines-emblem.svg'
       };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
@@ -33913,7 +33941,10 @@ function _buildGateAdSlideList() {
         subLogo: (function () {
           var _SUB_WORDMARK = {
             'DL': '/logos/airlines/us-major/delta-wordmark-light.svg',
-            'DAL': '/logos/airlines/us-major/delta-wordmark-light.svg'
+            'DAL': '/logos/airlines/us-major/delta-wordmark-light.svg',
+            // v23127 — Discover's name was missing entirely under the tail
+            '4Y': '/logos/airlines/european/discover-airlines-wordmark-light.svg',
+            'OCN': '/logos/airlines/european/discover-airlines-wordmark-light.svg'
           };
           return _SUB_WORDMARK[code] || '';
         })(),
@@ -34829,7 +34860,9 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // Measured against the SINGLE-LINE width: un-stack first so the test is
     // honest, then re-stack only if that single line genuinely overflows.
     try {
-      document.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title, .g8-board-grp-label').forEach(function (ln) {
+      // grp-labels REMOVED from this guard (v23127): the stack test misfired
+      // on them and silently ate the pipe out of 'Priority | Priorité'.
+      document.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title').forEach(function (ln) {
         if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
             && !/\|/.test(ln.textContent || '')) return;
         // Force ONE line for the measurement — inline units wrap between
