@@ -11880,3 +11880,56 @@ html body:not(#_):not(#_) .g8-wrap.g8-airline-4Y .g8-r1-silk .g8-r1-logoslot img
 html body .g8-final-hdr .g8-lane-p { white-space: nowrap !important; display: inline-block !important; }
 html body .g8-final-hdr { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; column-gap: 0.35em !important; }
 html body .g8-final-hdr .g8-lane-sep { white-space: nowrap !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23132 — THE ONE MEASURED "POP" (Nick: 'everything is popping in and
+   out of allignment'). Instrumented production for 60s: the only real
+   layout shift on the gate came from .g8-board-lane — the language guard
+   measures AFTER paint, so a lane line renders on one line and then jumps
+   to two when the guard stacks it. CLS 0.0021, one source, every time.
+
+   The lane box now RESERVES two lines' height always. Stacking rearranges
+   text inside a box whose height never changes, so the guard can no longer
+   move anything below it — no jump, and the sentence law is untouched.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_) .g8-board-body .g8-board-lane {
+  min-height: 2.3em !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* The second measured pop, same instrumentation run: the alliance mark is
+   sized 'auto' and only fills its box once the image decodes, so every gate
+   rebuild replays a zero-width → full-width step and everything on the band
+   slides (measured: 5 of 6 shifts, .g8-r1-star + .g8-bilbl together). The
+   star's box is RESERVED at its rendered height, so decode changes what is
+   painted inside it, never the layout around it. */
+html body:not(#_):not(#_):not(#_) .g8-wrap img.g8-r1-star {
+  height: clamp(48px, 7vh, 82px) !important;
+  min-height: clamp(48px, 7vh, 82px) !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-wrap img.g8-r1-star.g8-r1-alliance-oneworld {
+  height: clamp(88px, 14vh, 104px) !important;
+  min-height: clamp(88px, 14vh, 104px) !important;
+  min-width: clamp(160px, 22vw, 400px) !important;
+}
+/* The star tile's own rules (the 3x:not .g8-r1-alliance-star pair above)
+   pin min-width:0, which outranked the reserve and left the tile at 0px
+   until decode — that IS the pop. Four :not, both of its selectors, with
+   the artwork's measured aspect so the reserved width is the real width. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-silk img.g8-r1-star.g8-r1-alliance-star,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot img.g8-r1-star.g8-r1-alliance-star {
+  /* The tile is SQUARE — measured 59.2 x 59.2 once decoded, which is the
+     height clamp exactly. Reserve the same clamp on both axes. */
+  min-width: clamp(48px, 7vh, 82px) !important;
+  min-height: clamp(48px, 7vh, 82px) !important;
+}
+
+/* Flair's welcome-card mark is the brand GREEN dot, not a white disc — same
+   white-force exemption Delta's widget and Discover's tail already carry
+   (Nick: 'the first should be green simple'). */
+html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.gad-ad-logo, img[src*="flair-dot"]) {
+  filter: none !important;
+}

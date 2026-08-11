@@ -18994,7 +18994,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23132';
+var FIDS_BUILD_TAG = 'v23133';
 (function(){
   try {
     function _addTag(){
@@ -34088,7 +34088,13 @@ function _buildGateAdSlideList() {
         // the white-force turned their yellow+blue tail into a blank white
         // silhouette. Native colours.
         '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',
-        'OCN': '/logos/airlines/european/discover-airlines-emblem.svg'
+        'OCN': '/logos/airlines/european/discover-airlines-emblem.svg',
+        // v23132 — Flair's mark IS the green dot (Nick: 'the first should be
+        // green simple'). The white-force filter turned it into a blank
+        // white disc on the welcome card; the dot file is already the brand
+        // green, so it must not be filtered — see the no-filter rule in CSS.
+        'F8': '/logos/airlines/canadian/flair-dot.svg?v=2',
+        'FLE': '/logos/airlines/canadian/flair-dot.svg?v=2'
       };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
