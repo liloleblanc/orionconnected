@@ -1579,12 +1579,22 @@ function _cuReadForm() {
   // Save the toggles' EXPLICIT state (true OR false) so the user can override
   // an admin-set default. Without this, unchecking the box just removes the
   // field, and the admin's airport-wide setting kicks back in.
+  // v23125 — ONLY once PAINTED (Nick: 'airlines names coming in and out of
+  // existence depending on which device'). These reads ran on EVERY save,
+  // including saves from the menu bar with the Customize tab never opened —
+  // writing the checkboxes' default states over the device's real settings.
+  // airlineStyle:'emblem' hides the airline names, so a stray save on one
+  // device erased the names there while another device kept them. Unpainted →
+  // carry the stored values forward, exactly like dayNight and the colours.
   var hp = document.getElementById('cuHidePrefix');
-  if (hp) p.hideAirlinePrefix = !!hp.checked;
+  if (hp && hp.dataset.painted === '1') p.hideAirlinePrefix = !!hp.checked;
+  else { var _pv0 = _cuLoad(); if (_pv0 && _pv0.hideAirlinePrefix !== undefined) p.hideAirlinePrefix = _pv0.hideAirlinePrefix; }
   var hw = document.getElementById('cuHideWeather');
-  if (hw) p.hideWeather = !!hw.checked;
+  if (hw && hw.dataset.painted === '1') p.hideWeather = !!hw.checked;
+  else { var _pv1 = _cuLoad(); if (_pv1 && _pv1.hideWeather !== undefined) p.hideWeather = _pv1.hideWeather; }
   var ae = document.getElementById('cuAirlineEmblem');
-  if (ae) p.airlineStyle = ae.checked ? 'emblem' : 'full';
+  if (ae && ae.dataset.painted === '1') p.airlineStyle = ae.checked ? 'emblem' : 'full';
+  else { var _pv2 = _cuLoad(); if (_pv2 && _pv2.airlineStyle) p.airlineStyle = _pv2.airlineStyle; }
   // Font selection (v218.6+)
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel && fontSel.value) p.font = fontSel.value;
@@ -1617,11 +1627,11 @@ function _cuPaintForm(prefs) {
   } catch (e) {}
   cuSetPositionUI(prefs.logoPosition || '');
   var hp = document.getElementById('cuHidePrefix');
-  if (hp) hp.checked = !!prefs.hideAirlinePrefix;
+  if (hp) { hp.checked = !!prefs.hideAirlinePrefix; hp.dataset.painted = '1'; }
   var hw = document.getElementById('cuHideWeather');
-  if (hw) hw.checked = !!prefs.hideWeather;
+  if (hw) { hw.checked = !!prefs.hideWeather; hw.dataset.painted = '1'; }
   var ae = document.getElementById('cuAirlineEmblem');
-  if (ae) ae.checked = (prefs.airlineStyle === 'emblem');
+  if (ae) { ae.checked = (prefs.airlineStyle === 'emblem'); ae.dataset.painted = '1'; }
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel) fontSel.value = prefs.font || '';

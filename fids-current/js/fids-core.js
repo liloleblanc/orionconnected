@@ -11540,13 +11540,33 @@ function gateAutofit(root) {
     // LEFT RAIL titles first ('so much space is wasted') — each label line
     // fits its shelf width under a 0.2-row height cap, THEN the value fit
     // below reads the title's grown offsetHeight, so the two never collide.
-    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title').forEach(function (el) {
+    // v23125 — BOTH surfaces through the SAME title fit (Nick: 'it should be
+    // the exact same' — measured: rail titles inline-fitted to 12px while the
+    // strip sat at 16px). One selector, one budget; the 0.2-row height cap was
+    // the shrink — 0.26 matches the strip's real geometry, and _boxAssign is
+    // shrink-only from the shared CSS clamp, so the two surfaces can now only
+    // land on the same number.
+    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title, .g8-bir-shelves .v2-flightinfo-block .v2-fi-title').forEach(function (el) {
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var _pi = _plateInset(row);
       var _rowH = row.clientHeight - (_pi ? (_pi.t + _pi.b) : 0);
-      _boxAssign(el, tc.clientWidth, Math.floor(_rowH * 0.2), null, false);
+      _boxAssign(el, tc.clientWidth, Math.floor(_rowH * 0.32), null, false);   // v23126 — Nick's overlay: the chip fills the plate
     });
+    // HARMONIZE (Nick: 'the exact same') — after the fit, every title takes
+    // the smallest size any title landed on, so there is ONE number across
+    // rail and strip, always, and it cannot drift between rebuilds.
+    try {
+      var _tAll = root.querySelectorAll('.gad-aircraft-col .v2-fi-title, .g8-bir-shelves .v2-fi-title');
+      if (_tAll.length > 1) {
+        var _tMin = Infinity;
+        _tAll.forEach(function (t) { var f = parseFloat(getComputedStyle(t).fontSize); if (f && f < _tMin) _tMin = f; });
+        if (isFinite(_tMin)) _tAll.forEach(function (t) {
+          if (Math.abs(parseFloat(t.style.fontSize) - _tMin) > 0.5 || !t.style.fontSize)
+            t.style.setProperty('font-size', _tMin + 'px', 'important');
+        });
+      }
+    } catch (e) {}
     // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper).
     // Status value included since v22359 — its two stacked bilingual lines
     // are handled by the height check (offsetHeight measures both lines).
@@ -11605,8 +11625,21 @@ function gateAutofit(root) {
       // 0.24→0.26; measured ~30px of dead air above and below the values
       // in a 171px shelf. The fitter still shrinks to fit, so nothing can
       // overflow — the budgets only raise the ceiling.
-      if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.26), null, false);
-      if (val) _boxAssign(val, w, Math.floor(h * 0.74), null, false);
+      if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.30), null, false);
+      if (val) _boxAssign(val, w, Math.floor(h * 0.84), null, false);   // v23126 — fill the plate (Nick's overlay)
+    });
+    // v23126 — BAND CENTRE FILLS ITS SLOT (Nick's overlay). Fitted against
+    // the mid's real width minus emblem and star, so it is as big as actually
+    // fits and never clips. (First cut sat in the clock-tick IIFE where
+    // _boxAssign doesn't exist — the try/catch ate the ReferenceError and
+    // 'Embarquement en cours' clipped at the divider. It lives HERE now,
+    // beside the other gate fits.)
+    root.querySelectorAll('.g8-bw-clocked .g8-bw-mid').forEach(function (mid) {
+      var txt = mid.querySelector('.g8-bw-text'); if (!txt) return;
+      var used = 0;
+      [].forEach.call(mid.children, function (c) { if (c !== txt) used += c.getBoundingClientRect().width + 14; });
+      var w = mid.clientWidth - used - 16;
+      if (w > 60) _boxAssign(txt, w, Math.floor(mid.clientHeight * 0.74), null, false);
     });
     root.querySelectorAll('.g8-r1-right').forEach(function (box) {
       var num = box.querySelector('.g8-r1-gate'); if (!num) return;
@@ -18820,7 +18853,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23124';
+var FIDS_BUILD_TAG = 'v23126';
 (function(){
   try {
     function _addTag(){
@@ -24287,8 +24320,15 @@ function applyAirportConfigToBoard(iata) {
   // theme always fell back to the airport default (teal). Pin it on the URL:
   //   ?theme=mist   (also tus-teal, tus-teal-deep). Wins over everything.
   try {
+    // v23125 — the URL pin is a BOOT DEFAULT now, not a veto (Nick: 'I dont
+    // get any colors that work properly ... i cant change it'). His stream
+    // URLs pin ?theme=mist, and the pin outranked everything — so changing
+    // the theme in the menu on those screens did nothing, forever. The pin
+    // still gives a wiped kiosk a deterministic look; the moment an operator
+    // SAVES a theme on the device, that choice outranks the pin.
     var _urlTheme = new URLSearchParams(location.search).get('theme');
-    if (_urlTheme && _ALLOWED_THEMES[_urlTheme]) _theme = _urlTheme;
+    var _savedThemeChoice = _userCfg && _userCfg.theme;
+    if (_urlTheme && _ALLOWED_THEMES[_urlTheme] && !_savedThemeChoice) _theme = _urlTheme;
   } catch (e) {}
   // Logo position is nested under .logo.position in admin KV but flat in user prefs
   const _layout = _pref('logoPosition')
