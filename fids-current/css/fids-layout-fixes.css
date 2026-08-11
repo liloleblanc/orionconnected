@@ -12002,3 +12002,61 @@ html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus 
 html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
   grid-row: 6 / 7 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23135 — 'I think the gray or beige looks better than the red for AC
+   but the 2 sides need to be made and equal'.
+
+   1. AC's title bar is the warm GRAY-BEIGE, not the red accent. Air
+      Canada's secondary brand is gray (the header/speed-bar rules already
+      say so); on the black plates it reads as material rather than alarm.
+      Dark ink on the light bar — measured 12.5:1.
+   2. THE TWO SIDES ARE THE SAME COMPONENT NOW. The right card's rows were
+      label-beside-value with a small floating label; the left rail's are
+      a full-width title bar over a big value. Same grammar both sides:
+      the label becomes the bar, the value sits under it.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* 1 — AC: gray-beige bar, dark ink (seven :not beats the generic topper). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title * {
+  color: #14171B !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* 2 — THE TWO SIDES, EQUAL MATERIAL. Stacking a bar OVER the value in
+   the right card was measured to collide: that card carries four data
+   rows in a 240px shelf (60px each), and a bar plus a legible value needs
+   ~90. So the right card keeps its label column — but the label is now
+   the SAME BAR, in the same material and the same ink as the left rail's
+   title, full height of its row. Both sides read as one component. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+  padding: clamp(2px, 0.3vh, 5px) clamp(5px, 0.5vw, 10px) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+  align-self: stretch !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span {
+  color: inherit !important;
+  opacity: 1 !important;
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  align-self: center !important;
+}
+/* AC's right-card bars are the same gray-beige as its left plates. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl * {
+  color: #14171B !important;
+  text-shadow: none !important;
+}
