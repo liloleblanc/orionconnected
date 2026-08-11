@@ -1453,14 +1453,27 @@ let subScreenVal = '';
 // menu.js only calls _applyLogoSize when fids_customize_<IATA> exists, and the
 // guard below only fills in an UNSET attribute — so any screen can still be
 // customised, and every airport not listed here is untouched.
-var BOARD_DENSITY_DEFAULTS = {
-  MCO: 'small'          // 68px BAGS rows / 52px board rows
-};
+// v23114 — SMALL IS THE DEFAULT EVERYWHERE (Nick: 'default small then medium
+// then large with a set height no matter what'). Only Orlando was listed, so
+// every other airport fell through to 'medium' — 66px board rows / 98px BAGS
+// rows, which is the "rows are much bigger" report. The tiers themselves are
+// already absolute heights, not a fit: fids-v3.css pins 44/66/90 on the board
+// and bids-v2.css pins 68/98/132 on the bags screen, each with height,
+// min-height and max-height locked, and boardAutofit treats --fids-row-h as
+// the authority rather than measuring a row it may have grown. Nothing
+// stretches a row to fill a screen. So the only thing that needed changing is
+// which tier an un-customised screen starts on.
+//
+// A saved pref still wins (menu.js only calls _applyLogoSize when
+// fids_customize_<IATA> exists), and per-airport entries here still override
+// the default, so a screen that wants medium or large can have it.
+var BOARD_DENSITY_DEFAULTS = {};
+var BOARD_DENSITY_FALLBACK = 'small';   // 44px board rows / 68px BAGS rows
 try {
   if (document.body && !document.body.dataset.fidsLogoSize) {
     var _densAp = '';
     try { _densAp = String(new URLSearchParams(window.location.search).get('ap') || '').toUpperCase(); } catch (e2) {}
-    document.body.dataset.fidsLogoSize = BOARD_DENSITY_DEFAULTS[_densAp] || 'medium';
+    document.body.dataset.fidsLogoSize = BOARD_DENSITY_DEFAULTS[_densAp] || BOARD_DENSITY_FALLBACK;
   }
 } catch (e) {}
 
@@ -13778,7 +13791,7 @@ const gView = document.getElementById('gateView');
     // measure the actual flight-list container and divide by row height.
     // Store the measured fit on bView so the NEXT render uses real data.
     // First render uses the estimate; subsequent renders self-correct.
-    const _logoSize = document.body.dataset.fidsLogoSize || 'medium';
+    const _logoSize = document.body.dataset.fidsLogoSize || BOARD_DENSITY_FALLBACK;
     // Conservative estimates — intentionally LOW so first render never
     // overflows. The measurement loop expands them to actual fit.
     const _estimatePerPage = _logoSize === 'large' ? 6 :
@@ -14048,7 +14061,7 @@ const gView = document.getElementById('gateView');
           const _avail = _listH - _listPad - _headerH - 8; // 8px breathing room
           let _fit = Math.max(1, Math.floor(_avail / _rowH));
           _fit = Math.min(_fit, 40);
-          const _key = (document.body.dataset.fidsLogoSize || 'medium') + '|' + Math.round(window.innerHeight);
+          const _key = (document.body.dataset.fidsLogoSize || BOARD_DENSITY_FALLBACK) + '|' + Math.round(window.innerHeight);
           if (_BIDS_FIT.key !== _key) { _BIDS_FIT.key = _key; _BIDS_FIT.n = 0; _BIDS_FIT.capped = false; }
           const _current = _BIDS_FIT.n || _estimatePerPage;
           // Sticky cap: shrinking (real overflow) always applies and locks;

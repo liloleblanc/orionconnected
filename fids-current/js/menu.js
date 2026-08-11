@@ -2240,13 +2240,22 @@ function cuSetSize(size) {
 }
 
 function _applyLogoSize(size) {
-  // Slimmer tiers (Nick: rows got much bigger than they used to be).
-  var px = 44, row = 52; // medium default
-  if (size === 'small') { px = 36; row = 44; }
-  else if (size === 'large') { px = 50; row = 60; }
-  document.documentElement.style.setProperty('--fids-logo-size', px + 'px');
-  document.documentElement.style.setProperty('--fids-row-h', row + 'px');
-  document.body.dataset.fidsLogoSize = size || 'medium';
+  // ONE SOURCE OF TRUTH for the tier heights: the CSS, keyed on
+  // body[data-fids-logo-size]. fids-v3.css pins the board at 44/66/90 and
+  // bids-v2.css pins the bags screen at 68/98/132, each with height,
+  // min-height and max-height locked !important — a set height no matter what.
+  //
+  // This function used to ALSO write --fids-logo-size/--fids-row-h on :root,
+  // with a different set of numbers (44/52/60). Those never took effect,
+  // because the CSS declares the same variables on `body` with !important and
+  // a body declaration out-ranks an inherited :root one — so the pills read as
+  // dead controls while a stale second set of numbers sat in the DOM looking
+  // authoritative. Clear them and let the tier own the geometry.
+  try {
+    document.documentElement.style.removeProperty('--fids-logo-size');
+    document.documentElement.style.removeProperty('--fids-row-h');
+  } catch (e) {}
+  document.body.dataset.fidsLogoSize = size || 'small';
 }
 
 // Hook into the existing _cuReadForm/Paint flow
@@ -2280,9 +2289,10 @@ if (_origPaintForm) {
       var raw = localStorage.getItem('fids_customize_' + code);
       if (raw) {
         var p = JSON.parse(raw);
-        // No saved pref = MEDIUM — without a default the row-height cap
-        // never applied and fresh boards rendered ~90px rows (Nick).
-        _applyLogoSize((p && p.logoSize) || 'medium');
+        // A stored customize blob with no density picked = SMALL, matching
+        // BOARD_DENSITY_FALLBACK in fids-core. Without a default the
+        // row-height cap never applies at all and rows render ~90px (Nick).
+        _applyLogoSize((p && p.logoSize) || 'small');
       }
     } catch (e) {}
   }, 600);
