@@ -118,6 +118,49 @@ function _gateDayNightTheme() {
   return (_h >= 6 && _h < 19) ? 'light' : 'dark';
 }
 
+// ── LEGIBILITY FLOOR (v23114) ────────────────────────────────────────────
+// Nick, Aug 11: 'my teal screen is white white letters and numbers of white
+// background and i cant change it'. Reproduced: a saved CUSTOM palette whose
+// Row Text is white next to a Row Odd of #ffffff paints the board's own ink
+// invisible — every flight number, time and status vanishes. The palette is
+// the operator's to choose, but an unreadable board is never what they meant,
+// so no chosen colour is allowed to render on a ground it can't be seen on.
+//
+// _fidsInk(fg, bg) returns fg when it clears the floor and a black/white
+// substitute when it doesn't. The floor is 3:1 — below that a glyph stops
+// resolving at board viewing distance; 4.5:1 (AA text) would repaint palettes
+// that are merely low-contrast but still perfectly readable on a 55" panel.
+function _fidsRelLum(c) {
+  var r = 0, g = 0, b = 0, s = String(c || '').trim();
+  var m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(s);
+  if (m) {
+    var h = m[1];
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16);
+  } else {
+    var n = s.match(/[\d.]+/g);
+    if (!n || n.length < 3) return null;          // unparseable → caller keeps the colour
+    r = +n[0]; g = +n[1]; b = +n[2];
+  }
+  var f = [r, g, b].map(function (v) {
+    v = v / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+}
+function _fidsContrast(a, b) {
+  var la = _fidsRelLum(a), lb = _fidsRelLum(b);
+  if (la === null || lb === null) return null;
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function _fidsInk(fg, bg, floor) {
+  var c = _fidsContrast(fg, bg);
+  if (c === null || c >= (floor || 3)) return fg;   // honour the operator's pick
+  var lb = _fidsRelLum(bg);
+  return (lb !== null && lb > 0.45) ? '#111111' : '#ffffff';
+}
+try { window._fidsInk = _fidsInk; window._fidsContrast = _fidsContrast; } catch (e) {}
+
 // In-memory cache, populated lazily. Keys are normalized airport codes.
 const _airportConfigCache = {};
 const _airlineOverrideCache = {};
@@ -13780,10 +13823,28 @@ const gView = document.getElementById('gateView');
     // the previous render override for custom themes.
     var _bWmVariant = document.body.classList.contains('fids-light-board') ? 'dark' : 'light';
     try {
-      var _bScrProbe = document.querySelector('.bidsv2-screen');
-      if (_bScrProbe) {
-        var _bLumM = getComputedStyle(_bScrProbe).backgroundColor.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
-        if (_bLumM) _bWmVariant = (0.2126 * _bLumM[1] + 0.7152 * _bLumM[2] + 0.0722 * _bLumM[3]) > 150 ? 'dark' : 'light';
+      // v23114 — probe the ROW, not the screen. The wordmark sits on a row,
+      // and a custom palette can put white rows on a near-black screen (Nick's
+      // white-on-white board): measuring the screen then picked the white
+      // artwork and the airline names disappeared into the rows. Average both
+      // zebra shades, same as the FIDS wordmarkVariant() probe, so a palette
+      // straddling the threshold can't flip the board between renders.
+      var _bLums = [];
+      var _bRowProbes = document.querySelectorAll('.bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted)');
+      for (var _bpi = 0; _bpi < _bRowProbes.length && _bLums.length < 2; _bpi++) {
+        var _bm = getComputedStyle(_bRowProbes[_bpi]).backgroundColor.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,]+([\d.]+))?/);
+        if (_bm && (_bm[4] === undefined || +_bm[4] > 0.1)) _bLums.push(0.2126 * _bm[1] + 0.7152 * _bm[2] + 0.0722 * _bm[3]);
+      }
+      if (!_bLums.length) {
+        var _bScrProbe = document.querySelector('.bidsv2-screen');
+        if (_bScrProbe) {
+          var _bLumM = getComputedStyle(_bScrProbe).backgroundColor.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
+          if (_bLumM) _bLums.push(0.2126 * _bLumM[1] + 0.7152 * _bLumM[2] + 0.0722 * _bLumM[3]);
+        }
+      }
+      if (_bLums.length) {
+        var _bAvg = _bLums.reduce(function (a, b) { return a + b; }, 0) / _bLums.length;
+        _bWmVariant = _bAvg > 150 ? 'dark' : 'light';
       }
     } catch (e) {}
 
@@ -18434,7 +18495,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23112';
+var FIDS_BUILD_TAG = 'v23114';
 (function(){
   try {
     function _addTag(){
@@ -24052,22 +24113,58 @@ function applyAirportConfigToBoard(iata) {
       // colors instead of being reset — custom colors join the texture
       // system, they don't fight it.
       var _CA = 'html:not(#_):not(#_) body[data-fids-theme="custom"]:not(#_):not(#_) ';
+      // Resolve every ground ONCE, then run each ink through the legibility
+      // floor against the ground it actually lands on. Odd and even rows are
+      // separate grounds, so the row ink is emitted twice — one white row
+      // among dark ones used to swallow its own text (Nick's white-on-white
+      // board), because a single `td { color: text }` rule can only be right
+      // for one of the two.
+      var _gBg    = _cc.bg      || '#0a1628';
+      var _gOdd   = _cc.rowOdd  || _cc.bg || '#0c1e3a';
+      var _gEven  = _cc.rowEven || _cc.bg || '#122943';
+      var _gHdr   = _cc.hdr     || _cc.bg || '#0a1628';
+      var _iTxt   = _cc.text    || '#fff';
+      var _iHdrT  = _cc.hdrText || '#fff';
+      var _iAcc   = _cc.accent  || '#eab308';
+      var _inkOdd  = _fidsInk(_iTxt,  _gOdd);
+      var _inkEven = _fidsInk(_iTxt,  _gEven);
+      var _inkBg   = _fidsInk(_iTxt,  _gBg);
+      var _inkHdr  = _fidsInk(_iHdrT, _gHdr);
+      var _inkTh   = _fidsInk(_iHdrT, _gBg);
+      var _inkCrsl = _fidsInk(_gBg,   _gOdd);   // carousel block paints bg-colour text on a rowOdd ground
+      var _inkAcc  = _fidsInk(_iAcc,  _gHdr);
+      // The muted secondary line carries opacity .75, which costs real
+      // contrast. Where the floor had to substitute an ink, drop the fade so
+      // the substitution isn't undone by transparency.
+      var _fade = (_inkBg === _iTxt) ? '.75' : '.9';
       _styleEl.textContent =
-        _CA + '#fidsTable, ' + _CA + '.bidsv2-screen { background-color:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.text || '#fff') + ' !important; }' +
-        _CA + '.bidsv2-banner { background-color:' + (_cc.hdr || _cc.bg || '#0a1628') + ' !important; }' +
-        _CA + '.bidsv2-airport-name, ' + _CA + '.bidsv2-footer-date { color:' + (_cc.hdrText || '#fff') + ' !important; }' +
-        _CA + '.bidsv2-logo, ' + _CA + '.bidsv2-status-arrived { color:' + (_cc.accent || '#eab308') + ' !important; }' +
-        _CA + '.bidsv2-carousel-block { background-color:' + (_cc.rowOdd || '#fff') + ' !important; }' +
-        _CA + '.bidsv2-carousel-label, ' + _CA + '.bidsv2-carousel-number, ' + _CA + '.bidsv2-clock { color:' + (_cc.bg || '#0a1628') + ' !important; }' +
-        _CA + '.bidsv2-list-header, ' + _CA + '.bidsv2-airline-name, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-status-other, ' + _CA + '.bidsv2-footer-msg { color:' + (_cc.text || '#fff') + ' !important; opacity:.75; }' +
-        _CA + '.bidsv2-flight-row' + _nsB + ' { background-color:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; border-bottom-color:' + (_cc.accent || 'rgba(255,255,255,.12)') + '33 !important; }' +
-        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) { background-color:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
-        _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-flight-num, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-from, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-time, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-status { color:' + (_cc.text || '#fff') + ' !important; }' +
-        _CA + '#fidsTable tbody tr' + _nsF + ' { background-color:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
-        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) { background-color:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; }' +
-        _CA + '#fidsTable thead th { background-color:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.hdrText || '#fff') + ' !important; }' +
-        _CA + '#fidsTable tbody tr' + _nsF + ' td { color:' + (_cc.text || '#fff') + ' !important; }';
+        _CA + '#fidsTable, ' + _CA + '.bidsv2-screen { background-color:' + _gBg + ' !important; color:' + _inkBg + ' !important; }' +
+        _CA + '.bidsv2-banner { background-color:' + _gHdr + ' !important; }' +
+        _CA + '.bidsv2-airport-name, ' + _CA + '.bidsv2-footer-date { color:' + _inkHdr + ' !important; }' +
+        _CA + '.bidsv2-logo, ' + _CA + '.bidsv2-status-arrived { color:' + _inkAcc + ' !important; }' +
+        _CA + '.bidsv2-carousel-block { background-color:' + _gOdd + ' !important; }' +
+        _CA + '.bidsv2-carousel-label, ' + _CA + '.bidsv2-carousel-number, ' + _CA + '.bidsv2-clock { color:' + _inkCrsl + ' !important; }' +
+        _CA + '.bidsv2-list-header, ' + _CA + '.bidsv2-airline-name, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-status-other, ' + _CA + '.bidsv2-footer-msg { color:' + _inkBg + ' !important; opacity:' + _fade + '; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ' { background-color:' + _gEven + ' !important; border-bottom-color:' + (_cc.accent || 'rgba(255,255,255,.12)') + '33 !important; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) { background-color:' + _gOdd + ' !important; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-flight-num, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-from, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-time, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-status { color:' + _inkEven + ' !important; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) .bidsv2-flight-num, ' + _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) .bidsv2-col-from, ' + _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) .bidsv2-col-time, ' + _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) .bidsv2-col-status { color:' + _inkOdd + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ' { background-color:' + _gOdd + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) { background-color:' + _gEven + ' !important; }' +
+        _CA + '#fidsTable thead th { background-color:' + _gBg + ' !important; color:' + _inkTh + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ' td { color:' + _inkOdd + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) td { color:' + _inkEven + ' !important; }';
       document.head.appendChild(_styleEl);
+      // --fids-text feeds rules outside this block (ticker, footer, chips), so
+      // it takes the floored ink too — otherwise the raw pick leaks back in.
+      if (_cc.text) st.setProperty('--fids-text', _inkBg, 'important');
+      try {
+        if (_inkOdd !== _iTxt || _inkEven !== _iTxt || _inkTh !== _iHdrT) {
+          console.warn('[FIDS Theme APPLY] legibility floor engaged — saved ink ' + _iTxt +
+                       ' was invisible on rows ' + _gOdd + '/' + _gEven + '; painting ' +
+                       _inkOdd + '/' + _inkEven);
+        }
+      } catch (e) {}
       console.log('[FIDS Theme APPLY] custom colors restored:', _cc);
     } else {
       console.warn('[FIDS Theme APPLY] theme=custom but no customColors saved — falling back to builtin theme');
