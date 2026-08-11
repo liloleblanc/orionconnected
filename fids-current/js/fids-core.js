@@ -10289,7 +10289,12 @@ function uxgGateHtml(ctx) {
   // carries the same plate artwork the flight plates use.
   try {
     if (/^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) {
-      _silkGrad = "url('/textures/plate-dl-waves.jpg?v=23113') center/cover no-repeat, " + _silkDark;
+      // A dark scrim over the artwork: the plate's bright wave crest lands in
+      // the top-left corner and read as a bright blue patch behind the logo
+      // (Nick: 'top left Delta logo area bright blue'). The scrim keeps the
+      // pattern but holds the whole strip at one dark value.
+      _silkGrad = "linear-gradient(rgba(12,18,38,0.62), rgba(12,18,38,0.62)), "
+                + "url('/textures/plate-dl-waves.jpg?v=23113') center/cover no-repeat, " + _silkDark;
     }
   } catch (e) {}
 
@@ -10362,10 +10367,6 @@ function uxgGateHtml(ctx) {
        + (_wmSymbol ? ';--wm-symbol:url(' + _wmSymbol + ')' : '')
        + '">'
     // Background photo ONLY in the welcome area — placed via setGateBg into gateBgDiv
-    // v23113 — Nick: 'the outline ... around the whole tning'. One red frame
-    // layer over the whole gate screen; CSS positions and colours it per
-    // airline (Delta today) and it never affects layout.
-    + '<div class="g8-dl-frame" aria-hidden="true"></div>'
     + '<div class="gate-bg no-photo" id="gateBgDiv" style="display:none;"></div>'
     // ROW 1 - destination bar (full width)
     // For listed airlines (AC, UA, etc.): row 1 takes BANNER_COLOR_SPEC.r1 and
@@ -31433,7 +31434,7 @@ function buildGateAdHtml(ad) {
     + (ad.subLogo
         // v23113 — the sub line renders the brand's real WORDMARK when one is
         // supplied (Nick, Delta welcome); otherwise the plain name as before.
-        ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(34px,4.2vh,64px);width:auto;max-width:60%;object-fit:contain;margin-top:clamp(12px,2vh,22px);display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
+        ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(34px,4.2vh,64px);width:auto;max-width:60%;object-fit:contain;margin:clamp(12px,2vh,22px) auto 0;display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
         : '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>')
     + '</div></div>'
   );

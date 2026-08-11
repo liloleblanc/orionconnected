@@ -10975,21 +10975,3 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) img[src*="delta-emblem-colour"] {
   filter: none !important;
 }
-/* v23113 — Nick: 'no not around the shelves omg around the whole tning /
-   the outline'. ONE red outline around the whole screen. Three approaches
-   failed for reasons worth recording: `outline` is clipped by the wrap's
-   own overflow; a position:fixed frame is trapped by a transformed ancestor
-   and lands mid-screen; an inset box-shadow paints under the children. An
-   ABSOLUTE overlay layer inside the wrap sits above everything and cannot
-   be clipped or captured. */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
-  position: relative !important;
-}
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap > .g8-dl-frame {
-  position: absolute !important;
-  inset: 0 !important;
-  border: 7px solid #E01933 !important;
-  pointer-events: none !important;
-  z-index: 2147483000 !important;
-  box-sizing: border-box !important;
-}
