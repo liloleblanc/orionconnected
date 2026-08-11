@@ -11312,7 +11312,7 @@ html body .g8-bw-clocked .g8-bw-mid {
    with the accent rule beneath it — the title is a plate, not floating
    text. Scoped to the sideways strip; the side rail keeps its current
    treatment until he asks for it there. */
-html body:not(#_):not(#_):not(#_) .g8-bir-shelves .v2-fi-title {
+html body:not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title {
   background: linear-gradient(180deg, rgba(216,220,226,0.34), rgba(150,156,166,0.30)) !important;
   border-radius: 7px 7px 0 0 !important;
   padding: clamp(2px, 0.5vh, 7px) clamp(10px, 1vw, 20px) !important;
@@ -11411,4 +11411,46 @@ html body .g8-cd-mark .g8-cd-mark-still {
   animation: g8RondSpin 7s ease-in-out infinite !important;
   animation-delay: var(--rond-delay, 0s) !important;
   backface-visibility: visible !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23119 — TIGHTER BANNER on the boarding takeovers (Nick: 'tighten the
+   top where the logo ac and gate is to about the size of the aeroplan logo
+   a bit higher than the logo without changing gate size').
+
+   The alliance chip is 73px; the band comes down from 112px to 84px — a
+   bit higher than the chip, exactly the brief. The GATE keeps its size:
+   its number stays at the same font (93px measured before and after); the
+   red block trims only its padding to sit in the shorter band.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body .g8-wrap.g8-takeover .g8-r1 {
+  min-height: 84px !important;
+  height: 84px !important;
+}
+html body .g8-wrap.g8-takeover .g8-r1-logoslot {
+  height: 64px !important;
+}
+html body .g8-wrap.g8-takeover .g8-r1-logo {
+  height: 76px !important;
+  max-height: 76px !important;
+}
+html body .g8-wrap.g8-takeover .g8-r1-star,
+html body .g8-wrap.g8-takeover .g8-r1-alliance-star {
+  width: 58px !important;
+  height: 58px !important;
+}
+/* The gate block: same number, less air. The number font is PINNED to its
+   pre-change computed size (93px at 846h -> 11vh), because a height-fed
+   fitter re-derived it from the shorter box and shrank it to 69px — exactly
+   the 'without changing gate size' Nick ruled out. !important outranks the
+   fitter's inline write. */
+html body .g8-wrap.g8-takeover .g8-r1-right {
+  height: 82px !important;
+  align-items: center !important;
+}
+html body .g8-wrap.g8-takeover .g8-r1-gate {
+  height: auto !important;
+  line-height: 0.9 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }

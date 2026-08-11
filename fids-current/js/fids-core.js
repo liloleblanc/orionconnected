@@ -6767,7 +6767,10 @@ function buildV2GateLayout(ctx, vars) {
 // slot. Until a carrier is listed, its boarding screen shows the static ring
 // + symbol, which is what the mockup draws anyway; nothing waits on an asset.
 var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
-  // 'AC': '/logos/motion/AC-rondelle-swing.webm',
+  // Nick's TCA→AC evolution clip, cut to the MODERN segment on black (his
+  // instruction: 'remove the older logos simply keep the modern part where
+  // its black') and ping-ponged so the swing loops seamlessly. 81KB.
+  'AC': '/logos/motion/AC-rondelle-swing.mp4'
 };
 
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
@@ -11579,7 +11582,16 @@ function gateAutofit(root) {
       var bil = box.querySelector('.g8-bilbl');
       var w = box.clientWidth - 128; // 24px left + 104px right padding
       var bw = bil ? (bil.offsetWidth + 16) : 0;
-      _boxAssign(num, Math.max(40, w - bw), Math.floor(box.clientHeight * 0.86), null, false);
+      // v23119 — on a boarding takeover the band is TIGHTER but the gate
+      // number is NOT (Nick: 'without changing gate size'). The height feed
+      // stays at the FULL band's budget, so the number keeps its off-takeover
+      // size and simply sits proud in the shorter block; only its box got
+      // slimmer. Off-takeover nothing changes.
+      var _gh = box.clientHeight;
+      try {
+        if (box.closest('.g8-wrap.g8-takeover')) _gh = Math.max(_gh, 110);
+      } catch (e) {}
+      _boxAssign(num, Math.max(40, w - bw), Math.floor(_gh * 0.86), null, false);
     });
     // RIGHT CARD type shelf ('Aircraft details pending' clipped mid-word on
     // production): wrap allowed, then the largest size whose wrapped lines
@@ -17965,7 +17977,11 @@ const LS = {
   // shows in BOTH board languages at once (his shot: English above the
   // number, French below it). Title Case in the Latin scripts, matching the
   // mockup exactly; CJK/Arabic take their natural forms.
-  boardSoon: { en:'Boarding Begins In A Few Moments', fr:'Embarquement Dans Quelques Minutes', es:'El Embarque Comienza En Unos Momentos', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizia Tra Pochi Istanti", pt:'O Embarque Começa Em Instantes', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود بعد لحظات' },
+  // v23119 (Nick: 'maybe you have better words') — the airline-standard
+  // phrasing: time-neutral ('shortly' promises nothing a delay would break,
+  // where 'quelques minutes' promised minutes), and it is what Air Canada's
+  // own gate signage says. Title Case kept per Nick's design.
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
   // where the full 'MINUTES' would not fit next to a digit that size.
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
@@ -18604,7 +18620,11 @@ var _GATE_LBL = {
   // can render BOTH board languages at once (Nick's mockup puts English above
   // the number and French below it) through the same _gateLbl language pick
   // every other bilingual string on this screen already uses.
-  boardSoon: { en:'Boarding Begins In A Few Moments', fr:'Embarquement Dans Quelques Minutes', es:'El Embarque Comienza En Unos Momentos', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizia Tra Pochi Istanti", pt:'O Embarque Começa Em Instantes', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود بعد لحظات' },
+  // v23119 (Nick: 'maybe you have better words') — the airline-standard
+  // phrasing: time-neutral ('shortly' promises nothing a delay would break,
+  // where 'quelques minutes' promised minutes), and it is what Air Canada's
+  // own gate signage says. Title Case kept per Nick's design.
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
@@ -18769,7 +18789,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23118';
+var FIDS_BUILD_TAG = 'v23119';
 (function(){
   try {
     function _addTag(){
