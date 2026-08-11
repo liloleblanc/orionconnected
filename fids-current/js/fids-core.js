@@ -6760,6 +6760,16 @@ function buildV2GateLayout(ctx, vars) {
 // ─── V2 AIRCRAFT COLUMN BUILDER ───────────────────────────────────────────
 // Class-based markup matching gids-v218.78.css.
 // Structure: header > livery > 3-row data > inbound panel.
+// ── ANIMATED RONDELLE for the boarding screen's centre mark (v23115) ─────
+// Nick: 'the middle is the maple leaf rondelle that i have the gif that
+// swings'. Drop the file under /logos/motion/ and name it here — one line per
+// carrier, any format a <video> can decode (webm/mp4) or a .gif via the same
+// slot. Until a carrier is listed, its boarding screen shows the static ring
+// + symbol, which is what the mockup draws anyway; nothing waits on an asset.
+var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
+  // 'AC': '/logos/motion/AC-rondelle-swing.webm',
+};
+
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
@@ -9383,11 +9393,80 @@ function uxgGateHtml(ctx) {
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
     // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
     var _bwStar = starHtml ? starHtml.replace('star-3d-tile.jpg', 'star-3d-symbol.webp') : '';
-    return '<div class="g8-board-welcome">'
-      + (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
+    // v23115 \u2014 THE CLOCK LIVES HERE NOW (Nick's second mockup). It came out of
+    // the banner, where it was a tab competing with the airline lockup, and
+    // sits at the two ends of this white strip instead: label + time on the
+    // left in the first board language, label + time on the right in the
+    // second, with 'Welcome \u00b7 Bienvenue' centred between them.
+    //
+    // Each side is written the way its own language writes a time \u2014 English
+    // 12-hour '5:35pm', French 24-hour '17:35' \u2014 rather than one format
+    // repeated twice, which is what his shot shows and what the two locales
+    // actually do. Both are the same instant, from the same timezone.
+    var _bwClock = '';
+    try {
+      var _bwTz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
+      var _bwLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+      if (_frF) { var _bfi = _bwLangs.indexOf('fr'); if (_bfi > 0) { _bwLangs.splice(_bfi, 1); _bwLangs.unshift('fr'); } }
+      var _bwSide = function (lang, cls) {
+        var _lbl = (_GATE_LBL.currentTime && _GATE_LBL.currentTime[lang]) || _GATE_LBL.currentTime.en;
+        return '<div class="g8-bw-clock ' + cls + '">'
+          + '<span class="g8-bw-clk-lbl">' + _lbl + '</span>'
+          + '<span class="g8-bw-clk-val v2-fi-clock-val" data-tz="' + String(_bwTz || '') + '" data-bwlang="' + lang + '">'
+          +   _fidsClockForLang(new Date(), _bwTz, lang)
+          + '</span></div>';
+      };
+      _bwClock = _bwSide(_bwLangs[0] || 'en', 'g8-bw-clock-l')
+        + '::MID::'
+        + _bwSide(_bwLangs[1] || _bwLangs[0] || 'en', 'g8-bw-clock-r');
+    } catch (e) { _bwClock = '::MID::'; }
+    var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
       + '<div class="g8-bw-text">' + _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ') + '</div>'
-      + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
+      + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
+    return '<div class="g8-board-welcome g8-bw-clocked">'
+      + _bwClock.replace('::MID::', '<div class="g8-bw-mid">' + _bwMid + '</div>')
       + '</div>';
+  }
+
+  // COUNTDOWN RONDELLE (v23115) — the carrier mark that sits on the number's
+  // baseline in Nick's mockup: an accent-coloured RING with the airline's own
+  // symbol inside it, which is how the mark is worn on a tail.
+  //
+  // The symbol is rendered in its NATIVE colours, not tinted. Air Canada's
+  // AC.TO.svg is already #f01428, so on the black stage it lands as the red
+  // leaf the mockup shows, and every other carrier gets its real symbol
+  // instead of a silhouette that a mask would have flattened to a disc — the
+  // leaf is a filled shape in that file, so masking it would have lost the
+  // leaf entirely. The ring is CSS (border + radius), so it always takes the
+  // airline accent even for a carrier whose symbol is a different colour.
+  //
+  // MOTION SLOT: Nick has a GIF of the rondelle swinging and wants it in the
+  // middle. Register its path in GATE_RONDELLE_MOTION and it takes over the
+  // slot; the ring comes off because that artwork carries its own. If the file
+  // is missing or won't decode, the video removes itself and the static mark
+  // underneath is what shows — the screen is never a hole waiting on an asset.
+  //
+  // NOT WIRED to /logos/Backgrounds/AC/ac-rondelle-logo.mp4: that clip is the
+  // brand-guidelines reel (construction grid, then the Cargo/Altitude/Express
+  // /Jetz lockups), it runs on white #FDFDFD end to end, and nothing in it
+  // swings. Measured, not assumed — every frame's corners sample (253,253,253).
+  function _cdRondelleHtml() {
+    try {
+      var _sym = /^[A-Z0-9]{2}$/.test(String(airlineCode || '').toUpperCase())
+        ? '/logos/symbols/airlines/' + String(airlineCode).toUpperCase() + '.svg' : null;
+      var _src = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || _sym;
+      var _mot = (typeof GATE_RONDELLE_MOTION !== 'undefined' && GATE_RONDELLE_MOTION[airlineCode]) || null;
+      if (!_src && !_mot) return '';
+      var _still = _src
+        ? '<img class="g8-cd-mark-still" src="' + _src + '" alt="" onerror="this.style.display=\'none\'">'
+        : '';
+      if (!_mot) return '<span class="g8-cd-mark">' + _still + '</span>';
+      return '<span class="g8-cd-mark has-motion">'
+        + '<video class="g8-cd-mark-vid" src="' + _mot + '" autoplay loop muted playsinline'
+        +   ' onerror="try{this.parentNode.classList.remove(\'has-motion\');this.remove();}catch(e){}"></video>'
+        + _still
+        + '</span>';
+    } catch (e) { return ''; }
   }
 
   // FLIGHT INFO ROW for the boarding-state takeovers (Nick: 'flight info
@@ -9441,10 +9520,10 @@ function uxgGateHtml(ctx) {
     var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"'
       : (airlineCode === 'MX') ? ' style="background:#001633;"'
       : '';
-    function _cell(icon, en, fr, val, noswap) {
+    function _cell(icon, en, fr, val, noswap, cls) {
       var _t1 = en, _t2 = fr;
       if (_frF && !noswap && fr && fr !== en) { _t1 = fr; _t2 = en; }
-      return '<div class="g8-bir-cell">'
+      return '<div class="g8-bir-cell' + (cls ? ' ' + cls : '') + '">'
         + '<div class="g8-bir-badge"' + _birBadgeStyle + '><span class="ac-ico ' + icon + '"></span></div>'
         + '<div class="g8-bir-text">'
         +   '<div class="g8-bir-title"><span class="g8-bir-l1">' + _t1 + '</span>' + (_t2 && _t2 !== _t1 ? ' <span class="g8-bir-sep">|</span> <span class="g8-bir-l2">' + _t2 + '</span>' : '') + '</div>'
@@ -9456,9 +9535,18 @@ function uxgGateHtml(ctx) {
     // meridiem lets the shrink-to-fit grower push the DIGITS much larger
     // (they end up on par with the flight number), which is what reads as
     // 'bigger'. Wraps both times in a revised 'was \u2192 now' pair.
+    // v23115 — Nick's mockup sets these as ONE word, lowercase, tight to the
+    // digits: '5:40pm'. The old shrink-the-meridiem trick was there to buy
+    // width back from 'AM/PM' when five cells shared the row; at four cells
+    // there is room, and the split was rendering '12:25' with 'PM' dropped
+    // onto a second line. Lowercase, no space, no wrap.
     function _birMerid(html) {
       if (!html) return html;
-      return String(html).replace(/\b([AaPp][Mm])\b/g, '<span class="g8-bir-mer">$1</span>');
+      // ONE pass — a second .replace() over the first's output re-matched the
+      // 'am' it had just wrapped and nested the span inside itself.
+      return String(html).replace(/\s*\b([AaPp])\.?\s*[Mm]\.?\b/g, function (_, p) {
+        return '<span class="g8-bir-mer">' + p.toLowerCase() + 'm</span>';
+      });
     }
     // Flight cell carries the airline RONDELLE (same emblem set as the
     // rail) instead of the generic glyph (Nick).
@@ -9498,7 +9586,7 @@ function uxgGateHtml(ctx) {
       : (_birFlightIcon
           ? '<div class="g8-bir-badge"' + _birBadgeBgStyle + '>' + _birFlightIcon + '</div>'
           : null);
-    return '<div class="g8-board-info-row">'
+    return '<div class="g8-board-info-row' + ((_stCls && /delay|cancel|divert/i.test(_stCls)) ? ' has-status' : '') + '">'
       + (_birFlightBadge
           ? '<div class="g8-bir-cell">'
             + _birFlightBadge
@@ -9507,10 +9595,22 @@ function uxgGateHtml(ctx) {
             +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
             + '</div></div>'
           : _cell('ac-ico-flight', _gateLbl('flight', _frF, function(w){return w;}, ' | '), '', currentFlight.flight || '', true))
-      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | '), (locIata ? '<span class="g8-bir-code-t">' + _dispIata(locIata) + '</span>' : ''), _bDest, true)
+      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | '), '', _bDest, true)
       + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(boardTimeHtml), true)
       + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(depTimeHtml), true)
-      + _cell('ac-ico-status', _gateLbl('status', _frF, function(w){return w;}, ' | '), '', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
+      // v23115 — FOUR cells, per Nick's mockup: Flight · Destination ·
+      // Boarding · Departure. Status came out; with five, each cell lost a
+      // fifth of the width and the times shrank to fit it.
+      //
+      // It comes BACK the moment the flight is not normal. A gate screen that
+      // hides "Delayed" or "Cancelled" from the people standing at the gate is
+      // worse than one cell narrower, and the mockup was drawn on a scheduled
+      // flight where there was nothing to say. On a clean flight the screen is
+      // exactly the four cells drawn; on a delayed, cancelled or diverted one
+      // the status cell reappears and says so.
+      + (_stCls && /delay|cancel|divert/i.test(_stCls)
+          ? _cell('ac-ico-status', _gateLbl('status', _frF, function(w){return w;}, ' | '), '', '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>', false, 'g8-bir-cell-status')
+          : '')
       + '</div>';
   }
 
@@ -9695,10 +9795,21 @@ function uxgGateHtml(ctx) {
     countdownHtml = '<div class="g8-countdown">'
       + _boardInfoRowHtml(stKey)
       + _boardWelcomeStripHtml()
-      + '<div class="g8-cd-body">'
-      + '<div class="g8-cd-label">' + TL('boardBegins') + '</div>'
-      + '<div class="g8-cd-value">' + minsToBoard + '</div>'
-      + '<div class="g8-cd-unit">' + TL('minutes') + '</div>'
+      // v23115 — Nick's mockup. Headline above, ONE baseline carrying the
+      // number + short unit + the carrier rondelle, second-language headline
+      // below. Both languages show at once instead of alternating, because the
+      // countdown is the whole screen and a passenger reading it in French
+      // should not have to wait out an English cycle.
+      // The unit follows the FIRST language (it sits beside the number, under
+      // that language's headline); the number is the accent, the unit white.
+      + '<div class="g8-cd-body g8-cd-mock">'
+      + (function () {
+          var _cdL = ['', ''];
+          _gateLbl('boardSoon', _frF, function (w, i) { _cdL[i ? 1 : 0] = w; return ''; }, '');
+          return '<div class="g8-cd-label">' + (_cdL[0] || TL('boardSoon')) + '</div>'
+            + '<div class="g8-cd-line">' + (_cdRondelleHtml() || '') + '</div>'
+            + (_cdL[1] ? '<div class="g8-cd-label g8-cd-label2">' + _cdL[1] + '</div>' : '');
+        })()
       // 'Please remain seated until your zone is called' REMOVED (Nick).
       + '</div></div>';
   }
@@ -10369,6 +10480,12 @@ function uxgGateHtml(ctx) {
   } catch (e) {}
 
   return '<div class="g8-wrap'
+       // v23115 — the boarding takeovers move the clock OUT of the banner and
+       // into the white strip (Nick's mockup). CSS can't reach up from the
+       // countdown to the banner, and :has() is out — it threw on the display
+       // hardware and cost us every light-board adaptation the last time it
+       // was used here — so the state is marked on the wrap instead.
+       + ((finalActive || boardActive || showCountdown) ? ' g8-takeover' : '')
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
        + (_bannerSpec && _bannerSpec.r1 === '#FFFFFF' ? ' g8-banner-light' : '')
        + (_wmSymbol ? ' g8-wrap-watermark' : '')
@@ -10501,6 +10618,12 @@ function uxgGateHtml(ctx) {
             // the big clock under it, the second-language label under that,
             // then the bilingual date. ('Please rearrange the time like this
             // and bigger and change the gray theres too muchngray')
+            // UNCHANGED by v23115. The boarding mockup moves the clock into the
+            // white strip, but only for the boarding takeovers — the ordinary
+            // gate screen keeps this tab exactly as it was. (A first cut
+            // rewrote this markup outright and left the normal screen reading
+            // '11:57am / August 11Halifax11 août'.) The takeover hides this
+            // tab with CSS on .g8-wrap.g8-takeover instead.
             var _tbL = ['', ''];
             _gateLbl('timeIn', false, function(w,i){ _tbL[i?1:0] = '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; return ''; }, '');
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
@@ -17747,6 +17870,16 @@ const LS = {
   useLanes:  { en:'Use Lanes',fr:'Utilisez les voies',es:'Use carriles',de:'Spuren nutzen',it:'Usa corsie',pt:'Use faixas',ja:'\u30ec\u30fc\u30f3',zh:'\u901a\u9053',ar:'\u0645\u0645\u0631\u0627\u062a' },
   useLane:   { en:'Use Lane',fr:'Utilisez la voie',es:'Use carril',de:'Spur nutzen',it:'Usa corsia',pt:'Use faixa',ja:'レーン',zh:'通道',ar:'استخدم الممر' },
   boardBegins:{ en:'Boarding begins in',fr:"L'embarquement commence dans",es:'El embarque comienza en',de:'Boarding beginnt in',it:"L'imbarco inizia tra",pt:'Embarque começa em',ja:'搭乗開始まで',zh:'登机开始倒计时',ar:'يبدأ الصعود خلال' },
+  // v23115 — Nick's boarding-screen mockup. The countdown headline is a
+  // SENTENCE about the moment, not a fragment the number completes, and it
+  // shows in BOTH board languages at once (his shot: English above the
+  // number, French below it). Title Case in the Latin scripts, matching the
+  // mockup exactly; CJK/Arabic take their natural forms.
+  boardSoon: { en:'Boarding Begins In A Few Moments', fr:'Embarquement Dans Quelques Minutes', es:'El Embarque Comienza En Unos Momentos', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizia Tra Pochi Istanti", pt:'O Embarque Começa Em Instantes', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود بعد لحظات' },
+  // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
+  // where the full 'MINUTES' would not fit next to a digit that size.
+  minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   remainSeated:{ en:'Please remain seated until your zone is called',fr:'Veuillez rester assis jusqu\'à l\'appel de votre zone',es:'Por favor permanezca sentado hasta que llamen su zona',de:'Bitte bleiben Sie sitzen bis Ihre Zone aufgerufen wird',it:'Si prega di restare seduti fino alla chiamata della zona',pt:'Por favor permaneça sentado até sua zona ser chamada',ja:'ゾーンが呼ばれるまでお待ちください',zh:'请在座位上等待登机区域呼叫',ar:'يرجى البقاء جالساً حتى يتم استدعاء منطقتك' },
 
   operatedBy:{ en:'Operated by',fr:'Opéré par',es:'Operado por',de:'Durchgeführt von',it:'Operato da',pt:'Operado por',ja:'運航',zh:'执飞',ar:'بواسطة' },
@@ -18376,8 +18509,38 @@ var _GATE_LBL = {
   zones:     { en:'Zones',         fr:'Zones',          es:'Zonas',        de:'Zonen',       it:'Zone',        pt:'Zonas',      ja:'ゾーン',    zh:'区域',   ar:'مناطق' },
   useLane:   { en:'Use Lane',      fr:'Utilisez la voie', es:'Use carril',  de:'Spur nutzen', it:'Usa corsia',  pt:'Use faixa',  ja:'レーン',    zh:'通道',   ar:'استخدم الممر' },
   useLanes:  { en:'Use Lanes',     fr:'Utilisez les voies', es:'Use carriles', de:'Spuren nutzen', it:'Usa corsie', pt:'Use faixas', ja:'レーン',  zh:'通道',   ar:'ممرات' },
-  all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' }
+  all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' },
+  // Countdown headline + short unit, mirrored from LS so the boarding screen
+  // can render BOTH board languages at once (Nick's mockup puts English above
+  // the number and French below it) through the same _gateLbl language pick
+  // every other bilingual string on this screen already uses.
+  boardSoon: { en:'Boarding Begins In A Few Moments', fr:'Embarquement Dans Quelques Minutes', es:'El Embarque Comienza En Unos Momentos', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizia Tra Pochi Istanti", pt:'O Embarque Começa Em Instantes', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود بعد لحظات' },
+  minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  // Clock label for the boarding screen's white strip. Nick's concept wrote
+  // 'Heure Actuelle'; corrected to French sentence capitalisation, which is
+  // how the rest of the French on these screens is set.
+  currentTime: { en:'Current Time', fr:'Heure actuelle', es:'Hora actual', de:'Aktuelle Zeit', it:'Ora attuale', pt:'Hora atual', ja:'現在時刻', zh:'当前时间', ar:'الوقت الحالي' }
 };
+
+// Clock string in ONE language's own convention (v23115). English and the
+// other 12-hour locales get '5:35pm'; French, German and the 24-hour locales
+// get '17:35'. Used by the boarding screen's white strip, which shows the
+// same instant twice — once per board language — and would read as a mistake
+// if both halves used the same format.
+function _fidsClockForLang(now, tz, lang) {
+  var _24 = { fr: 1, de: 1, it: 1, pt: 1, es: 1, ja: 1, zh: 1 };
+  var o = { hour: 'numeric', minute: '2-digit', hour12: !_24[lang] };
+  if (tz) o.timeZone = tz;
+  try {
+    if (_24[lang]) {
+      o.hour = '2-digit';
+      return now.toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-GB', o).replace(/\s*h\s*/i, ':');
+    }
+    return now.toLocaleTimeString('en-US', o)
+      .replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
+  } catch (e) { return ''; }
+}
 
 // Returns the selected languages' words for `key`, at most two, de-duplicated.
 // frFirst only reorders — it is the French-first-airport flag and has never
@@ -18508,7 +18671,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23114';
+var FIDS_BUILD_TAG = 'v23115';
 (function(){
   try {
     function _addTag(){
@@ -34716,7 +34879,13 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       try {
         var s;
         // data-fmt="dual" → the shared banner format '6:26PM | 18 h 26'.
-        if (els[i].getAttribute('data-fmt') === 'dual' && typeof _ocClockTime === 'function') {
+        // v23115 — data-bwlang="<lang>" → the boarding strip's per-language
+        // clock. Without this branch the generic 12-hour en-US path below
+        // rewrote the French half as '5:35pm' five seconds after it painted,
+        // undoing the whole point of showing each language its own format.
+        if (els[i].getAttribute('data-bwlang') && typeof _fidsClockForLang === 'function') {
+          s = _fidsClockForLang(new Date(), tz || null, els[i].getAttribute('data-bwlang'));
+        } else if (els[i].getAttribute('data-fmt') === 'dual' && typeof _ocClockTime === 'function') {
           s = _ocClockTime(new Date(), tz || null);
         } else {
           var o = tz ? { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };

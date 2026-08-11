@@ -3040,14 +3040,35 @@ html .g8-bir-val .g8-bir-code { font-weight: 700; opacity: 0.7; font-size: 0.68e
 /* Meridiem (AM/PM) rendered smaller so the DIGITS dominate and the grow-fit
    pushes the time up to flight-number size (Nick: 'the times should be
    bigger'). */
+/* v23115 — one word, tight, same weight as the digits (Nick's mockup:
+   '5:40pm'). The old 0.58em + margin split the time visually and, in the
+   Departure cell, pushed 'PM' onto a line of its own. */
 html .g8-bir-val .g8-bir-mer { font-size: 0.58em; font-weight: 800; opacity: 0.72; margin-left: 0.08em; }
+/* Full-size meridiem ONLY on the four-cell strip, where there is room for
+   it. With a status cell present the two time plates give up width to it,
+   and an 0.86em 'pm' pushed '12:47pm' past the fitter's ceiling into
+   '12:47p…'. Five cells keep the compact meridiem they were sized for. */
+html .g8-board-info-row:not(.has-status) .g8-bir-val .g8-bir-mer {
+  font-size: 0.86em; font-weight: 900; opacity: 0.92; margin-left: 0;
+}
+/* No blanket white-space:nowrap here. The 'pm' dropping to its own line was
+   the status cell's column-flex leaking onto Departure via :last-child, fixed
+   at the source above. Forcing nowrap instead ALSO broke the value fitter:
+   with overflow hidden + ellipsis a nowrap line reports scrollWidth ==
+   clientWidth, so the fitter could not see it overflowing, kept the too-large
+   size, and Departure rendered '12:30p…'. */
 html .g8-bir-val .g8-bir-sep { opacity: 0.45; font-weight: 500; }
 html .g8-bir-val .g8-r2-strike { text-decoration: none; opacity: 0.5; margin-right: 0.35em; font-weight: 700; font-size: 0.75em; }  /* v22852: dimmed, never barred */
 html .g8-bir-val .g8-r2-revised { color: #b45309; }
 /* the STATUS cell stacks EN over FR — exactly two lines, each nowrap.
    Free wrapping let 'Gate closed | Porte fermée' become four giant lines
    and balloon the whole row (Nick: 'why is it so thick'). */
-html .g8-bir-cell:last-child .g8-bir-val {
+/* v23115 — TARGETED BY CLASS, NOT BY POSITION. ':last-child' was standing in
+   for 'the status cell', which held while the row always had five cells. The
+   boarding screen now shows four and adds status only when the flight is not
+   normal, so Departure became the last child and inherited this column flex —
+   which put 'pm' on a line of its own under '12:26'. */
+html .g8-bir-cell-status .g8-bir-val {
   /* v22983 — SIZED TO THE ROW'S WORST CASE, NOT ITS BEST. The row floats
      between 14.5vh and 17vh; at the SHORT end the cell offers ~8vh for the
      value (padding 3.2vh + title ≈3.3vh come off first), and the old
@@ -3062,7 +3083,7 @@ html .g8-bir-cell:last-child .g8-bir-val {
   white-space: nowrap;
   text-overflow: clip;
 }
-html .g8-bir-cell:last-child .g8-bir-val .g8-bir-st2 { display: block; }
+html .g8-bir-cell-status .g8-bir-val .g8-bir-st2 { display: block; }
 /* Status state colours — matches the vertical rail's coding. */
 html .g8-bir-val .g8-bir-stwrap { display: contents; }
 /* Status colours brightened for the dark metal shelf (Nick's white-lettering
@@ -3073,7 +3094,7 @@ html .g8-bir-val .g8-bir-st-boarding .g8-bir-st2 { color: #fbbf24; }
 html .g8-bir-val .g8-bir-st-delayed .g8-bir-st2 { color: #fb923c; }
 html .g8-bir-val .g8-bir-st-cancelled .g8-bir-st2,
 html .g8-bir-val .g8-bir-st-final .g8-bir-st2 { color: #f87171; }
-html .g8-bir-cell:last-child .g8-bir-val .g8-bir-sep { display: none; }
+html .g8-bir-cell-status .g8-bir-val .g8-bir-sep { display: none; }
 
 /* ── Boarding zone panels EXACTLY like the physical gate sign (Nick: 'look
    at the sign — black and red background, white lettering'): each side is a
@@ -5157,7 +5178,7 @@ html body .g8-r1-apmark img {
 
    Row height is unchanged — 177px measured before and after. */
 html body .g8-bir-cell .g8-bir-val,
-html body .g8-bir-cell:last-child .g8-bir-val {
+html body .g8-bir-cell-status .g8-bir-val {
   line-height: 1.16 !important;
 }
 html body .g8-bir-cell .g8-bir-val {
@@ -9736,14 +9757,16 @@ html body[data-gate-airline="EK"]:not(#_) .g8-board-info-row { background-positi
    The status plate is widened and the two time plates - whose values are
    short and were sitting in loose boxes - give up exactly that room. No
    value gets smaller; the status gets much bigger. */
-html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child {
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell-status {
   flex: 1.62 1 0 !important;
 }
 /* v22993c — the time plates only give up a little now. The first cut took
    too much and truncated their OWN labels ('Boarding | Embar…'); the
    status gained its size from height, not from starving its neighbours. */
-html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:nth-child(3),
-html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:nth-child(4) {
+/* v23115 — only while a status cell is actually present; the two time plates
+   gave up this width to make room for it. Four cells share evenly. */
+html body:not(#_):not(#_):not(#_) .g8-board-info-row.has-status .g8-bir-cell:nth-child(3),
+html body:not(#_):not(#_):not(#_) .g8-board-info-row.has-status .g8-bir-cell:nth-child(4) {
   flex: 0.84 1 0 !important;
 }
 /* v22993d — the strip's LABELS come down a touch so the narrower time
@@ -9777,7 +9800,7 @@ html body:not(#_):not(#_):not(#_) .g8-board-info-row {
 html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell {
   padding: clamp(9px, 1.25vh, 16px) clamp(16px, 1.4vw, 28px) !important;
 }
-html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-title {
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell-status .g8-bir-title {
   font-size: clamp(12px, 1.6vh, 19px) !important;
   margin-bottom: clamp(2px, 0.3vh, 4px) !important;
   padding-bottom: 2px !important;
@@ -9786,10 +9809,10 @@ html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8
 /* v22993b — the two status lines set solid (1.0) instead of 1.05, and the
    label gives up its last few pixels. Both go straight into the value, so
    the stacked status reaches the size it has in the upright rail. */
-html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-val {
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell-status .g8-bir-val {
   line-height: 1.0 !important;
 }
-html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell:last-child .g8-bir-title {
+html body:not(#_):not(#_):not(#_) .g8-board-info-row .g8-bir-cell-status .g8-bir-title {
   font-size: clamp(11px, 1.4vh, 17px) !important;
   margin-bottom: 1px !important;
   padding-bottom: 1px !important;
@@ -10974,4 +10997,152 @@ html body[data-fids-logo-size="large"] #fidsTable .td-wx .fids-cell-weather svg 
    sits in. max-height DOES apply to these (they are not table boxes). */
 html body[data-fids-logo-size] #fidsTable tbody tr td > * {
   max-height: var(--fids-row-h) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23115 — BOARDING SCREEN to Nick's revised mockup (Aug 11: "These are the
+   expectations. Everything needs to work everything needs to be accounted
+   for", then "changed my mind try this").
+
+   Three moves. The shell, the brushed-metal info cards and the white strip's
+   centre lockup were already right and are untouched.
+
+   1. The CLOCK LEAVES THE BANNER. The banner tab was a third block competing
+      with the airline lockup and the gate number; on a takeover the banner is
+      now just lockup + gate, edge to edge.
+   2. The CLOCK LANDS IN THE WHITE STRIP, one language at each end, with
+      'Welcome · Bienvenue' centred between them. Each side is written the way
+      its own language writes a time (5:35pm / 17:35) — the markup does that
+      part; this file only places and colours it.
+   3. The COUNTDOWN loses its number. Headline, the carrier rondelle alone in
+      the middle, headline in the second language. No digit to read, which is
+      the point — 'in a few moments' is the message.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. BANNER: no clock during a takeover ────────────────────────────── */
+/* display:none rather than visibility — the tab is absolutely positioned and
+   sized off --gate-rcw, so leaving it laid out would keep reserving the slot
+   the lockup is meant to expand into. */
+html body .g8-wrap.g8-takeover .g8-r1-timebox,
+html body .g8-wrap.g8-takeover .octb-wrap {
+  display: none !important;
+}
+/* The brushed lockup panel takes the width the clock gave up, stopping at the
+   gate block's left edge exactly as the mockup draws it. */
+html body .g8-wrap.g8-takeover .g8-r1-logoslot {
+  max-width: none !important;
+}
+
+/* ── 2. WHITE STRIP: clock at both ends ───────────────────────────────── */
+html body .g8-board-welcome.g8-bw-clocked {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: clamp(8px, 1.4vw, 32px) !important;
+  padding: 0 clamp(10px, 1.4vw, 34px) !important;
+}
+html body .g8-bw-clocked .g8-bw-mid {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(8px, 1vw, 22px) !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+html body .g8-bw-clocked .g8-bw-clock {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: clamp(5px, 0.6vw, 14px) !important;
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+html body .g8-bw-clocked .g8-bw-clk-lbl {
+  color: #101010 !important;
+  font-weight: 800 !important;
+  font-size: clamp(11px, 2.1vh, 30px) !important;
+  letter-spacing: -0.005em !important;
+}
+/* The time in a DARKENED airline accent, not the raw brand red: #F01428 on
+   white is 3.9:1, which is thin for a number people read at a distance and
+   at an angle. color-mix with black takes Air Canada to ~#B40F1E (7.1:1) and
+   does the same for any other carrier's accent without a per-airline rule.
+   The plain-colour line above it is the fallback where color-mix is missing. */
+html body .g8-bw-clocked .g8-bw-clk-val {
+  color: #A81020 !important;
+  color: color-mix(in srgb, var(--airline-accent, #d22630) 74%, #000) !important;
+  font-weight: 900 !important;
+  font-size: clamp(14px, 3.1vh, 44px) !important;
+  letter-spacing: -0.01em !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* ── 3. COUNTDOWN: headline · rondelle · headline ─────────────────────── */
+/* .g8-cd-body already declares container-type:size, so the cq units below
+   measure the countdown panel itself — the scene fits the room it is given
+   on any screen instead of guessing from the window. */
+html body:not(#_):not(#_) .g8-countdown .g8-cd-body.g8-cd-mock {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: space-evenly !important;
+  gap: clamp(2px, 1.5cqh, 20px) !important;
+}
+html body:not(#_):not(#_) .g8-countdown .g8-cd-mock .g8-cd-label {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  letter-spacing: 0 !important;
+  font-size: clamp(15px, 6.6vh, 200px) !important;
+  font-size: clamp(15px, min(13cqh, 3.6cqw), 200px) !important;
+  line-height: 1.06 !important;
+  flex: 0 0 auto !important;
+}
+html body:not(#_):not(#_) .g8-countdown .g8-cd-mock .g8-cd-line {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+/* The rondelle is the ARTWORK, not a CSS ring around a symbol. AC.TO.svg is a
+   single #f01428 path that draws the open ring AND the leaf together — the
+   whole Air Canada rondelle. Drawing a border around it produced two
+   concentric rings, which is what the first cut of this rendered. So: no
+   border, no mask (masking a filled leaf would flatten it to a disc), just the
+   carrier's own mark at size, in its own colours. */
+html body:not(#_):not(#_) .g8-countdown .g8-cd-mock .g8-cd-mark {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  height: min(86cqh, 32cqw) !important;
+  aspect-ratio: 1 / 1 !important;
+  max-height: 100% !important;
+  border: none !important;
+  flex: 0 0 auto !important;
+}
+html body:not(#_):not(#_) .g8-countdown .g8-cd-mock .g8-cd-mark-still {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+/* Motion take-over: when a swinging rondelle is registered for the carrier the
+   clip carries its own ring, so the CSS one comes off and the video fills the
+   circle. If it fails to decode, the script strips .has-motion and the static
+   mark above is what renders — the middle of the screen is never empty. */
+html body:not(#_):not(#_) .g8-countdown .g8-cd-mock .g8-cd-mark.has-motion {
+  border: none !important;
+}
+html body:not(#_):not(#_) .g8-countdown .g8-cd-mock .g8-cd-mark.has-motion .g8-cd-mark-still {
+  display: none !important;
+}
+html body:not(#_):not(#_) .g8-countdown .g8-cd-mock .g8-cd-mark-vid {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+  background: transparent !important;
 }
