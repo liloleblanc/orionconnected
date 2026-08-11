@@ -11589,3 +11589,39 @@ html body:not(#_):not(#_) .g8-countdown .g8-cd-mock .g8-cd-label {
   font-size: clamp(15px, 7.4vh, 220px) !important;
   font-size: clamp(15px, min(15cqh, 4cqw), 220px) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23125 — THE TITLES ARE THE EXACT SAME, UPRIGHT AND SIDEWAYS (Nick: 'the
+   words in general dont match from the upper boarding shelves to the
+   upright normal shelves even though I said it should be the exact same').
+   Measured before this fix: rail titles inline-fitted to 12px, strip titles
+   16px, different padding. One rule now owns the metric on BOTH surfaces —
+   same size, same padding, same weight, same spacing — and it out-ranks the
+   fitter's inline write.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title {
+  font-size: clamp(13px, 1.9vh, 26px) !important;
+  padding: clamp(3px, 0.5vh, 7px) clamp(10px, 1vw, 20px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.005em !important;
+  line-height: 1.1 !important;
+  text-transform: none !important;
+}
+
+/* v23125 — THE OLD BANNER LAYERS ARE REMOVED, NOT PAINTED OVER (Nick: 'the
+   old backgrounds for the upper banner still appear as they are hidden
+   behind'). Delta and Porter carry flat brand fields; the silk art layers
+   underneath still drew through blends and during load. display:none — they
+   no longer exist on these carriers. */
+/* pseudo-elements are INVALID inside :is() — the first cut of this rule
+   parsed to nothing and the layers stayed alive (measured: r1::before and
+   r1::after still rendering on DL and PD). One selector each. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"],[data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"],[data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1::after,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"],[data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"],[data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .octb-wrap::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"],[data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-right::before {
+  display: none !important;
+  content: none !important;
+}
