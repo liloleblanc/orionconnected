@@ -38,33 +38,37 @@
 /* TR Tahoma (Bold) — alternate brand candidate, bundled locally. */
 @font-face { font-family:'TR Tahoma'; font-weight:100 900; font-style:normal; font-display:swap; src:url('../fonts/TR-Tahoma-Bold.ttf') format('truetype'); }
 
-/* AC Nord — Air Canada's official brand typeface, bundled locally (woff2, no
-   CDN). Two optical families: Display (headlines / gate numbers) and Text
-   (body / labels). Each weight is its own file mapped to its true weight. */
-@font-face { font-family:'AC Nord Display'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Regular.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Display'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Medium.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Display'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Bold.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Display'; font-weight:800 900; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Heavy.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text'; font-weight:300; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Light.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Regular.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text'; font-weight:400; font-style:italic;  font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Italic.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Medium.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Bold.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text'; font-weight:800 900; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Heavy.woff2') format('woff2'); }
+/* v23110 — OUR OWN TYPE (Nick: 'start using our own assets'). The family
+   names stay 'AC Nord ...' so every consumer keeps working, but the files
+   behind them are now Anek Telugu SemiExpanded (SIL Open Font License —
+   fonts/AnekTelugu-OFL.txt), Nick's pick: 'SemiExpanded SemiBold'. Latin
+   subsets, ~18KB per weight. The Display headline anchor (w400) maps to
+   his chosen SemiBold cut; everything else keeps its relative hierarchy.
+   The unlicensed AC Nord / ACNord TTF binaries are gone from the repo. */
+@font-face { font-family:'AC Nord Display'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-SemiBold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Bold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-ExtraBold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display'; font-weight:800 900; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-ExtraBold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:300; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Light.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Regular.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:400; font-style:italic;  font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Regular.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Medium.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Bold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text'; font-weight:800 900; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-ExtraBold.woff2') format('woff2'); }
 
-/* Per-weight AC Nord families — each maps ALL weights to a single file so the
-   font picker can offer every weight as its own option (selecting one forces
-   that exact weight everywhere). Same woff2 files as above. */
-@font-face { font-family:'AC Nord Display Regular'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Regular.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Display Medium';  font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Medium.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Display Bold';    font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Bold.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Display Heavy';   font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Display-Heavy.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text Light';      font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Light.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text Regular';    font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Regular.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text Italic';     font-weight:1 1000; font-style:italic;  font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Italic.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text Medium';     font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Medium.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text Bold';       font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Bold.woff2') format('woff2'); }
-@font-face { font-family:'AC Nord Text Heavy';      font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ac-nord/AC_Nord_Text-Heavy.woff2') format('woff2'); }
+/* Per-weight families — each maps ALL weights to a single file so the font
+   picker can offer every weight as its own option (selecting one forces
+   that exact weight everywhere). Same Anek woff2 files as above. */
+@font-face { font-family:'AC Nord Display Regular'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-SemiBold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display Medium';  font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Bold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display Bold';    font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-ExtraBold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Display Heavy';   font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-ExtraBold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Light';      font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Light.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Regular';    font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Regular.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Italic';     font-weight:1 1000; font-style:italic;  font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Regular.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Medium';     font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Medium.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Bold';       font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-Bold.woff2') format('woff2'); }
+@font-face { font-family:'AC Nord Text Heavy';      font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/AnekTelugu-SemiExp-ExtraBold.woff2') format('woff2'); }
 
 /* ── Font stacks exposed as variables ────────────────────────────────────── */
 :root {
