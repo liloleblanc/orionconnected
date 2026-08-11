@@ -9361,7 +9361,7 @@ function uxgGateHtml(ctx) {
   // WELCOME STRIP for the boarding takeovers (Nick: 'the Welcome Bienvenue
   // and the rondelle and Star') — like the physical AC gate sign's header:
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
-  function _boardWelcomeStripHtml() {
+  function _boardWelcomeStripHtml(_stripState) {
     // WHITE-path emblems vanish on the white strip (Nick: United missing its
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
     // Swap those brands for a colored cut here, like the SkyTeam invert below.
@@ -9403,25 +9403,65 @@ function uxgGateHtml(ctx) {
     // 12-hour '5:35pm', French 24-hour '17:35' \u2014 rather than one format
     // repeated twice, which is what his shot shows and what the two locales
     // actually do. Both are the same instant, from the same timezone.
+    // v23115b \u2014 the strip is STATE-AWARE (Nick):
+    //   \u00b7 countdown (pre-boarding): Welcome \u00b7 Bienvenue in the middle
+    //   \u00b7 boarding/final:           NOW BOARDING | EMBARQUEMENT EN COURS
+    //   \u00b7 delayed/cancelled/diverted: a Status pair sits inboard of each
+    //     clock \u2014 first language on the left, second on the right \u2014 so the
+    //     abnormal state reads from either end of the strip.
+    // One board language \u2192 the SAME words on both sides (Nick: 'If its
+    // simply One Language repeat on both sides').
     var _bwClock = '';
     try {
       var _bwTz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
       var _bwLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
       if (_frF) { var _bfi = _bwLangs.indexOf('fr'); if (_bfi > 0) { _bwLangs.splice(_bfi, 1); _bwLangs.unshift('fr'); } }
+      var _bwL1 = _bwLangs[0] || 'en';
+      var _bwL2 = _bwLangs[1] || _bwL1;                 // one language \u2192 repeat
+      // Status word for the strip: the same normalized vocabulary the plates
+      // use, one word per language, sentence case.
+      var _bwStKey = String(_stripState || '');
+      var _bwAbn = /delay|cancel|divert/.test(_bwStKey);
+      var _bwStWord = function (lang) {
+        try {
+          var _o = (typeof SS !== 'undefined') ? (SS[_bwStKey] || SS[_bwStKey.replace(/ /g, '')]) : null;
+          var w = (_o && (_o[lang] || _o.en)) || _bwStKey;
+          w = String(w);
+          return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+        } catch (e) { return _bwStKey; }
+      };
       var _bwSide = function (lang, cls) {
         var _lbl = (_GATE_LBL.currentTime && _GATE_LBL.currentTime[lang]) || _GATE_LBL.currentTime.en;
-        return '<div class="g8-bw-clock ' + cls + '">'
+        var _stHtml = '';
+        if (_bwAbn) {
+          var _stLbl = (_GATE_LBL.status && _GATE_LBL.status[lang]) || 'Status';
+          _stHtml = '<div class="g8-bw-status g8-bw-st-' + _bwStKey.replace(/[^a-z]/g, '') + '">'
+            + '<span class="g8-bw-clk-lbl">' + _stLbl + '</span>'
+            + '<span class="g8-bw-st-val">' + _bwStWord(lang) + '</span>'
+            + '</div>';
+        }
+        var _clk = '<div class="g8-bw-clock">'
           + '<span class="g8-bw-clk-lbl">' + _lbl + '</span>'
           + '<span class="g8-bw-clk-val v2-fi-clock-val" data-tz="' + String(_bwTz || '') + '" data-bwlang="' + lang + '">'
           +   _fidsClockForLang(new Date(), _bwTz, lang)
           + '</span></div>';
+        // status sits INBOARD of the clock on both ends (clock stays at the edge)
+        return '<div class="g8-bw-end ' + cls + '">'
+          + (cls === 'g8-bw-end-l' ? _clk + _stHtml : _stHtml + _clk)
+          + '</div>';
       };
-      _bwClock = _bwSide(_bwLangs[0] || 'en', 'g8-bw-clock-l')
-        + '::MID::'
-        + _bwSide(_bwLangs[1] || _bwLangs[0] || 'en', 'g8-bw-clock-r');
+      _bwClock = _bwSide(_bwL1, 'g8-bw-end-l') + '::MID::' + _bwSide(_bwL2, 'g8-bw-end-r');
     } catch (e) { _bwClock = '::MID::'; }
+    // Middle: NOW BOARDING while boarding is actually on; Welcome otherwise.
+    var _bwMidWords;
+    if (/^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))) {
+      _bwMidWords = _gateLbl('nowBoarding', _frF, function (w) { return w; }, ' <span class="g8-bw-sep">|</span> ');
+      if (!_bwMidWords) _bwMidWords = 'Now Boarding';
+    } else {
+      _bwMidWords = _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ');
+    }
     var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="g8-bw-text">' + _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ') + '</div>'
+      + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
       + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
     return '<div class="g8-board-welcome g8-bw-clocked">'
       + _bwClock.replace('::MID::', '<div class="g8-bw-mid">' + _bwMid + '</div>')
@@ -9510,7 +9550,7 @@ function uxgGateHtml(ctx) {
         _svW.push(_svw);
       }
       if (!_svW.length && _stP.en) _svW.push(_stP.en);
-      _stTxt = _svW.map(function (w) { return '<span class="g8-bir-st2">' + w + '</span>'; }).join('');
+      _stTxt = _svW.map(function (w) { return '<span class="v2-fi-st2">' + w + '</span>'; }).join('');
     }
     // Flair brand palette (Nick): airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
@@ -9520,14 +9560,38 @@ function uxgGateHtml(ctx) {
     var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"'
       : (airlineCode === 'MX') ? ' style="background:#001633;"'
       : '';
+    // v23115b \u2014 THE RAIL'S OWN SHELF, VERBATIM (Nick: 'copy the exact current
+    // left info panel'). Same classes, same structure, same inline badge
+    // grammar as _shelf()/_badge() in the left rail builder \u2014 the horizontal
+    // strip is the SAME component laid sideways, so every shelf style Nick
+    // has approved (metal card, accent underline, per-airline artwork, and
+    // whatever he changes next) applies here without a parallel copy.
+    var _birAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[airlineCode] && AIRLINE_BRAND[airlineCode].accent) || '#D82F2E';
+    var _birRailBg = _birF8 ? '#141414'
+      : (airlineCode === 'MX') ? '#001633'
+      : 'var(--airline-accent,' + _birAccFb + ')';
+    var _birRailInk = _birF8 ? '#7AFF94' : '#fff';
+    var _BIR_BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _birRailBg + ';color:' + _birRailInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
     function _cell(icon, en, fr, val, noswap, cls) {
       var _t1 = en, _t2 = fr;
       if (_frF && !noswap && fr && fr !== en) { _t1 = fr; _t2 = en; }
-      return '<div class="g8-bir-cell' + (cls ? ' ' + cls : '') + '">'
-        + '<div class="g8-bir-badge"' + _birBadgeStyle + '><span class="ac-ico ' + icon + '"></span></div>'
-        + '<div class="g8-bir-text">'
-        +   '<div class="g8-bir-title"><span class="g8-bir-l1">' + _t1 + '</span>' + (_t2 && _t2 !== _t1 ? ' <span class="g8-bir-sep">|</span> <span class="g8-bir-l2">' + _t2 + '</span>' : '') + '</div>'
-        +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
+      var _sec = (_t2 && _t2 !== _t1)
+        ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _t2 + '</span>'
+        : '';
+      // en arrives '|'-joined from _gateLbl at every call site \u2014 split it into
+      // the rail's own lbl-en/sep/lbl-2 spans so the title matches the shelf.
+      if (!_sec && /\|/.test(_t1)) {
+        var _tp = _t1.split('|');
+        _t1 = _tp[0].trim();
+        if (_tp[1] && _tp[1].trim() && _tp[1].trim() !== _t1) {
+          _sec = '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _tp[1].trim() + '</span>';
+        }
+      }
+      return '<div class="v2-fi-row' + (cls ? ' ' + cls : '') + '">'
+        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '"><span class="ac-ico ' + icon + '"></span></div></div>'
+        + '<div class="v2-fi-textcol">'
+        +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _t1 + '</span>' + _sec + '</div>'
+        +   '<div class="v2-fi-value">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
     // Nick: 'even the times should be bigger than that'. The value column is
@@ -9586,32 +9650,27 @@ function uxgGateHtml(ctx) {
       : (_birFlightIcon
           ? '<div class="g8-bir-badge"' + _birBadgeBgStyle + '>' + _birFlightIcon + '</div>'
           : null);
-    return '<div class="g8-board-info-row' + ((_stCls && /delay|cancel|divert/i.test(_stCls)) ? ' has-status' : '') + '">'
-      + (_birFlightBadge
-          ? '<div class="g8-bir-cell">'
-            + _birFlightBadge
-            + '<div class="g8-bir-text">'
-            +   '<div class="g8-bir-title">' + _gateLbl('flight', _frF, function(w,i){ return '<span class="g8-bir-l'+(i+1)+'">'+w+'</span>'; }, ' <span class="g8-bir-sep">|</span> ') + '</div>'
-            +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
-            + '</div></div>'
-          : _cell('ac-ico-flight', _gateLbl('flight', _frF, function(w){return w;}, ' | '), '', currentFlight.flight || '', true))
+    // Flight shelf wears the airline rondelle in the rail's emblem-wrap
+    // grammar; falls back to the generic glyph badge exactly like the rail.
+    var _birFlightShelf = _birFlightIcon
+      ? '<div class="v2-fi-row v2-fi-flight">'
+        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (_birNativeColor ? ' v2-fi-emblem-native' : '') + '" style="' + _BIR_BADGE_STYLE + (_birTile ? 'background:' + _birTile.bg + ';' : '') + (_birOnWhite ? 'background:#fff;' : '') + '">' + _birFlightIcon.replace('<img ', '<img class="v2-fi-emblem-img" ') + '</div></div>'
+        + '<div class="v2-fi-textcol">'
+        +   '<div class="v2-fi-title">' + _gateLbl('flight', _frF, function(w,i){ return i ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">'+w+'</span>' : '<span class="v2-fi-lbl-en">'+w+'</span>'; }, '') + '</div>'
+        +   '<div class="v2-fi-value v2-fi-flight-number">' + (currentFlight.flight || '\u2014') + '</div>'
+        + '</div></div>'
+      : _cell('ac-ico-flight', _gateLbl('flight', _frF, function(w){return w;}, ' | '), '', currentFlight.flight || '', true, 'v2-fi-flight');
+    return '<div class="g8-board-info-row g8-bir-shelves"><div class="v2-flightinfo-block">'
+      + _birFlightShelf
       + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | '), '', _bDest, true)
       + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(boardTimeHtml), true)
       + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(depTimeHtml), true)
-      // v23115 — FOUR cells, per Nick's mockup: Flight · Destination ·
-      // Boarding · Departure. Status came out; with five, each cell lost a
-      // fifth of the width and the times shrank to fit it.
-      //
-      // It comes BACK the moment the flight is not normal. A gate screen that
-      // hides "Delayed" or "Cancelled" from the people standing at the gate is
-      // worse than one cell narrower, and the mockup was drawn on a scheduled
-      // flight where there was nothing to say. On a clean flight the screen is
-      // exactly the four cells drawn; on a delayed, cancelled or diverted one
-      // the status cell reappears and says so.
-      + (_stCls && /delay|cancel|divert/i.test(_stCls)
-          ? _cell('ac-ico-status', _gateLbl('status', _frF, function(w){return w;}, ' | '), '', '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>', false, 'g8-bir-cell-status')
-          : '')
-      + '</div>';
+      // v23115b — ALWAYS four shelves. The abnormal state (delayed /
+      // cancelled / diverted) reads from the WHITE STRIP now — a Status pair
+      // sits beside each clock (Nick's sketch: 'Current Time 12:11PM  Status
+      // Delayed … Statut En Retard  Heure actuelle 12:11') — so the fifth
+      // shelf that was squeezing the four real ones is gone for good.
+      + '</div></div>';
   }
 
   // AC-family lane board per the printed signs (Nick): quarter BLACK
@@ -9721,7 +9780,7 @@ function uxgGateHtml(ctx) {
     var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>';
     boardHtml = '<div class="g8-board active">'
       + _boardInfoRowHtml('boarding')
-      + _boardWelcomeStripHtml()
+      + _boardWelcomeStripHtml('boarding')
       + (_acLanes
           ? _acLanesBodyHtml(_acZonesVal)
           : airlineCode === 'PD'
@@ -9794,7 +9853,7 @@ function uxgGateHtml(ctx) {
     // info row + welcome strip on every takeover, countdown included.
     countdownHtml = '<div class="g8-countdown">'
       + _boardInfoRowHtml(stKey)
-      + _boardWelcomeStripHtml()
+      + _boardWelcomeStripHtml(stKey)
       // v23115 — Nick's mockup. Headline above, ONE baseline carrying the
       // number + short unit + the carrier rondelle, second-language headline
       // below. Both languages show at once instead of alternating, because the
@@ -11434,7 +11493,10 @@ function gateAutofit(root) {
     // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper).
     // Status value included since v22359 — its two stacked bilingual lines
     // are handled by the height check (offsetHeight measures both lines).
-    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-value').forEach(function (el) {
+    // v23115b — the boarding strip is the same shelf component sideways, so
+    // it goes through the same box-fitter (it had none, and revised 'was → now'
+    // time pairs truncated to '1:09…').
+    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-value, .g8-bir-shelves .v2-flightinfo-block .v2-fi-value').forEach(function (el) {
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var title = row.querySelector('.v2-fi-title');
@@ -18515,6 +18577,7 @@ var _GATE_LBL = {
   // the number and French below it) through the same _gateLbl language pick
   // every other bilingual string on this screen already uses.
   boardSoon: { en:'Boarding Begins In A Few Moments', fr:'Embarquement Dans Quelques Minutes', es:'El Embarque Comienza En Unos Momentos', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizia Tra Pochi Istanti", pt:'O Embarque Começa Em Instantes', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود بعد لحظات' },
+  nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   // Clock label for the boarding screen's white strip. Nick's concept wrote
