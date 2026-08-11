@@ -11489,8 +11489,38 @@ html body .g8-wrap.g8-airline-PD .g8-r1-right::before {
    the countdown stage inherit --banner-bg, which is now the cream — white
    type on cream is unreadable and neither surface is 'the upper'. They pin
    to Porter's Blue Zodiac navy, the colour they were before. */
+/* v23121 — 'with porter also like we did with Delta we need to throw some
+   gray in the background pattern': every navy surface takes a slate mix
+   instead of the raw saturated navy — same treatment Delta's panels got. */
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-hdr-now,
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.now,
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-countdown .g8-cd-body {
-  background-color: #112855 !important;
+  background-color: #2A3650 !important;
+  background-color: color-mix(in srgb, #112855 68%, #7C8590 32%) !important;
+}
+html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.next {
+  background-color: #33436B !important;
+  background-color: color-mix(in srgb, #254D87 70%, #7C8590 30%) !important;
+}
+/* The shelf plates' base ground takes the same slate mix — the blue-panel
+   texture then reads over gray-navy instead of pure navy. */
+html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_) {
+  --plate-base: color-mix(in srgb, #112855 60%, #7C8590 40%);
+}
+
+/* v23121 — Nick: the cream goes on 'the top of the panels shelves' too. The
+   title chip on every Porter shelf (upright rail and horizontal strip) wears
+   the banner's latte cream with the wordmark navy — same two colours, same
+   pairing, so the plates and the banner read as one system. Everyone else
+   keeps the gray chip. */
+html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title {
+  background: linear-gradient(180deg, #F4EEE2, #E7DECB) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6) !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title,
+html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title .v2-fi-lbl-en,
+html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title .v2-fi-lbl-2,
+html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title .v2-fi-sep {
+  color: #152C53 !important;
+  text-shadow: none !important;
 }
