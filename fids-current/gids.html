@@ -61,7 +61,24 @@
   <link rel="stylesheet" href="css/bids-v2.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-v216.css?v=312">
-  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=23135">
+  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=23137">
+  <script>
+  /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
+     after the feed lands (Nick: 'the old svreen shows up once in a while',
+     with a shot of a gate URL showing the Departures banner over an empty
+     body). The boot restore can only switch screenType once data arrives —
+     seconds on a big airport — so this stamps the intent NOW and the CSS
+     below keeps the board chrome off screen until the gate view takes over.
+     No timing dependency, nothing to race. */
+  try {
+    var _q = new URLSearchParams(window.location.search);
+    var _s = (_q.get('screen') || '').trim().toLowerCase();
+    if (_s !== 'main') {
+      if (_s === 'gate' || _q.get('gate')) document.documentElement.setAttribute('data-fids-url-screen', 'gate');
+      else if (_s === 'baggage' || _q.get('belt') || _q.get('carousel')) document.documentElement.setAttribute('data-fids-url-screen', 'baggage');
+    }
+  } catch (e) {}
+  </script>
   <link rel="stylesheet" href="css/gids-v218.78.css?v=23098">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
@@ -715,7 +732,7 @@
 <script src="js/gids-layout.js?v=1"></script>
 <script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=23120"></script>
-<script src="js/fids-core.js?v=23135"></script>
+<script src="js/fids-core.js?v=23137"></script>
 <script src="js/gate-visual-integrity-v22354.js?v=22559"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>

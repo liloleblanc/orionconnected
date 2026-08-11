@@ -19039,7 +19039,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23135';
+var FIDS_BUILD_TAG = 'v23137';
 (function(){
   try {
     function _addTag(){
@@ -27503,23 +27503,12 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // Track every overlay so a REUSE pass can wipe exactly these (and not the
   // tile layers) — otherwise reused arcs/markers/planes would pile up.
   var _ov = (gateMap._fidsOverlays = gateMap._fidsOverlays || []);
-  // v23131 — the solid leg follows the FLOWN track when we have one (Nick's
-  // video: a downwind east of the field drew as a straight chord past the
-  // airport folding back through the plane — a hairpin). Same condition as
-  // the glide's route below, so the drawn line and the animated line agree.
-  var _a1 = null;
-  try {
-    var _tk0 = (typeof _gateTrack !== 'undefined' && _gateTrack.points && _gateTrack.points.length >= 4) ? _gateTrack.points : null;
-    if (_tk0) {
-      var _tkA0 = _tk0.map(function (q) { return [q.lat, q.lng]; });
-      if (_gcNm(_tkA0[0], _tkA0[_tkA0.length - 1]) > 2 && _gcNm(_tkA0[_tkA0.length - 1], _pp) < 25) {
-        _a1 = L.polyline(_gcFullRoute(o, _tkA0[0], 40).concat(_tkA0.slice(1), [_pp]),
-          {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap);
-      }
-    }
-  } catch (eA1) {}
-  if (!_a1) _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
-  if(_a1)_ov.push(_a1);
+  // v23137 — the v23131 flown-track arc is WITHDRAWN. It was meant to stop
+  // the hairpin, but Nick's next shot showed NO flight path at all — a
+  // regression worse than the fault it chased. Back to the known-good
+  // great-circle solid leg; the hairpin stays open, to be fixed without
+  // touching what already works.
+  var _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
   // Runway-aligned final when we have the data — same shape the glide flies.
   var _rwyP = _runwayFinalPath(_pp, d, dst);
   var _a2 = null;
@@ -27876,29 +27865,6 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _vA = Math.max(2, Math.min(116, Math.round(118 * (_nmA / totalNm))));
   var _vB = Math.max(2, 118 - _vA);
   var _legA = _gcFullRoute(o, _pl, _vA);
-  // v23131 — DRAW THE FLOWN PATH, NOT A STRAIGHT LINE THAT DOUBLES BACK
-  // (Nick's video: an aircraft on the downwind east of the field drew as a
-  // hairpin — origin→fix as one straight chord shooting PAST the airport,
-  // then folding 180° back through the plane). When the track recorder has
-  // real history for this leg, the tail of the solid leg follows the
-  // recorded positions: origin → first recorded point (great circle), then
-  // the actual flown points, then the plane. The glide's distance walk is
-  // untouched — these vertices all sit BEHIND the seed point.
-  try {
-    var _tkPts = (typeof _gateTrack !== 'undefined' && _gateTrack.points && _gateTrack.points.length >= 4)
-      ? _gateTrack.points : null;
-    if (_tkPts) {
-      var _tkSpanNm = _gcNm([_tkPts[0].lat, _tkPts[0].lng], [_tkPts[_tkPts.length - 1].lat, _tkPts[_tkPts.length - 1].lng]);
-      var _tkNearNm = _gcNm([_tkPts[_tkPts.length - 1].lat, _tkPts[_tkPts.length - 1].lng], _pl);
-      // Only when the history is substantial and actually belongs to this
-      // aircraft's current position (last recorded point within 25nm).
-      if (_tkSpanNm > 2 && _tkNearNm < 25) {
-        var _tkArr = _tkPts.map(function (q) { return [q.lat, q.lng]; });
-        var _vHead = Math.max(2, _vA - _tkArr.length);
-        _legA = _gcFullRoute(o, _tkArr[0], _vHead).concat(_tkArr.slice(1), [_pl]);
-      }
-    }
-  } catch (eTk) {}
   // Runway-aligned final (Nick's DL5140 video): once inbound, the remaining
   // leg lands along a real runway instead of running into the airport pin.
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
@@ -35909,7 +35875,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       var uS = q.get('sub') || q.get('gate') || q.get('belt') || q.get('carousel') || '';
       if (!uT && q.get('gate')) uT = 'gate';
       if (!uT && (q.get('belt') || q.get('carousel'))) uT = 'baggage';
-      if (uT === 'gate' || uT === 'baggage') st = { t: uT, s: uS };
+      if (uT === 'gate' || uT === 'baggage') { st = { t: uT, s: uS }; window.__fidsUrlScreen = true; }
       else if (uT === 'main') return;          // explicit main — never restore over it
     } catch (e) {}
     if (!st) {
@@ -35918,6 +35884,29 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       st = JSON.parse(raw);
     }
     if (!st || !st.t || st.t === 'main') return;
+    // v23136 — NEVER FLASH THE DEPARTURES BOARD ON A GATE URL (Nick: 'the
+    // old svreen shows up once in a while', with a shot of /gids?ap=YYZ&
+    // gate=C35 showing the YYZ Departures banner over an empty body).
+    //
+    // The restore below waits for window._initialFetchDone before switching
+    // screenType — so from first paint until the feed lands, a ?gate= URL
+    // renders the MAIN BOARD. On a 546-flight airport like Pearson that
+    // window is seconds long, it recurs on every watchdog reload, and it is
+    // exactly the 'old screen' he keeps catching.
+    //
+    // The screen type is knowable from the URL alone, so claim it NOW. The
+    // gate view's own empty state covers the wait honestly, and the loop
+    // below still picks the sub-screen once the flights arrive.
+    try {
+      if (window.__fidsUrlScreen && (st.t === 'gate' || st.t === 'baggage')
+          && typeof changeScreenType === 'function' && screenType !== st.t) {
+        var _sel0 = document.getElementById('screenTypeSel');
+        if (_sel0) _sel0.value = st.t;
+        changeScreenType(st.t);
+        if (st.s) { try { subScreenVal = st.s; } catch (e0) {} }
+        try { if (typeof render === 'function') render(); } catch (e1) {}
+      }
+    } catch (e) {}
     var tries = 0;
     var iv = setInterval(function () {
       tries++;
