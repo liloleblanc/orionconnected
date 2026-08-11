@@ -9412,7 +9412,12 @@ function uxgGateHtml(ctx) {
   // .g8-grp-txt — the word-size clamp Porter Reserve already uses — so
   // the 34vh numeral size only ever applies to '1 • 2' style values.
   function _g8GrpValCls(v) {
-    return /[A-Za-zÀ-ɏ]/.test(String(v).replace(/<[^>]*>/g, '')) ? ' g8-grp-txt' : '';
+    // Strip markup until stable (CodeQL: a single pass can leave '<script'
+    // behind on nested brackets). This is only a letters-vs-numerals test —
+    // the value itself is never altered for rendering.
+    var t = String(v), prev;
+    do { prev = t; t = t.replace(/<[^>]*>/g, ''); } while (t !== prev);
+    return /[A-Za-zÀ-ɏ]/.test(t) ? ' g8-grp-txt' : '';
   }
 
   // WELCOME STRIP for the boarding takeovers (Nick: 'the Welcome Bienvenue
@@ -9449,7 +9454,11 @@ function uxgGateHtml(ctx) {
     // The strip is WHITE like the printed sign — swap the banner's metallic
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
     // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
-    var _bwStar = starHtml ? starHtml.replace('star-3d-tile.jpg', 'star-3d-symbol.webp') : '';
+    // v23131 — the strip's alliance slot is the APPROVED chrome star only
+    // (Nick's design: 'the rondelle and Star'). Oneworld/SkyTeam marks
+    // rendered as a tiny floating disc beside the phase text (his second
+    // orange box on the AA strip) — those alliances show nothing here.
+    var _bwStar = (starHtml && _allianceKey === 'star') ? starHtml.replace('star-3d-tile.jpg', 'star-3d-symbol.webp') : '';
     // v23115 \u2014 THE CLOCK LIVES HERE NOW (Nick's second mockup). It came out of
     // the banner, where it was a tab competing with the airline lockup, and
     // sits at the two ends of this white strip instead: label + time on the
@@ -9734,7 +9743,10 @@ function uxgGateHtml(ctx) {
     // COLOR-ON-WHITE (Nick: American/Delta 'color and centered'): the real
     // colour symbol on a white chip instead of the flat white silhouette on
     // the accent circle — matches the rail rondelle treatment.
-    var _birOnWhite = { 'AA': true }[airlineCode] && !_birRound && !_birTile;
+    // v23131 — the AA-only WHITE orb was never requested (Nick's orange box:
+    // 'this was never requested better fucking change it'). AA rides the same
+    // accent orb as every other cell; its colour art stays unfiltered.
+    var _birOnWhite = false;
     var _birNativeColor = !!_birRound || !!_birTile || !!_birOnWhite;
     var _birFilter = _birNativeColor ? '' : 'filter:brightness(0) invert(1);';
     // v23130 — Nick: 'the logos inside are tiny'. The img carried 9% padding
@@ -18961,7 +18973,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23130';
+var FIDS_BUILD_TAG = 'v23131';
 (function(){
   try {
     function _addTag(){
@@ -27425,7 +27437,23 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // Track every overlay so a REUSE pass can wipe exactly these (and not the
   // tile layers) — otherwise reused arcs/markers/planes would pile up.
   var _ov = (gateMap._fidsOverlays = gateMap._fidsOverlays || []);
-  var _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
+  // v23131 — the solid leg follows the FLOWN track when we have one (Nick's
+  // video: a downwind east of the field drew as a straight chord past the
+  // airport folding back through the plane — a hairpin). Same condition as
+  // the glide's route below, so the drawn line and the animated line agree.
+  var _a1 = null;
+  try {
+    var _tk0 = (typeof _gateTrack !== 'undefined' && _gateTrack.points && _gateTrack.points.length >= 4) ? _gateTrack.points : null;
+    if (_tk0) {
+      var _tkA0 = _tk0.map(function (q) { return [q.lat, q.lng]; });
+      if (_gcNm(_tkA0[0], _tkA0[_tkA0.length - 1]) > 2 && _gcNm(_tkA0[_tkA0.length - 1], _pp) < 25) {
+        _a1 = L.polyline(_gcFullRoute(o, _tkA0[0], 40).concat(_tkA0.slice(1), [_pp]),
+          {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap);
+      }
+    }
+  } catch (eA1) {}
+  if (!_a1) _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
+  if(_a1)_ov.push(_a1);
   // Runway-aligned final when we have the data — same shape the glide flies.
   var _rwyP = _runwayFinalPath(_pp, d, dst);
   var _a2 = null;
@@ -27782,6 +27810,29 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _vA = Math.max(2, Math.min(116, Math.round(118 * (_nmA / totalNm))));
   var _vB = Math.max(2, 118 - _vA);
   var _legA = _gcFullRoute(o, _pl, _vA);
+  // v23131 — DRAW THE FLOWN PATH, NOT A STRAIGHT LINE THAT DOUBLES BACK
+  // (Nick's video: an aircraft on the downwind east of the field drew as a
+  // hairpin — origin→fix as one straight chord shooting PAST the airport,
+  // then folding 180° back through the plane). When the track recorder has
+  // real history for this leg, the tail of the solid leg follows the
+  // recorded positions: origin → first recorded point (great circle), then
+  // the actual flown points, then the plane. The glide's distance walk is
+  // untouched — these vertices all sit BEHIND the seed point.
+  try {
+    var _tkPts = (typeof _gateTrack !== 'undefined' && _gateTrack.points && _gateTrack.points.length >= 4)
+      ? _gateTrack.points : null;
+    if (_tkPts) {
+      var _tkSpanNm = _gcNm([_tkPts[0].lat, _tkPts[0].lng], [_tkPts[_tkPts.length - 1].lat, _tkPts[_tkPts.length - 1].lng]);
+      var _tkNearNm = _gcNm([_tkPts[_tkPts.length - 1].lat, _tkPts[_tkPts.length - 1].lng], _pl);
+      // Only when the history is substantial and actually belongs to this
+      // aircraft's current position (last recorded point within 25nm).
+      if (_tkSpanNm > 2 && _tkNearNm < 25) {
+        var _tkArr = _tkPts.map(function (q) { return [q.lat, q.lng]; });
+        var _vHead = Math.max(2, _vA - _tkArr.length);
+        _legA = _gcFullRoute(o, _tkArr[0], _vHead).concat(_tkArr.slice(1), [_pl]);
+      }
+    }
+  } catch (eTk) {}
   // Runway-aligned final (Nick's DL5140 video): once inbound, the remaining
   // leg lands along a real runway instead of running into the airport pin.
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
