@@ -11714,3 +11714,63 @@ html body:is([data-gate-airline="4Y"],[data-gate-airline="OCN"],[data-gate-airli
 
 /* (v23128: the v23127 lane flattening is withdrawn — the gray belongs on
    the plates, not the lane sign.) */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23129 — NICK'S PORTER RAIL SHOT (PD253), three items + the frozen map
+   (that one is fixed in fids-core: the sticky-fix speed key + a marker
+   MOTION watchdog).
+
+   1. 'I have asked for the titles alligned right this is the third time'
+      — the flight-info card labels (Flight/Vol, From, Arrival, Status)
+      hug the value column: right-aligned, flush against the divider.
+   2. 'The background is bleeding through the altimeter' — the Speed/
+      Altitude bar was painted with the plate artwork stretched
+      100%x100%; on a 60px-tall full-width bar the diagonal line art
+      smears into broad pale streaks that read as the page background
+      showing through. The bar is now a SOLID opaque dark mixed from the
+      carrier's own plate ground — no texture, nothing to smear.
+   3. 'The altimeter needs to push everythign up it can play on top the
+      map' — the bar is pinned as an overlay on the map's bottom edge
+      (armored, so no later rule can push it back into the flow) and the
+      dead padding between the map shelf and the info card is closed, so
+      the card and everything under it ride up.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* 1 — titles right-aligned, tight against the values. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-rev2 > .v2-rc-fi-tlbl {
+  text-align: right !important;
+  align-items: flex-end !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-tlbl {
+  text-align: right !important;
+  align-items: flex-end !important;
+}
+/* The English word's word-width underline pinned itself flex-start (the
+   old left layout), which left 'Flight' on the left while 'Vol' obeyed
+   the new right alignment — a diagonal stagger. Both words right. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child,
+html body:not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-tlbl span:first-child {
+  align-self: flex-end !important;
+}
+/* 2 — solid opaque altimeter bar: the carrier plate ground, darkened.
+   Eleven :not(#_) to beat the 10x plate-texture painter. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  background-color: color-mix(in srgb, var(--plate-base, #14181e) 72%, #000 28%) !important;
+  background-image: none !important;
+}
+/* 3 — the bar rides ON the map (bigcraft keeps its own static layout,
+   where there is no map under it to overlay). */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap:not(.g8-bigcraft-active) .gad-map-col-v2 .v2-rc-mapstats {
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; bottom: 0 !important;
+  z-index: 6 !important;
+}
+/* …and the dead band under the map shelf is closed: the info card moves
+   up against the divider. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
+  padding-bottom: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+  padding-top: clamp(2px, 0.3vh, 5px) !important;
+}

@@ -3008,6 +3008,30 @@ try {
             window._lastMapPosKey = null; window._lastMapProgKey = null;
           }
         } catch (e2) {}
+        // v23129 — MOTION WATCHDOG (Nick's PD253: 'nope it doesnt its
+        // stuck'). The marker watchdog above only catches a MISSING marker;
+        // a marker that exists but never moves — a glide that seeded at
+        // speed 0, a wedged frame loop, anything — sat frozen forever. A
+        // LIVE map whose marker holds the same spot for 60 s while the
+        // aircraft is airborne is wedged whatever the cause: reset the
+        // pos/prog guards so this tick rebuilds from the latest fix.
+        try {
+          if (typeof gateMap !== 'undefined' && gateMap && gateMap._fidsLive === true
+              && window._gatePlaneMk && window._gatePlaneMk._map && window._gatePlaneMk.getLatLng) {
+            var _mwLL = window._gatePlaneMk.getLatLng();
+            var _mwKey = _mwLL.lat.toFixed(5) + ',' + _mwLL.lng.toFixed(5);
+            var _mwPrev = window._gateMarkerMotion || null;
+            var _mwOnG = !!(window._gateInboundLivePos && window._gateInboundLivePos.onGround === true)
+                      || !!(window._gateInbound && window._gateInbound._liveOnGround === true);
+            if (!_mwPrev || _mwPrev.key !== _mwKey) {
+              window._gateMarkerMotion = { key: _mwKey, ts: Date.now() };
+            } else if (!_mwOnG && Date.now() - _mwPrev.ts > 60000) {
+              console.log('[MAP-WATCHDOG] live marker frozen 60s while airborne — forcing rebuild');
+              window._gateMarkerMotion = { key: _mwKey, ts: Date.now() };
+              window._lastMapPosKey = null; window._lastMapProgKey = null;
+            }
+          }
+        } catch (e3) {}
         window._gateMapRetry();
       }
     } catch (e) {}
@@ -18876,7 +18900,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23128';
+var FIDS_BUILD_TAG = 'v23129';
 (function(){
   try {
     function _addTag(){
@@ -27289,7 +27313,11 @@ function initGateMapLive(org,dst,planeLat,planeLng){
           }
         } catch (e1) {}
         var _ipSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
+          // v23129 — sticky-fix speed lives under 'spd' (see _glSpd below).
+          : (window._gateMapFix && typeof window._gateMapFix.spd === 'number' && window._gateMapFix.spd > 0) ? window._gateMapFix.spd
           : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
+          : (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0
+             && window._gateInbound._liveOnGround !== true) ? window._gateInbound._liveSpd
           : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
           : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 && (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
           : 0;
@@ -27356,7 +27384,17 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
   var _glSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
+             // v23129 — _gateStickyFix stores the speed under 'spd', not
+             // 'speed'. Reading .speed here was ALWAYS undefined, so every map
+             // built off the sticky-fix branch (feed coords, no ADS-B answer
+             // yet — the normal case on low-altitude approach) seeded the
+             // glide at 0: '[GLIDE] not started — no live speed (marker stays
+             // put)'. Nick's PD253 'nope it doesnt its stuck', reproduced in
+             // the harness. Read both keys, then the feed's own _liveSpd.
+             : (window._gateMapFix && typeof window._gateMapFix.spd === 'number' && window._gateMapFix.spd > 0) ? window._gateMapFix.spd
              : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
+             : (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0
+                && window._gateInbound._liveOnGround !== true) ? window._gateInbound._liveSpd
              // Fall back to the same live speed the info panel resolved (the
              // separate _gateInboundLivePos cache is often empty even when the
              // panel shows a speed — that left the glide seeded at 0 and the
