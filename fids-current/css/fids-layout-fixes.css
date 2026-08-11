@@ -10936,3 +10936,42 @@ html body .leaflet-tile-pane img.leaflet-tile {
   width: 257px !important;
   height: 257px !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23114 — A SET ROW HEIGHT, NO MATTER WHAT (Nick: "default small then
+   medium then large with a set hight no matter what").
+
+   fids-v3.css already pins the row with height/min-height/max-height, but
+   on a table row those are not a ceiling: `height` on a <tr> behaves as a
+   MINIMUM and `max-height` has no effect at all on table rows and cells.
+   A single child taller than the tier therefore drags the whole row up with
+   it, and only the rows that happen to carry that child — which is why one
+   board measured 44, 48, 49.5 and 50 px rows side by side.
+
+   The child doing it is the weather glyph, hard-coded 48x48 back when
+   `medium` (66px) was the only size anyone ran. On `small` (44px) it is
+   4px taller than its own row. Scale it with the tier instead — `medium`
+   keeps 48px, so nothing about the current look changes — and cap every
+   direct child of a cell at the tier height so the next fixed-size element
+   someone adds cannot reopen this.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body[data-fids-logo-size="small"] #fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
+html body[data-fids-logo-size="small"] #fidsTable .td-wx .fids-cell-weather svg {
+  width: 38px !important;
+  height: 38px !important;
+}
+html body[data-fids-logo-size="medium"] #fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
+html body[data-fids-logo-size="medium"] #fidsTable .td-wx .fids-cell-weather svg {
+  width: 48px !important;
+  height: 48px !important;
+}
+html body[data-fids-logo-size="large"] #fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
+html body[data-fids-logo-size="large"] #fidsTable .td-wx .fids-cell-weather svg {
+  width: 64px !important;
+  height: 64px !important;
+}
+/* Backstop: no direct child of a board cell may be taller than the row it
+   sits in. max-height DOES apply to these (they are not table boxes). */
+html body[data-fids-logo-size] #fidsTable tbody tr td > * {
+  max-height: var(--fids-row-h) !important;
+}
