@@ -10961,9 +10961,21 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   background-color: #11063C !important;
   background-image: none !important;
 }
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.octb, .octb-tab, .octb-stack) {
-  background-color: #56102A !important;
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1-timebox, .octb, .octb-tab, .octb-stack) {
+  /* v23113b — Nick: 'clock is purple thats not red'. #56102A sampled from
+     his mock was landing at #201733 on screen: a translucent overlay on the
+     box was mixing it with the indigo strip behind. The colour is forced on
+     every layer of the clock and the overlays are cleared, so what renders
+     is the red itself and not a blend of it. */
+  background-color: #C8102E !important;
   background-image: none !important;
+  background-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1-timebox, .octb, .octb-tab, .octb-stack)::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1-timebox, .octb, .octb-tab, .octb-stack)::after {
+  background: none !important;
+  opacity: 0 !important;
 }
 /* v23113 — the welcome-slide mark keeps its own colour on Delta (the ad
    renderer forces marks white; Nick wants the red widget there). */
@@ -10971,14 +10983,11 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   filter: none !important;
 }
 /* v23113 — Nick: 'there is also white around the shelves entirely left and
-   right'. A white hairline around every shelf in BOTH columns — the left
-   flight plates and the right-hand panels — exactly as his rendition shows
-   them. Border only: no radius, no size change, so nothing reflows. */
+   right', then 'no white around the actual inside panels ONLY OUTSIDE'.
+   So it is ONE white edge around the OUTSIDE of each column — the left
+   plate stack and the right-hand stack — and nothing on the individual
+   panels inside. Border only: no radius, no size change, nothing reflows. */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
-  .g8-wrap :is(.gad-aircraft-col .v2-flightinfo-block > .v2-fi-row,
-               .gad-map-col-v2 > .v2-rc-shelf,
-               .gad-map-col-v2 .v2-rc-shelf-map,
-               .gad-map-col-v2 .v2-rc-fi-pane,
-               .gad-map-col-v2 .v2-rc-acb) {
+  .g8-wrap :is(.gad-aircraft-col, .gad-map-col-v2) {
   border: 2px solid rgba(255,255,255,0.92) !important;
 }
