@@ -10362,6 +10362,10 @@ function uxgGateHtml(ctx) {
        + (_wmSymbol ? ';--wm-symbol:url(' + _wmSymbol + ')' : '')
        + '">'
     // Background photo ONLY in the welcome area — placed via setGateBg into gateBgDiv
+    // v23113 — Nick: 'the outline ... around the whole tning'. One red frame
+    // layer over the whole gate screen; CSS positions and colours it per
+    // airline (Delta today) and it never affects layout.
+    + '<div class="g8-dl-frame" aria-hidden="true"></div>'
     + '<div class="gate-bg no-photo" id="gateBgDiv" style="display:none;"></div>'
     // ROW 1 - destination bar (full width)
     // For listed airlines (AC, UA, etc.): row 1 takes BANNER_COLOR_SPEC.r1 and
@@ -30345,6 +30349,7 @@ function getGateAds() {
     for (var k in ad) if (Object.prototype.hasOwnProperty.call(ad, k)) out[k] = ad[k];
     if (ad.headline) out.headline = adTL(ad.headline);
     if (ad.sub)      out.sub      = adTL(ad.sub);
+    if (ad.subLogo)  out.subLogo  = ad.subLogo;
     return out;
   });
   // Build destination-aware generic ads
@@ -31425,7 +31430,11 @@ function buildGateAdHtml(ad) {
     + _stdLogoHtml
     + '<div style="flex-shrink:0;text-align:center;max-width:100%;overflow:hidden;">'
     + '<div style="font-size:clamp(44px,5.2vw,78px);font-weight:800;color:' + _stdFg + ';line-height:1.08;max-width:100%;">' + _stdHeadline + '</div>'
-    + '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
+    + (ad.subLogo
+        // v23113 — the sub line renders the brand's real WORDMARK when one is
+        // supplied (Nick, Delta welcome); otherwise the plain name as before.
+        ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(34px,4.2vh,64px);width:auto;max-width:60%;object-fit:contain;margin-top:clamp(12px,2vh,22px);display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
+        : '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>')
     + '</div></div>'
   );
 }
@@ -33456,7 +33465,17 @@ function _buildGateAdSlideList() {
             return _w.join(' · ');
           } catch (e) { return _WA.en + ' · ' + _WA.fr; }
         })(),
+        // v23113 — Nick: 'put the actual delta name in the middle wordmark'.
+        // The sub line was the brand NAME as plain text; Delta shows its real
+        // wordmark art instead (white, so it reads on the welcome card).
         sub: (_fb && _fb.name) ? _fb.name : '',
+        subLogo: (function () {
+          var _SUB_WORDMARK = {
+            'DL': '/logos/airlines/us-major/delta-wordmark-light.svg',
+            'DAL': '/logos/airlines/us-major/delta-wordmark-light.svg'
+          };
+          return _SUB_WORDMARK[code] || '';
+        })(),
         logo: _fbLogo
       } }];
     }
