@@ -11517,10 +11517,12 @@ html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title {
   background: linear-gradient(180deg, #F4EEE2, #E7DECB) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.6) !important;
 }
-html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title,
-html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title .v2-fi-lbl-en,
-html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title .v2-fi-lbl-2,
-html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title .v2-fi-sep {
+/* Six :not(#_) — the Porter plate-ink block carries five, and it was
+   holding the chip lettering WHITE on the cream (Nick: 'the lettering
+   needs to be dark now'). Every child span included. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title * {
   color: #152C53 !important;
   text-shadow: none !important;
+  opacity: 1 !important;
 }
