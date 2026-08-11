@@ -8479,7 +8479,10 @@ html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not
 html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb::before,
 html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-cell::before,
 html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-telem {
-  background-image: url('/textures/plate-navy-gold.jpg?v=22902') !important;
+  /* v23128 — Nick: gray in the PANELS, same as Delta. This rule loses to
+     the 11x :not var(--plate-tex) painter below, but it points at the same
+     grayed bake so every cascade path renders identical plates. */
+  background-image: url('/textures/plate-pd-lines-gray.jpg?v=23128') !important;
   background-color: #0b0e14 !important;
   background-size: 100% 100% !important;
   background-position: center !important;
@@ -8859,7 +8862,9 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
 html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"],[data-gate-airline*="UNITED"]):not(#_):not(#_) {
   --plate-tex: url('/textures/plate-blue-panel.jpg?v=22908'); }
 html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-navy-gold.jpg?v=22908'); }
+  /* v23128 — superseded by the 11x :not rule far below; same grayed bake
+     so the value is identical whichever rule wins. */
+  --plate-tex: url('/textures/plate-pd-lines-gray.jpg?v=23128'); }
 
 /* ── v22909 — NO BLACK PLATE UNDER A COLOURED BRAND (Nick: 'whereever you
    put black with color thats a no no'), AND DELTA OFF UNITED'S BLUE (Nick:
@@ -10047,10 +10052,15 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
 /* Porter: Nick's elegant diagonal-line navy (v23088), replacing the silk wave.
    Much darker artwork — measured brightest luma 41/255, so white ink sits at
    about 18:1 worst case against the old bake's 4.66:1. The previous
-   plate-pd-silk.jpg is left in place as a one-line rollback. */
+   plate-pd-silk.jpg is left in place as a one-line rollback.
+   v23128 — Nick: 'it was the panels hello I said the same as Delta'. The
+   SAME line artwork with the slate mix baked in per-pixel (32% toward
+   #747C8A, the Delta panel treatment): mean RGB (0,25,86) -> (37,56,102),
+   saturated navy -> slate-navy, white ink still 11.1:1 on the mean.
+   plate-pd-lines.jpg stays on disk as the one-line rollback. */
 html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-pd-lines.jpg?v=23098');
-  --plate-base: #0c1626;
+  --plate-tex: url('/textures/plate-pd-lines-gray.jpg?v=23128');
+  --plate-base: #313c50;
   --plate-blend: normal;
 }
 html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
@@ -11512,22 +11522,17 @@ html body .g8-wrap.g8-airline-PD .g8-r1-right::before {
 /* v23121 — 'with porter also like we did with Delta we need to throw some
    gray in the background pattern': every navy surface takes a slate mix
    instead of the raw saturated navy — same treatment Delta's panels got. */
-/* v23127 — MORE GRAY (Nick: 'You never added the gray as requested to
-   porter' — the v23121 mix was too subtle to read as gray at all). The
-   panels now sit clearly in blue-GRAY, the same visible strength Delta's
-   treatment carries: half gray in the navy, and the plate ground likewise. */
+/* v23128 — THE GRAY GOES IN THE PANELS, NOT THE LANE SIGN (Nick: 'it was
+   the panels hello I said the same as Delta'). Lane sign back to Porter
+   navy exactly as it was; the shelf PLATES take the gray via their own
+   baked texture below. */
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-hdr-now,
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.now,
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-countdown .g8-cd-body {
-  background-color: #46506A !important;
-  background-color: color-mix(in srgb, #112855 50%, #8A8F99 50%) !important;
+  background-color: #112855 !important;
 }
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.next {
-  background-color: #4F5F82 !important;
-  background-color: color-mix(in srgb, #254D87 52%, #8A8F99 48%) !important;
-}
-html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_) {
-  --plate-base: color-mix(in srgb, #112855 48%, #8A8F99 52%);
+  background-color: #254D87 !important;
 }
 
 /* v23121 — Nick: the cream goes on 'the top of the panels shelves' too. The
@@ -11707,11 +11712,5 @@ html body:is([data-gate-airline="4Y"],[data-gate-airline="OCN"],[data-gate-airli
   filter: none !important;
 }
 
-/* v23127 — the gray READS on Porter now: the plate texture was soft-light
-   repainting navy over the mixed ground (measured: ground correct, render
-   still navy). Flat on the lane panels, like Delta's flat indigo strip. */
-html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.now,
-html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.next,
-html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-hdr-now {
-  background-image: none !important;
-}
+/* (v23128: the v23127 lane flattening is withdrawn — the gray belongs on
+   the plates, not the lane sign.) */
