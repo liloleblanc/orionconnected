@@ -11526,3 +11526,46 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD
   text-shadow: none !important;
   opacity: 1 !important;
 }
+
+/* ── v23123 — DELTA TOP BAR, NICK'S RENDITION (reintroduced from the
+   reverted v23113 — Nick: 'donr forget to reintroduce the colors changes
+   to Delta'). Colours sampled pixel-for-pixel out of the image he sent:
+     top strip   #11063C  deep indigo, FLAT — no wave art, no gradient
+     clock box   #C8102E  real red on every layer (his 'clock is purple'
+                          fix — a translucent overlay was mixing #56102A
+                          with the indigo behind it)
+     gate badge  #11063C  same indigo, white type
+   COLOURS ONLY — every existing shape, radius and edge stays ('You didnt
+   need to actually change the shape'). White ink 17.4:1 on the indigo.
+   The Moncton skyline from that build stays OUT until the v23113 board
+   break is understood. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  --airline-accent: #11063C !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1, .g8-wrap .g8-r1) {
+  background-color: #11063C !important;
+  background-image: none !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right {
+  background-color: #11063C !important;
+  background-image: none !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1-timebox, .octb, .octb-tab, .octb-stack) {
+  background-color: #C8102E !important;
+  background-image: none !important;
+  background-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1-timebox, .octb, .octb-tab, .octb-stack)::before,
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1-timebox, .octb, .octb-tab, .octb-stack)::after {
+  background: none !important;
+  opacity: 0 !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.gad-ad-logo, img[src*="delta-emblem-colour"]) {
+  filter: none !important;
+}
+/* White edge OUTSIDE each column only — nothing on the panels inside. */
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)
+  .g8-wrap :is(.gad-aircraft-col, .gad-map-col-v2) {
+  border: 2px solid rgba(255,255,255,0.92) !important;
+}

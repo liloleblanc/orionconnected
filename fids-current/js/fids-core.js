@@ -8743,7 +8743,11 @@ function _buildV2MapCol(ctx, vars) {
   // round rail ORB — keeps its mono white leaf.
   var _MAPLIFE_EMBLEM = {
     'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-    'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+    'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+    // v23123 (reintroduced from the reverted v23113) — Nick: 'the red emblem
+    // goes in the small map space when map not there'. His colour widget.
+    'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+    'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
   };
   var _mapLifeSrc = _MAPLIFE_EMBLEM[_mapLifeCode]
     || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
@@ -9335,7 +9339,9 @@ function uxgGateHtml(ctx) {
   // airline+alliance lockup — a separate mark would show the alliance twice.
   // (UA removed — Nick wants United's globe+wordmark with the Star Alliance
   // mark shown SEPARATELY, like every other Star carrier.)
-  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1 };
+  // v23123 — Delta joins KLM: Nick's lockup already CONTAINS SkyTeam, so a
+  // separate alliance mark would print it twice.
+  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1, 'DL': 1, 'DAL': 1 };
   // Per-carrier alliance-mark override (Nick's official asset): United uses
   // the official 2011 Star Alliance lockup, black backing stripped so the
   // white mark floats on the banner.
@@ -10101,7 +10107,7 @@ function uxgGateHtml(ctx) {
     'QK': '/logos/airlines/canadian/air-canada-white.svg',                       // Jazz under AC
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
-    'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
+    'DL': '/logos/airlines/us-major/delta-skyteam-lockup-white.svg',             // v23123 — Nick's own lockup: colour widget + WHITE wordmark + SkyTeam
     // Official COMBINED airline+alliance lockups (Nick: 'there are multiple
     // logos for alliance partners — use them'). Carriers with a combined
     // lockup skip the separate alliance mark (see _COMBINED_ALLIANCE_LOCKUP).
@@ -10538,6 +10544,12 @@ function uxgGateHtml(ctx) {
   // ~16%, which sits UNDER the skewed gate tab so no black wedge shows at the
   // seam. Result: solid black wordmark+time field, red only at the gate.
   var _silkGrad = 'linear-gradient(90deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 84%, var(--airline-accent,#1aa) 93%, var(--airline-accent,#1aa) 100%)';
+  // v23123 — Nick's Delta rendition: the top strip is FLAT deep indigo
+  // (#11063C, sampled from his image), not the gradient. Inline !important
+  // background is unbeatable from a stylesheet, so the swap happens here.
+  try {
+    if (/^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) _silkGrad = '#11063C';
+  } catch (e) {}
 
   // Silk drops the airport LOGO (Nick's redesign): the centre now holds a
   // centred local-time block instead. Classic banner keeps the airport band.
@@ -18803,7 +18815,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23122';
+var FIDS_BUILD_TAG = 'v23123';
 (function(){
   try {
     function _addTag(){
@@ -30735,6 +30747,7 @@ function getGateAds() {
     for (var k in ad) if (Object.prototype.hasOwnProperty.call(ad, k)) out[k] = ad[k];
     if (ad.headline) out.headline = adTL(ad.headline);
     if (ad.sub)      out.sub      = adTL(ad.sub);
+    if (ad.subLogo)  out.subLogo  = ad.subLogo;
     return out;
   });
   // Build destination-aware generic ads
@@ -31815,7 +31828,11 @@ function buildGateAdHtml(ad) {
     + _stdLogoHtml
     + '<div style="flex-shrink:0;text-align:center;max-width:100%;overflow:hidden;">'
     + '<div style="font-size:clamp(44px,5.2vw,78px);font-weight:800;color:' + _stdFg + ';line-height:1.08;max-width:100%;">' + _stdHeadline + '</div>'
-    + '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
+    + (ad.subLogo
+        // v23123 — the sub line renders the brand's real WORDMARK when one is
+        // supplied (Nick, Delta welcome); otherwise the plain name as before.
+        ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(34px,4.2vh,64px);width:auto;max-width:60%;object-fit:contain;margin:clamp(12px,2vh,22px) auto 0;display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
+        : '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>')
     + '</div></div>'
   );
 }
@@ -33823,7 +33840,11 @@ function _buildGateAdSlideList() {
       var _FB_WELCOME_LOGO = {
         'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg',
         'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+        // v23123 — Nick: 'the logo in the middle as well for the welcome =
+        // red'. His colour widget, not the white-forced mono mark.
+        'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
       };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
@@ -33843,6 +33864,14 @@ function _buildGateAdSlideList() {
           } catch (e) { return _WA.en + ' · ' + _WA.fr; }
         })(),
         sub: (_fb && _fb.name) ? _fb.name : '',
+        // v23123 — Nick: 'put the actual delta name in the middle wordmark'.
+        subLogo: (function () {
+          var _SUB_WORDMARK = {
+            'DL': '/logos/airlines/us-major/delta-wordmark-light.svg',
+            'DAL': '/logos/airlines/us-major/delta-wordmark-light.svg'
+          };
+          return _SUB_WORDMARK[code] || '';
+        })(),
         logo: _fbLogo
       } }];
     }
