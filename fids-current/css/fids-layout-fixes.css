@@ -11625,3 +11625,18 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   display: none !important;
   content: none !important;
 }
+
+/* v23126 — NICK'S OVERLAY, one last time: the chip spans the plate, the
+   value fills it, the band centre runs near band height. The fitters above
+   shrink-to-fit from these ceilings, so big-as-fits, never overflowing. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title {
+  font-size: clamp(15px, 2.6vh, 34px) !important;
+  align-self: stretch !important;
+  text-align: center !important;
+  margin: 0 clamp(2px, 0.3vw, 8px) !important;
+}
+html body .g8-bw-clocked .g8-bw-text {
+  font-size: clamp(22px, 5vh, 64px) !important;
+  white-space: nowrap !important;
+}

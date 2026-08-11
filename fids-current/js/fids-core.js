@@ -11551,7 +11551,7 @@ function gateAutofit(root) {
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var _pi = _plateInset(row);
       var _rowH = row.clientHeight - (_pi ? (_pi.t + _pi.b) : 0);
-      _boxAssign(el, tc.clientWidth, Math.floor(_rowH * 0.26), null, false);
+      _boxAssign(el, tc.clientWidth, Math.floor(_rowH * 0.32), null, false);   // v23126 — Nick's overlay: the chip fills the plate
     });
     // HARMONIZE (Nick: 'the exact same') — after the fit, every title takes
     // the smallest size any title landed on, so there is ONE number across
@@ -11625,8 +11625,21 @@ function gateAutofit(root) {
       // 0.24→0.26; measured ~30px of dead air above and below the values
       // in a 171px shelf. The fitter still shrinks to fit, so nothing can
       // overflow — the budgets only raise the ceiling.
-      if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.26), null, false);
-      if (val) _boxAssign(val, w, Math.floor(h * 0.74), null, false);
+      if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.30), null, false);
+      if (val) _boxAssign(val, w, Math.floor(h * 0.84), null, false);   // v23126 — fill the plate (Nick's overlay)
+    });
+    // v23126 — BAND CENTRE FILLS ITS SLOT (Nick's overlay). Fitted against
+    // the mid's real width minus emblem and star, so it is as big as actually
+    // fits and never clips. (First cut sat in the clock-tick IIFE where
+    // _boxAssign doesn't exist — the try/catch ate the ReferenceError and
+    // 'Embarquement en cours' clipped at the divider. It lives HERE now,
+    // beside the other gate fits.)
+    root.querySelectorAll('.g8-bw-clocked .g8-bw-mid').forEach(function (mid) {
+      var txt = mid.querySelector('.g8-bw-text'); if (!txt) return;
+      var used = 0;
+      [].forEach.call(mid.children, function (c) { if (c !== txt) used += c.getBoundingClientRect().width + 14; });
+      var w = mid.clientWidth - used - 16;
+      if (w > 60) _boxAssign(txt, w, Math.floor(mid.clientHeight * 0.74), null, false);
     });
     root.querySelectorAll('.g8-r1-right').forEach(function (box) {
       var num = box.querySelector('.g8-r1-gate'); if (!num) return;
@@ -18840,7 +18853,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23125';
+var FIDS_BUILD_TAG = 'v23126';
 (function(){
   try {
     function _addTag(){
