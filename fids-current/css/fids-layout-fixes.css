@@ -3157,15 +3157,14 @@ html .g8-lanes3 .g8-board-col.g8-q2 { flex: 1 1 0; }
 /* v23116 (Nick): the SECOND Priority panel is GRAY, not the accent — the
    sign reads black · gray · accent instead of two accent slabs. background-
    color only, so the plate texture the shared rule lays down still reads. */
-html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 {
-  background-color: #A9A9A9 !important;   /* Nick's markup: LIGHT gray, not slate */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="JZA"],[data-gate-airline="RV"],[data-gate-airline="ROU"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 {
+  background-color: #A9A9A9 !important;   /* Nick's markup: LIGHT gray — AC ONLY.
+     Unscoped, this leaked onto WestJet and washed their Priority 2 out
+     (Nick: 'color fading out'). Every other carrier keeps its own panel. */
 }
-/* White on the light gray needs an edge to read at distance — a soft dark
-   shadow, not an outline, so the type stays the same family as panel 1. */
-html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 .g8-board-grp-label,
-html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 .g8-board-grp-num,
-html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 .g8-board-arrow,
-html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 .g8-board-lane {
+/* White on the light gray needs an edge to read at distance — AC only,
+   like the gray itself. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="JZA"],[data-gate-airline="RV"],[data-gate-airline="ROU"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 :is(.g8-board-grp-label, .g8-board-grp-num, .g8-board-arrow, .g8-board-lane) {
   text-shadow: 0 1px 6px rgba(0,0,0,0.55) !important;
 }
 /* …and the division between the two Priority quarters carries a BIG DOT,
@@ -3173,8 +3172,29 @@ html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 .g8-board-lane {
    between the division big dot'). Drawn on q2's left edge so it rides the
    seam at any panel size; z-index lifts it over both plates. */
 html .g8-lanes3 .g8-board-col.g8-q2 { position: relative; }
-html .g8-lanes3 .g8-board-col.g8-q2::before {
+/* v23127 — 'the dot I asked for is half a dot': the column clips its own
+   ::before at the seam. The dot rides the SIGN now (boundary sits at 25% by
+   the 1:1:2 flex ratio), so nothing can clip it. The column dot is retired. */
+html .g8-lanes3 { position: relative !important; }
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="JZA"],[data-gate-airline="RV"],[data-gate-airline="ROU"],[data-gate-airline*="AIR CANADA"]) .g8-lanes3::before {
   content: '' !important;
+  position: absolute !important;
+  left: 25% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: clamp(22px, 3.4vh, 44px) !important;
+  height: clamp(22px, 3.4vh, 44px) !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important;
+  z-index: 5 !important;
+  pointer-events: none !important;
+}
+html body:not(:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="JZA"],[data-gate-airline="RV"],[data-gate-airline="ROU"],[data-gate-airline*="AIR CANADA"])) .g8-lanes3 .g8-board-col.g8-q2::before {
+  display: none !important;   /* the seam dot is part of AC's sign, not everyone's */
+}
+html .g8-lanes3 .g8-board-col.g8-q2::before {
+  content: none !important;   /* retired — the sign-level dot above replaces it */
   position: absolute !important;
   left: 0 !important;
   top: 50% !important;
@@ -11492,20 +11512,22 @@ html body .g8-wrap.g8-airline-PD .g8-r1-right::before {
 /* v23121 — 'with porter also like we did with Delta we need to throw some
    gray in the background pattern': every navy surface takes a slate mix
    instead of the raw saturated navy — same treatment Delta's panels got. */
+/* v23127 — MORE GRAY (Nick: 'You never added the gray as requested to
+   porter' — the v23121 mix was too subtle to read as gray at all). The
+   panels now sit clearly in blue-GRAY, the same visible strength Delta's
+   treatment carries: half gray in the navy, and the plate ground likewise. */
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-hdr-now,
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.now,
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-countdown .g8-cd-body {
-  background-color: #2A3650 !important;
-  background-color: color-mix(in srgb, #112855 68%, #7C8590 32%) !important;
+  background-color: #46506A !important;
+  background-color: color-mix(in srgb, #112855 50%, #8A8F99 50%) !important;
 }
 html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.next {
-  background-color: #33436B !important;
-  background-color: color-mix(in srgb, #254D87 70%, #7C8590 30%) !important;
+  background-color: #4F5F82 !important;
+  background-color: color-mix(in srgb, #254D87 52%, #8A8F99 48%) !important;
 }
-/* The shelf plates' base ground takes the same slate mix — the blue-panel
-   texture then reads over gray-navy instead of pure navy. */
 html body:is([data-gate-airline="PD"],[data-gate-airline="POE"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_) {
-  --plate-base: color-mix(in srgb, #112855 60%, #7C8590 40%);
+  --plate-base: color-mix(in srgb, #112855 48%, #8A8F99 52%);
 }
 
 /* v23121 — Nick: the cream goes on 'the top of the panels shelves' too. The
@@ -11639,4 +11661,57 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelv
 html body .g8-bw-clocked .g8-bw-text {
   font-size: clamp(22px, 5vh, 64px) !important;
   white-space: nowrap !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23127 — Nick's WestJet shot, every item:
+   · titles LEFT-ALIGNED on the lane panels, same colour everywhere
+   · numbers take the room they have (they had far more available)
+   · the band scales with WIDTH too — height-only sizing ran the right
+     clock out of the box the moment the window was narrower than the
+     test viewport ('lines sticking out of boxes')
+   ═══════════════════════════════════════════════════════════════════════ */
+html body .g8-board-col .g8-board-grp-label {
+  text-align: left !important;
+  align-self: stretch !important;
+  padding-left: clamp(14px, 1.6vw, 34px) !important;
+  color: #ffffff !important;
+  opacity: 0.94 !important;
+}
+html body .g8-board-col .g8-board-grp-num {
+  font-size: clamp(120px, 34vh, 420px) !important;
+  line-height: 0.9 !important;
+}
+html body .g8-board-grp-num.g8-grp-txt {
+  font-size: clamp(44px, 9.5vh, 120px) !important;   /* words, not numerals */
+}
+/* Band type: every fixed size gains a vw bound so a narrower window shrinks
+   the type instead of clipping the box. */
+html body .g8-bw-clocked .g8-bw-clk-val {
+  font-size: clamp(24px, min(5.8vh, 2.7vw), 82px) !important;
+}
+html body .g8-bw-clocked .g8-bw-st-val {
+  font-size: clamp(20px, min(4.8vh, 2.2vw), 68px) !important;
+}
+html body .g8-bw-clocked .g8-bw-clk-lbl {
+  font-size: clamp(11px, min(2.2vh, 1.05vw), 30px) !important;
+}
+html body .g8-bw-clocked .g8-bw-end {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* v23127 — Discover's welcome tail keeps its own yellow+blue (the ad
+   renderer white-forces marks; same exemption Delta's widget has). */
+html body:is([data-gate-airline="4Y"],[data-gate-airline="OCN"],[data-gate-airline*="DISCOVER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.gad-ad-logo, img[src*="discover-airlines-emblem"]) {
+  filter: none !important;
+}
+
+/* v23127 — the gray READS on Porter now: the plate texture was soft-light
+   repainting navy over the mixed ground (measured: ground correct, render
+   still navy). Flat on the lane panels, like Delta's flat indigo strip. */
+html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.now,
+html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.next,
+html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-hdr-now {
+  background-image: none !important;
 }
