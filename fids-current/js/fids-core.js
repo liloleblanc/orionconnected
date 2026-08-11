@@ -18434,7 +18434,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23108';
+var FIDS_BUILD_TAG = 'v23109';
 (function(){
   try {
     function _addTag(){
@@ -23193,6 +23193,21 @@ async function loadFlightHistory(flightNumber) {
   return promise;
 }
 
+// v23109 — REVISIONS LIVE ON THE NEAREST DAY (Nick, AC1986 into YQM:
+// 'showing as 12:08AM revised at 11:48PM yet delayed?'). Around midnight
+// the feed stamps the revised/predicted local time with the SCHEDULED
+// day's date, so an arrival due 12:08 AM revised to 11:48 PM the evening
+// before parses 24h forward and reads as a 23.7-hour delay — the status
+// said 'Delayed', the time painted amber, and boarding math slid, all
+// for a flight running 20 minutes EARLY. No real revision moves a flight
+// by more than half a day; anything past 12h from schedule is the date
+// bug, so snap it to the day that puts it nearest the scheduled time.
+function _adbNearestDayTs(ts, refTs) {
+  if (!ts || !refTs) return ts;
+  var d = ts - refTs;
+  if (Math.abs(d) <= 12 * 3600000) return ts;
+  return ts - Math.round(d / 86400000) * 86400000;
+}
 function adbStatus(f, mode, schedTs, nowTs) {
   const raw=String(f.status||'').replace(/[\s_-]+/g,'').toLowerCase();
   // AeroDataBox's explicit status is authoritative. In particular, EnRoute /
@@ -23216,7 +23231,7 @@ function adbStatus(f, mode, schedTs, nowTs) {
   const update=(leg.runwayTime&&(leg.runwayTime.local||leg.runwayTime.utc))
     ||(leg.predictedTime&&(leg.predictedTime.local||leg.predictedTime.utc))
     ||(leg.revisedTime&&(leg.revisedTime.local||leg.revisedTime.utc));
-  const updateTs=update?adbTs(update):null;
+  const updateTs=update?_adbNearestDayTs(adbTs(update),schedTs):null;
   const refTs = updateTs || schedTs;
   const minsToRef = (refTs - nowTs) / 60000;
   // Base phase from the (revised) reference time — boarding/final/gate
@@ -23335,7 +23350,7 @@ function mapADB(raw, mode) {
     const _predL=(_timeLeg.predictedTime&&(_timeLeg.predictedTime.local||_timeLeg.predictedTime.utc))||null;
     const _revisedL=(_timeLeg.revisedTime&&(_timeLeg.revisedTime.local||_timeLeg.revisedTime.utc))||null;
     const revL=_actualL||_predL||_revisedL;
-    const revTs=revL?adbTs(revL):null;
+    const revTs=revL?_adbNearestDayTs(adbTs(revL),schedTs):null;
     const upd=(revTs&&Math.abs(revTs-schedTs)>5*60000)?adbHHMM(revL):null;
     const st=adbStatus(f,mode,schedTs,nowTs);
     let locIata=mode==='dep'
