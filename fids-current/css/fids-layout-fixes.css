@@ -3154,6 +3154,31 @@ html .g8-board-col .g8-board-lane { opacity: 0.82; }
    right HALF as the called-zones sign. ── */
 html .g8-lanes3 .g8-board-col.g8-q1 { flex: 1 1 0; }
 html .g8-lanes3 .g8-board-col.g8-q2 { flex: 1 1 0; }
+/* v23116 (Nick): the SECOND Priority panel is GRAY, not the accent — the
+   sign reads black · gray · accent instead of two accent slabs. background-
+   color only, so the plate texture the shared rule lays down still reads. */
+html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 {
+  background-color: #5B646F !important;
+}
+/* …and the division between the two Priority quarters carries a BIG DOT,
+   centred on the seam (Nick: 'the middle between the 2 should have a dot in
+   between the division big dot'). Drawn on q2's left edge so it rides the
+   seam at any panel size; z-index lifts it over both plates. */
+html .g8-lanes3 .g8-board-col.g8-q2 { position: relative; }
+html .g8-lanes3 .g8-board-col.g8-q2::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: clamp(22px, 3.4vh, 44px) !important;
+  height: clamp(22px, 3.4vh, 44px) !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+}
 html .g8-lanes3 .g8-board-col.g8-zones,
 html .g8-lanes3 .g8-board-col.next.g8-zones {
   flex: 2 2 0;
@@ -11319,4 +11344,21 @@ html body .g8-bir-title .g8-bir-l2,
 html body .g8-board-grp-label,
 html body .g8-bw-clk-lbl {
   white-space: nowrap !important;
+}
+
+/* v23116b — the no-break rule covers EVERY bilingual pair (Nick: 'You never
+   ever Break a sentence'). When a title's two languages can't share a line,
+   they stack whole and the pipe disappears — same treatment as the lane
+   lines, same class, applied by the same guard. */
+html body .v2-fi-title.g8-lane-stacked .v2-fi-sep,
+html body .g8-bir-title.g8-lane-stacked .g8-bir-sep,
+html body .g8-board-grp-label.g8-lane-stacked .g8-bir-sep {
+  display: none !important;
+}
+html body .v2-fi-title.g8-lane-stacked .v2-fi-lbl-en,
+html body .v2-fi-title.g8-lane-stacked .v2-fi-lbl-2,
+html body .g8-bir-title.g8-lane-stacked .g8-bir-l1,
+html body .g8-bir-title.g8-lane-stacked .g8-bir-l2 {
+  display: block !important;
+  text-align: center !important;
 }

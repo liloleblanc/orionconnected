@@ -9470,8 +9470,16 @@ function uxgGateHtml(ctx) {
     // Middle: NOW BOARDING while boarding is actually on; Welcome otherwise.
     var _bwMidWords;
     if (/^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))) {
-      _bwMidWords = _gateLbl('nowBoarding', _frF, function (w) { return w; }, ' <span class="g8-bw-sep">|</span> ');
-      if (!_bwMidWords) _bwMidWords = 'Now Boarding';
+      // Built from the LANGUAGE PAIR (var-hoisted from the clock block above),
+      // not the dedup'd label helper — one selected language shows TWICE
+      // ('Now Boarding | Now Boarding') for symmetry (Nick). Quebec airports
+      // put French first via the same pair.
+      var _bwNB = _GATE_LBL.nowBoarding || {};
+      var _bwNBl1 = (typeof _bwL1 === 'string' && _bwL1) ? _bwL1 : 'en';
+      var _bwNBl2 = (typeof _bwL2 === 'string' && _bwL2) ? _bwL2 : _bwNBl1;
+      var _bwNB1 = _bwNB[_bwNBl1] || _bwNB.en || 'Now Boarding';
+      var _bwNB2 = _bwNB[_bwNBl2] || _bwNB1;
+      _bwMidWords = _bwNB1 + ' <span class="g8-bw-sep">|</span> ' + _bwNB2;
     } else {
       _bwMidWords = _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ');
     }
@@ -18756,7 +18764,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23116';
+var FIDS_BUILD_TAG = 'v23117';
 (function(){
   try {
     function _addTag(){
@@ -34708,8 +34716,9 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // Measured against the SINGLE-LINE width: un-stack first so the test is
     // honest, then re-stack only if that single line genuinely overflows.
     try {
-      document.querySelectorAll('.g8-board-lane').forEach(function (ln) {
-        if (!ln.querySelector('.g8-lane-p')) return;
+      document.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title, .g8-board-grp-label').forEach(function (ln) {
+        if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
+            && !/\|/.test(ln.textContent || '')) return;
         // Force ONE line for the measurement — inline units wrap between
         // themselves without ever overflowing, so scrollWidth alone can't
         // see that the single-line form doesn't fit (the same blindness
@@ -34725,6 +34734,9 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         var _lnOver = ln.scrollWidth > _lnAvail - 8;
         ln.style.whiteSpace = _lnPrev || '';
         if (_lnOver) ln.classList.add('g8-lane-stacked');
+        // same class does double duty: on titles it stacks the language
+        // halves whole and hides the pipe (CSS), so no surface anywhere can
+        // show 'Boarding |' over 'Embarquement' — never a broken pair.
       });
     } catch (e) {}
     var ones = document.querySelectorAll('.axr-one-line,'
