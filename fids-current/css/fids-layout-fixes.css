@@ -11569,3 +11569,23 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
   .g8-wrap :is(.gad-aircraft-col, .gad-map-col-v2) {
   border: 2px solid rgba(255,255,255,0.92) !important;
 }
+
+/* v23124 — FILL THE ROOM (Nick: 'size fit as much as you can tehre is still
+   lots of room in a lot of places'). Measured slack, grown into:
+   lane-sign labels and lane lines up ~18%, countdown headlines' ceiling up a
+   notch. Numbers were already at their max; the fitters still shrink to fit,
+   so none of this can overflow — it only raises ceilings. */
+html body .g8-lanes3 .g8-board-grp-label,
+html body .g8-lanes-pd .g8-board-grp-label,
+html body .g8-board-body .g8-board-grp-label {
+  font-size: clamp(24px, 4.6vh, 64px) !important;
+}
+html body .g8-lanes3 .g8-board-lane,
+html body .g8-lanes-pd .g8-board-lane,
+html body .g8-board-body .g8-board-lane {
+  font-size: clamp(20px, 4.2vh, 58px) !important;
+}
+html body:not(#_):not(#_) .g8-countdown .g8-cd-mock .g8-cd-label {
+  font-size: clamp(15px, 7.4vh, 220px) !important;
+  font-size: clamp(15px, min(15cqh, 4cqw), 220px) !important;
+}

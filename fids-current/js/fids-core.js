@@ -11600,8 +11600,13 @@ function gateAutofit(root) {
       // full client box was sliding under the gate tab.
       var w = box.clientWidth - 52 - 30;
       var h = box.clientHeight;
-      if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.24), null, false);
-      if (val) _boxAssign(val, w, Math.floor(h * 0.66), null, false);
+      // v23124 (Nick: 'size fit as much as you can there is still lots of
+      // room') — the value's height budget grows 0.66→0.74 and the title
+      // 0.24→0.26; measured ~30px of dead air above and below the values
+      // in a 171px shelf. The fitter still shrinks to fit, so nothing can
+      // overflow — the budgets only raise the ceiling.
+      if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.26), null, false);
+      if (val) _boxAssign(val, w, Math.floor(h * 0.74), null, false);
     });
     root.querySelectorAll('.g8-r1-right').forEach(function (box) {
       var num = box.querySelector('.g8-r1-gate'); if (!num) return;
@@ -18815,7 +18820,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23123';
+var FIDS_BUILD_TAG = 'v23124';
 (function(){
   try {
     function _addTag(){
