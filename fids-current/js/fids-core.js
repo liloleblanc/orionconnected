@@ -2810,6 +2810,23 @@ function _acResolvedGet(fl) {
   } catch (e) { return null; }
 }
 
+// v23130 — A TRUNCATED STATUS IS A BROKEN SENTENCE (Nick's YYZ shot:
+// 'Embarquem\u2026' — 'unaccepatble'). After any geometry/fit pass, any
+// status cell still wider than its box steps its own font down until the
+// whole word fits. No ellipsis, ever — the language law applies to the
+// board too.
+function _fidsNoStatusClip(tbl) {
+  try {
+    tbl.querySelectorAll('tbody td.td-status').forEach(function (td) {
+      var f = parseFloat(getComputedStyle(td).fontSize) || 16;
+      var guard = 26;
+      while (guard-- > 0 && td.scrollWidth > td.clientWidth + 1 && f > 9) {
+        f -= 1;
+        td.style.setProperty('font-size', f + 'px', 'important');
+      }
+    });
+  } catch (e) {}
+}
 async function _gateNumbersPoll() {
   try {
     if (_gateNumPollBusy) return;
@@ -3008,6 +3025,30 @@ try {
             window._lastMapPosKey = null; window._lastMapProgKey = null;
           }
         } catch (e2) {}
+        // v23129 — MOTION WATCHDOG (Nick's PD253: 'nope it doesnt its
+        // stuck'). The marker watchdog above only catches a MISSING marker;
+        // a marker that exists but never moves — a glide that seeded at
+        // speed 0, a wedged frame loop, anything — sat frozen forever. A
+        // LIVE map whose marker holds the same spot for 60 s while the
+        // aircraft is airborne is wedged whatever the cause: reset the
+        // pos/prog guards so this tick rebuilds from the latest fix.
+        try {
+          if (typeof gateMap !== 'undefined' && gateMap && gateMap._fidsLive === true
+              && window._gatePlaneMk && window._gatePlaneMk._map && window._gatePlaneMk.getLatLng) {
+            var _mwLL = window._gatePlaneMk.getLatLng();
+            var _mwKey = _mwLL.lat.toFixed(5) + ',' + _mwLL.lng.toFixed(5);
+            var _mwPrev = window._gateMarkerMotion || null;
+            var _mwOnG = !!(window._gateInboundLivePos && window._gateInboundLivePos.onGround === true)
+                      || !!(window._gateInbound && window._gateInbound._liveOnGround === true);
+            if (!_mwPrev || _mwPrev.key !== _mwKey) {
+              window._gateMarkerMotion = { key: _mwKey, ts: Date.now() };
+            } else if (!_mwOnG && Date.now() - _mwPrev.ts > 60000) {
+              console.log('[MAP-WATCHDOG] live marker frozen 60s while airborne — forcing rebuild');
+              window._gateMarkerMotion = { key: _mwKey, ts: Date.now() };
+              window._lastMapPosKey = null; window._lastMapProgKey = null;
+            }
+          }
+        } catch (e3) {}
         window._gateMapRetry();
       }
     } catch (e) {}
@@ -9366,6 +9407,18 @@ function uxgGateHtml(ctx) {
       + (mirror ? 'transform:scaleX(-1);' : '')
       + '" aria-hidden="true"><path d="M18 6 L7 17 M7 17 L7 10 M7 17 L14 17" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
+  // v23130 — WORDS ARE NOT NUMERALS (Nick's Flair shot: giant '| Tout'
+  // filling the whole panel). Any lane value containing letters wears
+  // .g8-grp-txt — the word-size clamp Porter Reserve already uses — so
+  // the 34vh numeral size only ever applies to '1 • 2' style values.
+  function _g8GrpValCls(v) {
+    // Strip markup until stable (CodeQL: a single pass can leave '<script'
+    // behind on nested brackets). This is only a letters-vs-numerals test —
+    // the value itself is never altered for rendering.
+    var t = String(v), prev;
+    do { prev = t; t = t.replace(/<[^>]*>/g, ''); } while (t !== prev);
+    return /[A-Za-zÀ-ɏ]/.test(t) ? ' g8-grp-txt' : '';
+  }
 
   // WELCOME STRIP for the boarding takeovers (Nick: 'the Welcome Bienvenue
   // and the rondelle and Star') — like the physical AC gate sign's header:
@@ -9401,7 +9454,11 @@ function uxgGateHtml(ctx) {
     // The strip is WHITE like the printed sign — swap the banner's metallic
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
     // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
-    var _bwStar = starHtml ? starHtml.replace('star-3d-tile.jpg', 'star-3d-symbol.webp') : '';
+    // v23131 — the strip's alliance slot is the APPROVED chrome star only
+    // (Nick's design: 'the rondelle and Star'). Oneworld/SkyTeam marks
+    // rendered as a tiny floating disc beside the phase text (his second
+    // orange box on the AA strip) — those alliances show nothing here.
+    var _bwStar = (starHtml && _allianceKey === 'star') ? starHtml.replace('star-3d-tile.jpg', 'star-3d-symbol.webp') : '';
     // v23115 \u2014 THE CLOCK LIVES HERE NOW (Nick's second mockup). It came out of
     // the banner, where it was a tab competing with the airline lockup, and
     // sits at the two ends of this white strip instead: label + time on the
@@ -9530,7 +9587,16 @@ function uxgGateHtml(ctx) {
     try {
       var _sym = /^[A-Z0-9]{2}$/.test(String(airlineCode || '').toUpperCase())
         ? '/logos/symbols/airlines/' + String(airlineCode).toUpperCase() + '.svg' : null;
-      var _src = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || _sym;
+      // v23130 — Delta's countdown centrepiece was the WHITE widget while
+      // every other Delta surface switched to the red colour widget
+      // yesterday (Nick: 'I made you change this yesterday why is this
+      // still white OMG WOW'). Same colour art as the map slot uses.
+      var _CD_MARK = {
+        'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
+      };
+      var _src = _CD_MARK[String(airlineCode || '').toUpperCase()]
+        || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || _sym;
       var _mot = (typeof GATE_RONDELLE_MOTION !== 'undefined' && GATE_RONDELLE_MOTION[airlineCode]) || null;
       if (!_src && !_mot) return '';
       var _cdSpin = ' style="--rond-delay:-' + ((Date.now() / 1000) % 7).toFixed(2) + 's"';
@@ -9677,10 +9743,16 @@ function uxgGateHtml(ctx) {
     // COLOR-ON-WHITE (Nick: American/Delta 'color and centered'): the real
     // colour symbol on a white chip instead of the flat white silhouette on
     // the accent circle — matches the rail rondelle treatment.
-    var _birOnWhite = { 'AA': true }[airlineCode] && !_birRound && !_birTile;
+    // v23131 — the AA-only WHITE orb was never requested (Nick's orange box:
+    // 'this was never requested better fucking change it'). AA rides the same
+    // accent orb as every other cell; its colour art stays unfiltered.
+    var _birOnWhite = false;
     var _birNativeColor = !!_birRound || !!_birTile || !!_birOnWhite;
     var _birFilter = _birNativeColor ? '' : 'filter:brightness(0) invert(1);';
-    var _birPad = _birOnWhite ? '13%' : '9%';
+    // v23130 — Nick: 'the logos inside are tiny'. The img carried 9% padding
+    // ON TOP of the wrap's 5-10px — double-padded art filled barely 60% of
+    // the orb. Slimmer img pad; the wrap pad alone keeps the round crop safe.
+    var _birPad = _birOnWhite ? '8%' : '3%';
     var _birFlightIcon = _birEmblemPath
       ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:' + _birPad + ';box-sizing:border-box;">'
       : null;
@@ -9696,9 +9768,14 @@ function uxgGateHtml(ctx) {
           : null);
     // Flight shelf wears the airline rondelle in the rail's emblem-wrap
     // grammar; falls back to the generic glyph badge exactly like the rail.
-    var _birFlightShelf = _birFlightIcon
+    // v23130 — Flair's mark IS the green dot (Nick: 'The icons were changed
+    // with no mention or permission the first should be green simple'). The
+    // rail's _emblemImg already renders F8 as a plain lime disc; this strip
+    // path was wrapping the emblem FILE in the orb instead. Same plain disc.
+    if (_birF8) _birFlightIcon = '';
+    var _birFlightShelf = (_birFlightIcon || _birF8)
       ? '<div class="v2-fi-row v2-fi-flight">'
-        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (_birNativeColor ? ' v2-fi-emblem-native' : '') + '" style="' + _BIR_BADGE_STYLE + (_birTile ? 'background:' + _birTile.bg + ';' : '') + (_birOnWhite ? 'background:#fff;' : '') + '">' + _birFlightIcon.replace('<img ', '<img class="v2-fi-emblem-img" ') + '</div></div>'
+        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (_birNativeColor ? ' v2-fi-emblem-native' : '') + '" style="' + _BIR_BADGE_STYLE + (_birF8 ? 'background:#7AFF94;' : '') + (_birTile ? 'background:' + _birTile.bg + ';' : '') + (_birOnWhite ? 'background:#fff;' : '') + '">' + (_birF8 ? '' : _birFlightIcon.replace('<img ', '<img class="v2-fi-emblem-img" ')) + '</div></div>'
         + '<div class="v2-fi-textcol">'
         +   '<div class="v2-fi-title">' + _gateLbl('flight', _frF, function(w,i){ return i ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">'+w+'</span>' : '<span class="v2-fi-lbl-en">'+w+'</span>'; }, '') + '</div>'
         +   '<div class="v2-fi-value v2-fi-flight-number">' + (currentFlight.flight || '\u2014') + '</div>'
@@ -9723,9 +9800,9 @@ function uxgGateHtml(ctx) {
   // 3 \u2022 4 \u2022 5 \u2022 6, also Lane 2).
   function _acLanesBodyHtml(zonesVal) {
     return '<div class="g8-board-body g8-lanes3">'
-      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
-      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
-      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">' + _gateLbl('zones', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
+      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
+      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
+      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">' + _gateLbl('zones', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(zonesVal) + '">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
       + '</div>';
   }
 
@@ -9738,7 +9815,7 @@ function uxgGateHtml(ctx) {
     var _rowsLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
     return '<div class="g8-board-body g8-lanes-pd">'
       + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">Porter Reserve</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
-      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
+      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
       + '</div>';
   }
 
@@ -9831,8 +9908,8 @@ function uxgGateHtml(ctx) {
           ? _pdLanesBodyHtml(nowVal)
           : _bHdr
             + '<div class="g8-board-body">'
-            + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + nowVal + '</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
-            + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
+            + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(nowVal) + '">' + nowVal + '</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
+            + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(nextVal) + '">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
             + '</div>')
       + '</div>';
   }
@@ -9841,7 +9918,13 @@ function uxgGateHtml(ctx) {
   var finalHtml = '';
   if (finalActive) {
     var isGateClosed = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed');
-    var finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
+    // v23130 — the header is a bilingual pair like every other sign line
+    // (Nick: 'all needs to be in the 2 languages'). Each language is one
+    // nowrap span; the pipe sits between; a narrow band stacks whole lines.
+    var finalHdr = _gateLbl(isGateClosed ? 'gateClosed' : 'finalCall', _frF,
+      function (w) { return '<span class="g8-lane-p">' + w + '</span>'; },
+      '<span class="g8-lane-sep"> <span class="g8-bir-sep">|</span> </span>', true);
+    if (!finalHdr) finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
     var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
     var finalSub = isGateClosed ? '' : TL('proceedGate');
     if (isGateClosed) {
@@ -9864,7 +9947,8 @@ function uxgGateHtml(ctx) {
              var m = String(currentFlight.flight || '').match(/(\d+)/);
              return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
            })();
-      var _fcNext, _fcNextLbl = 'Zones';
+      var _grpValCls = _g8GrpValCls;
+      var _fcNext, _fcNextLbl = _gateLbl('zones', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true);
       if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
       else if (airlineCode === 'PD') { _fcNextLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); }
       else _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
@@ -9887,9 +9971,14 @@ function uxgGateHtml(ctx) {
           // everyone else'). Two halves like Porter's: left = Priority on
           // lanes 1·2, right = the called zones on lanes 3·4. Carriers with
           // their own sign (AC, PD) keep theirs.
+          // v23130 — TWO arrows, the approved Porter grammar (Nick: 'I also
+          // mentioned lanes and 2 yes 2 arrows thats non existent'): left
+          // panel leads with the down-left arrow, right panel trails with
+          // the down-right — one each, mirrored. The next-panel's extra
+          // leading arrow is gone (it pointed at the divider).
           : '<div class="g8-board-body g8-lanes-std">'
-            + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1 &#8226; 2</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 &#8226; 2', true) + '</div></div>'
-            + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 &#8226; 4', true) + '</div></div>'
+            + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1 &#8226; 2</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 &#8226; 2', true) + '</div></div>'
+            + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _grpValCls(_fcNext) + '">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 &#8226; 4', true) + '</div></div>'
             + '</div>')
         + '</div>';
     }
@@ -12057,6 +12146,7 @@ function boardAutofit(full) {
               td.style.setProperty('font-size', _geoHit.fonts[c] + 'px', 'important');
             });
           });
+          _fidsNoStatusClip(tbl);
           _widthsStale = false;
         }
         if (full && _widthsStale) try {
@@ -12184,6 +12274,7 @@ function boardAutofit(full) {
           var _px = _boardFitCol(Array.prototype.slice.call(tbl.querySelectorAll('tbody td.' + c)), 0.72, false, _rowAuthH);
           if (_px) _fitFonts[c] = _px;
         });
+        _fidsNoStatusClip(tbl);
         // snapshot THIS language's finished build (widths live in the
         // colgroup right now) so its next appearance applies instantly
         try {
@@ -18700,6 +18791,8 @@ var _GATE_LBL = {
   timeIn:    { en:'Time in',       fr:'Heure à',        es:'Hora en',      de:'Zeit in',     it:'Ora a',       pt:'Hora em',    ja:'現地時刻',  zh:'当地时间', ar:'التوقيت في' },
   time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
   zones:     { en:'Zones',         fr:'Zones',          es:'Zonas',        de:'Zonen',       it:'Zone',        pt:'Zonas',      ja:'ゾーン',    zh:'区域',   ar:'مناطق' },
+  finalCall: { en:'FINAL BOARDING CALL', fr:'DERNIER APPEL', es:'ÚLTIMA LLAMADA', de:'LETZTER AUFRUF', it:'ULTIMA CHIAMATA', pt:'ÚLTIMA CHAMADA', ja:'最終搭乗案内', zh:'最后登机广播', ar:'النداء الأخير للصعود' },
+  gateClosed:{ en:'GATE CLOSED',   fr:'PORTE FERMÉE',   es:'PUERTA CERRADA', de:'GATE GESCHLOSSEN', it:'GATE CHIUSO', pt:'PORTÃO FECHADO', ja:'ゲート閉鎖', zh:'登机口已关闭', ar:'البوابة مغلقة' },
   useLane:   { en:'Use Lane',      fr:'Utilisez la voie', es:'Use carril',  de:'Spur nutzen', it:'Usa corsia',  pt:'Use faixa',  ja:'レーン',    zh:'通道',   ar:'استخدم الممر' },
   useLanes:  { en:'Use Lanes',     fr:'Utilisez les voies', es:'Use carriles', de:'Spuren nutzen', it:'Usa corsie', pt:'Use faixas', ja:'レーン',  zh:'通道',   ar:'ممرات' },
   all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' },
@@ -18743,7 +18836,7 @@ function _fidsClockForLang(now, tz, lang) {
 // Returns the selected languages' words for `key`, at most two, de-duplicated.
 // frFirst only reorders — it is the French-first-airport flag and has never
 // been a language choice. sep/wrap let each call site keep its own markup.
-function _gateLbl(key, frFirst, wrap, sep) {
+function _gateLbl(key, frFirst, wrap, sep, keepDup) {
   var o = _GATE_LBL[key];
   if (!o) return '';
   var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
@@ -18757,7 +18850,11 @@ function _gateLbl(key, frFirst, wrap, sep) {
     var w = o[picked[i]];
     if (!w) continue;
     var k = String(w).toLowerCase();
-    if (seen[k]) continue;          // 'Gate | Gate' helps nobody
+    // v23130 — SIGN SYMMETRY (Nick: 'all needs to be in the 2 languages and
+    // its still not there attrocious' — the AC sign's lone 'Zones'). With
+    // keepDup the pair shows even when both languages share the word:
+    // 'Zones | Zones', per his stated law ('display it twice … symmetry').
+    if (!keepDup && seen[k]) continue;   // 'Gate | Gate' helps nobody (chips)
     seen[k] = 1;
     parts.push(w);
   }
@@ -18876,7 +18973,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23128';
+var FIDS_BUILD_TAG = 'v23131';
 (function(){
   try {
     function _addTag(){
@@ -27289,7 +27386,11 @@ function initGateMapLive(org,dst,planeLat,planeLng){
           }
         } catch (e1) {}
         var _ipSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
+          // v23129 — sticky-fix speed lives under 'spd' (see _glSpd below).
+          : (window._gateMapFix && typeof window._gateMapFix.spd === 'number' && window._gateMapFix.spd > 0) ? window._gateMapFix.spd
           : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
+          : (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0
+             && window._gateInbound._liveOnGround !== true) ? window._gateInbound._liveSpd
           : (window._gateTelemAnim && typeof window._gateTelemAnim.realSpd === 'number' && window._gateTelemAnim.realSpd > 0) ? window._gateTelemAnim.realSpd
           : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 && (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
           : 0;
@@ -27336,7 +27437,23 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // Track every overlay so a REUSE pass can wipe exactly these (and not the
   // tile layers) — otherwise reused arcs/markers/planes would pile up.
   var _ov = (gateMap._fidsOverlays = gateMap._fidsOverlays || []);
-  var _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
+  // v23131 — the solid leg follows the FLOWN track when we have one (Nick's
+  // video: a downwind east of the field drew as a straight chord past the
+  // airport folding back through the plane — a hairpin). Same condition as
+  // the glide's route below, so the drawn line and the animated line agree.
+  var _a1 = null;
+  try {
+    var _tk0 = (typeof _gateTrack !== 'undefined' && _gateTrack.points && _gateTrack.points.length >= 4) ? _gateTrack.points : null;
+    if (_tk0) {
+      var _tkA0 = _tk0.map(function (q) { return [q.lat, q.lng]; });
+      if (_gcNm(_tkA0[0], _tkA0[_tkA0.length - 1]) > 2 && _gcNm(_tkA0[_tkA0.length - 1], _pp) < 25) {
+        _a1 = L.polyline(_gcFullRoute(o, _tkA0[0], 40).concat(_tkA0.slice(1), [_pp]),
+          {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap);
+      }
+    }
+  } catch (eA1) {}
+  if (!_a1) _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
+  if(_a1)_ov.push(_a1);
   // Runway-aligned final when we have the data — same shape the glide flies.
   var _rwyP = _runwayFinalPath(_pp, d, dst);
   var _a2 = null;
@@ -27356,7 +27473,17 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
   var _glSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
+             // v23129 — _gateStickyFix stores the speed under 'spd', not
+             // 'speed'. Reading .speed here was ALWAYS undefined, so every map
+             // built off the sticky-fix branch (feed coords, no ADS-B answer
+             // yet — the normal case on low-altitude approach) seeded the
+             // glide at 0: '[GLIDE] not started — no live speed (marker stays
+             // put)'. Nick's PD253 'nope it doesnt its stuck', reproduced in
+             // the harness. Read both keys, then the feed's own _liveSpd.
+             : (window._gateMapFix && typeof window._gateMapFix.spd === 'number' && window._gateMapFix.spd > 0) ? window._gateMapFix.spd
              : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
+             : (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0
+                && window._gateInbound._liveOnGround !== true) ? window._gateInbound._liveSpd
              // Fall back to the same live speed the info panel resolved (the
              // separate _gateInboundLivePos cache is often empty even when the
              // panel shows a speed — that left the glide seeded at 0 and the
@@ -27683,6 +27810,29 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _vA = Math.max(2, Math.min(116, Math.round(118 * (_nmA / totalNm))));
   var _vB = Math.max(2, 118 - _vA);
   var _legA = _gcFullRoute(o, _pl, _vA);
+  // v23131 — DRAW THE FLOWN PATH, NOT A STRAIGHT LINE THAT DOUBLES BACK
+  // (Nick's video: an aircraft on the downwind east of the field drew as a
+  // hairpin — origin→fix as one straight chord shooting PAST the airport,
+  // then folding 180° back through the plane). When the track recorder has
+  // real history for this leg, the tail of the solid leg follows the
+  // recorded positions: origin → first recorded point (great circle), then
+  // the actual flown points, then the plane. The glide's distance walk is
+  // untouched — these vertices all sit BEHIND the seed point.
+  try {
+    var _tkPts = (typeof _gateTrack !== 'undefined' && _gateTrack.points && _gateTrack.points.length >= 4)
+      ? _gateTrack.points : null;
+    if (_tkPts) {
+      var _tkSpanNm = _gcNm([_tkPts[0].lat, _tkPts[0].lng], [_tkPts[_tkPts.length - 1].lat, _tkPts[_tkPts.length - 1].lng]);
+      var _tkNearNm = _gcNm([_tkPts[_tkPts.length - 1].lat, _tkPts[_tkPts.length - 1].lng], _pl);
+      // Only when the history is substantial and actually belongs to this
+      // aircraft's current position (last recorded point within 25nm).
+      if (_tkSpanNm > 2 && _tkNearNm < 25) {
+        var _tkArr = _tkPts.map(function (q) { return [q.lat, q.lng]; });
+        var _vHead = Math.max(2, _vA - _tkArr.length);
+        _legA = _gcFullRoute(o, _tkArr[0], _vHead).concat(_tkArr.slice(1), [_pl]);
+      }
+    }
+  } catch (eTk) {}
   // Runway-aligned final (Nick's DL5140 video): once inbound, the remaining
   // leg lands along a real runway instead of running into the airport pin.
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
