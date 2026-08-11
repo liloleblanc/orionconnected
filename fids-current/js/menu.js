@@ -1556,7 +1556,22 @@ function _cuReadForm() {
   if (p.theme === 'custom'
       || (p.dayNight && (p.dayNight.day === 'custom' || p.dayNight.night === 'custom'))) {
     try {
-      p.customColors = _cuReadColorsFromEditor();
+      // ONLY read the editor once it has been PAINTED with the saved palette
+      // — same rule the Day & night block already follows. Every control in
+      // this panel routes through cuApplyAndSave(), so changing the font or a
+      // toggle from the menu BAR (Customize tab never opened, colour inputs
+      // still at their markup defaults: white Row Odd, #f4f4f5 Row Even) used
+      // to write those defaults over the operator's saved palette. Paired with
+      // a Row Text that survived from the old dark scheme, that is exactly how
+      // the board ended up white-on-white and stayed there however many times
+      // it was "changed". Unpainted → carry the stored colours forward.
+      var _cuPainted = (document.getElementById('cuColBg') || {}).dataset;
+      if (_cuPainted && _cuPainted.painted === '1') {
+        p.customColors = _cuReadColorsFromEditor();
+      } else {
+        var _prev = _cuLoad();
+        if (_prev && _prev.customColors) p.customColors = _prev.customColors;
+      }
     } catch (e) {}
   }
   if (_cuCurrentPos) p.logoPosition = _cuCurrentPos;
@@ -1587,6 +1602,19 @@ function _cuPaintForm(prefs) {
   // to the preset (that repaint is what un-did picking the teal scenes).
   if (theme) theme.value = (prefs.theme === 'custom' && prefs.themePresetId)
     ? ('preset:' + prefs.themePresetId) : (prefs.theme || '');
+  // Paint the colour editor from the SAVED palette. This was missing, so the
+  // seven pickers always showed their markup defaults no matter what was
+  // stored — the operator's own colours were never visible in the panel, and
+  // the next save read the defaults back out (see _cuReadForm). Painting them
+  // stamps data-painted so that read is trustworthy from here on.
+  if (prefs.customColors) {
+    try { _cuLoadPresetIntoEditor({ colors: prefs.customColors, name: (document.getElementById('cuPresetName') || {}).value || '' }); } catch (e) {}
+  }
+  try {
+    ['cuColAccent','cuColHdr','cuColHdrText','cuColBg','cuColRowOdd','cuColRowEven','cuColText'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.dataset.painted = '1';
+    });
+  } catch (e) {}
   cuSetPositionUI(prefs.logoPosition || '');
   var hp = document.getElementById('cuHidePrefix');
   if (hp) hp.checked = !!prefs.hideAirlinePrefix;
@@ -2212,13 +2240,22 @@ function cuSetSize(size) {
 }
 
 function _applyLogoSize(size) {
-  // Slimmer tiers (Nick: rows got much bigger than they used to be).
-  var px = 44, row = 52; // medium default
-  if (size === 'small') { px = 36; row = 44; }
-  else if (size === 'large') { px = 50; row = 60; }
-  document.documentElement.style.setProperty('--fids-logo-size', px + 'px');
-  document.documentElement.style.setProperty('--fids-row-h', row + 'px');
-  document.body.dataset.fidsLogoSize = size || 'medium';
+  // ONE SOURCE OF TRUTH for the tier heights: the CSS, keyed on
+  // body[data-fids-logo-size]. fids-v3.css pins the board at 44/66/90 and
+  // bids-v2.css pins the bags screen at 68/98/132, each with height,
+  // min-height and max-height locked !important — a set height no matter what.
+  //
+  // This function used to ALSO write --fids-logo-size/--fids-row-h on :root,
+  // with a different set of numbers (44/52/60). Those never took effect,
+  // because the CSS declares the same variables on `body` with !important and
+  // a body declaration out-ranks an inherited :root one — so the pills read as
+  // dead controls while a stale second set of numbers sat in the DOM looking
+  // authoritative. Clear them and let the tier own the geometry.
+  try {
+    document.documentElement.style.removeProperty('--fids-logo-size');
+    document.documentElement.style.removeProperty('--fids-row-h');
+  } catch (e) {}
+  document.body.dataset.fidsLogoSize = size || 'small';
 }
 
 // Hook into the existing _cuReadForm/Paint flow
@@ -2252,9 +2289,10 @@ if (_origPaintForm) {
       var raw = localStorage.getItem('fids_customize_' + code);
       if (raw) {
         var p = JSON.parse(raw);
-        // No saved pref = MEDIUM — without a default the row-height cap
-        // never applied and fresh boards rendered ~90px rows (Nick).
-        _applyLogoSize((p && p.logoSize) || 'medium');
+        // A stored customize blob with no density picked = SMALL, matching
+        // BOARD_DENSITY_FALLBACK in fids-core. Without a default the
+        // row-height cap never applies at all and rows render ~90px (Nick).
+        _applyLogoSize((p && p.logoSize) || 'small');
       }
     } catch (e) {}
   }, 600);
@@ -2304,8 +2342,15 @@ function cuThemeChanged() {
   var deleteBtn = document.getElementById('cuDeletePresetBtn');
 
   if (v === 'custom') {
-    // Reveal color editor for a brand-new custom theme
+    // Reveal color editor for a brand-new custom theme. The editor is now on
+    // screen, so its values ARE the operator's starting palette — mark it
+    // painted so _cuReadForm is allowed to read them.
     _cuActivePresetId = null;
+    try {
+      ['cuColAccent','cuColHdr','cuColHdrText','cuColBg','cuColRowOdd','cuColRowEven','cuColText'].forEach(function (id) {
+        var el = document.getElementById(id); if (el) el.dataset.painted = '1';
+      });
+    } catch (e) {}
     if (colorsWrap) colorsWrap.style.display = '';
     if (deleteBtn) deleteBtn.style.display = 'none';
     var nameEl = document.getElementById('cuPresetName');
@@ -2371,6 +2416,14 @@ function cuColorChanged(srcId, dstId) {
   cuApplyAndSave();
 }
 
+// Same legibility floor the board uses (fids-core _fidsInk). Declared through
+// window so the live preview in this panel and the persisted paint in
+// fids-core can never disagree about what is readable; the identity fallback
+// keeps the preview working if the panel loads before the board script.
+function _cuInk(fg, bg) {
+  try { return (window._fidsInk ? window._fidsInk(fg, bg) : fg); } catch (e) { return fg; }
+}
+
 function _cuApplyCustomColors(c) {
   if (!c) return;
   document.body.dataset.fidsTheme = 'custom';
@@ -2383,7 +2436,7 @@ function _cuApplyCustomColors(c) {
   st.setProperty('--fids-banner-text',   c.hdrText, 'important');
   st.setProperty('--fids-banner-accent', c.accent,  'important');
   st.setProperty('--fids-bg',            c.bg,      'important');
-  st.setProperty('--fids-text',          c.text,    'important');
+  st.setProperty('--fids-text',          _cuInk(c.text, c.bg || '#0c0c0e'), 'important');
   st.setProperty('--fids-stripe',        c.rowEven, 'important');
   st.setProperty('--fids-row-odd',       c.rowOdd,  'important');
   st.setProperty('--fids-divider',       c.accent,  'important');
@@ -2395,18 +2448,27 @@ function _cuApplyCustomColors(c) {
   if (old) old.remove();
   var css = document.createElement('style');
   css.id = '_fidsCustomizeLiveRules';
+  // Odd and even rows are different grounds — one shared `td { color }` rule
+  // is only ever right for one of them, which is how a white Row Text next to
+  // a white Row Odd produced an invisible board. Ink each ground separately
+  // and floor it.
+  var _bg = c.bg || '#0c0c0e', _od = c.rowOdd || c.bg || '#ffffff', _ev = c.rowEven || c.bg || '#f4f4f5';
+  var _hd = c.hdr || '#27272a', _tx = c.text || '#18181b';
+  var _kOdd = _cuInk(_tx, _od), _kEven = _cuInk(_tx, _ev), _kBg = _cuInk(_tx, _bg);
   css.textContent =
-    'body[data-fids-theme="custom"] #fidsBoard, body[data-fids-theme="custom"] #fidsTable { background:' + (c.bg || '#0c0c0e') + ' !important; }' +
-    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(odd), body[data-fids-theme="custom"] .ac-bag-row:nth-child(odd), body[data-fids-theme="custom"] .flight-card { background:' + (c.rowOdd || c.bg || '#ffffff') + ' !important; }' +
-    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(even), body[data-fids-theme="custom"] .ac-bag-row:nth-child(even) { background:' + (c.rowEven || c.bg || '#f4f4f5') + ' !important; }' +
-    'body[data-fids-theme="custom"] #fidsTable td, body[data-fids-theme="custom"] .ac-bag-row, body[data-fids-theme="custom"] .card-time, body[data-fids-theme="custom"] .card-city { color:' + (c.text || '#18181b') + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-screen { background:' + (c.bg || '#0c0c0e') + ' !important; color:' + (c.text || '#18181b') + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-banner { background:' + (c.hdr || '#27272a') + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-airport-name, body[data-fids-theme="custom"] .bidsv2-footer-date { color:' + (c.hdrText || '#ffffff') + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-logo, body[data-fids-theme="custom"] .bidsv2-status-arrived { color:' + (c.accent || '#eab308') + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) { background:' + (c.rowOdd || c.bg || '#ffffff') + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-flight-row { background:' + (c.rowEven || c.bg || '#f4f4f5') + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-col-status, body[data-fids-theme="custom"] .bidsv2-airline-name { color:' + (c.text || '#18181b') + ' !important; }';
+    'body[data-fids-theme="custom"] #fidsBoard, body[data-fids-theme="custom"] #fidsTable { background:' + _bg + ' !important; }' +
+    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(odd), body[data-fids-theme="custom"] .ac-bag-row:nth-child(odd), body[data-fids-theme="custom"] .flight-card { background:' + _od + ' !important; }' +
+    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(even), body[data-fids-theme="custom"] .ac-bag-row:nth-child(even) { background:' + _ev + ' !important; }' +
+    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(odd) td, body[data-fids-theme="custom"] .ac-bag-row:nth-child(odd), body[data-fids-theme="custom"] .flight-card .card-time, body[data-fids-theme="custom"] .flight-card .card-city { color:' + _kOdd + ' !important; }' +
+    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(even) td, body[data-fids-theme="custom"] .ac-bag-row:nth-child(even) { color:' + _kEven + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-screen { background:' + _bg + ' !important; color:' + _kBg + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-banner { background:' + _hd + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-airport-name, body[data-fids-theme="custom"] .bidsv2-footer-date { color:' + _cuInk(c.hdrText || '#ffffff', _hd) + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-logo, body[data-fids-theme="custom"] .bidsv2-status-arrived { color:' + _cuInk(c.accent || '#eab308', _hd) + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) { background:' + _od + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-flight-row { background:' + _ev + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-col-status, body[data-fids-theme="custom"] .bidsv2-airline-name { color:' + _kEven + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-status, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-airline-name { color:' + _kOdd + ' !important; }';
   document.head.appendChild(css);
 }
 

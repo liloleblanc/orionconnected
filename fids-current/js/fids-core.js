@@ -118,6 +118,49 @@ function _gateDayNightTheme() {
   return (_h >= 6 && _h < 19) ? 'light' : 'dark';
 }
 
+// ── LEGIBILITY FLOOR (v23114) ────────────────────────────────────────────
+// Nick, Aug 11: 'my teal screen is white white letters and numbers of white
+// background and i cant change it'. Reproduced: a saved CUSTOM palette whose
+// Row Text is white next to a Row Odd of #ffffff paints the board's own ink
+// invisible — every flight number, time and status vanishes. The palette is
+// the operator's to choose, but an unreadable board is never what they meant,
+// so no chosen colour is allowed to render on a ground it can't be seen on.
+//
+// _fidsInk(fg, bg) returns fg when it clears the floor and a black/white
+// substitute when it doesn't. The floor is 3:1 — below that a glyph stops
+// resolving at board viewing distance; 4.5:1 (AA text) would repaint palettes
+// that are merely low-contrast but still perfectly readable on a 55" panel.
+function _fidsRelLum(c) {
+  var r = 0, g = 0, b = 0, s = String(c || '').trim();
+  var m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(s);
+  if (m) {
+    var h = m[1];
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16);
+  } else {
+    var n = s.match(/[\d.]+/g);
+    if (!n || n.length < 3) return null;          // unparseable → caller keeps the colour
+    r = +n[0]; g = +n[1]; b = +n[2];
+  }
+  var f = [r, g, b].map(function (v) {
+    v = v / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+}
+function _fidsContrast(a, b) {
+  var la = _fidsRelLum(a), lb = _fidsRelLum(b);
+  if (la === null || lb === null) return null;
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function _fidsInk(fg, bg, floor) {
+  var c = _fidsContrast(fg, bg);
+  if (c === null || c >= (floor || 3)) return fg;   // honour the operator's pick
+  var lb = _fidsRelLum(bg);
+  return (lb !== null && lb > 0.45) ? '#111111' : '#ffffff';
+}
+try { window._fidsInk = _fidsInk; window._fidsContrast = _fidsContrast; } catch (e) {}
+
 // In-memory cache, populated lazily. Keys are normalized airport codes.
 const _airportConfigCache = {};
 const _airlineOverrideCache = {};
@@ -1410,14 +1453,27 @@ let subScreenVal = '';
 // menu.js only calls _applyLogoSize when fids_customize_<IATA> exists, and the
 // guard below only fills in an UNSET attribute — so any screen can still be
 // customised, and every airport not listed here is untouched.
-var BOARD_DENSITY_DEFAULTS = {
-  MCO: 'small'          // 68px BAGS rows / 52px board rows
-};
+// v23114 — SMALL IS THE DEFAULT EVERYWHERE (Nick: 'default small then medium
+// then large with a set height no matter what'). Only Orlando was listed, so
+// every other airport fell through to 'medium' — 66px board rows / 98px BAGS
+// rows, which is the "rows are much bigger" report. The tiers themselves are
+// already absolute heights, not a fit: fids-v3.css pins 44/66/90 on the board
+// and bids-v2.css pins 68/98/132 on the bags screen, each with height,
+// min-height and max-height locked, and boardAutofit treats --fids-row-h as
+// the authority rather than measuring a row it may have grown. Nothing
+// stretches a row to fill a screen. So the only thing that needed changing is
+// which tier an un-customised screen starts on.
+//
+// A saved pref still wins (menu.js only calls _applyLogoSize when
+// fids_customize_<IATA> exists), and per-airport entries here still override
+// the default, so a screen that wants medium or large can have it.
+var BOARD_DENSITY_DEFAULTS = {};
+var BOARD_DENSITY_FALLBACK = 'small';   // 44px board rows / 68px BAGS rows
 try {
   if (document.body && !document.body.dataset.fidsLogoSize) {
     var _densAp = '';
     try { _densAp = String(new URLSearchParams(window.location.search).get('ap') || '').toUpperCase(); } catch (e2) {}
-    document.body.dataset.fidsLogoSize = BOARD_DENSITY_DEFAULTS[_densAp] || 'medium';
+    document.body.dataset.fidsLogoSize = BOARD_DENSITY_DEFAULTS[_densAp] || BOARD_DENSITY_FALLBACK;
   }
 } catch (e) {}
 
@@ -6704,6 +6760,19 @@ function buildV2GateLayout(ctx, vars) {
 // ─── V2 AIRCRAFT COLUMN BUILDER ───────────────────────────────────────────
 // Class-based markup matching gids-v218.78.css.
 // Structure: header > livery > 3-row data > inbound panel.
+// ── ANIMATED RONDELLE for the boarding screen's centre mark (v23115) ─────
+// Nick: 'the middle is the maple leaf rondelle that i have the gif that
+// swings'. Drop the file under /logos/motion/ and name it here — one line per
+// carrier, any format a <video> can decode (webm/mp4) or a .gif via the same
+// slot. Until a carrier is listed, its boarding screen shows the static ring
+// + symbol, which is what the mockup draws anyway; nothing waits on an asset.
+var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
+  // Nick's TCA→AC evolution clip, cut to the MODERN segment on black (his
+  // instruction: 'remove the older logos simply keep the modern part where
+  // its black') and ping-ponged so the swing loops seamlessly. 81KB.
+  'AC': '/logos/motion/AC-rondelle-swing.mp4'
+};
+
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
@@ -8674,7 +8743,11 @@ function _buildV2MapCol(ctx, vars) {
   // round rail ORB — keeps its mono white leaf.
   var _MAPLIFE_EMBLEM = {
     'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-    'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+    'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+    // v23123 (reintroduced from the reverted v23113) — Nick: 'the red emblem
+    // goes in the small map space when map not there'. His colour widget.
+    'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+    'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
   };
   var _mapLifeSrc = _MAPLIFE_EMBLEM[_mapLifeCode]
     || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
@@ -9266,7 +9339,9 @@ function uxgGateHtml(ctx) {
   // airline+alliance lockup — a separate mark would show the alliance twice.
   // (UA removed — Nick wants United's globe+wordmark with the Star Alliance
   // mark shown SEPARATELY, like every other Star carrier.)
-  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1 };
+  // v23123 — Delta joins KLM: Nick's lockup already CONTAINS SkyTeam, so a
+  // separate alliance mark would print it twice.
+  var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1, 'DL': 1, 'DAL': 1 };
   // Per-carrier alliance-mark override (Nick's official asset): United uses
   // the official 2011 Star Alliance lockup, black backing stripped so the
   // white mark floats on the banner.
@@ -9295,7 +9370,7 @@ function uxgGateHtml(ctx) {
   // WELCOME STRIP for the boarding takeovers (Nick: 'the Welcome Bienvenue
   // and the rondelle and Star') — like the physical AC gate sign's header:
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
-  function _boardWelcomeStripHtml() {
+  function _boardWelcomeStripHtml(_stripState) {
     // WHITE-path emblems vanish on the white strip (Nick: United missing its
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
     // Swap those brands for a colored cut here, like the SkyTeam invert below.
@@ -9327,11 +9402,148 @@ function uxgGateHtml(ctx) {
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
     // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
     var _bwStar = starHtml ? starHtml.replace('star-3d-tile.jpg', 'star-3d-symbol.webp') : '';
-    return '<div class="g8-board-welcome">'
-      + (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="g8-bw-text">' + _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ') + '</div>'
-      + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
+    // v23115 \u2014 THE CLOCK LIVES HERE NOW (Nick's second mockup). It came out of
+    // the banner, where it was a tab competing with the airline lockup, and
+    // sits at the two ends of this white strip instead: label + time on the
+    // left in the first board language, label + time on the right in the
+    // second, with 'Welcome \u00b7 Bienvenue' centred between them.
+    //
+    // Each side is written the way its own language writes a time \u2014 English
+    // 12-hour '5:35pm', French 24-hour '17:35' \u2014 rather than one format
+    // repeated twice, which is what his shot shows and what the two locales
+    // actually do. Both are the same instant, from the same timezone.
+    // v23115b \u2014 the strip is STATE-AWARE (Nick):
+    //   \u00b7 countdown (pre-boarding): Welcome \u00b7 Bienvenue in the middle
+    //   \u00b7 boarding/final:           NOW BOARDING | EMBARQUEMENT EN COURS
+    //   \u00b7 delayed/cancelled/diverted: a Status pair sits inboard of each
+    //     clock \u2014 first language on the left, second on the right \u2014 so the
+    //     abnormal state reads from either end of the strip.
+    // One board language \u2192 the SAME words on both sides (Nick: 'If its
+    // simply One Language repeat on both sides').
+    var _bwClock = '';
+    try {
+      var _bwTz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
+      var _bwLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+      if (_frF) { var _bfi = _bwLangs.indexOf('fr'); if (_bfi > 0) { _bwLangs.splice(_bfi, 1); _bwLangs.unshift('fr'); } }
+      var _bwL1 = _bwLangs[0] || 'en';
+      var _bwL2 = _bwLangs[1] || _bwL1;                 // one language \u2192 repeat
+      // Status word for the strip: the same normalized vocabulary the plates
+      // use, one word per language, sentence case.
+      // v23116 — the pair is the SCHEDULE state, never the phase (Nick: 'it
+      // literally says already boarding status is not boarding again WOW its
+      // On Time'). The centre announces the phase (Welcome / Now Boarding);
+      // the flanks answer the other question a passenger has — is it on
+      // time? On Time green, Delayed amber, Cancelled/Diverted red. A
+      // revised departure counts as delayed even while the phase is
+      // 'boarding'.
+      var _bwStKey = 'ontime';
+      try {
+        var _bwRaw = '';
+        try { _bwRaw = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus((currentFlight && currentFlight.status) || '') : ''; } catch (e0) {}
+        _bwRaw = _bwRaw + ' ' + String(_stripState || '');
+        if (/cancel/.test(_bwRaw)) _bwStKey = 'cancelled';
+        else if (/divert/.test(_bwRaw)) _bwStKey = 'diverted';
+        else if (/delay/.test(_bwRaw) || (currentFlight && currentFlight.upd)) _bwStKey = 'delayed';
+      } catch (e) {}
+      var _bwAbn = true;
+      var _bwStWord = function (lang) {
+        try {
+          var _o = (typeof SS !== 'undefined') ? (SS[_bwStKey] || SS[_bwStKey.replace(/ /g, '')]) : null;
+          var w = (_o && (_o[lang] || _o.en)) || _bwStKey;
+          w = String(w);
+          return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+        } catch (e) { return _bwStKey; }
+      };
+      var _bwSide = function (lang, cls) {
+        var _lbl = (_GATE_LBL.currentTime && _GATE_LBL.currentTime[lang]) || _GATE_LBL.currentTime.en;
+        var _stHtml = '';
+        if (_bwAbn) {
+          var _stLbl = (_GATE_LBL.status && _GATE_LBL.status[lang]) || 'Status';
+          _stHtml = '<div class="g8-bw-status g8-bw-st-' + _bwStKey.replace(/[^a-z]/g, '') + '">'
+            + '<span class="g8-bw-clk-lbl">' + _stLbl + '</span>'
+            + '<span class="g8-bw-st-val">' + _bwStWord(lang) + '</span>'
+            + '</div>';
+        }
+        var _clk = '<div class="g8-bw-clock">'
+          + '<span class="g8-bw-clk-lbl">' + _lbl + '</span>'
+          + '<span class="g8-bw-clk-val v2-fi-clock-val" data-tz="' + String(_bwTz || '') + '" data-bwlang="' + lang + '">'
+          +   _fidsClockForLang(new Date(), _bwTz, lang)
+          + '</span></div>';
+        // status sits INBOARD of the clock on both ends (clock stays at the edge)
+        return '<div class="g8-bw-end ' + cls + '">'
+          + (cls === 'g8-bw-end-l' ? _clk + _stHtml : _stHtml + _clk)
+          + '</div>';
+      };
+      _bwClock = _bwSide(_bwL1, 'g8-bw-end-l') + '::MID::' + _bwSide(_bwL2, 'g8-bw-end-r');
+    } catch (e) { _bwClock = '::MID::'; }
+    // Middle: NOW BOARDING while boarding is actually on; Welcome otherwise.
+    var _bwMidWords;
+    if (/^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))) {
+      // Built from the LANGUAGE PAIR (var-hoisted from the clock block above),
+      // not the dedup'd label helper — one selected language shows TWICE
+      // ('Now Boarding | Now Boarding') for symmetry (Nick). Quebec airports
+      // put French first via the same pair.
+      var _bwNB = _GATE_LBL.nowBoarding || {};
+      var _bwNBl1 = (typeof _bwL1 === 'string' && _bwL1) ? _bwL1 : 'en';
+      var _bwNBl2 = (typeof _bwL2 === 'string' && _bwL2) ? _bwL2 : _bwNBl1;
+      var _bwNB1 = _bwNB[_bwNBl1] || _bwNB.en || 'Now Boarding';
+      var _bwNB2 = _bwNB[_bwNBl2] || _bwNB1;
+      _bwMidWords = _bwNB1 + ' <span class="g8-bw-sep">|</span> ' + _bwNB2;
+    } else {
+      _bwMidWords = _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ');
+    }
+    // Spin phase stamped from wall-clock so the rebuild-every-tick gate DOM
+    // doesn't restart the animation at 0° (Nick: 'The rondelle is not
+    // spinning' — it was, 0% of the time it was on screen).
+    var _bwSpin = ' style="--rond-delay:-' + ((Date.now() / 1000) % 7).toFixed(2) + 's"';
+    var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
+      + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
+      + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
+    return '<div class="g8-board-welcome g8-bw-clocked">'
+      + _bwClock.replace('::MID::', '<div class="g8-bw-mid">' + _bwMid + '</div>')
       + '</div>';
+  }
+
+  // COUNTDOWN RONDELLE (v23115) — the carrier mark that sits on the number's
+  // baseline in Nick's mockup: an accent-coloured RING with the airline's own
+  // symbol inside it, which is how the mark is worn on a tail.
+  //
+  // The symbol is rendered in its NATIVE colours, not tinted. Air Canada's
+  // AC.TO.svg is already #f01428, so on the black stage it lands as the red
+  // leaf the mockup shows, and every other carrier gets its real symbol
+  // instead of a silhouette that a mask would have flattened to a disc — the
+  // leaf is a filled shape in that file, so masking it would have lost the
+  // leaf entirely. The ring is CSS (border + radius), so it always takes the
+  // airline accent even for a carrier whose symbol is a different colour.
+  //
+  // MOTION SLOT: Nick has a GIF of the rondelle swinging and wants it in the
+  // middle. Register its path in GATE_RONDELLE_MOTION and it takes over the
+  // slot; the ring comes off because that artwork carries its own. If the file
+  // is missing or won't decode, the video removes itself and the static mark
+  // underneath is what shows — the screen is never a hole waiting on an asset.
+  //
+  // NOT WIRED to /logos/Backgrounds/AC/ac-rondelle-logo.mp4: that clip is the
+  // brand-guidelines reel (construction grid, then the Cargo/Altitude/Express
+  // /Jetz lockups), it runs on white #FDFDFD end to end, and nothing in it
+  // swings. Measured, not assumed — every frame's corners sample (253,253,253).
+  function _cdRondelleHtml() {
+    try {
+      var _sym = /^[A-Z0-9]{2}$/.test(String(airlineCode || '').toUpperCase())
+        ? '/logos/symbols/airlines/' + String(airlineCode).toUpperCase() + '.svg' : null;
+      var _src = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || _sym;
+      var _mot = (typeof GATE_RONDELLE_MOTION !== 'undefined' && GATE_RONDELLE_MOTION[airlineCode]) || null;
+      if (!_src && !_mot) return '';
+      var _cdSpin = ' style="--rond-delay:-' + ((Date.now() / 1000) % 7).toFixed(2) + 's"';
+      var _still = _src
+        ? '<img class="g8-cd-mark-still"' + _cdSpin + ' src="' + _src + '" alt="" onerror="this.style.display=\'none\'">'
+        : '';
+      if (!_mot) return '<span class="g8-cd-mark">' + _still + '</span>';
+      return '<span class="g8-cd-mark has-motion">'
+        + '<video class="g8-cd-mark-vid" src="' + _mot + '" autoplay loop muted playsinline'
+        +   ' onerror="try{this.parentNode.classList.remove(\'has-motion\');this.remove();}catch(e){}"></video>'
+        + _still
+        + '</span>';
+    } catch (e) { return ''; }
   }
 
   // FLIGHT INFO ROW for the boarding-state takeovers (Nick: 'flight info
@@ -9375,7 +9587,7 @@ function uxgGateHtml(ctx) {
         _svW.push(_svw);
       }
       if (!_svW.length && _stP.en) _svW.push(_stP.en);
-      _stTxt = _svW.map(function (w) { return '<span class="g8-bir-st2">' + w + '</span>'; }).join('');
+      _stTxt = _svW.map(function (w) { return '<span class="v2-fi-st2">' + w + '</span>'; }).join('');
     }
     // Flair brand palette (Nick): airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
@@ -9385,14 +9597,38 @@ function uxgGateHtml(ctx) {
     var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"'
       : (airlineCode === 'MX') ? ' style="background:#001633;"'
       : '';
-    function _cell(icon, en, fr, val, noswap) {
+    // v23115b \u2014 THE RAIL'S OWN SHELF, VERBATIM (Nick: 'copy the exact current
+    // left info panel'). Same classes, same structure, same inline badge
+    // grammar as _shelf()/_badge() in the left rail builder \u2014 the horizontal
+    // strip is the SAME component laid sideways, so every shelf style Nick
+    // has approved (metal card, accent underline, per-airline artwork, and
+    // whatever he changes next) applies here without a parallel copy.
+    var _birAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[airlineCode] && AIRLINE_BRAND[airlineCode].accent) || '#D82F2E';
+    var _birRailBg = _birF8 ? '#141414'
+      : (airlineCode === 'MX') ? '#001633'
+      : 'var(--airline-accent,' + _birAccFb + ')';
+    var _birRailInk = _birF8 ? '#7AFF94' : '#fff';
+    var _BIR_BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _birRailBg + ';color:' + _birRailInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+    function _cell(icon, en, fr, val, noswap, cls) {
       var _t1 = en, _t2 = fr;
       if (_frF && !noswap && fr && fr !== en) { _t1 = fr; _t2 = en; }
-      return '<div class="g8-bir-cell">'
-        + '<div class="g8-bir-badge"' + _birBadgeStyle + '><span class="ac-ico ' + icon + '"></span></div>'
-        + '<div class="g8-bir-text">'
-        +   '<div class="g8-bir-title"><span class="g8-bir-l1">' + _t1 + '</span>' + (_t2 && _t2 !== _t1 ? ' <span class="g8-bir-sep">|</span> <span class="g8-bir-l2">' + _t2 + '</span>' : '') + '</div>'
-        +   '<div class="g8-bir-val">' + (val || '\u2014') + '</div>'
+      var _sec = (_t2 && _t2 !== _t1)
+        ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _t2 + '</span>'
+        : '';
+      // en arrives '|'-joined from _gateLbl at every call site \u2014 split it into
+      // the rail's own lbl-en/sep/lbl-2 spans so the title matches the shelf.
+      if (!_sec && /\|/.test(_t1)) {
+        var _tp = _t1.split('|');
+        _t1 = _tp[0].trim();
+        if (_tp[1] && _tp[1].trim() && _tp[1].trim() !== _t1) {
+          _sec = '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _tp[1].trim() + '</span>';
+        }
+      }
+      return '<div class="v2-fi-row' + (cls ? ' ' + cls : '') + '">'
+        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '"><span class="ac-ico ' + icon + '"></span></div></div>'
+        + '<div class="v2-fi-textcol">'
+        +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _t1 + '</span>' + _sec + '</div>'
+        +   '<div class="v2-fi-value">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
     // Nick: 'even the times should be bigger than that'. The value column is
@@ -9400,9 +9636,18 @@ function uxgGateHtml(ctx) {
     // meridiem lets the shrink-to-fit grower push the DIGITS much larger
     // (they end up on par with the flight number), which is what reads as
     // 'bigger'. Wraps both times in a revised 'was \u2192 now' pair.
+    // v23115 — Nick's mockup sets these as ONE word, lowercase, tight to the
+    // digits: '5:40pm'. The old shrink-the-meridiem trick was there to buy
+    // width back from 'AM/PM' when five cells shared the row; at four cells
+    // there is room, and the split was rendering '12:25' with 'PM' dropped
+    // onto a second line. Lowercase, no space, no wrap.
     function _birMerid(html) {
       if (!html) return html;
-      return String(html).replace(/\b([AaPp][Mm])\b/g, '<span class="g8-bir-mer">$1</span>');
+      // ONE pass — a second .replace() over the first's output re-matched the
+      // 'am' it had just wrapped and nested the span inside itself.
+      return String(html).replace(/\s*\b([AaPp])\.?\s*[Mm]\.?\b/g, function (_, p) {
+        return '<span class="g8-bir-mer">' + p.toLowerCase() + 'm</span>';
+      });
     }
     // Flight cell carries the airline RONDELLE (same emblem set as the
     // rail) instead of the generic glyph (Nick).
@@ -9442,20 +9687,27 @@ function uxgGateHtml(ctx) {
       : (_birFlightIcon
           ? '<div class="g8-bir-badge"' + _birBadgeBgStyle + '>' + _birFlightIcon + '</div>'
           : null);
-    return '<div class="g8-board-info-row">'
-      + (_birFlightBadge
-          ? '<div class="g8-bir-cell">'
-            + _birFlightBadge
-            + '<div class="g8-bir-text">'
-            +   '<div class="g8-bir-title">' + _gateLbl('flight', _frF, function(w,i){ return '<span class="g8-bir-l'+(i+1)+'">'+w+'</span>'; }, ' <span class="g8-bir-sep">|</span> ') + '</div>'
-            +   '<div class="g8-bir-val">' + (currentFlight.flight || '\u2014') + '</div>'
-            + '</div></div>'
-          : _cell('ac-ico-flight', _gateLbl('flight', _frF, function(w){return w;}, ' | '), '', currentFlight.flight || '', true))
-      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | '), (locIata ? '<span class="g8-bir-code-t">' + _dispIata(locIata) + '</span>' : ''), _bDest, true)
+    // Flight shelf wears the airline rondelle in the rail's emblem-wrap
+    // grammar; falls back to the generic glyph badge exactly like the rail.
+    var _birFlightShelf = _birFlightIcon
+      ? '<div class="v2-fi-row v2-fi-flight">'
+        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (_birNativeColor ? ' v2-fi-emblem-native' : '') + '" style="' + _BIR_BADGE_STYLE + (_birTile ? 'background:' + _birTile.bg + ';' : '') + (_birOnWhite ? 'background:#fff;' : '') + '">' + _birFlightIcon.replace('<img ', '<img class="v2-fi-emblem-img" ') + '</div></div>'
+        + '<div class="v2-fi-textcol">'
+        +   '<div class="v2-fi-title">' + _gateLbl('flight', _frF, function(w,i){ return i ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">'+w+'</span>' : '<span class="v2-fi-lbl-en">'+w+'</span>'; }, '') + '</div>'
+        +   '<div class="v2-fi-value v2-fi-flight-number">' + (currentFlight.flight || '\u2014') + '</div>'
+        + '</div></div>'
+      : _cell('ac-ico-flight', _gateLbl('flight', _frF, function(w){return w;}, ' | '), '', currentFlight.flight || '', true, 'v2-fi-flight');
+    return '<div class="g8-board-info-row g8-bir-shelves"><div class="v2-flightinfo-block">'
+      + _birFlightShelf
+      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | '), '', _bDest, true)
       + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(boardTimeHtml), true)
       + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(depTimeHtml), true)
-      + _cell('ac-ico-status', _gateLbl('status', _frF, function(w){return w;}, ' | '), '', _stCls ? '<span class="g8-bir-stwrap' + _stCls + '">' + _stTxt + '</span>' : _stTxt)
-      + '</div>';
+      // v23115b — ALWAYS four shelves. The abnormal state (delayed /
+      // cancelled / diverted) reads from the WHITE STRIP now — a Status pair
+      // sits beside each clock (Nick's sketch: 'Current Time 12:11PM  Status
+      // Delayed … Statut En Retard  Heure actuelle 12:11') — so the fifth
+      // shelf that was squeezing the four real ones is gone for good.
+      + '</div></div>';
   }
 
   // AC-family lane board per the printed signs (Nick): quarter BLACK
@@ -9565,7 +9817,7 @@ function uxgGateHtml(ctx) {
     var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>';
     boardHtml = '<div class="g8-board active">'
       + _boardInfoRowHtml('boarding')
-      + _boardWelcomeStripHtml()
+      + _boardWelcomeStripHtml('boarding')
       + (_acLanes
           ? _acLanesBodyHtml(_acZonesVal)
           : airlineCode === 'PD'
@@ -9638,11 +9890,22 @@ function uxgGateHtml(ctx) {
     // info row + welcome strip on every takeover, countdown included.
     countdownHtml = '<div class="g8-countdown">'
       + _boardInfoRowHtml(stKey)
-      + _boardWelcomeStripHtml()
-      + '<div class="g8-cd-body">'
-      + '<div class="g8-cd-label">' + TL('boardBegins') + '</div>'
-      + '<div class="g8-cd-value">' + minsToBoard + '</div>'
-      + '<div class="g8-cd-unit">' + TL('minutes') + '</div>'
+      + _boardWelcomeStripHtml(stKey)
+      // v23115 — Nick's mockup. Headline above, ONE baseline carrying the
+      // number + short unit + the carrier rondelle, second-language headline
+      // below. Both languages show at once instead of alternating, because the
+      // countdown is the whole screen and a passenger reading it in French
+      // should not have to wait out an English cycle.
+      // The unit follows the FIRST language (it sits beside the number, under
+      // that language's headline); the number is the accent, the unit white.
+      + '<div class="g8-cd-body g8-cd-mock">'
+      + (function () {
+          var _cdL = ['', ''];
+          _gateLbl('boardSoon', _frF, function (w, i) { _cdL[i ? 1 : 0] = w; return ''; }, '');
+          return '<div class="g8-cd-label">' + (_cdL[0] || TL('boardSoon')) + '</div>'
+            + '<div class="g8-cd-line">' + (_cdRondelleHtml() || '') + '</div>'
+            + (_cdL[1] ? '<div class="g8-cd-label g8-cd-label2">' + _cdL[1] + '</div>' : '');
+        })()
       // 'Please remain seated until your zone is called' REMOVED (Nick).
       + '</div></div>';
   }
@@ -9844,7 +10107,7 @@ function uxgGateHtml(ctx) {
     'QK': '/logos/airlines/canadian/air-canada-white.svg',                       // Jazz under AC
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
-    'DL': '/logos/airlines/us-major/delta-on-black.svg',                         // Delta widget + white wordmark (combo for dark banner)
+    'DL': '/logos/airlines/us-major/delta-skyteam-lockup-white.svg',             // v23123 — Nick's own lockup: colour widget + WHITE wordmark + SkyTeam
     // Official COMBINED airline+alliance lockups (Nick: 'there are multiple
     // logos for alliance partners — use them'). Carriers with a combined
     // lockup skip the separate alliance mark (see _COMBINED_ALLIANCE_LOCKUP).
@@ -9858,7 +10121,7 @@ function uxgGateHtml(ctx) {
     // HA override REMOVED Jul 2026 (Nick: banner wordmark must be WHITE, icon
     // keeps its colors) — HA flows through the emblem+wordmark pair: native
     // Pualani beside hawaiian-wordmark-light.svg (white lettering).
-    'PD': '/logos/airlines/canadian/porter-white.svg',                           // white Porter wordmark for the navy bar
+    'PD': '/logos/airlines/canadian/porter.svg',                                 // NAVY wordmark for the cream banner (v23120)
     'PB': '/logos/airlines/canadian-regional/pal-airlines-swoosh-white.svg?v=2', // PAL — gold swoosh + white wordmark; v2 = ink-normalized (was 31% empty canvas → read tiny)
     // BA override REMOVED Jul 2026 (Nick: 'British Airways is not correct') —
     // BA now flows through the emblem+wordmark path: Speedmarque tile +
@@ -10144,7 +10407,11 @@ function uxgGateHtml(ctx) {
     // WestJet — WHITE banner / teal swoosh / white body (matches their white fuselage)
     'WS': { r1: '#081D33', r1Text: '#FFFFFF', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
-    'PD': { r1: '#0C1420', r1Text: '#FFFFFF', r2: '#1A3A6B', body: '#FFFFFF', bodyText: '#002244' }
+    // v23120 (Nick: 'with Porter a Cream colored background for the upper and
+    // blue font') — Porter's own identity: navy type on warm latte cream.
+    // r1Text is the official wordmark navy (#152C53, sampled from porter.svg)
+    // so the banner text and the logo are literally the same ink.
+    'PD': { r1: '#EFE8DA', r1Text: '#152C53', r2: '#152C53', body: '#FFFFFF', bodyText: '#002244' }
   };
   // Airline colour DATABASE (data/airline-colors.js) is the source of truth —
   // merge it over the built-in defaults so edits there win.
@@ -10277,6 +10544,12 @@ function uxgGateHtml(ctx) {
   // ~16%, which sits UNDER the skewed gate tab so no black wedge shows at the
   // seam. Result: solid black wordmark+time field, red only at the gate.
   var _silkGrad = 'linear-gradient(90deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 84%, var(--airline-accent,#1aa) 93%, var(--airline-accent,#1aa) 100%)';
+  // v23123 — Nick's Delta rendition: the top strip is FLAT deep indigo
+  // (#11063C, sampled from his image), not the gradient. Inline !important
+  // background is unbeatable from a stylesheet, so the swap happens here.
+  try {
+    if (/^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) _silkGrad = '#11063C';
+  } catch (e) {}
 
   // Silk drops the airport LOGO (Nick's redesign): the centre now holds a
   // centred local-time block instead. Classic banner keeps the airport band.
@@ -10313,8 +10586,24 @@ function uxgGateHtml(ctx) {
   } catch (e) {}
 
   return '<div class="g8-wrap'
+       // v23115 — the boarding takeovers move the clock OUT of the banner and
+       // into the white strip (Nick's mockup). CSS can't reach up from the
+       // countdown to the banner, and :has() is out — it threw on the display
+       // hardware and cost us every light-board adaptation the last time it
+       // was used here — so the state is marked on the wrap instead.
+       + ((finalActive || boardActive || showCountdown) ? ' g8-takeover' : '')
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
-       + (_bannerSpec && _bannerSpec.r1 === '#FFFFFF' ? ' g8-banner-light' : '')
+       + ((function () {
+           // light-banner = LUMINANCE, not the literal '#FFFFFF' — Porter's
+           // cream banner needs the same dark-ink treatment as a white one.
+           try {
+             var _m = /^#([0-9a-f]{6})$/i.exec((_bannerSpec && _bannerSpec.r1) || '');
+             if (!_m) return '';
+             var _h = _m[1];
+             var _lum = 0.2126 * parseInt(_h.slice(0, 2), 16) + 0.7152 * parseInt(_h.slice(2, 4), 16) + 0.0722 * parseInt(_h.slice(4, 6), 16);
+             return _lum > 170 ? ' g8-banner-light' : '';
+           } catch (e) { return ''; }
+         })())
        + (_wmSymbol ? ' g8-wrap-watermark' : '')
        + (airlineCode ? ' g8-airline-' + airlineCode : '')
        + (iata ? ' g8-ap-' + String(iata).toUpperCase() : '')
@@ -10445,6 +10734,12 @@ function uxgGateHtml(ctx) {
             // the big clock under it, the second-language label under that,
             // then the bilingual date. ('Please rearrange the time like this
             // and bigger and change the gray theres too muchngray')
+            // UNCHANGED by v23115. The boarding mockup moves the clock into the
+            // white strip, but only for the boarding takeovers — the ordinary
+            // gate screen keeps this tab exactly as it was. (A first cut
+            // rewrote this markup outright and left the normal screen reading
+            // '11:57am / August 11Halifax11 août'.) The takeover hides this
+            // tab with CSS on .g8-wrap.g8-takeover instead.
             var _tbL = ['', ''];
             _gateLbl('timeIn', false, function(w,i){ _tbL[i?1:0] = '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; return ''; }, '');
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
@@ -11255,7 +11550,10 @@ function gateAutofit(root) {
     // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper).
     // Status value included since v22359 — its two stacked bilingual lines
     // are handled by the height check (offsetHeight measures both lines).
-    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-value').forEach(function (el) {
+    // v23115b — the boarding strip is the same shelf component sideways, so
+    // it goes through the same box-fitter (it had none, and revised 'was → now'
+    // time pairs truncated to '1:09…').
+    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-value, .g8-bir-shelves .v2-flightinfo-block .v2-fi-value').forEach(function (el) {
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var title = row.querySelector('.v2-fi-title');
@@ -11302,15 +11600,29 @@ function gateAutofit(root) {
       // full client box was sliding under the gate tab.
       var w = box.clientWidth - 52 - 30;
       var h = box.clientHeight;
-      if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.24), null, false);
-      if (val) _boxAssign(val, w, Math.floor(h * 0.66), null, false);
+      // v23124 (Nick: 'size fit as much as you can there is still lots of
+      // room') — the value's height budget grows 0.66→0.74 and the title
+      // 0.24→0.26; measured ~30px of dead air above and below the values
+      // in a 171px shelf. The fitter still shrinks to fit, so nothing can
+      // overflow — the budgets only raise the ceiling.
+      if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.26), null, false);
+      if (val) _boxAssign(val, w, Math.floor(h * 0.74), null, false);
     });
     root.querySelectorAll('.g8-r1-right').forEach(function (box) {
       var num = box.querySelector('.g8-r1-gate'); if (!num) return;
       var bil = box.querySelector('.g8-bilbl');
       var w = box.clientWidth - 128; // 24px left + 104px right padding
       var bw = bil ? (bil.offsetWidth + 16) : 0;
-      _boxAssign(num, Math.max(40, w - bw), Math.floor(box.clientHeight * 0.86), null, false);
+      // v23119 — on a boarding takeover the band is TIGHTER but the gate
+      // number is NOT (Nick: 'without changing gate size'). The height feed
+      // stays at the FULL band's budget, so the number keeps its off-takeover
+      // size and simply sits proud in the shorter block; only its box got
+      // slimmer. Off-takeover nothing changes.
+      var _gh = box.clientHeight;
+      try {
+        if (box.closest('.g8-wrap.g8-takeover')) _gh = Math.max(_gh, 110);
+      } catch (e) {}
+      _boxAssign(num, Math.max(40, w - bw), Math.floor(_gh * 0.86), null, false);
     });
     // RIGHT CARD type shelf ('Aircraft details pending' clipped mid-word on
     // production): wrap allowed, then the largest size whose wrapped lines
@@ -13735,7 +14047,7 @@ const gView = document.getElementById('gateView');
     // measure the actual flight-list container and divide by row height.
     // Store the measured fit on bView so the NEXT render uses real data.
     // First render uses the estimate; subsequent renders self-correct.
-    const _logoSize = document.body.dataset.fidsLogoSize || 'medium';
+    const _logoSize = document.body.dataset.fidsLogoSize || BOARD_DENSITY_FALLBACK;
     // Conservative estimates — intentionally LOW so first render never
     // overflows. The measurement loop expands them to actual fit.
     const _estimatePerPage = _logoSize === 'large' ? 6 :
@@ -13780,10 +14092,28 @@ const gView = document.getElementById('gateView');
     // the previous render override for custom themes.
     var _bWmVariant = document.body.classList.contains('fids-light-board') ? 'dark' : 'light';
     try {
-      var _bScrProbe = document.querySelector('.bidsv2-screen');
-      if (_bScrProbe) {
-        var _bLumM = getComputedStyle(_bScrProbe).backgroundColor.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
-        if (_bLumM) _bWmVariant = (0.2126 * _bLumM[1] + 0.7152 * _bLumM[2] + 0.0722 * _bLumM[3]) > 150 ? 'dark' : 'light';
+      // v23114 — probe the ROW, not the screen. The wordmark sits on a row,
+      // and a custom palette can put white rows on a near-black screen (Nick's
+      // white-on-white board): measuring the screen then picked the white
+      // artwork and the airline names disappeared into the rows. Average both
+      // zebra shades, same as the FIDS wordmarkVariant() probe, so a palette
+      // straddling the threshold can't flip the board between renders.
+      var _bLums = [];
+      var _bRowProbes = document.querySelectorAll('.bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted)');
+      for (var _bpi = 0; _bpi < _bRowProbes.length && _bLums.length < 2; _bpi++) {
+        var _bm = getComputedStyle(_bRowProbes[_bpi]).backgroundColor.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,]+([\d.]+))?/);
+        if (_bm && (_bm[4] === undefined || +_bm[4] > 0.1)) _bLums.push(0.2126 * _bm[1] + 0.7152 * _bm[2] + 0.0722 * _bm[3]);
+      }
+      if (!_bLums.length) {
+        var _bScrProbe = document.querySelector('.bidsv2-screen');
+        if (_bScrProbe) {
+          var _bLumM = getComputedStyle(_bScrProbe).backgroundColor.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
+          if (_bLumM) _bLums.push(0.2126 * _bLumM[1] + 0.7152 * _bLumM[2] + 0.0722 * _bLumM[3]);
+        }
+      }
+      if (_bLums.length) {
+        var _bAvg = _bLums.reduce(function (a, b) { return a + b; }, 0) / _bLums.length;
+        _bWmVariant = _bAvg > 150 ? 'dark' : 'light';
       }
     } catch (e) {}
 
@@ -13987,7 +14317,7 @@ const gView = document.getElementById('gateView');
           const _avail = _listH - _listPad - _headerH - 8; // 8px breathing room
           let _fit = Math.max(1, Math.floor(_avail / _rowH));
           _fit = Math.min(_fit, 40);
-          const _key = (document.body.dataset.fidsLogoSize || 'medium') + '|' + Math.round(window.innerHeight);
+          const _key = (document.body.dataset.fidsLogoSize || BOARD_DENSITY_FALLBACK) + '|' + Math.round(window.innerHeight);
           if (_BIDS_FIT.key !== _key) { _BIDS_FIT.key = _key; _BIDS_FIT.n = 0; _BIDS_FIT.capped = false; }
           const _current = _BIDS_FIT.n || _estimatePerPage;
           // Sticky cap: shrinking (real overflow) always applies and locks;
@@ -17673,6 +18003,20 @@ const LS = {
   useLanes:  { en:'Use Lanes',fr:'Utilisez les voies',es:'Use carriles',de:'Spuren nutzen',it:'Usa corsie',pt:'Use faixas',ja:'\u30ec\u30fc\u30f3',zh:'\u901a\u9053',ar:'\u0645\u0645\u0631\u0627\u062a' },
   useLane:   { en:'Use Lane',fr:'Utilisez la voie',es:'Use carril',de:'Spur nutzen',it:'Usa corsia',pt:'Use faixa',ja:'レーン',zh:'通道',ar:'استخدم الممر' },
   boardBegins:{ en:'Boarding begins in',fr:"L'embarquement commence dans",es:'El embarque comienza en',de:'Boarding beginnt in',it:"L'imbarco inizia tra",pt:'Embarque começa em',ja:'搭乗開始まで',zh:'登机开始倒计时',ar:'يبدأ الصعود خلال' },
+  // v23115 — Nick's boarding-screen mockup. The countdown headline is a
+  // SENTENCE about the moment, not a fragment the number completes, and it
+  // shows in BOTH board languages at once (his shot: English above the
+  // number, French below it). Title Case in the Latin scripts, matching the
+  // mockup exactly; CJK/Arabic take their natural forms.
+  // v23119 (Nick: 'maybe you have better words') — the airline-standard
+  // phrasing: time-neutral ('shortly' promises nothing a delay would break,
+  // where 'quelques minutes' promised minutes), and it is what Air Canada's
+  // own gate signage says. Title Case kept per Nick's design.
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
+  // where the full 'MINUTES' would not fit next to a digit that size.
+  minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   remainSeated:{ en:'Please remain seated until your zone is called',fr:'Veuillez rester assis jusqu\'à l\'appel de votre zone',es:'Por favor permanezca sentado hasta que llamen su zona',de:'Bitte bleiben Sie sitzen bis Ihre Zone aufgerufen wird',it:'Si prega di restare seduti fino alla chiamata della zona',pt:'Por favor permaneça sentado até sua zona ser chamada',ja:'ゾーンが呼ばれるまでお待ちください',zh:'请在座位上等待登机区域呼叫',ar:'يرجى البقاء جالساً حتى يتم استدعاء منطقتك' },
 
   operatedBy:{ en:'Operated by',fr:'Opéré par',es:'Operado por',de:'Durchgeführt von',it:'Operato da',pt:'Operado por',ja:'運航',zh:'执飞',ar:'بواسطة' },
@@ -18302,8 +18646,43 @@ var _GATE_LBL = {
   zones:     { en:'Zones',         fr:'Zones',          es:'Zonas',        de:'Zonen',       it:'Zone',        pt:'Zonas',      ja:'ゾーン',    zh:'区域',   ar:'مناطق' },
   useLane:   { en:'Use Lane',      fr:'Utilisez la voie', es:'Use carril',  de:'Spur nutzen', it:'Usa corsia',  pt:'Use faixa',  ja:'レーン',    zh:'通道',   ar:'استخدم الممر' },
   useLanes:  { en:'Use Lanes',     fr:'Utilisez les voies', es:'Use carriles', de:'Spuren nutzen', it:'Usa corsie', pt:'Use faixas', ja:'レーン',  zh:'通道',   ar:'ممرات' },
-  all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' }
+  all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' },
+  // Countdown headline + short unit, mirrored from LS so the boarding screen
+  // can render BOTH board languages at once (Nick's mockup puts English above
+  // the number and French below it) through the same _gateLbl language pick
+  // every other bilingual string on this screen already uses.
+  // v23119 (Nick: 'maybe you have better words') — the airline-standard
+  // phrasing: time-neutral ('shortly' promises nothing a delay would break,
+  // where 'quelques minutes' promised minutes), and it is what Air Canada's
+  // own gate signage says. Title Case kept per Nick's design.
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
+  minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  // Clock label for the boarding screen's white strip. Nick's concept wrote
+  // 'Heure Actuelle'; corrected to French sentence capitalisation, which is
+  // how the rest of the French on these screens is set.
+  currentTime: { en:'Current Time', fr:'Heure actuelle', es:'Hora actual', de:'Aktuelle Zeit', it:'Ora attuale', pt:'Hora atual', ja:'現在時刻', zh:'当前时间', ar:'الوقت الحالي' }
 };
+
+// Clock string in ONE language's own convention (v23115). English and the
+// other 12-hour locales get '5:35pm'; French, German and the 24-hour locales
+// get '17:35'. Used by the boarding screen's white strip, which shows the
+// same instant twice — once per board language — and would read as a mistake
+// if both halves used the same format.
+function _fidsClockForLang(now, tz, lang) {
+  var _24 = { fr: 1, de: 1, it: 1, pt: 1, es: 1, ja: 1, zh: 1 };
+  var o = { hour: 'numeric', minute: '2-digit', hour12: !_24[lang] };
+  if (tz) o.timeZone = tz;
+  try {
+    if (_24[lang]) {
+      o.hour = '2-digit';
+      return now.toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-GB', o).replace(/\s*h\s*/i, ':');
+    }
+    return now.toLocaleTimeString('en-US', o)
+      .replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
+  } catch (e) { return ''; }
+}
 
 // Returns the selected languages' words for `key`, at most two, de-duplicated.
 // frFirst only reorders — it is the French-first-airport flag and has never
@@ -18354,7 +18733,14 @@ function _gateLaneLbl(nums, plural, frFirst) {
     parts.push(w + ' ' + nums);
   }
   if (!parts.length) parts.push(o.en + ' ' + nums);
-  return parts.join(' <span class="g8-bir-sep">|</span> ');
+  // v23116 — A SENTENCE NEVER BREAKS (Nick: 'dont ever let a sentence break
+  // thats a fine within Canadian law'). Each language's line is one nowrap
+  // unit; when both don't fit side by side the sign STACKS them whole —
+  // 'Use Lane 2' over 'Utilisez la voie 2' — and the pipe disappears. The
+  // stacking decision is made by the lane-line guard in the gate fitter,
+  // which measures the rendered box; this just gives it the units.
+  return parts.map(function (w) { return '<span class="g8-lane-p">' + w + '</span>'; })
+    .join('<span class="g8-lane-sep"> <span class="g8-bir-sep">|</span> </span>');
 }
 try { if (typeof window !== 'undefined') window._gateLaneLbl = _gateLaneLbl; } catch (e) {}
 
@@ -18434,7 +18820,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23112';
+var FIDS_BUILD_TAG = 'v23124';
 (function(){
   try {
     function _addTag(){
@@ -24052,22 +24438,58 @@ function applyAirportConfigToBoard(iata) {
       // colors instead of being reset — custom colors join the texture
       // system, they don't fight it.
       var _CA = 'html:not(#_):not(#_) body[data-fids-theme="custom"]:not(#_):not(#_) ';
+      // Resolve every ground ONCE, then run each ink through the legibility
+      // floor against the ground it actually lands on. Odd and even rows are
+      // separate grounds, so the row ink is emitted twice — one white row
+      // among dark ones used to swallow its own text (Nick's white-on-white
+      // board), because a single `td { color: text }` rule can only be right
+      // for one of the two.
+      var _gBg    = _cc.bg      || '#0a1628';
+      var _gOdd   = _cc.rowOdd  || _cc.bg || '#0c1e3a';
+      var _gEven  = _cc.rowEven || _cc.bg || '#122943';
+      var _gHdr   = _cc.hdr     || _cc.bg || '#0a1628';
+      var _iTxt   = _cc.text    || '#fff';
+      var _iHdrT  = _cc.hdrText || '#fff';
+      var _iAcc   = _cc.accent  || '#eab308';
+      var _inkOdd  = _fidsInk(_iTxt,  _gOdd);
+      var _inkEven = _fidsInk(_iTxt,  _gEven);
+      var _inkBg   = _fidsInk(_iTxt,  _gBg);
+      var _inkHdr  = _fidsInk(_iHdrT, _gHdr);
+      var _inkTh   = _fidsInk(_iHdrT, _gBg);
+      var _inkCrsl = _fidsInk(_gBg,   _gOdd);   // carousel block paints bg-colour text on a rowOdd ground
+      var _inkAcc  = _fidsInk(_iAcc,  _gHdr);
+      // The muted secondary line carries opacity .75, which costs real
+      // contrast. Where the floor had to substitute an ink, drop the fade so
+      // the substitution isn't undone by transparency.
+      var _fade = (_inkBg === _iTxt) ? '.75' : '.9';
       _styleEl.textContent =
-        _CA + '#fidsTable, ' + _CA + '.bidsv2-screen { background-color:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.text || '#fff') + ' !important; }' +
-        _CA + '.bidsv2-banner { background-color:' + (_cc.hdr || _cc.bg || '#0a1628') + ' !important; }' +
-        _CA + '.bidsv2-airport-name, ' + _CA + '.bidsv2-footer-date { color:' + (_cc.hdrText || '#fff') + ' !important; }' +
-        _CA + '.bidsv2-logo, ' + _CA + '.bidsv2-status-arrived { color:' + (_cc.accent || '#eab308') + ' !important; }' +
-        _CA + '.bidsv2-carousel-block { background-color:' + (_cc.rowOdd || '#fff') + ' !important; }' +
-        _CA + '.bidsv2-carousel-label, ' + _CA + '.bidsv2-carousel-number, ' + _CA + '.bidsv2-clock { color:' + (_cc.bg || '#0a1628') + ' !important; }' +
-        _CA + '.bidsv2-list-header, ' + _CA + '.bidsv2-airline-name, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-status-other, ' + _CA + '.bidsv2-footer-msg { color:' + (_cc.text || '#fff') + ' !important; opacity:.75; }' +
-        _CA + '.bidsv2-flight-row' + _nsB + ' { background-color:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; border-bottom-color:' + (_cc.accent || 'rgba(255,255,255,.12)') + '33 !important; }' +
-        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) { background-color:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
-        _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-flight-num, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-from, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-time, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-status { color:' + (_cc.text || '#fff') + ' !important; }' +
-        _CA + '#fidsTable tbody tr' + _nsF + ' { background-color:' + (_cc.rowOdd || _cc.bg || '#0c1e3a') + ' !important; }' +
-        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) { background-color:' + (_cc.rowEven || _cc.bg || '#122943') + ' !important; }' +
-        _CA + '#fidsTable thead th { background-color:' + (_cc.bg || '#0a1628') + ' !important; color:' + (_cc.hdrText || '#fff') + ' !important; }' +
-        _CA + '#fidsTable tbody tr' + _nsF + ' td { color:' + (_cc.text || '#fff') + ' !important; }';
+        _CA + '#fidsTable, ' + _CA + '.bidsv2-screen { background-color:' + _gBg + ' !important; color:' + _inkBg + ' !important; }' +
+        _CA + '.bidsv2-banner { background-color:' + _gHdr + ' !important; }' +
+        _CA + '.bidsv2-airport-name, ' + _CA + '.bidsv2-footer-date { color:' + _inkHdr + ' !important; }' +
+        _CA + '.bidsv2-logo, ' + _CA + '.bidsv2-status-arrived { color:' + _inkAcc + ' !important; }' +
+        _CA + '.bidsv2-carousel-block { background-color:' + _gOdd + ' !important; }' +
+        _CA + '.bidsv2-carousel-label, ' + _CA + '.bidsv2-carousel-number, ' + _CA + '.bidsv2-clock { color:' + _inkCrsl + ' !important; }' +
+        _CA + '.bidsv2-list-header, ' + _CA + '.bidsv2-airline-name, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-status-other, ' + _CA + '.bidsv2-footer-msg { color:' + _inkBg + ' !important; opacity:' + _fade + '; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ' { background-color:' + _gEven + ' !important; border-bottom-color:' + (_cc.accent || 'rgba(255,255,255,.12)') + '33 !important; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) { background-color:' + _gOdd + ' !important; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-flight-num, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-from, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-time, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-col-status { color:' + _inkEven + ' !important; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) .bidsv2-flight-num, ' + _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) .bidsv2-col-from, ' + _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) .bidsv2-col-time, ' + _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) .bidsv2-col-status { color:' + _inkOdd + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ' { background-color:' + _gOdd + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) { background-color:' + _gEven + ' !important; }' +
+        _CA + '#fidsTable thead th { background-color:' + _gBg + ' !important; color:' + _inkTh + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ' td { color:' + _inkOdd + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) td { color:' + _inkEven + ' !important; }';
       document.head.appendChild(_styleEl);
+      // --fids-text feeds rules outside this block (ticker, footer, chips), so
+      // it takes the floored ink too — otherwise the raw pick leaks back in.
+      if (_cc.text) st.setProperty('--fids-text', _inkBg, 'important');
+      try {
+        if (_inkOdd !== _iTxt || _inkEven !== _iTxt || _inkTh !== _iHdrT) {
+          console.warn('[FIDS Theme APPLY] legibility floor engaged — saved ink ' + _iTxt +
+                       ' was invisible on rows ' + _gOdd + '/' + _gEven + '; painting ' +
+                       _inkOdd + '/' + _inkEven);
+        }
+      } catch (e) {}
       console.log('[FIDS Theme APPLY] custom colors restored:', _cc);
     } else {
       console.warn('[FIDS Theme APPLY] theme=custom but no customColors saved — falling back to builtin theme');
@@ -30330,6 +30752,7 @@ function getGateAds() {
     for (var k in ad) if (Object.prototype.hasOwnProperty.call(ad, k)) out[k] = ad[k];
     if (ad.headline) out.headline = adTL(ad.headline);
     if (ad.sub)      out.sub      = adTL(ad.sub);
+    if (ad.subLogo)  out.subLogo  = ad.subLogo;
     return out;
   });
   // Build destination-aware generic ads
@@ -31410,7 +31833,11 @@ function buildGateAdHtml(ad) {
     + _stdLogoHtml
     + '<div style="flex-shrink:0;text-align:center;max-width:100%;overflow:hidden;">'
     + '<div style="font-size:clamp(44px,5.2vw,78px);font-weight:800;color:' + _stdFg + ';line-height:1.08;max-width:100%;">' + _stdHeadline + '</div>'
-    + '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>'
+    + (ad.subLogo
+        // v23123 — the sub line renders the brand's real WORDMARK when one is
+        // supplied (Nick, Delta welcome); otherwise the plain name as before.
+        ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(34px,4.2vh,64px);width:auto;max-width:60%;object-fit:contain;margin:clamp(12px,2vh,22px) auto 0;display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
+        : '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>')
     + '</div></div>'
   );
 }
@@ -33418,7 +33845,11 @@ function _buildGateAdSlideList() {
       var _FB_WELCOME_LOGO = {
         'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg',
         'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+        // v23123 — Nick: 'the logo in the middle as well for the welcome =
+        // red'. His colour widget, not the white-forced mono mark.
+        'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
       };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
@@ -33438,6 +33869,14 @@ function _buildGateAdSlideList() {
           } catch (e) { return _WA.en + ' · ' + _WA.fr; }
         })(),
         sub: (_fb && _fb.name) ? _fb.name : '',
+        // v23123 — Nick: 'put the actual delta name in the middle wordmark'.
+        subLogo: (function () {
+          var _SUB_WORDMARK = {
+            'DL': '/logos/airlines/us-major/delta-wordmark-light.svg',
+            'DAL': '/logos/airlines/us-major/delta-wordmark-light.svg'
+          };
+          return _SUB_WORDMARK[code] || '';
+        })(),
         logo: _fbLogo
       } }];
     }
@@ -34343,6 +34782,36 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // different sizes across the pages of a single ad (Nick: 'ALL THE SECTIONS
     // NEED TO BE UNIFORM EVERYWHERE'). Ad type is fixed by role and wraps.
     try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
+    // v23116 — LANE-LINE LANGUAGE GUARD (Nick: 'dont ever let a sentence
+    // break thats a fine within Canadian law'). Each language on a lane sign
+    // is one nowrap unit; if both units don't fit on one line, the sign
+    // stacks them whole (class flips the sep off and the units to blocks).
+    // Measured against the SINGLE-LINE width: un-stack first so the test is
+    // honest, then re-stack only if that single line genuinely overflows.
+    try {
+      document.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title, .g8-board-grp-label').forEach(function (ln) {
+        if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
+            && !/\|/.test(ln.textContent || '')) return;
+        // Force ONE line for the measurement — inline units wrap between
+        // themselves without ever overflowing, so scrollWidth alone can't
+        // see that the single-line form doesn't fit (the same blindness
+        // that hid '12:30p…' from the value fitter).
+        ln.classList.remove('g8-lane-stacked');
+        // Measure against the COLUMN, not the label's own box — the label
+        // grows past its column instead of overflowing itself (measured:
+        // scrollWidth == clientWidth == 484 inside a 417px column), so the
+        // honest test is the single-line width vs the space the column has.
+        var _lnPrev = ln.style.whiteSpace;
+        ln.style.whiteSpace = 'nowrap';
+        var _lnAvail = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
+        var _lnOver = ln.scrollWidth > _lnAvail - 8;
+        ln.style.whiteSpace = _lnPrev || '';
+        if (_lnOver) ln.classList.add('g8-lane-stacked');
+        // same class does double duty: on titles it stacks the language
+        // halves whole and hides the pipe (CSS), so no surface anywhere can
+        // show 'Boarding |' over 'Embarquement' — never a broken pair.
+      });
+    } catch (e) {}
     var ones = document.querySelectorAll('.axr-one-line,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable .fids-airline-name,'
@@ -34606,7 +35075,13 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       try {
         var s;
         // data-fmt="dual" → the shared banner format '6:26PM | 18 h 26'.
-        if (els[i].getAttribute('data-fmt') === 'dual' && typeof _ocClockTime === 'function') {
+        // v23115 — data-bwlang="<lang>" → the boarding strip's per-language
+        // clock. Without this branch the generic 12-hour en-US path below
+        // rewrote the French half as '5:35pm' five seconds after it painted,
+        // undoing the whole point of showing each language its own format.
+        if (els[i].getAttribute('data-bwlang') && typeof _fidsClockForLang === 'function') {
+          s = _fidsClockForLang(new Date(), tz || null, els[i].getAttribute('data-bwlang'));
+        } else if (els[i].getAttribute('data-fmt') === 'dual' && typeof _ocClockTime === 'function') {
           s = _ocClockTime(new Date(), tz || null);
         } else {
           var o = tz ? { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
