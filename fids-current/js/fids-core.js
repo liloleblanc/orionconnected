@@ -9483,7 +9483,11 @@ function uxgGateHtml(ctx) {
     } else {
       _bwMidWords = _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ');
     }
-    var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem" src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
+    // Spin phase stamped from wall-clock so the rebuild-every-tick gate DOM
+    // doesn't restart the animation at 0° (Nick: 'The rondelle is not
+    // spinning' — it was, 0% of the time it was on screen).
+    var _bwSpin = ' style="--rond-delay:-' + ((Date.now() / 1000) % 7).toFixed(2) + 's"';
+    var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
       + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
       + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
     return '<div class="g8-board-welcome g8-bw-clocked">'
@@ -9520,8 +9524,9 @@ function uxgGateHtml(ctx) {
       var _src = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || _sym;
       var _mot = (typeof GATE_RONDELLE_MOTION !== 'undefined' && GATE_RONDELLE_MOTION[airlineCode]) || null;
       if (!_src && !_mot) return '';
+      var _cdSpin = ' style="--rond-delay:-' + ((Date.now() / 1000) % 7).toFixed(2) + 's"';
       var _still = _src
-        ? '<img class="g8-cd-mark-still" src="' + _src + '" alt="" onerror="this.style.display=\'none\'">'
+        ? '<img class="g8-cd-mark-still"' + _cdSpin + ' src="' + _src + '" alt="" onerror="this.style.display=\'none\'">'
         : '';
       if (!_mot) return '<span class="g8-cd-mark">' + _still + '</span>';
       return '<span class="g8-cd-mark has-motion">'
@@ -18764,7 +18769,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23117';
+var FIDS_BUILD_TAG = 'v23118';
 (function(){
   try {
     function _addTag(){

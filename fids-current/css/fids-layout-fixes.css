@@ -3158,7 +3158,15 @@ html .g8-lanes3 .g8-board-col.g8-q2 { flex: 1 1 0; }
    sign reads black · gray · accent instead of two accent slabs. background-
    color only, so the plate texture the shared rule lays down still reads. */
 html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 {
-  background-color: #5B646F !important;
+  background-color: #A9A9A9 !important;   /* Nick's markup: LIGHT gray, not slate */
+}
+/* White on the light gray needs an edge to read at distance — a soft dark
+   shadow, not an outline, so the type stays the same family as panel 1. */
+html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 .g8-board-grp-label,
+html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 .g8-board-grp-num,
+html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 .g8-board-arrow,
+html body:not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 .g8-board-lane {
+  text-shadow: 0 1px 6px rgba(0,0,0,0.55) !important;
 }
 /* …and the division between the two Priority quarters carries a BIG DOT,
    centred on the seam (Nick: 'the middle between the 2 should have a dot in
@@ -11287,7 +11295,9 @@ html body .g8-bw-clocked [class*="g8-bw-st-cancelled"] .g8-bw-st-val,
 html body .g8-bw-clocked [class*="g8-bw-st-diverted"] .g8-bw-st-val { color: #B3261E !important; }
 /* Centre lockup scales with the band too. */
 html body .g8-bw-clocked .g8-bw-text {
-  font-size: clamp(20px, 3.6vh, 50px) !important;
+  /* a notch smaller since the dividers took their padding — the star was
+     getting clipped at the mid's right border */
+  font-size: clamp(18px, 3.3vh, 46px) !important;
   white-space: nowrap !important;
 }
 /* The middle may never overlap its neighbours — it shrinks and, in the very
@@ -11361,4 +11371,44 @@ html body .g8-bir-title.g8-lane-stacked .g8-bir-l1,
 html body .g8-bir-title.g8-lane-stacked .g8-bir-l2 {
   display: block !important;
   text-align: center !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23118 — Nick's annotated shot: divider bars in the white band, and the
+   rondelle MOVES ("The rondelle is not spinning").
+   ═══════════════════════════════════════════════════════════════════════ */
+/* Band dividers: a thin bar between clock and status inside each end, and a
+   stronger pair flanking the centre lockup — exactly where he drew them. */
+html body .g8-bw-clocked .g8-bw-end > * + * {
+  border-left: 3px solid rgba(22,28,38,0.75) !important;
+  padding-left: clamp(8px, 1vw, 24px) !important;
+  align-self: stretch !important;
+  display: flex !important;
+  /* COLUMN, explicitly — 'inherit' took the row direction from the end
+     container and flattened the label-over-value stacks sideways. */
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+html body .g8-bw-clocked .g8-bw-mid {
+  border-left: 3px solid rgba(22,28,38,0.75) !important;
+  border-right: 3px solid rgba(22,28,38,0.75) !important;
+  padding: 0 clamp(8px, 1.2vw, 28px) !important;
+  align-self: stretch !important;
+}
+/* The rondelle spins — one clean coin-turn, then rest, on a 7s cycle. The
+   phase rides a custom property the builder stamps from wall-clock, because
+   the gate rebuilds its DOM every telemetry tick and a plain animation would
+   restart at 0° each time and read as frozen (the g8AcFloat lesson, v23057).
+   animation-delay is declared AFTER the shorthand at the same weight, so the
+   shorthand cannot silently zero it. */
+@keyframes g8RondSpin {
+  0%   { transform: rotateY(0deg); }
+  18%  { transform: rotateY(360deg); }
+  100% { transform: rotateY(360deg); }
+}
+html body .g8-bw-clocked .g8-bw-emblem,
+html body .g8-cd-mark .g8-cd-mark-still {
+  animation: g8RondSpin 7s ease-in-out infinite !important;
+  animation-delay: var(--rond-delay, 0s) !important;
+  backface-visibility: visible !important;
 }
