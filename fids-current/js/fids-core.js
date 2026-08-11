@@ -10289,12 +10289,9 @@ function uxgGateHtml(ctx) {
   // carries the same plate artwork the flight plates use.
   try {
     if (/^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) {
-      // A dark scrim over the artwork: the plate's bright wave crest lands in
-      // the top-left corner and read as a bright blue patch behind the logo
-      // (Nick: 'top left Delta logo area bright blue'). The scrim keeps the
-      // pattern but holds the whole strip at one dark value.
-      _silkGrad = "linear-gradient(rgba(12,18,38,0.62), rgba(12,18,38,0.62)), "
-                + "url('/textures/plate-dl-waves.jpg?v=23113') center/cover no-repeat, " + _silkDark;
+      // v23113 — Nick's own rendition, colours sampled from his image: the
+      // top strip is a FLAT deep indigo (#11063C), not the wave artwork.
+      _silkGrad = '#11063C';
     }
   } catch (e) {}
 

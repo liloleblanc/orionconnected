@@ -10937,41 +10937,36 @@ html body .leaflet-tile-pane img.leaflet-tile {
   height: 257px !important;
 }
 
-/* ── v23113 — DELTA HEADER + CLOCK TAKE THE PLATE ARTWORK ────────────────
-   Nick: 'The gate top should match the same color as the plates' and 'the
-   clock should have the same pattern except with a red tint that can be
-   dark red or burgandy'.
 
-   The header strip and the gate badge now carry the SAME wave plate the
-   flight plates use, so the top of the screen belongs to the same family.
-   The clock carries that identical wave pattern re-inked burgundy — the
-   ramp is driven by the plate's own luma, so every crest and trough lands
-   exactly where Nick drew it. White ink: 11.0:1 worst case on the red. */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1, .g8-wrap .g8-r1) {
-  background-color: var(--plate-base, #0b0e14) !important;
-  background-image: var(--plate-tex) !important;
-  background-size: cover !important;
-  background-position: center !important;
-}
+/* ── v23113 — DELTA TOP BAR, NICK'S RENDITION ────────────────────────────
+   Colours sampled pixel-for-pixel out of the image he sent ('thats my
+   rendition / thats what i want / color wise'):
+     top strip   #11063C  deep indigo, FLAT — no wave art, no gradient
+     clock box   #56102A  burgundy — his value, not the bright red I had
+                          over-corrected to
+     gate badge  #11063C  same indigo as the strip, white type
+   Each box keeps a hairline white edge the way his mock shows them.
+   White ink: 17.4:1 on the indigo, 11.9:1 on the burgundy. */
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
-  --airline-accent: #0F1B3D !important;   /* the badge is painted inline from this */
+  --airline-accent: #11063C !important;
+}
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.g8-r1, .g8-wrap .g8-r1) {
+  background-color: #11063C !important;
+  background-image: none !important;
 }
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right {
-  background-color: var(--plate-base, #0b0e14) !important;
-  background-image: var(--plate-tex) !important;
-  background-size: cover !important;
-  background-position: center !important;
+  background-color: #11063C !important;
+  background-image: none !important;
+  border-left: 2px solid rgba(255,255,255,0.92) !important;
 }
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.octb, .octb-tab, .octb-stack) {
-  background-color: #21070B !important;
-  background-image: url('/textures/plate-dl-waves-red.jpg?v=23113') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-blend-mode: normal !important;
+  background-color: #56102A !important;
+  background-image: none !important;
+  border: 2px solid rgba(255,255,255,0.92) !important;
+  border-radius: 8px !important;
 }
 /* v23113 — the welcome-slide mark keeps its own colour on Delta (the ad
    renderer forces marks white; Nick wants the red widget there). */
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gad-ad-logo,
-html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) img[src*="delta-emblem-colour"] {
+html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.gad-ad-logo, img[src*="delta-emblem-colour"]) {
   filter: none !important;
 }
