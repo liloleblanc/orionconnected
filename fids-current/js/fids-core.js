@@ -16247,6 +16247,27 @@ const CITY_FR = {
 
 // ── AIRPORT COORDINATES ─────────────────────────────
 const COORDS = {
+  // ── v23132 — WEATHER COVERAGE GAP, audited against the LIVE feeds (Nick:
+  //    'i cant believe airports still dohnt hae weather cause theyre not in
+  //    the system espeically not in canada its unaccaeltable'). Every
+  //    destination flying on YQM/YHZ/YYZ/YUL/MCO today was checked against
+  //    this table; these 15 had no entry, so their weather cell was empty.
+  //    Canadian first — his specific complaint.
+  YXU:[43.036,-81.151],   // London, Ontario
+  YXX:[49.025,-122.361],  // Abbotsford, BC
+  YKU:[53.806,-78.917],   // Chisasibi, Quebec (Air Creebec)
+  YZG:[62.179,-75.667],   // Salluit, Nunavik (Air Inuit)
+  FSP:[46.763,-56.173],   // Saint-Pierre-et-Miquelon
+  PTP:[16.265,-61.532],   // Pointe-a-Pitre, Guadeloupe
+  FDF:[14.591,-61.003],   // Fort-de-France, Martinique
+  SVD:[13.157,-61.150],   // Argyle, St Vincent
+  SAL:[13.441,-89.056],   // San Salvador, El Salvador
+  GEO:[6.499,-58.254],    // Georgetown, Guyana
+  AMM:[31.723,35.993],    // Amman Queen Alia
+  ADD:[8.978,38.799],     // Addis Ababa Bole
+  LHE:[31.522,74.404],    // Lahore
+  TPE:[25.078,121.233],   // Taipei Taoyuan
+  ZAG:[45.743,16.069],    // Zagreb
   YXL:[50.11,-91.91], YQK:[49.79,-94.36],   // Sioux Lookout, Kenora (weather)
   YAG:[48.65,-93.44],   // Fort Frances (Ontario, Central Time)
   YMU:[52.60,-90.37],   // Musselwhite Mine aerodrome (Wasaya; no IATA — matched by name)
@@ -18973,7 +18994,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23131';
+var FIDS_BUILD_TAG = 'v23132';
 (function(){
   try {
     function _addTag(){
