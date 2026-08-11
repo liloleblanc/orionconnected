@@ -9421,7 +9421,10 @@ function uxgGateHtml(ctx) {
       // Status word for the strip: the same normalized vocabulary the plates
       // use, one word per language, sentence case.
       var _bwStKey = String(_stripState || '');
-      var _bwAbn = /delay|cancel|divert/.test(_bwStKey);
+      // v23115c — the status pair is on EVERY screen (Nick: 'The status sign
+      // follows all screens'), not only the abnormal ones. It always shows
+      // the live status word, coloured by state.
+      var _bwAbn = !!_bwStKey;
       var _bwStWord = function (lang) {
         try {
           var _o = (typeof SS !== 'undefined') ? (SS[_bwStKey] || SS[_bwStKey.replace(/ /g, '')]) : null;

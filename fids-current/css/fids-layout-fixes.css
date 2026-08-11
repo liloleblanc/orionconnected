@@ -11218,7 +11218,7 @@ html body:not(#_):not(#_):not(#_) .g8-bir-shelves .v2-flightinfo-block > .v2-fi-
 html body .g8-bw-clocked .g8-bw-end {
   display: flex !important;
   align-items: center !important;
-  gap: clamp(10px, 1.6vw, 40px) !important;
+  gap: clamp(8px, 1vw, 24px) !important;
   flex: 0 0 auto !important;
   white-space: nowrap !important;
 }
@@ -11236,22 +11236,52 @@ html body .g8-bw-end-r .g8-bw-status {
   align-items: flex-end !important;
 }
 html body .g8-bw-clocked .g8-bw-clk-lbl {
-  font-size: clamp(11px, 1.9vh, 26px) !important;
+  font-size: clamp(12px, 2.2vh, 30px) !important;
 }
-/* THE TIME — Nick: 'the time right now is wayyyyy to small'. Stacked label
-   over value buys the height: the value runs at the strip's full remaining
-   height, on par with the mockup's oversized red clock. */
+/* THE TIME + STATUS take the band's FULL height (Nick: 'all this takes as
+   much space as possible no more wasted space its enough'). Label stacked
+   over a value that runs edge to edge of the white strip. */
 html body .g8-bw-clocked .g8-bw-clk-val {
-  font-size: clamp(26px, 5.4vh, 74px) !important;
-  line-height: 0.98 !important;
+  font-size: clamp(28px, 5.8vh, 82px) !important;
+  line-height: 0.92 !important;
 }
 html body .g8-bw-clocked .g8-bw-st-val {
   font-weight: 900 !important;
-  font-size: clamp(20px, 4vh, 56px) !important;
-  line-height: 0.98 !important;
-  color: #A66F00 !important;             /* delayed amber on white */
+  font-size: clamp(24px, 4.8vh, 68px) !important;
+  line-height: 0.92 !important;
+  color: #16283C !important;             /* neutral (scheduled) navy-ink */
 }
-html body .g8-bw-clocked .g8-bw-st-cancelled .g8-bw-st-val,
-html body .g8-bw-clocked .g8-bw-st-diverted .g8-bw-st-val {
-  color: #B3261E !important;             /* cancelled/diverted red */
+/* Live state colours — same grammar as the board's status column. */
+html body .g8-bw-clocked [class*="g8-bw-st-ontime"] .g8-bw-st-val,
+html body .g8-bw-clocked [class*="g8-bw-st-boarding"] .g8-bw-st-val,
+html body .g8-bw-clocked [class*="g8-bw-st-early"] .g8-bw-st-val { color: #0E7A3C !important; }
+html body .g8-bw-clocked [class*="g8-bw-st-delayed"] .g8-bw-st-val { color: #A66F00 !important; }
+html body .g8-bw-clocked [class*="g8-bw-st-final"] .g8-bw-st-val,
+html body .g8-bw-clocked [class*="g8-bw-st-gateclosed"] .g8-bw-st-val { color: #B45309 !important; }
+html body .g8-bw-clocked [class*="g8-bw-st-cancelled"] .g8-bw-st-val,
+html body .g8-bw-clocked [class*="g8-bw-st-diverted"] .g8-bw-st-val { color: #B3261E !important; }
+/* Centre lockup scales with the band too. */
+html body .g8-bw-clocked .g8-bw-text {
+  font-size: clamp(20px, 3.6vh, 50px) !important;
+  white-space: nowrap !important;
+}
+/* The middle may never overlap its neighbours — it shrinks and, in the very
+   worst case, clips inside its own box instead of colliding with the status. */
+html body .g8-bw-clocked .g8-bw-mid {
+  overflow: hidden !important;
+  min-width: 0 !important;
+}
+
+/* ── TITLE PLATE (Nick: 'You didnt follow the added color on the panel for
+   titles'). His mockup sets each shelf title on its own LIGHTER GRAY chip
+   with the accent rule beneath it — the title is a plate, not floating
+   text. Scoped to the sideways strip; the side rail keeps its current
+   treatment until he asks for it there. */
+html body:not(#_):not(#_):not(#_) .g8-bir-shelves .v2-fi-title {
+  background: linear-gradient(180deg, rgba(216,220,226,0.34), rgba(150,156,166,0.30)) !important;
+  border-radius: 7px 7px 0 0 !important;
+  padding: clamp(2px, 0.5vh, 7px) clamp(10px, 1vw, 20px) !important;
+  align-self: stretch !important;
+  text-align: center !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25) !important;
 }
