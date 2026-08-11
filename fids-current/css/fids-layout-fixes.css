@@ -11666,12 +11666,20 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
    shrink-to-fit from these ceilings, so big-as-fits, never overflowing. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-title,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title {
-  font-size: clamp(15px, 2.6vh, 34px) !important;
+  /* v23134 — the clamp is set so the NARROWEST surface (the upright rail,
+     whose bar is ~277px of usable width) fits its longest label
+     ('Boarding | Embarquement') without shrinking. With no shrink on
+     either surface, rail and strip render the identical number by
+     construction — which is what 'the exact same' actually requires,
+     since the two never coexist for a harmonize pass to equalize. */
+  font-size: clamp(13px, 2.1vh, 26px) !important;
   align-self: stretch !important;
-  /* v23130 — LEFT, Nick's final word on the title chips ('Its supposed to
-     be left alligned sorry / The titles on the panels top title'). */
-  text-align: left !important;
-  margin: 0 clamp(2px, 0.3vw, 8px) !important;
+  /* v23134 — his mockup shows the pair CENTRED inside a full-width bar;
+     the v23130 left-align was for a short chip that no longer exists. */
+  text-align: center !important;
+  margin: 0 0 clamp(2px, 0.4vh, 6px) 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 html body .g8-bw-clocked .g8-bw-text {
   font-size: clamp(22px, 5vh, 64px) !important;
@@ -11778,17 +11786,21 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shel
    'Its supposed to be left alligned sorry / The titles on the panels top
    title' — the PANEL TOP TITLE CHIPS go left, spanning their plate.
    ═══════════════════════════════════════════════════════════════════════ */
-/* Chips LEFT-aligned and spanning the full text column — upright rail and
-   horizontal strip both ('youve cut way short'). */
+/* v23134 — NICK'S REDESIGN, measured off his mockup: the title chip is a
+   FULL-WIDTH brand bar across the top of the plate, not a short tab
+   floating in the middle ('youve cut way short' / 'I redid the design to
+   shownyou ocne again what is expected'). Edge to edge over the text
+   column, on both surfaces. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
-  text-align: left !important;
-  justify-content: flex-start !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
   align-self: stretch !important;
-  width: auto !important;
-  max-width: none !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  padding-left: clamp(10px, 1vw, 22px) !important;
+  margin: 0 0 clamp(2px, 0.4vh, 6px) 0 !important;
+  text-align: center !important;
+  padding-left: clamp(8px, 0.8vw, 18px) !important;
+  padding-right: clamp(8px, 0.8vw, 18px) !important;
 }
 /* 'theres no color in the title devider' — with the brand topper below,
    the divider takes the topper's own ink so it always reads. */
@@ -11880,3 +11892,171 @@ html body:not(#_):not(#_) .g8-wrap.g8-airline-4Y .g8-r1-silk .g8-r1-logoslot img
 html body .g8-final-hdr .g8-lane-p { white-space: nowrap !important; display: inline-block !important; }
 html body .g8-final-hdr { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; column-gap: 0.35em !important; }
 html body .g8-final-hdr .g8-lane-sep { white-space: nowrap !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23132 — THE ONE MEASURED "POP" (Nick: 'everything is popping in and
+   out of allignment'). Instrumented production for 60s: the only real
+   layout shift on the gate came from .g8-board-lane — the language guard
+   measures AFTER paint, so a lane line renders on one line and then jumps
+   to two when the guard stacks it. CLS 0.0021, one source, every time.
+
+   The lane box now RESERVES two lines' height always. Stacking rearranges
+   text inside a box whose height never changes, so the guard can no longer
+   move anything below it — no jump, and the sentence law is untouched.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_) .g8-board-body .g8-board-lane {
+  min-height: 2.3em !important;
+}
+/* v23134 — the reserve must NOT change the flow: forcing flex-column put
+   every inline child on its own line, so the pipe rendered as a lone '|'
+   between the two languages (visible in the AC final-call render). The box
+   only reserves height; the guard's own class still does the stacking. */
+html body:not(#_):not(#_):not(#_) .g8-board-body .g8-board-lane {
+  display: block !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-board-body .g8-board-lane.g8-lane-stacked {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* The second measured pop, same instrumentation run: the alliance mark is
+   sized 'auto' and only fills its box once the image decodes, so every gate
+   rebuild replays a zero-width → full-width step and everything on the band
+   slides (measured: 5 of 6 shifts, .g8-r1-star + .g8-bilbl together). The
+   star's box is RESERVED at its rendered height, so decode changes what is
+   painted inside it, never the layout around it. */
+html body:not(#_):not(#_):not(#_) .g8-wrap img.g8-r1-star {
+  height: clamp(48px, 7vh, 82px) !important;
+  min-height: clamp(48px, 7vh, 82px) !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-wrap img.g8-r1-star.g8-r1-alliance-oneworld {
+  height: clamp(88px, 14vh, 104px) !important;
+  min-height: clamp(88px, 14vh, 104px) !important;
+  min-width: clamp(160px, 22vw, 400px) !important;
+}
+/* The star tile's own rules (the 3x:not .g8-r1-alliance-star pair above)
+   pin min-width:0, which outranked the reserve and left the tile at 0px
+   until decode — that IS the pop. Four :not, both of its selectors, with
+   the artwork's measured aspect so the reserved width is the real width. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-silk img.g8-r1-star.g8-r1-alliance-star,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot img.g8-r1-star.g8-r1-alliance-star {
+  /* The tile is SQUARE — measured 59.2 x 59.2 once decoded, which is the
+     height clamp exactly. Reserve the same clamp on both axes. */
+  min-width: clamp(48px, 7vh, 82px) !important;
+  min-height: clamp(48px, 7vh, 82px) !important;
+}
+
+/* Flair's welcome-card mark is the brand GREEN dot, not a white disc — same
+   white-force exemption Delta's widget and Discover's tail already carry
+   (Nick: 'the first should be green simple'). */
+html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.gad-ad-logo, img[src*="flair-dot"]) {
+  filter: none !important;
+}
+
+/* v23134 — 'Why is tehre a line vertical aline upright wow'. Traced with a
+   computed-style + stylesheet walk: gids-v218.78's legacy light-rail rule
+   (.g8-wrap .gad-aircraft-col) still carries `border: 3px solid
+   var(--airline-accent)` from the white-rail era. The rail has been dark
+   plates for many builds, so all that survives is a bare accent line down
+   the screen's left edge. The rail draws no frame. */
+html body:not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+  border: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23134 — THE RIGHT SHELVES RIDE THE LEFT'S GRID (Nick: 'the oanel
+   shelves on the right need to be the same lenght as the left', and his
+   standing model: 'the left has to match the right … 6 and 6 and same
+   size').
+
+   Measured on an AC gate at 1669x846: the left rail is a uniform SIX-unit
+   grid, 121px per shelf, 115 -> 839. The right column was 288 / 192 / 120
+   / 120 — fractional flexes (2.6 / 1 / 1.5 / 2) that landed on no grid at
+   all, which is exactly the mismatch he keeps pointing at.
+
+   Integer units now: map 2, flight-info 2, illustration 1, type 1 = the
+   same six units, the same 121px module, top and bottom flush with the
+   left rail. */
+/* The column is a GRID, not flex — and the .gad-map-col-fi4 variant
+   re-templates it to `repeat(3, 0.85fr) 1.45fr repeat(2, 1fr)`, which is
+   precisely what knocked it off the left's module (measured 288 / 192 /
+   120 / 120 against a uniform 121 rail). Back to six EQUAL rows, with the
+   flight-info shelf taking two of them — so it is both on the grid AND
+   roomier than the 1.45fr hack it replaces. */
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
+  grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
+  grid-row: 1 / 3 !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+  grid-row: 3 / 5 !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  grid-row: 5 / 6 !important;
+}
+html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  grid-row: 6 / 7 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23135 — 'I think the gray or beige looks better than the red for AC
+   but the 2 sides need to be made and equal'.
+
+   1. AC's title bar is the warm GRAY-BEIGE, not the red accent. Air
+      Canada's secondary brand is gray (the header/speed-bar rules already
+      say so); on the black plates it reads as material rather than alarm.
+      Dark ink on the light bar — measured 12.5:1.
+   2. THE TWO SIDES ARE THE SAME COMPONENT NOW. The right card's rows were
+      label-beside-value with a small floating label; the left rail's are
+      a full-width title bar over a big value. Same grammar both sides:
+      the label becomes the bar, the value sits under it.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* 1 — AC: gray-beige bar, dark ink (seven :not beats the generic topper). */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title * {
+  color: #14171B !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* 2 — THE TWO SIDES, EQUAL MATERIAL. Stacking a bar OVER the value in
+   the right card was measured to collide: that card carries four data
+   rows in a 240px shelf (60px each), and a bar plus a legible value needs
+   ~90. So the right card keeps its label column — but the label is now
+   the SAME BAR, in the same material and the same ink as the left rail's
+   title, full height of its row. Both sides read as one component. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+  padding: clamp(2px, 0.3vh, 5px) clamp(5px, 0.5vw, 10px) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+  align-self: stretch !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span {
+  color: inherit !important;
+  opacity: 1 !important;
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  align-self: center !important;
+}
+/* AC's right-card bars are the same gray-beige as its left plates. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl * {
+  color: #14171B !important;
+  text-shadow: none !important;
+}

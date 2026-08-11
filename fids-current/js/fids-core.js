@@ -11649,12 +11649,23 @@ function gateAutofit(root) {
     // the shrink — 0.26 matches the strip's real geometry, and _boxAssign is
     // shrink-only from the shared CSS clamp, so the two surfaces can now only
     // land on the same number.
+    // v23134 — ONE SIZE, BOTH SURFACES, ALWAYS (Nick: 'they are different
+    // sizes from boarding to not I NEVER ASKED FOR THAT'). The old
+    // per-surface _boxAssign fit could never equalize them: the rail and
+    // the boarding strip NEVER EXIST AT THE SAME TIME, so each state fitted
+    // against its own geometry and landed on its own number (measured 15px
+    // rail vs 18px strip). The chip now takes the shared CSS clamp
+    // verbatim — identical on both surfaces by construction — and only
+    // shrinks if that specific title genuinely overflows its own bar.
     root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title, .g8-bir-shelves .v2-flightinfo-block .v2-fi-title').forEach(function (el) {
-      var row = el.closest('.v2-fi-row'); if (!row) return;
-      var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
-      var _pi = _plateInset(row);
-      var _rowH = row.clientHeight - (_pi ? (_pi.t + _pi.b) : 0);
-      _boxAssign(el, tc.clientWidth, Math.floor(_rowH * 0.32), null, false);   // v23126 — Nick's overlay: the chip fills the plate
+      el.style.removeProperty('font-size');
+      try { delete el.dataset.faKey; } catch (e) {}
+      var guard = 14;
+      while (guard-- > 0 && el.scrollWidth > el.clientWidth + 1) {
+        var _f = parseFloat(getComputedStyle(el).fontSize) || 16;
+        if (_f <= 11) break;
+        el.style.setProperty('font-size', (_f - 1) + 'px', 'important');
+      }
     });
     // HARMONIZE (Nick: 'the exact same') — after the fit, every title takes
     // the smallest size any title landed on, so there is ONE number across
@@ -11706,6 +11717,40 @@ function gateAutofit(root) {
       row.querySelectorAll('.v2-rc-fi-tlbl').forEach(function (lbl) {
         _boxAssign(lbl, lbl.clientWidth, Math.floor((row.clientHeight - 6) * 0.44), null, true);
       });
+    });
+    // v23134 — THE BOARDING NUMBERS FIT THEIR PANEL (Nick: 'FIX THE NUMBERS
+    // BOARDING IS ATTROCIOUS'). His shot: an AC express final call whose
+    // zones value is '3 • 4 • 5 • 6' — the CSS clamp sizes purely off
+    // viewport height, so a four-token value blew straight through the
+    // column and the outer digits and dots were sliced off at both edges.
+    // Every lane value is now fitted to its own panel's real width: the
+    // clamp is the CEILING, this shrinks from there until the whole value
+    // fits between the arrows. Nothing is ever clipped again.
+    root.querySelectorAll('.g8-board-col').forEach(function (col) {
+      var num = col.querySelector('.g8-board-grp-num'); if (!num) return;
+      var wrap = num.parentElement || col;
+      // Budget = the wrap minus the arrows that flank the value.
+      var used = 0;
+      [].forEach.call(wrap.children, function (c) {
+        if (c !== num) used += c.getBoundingClientRect().width + 10;
+      });
+      var availW = Math.floor(wrap.clientWidth - used - 12);
+      var availH = Math.floor(wrap.clientHeight || col.clientHeight * 0.55);
+      if (availW < 40 || availH < 20) return;
+      // The ceiling is whatever CSS asked for; only shrink from it.
+      var capPx = parseFloat(getComputedStyle(num).fontSize) || availH;
+      var lo = 16, hi = Math.max(16, Math.round(Math.min(capPx, availH)));
+      function _numFits(px) {
+        num.style.setProperty('font-size', px + 'px', 'important');
+        return num.scrollWidth <= availW && num.offsetHeight <= availH + 2;
+      }
+      if (!_numFits(hi)) {
+        while (lo < hi) {
+          var mid2 = Math.ceil((lo + hi) / 2);
+          if (_numFits(mid2)) lo = mid2; else hi = mid2 - 1;
+        }
+        _numFits(Math.max(16, lo));
+      }
     });
     // BANNER TABS — the time tab's label+clock and the gate tab's number
     // take the largest sizes their measured tab box fits. client boxes are
@@ -16247,6 +16292,27 @@ const CITY_FR = {
 
 // ── AIRPORT COORDINATES ─────────────────────────────
 const COORDS = {
+  // ── v23132 — WEATHER COVERAGE GAP, audited against the LIVE feeds (Nick:
+  //    'i cant believe airports still dohnt hae weather cause theyre not in
+  //    the system espeically not in canada its unaccaeltable'). Every
+  //    destination flying on YQM/YHZ/YYZ/YUL/MCO today was checked against
+  //    this table; these 15 had no entry, so their weather cell was empty.
+  //    Canadian first — his specific complaint.
+  YXU:[43.036,-81.151],   // London, Ontario
+  YXX:[49.025,-122.361],  // Abbotsford, BC
+  YKU:[53.806,-78.917],   // Chisasibi, Quebec (Air Creebec)
+  YZG:[62.179,-75.667],   // Salluit, Nunavik (Air Inuit)
+  FSP:[46.763,-56.173],   // Saint-Pierre-et-Miquelon
+  PTP:[16.265,-61.532],   // Pointe-a-Pitre, Guadeloupe
+  FDF:[14.591,-61.003],   // Fort-de-France, Martinique
+  SVD:[13.157,-61.150],   // Argyle, St Vincent
+  SAL:[13.441,-89.056],   // San Salvador, El Salvador
+  GEO:[6.499,-58.254],    // Georgetown, Guyana
+  AMM:[31.723,35.993],    // Amman Queen Alia
+  ADD:[8.978,38.799],     // Addis Ababa Bole
+  LHE:[31.522,74.404],    // Lahore
+  TPE:[25.078,121.233],   // Taipei Taoyuan
+  ZAG:[45.743,16.069],    // Zagreb
   YXL:[50.11,-91.91], YQK:[49.79,-94.36],   // Sioux Lookout, Kenora (weather)
   YAG:[48.65,-93.44],   // Fort Frances (Ontario, Central Time)
   YMU:[52.60,-90.37],   // Musselwhite Mine aerodrome (Wasaya; no IATA — matched by name)
@@ -18973,7 +19039,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23131';
+var FIDS_BUILD_TAG = 'v23135';
 (function(){
   try {
     function _addTag(){
@@ -34067,7 +34133,13 @@ function _buildGateAdSlideList() {
         // the white-force turned their yellow+blue tail into a blank white
         // silhouette. Native colours.
         '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',
-        'OCN': '/logos/airlines/european/discover-airlines-emblem.svg'
+        'OCN': '/logos/airlines/european/discover-airlines-emblem.svg',
+        // v23132 — Flair's mark IS the green dot (Nick: 'the first should be
+        // green simple'). The white-force filter turned it into a blank
+        // white disc on the welcome card; the dot file is already the brand
+        // green, so it must not be filtered — see the no-filter rule in CSS.
+        'F8': '/logos/airlines/canadian/flair-dot.svg?v=2',
+        'FLE': '/logos/airlines/canadian/flair-dot.svg?v=2'
       };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
