@@ -2896,6 +2896,12 @@ html .g8-bir-badge {
    visibly bigger than the target/leaf. Force a single size here (higher
    specificity + !important beats those single-class per-glyph rules). */
 html .g8-bir-badge .ac-ico { font-size: clamp(30px, 4vh, 50px) !important; line-height: 1; }
+/* v23130 — Nick: 'the logos inside are tiny'. Glyphs step up to fill the orb. */
+html body:not(#_):not(#_):not(#_) .g8-bir-badge .ac-ico,
+html body:not(#_):not(#_):not(#_) .v2-fi-icon-wrap .ac-ico {
+  font-size: clamp(34px, 4.8vh, 60px) !important;
+  line-height: 1 !important;
+}
 /* Frontier (Nick, Jul 2026): 'the icons green'. The gate icon badges default
    to var(--airline-accent) (blue #0033A1 for F9). Green ONLY the round icon
    badges here — NOT --airline-accent itself, so the blue boarding panels and
@@ -11540,7 +11546,9 @@ html body:not(#_):not(#_) .g8-wrap.g8-airline-PD .g8-board-col.next {
    the banner's latte cream with the wordmark navy — same two colours, same
    pairing, so the plates and the banner read as one system. Everyone else
    keeps the gray chip. */
-html body:not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title {
+/* v23130 — six :not(#_): the generic brand topper runs at five, and it was
+   painting Porter's cream chips accent-navy. Cream stays cream. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-PD .v2-fi-title {
   background: linear-gradient(180deg, #F4EEE2, #E7DECB) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.6) !important;
 }
@@ -11660,7 +11668,9 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title {
   font-size: clamp(15px, 2.6vh, 34px) !important;
   align-self: stretch !important;
-  text-align: center !important;
+  /* v23130 — LEFT, Nick's final word on the title chips ('Its supposed to
+     be left alligned sorry / The titles on the panels top title'). */
+  text-align: left !important;
   margin: 0 clamp(2px, 0.3vw, 8px) !important;
 }
 html body .g8-bw-clocked .g8-bw-text {
@@ -11735,24 +11745,10 @@ html body:is([data-gate-airline="4Y"],[data-gate-airline="OCN"],[data-gate-airli
       dead padding between the map shelf and the info card is closed, so
       the card and everything under it ride up.
    ═══════════════════════════════════════════════════════════════════════ */
-/* 1 — titles right-aligned, tight against the values. */
-html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl,
-html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
-html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-rev2 > .v2-rc-fi-tlbl {
-  text-align: right !important;
-  align-items: flex-end !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-tlbl {
-  text-align: right !important;
-  align-items: flex-end !important;
-}
-/* The English word's word-width underline pinned itself flex-start (the
-   old left layout), which left 'Flight' on the left while 'Vol' obeyed
-   the new right alignment — a diagonal stagger. Both words right. */
-html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-tlbl span:first-child,
-html body:not(#_):not(#_):not(#_):not(#_) .bigcraft-side .v2-rc-fi-tlbl span:first-child {
-  align-self: flex-end !important;
-}
+/* 1 — WITHDRAWN in v23130 (Nick: 'Its supposed to be left alligned sorry
+   / The titles on the panels top title'). The rail card labels keep their
+   original left alignment; the LEFT-alignment he was asking for is the
+   panel top TITLE CHIPS — see the v23130 block below. */
 /* 2 — solid opaque altimeter bar: the carrier plate ground, darkened.
    Eleven :not(#_) to beat the 10x plate-texture painter. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
@@ -11774,3 +11770,113 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shel
 html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
   padding-top: clamp(2px, 0.3vh, 5px) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23130 — NICK'S LIVE BATCH (Flair final call, AC 2C final call, YYZ
+   board, Discover banner), plus the title-alignment correction.
+
+   'Its supposed to be left alligned sorry / The titles on the panels top
+   title' — the PANEL TOP TITLE CHIPS go left, spanning their plate.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* Chips LEFT-aligned and spanning the full text column — upright rail and
+   horizontal strip both ('youve cut way short'). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  text-align: left !important;
+  justify-content: flex-start !important;
+  align-self: stretch !important;
+  width: auto !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: clamp(10px, 1vw, 22px) !important;
+}
+/* 'theres no color in the title devider' — with the brand topper below,
+   the divider takes the topper's own ink so it always reads. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title :is(.v2-fi-sep, .g8-bir-sep) {
+  color: inherit !important;
+  opacity: 0.92 !important;
+}
+
+/* ── THE BRAND TOPPER, every airline ('Why do airlines not have colors
+   topper for the titles how many times have i said it NONE DO they have
+   a glass looking crap thing that over shoots the panel'). The title
+   chip is the carrier's accent — pre-darkened via --accent-lane when the
+   brand colour is too light for white ink — flat, inset-lit, clipped to
+   its own box so nothing overshoots. Porter's cream and Flair's lime
+   keep their explicit two-colour rules (6x armor beats this). ── */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+  overflow: hidden !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title > * {
+  color: inherit !important;
+}
+
+/* ── Lane-sign arrows: ONE size everywhere ('the size and allignemnt is a
+   discrace' — huge arrows beside 1·2, tiny ones on the Zones panel). ── */
+html body:not(#_):not(#_):not(#_) .g8-board-col .g8-board-arrow {
+  font-size: clamp(48px, 9.5vh, 120px) !important;
+}
+
+/* ── AC q2 panel: 'Why is there 2 different colors numbers FFS' — the
+   white numeral on Nick's LIGHT gray read as a second, dimmer colour.
+   The gray steps down just enough that white ink reads as the SAME white
+   as its neighbours (#878C93 ≈ 3.3:1 for the giant numerals). ── */
+html body:not(#_):not(#_):not(#_) .g8-lanes3 .g8-board-col.g8-q2 {
+  background-color: #878C93 !important;
+}
+
+/* ── FLAIR (F8) IDENTITY — 'The color is gonna jhave to cahnge I cant
+   bare this' + 'repeating patterns over and over'. The olive smear was
+   the lime accent screen-blended over the tinted default engraving.
+   Flair is BLACK + lime: black line plates (the AC lines art — neutral
+   black/grey, no brand crossover), lime chips with near-black ink, flat
+   banner (no pattern layers to repeat). ── */
+html body:is([data-gate-airline="F8"],[data-gate-airline="FLE"],[data-gate-airline*="FLAIR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/ac-lines-plate.jpg?v=23130');
+  --plate-base: #101214;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+/* Lime chip, near-black ink — 'green simple'. Six :not(#_) beats the
+   plate-ink armor, same as Porter's cream chips. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-F8 .v2-fi-title {
+  background: linear-gradient(180deg, #8CFF9E, #6FE886) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-F8 .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-F8 .v2-fi-title * {
+  color: #0E1512 !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+/* Flat banner — the pattern layers behind the black band were tiling
+   ('repeating patterns over and over and over im annoyed'). */
+html body .g8-wrap.g8-airline-F8 .g8-r1::before { display: none !important; }
+html body .g8-wrap.g8-airline-F8 .g8-r1::after { display: none !important; }
+html body .g8-wrap.g8-airline-F8 .g8-r1-timebox::before { display: none !important; }
+
+/* ── DISCOVER (4Y): 'tahts all the roomm youre gonna give them for a
+   logo name?' — the two-line lockup gets real height and a wider slot. ── */
+html body .g8-wrap.g8-airline-4Y .g8-r1-silk .g8-r1-logoslot {
+  max-width: 46% !important;
+}
+html body:not(#_):not(#_) .g8-wrap.g8-airline-4Y .g8-r1-silk .g8-r1-logo,
+html body:not(#_):not(#_) .g8-wrap.g8-airline-4Y .g8-r1-silk .g8-r1-logoslot img:not(.g8-r1-star) {
+  height: clamp(104px, 14.5vh, 150px) !important;
+  max-height: 152px !important;
+  max-width: 42vw !important;
+}
+
+/* ── Final-call header: the bilingual pair never breaks mid-sentence —
+   each language is one unit; a narrow band stacks them whole. ── */
+html body .g8-final-hdr .g8-lane-p { white-space: nowrap !important; display: inline-block !important; }
+html body .g8-final-hdr { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; column-gap: 0.35em !important; }
+html body .g8-final-hdr .g8-lane-sep { white-space: nowrap !important; }
