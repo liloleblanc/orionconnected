@@ -12183,12 +12183,40 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   box-sizing: border-box !important;
   border-radius: 6px !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label  { padding: .12em .6em !important; }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number { padding: 0 .35em .06em !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label  {
+  padding: .12em .4em !important;
+  border-radius: 10px 10px 0 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  padding: 0 .2em .06em !important;
+  border-radius: 0 0 10px 10px !important;
+}
+/* ONE plate, not two stepped boxes. The label measured 350px and the number
+   253px, so the white card had a shoulder down its side. Both take the same
+   width and sit flush, so they read as a single card behind the number. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  width: 58% !important;
+  min-width: 58% !important;
+  text-align: center !important;
+}
 
 /* 2 — the clouds come off BAGS, from both layers that carry them */
+/* The board picks up the arrow's colours as a soft accent wash, so the two
+   halves of the screen belong to each other instead of the art sitting on an
+   unrelated blue ("i want the background to blend in those colors accented").
+   Large, low-alpha blooms in the panel's own palette — no pattern, no edges,
+   nothing for the rows to fight. The clouds stay gone. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-screen {
-  background-image: none !important;
+  background-image:
+    radial-gradient(120vw 70vh at 12% 8%,  rgba(146, 219, 222, 0.22) 0%, rgba(146, 219, 222, 0) 60%),
+    radial-gradient(100vw 65vh at 88% 22%, rgba(246, 156, 153, 0.16) 0%, rgba(246, 156, 153, 0) 62%),
+    radial-gradient(110vw 70vh at 72% 92%, rgba(252, 203, 146, 0.16) 0%, rgba(252, 203, 146, 0) 60%),
+    radial-gradient(90vw 60vh at 20% 88%,  rgba(132, 133, 175, 0.20) 0%, rgba(132, 133, 175, 0) 62%) !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-position: center !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-screen::after {
   content: none !important;
