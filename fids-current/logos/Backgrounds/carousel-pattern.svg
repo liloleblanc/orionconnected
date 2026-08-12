@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="960" viewBox="0 0 960 960">
+<rect width="960" height="960" fill="#8485AF"/>
+<rect x="0" y="0" width="240" height="240" fill="#F69C99"/>
+<circle cx="120.0" cy="120.0" r="91.2" fill="#8485AF"/>
+<circle cx="120.0" cy="120.0" r="52.8" fill="#F69C99"/>
+<circle cx="120.0" cy="120.0" r="24.0" fill="#92DBDE"/>
+<rect x="240" y="0" width="240" height="240" fill="#92DBDE"/>
+<circle cx="360.0" cy="120.0" r="86.39999999999999" fill="#8485AF"/>
+<rect x="480" y="0" width="240" height="240" fill="#92DBDE"/>
+<polygon points="600.0,28.799999999999997 691.2,120.0 600.0,211.2 508.8,120.0" fill="#F0F3F4"/>
+<polygon points="600.0,72.0 648.0,120.0 600.0,168.0 552.0,120.0" fill="#8485AF"/>
+<rect x="720" y="0" width="240" height="240" fill="#F69C99"/>
+<path d="M720,120.0 A120.0,120.0 0 0 1 960,120.0 Z" fill="#F0F3F4"/>
+<rect x="0" y="240" width="240" height="240" fill="#92DBDE"/>
+<path d="M120.0,264.0 C156.0,324.0 156.0,324.0 216.0,360.0 C156.0,396.0 156.0,396.0 120.0,456.0 C84.0,396.0 84.0,396.0 24.0,360.0 C84.0,324.0 84.0,324.0 120.0,264.0 Z" fill="#F69C99"/>
+<rect x="240" y="240" width="240" height="240" fill="#FCCB92"/>
+<path d="M480,240 L480,480 L240,240 Z" fill="#F69C99"/>
+<rect x="480" y="240" width="240" height="240" fill="#8485AF"/>
+<path d="M480,240 L720,240 L480,480 Z" fill="#FCCB92"/>
+<rect x="720" y="240" width="240" height="240" fill="#F0F3F4"/>
+<rect x="748.8" y="270.0" width="182.4" height="24.0" fill="#92DBDE"/>
+<rect x="748.8" y="318.0" width="182.4" height="24.0" fill="#92DBDE"/>
+<rect x="748.8" y="366.0" width="182.4" height="24.0" fill="#92DBDE"/>
+<rect x="748.8" y="414.0" width="182.4" height="24.0" fill="#92DBDE"/>
+<rect x="748.8" y="462.0" width="182.4" height="24.0" fill="#92DBDE"/>
+<rect x="0" y="480" width="240" height="240" fill="#FCCB92"/>
+<polygon points="120.0,508.8 211.2,600.0 120.0,691.2 28.799999999999997,600.0" fill="#F0F3F4"/>
+<polygon points="120.0,552.0 168.0,600.0 120.0,648.0 72.0,600.0" fill="#92DBDE"/>
+<rect x="240" y="480" width="240" height="240" fill="#92DBDE"/>
+<rect x="270.0" y="508.8" width="24.0" height="182.4" fill="#F0F3F4"/>
+<rect x="318.0" y="508.8" width="24.0" height="182.4" fill="#F0F3F4"/>
+<rect x="366.0" y="508.8" width="24.0" height="182.4" fill="#F0F3F4"/>
+<rect x="414.0" y="508.8" width="24.0" height="182.4" fill="#F0F3F4"/>
+<rect x="462.0" y="508.8" width="24.0" height="182.4" fill="#F0F3F4"/>
+<rect x="480" y="480" width="240" height="240" fill="#92DBDE"/>
+<circle cx="528.0" cy="528.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="528.0" cy="576.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="528.0" cy="624.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="528.0" cy="672.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="576.0" cy="528.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="576.0" cy="576.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="576.0" cy="624.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="576.0" cy="672.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="624.0" cy="528.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="624.0" cy="576.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="624.0" cy="624.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="624.0" cy="672.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="672.0" cy="528.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="672.0" cy="576.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="672.0" cy="624.0" r="13.2" fill="#F0F3F4"/>
+<circle cx="672.0" cy="672.0" r="13.2" fill="#F0F3F4"/>
+<rect x="720" y="480" width="240" height="240" fill="#FCCB92"/>
+<path d="M720,720 L720,480 L960,720 Z" fill="#F69C99"/>
+<rect x="0" y="720" width="240" height="240" fill="#92DBDE"/>
+<circle cx="48.0" cy="768.0" r="13.2" fill="#F69C99"/>
+<circle cx="48.0" cy="816.0" r="13.2" fill="#F69C99"/>
+<circle cx="48.0" cy="864.0" r="13.2" fill="#F69C99"/>
+<circle cx="48.0" cy="912.0" r="13.2" fill="#F69C99"/>
+<circle cx="96.0" cy="768.0" r="13.2" fill="#F69C99"/>
+<circle cx="96.0" cy="816.0" r="13.2" fill="#F69C99"/>
+<circle cx="96.0" cy="864.0" r="13.2" fill="#F69C99"/>
+<circle cx="96.0" cy="912.0" r="13.2" fill="#F69C99"/>
+<circle cx="144.0" cy="768.0" r="13.2" fill="#F69C99"/>
+<circle cx="144.0" cy="816.0" r="13.2" fill="#F69C99"/>
+<circle cx="144.0" cy="864.0" r="13.2" fill="#F69C99"/>
+<circle cx="144.0" cy="912.0" r="13.2" fill="#F69C99"/>
+<circle cx="192.0" cy="768.0" r="13.2" fill="#F69C99"/>
+<circle cx="192.0" cy="816.0" r="13.2" fill="#F69C99"/>
+<circle cx="192.0" cy="864.0" r="13.2" fill="#F69C99"/>
+<circle cx="192.0" cy="912.0" r="13.2" fill="#F69C99"/>
+<rect x="240" y="720" width="240" height="240" fill="#FCCB92"/>
+<rect x="358.0" y="762.0" width="4" height="148.8" fill="#92DBDE"/>
+<path d="M360.0,792.0 q-72.0,-4.8 -81.60000000000001,38.4 q48.0,12.0 81.60000000000001,-38.4 Z" fill="#92DBDE"/>
+<path d="M360.0,792.0 q72.0,-4.8 81.60000000000001,38.4 q-48.0,12.0 -81.60000000000001,-38.4 Z" fill="#92DBDE"/>
+<path d="M360.0,840.0 q-72.0,-4.8 -81.60000000000001,38.4 q48.0,12.0 81.60000000000001,-38.4 Z" fill="#92DBDE"/>
+<path d="M360.0,840.0 q72.0,-4.8 81.60000000000001,38.4 q-48.0,12.0 -81.60000000000001,-38.4 Z" fill="#92DBDE"/>
+<path d="M360.0,888.0 q-72.0,-4.8 -81.60000000000001,38.4 q48.0,12.0 81.60000000000001,-38.4 Z" fill="#92DBDE"/>
+<path d="M360.0,888.0 q72.0,-4.8 81.60000000000001,38.4 q-48.0,12.0 -81.60000000000001,-38.4 Z" fill="#92DBDE"/>
+<rect x="480" y="720" width="240" height="240" fill="#92DBDE"/>
+<path d="M600.0,744.0 C636.0,804.0 636.0,804.0 696.0,840.0 C636.0,876.0 636.0,876.0 600.0,936.0 C564.0,876.0 564.0,876.0 504.0,840.0 C564.0,804.0 564.0,804.0 600.0,744.0 Z" fill="#F69C99"/>
+<rect x="720" y="720" width="240" height="240" fill="#F69C99"/>
+<path d="M960,720 L960,960 L720,720 Z" fill="#92DBDE"/>
+</svg>

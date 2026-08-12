@@ -11980,28 +11980,21 @@ html body:not(#_):not(#_) .g8-wrap .gad-aircraft-col {
    Integer units now: map 2, flight-info 2, illustration 1, type 1 = the
    same six units, the same 121px module, top and bottom flush with the
    left rail. */
-/* The column is a GRID, not flex — and the .gad-map-col-fi4 variant
-   re-templates it to `repeat(3, 0.85fr) 1.45fr repeat(2, 1fr)`, which is
-   precisely what knocked it off the left's module (measured 288 / 192 /
-   120 / 120 against a uniform 121 rail). Back to six EQUAL rows, with the
-   flight-info shelf taking two of them — so it is both on the grid AND
-   roomier than the 1.45fr hack it replaces. */
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2,
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
-  grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
-}
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
-  grid-row: 1 / 3 !important;
-}
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
-  grid-row: 3 / 5 !important;
-}
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
-  grid-row: 5 / 6 !important;
-}
-html body:not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
-  grid-row: 6 / 7 !important;
-}
+/* v23138 — THE RIGHT-COLUMN GRID OVERRIDE IS WITHDRAWN ENTIRELY.
+
+   Nick is right that the map should be three panels — that is his own
+   six-and-six spec. But measured, it cannot be three panels AND keep a
+   working flight-info shelf at this column width: giving the map a third
+   module leaves the info shelf 240px for four rows, its value cells come
+   out 96px wide, and 'Scheduled | Prévu' (145px) cannot fit at any size
+   the fitter is allowed to use. Wrapping needs 56px in a 45px row. Every
+   arrangement I measured either clipped the values or shrank the map.
+
+   So the column goes back to EXACTLY what it was before tonight — map 288,
+   info 192, aircraft 120, type 120 — which scans clean. The trade (map
+   size vs info-shelf rows vs column width) is a layout decision, and it is
+   Nick's to make, not mine to keep guessing at. */
+
 
 /* ═══════════════════════════════════════════════════════════════════════
    v23135 — 'I think the gray or beige looks better than the red for AC
@@ -12028,35 +12021,206 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   opacity: 1 !important;
 }
 
-/* 2 — THE TWO SIDES, EQUAL MATERIAL. Stacking a bar OVER the value in
-   the right card was measured to collide: that card carries four data
-   rows in a 240px shelf (60px each), and a bar plus a legible value needs
-   ~90. So the right card keeps its label column — but the label is now
-   the SAME BAR, in the same material and the same ink as the left rail's
-   title, full height of its row. Both sides read as one component. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
-  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
-  color: #ffffff !important;
-  border-radius: 4px !important;
-  padding: clamp(2px, 0.3vh, 5px) clamp(5px, 0.5vw, 10px) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
-  align-self: stretch !important;
-  justify-content: center !important;
-  text-align: center !important;
+/* v23137 — the v23135 right-card label BARS are WITHDRAWN (Nick, with the
+   labels boxed: 'we need to talk thats not what i wanted'). The right
+   card's labels go back exactly as they were; the left rail keeps its
+   full-width title bar. What 'the 2 sides need to be made and equal'
+   should mean concretely is his call, not another guess from me. */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23136 — NO DEPARTURES BOARD ON A GATE URL, EVER (Nick: 'the old svreen
+   shows up once in a while' + his /gids?ap=YYZ&gate=C35 shot: the YYZ
+   Departures banner over an empty gray body).
+
+   Measured: a ?gate= URL keeps screenType 'main' for ~2s while the first
+   feed loads — the board banner paints, the gate view has nothing yet, and
+   that is the 'old screen'. The head script stamps the URL's intent before
+   any paint; this holds the board chrome off until the gate view takes
+   over (body.uxg-gate-mode), on the gate's own dark ground rather than a
+   white flash.
+   ═══════════════════════════════════════════════════════════════════════ */
+html[data-fids-url-screen="gate"] body:not(.uxg-gate-mode) :is(.fids-banner, #boardView, #fidsTable, .fids-ticker),
+html[data-fids-url-screen="baggage"] body:not(.uxg-bag-mode) :is(.fids-banner, #boardView, #fidsTable) {
+  visibility: hidden !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-tlbl span {
-  color: inherit !important;
-  opacity: 1 !important;
-  border-bottom: 0 !important;
-  padding-bottom: 0 !important;
-  align-self: center !important;
+html[data-fids-url-screen="gate"] body:not(.uxg-gate-mode),
+html[data-fids-url-screen="baggage"] body:not(.uxg-bag-mode) {
+  background: #0b1119 !important;
 }
-/* AC's right-card bars are the same gray-beige as its left plates. */
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl {
+
+/* v23138 — GIVE THE MAP BACK ITS PIXELS (Nick: 'with the altimeter its now
+   1 and half seriously' / 'You cant see it'). Measured on the 3-module map
+   shelf: 364px of shelf, but the title bar (35px) and the altimeter (64px)
+   both sit ON the map, leaving 2.2 modules of unobstructed map. Both bars
+   are slimmed to the smallest size their type still reads at, which returns
+   ~30px — every pixel of it to the visible map. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
+  min-height: clamp(38px, 5.1vh, 64px) !important;
+  padding: clamp(2px, 0.35vh, 6px) clamp(8px, 0.8vw, 16px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-val {
+  font-size: clamp(18px, 2.4vh, 36px) !important;
+  line-height: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl {
+  font-size: clamp(11px, 1.35vh, 18px) !important;
+  line-height: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-ms-lbl2 {
+  font-size: clamp(9px, 1.05vh, 13px) !important;
+  line-height: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle {
+  padding: clamp(2px, 0.35vh, 6px) clamp(8px, 0.8vw, 16px) !important;
+  font-size: clamp(13px, 1.85vh, 22px) !important;
+  line-height: 1.15 !important;
+}
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23143 — THE TOP PORTION OF THE THREE WORD PANELS GOES BEIGE.
+
+   Nick, finally stated plainly and confirmed back to him:
+     "There are 3 panels with words ... all i wanted was the top portion of
+      all 3 to be beige thats it"
+     "Flight Vol is one, Arrival Arrive is 2, Aircraft is 3"
+     "All except Your aircraft which i never mentioned and should be
+      simply normal like gray"
+
+   So the three panels stacked under the map are:
+     1. the pane headed 'Flight | Vol'      -> its FIRST row
+     2. the pane headed 'Arrival | Arrivee' -> its FIRST row
+     3. the Aircraft panel                  -> its type bar
+
+   Each gets the beige top with the red divider under it and the existing
+   gray body below, which is the grammar the LEFT rail's panels already
+   use and what he described earlier as 'the full top divided by red line
+   and below gray'.
+
+   'Your Aircraft | Votre Avion' above the map is NOT one of the three. It
+   was never asked for; v23140/v23142 painted it anyway. It is left alone
+   here and returns to its normal gray.
+
+   Colour only. No element added, no shelf restructured, no width, height
+   or position touched. The 12x :not chain exists solely to outrank the
+   plate painter, which carries 10x.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
   background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+  background-image: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
 }
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl,
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow > .v2-rc-fi-tlbl * {
+/* Dark ink on the beige. Scoped to the first row's own label/value so the
+   colour-coded status word in the SECOND row keeps its green/amber/red. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tlbl,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tlbl *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tval,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tval *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype * {
   color: #14171B !important;
   text-shadow: none !important;
+}
+
+/* The panel titles read LEFT (Nick, three times: 'Its supposed to be left
+   alligned' / 'The titles on the panels top title' / 'Im still waiting for
+   the names to go left too'). Alignment only, and NOT on the map's
+   'Your Aircraft' strip, which stays exactly as it was. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23143 — BAGS: THE PATTERN GOES IN THE ARROW. THE CLOUDS COME OFF.
+
+   Nick, plainly: "remove the clouds and the yes whatever is tehre but this
+   goes where the arrow and carousel number is how many times do i have to
+   say it".
+
+   So, two things and nothing else:
+     1. the carousel arrow — the white block carrying 'Carousel' and the big
+        number — is filled with the geometric panel;
+     2. the cloud + hex band is removed from the BAGS screen. It came from
+        TWO places (a background-image on .bidsv2-screen and a separate
+        drifting ::after layer), so both are switched off or the clouds
+        survive on one of them.
+
+   The panel is a handful of LARGE shapes, not a fine repeat ("like the
+   pattern as a few squares not hundreds"), in the artwork's own palette
+   tinted toward white ("maybe lithen it"). It is drawn as vector so it
+   stays sharp at any screen size.
+
+   The words keep a white card so 'Carousel 1' is still readable from
+   across the hall — the number is the one thing on this screen a traveller
+   has to be able to read.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* 1 — the arrow carries the pattern */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
+  background-color: #F0F3F4 !important;
+  background-image: url("/logos/Backgrounds/carousel-pattern.svg?v=23143") !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}
+/* the label and the number sit on their own white card */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  position: relative !important;
+  z-index: 3 !important;
+  background: #FFFFFF !important;
+  display: inline-block !important;
+  width: auto !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+  border-radius: 6px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label  {
+  padding: .12em .4em !important;
+  border-radius: 10px 10px 0 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  padding: 0 .2em .06em !important;
+  border-radius: 0 0 10px 10px !important;
+}
+/* ONE plate, not two stepped boxes. The label measured 350px and the number
+   253px, so the white card had a shoulder down its side. Both take the same
+   width and sit flush, so they read as a single card behind the number. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  width: 58% !important;
+  min-width: 58% !important;
+  text-align: center !important;
+}
+
+/* 2 — the clouds come off BAGS, from both layers that carry them */
+/* The board picks up the arrow's colours as a soft accent wash, so the two
+   halves of the screen belong to each other instead of the art sitting on an
+   unrelated blue ("i want the background to blend in those colors accented").
+   Large, low-alpha blooms in the panel's own palette — no pattern, no edges,
+   nothing for the rows to fight. The clouds stay gone. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-screen {
+  background-image:
+    radial-gradient(120vw 70vh at 12% 8%,  rgba(146, 219, 222, 0.22) 0%, rgba(146, 219, 222, 0) 60%),
+    radial-gradient(100vw 65vh at 88% 22%, rgba(246, 156, 153, 0.16) 0%, rgba(246, 156, 153, 0) 62%),
+    radial-gradient(110vw 70vh at 72% 92%, rgba(252, 203, 146, 0.16) 0%, rgba(252, 203, 146, 0) 60%),
+    radial-gradient(90vw 60vh at 20% 88%,  rgba(132, 133, 175, 0.20) 0%, rgba(132, 133, 175, 0) 62%) !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-screen::after {
+  content: none !important;
+  background-image: none !important;
+  display: none !important;
+  animation: none !important;
 }

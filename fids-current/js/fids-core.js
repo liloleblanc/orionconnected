@@ -3049,6 +3049,26 @@ try {
             }
           }
         } catch (e3) {}
+        // v23138 — THE MAP MUST EXIST WHENEVER THE AIRCRAFT DOES (Nick, with
+        // a shot of the airline emblem filling the map slot while the bar
+        // read 32,000 ft: 'this just cant happen sorry'). The emblem is a
+        // watermark UNDER the map — so what he photographed is an EMPTY map
+        // container, i.e. the map died (or never built) while telemetry kept
+        // running. The two existing watchdogs only police a live map's
+        // marker and its motion; neither notices the map itself being gone.
+        //
+        // If this gate has an inbound and the box holds no Leaflet container,
+        // clear the pos/prog guards so THIS tick rebuilds it from scratch.
+        try {
+          var _mbW = document.getElementById('gateMapBox');
+          if (_mbW && _mbW.offsetParent !== null && window._gateInbound
+              && !_mbW.querySelector('.leaflet-container')) {
+            console.log('[MAP-WATCHDOG] map container EMPTY while an inbound is tracked — rebuilding');
+            try { if (typeof gateMap !== 'undefined' && gateMap) { gateMap.remove(); } } catch (e4) {}
+            try { gateMap = null; } catch (e5) {}
+            window._lastMapPosKey = null; window._lastMapProgKey = null;
+          }
+        } catch (e6) {}
         window._gateMapRetry();
       }
     } catch (e) {}
@@ -6021,7 +6041,19 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // narrowbody to 32Q (neo) for TS so the gate always shows the neo image,
   // never a ceo/320. Other carriers genuinely fly these, so this stays TS-only.
   if (al === 'TS' && /^(319|320|321|32N|32A|32B|32S)$/.test(eq)) eq = '32Q';
-  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, F9:1, XP:1, '3H':1, '5T':1 };
+  // v23141 — AIR FRANCE AND KLM WERE NEVER ON THIS LIST (Nick: 'they are
+  // not installed to work'). Their livery art has been sitting in
+  // aircraft/AF/ and aircraft/KL/ — 25 files, committed and serving — but
+  // this whitelist is what decides whether the resolver ever LOOKS in a
+  // carrier folder, and neither code was in it. So every AF and KLM flight
+  // fell straight through to the generic white aircraft.
+  // The KLM folder was also named WA (Cityhopper's code) while KLM mainline
+  // flights arrive as KL — renamed to KL, with WA kept as an alias so
+  // Cityhopper's E175/E190 still resolve to the same art.
+  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, F9:1, XP:1, '3H':1, '5T':1, AF:1, KL:1 };
+  // ICAO / sister-code aliases so a feed that says AFR, KLM or WA still
+  // finds the same folder.
+  var LIVERY_FOLDER_ALIAS = { AFR:'AF', KLM:'KL', WA:'KL', KLC:'KL' };
   var miss = (typeof window !== 'undefined') ? window.AIRCRAFT_IMG_MISSING : {};
 
   // v218.99.47 — Engine variant detection. If the full model string was
@@ -6059,9 +6091,10 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // Try variant-specific → exact → siblings, ALL in the airline's livery folder
   // first, then the same chain on the generic (liveryless) images.
   var paths = [];
-  if (LIVERY_FOLDERS[al]) {
-    if (engineCode) paths.push('aircraft/' + al + '/' + eq + '-' + engineCode + '.png');
-    for (var _vi = 0; _vi < _variants.length; _vi++) paths.push('aircraft/' + al + '/' + _variants[_vi] + '.png');
+  var _alFolder = LIVERY_FOLDER_ALIAS[al] || al;
+  if (LIVERY_FOLDERS[_alFolder]) {
+    if (engineCode) paths.push('aircraft/' + _alFolder + '/' + eq + '-' + engineCode + '.png');
+    for (var _vi = 0; _vi < _variants.length; _vi++) paths.push('aircraft/' + _alFolder + '/' + _variants[_vi] + '.png');
   }
   if (engineCode) paths.push('aircraft/' + eq + '-' + engineCode + '.png');
   for (var _vg = 0; _vg < _variants.length; _vg++) paths.push('aircraft/' + _variants[_vg] + '.png');
@@ -13315,8 +13348,18 @@ const gView = document.getElementById('gateView');
           return;
         }
 
-        // Preserve map across rebuilds: detach, rebuild, re-attach
-        var _savedMap = document.getElementById('gateMapBox');
+        // Preserve map across rebuilds: detach, rebuild, re-attach.
+        // Take Leaflet's OWN container, not getElementById('gateMapBox') —
+        // four separate layout branches emit a node with that id, so a stale
+        // duplicate left in the DOM made getElementById hand back a node
+        // Leaflet was never bound to. We then detached the WRONG node and
+        // innerHTML wiped the real live container, so the map vanished while
+        // gateMap still pointed at it (Nick: 'map is glitching out').
+        var _savedMap = null;
+        try {
+          if (gateMap && typeof gateMap.getContainer === 'function') _savedMap = gateMap.getContainer();
+        } catch (e) {}
+        if (!_savedMap) _savedMap = document.getElementById('gateMapBox');
         var _savedMapParent = _savedMap ? _savedMap.parentElement : null;
         if (_savedMap && gateMap) { _savedMap.remove(); }
         // Preserve the LIVE ad carousel across rebuilds: detach the node
@@ -13438,9 +13481,21 @@ const gView = document.getElementById('gateView');
         } catch(e){}
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
-        if (_savedMap && gateMap && _newMapSlot) {
-          _newMapSlot.replaceWith(_savedMap);
-          setTimeout(function(){ if(gateMap) gateMap.invalidateSize(); }, 200);
+        if (_savedMap && gateMap) {
+          if (_newMapSlot) {
+            _newMapSlot.replaceWith(_savedMap);
+            setTimeout(function(){ if(gateMap) gateMap.invalidateSize(); }, 200);
+          } else {
+            // The fresh markup carries NO map slot. The old code silently
+            // dropped the detached node here: the Leaflet instance stayed
+            // alive off-DOM, gateMap stayed non-null, so NOTHING rebuilt it
+            // and the map was simply gone until the 10 s presence watchdog
+            // happened to fire. Tear it down now so the next tick re-creates
+            // it immediately instead of leaving a hole on screen.
+            try { gateMap.remove(); } catch (e) {}
+            gateMap = null;
+            window._lastMapPosKey = null; window._lastMapProgKey = null;
+          }
         }
         // Fade back in
         requestAnimationFrame(function() {
@@ -19039,7 +19094,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23135';
+var FIDS_BUILD_TAG = 'v23143';
 (function(){
   try {
     function _addTag(){
@@ -23854,9 +23909,61 @@ function adbStatus(f, mode, schedTs, nowTs) {
   }
   return base;
 }
+// ── Row de-duplication ───────────────────────────────────────────────────
+// Nick: 'the plane 1983 has left 4 times from toronto'. The feeds repeat the
+// same departure. AeroDataBox is queried withLeg=true, so a rotation comes
+// back once per leg, and the two overlapping fetch windows are merged on an
+// EXACT scheduled-UTC string — the moment an estimate is revised or a
+// timestamp is formatted differently, a second copy slips through. Nothing
+// de-duped again at render time, so the identical flight (same number, same
+// destination, same minute) stacked up on the board.
+// Collapse only what is unambiguously ONE departure: same flight number,
+// same endpoint, scheduled within 10 minutes. A real second daily rotation
+// on the same number is hours apart and is left alone.
+var _ROW_STATUS_RANK = {
+  scheduled: 0, ontime: 0, early: 1, delayed: 1, boarding: 2,
+  gateclosed: 3, finalcall: 3, active: 4, departed: 5, arrived: 6,
+  diverted: 7, cancelled: 8
+};
+function _rowStatusRank(s) {
+  var k = String(s || '').toLowerCase().replace(/[\s_-]+/g, '');
+  return (_ROW_STATUS_RANK[k] != null) ? _ROW_STATUS_RANK[k] : 0;
+}
+function _fidsDedupeRows(rows, mode) {
+  var out = [], byKey = Object.create(null);
+  // Fields that often arrive on only ONE of the two copies — never lose them.
+  var _FILL = ['gate','terminal','_reg','_aircraft','_aircraftCode','_belt',
+               '_checkIn','_callSign','_durationMins','_actualDepTime','_actualArrTime'];
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    var ep = String(r._locIata || (mode === 'dep' ? r.dest : r.origin) || '').toUpperCase();
+    var key = String(r.flight || '').toUpperCase() + '|' + ep;
+    var prev = byKey[key];
+    if (prev && Math.abs((r._sortTs || 0) - (prev._sortTs || 0)) <= 10 * 60000) {
+      // Same departure, seen twice. Keep the copy that knows the most.
+      if (_rowStatusRank(r.status) > _rowStatusRank(prev.status)) {
+        prev.status = r.status;
+        if (r.upd) prev.upd = r.upd;
+        if (r._revTs) prev._revTs = r._revTs;
+      }
+      for (var j = 0; j < _FILL.length; j++) {
+        var fk = _FILL[j];
+        if ((prev[fk] === null || prev[fk] === undefined || prev[fk] === '') && r[fk]) prev[fk] = r[fk];
+      }
+      continue;
+    }
+    byKey[key] = r;
+    out.push(r);
+  }
+  if (out.length !== rows.length) {
+    console.log('[FIDS] row dedupe: ' + rows.length + ' → ' + out.length
+      + ' (' + (rows.length - out.length) + ' duplicate row(s) dropped)');
+  }
+  return out;
+}
 function mapADB(raw, mode) {
   const nowTs=Date.now(), list=mode==='dep'?(raw.departures||[]):(raw.arrivals||[]);
-  return list.map(f => {
+  return _fidsDedupeRows(list.map(f => {
     const sL=mode==='dep'?(f.departure?.scheduledTime?.local||f.departure?.scheduledTime?.utc):(f.arrival?.scheduledTime?.local||f.arrival?.scheduledTime?.utc);
     if(!sL)return null;
     const schedTs=adbTs(sL); if(!schedTs)return null;
@@ -24197,7 +24304,7 @@ function mapADB(raw, mode) {
     return mode==='dep'
       ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
       :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
-  }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs);
+  }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs), mode);
 }
 
 // OAG via the same-origin worker route, returned in ADB shape so mapADB can
@@ -27503,23 +27610,12 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // Track every overlay so a REUSE pass can wipe exactly these (and not the
   // tile layers) — otherwise reused arcs/markers/planes would pile up.
   var _ov = (gateMap._fidsOverlays = gateMap._fidsOverlays || []);
-  // v23131 — the solid leg follows the FLOWN track when we have one (Nick's
-  // video: a downwind east of the field drew as a straight chord past the
-  // airport folding back through the plane — a hairpin). Same condition as
-  // the glide's route below, so the drawn line and the animated line agree.
-  var _a1 = null;
-  try {
-    var _tk0 = (typeof _gateTrack !== 'undefined' && _gateTrack.points && _gateTrack.points.length >= 4) ? _gateTrack.points : null;
-    if (_tk0) {
-      var _tkA0 = _tk0.map(function (q) { return [q.lat, q.lng]; });
-      if (_gcNm(_tkA0[0], _tkA0[_tkA0.length - 1]) > 2 && _gcNm(_tkA0[_tkA0.length - 1], _pp) < 25) {
-        _a1 = L.polyline(_gcFullRoute(o, _tkA0[0], 40).concat(_tkA0.slice(1), [_pp]),
-          {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap);
-      }
-    }
-  } catch (eA1) {}
-  if (!_a1) _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
-  if(_a1)_ov.push(_a1);
+  // v23137 — the v23131 flown-track arc is WITHDRAWN. It was meant to stop
+  // the hairpin, but Nick's next shot showed NO flight path at all — a
+  // regression worse than the fault it chased. Back to the known-good
+  // great-circle solid leg; the hairpin stays open, to be fixed without
+  // touching what already works.
+  var _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
   // Runway-aligned final when we have the data — same shape the glide flies.
   var _rwyP = _runwayFinalPath(_pp, d, dst);
   var _a2 = null;
@@ -27876,29 +27972,6 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _vA = Math.max(2, Math.min(116, Math.round(118 * (_nmA / totalNm))));
   var _vB = Math.max(2, 118 - _vA);
   var _legA = _gcFullRoute(o, _pl, _vA);
-  // v23131 — DRAW THE FLOWN PATH, NOT A STRAIGHT LINE THAT DOUBLES BACK
-  // (Nick's video: an aircraft on the downwind east of the field drew as a
-  // hairpin — origin→fix as one straight chord shooting PAST the airport,
-  // then folding 180° back through the plane). When the track recorder has
-  // real history for this leg, the tail of the solid leg follows the
-  // recorded positions: origin → first recorded point (great circle), then
-  // the actual flown points, then the plane. The glide's distance walk is
-  // untouched — these vertices all sit BEHIND the seed point.
-  try {
-    var _tkPts = (typeof _gateTrack !== 'undefined' && _gateTrack.points && _gateTrack.points.length >= 4)
-      ? _gateTrack.points : null;
-    if (_tkPts) {
-      var _tkSpanNm = _gcNm([_tkPts[0].lat, _tkPts[0].lng], [_tkPts[_tkPts.length - 1].lat, _tkPts[_tkPts.length - 1].lng]);
-      var _tkNearNm = _gcNm([_tkPts[_tkPts.length - 1].lat, _tkPts[_tkPts.length - 1].lng], _pl);
-      // Only when the history is substantial and actually belongs to this
-      // aircraft's current position (last recorded point within 25nm).
-      if (_tkSpanNm > 2 && _tkNearNm < 25) {
-        var _tkArr = _tkPts.map(function (q) { return [q.lat, q.lng]; });
-        var _vHead = Math.max(2, _vA - _tkArr.length);
-        _legA = _gcFullRoute(o, _tkArr[0], _vHead).concat(_tkArr.slice(1), [_pl]);
-      }
-    }
-  } catch (eTk) {}
   // Runway-aligned final (Nick's DL5140 video): once inbound, the remaining
   // leg lands along a real runway instead of running into the airport pin.
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
@@ -35909,7 +35982,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       var uS = q.get('sub') || q.get('gate') || q.get('belt') || q.get('carousel') || '';
       if (!uT && q.get('gate')) uT = 'gate';
       if (!uT && (q.get('belt') || q.get('carousel'))) uT = 'baggage';
-      if (uT === 'gate' || uT === 'baggage') st = { t: uT, s: uS };
+      if (uT === 'gate' || uT === 'baggage') { st = { t: uT, s: uS }; window.__fidsUrlScreen = true; }
       else if (uT === 'main') return;          // explicit main — never restore over it
     } catch (e) {}
     if (!st) {
@@ -35918,6 +35991,29 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       st = JSON.parse(raw);
     }
     if (!st || !st.t || st.t === 'main') return;
+    // v23136 — NEVER FLASH THE DEPARTURES BOARD ON A GATE URL (Nick: 'the
+    // old svreen shows up once in a while', with a shot of /gids?ap=YYZ&
+    // gate=C35 showing the YYZ Departures banner over an empty body).
+    //
+    // The restore below waits for window._initialFetchDone before switching
+    // screenType — so from first paint until the feed lands, a ?gate= URL
+    // renders the MAIN BOARD. On a 546-flight airport like Pearson that
+    // window is seconds long, it recurs on every watchdog reload, and it is
+    // exactly the 'old screen' he keeps catching.
+    //
+    // The screen type is knowable from the URL alone, so claim it NOW. The
+    // gate view's own empty state covers the wait honestly, and the loop
+    // below still picks the sub-screen once the flights arrive.
+    try {
+      if (window.__fidsUrlScreen && (st.t === 'gate' || st.t === 'baggage')
+          && typeof changeScreenType === 'function' && screenType !== st.t) {
+        var _sel0 = document.getElementById('screenTypeSel');
+        if (_sel0) _sel0.value = st.t;
+        changeScreenType(st.t);
+        if (st.s) { try { subScreenVal = st.s; } catch (e0) {} }
+        try { if (typeof render === 'function') render(); } catch (e1) {}
+      }
+    } catch (e) {}
     var tries = 0;
     var iv = setInterval(function () {
       tries++;
