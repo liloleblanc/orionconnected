@@ -91,7 +91,7 @@
   <link rel="stylesheet" href="css/bids-v2.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-v216.css?v=312">
-  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=23138">
+  <link rel="stylesheet" href="css/fids-layout-fixes.css?v=23139">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (Nick: 'the old svreen shows up once in a while',
@@ -107,6 +107,13 @@
       if (_s === 'gate' || _q.get('gate')) document.documentElement.setAttribute('data-fids-url-screen', 'gate');
       else if (_s === 'baggage' || _q.get('belt') || _q.get('carousel')) document.documentElement.setAttribute('data-fids-url-screen', 'baggage');
     }
+    /* HARD FAILSAFE: whatever happens, this hold releases. Nothing on a
+       display may stay hidden because a boot path did not complete —
+       'the logos cannot be hidden'. 8s is far longer than any measured
+       first paint (~2s on a 546-flight airport). */
+    setTimeout(function () {
+      try { document.documentElement.removeAttribute('data-fids-url-screen'); } catch (e) {}
+    }, 8000);
   } catch (e) {}
   </script>
   <link rel="stylesheet" href="css/gids-v218.78.css?v=23098">
@@ -740,7 +747,7 @@
 <script src="js/fids-v2.js?v=320"></script>
 <script src="js/gids-layout.js?v=1"></script>
 <script src="data/airline-colors.js?v=23120"></script>
-<script src="js/fids-core.js?v=23138"></script>
+<script src="js/fids-core.js?v=23139"></script>
 <script src="js/gate-visual-integrity-v22354.js?v=22559"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
