@@ -12193,7 +12193,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard {
   background-image: url("/logos/Backgrounds/moncton-skyline.svg?v=23146") !important;
   background-attachment: fixed !important;
-  background-position: center bottom !important;
+  /* v23146d — "Lower Moncton please to improve skyline coverage": the city
+     sits 10vh lower, so the buildings hug the bottom band instead of
+     riding up into the rows. */
+  background-position: center calc(100% + 10vh) !important;
   background-size: 100vw auto !important;
   background-repeat: no-repeat !important;
 }
@@ -12244,4 +12247,21 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-weight: 700 !important;
   padding-bottom: .55em !important;
   opacity: 1 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23146d — THE BELT STRIPES SHOW (Nick: "Orlando still has no stripes
+   they don't work"). The v22711 stripes were painted at 22–42% of the
+   diagonal — exactly the region the white carousel arrow covers, so on
+   every belt they rendered fully hidden behind the sign. They now run
+   through the open field to the right of the arrow, in the same
+   per-carousel identity colour, and read clearly under the flight list.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)[data-bids-carousel] .bidsv2-chevrons {
+  background:
+    linear-gradient(105deg, transparent 52%, var(--crsl, #0E2748) 52%, var(--crsl, #0E2748) 57%, transparent 57%),
+    linear-gradient(105deg, transparent 63%, color-mix(in srgb, var(--crsl, #0E2748) 55%, transparent) 63%, color-mix(in srgb, var(--crsl, #0E2748) 55%, transparent) 70%, transparent 70%),
+    linear-gradient(105deg, transparent 78%, color-mix(in srgb, var(--crsl, #0E2748) 30%, transparent) 78%, color-mix(in srgb, var(--crsl, #0E2748) 30%, transparent) 82%, transparent 82%) !important;
+  opacity: .8 !important;
 }
