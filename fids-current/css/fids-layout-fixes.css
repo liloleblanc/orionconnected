@@ -12166,7 +12166,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* 1 — the arrow carries the pattern */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
   background-color: #F0F3F4 !important;
-  background-image: url("/logos/Backgrounds/carousel-pattern.svg?v=23143") !important;
+  background-image: var(--crsl-pattern, url("/logos/Backgrounds/carousel-pattern.svg?v=23143")) !important;
   background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
@@ -12219,6 +12219,29 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   background-position: center !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-screen::after {
+  content: none !important;
+  background-image: none !important;
+  display: none !important;
+  animation: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23146 — MONCTON ON THE FIDS BOARD (Nick: "Moncton didn't go in the
+   baggage claim it was the fids" / "still do city"). His no-text
+   waterfront skyline is the YQM departures board's background, replacing
+   the clouds there — the drifting cloud ::after is switched off for YQM
+   so it can't paint over the city. Baggage and every other airport are
+   untouched.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard {
+  background-image: url("/logos/Backgrounds/moncton-skyline.svg?v=23146") !important;
+  background-attachment: fixed !important;
+  background-position: center bottom !important;
+  background-size: 100vw auto !important;
+  background-repeat: no-repeat !important;
+}
+html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard::after {
   content: none !important;
   background-image: none !important;
   display: none !important;

@@ -19094,7 +19094,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23143';
+var FIDS_BUILD_TAG = 'v23146';
 (function(){
   try {
     function _addTag(){
@@ -37068,6 +37068,22 @@ setInterval(function () {
       var v = el ? String(el.textContent || '').trim() : '';
       if (/^\d{1,2}$/.test(v)) document.body.setAttribute('data-bids-carousel', v);
       else document.body.removeAttribute('data-bids-carousel');
+      // v23146 — NICK'S 12 PATTERNS, ONE PER SCREEN WORLDWIDE. Every
+      // airport+carousel combination hashes to one of his twelve Vecteezy
+      // panels (logos/Backgrounds/patterns/p01..p12.jpg), deterministically —
+      // the same screen always wears the same pattern, different screens
+      // differ. The arrow CSS consumes --crsl-pattern; the approved v23143
+      // panel stays as the fallback when no belt is on screen.
+      if (/^\d{1,2}$/.test(v)) {
+        var _ap = document.body.getAttribute('data-fids-ap') || '';
+        var _seed = _ap + '|' + v, _hs = 0;
+        for (var _i = 0; _i < _seed.length; _i++) _hs = (_hs * 31 + _seed.charCodeAt(_i)) % 997;
+        var _pn = (_hs % 12) + 1;
+        var _pv = "url('/logos/Backgrounds/patterns/p" + (_pn < 10 ? '0' : '') + _pn + ".jpg?v=23146')";
+        if (document.body.style.getPropertyValue('--crsl-pattern') !== _pv) document.body.style.setProperty('--crsl-pattern', _pv);
+      } else {
+        document.body.style.removeProperty('--crsl-pattern');
+      }
     } catch (e) {}
   }
   if (document.readyState === 'loading') {
