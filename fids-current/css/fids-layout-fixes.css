@@ -12077,3 +12077,55 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptit
 }
 
 
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23140 — THE RIGHT SHELVES' TOP BARS MATCH THE LEFT (Nick: 'you put
+   those names titles on the lest and the tops parts on the right size go
+   the same color beige all 3 shelves the whole way').
+
+   The left rail's title bars are the carrier's own colour — beige on Air
+   Canada. The right column's header bars ('Your Aircraft | Votre Avion'
+   at the map's top, and the aircraft-type bar) take the SAME colour and
+   run the full width of their shelf, so both sides read as one system.
+
+   This is colour and width only — no shelf is resized, nothing moves.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+  /* Solid and opaque — the first cut let the map show through, which read
+     as washed-out type. Both bars carry the same height and weight as the
+     left rail's titles so the two sides match. */
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: clamp(24px, 3.2vh, 40px) !important;
+  padding: clamp(3px, 0.45vh, 7px) clamp(8px, 0.8vw, 16px) !important;
+  font-weight: 800 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype * {
+  color: inherit !important;
+}
+/* Air Canada: the same warm gray-beige as its left title bars, dark ink. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle *,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype * {
+  color: #14171B !important;
+  text-shadow: none !important;
+}
