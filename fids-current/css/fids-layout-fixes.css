@@ -12137,3 +12137,62 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   text-align: left !important;
   justify-content: flex-start !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23143 — BAGS: THE PATTERN GOES IN THE ARROW. THE CLOUDS COME OFF.
+
+   Nick, plainly: "remove the clouds and the yes whatever is tehre but this
+   goes where the arrow and carousel number is how many times do i have to
+   say it".
+
+   So, two things and nothing else:
+     1. the carousel arrow — the white block carrying 'Carousel' and the big
+        number — is filled with the geometric panel;
+     2. the cloud + hex band is removed from the BAGS screen. It came from
+        TWO places (a background-image on .bidsv2-screen and a separate
+        drifting ::after layer), so both are switched off or the clouds
+        survive on one of them.
+
+   The panel is a handful of LARGE shapes, not a fine repeat ("like the
+   pattern as a few squares not hundreds"), in the artwork's own palette
+   tinted toward white ("maybe lithen it"). It is drawn as vector so it
+   stays sharp at any screen size.
+
+   The words keep a white card so 'Carousel 1' is still readable from
+   across the hall — the number is the one thing on this screen a traveller
+   has to be able to read.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* 1 — the arrow carries the pattern */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
+  background-color: #F0F3F4 !important;
+  background-image: url("/logos/Backgrounds/carousel-pattern.svg?v=23143") !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}
+/* the label and the number sit on their own white card */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  position: relative !important;
+  z-index: 3 !important;
+  background: #FFFFFF !important;
+  display: inline-block !important;
+  width: auto !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+  border-radius: 6px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label  { padding: .12em .6em !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number { padding: 0 .35em .06em !important; }
+
+/* 2 — the clouds come off BAGS, from both layers that carry them */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-screen {
+  background-image: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-screen::after {
+  content: none !important;
+  background-image: none !important;
+  display: none !important;
+  animation: none !important;
+}
