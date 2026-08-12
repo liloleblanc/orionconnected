@@ -12165,10 +12165,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    nothing for the rows to fight. The clouds stay gone. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-screen {
   background-image:
-    radial-gradient(120vw 70vh at 12% 8%,  rgba(146, 219, 222, 0.22) 0%, rgba(146, 219, 222, 0) 60%),
-    radial-gradient(100vw 65vh at 88% 22%, rgba(246, 156, 153, 0.16) 0%, rgba(246, 156, 153, 0) 62%),
-    radial-gradient(110vw 70vh at 72% 92%, rgba(252, 203, 146, 0.16) 0%, rgba(252, 203, 146, 0) 60%),
-    radial-gradient(90vw 60vh at 20% 88%,  rgba(132, 133, 175, 0.20) 0%, rgba(132, 133, 175, 0) 62%) !important;
+    radial-gradient(120vw 70vh at 12% 8%,  var(--crsl-w1, rgba(146, 219, 222, 0.22)) 0%, transparent 60%),
+    radial-gradient(100vw 65vh at 88% 22%, var(--crsl-w2, rgba(246, 156, 153, 0.16)) 0%, transparent 62%),
+    radial-gradient(110vw 70vh at 72% 92%, var(--crsl-w3, rgba(252, 203, 146, 0.16)) 0%, transparent 60%),
+    radial-gradient(90vw 60vh at 20% 88%,  var(--crsl-w4, rgba(132, 133, 175, 0.20)) 0%, transparent 62%) !important;
   background-attachment: fixed !important;
   background-repeat: no-repeat !important;
   background-size: cover !important;
@@ -12202,4 +12202,46 @@ html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):no
   background-image: none !important;
   display: none !important;
   animation: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23146c — THE CAROUSEL SIGN IS A BAND, NOT A THROWN-IN CARD (Nick: "the
+   carousel sign itself doesn't align with anything it's thrown in there
+   the terminal info is dark on dark").
+
+   The white sign now runs the full width of the arrow and pins to its
+   top, so its edges align with the arrow's own edges and its top line
+   aligns with the flight list's header bar beside it. The terminal line
+   joins the band — white ground, dark ink — instead of floating dark on
+   the pattern.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  padding-top: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-terminal {
+  display: block !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: #FFFFFF !important;
+  text-align: left !important;
+  padding-left: 6% !important;
+  padding-right: 6% !important;
+  position: relative !important;
+  z-index: 3 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label   { padding-top: .30em !important; padding-bottom: 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number  { padding-top: 0 !important; padding-bottom: .04em !important; line-height: 0.95 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-terminal {
+  color: #0E2748 !important;
+  font-weight: 700 !important;
+  padding-bottom: .55em !important;
+  opacity: 1 !important;
 }

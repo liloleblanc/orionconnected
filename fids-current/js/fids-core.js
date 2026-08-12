@@ -37081,8 +37081,20 @@ setInterval(function () {
         var _pn = (_hs % 12) + 1;
         var _pv = "url('/logos/Backgrounds/patterns/p" + (_pn < 10 ? '0' : '') + _pn + ".jpg?v=23146')";
         if (document.body.style.getPropertyValue('--crsl-pattern') !== _pv) document.body.style.setProperty('--crsl-pattern', _pv);
+        // v23146c — the BOARD WEARS THE PATTERN'S OWN COLOURS (Nick: "Most
+        // your patterns don't match the background"). Each pattern's four
+        // dominant colours, extracted offline, feed the wash gradients that
+        // v23143 hardcoded to pattern 5's palette.
+        var _CRSL_PAL = {1:[[233,212,193],[164,64,2],[254,187,8],[68,36,47]],2:[[254,227,184],[244,87,46],[30,135,200],[135,199,237]],3:[[119,99,171],[82,191,158],[39,50,79],[131,213,247]],4:[[191,233,231],[255,115,118],[0,154,206],[153,121,218]],5:[[79,197,201],[56,59,126],[240,95,90],[174,221,224]],6:[[213,81,56],[148,195,215],[246,237,228],[224,185,113]],7:[[117,179,226],[249,171,102],[149,209,173],[239,93,162]],8:[[196,108,0],[65,72,82],[244,166,190],[176,205,175]],9:[[3,29,66],[252,212,204],[252,236,0],[22,170,154]],10:[[28,174,160],[108,198,188],[195,190,103],[237,226,216]],11:[[240,150,72],[86,139,143],[251,215,191],[196,89,67]],12:[[207,168,39],[63,65,51],[106,118,116],[161,186,208]]};
+        var _wp = _CRSL_PAL[_pn] || _CRSL_PAL[5];
+        var _wa = [0.22, 0.16, 0.16, 0.20];
+        for (var _wi = 0; _wi < 4; _wi++) {
+          var _wc = 'rgba(' + _wp[_wi][0] + ',' + _wp[_wi][1] + ',' + _wp[_wi][2] + ',' + _wa[_wi] + ')';
+          if (document.body.style.getPropertyValue('--crsl-w' + (_wi + 1)) !== _wc) document.body.style.setProperty('--crsl-w' + (_wi + 1), _wc);
+        }
       } else {
         document.body.style.removeProperty('--crsl-pattern');
+        for (var _wj = 1; _wj <= 4; _wj++) document.body.style.removeProperty('--crsl-w' + _wj);
       }
     } catch (e) {}
   }
