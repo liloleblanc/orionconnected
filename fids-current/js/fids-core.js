@@ -37084,7 +37084,9 @@ setInterval(function () {
         // stricter cut (Nick: "I just asked you to remove round objects"):
         // the rings (2), petals (8) and arches (10) are round too. Only the
         // angular sets stay.
-        var _CRSL_OK = [5, 6, 11];
+        // v23146g — Nick: "Let's just do 8 for now." Every screen wears
+        // pattern 8; the hash rotation stays here for when he widens it.
+        var _CRSL_OK = [8];
         var _pn = _CRSL_OK[_hs % _CRSL_OK.length];
         var _pv = "url('/logos/Backgrounds/patterns/p" + (_pn < 10 ? '0' : '') + _pn + ".jpg?v=23146')";
         if (document.body.style.getPropertyValue('--crsl-pattern') !== _pv) document.body.style.setProperty('--crsl-pattern', _pv);
