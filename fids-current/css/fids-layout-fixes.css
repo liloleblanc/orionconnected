@@ -12079,25 +12079,34 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptit
 
 
 /* ═══════════════════════════════════════════════════════════════════════
-   v23142 — COLOUR THE SHELF TOPS. NOTHING ELSE.
-   (Nick: 'YOU SIMPLY HAD TO COLOR THEM ... WHY MUST YOU MAKE EVEYRTHIGN
-   COMPLICATED AND BREAK ALL OF IT'.)
+   v23143 — THE TOP PORTION OF THE THREE WORD PANELS GOES BEIGE.
 
-   v23140 painted them the carrier accent; v23142's first cut then added a
-   header element and restructured the info shelf, which crushed its rows.
-   Both were more than was asked for. This rule changes THREE properties on
-   bars that already exist — background, ink, and the divider — copied off
-   the left rail's own title bar:
+   Nick, finally stated plainly and confirmed back to him:
+     "There are 3 panels with words ... all i wanted was the top portion of
+      all 3 to be beige thats it"
+     "Flight Vol is one, Arrival Arrive is 2, Aircraft is 3"
+     "All except Your aircraft which i never mentioned and should be
+      simply normal like gray"
 
-     background  linear-gradient(#CFCBC2, #B6B1A7)
-     ink         #14171B
-     divider     2px solid var(--airline-accent)
+   So the three panels stacked under the map are:
+     1. the pane headed 'Flight | Vol'      -> its FIRST row
+     2. the pane headed 'Arrival | Arrivee' -> its FIRST row
+     3. the Aircraft panel                  -> its type bar
 
-   No element is added, no shelf is restructured, no width or alignment or
-   height is touched. The 12x :not chain only exists to outrank the plate
-   painter, which carries 10x.
+   Each gets the beige top with the red divider under it and the existing
+   gray body below, which is the grammar the LEFT rail's panels already
+   use and what he described earlier as 'the full top divided by red line
+   and below gray'.
+
+   'Your Aircraft | Votre Avion' above the map is NOT one of the three. It
+   was never asked for; v23140/v23142 painted it anyway. It is left alone
+   here and returns to its normal gray.
+
+   Colour only. No element added, no shelf restructured, no width, height
+   or position touched. The 12x :not chain exists solely to outrank the
+   plate painter, which carries 10x.
    ═══════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
   background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
   background-image: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
@@ -12106,19 +12115,24 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   opacity: 1 !important;
   mix-blend-mode: normal !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle *,
+/* Dark ink on the beige. Scoped to the first row's own label/value so the
+   colour-coded status word in the SECOND row keeps its green/amber/red. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tlbl,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tlbl *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tval,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tval *,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype * {
   color: #14171B !important;
   text-shadow: none !important;
 }
 
-/* The panel titles read LEFT, both columns (Nick, three times over:
-   'Its supposed to be left alligned' / 'The titles on the panels top title'
-   / 'Im still waiting for the names to go left too'). Alignment only. */
+/* The panel titles read LEFT (Nick, three times: 'Its supposed to be left
+   alligned' / 'The titles on the panels top title' / 'Im still waiting for
+   the names to go left too'). Alignment only, and NOT on the map's
+   'Your Aircraft' strip, which stays exactly as it was. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
   text-align: left !important;
   justify-content: flex-start !important;
