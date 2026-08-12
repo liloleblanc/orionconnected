@@ -37081,7 +37081,10 @@ setInterval(function () {
         // v23146e — the ROUND patterns are out (Nick: "I'd avoid the round
         // ones. Just chuck them"): 1, 3, 4, 7, 9 and 12 are circle/half-
         // circle sets. The rotation draws from the six non-round panels.
-        var _CRSL_OK = [2, 5, 6, 8, 10, 11];
+        // stricter cut (Nick: "I just asked you to remove round objects"):
+        // the rings (2), petals (8) and arches (10) are round too. Only the
+        // angular sets stay.
+        var _CRSL_OK = [5, 6, 11];
         var _pn = _CRSL_OK[_hs % _CRSL_OK.length];
         var _pv = "url('/logos/Backgrounds/patterns/p" + (_pn < 10 ? '0' : '') + _pn + ".jpg?v=23146')";
         if (document.body.style.getPropertyValue('--crsl-pattern') !== _pv) document.body.style.setProperty('--crsl-pattern', _pv);
