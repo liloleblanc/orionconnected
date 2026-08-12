@@ -19094,7 +19094,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23143';
+var FIDS_BUILD_TAG = 'v23146';
 (function(){
   try {
     function _addTag(){
@@ -37068,6 +37068,50 @@ setInterval(function () {
       var v = el ? String(el.textContent || '').trim() : '';
       if (/^\d{1,2}$/.test(v)) document.body.setAttribute('data-bids-carousel', v);
       else document.body.removeAttribute('data-bids-carousel');
+      // v23146 — NICK'S 12 PATTERNS, ONE PER SCREEN WORLDWIDE. Every
+      // airport+carousel combination hashes to one of his twelve Vecteezy
+      // panels (logos/Backgrounds/patterns/p01..p12.jpg), deterministically —
+      // the same screen always wears the same pattern, different screens
+      // differ. The arrow CSS consumes --crsl-pattern; the approved v23143
+      // panel stays as the fallback when no belt is on screen.
+      if (/^\d{1,2}$/.test(v)) {
+        var _ap = document.body.getAttribute('data-fids-ap') || '';
+        var _hs = 0;
+        for (var _i = 0; _i < _ap.length; _i++) _hs = (_hs * 31 + _ap.charCodeAt(_i)) % 997;
+        // v23146h — per BELT (Nick: 'Belts'): the belt number steps through
+        // the set, so belts at the same airport can never match each other;
+        // the airport hash offsets the start so airports differ too.
+        _hs = _hs + (parseInt(v, 10) - 1);
+        // v23146e — the ROUND patterns are out (Nick: "I'd avoid the round
+        // ones. Just chuck them"): 1, 3, 4, 7, 9 and 12 are circle/half-
+        // circle sets. The rotation draws from the six non-round panels.
+        // stricter cut (Nick: "I just asked you to remove round objects"):
+        // the rings (2), petals (8) and arches (10) are round too. Only the
+        // angular sets stay.
+        // v23146g — Nick: "Let's just do 8 for now." Every screen wears
+        // pattern 8; the hash rotation stays here for when he widens it.
+        // v23146i — the four CIRCLE patterns (3, 4, 7, 12) are chucked;
+        // the eight remaining rotate per belt (Nick: "chuck the circles" /
+        // "1 to 8 you have 8 patterns").
+        var _CRSL_OK = [1, 2, 5, 6, 8, 9, 10, 11];
+        var _pn = _CRSL_OK[_hs % _CRSL_OK.length];
+        var _pv = "url('/logos/Backgrounds/patterns/p" + (_pn < 10 ? '0' : '') + _pn + ".jpg?v=23146')";
+        if (document.body.style.getPropertyValue('--crsl-pattern') !== _pv) document.body.style.setProperty('--crsl-pattern', _pv);
+        // v23146c — the BOARD WEARS THE PATTERN'S OWN COLOURS (Nick: "Most
+        // your patterns don't match the background"). Each pattern's four
+        // dominant colours, extracted offline, feed the wash gradients that
+        // v23143 hardcoded to pattern 5's palette.
+        var _CRSL_PAL = {1:[[233,212,193],[164,64,2],[254,187,8],[68,36,47]],2:[[254,227,184],[244,87,46],[30,135,200],[135,199,237]],3:[[119,99,171],[82,191,158],[39,50,79],[131,213,247]],4:[[191,233,231],[255,115,118],[0,154,206],[153,121,218]],5:[[79,197,201],[56,59,126],[240,95,90],[174,221,224]],6:[[213,81,56],[148,195,215],[246,237,228],[224,185,113]],7:[[117,179,226],[249,171,102],[149,209,173],[239,93,162]],8:[[196,108,0],[65,72,82],[244,166,190],[176,205,175]],9:[[3,29,66],[252,212,204],[252,236,0],[22,170,154]],10:[[28,174,160],[108,198,188],[195,190,103],[237,226,216]],11:[[240,150,72],[86,139,143],[251,215,191],[196,89,67]],12:[[207,168,39],[63,65,51],[106,118,116],[161,186,208]]};
+        var _wp = _CRSL_PAL[_pn] || _CRSL_PAL[5];
+        var _wa = [0.22, 0.16, 0.16, 0.20];
+        for (var _wi = 0; _wi < 4; _wi++) {
+          var _wc = 'rgba(' + _wp[_wi][0] + ',' + _wp[_wi][1] + ',' + _wp[_wi][2] + ',' + _wa[_wi] + ')';
+          if (document.body.style.getPropertyValue('--crsl-w' + (_wi + 1)) !== _wc) document.body.style.setProperty('--crsl-w' + (_wi + 1), _wc);
+        }
+      } else {
+        document.body.style.removeProperty('--crsl-pattern');
+        for (var _wj = 1; _wj <= 4; _wj++) document.body.style.removeProperty('--crsl-w' + _wj);
+      }
     } catch (e) {}
   }
   if (document.readyState === 'loading') {

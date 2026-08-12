@@ -12078,55 +12078,11 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptit
 
 
 
-/* ═══════════════════════════════════════════════════════════════════════
-   v23143 — THE TOP PORTION OF THE THREE WORD PANELS GOES BEIGE.
-
-   Nick, finally stated plainly and confirmed back to him:
-     "There are 3 panels with words ... all i wanted was the top portion of
-      all 3 to be beige thats it"
-     "Flight Vol is one, Arrival Arrive is 2, Aircraft is 3"
-     "All except Your aircraft which i never mentioned and should be
-      simply normal like gray"
-
-   So the three panels stacked under the map are:
-     1. the pane headed 'Flight | Vol'      -> its FIRST row
-     2. the pane headed 'Arrival | Arrivee' -> its FIRST row
-     3. the Aircraft panel                  -> its type bar
-
-   Each gets the beige top with the red divider under it and the existing
-   gray body below, which is the grammar the LEFT rail's panels already
-   use and what he described earlier as 'the full top divided by red line
-   and below gray'.
-
-   'Your Aircraft | Votre Avion' above the map is NOT one of the three. It
-   was never asked for; v23140/v23142 painted it anyway. It is left alone
-   here and returns to its normal gray.
-
-   Colour only. No element added, no shelf restructured, no width, height
-   or position touched. The 12x :not chain exists solely to outrank the
-   plate painter, which carries 10x.
-   ═══════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
-  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
-  background-image: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
-  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
-  opacity: 1 !important;
-  mix-blend-mode: normal !important;
-}
-/* Dark ink on the beige. Scoped to the first row's own label/value so the
-   colour-coded status word in the SECOND row keeps its green/amber/red. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tlbl,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tlbl *,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tval,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane > .v2-rc-fi-trow:first-child .v2-rc-fi-tval *,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype * {
-  color: #14171B !important;
-  text-shadow: none !important;
-}
+/* v23146 — the v23143 beige row strips are OUT (Nick: "leave the panels
+   one color that is pattern already there"). The right rail's panels go
+   back to being uniformly the plate pattern they already carry — no beige
+   rows, no added dividers, no re-inked labels. The left-alignment below
+   stays: that was asked for separately and repeatedly. */
 
 /* The panel titles read LEFT (Nick, three times: 'Its supposed to be left
    alligned' / 'The titles on the panels top title' / 'Im still waiting for
@@ -12166,7 +12122,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* 1 — the arrow carries the pattern */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
   background-color: #F0F3F4 !important;
-  background-image: url("/logos/Backgrounds/carousel-pattern.svg?v=23143") !important;
+  background-image: var(--crsl-pattern, url("/logos/Backgrounds/carousel-pattern.svg?v=23143")) !important;
   background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
@@ -12209,10 +12165,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    nothing for the rows to fight. The clouds stay gone. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-screen {
   background-image:
-    radial-gradient(120vw 70vh at 12% 8%,  rgba(146, 219, 222, 0.22) 0%, rgba(146, 219, 222, 0) 60%),
-    radial-gradient(100vw 65vh at 88% 22%, rgba(246, 156, 153, 0.16) 0%, rgba(246, 156, 153, 0) 62%),
-    radial-gradient(110vw 70vh at 72% 92%, rgba(252, 203, 146, 0.16) 0%, rgba(252, 203, 146, 0) 60%),
-    radial-gradient(90vw 60vh at 20% 88%,  rgba(132, 133, 175, 0.20) 0%, rgba(132, 133, 175, 0) 62%) !important;
+    radial-gradient(120vw 70vh at 12% 8%,  var(--crsl-w1, rgba(146, 219, 222, 0.22)) 0%, transparent 60%),
+    radial-gradient(100vw 65vh at 88% 22%, var(--crsl-w2, rgba(246, 156, 153, 0.16)) 0%, transparent 62%),
+    radial-gradient(110vw 70vh at 72% 92%, var(--crsl-w3, rgba(252, 203, 146, 0.16)) 0%, transparent 60%),
+    radial-gradient(90vw 60vh at 20% 88%,  var(--crsl-w4, rgba(132, 133, 175, 0.20)) 0%, transparent 62%) !important;
   background-attachment: fixed !important;
   background-repeat: no-repeat !important;
   background-size: cover !important;
@@ -12223,4 +12179,89 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   background-image: none !important;
   display: none !important;
   animation: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23146 — MONCTON ON THE FIDS BOARD (Nick: "Moncton didn't go in the
+   baggage claim it was the fids" / "still do city"). His no-text
+   waterfront skyline is the YQM departures board's background, replacing
+   the clouds there — the drifting cloud ::after is switched off for YQM
+   so it can't paint over the city. Baggage and every other airport are
+   untouched.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard {
+  background-image: url("/logos/Backgrounds/moncton-skyline.svg?v=23146") !important;
+  background-attachment: fixed !important;
+  /* v23146d — "Lower Moncton please to improve skyline coverage": the city
+     sits 10vh lower, so the buildings hug the bottom band instead of
+     riding up into the rows. */
+  background-position: center calc(100% + 10vh) !important;
+  background-size: 100vw auto !important;
+  background-repeat: no-repeat !important;
+}
+html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard::after {
+  content: none !important;
+  background-image: none !important;
+  display: none !important;
+  animation: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23146c — THE CAROUSEL SIGN IS A BAND, NOT A THROWN-IN CARD (Nick: "the
+   carousel sign itself doesn't align with anything it's thrown in there
+   the terminal info is dark on dark").
+
+   The white sign now runs the full width of the arrow and pins to its
+   top, so its edges align with the arrow's own edges and its top line
+   aligns with the flight list's header bar beside it. The terminal line
+   joins the band — white ground, dark ink — instead of floating dark on
+   the pattern.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  padding-top: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-terminal {
+  display: block !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: #FFFFFF !important;
+  text-align: left !important;
+  padding-left: 6% !important;
+  padding-right: 6% !important;
+  position: relative !important;
+  z-index: 3 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label   { padding-top: .30em !important; padding-bottom: 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number  { padding-top: 0 !important; padding-bottom: .04em !important; line-height: 0.95 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-terminal {
+  color: #0E2748 !important;
+  font-weight: 700 !important;
+  padding-bottom: .55em !important;
+  opacity: 1 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23146d — THE BELT STRIPES SHOW (Nick: "Orlando still has no stripes
+   they don't work"). The v22711 stripes were painted at 22–42% of the
+   diagonal — exactly the region the white carousel arrow covers, so on
+   every belt they rendered fully hidden behind the sign. They now run
+   through the open field to the right of the arrow, in the same
+   per-carousel identity colour, and read clearly under the flight list.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)[data-bids-carousel] .bidsv2-chevrons {
+  background:
+    linear-gradient(105deg, transparent 52%, var(--crsl, #0E2748) 52%, var(--crsl, #0E2748) 57%, transparent 57%),
+    linear-gradient(105deg, transparent 63%, color-mix(in srgb, var(--crsl, #0E2748) 55%, transparent) 63%, color-mix(in srgb, var(--crsl, #0E2748) 55%, transparent) 70%, transparent 70%),
+    linear-gradient(105deg, transparent 78%, color-mix(in srgb, var(--crsl, #0E2748) 30%, transparent) 78%, color-mix(in srgb, var(--crsl, #0E2748) 30%, transparent) 82%, transparent 82%) !important;
+  opacity: .8 !important;
 }
