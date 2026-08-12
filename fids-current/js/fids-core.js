@@ -37090,7 +37090,10 @@ setInterval(function () {
         // angular sets stay.
         // v23146g — Nick: "Let's just do 8 for now." Every screen wears
         // pattern 8; the hash rotation stays here for when he widens it.
-        var _CRSL_OK = [5, 6, 11];
+        // v23146i — the four CIRCLE patterns (3, 4, 7, 12) are chucked;
+        // the eight remaining rotate per belt (Nick: "chuck the circles" /
+        // "1 to 8 you have 8 patterns").
+        var _CRSL_OK = [1, 2, 5, 6, 8, 9, 10, 11];
         var _pn = _CRSL_OK[_hs % _CRSL_OK.length];
         var _pv = "url('/logos/Backgrounds/patterns/p" + (_pn < 10 ? '0' : '') + _pn + ".jpg?v=23146')";
         if (document.body.style.getPropertyValue('--crsl-pattern') !== _pv) document.body.style.setProperty('--crsl-pattern', _pv);
