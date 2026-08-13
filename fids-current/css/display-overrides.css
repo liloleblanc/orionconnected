@@ -12292,7 +12292,7 @@ html body .g8-wrap :is(
    clean two-line fit so long model names can remain prominent instead of
    shrinking to a caption-sized single line. */
 html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
-  white-space: normal !important;
+  white-space: nowrap !important;
   line-height: 1.05 !important;
   box-sizing: border-box !important;
   width: 100% !important;
@@ -12328,6 +12328,15 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-titl
   width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+/* The title bar is inset from the rail's icon column by one fixed amount on
+   every shelf. This removes the narrower Destination/Arrival tabs. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  grid-template-columns: 25% minmax(0, 75%) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row > .v2-fi-textcol {
+  justify-self: stretch !important;
+  align-self: stretch !important;
 }
 
 /* A gate may legitimately show tomorrow's first flight late tonight. Keep

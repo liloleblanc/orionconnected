@@ -11965,22 +11965,10 @@ function gateAutofit(root) {
       var panelPadLeft = parseFloat(scs.paddingLeft) || 0;
       var panelPadRight = parseFloat(scs.paddingRight) || 0;
       var panelContentWidth = panel.clientWidth - panelPadLeft - panelPadRight;
-      // Align the aircraft model to the actual value column above it. A fixed
-      // percentage drifted across airlines and resolutions; the visible
-      // flight/departure value edge is the authoritative guide.
-      var valueGuide = panel.closest('.gad-map-col-v2');
-      valueGuide = valueGuide && valueGuide.querySelector('.v2-rc-fi-tval');
-      var typeOffset = 0;
-      if (valueGuide) {
-        var panelRect = panel.getBoundingClientRect();
-        var guideRect = valueGuide.getBoundingClientRect();
-        typeOffset = Math.max(0, Math.min(panelContentWidth * 0.48,
-          Math.round(guideRect.left - panelRect.left - panelPadLeft)));
-      }
-      el.style.setProperty('margin-left', typeOffset + 'px', 'important');
-      el.style.setProperty('width', Math.max(30, panelContentWidth - typeOffset) + 'px', 'important');
+      el.style.setProperty('margin-left', '0', 'important');
+      el.style.setProperty('width', panelContentWidth + 'px', 'important');
       el.style.setProperty('padding-left', '0', 'important');
-      var w = Math.max(30, panelContentWidth - typeOffset);
+      var w = Math.max(30, panelContentWidth);
       var h = panel.clientHeight - (parseFloat(scs.paddingTop) || 0) - (parseFloat(scs.paddingBottom) || 0);
       var op = panel.querySelector('.v2-rc-acb-opby');
       try {
@@ -19256,7 +19244,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23155';
+var FIDS_BUILD_TAG = 'v23156';
 (function(){
   try {
     function _addTag(){
