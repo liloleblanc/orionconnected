@@ -136,3 +136,11 @@ silence.
   Chrome shows.
 - If the picture is black: `journalctl -u fids-stream -f` and check Chrome
   launched. On a 1 GB server Chrome can OOM — size up to 4 GB.
+
+## Maintenance tools
+
+The small server helpers are kept in `stream-server/tools/`:
+
+- `diagnostics.sh` checks the running stream and prints useful status details.
+- `update-stream-key.sh` updates the saved YouTube stream key.
+- `set-music.sh` changes or clears the background audio source.

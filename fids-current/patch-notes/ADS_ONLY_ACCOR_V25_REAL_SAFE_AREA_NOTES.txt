@@ -1,6 +1,0 @@
-V25 REAL SAFE AREA
-- Stops creating/positioning a second QR cover/card. The real existing QR element is used.
-- QR bubble is hard-locked to one 368x128 card inside the photo column: copy left, QR right, no overlap.
-- Hotel panel typography is reduced and hard-locked inside the dark panel. No horizontal bleed into map/right flight card.
-- Logo area is constrained by max-height/max-width and never allowed to push hotel title text out of the panel.
-- Footer and amenities are bounded so they cannot collide with the bottom ALL lockup.

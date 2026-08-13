@@ -1457,8 +1457,8 @@ let subScreenVal = '';
 // then large with a set height no matter what'). Only Orlando was listed, so
 // every other airport fell through to 'medium' — 66px board rows / 98px BAGS
 // rows, which is the "rows are much bigger" report. The tiers themselves are
-// already absolute heights, not a fit: fids-v3.css pins 44/66/90 on the board
-// and bids-v2.css pins 68/98/132 on the bags screen, each with height,
+// already absolute heights, not a fit: flight-display.css pins 44/66/90 on the board
+// and baggage-display.css pins 68/98/132 on the bags screen, each with height,
 // min-height and max-height locked, and boardAutofit treats --fids-row-h as
 // the authority rather than measuring a row it may have grown. Nothing
 // stretches a row to fill a screen. So the only thing that needed changing is
@@ -2415,6 +2415,13 @@ function requestGateRebuild() {
     window._lastGateKey = '';
     dedicatedRenderKey = '';
     _gateKeyResetTimer = null;
+    // Resetting a key alone does not paint a dedicated screen. Gate clocks are
+    // updated in place, so newly resolved aircraft data could otherwise remain
+    // invisible until the next feed refresh. Paint exactly once after batching.
+    try {
+      if (typeof screenType !== 'undefined' && screenType === 'gate'
+          && typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
+    } catch (e) {}
   }, 300); // Wait 300ms to batch multiple data updates
 }
 // ── Codeshare guard for GATE screens (Nick: a Qantas codeshare number must
@@ -3259,8 +3266,9 @@ function _destFlipStops(stops, kind, cls) {
 // ('Houston, TX') — rows without a feed-code _stops list simply don't flip.
 try {
   // 7 s per leg — the 4 s swap read as a cheap strobe (Nick: 'too fast...
-  // looks like a bad effect'). Soft crossfade instead of a raw text pop,
-  // and gate text re-fits after every swap so both legs render at ONE size.
+  // looks like a bad effect'). Soft crossfade instead of a raw text pop. The
+  // gate fitter measures every alternate up front, so a swap never re-fits the
+  // rest of the screen or makes unrelated boarding numbers and titles pulse.
   setInterval(function () {
     var els = document.querySelectorAll('[data-destflip]');
     if (!els.length) return;
@@ -3279,8 +3287,6 @@ try {
           setTimeout(function () {
             el2.textContent = v2;
             try {
-              var gv = document.getElementById('gateView');
-              if (gv && gv.contains(el2) && typeof gateAutofit === 'function') gateAutofit(gv);
               // Board rows: refit FONTS immediately after the swap (geometry
               // stays frozen — widths already reserve the longest alternate).
               var tb = document.getElementById('fidsTable');
@@ -3800,7 +3806,7 @@ var ACCOR_BRAND_LOGOS = {
   'SLS': '/logos/hotels/accor-luxury/SLS-monochrome-white.svg',
   'SO':  '/logos/hotels/accor-luxury/SO-monochrome-white.svg',
   'SEQ': '/logos/hotels/accor-luxury/SO-monochrome-white.svg',
-  'JO':  '/logos/hotels/accor-premium/jojoe.png',
+  'JO':  '/logos/hotels/accor-economy/jo&joe-monochrome-white.svg',
   'HB':  '/logos/hotels/accor-midscale/thehoxton-monochrome-white.svg'
 };
 
@@ -3864,7 +3870,7 @@ var ACCOR_BRAND_CATEGORY = {
   'EMB': 'premium',   // Emblems
   'SO':  'premium',   // So/ Sofitel
   'SEQ': 'premium',
-  'JO':  'premium'    // JO&JOE (lifestyle premium)
+  'JO':  'economy'    // JO&JOE
 };
 
 function accorBrandCategory(brandCode) {
@@ -3921,46 +3927,45 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
   if (brandCode && ACCOR_BRAND_LOGOS[brandCode]) return ACCOR_BRAND_LOGOS[brandCode];
   var hay = [brandName || '', rawHotelName || '', cleanedHotelName || ''].join(' | ').toLowerCase();
   var keywordMap = [
-    [/the sebel|sebel/,                 '/logos/hotels/accor-midscale/thesebel-monochrome-white.svg'],
-    [/tribe/,                                '/logos/hotels/accor-midscale/tribe-monochrome-white.svg'],
-    [/breakfree/,                            '/logos/hotels/accor-midscale/BreakFree-monochrome-white.svg'],
-    [/peppers/,                              '/logos/hotels/accor-midscale/peppers-monochrome-white.svg'],
-    [/mantra/,                               '/logos/hotels/accor-midscale/mantra-monochrome-white.svg'],
-    [/art\s*series/,                        '/logos/hotels/accor-premium/artseries-monochrome-white.svg'],
-    [/greet/,                                '/logos/hotels/accor-economy/greet-monochrome-white.svg'],
-    [/mama\s*shelter/,                      '/logos/hotels/accor-midscale/mamashelter-monochrome-white.svg'],
+    [/\bthe sebel\b|\bsebel\b/,                 '/logos/hotels/accor-midscale/thesebel-monochrome-white.svg'],
+    [/\btribe\b/,                                '/logos/hotels/accor-midscale/tribe-monochrome-white.svg'],
+    [/\bbreakfree\b/,                            '/logos/hotels/accor-midscale/BreakFree-monochrome-white.svg'],
+    [/\bpeppers\b/,                              '/logos/hotels/accor-midscale/peppers-monochrome-white.svg'],
+    [/\bmantra\b/,                               '/logos/hotels/accor-midscale/mantra-monochrome-white.svg'],
+    [/\bart\s*series\b/,                        '/logos/hotels/accor-premium/artseries-monochrome-white.svg'],
+    [/\bgreet\b/,                                '/logos/hotels/accor-economy/greet-monochrome-white.svg'],
+    [/\bmama\s*shelter\b/,                      '/logos/hotels/accor-midscale/mamashelter-monochrome-white.svg'],
     // Handwritten Collection properties carry the brand in their name
     // ('Hotel Maison Hamelin Paris - Handwritten Collection'), so match on it:
     // the script wordmark then shows for whatever code the catalog sends
     // (Nick: 'Many hotels should be using this logo, its not used at all').
     [/handwritten/,                          '/logos/hotels/accor-midscale/handwritten-monochrome-white.svg'],
-    [/faena/,                                '/logos/hotels/accor-luxury/faena-monochrome-white.svg'],
-    [/orient\s*express/,                    '/logos/hotels/accor-luxury/orientexpress-monochrome-white.svg'],
-    [/our\s*habitas/,                       '/logos/hotels/accor-premium/our-habitas.svg'],
-    [/delano/,                               '/logos/hotels/accor-luxury/delano-monochrome-white.svg'],
-    [/mondrian/,                             '/logos/hotels/accor-luxury/mondrian-monochrome-white.svg'],
-    [/hyde/,                                 '/logos/hotels/accor-luxury/hyde-monochrome-white.svg'],
-    [/sls/,                                  '/logos/hotels/accor-luxury/SLS-monochrome-white.svg'],
-    [/jo\s*(?:&|and)\s*joe/,               '/logos/hotels/accor-premium/jo-and-joe.svg'],
-    [/25\s*hours|25hours/,            '/logos/hotels/accor-midscale/25th-monochrome-white.svg'],
-    [/the\s*hoxton|hoxton/,           '/logos/hotels/accor-midscale/thehoxton-monochrome-white.svg'],
-    [/ibis\s*budget/,                       '/logos/hotels/accor-economy/ibisbudget-monochrome-white.svg'],
-    [/ibis\s*styles/,                       '/logos/hotels/accor-economy/ibisstyles-monochrome-white.svg'],
-    [/hotelf1|hotel\s*f1/,            '/logos/hotels/accor-economy/hotelF1-monochrome-white.svg'],
-    [/ibis/,                                 '/logos/hotels/accor-economy/ibis-monochrome-white.svg'],
-    [/mercure/,                              '/logos/hotels/accor-midscale/mercure-monochrome-white.svg'],
-    [/novotel/,                              '/logos/hotels/accor-midscale/novotel-monochrome-white.svg'],
-    [/m[öo]venpick|movenpick/,         '/logos/hotels/accor-premium/movenpick-monochrome-white.svg'],
-    [/pullman/,                              '/logos/hotels/accor-premium/pullman-monochrome-white.svg'],
-    [/grand\s*mercure/,                     '/logos/hotels/accor-midscale/grandmercure-monochrome-white.svg'],
-    [/swiss[oô]tel|swissotel/,         '/logos/hotels/accor-premium/swissotel-monochrome-white.svg'],
-    [/mantis/,                               '/logos/hotels/accor-luxury/mantis-monochrome-white.svg'],
-    [/banyan\s*tree/,                       '/logos/hotels/accor-luxury/banyan-monochrome-white.svg'],
-    [/raffles/,                              '/logos/hotels/accor-luxury/raffles-monochrome-white.svg'],
+    [/\bfaena\b/,                                '/logos/hotels/accor-luxury/faena-monochrome-white.svg'],
+    [/\borient\s*express\b/,                    '/logos/hotels/accor-luxury/orientexpress-monochrome-white.svg'],
+    [/\bdelano\b/,                               '/logos/hotels/accor-luxury/delano-monochrome-white.svg'],
+    [/\bmondrian\b/,                             '/logos/hotels/accor-luxury/mondrian-monochrome-white.svg'],
+    [/\bhyde\b/,                                 '/logos/hotels/accor-luxury/hyde-monochrome-white.svg'],
+    [/\bsls\b/,                                  '/logos/hotels/accor-luxury/SLS-monochrome-white.svg'],
+    [/\bjo\s*(?:&|and)\s*joe\b/,               '/logos/hotels/accor-economy/jo&joe-monochrome-white.svg'],
+    [/\b25\s*hours\b|\b25hours\b/,            '/logos/hotels/accor-midscale/25th-monochrome-white.svg'],
+    [/\bthe\s*hoxton\b|\bhoxton\b/,           '/logos/hotels/accor-midscale/thehoxton-monochrome-white.svg'],
+    [/\bibis\s*budget\b/,                       '/logos/hotels/accor-economy/ibisbudget-monochrome-white.svg'],
+    [/\bibis\s*styles\b/,                       '/logos/hotels/accor-economy/ibisstyles-monochrome-white.svg'],
+    [/\bhotelf1\b|\bhotel\s*f1\b/,            '/logos/hotels/accor-economy/hotelF1-monochrome-white.svg'],
+    [/\bibis\b/,                                 '/logos/hotels/accor-economy/ibis-monochrome-white.svg'],
+    [/\bmercure\b/,                              '/logos/hotels/accor-midscale/mercure-monochrome-white.svg'],
+    [/\bnovotel\b/,                              '/logos/hotels/accor-midscale/novotel-monochrome-white.svg'],
+    [/\bm[öo]venpick\b|\bmovenpick\b/,         '/logos/hotels/accor-premium/movenpick-monochrome-white.svg'],
+    [/\bpullman\b/,                              '/logos/hotels/accor-premium/pullman-monochrome-white.svg'],
+    [/\bgrand\s*mercure\b/,                     '/logos/hotels/accor-midscale/grandmercure-monochrome-white.svg'],
+    [/\bswiss[oô]tel\b|\bswissotel\b/,         '/logos/hotels/accor-premium/swissotel-monochrome-white.svg'],
+    [/\bmantis\b/,                               '/logos/hotels/accor-luxury/mantis-monochrome-white.svg'],
+    [/\bbanyan\s*tree\b/,                       '/logos/hotels/accor-luxury/banyan-monochrome-white.svg'],
+    [/\braffles\b/,                              '/logos/hotels/accor-luxury/raffles-monochrome-white.svg'],
     [/sofitel\s*legend/,                     '/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg'],
-    [/sofitel/,                              '/logos/hotels/sofitel/sofitel-wordmark-white.svg'],
-    [/fairmont/,                             '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg'],
-    [/emblems/,                              '/logos/hotels/accor-luxury/emblems-monochrome-white.svg']
+    [/\bsofitel\b/,                              '/logos/hotels/sofitel/sofitel-wordmark-white.svg'],
+    [/\bfairmont\b/,                             '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg'],
+    [/\bemblems\b/,                              '/logos/hotels/accor-luxury/emblems-monochrome-white.svg']
   ];
   for (var i = 0; i < keywordMap.length; i++) {
     if (keywordMap[i][0].test(hay)) return keywordMap[i][1];
@@ -4043,12 +4048,12 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
 // Match key = lowercased property name with the "Fairmont " prefix already
 // stripped (matches what the headline reduces to in _buildAccorAd).
 var FAIRMONT_PROPERTY_LOCKUPS = {
-  // AUTO-GENERATED by tools/gen-fairmont-lockups.py from the brand-team
+  // AUTO-GENERATED by scripts/assets/gen-fairmont-lockups.py from the brand-team
   // manifest (logos/hotels/accor-luxury/fairmont/manifest_from_user_image.csv).
   // All 67 worldwide Fairmont properties -> uniform white-on-transparent
   // outlined lockups (viewBox 0 0 266.5 104). Keys mirror the runtime
   // _lockupKey normalization; multiple spellings/accents per property.
-  // To regenerate: python3 tools/gen-fairmont-lockups.py --write
+  // To regenerate: python3 scripts/assets/gen-fairmont-lockups.py --write
 
   // 01  The Fairmont Banff Springs  (Banff, Canada)
   "banff springs"          : "/logos/hotels/accor-luxury/fairmont/outlined_svg_white/001_The_Fairmont_Banff_Springs.svg",
@@ -4586,7 +4591,7 @@ function makeSofitelLockupSvgDataUri(propertyName) {
 // A @font-face embedded in an SVG rendered as <img> does NOT load in browsers,
 // so the property name fell back to a system font. Rendered INLINE in the DOM
 // with the font declared at document level (RebeltonExt @font-face in
-// accor-slide.css), the name paints in the real Rebelton Extended. The SOFITEL
+// hotel-ads.css), the name paints in the real Rebelton Extended. The SOFITEL
 // wordmark is vector paths either way. Returns raw <svg> markup (not a data URI).
 function makeSofitelLockupInlineSvg(propertyName) {
   if (!propertyName) return '';
@@ -6784,7 +6789,7 @@ function buildV2GateLayout(ctx, vars) {
   var mapCol = _buildV2MapCol(ctx, vars);
 
   // Theme-driven column widths removed in v218.99.9 — defaults wired
-  // directly via CSS (25/50/25 in gids-v218.78.css). No JS lookup needed.
+  // directly via CSS (25/50/25 in gate-display.css). No JS lookup needed.
   var _colStyle = '';
 
   // ─── MESSAGE STRIP (g8-r3) ──────────────────────────────────────────────
@@ -6832,7 +6837,7 @@ function buildV2GateLayout(ctx, vars) {
 }
 
 // ─── V2 AIRCRAFT COLUMN BUILDER ───────────────────────────────────────────
-// Class-based markup matching gids-v218.78.css.
+// Class-based markup matching gate-display.css.
 // Structure: header > livery > 3-row data > inbound panel.
 // ── ANIMATED RONDELLE for the boarding screen's centre mark (v23115) ─────
 // Nick: 'the middle is the maple leaf rondelle that i have the gif that
@@ -6907,6 +6912,7 @@ function _buildV2AircraftCol(ctx, vars) {
   var _inbOperating = vars._inbOperating;
   var airlineCode = vars.airlineCode;
   var equipRaw = vars.equipRaw, equipName = vars.equipName;
+  var _flightDateContext = vars.flightDateContext || { labels: [] };
 
   var _hasInb = !!(inboundFlight && _inbOperating);
   var _anyInb = !!inboundFlight;
@@ -8026,8 +8032,11 @@ function _buildV2MapCol(ctx, vars) {
       // Flight number (compact, e.g. "AC1984")
       var _dFltCompact = String(_dcf.flight || '').replace(/\s+/g, '').toUpperCase();
 
-      // Status — reuse the outbound label/class computed for the left column.
-      var _dStLabel = String(vars.stLabel || _dcf.status || '').trim();
+      // Status — reuse the same passenger-facing display key as the left rail.
+      // This keeps a normally tracking flight from reading On Time on one side
+      // and Scheduled on the other.
+      var _dStKey = String(vars.stKey || _dcf.status || '').trim().toLowerCase();
+      var _dStLabel = String(vars.stLabel || _dStKey || '').trim();
       var _dStCls = String(vars.stClass || 'ontime').replace(/^v2-fi-status/, '').replace(/^[-\s]+/, '') || 'ontime';
       if (['scheduled','ontime','delayed','cancelled'].indexOf(_dStCls) === -1) _dStCls = 'ontime';
 
@@ -8097,7 +8106,7 @@ function _buildV2MapCol(ctx, vars) {
       // Bilingual status for the departure card (Scheduled | Prévu).
       var _dStEn = '', _dStFr = '';
       try {
-        var _dk = String((_dcf && _dcf.status) || '').toLowerCase().replace(/[\s_-]/g, '');
+        var _dk = String(_dStKey || (_dcf && _dcf.status) || '').toLowerCase().replace(/[\s_-]/g, '');
         var _dss = (typeof SS !== 'undefined' && SS[_dk]) ? SS[_dk] : null;
         if (_dss) { _dStEn = _fidsTitleCase(_dss.en); _dStFr = _dss.fr; }
       } catch (e) {}
@@ -8186,7 +8195,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-rc-fi-pane">'
         +     '<div class="v2-rc-fi-trow">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('departure', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-fi-departure"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '><span class="v2-rc-deptime">' + (_dDepStr || '—') + '</span></div>'
         +     '</div>'
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('status', _frF) + '</div>'
@@ -8597,9 +8606,8 @@ function _buildV2MapCol(ctx, vars) {
           }
         }
         if (_opCode === 'RV' || _opCode === 'ROU') {
-          _candidates.push('/logos/airlines/canadian/aircanada-rouge.svg');
-          _candidates.push('/logos/airlines/canadian/air-canada-rouge.svg');
-          _candidates.push('/logos/airlines/canadian/rouge-wordmark.svg');
+          _candidates.push('/logos/airlines/canadian/rouge.svg');
+          _candidates.push('/logos/airlines/canadian/rouge-monochrome-white.svg');
         }
         var _candidatesJson = JSON.stringify(_candidates);
         var _shortEsc = _opShortName.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
@@ -8764,6 +8772,18 @@ function _buildV2MapCol(ctx, vars) {
         + (_opByVal
             ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">' + _opByLbl + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
             : '');
+      // The reserved aircraft area should remain an intentional branded panel
+      // while a lookup finishes. Never guess a model; hold the airline mark in
+      // the space instead of floating a raw "image pending" warning over it.
+      var _holdCode = String(vars.airlineCode || '').trim().toUpperCase();
+      var _holdSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_holdCode]) || '';
+      var _holdMark = _holdSrc
+        ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="">'
+        : '<span class="v2-rc-aircraft-hold-code">' + (_holdCode || '—') + '</span>';
+      var _aircraftHoldHtml = '<div class="v2-rc-aircraft-hold">' + _holdMark
+        + '<span class="v2-rc-aircraft-hold-text">'
+        + _gateLbl('acUpdating', _frF8, function (w) { return '<span>' + w + '</span>'; }, '')
+        + '</span></div>';
       // Facing class baked at build time from the manifest — the clouds are
       // mirrored correctly on the FIRST painted frame, no onload race.
       var _facingCls = '';
@@ -8777,7 +8797,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div id="gateCloudsBg"></div>'
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
-              : '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>')
+              : _aircraftHoldHtml)
         +   (/[?&]acsky=1\b/.test(window.location.search)
               ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
                 + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
@@ -8791,17 +8811,26 @@ function _buildV2MapCol(ctx, vars) {
   // Last-resort geometry guard: even a malformed enrichment field must not
   // remove the two fixed shelves from the six-row right rail.
   if (!_aircraftBlock) {
+    var _fallbackCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
+    var _fallbackSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_fallbackCode]) || '';
+    var _fallbackMark = _fallbackSrc
+      ? '<img class="v2-rc-aircraft-hold-logo" src="' + _fallbackSrc + '" alt="">'
+      : '<span class="v2-rc-aircraft-hold-code">' + (_fallbackCode || '—') + '</span>';
+    var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark
+      + '<span class="v2-rc-aircraft-hold-text">'
+      + _gateLbl('acUpdating', _frF8, function (w) { return '<span>' + w + '</span>'; }, '')
+      + '</span></div>';
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus">'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>'
+      +   _fallbackHold
       +   (/[?&]acsky=1\b/.test(window.location.search)
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
               + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
-      +   '<div class="v2-rc-acb-actype v2-rc-actype-val">Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir</div>'
+      +   '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
       + '</div></div>';
   }
 
@@ -8887,6 +8916,18 @@ function uxgGateHtml(ctx) {
   const _gateLbl2 = ({fr:'Porte', es:'Puerta', en:'Gate', de:'Gate', it:'Uscita', pt:'Porta'})[_hdr2nd] || 'Porte';
   // Québec airports: French first on every bilingual pair (Nick).
   const _frF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
+  var _flightDateContext = { dayOffset: null, labels: [], text: '' };
+  try {
+    if (window.FIDSGateDate && typeof window.FIDSGateDate.getFlightDateContext === 'function') {
+      _flightDateContext = window.FIDSGateDate.getFlightDateContext({
+        flightTimestamp: currentFlight._sortTs,
+        nowTimestamp: Date.now(),
+        timeZone: tz || 'UTC',
+        languages: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs : ['en', 'fr'],
+        frenchFirst: _frF
+      });
+    }
+  } catch (e) {}
   const _flightNumDisp = (String(currentFlight.flight || '').replace(/^[A-Za-z]+\s*/, '').trim()) || String(currentFlight.flight || '');
   const locale = uxgLocaleCode();
   // Short display names for the top banner — long names (NEW YORK KENNEDY) get
@@ -8962,6 +9003,10 @@ function uxgGateHtml(ctx) {
       }
     }
   }
+  // Passenger-facing status: a normally tracking scheduled flight is On Time.
+  // Keep the source value unchanged for operational logic, but use one display
+  // key on both the left rail and the right flight card.
+  if (stKey === 'scheduled' || !stKey) stKey = 'ontime';
   var stLabel = SL(stKey) || stKey.toUpperCase();
   var airlineCode = (currentFlight.airline || '').trim().toUpperCase();
   // Hawaiian brand override: AS flights on ex-HA equipment or Hawaii routes still wear
@@ -10966,7 +11011,8 @@ function uxgGateHtml(ctx) {
                 // these strings get rendered as a vertical stack inside the
                 // aircraft column above the brand/reg/inbound blocks.
                 depTimeHtml: depTimeHtml, arrHtml: arrHtml, boardTimeHtml: boardTimeHtml,
-                stClass: stClass, stLabel: stLabel
+                stClass: stClass, stLabel: stLabel, stKey: stKey,
+                flightDateContext: _flightDateContext
               });
             })()
           // ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -11510,6 +11556,29 @@ function uxgActivateRotator() {
 
 
 
+// Keep each bilingual gate label intact. If both languages cannot fit beside
+// each other, stack the complete phrases before the gate is painted. This is
+// deliberately owned by gateAutofit: the old two-second scanner changed this
+// class after the display was already visible, producing the boarding
+// "breathing" caught by the production soak.
+function gateLanguageLayout(root) {
+  if (!root) return;
+  try {
+    root.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title').forEach(function (ln) {
+      if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
+          && !/\|/.test(ln.textContent || '')) return;
+      var parentWidth = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
+      if (parentWidth <= 1) return;
+      ln.classList.remove('g8-lane-stacked');
+      var previousWhiteSpace = ln.style.whiteSpace;
+      ln.style.whiteSpace = 'nowrap';
+      var overflows = ln.scrollWidth > parentWidth - 8;
+      ln.style.whiteSpace = previousWhiteSpace || '';
+      if (overflows) ln.classList.add('g8-lane-stacked');
+    });
+  } catch (e) {}
+}
+
 // Autofit: shrink text in given element until it fits its container width.
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
@@ -11528,8 +11597,8 @@ function gateAutofit(root) {
     els.forEach(function(el) {
       var parent = el.parentElement;
       if (!parent) return;
-      // Never fit a detached/hidden/not-yet-laid-out box. A later rAF/font-
-      // ready/heartbeat pass will measure it once real geometry exists.
+      // Never fit a detached/hidden/not-yet-laid-out box. The font-ready or
+      // viewport-resize correction will measure it once real geometry exists.
       if (!el.isConnected || el.clientWidth <= 1 || parent.clientWidth <= 1) return;
       // Reset any previously applied shrink. NOTE: the CSS font-size uses
       // !important, so an inline value is ignored unless we ALSO mark it
@@ -11600,8 +11669,8 @@ function gateAutofit(root) {
   // measured box — the text column's width and the row's free height.
   // Grow-to-fit from the measurement, not shrink-from-a-CSS-guess, so a
   // short value (a time) genuinely fills its shelf. Runs last and is
-  // deterministic from geometry, so the 5s heartbeat converges instead of
-  // dancing. Status value excluded (two stacked bilingual lines).
+  // deterministic from geometry, so repeated calls return the same result
+  // instead of dancing. Status value excluded (two stacked bilingual lines).
   // Shared box-assign: binary-search the largest size that fits the given
   // box, strict (the browser ellipsizes on 1px of overflow), 1px slack.
   // strictContent (v22733): also require the element's own CONTENT to fit
@@ -11615,30 +11684,58 @@ function gateAutofit(root) {
   // boxes DO grow with their text keep their existing behaviour exactly.
   function _boxAssign(el, availW, availH, colR, skipH, strictContent) {
     if (availH < 12 || availW < 30) return;
-    // DON'T RE-DERIVE WHAT HASN'T CHANGED. This runs on every rebuild and on
-    // the 5s heartbeat, and each pass re-measures — so a box that reads a pixel
+    // Multi-city values rotate after paint. Measure every alternate now and
+    // assign one font size that fits the longest/widest value; the seven-second
+    // rotator can then change text without re-fitting the whole gate screen.
+    var _fitFlip = null, _fitFlipOriginal = '', _fitFlipValues = [];
+    try {
+      _fitFlip = el.querySelector && el.querySelector('[data-destflip]');
+      if (_fitFlip) {
+        _fitFlipOriginal = _fitFlip.textContent;
+        var _fitItems = JSON.parse(decodeURIComponent(_fitFlip.getAttribute('data-destflip') || ''));
+        var _fitKind = _fitFlip.getAttribute('data-dfk') || 'c';
+        _fitFlipValues = _fitItems.map(function (item) {
+          return String((_fitKind === 'ia' ? item.ia : item.c) || '');
+        }).filter(Boolean);
+      }
+    } catch (e) { _fitFlip = null; _fitFlipValues = []; }
+    // DON'T RE-DERIVE WHAT HASN'T CHANGED. This runs on rebuild/font/viewport
+    // corrections, and each pass re-measures — so a box that reads a pixel
     // narrower once (mid-transition, a font settling, the destination flip
     // swapping in a longer word) permanently ratchets the type DOWN, and the
     // data on screen quietly shrinks over the course of a shift (Nick: 'my
     // data keeps shrinking I dont know why'). Same text in the same box keeps
     // the size it already earned.
     try {
-      var _faKey = (el.textContent || '').trim() + '|' + Math.round(availW) + 'x' + Math.round(availH);
+      var _faContentKey = _fitFlip
+        ? (_fitFlip.getAttribute('data-destflip') || '')
+        : (el.textContent || '').trim();
+      var _faKey = _faContentKey + '|' + Math.round(availW) + 'x' + Math.round(availH);
       if (el.dataset.faKey === _faKey && parseFloat(el.style.fontSize) > 0) return;
       el.dataset.faKey = _faKey;
     } catch (e) {}
-    // HYSTERESIS (Nick: 'fighting with itself'): the 5 s heartbeats
-    // re-derive the size each pass; a result within 1px of what's already
+    // HYSTERESIS (Nick: 'fighting with itself'): repeated corrections can
+    // re-derive the size; a result within 1px of what's already
     // applied must not repaint, or the type visibly ticks.
     var _curPx = parseFloat(el.style.fontSize) || 0;
-    function fits(px) {
-      el.style.setProperty('font-size', px + 'px', 'important');
+    function _fitsCurrentContent() {
       if (el.scrollWidth > el.clientWidth) return false;
       if (el.scrollWidth > availW) return false;
       if (!skipH && el.offsetHeight > availH) return false;
       if (strictContent && el.scrollHeight > el.clientHeight + 2) return false;
       if (colR && el.getBoundingClientRect().right > colR) return false;
       return true;
+    }
+    function fits(px) {
+      el.style.setProperty('font-size', px + 'px', 'important');
+      if (!_fitFlip || !_fitFlipValues.length) return _fitsCurrentContent();
+      var _allFit = true;
+      for (var _ffi = 0; _ffi < _fitFlipValues.length; _ffi++) {
+        _fitFlip.textContent = _fitFlipValues[_ffi];
+        if (!_fitsCurrentContent()) { _allFit = false; break; }
+      }
+      _fitFlip.textContent = _fitFlipOriginal;
+      return _allFit;
     }
     var lo = 12, hi = Math.min(140, Math.floor(availH));
     if (!fits(hi)) {
@@ -11836,7 +11933,7 @@ function gateAutofit(root) {
       try {
         if (box.closest('.g8-wrap.g8-takeover')) _gh = Math.max(_gh, 110);
       } catch (e) {}
-      _boxAssign(num, Math.max(40, w - bw), Math.floor(_gh * 0.86), null, false);
+      _boxAssign(num, Math.max(40, w - bw), Math.floor(_gh * 0.98), null, false);
     });
     // RIGHT CARD type shelf ('Aircraft details pending' clipped mid-word on
     // production): wrap allowed, then the largest size whose wrapped lines
@@ -11865,7 +11962,13 @@ function gateAutofit(root) {
       if (!panel || panel.clientHeight < 24) return;
       el.style.setProperty('white-space', 'normal', 'important');
       var scs = window.getComputedStyle(panel);
-      var w = panel.clientWidth - (parseFloat(scs.paddingLeft) || 0) - (parseFloat(scs.paddingRight) || 0);
+      var panelPadLeft = parseFloat(scs.paddingLeft) || 0;
+      var panelPadRight = parseFloat(scs.paddingRight) || 0;
+      var panelContentWidth = panel.clientWidth - panelPadLeft - panelPadRight;
+      el.style.setProperty('margin-left', '0', 'important');
+      el.style.setProperty('width', panelContentWidth + 'px', 'important');
+      el.style.setProperty('padding-left', '0', 'important');
+      var w = Math.max(30, panelContentWidth);
       var h = panel.clientHeight - (parseFloat(scs.paddingTop) || 0) - (parseFloat(scs.paddingBottom) || 0);
       var op = panel.querySelector('.v2-rc-acb-opby');
       try {
@@ -11879,8 +11982,24 @@ function gateAutofit(root) {
       // 'expected | prévu' and the registration — got the scraps and
       // collapsed. Now the type line takes the bigger share first and
       // Operated-By fits into the real remainder, capped below the type.
-      var typeBudget = op ? Math.floor(h * 0.62) : Math.floor(h * 0.92);
+      var typeBudget = op ? Math.floor(h * 0.72) : Math.floor(h * 0.92);
       _boxAssign(el, w, Math.max(14, typeBudget), null, false, true);
+      // A short model-only value should use the panel, not stop at the old
+      // 38px flex-box equilibrium. Grow it until either width or real panel
+      // height says stop; long model+registration lines naturally stay lower.
+      if (!op) {
+        var heroPx = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+        var heroCap = Math.min(62, Math.floor(h * 0.72));
+        while (heroPx < heroCap) {
+          var nextHeroPx = Math.min(heroCap, heroPx + 1);
+          el.style.setProperty('font-size', nextHeroPx + 'px', 'important');
+          if (el.scrollWidth > w || el.scrollHeight > h) {
+            el.style.setProperty('font-size', heroPx + 'px', 'important');
+            break;
+          }
+          heroPx = nextHeroPx;
+        }
+      }
       var opAvail = Math.max(12, Math.floor(h - el.offsetHeight - 6));
       if (op) _boxAssign(op, w, Math.min(opAvail, Math.floor(h * 0.30)), null, false, true);
       // v22866 — width can still squeeze a long type+registration line
@@ -11946,6 +12065,7 @@ function gateAutofit(root) {
       acb.style.setProperty('justify-content', 'center', 'important');
     });
   } catch (e) {}
+  gateLanguageLayout(root);
 }
 
 // ═══ BOARD AUTOFIT ═══ (Nick: 'row sizes everywhere to check and adjust',
@@ -13299,7 +13419,7 @@ const gView = document.getElementById('gateView');
       // poll) happened to change at the same moment — which is why the screen
       // looked "one click behind" instead of simply stuck.
       var _langTag = (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '';
-      var _gateKey = (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag;
+      var _gateKey = (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (currentFlight._sortTs||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag;
       if (window._lastGateKey !== _gateKey) {
         window._lastGateKey = _gateKey;
 
@@ -13452,32 +13572,45 @@ const gView = document.getElementById('gateView');
         if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
         var _newAdLogo = document.getElementById('gateAdLogo');
         if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
-        // Run autofit synchronously first so the un-shrunk (large) text never
-        // paints — that was the "words bump up to twice the size then snap
-        // back" flash on every rebuild. The rAF pass stays as a correction
-        // once web fonts have fully settled.
+        // Run autofit synchronously so oversized text never paints. There used
+        // to be six more fit passes (double-rAF, three delayed timers, and a
+        // five-second heartbeat); each reset and re-measured the boarding text
+        // and made the numbers visibly fight between sizes. Fit again only when
+        // the font finishes loading or the view's actual dimensions change.
         try { if (typeof gateAutofit === "function") gateAutofit(gView); } catch(e){}
-        try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
-        // Re-fit once web fonts have actually loaded — DM Sans is WIDER than the
-        // fallback, so an early fit can leave long city names (e.g. "Regina")
-        // overflowing and clipping to "Regi…". And re-fit on short delays to
-        // catch values populated late by the live data feed.
-        try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); } catch(e){}
-        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 450); } catch(e){}
-        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 1300); } catch(e){}
-        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 3200); } catch(e){} // late refit: fonts/skins settle after 1.3s (Nick: AC19... Toron...)
-        // STANDING refit heartbeat — production kiosks kept ellipsizing the
-        // big values after every one-shot pass (late fonts / ad reflows we
-        // cannot reproduce). Re-fit every 5 s while a gate view is up; the
-        // pass is measure-only and no-ops when nothing overflows.
         try {
           if (window._gateFitTick) clearInterval(window._gateFitTick);
-          window._gateFitTick = setInterval(function(){
-            try {
-              var gv2 = document.getElementById('gateView');
-              if (gv2 && typeof screenType !== 'undefined' && screenType === 'gate' && typeof gateAutofit === 'function') gateAutofit(gv2);
-            } catch (e2) {}
-          }, 5000);
+          window._gateFitTick = null;
+          var _fitGeneration = (window._gateFitGeneration || 0) + 1;
+          window._gateFitGeneration = _fitGeneration;
+          if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){
+            if (window._gateFitGeneration !== _fitGeneration) return;
+            var _fontView = document.getElementById('gateView');
+            if (_fontView === gView && typeof gateAutofit === 'function') gateAutofit(_fontView);
+          });
+          // Observe the VIEWPORT, not gateView's content box. A content
+          // ResizeObserver feeds font changes back into itself (fit → a 1 px
+          // content change → fit again) even when the physical screen never
+          // changed. The viewport event is exactly the signal this needs.
+          window._gateFitViewportKey = Math.round(window.innerWidth || 0) + 'x'
+            + Math.round(window.innerHeight || 0);
+          if (!window._gateFitResizeHandler) {
+            window._gateFitResizeHandler = function () {
+              var _viewportKey = Math.round(window.innerWidth || 0) + 'x'
+                + Math.round(window.innerHeight || 0);
+              if (_viewportKey === window._gateFitViewportKey) return;
+              window._gateFitViewportKey = _viewportKey;
+              if (window._gateFitResizeTimer) clearTimeout(window._gateFitResizeTimer);
+              window._gateFitResizeTimer = setTimeout(function () {
+                try {
+                  var _resizeView = document.getElementById('gateView');
+                  if (_resizeView && typeof screenType !== 'undefined' && screenType === 'gate'
+                      && typeof gateAutofit === 'function') gateAutofit(_resizeView);
+                } catch (e2) {}
+              }, 80);
+            };
+            window.addEventListener('resize', window._gateFitResizeHandler, { passive: true });
+          }
         } catch(e){}
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
@@ -13865,7 +13998,11 @@ const gView = document.getElementById('gateView');
       if (currentFlight.flight && !currentFlight._gateEnriched) {
         currentFlight._gateEnriched = true;
         var _enrichIata = iata;
-        var _todayStr = fidsLocalDateKey(Date.now(), ((typeof AP !== 'undefined' && AP[_enrichIata]) ? AP[_enrichIata].tz : '') || tz || 'UTC');
+        // Enrich the date the flight actually operates. Late-evening gate
+        // screens commonly show tomorrow's first departure; querying today's
+        // date made the provider return no match even when tomorrow's record
+        // already carried its aircraft assignment (PD2294 at YQM).
+        var _todayStr = fidsLocalDateKey(currentFlight._sortTs || Date.now(), ((typeof AP !== 'undefined' && AP[_enrichIata]) ? AP[_enrichIata].tz : '') || tz || 'UTC');
 
         var _enrichFlight = currentFlight.flight;
         loadFlight(currentFlight.flight, _todayStr, _enrichIata).then(function(data) {
@@ -14085,9 +14222,19 @@ const gView = document.getElementById('gateView');
 
           // Aircraft type
           if (_eq.aircraft || _eq.aircraftCode) {
-            currentFlight._aircraft = _eq.aircraft || currentFlight._aircraft;
-            currentFlight._aircraftCode = _eq.aircraftCode || currentFlight._aircraftCode;
-            changed = true;
+            var _nextAircraft = _eq.aircraft || currentFlight._aircraft || '';
+            var _nextAircraftCode = _eq.aircraftCode || currentFlight._aircraftCode || '';
+            if (currentFlight._aircraft !== _nextAircraft || currentFlight._aircraftCode !== _nextAircraftCode) {
+              currentFlight._aircraft = _nextAircraft;
+              currentFlight._aircraftCode = _nextAircraftCode;
+              changed = true;
+            }
+            // Flight rows are replaced on each feed refresh. Preserve the
+            // resolved type outside the row so it cannot fall back to Pending.
+            if (typeof _acResolvedPut === 'function') {
+              _acResolvedPut(currentFlight.flight, _nextAircraft, _nextAircraftCode,
+                _regTrustworthy ? _eq.reg : '');
+            }
           }
 
           // Callsign
@@ -14100,11 +14247,13 @@ const gView = document.getElementById('gateView');
           // Only apply if different from the marketing carrier (otherwise it's
           // just the airline operating its own flight, no "operated by" tag needed).
           if (_eq.opCode) {
-            currentFlight._opCode = _eq.opCode;
-            currentFlight._opName = _eq.opName;
-            changed = true;
-            console.log('[FIDS] Operator resolved:', currentFlight.flight, '→',
-                        _eq.opCode, '(' + (_eq.opSource || 'locked') + ')');
+            if (currentFlight._opCode !== _eq.opCode || currentFlight._opName !== _eq.opName) {
+              currentFlight._opCode = _eq.opCode;
+              currentFlight._opName = _eq.opName;
+              changed = true;
+              console.log('[FIDS] Operator resolved:', currentFlight.flight, '→',
+                          _eq.opCode, '(' + (_eq.opSource || 'locked') + ')');
+            }
           }
 
           // Inbound — publish to window so the panel and map can read it.
@@ -14119,7 +14268,18 @@ const gView = document.getElementById('gateView');
             // this reg-lookup inbound while ITS outbound owns the screen
             // (harness-proven: an untagged one crossed gates and dragged its
             // tail onto other flights' panels).
+            var _prevInbound = window._gateInbound;
+            var _prevInboundKey = _prevInbound ? [
+              _prevInbound.flight, _prevInbound.status, _prevInbound._locIata,
+              _prevInbound._aircraft, _prevInbound._aircraftCode, _prevInbound._reg,
+              _prevInbound._sortTs, _prevInbound._revTs
+            ].join('|') : '';
             data.inbound._forOutbound = _enrichFlight;
+            var _nextInboundKey = [
+              data.inbound.flight, data.inbound.status, data.inbound._locIata,
+              data.inbound._aircraft, data.inbound._aircraftCode, data.inbound._reg,
+              data.inbound._sortTs, data.inbound._revTs
+            ].join('|');
             window._gateInbound = data.inbound;
             // Merge — don't let the board's (often altitude-less) telemetry blank
             // out a real altitude a previous update already wrote for this same
@@ -14141,7 +14301,7 @@ const gView = document.getElementById('gateView');
                 ? { lat: _la, lng: _ln, speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null }
                 : null;
             })();
-            changed = true;
+            if (_prevInboundKey !== _nextInboundKey) changed = true;
             console.log('[FIDS] Inbound resolved:', data.inbound.flight,
                         'from', data.inbound._locIata,
                         '(' + data.inbound._aircraftCode + ' ' + data.inbound._reg + ')');
@@ -14156,8 +14316,12 @@ const gView = document.getElementById('gateView');
           // put "expected | prévu" on confirmed tails when a thin round got
           // rejected by the lock, and dropped it off lock-restored history
           // tails on rounds with no reg at all.
-          currentFlight._regSource = (currentFlight._reg && _eq.reg === currentFlight._reg)
+          var _nextRegSource = (currentFlight._reg && _eq.reg === currentFlight._reg)
             ? (_eq.regSource || '') : '';
+          if (String(currentFlight._regSource || '') !== _nextRegSource) {
+            currentFlight._regSource = _nextRegSource;
+            changed = true;
+          }
           if (data.operator && data.operator._source) currentFlight._operatorSource = data.operator._source;
 
           // "Pending" means: no reg available from today OR from history.
@@ -14176,19 +14340,20 @@ const gView = document.getElementById('gateView');
             // reg from an earlier successful call (including the equip lock —
             // currentFlight is rebuilt every refresh, so _lastGoodReg alone
             // doesn't survive; the lock does).
-            if (!currentFlight.reg && !currentFlight._lastGoodReg && !_eq.reg) {
+            if (!currentFlight._reg && !currentFlight._lastGoodReg && !_eq.reg) {
+              if (currentFlight._aircraftPending === false) changed = true;
               currentFlight._aircraftPending = true;
               scheduleAircraftPendingRetry(currentFlight.flight, _enrichIata);
-              changed = true;
               console.log('[FIDS] Aircraft pending:', currentFlight.flight, '— will retry in 3 min');
             } else {
               // Keep showing the last known aircraft. Don't flip back to pending.
               console.log('[FIDS] API returned no reg for', currentFlight.flight,
-                          '— keeping last known reg:', currentFlight.reg || currentFlight._lastGoodReg);
+                          '— keeping last known reg:', currentFlight._reg || currentFlight._lastGoodReg);
               // Still schedule a retry — we want today's confirmed data eventually.
               scheduleAircraftPendingRetry(currentFlight.flight, _enrichIata);
             }
           } else {
+            if (currentFlight._aircraftPending === true) changed = true;
             currentFlight._aircraftPending = false;
             // Cache the good reg so we don't lose it on the next empty response
             currentFlight._lastGoodReg = data.reg;
@@ -14199,7 +14364,7 @@ const gView = document.getElementById('gateView');
             }
           }
 
-          if (changed) window._lastGateKey = ''; // force re-render with new data
+          if (changed && typeof requestGateRebuild === 'function') requestGateRebuild();
         }).catch(function(e){
           console.warn('[FIDS] loadFlight failed:', e && e.message);
         });
@@ -14397,7 +14562,7 @@ const gView = document.getElementById('gateView');
 
         <!-- Banner — same v2 chevron pattern as the FIDS board (Nick): time
              + date top-right, airport pill (logo + IATA + name) center, and
-             the screen title right. Classes come from fids-v3.css so every
+             the screen title right. Classes come from flight-display.css so every
              theme (including custom) styles it exactly like the board. -->
         ${(function () {
           var _lg = '';
@@ -17894,11 +18059,11 @@ const LOGO_SUBFOLDER = {
   'Air_Canada_Logo_2017_stacked.svg':'airlines/canadian', 'Air_Canada_Logo_2017_stacked_variant.svg':'airlines/canadian', 'American_Airlines_Logo_2013_alternative_variant.svg':'airlines/us-major',
   'BA-long.svg':'airlines/european', 'BA-square.svg':'airlines/european', 'Envoy.png':'airlines/us-regional',
   'HI-Express.svg':'hotels/ihg', 'Hawaiian.svg':'airlines/us-major', 'Hilton-Icon.jpeg':'hotels/hilton',
-  'Holiday-Inn-Logo.svg':'hotels/ihg', 'Holiday_Inn.svg':'hotels/ihg', 'Hyatt-01.eps':'hotels/hyatt', 'KLM_Logo_1971_SkyTeam.svg':'airlines/european',
-  'KLM_Logo_2011.svg':'airlines/european', 'KLM_Logo_2011_SkyTeam.svg':'airlines/european', 'KLM_Logo_2024 (1).svg':'airlines/european', 'KLM_Logo_2024.svg':'airlines/european',
-  'Logo Alternative.svg':'hotels/hilton', 'Logo.svg':'hotels/hilton', 'Lufthansa_Logo_2018.svg':'airlines/european', 'Oneworld-Logo.png':'airlines/alliances',
+  'Holiday-Inn-Logo.svg':'hotels/ihg', 'Holiday_Inn.svg':'hotels/ihg', 'KLM_Logo_1971_SkyTeam.svg':'airlines/european',
+  'KLM_Logo_2011.svg':'airlines/european', 'KLM_Logo_2011_SkyTeam.svg':'airlines/european', 'KLM_Logo_2024.svg':'airlines/european',
+  'hilton-alternative.svg':'hotels/hilton', 'Logo.svg':'hotels/hilton', 'Lufthansa_Logo_2018.svg':'airlines/european', 'Oneworld-Logo.png':'airlines/alliances',
   'Oneworld.svg':'airlines/alliances', 'Oneworld_logo.svg':'airlines/alliances', 'PAL-Airlines.svg':'airlines/canadian-regional', 'bearskin-wordmark-light.svg':'airlines/canadian-regional', 'wasaya-wordmark-light.svg':'airlines/canadian-regional', 'north-star-wordmark-light.svg':'airlines/canadian-regional', 'Porter_Airlines_Logo_2006.svg':'airlines/canadian',
-  'SO.png':'hotels/accor-premium', 'Skywest-Airlines-01.svg':'airlines/us-regional', 'Sofitel-01.eps':'hotels/accor-luxury', 'Sofitel-01.jpg':'hotels/accor-luxury',
+  'SO.png':'hotels/accor-premium', 'Skywest-Airlines-01.svg':'airlines/us-regional', 'Sofitel-01.jpg':'hotels/accor-luxury',
   'Sofitel-01.png':'hotels/accor-luxury', 'WestJet_Logo_2016_symbol.svg':'airlines/canadian', 'WestJet_Logo_2018.svg':'airlines/canadian', 'WestJet_Logo_2018_white_wordmark.svg':'airlines/canadian', 'aaadvantage-white.png':'airlines/us-major', 'aaadvantage.png':'airlines/us-major', 'ac-hotels.png':'hotels/marriott',
   'ac-roundel.png':'airlines/canadian', 'aeroplan.svg':'airlines/canadian', 'air-canada-star-alliance-horizontal.svg':'airlines/canadian', 'air-canada-white.svg':'airlines/canadian', 'air-canada-wordmark-dark.svg':'airlines/canadian', 'air-canada-wordmark-light.svg':'airlines/canadian', 'air-canada.svg':'airlines/canadian', 'air-france-wordmark-dark.svg':'airlines/european',
   'air-france-wordmark-light.svg':'airlines/european', 'air-france.svg':'airlines/european', 'alaska-airlines-wordmark-dark.svg':'airlines/us-major',
@@ -17947,10 +18112,10 @@ const LOGO_SUBFOLDER = {
   'jazz.svg':'airlines/canadian-regional', 'jetblue-wordmark-dark.svg':'airlines/us-major', 'level-wordmark-light.svg':'airlines/european', 'level-wordmark-dark.svg':'airlines/european', 'level-emblem.svg':'airlines/european', 'level.svg':'airlines/european', 'avelo-wordmark-light.svg':'airlines/us-major', 'avelo-wordmark-dark.svg':'airlines/us-major', 'avelo-wordmark-color.svg':'airlines/us-major', 'avelo-emblem.svg':'airlines/us-major', 'avelo.svg':'airlines/us-major', 'jetblue-wordmark-light.svg':'airlines/us-major', 'jetblue.svg':'airlines/us-major', 'frontier.svg':'airlines/us-major', 'frontier-emblem.svg':'airlines/us-major', 'frontier-wordmark-light.svg':'airlines/us-major', 'frontier-wordmark-dark.svg':'airlines/us-major',
   'jo-and-joe.svg':'hotels/accor-premium', 'jojoe.png':'hotels/accor-premium', 'kempinski.png':'hotels/other-chains', 'kimpton.png':'hotels/ihg',
   'klm-wordmark-dark.svg':'airlines/european', 'klm-wordmark-light.svg':'airlines/european', 'klm.png':'airlines/european', 'le-meridien.png':'hotels/choice-le-meridien',
-  'lemeridien-01.eps':'hotels/choice-le-meridien', 'logo-hiex-white.svg':'hotels/ihg', 'lot-wordmark-dark.svg':'airlines/european',
+  'logo-hiex-white.svg':'hotels/ihg', 'lot-wordmark-dark.svg':'airlines/european',
   'lot-wordmark-light.svg':'airlines/european', 'lufthansa.svg':'airlines/european', 'm-gallery.png':'hotels/accor-premium', 'mama-shelter.svg':'hotels/accor-midscale',
   'mandarin-oriental.svg':'hotels/accor-luxury', 'mantis.png':'hotels/accor-premium', 'mantis.svg':'hotels/accor-premium', 'mantra.svg':'hotels/accor-premium',
-  'marriott-01.eps':'hotels/marriott', 'marriott-bonvoy-white.png':'hotels/marriott', 'marriott-bonvoy.png':'hotels/marriott', 'marriott-white.png':'hotels/marriott',
+  'marriott-bonvoy-white.png':'hotels/marriott', 'marriott-bonvoy.png':'hotels/marriott', 'marriott-white.png':'hotels/marriott',
   'marriott.png':'hotels/marriott', 'mercure.png':'hotels/accor-midscale', 'mercure.svg':'hotels/accor-midscale', 'mgallery.png':'hotels/accor-premium',
   'mgm-resorts.png':'hotels/other-chains', 'mokulele-emblem.svg':'airlines/us-major', 'mokulele-wordmark-dark.svg':'airlines/us-major', 'mokulele-wordmark-light.svg':'airlines/us-major',
   'mokulele-wordmark.svg':'airlines/us-major', 'mokulele.svg':'airlines/us-major', 'mondrian.png':'hotels/accor-premium', 'mondrian.svg':'hotels/accor-premium',
@@ -18905,6 +19070,7 @@ var _GATE_LBL = {
   yourAc:    { en:'Your Aircraft', fr:'Votre Avion',    es:'Su Aeronave',  de:'Ihr Flugzeug',it:'Il Tuo Aereo',pt:'Sua Aeronave',ja:'ご搭乗機', zh:'您的航机', ar:'طائرتك' },
   acPending: { en:'Aircraft details pending', fr:'Détails de l\u2019appareil à venir', es:'Datos del avión pendientes', de:'Flugzeugdaten folgen', it:'Dettagli dell\u2019aereo in arrivo', pt:'Detalhes da aeronave pendentes', ja:'機材情報は準備中', zh:'机型信息即将显示', ar:'تفاصيل الطائرة قريباً' },
   acImgPending:{ en:'Aircraft image pending', fr:'Image de l\u2019appareil à venir', es:'Imagen del avión pendiente', de:'Flugzeugbild folgt', it:'Immagine dell\u2019aereo in arrivo', pt:'Imagem da aeronave pendente', ja:'機体画像は準備中', zh:'机型图片即将显示', ar:'صورة الطائرة قريباً' },
+  acUpdating:{ en:'Aircraft details updating', fr:'Mise à jour de l\u2019appareil', es:'Actualizando datos del avión', de:'Flugzeugdaten werden aktualisiert', it:'Aggiornamento dati dell\u2019aereo', pt:'Atualizando dados da aeronave', ja:'機材情報を更新中', zh:'正在更新机型信息', ar:'جارٍ تحديث تفاصيل الطائرة' },
   operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
   welcome:   { en:'Welcome',       fr:'Bienvenue',      es:'Bienvenido',   de:'Willkommen',  it:'Benvenuto',   pt:'Bem-vindo',  ja:'ようこそ',  zh:'欢迎',   ar:'أهلاً' },
   priority:  { en:'Priority',      fr:'Priorité',       es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
@@ -19094,7 +19260,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23146';
+var FIDS_BUILD_TAG = 'v23157';
 (function(){
   try {
     function _addTag(){
@@ -19158,7 +19324,7 @@ var FIDS_BUILD_TAG = 'v23146';
 })();
 
 // ── GATE STYLESHEET GUARD ────────────────────────────────────────────────
-// One browser cached a dead response for gids-v218.78.css (fetched during a
+// One browser cached a dead response for gate-display.css (fetched during a
 // deploy window) and rendered the retired gate look — visible g8-r2 banner,
 // unstyled rails — on every build after, because the cached URL never
 // changed. The probe measures the sentinel rule that sits at the END of the
@@ -19169,11 +19335,11 @@ var FIDS_BUILD_TAG = 'v23146';
   try {
     // Every guarded stylesheet carries a sentinel rule at its very END with a
     // unique probe height, so a cached bad/truncated copy of ANY of them
-    // self-heals — the jetBlue clip was fids-layout-fixes.css gone stale on
+    // self-heals — the jetBlue clip was display-overrides.css gone stale on
     // one browser, the exact disease v22358 fixed for the gate stylesheet.
     var GUARDS = [
-      { href: 'gids-v218.78.css',     cls: 'g8-css-sentinel',   h: 7, tries: 0 },
-      { href: 'fids-layout-fixes.css', cls: 'fids-css-sentinel', h: 9, tries: 0 }
+      { href: 'gate-display.css',     cls: 'g8-css-sentinel',   h: 7, tries: 0 },
+      { href: 'display-overrides.css', cls: 'fids-css-sentinel', h: 9, tries: 0 }
     ];
     function _cssAlive(g) {
       if (!document.body) return true; // can't probe yet — don't re-fetch blind
@@ -24745,7 +24911,7 @@ function applyAirportConfigToBoard(iata) {
       // the user's Row Odd picker actually paints the odd rows.
       if (_cc.rowOdd)  st.setProperty('--fids-row-odd',       _cc.rowOdd,  'important');
       // Inject a high-specificity rule set so the per-theme hardcoded
-      // rules in fids-v3.css (body[data-fids-theme="navy"] #fidsTable
+      // rules in flight-display.css (body[data-fids-theme="navy"] #fidsTable
       // tbody tr) can't override custom row colors. This rule has the
       // same specificity as those theme rules but matches "custom" only.
       var _existing = document.getElementById('_fidsCustomThemeRules');
@@ -35148,38 +35314,6 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // different sizes across the pages of a single ad (Nick: 'ALL THE SECTIONS
     // NEED TO BE UNIFORM EVERYWHERE'). Ad type is fixed by role and wraps.
     try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
-    // v23116 — LANE-LINE LANGUAGE GUARD (Nick: 'dont ever let a sentence
-    // break thats a fine within Canadian law'). Each language on a lane sign
-    // is one nowrap unit; if both units don't fit on one line, the sign
-    // stacks them whole (class flips the sep off and the units to blocks).
-    // Measured against the SINGLE-LINE width: un-stack first so the test is
-    // honest, then re-stack only if that single line genuinely overflows.
-    try {
-      // grp-labels REMOVED from this guard (v23127): the stack test misfired
-      // on them and silently ate the pipe out of 'Priority | Priorité'.
-      document.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title').forEach(function (ln) {
-        if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
-            && !/\|/.test(ln.textContent || '')) return;
-        // Force ONE line for the measurement — inline units wrap between
-        // themselves without ever overflowing, so scrollWidth alone can't
-        // see that the single-line form doesn't fit (the same blindness
-        // that hid '12:30p…' from the value fitter).
-        ln.classList.remove('g8-lane-stacked');
-        // Measure against the COLUMN, not the label's own box — the label
-        // grows past its column instead of overflowing itself (measured:
-        // scrollWidth == clientWidth == 484 inside a 417px column), so the
-        // honest test is the single-line width vs the space the column has.
-        var _lnPrev = ln.style.whiteSpace;
-        ln.style.whiteSpace = 'nowrap';
-        var _lnAvail = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
-        var _lnOver = ln.scrollWidth > _lnAvail - 8;
-        ln.style.whiteSpace = _lnPrev || '';
-        if (_lnOver) ln.classList.add('g8-lane-stacked');
-        // same class does double duty: on titles it stacks the language
-        // halves whole and hides the pipe (CSS), so no surface anywhere can
-        // show 'Boarding |' over 'Embarquement' — never a broken pair.
-      });
-    } catch (e) {}
     var ones = document.querySelectorAll('.axr-one-line,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable .fids-airline-name,'
@@ -37058,7 +37192,7 @@ setInterval(function () {
 // for like Gate 1 maybe a pattern or colors or something then etc').
 // CSS can't read the carousel digit out of the DOM, so this keeper mirrors
 // .bidsv2-carousel-number's text onto body[data-bids-carousel]; the per-
-// carousel palette lives in fids-layout-fixes.css. Same keeper shape as the
+// carousel palette lives in display-overrides.css. Same keeper shape as the
 // pattern sync above — re-stamped every second so screen switches and
 // re-renders can never strand a stale colour.
 (function () {

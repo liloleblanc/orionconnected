@@ -116,7 +116,7 @@ html, body {
 
   /* Time + date block — pull it in-flow on a second row instead of
      absolute-positioned in the corner where it overlaps the board label.
-     fids-v3.css uses absolute positioning + transform to centre the
+     flight-display.css uses absolute positioning + transform to centre the
      time-block on desktop; on mobile we reset all of those to in-flow. */
   .fids-banner-time-block,
   body[data-fids-layout="right"] .fids-banner-time-block {

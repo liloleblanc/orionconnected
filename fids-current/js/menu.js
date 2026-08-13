@@ -2251,8 +2251,8 @@ function cuSetSize(size) {
 
 function _applyLogoSize(size) {
   // ONE SOURCE OF TRUTH for the tier heights: the CSS, keyed on
-  // body[data-fids-logo-size]. fids-v3.css pins the board at 44/66/90 and
-  // bids-v2.css pins the bags screen at 68/98/132, each with height,
+  // body[data-fids-logo-size]. flight-display.css pins the board at 44/66/90 and
+  // baggage-display.css pins the bags screen at 68/98/132, each with height,
   // min-height and max-height locked !important — a set height no matter what.
   //
   // This function used to ALSO write --fids-logo-size/--fids-row-h on :root,

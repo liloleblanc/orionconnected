@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Asset Library</title>
 <style>
-  /* ── This viewer is DUMB by design (see ARCHITECTURE.md). It hardcodes
+  /* ── This viewer is data-driven (see docs/ARCHITECTURE.md). It hardcodes
      nothing about logos or categories — it renders whatever the manifest
-     contains. Add assets, re-run build-asset-manifest.py, refresh. ── */
+     contains. Add assets, re-run scripts/assets/build-manifest.py, refresh. ── */
   :root{
     --bg:#0e1116; --panel:#161b22; --panel2:#1c232d; --line:#283039;
     --ink:#e6edf3; --muted:#8b98a5; --accent:#4cc2ff; --accent2:#2dd4a7;
@@ -134,7 +134,7 @@ async function boot(){
   }catch(e){
     el("results").innerHTML =
       `<div class="empty">Could not load <b>${MANIFEST_URL}</b>.<br>`+
-      `Make sure build-asset-manifest.py has been run and this page sits in /assets/.<br>`+
+      `Run npm run assets:build and keep this page beside the manifest in /assets/.<br>`+
       `<small>${e.message}</small></div>`;
     return;
   }
