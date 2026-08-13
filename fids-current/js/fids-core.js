@@ -7380,7 +7380,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // rail, the boarding row, and the banner). Nick's screenshot: right
       // rail correctly English-only, left rail still 'Flight | Vol'.
       function _railPair(key) {
-        var _s = _gateLbl(key, _frF, function (w) { return w; }, '\u0001');
+        var _s = _gateLbl(key, _frF, function (w) { return w; }, '\u0001', true);
         var _a = _s.split('\u0001');
         return [_a[0] || '', _a[1] || ''];
       }
@@ -7391,7 +7391,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // v22956 — labels arrive langs-resolved (French-first already applied
         // by _gateLbl); re-swapping here would undo it.
         var _p1 = en, _p2 = second;
-        var _sec = (_p2 && _p2 !== _p1)
+        var _sec = _p2 /* v23158 keepDup: EN/FR share 'Destination' — print the pair anyway */
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
         return '<div class="v2-fi-row">'
@@ -7446,7 +7446,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // ('DEN' beside 'Reno') — if the city flips and the chip can't flip
       // with it, drop the chip entirely.
       var _destChipHtml = _dfChip || (_dfCity ? '' : _destIataDisp);
-      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ')
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true)
         + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
@@ -7511,7 +7511,7 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}
@@ -7735,10 +7735,30 @@ function _buildV2MapCol(ctx, vars) {
       else if (_rawSt === 'ontime' || _rawSt === 'on-time') _stKey = 'ontime';
       else _stKey = 'scheduled';
       // Verified airborne (real altitude from live telemetry) → show the PHASE
-      // 'En route' instead of the punctuality word (Early / On time) the feed
-      // hands us. A plane at altitude is unambiguously enroute. Punctuality
-      // words stay everywhere else; don't override a Cancelled/Diverted flight.
-      if (_liveAlt !== null && _rawSt !== 'cancelled' && _rawSt !== 'diverted') _stKey = 'enroute';
+      // 'En route' instead of the neutral word (Scheduled / On time) the feed
+      // hands us. A plane at altitude is unambiguously enroute.
+      // v23158 — but PUNCTUALITY BEATS PHASE (Nick: 'Why is it nt deayed on
+      // the right' — AC1986 running 104 min late read 'En route | En vol'
+      // in green while every other surface said Delayed; and his approved
+      // reference card shows 'Early | En avance' on an airborne flight).
+      // Delayed and Early survive takeoff; the amber/green ink and the
+      // revised time already carry the story. Cancelled/Diverted untouched.
+      if (_liveAlt !== null && _rawSt !== 'cancelled' && _rawSt !== 'diverted'
+          && _stKey !== 'delayed' && _stKey !== 'early') _stKey = 'enroute';
+      // v23158b — AND THE REVISED TIME IS THE TRUTH THE STATUS WORD MISSES.
+      // The feed keeps status 'active' while carrying a revised arrival an
+      // hour later — so the guard above never saw 'delayed' and the card
+      // stayed green 'En route' on a flight every other surface called
+      // Delayed (AC1986: 12:33 revised 2:17). Same law as the big panel's
+      // _bcDelayed: a revision later than schedule IS delayed, earlier IS
+      // early — his approved reference card shows 'Early | En avance' on an
+      // airborne flight. 5-minute dead band so a jitter never flips it.
+      try {
+        if (_ib && _ib._revTs && _ib._sortTs && _stKey !== 'cancelled' && _stKey !== 'arrived') {
+          if (_ib._revTs - _ib._sortTs > 5 * 60000) _stKey = 'delayed';
+          else if (_ib._sortTs - _ib._revTs > 5 * 60000) _stKey = 'early';
+        }
+      } catch (e) {}
       var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
       var _ST_SHORT = {
         enroute:{en:'En route',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
@@ -9069,6 +9089,11 @@ function uxgGateHtml(ctx) {
     var origParts = currentFlight.time.split(':'), updParts = currentFlight.upd.split(':');
     if (origParts.length === 2 && updParts.length === 2) {
       var delayMins = (parseInt(updParts[0])*60+parseInt(updParts[1])) - (parseInt(origParts[0])*60+parseInt(origParts[1]));
+      // v23158 — MIDNIGHT WRAP: wall-clock HH:MM strings subtract to -1410 when a
+      // 23:50 departure is revised to 00:20; the >0 guard then skipped the shift
+      // and the arrival sat unrevised and white. Only a swing past half a day is
+      // a wrap; genuinely earlier times stay negative and are skipped.
+      if (delayMins < -720) delayMins += 1440;
       if (delayMins > 0 && _cleanArr !== '\u2014') {
         var arrParts = _cleanArr.split(':');
         if (arrParts.length === 2) {
@@ -19260,7 +19285,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23157';
+var FIDS_BUILD_TAG = 'v23158';
 (function(){
   try {
     function _addTag(){
@@ -29564,13 +29589,25 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // between builds and are gone.
       var fullW = r.width >= hb.width - 8, fullH = r.height >= hb.height - 8;
       var padX = 0, padY = 0;
-      if (!(fullW && fullH)) {
-        // Clear the WHOLE double-line motif past the ad edge (the inner
-        // line sat on the creative — 'you can still see the ad outside
-        // borders'). Solved from the art's line geometry: inner-line inner
-        // edge at 2.8%/4.3% of the frame box.
+      // v23158 — PER-AXIS, AND THE FRAME NEVER LEAVES THE HOST (Nick: 'red
+      // frame missing left side'). The old test padded BOTH axes unless the
+      // creative filled BOTH — so a full-WIDTH letterboxed ad (the Bell
+      // wifi card: 977 wide in a 977 host) still inflated horizontally,
+      // pushed the frame 29px past each side of the overflow:hidden slide
+      // wrapper, and the wrapper clipped the art's left band clean off
+      // (the right band only survived because that side of the art sits
+      // deeper in). Each axis now decides for itself — a full axis takes
+      // the approved full-bleed behaviour ('it can go over it, its fine'),
+      // a letterboxed axis pads outward — and the pad is clamped to the
+      // real letterbox margin so no side of the frame can ever cross the
+      // wrapper edge and vanish, whatever the creative's shape.
+      if (!fullW) {
         padX = Math.max(10, Math.round(r.width * 0.030));
+        padX = Math.max(0, Math.min(padX, Math.floor((hb.width - r.width) / 2)));
+      }
+      if (!fullH) {
         padY = Math.max(10, Math.round(r.height * 0.047));
+        padY = Math.max(0, Math.min(padY, Math.floor((hb.height - r.height) / 2)));
       }
       try { if (m.classList.contains('g8-ad-inset')) { m.classList.remove('g8-ad-inset'); delete f.dataset.geom; continue; } } catch (e) {}
       // FREEZE (Nick: 'make sure the frames don't move'): once placed,
