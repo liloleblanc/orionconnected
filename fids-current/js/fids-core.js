@@ -7735,10 +7735,30 @@ function _buildV2MapCol(ctx, vars) {
       else if (_rawSt === 'ontime' || _rawSt === 'on-time') _stKey = 'ontime';
       else _stKey = 'scheduled';
       // Verified airborne (real altitude from live telemetry) → show the PHASE
-      // 'En route' instead of the punctuality word (Early / On time) the feed
-      // hands us. A plane at altitude is unambiguously enroute. Punctuality
-      // words stay everywhere else; don't override a Cancelled/Diverted flight.
-      if (_liveAlt !== null && _rawSt !== 'cancelled' && _rawSt !== 'diverted') _stKey = 'enroute';
+      // 'En route' instead of the neutral word (Scheduled / On time) the feed
+      // hands us. A plane at altitude is unambiguously enroute.
+      // v23158 — but PUNCTUALITY BEATS PHASE (Nick: 'Why is it nt deayed on
+      // the right' — AC1986 running 104 min late read 'En route | En vol'
+      // in green while every other surface said Delayed; and his approved
+      // reference card shows 'Early | En avance' on an airborne flight).
+      // Delayed and Early survive takeoff; the amber/green ink and the
+      // revised time already carry the story. Cancelled/Diverted untouched.
+      if (_liveAlt !== null && _rawSt !== 'cancelled' && _rawSt !== 'diverted'
+          && _stKey !== 'delayed' && _stKey !== 'early') _stKey = 'enroute';
+      // v23158b — AND THE REVISED TIME IS THE TRUTH THE STATUS WORD MISSES.
+      // The feed keeps status 'active' while carrying a revised arrival an
+      // hour later — so the guard above never saw 'delayed' and the card
+      // stayed green 'En route' on a flight every other surface called
+      // Delayed (AC1986: 12:33 revised 2:17). Same law as the big panel's
+      // _bcDelayed: a revision later than schedule IS delayed, earlier IS
+      // early — his approved reference card shows 'Early | En avance' on an
+      // airborne flight. 5-minute dead band so a jitter never flips it.
+      try {
+        if (_ib && _ib._revTs && _ib._sortTs && _stKey !== 'cancelled' && _stKey !== 'arrived') {
+          if (_ib._revTs - _ib._sortTs > 5 * 60000) _stKey = 'delayed';
+          else if (_ib._sortTs - _ib._revTs > 5 * 60000) _stKey = 'early';
+        }
+      } catch (e) {}
       var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
       var _ST_SHORT = {
         enroute:{en:'En route',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
