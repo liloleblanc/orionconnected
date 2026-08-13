@@ -7380,7 +7380,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // rail, the boarding row, and the banner). Nick's screenshot: right
       // rail correctly English-only, left rail still 'Flight | Vol'.
       function _railPair(key) {
-        var _s = _gateLbl(key, _frF, function (w) { return w; }, '\u0001');
+        var _s = _gateLbl(key, _frF, function (w) { return w; }, '\u0001', true);
         var _a = _s.split('\u0001');
         return [_a[0] || '', _a[1] || ''];
       }
@@ -7391,7 +7391,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // v22956 — labels arrive langs-resolved (French-first already applied
         // by _gateLbl); re-swapping here would undo it.
         var _p1 = en, _p2 = second;
-        var _sec = (_p2 && _p2 !== _p1)
+        var _sec = _p2 /* v23158 keepDup: EN/FR share 'Destination' — print the pair anyway */
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
         return '<div class="v2-fi-row">'
@@ -7446,7 +7446,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // ('DEN' beside 'Reno') — if the city flips and the chip can't flip
       // with it, drop the chip entirely.
       var _destChipHtml = _dfChip || (_dfCity ? '' : _destIataDisp);
-      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ')
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true)
         + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
@@ -7511,7 +7511,7 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm((typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
         + '</div>';
     }
   } catch (e) {}
@@ -9069,6 +9069,11 @@ function uxgGateHtml(ctx) {
     var origParts = currentFlight.time.split(':'), updParts = currentFlight.upd.split(':');
     if (origParts.length === 2 && updParts.length === 2) {
       var delayMins = (parseInt(updParts[0])*60+parseInt(updParts[1])) - (parseInt(origParts[0])*60+parseInt(origParts[1]));
+      // v23158 — MIDNIGHT WRAP: wall-clock HH:MM strings subtract to -1410 when a
+      // 23:50 departure is revised to 00:20; the >0 guard then skipped the shift
+      // and the arrival sat unrevised and white. Only a swing past half a day is
+      // a wrap; genuinely earlier times stay negative and are skipped.
+      if (delayMins < -720) delayMins += 1440;
       if (delayMins > 0 && _cleanArr !== '\u2014') {
         var arrParts = _cleanArr.split(':');
         if (arrParts.length === 2) {
@@ -19260,7 +19265,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23157';
+var FIDS_BUILD_TAG = 'v23158';
 (function(){
   try {
     function _addTag(){
