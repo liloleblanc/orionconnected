@@ -12296,7 +12296,7 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-ac
   line-height: 1.05 !important;
   box-sizing: border-box !important;
   width: 100% !important;
-  padding-left: 30% !important;
+  padding-left: 0 !important;
   padding-right: clamp(8px, .7vw, 14px) !important;
 }
 
