@@ -9,7 +9,7 @@ import net from 'node:net';
 const port = process.env.FIDS_DEBUG_PORT || '9223';
 const forcedStatus = String(process.env.FIDS_FORCE_STATUS || '').trim().toLowerCase();
 const targets = await fetch(`http://127.0.0.1:${port}/json/list`).then((response) => response.json());
-const page = targets.find((target) => target.type === 'page' && /gids\.html/.test(target.url));
+const page = targets.find((target) => target.type === 'page' && /\/gids(?:\.html)?(?:[?#]|$)/.test(target.url));
 assert.ok(page, 'No GIDS page is attached to the Chrome debugging port');
 
 async function openLocalWebSocket(address) {
@@ -233,7 +233,7 @@ const counters = await evaluate('window.__gateStability');
 
 console.log(JSON.stringify({ url: page.url, samples: 3, elements: first.measurements.length, counters }, null, 2));
 
-assert.equal(first.build, 'v23149');
+assert.equal(first.build, 'v23150');
 assert.equal(first.fitHeartbeatCleared, true);
 assert.equal(first.resizeHandlerActive, true);
 if (forcedStatus) assert.ok(first.boardingNumberCount > 0, `Forced ${forcedStatus} did not render boarding numbers`);

@@ -14,6 +14,10 @@ const baggageCss = fs.readFileSync(path.join(root, 'css', 'baggage-display.css')
 test('boarding fit has no standing resize heartbeat', () => {
   assert.doesNotMatch(core, /_gateFitTick\s*=\s*setInterval/);
   assert.match(core, /addEventListener\('resize', window\._gateFitResizeHandler/);
+  assert.match(core, /function gateLanguageLayout\(root\)/);
+  assert.match(core, /function gateAutofit\(root\)[\s\S]*gateLanguageLayout\(root\);/);
+  const periodicScan = core.slice(core.indexOf('function _scanAndUpgrade()'), core.indexOf('// Initial scan after a tick'));
+  assert.doesNotMatch(periodicScan, /g8-board-lane/);
   assert.match(css, /\.g8-board-grp-num[\s\S]*transition:\s*none\s*!important/);
 });
 
@@ -26,8 +30,8 @@ test('aircraft enrichment uses the flight operating date and persists the type',
 test('all display entry points load the date-context helper before core', () => {
   for (const file of ['fids.html', 'gids.html', 'bids.html']) {
     const html = fs.readFileSync(path.join(root, file), 'utf8');
-    const helper = html.indexOf('js/gate-date-context.js?v=23149');
-    const main = html.indexOf('js/fids-core.js?v=23149');
+    const helper = html.indexOf('js/gate-date-context.js?v=23150');
+    const main = html.indexOf('js/fids-core.js?v=23150');
     assert.ok(helper >= 0, `${file} is missing the date helper`);
     assert.ok(main > helper, `${file} must load the date helper before core`);
   }

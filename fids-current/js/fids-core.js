@@ -7504,20 +7504,9 @@ function _buildV2AircraftCol(ctx, vars) {
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
 
-      var _flightDateRailHtml = '';
-      if (_flightDateContext.labels && _flightDateContext.labels.length) {
-        _flightDateRailHtml = '<span class="v2-fi-dayctx">'
-          + _flightDateContext.labels.map(function (label) {
-              return '<span class="v2-fi-dayctx-line">' + label + '</span>';
-            }).join('')
-          + '</span>';
-      }
-      var _flightNumberWithDate = '<span class="v2-fi-flight-main">'
-        + (_fiFlightNo || _fnNumber || '—') + '</span>' + _flightDateRailHtml;
-
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], _flightNumberWithDate, 'v2-fi-flight-number')
+        + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
@@ -8187,15 +8176,6 @@ function _buildV2MapCol(ctx, vars) {
         var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
         if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dfRowIa) + '</span>' : '');
       })();
-      var _dDateContext = vars.flightDateContext || { labels: [] };
-      var _dDateHtml = '';
-      if (_dDateContext.labels && _dDateContext.labels.length) {
-        _dDateHtml = '<span class="v2-rc-datectx">'
-          + _dDateContext.labels.map(function (label) {
-              return '<span class="v2-rc-datectx-line">' + label + '</span>';
-            }).join('')
-          + '</span>';
-      }
       // Same 2-PANEL pattern as the inbound card, inside ONE shelf element
       // (a second shelf child breaks the rail grid): pane 1 = Flight /
       // Destination, pane 2 = Departure / Status. Departure TIME stays
@@ -8215,7 +8195,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-rc-fi-pane">'
         +     '<div class="v2-rc-fi-trow">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('departure', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-fi-departure"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '><span class="v2-rc-deptime">' + (_dDepStr || '—') + '</span>' + _dDateHtml + '</div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-fi-departure"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '><span class="v2-rc-deptime">' + (_dDepStr || '—') + '</span></div>'
         +     '</div>'
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('status', _frF) + '</div>'
@@ -11576,6 +11556,29 @@ function uxgActivateRotator() {
 
 
 
+// Keep each bilingual gate label intact. If both languages cannot fit beside
+// each other, stack the complete phrases before the gate is painted. This is
+// deliberately owned by gateAutofit: the old two-second scanner changed this
+// class after the display was already visible, producing the boarding
+// "breathing" caught by the production soak.
+function gateLanguageLayout(root) {
+  if (!root) return;
+  try {
+    root.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title').forEach(function (ln) {
+      if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
+          && !/\|/.test(ln.textContent || '')) return;
+      var parentWidth = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
+      if (parentWidth <= 1) return;
+      ln.classList.remove('g8-lane-stacked');
+      var previousWhiteSpace = ln.style.whiteSpace;
+      ln.style.whiteSpace = 'nowrap';
+      var overflows = ln.scrollWidth > parentWidth - 8;
+      ln.style.whiteSpace = previousWhiteSpace || '';
+      if (overflows) ln.classList.add('g8-lane-stacked');
+    });
+  } catch (e) {}
+}
+
 // Autofit: shrink text in given element until it fits its container width.
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
@@ -12040,6 +12043,7 @@ function gateAutofit(root) {
       acb.style.setProperty('justify-content', 'center', 'important');
     });
   } catch (e) {}
+  gateLanguageLayout(root);
 }
 
 // ═══ BOARD AUTOFIT ═══ (Nick: 'row sizes everywhere to check and adjust',
@@ -19234,7 +19238,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23149';
+var FIDS_BUILD_TAG = 'v23150';
 (function(){
   try {
     function _addTag(){
@@ -35288,50 +35292,6 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // different sizes across the pages of a single ad (Nick: 'ALL THE SECTIONS
     // NEED TO BE UNIFORM EVERYWHERE'). Ad type is fixed by role and wraps.
     try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
-    // v23116 — LANE-LINE LANGUAGE GUARD (Nick: 'dont ever let a sentence
-    // break thats a fine within Canadian law'). Each language on a lane sign
-    // is one nowrap unit; if both units don't fit on one line, the sign
-    // stacks them whole (class flips the sep off and the units to blocks).
-    // Measured against the SINGLE-LINE width: un-stack first so the test is
-    // honest, then re-stack only if that single line genuinely overflows.
-    try {
-      // grp-labels REMOVED from this guard (v23127): the stack test misfired
-      // on them and silently ate the pipe out of 'Priority | Priorité'.
-      document.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title').forEach(function (ln) {
-        if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
-            && !/\|/.test(ln.textContent || '')) return;
-        // This guard is scanned every two seconds. Geometry and text that did
-        // not change must be a true no-op; repeatedly clearing/reapplying the
-        // same inline white-space and stacking class was another source of the
-        // visible "fighting" on boarding titles and lane instructions.
-        var _lnParentW = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
-        var _lnFontPx = parseFloat(getComputedStyle(ln).fontSize) || 0;
-        var _lnFontStatus = (document.fonts && document.fonts.status) || '';
-        var _lnGuardKey = Math.round(_lnParentW) + '|'
-          + Math.round(_lnFontPx * 10) + '|' + _lnFontStatus + '|'
-          + (ln.textContent || '');
-        if (ln.dataset.gateLangGuardKey === _lnGuardKey) return;
-        // Force ONE line for the measurement — inline units wrap between
-        // themselves without ever overflowing, so scrollWidth alone can't
-        // see that the single-line form doesn't fit (the same blindness
-        // that hid '12:30p…' from the value fitter).
-        ln.classList.remove('g8-lane-stacked');
-        // Measure against the COLUMN, not the label's own box — the label
-        // grows past its column instead of overflowing itself (measured:
-        // scrollWidth == clientWidth == 484 inside a 417px column), so the
-        // honest test is the single-line width vs the space the column has.
-        var _lnPrev = ln.style.whiteSpace;
-        ln.style.whiteSpace = 'nowrap';
-        var _lnAvail = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
-        var _lnOver = ln.scrollWidth > _lnAvail - 8;
-        ln.style.whiteSpace = _lnPrev || '';
-        if (_lnOver) ln.classList.add('g8-lane-stacked');
-        ln.dataset.gateLangGuardKey = _lnGuardKey;
-        // same class does double duty: on titles it stacks the language
-        // halves whole and hides the pipe (CSS), so no surface anywhere can
-        // show 'Boarding |' over 'Embarquement' — never a broken pair.
-      });
-    } catch (e) {}
     var ones = document.querySelectorAll('.axr-one-line,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
       + ' #fidsTable .fids-airline-name,'
