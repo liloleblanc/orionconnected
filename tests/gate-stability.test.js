@@ -30,8 +30,8 @@ test('aircraft enrichment uses the flight operating date and persists the type',
 test('all display entry points load the date-context helper before core', () => {
   for (const file of ['fids.html', 'gids.html', 'bids.html']) {
     const html = fs.readFileSync(path.join(root, file), 'utf8');
-    const helper = html.indexOf('js/gate-date-context.js?v=23154');
-    const main = html.indexOf('js/fids-core.js?v=23154');
+    const helper = html.indexOf('js/gate-date-context.js?v=23155');
+    const main = html.indexOf('js/fids-core.js?v=23155');
     assert.ok(helper >= 0, `${file} is missing the date helper`);
     assert.ok(main > helper, `${file} must load the date helper before core`);
   }
