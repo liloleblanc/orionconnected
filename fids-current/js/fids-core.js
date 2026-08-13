@@ -11984,6 +11984,22 @@ function gateAutofit(root) {
       // Operated-By fits into the real remainder, capped below the type.
       var typeBudget = op ? Math.floor(h * 0.72) : Math.floor(h * 0.92);
       _boxAssign(el, w, Math.max(14, typeBudget), null, false, true);
+      // A short model-only value should use the panel, not stop at the old
+      // 38px flex-box equilibrium. Grow it until either width or real panel
+      // height says stop; long model+registration lines naturally stay lower.
+      if (!op) {
+        var heroPx = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+        var heroCap = Math.min(62, Math.floor(h * 0.72));
+        while (heroPx < heroCap) {
+          var nextHeroPx = Math.min(heroCap, heroPx + 1);
+          el.style.setProperty('font-size', nextHeroPx + 'px', 'important');
+          if (el.scrollWidth > w || el.scrollHeight > h) {
+            el.style.setProperty('font-size', heroPx + 'px', 'important');
+            break;
+          }
+          heroPx = nextHeroPx;
+        }
+      }
       var opAvail = Math.max(12, Math.floor(h - el.offsetHeight - 6));
       if (op) _boxAssign(op, w, Math.min(opAvail, Math.floor(h * 0.30)), null, false, true);
       // v22866 — width can still squeeze a long type+registration line
@@ -19244,7 +19260,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23156';
+var FIDS_BUILD_TAG = 'v23157';
 (function(){
   try {
     function _addTag(){

@@ -233,7 +233,7 @@ const counters = await evaluate('window.__gateStability');
 
 console.log(JSON.stringify({ url: page.url, samples: 3, elements: first.measurements.length, counters }, null, 2));
 
-assert.equal(first.build, 'v23156');
+assert.equal(first.build, 'v23157');
 assert.equal(first.fitHeartbeatCleared, true);
 assert.equal(first.resizeHandlerActive, true);
 if (forcedStatus) assert.ok(first.boardingNumberCount > 0, `Forced ${forcedStatus} did not render boarding numbers`);
