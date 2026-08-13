@@ -11933,7 +11933,7 @@ function gateAutofit(root) {
       try {
         if (box.closest('.g8-wrap.g8-takeover')) _gh = Math.max(_gh, 110);
       } catch (e) {}
-      _boxAssign(num, Math.max(40, w - bw), Math.floor(_gh * 0.86), null, false);
+      _boxAssign(num, Math.max(40, w - bw), Math.floor(_gh * 0.98), null, false);
     });
     // RIGHT CARD type shelf ('Aircraft details pending' clipped mid-word on
     // production): wrap allowed, then the largest size whose wrapped lines
@@ -19256,7 +19256,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23153';
+var FIDS_BUILD_TAG = 'v23154';
 (function(){
   try {
     function _addTag(){
