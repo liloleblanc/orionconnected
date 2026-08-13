@@ -1943,7 +1943,7 @@ html body .bidsv2-flight-row.bidsv2-row-delayed, html body .bidsv2-flight-row.bi
 html body.fids-light-board .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n),
 html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n) { background: #C8102E !important; }
 html body.fids-light-board .bidsv2-flight-row.bidsv2-row-diverted:nth-child(n),
-html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-diverted:nth-child(n) { background: #185A9D !important; }
+html body:not(.fids-light-board) .bidsv2-flight-row.bidsv2-row-diverted:nth-child(n) { background: #A61B2B !important; }
 html body .bidsv2-flight-row.bidsv2-row-cancelled, html body .bidsv2-flight-row.bidsv2-row-cancelled *,
 html body .bidsv2-flight-row.bidsv2-row-diverted, html body .bidsv2-flight-row.bidsv2-row-diverted * { color: #ffffff !important; }
 
@@ -5605,7 +5605,7 @@ html:not(#_) body[data-fids-ap="MCO"]:not(#_) #fidsTable tbody tr.row-delayed td
        cancelled   #A50D24                            7.83 -> 14.66
        cancelled   #D42341                            5.10 -> 11.82
        diverted    #A61B2B                            7.47 -> 14.25
-       diverted    #185A9D                            7.03 -> 13.63
+       diverted    #A61B2B                            7.47 -> 14.25
        gate-closed #262D36                           13.90 -> 17.92
 
    The light weight is used wherever the surface is light REGARDLESS of
@@ -12374,4 +12374,25 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-hold-text {
   font-weight: 800 !important;
   line-height: 1.12 !important;
   text-shadow: 0 1px 1px rgba(255,255,255,.75) !important;
+}
+
+/* Diverted is an irregular-operation alarm, not an airline/theme colour.
+   Keep every FIDS and BIDS cell on the same alternating red strip so a
+   theme's ordinary blue row cannot split the row from its Status cell. */
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(odd),
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(odd) > td,
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted:nth-child(odd) {
+  background-color: #A61B2B !important;
+}
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even),
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even) > td,
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted:nth-child(even) {
+  background-color: #DE4B58 !important;
+}
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted > td,
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted > td *,
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted,
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }

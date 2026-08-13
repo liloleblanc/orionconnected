@@ -3939,7 +3939,7 @@ body #fidsTable tbody tr.row-cancelled:nth-child(n) td,
 body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(n),
 body.fids-light-board #fidsTable tbody tr.row-cancelled:nth-child(n) td { background: #C8102E !important; }
 body #fidsTable tbody tr.row-diverted:nth-child(n),
-body #fidsTable tbody tr.row-diverted:nth-child(n) td { background: #185A9D !important; }
+body #fidsTable tbody tr.row-diverted:nth-child(n) td { background: #A61B2B !important; }
 body #fidsTable tbody tr.row-cancelled td, body #fidsTable tbody tr.row-cancelled td *,
 body #fidsTable tbody tr.row-diverted td, body #fidsTable tbody tr.row-diverted td * { color: #ffffff !important; }
 /* NEW GATE — solid amber block on just the gate cell */

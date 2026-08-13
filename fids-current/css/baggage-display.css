@@ -589,14 +589,14 @@ body[data-fids-airline-style="emblem"] .bidsv2-airline-wordmark { display: none 
 
 /* ══ BAGGAGE FULL-ROW STATE BLOCKS (Nick's GO, Jul 5 2026) ══════════════════
    Same grammar as the FIDS board: Delayed = whole row yellow with navy
-   ink, Cancelled = crimson, Diverted = blue with white ink. Identical on
+   ink, Cancelled = crimson, Diverted = red with white ink. Identical on
    every theme (:nth-child(n) ties the zebra; body prefix beats the
    custom-theme rows). */
 body .bidsv2-flight-row.bidsv2-row-delayed:nth-child(n) { background: #EDBB00 !important; }
 body .bidsv2-flight-row.bidsv2-row-delayed,
 body .bidsv2-flight-row.bidsv2-row-delayed * { color: #102437 !important; }
 body .bidsv2-flight-row.bidsv2-row-cancelled:nth-child(n) { background: #C8102E !important; }
-body .bidsv2-flight-row.bidsv2-row-diverted:nth-child(n) { background: #185A9D !important; }
+body .bidsv2-flight-row.bidsv2-row-diverted:nth-child(n) { background: #A61B2B !important; }
 body .bidsv2-flight-row.bidsv2-row-cancelled, body .bidsv2-flight-row.bidsv2-row-cancelled *,
 body .bidsv2-flight-row.bidsv2-row-diverted, body .bidsv2-flight-row.bidsv2-row-diverted * { color: #ffffff !important; }
 
