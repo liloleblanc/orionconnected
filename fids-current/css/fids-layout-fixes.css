@@ -12265,3 +12265,113 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
     linear-gradient(105deg, transparent 78%, color-mix(in srgb, var(--crsl, #0E2748) 30%, transparent) 78%, color-mix(in srgb, var(--crsl, #0E2748) 30%, transparent) 82%, transparent 82%) !important;
   opacity: .8 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23147 — GATE STABILITY + NEXT-DAY CONTEXT
+
+   Font fitting is applied as a single settled value. These text surfaces
+   must never animate between measured sizes; only the deliberate aircraft,
+   cloud, destination, and media motion remains animated.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body .g8-wrap :is(
+  .g8-board-grp-num,
+  .g8-board-grp-label,
+  .g8-board-lane,
+  .g8-board-arrow,
+  .g8-final-hdr,
+  .v2-fi-title,
+  .v2-fi-value,
+  .v2-rc-fi-tlbl,
+  .v2-rc-fi-tval,
+  .v2-rc-actype-val
+) {
+  transition: none !important;
+}
+
+/* A gate may legitimately show tomorrow's first flight late tonight. Keep
+   that calendar context directly under the flight number and departure time
+   so the selected flight cannot be mistaken for a same-day departure. */
+html body .g8-wrap .v2-fi-flight-number .v2-fi-flight-main {
+  display: block !important;
+  white-space: nowrap !important;
+  line-height: .92 !important;
+}
+html body .g8-wrap .v2-fi-flight-number .v2-fi-dayctx {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 1px !important;
+  margin-top: clamp(2px, .35vh, 5px) !important;
+  color: inherit !important;
+  font-size: clamp(11px, 1.35vh, 17px) !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+}
+html body .g8-wrap .v2-fi-flight-number .v2-fi-dayctx-line {
+  display: block !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-departure {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  overflow: visible !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-deptime {
+  display: block !important;
+  white-space: nowrap !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-datectx {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  margin-top: clamp(1px, .2vh, 3px) !important;
+  font-size: clamp(9px, 1vh, 13px) !important;
+  font-weight: 800 !important;
+  line-height: 1.02 !important;
+  white-space: nowrap !important;
+  opacity: .86 !important;
+}
+
+/* A brief enrichment wait remains branded and balanced. This is an honest
+   hold state—no guessed aircraft—while the real livery/type is resolved. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-hold {
+  align-self: stretch !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(6px, 1vh, 12px) !important;
+  padding: clamp(10px, 1.5vh, 20px) !important;
+  text-align: center !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-hold-logo {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: min(46%, 150px) !important;
+  max-height: clamp(40px, 6.5vh, 76px) !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.24)) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-hold-code {
+  font-size: clamp(28px, 4vh, 52px) !important;
+  font-weight: 900 !important;
+  color: #18314f !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-hold-text {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  color: #24364b !important;
+  font-size: clamp(11px, 1.35vh, 17px) !important;
+  font-weight: 800 !important;
+  line-height: 1.12 !important;
+  text-shadow: 0 1px 1px rgba(255,255,255,.75) !important;
+}

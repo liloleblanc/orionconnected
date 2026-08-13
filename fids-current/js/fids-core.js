@@ -2415,6 +2415,13 @@ function requestGateRebuild() {
     window._lastGateKey = '';
     dedicatedRenderKey = '';
     _gateKeyResetTimer = null;
+    // Resetting a key alone does not paint a dedicated screen. Gate clocks are
+    // updated in place, so newly resolved aircraft data could otherwise remain
+    // invisible until the next feed refresh. Paint exactly once after batching.
+    try {
+      if (typeof screenType !== 'undefined' && screenType === 'gate'
+          && typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
+    } catch (e) {}
   }, 300); // Wait 300ms to batch multiple data updates
 }
 // ── Codeshare guard for GATE screens (Nick: a Qantas codeshare number must
@@ -3259,8 +3266,9 @@ function _destFlipStops(stops, kind, cls) {
 // ('Houston, TX') — rows without a feed-code _stops list simply don't flip.
 try {
   // 7 s per leg — the 4 s swap read as a cheap strobe (Nick: 'too fast...
-  // looks like a bad effect'). Soft crossfade instead of a raw text pop,
-  // and gate text re-fits after every swap so both legs render at ONE size.
+  // looks like a bad effect'). Soft crossfade instead of a raw text pop. The
+  // gate fitter measures every alternate up front, so a swap never re-fits the
+  // rest of the screen or makes unrelated boarding numbers and titles pulse.
   setInterval(function () {
     var els = document.querySelectorAll('[data-destflip]');
     if (!els.length) return;
@@ -3279,8 +3287,6 @@ try {
           setTimeout(function () {
             el2.textContent = v2;
             try {
-              var gv = document.getElementById('gateView');
-              if (gv && gv.contains(el2) && typeof gateAutofit === 'function') gateAutofit(gv);
               // Board rows: refit FONTS immediately after the swap (geometry
               // stays frozen — widths already reserve the longest alternate).
               var tb = document.getElementById('fidsTable');
@@ -6907,6 +6913,7 @@ function _buildV2AircraftCol(ctx, vars) {
   var _inbOperating = vars._inbOperating;
   var airlineCode = vars.airlineCode;
   var equipRaw = vars.equipRaw, equipName = vars.equipName;
+  var _flightDateContext = vars.flightDateContext || { labels: [] };
 
   var _hasInb = !!(inboundFlight && _inbOperating);
   var _anyInb = !!inboundFlight;
@@ -7498,9 +7505,20 @@ function _buildV2AircraftCol(ctx, vars) {
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
 
+      var _flightDateRailHtml = '';
+      if (_flightDateContext.labels && _flightDateContext.labels.length) {
+        _flightDateRailHtml = '<span class="v2-fi-dayctx">'
+          + _flightDateContext.labels.map(function (label) {
+              return '<span class="v2-fi-dayctx-line">' + label + '</span>';
+            }).join('')
+          + '</span>';
+      }
+      var _flightNumberWithDate = '<span class="v2-fi-flight-main">'
+        + (_fiFlightNo || _fnNumber || '—') + '</span>' + _flightDateRailHtml;
+
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
-        + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
+        + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], _flightNumberWithDate, 'v2-fi-flight-number')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
         + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
@@ -8026,8 +8044,11 @@ function _buildV2MapCol(ctx, vars) {
       // Flight number (compact, e.g. "AC1984")
       var _dFltCompact = String(_dcf.flight || '').replace(/\s+/g, '').toUpperCase();
 
-      // Status — reuse the outbound label/class computed for the left column.
-      var _dStLabel = String(vars.stLabel || _dcf.status || '').trim();
+      // Status — reuse the same passenger-facing display key as the left rail.
+      // This keeps a normally tracking flight from reading On Time on one side
+      // and Scheduled on the other.
+      var _dStKey = String(vars.stKey || _dcf.status || '').trim().toLowerCase();
+      var _dStLabel = String(vars.stLabel || _dStKey || '').trim();
       var _dStCls = String(vars.stClass || 'ontime').replace(/^v2-fi-status/, '').replace(/^[-\s]+/, '') || 'ontime';
       if (['scheduled','ontime','delayed','cancelled'].indexOf(_dStCls) === -1) _dStCls = 'ontime';
 
@@ -8097,7 +8118,7 @@ function _buildV2MapCol(ctx, vars) {
       // Bilingual status for the departure card (Scheduled | Prévu).
       var _dStEn = '', _dStFr = '';
       try {
-        var _dk = String((_dcf && _dcf.status) || '').toLowerCase().replace(/[\s_-]/g, '');
+        var _dk = String(_dStKey || (_dcf && _dcf.status) || '').toLowerCase().replace(/[\s_-]/g, '');
         var _dss = (typeof SS !== 'undefined' && SS[_dk]) ? SS[_dk] : null;
         if (_dss) { _dStEn = _fidsTitleCase(_dss.en); _dStFr = _dss.fr; }
       } catch (e) {}
@@ -8167,6 +8188,15 @@ function _buildV2MapCol(ctx, vars) {
         var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
         if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dfRowIa) + '</span>' : '');
       })();
+      var _dDateContext = vars.flightDateContext || { labels: [] };
+      var _dDateHtml = '';
+      if (_dDateContext.labels && _dDateContext.labels.length) {
+        _dDateHtml = '<span class="v2-rc-datectx">'
+          + _dDateContext.labels.map(function (label) {
+              return '<span class="v2-rc-datectx-line">' + label + '</span>';
+            }).join('')
+          + '</span>';
+      }
       // Same 2-PANEL pattern as the inbound card, inside ONE shelf element
       // (a second shelf child breaks the rail grid): pane 1 = Flight /
       // Destination, pane 2 = Departure / Status. Departure TIME stays
@@ -8186,7 +8216,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-rc-fi-pane">'
         +     '<div class="v2-rc-fi-trow">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('departure', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '>' + (_dDepStr || '—') + '</div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-fi-departure"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '><span class="v2-rc-deptime">' + (_dDepStr || '—') + '</span>' + _dDateHtml + '</div>'
         +     '</div>'
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('status', _frF) + '</div>'
@@ -8764,6 +8794,18 @@ function _buildV2MapCol(ctx, vars) {
         + (_opByVal
             ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">' + _opByLbl + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
             : '');
+      // The reserved aircraft area should remain an intentional branded panel
+      // while a lookup finishes. Never guess a model; hold the airline mark in
+      // the space instead of floating a raw "image pending" warning over it.
+      var _holdCode = String(vars.airlineCode || '').trim().toUpperCase();
+      var _holdSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_holdCode]) || '';
+      var _holdMark = _holdSrc
+        ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="">'
+        : '<span class="v2-rc-aircraft-hold-code">' + (_holdCode || '—') + '</span>';
+      var _aircraftHoldHtml = '<div class="v2-rc-aircraft-hold">' + _holdMark
+        + '<span class="v2-rc-aircraft-hold-text">'
+        + _gateLbl('acUpdating', _frF8, function (w) { return '<span>' + w + '</span>'; }, '')
+        + '</span></div>';
       // Facing class baked at build time from the manifest — the clouds are
       // mirrored correctly on the FIRST painted frame, no onload race.
       var _facingCls = '';
@@ -8777,7 +8819,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div id="gateCloudsBg"></div>'
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
-              : '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>')
+              : _aircraftHoldHtml)
         +   (/[?&]acsky=1\b/.test(window.location.search)
               ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
                 + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
@@ -8791,17 +8833,26 @@ function _buildV2MapCol(ctx, vars) {
   // Last-resort geometry guard: even a malformed enrichment field must not
   // remove the two fixed shelves from the six-row right rail.
   if (!_aircraftBlock) {
+    var _fallbackCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
+    var _fallbackSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_fallbackCode]) || '';
+    var _fallbackMark = _fallbackSrc
+      ? '<img class="v2-rc-aircraft-hold-logo" src="' + _fallbackSrc + '" alt="">'
+      : '<span class="v2-rc-aircraft-hold-code">' + (_fallbackCode || '—') + '</span>';
+    var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark
+      + '<span class="v2-rc-aircraft-hold-text">'
+      + _gateLbl('acUpdating', _frF8, function (w) { return '<span>' + w + '</span>'; }, '')
+      + '</span></div>';
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus">'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<div class="v2-rc-aircraft-pending">' + _gateLbl('acImgPending', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span>|</span> ') + '</div>'
+      +   _fallbackHold
       +   (/[?&]acsky=1\b/.test(window.location.search)
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
               + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
-      +   '<div class="v2-rc-acb-actype v2-rc-actype-val">Aircraft details pending <span class="v2-rc-fi-sep">|</span> Détails de l’appareil à venir</div>'
+      +   '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
       + '</div></div>';
   }
 
@@ -8887,6 +8938,18 @@ function uxgGateHtml(ctx) {
   const _gateLbl2 = ({fr:'Porte', es:'Puerta', en:'Gate', de:'Gate', it:'Uscita', pt:'Porta'})[_hdr2nd] || 'Porte';
   // Québec airports: French first on every bilingual pair (Nick).
   const _frF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
+  var _flightDateContext = { dayOffset: null, labels: [], text: '' };
+  try {
+    if (window.FIDSGateDate && typeof window.FIDSGateDate.getFlightDateContext === 'function') {
+      _flightDateContext = window.FIDSGateDate.getFlightDateContext({
+        flightTimestamp: currentFlight._sortTs,
+        nowTimestamp: Date.now(),
+        timeZone: tz || 'UTC',
+        languages: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs : ['en', 'fr'],
+        frenchFirst: _frF
+      });
+    }
+  } catch (e) {}
   const _flightNumDisp = (String(currentFlight.flight || '').replace(/^[A-Za-z]+\s*/, '').trim()) || String(currentFlight.flight || '');
   const locale = uxgLocaleCode();
   // Short display names for the top banner — long names (NEW YORK KENNEDY) get
@@ -8962,6 +9025,10 @@ function uxgGateHtml(ctx) {
       }
     }
   }
+  // Passenger-facing status: a normally tracking scheduled flight is On Time.
+  // Keep the source value unchanged for operational logic, but use one display
+  // key on both the left rail and the right flight card.
+  if (stKey === 'scheduled' || !stKey) stKey = 'ontime';
   var stLabel = SL(stKey) || stKey.toUpperCase();
   var airlineCode = (currentFlight.airline || '').trim().toUpperCase();
   // Hawaiian brand override: AS flights on ex-HA equipment or Hawaii routes still wear
@@ -10966,7 +11033,8 @@ function uxgGateHtml(ctx) {
                 // these strings get rendered as a vertical stack inside the
                 // aircraft column above the brand/reg/inbound blocks.
                 depTimeHtml: depTimeHtml, arrHtml: arrHtml, boardTimeHtml: boardTimeHtml,
-                stClass: stClass, stLabel: stLabel
+                stClass: stClass, stLabel: stLabel, stKey: stKey,
+                flightDateContext: _flightDateContext
               });
             })()
           // ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -11528,8 +11596,8 @@ function gateAutofit(root) {
     els.forEach(function(el) {
       var parent = el.parentElement;
       if (!parent) return;
-      // Never fit a detached/hidden/not-yet-laid-out box. A later rAF/font-
-      // ready/heartbeat pass will measure it once real geometry exists.
+      // Never fit a detached/hidden/not-yet-laid-out box. The font-ready or
+      // viewport-resize correction will measure it once real geometry exists.
       if (!el.isConnected || el.clientWidth <= 1 || parent.clientWidth <= 1) return;
       // Reset any previously applied shrink. NOTE: the CSS font-size uses
       // !important, so an inline value is ignored unless we ALSO mark it
@@ -11600,8 +11668,8 @@ function gateAutofit(root) {
   // measured box — the text column's width and the row's free height.
   // Grow-to-fit from the measurement, not shrink-from-a-CSS-guess, so a
   // short value (a time) genuinely fills its shelf. Runs last and is
-  // deterministic from geometry, so the 5s heartbeat converges instead of
-  // dancing. Status value excluded (two stacked bilingual lines).
+  // deterministic from geometry, so repeated calls return the same result
+  // instead of dancing. Status value excluded (two stacked bilingual lines).
   // Shared box-assign: binary-search the largest size that fits the given
   // box, strict (the browser ellipsizes on 1px of overflow), 1px slack.
   // strictContent (v22733): also require the element's own CONTENT to fit
@@ -11615,30 +11683,58 @@ function gateAutofit(root) {
   // boxes DO grow with their text keep their existing behaviour exactly.
   function _boxAssign(el, availW, availH, colR, skipH, strictContent) {
     if (availH < 12 || availW < 30) return;
-    // DON'T RE-DERIVE WHAT HASN'T CHANGED. This runs on every rebuild and on
-    // the 5s heartbeat, and each pass re-measures — so a box that reads a pixel
+    // Multi-city values rotate after paint. Measure every alternate now and
+    // assign one font size that fits the longest/widest value; the seven-second
+    // rotator can then change text without re-fitting the whole gate screen.
+    var _fitFlip = null, _fitFlipOriginal = '', _fitFlipValues = [];
+    try {
+      _fitFlip = el.querySelector && el.querySelector('[data-destflip]');
+      if (_fitFlip) {
+        _fitFlipOriginal = _fitFlip.textContent;
+        var _fitItems = JSON.parse(decodeURIComponent(_fitFlip.getAttribute('data-destflip') || ''));
+        var _fitKind = _fitFlip.getAttribute('data-dfk') || 'c';
+        _fitFlipValues = _fitItems.map(function (item) {
+          return String((_fitKind === 'ia' ? item.ia : item.c) || '');
+        }).filter(Boolean);
+      }
+    } catch (e) { _fitFlip = null; _fitFlipValues = []; }
+    // DON'T RE-DERIVE WHAT HASN'T CHANGED. This runs on rebuild/font/viewport
+    // corrections, and each pass re-measures — so a box that reads a pixel
     // narrower once (mid-transition, a font settling, the destination flip
     // swapping in a longer word) permanently ratchets the type DOWN, and the
     // data on screen quietly shrinks over the course of a shift (Nick: 'my
     // data keeps shrinking I dont know why'). Same text in the same box keeps
     // the size it already earned.
     try {
-      var _faKey = (el.textContent || '').trim() + '|' + Math.round(availW) + 'x' + Math.round(availH);
+      var _faContentKey = _fitFlip
+        ? (_fitFlip.getAttribute('data-destflip') || '')
+        : (el.textContent || '').trim();
+      var _faKey = _faContentKey + '|' + Math.round(availW) + 'x' + Math.round(availH);
       if (el.dataset.faKey === _faKey && parseFloat(el.style.fontSize) > 0) return;
       el.dataset.faKey = _faKey;
     } catch (e) {}
-    // HYSTERESIS (Nick: 'fighting with itself'): the 5 s heartbeats
-    // re-derive the size each pass; a result within 1px of what's already
+    // HYSTERESIS (Nick: 'fighting with itself'): repeated corrections can
+    // re-derive the size; a result within 1px of what's already
     // applied must not repaint, or the type visibly ticks.
     var _curPx = parseFloat(el.style.fontSize) || 0;
-    function fits(px) {
-      el.style.setProperty('font-size', px + 'px', 'important');
+    function _fitsCurrentContent() {
       if (el.scrollWidth > el.clientWidth) return false;
       if (el.scrollWidth > availW) return false;
       if (!skipH && el.offsetHeight > availH) return false;
       if (strictContent && el.scrollHeight > el.clientHeight + 2) return false;
       if (colR && el.getBoundingClientRect().right > colR) return false;
       return true;
+    }
+    function fits(px) {
+      el.style.setProperty('font-size', px + 'px', 'important');
+      if (!_fitFlip || !_fitFlipValues.length) return _fitsCurrentContent();
+      var _allFit = true;
+      for (var _ffi = 0; _ffi < _fitFlipValues.length; _ffi++) {
+        _fitFlip.textContent = _fitFlipValues[_ffi];
+        if (!_fitsCurrentContent()) { _allFit = false; break; }
+      }
+      _fitFlip.textContent = _fitFlipOriginal;
+      return _allFit;
     }
     var lo = 12, hi = Math.min(140, Math.floor(availH));
     if (!fits(hi)) {
@@ -13299,7 +13395,7 @@ const gView = document.getElementById('gateView');
       // poll) happened to change at the same moment — which is why the screen
       // looked "one click behind" instead of simply stuck.
       var _langTag = (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '';
-      var _gateKey = (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag;
+      var _gateKey = (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (currentFlight._sortTs||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag;
       if (window._lastGateKey !== _gateKey) {
         window._lastGateKey = _gateKey;
 
@@ -13452,32 +13548,45 @@ const gView = document.getElementById('gateView');
         if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
         var _newAdLogo = document.getElementById('gateAdLogo');
         if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
-        // Run autofit synchronously first so the un-shrunk (large) text never
-        // paints — that was the "words bump up to twice the size then snap
-        // back" flash on every rebuild. The rAF pass stays as a correction
-        // once web fonts have fully settled.
+        // Run autofit synchronously so oversized text never paints. There used
+        // to be six more fit passes (double-rAF, three delayed timers, and a
+        // five-second heartbeat); each reset and re-measured the boarding text
+        // and made the numbers visibly fight between sizes. Fit again only when
+        // the font finishes loading or the view's actual dimensions change.
         try { if (typeof gateAutofit === "function") gateAutofit(gView); } catch(e){}
-        try { requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); }); } catch(e){}
-        // Re-fit once web fonts have actually loaded — DM Sans is WIDER than the
-        // fallback, so an early fit can leave long city names (e.g. "Regina")
-        // overflowing and clipping to "Regi…". And re-fit on short delays to
-        // catch values populated late by the live data feed.
-        try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }); } catch(e){}
-        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 450); } catch(e){}
-        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 1300); } catch(e){}
-        try { setTimeout(function(){ if (typeof gateAutofit === "function") gateAutofit(gView); }, 3200); } catch(e){} // late refit: fonts/skins settle after 1.3s (Nick: AC19... Toron...)
-        // STANDING refit heartbeat — production kiosks kept ellipsizing the
-        // big values after every one-shot pass (late fonts / ad reflows we
-        // cannot reproduce). Re-fit every 5 s while a gate view is up; the
-        // pass is measure-only and no-ops when nothing overflows.
         try {
           if (window._gateFitTick) clearInterval(window._gateFitTick);
-          window._gateFitTick = setInterval(function(){
-            try {
-              var gv2 = document.getElementById('gateView');
-              if (gv2 && typeof screenType !== 'undefined' && screenType === 'gate' && typeof gateAutofit === 'function') gateAutofit(gv2);
-            } catch (e2) {}
-          }, 5000);
+          window._gateFitTick = null;
+          var _fitGeneration = (window._gateFitGeneration || 0) + 1;
+          window._gateFitGeneration = _fitGeneration;
+          if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){
+            if (window._gateFitGeneration !== _fitGeneration) return;
+            var _fontView = document.getElementById('gateView');
+            if (_fontView === gView && typeof gateAutofit === 'function') gateAutofit(_fontView);
+          });
+          // Observe the VIEWPORT, not gateView's content box. A content
+          // ResizeObserver feeds font changes back into itself (fit → a 1 px
+          // content change → fit again) even when the physical screen never
+          // changed. The viewport event is exactly the signal this needs.
+          window._gateFitViewportKey = Math.round(window.innerWidth || 0) + 'x'
+            + Math.round(window.innerHeight || 0);
+          if (!window._gateFitResizeHandler) {
+            window._gateFitResizeHandler = function () {
+              var _viewportKey = Math.round(window.innerWidth || 0) + 'x'
+                + Math.round(window.innerHeight || 0);
+              if (_viewportKey === window._gateFitViewportKey) return;
+              window._gateFitViewportKey = _viewportKey;
+              if (window._gateFitResizeTimer) clearTimeout(window._gateFitResizeTimer);
+              window._gateFitResizeTimer = setTimeout(function () {
+                try {
+                  var _resizeView = document.getElementById('gateView');
+                  if (_resizeView && typeof screenType !== 'undefined' && screenType === 'gate'
+                      && typeof gateAutofit === 'function') gateAutofit(_resizeView);
+                } catch (e2) {}
+              }, 80);
+            };
+            window.addEventListener('resize', window._gateFitResizeHandler, { passive: true });
+          }
         } catch(e){}
         // Re-attach saved map into new container
         var _newMapSlot = document.getElementById('gateMapBox');
@@ -13865,7 +13974,11 @@ const gView = document.getElementById('gateView');
       if (currentFlight.flight && !currentFlight._gateEnriched) {
         currentFlight._gateEnriched = true;
         var _enrichIata = iata;
-        var _todayStr = fidsLocalDateKey(Date.now(), ((typeof AP !== 'undefined' && AP[_enrichIata]) ? AP[_enrichIata].tz : '') || tz || 'UTC');
+        // Enrich the date the flight actually operates. Late-evening gate
+        // screens commonly show tomorrow's first departure; querying today's
+        // date made the provider return no match even when tomorrow's record
+        // already carried its aircraft assignment (PD2294 at YQM).
+        var _todayStr = fidsLocalDateKey(currentFlight._sortTs || Date.now(), ((typeof AP !== 'undefined' && AP[_enrichIata]) ? AP[_enrichIata].tz : '') || tz || 'UTC');
 
         var _enrichFlight = currentFlight.flight;
         loadFlight(currentFlight.flight, _todayStr, _enrichIata).then(function(data) {
@@ -14085,9 +14198,19 @@ const gView = document.getElementById('gateView');
 
           // Aircraft type
           if (_eq.aircraft || _eq.aircraftCode) {
-            currentFlight._aircraft = _eq.aircraft || currentFlight._aircraft;
-            currentFlight._aircraftCode = _eq.aircraftCode || currentFlight._aircraftCode;
-            changed = true;
+            var _nextAircraft = _eq.aircraft || currentFlight._aircraft || '';
+            var _nextAircraftCode = _eq.aircraftCode || currentFlight._aircraftCode || '';
+            if (currentFlight._aircraft !== _nextAircraft || currentFlight._aircraftCode !== _nextAircraftCode) {
+              currentFlight._aircraft = _nextAircraft;
+              currentFlight._aircraftCode = _nextAircraftCode;
+              changed = true;
+            }
+            // Flight rows are replaced on each feed refresh. Preserve the
+            // resolved type outside the row so it cannot fall back to Pending.
+            if (typeof _acResolvedPut === 'function') {
+              _acResolvedPut(currentFlight.flight, _nextAircraft, _nextAircraftCode,
+                _regTrustworthy ? _eq.reg : '');
+            }
           }
 
           // Callsign
@@ -14100,11 +14223,13 @@ const gView = document.getElementById('gateView');
           // Only apply if different from the marketing carrier (otherwise it's
           // just the airline operating its own flight, no "operated by" tag needed).
           if (_eq.opCode) {
-            currentFlight._opCode = _eq.opCode;
-            currentFlight._opName = _eq.opName;
-            changed = true;
-            console.log('[FIDS] Operator resolved:', currentFlight.flight, '→',
-                        _eq.opCode, '(' + (_eq.opSource || 'locked') + ')');
+            if (currentFlight._opCode !== _eq.opCode || currentFlight._opName !== _eq.opName) {
+              currentFlight._opCode = _eq.opCode;
+              currentFlight._opName = _eq.opName;
+              changed = true;
+              console.log('[FIDS] Operator resolved:', currentFlight.flight, '→',
+                          _eq.opCode, '(' + (_eq.opSource || 'locked') + ')');
+            }
           }
 
           // Inbound — publish to window so the panel and map can read it.
@@ -14119,7 +14244,18 @@ const gView = document.getElementById('gateView');
             // this reg-lookup inbound while ITS outbound owns the screen
             // (harness-proven: an untagged one crossed gates and dragged its
             // tail onto other flights' panels).
+            var _prevInbound = window._gateInbound;
+            var _prevInboundKey = _prevInbound ? [
+              _prevInbound.flight, _prevInbound.status, _prevInbound._locIata,
+              _prevInbound._aircraft, _prevInbound._aircraftCode, _prevInbound._reg,
+              _prevInbound._sortTs, _prevInbound._revTs
+            ].join('|') : '';
             data.inbound._forOutbound = _enrichFlight;
+            var _nextInboundKey = [
+              data.inbound.flight, data.inbound.status, data.inbound._locIata,
+              data.inbound._aircraft, data.inbound._aircraftCode, data.inbound._reg,
+              data.inbound._sortTs, data.inbound._revTs
+            ].join('|');
             window._gateInbound = data.inbound;
             // Merge — don't let the board's (often altitude-less) telemetry blank
             // out a real altitude a previous update already wrote for this same
@@ -14141,7 +14277,7 @@ const gView = document.getElementById('gateView');
                 ? { lat: _la, lng: _ln, speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null }
                 : null;
             })();
-            changed = true;
+            if (_prevInboundKey !== _nextInboundKey) changed = true;
             console.log('[FIDS] Inbound resolved:', data.inbound.flight,
                         'from', data.inbound._locIata,
                         '(' + data.inbound._aircraftCode + ' ' + data.inbound._reg + ')');
@@ -14156,8 +14292,12 @@ const gView = document.getElementById('gateView');
           // put "expected | prévu" on confirmed tails when a thin round got
           // rejected by the lock, and dropped it off lock-restored history
           // tails on rounds with no reg at all.
-          currentFlight._regSource = (currentFlight._reg && _eq.reg === currentFlight._reg)
+          var _nextRegSource = (currentFlight._reg && _eq.reg === currentFlight._reg)
             ? (_eq.regSource || '') : '';
+          if (String(currentFlight._regSource || '') !== _nextRegSource) {
+            currentFlight._regSource = _nextRegSource;
+            changed = true;
+          }
           if (data.operator && data.operator._source) currentFlight._operatorSource = data.operator._source;
 
           // "Pending" means: no reg available from today OR from history.
@@ -14176,19 +14316,20 @@ const gView = document.getElementById('gateView');
             // reg from an earlier successful call (including the equip lock —
             // currentFlight is rebuilt every refresh, so _lastGoodReg alone
             // doesn't survive; the lock does).
-            if (!currentFlight.reg && !currentFlight._lastGoodReg && !_eq.reg) {
+            if (!currentFlight._reg && !currentFlight._lastGoodReg && !_eq.reg) {
+              if (currentFlight._aircraftPending === false) changed = true;
               currentFlight._aircraftPending = true;
               scheduleAircraftPendingRetry(currentFlight.flight, _enrichIata);
-              changed = true;
               console.log('[FIDS] Aircraft pending:', currentFlight.flight, '— will retry in 3 min');
             } else {
               // Keep showing the last known aircraft. Don't flip back to pending.
               console.log('[FIDS] API returned no reg for', currentFlight.flight,
-                          '— keeping last known reg:', currentFlight.reg || currentFlight._lastGoodReg);
+                          '— keeping last known reg:', currentFlight._reg || currentFlight._lastGoodReg);
               // Still schedule a retry — we want today's confirmed data eventually.
               scheduleAircraftPendingRetry(currentFlight.flight, _enrichIata);
             }
           } else {
+            if (currentFlight._aircraftPending === true) changed = true;
             currentFlight._aircraftPending = false;
             // Cache the good reg so we don't lose it on the next empty response
             currentFlight._lastGoodReg = data.reg;
@@ -14199,7 +14340,7 @@ const gView = document.getElementById('gateView');
             }
           }
 
-          if (changed) window._lastGateKey = ''; // force re-render with new data
+          if (changed && typeof requestGateRebuild === 'function') requestGateRebuild();
         }).catch(function(e){
           console.warn('[FIDS] loadFlight failed:', e && e.message);
         });
@@ -18905,6 +19046,7 @@ var _GATE_LBL = {
   yourAc:    { en:'Your Aircraft', fr:'Votre Avion',    es:'Su Aeronave',  de:'Ihr Flugzeug',it:'Il Tuo Aereo',pt:'Sua Aeronave',ja:'ご搭乗機', zh:'您的航机', ar:'طائرتك' },
   acPending: { en:'Aircraft details pending', fr:'Détails de l\u2019appareil à venir', es:'Datos del avión pendientes', de:'Flugzeugdaten folgen', it:'Dettagli dell\u2019aereo in arrivo', pt:'Detalhes da aeronave pendentes', ja:'機材情報は準備中', zh:'机型信息即将显示', ar:'تفاصيل الطائرة قريباً' },
   acImgPending:{ en:'Aircraft image pending', fr:'Image de l\u2019appareil à venir', es:'Imagen del avión pendiente', de:'Flugzeugbild folgt', it:'Immagine dell\u2019aereo in arrivo', pt:'Imagem da aeronave pendente', ja:'機体画像は準備中', zh:'机型图片即将显示', ar:'صورة الطائرة قريباً' },
+  acUpdating:{ en:'Aircraft details updating', fr:'Mise à jour de l\u2019appareil', es:'Actualizando datos del avión', de:'Flugzeugdaten werden aktualisiert', it:'Aggiornamento dati dell\u2019aereo', pt:'Atualizando dados da aeronave', ja:'機材情報を更新中', zh:'正在更新机型信息', ar:'جارٍ تحديث تفاصيل الطائرة' },
   operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
   welcome:   { en:'Welcome',       fr:'Bienvenue',      es:'Bienvenido',   de:'Willkommen',  it:'Benvenuto',   pt:'Bem-vindo',  ja:'ようこそ',  zh:'欢迎',   ar:'أهلاً' },
   priority:  { en:'Priority',      fr:'Priorité',       es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
@@ -19094,7 +19236,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23146';
+var FIDS_BUILD_TAG = 'v23147';
 (function(){
   try {
     function _addTag(){
@@ -35160,6 +35302,17 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       document.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title').forEach(function (ln) {
         if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
             && !/\|/.test(ln.textContent || '')) return;
+        // This guard is scanned every two seconds. Geometry and text that did
+        // not change must be a true no-op; repeatedly clearing/reapplying the
+        // same inline white-space and stacking class was another source of the
+        // visible "fighting" on boarding titles and lane instructions.
+        var _lnParentW = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
+        var _lnFontPx = parseFloat(getComputedStyle(ln).fontSize) || 0;
+        var _lnFontStatus = (document.fonts && document.fonts.status) || '';
+        var _lnGuardKey = Math.round(_lnParentW) + '|'
+          + Math.round(_lnFontPx * 10) + '|' + _lnFontStatus + '|'
+          + (ln.textContent || '');
+        if (ln.dataset.gateLangGuardKey === _lnGuardKey) return;
         // Force ONE line for the measurement — inline units wrap between
         // themselves without ever overflowing, so scrollWidth alone can't
         // see that the single-line form doesn't fit (the same blindness
@@ -35175,6 +35328,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         var _lnOver = ln.scrollWidth > _lnAvail - 8;
         ln.style.whiteSpace = _lnPrev || '';
         if (_lnOver) ln.classList.add('g8-lane-stacked');
+        ln.dataset.gateLangGuardKey = _lnGuardKey;
         // same class does double duty: on titles it stacks the language
         // halves whole and hides the pipe (CSS), so no surface anywhere can
         // show 'Boarding |' over 'Embarquement' — never a broken pair.
