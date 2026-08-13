@@ -29589,13 +29589,25 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // between builds and are gone.
       var fullW = r.width >= hb.width - 8, fullH = r.height >= hb.height - 8;
       var padX = 0, padY = 0;
-      if (!(fullW && fullH)) {
-        // Clear the WHOLE double-line motif past the ad edge (the inner
-        // line sat on the creative — 'you can still see the ad outside
-        // borders'). Solved from the art's line geometry: inner-line inner
-        // edge at 2.8%/4.3% of the frame box.
+      // v23158 — PER-AXIS, AND THE FRAME NEVER LEAVES THE HOST (Nick: 'red
+      // frame missing left side'). The old test padded BOTH axes unless the
+      // creative filled BOTH — so a full-WIDTH letterboxed ad (the Bell
+      // wifi card: 977 wide in a 977 host) still inflated horizontally,
+      // pushed the frame 29px past each side of the overflow:hidden slide
+      // wrapper, and the wrapper clipped the art's left band clean off
+      // (the right band only survived because that side of the art sits
+      // deeper in). Each axis now decides for itself — a full axis takes
+      // the approved full-bleed behaviour ('it can go over it, its fine'),
+      // a letterboxed axis pads outward — and the pad is clamped to the
+      // real letterbox margin so no side of the frame can ever cross the
+      // wrapper edge and vanish, whatever the creative's shape.
+      if (!fullW) {
         padX = Math.max(10, Math.round(r.width * 0.030));
+        padX = Math.max(0, Math.min(padX, Math.floor((hb.width - r.width) / 2)));
+      }
+      if (!fullH) {
         padY = Math.max(10, Math.round(r.height * 0.047));
+        padY = Math.max(0, Math.min(padY, Math.floor((hb.height - r.height) / 2)));
       }
       try { if (m.classList.contains('g8-ad-inset')) { m.classList.remove('g8-ad-inset'); delete f.dataset.geom; continue; } } catch (e) {}
       // FREEZE (Nick: 'make sure the frames don't move'): once placed,
