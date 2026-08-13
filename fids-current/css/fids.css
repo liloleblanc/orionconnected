@@ -706,7 +706,7 @@ thead th { height: 50px; }
 
 /* Per-carrier height overrides for mobile cards — REGENERATED (Jul 2026)
    from the normalized (ink-tight) wordmark files; ~0.62x of the desktop
-   FIDS table heights in fids-v3.css. Regenerate, don't hand-edit. */
+   FIDS table heights in flight-display.css. Regenerate, don't hand-edit. */
 .card-logo.card-wordmark[data-code="4Y"],
 .card-logo.card-wordmark[data-code="AV"],
 .card-logo.card-wordmark[data-code="WS"] { height: 19px; }

@@ -116,7 +116,7 @@
 .ac-ico-boarding { font-size:clamp(38px,5.84vh,80px) !important; }   /* boarding  — ink .92 */
 .ac-ico-depart   { font-size:clamp(41px,6.32vh,86px) !important; }   /* takeoff   — ink .85 */
 /* The stopwatch badge must not clip (its glyph sits high in the em). And the
-   icon rule must out-specify gids-v218.78.css's `.gad-aircraft-col [class*="time"]
+   icon rule must out-specify gate-display.css's `.gad-aircraft-col [class*="time"]
    {font-size:…34px}` — that value-text rule's [class*="time"] also matches
    ac-ico-TIME, so a bare `.ac-ico-time` loses to it. Hence the deep scope below. */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge:has(.ac-ico-time) { overflow: visible !important; }

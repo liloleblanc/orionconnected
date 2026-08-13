@@ -1457,8 +1457,8 @@ let subScreenVal = '';
 // then large with a set height no matter what'). Only Orlando was listed, so
 // every other airport fell through to 'medium' — 66px board rows / 98px BAGS
 // rows, which is the "rows are much bigger" report. The tiers themselves are
-// already absolute heights, not a fit: fids-v3.css pins 44/66/90 on the board
-// and bids-v2.css pins 68/98/132 on the bags screen, each with height,
+// already absolute heights, not a fit: flight-display.css pins 44/66/90 on the board
+// and baggage-display.css pins 68/98/132 on the bags screen, each with height,
 // min-height and max-height locked, and boardAutofit treats --fids-row-h as
 // the authority rather than measuring a row it may have grown. Nothing
 // stretches a row to fill a screen. So the only thing that needed changing is
@@ -3806,7 +3806,7 @@ var ACCOR_BRAND_LOGOS = {
   'SLS': '/logos/hotels/accor-luxury/SLS-monochrome-white.svg',
   'SO':  '/logos/hotels/accor-luxury/SO-monochrome-white.svg',
   'SEQ': '/logos/hotels/accor-luxury/SO-monochrome-white.svg',
-  'JO':  '/logos/hotels/accor-premium/jojoe.png',
+  'JO':  '/logos/hotels/accor-economy/jo&joe-monochrome-white.svg',
   'HB':  '/logos/hotels/accor-midscale/thehoxton-monochrome-white.svg'
 };
 
@@ -3870,7 +3870,7 @@ var ACCOR_BRAND_CATEGORY = {
   'EMB': 'premium',   // Emblems
   'SO':  'premium',   // So/ Sofitel
   'SEQ': 'premium',
-  'JO':  'premium'    // JO&JOE (lifestyle premium)
+  'JO':  'economy'    // JO&JOE
 };
 
 function accorBrandCategory(brandCode) {
@@ -3927,46 +3927,45 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
   if (brandCode && ACCOR_BRAND_LOGOS[brandCode]) return ACCOR_BRAND_LOGOS[brandCode];
   var hay = [brandName || '', rawHotelName || '', cleanedHotelName || ''].join(' | ').toLowerCase();
   var keywordMap = [
-    [/the sebel|sebel/,                 '/logos/hotels/accor-midscale/thesebel-monochrome-white.svg'],
-    [/tribe/,                                '/logos/hotels/accor-midscale/tribe-monochrome-white.svg'],
-    [/breakfree/,                            '/logos/hotels/accor-midscale/BreakFree-monochrome-white.svg'],
-    [/peppers/,                              '/logos/hotels/accor-midscale/peppers-monochrome-white.svg'],
-    [/mantra/,                               '/logos/hotels/accor-midscale/mantra-monochrome-white.svg'],
-    [/art\s*series/,                        '/logos/hotels/accor-premium/artseries-monochrome-white.svg'],
-    [/greet/,                                '/logos/hotels/accor-economy/greet-monochrome-white.svg'],
-    [/mama\s*shelter/,                      '/logos/hotels/accor-midscale/mamashelter-monochrome-white.svg'],
+    [/\bthe sebel\b|\bsebel\b/,                 '/logos/hotels/accor-midscale/thesebel-monochrome-white.svg'],
+    [/\btribe\b/,                                '/logos/hotels/accor-midscale/tribe-monochrome-white.svg'],
+    [/\bbreakfree\b/,                            '/logos/hotels/accor-midscale/BreakFree-monochrome-white.svg'],
+    [/\bpeppers\b/,                              '/logos/hotels/accor-midscale/peppers-monochrome-white.svg'],
+    [/\bmantra\b/,                               '/logos/hotels/accor-midscale/mantra-monochrome-white.svg'],
+    [/\bart\s*series\b/,                        '/logos/hotels/accor-premium/artseries-monochrome-white.svg'],
+    [/\bgreet\b/,                                '/logos/hotels/accor-economy/greet-monochrome-white.svg'],
+    [/\bmama\s*shelter\b/,                      '/logos/hotels/accor-midscale/mamashelter-monochrome-white.svg'],
     // Handwritten Collection properties carry the brand in their name
     // ('Hotel Maison Hamelin Paris - Handwritten Collection'), so match on it:
     // the script wordmark then shows for whatever code the catalog sends
     // (Nick: 'Many hotels should be using this logo, its not used at all').
     [/handwritten/,                          '/logos/hotels/accor-midscale/handwritten-monochrome-white.svg'],
-    [/faena/,                                '/logos/hotels/accor-luxury/faena-monochrome-white.svg'],
-    [/orient\s*express/,                    '/logos/hotels/accor-luxury/orientexpress-monochrome-white.svg'],
-    [/our\s*habitas/,                       '/logos/hotels/accor-premium/our-habitas.svg'],
-    [/delano/,                               '/logos/hotels/accor-luxury/delano-monochrome-white.svg'],
-    [/mondrian/,                             '/logos/hotels/accor-luxury/mondrian-monochrome-white.svg'],
-    [/hyde/,                                 '/logos/hotels/accor-luxury/hyde-monochrome-white.svg'],
-    [/sls/,                                  '/logos/hotels/accor-luxury/SLS-monochrome-white.svg'],
-    [/jo\s*(?:&|and)\s*joe/,               '/logos/hotels/accor-premium/jo-and-joe.svg'],
-    [/25\s*hours|25hours/,            '/logos/hotels/accor-midscale/25th-monochrome-white.svg'],
-    [/the\s*hoxton|hoxton/,           '/logos/hotels/accor-midscale/thehoxton-monochrome-white.svg'],
-    [/ibis\s*budget/,                       '/logos/hotels/accor-economy/ibisbudget-monochrome-white.svg'],
-    [/ibis\s*styles/,                       '/logos/hotels/accor-economy/ibisstyles-monochrome-white.svg'],
-    [/hotelf1|hotel\s*f1/,            '/logos/hotels/accor-economy/hotelF1-monochrome-white.svg'],
-    [/ibis/,                                 '/logos/hotels/accor-economy/ibis-monochrome-white.svg'],
-    [/mercure/,                              '/logos/hotels/accor-midscale/mercure-monochrome-white.svg'],
-    [/novotel/,                              '/logos/hotels/accor-midscale/novotel-monochrome-white.svg'],
-    [/m[öo]venpick|movenpick/,         '/logos/hotels/accor-premium/movenpick-monochrome-white.svg'],
-    [/pullman/,                              '/logos/hotels/accor-premium/pullman-monochrome-white.svg'],
-    [/grand\s*mercure/,                     '/logos/hotels/accor-midscale/grandmercure-monochrome-white.svg'],
-    [/swiss[oô]tel|swissotel/,         '/logos/hotels/accor-premium/swissotel-monochrome-white.svg'],
-    [/mantis/,                               '/logos/hotels/accor-luxury/mantis-monochrome-white.svg'],
-    [/banyan\s*tree/,                       '/logos/hotels/accor-luxury/banyan-monochrome-white.svg'],
-    [/raffles/,                              '/logos/hotels/accor-luxury/raffles-monochrome-white.svg'],
+    [/\bfaena\b/,                                '/logos/hotels/accor-luxury/faena-monochrome-white.svg'],
+    [/\borient\s*express\b/,                    '/logos/hotels/accor-luxury/orientexpress-monochrome-white.svg'],
+    [/\bdelano\b/,                               '/logos/hotels/accor-luxury/delano-monochrome-white.svg'],
+    [/\bmondrian\b/,                             '/logos/hotels/accor-luxury/mondrian-monochrome-white.svg'],
+    [/\bhyde\b/,                                 '/logos/hotels/accor-luxury/hyde-monochrome-white.svg'],
+    [/\bsls\b/,                                  '/logos/hotels/accor-luxury/SLS-monochrome-white.svg'],
+    [/\bjo\s*(?:&|and)\s*joe\b/,               '/logos/hotels/accor-economy/jo&joe-monochrome-white.svg'],
+    [/\b25\s*hours\b|\b25hours\b/,            '/logos/hotels/accor-midscale/25th-monochrome-white.svg'],
+    [/\bthe\s*hoxton\b|\bhoxton\b/,           '/logos/hotels/accor-midscale/thehoxton-monochrome-white.svg'],
+    [/\bibis\s*budget\b/,                       '/logos/hotels/accor-economy/ibisbudget-monochrome-white.svg'],
+    [/\bibis\s*styles\b/,                       '/logos/hotels/accor-economy/ibisstyles-monochrome-white.svg'],
+    [/\bhotelf1\b|\bhotel\s*f1\b/,            '/logos/hotels/accor-economy/hotelF1-monochrome-white.svg'],
+    [/\bibis\b/,                                 '/logos/hotels/accor-economy/ibis-monochrome-white.svg'],
+    [/\bmercure\b/,                              '/logos/hotels/accor-midscale/mercure-monochrome-white.svg'],
+    [/\bnovotel\b/,                              '/logos/hotels/accor-midscale/novotel-monochrome-white.svg'],
+    [/\bm[öo]venpick\b|\bmovenpick\b/,         '/logos/hotels/accor-premium/movenpick-monochrome-white.svg'],
+    [/\bpullman\b/,                              '/logos/hotels/accor-premium/pullman-monochrome-white.svg'],
+    [/\bgrand\s*mercure\b/,                     '/logos/hotels/accor-midscale/grandmercure-monochrome-white.svg'],
+    [/\bswiss[oô]tel\b|\bswissotel\b/,         '/logos/hotels/accor-premium/swissotel-monochrome-white.svg'],
+    [/\bmantis\b/,                               '/logos/hotels/accor-luxury/mantis-monochrome-white.svg'],
+    [/\bbanyan\s*tree\b/,                       '/logos/hotels/accor-luxury/banyan-monochrome-white.svg'],
+    [/\braffles\b/,                              '/logos/hotels/accor-luxury/raffles-monochrome-white.svg'],
     [/sofitel\s*legend/,                     '/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg'],
-    [/sofitel/,                              '/logos/hotels/sofitel/sofitel-wordmark-white.svg'],
-    [/fairmont/,                             '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg'],
-    [/emblems/,                              '/logos/hotels/accor-luxury/emblems-monochrome-white.svg']
+    [/\bsofitel\b/,                              '/logos/hotels/sofitel/sofitel-wordmark-white.svg'],
+    [/\bfairmont\b/,                             '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg'],
+    [/\bemblems\b/,                              '/logos/hotels/accor-luxury/emblems-monochrome-white.svg']
   ];
   for (var i = 0; i < keywordMap.length; i++) {
     if (keywordMap[i][0].test(hay)) return keywordMap[i][1];
@@ -4049,12 +4048,12 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
 // Match key = lowercased property name with the "Fairmont " prefix already
 // stripped (matches what the headline reduces to in _buildAccorAd).
 var FAIRMONT_PROPERTY_LOCKUPS = {
-  // AUTO-GENERATED by tools/gen-fairmont-lockups.py from the brand-team
+  // AUTO-GENERATED by scripts/assets/gen-fairmont-lockups.py from the brand-team
   // manifest (logos/hotels/accor-luxury/fairmont/manifest_from_user_image.csv).
   // All 67 worldwide Fairmont properties -> uniform white-on-transparent
   // outlined lockups (viewBox 0 0 266.5 104). Keys mirror the runtime
   // _lockupKey normalization; multiple spellings/accents per property.
-  // To regenerate: python3 tools/gen-fairmont-lockups.py --write
+  // To regenerate: python3 scripts/assets/gen-fairmont-lockups.py --write
 
   // 01  The Fairmont Banff Springs  (Banff, Canada)
   "banff springs"          : "/logos/hotels/accor-luxury/fairmont/outlined_svg_white/001_The_Fairmont_Banff_Springs.svg",
@@ -4592,7 +4591,7 @@ function makeSofitelLockupSvgDataUri(propertyName) {
 // A @font-face embedded in an SVG rendered as <img> does NOT load in browsers,
 // so the property name fell back to a system font. Rendered INLINE in the DOM
 // with the font declared at document level (RebeltonExt @font-face in
-// accor-slide.css), the name paints in the real Rebelton Extended. The SOFITEL
+// hotel-ads.css), the name paints in the real Rebelton Extended. The SOFITEL
 // wordmark is vector paths either way. Returns raw <svg> markup (not a data URI).
 function makeSofitelLockupInlineSvg(propertyName) {
   if (!propertyName) return '';
@@ -6790,7 +6789,7 @@ function buildV2GateLayout(ctx, vars) {
   var mapCol = _buildV2MapCol(ctx, vars);
 
   // Theme-driven column widths removed in v218.99.9 — defaults wired
-  // directly via CSS (25/50/25 in gids-v218.78.css). No JS lookup needed.
+  // directly via CSS (25/50/25 in gate-display.css). No JS lookup needed.
   var _colStyle = '';
 
   // ─── MESSAGE STRIP (g8-r3) ──────────────────────────────────────────────
@@ -6838,7 +6837,7 @@ function buildV2GateLayout(ctx, vars) {
 }
 
 // ─── V2 AIRCRAFT COLUMN BUILDER ───────────────────────────────────────────
-// Class-based markup matching gids-v218.78.css.
+// Class-based markup matching gate-display.css.
 // Structure: header > livery > 3-row data > inbound panel.
 // ── ANIMATED RONDELLE for the boarding screen's centre mark (v23115) ─────
 // Nick: 'the middle is the maple leaf rondelle that i have the gif that
@@ -8627,9 +8626,8 @@ function _buildV2MapCol(ctx, vars) {
           }
         }
         if (_opCode === 'RV' || _opCode === 'ROU') {
-          _candidates.push('/logos/airlines/canadian/aircanada-rouge.svg');
-          _candidates.push('/logos/airlines/canadian/air-canada-rouge.svg');
-          _candidates.push('/logos/airlines/canadian/rouge-wordmark.svg');
+          _candidates.push('/logos/airlines/canadian/rouge.svg');
+          _candidates.push('/logos/airlines/canadian/rouge-monochrome-white.svg');
         }
         var _candidatesJson = JSON.stringify(_candidates);
         var _shortEsc = _opShortName.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
@@ -14538,7 +14536,7 @@ const gView = document.getElementById('gateView');
 
         <!-- Banner — same v2 chevron pattern as the FIDS board (Nick): time
              + date top-right, airport pill (logo + IATA + name) center, and
-             the screen title right. Classes come from fids-v3.css so every
+             the screen title right. Classes come from flight-display.css so every
              theme (including custom) styles it exactly like the board. -->
         ${(function () {
           var _lg = '';
@@ -18035,11 +18033,11 @@ const LOGO_SUBFOLDER = {
   'Air_Canada_Logo_2017_stacked.svg':'airlines/canadian', 'Air_Canada_Logo_2017_stacked_variant.svg':'airlines/canadian', 'American_Airlines_Logo_2013_alternative_variant.svg':'airlines/us-major',
   'BA-long.svg':'airlines/european', 'BA-square.svg':'airlines/european', 'Envoy.png':'airlines/us-regional',
   'HI-Express.svg':'hotels/ihg', 'Hawaiian.svg':'airlines/us-major', 'Hilton-Icon.jpeg':'hotels/hilton',
-  'Holiday-Inn-Logo.svg':'hotels/ihg', 'Holiday_Inn.svg':'hotels/ihg', 'Hyatt-01.eps':'hotels/hyatt', 'KLM_Logo_1971_SkyTeam.svg':'airlines/european',
-  'KLM_Logo_2011.svg':'airlines/european', 'KLM_Logo_2011_SkyTeam.svg':'airlines/european', 'KLM_Logo_2024 (1).svg':'airlines/european', 'KLM_Logo_2024.svg':'airlines/european',
-  'Logo Alternative.svg':'hotels/hilton', 'Logo.svg':'hotels/hilton', 'Lufthansa_Logo_2018.svg':'airlines/european', 'Oneworld-Logo.png':'airlines/alliances',
+  'Holiday-Inn-Logo.svg':'hotels/ihg', 'Holiday_Inn.svg':'hotels/ihg', 'KLM_Logo_1971_SkyTeam.svg':'airlines/european',
+  'KLM_Logo_2011.svg':'airlines/european', 'KLM_Logo_2011_SkyTeam.svg':'airlines/european', 'KLM_Logo_2024.svg':'airlines/european',
+  'hilton-alternative.svg':'hotels/hilton', 'Logo.svg':'hotels/hilton', 'Lufthansa_Logo_2018.svg':'airlines/european', 'Oneworld-Logo.png':'airlines/alliances',
   'Oneworld.svg':'airlines/alliances', 'Oneworld_logo.svg':'airlines/alliances', 'PAL-Airlines.svg':'airlines/canadian-regional', 'bearskin-wordmark-light.svg':'airlines/canadian-regional', 'wasaya-wordmark-light.svg':'airlines/canadian-regional', 'north-star-wordmark-light.svg':'airlines/canadian-regional', 'Porter_Airlines_Logo_2006.svg':'airlines/canadian',
-  'SO.png':'hotels/accor-premium', 'Skywest-Airlines-01.svg':'airlines/us-regional', 'Sofitel-01.eps':'hotels/accor-luxury', 'Sofitel-01.jpg':'hotels/accor-luxury',
+  'SO.png':'hotels/accor-premium', 'Skywest-Airlines-01.svg':'airlines/us-regional', 'Sofitel-01.jpg':'hotels/accor-luxury',
   'Sofitel-01.png':'hotels/accor-luxury', 'WestJet_Logo_2016_symbol.svg':'airlines/canadian', 'WestJet_Logo_2018.svg':'airlines/canadian', 'WestJet_Logo_2018_white_wordmark.svg':'airlines/canadian', 'aaadvantage-white.png':'airlines/us-major', 'aaadvantage.png':'airlines/us-major', 'ac-hotels.png':'hotels/marriott',
   'ac-roundel.png':'airlines/canadian', 'aeroplan.svg':'airlines/canadian', 'air-canada-star-alliance-horizontal.svg':'airlines/canadian', 'air-canada-white.svg':'airlines/canadian', 'air-canada-wordmark-dark.svg':'airlines/canadian', 'air-canada-wordmark-light.svg':'airlines/canadian', 'air-canada.svg':'airlines/canadian', 'air-france-wordmark-dark.svg':'airlines/european',
   'air-france-wordmark-light.svg':'airlines/european', 'air-france.svg':'airlines/european', 'alaska-airlines-wordmark-dark.svg':'airlines/us-major',
@@ -18088,10 +18086,10 @@ const LOGO_SUBFOLDER = {
   'jazz.svg':'airlines/canadian-regional', 'jetblue-wordmark-dark.svg':'airlines/us-major', 'level-wordmark-light.svg':'airlines/european', 'level-wordmark-dark.svg':'airlines/european', 'level-emblem.svg':'airlines/european', 'level.svg':'airlines/european', 'avelo-wordmark-light.svg':'airlines/us-major', 'avelo-wordmark-dark.svg':'airlines/us-major', 'avelo-wordmark-color.svg':'airlines/us-major', 'avelo-emblem.svg':'airlines/us-major', 'avelo.svg':'airlines/us-major', 'jetblue-wordmark-light.svg':'airlines/us-major', 'jetblue.svg':'airlines/us-major', 'frontier.svg':'airlines/us-major', 'frontier-emblem.svg':'airlines/us-major', 'frontier-wordmark-light.svg':'airlines/us-major', 'frontier-wordmark-dark.svg':'airlines/us-major',
   'jo-and-joe.svg':'hotels/accor-premium', 'jojoe.png':'hotels/accor-premium', 'kempinski.png':'hotels/other-chains', 'kimpton.png':'hotels/ihg',
   'klm-wordmark-dark.svg':'airlines/european', 'klm-wordmark-light.svg':'airlines/european', 'klm.png':'airlines/european', 'le-meridien.png':'hotels/choice-le-meridien',
-  'lemeridien-01.eps':'hotels/choice-le-meridien', 'logo-hiex-white.svg':'hotels/ihg', 'lot-wordmark-dark.svg':'airlines/european',
+  'logo-hiex-white.svg':'hotels/ihg', 'lot-wordmark-dark.svg':'airlines/european',
   'lot-wordmark-light.svg':'airlines/european', 'lufthansa.svg':'airlines/european', 'm-gallery.png':'hotels/accor-premium', 'mama-shelter.svg':'hotels/accor-midscale',
   'mandarin-oriental.svg':'hotels/accor-luxury', 'mantis.png':'hotels/accor-premium', 'mantis.svg':'hotels/accor-premium', 'mantra.svg':'hotels/accor-premium',
-  'marriott-01.eps':'hotels/marriott', 'marriott-bonvoy-white.png':'hotels/marriott', 'marriott-bonvoy.png':'hotels/marriott', 'marriott-white.png':'hotels/marriott',
+  'marriott-bonvoy-white.png':'hotels/marriott', 'marriott-bonvoy.png':'hotels/marriott', 'marriott-white.png':'hotels/marriott',
   'marriott.png':'hotels/marriott', 'mercure.png':'hotels/accor-midscale', 'mercure.svg':'hotels/accor-midscale', 'mgallery.png':'hotels/accor-premium',
   'mgm-resorts.png':'hotels/other-chains', 'mokulele-emblem.svg':'airlines/us-major', 'mokulele-wordmark-dark.svg':'airlines/us-major', 'mokulele-wordmark-light.svg':'airlines/us-major',
   'mokulele-wordmark.svg':'airlines/us-major', 'mokulele.svg':'airlines/us-major', 'mondrian.png':'hotels/accor-premium', 'mondrian.svg':'hotels/accor-premium',
@@ -19236,7 +19234,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23147';
+var FIDS_BUILD_TAG = 'v23148';
 (function(){
   try {
     function _addTag(){
@@ -19300,7 +19298,7 @@ var FIDS_BUILD_TAG = 'v23147';
 })();
 
 // ── GATE STYLESHEET GUARD ────────────────────────────────────────────────
-// One browser cached a dead response for gids-v218.78.css (fetched during a
+// One browser cached a dead response for gate-display.css (fetched during a
 // deploy window) and rendered the retired gate look — visible g8-r2 banner,
 // unstyled rails — on every build after, because the cached URL never
 // changed. The probe measures the sentinel rule that sits at the END of the
@@ -19311,11 +19309,11 @@ var FIDS_BUILD_TAG = 'v23147';
   try {
     // Every guarded stylesheet carries a sentinel rule at its very END with a
     // unique probe height, so a cached bad/truncated copy of ANY of them
-    // self-heals — the jetBlue clip was fids-layout-fixes.css gone stale on
+    // self-heals — the jetBlue clip was display-overrides.css gone stale on
     // one browser, the exact disease v22358 fixed for the gate stylesheet.
     var GUARDS = [
-      { href: 'gids-v218.78.css',     cls: 'g8-css-sentinel',   h: 7, tries: 0 },
-      { href: 'fids-layout-fixes.css', cls: 'fids-css-sentinel', h: 9, tries: 0 }
+      { href: 'gate-display.css',     cls: 'g8-css-sentinel',   h: 7, tries: 0 },
+      { href: 'display-overrides.css', cls: 'fids-css-sentinel', h: 9, tries: 0 }
     ];
     function _cssAlive(g) {
       if (!document.body) return true; // can't probe yet — don't re-fetch blind
@@ -24887,7 +24885,7 @@ function applyAirportConfigToBoard(iata) {
       // the user's Row Odd picker actually paints the odd rows.
       if (_cc.rowOdd)  st.setProperty('--fids-row-odd',       _cc.rowOdd,  'important');
       // Inject a high-specificity rule set so the per-theme hardcoded
-      // rules in fids-v3.css (body[data-fids-theme="navy"] #fidsTable
+      // rules in flight-display.css (body[data-fids-theme="navy"] #fidsTable
       // tbody tr) can't override custom row colors. This rule has the
       // same specificity as those theme rules but matches "custom" only.
       var _existing = document.getElementById('_fidsCustomThemeRules');
@@ -37212,7 +37210,7 @@ setInterval(function () {
 // for like Gate 1 maybe a pattern or colors or something then etc').
 // CSS can't read the carousel digit out of the DOM, so this keeper mirrors
 // .bidsv2-carousel-number's text onto body[data-bids-carousel]; the per-
-// carousel palette lives in fids-layout-fixes.css. Same keeper shape as the
+// carousel palette lives in display-overrides.css. Same keeper shape as the
 // pattern sync above — re-stamped every second so screen switches and
 // re-renders can never strand a stale colour.
 (function () {

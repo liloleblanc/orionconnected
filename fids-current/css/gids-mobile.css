@@ -4,7 +4,7 @@
    Targets STABLE structural classes (g8-*, gad-*) — NOT inline-style
    selectors. Desktop/big-display layout is untouched.
    Day/night driven by [data-theme] on the gate root (same as console).
-   Load AFTER gids-v218.78.css so these win on phones.
+   Load AFTER gate-display.css so these win on phones.
    ═══════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 640px) {

@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+r"""
+Generate the FAIRMONT_PROPERTY_LOCKUPS JS object for js/fids-core.js from the
+brand-team manifest (logos/hotels/accor-luxury/fairmont/manifest_from_user_image.csv).
+
+- Targets the uniform white-on-transparent pack: outlined_svg_white/<base>.svg
+- Keys mirror the runtime _lockupKey normalization in fids-core.js:
+      name.toLowerCase().trim()
+          .replace(/^fairmont\s+/, '')
+          .replace(/,?\s*fairmont\s*$/, '')
+          .replace(/^the\s+/, '')
+          .trim()
+  so we feed every plausible Accor-API spelling through the same transform and
+  collect the resulting keys (accented + accent-folded variants).
+- Curated aliases preserve proven real-API keys from the previous hand-built map
+  (e.g. "reine elizabeth", "yvr", "fort garry" -> Winnipeg).
+- Collision-checked: any key that would point at >1 different property is dropped
+  (better to fall through to the runtime generator than show the wrong hotel).
+"""
+import csv, re, os, sys, unicodedata, json
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
+FROOT = os.path.join(REPO_ROOT, "fids-current", "logos", "hotels", "accor-luxury", "fairmont")
+MANIFEST = os.path.join(FROOT, "manifest_from_user_image.csv")
+WHITE_DIR = os.path.join(FROOT, "outlined_svg_white")
+WEB_PREFIX = "/logos/hotels/accor-luxury/fairmont/outlined_svg_white/"
+
+def fold(s):
+    """Strip accents: château -> chateau."""
+    return "".join(c for c in unicodedata.normalize("NFKD", s)
+                   if not unicodedata.combining(c))
+
+def transform(name):
+    """Replicate the runtime _lockupKey normalization exactly."""
+    s = name.lower().strip()
+    s = re.sub(r"^fairmont\s+", "", s)
+    s = re.sub(r",?\s*fairmont\s*$", "", s)
+    s = re.sub(r"^the\s+", "", s)
+    return s.strip()
+
+def norm_ws(s):
+    return re.sub(r"\s+", " ", s).strip()
+
+def clean_spaces(s):
+    return norm_ws(s.replace(",", " "))
+
+def keyforms(s):
+    """Both comma-preserved and comma-stripped forms — the Accor API is
+    inconsistent about commas (e.g. 'Copley Plaza, Boston' vs 'Copley Plaza
+    Boston'), and the runtime _lockupKey does NOT strip them."""
+    s = norm_ws(s)
+    return {f for f in {s, norm_ws(s.replace(",", " ")), norm_ws(s.replace(",", ""))} if f}
+
+# ---- curated aliases (alias -> property number) from the proven old map ----
+CURATED = {
+    "fort garry": 20, "the fort garry": 20, "winnipeg": 20,
+    "yvr": 15, "vancouver international airport": 15, "vancouver airport": 15,
+    "reine elizabeth": 10, "le reine elizabeth": 10, "queen elizabeth": 10,
+    "vancouver": 16, "hotel vancouver": 16,
+    "jasper": 5,
+    "york": 13,
+    "macdonald": 4,
+    "laurier": 11,
+    "frontenac": 12,
+    "richelieu": 3, "manoir richelieu": 3,
+    "whistler": 19,
+    "montebello": 9,
+    "lake louise": 6,
+    "mont tremblant": 7, "mont-tremblant": 7,
+    "vancouver waterfront": 14,
+    "empress": 18,
+    "pacific rim": 17,
+}
+
+rows = []
+with open(MANIFEST, encoding="utf-8-sig") as f:
+    for r in csv.DictReader(f):
+        if not r.get("number"):
+            continue
+        rows.append(r)
+
+by_num = {int(r["number"]): r for r in rows}
+
+# key -> set of property numbers (for collision detection)
+key_owners = {}
+
+def add_key(k, num):
+    k = norm_ws(k)
+    if not k or len(k) < 3:
+        return
+    key_owners.setdefault(k, set()).add(num)
+
+missing_files = []
+for r in rows:
+    num = int(r["number"])
+    base = r["filename_base"]
+    if not os.path.isfile(os.path.join(WHITE_DIR, base + ".svg")):
+        missing_files.append(base)
+    subline = r["logo_subline_used"]
+    source = r["source_hotel_name_from_image"]
+    sub_pre = subline.split(",")[0]
+    candidates = {
+        source, "Fairmont " + subline, "The Fairmont " + subline,
+        subline, sub_pre, "Fairmont " + sub_pre,
+    }
+    for c in list(candidates):
+        candidates.add(fold(c))
+        # Accor API may spell "&" as "and" (and vice-versa) — cover both.
+        if "&" in c:
+            candidates.add(c.replace("&", "and"))
+        if re.search(r"\band\b", c, re.I):
+            candidates.add(re.sub(r"\band\b", "&", c, flags=re.I))
+    for c in candidates:
+        t = transform(c)
+        for kf in keyforms(t):
+            add_key(kf, num)
+        for kf in keyforms(fold(t)):
+            add_key(kf, num)
+
+for alias, num in CURATED.items():
+    for kf in keyforms(alias):
+        add_key(kf, num)
+    for kf in keyforms(fold(alias)):
+        add_key(kf, num)
+
+# resolve collisions
+final = {}      # key -> num
+collisions = {}
+for k, owners in key_owners.items():
+    if len(owners) == 1:
+        final[k] = next(iter(owners))
+    else:
+        collisions[k] = sorted(owners)
+
+# emit JS, grouped by property number
+def web_path(num):
+    return WEB_PREFIX + by_num[num]["filename_base"] + ".svg"
+
+keys_by_num = {}
+for k, num in final.items():
+    keys_by_num.setdefault(num, []).append(k)
+
+lines = []
+lines.append("var FAIRMONT_PROPERTY_LOCKUPS = {")
+lines.append("  // AUTO-GENERATED by scripts/assets/gen-fairmont-lockups.py from the brand-team")
+lines.append("  // manifest (logos/hotels/accor-luxury/fairmont/manifest_from_user_image.csv).")
+lines.append("  // All 67 worldwide Fairmont properties -> uniform white-on-transparent")
+lines.append("  // outlined lockups (viewBox 0 0 266.5 104). Keys mirror the runtime")
+lines.append("  // _lockupKey normalization; multiple spellings/accents per property.")
+lines.append("  // To regenerate: python3 scripts/assets/gen-fairmont-lockups.py --write")
+for num in sorted(keys_by_num):
+    r = by_num[num]
+    path = web_path(num)
+    lines.append("")
+    lines.append("  // %02d  %s  (%s, %s)" % (num, r["source_hotel_name_from_image"], r["city"], r["region"]))
+    ks = sorted(set(keys_by_num[num]), key=lambda x: (len(x), x))
+    width = max(len(json.dumps(k)) for k in ks)
+    for k in ks:
+        kk = json.dumps(k)
+        lines.append("  %-*s : %s," % (width, kk, json.dumps(path)))
+lines.append("};")
+js = "\n".join(lines)
+
+OUT = os.path.join(HERE, "fairmont-lockups.generated.js")
+with open(OUT, "w", encoding="utf-8") as f:
+    f.write(js + "\n")
+
+# ---- coverage simulation: does every property resolve to ITS OWN file? ----
+def lookup(name):
+    key = transform(name)
+    if key in final:
+        return final[key]
+    # secondary lookup the runtime tries: unmodified lowercased name
+    alt = norm_ws(name.lower().strip())
+    if alt in final:
+        return final[alt]
+    return None
+
+cov_fail = []
+for r in rows:
+    num = int(r["number"])
+    sub = r["logo_subline_used"]
+    tries = ["Fairmont " + sub, fold("Fairmont " + sub),
+             r["source_hotel_name_from_image"], fold(r["source_hotel_name_from_image"])]
+    ok = any(lookup(t) == num for t in tries)
+    if not ok:
+        cov_fail.append((num, sub, [ (t, lookup(t)) for t in tries ]))
+
+print("properties:           ", len(rows))
+print("total unique keys:    ", len(final))
+print("missing svg files:    ", missing_files or "none")
+print("dropped collisions:   ", json.dumps(collisions, indent=2) if collisions else "none")
+print("coverage failures:    ", cov_fail or "none — all 67 resolve to their own file")
+print("wrote:                ", OUT)
