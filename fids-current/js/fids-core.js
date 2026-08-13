@@ -11976,7 +11976,7 @@ function gateAutofit(root) {
       // 'expected | prévu' and the registration — got the scraps and
       // collapsed. Now the type line takes the bigger share first and
       // Operated-By fits into the real remainder, capped below the type.
-      var typeBudget = op ? Math.floor(h * 0.62) : Math.floor(h * 0.92);
+      var typeBudget = op ? Math.floor(h * 0.72) : Math.floor(h * 0.92);
       _boxAssign(el, w, Math.max(14, typeBudget), null, false, true);
       var opAvail = Math.max(12, Math.floor(h - el.offsetHeight - 6));
       if (op) _boxAssign(op, w, Math.min(opAvail, Math.floor(h * 0.30)), null, false, true);
@@ -19238,7 +19238,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23150';
+var FIDS_BUILD_TAG = 'v23151';
 (function(){
   try {
     function _addTag(){

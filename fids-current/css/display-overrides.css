@@ -12288,6 +12288,14 @@ html body .g8-wrap :is(
   transition: none !important;
 }
 
+/* Aircraft model is the main information in the lower-right panel. Permit a
+   clean two-line fit so long model names can remain prominent instead of
+   shrinking to a caption-sized single line. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-actype {
+  white-space: normal !important;
+  line-height: 1.05 !important;
+}
+
 /* A gate may legitimately show tomorrow's first flight late tonight. Keep
    that calendar context directly under the flight number and departure time
    so the selected flight cannot be mistaken for a same-day departure. */
