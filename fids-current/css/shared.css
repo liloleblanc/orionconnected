@@ -178,6 +178,15 @@ html[data-theme="dark"] #fidsLoader {
   --ld-border:      rgba(255, 255, 255, 0.08);
   --ld-grain-dot:   rgba(255, 255, 255, 0.018);
 }
+/* v23159 — NO WELCOME SCREEN ON A ROTATION HOP. ?rotate= navigates the whole
+   document every dwell period, so replaying the boot loader each time is what
+   made the boards flash continuously rather than only at startup. Measured: the
+   board needs ~11s to populate, so a 30s dwell spent roughly a third of every
+   cycle showing the loader instead of flights. The arriving page stamps
+   data-boot-hop on <html> when it recognises the navigation as a rotation, and
+   the loader simply never paints. A cold boot is unaffected. */
+html[data-boot-hop="1"] #fidsLoader { display: none !important; }
+
 #fidsLoader::before {
   content: '';
   position: absolute;

@@ -26,6 +26,21 @@
          and a white flash before they arrive is the same defect by another
          route. Matches --ld-bg-1 for each theme in css/shared.css. */
       r.style.background = (t === 'dark') ? '#070b14' : '#fbfcfe';
+      /* v23159 — A ROTATION HOP IS NOT A COLD BOOT (Nick: 'transitions flashes
+         it's not just start it's all the time now'). ?rotate= navigates with
+         location.href, so every dwell period the display throws the page away
+         and replays the whole boot — welcome screen included. Measured: the
+         board needs ~11s to populate, so a 30s dwell spends roughly a third of
+         every cycle showing the loader instead of flights, and travellers see
+         it. The screen is already awake on a hop; it does not need welcoming
+         again. The flag is set by the rotate script immediately before it
+         navigates, and consumed here on arrival. */
+      try {
+        if (sessionStorage.getItem('fids_rot_hop') === '1') {
+          sessionStorage.removeItem('fids_rot_hop');
+          r.setAttribute('data-boot-hop', '1');
+        }
+      } catch (e) {}
     } catch (e) {}
   })();
   </script>
@@ -71,6 +86,9 @@
       var next = (idx < 0) ? list[0] : list[(idx + 1) % list.length];
       if (!next || next === norm) return;
       window.setTimeout(function(){
+        /* v23159 — tell the arriving page this is a rotation, not a cold boot,
+           so it skips the welcome screen. See the head script above. */
+        try { sessionStorage.setItem('fids_rot_hop', '1'); } catch (e) {}
         window.location.href = next + window.location.search;
       }, dwell * 1000);
     } catch (e) {}
