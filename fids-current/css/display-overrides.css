@@ -12695,16 +12695,24 @@ html body:not(#_) .wxcard-wrap.wxcard-col {
   --wxs-ink-soft: rgba(255, 255, 255, .78);
   --wxs-ink-faint: rgba(255, 255, 255, .55);
   --wxs-line: rgba(255, 255, 255, .22);
-  width: clamp(370px, 38vw, 560px) !important;
-  max-width: 92% !important;
+  /* v23166d — IT'S A SCREEN (Nick: 'why is it so small — every time you
+     make things SO SMALL'). The portrait strip wasted two-thirds of the
+     stage and the fit fix shrank the hero to pay for the outlook. Wrong
+     trade. The card now spreads across the stage as two columns — hero
+     left, the week right — so everything gets BIGGER and all seven days
+     still fit without squeezing anything. */
+  width: min(94%, 1240px) !important;
   height: 100% !important;
   max-height: 100% !important;
   margin: 0 auto !important;
+  /* Two independent columns: the hero stacks on the left, the week owns an
+     absolutely-placed right panel. A grid tied their row heights together —
+     the outlook's seven tall rows inflated the hero's rows past the stage
+     and clipped the carrier line and the rail. */
   display: flex !important;
   flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  gap: 0 !important;
+  justify-content: center !important;
+  position: relative !important;
   text-align: left !important;
 }
 html body:not(#_) .wxcard-wrap.wxcard-col.wxc-ink-dark {
@@ -12719,7 +12727,7 @@ html body:not(#_) .wxcard-wrap .wxs-carrier {
   color: var(--wxs-ink-faint) !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-city {
-  font-size: clamp(20px, 3.2vh, 38px) !important; font-weight: 800 !important;
+  font-size: clamp(26px, 4.2vh, 50px) !important; font-weight: 800 !important;
   color: var(--wxs-ink) !important; line-height: 1.15 !important;
   margin-top: clamp(4px, 0.8vh, 10px) !important;
 }
@@ -12728,7 +12736,7 @@ html body:not(#_) .wxcard-wrap .wxs-sub {
   letter-spacing: .08em !important; color: var(--wxs-ink-faint) !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-temp {
-  font-size: clamp(44px, 8.5vh, 104px) !important; font-weight: 900 !important;
+  font-size: clamp(58px, 11.5vh, 138px) !important; font-weight: 900 !important;
   line-height: 1 !important; color: var(--wxs-ink) !important;
   margin-top: clamp(6px, 1.2vh, 16px) !important;
   font-variant-numeric: tabular-nums !important;
@@ -12738,21 +12746,21 @@ html body:not(#_) .wxcard-wrap .wxs-unit {
   vertical-align: super !important; margin-left: .06em !important;
   color: var(--wxs-ink) !important;
 }
-html body:not(#_) .wxcard-wrap .wxs-icon { text-align: center !important; margin: clamp(2px, 0.8vh, 10px) 0 !important; }
+html body:not(#_) .wxcard-wrap .wxs-icon { text-align: center !important; margin: clamp(1px, 0.4vh, 6px) 0 !important; }
 html body:not(#_) .wxcard-wrap .wxs-icon img {
-  width: clamp(64px, 11.5vh, 140px) !important; height: clamp(64px, 11.5vh, 140px) !important;
+  width: clamp(96px, 16vh, 190px) !important; height: clamp(96px, 16vh, 190px) !important;
   display: inline-block !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-cond {
-  text-align: center !important; font-size: clamp(17px, 2.7vh, 30px) !important;
+  text-align: center !important; font-size: clamp(20px, 3.3vh, 38px) !important;
   font-weight: 800 !important; color: var(--wxs-ink) !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-meta {
   display: flex !important; justify-content: center !important;
   align-items: flex-start !important;
-  margin-top: clamp(6px, 1.2vh, 16px) !important;
+  margin-top: clamp(4px, 0.9vh, 12px) !important;
   border-top: 1px solid var(--wxs-line) !important;
-  padding-top: clamp(8px, 1.4vh, 16px) !important;
+  padding-top: clamp(5px, 0.9vh, 12px) !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-meta > div {
   flex: 1 1 0 !important; text-align: center !important;
@@ -12765,15 +12773,23 @@ html body:not(#_) .wxcard-wrap .wxs-meta span {
   text-transform: uppercase !important; color: var(--wxs-ink-faint) !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-meta b {
-  font-size: clamp(15px, 2.3vh, 24px) !important; font-weight: 800 !important;
+  font-size: clamp(18px, 2.9vh, 32px) !important; font-weight: 800 !important;
   color: var(--wxs-ink) !important;
 }
+html body:not(#_) .wxcard-wrap > *:not(.wxs-outlook) {
+  width: 52% !important;
+}
 html body:not(#_) .wxcard-wrap .wxs-outlook {
-  margin-top: clamp(8px, 1.4vh, 18px) !important;
-  flex: 1 1 auto !important;
+  position: absolute !important;
+  top: clamp(14px, 2.2vh, 26px) !important;
+  right: clamp(16px, 2vw, 30px) !important;
+  bottom: clamp(14px, 2.2vh, 26px) !important;
+  width: 43% !important;
+  margin-top: 0 !important;
   min-height: 0 !important;
   display: flex !important;
   flex-direction: column !important;
+  justify-content: center !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-ol-title {
   font-size: clamp(10px, 1.4vh, 14px) !important; font-weight: 800 !important;
@@ -12793,22 +12809,22 @@ html body:not(#_) .wxcard-wrap .wxs-day {
 }
 html body:not(#_) .wxcard-wrap .wxs-day:first-of-type { border-top: none !important; }
 html body:not(#_) .wxcard-wrap .wxs-dname {
-  font-size: clamp(12px, 1.9vh, 19px) !important; font-weight: 800 !important;
+  font-size: clamp(16px, 2.6vh, 28px) !important; font-weight: 800 !important;
   letter-spacing: .1em !important; color: var(--wxs-ink-soft) !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-day img {
-  width: clamp(20px, 3.4vh, 40px) !important; height: clamp(20px, 3.4vh, 40px) !important;
+  width: clamp(34px, 5.8vh, 64px) !important; height: clamp(34px, 5.8vh, 64px) !important;
   max-height: 100% !important;
   display: block !important;
   justify-self: start !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-hi {
-  font-size: clamp(14px, 2.2vh, 23px) !important; font-weight: 900 !important;
+  font-size: clamp(18px, 3vh, 34px) !important; font-weight: 900 !important;
   color: var(--wxs-ink) !important; text-align: right !important;
   font-variant-numeric: tabular-nums !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-lo {
-  font-size: clamp(13px, 2vh, 21px) !important; font-weight: 700 !important;
+  font-size: clamp(16px, 2.6vh, 30px) !important; font-weight: 700 !important;
   color: var(--wxs-ink-faint) !important; text-align: right !important;
   font-variant-numeric: tabular-nums !important;
 }
