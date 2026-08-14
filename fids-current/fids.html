@@ -21,11 +21,28 @@
         t = (h >= 6 && h < 19) ? 'light' : 'dark';
       }
       var r = document.documentElement;
+      /* v23163 — A SCREEN WITH NO MEMORY MUST NOT GUESS WHITE. The theme above
+         is the CONSOLE preference, and with nothing saved it falls back to the
+         hour: light between 06:00 and 19:00. The board it is about to cover is
+         rgb(13,77,139) at every hour of the day, so on a display booting cold
+         in daylight that guess put a full white screen up for the ten seconds
+         the board takes to fill, then cut to blue. Measured on production:
+         brightness 201 held from 3.7s to 14.0s.
+         The board's ground is knowable, so it is the fallback now rather than
+         the clock. fids_boot_ground still overrides it the moment a real board
+         has reported its own colour, which is what makes this correct for a
+         light board too. */
+      var _learned = null;
+      try {
+        var _g = localStorage.getItem('fids_boot_ground');
+        if (_g && /\d+\s*,\s*\d+\s*,\s*\d+/.test(_g)) _learned = _g;
+      } catch (e) {}
+      if (!_learned) t = 'dark';
       r.setAttribute('data-theme', t);
       /* Paint the ground immediately too: stylesheets below still have to load,
          and a white flash before they arrive is the same defect by another
          route. Matches --ld-bg-1 for each theme in css/shared.css. */
-      r.style.background = (t === 'dark') ? '#070b14' : '#fbfcfe';
+      r.style.background = _learned || 'rgb(13,77,139)';
       /* v23159 — A ROTATION HOP IS NOT A COLD BOOT (Nick: 'transitions flashes
          it's not just start it's all the time now'). ?rotate= navigates with
          location.href, so every dwell period the display throws the page away
@@ -168,14 +185,14 @@
   <link rel="stylesheet" href="css/font.css?v=327">
   <link rel="stylesheet" href="css/airport-fonts.css?v=312">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
-  <link rel="stylesheet" href="css/shared.css?v=23161">
+  <link rel="stylesheet" href="css/shared.css?v=23163">
   <link rel="stylesheet" href="css/menu.css?v=21899-22">
   <link rel="stylesheet" href="css/fids.css?v=22852">
   <link rel="stylesheet" href="css/flight-display.css?v=22852">
   <link rel="stylesheet" href="css/baggage-display.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23161">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23163">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (Nick: 'the old svreen shows up once in a while',
@@ -832,7 +849,7 @@
 <script src="js/gids-layout.js?v=1"></script>
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/fids-core.js?v=23161"></script>
+<script src="js/fids-core.js?v=23163"></script>
 <script src="js/gate-visual-integrity.js?v=22559"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
