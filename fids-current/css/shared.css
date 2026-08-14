@@ -187,6 +187,17 @@ html[data-theme="dark"] #fidsLoader {
    the loader simply never paints. A cold boot is unaffected. */
 html[data-boot-hop="1"] #fidsLoader { display: none !important; }
 
+/* v23159 — the loader sits on the board's OWN ground once the board has told us
+   what that is. The stock palettes are a guess from the clock; the board at YQM
+   is rgb(13,77,139), which is neither of them, so the loader was a different
+   colour from the screen it covered and the handover read as a flash. The value
+   is recorded by _fidsHideLoader() the first time the board paints and replayed
+   here on every subsequent load. Ink still comes from the theme, which the head
+   script now derives from this colour's luminance rather than the hour. */
+html[data-boot-ground="1"] #fidsLoader {
+  background: var(--boot-ground) !important;
+}
+
 #fidsLoader::before {
   content: '';
   position: absolute;

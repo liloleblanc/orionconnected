@@ -41,6 +41,29 @@
           r.setAttribute('data-boot-hop', '1');
         }
       } catch (e) {}
+      /* v23159 — THE BOOT GROUND IS LEARNED FROM THE BOARD, NOT GUESSED.
+         The loader's palette came from fids_console_theme, which is a separate
+         setting from the board's own theme — so a light console preference put
+         a WHITE screen in front of a board whose real ground is rgb(13,77,139).
+         No amount of painting it sooner fixes a colour that is simply wrong.
+         The board records its ground when it finishes painting (see
+         _fidsHideLoader below); this reads it back on the next load so the very
+         first frame is already the board's own colour. First-ever boot on a
+         fresh display falls back to the theme guess above and is correct from
+         the second boot onward. */
+      try {
+        var g = localStorage.getItem('fids_boot_ground');
+        var m = g && g.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+        if (m) {
+          r.style.background = g;
+          r.style.setProperty('--boot-ground', g);
+          r.setAttribute('data-boot-ground', '1');
+          /* Text on the loader has to survive whatever that colour is, so the
+             theme follows the ground's luminance rather than the clock. */
+          var lum = (0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3]) / 255;
+          r.setAttribute('data-theme', lum > 0.55 ? 'light' : 'dark');
+        }
+      } catch (e) {}
     } catch (e) {}
   })();
   </script>
@@ -85,12 +108,27 @@
       var idx = list.indexOf(norm);
       var next = (idx < 0) ? list[0] : list[(idx + 1) % list.length];
       if (!next || next === norm) return;
-      window.setTimeout(function(){
-        /* v23159 — tell the arriving page this is a rotation, not a cold boot,
-           so it skips the welcome screen. See the head script above. */
-        try { sessionStorage.setItem('fids_rot_hop', '1'); } catch (e) {}
-        window.location.href = next + window.location.search;
-      }, dwell * 1000);
+      /* v23159 — THE DWELL STARTS WHEN THE BOARD IS READY, NOT WHEN THE PAGE
+         LOADS (Nick: 'if it means to slow it down to catch up then fine').
+         The board needs several seconds to fetch and paint, so counting from
+         page load spent part of every dwell showing a screen that was still
+         filling in — and on a short dwell it could rotate away before the
+         flights ever arrived. Now each screen gets its full dwell of finished
+         board. The cap means a screen that never becomes ready still rotates
+         rather than sitting there forever. */
+      var _armed = false;
+      function _armRotation() {
+        if (_armed) return;
+        _armed = true;
+        window.setTimeout(function(){
+          /* Tell the arriving page this is a rotation, not a cold boot, so it
+             skips the welcome screen. See the head script above. */
+          try { sessionStorage.setItem('fids_rot_hop', '1'); } catch (e) {}
+          window.location.href = next + window.location.search;
+        }, dwell * 1000);
+      }
+      window.addEventListener('fids:ready', _armRotation, { once: true });
+      window.setTimeout(_armRotation, 20000);
     } catch (e) {}
   })();
   </script>
@@ -843,6 +881,18 @@ window.addEventListener("DOMContentLoaded", async function() {
       // then fade. (One rAF schedules after render; two guarantees paint.)
       requestAnimationFrame(function() {
         requestAnimationFrame(function() {
+          /* v23159 — the board has painted, so two things are true and worth
+             recording. Its ground colour is now knowable, and the screen is
+             genuinely ready. The first is stored for the next boot to paint
+             into; the second is announced so the rotation timer can start its
+             dwell from a full screen instead of from a loading one. */
+          try {
+            var bg = getComputedStyle(document.body).backgroundColor;
+            if (bg && !/rgba\(0,\s*0,\s*0,\s*0\)|transparent/.test(bg)) {
+              localStorage.setItem('fids_boot_ground', bg);
+            }
+          } catch (e) {}
+          try { window.dispatchEvent(new Event('fids:ready')); } catch (e) {}
           el.classList.add('is-hidden');
           // Remove from layout after fade finishes (CSS transition is 0.5s + 0.1s delay)
           setTimeout(function() { el.classList.add('is-gone'); }, 800);
