@@ -1,6 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- v23159 — BOOT THEME RESOLVES BEFORE FIRST PAINT (Nick: 'when it comes on
+       it blinks like 4 or 5 times'). The loader's palette in shared.css is the
+       LIGHT one by default and only flips on [data-theme="dark"]. The script
+       that set that attribute lived further down, inside <body>, ABOVE the
+       #fidsLoader markup — so getElementById() returned null, the attribute
+       only landed on DOMContentLoaded, and the screen painted white first and
+       snapped to dark a beat later. Overnight (19:00-06:00, when the theme
+       resolves to dark) that flash happened on every single boot.
+       Resolving it here, in <head>, on <html>, means the very first painted
+       frame is already the right colour. The old in-body script is kept as a
+       no-op safety net for any cached page that still has it. -->
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem('fids_console_theme');
+      if (t !== 'light' && t !== 'dark') {
+        var h = new Date().getHours();
+        t = (h >= 6 && h < 19) ? 'light' : 'dark';
+      }
+      var r = document.documentElement;
+      r.setAttribute('data-theme', t);
+      /* Paint the ground immediately too: stylesheets below still have to load,
+         and a white flash before they arrive is the same defect by another
+         route. Matches --ld-bg-1 for each theme in css/shared.css. */
+      r.style.background = (t === 'dark') ? '#070b14' : '#fbfcfe';
+    } catch (e) {}
+  })();
+  </script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -54,7 +82,7 @@
   <link rel="stylesheet" href="css/font.css?v=327">
   <link rel="stylesheet" href="css/airport-fonts.css?v=312">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
-  <link rel="stylesheet" href="css/shared.css?v=21899-21">
+  <link rel="stylesheet" href="css/shared.css?v=23159">
   <link rel="stylesheet" href="css/menu.css?v=21899-22">
   <link rel="stylesheet" href="css/fids.css?v=22852">
   <link rel="stylesheet" href="css/flight-display.css?v=22852">
@@ -740,7 +768,7 @@
 <script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/fids-core.js?v=23158"></script>
+<script src="js/fids-core.js?v=23159"></script>
 <script src="js/gate-visual-integrity.js?v=22559"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>

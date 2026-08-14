@@ -158,7 +158,14 @@ body {
   pointer-events: auto;
   transition: opacity 0.5s ease 0.1s;
 }
-#fidsLoader[data-theme="dark"] {
+/* v23159 — the dark palette is also reachable from <html>, which is where the
+   head script now stamps the resolved theme before first paint. The original
+   selector only matched the attribute ON the loader, and nothing could set
+   that until the element existed — which is what produced the white-then-dark
+   flash on every overnight boot. Both selectors are kept so a cached page that
+   still stamps the loader directly behaves exactly as before. */
+#fidsLoader[data-theme="dark"],
+html[data-theme="dark"] #fidsLoader {
   --ld-bg-1: #070b14;
   --ld-bg-2: #0f1424;
   --ld-bg-radial-1: rgba(251, 191, 36, 0.06);

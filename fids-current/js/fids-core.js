@@ -19285,9 +19285,20 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23158';
+var FIDS_BUILD_TAG = 'v23159';
 (function(){
   try {
+    // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
+    // version badge, but the ad investigation bolted a live readout onto it:
+    // window._adDiag plus an elementFromPoint() probe naming whatever paints
+    // the ad panel's centre pixel, re-run every 2s. Nothing gated it, so every
+    // gate screen in every airport has been showing lines like
+    //   v23158 · car-image/contain:b-46c9-9f9b-cfaeb79ab855.png · top:img.ad-tech-media
+    // to the travelling public, forever. The probe is genuinely useful, so it
+    // is kept — behind ?diag=1 — rather than deleted. Default is the version
+    // alone, painted once, with no repeating timer.
+    var _diagOn = false;
+    try { _diagOn = /(?:^|[?&])diag=1(?:&|$)/.test(location.search); } catch (e) {}
     function _addTag(){
       if (document.getElementById('fidsBuildTag')) return;
       var d = document.createElement('div');
@@ -19295,6 +19306,7 @@ var FIDS_BUILD_TAG = 'v23158';
       d.textContent = FIDS_BUILD_TAG;
       d.style.cssText = 'position:fixed;left:7px;bottom:1px;z-index:99999;font:600 10px/1.6 monospace;color:rgba(128,138,152,0.55);pointer-events:none;';
       document.body.appendChild(d);
+      if (!_diagOn) return;
       setInterval(function(){
         try {
           var t = FIDS_BUILD_TAG + (window._adDiag ? ' · ' + window._adDiag : '');
