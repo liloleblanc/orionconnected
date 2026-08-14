@@ -36794,9 +36794,9 @@ function _renderWxCard(el) {
         var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
         var hNight = h24 < 6 || h24 >= 21;
         var hic = _wxAnimIcon(h.code, hNight);
-        hoursHtml += '<div class="wxc-hour"><div class="wxc-hr">' + lbl + '</div>'
+        hoursHtml += '<div class="wxs-hour"><div class="wxs-hr">' + lbl + '</div>'
           + _wxImgHtml(hic)
-          + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';
+          + '<div class="wxs-ht">' + _dg(h.temp) + '</div></div>';
       });
     } catch (eHrs) { hoursHtml = ''; }
     // Split MAIN (globe + head + hero) from the STRIPS (hours + outlook):
@@ -36843,10 +36843,19 @@ function _renderWxCard(el) {
       +   (typeof cur.windSpeed === 'number' ? '<div><span>' + _mlbl('wind').replace(_wxSep, '<br>') + '</span><b>' + Math.round(cur.windSpeed) + ' km/h</b></div>' : '')
       +   (typeof cur.humidity === 'number' ? '<div><span>' + _mlbl('hum').replace(_wxSep, '<br>') + '</span><b>' + Math.round(cur.humidity) + '%</b></div>' : '')
       + '</div>';
+    // v23166e — THE HOURLY ROW IS BACK (Nick: 'theres nothing hourly, its
+    // not what we had discussed from figma, why?'). The v3 sheet omitted
+    // it, but the discussed design carried the next hours ON TOP of the
+    // 7 days — his earlier words exactly: 'add weather hourly on top of
+    // the 7 days like it was before'. The sheet was a snapshot, not a
+    // subtraction.
     var _wxStripsHtml =
-      (tiles ? '<div class="wxc-strip wxs-outlook"><div class="wxs-ol-title">' + _wxPair({
+      ((hoursHtml || tiles) ? '<div class="wxc-strip wxs-outlook">'
+        + (hoursHtml ? '<div class="wxs-ol-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PR\u00d3XIMAS HORAS', de:'N\u00c4CHSTE STUNDEN', it:'PROSSIME ORE', pt:'PR\u00d3XIMAS HORAS', ja:'\u4eca\u5f8c\u306e\u5929\u6c17', zh:'\u672a\u6765\u51e0\u5c0f\u65f6', ar:'\u0627\u0644\u0633\u0627\u0639\u0627\u062a \u0627\u0644\u0642\u0627\u062f\u0645\u0629' }) + '</div><div class="wxs-hours">' + hoursHtml + '</div>' : '')
+        + (tiles ? '<div class="wxs-ol-title wxs-ol-title2">' + _wxPair({
             en: '7-DAY OUTLOOK', fr: 'PR\u00c9VISIONS 7 JOURS', es: 'PRON\u00d3STICO 7 D\u00cdAS', de: '7-TAGE-AUSBLICK', it: 'PREVISIONI 7 GIORNI', pt: 'PREVIS\u00c3O 7 DIAS', ja: '7\u65e5\u9593\u4e88\u5831', zh: '7\u5929\u9884\u62a5', ar: '\u062a\u0648\u0642\u0639\u0627\u062a 7 \u0623\u064a\u0627\u0645'
-          }) + '</div>' + tiles + '</div>' : '');
+          }) + '</div>' + tiles : '')
+        + '</div>' : '');
     // v23166 — THE CARD COLOUR CARRIES THE WEATHER (the design sheet Nick
     // approved: weather-cards-v3.svg). The old card tinted itself with the
     // AIRLINE accent; the sheet rejected that on purpose — on a board with a

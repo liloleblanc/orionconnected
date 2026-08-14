@@ -12836,3 +12836,39 @@ html body:not(#_) .wxcard-wrap .wxs-alt {
   margin-left: .45em !important; vertical-align: baseline !important;
   color: var(--wxs-ink-faint) !important; letter-spacing: .04em !important;
 }
+
+/* v23166e — the hourly row returns, on top of the 7 days as discussed in
+   Figma ('theres nothing hourly... why?'). Six chips across the week panel. */
+html body:not(#_) .wxcard-wrap .wxs-hours {
+  display: flex !important;
+  gap: clamp(6px, 0.7vw, 12px) !important;
+  margin-bottom: clamp(8px, 1.4vh, 18px) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-hour {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  text-align: center !important;
+  background: rgba(255, 255, 255, .13) !important;
+  border-radius: 12px !important;
+  padding: clamp(5px, 0.8vh, 10px) 2px !important;
+}
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxs-hour {
+  background: rgba(11, 42, 74, .10) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-hour img {
+  width: clamp(28px, 4.6vh, 52px) !important;
+  height: clamp(28px, 4.6vh, 52px) !important;
+  display: block !important;
+  margin: 2px auto !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-hr {
+  font-size: clamp(10px, 1.5vh, 16px) !important; font-weight: 800 !important;
+  letter-spacing: .06em !important; color: var(--wxs-ink-faint) !important;
+  white-space: nowrap !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-ht {
+  font-size: clamp(14px, 2.2vh, 26px) !important; font-weight: 900 !important;
+  color: var(--wxs-ink) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-ol-title2 { margin-top: clamp(2px, 0.5vh, 8px) !important; }
