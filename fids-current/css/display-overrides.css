@@ -12552,21 +12552,21 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-size: 52vh !important;
   line-height: 0.78 !important;
   background: transparent !important;
-  color: var(--crsl-ink, rgb(3,29,66)) !important;
-  -webkit-text-fill-color: var(--crsl-ink, rgb(3,29,66)) !important;
-  /* A hairline of light around the glyph. --crsl-ink is the pattern's darkest
-     tone, which means the numeral is drawn in a colour the pattern also USES —
-     so wherever it crosses one of those dark shapes it would merge into it.
-     This is the smallest thing that guarantees separation without putting a
-     card back. It is a halo, not a shadow: even on all sides, no direction, so
-     it reads as the numeral being cut out of the artwork rather than floating
-     above it. */
-  text-shadow:
-     0 0 6px rgba(255,255,255,0.55),
-     2px 0 0 rgba(255,255,255,0.75), -2px 0 0 rgba(255,255,255,0.75),
-     0 2px 0 rgba(255,255,255,0.75),  0 -2px 0 rgba(255,255,255,0.75),
-     1.5px 1.5px 0 rgba(255,255,255,0.75), -1.5px 1.5px 0 rgba(255,255,255,0.75),
-     1.5px -1.5px 0 rgba(255,255,255,0.75), -1.5px -1.5px 0 rgba(255,255,255,0.75) !important;
+  /* v23161 — WHITE NUMERAL, PATTERN-INK OUTLINE (Nick: 'if you were to have a
+     1 white with the outline that dark blue it is now it would work'). The
+     earlier way round — dark fill, light halo — meant the numeral was painted
+     in a colour the pattern itself uses, so it merged wherever it crossed one
+     of those shapes and the halo was there to rescue it. Inverted, the fill is
+     the one colour no pattern in the set contains much of, and the outline is
+     still drawn from the pattern's own palette, so the numeral keeps belonging
+     to the artwork while never disappearing into it. */
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-text-stroke: 0.055em var(--crsl-ink, rgb(3,29,66)) !important;
+  paint-order: stroke fill !important;
+  /* A whisper of the ink outside the stroke, so the outline still separates
+     where the glyph crosses a pale area of the pattern. */
+  text-shadow: 0 0 10px rgba(255,255,255,0.35) !important;
   position: relative !important;
   z-index: 3 !important;
 }
