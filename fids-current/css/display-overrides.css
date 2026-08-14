@@ -12683,3 +12683,120 @@ html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-hour img,
 html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-hero img {
   filter: saturate(1.05) drop-shadow(0 2px 5px rgba(11, 42, 74, 0.25)) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23166b — THE CARD IS THE SHEET'S CARD (Nick: 'not the same as
+   discussed at all'). Layout now mirrors weather-cards-v3.svg top to
+   bottom; the first pass had only borrowed its colours. Ink rides two
+   custom properties so the luminance flip recolours everything at once.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_) .wxcard-wrap.wxcard-col {
+  --wxs-ink: #fff;
+  --wxs-ink-soft: rgba(255, 255, 255, .78);
+  --wxs-ink-faint: rgba(255, 255, 255, .55);
+  --wxs-line: rgba(255, 255, 255, .22);
+  width: clamp(370px, 38vw, 560px) !important;
+  max-width: 92% !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  text-align: left !important;
+}
+html body:not(#_) .wxcard-wrap.wxcard-col.wxc-ink-dark {
+  --wxs-ink: #0B2A4A;
+  --wxs-ink-soft: rgba(11, 42, 74, .74);
+  --wxs-ink-faint: rgba(11, 42, 74, .55);
+  --wxs-line: rgba(11, 42, 74, .25);
+}
+html body:not(#_) .wxcard-wrap .wxs-carrier {
+  font-size: clamp(11px, 1.5vh, 15px) !important; font-weight: 700 !important;
+  letter-spacing: .14em !important; text-transform: uppercase !important;
+  color: var(--wxs-ink-faint) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-city {
+  font-size: clamp(24px, 3.8vh, 42px) !important; font-weight: 800 !important;
+  color: var(--wxs-ink) !important; line-height: 1.15 !important;
+  margin-top: clamp(4px, 0.8vh, 10px) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-sub {
+  font-size: clamp(11px, 1.6vh, 16px) !important; font-weight: 600 !important;
+  letter-spacing: .08em !important; color: var(--wxs-ink-faint) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-temp {
+  font-size: clamp(56px, 11vh, 122px) !important; font-weight: 900 !important;
+  line-height: 1 !important; color: var(--wxs-ink) !important;
+  margin-top: clamp(6px, 1.2vh, 16px) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-unit {
+  font-size: .34em !important; font-weight: 800 !important;
+  vertical-align: super !important; margin-left: .06em !important;
+  color: var(--wxs-ink) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-icon { text-align: center !important; margin: clamp(2px, 0.8vh, 10px) 0 !important; }
+html body:not(#_) .wxcard-wrap .wxs-icon img {
+  width: clamp(92px, 17vh, 180px) !important; height: clamp(92px, 17vh, 180px) !important;
+  display: inline-block !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-cond {
+  text-align: center !important; font-size: clamp(17px, 2.7vh, 30px) !important;
+  font-weight: 800 !important; color: var(--wxs-ink) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-meta {
+  display: flex !important; justify-content: center !important;
+  margin-top: clamp(8px, 1.6vh, 20px) !important;
+  border-top: 1px solid var(--wxs-line) !important;
+  padding-top: clamp(8px, 1.4vh, 16px) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-meta > div {
+  flex: 1 1 0 !important; text-align: center !important;
+  border-left: 1px solid var(--wxs-line) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-meta > div:first-child { border-left: none !important; }
+html body:not(#_) .wxcard-wrap .wxs-meta span {
+  display: block !important; font-size: clamp(9px, 1.3vh, 13px) !important;
+  font-weight: 700 !important; letter-spacing: .12em !important;
+  text-transform: uppercase !important; color: var(--wxs-ink-faint) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-meta b {
+  font-size: clamp(15px, 2.3vh, 24px) !important; font-weight: 800 !important;
+  color: var(--wxs-ink) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-outlook { margin-top: clamp(10px, 2vh, 24px) !important; }
+html body:not(#_) .wxcard-wrap .wxs-ol-title {
+  font-size: clamp(10px, 1.4vh, 14px) !important; font-weight: 800 !important;
+  letter-spacing: .14em !important; text-transform: uppercase !important;
+  color: var(--wxs-ink-faint) !important; margin-bottom: clamp(4px, 0.8vh, 8px) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-day {
+  display: grid !important;
+  /* Sheet order: day, icon beside it, space, then hi/lo right-aligned. */
+  grid-template-columns: minmax(3.4em, auto) 1fr minmax(3.2em, auto) minmax(2.6em, auto) !important;
+  align-items: center !important;
+  column-gap: clamp(8px, 1vw, 16px) !important;
+  padding: clamp(2px, 0.55vh, 7px) 0 !important;
+  border-top: 1px solid var(--wxs-line) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-day:first-of-type { border-top: none !important; }
+html body:not(#_) .wxcard-wrap .wxs-dname {
+  font-size: clamp(12px, 1.9vh, 19px) !important; font-weight: 800 !important;
+  letter-spacing: .1em !important; color: var(--wxs-ink-soft) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-day img {
+  width: clamp(26px, 4.4vh, 46px) !important; height: clamp(26px, 4.4vh, 46px) !important;
+  display: block !important;
+  justify-self: start !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-hi {
+  font-size: clamp(14px, 2.2vh, 23px) !important; font-weight: 900 !important;
+  color: var(--wxs-ink) !important; text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-lo {
+  font-size: clamp(13px, 2vh, 21px) !important; font-weight: 700 !important;
+  color: var(--wxs-ink-faint) !important; text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}

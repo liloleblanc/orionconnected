@@ -34710,83 +34710,75 @@ function _restartGateAdsTimer() {
       }
       var totalSlots = 1;
       try { totalSlots = _getGateAdTotalSlots(); } catch (e) { totalSlots = ((getGateAds() || []).length + 1); }
-      // Lift the current slide's DOM into a fading overlay. Moving (not
-      // cloning) keeps playing videos playing while they dissolve.
-      //
-      // v22229 — the overlay is parked in el3's PARENT, exactly over el3, and
-      // put on screen BEFORE the new slide renders. Previously _old was slapped
-      // on only AFTER renderGateAd painted the new slide, so for one frame the
-      // NEW slide was visible bare, then the old covered it, then dissolved back
-      // to new — a visible new->old->new 'double take' (Nick: 'transitions are
-      // still pitiful it double takes' / 'atrocious'). Covering FIRST means the
-      // new slide only ever appears as the old DISSOLVES over it — one clean
-      // crossfade, no flash.
-      var _old = null;
+      // v23166b — FADE THROUGH A SOLID, NEVER INTO EACH OTHER (Nick: 'make
+      // sure the slides dont blend in each other... fades black or red or
+      // blue or whatever but not into the next — it can cause some really
+      // weird glitches'). The crossfade dissolved the outgoing slide OVER
+      // the incoming for ~a second; with a live map, a video and a
+      // full-bleed weather card in the mix, that blend frame reads as a
+      // glitch, exactly as reported. A solid curtain in the board's own
+      // ground colour now covers the stage, the swap happens fully hidden,
+      // and the curtain lifts on the finished slide. No frame ever shows
+      // two slides at once. (The 'fade-through-dark reads as a double jump'
+      // note from the crossfade era is retired by this newer directive.)
+      var _curtain = null;
       try {
-        if (el3.firstChild) {
-          var _pr = el3.parentNode;
-          if (_pr) {
-            try { if (getComputedStyle(_pr).position === 'static') _pr.style.position = 'relative'; } catch (ep) {}
-            var _er = el3.getBoundingClientRect(), _prr = _pr.getBoundingClientRect();
-            _old = document.createElement('div');
-            // Marked so the page rotator leaves the dissolving copy alone.
-            _old.setAttribute('data-ad-fading', '1');
-            _old.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
-              + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.95s ease-in-out;overflow:hidden;';
-            while (el3.firstChild) _old.appendChild(el3.firstChild);
-            // The children moved out — bust the per-slide DOM caches so a
-            // same-content render can't early-return into an empty carousel.
-            el3._lastKey = null;
-            el3._wxLastHtml = null;
-            _pr.appendChild(_old); // cover NOW, before the new slide paints
-          }
+        var _pr = el3.parentNode;
+        if (_pr) {
+          try { if (getComputedStyle(_pr).position === 'static') _pr.style.position = 'relative'; } catch (ep) {}
+          var _er = el3.getBoundingClientRect(), _prr = _pr.getBoundingClientRect();
+          var _ground = 'rgb(10,21,38)';
+          try {
+            var _g = localStorage.getItem('fids_boot_ground');
+            if (_g && /\d+\s*,\s*\d+\s*,\s*\d+/.test(_g)) _ground = _g;
+          } catch (eg) {}
+          _curtain = document.createElement('div');
+          // Marked so the page rotator leaves the transition layer alone.
+          _curtain.setAttribute('data-ad-fading', '1');
+          _curtain.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
+            + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:70;pointer-events:none;'
+            + 'background:' + _ground + ';opacity:0;transition:opacity 0.38s ease-in-out;';
+          _pr.appendChild(_curtain);
+          void _curtain.offsetWidth;
+          _curtain.style.opacity = '1';
         }
-      } catch (e) { _old = null; }
-      _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
-      _gateAdExtN = 0;   // new slide visit, holds start over
-      // The rotation tick is the ONE authority allowed to change the slide —
-      // announce it so the slide lock in renderGateAd lets this swap through.
-      window._gateAdAuthChange = true;
-      try { renderGateAd(_gateAdIndex); } catch (e) {}
-      window._gateAdAuthChange = false;
-      if (_old) {
+      } catch (eCur) { _curtain = null; }
+      var _swapDone = false;
+      var _swap = function () {
+        if (_swapDone) return; _swapDone = true;
+        if (gen !== _gateAdGen) { try { if (_curtain) _curtain.remove(); } catch (e2) {} return; }
+        _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
+        _gateAdExtN = 0;   // new slide visit, holds start over
+        // The rotation tick is the ONE authority allowed to change the slide —
+        // announce it so the slide lock in renderGateAd lets this swap through.
+        window._gateAdAuthChange = true;
+        try { renderGateAd(_gateAdIndex); } catch (e) {}
+        window._gateAdAuthChange = false;
         el3.style.transition = 'none';
         el3.style.opacity = '1';
-      } else {
-        // NOTHING TO DISSOLVE — FADE THE NEW SLIDE IN INSTEAD. The crossfade
-        // is built by lifting the OUTGOING slide's children into an overlay,
-        // which only works when the carousel actually holds them. The big
-        // route map renders outside the carousel, so leaving it left nothing
-        // to fade and the next slide arrived as a hard cut — once every
-        // cycle, and it reads as a blip. Fading the incoming slide up covers
-        // that case without touching the map itself.
+        if (_curtain) {
+          try {
+            void _curtain.offsetWidth;
+            _curtain.style.opacity = '0';
+            setTimeout(function () { try { _curtain.remove(); } catch (e2) {} }, 460);
+          } catch (e) { try { _curtain.remove(); } catch (e2) {} }
+        }
+        // Schedule the NEXT tick using the dwell of the slide we just
+        // showed. Falls back to 15s if anything goes wrong.
+        var dwell = 15000;
         try {
-          el3.style.transition = 'none';
-          el3.style.opacity = '0';
-          void el3.offsetWidth;
-          el3.style.transition = 'opacity 0.6s ease-in-out';
-          requestAnimationFrame(function () { try { el3.style.opacity = '1'; } catch (e) {} });
-        } catch (e) { el3.style.transition = 'none'; el3.style.opacity = '1'; }
-      }
-      if (_old) {
-        try {
-          void _old.offsetWidth; // new is painted UNDER the cover; now dissolve
-          _old.style.opacity = '0';
-          setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 1050);
-        } catch (e) { try { if (_old.parentNode) _old.remove(); } catch (e2) {} }
-      }
-      // Schedule the NEXT tick using the dwell of the slide we just
-      // showed. Falls back to 15s if anything goes wrong.
-      var dwell = 15000;
-      try {
-        var nowSlide = _getGateAdSlideAt(_gateAdIndex);
-        dwell = _getGateAdDwellMs(nowSlide);
-      } catch (e) {}
-      dwell = Math.max(22000, dwell);   // Nick: slides were flicking by every 5-10s — hold each ≥22s
-      // Pre-warm the media for the slide that comes NEXT, during this slide's
-      // dwell, so its background lands in sync (no late-pop, no load bump).
-      try { _preloadGateAdMediaForSlide(_getGateAdSlideAt((_gateAdIndex + 1) % totalSlots)); } catch (e) {}
-      _gateAdTimer = setTimeout(_tick, dwell);
+          var nowSlide = _getGateAdSlideAt(_gateAdIndex);
+          dwell = _getGateAdDwellMs(nowSlide);
+        } catch (e) {}
+        dwell = Math.max(22000, dwell);   // Nick: slides were flicking by every 5-10s — hold each ≥22s
+        // Pre-warm the media for the slide that comes NEXT, during this slide's
+        // dwell, so its background lands in sync (no late-pop, no load bump).
+        try { _preloadGateAdMediaForSlide(_getGateAdSlideAt((_gateAdIndex + 1) % totalSlots)); } catch (e) {}
+        _gateAdTimer = setTimeout(_tick, dwell);
+      };
+      // Swap only once the curtain is fully opaque; if the curtain failed to
+      // build, swap immediately — a hard cut beats a stuck stage.
+      if (_curtain) setTimeout(_swap, 400); else _swap();
     }, 10);
   };
   // Kick off — use the dwell of the FIRST slide on initial run.
@@ -36713,6 +36705,13 @@ function _renderWxCard(el) {
       return '<div class="wxc-d' + extraCls + '">' + day + '</div>'
         + '<div class="wxc-dt' + extraCls.replace('wxc-d-fr', 'wxc-dt-fr') + '">' + date + '</div>';
     };
+    // v23166b — the sheet's own formats: 3-letter day rows and bare-degree
+    // temps ('16\u00b0 9\u00b0', unit shown once on the hero only).
+    var _dg = function (v) { return Math.round(v) + '\u00b0'; };
+    var _wxsAbbr = function (d) {
+      var loc = _WX_LOCALE[_wxLangs[0]] || 'en-US';
+      return d.toLocaleDateString(loc, { weekday: 'short' }).replace('.', '').slice(0, 3).toUpperCase();
+    };
     var _dayTopEn = function (d) { return _dayLine(d, _wxLangs[0], ''); };
     var _dayBotFr = function (d) { return _wxLangs[1] ? _dayLine(d, _wxLangs[1], ' wxc-d-fr') : ''; };
     var _mlbl = function (key) {
@@ -36734,11 +36733,10 @@ function _renderWxCard(el) {
       for (var i = 0; i < Math.min(7, daily.time.length); i++) {
         var dt = new Date(daily.time[i] + 'T12:00:00');
         var icd = _wmoAnimIcon(daily.weather_code[i]);
-        tiles += '<div class="wxc-day">' + _dayTopEn(dt)
+        tiles += '<div class="wxs-day"><span class="wxs-dname">' + _wxsAbbr(dt) + '</span>'
           + _wxImgHtml(icd)
-          + _dayBotFr(dt)
-          + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
-          + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
+          + '<span class="wxs-hi">' + _dg(daily.temperature_2m_max[i]) + '</span>'
+          + '<span class="wxs-lo">' + _dg(daily.temperature_2m_min[i]) + '</span></div>';
         nDays++;
       }
     } else {
@@ -36757,10 +36755,10 @@ function _renderWxCard(el) {
         var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
         var dt2 = new Date(k + 'T12:00:00');
         var ich = _wxAnimIcon(code, false);
-        tiles += '<div class="wxc-day">' + _dayTopEn(dt2)
+        tiles += '<div class="wxs-day"><span class="wxs-dname">' + _wxsAbbr(dt2) + '</span>'
           + _wxImgHtml(ich)
-          + _dayBotFr(dt2)
-          + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
+          + '<span class="wxs-hi">' + _dg(dd.hi) + '</span>'
+          + '<span class="wxs-lo">' + _dg(dd.lo) + '</span></div>';
         nDays++;
       });
     }
@@ -36794,28 +36792,45 @@ function _renderWxCard(el) {
     // rebuilding the whole card for it reloaded the big hero icon — the
     // 'bump di bump, almost twice at the beginning' (Nick). With the split,
     // late strip data swaps in UNDER the untouched hero.
+    // v23166b — THE CARD IS THE SHEET'S CARD (Nick: 'not the same as
+    // discussed at all' — he was right; the first pass borrowed the sheet's
+    // colours but kept the old layout). Anatomy now follows
+    // weather-cards-v3.svg top to bottom: carrier \u00b7 flight / CITY /
+    // IATA \u00b7 local time / huge temp with small unit / icon centred /
+    // condition / FEELS-WIND-HUMIDITY three-column rail / vertical 7-day
+    // rows. The hourly strip is not on the sheet and steps aside; its
+    // builder stays for the day it is asked back.
+    var _wxsCar = '';
+    try {
+      var _wxsNm = String(cf._airlineName || cf.airline || '').toUpperCase();
+      var _wxsFl = String(cf.flight || '').replace(/^([A-Z0-9]{2})(\d)/, '$1 $2');
+      _wxsCar = _wxsNm + (_wxsFl ? ' \u00b7 ' + _wxsFl : '');
+    } catch (eCar) {}
+    var _wxsWhen = '';
+    try {
+      var _wxsTz = (AP[dest] || {}).tz;
+      var _wxsLoc = _WX_LOCALE[_wxLangs[0]] || 'en-US';
+      _wxsWhen = new Date().toLocaleString(_wxsLoc, Object.assign(
+        { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false },
+        _wxsTz ? { timeZone: _wxsTz } : {})).replace(',', '').replace('.', '');
+    } catch (eWhen) {}
+    var _wxsT = dT(cur.temp), _wxsTm = _wxsT.match(/^(-?\d+)(.*)$/) || [null, _wxsT, ''];
     var _wxMainHtml =
-        '<div class="wxc-globe" aria-hidden="true"></div>'
-      + '<div class="wxcard-main">'
-      +   '<div class="wxc-head">'
-      +     '<div><div class="wxc-kicker">' + _wxPair({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter am Ziel', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' }) + '</div>'
-      +     '<div class="wxc-city">' + city + ' <span class="wxc-bar">|</span> <span class="wxc-iata">' + _dispIata(dest) + '</span></div></div>'
-      +   '</div>'
-      +   '<div class="wxc-hero">'
-      +     _wxImgHtml(ic)
-      +     '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
-      +     '<div class="wxc-meta">'
-      +       (typeof cur.feelsLike === 'number' ? '<span>' + _mlbl('feels') + ' <b>' + dT(cur.feelsLike) + '</b></span>' : '')
-      +       (typeof cur.windSpeed === 'number' ? '<span>' + _mlbl('wind') + ' <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
-      +       (typeof cur.humidity === 'number' ? '<span>' + _mlbl('hum') + ' <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
-      +     '</div></div>'
-      +   '</div>'
+        (_wxsCar ? '<div class="wxs-carrier">' + _wxsCar + '</div>' : '')
+      + '<div class="wxs-city">' + city + '</div>'
+      + '<div class="wxs-sub">' + _dispIata(dest) + ' \u00b7 ' + _wxsWhen + '</div>'
+      + '<div class="wxs-temp">' + _wxsTm[1] + '<span class="wxs-unit">' + _wxsTm[2] + '</span></div>'
+      + '<div class="wxs-icon">' + _wxImgHtml(ic) + '</div>'
+      + '<div class="wxs-cond">' + cond + '</div>'
+      + '<div class="wxs-meta">'
+      +   (typeof cur.feelsLike === 'number' ? '<div><span>' + _mlbl('feels') + '</span><b>' + _dg(cur.feelsLike) + '</b></div>' : '')
+      +   (typeof cur.windSpeed === 'number' ? '<div><span>' + _mlbl('wind') + '</span><b>' + Math.round(cur.windSpeed) + ' km/h</b></div>' : '')
+      +   (typeof cur.humidity === 'number' ? '<div><span>' + _mlbl('hum') + '</span><b>' + Math.round(cur.humidity) + '%</b></div>' : '')
       + '</div>';
     var _wxStripsHtml =
-        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
-      + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
-            en: nDays + '-DAY', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
-          }) + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
+      (tiles ? '<div class="wxc-strip wxs-outlook"><div class="wxs-ol-title">' + _wxPair({
+            en: '7-DAY OUTLOOK', fr: 'PR\u00c9VISIONS 7 JOURS', es: 'PRON\u00d3STICO 7 D\u00cdAS', de: '7-TAGE-AUSBLICK', it: 'PREVISIONI 7 GIORNI', pt: 'PREVIS\u00c3O 7 DIAS', ja: '7\u65e5\u9593\u4e88\u5831', zh: '7\u5929\u9884\u62a5', ar: '\u062a\u0648\u0642\u0639\u0627\u062a 7 \u0623\u064a\u0627\u0645'
+          }) + '</div>' + tiles + '</div>' : '');
     // v23166 — THE CARD COLOUR CARRIES THE WEATHER (the design sheet Nick
     // approved: weather-cards-v3.svg). The old card tinted itself with the
     // AIRLINE accent; the sheet rejected that on purpose — on a board with a
