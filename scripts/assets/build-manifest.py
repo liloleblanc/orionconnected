@@ -137,7 +137,11 @@ def main():
             })
             counts[cat] = counts.get(cat, 0) + 1
 
-    items.sort(key=lambda x: (x["category"], x["subcategory"], x["file"].lower()))
+    # The full path is the final tiebreaker: sibling folders carry identical
+    # filenames (the hotel preview/outlined/editable trees), and a filename-only
+    # key left their order to os.walk — which differs by filesystem, so --check
+    # could fail on CI against a manifest freshly built elsewhere.
+    items.sort(key=lambda x: (x["category"], x["subcategory"], x["file"].lower(), x["path"].lower()))
 
     manifest = {
         "_meta": {
