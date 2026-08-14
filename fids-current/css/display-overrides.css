@@ -11455,30 +11455,57 @@ html body .g8-cd-mark .g8-cd-mark-still {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   v23119 — TIGHTER BANNER on the boarding takeovers (Nick: 'tighten the
-   top where the logo ac and gate is to about the size of the aeroplan logo
-   a bit higher than the logo without changing gate size').
+   v23164 — THE BANNER SHRINK IS WITHDRAWN (Nick: 'the sizing or resizing of
+   the top banner I never wanted that — I said I wanted the middle part to be
+   more tight... you changed the height, I never wanted that').
 
-   The alliance chip is 73px; the band comes down from 112px to 84px — a
-   bit higher than the chip, exactly the brief. The GATE keeps its size:
-   its number stays at the same font (93px measured before and after); the
-   red block trims only its padding to sit in the shorter band.
+   v23119 took this band from 112px down to 84px and pinned the logo slot to
+   64px. The band was the only thing that moved; the WORDMARK never followed,
+   because its height is not written here at all. fids-core.js:10540 stamps it
+   INLINE, with !important:
+
+       _logoH = Math.min(_logoH, 106);   // 'without overrunning the ~118px banner'
+
+   An inline !important outranks every rule in this file, so the 76px pin
+   below it was dead the day it was written and a 106px image has been sitting
+   in a 64px box under overflow:hidden ever since. What that looks like depends
+   entirely on the logo FILE, which is why it reads as a different bug on every
+   screen: a tall lockup (WestJet's leaf rises above the letters) gets sliced
+   top and bottom, while a wide flat one carrying transparent padding
+   (American) has object-fit:contain scale the letterforms down inside the
+   width cap — 'the American Airlines logo is so small'. Same cause, and it
+   re-rolls every time the gate changes carrier, which is the 'it changed again
+   and I didn't touch it'.
+
+   The band goes back to 112px, which is what fids-core.js has always been
+   calibrated against, and the slot is given the band instead of a pin of its
+   own — one number governs, so the two cannot drift apart again. The 76px
+   logo pin is deleted rather than corrected: it never applied, and a rule that
+   looks authoritative but loses to an inline style is worse than no rule.
+
+   The GATE is untouched — its number stays pinned at 11vh below, which is the
+   'without changing gate size' half of the original brief and still holds.
    ═══════════════════════════════════════════════════════════════════════ */
 html body .g8-wrap.g8-takeover .g8-r1 {
-  min-height: 84px !important;
-  height: 84px !important;
+  min-height: 112px !important;
+  height: 112px !important;
 }
 html body .g8-wrap.g8-takeover .g8-r1-logoslot {
-  height: 64px !important;
-}
-html body .g8-wrap.g8-takeover .g8-r1-logo {
-  height: 76px !important;
-  max-height: 76px !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  align-items: center !important;
+  /* The slot's own overflow:hidden (gate-display.css:3641) is what turned an
+     oversized wordmark into a SLICED one instead of a visibly oversized one —
+     it hid the symptom and left the cause. The band below still clips, so
+     nothing can escape the header; the difference is that the logo is now
+     measured against the band's 112px rather than the slot's content box,
+     which is shorter by the band's vertical padding. */
+  overflow: visible !important;
 }
 html body .g8-wrap.g8-takeover .g8-r1-star,
 html body .g8-wrap.g8-takeover .g8-r1-alliance-star {
-  width: 58px !important;
-  height: 58px !important;
+  width: 73px !important;
+  height: 73px !important;
 }
 /* The gate block: same number, less air. The number font is PINNED to its
    pre-change computed size (93px at 846h -> 11vh), because a height-fed
@@ -11486,7 +11513,7 @@ html body .g8-wrap.g8-takeover .g8-r1-alliance-star {
    the 'without changing gate size' Nick ruled out. !important outranks the
    fitter's inline write. */
 html body .g8-wrap.g8-takeover .g8-r1-right {
-  height: 82px !important;
+  height: 110px !important;
   align-items: center !important;
 }
 html body .g8-wrap.g8-takeover .g8-r1-gate {

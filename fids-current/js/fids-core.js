@@ -7441,13 +7441,27 @@ function _buildV2AircraftCol(ctx, vars) {
       var _dfStops = (currentFlight && Array.isArray(currentFlight._stops) && currentFlight._stops.length > 1)
         ? currentFlight._stops : null;
       var _dfCity = _dfStops ? _destFlipStops(_dfStops, 'c') : null;
-      var _dfChip = _dfStops ? _destFlipStops(_dfStops, 'ia', 'v2-fi-code-flip') : null;
+      // (The IATA flip-chip that used to live in the title is gone with it —
+      // _dfCity below still flips the CITY leg-by-leg, so a via-stop reads on
+      // screen exactly as before, in the value.)
       // A flipping value with a frozen chip disagrees half the time
       // ('DEN' beside 'Reno') — if the city flips and the chip can't flip
       // with it, drop the chip entirely.
-      var _destChipHtml = _dfChip || (_dfCity ? '' : _destIataDisp);
-      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true)
-        + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
+      // v23164 — the IATA chip comes OUT of the title (Nick: 'the title
+      // destination is off by quite a bit... this is not adjustments, those
+      // titles DON'T change').
+      //
+      // Every other shelf title is two segments — "Flight | Vuelo", "Status |
+      // Estado". Destination was three, because the code was appended here,
+      // which made it visibly wider than its neighbours. Worse, the third
+      // segment was CONDITIONAL: it appeared only when the city name could not
+      // be resolved or flipped, so the title changed width mid-session with
+      // nothing on screen to explain it. A title that re-flows is not a title.
+      //
+      // Nothing is lost. When there is no city name the value on line below
+      // already falls back to the IATA code, so the code still reaches the
+      // screen — in the value, where a changing thing belongs.
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true);
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -19298,7 +19312,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23163';
+var FIDS_BUILD_TAG = 'v23164';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -28664,7 +28678,35 @@ function _gateMapTick() {
       inb.status !== 'cancelled' &&
       prog > 0.02 && (prog < 0.99 || _liveFinal)
     );
-    var inboundLanded = !_liveFinal && (inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
+    // v23164 — A GROUND FIX AT OUR FIELD IS A LANDING (Nick's video: 'the
+    // plane coming in sideways and just stopped', with the camera parked at
+    // street level and 'still there now'). prog is derived from the GATE
+    // time, so an EARLY arrival rolls out with prog still well under 0.99 —
+    // status lags too — and the phase stays 'airborne': the camera keeps
+    // street-following a taxiing aircraft until the SCHEDULED time catches
+    // up, which on an early flight is many minutes of a frozen street map.
+    // This is the missing mirror of _liveFinal above: that rule says
+    // 'measurably in the air near the field ⇒ not landed'; this one says
+    // 'measurably on the ground at the field ⇒ landed'. Same evidence, both
+    // directions. The screen's own digits already trusted it — the video
+    // reads 'Altitude 0 ft', which only renders when onGround is true.
+    // Distance-gated to our field so a delayed departure taxiing at the
+    // ORIGIN can't trip it, and it feeds the existing 20s debounce below,
+    // so a single onGround blip on approach still can't flap the view.
+    var _liveGrounded = false;
+    try {
+      if (inb.status !== 'arrived' && inb.status !== 'landed') {
+        var _lvG = window._gateInboundLivePos || window._gateMapFix;
+        var _apCG = _lookupAirport(apIata);
+        if (_lvG && _apCG && typeof _lvG.lat === 'number' && typeof _lvG.lng === 'number' &&
+            (_lvG.onGround === true ||
+             (window._gateInbound && window._gateInbound._liveOnGround === true)) &&
+            _gcNm([_lvG.lat, _lvG.lng], _apCG) < 6) {
+          _liveGrounded = true;
+        }
+      }
+    } catch (e) {}
+    var inboundLanded = !_liveFinal && (_liveGrounded || inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
     // v23102 — DEBOUNCE the clock-derived landing: a single missing poll or
     // onGround blip flipped airborne↔at-gate once a minute on approach, and
     // every flip re-routed the map (the measured flash cycle). A landing the
