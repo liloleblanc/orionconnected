@@ -11404,7 +11404,12 @@ html body .g8-board-grp-label.g8-lane-stacked .g8-bir-sep {
 html body .v2-fi-title.g8-lane-stacked .v2-fi-lbl-en,
 html body .v2-fi-title.g8-lane-stacked .v2-fi-lbl-2,
 html body .g8-bir-title.g8-lane-stacked .g8-bir-l1,
-html body .g8-bir-title.g8-lane-stacked .g8-bir-l2 {
+html body .g8-bir-title.g8-lane-stacked .g8-bir-l2,
+/* v23161 — the boarding sign's group label was listed in the rule that hides
+   the pipe but not in the one that stacks the halves, so it could never
+   actually stack and 'Priority | Priorité' ran off the column instead. */
+html body .g8-board-grp-label.g8-lane-stacked .g8-bir-l1,
+html body .g8-board-grp-label.g8-lane-stacked .g8-bir-l2 {
   display: block !important;
   text-align: center !important;
 }

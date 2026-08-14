@@ -9903,9 +9903,9 @@ function uxgGateHtml(ctx) {
   // 3 \u2022 4 \u2022 5 \u2022 6, also Lane 2).
   function _acLanesBodyHtml(zonesVal) {
     return '<div class="g8-board-body g8-lanes3">'
-      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
-      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
-      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">' + _gateLbl('zones', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(zonesVal) + '">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
+      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
+      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
+      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">' + _gateLbl('zones', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(zonesVal) + '">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
       + '</div>';
   }
 
@@ -10051,7 +10051,7 @@ function uxgGateHtml(ctx) {
              return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
            })();
       var _grpValCls = _g8GrpValCls;
-      var _fcNext, _fcNextLbl = _gateLbl('zones', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true);
+      var _fcNext, _fcNextLbl = _gateLbl('zones', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true);
       if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
       else if (airlineCode === 'PD') { _fcNextLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); }
       else _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
@@ -10080,7 +10080,7 @@ function uxgGateHtml(ctx) {
           // the down-right — one each, mirrored. The next-panel's extra
           // leading arrow is gone (it pointed at the divider).
           : '<div class="g8-board-body g8-lanes-std">'
-            + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1 &#8226; 2</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 &#8226; 2', true) + '</div></div>'
+            + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1 &#8226; 2</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 &#8226; 2', true) + '</div></div>'
             + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _grpValCls(_fcNext) + '">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 &#8226; 4', true) + '</div></div>'
             + '</div>')
         + '</div>';
@@ -11589,7 +11589,7 @@ function uxgActivateRotator() {
 function gateLanguageLayout(root) {
   if (!root) return;
   try {
-    root.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title').forEach(function (ln) {
+    root.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title, .g8-board-grp-label').forEach(function (ln) {
       if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
           && !/\|/.test(ln.textContent || '')) return;
       var parentWidth = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
@@ -19148,6 +19148,15 @@ function _fidsClockForLang(now, tz, lang) {
 // Returns the selected languages' words for `key`, at most two, de-duplicated.
 // frFirst only reorders — it is the French-first-airport flag and has never
 // been a language choice. sep/wrap let each call site keep its own markup.
+// v23161 — 'Priority | Priorité' was clipped on the boarding sign (Nick's
+// screenshot). The label is white-space:nowrap by policy — 'You never ever
+// Break a sentence' — and the stacking treatment that rescues every other
+// bilingual pair was written in CSS for this class too, but never reached it:
+// gateLanguageLayout() did not look at .g8-board-grp-label, and the two halves
+// were bare text with nothing for CSS to stack. This names them.
+function _gateLblHalf(w, i) {
+  return '<span class="g8-bir-l' + (i + 1) + '">' + w + '</span>';
+}
 function _gateLbl(key, frFirst, wrap, sep, keepDup) {
   var o = _GATE_LBL[key];
   if (!o) return '';
@@ -19171,7 +19180,11 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
     parts.push(w);
   }
   if (!parts.length) parts.push(o.en);
-  if (typeof wrap === 'function') return parts.map(wrap).join(sep || '');
+  // v23161 — wrap() now receives the index. The lane labels need their two
+  // halves in addressable spans so they can STACK when they cannot share a
+  // line; without that the pair is bare text and CSS has nothing to move.
+  // Existing callers that ignore the second argument are unaffected.
+  if (typeof wrap === 'function') return parts.map(function (w, i) { return wrap(w, i); }).join(sep || '');
   return parts.join(sep || ' ');
 }
 // Lane line as a bilingual pair with the lane number in BOTH halves
