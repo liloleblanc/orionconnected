@@ -156,7 +156,12 @@ body {
     linear-gradient(155deg, var(--ld-bg-1) 0%, var(--ld-bg-2) 100%);
   opacity: 1;
   pointer-events: auto;
-  transition: opacity 0.5s ease 0.1s;
+  /* v23159 — a slower, gentler hand-off (Nick: 'the transitions don't have to
+     be so fast either they can fade slower'). Now that the loader sits on the
+     board's own ground, this reads as the screen settling rather than one
+     thing being swapped for another. The .is-gone timeout in each page's
+     _fidsHideLoader() is matched to it. */
+  transition: opacity 1.2s ease 0.1s;
 }
 /* v23159 — the dark palette is also reachable from <html>, which is where the
    head script now stamps the resolved theme before first paint. The original

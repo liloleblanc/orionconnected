@@ -879,7 +879,7 @@ window.addEventListener("DOMContentLoaded", function() {
           try { window.dispatchEvent(new Event('fids:ready')); } catch (e) {}
           el.classList.add('is-hidden');
           // Remove from layout after fade finishes (CSS transition is 0.5s + 0.1s delay)
-          setTimeout(function() { el.classList.add('is-gone'); }, 800);
+          setTimeout(function() { el.classList.add('is-gone'); }, 1500);  /* v23159 — matches the 0.1s delay + 1.2s fade in shared.css */
         });
       });
     }
