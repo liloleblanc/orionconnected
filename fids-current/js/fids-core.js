@@ -7461,7 +7461,13 @@ function _buildV2AircraftCol(ctx, vars) {
       // Nothing is lost. When there is no city name the value on line below
       // already falls back to the IATA code, so the code still reaches the
       // screen — in the value, where a changing thing belongs.
-      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true);
+      // v23165 — no keepDup here (Nick's screenshot: 'Destination |
+      // Destination' on a French gate — EN and FR share the word, and the
+      // doubled title reads as a glitch, not symmetry). Languages that differ
+      // still show both: 'Destination | Destino' is untouched. The boarding
+      // sign's deliberate 'Zones | Zones' symmetry (v23130) keeps its own
+      // keepDup at its own call sites.
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -19312,7 +19318,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23164';
+var FIDS_BUILD_TAG = 'v23165';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

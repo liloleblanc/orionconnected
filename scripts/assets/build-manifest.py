@@ -150,7 +150,10 @@ def main():
                            "python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
             "generator": "scripts/assets/build-manifest.py",
             "total": len(items),
-            "by_category": counts,
+            # Sorted for the same reason the items are: a plain dict here keeps
+            # os.walk insertion order, which differs by filesystem, so --check
+            # failed on CI against a manifest freshly built elsewhere.
+            "by_category": {c: counts[c] for c in sorted(counts)},
         },
         "items": items,
     }

@@ -4,15 +4,15 @@
     "generator": "scripts/assets/build-manifest.py",
     "total": 2514,
     "by_category": {
-      "misc": 14,
-      "weather": 83,
-      "airline": 1318,
       "ad": 10,
+      "airline": 1318,
+      "background": 103,
       "brand": 2,
-      "livery": 96,
       "hotel": 884,
+      "livery": 96,
+      "misc": 14,
       "symbol": 4,
-      "background": 103
+      "weather": 83
     }
   },
   "items": [
