@@ -36778,32 +36778,22 @@ function _renderWxCard(el) {
     // NEXT-HOURS strip (Nick: 'add weather hourly on top of the 7 days like it
     // was before'). Next 6 hours from the cached hourly forecast, in the
     // DESTINATION's local time, sitting above the 7-day outlook.
-    var hoursHtml = '';
+    // v23166f — NEXT 6 HOURS IS A LINE GRAPH (Nick's prototype, node 27:2:
+    // hour labels across the top, a dotted line riding the temps, the
+    // values beneath — not chips). Points collected here; drawn below.
+    var _hrPts = [];
     try {
       var _hTz = (AP[dest] || {}).tz;
       var _hNow = Date.now();
-      var _hFmt = _hTz ? { timeZone: _hTz, hour: 'numeric', hour12: true } : { hour: 'numeric', hour12: true };
       var _hFmt24 = _hTz ? { timeZone: _hTz, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' };
-      var _hrs = (wx.hourly || [])
+      (wx.hourly || [])
         .filter(function (h) { return h && typeof h.temp === 'number' && h.ts && h.ts >= _hNow - 1800000; })
         .sort(function (a, b) { return a.ts - b.ts; })
-        .slice(0, 6);
-      _hrs.forEach(function (h) {
-        var hd = new Date(h.ts);
-        var lbl = hd.toLocaleTimeString('en-US', _hFmt).replace(/:00/, '').replace(/\s/g, ' '); // "3 PM"
-        var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
-        var hNight = h24 < 6 || h24 >= 21;
-        var hic = _wxAnimIcon(h.code, hNight);
-        hoursHtml += '<div class="wxs-hour"><div class="wxs-hr">' + lbl + '</div>'
-          + _wxImgHtml(hic)
-          + '<div class="wxs-ht">' + _dg(h.temp) + '</div></div>';
-      });
-    } catch (eHrs) { hoursHtml = ''; }
-    // Split MAIN (globe + head + hero) from the STRIPS (hours + outlook):
-    // the 7-day data usually lands a beat AFTER the first paint, and
-    // rebuilding the whole card for it reloaded the big hero icon — the
-    // 'bump di bump, almost twice at the beginning' (Nick). With the split,
-    // late strip data swaps in UNDER the untouched hero.
+        .slice(0, 6)
+        .forEach(function (h) {
+          _hrPts.push({ lbl: new Date(h.ts).toLocaleTimeString('en-GB', _hFmt24).slice(0, 2), t: h.temp });
+        });
+    } catch (eHrs) { _hrPts = []; }
     // v23166b — THE CARD IS THE SHEET'S CARD (Nick: 'not the same as
     // discussed at all' — he was right; the first pass borrowed the sheet's
     // colours but kept the old layout). Anatomy now follows
@@ -36812,12 +36802,6 @@ function _renderWxCard(el) {
     // condition / FEELS-WIND-HUMIDITY three-column rail / vertical 7-day
     // rows. The hourly strip is not on the sheet and steps aside; its
     // builder stays for the day it is asked back.
-    var _wxsCar = '';
-    try {
-      var _wxsNm = String(cf._airlineName || cf.airline || '').toUpperCase();
-      var _wxsFl = String(cf.flight || '').replace(/^([A-Z0-9]{2})(\d)/, '$1 $2');
-      _wxsCar = _wxsNm + (_wxsFl ? ' \u00b7 ' + _wxsFl : '');
-    } catch (eCar) {}
     var _wxsWhen = '';
     try {
       var _wxsTz = (AP[dest] || {}).tz;
@@ -36826,36 +36810,58 @@ function _renderWxCard(el) {
         { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false },
         _wxsTz ? { timeZone: _wxsTz } : {})).replace(',', '').replace('.', '');
     } catch (eWhen) {}
-    var _wxsT = dT(cur.temp), _wxsTm = _wxsT.match(/^(-?\d+)(.*)$/) || [null, _wxsT, ''];
+    // The hero icon is the 3D set — the artwork the prototype is drawn
+    // with (logos/weather/orion). Conditions outside its six fall back to
+    // the paper-cut mark, which still covers everything else.
+    var _WX3D = { 'clear-day': 'clear-day', 'partly-cloudy-day': 'partly-cloudy-day',
+      'partly-cloudy-night': 'partly-cloudy-night',
+      'rain': 'rain', 'extreme-rain': 'rain', 'drizzle': 'rain',
+      'snow': 'snow', 'extreme-snow': 'snow',
+      'thunderstorms-rain': 'thunderstorms-rain', 'thunderstorms-day-rain': 'thunderstorms-rain' };
+    var _hero = _WX3D[ic]
+      ? '<img class="wxs-hero3d" src="/logos/weather/orion/' + _WX3D[ic] + '.svg" alt="">'
+      : _wxImgHtml(ic);
+    var _sparkHtml = '';
+    if (_hrPts.length >= 2) {
+      var _tv = _hrPts.map(function (p2) { return _wxUseF ? _f(p2.t) : Math.round(p2.t); });
+      var _tMin = Math.min.apply(null, _tv), _tMax = Math.max.apply(null, _tv);
+      var _span = Math.max(1, _tMax - _tMin);
+      var _n = _hrPts.length, _pts = [];
+      for (var _si = 0; _si < _n; _si++) {
+        var _sx = (_si + 0.5) * (600 / _n);
+        var _sy = 78 - ((_tv[_si] - _tMin) / _span) * 56;
+        _pts.push(_sx.toFixed(1) + ',' + _sy.toFixed(1));
+      }
+      var _dots = '';
+      for (var _sj = 0; _sj < _n; _sj++) {
+        var _xy = _pts[_sj].split(',');
+        _dots += '<circle cx="' + _xy[0] + '" cy="' + _xy[1] + '" r="7" fill="currentColor"/>';
+      }
+      _sparkHtml =
+          '<div class="wxs-spark-row wxs-spark-hrs">' + _hrPts.map(function (p3) { return '<span>' + p3.lbl + '</span>'; }).join('') + '</div>'
+        + '<svg class="wxs-spark" viewBox="0 0 600 92" preserveAspectRatio="none" aria-hidden="true">'
+        +   '<polyline points="' + _pts.join(' ') + '" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>'
+        +   _dots
+        + '</svg>'
+        + '<div class="wxs-spark-row wxs-spark-temps">' + _tv.map(function (v2) { return '<span>' + v2 + '\u00b0</span>'; }).join('') + '</div>';
+    }
     var _wxMainHtml =
-        (_wxsCar ? '<div class="wxs-carrier">' + _wxsCar + '</div>' : '')
-      + '<div class="wxs-city">' + city + '</div>'
+        '<div class="wxs-city">' + String(city).toUpperCase() + '</div>'
       + '<div class="wxs-sub">' + _dispIata(dest) + ' \u00b7 ' + _wxsWhen + '</div>'
-      + '<div class="wxs-temp">' + _wxsTm[1] + '<span class="wxs-unit">' + _wxsTm[2] + '</span>'
-      +   '<span class="wxs-alt">' + (_wxUseF ? Math.round(cur.temp) + '\u00b0C' : _f(cur.temp) + '\u00b0F') + '</span></div>'
-      + '<div class="wxs-icon">' + _wxImgHtml(ic) + '</div>'
+      + '<div class="wxs-temp">' + (_wxUseF ? _f(cur.temp) : Math.round(cur.temp)) + '<span class="wxs-deg">\u00b0</span></div>'
+      + '<div class="wxs-icon">' + _hero + '</div>'
       + '<div class="wxs-cond">' + cond + '</div>'
-      // Rail labels: the two languages stack (Nick's screenshot: 'FEELS
-      // LIKE | RESSENTI' wrapped around a floating pipe in the narrow
-      // column — a <br> is what that layout actually wants).
       + '<div class="wxs-meta">'
       +   (typeof cur.feelsLike === 'number' ? '<div><span>' + _mlbl('feels').replace(_wxSep, '<br>') + '</span><b>' + _dg(cur.feelsLike) + '</b></div>' : '')
       +   (typeof cur.windSpeed === 'number' ? '<div><span>' + _mlbl('wind').replace(_wxSep, '<br>') + '</span><b>' + Math.round(cur.windSpeed) + ' km/h</b></div>' : '')
       +   (typeof cur.humidity === 'number' ? '<div><span>' + _mlbl('hum').replace(_wxSep, '<br>') + '</span><b>' + Math.round(cur.humidity) + '%</b></div>' : '')
       + '</div>';
-    // v23166e — THE HOURLY ROW IS BACK (Nick: 'theres nothing hourly, its
-    // not what we had discussed from figma, why?'). The v3 sheet omitted
-    // it, but the discussed design carried the next hours ON TOP of the
-    // 7 days — his earlier words exactly: 'add weather hourly on top of
-    // the 7 days like it was before'. The sheet was a snapshot, not a
-    // subtraction.
+    // v23166f — the prototype card carries NEXT 6 HOURS only; the 7-day
+    // list is not on it ('its no where near the same' — node 27:2 is the
+    // spec). The daily builders above stay for the compact board tiles the
+    // prototype shows elsewhere.
     var _wxStripsHtml =
-      ((hoursHtml || tiles) ? '<div class="wxc-strip wxs-outlook">'
-        + (hoursHtml ? '<div class="wxs-ol-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PR\u00d3XIMAS HORAS', de:'N\u00c4CHSTE STUNDEN', it:'PROSSIME ORE', pt:'PR\u00d3XIMAS HORAS', ja:'\u4eca\u5f8c\u306e\u5929\u6c17', zh:'\u672a\u6765\u51e0\u5c0f\u65f6', ar:'\u0627\u0644\u0633\u0627\u0639\u0627\u062a \u0627\u0644\u0642\u0627\u062f\u0645\u0629' }) + '</div><div class="wxs-hours">' + hoursHtml + '</div>' : '')
-        + (tiles ? '<div class="wxs-ol-title wxs-ol-title2">' + _wxPair({
-            en: '7-DAY OUTLOOK', fr: 'PR\u00c9VISIONS 7 JOURS', es: 'PRON\u00d3STICO 7 D\u00cdAS', de: '7-TAGE-AUSBLICK', it: 'PREVISIONI 7 GIORNI', pt: 'PREVIS\u00c3O 7 DIAS', ja: '7\u65e5\u9593\u4e88\u5831', zh: '7\u5929\u9884\u62a5', ar: '\u062a\u0648\u0642\u0639\u0627\u062a 7 \u0623\u064a\u0627\u0645'
-          }) + '</div>' + tiles : '')
-        + '</div>' : '');
+      (_sparkHtml ? '<div class="wxc-strip wxs-hours6"><div class="wxs-ol-title">' + _wxPair({ en: 'NEXT 6 HOURS', fr: 'PROCHAINES 6 HEURES', es: 'PR\u00d3XIMAS 6 HORAS', de: 'N\u00c4CHSTE 6 STUNDEN', it: 'PROSSIME 6 ORE', pt: 'PR\u00d3XIMAS 6 HORAS', ja: '\u4eca\u5f8c6\u6642\u9593', zh: '\u672a\u67656\u5c0f\u65f6', ar: '\u0627\u0644\u0633\u0627\u0639\u0627\u062a \u0627\u0644\u0633\u062a \u0627\u0644\u0642\u0627\u062f\u0645\u0629' }) + '</div>' + _sparkHtml + '</div>' : '');
     // v23166 — THE CARD COLOUR CARRIES THE WEATHER (the design sheet Nick
     // approved: weather-cards-v3.svg). The old card tinted itself with the
     // AIRLINE accent; the sheet rejected that on purpose — on a board with a
@@ -36867,7 +36873,7 @@ function _renderWxCard(el) {
     // sunny yellow and the pale snow cyan.
     var _WXCARD = {
       'clear-day':              ['#FFD24A', '#EC8A12', 1],
-      'partly-cloudy-day':      ['#5ED0FA', '#2BA8EE', 1],
+      'partly-cloudy-day':      ['#41B0F4', '#1274DB', 0],
       'clear-night':            ['#2E3F7E', '#0F1A45', 0],
       'partly-cloudy-night':    ['#2E3F7E', '#0F1A45', 0],
       'rain':                   ['#45AEF4', '#0B7FE0', 0],
@@ -36884,7 +36890,7 @@ function _renderWxCard(el) {
       'thunderstorms-rain':     ['#1657D8', '#05238C', 0],
       'thunderstorms-day-rain': ['#1657D8', '#05238C', 0],
       'hail':                   ['#1657D8', '#05238C', 0],
-      'wind':                   ['#5ED0FA', '#2BA8EE', 1]
+      'wind':                   ['#41B0F4', '#1274DB', 0]
     };
     var _cw = _WXCARD[ic] || ['#45AEF4', '#0B7FE0', 0];
     var _wxBg = 'linear-gradient(180deg, ' + _cw[0] + ' 0%, ' + _cw[1] + ' 100%)';

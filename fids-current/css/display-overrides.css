@@ -12620,22 +12620,13 @@ html body:not(#_) .wxcard-wrap.wxcard-col {
   position: relative !important;
   border-radius: 18px !important;
   overflow: hidden !important;
-  padding: clamp(14px, 2.2vh, 26px) clamp(16px, 2vw, 30px)
-           clamp(14px, 2.2vh, 26px) calc(8px + clamp(16px, 2vw, 30px)) !important;
+  padding: clamp(12px, 1.8vh, 22px) clamp(18px, 2.2vw, 34px) !important;
 }
 /* Sheen — white 18% fading out by 34%, the sheet's own top-light. */
 html body:not(#_) .wxcard-wrap.wxcard-col::before {
   content: '';
   position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 34%);
-  pointer-events: none;
-}
-/* Carrier accent edge: 8px bar + the 1.5px white 30% inner hairline. */
-html body:not(#_) .wxcard-wrap.wxcard-col::after {
-  content: '';
-  position: absolute; left: 0; top: 0; bottom: 0; width: 8px;
-  background: var(--wxc-acc, #0033A1);
-  box-shadow: inset -1.5px 0 0 rgba(255,255,255,.30);
   pointer-events: none;
 }
 /* Temps never reflow between refreshes — tabular figures reserve equal
@@ -12701,14 +12692,13 @@ html body:not(#_) .wxcard-wrap.wxcard-col {
      trade. The card now spreads across the stage as two columns — hero
      left, the week right — so everything gets BIGGER and all seven days
      still fit without squeezing anything. */
-  width: min(94%, 1240px) !important;
+  /* v23166f — the prototype's portrait card (node 27:2), scaled to the
+     stage: city, bare temp, the 3D icon, condition, rail, and the NEXT 6
+     HOURS line graph. Nothing else on the card. */
+  width: min(52%, 640px) !important;
   height: 100% !important;
   max-height: 100% !important;
   margin: 0 auto !important;
-  /* Two independent columns: the hero stacks on the left, the week owns an
-     absolutely-placed right panel. A grid tied their row heights together —
-     the outlook's seven tall rows inflated the hero's rows past the stage
-     and clipped the carrier line and the rail. */
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
@@ -12727,7 +12717,7 @@ html body:not(#_) .wxcard-wrap .wxs-carrier {
   color: var(--wxs-ink-faint) !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-city {
-  font-size: clamp(26px, 4.2vh, 50px) !important; font-weight: 800 !important;
+  font-size: clamp(24px, 3.8vh, 46px) !important; font-weight: 800 !important;
   color: var(--wxs-ink) !important; line-height: 1.15 !important;
   margin-top: clamp(4px, 0.8vh, 10px) !important;
 }
@@ -12736,7 +12726,8 @@ html body:not(#_) .wxcard-wrap .wxs-sub {
   letter-spacing: .08em !important; color: var(--wxs-ink-faint) !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-temp {
-  font-size: clamp(58px, 11.5vh, 138px) !important; font-weight: 900 !important;
+  line-height: 0.95 !important;
+  font-size: clamp(60px, 10.6vh, 140px) !important; font-weight: 900 !important;
   line-height: 1 !important; color: var(--wxs-ink) !important;
   margin-top: clamp(6px, 1.2vh, 16px) !important;
   font-variant-numeric: tabular-nums !important;
@@ -12746,10 +12737,16 @@ html body:not(#_) .wxcard-wrap .wxs-unit {
   vertical-align: super !important; margin-left: .06em !important;
   color: var(--wxs-ink) !important;
 }
-html body:not(#_) .wxcard-wrap .wxs-icon { text-align: center !important; margin: clamp(1px, 0.4vh, 6px) 0 !important; }
+/* The icon is the card's shock absorber: it flexes to whatever height is
+   left, so the text rows and the graph never clip whatever the stage. */
+html body:not(#_) .wxcard-wrap .wxs-icon {
+  text-align: center !important; margin: 0 !important; line-height: 0 !important;
+  flex: 1 1 auto !important; min-height: 56px !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+}
 html body:not(#_) .wxcard-wrap .wxs-icon img {
-  width: clamp(96px, 16vh, 190px) !important; height: clamp(96px, 16vh, 190px) !important;
-  display: inline-block !important;
+  height: 100% !important; max-height: clamp(104px, 15.5vh, 195px) !important;
+  width: auto !important; display: inline-block !important; object-fit: contain !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-cond {
   text-align: center !important; font-size: clamp(20px, 3.3vh, 38px) !important;
@@ -12758,9 +12755,9 @@ html body:not(#_) .wxcard-wrap .wxs-cond {
 html body:not(#_) .wxcard-wrap .wxs-meta {
   display: flex !important; justify-content: center !important;
   align-items: flex-start !important;
-  margin-top: clamp(4px, 0.9vh, 12px) !important;
+  margin-top: clamp(3px, 0.6vh, 8px) !important;
   border-top: 1px solid var(--wxs-line) !important;
-  padding-top: clamp(5px, 0.9vh, 12px) !important;
+  padding-top: clamp(3px, 0.6vh, 8px) !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-meta > div {
   flex: 1 1 0 !important; text-align: center !important;
@@ -12775,9 +12772,6 @@ html body:not(#_) .wxcard-wrap .wxs-meta span {
 html body:not(#_) .wxcard-wrap .wxs-meta b {
   font-size: clamp(18px, 2.9vh, 32px) !important; font-weight: 800 !important;
   color: var(--wxs-ink) !important;
-}
-html body:not(#_) .wxcard-wrap > *:not(.wxs-outlook) {
-  width: 52% !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-outlook {
   position: absolute !important;
@@ -12872,3 +12866,44 @@ html body:not(#_) .wxcard-wrap .wxs-ht {
   font-variant-numeric: tabular-nums !important;
 }
 html body:not(#_) .wxcard-wrap .wxs-ol-title2 { margin-top: clamp(2px, 0.5vh, 8px) !important; }
+
+
+/* v23166f — prototype details: caps city, raised bare degree, 3D hero, and
+   the NEXT 6 HOURS sparkline (labels, line, temps — currentColor ink). */
+html body:not(#_) .wxcard-wrap .wxs-city {
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-deg {
+  font-size: .45em !important; font-weight: 800 !important;
+  vertical-align: super !important; line-height: 0 !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-hero3d {
+  height: 100% !important; max-height: clamp(104px, 15.5vh, 195px) !important;
+  width: auto !important; display: inline-block !important; object-fit: contain !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-hours6 {
+  color: var(--wxs-ink) !important;
+  margin-top: clamp(8px, 1.6vh, 20px) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-spark {
+  display: block !important;
+  width: 100% !important;
+  height: clamp(26px, 4.4vh, 52px) !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-spark-row {
+  display: flex !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-spark-row span {
+  flex: 1 1 0 !important;
+  text-align: center !important;
+  font-variant-numeric: tabular-nums !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-spark-hrs span {
+  font-size: clamp(11px, 1.7vh, 18px) !important; font-weight: 700 !important;
+  color: var(--wxs-ink-faint) !important; letter-spacing: .08em !important;
+}
+html body:not(#_) .wxcard-wrap .wxs-spark-temps span {
+  font-size: clamp(14px, 2.3vh, 26px) !important; font-weight: 800 !important;
+  color: var(--wxs-ink) !important;
+}
