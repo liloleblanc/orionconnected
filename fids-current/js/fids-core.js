@@ -37291,6 +37291,47 @@ setInterval(function () {
           var _wc = 'rgba(' + _wp[_wi][0] + ',' + _wp[_wi][1] + ',' + _wp[_wi][2] + ',' + _wa[_wi] + ')';
           if (document.body.style.getPropertyValue('--crsl-w' + (_wi + 1)) !== _wc) document.body.style.setProperty('--crsl-w' + (_wi + 1), _wc);
         }
+        // v23161 — THE TYPE TAKES ITS COLOUR FROM THE PATTERN (Nick's mockup:
+        // a teal numeral and a teal-on-orange label, both lifted straight out
+        // of the artwork behind them). Washing the pattern out to make room for
+        // the number was the wrong move — the number should belong to the
+        // pattern instead. These four colours are already the pattern's own
+        // dominant tones, so the only work here is choosing which does what.
+        //
+        //   --crsl-ink  the darkest tone. Carries the numeral, so it reads on
+        //               the pale patterns as well as the busy ones.
+        //   --crsl-pop  the most saturated tone that is not the ink. Carries
+        //               the label bar.
+        //   --crsl-pop-ink  white or the ink, whichever holds against --crsl-pop.
+        //
+        // Deriving them per pattern is what makes this survive the rotation:
+        // twelve patterns, twelve palettes, no hand-picked hexes to go stale.
+        var _lum = function (c) { return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; };
+        var _sat = function (c) {
+          var mx = Math.max(c[0], c[1], c[2]) / 255, mn = Math.min(c[0], c[1], c[2]) / 255;
+          return mx === 0 ? 0 : (mx - mn) / mx;
+        };
+        var _rgb = function (c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; };
+        var _sorted = _wp.slice().sort(function (a, b) { return _lum(a) - _lum(b); });
+        var _ink = _sorted[0];
+        var _pop = _wp.slice().filter(function (c) { return c !== _ink; })
+                      .sort(function (a, b) { return _sat(b) - _sat(a); })[0] || _sorted[1];
+        // Pick the label ink by measured contrast, not a luminance guess: on the
+        // floral palette the accent is an olive whose luminance clears 0.45, so
+        // a threshold handed it the dark ink and the bar read weakly. Comparing
+        // both candidates properly picks whichever actually separates.
+        var _contrast = function (a, b) {
+          var la = _lum(a), lb = _lum(b);
+          return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+        };
+        var _popInk = (_contrast(_pop, _ink) >= _contrast(_pop, [255, 255, 255]))
+          ? _ink : [255, 255, 255];
+        var _set = function (k, v) {
+          if (document.body.style.getPropertyValue(k) !== v) document.body.style.setProperty(k, v);
+        };
+        _set('--crsl-ink', _rgb(_ink));
+        _set('--crsl-pop', _rgb(_pop));
+        _set('--crsl-pop-ink', _rgb(_popInk));
       } else {
         document.body.style.removeProperty('--crsl-pattern');
         for (var _wj = 1; _wj <= 4; _wj++) document.body.style.removeProperty('--crsl-w' + _wj);

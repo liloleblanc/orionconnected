@@ -12487,66 +12487,97 @@ html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   v23160 — AN INNER ARROW, NOT A CARD
-   Nick: 'a shape lighter than the rest that is the shape of the arrow but half
-   the size of the actual item, putting the one in it... the pattern where the
-   number is in but faded not white... I wanted the patterns to blend in the
-   lines too have an art piece'.
+   v23161 — THE NUMBER BELONGS TO THE PATTERN
+   Nick's mockup: the wedge keeps the artwork at full strength, and the numeral
+   and the label are drawn in the pattern's OWN colours — a teal numeral, a
+   teal-on-orange label bar — instead of a white card being cut into it.
 
-   The wedge is already an arrow. The number's container now repeats that
-   silhouette instead of importing a rectangle that belongs to nothing else on
-   this screen, and it is LIGHTER rather than white — so the artwork runs
-   through it and the panel reads as one piece.
+   That inverts what every earlier attempt did. Washing the pattern back to make
+   the number readable was fighting the artwork; taking the number's colour out
+   of the artwork makes them the same object. It also fixes the problem the
+   inner-arrow version had, where a light shape vanished on the pale patterns —
+   --crsl-ink is always the darkest tone in whichever pattern is showing, so the
+   contrast holds across all twelve.
 
-   The pattern outside the shape stays at full strength. 'Lighter than the rest'
-   means the rest keeps its punch; only the inside lifts, and that lift is what
-   gives the numeral its contrast. The label rides inside the same shape because
-   dark text on the un-washed pattern could not be read.
+   Colours come from the belt-pattern stamper in fids-core.js (--crsl-ink,
+   --crsl-pop, --crsl-pop-ink), derived per pattern rather than hand-picked.
 
-   Note for whoever edits this next: the two earlier rules at :12131 (12x armor)
-   and :12251 (13x) both set background:#FFFFFF on these elements. This block
-   carries 14x so it wins. Editing either of those alone changes nothing on
-   screen — that cost two rounds to find.
+   Fallbacks are the p09 palette, so a missed stamp still looks deliberate.
+
+   Armor note: the two rules at :12131 (12x) and :12251 (13x) both set
+   background:#FFFFFF here. This block carries 14x.
    ═══════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
   position: relative !important;
   display: flex !important;
   flex-direction: column !important;
+  justify-content: space-between !important;
   align-items: stretch !important;
-  padding-top: 5% !important;
+  padding: 0 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block::before {
-  content: '' !important;
-  position: absolute !important;
-  left: 4% !important;
-  top: 3.5% !important;
-  width: 64% !important;
-  height: 82% !important;
-  clip-path: polygon(0% 0%, 88% 0%, 100% 50%, 88% 100%, 0% 100%) !important;
-  -webkit-clip-path: polygon(0% 0%, 88% 0%, 100% 50%, 88% 100%, 0% 100%) !important;
-  background: rgba(255,255,255,0.68) !important;
-  z-index: 2 !important;
-  pointer-events: none !important;
-}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block::before { content: none !important; }
+
+/* EN label — a bar in the pattern's accent, hard against the top edge */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label {
   flex: 0 0 auto !important;
-  background: transparent !important;
+  align-self: flex-start !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 4% 0 0 0 !important;
+  padding: .10em .5em .14em !important;
+  background: var(--crsl-pop, rgb(252,236,0)) !important;
+  color: var(--crsl-pop-ink, rgb(3,29,66)) !important;
+  -webkit-text-fill-color: var(--crsl-pop-ink, rgb(3,29,66)) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+  border-radius: 0 !important;
   position: relative !important;
   z-index: 3 !important;
-  padding-left: 9% !important;
 }
+
+/* FR label — same bar, hard against the bottom edge */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block::after {
+  content: 'CARROUSEL' !important;
+  position: absolute !important;
+  left: 0 !important;
+  bottom: 5% !important;
+  padding: .10em .5em .14em !important;
+  background: var(--crsl-pop, rgb(252,236,0)) !important;
+  color: var(--crsl-pop-ink, rgb(3,29,66)) !important;
+  font-family: inherit !important;
+  font-weight: 800 !important;
+  font-size: 4.4vh !important;
+  letter-spacing: .04em !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+}
+
+/* The numeral, in the pattern's darkest tone, sitting straight on the artwork */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
   flex: 1 1 auto !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  padding: 0 0 6% 12% !important;
+  padding: 0 0 0 8% !important;
   margin: 0 !important;
-  font-size: 40vh !important;
-  line-height: 0.84 !important;
+  font-size: 52vh !important;
+  line-height: 0.78 !important;
   background: transparent !important;
-  color: #0E2748 !important;
-  -webkit-text-fill-color: #0E2748 !important;
+  color: var(--crsl-ink, rgb(3,29,66)) !important;
+  -webkit-text-fill-color: var(--crsl-ink, rgb(3,29,66)) !important;
+  /* A hairline of light around the glyph. --crsl-ink is the pattern's darkest
+     tone, which means the numeral is drawn in a colour the pattern also USES —
+     so wherever it crosses one of those dark shapes it would merge into it.
+     This is the smallest thing that guarantees separation without putting a
+     card back. It is a halo, not a shadow: even on all sides, no direction, so
+     it reads as the numeral being cut out of the artwork rather than floating
+     above it. */
+  text-shadow:
+     0 0 6px rgba(255,255,255,0.55),
+     2px 0 0 rgba(255,255,255,0.75), -2px 0 0 rgba(255,255,255,0.75),
+     0 2px 0 rgba(255,255,255,0.75),  0 -2px 0 rgba(255,255,255,0.75),
+     1.5px 1.5px 0 rgba(255,255,255,0.75), -1.5px 1.5px 0 rgba(255,255,255,0.75),
+     1.5px -1.5px 0 rgba(255,255,255,0.75), -1.5px -1.5px 0 rgba(255,255,255,0.75) !important;
   position: relative !important;
   z-index: 3 !important;
 }
