@@ -16,8 +16,25 @@
         t = (h >= 6 && h < 19) ? 'light' : 'dark';
       }
       var r = document.documentElement;
+      /* v23163 — A SCREEN WITH NO MEMORY MUST NOT GUESS WHITE. The theme above
+         is the CONSOLE preference, and with nothing saved it falls back to the
+         hour: light between 06:00 and 19:00. The board it is about to cover is
+         rgb(13,77,139) at every hour of the day, so on a display booting cold
+         in daylight that guess put a full white screen up for the ten seconds
+         the board takes to fill, then cut to blue. Measured on production:
+         brightness 201 held from 3.7s to 14.0s.
+         The board's ground is knowable, so it is the fallback now rather than
+         the clock. fids_boot_ground still overrides it the moment a real board
+         has reported its own colour, which is what makes this correct for a
+         light board too. */
+      var _learned = null;
+      try {
+        var _g = localStorage.getItem('fids_boot_ground');
+        if (_g && /\d+\s*,\s*\d+\s*,\s*\d+/.test(_g)) _learned = _g;
+      } catch (e) {}
+      if (!_learned) t = 'dark';
       r.setAttribute('data-theme', t);
-      r.style.background = (t === 'dark') ? '#070b14' : '#fbfcfe';
+      r.style.background = _learned || 'rgb(13,77,139)';
       /* If a board has already recorded its own ground, this entry page paints
          straight into it, so the hand-off to fids.html has no colour change at
          all. */
@@ -62,7 +79,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="css/shared.css?v=23161">
+  <link rel="stylesheet" href="css/shared.css?v=23163">
   <link rel="stylesheet" href="css/font.css?v=1">
   <link rel="stylesheet" href="css/entry.css?v=35">
   <link rel="stylesheet" href="css/mobile.css?v=1">
