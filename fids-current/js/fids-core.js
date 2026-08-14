@@ -7441,13 +7441,27 @@ function _buildV2AircraftCol(ctx, vars) {
       var _dfStops = (currentFlight && Array.isArray(currentFlight._stops) && currentFlight._stops.length > 1)
         ? currentFlight._stops : null;
       var _dfCity = _dfStops ? _destFlipStops(_dfStops, 'c') : null;
-      var _dfChip = _dfStops ? _destFlipStops(_dfStops, 'ia', 'v2-fi-code-flip') : null;
+      // (The IATA flip-chip that used to live in the title is gone with it —
+      // _dfCity below still flips the CITY leg-by-leg, so a via-stop reads on
+      // screen exactly as before, in the value.)
       // A flipping value with a frozen chip disagrees half the time
       // ('DEN' beside 'Reno') — if the city flips and the chip can't flip
       // with it, drop the chip entirely.
-      var _destChipHtml = _dfChip || (_dfCity ? '' : _destIataDisp);
-      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true)
-        + (_destChipHtml ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destChipHtml + '</span>' : '');
+      // v23164 — the IATA chip comes OUT of the title (Nick: 'the title
+      // destination is off by quite a bit... this is not adjustments, those
+      // titles DON'T change').
+      //
+      // Every other shelf title is two segments — "Flight | Vuelo", "Status |
+      // Estado". Destination was three, because the code was appended here,
+      // which made it visibly wider than its neighbours. Worse, the third
+      // segment was CONDITIONAL: it appeared only when the city name could not
+      // be resolved or flipped, so the title changed width mid-session with
+      // nothing on screen to explain it. A title that re-flows is not a title.
+      //
+      // Nothing is lost. When there is no city name the value on line below
+      // already falls back to the IATA code, so the code still reaches the
+      // screen — in the value, where a changing thing belongs.
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true);
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -19298,7 +19312,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23163';
+var FIDS_BUILD_TAG = 'v23164';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
