@@ -12127,7 +12127,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* 1 — the arrow carries the pattern */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
   background-color: #F0F3F4 !important;
-  /* v23162 — the artwork sits back 25% (Nick: 'fade by about 25% the art for
+  /* v23162 — the artwork sits back 35% (Nick: 'lets do in total 35% reduction' — the art for
      baggage'). A flat, even wash across the whole wedge — NOT the shaped glow
      an earlier pass used, which had to be torn out because it dimmed hardest
      exactly where the number sits and turned the panel back into a card. This
@@ -12136,7 +12136,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      from a hole burned in the pattern. 25% is the number he asked for; it is
      the single value to change if he wants more or less. */
   background-image:
-    linear-gradient(rgba(255,255,255,0.25), rgba(255,255,255,0.25)),
+    linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35)),
     var(--crsl-pattern, url("/logos/Backgrounds/carousel-pattern.svg?v=23143")) !important;
   background-size: 100% 100%, 100% 100% !important;
   background-repeat: no-repeat, no-repeat !important;
