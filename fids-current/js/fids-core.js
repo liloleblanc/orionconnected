@@ -19318,7 +19318,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23165';
+var FIDS_BUILD_TAG = 'v23166';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -36502,6 +36502,38 @@ function _wmoAnimIcon(code) {
   if (c >= 95) return 'thunderstorms-day-rain';
   return 'cloudy';
 }
+// v23166 — THE ORION PAPER-CUT WEATHER SET GOES LIVE (the set Nick picked:
+// 'I love that one'). Every condition the set covers renders its PNG; a name
+// the set lacks falls through to the animated Meteocon exactly as before.
+// Hail is the only such condition — no artwork for it exists in any set Nick
+// supplied (see design/weather/ORION-PAPERCUT-SET.md).
+//
+// The papercut img carries data-wxp, NOT data-wx, on purpose, twice over:
+// 1. _wxHydrateSvgs below selects img.wxanim[data-wx] to inline-animate
+//    Meteocon SVGs — a PNG must not be fetched-and-replaced by that path.
+// 2. The board's light-row swap (display-overrides.css:6273) selects
+//    img.fids-wx-cell[data-wx] to substitute -light.svg variants. The
+//    papercut art is saturated colour that reads on both grounds — that is
+//    why this set won — so it needs no swap, and must not be swapped back
+//    into a Meteocon on Delayed/Final rows.
+var _WX_PAPERCUT = {
+  'clear-day': 'clear-day', 'clear-night': 'clear-night',
+  'partly-cloudy-day': 'partly-cloudy-day', 'partly-cloudy-night': 'partly-cloudy-night',
+  'cloudy': 'overcast', 'overcast': 'overcast', 'overcast-day': 'overcast',
+  'fog': 'fog', 'mist': 'fog',
+  'drizzle': 'drizzle',
+  'rain': 'rain', 'extreme-rain': 'rain',
+  'sleet': 'sleet',
+  'snow': 'snow', 'extreme-snow': 'snow',
+  'thunderstorms': 'thunderstorms',
+  'thunderstorms-rain': 'thunderstorms-rain', 'thunderstorms-day-rain': 'thunderstorms-rain',
+  'wind': 'wind'
+};
+function _wxImgHtml(name) {
+  var pc = _WX_PAPERCUT[name];
+  if (pc) return '<img class="wxanim" data-wxp="' + pc + '" src="/logos/weather/orion-papercut/' + pc + '.png" alt="">';
+  return '<img class="wxanim" data-wx="' + name + '" src="/logos/weather/animated/' + name + '.svg" alt="">';
+}
 // Inline the animated SVGs so their animations ALWAYS run (some display
 // stacks freeze SVG animation inside <img>). Fetched once, cached.
 window._wxSvgTxt = window._wxSvgTxt || {};
@@ -36703,7 +36735,7 @@ function _renderWxCard(el) {
         var dt = new Date(daily.time[i] + 'T12:00:00');
         var icd = _wmoAnimIcon(daily.weather_code[i]);
         tiles += '<div class="wxc-day">' + _dayTopEn(dt)
-          + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
+          + _wxImgHtml(icd)
           + _dayBotFr(dt)
           + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
           + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
@@ -36726,7 +36758,7 @@ function _renderWxCard(el) {
         var dt2 = new Date(k + 'T12:00:00');
         var ich = _wxAnimIcon(code, false);
         tiles += '<div class="wxc-day">' + _dayTopEn(dt2)
-          + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
+          + _wxImgHtml(ich)
           + _dayBotFr(dt2)
           + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
         nDays++;
@@ -36753,7 +36785,7 @@ function _renderWxCard(el) {
         var hNight = h24 < 6 || h24 >= 21;
         var hic = _wxAnimIcon(h.code, hNight);
         hoursHtml += '<div class="wxc-hour"><div class="wxc-hr">' + lbl + '</div>'
-          + '<img class="wxanim" data-wx="' + hic + '" src="/logos/weather/animated/' + hic + '.svg" alt="">'
+          + _wxImgHtml(hic)
           + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';
       });
     } catch (eHrs) { hoursHtml = ''; }
@@ -36770,7 +36802,7 @@ function _renderWxCard(el) {
       +     '<div class="wxc-city">' + city + ' <span class="wxc-bar">|</span> <span class="wxc-iata">' + _dispIata(dest) + '</span></div></div>'
       +   '</div>'
       +   '<div class="wxc-hero">'
-      +     '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
+      +     _wxImgHtml(ic)
       +     '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
       +     '<div class="wxc-meta">'
       +       (typeof cur.feelsLike === 'number' ? '<span>' + _mlbl('feels') + ' <b>' + dT(cur.feelsLike) + '</b></span>' : '')

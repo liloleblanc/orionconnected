@@ -202,6 +202,26 @@
     // clashed with every board theme (Nick: 'the colors for the weather are
     // not at all matching'). Sprite kept below as fallback for names the
     // animated set doesn't cover.
+    // v23166 — the Orion paper-cut set (Nick's pick) renders every condition
+    // it covers; hail is the only name with no papercut artwork and stays on
+    // the animated icon below. Mirror of _WX_PAPERCUT in fids-core.js — the
+    // two bundles load independently, so each carries the map.
+    // data-wxp, not data-wx: the light-row swap (display-overrides.css:6273)
+    // keys on [data-wx] to substitute -light Meteocons, and this art reads on
+    // both grounds — it must never be swapped.
+    const _pcSet = { 'clear-day':'clear-day','clear-night':'clear-night',
+      'partly-cloudy-day':'partly-cloudy-day','partly-cloudy-night':'partly-cloudy-night',
+      'cloudy':'overcast','overcast':'overcast','overcast-day':'overcast',
+      'fog':'fog','mist':'fog','drizzle':'drizzle',
+      'rain':'rain','extreme-rain':'rain','sleet':'sleet',
+      'snow':'snow','extreme-snow':'snow','thunderstorms':'thunderstorms',
+      'thunderstorms-rain':'thunderstorms-rain','thunderstorms-day-rain':'thunderstorms-rain',
+      'wind':'wind' };
+    if (_pcSet[nameKey]) {
+      return '<img class="fids-wx-cell" data-wxp="' + _pcSet[nameKey] + '" src="/logos/weather/orion-papercut/' + _pcSet[nameKey] + '.png" alt="" aria-hidden="true" style="'
+        + 'display:inline-block;width:' + size + 'px;height:' + size + 'px;'
+        + 'flex-shrink:0;object-fit:contain;vertical-align:middle;">';
+    }
     const _animSet = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'mist':1,'overcast-day':1,'overcast':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'thunderstorms-day-rain':1,'thunderstorms-rain':1,'wind':1 };
     if (_animSet[nameKey]) {
       // v22674 — data-wx names the icon so CSS can swap in the dark-ink
