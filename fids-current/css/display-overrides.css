@@ -12907,3 +12907,21 @@ html body:not(#_) .wxcard-wrap .wxs-spark-temps span {
   font-size: clamp(14px, 2.3vh, 26px) !important; font-weight: 800 !important;
   color: var(--wxs-ink) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23166g — NICK'S AIR CANADA PLATE BACKDROP, LEFT COLUMN TEST ('Since the
+   plates are such a problem ive made this... where it wont move — install
+   it on the left first as a test'). His artwork (red panel over carbon
+   hex, supplied as vector), mounted as a STATIC background on the gate's
+   left info rail for AC only. No animation, no per-plate painting — the
+   plates render over one fixed piece, so nothing can drift or re-roll.
+   Anchored left-top so the red band crowns the column and the carbon
+   field runs beneath, matching the art's own composition.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col {
+  background-image: url("/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1") !important;
+  background-size: cover !important;
+  background-position: left top !important;
+  background-repeat: no-repeat !important;
+  background-color: #141618 !important; /* art's own ground, if the SVG is late */
+}

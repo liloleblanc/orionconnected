@@ -2,11 +2,11 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2514,
+    "total": 2515,
     "by_category": {
       "ad": 10,
       "airline": 1318,
-      "background": 103,
+      "background": 104,
       "brand": 2,
       "hotel": 884,
       "livery": 96,
@@ -14700,6 +14700,17 @@
       "iata": "",
       "country": "",
       "ext": "webp"
+    },
+    {
+      "path": "/logos/Backgrounds/AC/ac-plate-carbon.svg",
+      "file": "ac-plate-carbon.svg",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "ac plate carbon",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/Backgrounds/AC/ac-rondelle-logo.mp4",
