@@ -17439,9 +17439,9 @@ async function _fetchOpenMeteoWx(iata) {
     var r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon
       + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'
       + '&hourly=temperature_2m,weather_code&forecast_days=2&timezone=UTC');
-    if (!r.ok) return null;
+    if (!r.ok) { console.warn('[WX-OM] HTTP', r.status, 'for', iata); return null; }
     var d = await r.json();
-    if (!d || !d.current || typeof d.current.temperature_2m !== 'number') return null;
+    if (!d || !d.current || typeof d.current.temperature_2m !== 'number') { console.warn('[WX-OM] no temperature for', iata); return null; }
     var hourly = [];
     try {
       var ht = (d.hourly && d.hourly.time) || [];
@@ -17464,7 +17464,7 @@ async function _fetchOpenMeteoWx(iata) {
     };
     console.log('[WX-OM] ✓ Open-Meteo fallback for', iata, Math.round(d.current.temperature_2m) + '°C');
     return TOMORROW_WX[iata];
-  } catch (e) { return null; }
+  } catch (e) { console.warn('[WX-OM] failed for', iata, e && e.message); return null; }
 }
 
 async function fetchTomorrowWeather(iata) {
@@ -34541,7 +34541,13 @@ function _buildGateAdSlideList() {
     if (_wxD && typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[String(_wxD).toUpperCase()]
         && TOMORROW_WX[String(_wxD).toUpperCase()].current
         && typeof TOMORROW_WX[String(_wxD).toUpperCase()].current.temp === 'number') {
-      deck.splice(Math.min(3, deck.length), 0, { type: 'wxcard' });
+      // v23166f — weather rides SECOND in the deck, not last (Nick, on the
+      // preview: 'i have not seen one weather apparition'). At position 3,
+      // behind an ad (22s min) and the 45s aircraft takeover, the first
+      // weather of a cycle arrived over a minute after boot — practically
+      // invisible to anyone flipping between screens. Position 1 puts it
+      // ~22s from boot, every cycle.
+      deck.splice(Math.min(1, deck.length), 0, { type: 'wxcard' });
       // PRE-WARM the 7-day forecast now, while other slides are showing —
       // so the outlook is already cached when the weather slide appears
       // and it paints ONCE (the cold fetch was the second 'bump', Nick).
