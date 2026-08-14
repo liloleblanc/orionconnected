@@ -12485,3 +12485,68 @@ html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23160 — AN INNER ARROW, NOT A CARD
+   Nick: 'a shape lighter than the rest that is the shape of the arrow but half
+   the size of the actual item, putting the one in it... the pattern where the
+   number is in but faded not white... I wanted the patterns to blend in the
+   lines too have an art piece'.
+
+   The wedge is already an arrow. The number's container now repeats that
+   silhouette instead of importing a rectangle that belongs to nothing else on
+   this screen, and it is LIGHTER rather than white — so the artwork runs
+   through it and the panel reads as one piece.
+
+   The pattern outside the shape stays at full strength. 'Lighter than the rest'
+   means the rest keeps its punch; only the inside lifts, and that lift is what
+   gives the numeral its contrast. The label rides inside the same shape because
+   dark text on the un-washed pattern could not be read.
+
+   Note for whoever edits this next: the two earlier rules at :12131 (12x armor)
+   and :12251 (13x) both set background:#FFFFFF on these elements. This block
+   carries 14x so it wins. Editing either of those alone changes nothing on
+   screen — that cost two rounds to find.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  padding-top: 5% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 4% !important;
+  top: 3.5% !important;
+  width: 64% !important;
+  height: 82% !important;
+  clip-path: polygon(0% 0%, 88% 0%, 100% 50%, 88% 100%, 0% 100%) !important;
+  -webkit-clip-path: polygon(0% 0%, 88% 0%, 100% 50%, 88% 100%, 0% 100%) !important;
+  background: rgba(255,255,255,0.68) !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label {
+  flex: 0 0 auto !important;
+  background: transparent !important;
+  position: relative !important;
+  z-index: 3 !important;
+  padding-left: 9% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 0 0 6% 12% !important;
+  margin: 0 !important;
+  font-size: 40vh !important;
+  line-height: 0.84 !important;
+  background: transparent !important;
+  color: #0E2748 !important;
+  -webkit-text-fill-color: #0E2748 !important;
+  position: relative !important;
+  z-index: 3 !important;
+}
