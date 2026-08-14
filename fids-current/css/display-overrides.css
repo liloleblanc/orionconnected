@@ -12800,3 +12800,11 @@ html body:not(#_) .wxcard-wrap .wxs-lo {
   color: var(--wxs-ink-faint) !important; text-align: right !important;
   font-variant-numeric: tabular-nums !important;
 }
+
+/* v23166c — the hero temp's courtesy line: the other convention, small and
+   faint beside the unit ('C and F? how would it work?'). */
+html body:not(#_) .wxcard-wrap .wxs-alt {
+  font-size: .22em !important; font-weight: 700 !important;
+  margin-left: .45em !important; vertical-align: baseline !important;
+  color: var(--wxs-ink-faint) !important; letter-spacing: .04em !important;
+}

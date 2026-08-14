@@ -36670,7 +36670,19 @@ function _renderWxCard(el) {
       night = hh < 6 || hh >= 21;
     } catch (e3) {}
     var ic = _wxAnimIcon(cur.code, night);
-    var dT = function (v) { return (typeof displayTemp === 'function') ? displayTemp(Math.round(v)) : Math.round(v) + '°C'; };
+    // v23166c — THE CARD SPEAKS THE DESTINATION'S UNIT (Nick: 'C and F? how
+    // would it work?'). The sheet's rule: an Orlando card reads °F, a
+    // Moncton card °C. The old dT leaned on the board's global tempUnit,
+    // which never rotates on gate screens, so every card was stuck in
+    // Celsius regardless of where the flight was going. Fahrenheit-
+    // convention destinations are recognised by timezone (US zones plus
+    // Nassau/Cayman/Puerto Rico, which also use °F); everywhere else is
+    // Celsius. The hero also carries the OTHER unit as a small faint line,
+    // so nobody at the gate has to convert in their head.
+    var _wxUseF = false;
+    try { _wxUseF = /America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Detroit|Boise|Anchorage|Adak|Indiana|Kentucky|Puerto_Rico|Cayman|Nassau)|Pacific\/Honolulu/.test((AP[dest] || {}).tz || ''); } catch (eU) {}
+    var _f = function (v) { return Math.round(v * 9 / 5 + 32); };
+    var dT = function (v) { return _wxUseF ? _f(v) + '\u00b0F' : Math.round(v) + '\u00b0C'; };
     var _wxFrF = false;
     try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
     // v22971 — THE CARD FOLLOWS THE SELECTED LANGUAGES (Nick: 'Weather has
@@ -36707,7 +36719,7 @@ function _renderWxCard(el) {
     };
     // v23166b — the sheet's own formats: 3-letter day rows and bare-degree
     // temps ('16\u00b0 9\u00b0', unit shown once on the hero only).
-    var _dg = function (v) { return Math.round(v) + '\u00b0'; };
+    var _dg = function (v) { return (_wxUseF ? _f(v) : Math.round(v)) + '\u00b0'; };
     var _wxsAbbr = function (d) {
       var loc = _WX_LOCALE[_wxLangs[0]] || 'en-US';
       return d.toLocaleDateString(loc, { weekday: 'short' }).replace('.', '').slice(0, 3).toUpperCase();
@@ -36819,7 +36831,8 @@ function _renderWxCard(el) {
         (_wxsCar ? '<div class="wxs-carrier">' + _wxsCar + '</div>' : '')
       + '<div class="wxs-city">' + city + '</div>'
       + '<div class="wxs-sub">' + _dispIata(dest) + ' \u00b7 ' + _wxsWhen + '</div>'
-      + '<div class="wxs-temp">' + _wxsTm[1] + '<span class="wxs-unit">' + _wxsTm[2] + '</span></div>'
+      + '<div class="wxs-temp">' + _wxsTm[1] + '<span class="wxs-unit">' + _wxsTm[2] + '</span>'
+      +   '<span class="wxs-alt">' + (_wxUseF ? Math.round(cur.temp) + '\u00b0C' : _f(cur.temp) + '\u00b0F') + '</span></div>'
       + '<div class="wxs-icon">' + _wxImgHtml(ic) + '</div>'
       + '<div class="wxs-cond">' + cond + '</div>'
       + '<div class="wxs-meta">'
