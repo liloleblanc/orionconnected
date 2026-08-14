@@ -36816,27 +36816,53 @@ function _renderWxCard(el) {
       + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
             en: nDays + '-DAY', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
           }) + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col">' + _wxMainHtml + _wxStripsHtml + '</div>';
+    // v23166 — THE CARD COLOUR CARRIES THE WEATHER (the design sheet Nick
+    // approved: weather-cards-v3.svg). The old card tinted itself with the
+    // AIRLINE accent; the sheet rejected that on purpose — on a board with a
+    // dozen carriers the colour would stop meaning anything about the
+    // weather. The airline lives on as the 8px accent EDGE (::after in CSS,
+    // fed the --wxc-acc var below), exactly as drawn. Gradients and the
+    // luminance ink-flip are the sheet's own values: mean luminance above
+    // 0.50 flips the ink to navy, which is what keeps text readable on the
+    // sunny yellow and the pale snow cyan.
+    var _WXCARD = {
+      'clear-day':              ['#FFD24A', '#EC8A12', 1],
+      'partly-cloudy-day':      ['#5ED0FA', '#2BA8EE', 1],
+      'clear-night':            ['#2E3F7E', '#0F1A45', 0],
+      'partly-cloudy-night':    ['#2E3F7E', '#0F1A45', 0],
+      'rain':                   ['#45AEF4', '#0B7FE0', 0],
+      'drizzle':                ['#45AEF4', '#0B7FE0', 0],
+      'extreme-rain':           ['#45AEF4', '#0B7FE0', 0],
+      'cloudy':                 ['#6B63F0', '#3F2FCE', 0],
+      'overcast':               ['#6B63F0', '#3F2FCE', 0],
+      'overcast-day':           ['#6B63F0', '#3F2FCE', 0],
+      'fog':                    ['#6B63F0', '#3F2FCE', 0],
+      'mist':                   ['#6B63F0', '#3F2FCE', 0],
+      'snow':                   ['#A9E9F7', '#46CDEF', 1],
+      'extreme-snow':           ['#A9E9F7', '#46CDEF', 1],
+      'sleet':                  ['#A9E9F7', '#46CDEF', 1],
+      'thunderstorms-rain':     ['#1657D8', '#05238C', 0],
+      'thunderstorms-day-rain': ['#1657D8', '#05238C', 0],
+      'hail':                   ['#1657D8', '#05238C', 0],
+      'wind':                   ['#5ED0FA', '#2BA8EE', 1]
+    };
+    var _cw = _WXCARD[ic] || ['#45AEF4', '#0B7FE0', 0];
+    var _wxBg = 'linear-gradient(180deg, ' + _cw[0] + ' 0%, ' + _cw[1] + ' 100%)';
+    var _wxInkDark = !!_cw[2];
+    var _wxAcc = '';
+    try {
+      // Airline accent for the edge — live gate theme first (the static
+      // table misses codes), same source as before.
+      var _wxGw = document.querySelector('.g8-wrap');
+      if (_wxGw) _wxAcc = (getComputedStyle(_wxGw).getPropertyValue('--airline-accent') || '').trim();
+      if (!_wxAcc && typeof getAirlineAccent === 'function') _wxAcc = getAirlineAccent((cf && cf.airline) || '');
+    } catch (e) {}
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + (_wxInkDark ? ' wxc-ink-dark' : '')
+      + '"' + (_wxAcc ? ' style="--wxc-acc:' + _wxAcc + ';"' : '') + '>' + _wxMainHtml + _wxStripsHtml + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually
     // changed (weather refreshes ~every 30 min, or the destination changes).
-    // Tint the card with the current airline's accent colour so the weather
-    // matches the gate's airline theming (same accentTint the other weather
-    // panels use; AC red auto-swaps to charcoal to avoid muddy maroon). Folded
-    // into the cache key so an airline change re-tints.
-    var _wxBg = 'linear-gradient(135deg, #0d2440 0%, #164a7c 100%)';
-    try {
-      // Use the LIVE gate theme (the .g8-wrap inline --airline-accent var,
-      // same source the media frame reads) — the static AIRLINE_ACCENT table
-      // misses codes and fell back to a generic blue that didn't match the
-      // board (Nick: 'the colors for the weather are not at all matching').
-      var _wxAcc = '';
-      var _wxGw = document.querySelector('.g8-wrap');
-      if (_wxGw) _wxAcc = (getComputedStyle(_wxGw).getPropertyValue('--airline-accent') || '').trim();
-      if (!_wxAcc && typeof getAirlineAccent === 'function') _wxAcc = getAirlineAccent((cf && cf.airline) || '');
-      if (_wxAcc && typeof accentTint === 'function') _wxBg = accentTint(_wxAcc, 0.42);
-    } catch (e) {}
     // v22199 — the accent used to be part of the rebuild signature, but it's
     // read from a LIVE computed var that is briefly empty right after a gate
     // rebuild: the signature oscillated between two values and every flip

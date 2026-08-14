@@ -12608,3 +12608,78 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   position: relative !important;
   z-index: 3 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23166 — THE WEATHER CARD WEARS THE DESIGN SHEET (weather-cards-v3.svg,
+   the layout Nick approved: 'I was expecting what you had shown me').
+   The card's gradient now carries the WEATHER (set inline by _renderWxCard);
+   the airline is demoted to the 8px accent edge, exactly as drawn — a
+   carrier-coloured card was considered and rejected in the design notes.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_) .wxcard-wrap.wxcard-col {
+  position: relative !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  padding: clamp(14px, 2.2vh, 26px) clamp(16px, 2vw, 30px)
+           clamp(14px, 2.2vh, 26px) calc(8px + clamp(16px, 2vw, 30px)) !important;
+}
+/* Sheen — white 18% fading out by 34%, the sheet's own top-light. */
+html body:not(#_) .wxcard-wrap.wxcard-col::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 34%);
+  pointer-events: none;
+}
+/* Carrier accent edge: 8px bar + the 1.5px white 30% inner hairline. */
+html body:not(#_) .wxcard-wrap.wxcard-col::after {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 8px;
+  background: var(--wxc-acc, #0033A1);
+  box-shadow: inset -1.5px 0 0 rgba(255,255,255,.30);
+  pointer-events: none;
+}
+/* Temps never reflow between refreshes — tabular figures reserve equal
+   digit widths (the sheet's fixed minus-slot rule, done the CSS way). */
+html body:not(#_) .wxcard-wrap .wxc-temp,
+html body:not(#_) .wxcard-wrap .wxc-hi,
+html body:not(#_) .wxcard-wrap .wxc-lo,
+html body:not(#_) .wxcard-wrap .wxc-ht {
+  font-variant-numeric: tabular-nums !important;
+}
+/* NAVY INK FLIP — cards whose mean luminance passes 0.50 (sunny yellow,
+   snow cyan, partly-cloudy) get #0B2A4A ink so the small text stays
+   readable. Secondary text steps down through opacity, same as the sheet. */
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-city,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-temp,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-cond,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-hi,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-ht,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-meta b {
+  color: #0B2A4A !important;
+}
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-kicker,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-title,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-d,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-dt,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-d-fr,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-dt-fr,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-hr,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-meta,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-iata,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-bar {
+  color: rgba(11, 42, 74, .72) !important;
+}
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-lo {
+  color: rgba(11, 42, 74, .55) !important;
+}
+/* Tile chips flip with the ink: navy-tinted glass instead of white. */
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-day,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-hour {
+  background: rgba(11, 42, 74, .12) !important;
+}
+/* The icon lift shadow reads wrong on light cards — soften it. */
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-day img,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-hour img,
+html body:not(#_) .wxcard-wrap.wxc-ink-dark .wxc-hero img {
+  filter: saturate(1.05) drop-shadow(0 2px 5px rgba(11, 42, 74, 0.25)) !important;
+}
