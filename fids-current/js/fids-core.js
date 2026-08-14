@@ -28678,7 +28678,35 @@ function _gateMapTick() {
       inb.status !== 'cancelled' &&
       prog > 0.02 && (prog < 0.99 || _liveFinal)
     );
-    var inboundLanded = !_liveFinal && (inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
+    // v23164 — A GROUND FIX AT OUR FIELD IS A LANDING (Nick's video: 'the
+    // plane coming in sideways and just stopped', with the camera parked at
+    // street level and 'still there now'). prog is derived from the GATE
+    // time, so an EARLY arrival rolls out with prog still well under 0.99 —
+    // status lags too — and the phase stays 'airborne': the camera keeps
+    // street-following a taxiing aircraft until the SCHEDULED time catches
+    // up, which on an early flight is many minutes of a frozen street map.
+    // This is the missing mirror of _liveFinal above: that rule says
+    // 'measurably in the air near the field ⇒ not landed'; this one says
+    // 'measurably on the ground at the field ⇒ landed'. Same evidence, both
+    // directions. The screen's own digits already trusted it — the video
+    // reads 'Altitude 0 ft', which only renders when onGround is true.
+    // Distance-gated to our field so a delayed departure taxiing at the
+    // ORIGIN can't trip it, and it feeds the existing 20s debounce below,
+    // so a single onGround blip on approach still can't flap the view.
+    var _liveGrounded = false;
+    try {
+      if (inb.status !== 'arrived' && inb.status !== 'landed') {
+        var _lvG = window._gateInboundLivePos || window._gateMapFix;
+        var _apCG = _lookupAirport(apIata);
+        if (_lvG && _apCG && typeof _lvG.lat === 'number' && typeof _lvG.lng === 'number' &&
+            (_lvG.onGround === true ||
+             (window._gateInbound && window._gateInbound._liveOnGround === true)) &&
+            _gcNm([_lvG.lat, _lvG.lng], _apCG) < 6) {
+          _liveGrounded = true;
+        }
+      }
+    } catch (e) {}
+    var inboundLanded = !_liveFinal && (_liveGrounded || inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
     // v23102 — DEBOUNCE the clock-derived landing: a single missing poll or
     // onGround blip flipped airborne↔at-gate once a minute on approach, and
     // every flip re-routed the map (the measured flash cycle). A landing the
