@@ -36835,10 +36835,13 @@ function _renderWxCard(el) {
       +   '<span class="wxs-alt">' + (_wxUseF ? Math.round(cur.temp) + '\u00b0C' : _f(cur.temp) + '\u00b0F') + '</span></div>'
       + '<div class="wxs-icon">' + _wxImgHtml(ic) + '</div>'
       + '<div class="wxs-cond">' + cond + '</div>'
+      // Rail labels: the two languages stack (Nick's screenshot: 'FEELS
+      // LIKE | RESSENTI' wrapped around a floating pipe in the narrow
+      // column — a <br> is what that layout actually wants).
       + '<div class="wxs-meta">'
-      +   (typeof cur.feelsLike === 'number' ? '<div><span>' + _mlbl('feels') + '</span><b>' + _dg(cur.feelsLike) + '</b></div>' : '')
-      +   (typeof cur.windSpeed === 'number' ? '<div><span>' + _mlbl('wind') + '</span><b>' + Math.round(cur.windSpeed) + ' km/h</b></div>' : '')
-      +   (typeof cur.humidity === 'number' ? '<div><span>' + _mlbl('hum') + '</span><b>' + Math.round(cur.humidity) + '%</b></div>' : '')
+      +   (typeof cur.feelsLike === 'number' ? '<div><span>' + _mlbl('feels').replace(_wxSep, '<br>') + '</span><b>' + _dg(cur.feelsLike) + '</b></div>' : '')
+      +   (typeof cur.windSpeed === 'number' ? '<div><span>' + _mlbl('wind').replace(_wxSep, '<br>') + '</span><b>' + Math.round(cur.windSpeed) + ' km/h</b></div>' : '')
+      +   (typeof cur.humidity === 'number' ? '<div><span>' + _mlbl('hum').replace(_wxSep, '<br>') + '</span><b>' + Math.round(cur.humidity) + '%</b></div>' : '')
       + '</div>';
     var _wxStripsHtml =
       (tiles ? '<div class="wxc-strip wxs-outlook"><div class="wxs-ol-title">' + _wxPair({
