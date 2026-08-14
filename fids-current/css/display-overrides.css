@@ -12122,17 +12122,39 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* 1 — the arrow carries the pattern */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
   background-color: #F0F3F4 !important;
-  background-image: var(--crsl-pattern, url("/logos/Backgrounds/carousel-pattern.svg?v=23143")) !important;
-  background-size: 100% 100% !important;
-  background-repeat: no-repeat !important;
-  background-position: center !important;
+  /* v23160 — the light that makes 'Carousel 1' readable is now part of the
+     wedge, layered OVER the pattern, instead of a white card sitting on it.
+     One soft ellipse with no edge anywhere: it reads as light falling on the
+     artwork rather than a hole punched through it. Held at 0.94 in the middle
+     so the numeral is still the most legible thing on the screen. */
+  background-image:
+    radial-gradient(ellipse 92% 52% at 34% 16%,
+      rgba(255,255,255,0.93) 0%,
+      rgba(255,255,255,0.90) 34%,
+      rgba(255,255,255,0.72) 58%,
+      rgba(255,255,255,0.40) 78%,
+      rgba(255,255,255,0.12) 92%,
+      rgba(255,255,255,0.00) 100%),
+    var(--crsl-pattern, url("/logos/Backgrounds/carousel-pattern.svg?v=23143")) !important;
+  background-size: 100% 100%, 100% 100% !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-position: center, center !important;
 }
-/* the label and the number sit on their own white card */
+/* v23160 — THE PLATE IS A SCRIM, NOT A CUT-OUT (Nick: 'where the gate number
+   goes maybe pattern faded? instead of just white cut off? I wanted the
+   patterns to blend in the lines too have an art piece'). It was
+   background:#FFFFFF, fully opaque, so the pattern stopped dead behind it on a
+   hard straight edge and the wedge read as a pattern with a hole punched in it.
+
+   Now the pattern ghosts through the whole plate and the plate's lower edge
+   dissolves into it instead of ending. The number stays the most legible thing
+   on the screen -- which is the one rule this element cannot break -- because
+   the glyph never sits over less than 0.86 white; the dissolve happens in the
+   band below it. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
   position: relative !important;
   z-index: 3 !important;
-  background: #FFFFFF !important;
   display: inline-block !important;
   width: auto !important;
   margin: 0 auto !important;
@@ -12142,10 +12164,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label  {
   padding: .12em .4em !important;
   border-radius: 10px 10px 0 0 !important;
+  background: transparent !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
   padding: 0 .2em .06em !important;
   border-radius: 0 0 10px 10px !important;
+  background: transparent !important;
 }
 /* ONE plate, not two stepped boxes. The label measured 350px and the number
    253px, so the white card had a shoulder down its side. Both take the same
@@ -12233,12 +12257,26 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   box-sizing: border-box !important;
   margin: 0 !important;
   border-radius: 0 !important;
-  background: #FFFFFF !important;
   text-align: left !important;
   padding-left: 6% !important;
   padding-right: 6% !important;
   position: relative !important;
   z-index: 3 !important;
+}
+/* v23160 — the label and the number no longer carry their own white ground.
+   The light they need is painted into the wedge itself as one soft ellipse
+   over the pattern, so the artwork reads through them and there is no edge
+   where the card used to stop (Nick: 'instead of just white cut off... I
+   wanted the patterns to blend in the lines too have an art piece').
+   The TERMINAL line keeps its ground: it sits below the ellipse's falloff,
+   where there is not enough light left to hold #0E2748 text against a busy
+   pattern. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  background: transparent !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-terminal {
+  background: #FFFFFF !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label   { padding-top: .30em !important; padding-bottom: 0 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number  { padding-top: 0 !important; padding-bottom: .04em !important; line-height: 0.95 !important; }
