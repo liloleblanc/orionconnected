@@ -9903,9 +9903,9 @@ function uxgGateHtml(ctx) {
   // 3 \u2022 4 \u2022 5 \u2022 6, also Lane 2).
   function _acLanesBodyHtml(zonesVal) {
     return '<div class="g8-board-body g8-lanes3">'
-      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
-      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
-      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">' + _gateLbl('zones', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(zonesVal) + '">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
+      + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
+      + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
+      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">' + _gateLbl('zones', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(zonesVal) + '">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
       + '</div>';
   }
 
@@ -10051,7 +10051,7 @@ function uxgGateHtml(ctx) {
              return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
            })();
       var _grpValCls = _g8GrpValCls;
-      var _fcNext, _fcNextLbl = _gateLbl('zones', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true);
+      var _fcNext, _fcNextLbl = _gateLbl('zones', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true);
       if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
       else if (airlineCode === 'PD') { _fcNextLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); }
       else _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
@@ -10080,7 +10080,7 @@ function uxgGateHtml(ctx) {
           // the down-right — one each, mirrored. The next-panel's extra
           // leading arrow is gone (it pointed at the divider).
           : '<div class="g8-board-body g8-lanes-std">'
-            + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1 &#8226; 2</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 &#8226; 2', true) + '</div></div>'
+            + '<div class="g8-board-col now"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1 &#8226; 2</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 &#8226; 2', true) + '</div></div>'
             + '<div class="g8-board-col next"><div class="g8-board-grp-label">' + _fcNextLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _grpValCls(_fcNext) + '">' + _fcNext + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 &#8226; 4', true) + '</div></div>'
             + '</div>')
         + '</div>';
@@ -11589,7 +11589,7 @@ function uxgActivateRotator() {
 function gateLanguageLayout(root) {
   if (!root) return;
   try {
-    root.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title').forEach(function (ln) {
+    root.querySelectorAll('.g8-board-lane, .v2-fi-title, .g8-bir-title, .g8-board-grp-label').forEach(function (ln) {
       if (!ln.querySelector('.g8-lane-p, .v2-fi-lbl-en, .g8-bir-l1, .g8-bilbl-en')
           && !/\|/.test(ln.textContent || '')) return;
       var parentWidth = (ln.parentElement && ln.parentElement.clientWidth) || ln.clientWidth;
@@ -19148,6 +19148,15 @@ function _fidsClockForLang(now, tz, lang) {
 // Returns the selected languages' words for `key`, at most two, de-duplicated.
 // frFirst only reorders — it is the French-first-airport flag and has never
 // been a language choice. sep/wrap let each call site keep its own markup.
+// v23161 — 'Priority | Priorité' was clipped on the boarding sign (Nick's
+// screenshot). The label is white-space:nowrap by policy — 'You never ever
+// Break a sentence' — and the stacking treatment that rescues every other
+// bilingual pair was written in CSS for this class too, but never reached it:
+// gateLanguageLayout() did not look at .g8-board-grp-label, and the two halves
+// were bare text with nothing for CSS to stack. This names them.
+function _gateLblHalf(w, i) {
+  return '<span class="g8-bir-l' + (i + 1) + '">' + w + '</span>';
+}
 function _gateLbl(key, frFirst, wrap, sep, keepDup) {
   var o = _GATE_LBL[key];
   if (!o) return '';
@@ -19171,7 +19180,11 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
     parts.push(w);
   }
   if (!parts.length) parts.push(o.en);
-  if (typeof wrap === 'function') return parts.map(wrap).join(sep || '');
+  // v23161 — wrap() now receives the index. The lane labels need their two
+  // halves in addressable spans so they can STACK when they cannot share a
+  // line; without that the pair is bare text and CSS has nothing to move.
+  // Existing callers that ignore the second argument are unaffected.
+  if (typeof wrap === 'function') return parts.map(function (w, i) { return wrap(w, i); }).join(sep || '');
   return parts.join(sep || ' ');
 }
 // Lane line as a bilingual pair with the lane number in BOTH halves
@@ -19285,7 +19298,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23159';
+var FIDS_BUILD_TAG = 'v23161';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -37291,6 +37304,47 @@ setInterval(function () {
           var _wc = 'rgba(' + _wp[_wi][0] + ',' + _wp[_wi][1] + ',' + _wp[_wi][2] + ',' + _wa[_wi] + ')';
           if (document.body.style.getPropertyValue('--crsl-w' + (_wi + 1)) !== _wc) document.body.style.setProperty('--crsl-w' + (_wi + 1), _wc);
         }
+        // v23161 — THE TYPE TAKES ITS COLOUR FROM THE PATTERN (Nick's mockup:
+        // a teal numeral and a teal-on-orange label, both lifted straight out
+        // of the artwork behind them). Washing the pattern out to make room for
+        // the number was the wrong move — the number should belong to the
+        // pattern instead. These four colours are already the pattern's own
+        // dominant tones, so the only work here is choosing which does what.
+        //
+        //   --crsl-ink  the darkest tone. Carries the numeral, so it reads on
+        //               the pale patterns as well as the busy ones.
+        //   --crsl-pop  the most saturated tone that is not the ink. Carries
+        //               the label bar.
+        //   --crsl-pop-ink  white or the ink, whichever holds against --crsl-pop.
+        //
+        // Deriving them per pattern is what makes this survive the rotation:
+        // twelve patterns, twelve palettes, no hand-picked hexes to go stale.
+        var _lum = function (c) { return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; };
+        var _sat = function (c) {
+          var mx = Math.max(c[0], c[1], c[2]) / 255, mn = Math.min(c[0], c[1], c[2]) / 255;
+          return mx === 0 ? 0 : (mx - mn) / mx;
+        };
+        var _rgb = function (c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; };
+        var _sorted = _wp.slice().sort(function (a, b) { return _lum(a) - _lum(b); });
+        var _ink = _sorted[0];
+        var _pop = _wp.slice().filter(function (c) { return c !== _ink; })
+                      .sort(function (a, b) { return _sat(b) - _sat(a); })[0] || _sorted[1];
+        // Pick the label ink by measured contrast, not a luminance guess: on the
+        // floral palette the accent is an olive whose luminance clears 0.45, so
+        // a threshold handed it the dark ink and the bar read weakly. Comparing
+        // both candidates properly picks whichever actually separates.
+        var _contrast = function (a, b) {
+          var la = _lum(a), lb = _lum(b);
+          return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+        };
+        var _popInk = (_contrast(_pop, _ink) >= _contrast(_pop, [255, 255, 255]))
+          ? _ink : [255, 255, 255];
+        var _set = function (k, v) {
+          if (document.body.style.getPropertyValue(k) !== v) document.body.style.setProperty(k, v);
+        };
+        _set('--crsl-ink', _rgb(_ink));
+        _set('--crsl-pop', _rgb(_pop));
+        _set('--crsl-pop-ink', _rgb(_popInk));
       } else {
         document.body.style.removeProperty('--crsl-pattern');
         for (var _wj = 1; _wj <= 4; _wj++) document.body.style.removeProperty('--crsl-w' + _wj);

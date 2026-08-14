@@ -11404,7 +11404,12 @@ html body .g8-board-grp-label.g8-lane-stacked .g8-bir-sep {
 html body .v2-fi-title.g8-lane-stacked .v2-fi-lbl-en,
 html body .v2-fi-title.g8-lane-stacked .v2-fi-lbl-2,
 html body .g8-bir-title.g8-lane-stacked .g8-bir-l1,
-html body .g8-bir-title.g8-lane-stacked .g8-bir-l2 {
+html body .g8-bir-title.g8-lane-stacked .g8-bir-l2,
+/* v23161 — the boarding sign's group label was listed in the rule that hides
+   the pipe but not in the one that stacks the halves, so it could never
+   actually stack and 'Priority | Priorité' ran off the column instead. */
+html body .g8-board-grp-label.g8-lane-stacked .g8-bir-l1,
+html body .g8-board-grp-label.g8-lane-stacked .g8-bir-l2 {
   display: block !important;
   text-align: center !important;
 }
@@ -12122,17 +12127,26 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* 1 — the arrow carries the pattern */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
   background-color: #F0F3F4 !important;
-  background-image: var(--crsl-pattern, url("/logos/Backgrounds/carousel-pattern.svg?v=23143")) !important;
-  background-size: 100% 100% !important;
-  background-repeat: no-repeat !important;
-  background-position: center !important;
+  /* v23162 — the artwork sits back 35% (Nick: 'lets do in total 35% reduction' — the art for
+     baggage'). A flat, even wash across the whole wedge — NOT the shaped glow
+     an earlier pass used, which had to be torn out because it dimmed hardest
+     exactly where the number sits and turned the panel back into a card. This
+     one takes the whole plane down together, so the wedge still reads as one
+     piece and the numeral's contrast comes from its own colour rather than
+     from a hole burned in the pattern. 25% is the number he asked for; it is
+     the single value to change if he wants more or less. */
+  background-image:
+    linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35)),
+    var(--crsl-pattern, url("/logos/Backgrounds/carousel-pattern.svg?v=23143")) !important;
+  background-size: 100% 100%, 100% 100% !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-position: center, center !important;
 }
 /* the label and the number sit on their own white card */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
   position: relative !important;
   z-index: 3 !important;
-  background: #FFFFFF !important;
   display: inline-block !important;
   width: auto !important;
   margin: 0 auto !important;
@@ -12142,10 +12156,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label  {
   padding: .12em .4em !important;
   border-radius: 10px 10px 0 0 !important;
+  background: transparent !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
   padding: 0 .2em .06em !important;
   border-radius: 0 0 10px 10px !important;
+  background: transparent !important;
 }
 /* ONE plate, not two stepped boxes. The label measured 350px and the number
    253px, so the white card had a shoulder down its side. Both take the same
@@ -12233,12 +12249,26 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   box-sizing: border-box !important;
   margin: 0 !important;
   border-radius: 0 !important;
-  background: #FFFFFF !important;
   text-align: left !important;
   padding-left: 6% !important;
   padding-right: 6% !important;
   position: relative !important;
   z-index: 3 !important;
+}
+/* v23160 — the label and the number no longer carry their own white ground.
+   The light they need is painted into the wedge itself as one soft ellipse
+   over the pattern, so the artwork reads through them and there is no edge
+   where the card used to stop (Nick: 'instead of just white cut off... I
+   wanted the patterns to blend in the lines too have an art piece').
+   The TERMINAL line keeps its ground: it sits below the ellipse's falloff,
+   where there is not enough light left to hold #0E2748 text against a busy
+   pattern. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  background: transparent !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-terminal {
+  background: #FFFFFF !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label   { padding-top: .30em !important; padding-bottom: 0 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number  { padding-top: 0 !important; padding-bottom: .04em !important; line-height: 0.95 !important; }
@@ -12446,4 +12476,108 @@ html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted,
 html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23161 — THE NUMBER BELONGS TO THE PATTERN
+   Nick's mockup: the wedge keeps the artwork at full strength, and the numeral
+   and the label are drawn in the pattern's OWN colours — a teal numeral, a
+   teal-on-orange label bar — instead of a white card being cut into it.
+
+   That inverts what every earlier attempt did. Washing the pattern back to make
+   the number readable was fighting the artwork; taking the number's colour out
+   of the artwork makes them the same object. It also fixes the problem the
+   inner-arrow version had, where a light shape vanished on the pale patterns —
+   --crsl-ink is always the darkest tone in whichever pattern is showing, so the
+   contrast holds across all twelve.
+
+   Colours come from the belt-pattern stamper in fids-core.js (--crsl-ink,
+   --crsl-pop, --crsl-pop-ink), derived per pattern rather than hand-picked.
+
+   Fallbacks are the p09 palette, so a missed stamp still looks deliberate.
+
+   Armor note: the two rules at :12131 (12x) and :12251 (13x) both set
+   background:#FFFFFF here. This block carries 14x.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block::before { content: none !important; }
+
+/* EN label — a bar in the pattern's accent, hard against the top edge */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label {
+  flex: 0 0 auto !important;
+  /* v23161 — THE BACKS LINE UP (Nick: 'align your back of the number to the
+     last L of carousel or the yellow... they should all align the back in a
+     straight line if possible'). All three items are right-aligned to one
+     vertical line at 58% of the wedge, so the label, the numeral and the French
+     label share an edge and the ragged side is the left, where the arrow is
+     already leading the eye rightward. CARROUSEL is a letter longer than
+     CAROUSEL, so aligning their fronts could never have made them line up. */
+  align-self: flex-end !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 4% 42% 0 0 !important;
+  padding: .10em .5em .14em !important;
+  background: var(--crsl-pop, rgb(252,236,0)) !important;
+  color: var(--crsl-pop-ink, rgb(3,29,66)) !important;
+  -webkit-text-fill-color: var(--crsl-pop-ink, rgb(3,29,66)) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+  border-radius: 0 !important;
+  position: relative !important;
+  z-index: 3 !important;
+}
+
+/* FR label — same bar, hard against the bottom edge */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block::after {
+  content: 'CARROUSEL' !important;
+  position: absolute !important;
+  left: auto !important;
+  right: 42% !important;
+  bottom: 5% !important;
+  padding: .10em .5em .14em !important;
+  background: var(--crsl-pop, rgb(252,236,0)) !important;
+  color: var(--crsl-pop-ink, rgb(3,29,66)) !important;
+  font-family: inherit !important;
+  font-weight: 800 !important;
+  font-size: 4.4vh !important;
+  letter-spacing: .04em !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+}
+
+/* The numeral, in the pattern's darkest tone, sitting straight on the artwork */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  padding: 0 42% 0 0 !important;
+  margin: 0 !important;
+  font-size: 52vh !important;
+  line-height: 0.78 !important;
+  background: transparent !important;
+  /* v23161 — WHITE NUMERAL, PATTERN-INK OUTLINE (Nick: 'if you were to have a
+     1 white with the outline that dark blue it is now it would work'). The
+     earlier way round — dark fill, light halo — meant the numeral was painted
+     in a colour the pattern itself uses, so it merged wherever it crossed one
+     of those shapes and the halo was there to rescue it. Inverted, the fill is
+     the one colour no pattern in the set contains much of, and the outline is
+     still drawn from the pattern's own palette, so the numeral keeps belonging
+     to the artwork while never disappearing into it. */
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-text-stroke: 0.055em var(--crsl-ink, rgb(3,29,66)) !important;
+  paint-order: stroke fill !important;
+  /* A whisper of the ink outside the stroke, so the outline still separates
+     where the glyph crosses a pale area of the pattern. */
+  text-shadow: 0 0 10px rgba(255,255,255,0.35) !important;
+  position: relative !important;
+  z-index: 3 !important;
 }
