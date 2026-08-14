@@ -12127,14 +12127,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* 1 — the arrow carries the pattern */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block {
   background-color: #F0F3F4 !important;
-  /* The wedge carries the pattern, undimmed. An earlier pass layered a white
-     ellipse over this to make room for the number; that is gone, because the
-     number now takes its colour FROM the pattern instead of needing the pattern
-     pushed out of its way. Anything that washes this back is a regression. */
-  background-image: var(--crsl-pattern, url("/logos/Backgrounds/carousel-pattern.svg?v=23143")) !important;
-  background-size: 100% 100% !important;
-  background-repeat: no-repeat !important;
-  background-position: center !important;
+  /* v23162 — the artwork sits back 25% (Nick: 'fade by about 25% the art for
+     baggage'). A flat, even wash across the whole wedge — NOT the shaped glow
+     an earlier pass used, which had to be torn out because it dimmed hardest
+     exactly where the number sits and turned the panel back into a card. This
+     one takes the whole plane down together, so the wedge still reads as one
+     piece and the numeral's contrast comes from its own colour rather than
+     from a hole burned in the pattern. 25% is the number he asked for; it is
+     the single value to change if he wants more or less. */
+  background-image:
+    linear-gradient(rgba(255,255,255,0.25), rgba(255,255,255,0.25)),
+    var(--crsl-pattern, url("/logos/Backgrounds/carousel-pattern.svg?v=23143")) !important;
+  background-size: 100% 100%, 100% 100% !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-position: center, center !important;
 }
 /* the label and the number sit on their own white card */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-label,
