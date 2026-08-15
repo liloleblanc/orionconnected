@@ -9,23 +9,11 @@ console.log('%c[FIDS BUILD ' + FIDS_BUILD + '] loaded ' + new Date().toISOString
 // ── FEATURE FLAGS ────────────────────────────────────────────────────────
 // GATE_LAYOUT_V2 = three-column gate screen (aircraft | media | map) with
 // the always-present bottom bar that grows when a message is active.
-// Toggle at runtime: localStorage.setItem('fids_gate_layout_v2', 'on'|'off')
-// Default: ON. Roll back instantly by setting to 'off' and refreshing.
-(function(){
-  // v22356: the 'off' rollback is RETIRED. A stale machine-local flag
-  // resurrected the unmaintained legacy gate on Nick's admin browser
-  // ('looks like an old screen just crept up') — the v2 gate is the only
-  // maintained layout and is now unconditional. The old flag is cleared
-  // so no display can ever trip on it again.
-  window.GATE_LAYOUT_V2 = true;
-  try {
-    if (localStorage.getItem('fids_gate_layout_v2') === 'off') {
-      console.warn('[FIDS] Ignoring stale fids_gate_layout_v2=off (legacy layout retired)');
-      localStorage.removeItem('fids_gate_layout_v2');
-    }
-  } catch(e) {}
-  console.log('[FIDS] GATE_LAYOUT_V2 =', window.GATE_LAYOUT_V2);
-})();
+// v23168 — THE GATE LAYOUT FLAG IS RETIRED ALONG WITH THE LAYOUT IT SELECTED.
+// GATE_LAYOUT_V2 was set to a literal true here and read in exactly one place;
+// the legacy arm it guarded is deleted, so both the flag and its stale-key
+// cleanup go with it. The old localStorage key is simply ignored now — nothing
+// reads it, so a leftover value on some admin browser cannot do anything.
 
 // ── HIDDEN-BOARD CPU BRAKE ───────────────────────────────────────────────
 // rotate.html loads EVERY board in its own iframe and keeps them all alive,
@@ -5581,73 +5569,7 @@ function gateAircraftShortname(s) {
   return t;
 }
 
-/**
- * Tightest possible aircraft name for cramped layouts (e.g. when
- * Aircraft + Registration share a single row). Drops the manufacturer
- * prefix entirely and returns just the model designator.
- *   "De Havilland Dash 8-400" → "Dash 8-400"
- *   "Mitsubishi CRJ900"       → "CRJ900"
- *   "Airbus A319"             → "A319"
- *   "Boeing 737-800"          → "B737-800"
- *   "Embraer E175"            → "E175"
- */
-function gateAircraftShortnameCompact(s) {
-  if (!s) return '';
-  var t = String(s).trim();
-  var dashM = t.match(/(?:dash[\s-]*8|dhc[\s-]*8)[\s-]*(?:Q[\s-]*)?(\d{3})/i);
-  if (dashM) return 'Dash 8-' + dashM[1];
-  var crjM = t.match(/CRJ[\s-]*(\d{3,4})/i);
-  if (crjM) return 'CRJ' + crjM[1];
-  // Airbus AXXX
-  var aM = t.match(/Airbus\s+(A\d{3}(?:-\d+)?(?:neo|NEO|ceo)?)/i);
-  if (aM) return aM[1];
-  // Boeing 7XX-XXX → B737-800 form (compact, common in aviation displays)
-  var bM = t.match(/Boeing\s+(\d{3}(?:[-\s]\d+)?)/i);
-  if (bM) return 'B' + bM[1].replace(/\s/, '-');
-  // Embraer EXXX
-  var eM = t.match(/Embraer\s+(E?\d{3})/i);
-  if (eM) {
-    var num = eM[1];
-    return num.startsWith('E') ? num : ('E' + num);
-  }
-  // ATR
-  var atrM = t.match(/ATR[\s-]*(\d{2})[\s-]*(\d{3})?/i);
-  if (atrM) return 'ATR ' + atrM[1] + (atrM[2] ? '-' + atrM[2] : '');
-  // Fall back to full string
-  return t;
-}
 
-/**
- * HTML version of gateAircraftShortname() that emits two no-wrap spans
- * separated by a natural space, so a long model like "De Havilland Dash
- * 8-300" can break between manufacturer and model on a narrow panel
- * (gives "De Havilland" / "Dash 8-300") instead of breaking mid-string
- * at "...Dash 8-" / "300".
- *
- *   "De Havilland Dash 8-400" → '<span>De Havilland</span> <span>Dash 8-400</span>'
- *   "Mitsubishi CRJ900"       → '<span>Mitsubishi</span> <span>CRJ900</span>'
- *   "Airbus A319"             → '<span>Airbus A319</span>'  (single unit, won't break anyway)
- *   "Boeing 737-800"          → '<span>Boeing 737-800</span>'
- *
- * The two-segment pattern is reserved for the long manufacturer names
- * (De Havilland, Mitsubishi) where the break is genuinely needed.
- */
-function gateAircraftShortnameHtml(s) {
-  if (!s) return '';
-  function _esc(x) {
-    return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-  function _seg(x) { return '<span style="white-space:nowrap;display:inline-block;">' + _esc(x) + '</span>'; }
-  var t = String(s).trim();
-  // Dash 8 — split as "De Havilland" / "Dash 8-NNN"
-  var dashM = t.match(/(?:dash[\s-]*8|dhc[\s-]*8)[\s-]*(?:Q[\s-]*)?(\d{3})/i);
-  if (dashM) return _seg('De Havilland') + ' ' + _seg('Dash 8-' + dashM[1]);
-  // CRJ — split as "Mitsubishi" / "CRJNNN"
-  var crjM = t.match(/CRJ[\s-]*(\d{3,4})/i);
-  if (crjM) return _seg('Mitsubishi') + ' ' + _seg('CRJ' + crjM[1]);
-  // Everything else — single segment (already short enough not to need a break point)
-  return _seg(t);
-}
 
 function formatAircraft(raw) {
   if (!raw) return '';
@@ -7079,7 +7001,7 @@ function _buildV2AircraftCol(ctx, vars) {
     _eqBlock =
         '<div class="v2-eq-block">'
       +   '<div class="v2-eq-lbl">Aircraft&nbsp;Type</div>'
-      +   '<div class="v2-eq-val">' + (_equipNm || _equipCd) + '</div>'
+      +   '<div class="v2-eq-val">' + gateAircraftShortname(_equipNm || _equipCd) + '</div>'
       + '</div>';
   }
 
@@ -8737,7 +8659,7 @@ function _buildV2MapCol(ctx, vars) {
           +   '<div style="flex:1 1 auto;min-width:0;">'
           +     ((_equipNm || _equipCd)
                 ? '<div class="v2-rc-aircraft-shelf-lbl">' + TL('aircraftType') + '</div>'
-                  + '<div class="v2-rc-aircraft-shelf-val">' + (_equipNm || _equipCd) + '</div>'
+                  + '<div class="v2-rc-aircraft-shelf-val">' + gateAircraftShortname(_equipNm || _equipCd) + '</div>'
                 : '')
           +   '</div>'
           +   _opBadgeInline
@@ -8761,7 +8683,15 @@ function _buildV2MapCol(ctx, vars) {
       // ("De Havilland Dash 8-300", not "Dash 8-300") — the auto-fit
       // shrinks the line if it runs long.
       var _lang2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
-      var _acModel = String(_equipNm || _equipCd || '');
+      // v23168 — THE TYPE IS PRINTED UNDER ITS CURRENT NAME.
+      // gateAircraftShortname() has been in this file the whole time, turning
+      // "Bombardier Dash 8 Q400" into "De Havilland Dash 8-400" and "CRJ900"
+      // into "Mitsubishi CRJ900" — the manufacturers those programmes actually
+      // belong to now. Nothing called it: it was only ever wired into the V1
+      // layout, so when V2 replaced V1 the boards quietly went back to printing
+      // the raw feed string. Retiring V1 made that orphan obvious, so it goes
+      // back to work rather than being deleted with the rest.
+      var _acModel = gateAircraftShortname(String(_equipNm || _equipCd || ''));
       // The REG is a specific airframe — its true type (ADB lookup, cached)
       // beats the scheduled equipment, which lies on swaps (MAX 8 vs the
       // -700 that C-FWSI actually is, per Nick).
@@ -11084,13 +11014,16 @@ function uxgGateHtml(ctx) {
       // bottom'), NOT between the banner and the info row. ═══
       ? '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
       + (r3Left ? '<div class="g8-r3 g8-r3-bottom" style="background:rgba(0,0,0,0.85);border-top:2px solid ' + (accent || '#eab308') + ';flex-shrink:0;">' + r3Left + '</div>' : '')
-      // ═══ IDLE MODE: layout depends on GATE_LAYOUT_V2 flag ═══
-      : (window.GATE_LAYOUT_V2
-          // ╔═══ V2 LAYOUT: 3-column (aircraft | media | map) with growable message strip ═══╗
-          ? (function buildV2Layout() {
-              // Reuse the same column-builder IIFE the v1 layout uses below — it
-              // already produces _infoCol (aircraft info) and _mapCol (flight map).
-              // We re-run that exact builder here to keep behaviour identical.
+      // ═══ IDLE MODE ═══
+      : (
+          // v23168 — THE V1/V2 CHOICE IS GONE, AND SO IS V1.
+          // window.GATE_LAYOUT_V2 was hard-wired to true and its only reader was
+          // here, so the legacy arm — 462 lines — had been unreachable for as
+          // long as the flag has been unconditional. Keeping a rollback that
+          // cannot be selected is worse than having none: it reads as a
+          // supported option and it is the thing that once 'crept up' on a
+          // display when a stale local flag resurrected it.
+          (function buildV2Layout() {
               return buildV2GateLayout(ctx, {
                 iata: iata, accent: accent, currentFlight: currentFlight, inboundFlight: inboundFlight,
                 _inbOperating: _inbOperating, airlineCode: airlineCode, equipRaw: equipRaw,
@@ -11105,469 +11038,7 @@ function uxgGateHtml(ctx) {
                 flightDateContext: _flightDateContext
               });
             })()
-          // ╚═══════════════════════════════════════════════════════════════════════════════╝
-          // ─── V1 (LEGACY) LAYOUT: photo+welcome left, aircraft+map right, ad strip bottom ───
-          : '<div style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;position:relative;z-index:2;">'
-        + (_ovMsg ? '<div class="g8-r3" style="background:rgba(0,0,0,0.85);flex-shrink:0;">' + _ovMsg + '</div>' : '')
-        // MAIN CONTENT: two columns
-        +   '<div style="display:flex;flex:1;overflow:hidden;gap:0;min-height:0;">'
-        // LEFT COLUMN — photo + welcome text
-        +     '<div style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;background:#0a0a0f;">'
-        +       '<div id="gatePhotoBg" style="position:absolute;inset:0;z-index:0;background-size:cover;background-position:center center;background-repeat:no-repeat;width:100%;height:100%;"></div>'
-        +       '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.05) 40%,rgba(0,0,0,0.2) 70%,rgba(0,0,0,0.5) 100%);"></div>'
-        +       '<div id="gateWelcomeText" style="flex:1;display:' + (GATE_BG_MODE === 'airline' ? 'none' : 'flex') + ';align-items:center;justify-content:center;position:relative;z-index:2;padding:32px;">'
-        +         '<div style="text-align:center;">'
-        +           '<div style="font-size:clamp(26px,2.8vw,42px);font-weight:700;color:rgba(255,255,255,0.95);letter-spacing:0.02em;margin-bottom:12px;text-shadow:0 2px 10px rgba(0,0,0,0.6);">' + TL('welcomeTo') + '</div>'
-        +           '<div class="g8-welcome-city" style="font-size:clamp(46px,5.5vw,88px);font-weight:900;color:#fff;letter-spacing:-0.02em;line-height:1.05;text-shadow:0 2px 14px rgba(0,0,0,0.55);white-space:nowrap;max-width:100%;overflow:hidden;">' + cityCode(locIata || iata) + '</div>'
-        +         '</div>'
-        +       '</div>'
-        // MESSAGE ZONE moved — now lives under the map in the right column
-        +     '</div>'
-        // RIGHT COLUMN — Aircraft Arrival Data panels (~60%) + Flight Path map (~40%)
-        +     (function() {
-                var _hasInb = !!(inboundFlight && _inbOperating);
-                // Legacy layout uses the same truth order as V2:
-                // confirmed registration > inbound/live update > today's schedule.
-                var _airline = airlineCode;
-                var _anyInb = !!inboundFlight;  // any inbound we know about, arrived or not
-                var _outCdHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftCodeSource) || ''));
-                var _outNmHistorical = /^history/i.test(String((currentFlight && currentFlight._aircraftSource) || ''));
-                var _inbCdHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftCodeSource || ''));
-                var _inbNmHistorical = _anyInb && /^history/i.test(String(inboundFlight._aircraftSource || ''));
-                var _outEquipCd = _outCdHistorical ? '' : (equipRaw || '');
-                var _outEquipNm = _outNmHistorical ? '' : (equipName || '');
-                var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (inboundFlight._aircraftCode || '') : '';
-                var _inbEquipNm = (_anyInb && !_inbNmHistorical)
-                  ? (inboundFlight._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
-                if (_anyInb && !_inbEquipNm && !_inbEquipCd && typeof _acResolvedGet === 'function') {
-                  var _inbR3 = _acResolvedGet(inboundFlight.flight);
-                  if (_inbR3) {
-                    _inbEquipCd = _inbR3.cd || '';
-                    _inbEquipNm = _inbR3.nm || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '');
-                    if (!inboundFlight._reg && _inbR3.reg) inboundFlight._reg = _inbR3.reg;
-                  }
-                }
-                // PAIRWISE, ONE FLIGHT (Nick: 'the airplane picture does not always
-                // match the aircraft details so it must be coming from 2 different
-                // sources' — exactly right: name and code were merged FIELD-BY-FIELD,
-                // so an inbound carrying only the CODE (320) zipped with the
-                // outbound's NAME ('Airbus A319'): the text said A319 while the image
-                // drew the 320, with the reg riding along from whichever had it. Type
-                // name and code now always travel together from the SAME flight.
-                var _equipCd, _equipNm;
-                if (_inbEquipCd || _inbEquipNm) { _equipCd = _inbEquipCd; _equipNm = _inbEquipNm; }
-                else { _equipCd = _outEquipCd; _equipNm = _outEquipNm; }
-                if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
-                var _curRegSource = String((currentFlight && currentFlight._regSource) || '');
-                var _inbRegSource = String((_anyInb && inboundFlight && inboundFlight._regSource) || '');
-                var _curReg = /^history/i.test(_curRegSource) ? '' : ((currentFlight && currentFlight._reg) || '');
-                var _inbReg = /^history/i.test(_inbRegSource) ? '' : ((_anyInb && inboundFlight && inboundFlight._reg) || '');
-                var _reg = _curReg || _inbReg;
-                try {
-                  var _legacyRegType = (_reg && typeof _regTrueType === 'function') ? _regTrueType(_reg) : '';
-                  if (_legacyRegType) {
-                    _equipNm = _legacyRegType;
-                    var _legacyRegCode = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_legacyRegType) : '';
-                    if (_legacyRegCode) _equipCd = _legacyRegCode;
-                  }
-                  if (typeof window !== 'undefined' && _reg) window._gateAcRegShown = _reg;
-                } catch (e) {}
-
-                var _fromCity = '', _fromIata = '';
-                var _schedDepStr = '--', _schedArrStr = '--';
-                var _statusTxt = '', _statusColor = '#60a5fa';
-                if (_hasInb) {
-                  _fromIata = inboundFlight._locIata || '';
-                  _fromCity = _fromIata ? cityCode(_fromIata) : tc(inboundFlight.origin && inboundFlight.origin !== '\u2014' ? inboundFlight.origin : '');
-                  var _fmtDT = function(ts, zone) {
-                    if (!ts) return '--';
-                    try {
-                      var d = new Date(ts);
-                      var mo = d.toLocaleDateString('en-US', { timeZone: zone||'UTC', month:'short' });
-                      var dy = d.toLocaleDateString('en-US', { timeZone: zone||'UTC', day:'numeric' });
-                      var hm = d.toLocaleTimeString('en-US', { timeZone: zone||'UTC', hour:'2-digit', minute:'2-digit', hour12:true });
-                      return mo + ' ' + dy + '  ' + hm;
-                    } catch(e) { return '--'; }
-                  };
-                  var _depTs = inboundFlight._depSchedLocal ? adbTs(inboundFlight._depSchedLocal) : 0;
-                  var _arrTs = inboundFlight._sortTs || 0;
-                  var _depRevTs = inboundFlight._depRevLocal ? adbTs(inboundFlight._depRevLocal) : 0;
-                  var _arrRevTs = inboundFlight._revTs || 0;
-                  _schedDepStr = _fmtDT(_depTs, tz);
-                  _schedArrStr = _fmtDT(_arrTs, tz);
-                  // Revised times for delayed flights
-                  var _revDepStr = (_depRevTs && _depRevTs !== _depTs) ? _fmtDT(_depRevTs, tz) : '';
-                  var _revArrStr = (_arrRevTs && _arrRevTs !== _arrTs) ? _fmtDT(_arrRevTs, tz) : '';
-                  var _inbSt = (inboundFlight.status || '').toLowerCase();
-                  if (_inbSt === 'landed' || _inbSt === 'arrived')       { _statusTxt = SL('arrived');   _statusColor = '#10b981'; }
-                  else if (_inbSt === 'delayed')                          { _statusTxt = SL('delayed');   _statusColor = '#f59e0b'; }
-                  else if (_inbSt === 'active' || _inbSt === 'en-route') { _statusTxt = SL('active');    _statusColor = '#3b82f6'; }
-                  else if (_inbSt === 'scheduled')                        { _statusTxt = SL('scheduled'); _statusColor = '#60a5fa'; }
-                  else {
-                    // Unknown status — try the dictionary first; otherwise show the raw
-                    // value with just the first letter capitalized (Title Case), not SHOUTED.
-                    var _slMaybe = SL(_inbSt);
-                    if (_slMaybe && _slMaybe !== _inbSt.toUpperCase()) {
-                      _statusTxt = _slMaybe;
-                    } else {
-                      var _raw = String(inboundFlight.status || '');
-                      _statusTxt = _raw ? (_raw.charAt(0).toUpperCase() + _raw.slice(1).toLowerCase()) : '';
-                    }
-                  }
-                }
-
-                // Live telemetry — only trust window cache if it belongs to THIS airport
-                // and inbound flight (set by the inbound position fetch with airport-scoped tags).
-                var _livePos = null;
-                try {
-                  var _wp = window._gateInboundLivePos;
-                  if (_wp && typeof _wp === 'object') {
-                    // Accept if either: tagged with matching airport, OR untagged (legacy reg-lookup path)
-                    if (!_wp._airport || _wp._airport === iata) {
-                      _livePos = _wp;
-                    }
-                  }
-                } catch(e) {}
-                var _liveSpd = (_hasInb && typeof inboundFlight._liveSpd === 'number') ? Math.round(inboundFlight._liveSpd) : (_livePos && typeof _livePos.speed === 'number' ? Math.round(_livePos.speed) : null);
-                var _liveAlt = (_hasInb && typeof inboundFlight._liveAlt === 'number') ? Math.round(inboundFlight._liveAlt) : (_livePos && typeof _livePos.altitude === 'number' ? Math.round(_livePos.altitude) : null);
-                var _hasLive = _hasInb && (_liveSpd !== null || _liveAlt !== null);
-
-                // Aircraft livery PNG — AC/DH4.png style, with generic fallback.
-                // For AC flights operated by Rouge (RV), append 'r' to the equipment code
-                // so we pick up the Rouge variant liveries in /aircraft/AC/ (e.g. 321r.png).
-                var _liveryEq = _equipCd || _equipNm;
-                if (_airline === 'AC' && _opCode === 'RV' && _liveryEq) {
-                  var _baseEq = aircraftCodeToIata(_liveryEq) || _liveryEq;
-                  _liveryEq = _rougeLiveryEq(_baseEq);   // Airbus family only
-                }
-                var _acImg = aircraftImgTag(_airline, _liveryEq, {
-                  rawModel: _equipNm || _equipCd || '',
-                  reg: (vars.currentFlight && vars.currentFlight._reg) || '',
-                  style: 'max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));'
-                }) || '';
-
-                // Icons
-                var _gaugeSvg = '<svg viewBox="0 0 24 24" class="gad-metric-icon"><path d="M12 2a10 10 0 00-10 10c0 2.5.92 4.78 2.43 6.53l1.43-1.43A7.96 7.96 0 014 12c0-4.42 3.58-8 8-8s8 3.58 8 8c0 1.92-.68 3.68-1.82 5.06l1.43 1.43A9.966 9.966 0 0022 12 10 10 0 0012 2zm-1 6h2v5h-2zM8.76 15.76L12 12.24l3.24 3.52-1.58 1.46L12 15.64l-1.66 1.58z"/></svg>';
-                var _mountSvg = '<svg viewBox="0 0 24 24" class="gad-metric-icon"><path d="M14 6l-3.75 5 2.85 3.8L11.5 16c-1.99-2.65-5-7-5-7L1 18h22L14 6z"/></svg>';
-
-                // Panel 1: INCOMING FLIGHT INFO
-                var _incomingPanel = '';
-                if (_hasInb) {
-                  var _inbFlight = inboundFlight.flight || '';
-                  // Calculate flight duration and ETA
-                  var _flightDurStr = '';
-                  var _etaStr = '';
-                  if (_depTs && _arrTs && _arrTs > _depTs) {
-                    var _durMins = Math.round((_arrTs - _depTs) / 60000);
-                    var _durH = Math.floor(_durMins / 60);
-                    var _durM = _durMins % 60;
-                    _flightDurStr = (_durH > 0 ? _durH + 'h ' : '') + _durM + 'min';
-                  }
-                  if (_arrTs) {
-                    // Prefer revised arrival time over scheduled when the
-                    // flight is delayed — otherwise the "arriving in X min"
-                    // countdown ticks toward the original schedule and shows
-                    // an arrival much sooner than reality.
-                    var _effArrTs = (_arrRevTs && _arrRevTs > _arrTs) ? _arrRevTs : _arrTs;
-                    var _minsToArr = Math.round((_effArrTs - Date.now()) / 60000);
-                    if (_minsToArr > 0 && _minsToArr < 1440) {
-                      if (_minsToArr >= 60) {
-                        _etaStr = Math.floor(_minsToArr / 60) + 'h ' + (_minsToArr % 60) + 'min';
-                      } else {
-                        _etaStr = _minsToArr + ' min';
-                      }
-                    } else if (_minsToArr <= 0) {
-                      _etaStr = '';
-                    }
-                  }
-                  // Helper to render a time cell: shows strikethrough original + revised
-                  // when a revision exists. Both dep and arr use this for consistency.
-                  function _timeCell(sched, rev) {
-                    if (rev) {
-                      return '<div style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.45);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sched + '</div>'
-                           + '<div style="font-size:18px;font-weight:700;color:#f59e0b;line-height:1.15;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + rev + '</div>';
-                    }
-                    return '<div style="font-size:18px;font-weight:700;color:#fff;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sched + '</div>';
-                  }
-                  // Shared styles
-                  // Unified row pattern — matches _equipPanel exactly so
-                  // the From / Scheduled / Revised rows visually align with
-                  // Aircraft / Registration / Operated by below. Same label
-                  // size, same value size, same divider color.
-                  var _rowLabelSty = 'font-size:18px;font-weight:600;color:rgba(255,255,255,0.7);display:block;margin-bottom:3px;';
-                  var _rowValSty   = 'font-size:28px;font-weight:700;color:#fff;display:block;line-height:1.15;';
-                  var _rowBox      = 'padding:6px 0;border-bottom:1px solid rgba(127,127,127,0.35);';
-                  var _rowBoxFirst = 'padding:0 0 6px 0;border-bottom:1px solid rgba(127,127,127,0.35);';
-                  // Detect arrived state
-                  var _inbArrived = !!(inboundFlight && (
-                    inboundFlight.status === 'arrived' ||
-                    inboundFlight.status === 'landed' ||
-                    inboundFlight.status === 'at-gate' ||
-                    inboundFlight.status === 'gate'
-                  ));
-                  var _topLineHtml = '';
-                  if (_inbArrived) {
-                    // Arrived state — single "From {city}" row in green to indicate arrival
-                    // v218.14: cityCode() now returns "City (IATA)" parens format; defensive check updated.
-                    var _fromCityHasIata = _fromIata && _fromCity && _fromCity.toUpperCase().endsWith('(' + _fromIata.toUpperCase() + ')');
-                    _topLineHtml =
-                      '<div style="' + _rowBoxFirst + '">'
-                      +   '<span style="' + _rowLabelSty + '">' + TL('arrivedAtGate') + '</span>'
-                      +   '<span style="font-size:28px;font-weight:700;color:#10b981;display:block;line-height:1.15;">' + _fromCity + (_fromIata && !_fromCityHasIata ? ' (' + _fromIata + ')' : '') + '</span>'
-                      + '</div>';
-                  } else {
-                    // From row (no top padding so it runs flush to panel top)
-                    // v218.14: cityCode() now returns "City (IATA)" parens format; defensive check updated.
-                    var _fromCityHasIata2 = _fromIata && _fromCity && _fromCity.toUpperCase().endsWith('(' + _fromIata.toUpperCase() + ')');
-                    _topLineHtml =
-                      '<div style="' + _rowBoxFirst + '">'
-                      +   '<span style="' + _rowLabelSty + '">' + TL('arrivingFrom') + '</span>'
-                      +   '<span style="' + _rowValSty + '">' + _fromCity + (_fromIata && !_fromCityHasIata2 ? ' (' + _fromIata + ')' : '') + '</span>'
-                      + '</div>';
-                    if (_revArrStr) {
-                      // Delayed: Scheduled row (struck through) on its own, Revised row with time + countdown
-                      _topLineHtml +=
-                        '<div style="' + _rowBox + '">'
-                        +   '<span style="' + _rowLabelSty + '">' + TL('scheduled') + '</span>'
-                        +   '<span style="font-size:28px;font-weight:700;display:block;line-height:1.2;color:rgba(255,255,255,0.5);">' + (_schedArrStr || '\u2014') + '</span>'
-                        + '</div>';
-                      _topLineHtml +=
-                        '<div style="' + _rowBox + '">'
-                        +   '<span style="' + _rowLabelSty + '">' + TL('revised') + '</span>'
-                        +   '<span style="font-size:28px;font-weight:700;color:#f59e0b;display:block;line-height:1.15;">' + _revArrStr
-                        +     (_etaStr ? ' <span style="font-size:20px;font-weight:600;color:rgba(245,158,11,0.85);">\u00b7 ' + TL('inMin') + ' ' + _etaStr + '</span>' : '')
-                        +   '</span>'
-                        + '</div>';
-                    } else {
-                      // On time: combine Scheduled date/time + countdown on ONE row to save space
-                      // Saves a full row vs. having Scheduled and "in Xh Ymin" stacked.
-                      _topLineHtml +=
-                        '<div style="' + _rowBox + '">'
-                        +   '<span style="' + _rowLabelSty + '">' + TL('scheduled') + '</span>'
-                        +   '<span style="font-size:28px;font-weight:700;color:#fff;display:block;line-height:1.15;">' + (_schedArrStr || '\u2014')
-                        +     (_etaStr ? ' <span style="font-size:20px;font-weight:600;color:#60a5fa;">\u00b7 ' + TL('inMin') + ' ' + _etaStr + '</span>' : '')
-                        +   '</span>'
-                        + '</div>';
-                    }
-                  }
-                  _incomingPanel = _topLineHtml;
-                }
-
-                // Panel 2: EQUIPMENT PROFILE — type, reg, operating carrier, aircraft image
-                var _equipPanel = '';
-                var _isPending = !!(currentFlight && currentFlight._aircraftPending && !_reg && !_equipCd && !_equipNm);
-                if (_isPending) {
-                  // Aircraft not yet assigned — show a clear pending state
-                  // instead of a generic aircraft image that would suggest we
-                  // know which plane is coming when we don't.
-                  _equipPanel =
-                    '<div class="gad-panel gad-equip-panel" style="border-left:4px solid rgba(234,179,8,0.9);">'
-                    +   (_incomingPanel || '')
-                    +   '<div class="gad-panel-hdr" style="font-size:16px;color:#fff;font-weight:800;letter-spacing:0.3px;margin-bottom:10px;' + (_incomingPanel ? 'padding-top:14px;' : '') + '">' + TL('yourAircraftLbl') + '</div>'
-                    +   '<div class="gad-equip-text">'
-                    +     '<div style="font-size:18px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:6px;">'
-                    +       TL('acPendingTitle')
-                    +     '</div>'
-                    +     '<div style="font-size:13px;color:rgba(255,255,255,0.7);font-weight:500;line-height:1.4;">'
-                    +       TL('acPendingDesc')
-                    +     '</div>'
-                    +   '</div>'
-                    + '</div>';
-                } else if (_equipNm || _reg || _acImg) {
-                  // Build the operator name (Air Canada Rouge, Jazz Aviation, etc.)
-                  var _opTxt = '';
-                  if (_opCode && _opName && _opCode !== airlineCode) {
-                    // Strip "Air Canada " prefix from "Air Canada Rouge" → just "Rouge"
-                    _opTxt = _opName.replace(/^Air Canada\s+/i, '');
-                  }
-                  // Pretty aircraft type — gate screen uses the SHORT FORM
-                  // (e.g. "De Havilland Dash 8-400" → "Dash 8-400") so the
-                  // value never wraps mid-string in the narrow gate panel.
-                  // gateAircraftShortname() handles Dash 8 / CRJ / E-jets.
-                  var _prettyType = gateAircraftShortname(_equipNm || '');
-                  var _prettyTypeHtml = gateAircraftShortnameHtml(_equipNm || '');
-                  // Stacked layout — small uppercase label on top, big value
-                  // below at full panel width. Inline styles intentionally:
-                  // class-based approach collided with an unrelated
-                  // .gad-equip-row rule in fids.css that forced nowrap+inline,
-                  // so reverted to inline display:block to make this immune
-                  // to cascade conflicts. (The light-theme divider problem
-                  // can be revisited separately without changing this.)
-                  var _labelStyle = 'font-size:18px;font-weight:600;color:rgba(255,255,255,0.7);display:block;margin-bottom:6px;';
-                  var _aircraftLine = '<div style="display:flex;flex-direction:column;">';
-                  // Aircraft + Registration combine onto ONE row when both exist
-                  // to save a full row of vertical space. If the aircraft name
-                  // is long (>14 chars), we drop the manufacturer prefix via
-                  // gateAircraftShortnameCompact() so both cells fit comfortably
-                  // side-by-side without wrapping.
-                  if (_prettyType && _reg) {
-                    var _displayType = _prettyType;
-                    var _displayTypeHtml = _prettyTypeHtml;
-                    if (_prettyType.length > 14) {
-                      _displayType = gateAircraftShortnameCompact(_equipNm || '');
-                      _displayTypeHtml = _displayType;
-                    }
-                    _aircraftLine += '<div style="padding:14px 0;border-bottom:1px solid rgba(127,127,127,0.35);display:flex;align-items:center;gap:32px;">'
-                      + '<div style="flex:1 1 auto;min-width:0;">'
-                      +   '<span style="' + _labelStyle + '">' + TL('aircraftLbl') + '</span>'
-                      +   '<span style="font-size:24px;font-weight:700;color:#fff;display:block;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _displayTypeHtml + '</span>'
-                      + '</div>'
-                      + '<div style="flex:0 0 auto;">'
-                      +   '<span style="' + _labelStyle + '">' + TL('registrationLbl') + '</span>'
-                      +   '<span style="display:inline-block;font-weight:800;letter-spacing:1px;'
-                      +     'color:#fff;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.45);'
-                      +     'padding:4px 12px;border-radius:5px;font-family:\'SF Mono\',\'Roboto Mono\',Menlo,Consolas,monospace;'
-                      +     'font-size:22px;">' + String(_reg).toUpperCase()
-                      +     (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="display:block;font-size:12px;font-weight:600;opacity:0.7;">expected | prévu</span>' : '') + '</span>'
-                      + '</div>'
-                      + '</div>';
-                  } else if (_prettyType) {
-                    _aircraftLine += '<div style="padding:14px 0;border-bottom:1px solid rgba(127,127,127,0.35);">'
-                      + '<span style="' + _labelStyle + '">' + TL('aircraftLbl') + '</span>'
-                      + '<span style="font-size:28px;font-weight:700;color:#fff;display:block;line-height:1.15;">' + _prettyTypeHtml + '</span>'
-                      + '</div>';
-                  } else if (_reg) {
-                    _aircraftLine += '<div style="padding:14px 0;border-bottom:1px solid rgba(127,127,127,0.35);">'
-                      + '<span style="' + _labelStyle + '">' + TL('registrationLbl') + '</span>'
-                      + '<span style="display:inline-block;font-weight:800;letter-spacing:1.5px;'
-                      +   'color:#fff;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.45);'
-                      +   'padding:5px 16px;border-radius:5px;font-family:\'SF Mono\',\'Roboto Mono\',Menlo,Consolas,monospace;'
-                      +   'font-size:24px;">' + String(_reg).toUpperCase()
-                      +   (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="display:block;font-size:13px;font-weight:600;opacity:0.7;">expected | prévu</span>' : '') + '</span>'
-                      + '</div>';
-                  }
-                  if (_opTxt) {
-                    // Big-display gate panel is always on a dark background → use the white logo variant.
-                    var _opLogoUrl = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
-                    // Single-line layout: "Operated by [logo or text]" with
-                    // label and value on the same row, vertically centered.
-                    _aircraftLine += '<div style="padding:14px 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
-                      + '<span style="font-size:18px;font-weight:600;color:rgba(255,255,255,0.7);">Operated by</span>';
-                    if (_opLogoUrl) {
-                      _aircraftLine += '<img src="' + _opLogoUrl + '" alt="' + _opTxt + '" '
-                        + 'style="height:32px;max-width:160px;width:auto;object-fit:contain;background:transparent;opacity:0.95;display:inline-block;vertical-align:middle;" '
-                        + 'onerror="this.outerHTML=\'<span style=&quot;font-weight:700;color:#fff;font-size:28px;display:inline-block;vertical-align:middle;&quot;>' + _opTxt.replace(/'/g,'&#39;') + '</span>\'">';
-                    } else {
-                      _aircraftLine += '<span style="font-weight:700;color:#fff;font-size:28px;display:inline-block;vertical-align:middle;">' + _opTxt + '</span>';
-                    }
-                    _aircraftLine += '</div>';
-                  }
-                  _aircraftLine += '</div>';
-                  // Unified panel: From / Scheduled / Revised rows from
-                  // _incomingPanel sit ABOVE the aircraft rows in the same
-                  // container, so all rows share the same divider rhythm
-                  // and visual weight. Aircraft photo (if present) goes at
-                  // the bottom, below the last row.
-                  _equipPanel =
-                    '<div class="gad-panel gad-equip-panel">'
-                    +   (_incomingPanel || '')
-                    +   _aircraftLine
-                    +   (_acImg ? '<div class="gad-equip-img-large" style="margin-top:6px;">' + _acImg + '</div>' : '')
-                    + '</div>';
-                } else if (_incomingPanel) {
-                  // No equipment data yet, but we have inbound — render just
-                  // the From/Scheduled/Revised rows in the unified container.
-                  _equipPanel =
-                    '<div class="gad-panel gad-equip-panel">'
-                    +   _incomingPanel
-                    + '</div>';
-                }
-
-                // Panel 3: REAL-TIME METRICS — only shown when live telemetry actually exists.
-                //          If no live data, show a muted "tracking unavailable" line instead of zeros.
-                var _metricsPanel = '';
-                if (_hasInb) {
-                  if (_hasLive && (_liveSpd !== null || _liveAlt !== null)) {
-                    _metricsPanel =
-                      '<div class="gad-panel">'
-                      +   '<div class="gad-panel-hdr">REAL-TIME METRICS <span class="gad-panel-sub">(live flight data)</span></div>'
-                      +   '<div class="gad-metrics-row">'
-                      +     '<div class="gad-metric">' + _gaugeSvg
-                      +       '<div class="gad-metric-text"><div class="gad-lbl">GROUND SPEED</div><div class="gad-metric-val">' + (_liveSpd !== null ? _liveSpd + ' kts' : '—') + '</div></div>'
-                      +     '</div>'
-                      +     '<div class="gad-metric">' + _mountSvg
-                      +       '<div class="gad-metric-text"><div class="gad-lbl">ALTITUDE</div><div class="gad-metric-val">' + (_liveAlt !== null ? _liveAlt.toLocaleString() + ' ft' : '—') + '</div></div>'
-                      +     '</div>'
-                      +   '</div>'
-                      + '</div>';
-                  } else {
-                    _metricsPanel =
-                      '<div class="gad-panel gad-metrics-none">'
-                      +   '<div class="gad-panel-hdr">REAL-TIME METRICS</div>'
-                      +   '<div class="gad-metrics-unavail">Live tracking unavailable for this flight</div>'
-                      + '</div>';
-                  }
-                }
-
-                var _infoCol =
-                  '<div class="gad-info-col">'
-                  +   _equipPanel
-                  + '</div>';
-
-                // Map banner: Ground Speed + Altitude as a FULL-WIDTH strip at top of map.
-                // Only rendered when there's actual live telemetry to show (hides when idle/ground).
-                var _metricsOverlay = '';
-                if (_liveSpd !== null || _liveAlt !== null) {
-                  _metricsOverlay =
-                      '<div style="position:absolute;top:0;left:0;right:0;height:64px;display:flex;align-items:stretch;justify-content:stretch;z-index:500;pointer-events:none;background:rgba(0,0,0,0.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.08);">'
-                      +   '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:14px;padding:0 18px;border-right:1px solid rgba(255,255,255,0.08);">'
-                      +     _gaugeSvg
-                      +     '<div style="display:flex;flex-direction:column;align-items:flex-start;"><div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.65);letter-spacing:0.3px;">Ground Speed</div><div style="font-size:26px;font-weight:800;color:#fff;line-height:1.05;">' + (_liveSpd !== null ? _liveSpd + ' <span style=\'font-size:17px;font-weight:600;opacity:0.7;\'>kts</span>' : '—') + '</div></div>'
-                      +   '</div>'
-                      +   '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:14px;padding:0 18px;">'
-                      +     _mountSvg
-                      +     '<div style="display:flex;flex-direction:column;align-items:flex-start;"><div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.65);letter-spacing:0.3px;">Altitude</div><div style="font-size:26px;font-weight:800;color:#fff;line-height:1.05;">' + (_liveAlt !== null ? _liveAlt.toLocaleString() + ' <span style=\'font-size:17px;font-weight:600;opacity:0.7;\'>ft</span>' : '—') + '</div></div>'
-                      +   '</div>'
-                      + '</div>';
-                }
-
-                var _mapCol =
-                  '<div class="gad-map-col">'
-                  +   '<div style="flex:1;position:relative;overflow:hidden;min-height:200px;">'
-                  +     _metricsOverlay
-                  +     '<div class="g8-inb-map" id="gateMapBox" style="position:absolute;inset:0;width:100%;height:100%;min-height:200px;"></div>'
-                  +   '</div>'
-                  + '</div>';
-
-                return '<div class="gad-right-col">' + _infoCol + _mapCol + '</div>';
-              })()
-        +   '</div>'
-        // FULL-WIDTH BOTTOM BAR: Logo | Ads Carousel | Weather (UNTOUCHED — no banner here)
-        +   (function() {
-          var depTio = typeof TOMORROW_WX !== 'undefined' ? TOMORROW_WX[iata] : null;
-          var barBg = (depTio && depTio.current) ? wxBgGradient(depTio.current.code) : 'linear-gradient(135deg,#0f1628,#1a2744)';
-          function wxPanel(tioData, cityLabel) {
-            if (!tioData || !tioData.current || tioData.current.temp === undefined) return '';
-            var c = tioData.current;
-            var wxBg = accentTint(accent, 0.28);
-            var _feelsRow = '<div style="font-size:14px;color:rgba(255,255,255,0.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:19px;">';
-            if (c.feelsLike !== undefined && !isNaN(c.feelsLike)) {
-              _feelsRow += TL('feelsLike') + ' ' + displayTemp(Math.round(c.feelsLike));
-              if (c.windSpeed !== undefined && !isNaN(c.windSpeed)) {
-                _feelsRow += ' \u00B7 ' + Math.round(c.windSpeed) + ' km/h';
-              }
-            } else {
-              _feelsRow += '&nbsp;';
-            }
-            _feelsRow += '</div>';
-            return '<div style="flex:0 0 280px;display:flex;align-items:center;gap:16px;padding:18px 22px;border:none;border-radius:0;margin:0;background:' + wxBg + ';align-self:stretch;box-sizing:border-box;">'
-              + tioIcon(c.code, 76)
-              + '<div style="min-width:0;flex:1;overflow:hidden;">'
-              + '<div style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cityLabel + '</div>'
-              + '<div style="font-size:44px;font-weight:800;color:#fff;line-height:1.05;">' + displayTemp(Math.round(c.temp)) + '</div>'
-              + '<div style="font-size:18px;font-weight:600;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tioLabel(c.code) + '</div>'
-              + _feelsRow
-              + '</div></div>';
-          }
-          var depCity = cityCode(iata);
-          return '<div style="flex-shrink:0;width:100%;height:170px;background:rgba(18,20,28,0.95);border-top:2px solid #111;display:flex;flex-direction:row;align-items:stretch;overflow:hidden;">'
-            + '<div id="gateAdLogo" style="display:none;flex:0 0 0;width:0;min-width:0;max-width:0;overflow:hidden;"></div>'
-            + '<div style="flex:1;min-width:0;overflow:hidden;position:relative;height:100%;" id="gateAdCarousel"></div>'
-            + '<div id="gateWxStrip" style="display:flex;align-items:stretch;overflow:visible;flex:0 0 280px;align-self:stretch;"></div>'
-            + '</div>';
-        })()
-        + '</div>'
-      ) // end V1 (legacy) layout branch
+      ) // end gate idle layout
     ) // end ROW 3+4 ternary
     // ROW 5 - footer (full width)
     // Middle slot: gate-change banner takes over briefly when active, otherwise shows next-flight info.
@@ -17333,21 +16804,6 @@ async function _fetchBoardWeather(codes) {
   if (typeof render === 'function') render();
 }
 
-// Weather-themed background gradient for panels
-function wxBgGradient(code) {
-  if (code===1000) return 'linear-gradient(135deg,#0f1628,#1a2744)';
-  if (code>=1100&&code<=1103) return 'linear-gradient(135deg,#1a2030,#253550)';
-  if (code===1001) return 'linear-gradient(135deg,#1c2333,#2a3548)';
-  if (code>=2000&&code<=2100) return 'linear-gradient(135deg,#252d3a,#3a4555)';
-  if (code>=3000&&code<=3002) return 'linear-gradient(135deg,#1a2535,#2a3d50)';
-  if (code>=4000&&code<=4200) return 'linear-gradient(135deg,#171d2a,#252d3f)';
-  if (code===4201) return 'linear-gradient(135deg,#111520,#1a2030)';
-  if (code>=5000&&code<=5101) return 'linear-gradient(135deg,#202838,#354050)';
-  if (code>=6000&&code<=6201) return 'linear-gradient(135deg,#1a2030,#2a3345)';
-  if (code>=7000&&code<=7102) return 'linear-gradient(135deg,#1a2030,#2a3345)';
-  if (code===8000) return 'linear-gradient(135deg,#12101e,#1e1a35)';
-  return 'linear-gradient(135deg,#0f1628,#1a2744)';
-}
 
 // ── TOMORROW.IO WEATHER (Gate Screen) ─────────────────────────────────────
 // API keys removed — routed through secure proxy
@@ -19395,7 +18851,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23167';
+var FIDS_BUILD_TAG = 'v23168';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
