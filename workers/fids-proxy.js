@@ -277,6 +277,25 @@ const R2_PUBLIC_BASE = "https://pub-e392224bda1a4096843ed05df504ca91.r2.dev";
 
 function isAdmin(payload) { return payload && payload.role === "admin"; }
 __name(isAdmin, "isAdmin");
+// ── OPS GUARD ─────────────────────────────────────────────────────────────
+// Destructive maintenance routes live OUTSIDE the `/api/` auth gate, because
+// that gate is a path-prefix opt-in rather than default-deny. Four of them were
+// reachable with no credentials at all: the cache wipe, the credit refill, the
+// webhook delete and the cached-flight delete. Two neighbours in the same block
+// (/webhook/flight and /subscriptions/create-yqm) already gate on
+// ADB_WEBHOOK_SECRET, so this reuses that established pattern rather than
+// inventing a second scheme.
+// NOTE: this is a stopgap for the specific destructive routes. The structural
+// fix is to make the router default-deny with an explicit public allowlist, so
+// that a route added outside /api/ is not public by construction.
+function requireOpsSecret(url, env, origin) {
+  const expected = (env.ADB_WEBHOOK_SECRET || "").trim();
+  if (!expected) return jsonResponse({ error: "Ops secret not configured" }, 500, origin);
+  const provided = (url.searchParams.get("secret") || "").trim();
+  if (provided !== expected) return jsonResponse({ error: "Unauthorized" }, 401, origin);
+  return null;
+}
+__name(isAdmin, "isAdmin");
 
 function normIata(code) { return (code || "").toUpperCase().trim().slice(0, 4); }
 __name(normIata, "normIata");
@@ -2057,6 +2076,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
     if (path === "/admin/clear-cache" && request.method === "GET") {
+      // v23169 — was reachable with no credentials: the cache wipe — a GET with destructive side effects, so a crawler or link preview could fire it.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       try {
         let deleted = 0;
         let cursor = undefined;
@@ -2172,6 +2193,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // 1 API unit = 1 credit. Use sparingly — 5000 credits is plenty for
     // YQM-only operation for a couple weeks.
     if (path === "/subscriptions/refill" && request.method === "POST") {
+      // v23169 — was reachable with no credentials: the credit refill — spends real money.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       let credits = url.searchParams.get("credits");
       if (!credits) {
         try {
@@ -2249,6 +2272,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // ── DELETE a webhook subscription by ID ────────────────────────────────
     // DELETE /subscriptions/webhook/:id — removes subscription. Free.
     if (path.startsWith("/subscriptions/webhook/") && request.method === "DELETE") {
+      // v23169 — was reachable with no credentials: deleting the subscription that feeds live flights to the boards.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const subId = path.replace("/subscriptions/webhook/", "");
       if (!subId || subId.includes("/")) {
         return jsonResponse({ error: "Invalid subscription ID" }, 400, origin);
@@ -2382,6 +2407,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // airport from KV. Useful for clearing test data or forcing a refresh
     // from the next webhook push.
     if (path.startsWith("/flights/cached/") && request.method === "DELETE") {
+      // v23169 — was reachable with no credentials: clearing cached flights (the boards only GET this path, so they are unaffected).
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const parts = path.split("/").filter(Boolean);
       const icao = (parts[2] || "").toUpperCase();
       if (!icao || !/^[A-Z]{4}$/.test(icao)) {
