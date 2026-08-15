@@ -16,10 +16,42 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 //   ADB_WEBHOOK_SECRET     — optional, for ADB webhook signature checks
 //   TIO_KEY                — Tomorrow.io API key (weather)
 //
-// REQUIRED bindings:
-//   FIDS_USERS, FIDS_AIRPORT_CONFIG, CITY_BG_CACHE, FIDS_MEDIA — KV namespaces
-//   FIDS_ASSETS                                                — R2 bucket
-//   AI                                                         — Workers AI
+// REQUIRED bindings (CORRECTED 2026-08-15 — see docs/OPERATIONS-BRIEF.md):
+//   FIDS_USERS         KV — users, airport config, airline overrides, media
+//   FIDS_LIVE_FLIGHTS  KV — webhook flight cache (36h TTL)
+//   CITY_BG_CACHE      KV — AI backgrounds + destination info
+//   FIDS_ASSETS        R2 — logos and uploaded media
+//   AI                    — Workers AI
+//
+// The previous version of this comment listed FIDS_AIRPORT_CONFIG and
+// FIDS_MEDIA, NEITHER OF WHICH EXISTS — the code never references them, and
+// everything goes into FIDS_USERS. It also omitted FIDS_LIVE_FLIGHTS, which IS
+// used. Deploying from that list bound two phantom namespaces and missed a real
+// one, which is part of why this worker had no committed deploy config for so
+// long. The authoritative config is now workers/wrangler.fids-proxy.jsonc.
+//
+// TIO_KEY is also listed below but no longer used — weather comes from
+// open-meteo, which needs no key.
+
+// ── PASSWORDS ─────────────────────────────────────────────────────────────
+// v23169. What was here was a bare SHA-256 of the password: no salt, no
+// iterations. SHA-256 is built to be FAST, which is precisely wrong for a
+// password — it is brute-forceable at enormous rates on commodity hardware —
+// and with no salt, two accounts sharing a password share a hash, so cracking
+// one reveals every other. That was tolerable with four internal accounts. It
+// is not tolerable once airline and airport staff have logins, which is the
+// direction this system is going.
+//
+// Now PBKDF2-SHA256 with a random 16-byte salt per user. Iterations are stored
+// ALONGSIDE the hash rather than hardcoded at the comparison site, so the count
+// can be raised later without invalidating existing passwords.
+//
+// NOBODY IS LOCKED OUT. Legacy records are still verified with the old scheme,
+// and a successful legacy login transparently re-hashes and saves in the new
+// format — so accounts migrate as people sign in, with no forced reset and no
+// admin intervention. hashPassword() is kept solely to verify those legacy
+// records and must never be used to CREATE one again.
+const PBKDF2_ITERATIONS = 210000;
 
 async function hashPassword(password) {
   const encoder = new TextEncoder();
@@ -28,6 +60,62 @@ async function hashPassword(password) {
   return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
 }
 __name(hashPassword, "hashPassword");
+
+function randomSaltB64() {
+  const s = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...s));
+}
+__name(randomSaltB64, "randomSaltB64");
+
+async function pbkdf2Hash(password, saltB64, iterations) {
+  const salt = Uint8Array.from(atob(saltB64), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" }, key, 256
+  );
+  return btoa(String.fromCharCode(...new Uint8Array(bits)));
+}
+__name(pbkdf2Hash, "pbkdf2Hash");
+
+// Build the stored credential for a NEW or CHANGED password.
+async function makePasswordRecord(password) {
+  const salt = randomSaltB64();
+  return {
+    alg: "pbkdf2-sha256",
+    salt,
+    iterations: PBKDF2_ITERATIONS,
+    hash: await pbkdf2Hash(password, salt, PBKDF2_ITERATIONS)
+  };
+}
+__name(makePasswordRecord, "makePasswordRecord");
+
+// Length-independent, value-independent comparison. A plain !== leaks how many
+// leading characters matched via timing; irrelevant for most attackers but free
+// to avoid.
+function safeEqual(a, b) {
+  const x = String(a || ""), y = String(b || "");
+  let diff = x.length ^ y.length;
+  const n = Math.max(x.length, y.length);
+  for (let i = 0; i < n; i++) diff |= (x.charCodeAt(i) || 0) ^ (y.charCodeAt(i) || 0);
+  return diff === 0;
+}
+__name(safeEqual, "safeEqual");
+
+// Returns "ok" (modern hash matched), "upgrade" (legacy hash matched — caller
+// should re-save in the new format), or "no".
+async function verifyPassword(user, password) {
+  if (user && user.password && user.password.alg === "pbkdf2-sha256") {
+    const h = await pbkdf2Hash(password, user.password.salt, user.password.iterations);
+    return safeEqual(h, user.password.hash) ? "ok" : "no";
+  }
+  if (user && user.passwordHash) {
+    return safeEqual(await hashPassword(password), user.passwordHash) ? "upgrade" : "no";
+  }
+  return "no";
+}
+__name(verifyPassword, "verifyPassword");
 async function createJwt(payload, secret) {
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1e3);
@@ -135,7 +223,7 @@ async function seedAdmin(env) {
   const existing = await getUser(env, "admin");
   if (!existing) {
     await saveUser(env, "admin", {
-      passwordHash: await hashPassword(env.SEED_ADMIN_PASSWORD || crypto.randomUUID()),
+      password: await makePasswordRecord(env.SEED_ADMIN_PASSWORD || crypto.randomUUID()),
       role: "admin",
       displayName: "Administrator",
       createdAt: (/* @__PURE__ */ new Date()).toISOString()
@@ -153,9 +241,19 @@ async function handleLogin(request, env, origin) {
   if (!user) {
     return jsonResponse({ error: "Invalid credentials" }, 401, origin);
   }
-  const hash = await hashPassword(password);
-  if (hash !== user.passwordHash) {
+  const verdict = await verifyPassword(user, password);
+  if (verdict === "no") {
     return jsonResponse({ error: "Invalid credentials" }, 401, origin);
+  }
+  // v23169 — a correct password stored under the old unsalted SHA-256 scheme is
+  // re-hashed with PBKDF2 and saved here. Accounts migrate as people sign in;
+  // nobody is reset, and the legacy field is removed so it cannot be used again.
+  if (verdict === "upgrade") {
+    try {
+      user.password = await makePasswordRecord(password);
+      delete user.passwordHash;
+      await saveUser(env, username.toLowerCase(), user);
+    } catch (e) { /* login still succeeds — the upgrade retries next sign-in */ }
   }
   const token = await createJwt({
     sub: username.toLowerCase(),
@@ -197,7 +295,7 @@ async function handleCreateUser(request, env, payload, origin) {
     return jsonResponse({ error: "User already exists" }, 409, origin);
   }
   await saveUser(env, username.toLowerCase(), {
-    passwordHash: await hashPassword(password),
+    password: await makePasswordRecord(password),
     role,
     displayName: displayName || username,
     createdAt: (/* @__PURE__ */ new Date()).toISOString()
@@ -218,7 +316,8 @@ async function handleUpdateUser(request, env, payload, origin, username) {
   }
   const updates = await request.json();
   if (updates.password) {
-    user.passwordHash = await hashPassword(updates.password);
+    user.password = await makePasswordRecord(updates.password);
+    delete user.passwordHash;   // v23169 — never leave the weak hash behind
   }
   if (updates.role) {
     const validRoles = ["admin", "operator", "viewer"];
@@ -276,6 +375,25 @@ __name(handleApiProxy, "handleApiProxy");
 const R2_PUBLIC_BASE = "https://pub-e392224bda1a4096843ed05df504ca91.r2.dev";
 
 function isAdmin(payload) { return payload && payload.role === "admin"; }
+__name(isAdmin, "isAdmin");
+// ── OPS GUARD ─────────────────────────────────────────────────────────────
+// Destructive maintenance routes live OUTSIDE the `/api/` auth gate, because
+// that gate is a path-prefix opt-in rather than default-deny. Four of them were
+// reachable with no credentials at all: the cache wipe, the credit refill, the
+// webhook delete and the cached-flight delete. Two neighbours in the same block
+// (/webhook/flight and /subscriptions/create-yqm) already gate on
+// ADB_WEBHOOK_SECRET, so this reuses that established pattern rather than
+// inventing a second scheme.
+// NOTE: this is a stopgap for the specific destructive routes. The structural
+// fix is to make the router default-deny with an explicit public allowlist, so
+// that a route added outside /api/ is not public by construction.
+function requireOpsSecret(url, env, origin) {
+  const expected = (env.ADB_WEBHOOK_SECRET || "").trim();
+  if (!expected) return jsonResponse({ error: "Ops secret not configured" }, 500, origin);
+  const provided = (url.searchParams.get("secret") || "").trim();
+  if (provided !== expected) return jsonResponse({ error: "Unauthorized" }, 401, origin);
+  return null;
+}
 __name(isAdmin, "isAdmin");
 
 function normIata(code) { return (code || "").toUpperCase().trim().slice(0, 4); }
@@ -1661,6 +1779,12 @@ var fids_proxy_default = {
       }
     }
 
+    // ⚠️ THIS GATE IS OPT-IN, NOT DEFAULT-DENY. It only protects paths under
+    // /auth/users or /api/. ANY route registered outside those prefixes is
+    // PUBLIC BY CONSTRUCTION — which is how six destructive endpoints ended up
+    // reachable with no credentials (fixed v23169; see docs/OPERATIONS-BRIEF.md).
+    // Put new admin routes UNDER /api/ so they inherit this, or guard them
+    // explicitly with requireOpsSecret(). Do not assume anything is protected.
     if (path.startsWith("/auth/users") || path.startsWith("/api/")) {
       const authHeader = request.headers.get("Authorization");
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -2057,6 +2181,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
     if (path === "/admin/clear-cache" && request.method === "GET") {
+      // v23169 — was reachable with no credentials: the cache wipe — a GET with destructive side effects, so a crawler or link preview could fire it.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       try {
         let deleted = 0;
         let cursor = undefined;
@@ -2075,6 +2201,88 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         return jsonResponse({ error: "Cache clear failed", details: e.message }, 500, origin);
       }
     }
+    // ── ADS-B LIVE POSITIONS (proxied + cached) ───────────────────────────
+    // GET /adsb/hex/{icao24} | /adsb/reg/{tail} | /adsb/callsign/{cs}
+    //
+    // WHY THIS EXISTS. The boards used to call the ADS-B feed DIRECTLY from the
+    // browser. Two things broke that: the provider now returns 403 to
+    // unregistered callers, and it sends no Access-Control-Allow-Origin, so the
+    // browser blocks the response regardless. Every downstream feature went
+    // quiet at once — the map fell back to clock estimates, the runway-aligned
+    // final never drew (it needs a live fix within 25nm), "landed" never fired
+    // (a ground fix within 6nm), and _liveTrack was never set so the aircraft
+    // icon pointed at the destination instead of along its track.
+    //
+    // Fetching server-side fixes both: same-origin, so CORS is irrelevant, and
+    // any credential stays here instead of shipping to every kiosk.
+    //
+    // IT ALSO CHANGES THE COST SHAPE, which matters for getting approved at
+    // all. Called from the browser, query volume scales with the number of
+    // VIEWERS — ten people watching the stream is ten times the queries for the
+    // same aircraft. Cached here, it is one upstream call per aircraft per
+    // ADSB_TTL regardless of audience.
+    //
+    // The upstream is a FIXED constant chosen from a small allowlist and the
+    // subject is pattern-checked, so this cannot be turned into an open proxy
+    // (same SSRF discipline as /maptiles, /logoimg, /miafids).
+    if (path.startsWith("/adsb/")) {
+      const ADSB_TTL = 20;                       // seconds; positions age fast
+      const PROVIDERS = {
+        "airplanes.live": "https://api.airplanes.live/v2",
+        "adsb.fi":        "https://opendata.adsb.fi/api/v2",
+        "adsb.lol":       "https://api.adsb.lol/v2"
+      };
+      const provider = (env.ADSB_PROVIDER || "airplanes.live").trim();
+      const base = PROVIDERS[provider];
+      if (!base) {
+        return jsonResponse({ error: "Unknown ADSB_PROVIDER", provider, allowed: Object.keys(PROVIDERS) }, 500, origin);
+      }
+      const m = path.match(/^\/adsb\/(hex|reg|callsign)\/([A-Za-z0-9-]{1,12})$/);
+      if (!m) {
+        return jsonResponse({ error: "Use /adsb/hex/:icao24, /adsb/reg/:tail or /adsb/callsign/:cs" }, 400, origin);
+      }
+      const kind = m[1];
+      const subject = m[2].toUpperCase();
+      const upstream = `${base}/${kind}/${encodeURIComponent(subject)}`;
+
+      // Shared edge cache — this is the bit that makes audience size irrelevant.
+      const cacheKey = new Request(`https://adsb-cache/${provider}/${kind}/${subject}`);
+      const cache = caches.default;
+      try {
+        const hit = await cache.match(cacheKey);
+        if (hit) {
+          const body = await hit.text();
+          return new Response(body, { status: 200, headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+            "X-Adsb-Cache": "hit", ...corsHeaders(origin) } });
+        }
+      } catch (e) {}
+
+      try {
+        const headers = { "Accept": "application/json", "User-Agent": "OrionConnected-FIDS/1.0 (airport flight information displays)" };
+        // Only set if the chosen provider needs one. Absent = anonymous, which
+        // is how the free community feeds normally work.
+        if (env.ADSB_KEY) headers["auth"] = env.ADSB_KEY;
+        const r = await fetch(upstream, { headers });
+        if (!r.ok) {
+          // Deliberately NOT cached — a 403/429 must not pin a dead answer for
+          // everyone. Shaped like a success with no aircraft so the board's
+          // existing "no fix" path handles it without a special case.
+          return jsonResponse({ ac: [], _upstreamStatus: r.status, _provider: provider }, 200, origin);
+        }
+        const payload = await r.text();
+        try {
+          await cache.put(cacheKey, new Response(payload, { headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
+        } catch (e) {}
+        return new Response(payload, { status: 200, headers: {
+          "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+          "X-Adsb-Cache": "miss", ...corsHeaders(origin) } });
+      } catch (e) {
+        return jsonResponse({ ac: [], _error: String(e && e.message).slice(0, 120) }, 200, origin);
+      }
+    }
+
     if (path === "/health") {
       return jsonResponse({ status: "ok", version: "218" }, 200, origin);
     }
@@ -2105,6 +2313,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // user is not on the latest (post-2026) version of their plan and needs
     // to re-subscribe. Use this BEFORE building webhook integration.
     if (path === "/subscriptions/balance" || path === "/subscriptions/balance/debug") {
+      // v23169 — ops-only, and no board calls it: exposes the AeroDataBox account credit balance, and in debug mode the raw upstream headers.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const adbUrl = `https://aerodatabox.p.rapidapi.com/subscriptions/balance`;
       const debugMode = path.endsWith("/debug");
       try {
@@ -2144,6 +2354,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // Lists current webhook subscriptions. Should return [] if none are
     // active (still confirms the endpoint is accessible on your plan).
     if (path === "/subscriptions/webhooks" || path === "/subscriptions/webhook") {
+      // v23169 — ops-only, and no board calls it: lists the webhook subscriptions feeding the boards, including their ids.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const adbUrl = `https://aerodatabox.p.rapidapi.com/subscriptions/webhook`;
       try {
         const response = await fetch(adbUrl, {
@@ -2172,6 +2384,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // 1 API unit = 1 credit. Use sparingly — 5000 credits is plenty for
     // YQM-only operation for a couple weeks.
     if (path === "/subscriptions/refill" && request.method === "POST") {
+      // v23169 — was reachable with no credentials: the credit refill — spends real money.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       let credits = url.searchParams.get("credits");
       if (!credits) {
         try {
@@ -2249,6 +2463,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // ── DELETE a webhook subscription by ID ────────────────────────────────
     // DELETE /subscriptions/webhook/:id — removes subscription. Free.
     if (path.startsWith("/subscriptions/webhook/") && request.method === "DELETE") {
+      // v23169 — was reachable with no credentials: deleting the subscription that feeds live flights to the boards.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const subId = path.replace("/subscriptions/webhook/", "");
       if (!subId || subId.includes("/")) {
         return jsonResponse({ error: "Invalid subscription ID" }, 400, origin);
@@ -2382,6 +2598,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // airport from KV. Useful for clearing test data or forcing a refresh
     // from the next webhook push.
     if (path.startsWith("/flights/cached/") && request.method === "DELETE") {
+      // v23169 — was reachable with no credentials: clearing cached flights (the boards only GET this path, so they are unaffected).
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const parts = path.split("/").filter(Boolean);
       const icao = (parts[2] || "").toUpperCase();
       if (!icao || !/^[A-Z]{4}$/.test(icao)) {

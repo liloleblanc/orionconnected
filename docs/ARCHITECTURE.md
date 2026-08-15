@@ -1,5 +1,10 @@
 # Current architecture
 
+> **See also: [`OPERATIONS-BRIEF.md`](OPERATIONS-BRIEF.md)** — verified bindings,
+> deploy/rollback commands, current security state, and the known traps.
+> Several comments in the source contradict reality; the brief says which.
+
+
 This document describes the system that is running now. The separate
 [design-direction document](DESIGN-DIRECTION.md) describes the desired future
 template-driven architecture.

@@ -1,5 +1,10 @@
 # Deployment
 
+> **See also: [`OPERATIONS-BRIEF.md`](OPERATIONS-BRIEF.md)** — verified bindings,
+> deploy/rollback commands, current security state, and the known traps.
+> Several comments in the source contradict reality; the brief says which.
+
+
 The repository contains two distinct Cloudflare Workers. Deploying one does
 not deploy the other.
 
