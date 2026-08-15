@@ -36634,18 +36634,40 @@ function _gcArcLatLngs(from, to, opts) {
 }
 // Where along that arc the aircraft sits, plus the bearing of the segment it
 // is on — the same maths that used to live inline after the first setView.
+// v23175 — THE PLANE MOVES BETWEEN THE VERTICES, NOT FROM ONE TO THE NEXT.
+// (Nick: "its not a smooth im flying line its a bobble head".)
+//
+// The arc is sampled at 100 points and the position used to be ll[floor(p*100)]
+// — so the aircraft could only ever occupy 100 fixed spots on the route and
+// TELEPORTED between them. Measured hop sizes with the camera following the
+// plane: 12.2km ≈ 7px on Moncton–Toronto, 46.4km ≈ 32px on Moncton–London (64px
+// one zoom level in). That hop is the choppiness. The heading was never the
+// problem — sampled across the whole route it moves at most 0.11° per step,
+// perfectly monotonic — which is why raising the vertex count or smoothing the
+// angle would both have been fixes aimed at the wrong thing.
+//
+// Interpolating between the two neighbouring vertices makes the position
+// continuous in p, so the plane is now limited only by how often p updates
+// rather than by the shape of the sample list. Bearing keeps its ±3-vertex
+// window: it was already smooth and widening or narrowing it only adds lag.
 function _gcPlaneAt(ll, p) {
   if (!ll || !ll.length) return null;
   var pp = Math.max(0.02, Math.min(0.98, p));
-  var i = Math.min(Math.floor(pp * ll.length), ll.length - 1);
-  var a = ll[Math.max(i - 3, 0)], b = ll[Math.min(i + 3, ll.length - 1)];
+  var last = ll.length - 1;
+  var f = pp * last;                       // fractional position along the list
+  var i = Math.min(Math.floor(f), Math.max(0, last - 1));
+  var t = f - i;                           // 0..1 between vertex i and i+1
+  var v0 = ll[i], v1 = ll[Math.min(i + 1, last)];
+  var pos = { lat: v0.lat + (v1.lat - v0.lat) * t, lng: v0.lng + (v1.lng - v0.lng) * t };
+  try { if (typeof L !== 'undefined' && L.latLng) pos = L.latLng(pos.lat, pos.lng); } catch (e) {}
+  var a = ll[Math.max(i - 3, 0)], b = ll[Math.min(i + 3, last)];
   var dLng = (b.lng - a.lng) * Math.PI / 180;
   var la = a.lat * Math.PI / 180, lb = b.lat * Math.PI / 180;
   var bearing = Math.atan2(
     Math.sin(dLng) * Math.cos(lb),
     Math.cos(la) * Math.sin(lb) - Math.sin(la) * Math.cos(lb) * Math.cos(dLng)
   ) * 180 / Math.PI;
-  return { pos: ll[i], bearing: bearing };
+  return { pos: pos, bearing: bearing };
 }
 function _gcAddArc(map, from, to, opts, preLL) {
   var ll = preLL || _gcArcLatLngs(from, to, opts);
