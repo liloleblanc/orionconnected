@@ -10,41 +10,114 @@ const Auth = (() => {
   const USER_KEY   = 'fids_user';
 
   // ── Roles ─────────────────────────────────────────────────────────────
+  // These are the roles the SERVER actually accepts (fids-proxy validRoles).
+  // Keep this list in step with it — a role invented here and not there simply
+  // cannot log in.
   const ROLES = {
     ADMIN:    'admin',     // Full access + user management
     OPERATOR: 'operator',  // Live data + settings changes
-    VIEWER:   'viewer',    // Live data, read-only
-    DEMO:     'demo'       // No auth, demo data only
+    VIEWER:   'viewer'     // Live data, read-only
   };
 
+  // v23170 — 'demo' IS GONE, AND SIGNED-OUT IS NOW ITS OWN STATE.
+  //
+  // 'demo' was never a role. The server's validRoles is
+  // ["admin","operator","viewer"], so nobody could ever hold it, and nothing in
+  // the codebase checked for it. Its only real effect was cosmetic and
+  // confusing: it was the DEFAULT value of currentRole, so every ordinary
+  // signed-out moment — a closed tab, an expired token, a stray 401 — reported
+  // itself as "demo" (Nick: "I will be logged in as admin and then all of a
+  // sudden it will fall to the demo, that should not happen"). Nothing had
+  // fallen anywhere; the session had simply ended, and the label made an
+  // ordinary sign-out look like a mode switch.
+  //
+  // It also collided with DEMO_SCHEDULES in fids-core.js, which is a genuinely
+  // useful and completely unrelated thing: sample flights for showing a board
+  // when there is no live feed. That keeps its name. This does not.
+  //
+  // Signed out is now null, which reads as what it is.
+  const SIGNED_OUT = null;
+
+  // NOTE: this table is currently DECORATIVE — hasPermission() is defined below
+  // and called from nowhere in the codebase, and the server enforces its own
+  // rules regardless. It is kept as the intended shape for the scoped-role work
+  // (airline/airport scopes), but do not mistake it for a security control:
+  // anything it "protects" is protected by the server or not at all.
   const ROLE_PERMISSIONS = {
     admin:    ['view', 'settings', 'override', 'users', 'api'],
     operator: ['view', 'settings', 'override', 'api'],
-    viewer:   ['view', 'api'],
-    demo:     ['view']
+    viewer:   ['view', 'api']
   };
 
   // ── State ─────────────────────────────────────────────────────────────
   let currentUser = null;
-  let currentRole = ROLES.DEMO;
+  let currentRole = SIGNED_OUT;
   let token = null;
   let onAuthChange = null;  // callback
 
   // ── Token Management ──────────────────────────────────────────────────
+  // v23170 — THE SESSION SURVIVES A CLOSED TAB.
+  //
+  // The token lived in sessionStorage, which is scoped to ONE TAB and erased
+  // when that tab closes. So opening the board in a second tab, restarting the
+  // browser, or a kiosk rebooting all presented as "logged out" with nothing
+  // actually expired — the token simply was not where anyone looked. Combined
+  // with 'demo' being the fallback label, that is the "suddenly in demo" this
+  // release is fixing.
+  //
+  // localStorage is the right scope for an admin session: it is per-origin, not
+  // per-tab. The exposure is unchanged in kind — a token readable by script was
+  // already readable by script in sessionStorage — and it is still bounded by
+  // the server's 24h expiry, which is re-checked on every load below.
+  //
+  // Legacy sessionStorage values are read once on load and migrated, so anyone
+  // signed in when this ships stays signed in.
   function saveToken(jwt, user) {
     token = jwt;
     currentUser = user;
     currentRole = user.role || ROLES.VIEWER;
     try {
+      // localStorage is the DURABLE copy — it survives a closed tab.
+      localStorage.setItem(TOKEN_KEY, jwt);
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      // sessionStorage is kept as a MIRROR, deliberately. Thirteen places
+      // across fids-core.js, menu.js and editor-roles.js read the token
+      // straight out of sessionStorage rather than going through Auth.
+      // Rewriting all thirteen is how one gets missed and admin saves break, so
+      // both are written and the mirror is rehydrated on load. If those readers
+      // are ever centralised through Auth.getToken(), this line can go.
       sessionStorage.setItem(TOKEN_KEY, jwt);
       sessionStorage.setItem(USER_KEY, JSON.stringify(user));
-    } catch (e) { /* sessionStorage not available */ }
+    } catch (e) { /* storage unavailable — session lasts this page only */ }
   }
 
   function loadToken() {
     try {
-      const stored = sessionStorage.getItem(TOKEN_KEY);
-      const storedUser = sessionStorage.getItem(USER_KEY);
+      // localStorage first; fall back to a sessionStorage token left by a
+      // pre-v23170 login so an in-flight session is not dropped on upgrade.
+      let stored = localStorage.getItem(TOKEN_KEY);
+      let storedUser = localStorage.getItem(USER_KEY);
+      if (!stored || !storedUser) {
+        // Pre-v23170 session, or this tab has only the old per-tab copy.
+        stored = sessionStorage.getItem(TOKEN_KEY);
+        storedUser = sessionStorage.getItem(USER_KEY);
+        if (stored && storedUser) {
+          try {   // promote it to the durable copy
+            localStorage.setItem(TOKEN_KEY, stored);
+            localStorage.setItem(USER_KEY, storedUser);
+          } catch (e) {}
+        }
+      } else {
+        // Durable copy exists but this TAB has no mirror — e.g. a new tab, or
+        // the browser was restarted. Rehydrate it so the thirteen direct
+        // sessionStorage readers keep working in this tab.
+        try {
+          if (!sessionStorage.getItem(TOKEN_KEY)) {
+            sessionStorage.setItem(TOKEN_KEY, stored);
+            sessionStorage.setItem(USER_KEY, storedUser);
+          }
+        } catch (e) {}
+      }
       if (stored && storedUser) {
         token = stored;
         currentUser = JSON.parse(storedUser);
@@ -64,9 +137,11 @@ const Auth = (() => {
   function clearToken() {
     token = null;
     currentUser = null;
-    currentRole = ROLES.DEMO;
+    currentRole = SIGNED_OUT;
     try {
-      sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);   // and any legacy copy
       sessionStorage.removeItem(USER_KEY);
     } catch (e) { /* ignore */ }
   }
@@ -118,7 +193,7 @@ const Auth = (() => {
   }
 
   function isLive() {
-    return currentRole !== ROLES.DEMO && token !== null;
+    return currentRole !== SIGNED_OUT && token !== null;
   }
 
   function isAdmin() {

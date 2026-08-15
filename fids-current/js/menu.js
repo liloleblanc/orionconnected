@@ -1097,7 +1097,8 @@ function _acGetToken() {
     if (typeof Auth !== 'undefined' && Auth.token) return Auth.token;
   } catch (e) {}
   try {
-    return sessionStorage.getItem('fids_token') || null;
+    // durable copy first, per-tab mirror second (v23170)
+    return localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token') || null;
   } catch (e) {}
   return null;
 }
@@ -1116,13 +1117,44 @@ async function _acFetch(url, opts) {
   var token = _acGetToken();
   if (token) opts.headers['Authorization'] = 'Bearer ' + token;
   var res = await fetch(url, opts);
+  // v23170 — ONLY AN ACTUALLY-DEAD TOKEN ENDS THE SESSION.
+  //
+  // This used to treat EVERY 401 as "your login expired" and wipe the session
+  // on the spot. But a 401 also comes back for reasons that have nothing to do
+  // with the token — an endpoint that wants a different credential, a
+  // permission the account genuinely lacks, a transient upstream failure — and
+  // each of those logged the operator out mid-edit for no reason. That is a
+  // large part of "I'm logged in as admin and then all of a sudden it falls to
+  // demo".
+  //
+  // So decide it from the token itself, which is knowable locally: if it has
+  // expired, the session really is over — clear it and prompt. If it has NOT,
+  // the 401 was about this particular request, so report that and leave the
+  // session alone.
   if (res && res.status === 401) {
-    try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
-    try { if (typeof Auth !== 'undefined' && Auth.logout) Auth.logout(); } catch (e) {}
-    try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
+    var _expired = true;                     // no readable token => treat as dead
     try {
-      _acFlash('Your login expired — sign in, then hit Save again / Session expirée — reconnectez-vous puis sauvegardez', true);
-    } catch (e) {}
+      var _t = _acGetToken();
+      if (_t) {
+        var _p = JSON.parse(atob(_t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        _expired = !!(_p && _p.exp && (Date.now() / 1000) > _p.exp);
+      }
+    } catch (e) { _expired = true; }
+
+    if (_expired) {
+      try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
+      try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+      try { if (typeof Auth !== 'undefined' && Auth.logout) Auth.logout(); } catch (e) {}
+      try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
+      try {
+        _acFlash('Your login expired — sign in, then hit Save again / Session expirée — reconnectez-vous puis sauvegardez', true);
+      } catch (e) {}
+    } else {
+      // Session is fine — this request was refused on its own merits.
+      try {
+        _acFlash('That action was refused (401) — your login is still active / Action refusée (401) — votre session est toujours active', true);
+      } catch (e) {}
+    }
   }
   return res;
 }

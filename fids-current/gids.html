@@ -831,7 +831,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/fids-core.js?v=23168"></script>
+<script src="js/fids-core.js?v=23170"></script>
 <script src="js/gate-visual-integrity.js?v=23166"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -841,7 +841,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/airport-runways.js?v=23035"></script>
 <script src="js/template-renderer.js?v=1"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=23125"></script>
+<script src="js/menu.js?v=23170"></script>
 <script src="js/gids-mobile-nav.js?v=1"></script><!-- TEMP: mobile gate nav + theme -->
 <script src="js/menubar.js?v=23035"></script>
 <script src="js/editor-roles.js?v=1"></script>
@@ -886,7 +886,19 @@ window.addEventListener("DOMContentLoaded", async function() {
 
     var params = new URLSearchParams(window.location.search);
     var ap = params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM';
-    var startMode = params.get('mode') || sessionStorage.getItem('fids_mode') || 'live'; // v22832 — never silently demo (Nick); ?mode=demo is the only door
+    // v22832 — never silently demo (Nick); ?mode=demo is the only door.
+    // v23170 — AND BEING SIGNED IN IMPLIES LIVE. fids_mode is written once by
+    // the entry page (enterDemo() stamps 'demo') and then remembered for the
+    // life of that TAB, so a single visit to the demo could outrank a later
+    // admin login and quietly serve sample flights to someone who had signed in
+    // (Nick: "I will be logged in as admin and then all of a sudden it will
+    // fall to the demo"). An explicit ?mode= in the URL still wins — that is a
+    // deliberate request — but a stored 'demo' no longer outranks a real
+    // session.
+    var _urlMode = params.get('mode');
+    var _signedIn = false;
+    try { _signedIn = !!(localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token')); } catch (e) {}
+    var startMode = _urlMode || (_signedIn ? 'live' : (sessionStorage.getItem('fids_mode') || 'live'));
     var requestedGate = params.get('gate') || '';   // e.g. C77, A4, 12
 
     var apSel = document.getElementById('apSel');
