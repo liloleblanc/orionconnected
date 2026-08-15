@@ -12908,30 +12908,37 @@ html body:not(#_) .wxcard-wrap .wxs-spark-temps span {
   color: var(--wxs-ink) !important;
 }
 
+
 /* ═══════════════════════════════════════════════════════════════════════
-   v23166g — NICK'S AIR CANADA PLATE BACKDROP, LEFT COLUMN TEST ('Since the
-   plates are such a problem ive made this... where it wont move — install
-   it on the left first as a test'). His artwork (red panel over carbon
-   hex, supplied as vector), mounted as a STATIC background on the gate's
-   left info rail for AC only. No animation, no per-plate painting — the
-   plates render over one fixed piece, so nothing can drift or re-roll.
-   Anchored left-top so the red band crowns the column and the carbon
-   field runs beneath, matching the art's own composition.
-   ═══════════════════════════════════════════════════════════════════════ */
-/* 17x :not(#_): the AC shelf history below this file runs its own arms
-   race — ac-shelf-lux (12x), ac-back-lines (14x), and finally a
-   background-image:initial killer at 16x that silently erased the first
-   version of this rule (measured via CDP matched-styles; the computed
-   image was 'none' while the rule sat parsed and matching). One more
-   than the deepest killer, and every longhand pinned at the same weight
-   so a partial reset cannot strip the frame while keeping the image.
-   Centre-top so Nick's red panel crowns the column. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col {
+   v23167b — NICK'S ARTWORK IS THE PLATE (his correction: 'you put the
+   plate in the background — do you really think that's where it goes').
+   He drew a PLATE: the red band is the title bar, the carbon field is the
+   value area. So his art skins each left-column plate on AC gates — the
+   CSS-built chrome (grey title lozenge, dark body) steps aside and the
+   fixed image takes its place, which is the whole point: an image cannot
+   drift, re-roll, or misalign. Cover from the top: at the plate's ratio
+   the red band lands on the title zone (art 27%, plate ~30%).
+   17x :not(#_) — same AC shelf battlefield as the rules this replaces;
+   the deepest existing killer runs 16x. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-textcol {
+  background-color: #141618 !important;
   background-image: url("/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1") !important;
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
-  background-color: #141618 !important; /* art's own ground, if the SVG is late */
-  background-attachment: scroll !important;
-  background-blend-mode: normal !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,.45) !important;
+}
+/* The title sits ON his red band: chrome off, white ink. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-textcol .v2-fi-title {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.35) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-textcol .v2-fi-title * {
+  color: #fff !important;
 }
