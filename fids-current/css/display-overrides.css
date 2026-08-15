@@ -12910,29 +12910,153 @@ html body:not(#_) .wxcard-wrap .wxs-spark-temps span {
 
 
 
+
 /* ═══════════════════════════════════════════════════════════════════════
-   v23171 — NICK'S PLATE, LEFT COLUMN ONLY, NOTHING PATCHED TOGETHER.
-   His words: 'I asked the left side as a test, you went ahead and did all
-   of it' — the v23170 variable swap fed every AC plate surface including
-   the right rail he reserved for his own plan. Withdrawn above. This
-   block touches ONLY the left column's plate faces:
-   - the face wears his artwork edge to edge (his red band, his carbon);
-   - the old beige title banner retires — his red band IS the banner, the
-     title renders in white directly on it;
-   - the plate object itself (outline, rounding, inset, glossy icons) is
-     not touched in any way.
-   9x: the face's texture re-pointing rules run at 8x (v22905 block).
+   v23172 — NICK'S PLATE, BUILT TO HIS MOCK ('this is literally the way it
+   was supposed to look'). From his picture, exactly:
+   - the plate is his artwork edge to edge, rounded by its own border;
+   - the TITLE sits centred INSIDE the red band — black, bold, with the
+     white glow from his mock; the IATA code renders white;
+   - the ICON lives INSIDE the plate, bottom-left on his diagonal ribbon
+     (not in a separate column beside the plate — that was 'half on the
+     old one');
+   - the VALUE rides the carbon field bottom-aligned beside the icon,
+     white with the hard dark shadow.
+   Left column, AC gates only. 9x: the face's texture re-pointing rules
+   run at 8x (v22905 block).
    ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  position: relative !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before {
   background: #141618 url('/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1') center / 100% 100% no-repeat !important;
+  inset: 0 !important;
+  border-radius: 16px !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-textcol .v2-fi-title {
+/* Icon: inside the plate, bottom-left, over his diagonal. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-iconcol {
+  position: absolute !important;
+  left: 2.5% !important;
+  bottom: 7% !important;
+  width: auto !important;
+  z-index: 3 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+/* Text block owns the whole plate; title band + value zone stack. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0 !important;
+  padding: 0 !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  color: #fff !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,.4) !important;
+  z-index: 2 !important;
+  max-width: none !important;
+  width: 100% !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-textcol .v2-fi-title * {
+/* Title: centred in the red band — black bold with the mock's white glow. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title {
+  flex: 0 0 27.5% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 4% !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: #0a0a0a !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 1px #fff, 0 1px 5px rgba(255,255,255,.85), 0 0 12px rgba(255,255,255,.45) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title * {
+  color: #0a0a0a !important;
+}
+/* The IATA code stays white in the band, as drawn. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title .v2-fi-code {
   color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.7) !important;
+}
+/* Value: on the carbon, bottom-aligned beside the icon, white on dark. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-value {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 3% 1% 19% !important;
+  min-width: 0 !important;
+  color: #fff !important;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9), 0 0 2px rgba(0,0,0,.8) !important;
+}
+
+/* The v22920 'pattern at its own size' rule still tiles the face texture at
+   native scale from deeper armor — these longhands out-rank it (15x > 14x
+   measured) so his art stretches edge-to-edge, once, as drawn. And the
+   autofitter crushed the value to 12px when the icon padding changed its
+   box mid-fit — the value size is pinned, like the gate number before it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before {
+  background-image: url('/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1') !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-color: #141618 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-value {
+  font-size: clamp(26px, 4.8vh, 50px) !important;
+  line-height: 1.05 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title {
+  font-size: clamp(15px, 2.4vh, 25px) !important;
+}
+
+/* Title centred in the band at full strength (a deeper rule held it left),
+   the icon scaled to the mock's proportion (~30% of plate height, not 52%),
+   and the value's box made honest so the autofitter measures sanely instead
+   of crashing to its 12px floor and stamping it inline. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title {
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 0 4% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title .v2-fi-lbl-en {
+  display: inline !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-iconcol {
+  transform: scale(0.62) !important;
+  transform-origin: left bottom !important;
+  left: 2% !important;
+  bottom: 5% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-value {
+  padding: 0 3% 2% 15% !important;
+  align-items: flex-end !important;
+  overflow: hidden !important;
+}
+
+/* The 12px collapse, explained by the fitter's own math: it budgets
+   availH = row − title − 6 = 106px, then tests the element's offsetHeight —
+   and a flex:1 value IS 112px tall no matter the font, so no size ever
+   'fit' and the search bottomed out at its floor, on every row. The value
+   now hugs its text and rides the bottom via margin-top:auto, so its box
+   height follows the font and the fitter can do its job. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol {
+  justify-content: flex-start !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-value {
+  flex: 0 1 auto !important;
+  display: block !important;
+  margin-top: auto !important;
+  padding: 0 3% 2.5% 15% !important;
+  align-items: initial !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
 }
