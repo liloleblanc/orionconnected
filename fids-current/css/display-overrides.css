@@ -12909,12 +12909,30 @@ html body:not(#_) .wxcard-wrap .wxs-spark-temps span {
 }
 
 
-/* ── v23170 — NICK'S PLATE ART, INSTALLED THE WAY THE PLATE WAS BUILT FOR
-   ('install it on the plate which I rounded, preinstalled, premeasured').
-   v22905 made --plate-tex the single source of truth for what AC's front
-   plate face carries — so his artwork installs as ONE variable swap. The
-   plate's own rounding, inset, lozenge, icons and geometry are untouched;
-   only the texture it wears changes. 2x beats the 1x original definition. */
-html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) {
-  --plate-tex: url('/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1');
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23171 — NICK'S PLATE, LEFT COLUMN ONLY, NOTHING PATCHED TOGETHER.
+   His words: 'I asked the left side as a test, you went ahead and did all
+   of it' — the v23170 variable swap fed every AC plate surface including
+   the right rail he reserved for his own plan. Withdrawn above. This
+   block touches ONLY the left column's plate faces:
+   - the face wears his artwork edge to edge (his red band, his carbon);
+   - the old beige title banner retires — his red band IS the banner, the
+     title renders in white directly on it;
+   - the plate object itself (outline, rounding, inset, glossy icons) is
+     not touched in any way.
+   9x: the face's texture re-pointing rules run at 8x (v22905 block).
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before {
+  background: #141618 url('/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1') center / 100% 100% no-repeat !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-textcol .v2-fi-title {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.4) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-textcol .v2-fi-title * {
+  color: #fff !important;
 }
