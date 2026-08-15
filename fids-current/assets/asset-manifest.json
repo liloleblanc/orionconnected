@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2514,
+    "total": 2513,
     "by_category": {
       "ad": 10,
       "airline": 1318,
@@ -10,7 +10,7 @@
       "brand": 2,
       "hotel": 884,
       "livery": 96,
-      "misc": 14,
+      "misc": 13,
       "symbol": 4,
       "weather": 83
     }
@@ -26632,17 +26632,6 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "car rental",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/airports/CYQM-color.svg",
-      "file": "CYQM-color.svg",
-      "category": "misc",
-      "subcategory": "root",
-      "group": "Uncategorized (logos root)",
-      "name": "CYQM color",
       "iata": "",
       "country": "",
       "ext": "svg"

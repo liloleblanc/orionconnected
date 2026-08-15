@@ -13810,11 +13810,6 @@ const gView = document.getElementById('gateView');
         // restart) — but a mounted flight-map slide belongs to the PREVIOUS
         // flight ("WestJet gate showing Porter's map" on rotating displays).
         // Kill it and restart the rotation so the new flight gets its own map.
-        try {
-          if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
-            window.GateMap3D.destroy(); // next _gateMapTick remounts for the new flight
-          }
-        } catch (e) {}
       }
       // Only overwrite window._gateInbound with the gate-match fallback when we
       // don't already have a reg-based result (which is more reliable).
@@ -19400,7 +19395,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23166';
+var FIDS_BUILD_TAG = 'v23167';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -33950,9 +33945,6 @@ function renderGateAd(index) {
     window._gateAdCurrentIdx = slot;
     slide = slides[slot] || slide;
   }
-  if (window.GateMap3D && window.GateMap3D.mounted && window.GateMap3D.mounted()) {
-    try { window.GateMap3D.destroy(); } catch (e) {} // another slide takes the slot
-  }
 
   // ── Custom theme slide (image or video uploaded via Media Library) ──
   if (slide && slide.type === 'custom' && slide.item) {
@@ -34445,9 +34437,9 @@ function buildAdLogoPanelHtml(ad) {
 // than text-only Wi-Fi ads or Did You Know facts. Returns ms.
 function _getGateAdDwellMs(slide) {
   if (!slide) return 15000;
-  // 3D flight map holds the slot for about a minute (per Nick) —
-  // four camera views ~15s each inside GateMap3D's sequence.
-  if (slide.type === 'map3d') return 60000;
+  // (The 'map3d' dwell branch is gone with the feature — see v23167. No slide
+  // of that type was ever produced, so this could only return the generic
+  // floor anyway.)
   // The big route map and the weather card had NO entry here and fell through
   // to the generic floor, so the map got 22s for a sequence sized at about a
   // minute and every scene ticked at the same flat interval — the 'welcome
