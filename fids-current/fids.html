@@ -224,26 +224,27 @@
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg-v21853">
 </head>
 <body>
-<script>
-/* v218.99.19 — Apply console theme to boot loader immediately (no FOUC) */
-(function() {
-  try {
-    var t = localStorage.getItem('fids_console_theme');
-    if (t !== 'light' && t !== 'dark') {
-      var h = new Date().getHours();
-      t = (h >= 6 && h < 19) ? 'light' : 'dark';
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-      var el = document.getElementById('fidsLoader');
-      if (el) el.setAttribute('data-theme', t);
-    });
-    /* Also set as early as possible — if the element already exists by the
-       time this runs */
-    var early = document.getElementById('fidsLoader');
-    if (early) early.setAttribute('data-theme', t);
-  } catch (e) {}
-})();
-</script>
+<!--
+v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
+   (Nick: 'i just dont want flashes and glitches' / 'they just keep building on
+   top of everything and taking easy shortcuts'.)
+
+   What stood here read `fids_console_theme` — the CONSOLE's light/dark
+   preference, which has nothing to do with the board's own theme — fell back to
+   the hour of day, and stamped the result onto #fidsLoader as data-theme.
+
+   The <head> script above had ALREADY decided this correctly, and by a much
+   better rule: it reads the ground colour the board itself recorded on its last
+   paint (fids_boot_ground) and derives the loader theme from that colour's
+   luminance. This ran afterwards and overwrote that answer on the loader
+   element with the console guess. On a board pinned to a light theme, a dark
+   console preference — or simply any boot after 19:00 — put a DARK loader in
+   front of a light board, which is a full-screen inversion at every boot, and
+   the kiosks boot on every deploy.
+
+   Nothing replaces it: the head script covers this case properly and on its
+   own. Its comment claiming this block was a harmless no-op was wrong.
+-->
 <!-- Transition loader -->
 <!-- ══════════════════════════════════════════════════════════════════
      OrionConnected boot loader — F.I.D.S. (Flight Information Display Screen)

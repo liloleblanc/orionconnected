@@ -156,26 +156,48 @@
       // is no dip to be seen — just one deliberate fade, which is what was asked
       // for. It also means the incoming board gets the whole fade-out to finish
       // its own catch-up work off-screen before anyone can see it.
-      var switching = false;
+      // THIS RUNS 24/7 UNATTENDED, SO THE SECOND HALF MUST NOT DEPEND ON A
+      // setTimeout (Nick: 'just remember about the stream and that it is running
+      // 24/7'). These boards are same-origin iframes sharing ONE main thread —
+      // that is exactly how the rotation got stuck before, when the gate's
+      // render loop starved the parent's timer and the switch never came (which
+      // is why the dwell clock was moved into a Web Worker). If the fade-in
+      // timer were starved the same way now, the stream would sit on BLACK,
+      // which is far worse than the blink this replaces.
+      //
+      // So the reveal is recorded as a DUE TIME, not a callback. The timer is
+      // just the fast path; the worker heartbeat below re-checks every second
+      // and performs any reveal that is overdue. Both routes call the same
+      // idempotent function, so whichever arrives first wins and the other is a
+      // no-op. A starved timer now costs at most one extra second of black
+      // instead of ending the rotation.
+      var pendingShow = null;   // {frame, dueAt} — a reveal that has not happened yet
+
+      function showNow() {
+        if (!pendingShow) return;
+        var f = pendingShow.frame;
+        pendingShow = null;
+        if (!f.classList.contains('oc-active')) {
+          f.classList.add('oc-active');
+          ocTell(f, true);
+        }
+        slotStart = Date.now();          // the dwell starts when it is VISIBLE
+      }
+
       function advance() {
-        if (switching) return;            // a switch already in flight
+        if (pendingShow) return;         // a switch is already in flight
         var cur = frameFor[seq[idx]];
         idx = (idx + 1) % seq.length;
         var nxt = frameFor[seq[idx]];
         slotStart = Date.now();
         if (nxt === cur) return;
-        switching = true;
-        // 1. fade the current board out; tell it immediately so it can pause
-        //    its janitors while it is on its way off screen.
+        // 1. fade the current board out; tell it immediately so it can pause its
+        //    janitors while it is on its way off screen.
         cur.classList.remove('oc-active');
         ocTell(cur, false);
         // 2. once it is fully out (screen is black), bring the next one up.
-        setTimeout(function () {
-          nxt.classList.add('oc-active');
-          ocTell(nxt, true);
-          slotStart = Date.now();         // the dwell starts when it is VISIBLE
-          setTimeout(function () { switching = false; }, FADE_MS);
-        }, FADE_MS + HOLD_MS);
+        pendingShow = { frame: nxt, dueAt: Date.now() + FADE_MS + HOLD_MS };
+        setTimeout(showNow, FADE_MS + HOLD_MS);
       }
 
       // A gate ad just finished. If we're on the gate and past the minimum, switch
@@ -184,6 +206,7 @@
       window.addEventListener('message', function (ev) {
         var d = ev && ev.data;
         if (!d || !d.ocGateBoundary) return;
+        if (pendingShow) return;   // a switch is already in flight (v23166)
         if (seq[idx] === GATE && (Date.now() - slotStart) >= minMs) advance();
       });
 
@@ -192,6 +215,14 @@
       // main thread makes the cheap decision. Non-gate boards advance at dwell;
       // the gate advance is boundary-driven above, with maxMs as a safety net.
       function beat() {
+        // WATCHDOG FIRST (v23166). The worker runs on its own thread, so this
+        // tick arrives even when the boards have the main thread pinned. If a
+        // reveal is overdue — its setTimeout was starved, or the host throttled
+        // it — perform it here. This is the guarantee that the 24/7 stream can
+        // never come to rest on a black screen: the worst case is that black
+        // lasts a fraction of a second longer than intended.
+        if (pendingShow && Date.now() >= pendingShow.dueAt) showNow();
+        if (pendingShow) return;   // mid-transition: don't stack another switch
         var elapsed = Date.now() - slotStart;
         if (seq[idx] === GATE) {
           if (elapsed >= maxMs) advance();
