@@ -12907,3 +12907,49 @@ html body:not(#_) .wxcard-wrap .wxs-spark-temps span {
   font-size: clamp(14px, 2.3vh, 26px) !important; font-weight: 800 !important;
   color: var(--wxs-ink) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23168 — NICK'S ARTWORK IS THE PLATE (AC left column). His drawing is
+   the entire plate face: title in white on his red band, value on his
+   carbon field, the old chrome (beige lozenge, glossy icon ball, plate
+   body) not painted at all on these rows. 15x measured against the
+   deepest live rule on these elements (14x on the row) — measured by
+   CDP, not guessed. Nothing under this block was deleted; his July
+   design layers remain intact beneath for every other surface.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  background-color: #141618 !important;
+  background-image: url("/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1") !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  border: none !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,.45) !important;
+}
+/* The old plate FACE was a ::before painting ac-front-black.jpg OVER the
+   row — his art sat behind it, 'you have it behind the plate' verbatim.
+   The face layer retires; the row itself is the plate now. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before {
+  display: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-textcol,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-iconcol,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-icon-wrap,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-icon {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-title {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.4) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-title * {
+  color: #fff !important;
+}
