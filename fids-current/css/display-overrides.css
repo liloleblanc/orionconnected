@@ -13029,45 +13029,61 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title .v2-fi-lbl-en {
   display: inline !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-iconcol {
-  transform: scale(0.62) !important;
-  transform-origin: left bottom !important;
-  left: 2% !important;
-  bottom: 5% !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-value {
-  padding: 0 3% 2% 15% !important;
-  align-items: flex-end !important;
-  overflow: hidden !important;
-}
-
-/* The 12px collapse, explained by the fitter's own math: it budgets
-   availH = row − title − 6 = 106px, then tests the element's offsetHeight —
-   and a flex:1 value IS 112px tall no matter the font, so no size ever
-   'fit' and the search bottomed out at its floor, on every row. The value
-   now hugs its text and rides the bottom via margin-top:auto, so its box
-   height follows the font and the fitter can do its job. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol {
-  justify-content: flex-start !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-value {
-  flex: 0 1 auto !important;
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 2.2% !important;
+  top: 26% !important;
+  width: 15% !important;
+  height: 52% !important;
+  z-index: 4 !important;
+  background: #d22730 !important;
+  border-radius: 22% !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.5) !important;
   display: block !important;
-  margin-top: auto !important;
-  padding: 0 3% 2.5% 15% !important;
-  align-items: initial !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-  white-space: nowrap !important;
-}
-
-/* 'youre not filling the sides' — correct: the mock runs the title and the
-   value across the FULL plate width, over the art's side zones; only the
-   icon offsets the value. The margins I invented are gone. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title {
-  padding: 0 1.5% !important;
-  font-size: clamp(17px, 3vh, 31px) !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-value {
-  padding: 0 1.5% 1.5% 12.5% !important;
+  padding: 0 1.5% 1% 19% !important;
+}
+
+
+/* The icon ball already IS the red chip (inline-styled wrap + white glyph).
+   It only needed to be PLACED per the mock and squared off — nothing else
+   touched, so nothing can zero out. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-iconcol {
+  position: absolute !important;
+  left: 2% !important;
+  top: 24% !important;
+  bottom: auto !important;
+  z-index: 5 !important;
+  display: block !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-iconcol .v2-fi-icon-wrap {
+  border-radius: 22% !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.5) !important;
+}
+
+/* FINAL BOX PIN (measured: value offsetHeight 112 vs budget 106 — a deeper
+   flex:1 re-stretched it; and the title's 40% basis lost, landing at 42px).
+   One consolidated pin at 16x, last in file: the title IS 40% of the plate,
+   the value IS its content height riding the bottom. The fitter's math then
+   has honest boxes on both sides. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title {
+  flex: 0 0 40% !important;
+  height: 40% !important;
+  min-height: 40% !important;
+  max-height: 40% !important;
+  box-sizing: border-box !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-value {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin-top: auto !important;
+  display: block !important;
+  padding-left: 18% !important;
 }

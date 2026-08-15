@@ -7468,6 +7468,13 @@ function _buildV2AircraftCol(ctx, vars) {
       // sign's deliberate 'Zones | Zones' symmetry (v23130) keeps its own
       // keepDup at its own call sites.
       var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ');
+      // v23174 — Nick's plate mock: the dest title carries the IATA code as a
+      // permanent third segment, code in white ('Destination | Destino | YYZ').
+      // Permanent, not conditional — a title that never changes shape.
+      try {
+        var _destCodePlate = _dispIata(String((currentFlight && currentFlight._locIata) || '').toUpperCase());
+        if (_destCodePlate) _destLabel += ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code">' + _destCodePlate + '</span>';
+      } catch (eDc) {}
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -19318,7 +19325,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23173';
+var FIDS_BUILD_TAG = 'v23174';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
