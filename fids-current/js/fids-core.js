@@ -18858,7 +18858,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23174';
+var FIDS_BUILD_TAG = 'v23175';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27248,36 +27248,44 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
   // ("fallback to setView above") — instead of running both every time. animate:
   // false because this is the map ARRIVING at its view, not travelling to it;
   // there is no previous view worth animating away from.
-  var _preDep = (p < 0.02);
+  // v23175 — ONE CAMERA MOVE PER DRAW. This is the jolt.
+  //
+  // The old order was: setView(center) -> add the arc -> read the plane's
+  // position off the arc -> setView(planePos). Two moves, milliseconds apart,
+  // on EVERY draw: the camera landed on the route midpoint and then jumped to
+  // the aircraft. Tracing Leaflet on the live board showed the zoom going
+  // 3 -> 6 -> 3 in a single render. Marking both moves animate:false (v23172)
+  // did not help and could not have — an instant jump is still a jump; the
+  // problem was ever having two.
+  //
+  // The order was forced by Leaflet: it refuses layers until a view exists, so
+  // the plane position (which comes off the arc) was unavailable until after
+  // the first setView. But L.Polyline.Arc() only needs a map to be DRAWN, not
+  // to be computed — so the vertices are worked out first now (_gcArcLatLngs),
+  // the destination is chosen once, and the camera goes straight there.
+  var _arcOpts = {vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true};
+  var _wantArc = _gateMapShowOverlay('route');
+  var _arcLL   = _wantArc ? _gcArcLatLngs(o, d, _arcOpts) : null;
+  var _plane   = (_arcLL && p >= 0.02) ? _gcPlaneAt(_arcLL, p) : null;
+
   var _viewSet = false;
-  if (_preDep) {
-    try {
-      gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
-      _viewSet = true;
-    } catch (e) { /* fall through to setView */ }
+  if (p < 0.02) {
+    // Pre-departure: the bounds fit IS the wanted view, not a correction to one.
+    try { gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false }); _viewSet = true; }
+    catch (e) { /* fall through to setView */ }
+  } else if (_plane && p >= 0.12 && p < 0.995) {
+    // v23106 — follow the aircraft through descent and approach too, not just
+    // cruise: framing the destination from p>0.88 left the plane off-screen.
+    gateMap.setView(_plane.pos, zoom, { animate: false });
+    _viewSet = true;
   }
   if (!_viewSet) gateMap.setView(center, zoom, { animate: false });
+
   var _estOv=(gateMap._fidsOverlays=gateMap._fidsOverlays||[]);
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(arc)_estOv.push(arc); }_estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_gateMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
-      var planePos=ll[planeIdx];
-      var nextIdx=Math.min(planeIdx+3,ll.length-1);
-      var prevIdx=Math.max(planeIdx-3,0);
-      var segStart=ll[prevIdx],segEnd=ll[nextIdx];
-      var dLng=(segEnd.lng-segStart.lng)*Math.PI/180;
-      var lat1=segStart.lat*Math.PI/180,lat2=segEnd.lat*Math.PI/180;
-      var y2=Math.sin(dLng)*Math.cos(lat2);
-      var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
-      var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      _estOv.push(L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
-      // v23106 — center on the plane through DESCENT AND APPROACH too, not
-      // just cruise: the phase table above frames the DESTINATION for
-      // p>0.88 while the estimated plane still paints miles away — the
-      // camera 'zooms out and the aircraft does not show on the map'
-      // (Nick). The field stays in frame anyway once the plane is close.
-      if (p >= 0.12 && p < 0.995) {
-        gateMap.setView(planePos, zoom, { animate: false });
-      }
-  }_gateMapSettle(o,d,p,500);}
+  var arc=null; if(_wantArc){ arc=_gcAddArc(gateMap,o,d,_arcOpts,_arcLL); if(arc)_estOv.push(arc); }
+_estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_gateMapSettle(o,d,p,100);
+  if (_plane) _estOv.push(L.marker(_plane.pos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(_plane.bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
+  _gateMapSettle(o,d,p,500);}
 
 // v23166 — THE SETTLE PASS ONLY ACTS WHEN THE CONTAINER ACTUALLY CHANGED SIZE.
 // (Nick: 'flashes and glitches... especially on gate' / 'they just keep building
@@ -27304,6 +27312,27 @@ function _gateMapSettle(o, d, p, delayMs) {
       var _after = gateMap.getSize();
       if (_before.x === _after.x && _before.y === _after.y) return; // nothing moved
       if (p < 0.02) gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
+    } catch (e) {}
+  }, delayMs);
+}
+
+// v23175 — the same size-gated settle for the FULL-SCREEN gate map.
+// The big map had two hand-rolled copies of this as inline setTimeouts, each
+// running invalidateSize() AND an unconditional fitBounds() after every draw —
+// a second and third camera move landing 100ms and 500ms after the first, which
+// is what made the big slide 'jolt' twice more once it had already settled.
+// Same rule as the mini map: if the container did not actually change size,
+// there is nothing to correct, so do not touch the camera at all.
+function _bigMapSettle(o, d, p, delayMs) {
+  setTimeout(function () {
+    var m = window._bigCraftMap;
+    if (!m) return;
+    try {
+      var _before = m.getSize();
+      m.invalidateSize({ animate: false });
+      var _after = m.getSize();
+      if (_before.x === _after.x && _before.y === _after.y) return; // nothing moved
+      if (p < 0.02) m.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
     } catch (e) {}
   }, delayMs);
 }
@@ -27667,7 +27696,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   window._gatePlaneMk = _planeMk;
   try { console.log('[MAP-LIVE] plane @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'z' + zoom, 'glideKts', _glSpd); } catch (e) {}
   _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd, dst);
-  setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
+  setTimeout(function(){ try { if (gateMap) gateMap.invalidateSize({ animate:false, pan:false }); } catch(e){} },500);
 }
 
 // ── MOVING AIRCRAFT — dead-reckoning glide between real ADS-B fixes ─────────
@@ -36570,15 +36599,44 @@ function _renderWxCard(el) {
 // endpoint's pin connects on the primary world copy (tiles repeat, so both
 // copies land on basemap). Returns the continuous polyline — getLatLngs()
 // stays a flat array, so plane-position/bearing indexing works unchanged.
-function _gcAddArc(map, from, to, opts) {
+// v23175 — the arc VERTICES, with no map and nothing added to one.
+// Split out of _gcAddArc so the camera can be aimed at the plane BEFORE any
+// layer exists. The old order was forced: Leaflet refuses layers until a view
+// is set, so the code set a view, added the arc, read the plane position off
+// it, then set the view AGAIN — two camera moves on every single draw. That
+// second move is the jolt. L.Polyline.Arc() never needed a map to compute
+// its points; only .addTo() does.
+function _gcArcLatLngs(from, to, opts) {
   var a;
-  try { a = L.Polyline.Arc(from, to, opts); }
-  catch (e) { return L.polyline([from, to], opts).addTo(map); }
+  try { a = L.Polyline.Arc(from, to, opts); } catch (e) { return null; }
   var ll = a.getLatLngs();
   for (var i = 1; i < ll.length; i++) {
     while (ll[i].lng - ll[i - 1].lng >  180) ll[i].lng -= 360;
     while (ll[i].lng - ll[i - 1].lng < -180) ll[i].lng += 360;
   }
+  return ll;
+}
+// Where along that arc the aircraft sits, plus the bearing of the segment it
+// is on — the same maths that used to live inline after the first setView.
+function _gcPlaneAt(ll, p) {
+  if (!ll || !ll.length) return null;
+  var pp = Math.max(0.02, Math.min(0.98, p));
+  var i = Math.min(Math.floor(pp * ll.length), ll.length - 1);
+  var a = ll[Math.max(i - 3, 0)], b = ll[Math.min(i + 3, ll.length - 1)];
+  var dLng = (b.lng - a.lng) * Math.PI / 180;
+  var la = a.lat * Math.PI / 180, lb = b.lat * Math.PI / 180;
+  var bearing = Math.atan2(
+    Math.sin(dLng) * Math.cos(lb),
+    Math.cos(la) * Math.sin(lb) - Math.sin(la) * Math.cos(lb) * Math.cos(dLng)
+  ) * 180 / Math.PI;
+  return { pos: ll[i], bearing: bearing };
+}
+function _gcAddArc(map, from, to, opts, preLL) {
+  var ll = preLL || _gcArcLatLngs(from, to, opts);
+  if (!ll) return L.polyline([from, to], opts).addTo(map);
+  var a;
+  try { a = L.Polyline.Arc(from, to, opts); }
+  catch (e) { return L.polyline([from, to], opts).addTo(map); }
   a.setLatLngs(ll).addTo(map);
   var endLng = ll.length ? ll[ll.length - 1].lng : 0;
   if (endLng > 180 || endLng < -180) {
@@ -36666,32 +36724,37 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
     // Landed: city-level on destination
     zoom = 11; center = d;
   }
-  window._bigCraftMap.setView(center, zoom, { animate: false });
-  // For pre-departure flights, fit bounds to show both endpoints with padding.
+  // v23175 — ONE VIEW DECISION (the fix initGateMap got in v23166; this copy
+  // was missed twice). setView to the phase zoom followed immediately by
+  // fitBounds to a different one is two camera moves per draw, and making them
+  // instant does not help — an instant jump is still a jolt. For a
+  // pre-departure flight the bounds fit IS the wanted view, so ask once and
+  // keep setView as the documented fallback.
+  // v23175 — ONE CAMERA MOVE PER DRAW (see initGateMap for the full note).
+  // This copy was missed by the v23166 and v23172 attempts; the big map was
+  // still doing setView(center) -> add arc -> setView(planePos), which is the
+  // jolt Nick kept seeing on the full-screen gate slide after both "fixes".
+  var _arcOpts = {vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true};
+  var _wantArc = _gateMapShowOverlay('route');
+  var _arcLL   = _wantArc ? _gcArcLatLngs(o, d, _arcOpts) : null;
+  var _plane   = (_arcLL && p >= 0.02) ? _gcPlaneAt(_arcLL, p) : null;
+
+  var _bcSet = false;
   if (p < 0.02) {
-    try {
-      window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
-    } catch(e) { /* fallback to setView above */ }
+    try { window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false }); _bcSet = true; }
+    catch (e) { /* fall through to setView */ }
+  } else if (_plane && p >= 0.12 && p < 0.995) {
+    // Keep the camera ON THE PLANE through descent/approach — the
+    // destination-framed phases left the estimated plane off-screen.
+    window._bigCraftMap.setView(_plane.pos, zoom, { animate: false });
+    _bcSet = true;
   }
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[14,14],maxZoom:11, animate: false });}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
-      var planePos=ll[planeIdx];
-      var nextIdx=Math.min(planeIdx+3,ll.length-1);
-      var prevIdx=Math.max(planeIdx-3,0);
-      var segStart=ll[prevIdx],segEnd=ll[nextIdx];
-      var dLng=(segEnd.lng-segStart.lng)*Math.PI/180;
-      var lat1=segStart.lat*Math.PI/180,lat2=segEnd.lat*Math.PI/180;
-      var y2=Math.sin(dLng)*Math.cos(lat2);
-      var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
-      var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
-      // v23106 — same as the mini est map: keep the camera ON THE PLANE
-      // through descent/approach; the destination-framed phases left the
-      // estimated plane off-screen (Nick's 31s clip: static camera on the
-      // field, plane sliding out of the corner).
-      if (p >= 0.12 && p < 0.995) {
-        window._bigCraftMap.setView(planePos, zoom, { animate: false });
-      }
-  }setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[14,14],maxZoom:11, animate: false });}catch(e){}}}},500);}
+  if (!_bcSet) window._bigCraftMap.setView(center, zoom, { animate: false });
+
+  var arc=null; if(_wantArc){ arc=_gcAddArc(window._bigCraftMap,o,d,_arcOpts,_arcLL); }
+L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});_bigMapSettle(o,d,p,100);
+  if (_plane) L.marker(_plane.pos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(_plane.bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+  _bigMapSettle(o,d,p,500);}
 
 
 function _bigMapCloneLive(org,dst,planeLat,planeLng){
@@ -36814,7 +36877,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
       _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bcPlaneMk, _bcA1, _bcA2, _bcGlSpd, dst);
     }
   } catch (e) {}
-  setTimeout(function(){if(window._bigCraftMap)window._bigCraftMap.invalidateSize();},500);
+  setTimeout(function(){ try { if (window._bigCraftMap) window._bigCraftMap.invalidateSize({ animate:false, pan:false }); } catch(e){} },500);
 }
 // ──────────────────────────────────────────────────────────────────────
 // CINEMATIC MAP CAMERA  (tracks aircraft by REGISTRATION)

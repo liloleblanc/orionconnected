@@ -149,6 +149,46 @@
     } catch (e) {}
   })();
   </script>
+  <script>
+  /* v23175 — PORTRAIT / ROTATED KIOSK MODE ON THE GATE BOARD.
+     fids.html and bids.html have carried this since v22867; gids.html never
+     did. The menu's Orientation buttons (menuSetOrientation) set ?rot= /
+     ?orient= and reload — on the gate board nothing read them, so the page
+     reloaded unchanged and the option looked dead (Nick: "my rendition option
+     to get the monitors upright gone doesnt work"). The CSS was never the
+     problem: display-overrides.css already rotates the body for
+     html.fids-rot90 / .fids-rot270 and gids.html already loads it. Only the
+     class was never applied. Kept byte-identical to the fids.html copy so the
+     three boards cannot drift apart again. */
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search);
+      var rot = q.get('rot');
+      var de = document.documentElement;
+      if (rot === '90' || rot === '270') {
+        de.classList.add('fids-rot' + rot, 'fids-portrait');
+        // The layout code sizes from window.innerWidth/Height, which still
+        // report the LANDSCAPE viewport in rot mode. The page is laid out
+        // portrait (100vh x 100vw), so the reported axes swap. Kiosks never
+        // resize, so fixed getters are safe.
+        // v23175 — only swap the axes if the window actually HAS a size.
+        // These getters are permanent, so capturing a 0 (the document parsed
+        // before layout — measured on the live board) froze innerWidth at 0
+        // forever and every size computed from it collapsed to nothing.
+        var w0 = window.innerWidth, h0 = window.innerHeight;
+        if (w0 > 0 && h0 > 0) {
+          try {
+            Object.defineProperty(window, 'innerWidth',  { get: function () { return h0; } });
+            Object.defineProperty(window, 'innerHeight', { get: function () { return w0; } });
+          } catch (e2) {}
+        }
+      } else if (q.get('orient') === 'portrait'
+                 || (window.innerHeight > window.innerWidth && window.innerWidth >= 800)) {
+        de.classList.add('fids-portrait');
+      }
+    } catch (e) {}
+  })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
@@ -831,7 +871,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/fids-core.js?v=23174"></script>
+<script src="js/fids-core.js?v=23175"></script>
 <script src="js/gate-visual-integrity.js?v=23166"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -841,7 +881,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/airport-runways.js?v=23035"></script>
 <script src="js/template-renderer.js?v=1"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=23174"></script>
+<script src="js/menu.js?v=23175"></script>
 <script src="js/gids-mobile-nav.js?v=1"></script><!-- TEMP: mobile gate nav + theme -->
 <script src="js/menubar.js?v=23035"></script>
 <script src="js/editor-roles.js?v=1"></script>

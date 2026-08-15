@@ -199,9 +199,19 @@ function menuChangeDisplay(type) {
   var ap = (document.getElementById('apSel') || {}).value || 'YQM';
   var mode = (typeof LIVE_MODE !== 'undefined' && LIVE_MODE) ? 'live' : 'demo';
   closeOverlayMenu();
-  setTimeout(function() {
-    window.location.href = target + '.html?ap=' + ap + '&mode=' + mode;
-  }, 200);
+  // v23175 — CARRY THE SCREEN SETTINGS ACROSS A BOARD SWITCH.
+  // This used to build a fresh URL holding only ap+mode, so every setting that
+  // lives in the query string was silently dropped the moment you moved from
+  // Flights to Gate to Bags: ?rot / ?orient (the upright-monitor option — set
+  // it, switch board, it is gone and looks broken), plus the terminal, airline
+  // and region filters. The auto-rotator never had this bug; it forwards
+  // window.location.search verbatim. Start from the current URL for the same
+  // reason, and only replace what actually changes.
+  var u = new URL(window.location.href);
+  u.pathname = u.pathname.replace(/[^/]*$/, target + '.html');
+  u.searchParams.set('ap', ap);
+  u.searchParams.set('mode', mode);
+  setTimeout(function() { window.location.href = u.toString(); }, 200);
 }
 
 function menuChangeSubScreen(val) {
