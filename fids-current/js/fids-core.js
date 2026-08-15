@@ -6908,12 +6908,23 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
 // the first/top round Flight icon on the gate display — never in the main FIDS
 // all-flights airline cell (which has its own IATA_TO_* logo system).
 var GATE_TOP_ROUND_EMBLEM_FILES = {
-  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350'
-  // DL-glossy removed (Nick, Aug 7: 'They should all match … as long as they
-  // are all consistent') — the glossy orb was the one multi-tone chip in a
-  // row of red accent orbs with white glyphs. With no override the Flight
-  // badge falls back to AIRLINE_EMBLEM_FILES' monochrome-white widget on the
-  // same red orb as every other icon on the rail.
+  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
+  // v23175 — DL-glossy is BACK, on Nick's own artwork, and it no longer
+  // breaks the consistency rule that removed it on Aug 7 ('They should all
+  // match … as long as they are all consistent').
+  //
+  // The version pulled then was a WHITE sphere carrying a red widget — the one
+  // multi-tone chip in a row of red orbs with white glyphs, so it stood out.
+  // The replacement is the inverse: a RED sphere with a WHITE widget, which is
+  // the same red-orb/white-glyph pairing every other badge on the rail wears
+  // ('Delta icons white with red middle'). Consistent by construction, with
+  // the glossy treatment United's globe already has here.
+  //
+  // Rebuilt as vector from Delta's official path data — Nick's supplied file
+  // was a 1500px PNG in an SVG wrapper (940KB); this is ~1.5KB and stays crisp
+  // when the gate scales it up. See the header note in the asset itself.
+  'DL':  '/logos/airline-tiles/DL-glossy.svg?v=23175',
+  'DAL': '/logos/airline-tiles/DL-glossy.svg?v=23175'
 };
 
 function _buildV2AircraftCol(ctx, vars) {

@@ -1,16 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320">
-<!-- v22966: Nick — "the Delta icon should all be the same color ... simply
-     red please". White glossy sphere (the original tile material), widget in
-     ONE flat Delta red. No two-tone, no white-on-red inversion. -->
+<!-- v23175 — DELTA GLOSSY GATE ORB, REBUILT AS TRUE VECTOR.
+     Nick supplied this design as a 940KB file that was really a 1500px PNG in
+     an SVG wrapper ("i made it and obviously didnt do it well can you
+     recreate it"). Same design — red sphere, silver rim, white widget tilted
+     — rebuilt as geometry: ~1.5KB, crisp at any size, no raster edges when
+     the gate scales it up, and no 940KB fetch on a board that repaints often.
+
+     THE WIDGET IS DELTA'S OFFICIAL PATH DATA, lifted from delta-widget.svg,
+     not traced from the raster. It is rotated 38 degrees about the sphere
+     centre to match the angle Nick drew; Delta's own artwork is upright, so
+     this tilt is a deliberate house choice for this badge, not the brand mark.
+     Painted flat white with no fold lines, which is Delta's official
+     monochrome-white treatment (delta-widget-monochrome-white.svg) — the four
+     facets are meant to merge at this size.
+
+     This file replaces the WHITE sphere / red widget version from v22966. It
+     is the inverse: red sphere, white widget, matching the red orb the rest of
+     the gate badges wear ("Delta icons white with red middle"). -->
 <defs>
-<radialGradient id="s" cx="50%" cy="36%" r="65%"><stop offset="0%" stop-color="#ffffff"/><stop offset="52%" stop-color="#eef0f2"/><stop offset="100%" stop-color="#ccd0d6"/></radialGradient>
-<radialGradient id="g" cx="50%" cy="20%" r="42%"><stop offset="0%" stop-color="#fff" stop-opacity=".85"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  <!-- sphere body: lit from upper-centre, deepening to a shadowed lower edge -->
+  <radialGradient id="dlBody" cx="50%" cy="33%" r="74%">
+    <stop offset="0%"   stop-color="#F2536A"/>
+    <stop offset="38%"  stop-color="#E42239"/>
+    <stop offset="72%"  stop-color="#CC1630"/>
+    <stop offset="92%"  stop-color="#A81026"/>
+    <stop offset="100%" stop-color="#8C0C1F"/>
+  </radialGradient>
+  <!-- specular bloom across the top face -->
+  <radialGradient id="dlGloss" cx="50%" cy="20%" r="48%">
+    <stop offset="0%"   stop-color="#ffffff" stop-opacity=".72"/>
+    <stop offset="45%"  stop-color="#ffffff" stop-opacity=".22"/>
+    <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+  </radialGradient>
+  <!-- brushed metal rim: light at the top, shadowed at the bottom -->
+  <linearGradient id="dlRim" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%"   stop-color="#eef0f3"/>
+    <stop offset="45%"  stop-color="#b9bfc7"/>
+    <stop offset="100%" stop-color="#878d95"/>
+  </linearGradient>
+  <!-- contact shading at the lower rim so the ball sits inside the ring -->
+  <radialGradient id="dlSeat" cx="50%" cy="88%" r="58%">
+    <stop offset="0%"   stop-color="#5E0813" stop-opacity=".34"/>
+    <stop offset="100%" stop-color="#5E0813" stop-opacity="0"/>
+  </radialGradient>
 </defs>
-<circle cx="160" cy="160" r="150" fill="#b4b9c1"/>
-<circle cx="160" cy="160" r="146" fill="url(#s)"/>
-<ellipse cx="160" cy="92" rx="118" ry="72" fill="url(#g)"/>
-<g transform="translate(83.5,88) scale(0.74)" fill="#E01933">
-  <path d="M185.7,137.6l-89.3-43V0L185.7,137.6z M192.8,154l-96.4-40.7V154H192.8z"/>
+
+<circle cx="160" cy="160" r="152" fill="url(#dlRim)"/>
+<circle cx="160" cy="160" r="146" fill="url(#dlBody)"/>
+<circle cx="160" cy="160" r="146" fill="url(#dlSeat)"/>
+<ellipse cx="160" cy="84" rx="110" ry="64" fill="url(#dlGloss)"/>
+
+<g transform="rotate(38 160 160) translate(62,87) scale(0.95)" fill="#ffffff">
+  <path d="M185.7,137.6l-89.3-43V0L185.7,137.6z"/>
+  <path d="M192.8,154l-96.4-40.7V154H192.8z"/>
   <polygon points="7.1,137.6 96.4,0 96.4,94.6 7.1,137.6"/>
   <polygon points="0,154 96.4,154 96.4,113.3 0,154"/>
 </g>
