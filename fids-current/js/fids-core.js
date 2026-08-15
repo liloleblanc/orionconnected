@@ -18087,7 +18087,7 @@ const LS = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
-  boardSoon: { en:'Standby, Boarding Will Begin Momentarily', fr:"Patientez, L'embarquement Débutera Bientôt", es:'Espere, El Embarque Comenzará En Breve', de:'Bitte Warten, Das Boarding Beginnt Gleich', it:"Attendere, L'Imbarco Inizierà A Breve", pt:'Aguarde, O Embarque Começará Em Breve', ja:'お待ちください、まもなく搭乗を開始します', zh:'请稍候，登机即将开始', ar:'يرجى الانتظار، سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Standby, Boarding Will Begin Momentarily', fr:'Veuillez Patienter, Embarquement Bientôt', es:'Espere, El Embarque Comenzará En Breve', de:'Bitte Warten, Das Boarding Beginnt Gleich', it:"Attendere, L'Imbarco Inizierà A Breve", pt:'Aguarde, O Embarque Começará Em Breve', ja:'お待ちください、まもなく搭乗を開始します', zh:'请稍候，登机即将开始', ar:'يرجى الانتظار، سيبدأ الصعود قريباً' },
   // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
   // where the full 'MINUTES' would not fit next to a digit that size.
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
@@ -18733,7 +18733,7 @@ var _GATE_LBL = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
-  boardSoon: { en:'Standby, Boarding Will Begin Momentarily', fr:"Patientez, L'embarquement Débutera Bientôt", es:'Espere, El Embarque Comenzará En Breve', de:'Bitte Warten, Das Boarding Beginnt Gleich', it:"Attendere, L'Imbarco Inizierà A Breve", pt:'Aguarde, O Embarque Começará Em Breve', ja:'お待ちください、まもなく搭乗を開始します', zh:'请稍候，登机即将开始', ar:'يرجى الانتظار، سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Standby, Boarding Will Begin Momentarily', fr:'Veuillez Patienter, Embarquement Bientôt', es:'Espere, El Embarque Comenzará En Breve', de:'Bitte Warten, Das Boarding Beginnt Gleich', it:"Attendere, L'Imbarco Inizierà A Breve", pt:'Aguarde, O Embarque Começará Em Breve', ja:'お待ちください、まもなく搭乗を開始します', zh:'请稍候，登机即将开始', ar:'يرجى الانتظار، سيبدأ الصعود قريباً' },
   nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
