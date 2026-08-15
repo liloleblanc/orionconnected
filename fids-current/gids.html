@@ -515,20 +515,9 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
   </div>
 </div>
 
-<div class="hdr">
-  <div class="hdr-left">
-    <img id="legacy_hdrAirlineLogo" style="display:none;height:52px;margin-right:14px;" alt="">
-    <div class="hdr-board" id="legacy_hdrBoard">Arrivées</div>
-  </div>
-  <div class="hdr-center">
-    <div class="hdr-apname" id="legacy_hdrApName">Greater Moncton Roméo LeBlanc International Airport</div>
-    <div class="hdr-temp" id="legacy_hdrTemp"><div class="hdr-fc-day"><span class="fc-label">ACTUELLEMENT</span>  <span class="hdr-fc-now">34°F</span></div><div class="hdr-fc-day"><span class="fc-label">AVR 9 - JEU</span>  <span class="fc-temp">46°F/28°F</span></div><div class="hdr-fc-day"><span class="fc-label">AVR 10 - VEN</span>  <span class="fc-temp">54°F/32°F</span></div></div>
-  </div>
-  <div class="hdr-right">
-    <div class="hdr-clock" id="legacyHdrClock">11:41:30</div>
-    <div class="hdr-date" id="legacyHdrClockDate">WEDNESDAY, APR 8, 2026</div>
-  </div>
-</div>
+<!-- v23167 — the retired .hdr header block is removed. It was still shipped on
+     every load but permanently invisible: flight-display.css:484 sets
+     `.hdr { display: none !important; }`. The chevron banner replaced it. -->
 
 <div class="fids-banner" id="fidsBanner">
   <div class="fids-banner-chevrons" aria-hidden="true"></div>
@@ -842,7 +831,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/fids-core.js?v=23166"></script>
+<script src="js/fids-core.js?v=23167"></script>
 <script src="js/gate-visual-integrity.js?v=23166"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -855,7 +844,6 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/menu.js?v=23125"></script>
 <script src="js/gids-mobile-nav.js?v=1"></script><!-- TEMP: mobile gate nav + theme -->
 <script src="js/menubar.js?v=23035"></script>
-<script src="js/console-menu.js?v=3"></script>
 <script src="js/editor-roles.js?v=1"></script>
 <script>
 window.addEventListener("DOMContentLoaded", async function() {
