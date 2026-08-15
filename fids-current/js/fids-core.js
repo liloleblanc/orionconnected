@@ -6836,6 +6836,33 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
   'AC': '/logos/motion/AC-rondelle-swing.mp4'
 };
 
+// v23175 — THE CARRIER'S REAL MARK, IN ITS OWN COLOURS, IN ONE PLACE.
+// (Nick: "Should be the real logo in color too" — the WestJet leaf was
+// rendering as a BLACK silhouette on the dark blue countdown panel.)
+//
+// AIRLINE_EMBLEM_FILES below is the ORB set: single-path mono art that the
+// round rail badge recolours to white with CSS. That is right for the orb and
+// wrong anywhere the mark is shown large on its own, because nothing recolours
+// it there and the raw path paints black. The countdown centrepiece is exactly
+// that case, and its stylesheet says so out loud: "just the carrier's own mark
+// at size, in its own colours".
+//
+// The same colour lookup had been copy-pasted FOUR times (the welcome card's
+// _FB_WELCOME_LOGO, two map/hold-slot copies, and a Delta-only _CD_MARK inside
+// the countdown), each with different membership — so fixing Delta in one copy
+// left WestJet black in another, which is the bug being fixed here. New surfaces
+// should read THIS map; the remaining copies should be folded into it rather
+// than a fifth being added.
+var AIRLINE_COLOUR_EMBLEM = window._AIRLINE_COLOUR_EMBLEM = {
+  'WS':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+  'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+  'DL':  '/logos/airlines/us-major/delta-emblem-colour.svg',
+  'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+  '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg',
+  'OCN': '/logos/airlines/european/discover-airlines-emblem.svg',
+  'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',
+  'FLE': '/logos/airlines/canadian/flair-dot.svg?v=2'
+};
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
@@ -9712,11 +9739,14 @@ function uxgGateHtml(ctx) {
       // every other Delta surface switched to the red colour widget
       // yesterday (Nick: 'I made you change this yesterday why is this
       // still white OMG WOW'). Same colour art as the map slot uses.
-      var _CD_MARK = {
-        'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
-        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
-      };
-      var _src = _CD_MARK[String(airlineCode || '').toUpperCase()]
+      //
+      // v23175 — that Delta-only list is now the SHARED colour map, so every
+      // carrier with colour art gets it here instead of one airline being
+      // fixed at a time. WestJet was the next to show the fault: this panel
+      // fell through to the mono ORB leaf, which has no white recolour on this
+      // surface and painted solid black on the dark blue (Nick: "Should be the
+      // real logo in color too").
+      var _src = (window._AIRLINE_COLOUR_EMBLEM && window._AIRLINE_COLOUR_EMBLEM[String(airlineCode || '').toUpperCase()])
         || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || _sym;
       var _mot = (typeof GATE_RONDELLE_MOTION !== 'undefined' && GATE_RONDELLE_MOTION[airlineCode]) || null;
       if (!_src && !_mot) return '';
