@@ -18858,7 +18858,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23171';
+var FIDS_BUILD_TAG = 'v23172';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27252,6 +27252,23 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
 // invalidateSize() reports the map's size; if it has not moved since the last
 // pass there is nothing to re-fit and we leave the view alone. When it has
 // moved, we re-fit once, without animation.
+// v23172 — the big map's settle pass, mirroring _gateMapSettle for the mini.
+// Only re-fits when the CONTAINER actually changed size; an unconditional
+// re-fit on a timer is what made the view jump on every draw.
+function _bigMapSettle(o, d, p, delayMs) {
+  setTimeout(function () {
+    var m = window._bigCraftMap;
+    if (!m) return;
+    try {
+      var before = m.getSize();
+      m.invalidateSize({ animate: false });
+      var after = m.getSize();
+      if (before.x === after.x && before.y === after.y) return;   // nothing moved
+      if (p < 0.02) m.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
+    } catch (e) {}
+  }, delayMs);
+}
+
 function _gateMapSettle(o, d, p, delayMs) {
   setTimeout(function () {
     if (!gateMap) return;
@@ -34399,6 +34416,26 @@ function _restartGateAdsTimer() {
         el3.style.transition = 'none';
         el3.style.opacity = '1';
       } else {
+        // v23172 — RESTORE THE ENTRY ANIMATION ON THIS PATH.
+        // v23166 scoped gadSlideIn to a .gad-enter class on the reasoning that
+        // the JS crossfade owned the transition. It does — but ONLY on the
+        // `_old` branch above, where there are outgoing children to lift into an
+        // overlay. Nothing ever added .gad-enter, so every slide arriving
+        // through THIS branch (the big route-map takeover leaves nothing in the
+        // carousel to dissolve) lost its transition entirely and became a hard
+        // cut. Nick: "I dont even have those smooth transitions between slides
+        // anymore its a jolt." Marking the incoming children restores the ease
+        // exactly where the crossfade cannot reach, and the class is stripped on
+        // animationend so a later re-attach cannot replay it.
+        try {
+          Array.prototype.forEach.call(el3.children, function (c) {
+            c.classList.add('gad-enter');
+            c.addEventListener('animationend', function h() {
+              c.classList.remove('gad-enter');
+              c.removeEventListener('animationend', h);
+            });
+          });
+        } catch (e) {}
         // NOTHING TO DISSOLVE — FADE THE NEW SLIDE IN INSTEAD. The crossfade
         // is built by lifting the OUTGOING slide's children into an overlay,
         // which only works when the carousel actually holds them. The big
@@ -36623,14 +36660,31 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
     // Landed: city-level on destination
     zoom = 11; center = d;
   }
-  window._bigCraftMap.setView(center, zoom);
+  // v23172 — ONE VIEW DECISION HERE TOO.
+  // v23166 fixed this on the MINI map and missed the big one, which is the
+  // larger and more noticeable of the two (Nick: "the map still jolts"). This
+  // ran setView() to the phase zoom, then fitBounds() to a different zoom
+  // immediately, then invalidateSize()+fitBounds() again at +100ms and again at
+  // +500ms — four view changes per draw. For a pre-departure flight the bounds
+  // fit IS the wanted view, so ask for it once; setView stays as the fallback it
+  // was always documented to be. animate:false because the map is ARRIVING at a
+  // view, not travelling between two.
+  var _bcPreDep = (p < 0.02);
+  var _bcViewSet = false;
+  if (_bcPreDep) {
+    try {
+      window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
+      _bcViewSet = true;
+    } catch (e) { /* fall through */ }
+  }
+  if (!_bcViewSet) window._bigCraftMap.setView(center, zoom, { animate: false });
   // For pre-departure flights, fit bounds to show both endpoints with padding.
   if (p < 0.02) {
     try {
       window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11 });
     } catch(e) { /* fallback to setView above */ }
   }
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[14,14],maxZoom:11});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});_bigMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -36648,7 +36702,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       if (p >= 0.12 && p < 0.995) {
         window._bigCraftMap.setView(planePos, zoom);
       }
-  }setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[14,14],maxZoom:11});}catch(e){}}}},500);}
+  }_bigMapSettle(o,d,p,500);}
 
 
 function _bigMapCloneLive(org,dst,planeLat,planeLng){
