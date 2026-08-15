@@ -12908,45 +12908,13 @@ html body:not(#_) .wxcard-wrap .wxs-spark-temps span {
   color: var(--wxs-ink) !important;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   v23168 — NICK'S ARTWORK IS THE PLATE (AC left column). His drawing is
-   the entire plate face: title in white on his red band, value on his
-   carbon field, the old chrome (beige lozenge, glossy icon ball, plate
-   body) not painted at all on these rows. 15x measured against the
-   deepest live rule on these elements (14x on the row) — measured by
-   CDP, not guessed. Nothing under this block was deleted; his July
-   design layers remain intact beneath for every other surface.
-   ═══════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
-  background-color: #141618 !important;
-  background-image: url("/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1") !important;
-  background-size: 100% 100% !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-blend-mode: normal !important;
-  border-radius: 18px !important;
-  overflow: hidden !important;
-  border: none !important;
-  box-shadow: 0 3px 10px rgba(0,0,0,.45) !important;
-}
-/* The old plate FACE was a ::before painting ac-front-black.jpg OVER the
-   row — his art sat behind it, 'you have it behind the plate' verbatim.
-   The face layer retires; the row itself is the plate now. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before {
-  display: none !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-textcol {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-title {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: #fff !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,.4) !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-title * {
-  color: #fff !important;
+
+/* ── v23170 — NICK'S PLATE ART, INSTALLED THE WAY THE PLATE WAS BUILT FOR
+   ('install it on the plate which I rounded, preinstalled, premeasured').
+   v22905 made --plate-tex the single source of truth for what AC's front
+   plate face carries — so his artwork installs as ONE variable swap. The
+   plate's own rounding, inset, lozenge, icons and geometry are untouched;
+   only the texture it wears changes. 2x beats the 1x original definition. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) {
+  --plate-tex: url('/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1');
 }
