@@ -2201,6 +2201,88 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         return jsonResponse({ error: "Cache clear failed", details: e.message }, 500, origin);
       }
     }
+    // ── ADS-B LIVE POSITIONS (proxied + cached) ───────────────────────────
+    // GET /adsb/hex/{icao24} | /adsb/reg/{tail} | /adsb/callsign/{cs}
+    //
+    // WHY THIS EXISTS. The boards used to call the ADS-B feed DIRECTLY from the
+    // browser. Two things broke that: the provider now returns 403 to
+    // unregistered callers, and it sends no Access-Control-Allow-Origin, so the
+    // browser blocks the response regardless. Every downstream feature went
+    // quiet at once — the map fell back to clock estimates, the runway-aligned
+    // final never drew (it needs a live fix within 25nm), "landed" never fired
+    // (a ground fix within 6nm), and _liveTrack was never set so the aircraft
+    // icon pointed at the destination instead of along its track.
+    //
+    // Fetching server-side fixes both: same-origin, so CORS is irrelevant, and
+    // any credential stays here instead of shipping to every kiosk.
+    //
+    // IT ALSO CHANGES THE COST SHAPE, which matters for getting approved at
+    // all. Called from the browser, query volume scales with the number of
+    // VIEWERS — ten people watching the stream is ten times the queries for the
+    // same aircraft. Cached here, it is one upstream call per aircraft per
+    // ADSB_TTL regardless of audience.
+    //
+    // The upstream is a FIXED constant chosen from a small allowlist and the
+    // subject is pattern-checked, so this cannot be turned into an open proxy
+    // (same SSRF discipline as /maptiles, /logoimg, /miafids).
+    if (path.startsWith("/adsb/")) {
+      const ADSB_TTL = 20;                       // seconds; positions age fast
+      const PROVIDERS = {
+        "airplanes.live": "https://api.airplanes.live/v2",
+        "adsb.fi":        "https://opendata.adsb.fi/api/v2",
+        "adsb.lol":       "https://api.adsb.lol/v2"
+      };
+      const provider = (env.ADSB_PROVIDER || "airplanes.live").trim();
+      const base = PROVIDERS[provider];
+      if (!base) {
+        return jsonResponse({ error: "Unknown ADSB_PROVIDER", provider, allowed: Object.keys(PROVIDERS) }, 500, origin);
+      }
+      const m = path.match(/^\/adsb\/(hex|reg|callsign)\/([A-Za-z0-9-]{1,12})$/);
+      if (!m) {
+        return jsonResponse({ error: "Use /adsb/hex/:icao24, /adsb/reg/:tail or /adsb/callsign/:cs" }, 400, origin);
+      }
+      const kind = m[1];
+      const subject = m[2].toUpperCase();
+      const upstream = `${base}/${kind}/${encodeURIComponent(subject)}`;
+
+      // Shared edge cache — this is the bit that makes audience size irrelevant.
+      const cacheKey = new Request(`https://adsb-cache/${provider}/${kind}/${subject}`);
+      const cache = caches.default;
+      try {
+        const hit = await cache.match(cacheKey);
+        if (hit) {
+          const body = await hit.text();
+          return new Response(body, { status: 200, headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+            "X-Adsb-Cache": "hit", ...corsHeaders(origin) } });
+        }
+      } catch (e) {}
+
+      try {
+        const headers = { "Accept": "application/json", "User-Agent": "OrionConnected-FIDS/1.0 (airport flight information displays)" };
+        // Only set if the chosen provider needs one. Absent = anonymous, which
+        // is how the free community feeds normally work.
+        if (env.ADSB_KEY) headers["auth"] = env.ADSB_KEY;
+        const r = await fetch(upstream, { headers });
+        if (!r.ok) {
+          // Deliberately NOT cached — a 403/429 must not pin a dead answer for
+          // everyone. Shaped like a success with no aircraft so the board's
+          // existing "no fix" path handles it without a special case.
+          return jsonResponse({ ac: [], _upstreamStatus: r.status, _provider: provider }, 200, origin);
+        }
+        const payload = await r.text();
+        try {
+          await cache.put(cacheKey, new Response(payload, { headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
+        } catch (e) {}
+        return new Response(payload, { status: 200, headers: {
+          "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+          "X-Adsb-Cache": "miss", ...corsHeaders(origin) } });
+      } catch (e) {
+        return jsonResponse({ ac: [], _error: String(e && e.message).slice(0, 120) }, 200, origin);
+      }
+    }
+
     if (path === "/health") {
       return jsonResponse({ status: "ok", version: "218" }, 200, origin);
     }

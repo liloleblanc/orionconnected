@@ -2975,7 +2975,11 @@ async function _gateNumbersPoll() {
     // Registration is the join: it is exact, and _reg is already resolved by
     // the block above. Callsign is the fallback. One request per 60 s poll.
     var _adsb = null;
-    try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt); } catch (e) {}
+    // v23171 — pass the Mode-S hex when we have it. AeroDataBox supplies it on
+    // the flight lookup, so on most gates this is the exact key and the reg /
+    // callsign attempts below are never needed.
+    var _inbHex = inb._modeS || (inb.aircraft && inb.aircraft.modeS) || '';
+    try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt, _inbHex); } catch (e) {}
     // v23103 — THE TAIL IS NOT THE FLIGHT. Registration matching finds the
     // airframe wherever it is — including mid-air on its PREVIOUS leg.
     // Nick's gate 4: AC1984 hadn't left Toronto (departs ~90 min later) yet
@@ -3005,6 +3009,9 @@ async function _gateNumbersPoll() {
       // on the row, because the map markers draw from a different scope and had
       // no way to reach it — which is why they fell back to pointing the plane
       // at the destination (see _gateHeading, v23166).
+      // The feed reports the airframe's own hex — keep it so subsequent polls
+      // use the exact key even if AeroDataBox had not supplied it yet (v23171).
+      if (_adsb.hex && !inb._modeS) inb._modeS = String(_adsb.hex).toUpperCase();
       if (typeof _adsb.track === 'number') {
         inb._liveTrack = _adsb.track;
         window._gateInboundLiveTrack = { track: _adsb.track, at: Date.now() };
@@ -7604,7 +7611,7 @@ function _buildV2MapCol(ctx, vars) {
       // rendered blank while live data was demonstrably reaching the page.
       // Reading the shared cache removes that coupling entirely.
       var _adsbC = null;
-      try { _adsbC = _adsbCached(_ib._reg, _ib._callSign, _ib.flight); } catch (e) {}
+      try { _adsbC = _adsbCached(_ib._reg, _ib._callSign, _ib.flight, null, _ib._modeS || (_ib.aircraft && _ib.aircraft.modeS)); } catch (e) {}
       var _candAlt = (_adsbC && typeof _adsbC.alt === 'number') ? _adsbC.alt
                    : (typeof _ib._liveAlt === 'number') ? _ib._liveAlt
                    : (_wpC && typeof _wpC.altitude === 'number' ? _wpC.altitude : null);
@@ -18851,7 +18858,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23170';
+var FIDS_BUILD_TAG = 'v23171';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -22881,7 +22888,7 @@ function _gateStickyFix(key, lat, lng, alt, spd) {
 function _gateLiveFix(row) {
   if (!row) return null;
   var c = null;
-  try { c = (typeof _adsbCached === 'function') ? _adsbCached(row._reg, row._callSign, row.flight) : null; } catch (e) {}
+  try { c = (typeof _adsbCached === 'function') ? _adsbCached(row._reg, row._callSign, row.flight, null, row._modeS || (row.aircraft && row.aircraft.modeS)) : null; } catch (e) {}
   var lat = (c && typeof c.lat === 'number') ? c.lat
           : (typeof row._liveLat === 'number') ? row._liveLat : null;
   var lng = (c && typeof c.lng === 'number') ? c.lng
@@ -22954,7 +22961,13 @@ function _crossTrackKm(plat, plng, alat, alng, blat, blng) {
 // FlightAware), then PROXY IT THROUGH fids-proxy. Calling it from the browser
 // means traffic scales with the number of viewers; server-side with a cache it
 // stays flat regardless of audience.
-var _ADSB_BASE = 'https://api.airplanes.live/v2';
+// v23171 — GOES THROUGH OUR OWN WORKER NOW, not the provider directly.
+// Same-origin, so the CORS block that killed this is gone; the provider's
+// credential (if the chosen feed needs one) stays server-side instead of
+// shipping to every kiosk; and the worker caches per aircraft, so query volume
+// no longer scales with how many people are watching the stream.
+// Provider is chosen server-side via the ADSB_PROVIDER secret.
+var _ADSB_BASE = 'https://fids-proxy.n-leblanc1984.workers.dev/adsb';
 var _adsbCache = Object.create(null);
 var _ADSB_TTL_MS = 45000;
 
@@ -23011,8 +23024,19 @@ function _icaoCallsign(s) {
   var icao = _IATA_TO_CALLSIGN[m[1]];
   return icao ? icao + m[2] : '';
 }
-async function _adsbTelemetry(reg, callSign, flightNo) {
+async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
   var tries = [];
+  // v23171 — MODE-S HEX FIRST. It is the aircraft's ICAO 24-bit address: the
+  // primary key every ADS-B feed indexes by, unique to the airframe, and it
+  // cannot be confused the way a callsign can (callsigns are reused across
+  // legs, and the IATA number on the board is often not the callsign at all —
+  // which is the whole reason for the conversion table below).
+  //
+  // We already have it for free: AeroDataBox returns aircraft.modeS alongside
+  // the registration on every flight lookup, and it is merged onto the row
+  // (~line 22881). It was simply never used for the position query.
+  var _hexId = String(modeS || '').trim().toUpperCase().replace(/[^0-9A-F]/g, '');
+  if (/^[0-9A-F]{6}$/.test(_hexId)) tries.push('/hex/' + _hexId);
   var _r = String(reg || '').trim().toUpperCase();
   if (/^[A-Z0-9-]{4,10}$/.test(_r)) tries.push('/reg/' + encodeURIComponent(_r));
   // {0,2} not {0,1}: real callsigns carry two trailing letters (DLH3CF,
@@ -23078,8 +23102,8 @@ async function _adsbTelemetry(reg, callSign, flightNo) {
 // is stale; the lookup re-renders once on success. Throttled per key so a
 // 10-second render tick cannot become a 10-second request rate.
 var _adsbInflight = Object.create(null);
-function _adsbCached(reg, callSign, flightNo, maxAgeMs) {
-  var keys = [reg, callSign, flightNo].map(function (k) {
+function _adsbCached(reg, callSign, flightNo, maxAgeMs, modeS) {
+  var keys = [modeS, reg, callSign, flightNo].map(function (k) {
     return String(k || '').trim().toUpperCase().replace(/\s+/g, '');
   }).filter(Boolean);
   var now = Date.now(), best = null;
@@ -23095,7 +23119,7 @@ function _adsbCached(reg, callSign, flightNo, maxAgeMs) {
     if (!_adsbInflight[ik] || (now - _adsbInflight[ik]) > 20000) {
       _adsbInflight[ik] = now;
       try {
-        _adsbTelemetry(reg, callSign, flightNo).then(function (r) {
+        _adsbTelemetry(reg, callSign, flightNo, modeS).then(function (r) {
           if (r) { try { window._lastGateKey = ''; if (typeof render === 'function') render(); } catch (e) {} }
         }, function () {});
       } catch (e) {}
