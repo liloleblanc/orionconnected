@@ -2282,7 +2282,30 @@ html .g8-wrap .gad-media-col {
   from { opacity: 0; transform: translateX(2.2%) scale(0.992); }
   to   { opacity: 1; transform: none; }
 }
-html #gateAdCarousel > * {
+/* v23166 — THE ENTRY ANIMATION IS OPT-IN, NOT A PROPERTY OF EXISTING (Nick:
+   'flashes and glitches... especially on gate').
+
+   This used to read `html #gateAdCarousel > *`, so ANY element that found
+   itself inside the carousel animated from opacity 0. Two things made that a
+   flash rather than a transition:
+
+   1. THE REBUILD. A gate rebuild detaches the live carousel and re-attaches it
+      to survive the innerHTML wipe. Re-inserting a node restarts its CSS
+      animations, so the largest panel on the screen dropped to a dark navy
+      rectangle and drifted back in on EVERY rebuild — a blink of the whole
+      centre column, with nothing in the ad having changed.
+   2. THE DOUBLE OWNER. On a real slide change the JS already runs a 0.95s
+      crossfade (fids-core.js ~34783): it lifts the outgoing slide into an
+      overlay and dissolves it over the incoming one. Fading the incoming slide
+      up from zero UNDERNEATH that dissolve meant both were partly transparent
+      at once, so the change dipped through dark instead of crossfading.
+
+   The JS crossfade is now the single owner of the slide transition — it covers
+   both the dissolve path and the no-outgoing-slide path (which fades el3 in
+   itself). The keyframes stay for any caller that wants a one-shot entry, but
+   it must ask for it by class, and must drop the class on animationend so a
+   later re-attach cannot replay it. */
+html #gateAdCarousel > .gad-enter {
   animation: gadSlideIn 560ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 

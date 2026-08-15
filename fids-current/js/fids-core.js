@@ -721,9 +721,21 @@ function scheduleAircraftPendingRetry(flightNumber, airportIata) {
     // the NATURAL poll instead — each board refresh rebuilds the flight and
     // re-runs enrichment past the 60s cache, so today's tail still lands.
     if (cf._reg) return;
-    cf._gateEnriched = false; // allow re-enrichment
-    window._lastGateKey = ''; // force re-render which re-fetches
-    if (typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
+    // v23166 — THE RETRY NO LONGER REPAINTS THE SCREEN (Nick: 'flashes and
+    // glitches... especially on gate'). Clearing _lastGateKey and calling
+    // renderDedicatedScreen() here forced a FULL gate rebuild every 3 minutes
+    // for as long as the flight had no registration — which for a regional
+    // departure is its entire time on the board. A rebuild is not free: it
+    // replays gadSlideIn on the ad panel, re-grows the bigcraft takeover,
+    // restarts the aircraft float, drops --gate-wm-top so the watermark jumps,
+    // and re-runs every JS fitter. That was a guaranteed 3-minute pulse on the
+    // largest panel on the screen, with nothing new to show for it.
+    //
+    // Re-enrichment alone is enough. loadFlight's enrichment already ends in
+    // `if (changed) requestGateRebuild()`, so the screen repaints if and ONLY
+    // if the retry actually produced new data — which is the whole point of
+    // retrying. No data, no repaint.
+    cf._gateEnriched = false; // allow re-enrichment on the next natural poll
   }, 3 * 60 * 1000); // retry every 3 minutes
 }
 
@@ -2407,22 +2419,48 @@ function gateWeatherHtml(locIata, loc, dayNames) {
 
 
 let dedicatedRenderKey = '';
-// Debounced gate key reset — prevents rapid successive re-renders
+// Debounced gate key reset — prevents rapid successive re-renders.
+//
+// v23166 — TRAILING EDGE, AND WIDER THAN THE CALLER'S PACING (Nick: 'flashes
+// and glitches... especially on gate'). This used to be a LEADING-edge latch:
+// the first call armed a fixed 300ms timer and every later call inside that
+// window was DROPPED — but dropped callers were not batched, they were simply
+// ignored, and the timer never extended. Enrichment fans its API calls out on
+// a ~350ms pacing gap, which is LONGER than the 300ms window, so in practice
+// every single call arrived after the previous window had already closed and
+// won its own full-screen rebuild. The debounce that was supposed to collapse
+// a burst into one repaint was instead passing all 3-5 of them through, which
+// is the multi-second stutter after each feed refresh and each gate change.
+//
+// Now: every call reschedules (true trailing edge), so a fan-out settles into
+// ONE repaint once the callers go quiet. MAX_WAIT stops a steady drip of calls
+// from starving the repaint forever — the screen still updates at least that
+// often while data keeps arriving.
 var _gateKeyResetTimer = null;
+var _gateRebuildFirstReq = 0;
+var _GATE_REBUILD_QUIET_MS = 800;  // must exceed the ~350ms API pacing gap
+var _GATE_REBUILD_MAX_WAIT = 4000; // never defer a real update longer than this
 function requestGateRebuild() {
-  if (_gateKeyResetTimer) return; // Already scheduled
-  _gateKeyResetTimer = setTimeout(function() {
-    window._lastGateKey = '';
-    dedicatedRenderKey = '';
-    _gateKeyResetTimer = null;
-    // Resetting a key alone does not paint a dedicated screen. Gate clocks are
-    // updated in place, so newly resolved aircraft data could otherwise remain
-    // invisible until the next feed refresh. Paint exactly once after batching.
-    try {
-      if (typeof screenType !== 'undefined' && screenType === 'gate'
-          && typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
-    } catch (e) {}
-  }, 300); // Wait 300ms to batch multiple data updates
+  var _nowTs = Date.now();
+  if (!_gateKeyResetTimer) _gateRebuildFirstReq = _nowTs;
+  // Starved by a continuous drip? stop extending and let the already-pending
+  // timer land, so a busy gate still repaints within MAX_WAIT + QUIET.
+  if (_nowTs - _gateRebuildFirstReq >= _GATE_REBUILD_MAX_WAIT) return;
+  clearTimeout(_gateKeyResetTimer);
+  _gateKeyResetTimer = setTimeout(_gateRebuildFire, _GATE_REBUILD_QUIET_MS);
+}
+function _gateRebuildFire() {
+  window._lastGateKey = '';
+  dedicatedRenderKey = '';
+  _gateKeyResetTimer = null;
+  _gateRebuildFirstReq = 0;
+  // Resetting a key alone does not paint a dedicated screen. Gate clocks are
+  // updated in place, so newly resolved aircraft data could otherwise remain
+  // invisible until the next feed refresh. Paint exactly once after batching.
+  try {
+    if (typeof screenType !== 'undefined' && screenType === 'gate'
+        && typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
+  } catch (e) {}
 }
 // ── Codeshare guard for GATE screens (Nick: a Qantas codeshare number must
 // never brand an American flight). The same physical departure can appear
@@ -2975,7 +3013,14 @@ async function _gateNumbersPoll() {
         // dead-reckoning guard in the map tick.
         window._gateInboundLivePos = { lat: _adsb.lat, lng: _adsb.lng, speed: _adsb.spd, altitude: _adsb.alt, onGround: _adsb.onGround === true };
       }
-      if (typeof _adsb.track === 'number') inb._liveTrack = _adsb.track;
+      // The aircraft's REAL track over the ground. Published globally as well as
+      // on the row, because the map markers draw from a different scope and had
+      // no way to reach it — which is why they fell back to pointing the plane
+      // at the destination (see _gateHeading, v23166).
+      if (typeof _adsb.track === 'number') {
+        inb._liveTrack = _adsb.track;
+        window._gateInboundLiveTrack = { track: _adsb.track, at: Date.now() };
+      }
       if (typeof _adsb.vs === 'number') inb._liveVs = _adsb.vs;
       if (_adsb.onGround === true) inb._liveOnGround = true;
       // ADS-B knows the exact sub-type (B38M where the schedule feed says
@@ -13464,7 +13509,20 @@ const gView = document.getElementById('gateView');
       // poll) happened to change at the same moment — which is why the screen
       // looked "one click behind" instead of simply stuck.
       var _langTag = (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '';
-      var _gateKey = (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (currentFlight._sortTs||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag;
+      // v23166 — THE KEY IS RE-READ AFTER THE BUILD, NOT ONLY BEFORE IT (Nick:
+      // 'flashes and glitches... especially on gate'). uxgGateHtml carries an
+      // inbound delay over onto currentFlight.upd while it builds (~9079) — it
+      // WRITES a field this key READS. So the key that authorised the rebuild
+      // was already stale by the time the rebuild finished, and the very next
+      // render pass saw a "change" that was nothing but our own side effect and
+      // repainted the whole screen a second time with identical content. That
+      // doubled beat is what turned each feed refresh into a visible stutter.
+      // Recomputing after the build stores what is actually on screen now, so
+      // an unchanged flight compares equal and stays still.
+      var _computeGateKey = function () {
+        return (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (currentFlight._sortTs||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag;
+      };
+      var _gateKey = _computeGateKey();
       if (window._lastGateKey !== _gateKey) {
         window._lastGateKey = _gateKey;
 
@@ -13567,6 +13625,12 @@ const gView = document.getElementById('gateView');
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
           gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs });
         }
+        // v23166 — store what we ACTUALLY painted. The builders above may have
+        // settled fields the key reads (the inbound-delay carry-over onto
+        // currentFlight.upd), so the pre-build key can already be stale. Re-read
+        // it here and an unchanged flight now compares equal on the next pass
+        // instead of triggering a duplicate repaint of identical content.
+        window._lastGateKey = _computeGateKey();
         // Align the right-column airline watermark band to the MAP's real
         // bottom edge: the map shelf height varies by layout, so a fixed
         // CSS % left the logo's top hidden behind the map (read as "too
@@ -13606,7 +13670,25 @@ const gView = document.getElementById('gateView');
                 }
               } catch (e) {}
             };
-            setInterval(window._alignGateWm, 2000);
+            // v23166 — SKIP WHILE THIS BOARD IS OFF SCREEN (Nick: 'I dont
+            // understand why multiple pages load instead of loading what is
+            // asked for').
+            //
+            // rotate.html keeps ALL THREE boards alive at once so switching is
+            // instant. That only works if a hidden board goes quiet — and this
+            // one did not. It re-measured the map shelf every 2s forever, in
+            // every hidden iframe, on a 2-vCPU box that is also encoding the
+            // stream with ffmpeg. Three boards' worth of measurement competing
+            // with the encoder is what starves the visible board's main thread
+            // and turns its animations into stutter.
+            //
+            // _ocEvery is the existing pause-aware wrapper: it skips while
+            // hidden AND runs one catch-up pass the moment the board comes back,
+            // inside the fade, so the watermark is never seen mid-repair. This is
+            // pure measurement of an off-screen layout — there is nothing whose
+            // result anyone could see while it is skipped.
+            if (typeof window._ocEvery === 'function') window._ocEvery(window._alignGateWm, 2000);
+            else setInterval(window._alignGateWm, 2000);
           }
           setTimeout(window._alignGateWm, 60);
           setTimeout(window._alignGateWm, 600);
@@ -19318,7 +19400,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23165';
+var FIDS_BUILD_TAG = 'v23166';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27444,6 +27526,38 @@ function _wxRadarAdd(m) {
 // would fly sideways. The prop set is the turboprop fleet the boards
 // actually see (Dash family, ATR, Beech/King Air, Saab, Metro, Twin
 // Otter, Caravan, PC-12); everything else gets the jet.
+// v23166 — POINT THE PLANE WHERE IT IS ACTUALLY FLYING (Nick: 'the plane half
+// the time doesnt work its flying sideways... it never does what its full
+// potential could do').
+//
+// Every map marker rotated by a GREAT-CIRCLE BEARING FROM THE PLANE TO THE
+// DESTINATION. That is only the right answer when the aircraft happens to be
+// pointing straight at the airport. It is wrong for the whole climb out on a
+// runway heading, every vector, every hold, and the entire arrival — and it is
+// most obviously wrong on final, where the route line is drawn along the
+// RUNWAY (_runwayFinalPath) while the icon kept aiming at the field. The plane
+// visibly sat crossways to the very line it was supposed to be flying.
+//
+// The true heading was already being fetched and stored — `inb._liveTrack` was
+// written from the ADS-B `track` field and then read by NOTHING. The data was
+// there the whole time; only the wiring was missing.
+//
+// Track is degrees clockwise from true north, which is the same convention as
+// the computed bearing and as the icon art (both plane PNGs point north at
+// rest), so it drops straight in. Stale fixes are refused — a heading from a
+// position report minutes old is worse than the geometric estimate — and the
+// bearing remains the fallback whenever there is no live track at all.
+var _GATE_TRACK_MAX_AGE_MS = 120000; // 2 min; ADS-B fixes arrive far faster
+function _gateHeading(fallbackBearing) {
+  try {
+    var lt = window._gateInboundLiveTrack;
+    if (lt && typeof lt.track === 'number' && (Date.now() - lt.at) <= _GATE_TRACK_MAX_AGE_MS) return lt.track;
+    var inb = window._gateInbound;
+    if (inb && typeof inb._liveTrack === 'number') return inb._liveTrack;
+  } catch (e) {}
+  return fallbackBearing;
+}
+
 function _mapPlaneIcon() {
   try {
     // v23107 — LOOK EVERYWHERE THE TYPE ACTUALLY LIVES (Nick, PD472: the
@@ -27587,15 +27701,28 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     // Landed: city-level on destination
     zoom = 11; center = d;
   }
-  gateMap.setView(center, zoom);
-  // For pre-departure flights, fit bounds to show both endpoints with padding.
-  if (p < 0.02) {
+  // v23166 — ONE VIEW DECISION, NOT TWO IN A ROW (Nick: 'flashes and glitches...
+  // especially on gate'). This used to setView() to the phase-table zoom and
+  // then IMMEDIATELY fitBounds() to a different one, so a pre-departure gate
+  // watched its map zoom to one level and snap to another. Measured live on
+  // v23165: zoom 4 -> 6 -> back to 4 inside 1.5s on a single rebuild.
+  //
+  // For a pre-departure flight the bounds fit IS the correct view, so ask for it
+  // first and keep setView purely as the fallback it was always documented to be
+  // ("fallback to setView above") — instead of running both every time. animate:
+  // false because this is the map ARRIVING at its view, not travelling to it;
+  // there is no previous view worth animating away from.
+  var _preDep = (p < 0.02);
+  var _viewSet = false;
+  if (_preDep) {
     try {
-      gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9 });
-    } catch(e) { /* fallback to setView above */ }
+      gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
+      _viewSet = true;
+    } catch (e) { /* fall through to setView */ }
   }
+  if (!_viewSet) gateMap.setView(center, zoom, { animate: false });
   var _estOv=(gateMap._fidsOverlays=gateMap._fidsOverlays||[]);
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(arc)_estOv.push(arc); }_estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(arc)_estOv.push(arc); }_estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_gateMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -27605,7 +27732,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      _estOv.push(L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
+      _estOv.push(L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
       // v23106 — center on the plane through DESCENT AND APPROACH too, not
       // just cruise: the phase table above frames the DESTINATION for
       // p>0.88 while the estimated plane still paints miles away — the
@@ -27614,7 +27741,36 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       if (p >= 0.12 && p < 0.995) {
         gateMap.setView(planePos, zoom);
       }
-  }setTimeout(function(){if(gateMap){gateMap.invalidateSize();if(p<0.02){try{gateMap.fitBounds([o,d],{padding:[40,40],maxZoom:9});}catch(e){}}}},500);}
+  }_gateMapSettle(o,d,p,500);}
+
+// v23166 — THE SETTLE PASS ONLY ACTS WHEN THE CONTAINER ACTUALLY CHANGED SIZE.
+// (Nick: 'flashes and glitches... especially on gate' / 'they just keep building
+// on top of everything and taking easy shortcuts'.)
+//
+// This replaces two copy-pasted setTimeout blocks that each ran invalidateSize()
+// AND an unconditional fitBounds() at +100ms and +500ms after every draw. They
+// existed because the map is built before its container has its final size, so
+// somebody added a re-fit "in case" — then added a second one when the first was
+// not always enough. The cost was paid on every draw forever: a pre-departure
+// gate re-fitted its view three times, which is the zoom jump that reads as the
+// map glitching.
+//
+// The real cause is only ever a container RESIZE, so test for exactly that.
+// invalidateSize() reports the map's size; if it has not moved since the last
+// pass there is nothing to re-fit and we leave the view alone. When it has
+// moved, we re-fit once, without animation.
+function _gateMapSettle(o, d, p, delayMs) {
+  setTimeout(function () {
+    if (!gateMap) return;
+    try {
+      var _before = gateMap.getSize();
+      gateMap.invalidateSize({ animate: false });
+      var _after = gateMap.getSize();
+      if (_before.x === _after.x && _before.y === _after.y) return; // nothing moved
+      if (p < 0.02) gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
+    } catch (e) {}
+  }, delayMs);
+}
 
 // The rail grid re-tracks when the 4-row flight-info panel arrives late
 // (reg lookup, v22198) — the MAP ROW then resizes under an already-
@@ -27866,7 +28022,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  var _planeMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
+  var _planeMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
   _ov.push(_planeMk);
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
@@ -36331,6 +36487,23 @@ function _renderBigCraft(el, ctx) {
   // twice. The takeover renders as an overlay spanning the center + right
   // columns with a grow-from-the-right animation, and the right column
   // hides beneath it for the duration of the slide.
+  //
+  // v23166 — IS THIS A NEW VISIT, OR A REPAINT OF THE ONE ALREADY SHOWING?
+  // (Nick: 'flashes and glitches... especially on gate'.) Every gate rebuild
+  // re-enters here, and each re-entry tore the overlay down and built a fresh
+  // one — replaying bigcraftGrow from scale(0.62)/opacity(0.55) and blanking the
+  // route map while its tiles reloaded. Rebuilds land several times inside this
+  // slide's 45s dwell, so the biggest panel on the screen sat there pumping in
+  // and out. The grow belongs to ARRIVING at the slide, not to repainting it,
+  // so a continuation keeps its size and its already-loaded tiles. The visit
+  // bookkeeping further down already knows the difference — read it BEFORE the
+  // teardown clears the overlay reference.
+  var _bcContinuation = !!(
+    window._bigCraftOverlay && window._bigCraftOverlay.isConnected
+    && window._bigCraftVisitStart
+    && window._bigCraftVisitSlot === window._gateAdCurrentIdx
+    && (Date.now() - window._bigCraftVisitStart) <= 120000
+  );
   if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown();
   // Leg-aware: on the outbound fallback (ctx.out) the status/reg belong to
   // the departing flight, not the (absent) inbound.
@@ -36382,6 +36555,11 @@ function _renderBigCraft(el, ctx) {
   var _bcElR = el.getBoundingClientRect(), _bcWrapR = _bcWrapEl.getBoundingClientRect();
   var _bcOv = document.createElement('div');
   _bcOv.className = 'bigcraft-overlay';
+  // A continuation is already at full size on screen — suppress the entry grow
+  // so a mid-dwell repaint is invisible instead of a 650ms pump (v23166).
+  // The rule this overrides carries !important (display-overrides.css ~1791),
+  // so a plain inline style would lose to it — this priority is required.
+  if (_bcContinuation) _bcOv.style.setProperty('animation', 'none', 'important');
   _bcOv.style.left = Math.round(_bcElR.left - _bcWrapR.left) + 'px';
   _bcOv.style.top = Math.round(_bcElR.top - _bcWrapR.top) + 'px';
   _bcOv.style.width = Math.round(_bcElR.width) + 'px';
@@ -36972,7 +37150,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       var y2=Math.sin(dLng)*Math.cos(lat2);
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
-      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+      L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
       // v23106 — same as the mini est map: keep the camera ON THE PLANE
       // through descent/approach; the destination-framed phases left the
       // estimated plane off-screen (Nick's 31s clip: static camera on the
@@ -37082,7 +37260,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
-  var _bcPlaneMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+bearing+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+  var _bcPlaneMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
   // SAME PROGRAMMING as the mini map (Nick: 'big screen and little screen need
   // same programming — it's not separate'): the identical glide engine now
   // dead-reckons the plane along the route on the BIG map too. The big plane
