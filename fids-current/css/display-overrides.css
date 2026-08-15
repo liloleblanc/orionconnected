@@ -13060,3 +13060,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   overflow: hidden !important;
   white-space: nowrap !important;
 }
+
+/* 'youre not filling the sides' — correct: the mock runs the title and the
+   value across the FULL plate width, over the art's side zones; only the
+   icon offsets the value. The margins I invented are gone. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-title {
+  padding: 0 1.5% !important;
+  font-size: clamp(17px, 3vh, 31px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col .v2-fi-row .v2-fi-textcol .v2-fi-value {
+  padding: 0 1.5% 1.5% 12.5% !important;
+}
