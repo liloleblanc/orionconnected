@@ -10165,9 +10165,41 @@ function uxgGateHtml(ctx) {
       + (function () {
           var _cdL = ['', ''];
           _gateLbl('boardSoon', _frF, function (w, i) { _cdL[i ? 1 : 0] = w; return ''; }, '');
-          return '<div class="g8-cd-label">' + (_cdL[0] || TL('boardSoon')) + '</div>'
+          // v23175 — THE PANEL FITS THE WORDS, NOT THE WORDS THE PANEL.
+          // .g8-cd-label is white-space:nowrap at min(15cqh, 4cqw), so a long
+          // line has no wrap to fall back on — it is simply cut off at the
+          // panel edge. That turned every wording change into a character
+          // count, and the French line was twice shortened to fit rather than
+          // said properly. Now the size is derived from the string's own
+          // width, so any wording in any language lands inside the panel.
+          //
+          // Width, not length: CJK glyphs are full-width, so 20 Japanese
+          // characters occupy the same space as 40 Latin ones. Counting them
+          // as 2 makes one budget work for every script — checked against
+          // measured widths (ja 20 chars = 78.6% of panel, en 40 = 79.6%).
+          // Inline !important because the stylesheet rule carries !important
+          // and a plain inline style would lose to it.
+          function _cdFit(t) {
+            var w = 0;
+            for (var i = 0; i < t.length; i++) {
+              var c = t.charCodeAt(i);
+              w += (c >= 0x1100 && (c <= 0x115F || (c >= 0x2E80 && c <= 0xA4CF)
+                    || (c >= 0xAC00 && c <= 0xD7A3) || (c >= 0xF900 && c <= 0xFAFF)
+                    || (c >= 0xFE30 && c <= 0xFE6F) || (c >= 0xFF00 && c <= 0xFF60)
+                    || (c >= 0xFFE0 && c <= 0xFFE6))) ? 2 : 1;
+            }
+            // Budget measured, not guessed: 40 width-units renders at ~80% of
+            // the panel at the full 4cqw size, and anything wider shrinks in
+            // proportion. A 44-unit line was 91.7% and a 69-unit stress string
+            // 91.4% at a 44 budget — inside the panel, but too close to the
+            // edge once a wider airline face (AC Nord, WestJet, Porter) loads.
+            var k = Math.min(1, 40 / Math.max(1, w));
+            return ' style="font-size:min(15cqh,' + (4 * k).toFixed(2) + 'cqw)!important"';
+          }
+          var _l1 = _cdL[0] || TL('boardSoon');
+          return '<div class="g8-cd-label"' + _cdFit(_l1) + '>' + _l1 + '</div>'
             + '<div class="g8-cd-line">' + (_cdRondelleHtml() || '') + '</div>'
-            + (_cdL[1] ? '<div class="g8-cd-label g8-cd-label2">' + _cdL[1] + '</div>' : '');
+            + (_cdL[1] ? '<div class="g8-cd-label g8-cd-label2"' + _cdFit(_cdL[1]) + '>' + _cdL[1] + '</div>' : '');
         })()
       // 'Please remain seated until your zone is called' REMOVED (Nick).
       + '</div></div>';
@@ -18087,7 +18119,7 @@ const LS = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
-  boardSoon: { en:'Standby, Boarding Will Begin Momentarily', fr:'Veuillez Patienter, Embarquement Bientôt', es:'Espere, El Embarque Comenzará En Breve', de:'Bitte Warten, Das Boarding Beginnt Gleich', it:"Attendere, L'Imbarco Inizierà A Breve", pt:'Aguarde, O Embarque Começará Em Breve', ja:'お待ちください、まもなく搭乗を開始します', zh:'请稍候，登机即将开始', ar:'يرجى الانتظار، سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Standby, Boarding Will Begin Momentarily', fr:"Patientez, L'embarquement Commencera Bientôt", es:'Espere, El Embarque Comenzará En Breve', de:'Bitte Warten, Das Boarding Beginnt Gleich', it:"Attendere, L'Imbarco Inizierà A Breve", pt:'Aguarde, O Embarque Começará Em Breve', ja:'お待ちください、まもなく搭乗を開始します', zh:'请稍候，登机即将开始', ar:'يرجى الانتظار، سيبدأ الصعود قريباً' },
   // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
   // where the full 'MINUTES' would not fit next to a digit that size.
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
@@ -18733,7 +18765,7 @@ var _GATE_LBL = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
-  boardSoon: { en:'Standby, Boarding Will Begin Momentarily', fr:'Veuillez Patienter, Embarquement Bientôt', es:'Espere, El Embarque Comenzará En Breve', de:'Bitte Warten, Das Boarding Beginnt Gleich', it:"Attendere, L'Imbarco Inizierà A Breve", pt:'Aguarde, O Embarque Começará Em Breve', ja:'お待ちください、まもなく搭乗を開始します', zh:'请稍候，登机即将开始', ar:'يرجى الانتظار، سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Standby, Boarding Will Begin Momentarily', fr:"Patientez, L'embarquement Commencera Bientôt", es:'Espere, El Embarque Comenzará En Breve', de:'Bitte Warten, Das Boarding Beginnt Gleich', it:"Attendere, L'Imbarco Inizierà A Breve", pt:'Aguarde, O Embarque Começará Em Breve', ja:'お待ちください、まもなく搭乗を開始します', zh:'请稍候，登机即将开始', ar:'يرجى الانتظار، سيبدأ الصعود قريباً' },
   nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
