@@ -12918,10 +12918,20 @@ html body:not(#_) .wxcard-wrap .wxs-spark-temps span {
    Anchored left-top so the red band crowns the column and the carbon
    field runs beneath, matching the art's own composition.
    ═══════════════════════════════════════════════════════════════════════ */
-html body:not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col {
+/* 17x :not(#_): the AC shelf history below this file runs its own arms
+   race — ac-shelf-lux (12x), ac-back-lines (14x), and finally a
+   background-image:initial killer at 16x that silently erased the first
+   version of this rule (measured via CDP matched-styles; the computed
+   image was 'none' while the rule sat parsed and matching). One more
+   than the deepest killer, and every longhand pinned at the same weight
+   so a partial reset cannot strip the frame while keeping the image.
+   Centre-top so Nick's red panel crowns the column. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-AC .gad-aircraft-col {
   background-image: url("/logos/Backgrounds/AC/ac-plate-carbon.svg?v=1") !important;
   background-size: cover !important;
-  background-position: left top !important;
+  background-position: center top !important;
   background-repeat: no-repeat !important;
   background-color: #141618 !important; /* art's own ground, if the SVG is late */
+  background-attachment: scroll !important;
+  background-blend-mode: normal !important;
 }
