@@ -5441,7 +5441,17 @@ function getBoardingLeadMins(aircraftCode) {
   // every code the feeds use for the Dash 8-400 — DH4 (IATA), DH8D (ICAO) —
   // and the -300/-100/-200 stay on the regional default.
   var _acU = String(aircraftCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (_acU === 'DH4' || _acU === 'DH8D' || _acU === 'Q400' || /DHC8400|DASH8400/.test(_acU)) return 20;
+  // v23175 — match the WHOLE -400 family, not four exact spellings.
+  // The line above strips punctuation, so 'DHC-8-402' arrives as 'DHC8402'
+  // and 'DH8-400' as 'DH8400' — neither matched the literal DHC8400/DASH8400
+  // test, so both fell through to the 35-minute narrowbody default and the
+  // board posted boarding at dep-35 instead of dep-20. Porter's fleet is the
+  // DHC-8-402 specifically, so the exact code Nick's gates run was the one
+  // most likely to miss. Accepts DH4/DH8D (IATA/ICAO), any Q40x, and any
+  // Dash-8 spelling carrying a 40x series number.
+  if (/^(DH4|DH8D)$/.test(_acU) || /Q40[0-9]/.test(_acU) || /(?:DHC?8|DASH8)40[0-9]/.test(_acU)) return 20;
+  // The -100/-200/-300 keep the regional 25, including a bare 'DHC8'/'DH8'.
+  if (/^(DH1|DH2|DH3|DH8[ABC]|DHC?8)$/.test(_acU) || /(?:DHC?8|DASH8)[123]0[0-9]/.test(_acU)) return 25;
   if (cat === 'regional') return 25;
   if (cat === 'widebody') return 45;
   // Narrowbody - check if small (A319/A320) or large (737/A321)
@@ -9528,7 +9538,12 @@ function uxgGateHtml(ctx) {
   // WELCOME STRIP for the boarding takeovers (Nick: 'the Welcome Bienvenue
   // and the rondelle and Star') — like the physical AC gate sign's header:
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
-  function _boardWelcomeStripHtml(_stripState) {
+  // v23175 — _opts.suppressBoarding lets a caller keep the SCHEDULE half of
+  // this strip (On time / Delayed / Cancelled, which is read from _stripState)
+  // while forbidding the middle from announcing 'Now Boarding'. The countdown
+  // takeover needs exactly that: it is the pre-boarding panel by definition,
+  // so it must never sit under a strip claiming boarding is already underway.
+  function _boardWelcomeStripHtml(_stripState, _opts) {
     // WHITE-path emblems vanish on the white strip (Nick: United missing its
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
     // Swap those brands for a colored cut here, like the SkyTeam invert below.
@@ -9640,7 +9655,8 @@ function uxgGateHtml(ctx) {
     } catch (e) { _bwClock = '::MID::'; }
     // Middle: NOW BOARDING while boarding is actually on; Welcome otherwise.
     var _bwMidWords;
-    if (/^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))) {
+    if (!(_opts && _opts.suppressBoarding)
+        && /^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))) {
       // Built from the LANGUAGE PAIR (var-hoisted from the clock block above),
       // not the dedup'd label helper — one selected language shows TWICE
       // ('Now Boarding | Now Boarding') for symmetry (Nick). Quebec airports
@@ -10096,7 +10112,7 @@ function uxgGateHtml(ctx) {
     // info row + welcome strip on every takeover, countdown included.
     countdownHtml = '<div class="g8-countdown">'
       + _boardInfoRowHtml(stKey)
-      + _boardWelcomeStripHtml(stKey)
+      + _boardWelcomeStripHtml(stKey, { suppressBoarding: true })
       // v23115 — Nick's mockup. Headline above, ONE baseline carrying the
       // number + short unit + the carrier rondelle, second-language headline
       // below. Both languages show at once instead of alternating, because the
@@ -18030,7 +18046,7 @@ const LS = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
-  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:"Bientôt", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
   // where the full 'MINUTES' would not fit next to a digit that size.
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
@@ -18676,7 +18692,7 @@ var _GATE_LBL = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
-  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:"Bientôt", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
