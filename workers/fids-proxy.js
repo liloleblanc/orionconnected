@@ -452,7 +452,28 @@ async function handlePutAirport(request, env, payload, origin, code) {
   const norm = normIata(code);
   const existing = await env.FIDS_USERS.get(`airport:${norm}`);
   let cfg = existing ? JSON.parse(existing) : {};
-  const fields = ["displayName", "longName", "logo", "theme", "hideAirlinePrefix", "hideWeather", "airlineStyle"];
+  // v23174 — THE FULL CUSTOMISE SET IS NOW STORED, NOT SEVEN FIELDS.
+  // The board reads a dozen settings out of fids_customize_<IATA>, but this
+  // allowlist accepted only seven of them, so colours, fonts, languages, logo
+  // position and display mode had nowhere to live except the operator's own
+  // browser. That is why a manager's change never followed them to the next
+  // station (Nick: "if a manager wants to change the colour to an airline, if
+  // the employee goes to the next station it needs to be the same").
+  // The allowlist stays an allowlist — an unknown key is still rejected — it
+  // simply now covers everything the board actually consumes.
+  const fields = [
+    "displayName", "longName", "logo", "theme", "hideAirlinePrefix",
+    "hideWeather", "airlineStyle",
+    // v23174 additions — the rest of the customise surface
+    "customColors",   // the resolved palette (NOT a preset id — see below)
+    "presetName",     // what the operator called it, for the console
+    "font", "customFonts",
+    "langs",
+    "logoPosition", "logoSize",
+    "displayMode",    // auto | light | dark
+    "gateBlocks",     // order + on/off of the gate screen blocks
+    "tickerMessage"
+  ];
   for (const f of fields) { if (body[f] !== undefined) cfg[f] = body[f]; }
   cfg.updatedAt = Date.now();
   cfg.updatedBy = payload.sub;

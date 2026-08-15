@@ -18858,7 +18858,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23171';
+var FIDS_BUILD_TAG = 'v23174';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -24284,8 +24284,51 @@ const V2_AIRPORT_SHORT_NAME = {
 //   1. Built-in V2_AIRPORT_THEME (factory defaults)
 //   2. Admin KV config (airport-wide, overrides #1)         — loaded by Phase 2 resolver
 //   3. Local Customize prefs (per-device, overrides #2)     — from window.FIDS_CUSTOMIZE
+// v23174 — PULL THE SHARED SETTINGS FIRST, THEN REPAINT.
+// The board reads fids_customize_<IATA> out of localStorage, which is why a
+// manager's change never reached another screen: nothing ever fetched the
+// shared copy. This runs once per airport on boot, writes the server's version
+// into that same localStorage key, and re-applies. Because it lands in the key
+// the board already reads, every downstream consumer picks it up unchanged.
+//
+// Precedence is now SERVER > LOCAL, which is the half that actually matters —
+// simply storing settings centrally changes nothing while the local copy still
+// wins. localStorage is demoted to a last-known-good cache, so a screen with no
+// network still boots with whatever it saw last instead of a default.
+var _cfgPulled = Object.create(null);
+function pullSharedAirportConfig(iata, onDone) {
+  var code = String(iata || '').toUpperCase();
+  if (!code || _cfgPulled[code]) { if (onDone) onDone(false); return; }
+  _cfgPulled[code] = 1;
+  try {
+    fetch(FIDS_API_BASE + '/api/airport-config/' + encodeURIComponent(code), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (cfg) {
+        if (!cfg || typeof cfg !== 'object' || cfg.error) { if (onDone) onDone(false); return; }
+        var merged = null;
+        try {
+          // Merge over the local cache rather than replacing it: anything the
+          // server does not carry (a device-local choice) must survive.
+          var localRaw = localStorage.getItem('fids_customize_' + code);
+          var localCfg = localRaw ? JSON.parse(localRaw) : {};
+          merged = Object.assign({}, localCfg, cfg);
+          localStorage.setItem('fids_customize_' + code, JSON.stringify(merged));
+        } catch (e) {}
+        if (onDone) onDone(true, merged);
+      })
+      .catch(function () { if (onDone) onDone(false); });   // offline: cache stands
+  } catch (e) { if (onDone) onDone(false); }
+}
+
 function applyAirportConfigToBoard(iata) {
   if (!iata) return;
+  // First call for this airport: fetch the shared copy, then re-apply once it
+  // lands. The immediate pass below still runs, so the board paints from cache
+  // without waiting on the network — the shared version arrives a moment later
+  // and repaints only if it actually differs.
+  pullSharedAirportConfig(iata, function (changed) {
+    if (changed) { try { applyAirportConfigToBoard(iata); } catch (e) {} }
+  });
   const apData = AP[iata] || { name: iata };
   let _adminCfg = null;
   try { _adminCfg = (typeof getAirportConfig === 'function') ? getAirportConfig(iata) : null; } catch (e) {}
@@ -27116,7 +27159,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
           gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
           _gateMapTileLayer().addTo(gateMap);
           var _kC = _oK || _dK, _kL = _oK ? org : dst, _kCol = _oK ? '#60a5fa' : '#ef4444';
-          gateMap.setView([20, _kC[1]], 1);
+          gateMap.setView([20, _kC[1]], 1, { animate: false });
           L.circleMarker(_kC,{radius:6,color:_kCol,fillColor:_kCol,fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_kL,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
           setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300);
         } else if (mb) {
@@ -27232,7 +27275,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       // camera 'zooms out and the aircraft does not show on the map'
       // (Nick). The field stays in frame anyway once the plane is close.
       if (p >= 0.12 && p < 0.995) {
-        gateMap.setView(planePos, zoom);
+        gateMap.setView(planePos, zoom, { animate: false });
       }
   }_gateMapSettle(o,d,p,500);}
 
@@ -27329,7 +27372,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
           gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
           _gateMapTileLayer().addTo(gateMap);
           var _kC2 = _oK2 || _dK2, _kL2 = _oK2 ? org : dst, _kCol2 = _oK2 ? '#60a5fa' : '#ef4444';
-          gateMap.setView([20, _kC2[1]], 1);
+          gateMap.setView([20, _kC2[1]], 1, { animate: false });
           L.circleMarker(_kC2,{radius:6,color:_kCol2,fillColor:_kCol2,fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_kL2,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
           setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300);
         } else if (mb) {
@@ -27486,7 +27529,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   gateMap._fidsLive = true;   // live map — the marker watchdog polices this one
   gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
   try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e) {}
-  gateMap.setView([planeLat, planeLng], zoom);
+  gateMap.setView([planeLat, planeLng], zoom, { animate: false });
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
   // (The old single ideal arc left any real-world deviation looking
@@ -36623,14 +36666,14 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
     // Landed: city-level on destination
     zoom = 11; center = d;
   }
-  window._bigCraftMap.setView(center, zoom);
+  window._bigCraftMap.setView(center, zoom, { animate: false });
   // For pre-departure flights, fit bounds to show both endpoints with padding.
   if (p < 0.02) {
     try {
-      window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11 });
+      window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
     } catch(e) { /* fallback to setView above */ }
   }
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[14,14],maxZoom:11});}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[14,14],maxZoom:11, animate: false });}catch(e){}}}},100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -36646,9 +36689,9 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       // estimated plane off-screen (Nick's 31s clip: static camera on the
       // field, plane sliding out of the corner).
       if (p >= 0.12 && p < 0.995) {
-        window._bigCraftMap.setView(planePos, zoom);
+        window._bigCraftMap.setView(planePos, zoom, { animate: false });
       }
-  }setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[14,14],maxZoom:11});}catch(e){}}}},500);}
+  }setTimeout(function(){if(window._bigCraftMap){window._bigCraftMap.invalidateSize();if(p<0.02){try{window._bigCraftMap.fitBounds([o,d],{padding:[14,14],maxZoom:11, animate: false });}catch(e){}}}},500);}
 
 
 function _bigMapCloneLive(org,dst,planeLat,planeLng){
@@ -36725,7 +36768,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   else if (nearDst < 0.06) zoom = 11;
   else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
-  window._bigCraftMap.setView([planeLat, planeLng], zoom);
+  window._bigCraftMap.setView([planeLat, planeLng], zoom, { animate: false });
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
   // (The old single ideal arc left any real-world deviation looking

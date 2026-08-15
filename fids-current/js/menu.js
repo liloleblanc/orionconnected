@@ -1551,7 +1551,68 @@ function _cuLoad() {
 }
 
 function _cuSave(prefs) {
+  // Local write stays — it is the offline cache and the instant-preview source.
   try { localStorage.setItem(_cuStorageKey(), JSON.stringify(prefs)); } catch (e) {}
+  // …and the change now goes to the SERVER, so it follows the operator to the
+  // next station instead of living in one browser (v23174).
+  _cuPushToServer(prefs);
+}
+
+// ── SERVER-SIDE PREFERENCES (v23174) ─────────────────────────────────────────
+// Until now every customise setting lived only in this browser's localStorage.
+// A manager changing an airline's colours changed them on the machine in front
+// of them and nowhere else — Nick: "the setting needs to live not locally, if a
+// manager wants to change the colour to an airline, if the employee goes to the
+// next station it needs to be the same."
+//
+// The store already existed: fids-proxy keeps airport:{IATA} in KV and the board
+// already READS it on boot. What was missing was (a) the server's allowlist only
+// accepted 7 of the ~14 settings, and (b) nothing ever wrote the rest to it.
+//
+// Writing requires a signed-in session, by design: an anonymous viewer must
+// never be able to change what a terminal displays. Signed out, the change still
+// applies locally to that screen and simply is not shared — which is the correct
+// behaviour for someone previewing on their own device.
+function _cuPushToServer(prefs) {
+  var code = (typeof _acCurrentCode === 'function') ? _acCurrentCode() : '';
+  if (!code) return;
+  var token = (typeof _acGetToken === 'function') ? _acGetToken() : null;
+  if (!token) return;              // anonymous: local only, no shared write
+  try {
+    _acFetch('https://fids-proxy.n-leblanc1984.workers.dev/api/airport-config/' + encodeURIComponent(code), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(prefs)
+    }).then(function (r) {
+      if (r && r.ok) { try { _cuFlashSaved('Saved to all screens / Enregistré sur tous les écrans'); } catch (e) {} }
+    }, function () {});
+  } catch (e) {}
+}
+
+// Pull the shared settings for this airport and make them WIN over the local
+// copy. Precedence had to invert: local used to outrank the server on every
+// path, so a central store would have changed nothing on its own — the manager's
+// save would appear to work and then not take effect anywhere else.
+// The local copy is kept as a last-known-good cache so a screen still boots
+// correctly if the backend is unreachable.
+function _cuPullFromServer(code, done) {
+  code = (code || ((typeof _acCurrentCode === 'function') ? _acCurrentCode() : '')).toUpperCase();
+  if (!code) { if (done) done(null); return; }
+  try {
+    fetch('https://fids-proxy.n-leblanc1984.workers.dev/api/airport-config/' + encodeURIComponent(code), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (cfg) {
+        if (!cfg || typeof cfg !== 'object') { if (done) done(null); return; }
+        try { localStorage.setItem('fids_customize_' + code, JSON.stringify(cfg)); } catch (e) {}
+        if (done) done(cfg);
+      })
+      .catch(function () { if (done) done(null); });   // offline: the cache stands
+  } catch (e) { if (done) done(null); }
+}
+
+function _cuFlashSaved(msg) {
+  try { if (typeof _acFlash === 'function') { _acFlash(msg, false); return; } } catch (e) {}
+  try { if (typeof usFlash === 'function') usFlash(msg, false); } catch (e) {}
 }
 
 // Read the form into a prefs object (only fields the user actually set are stored)
