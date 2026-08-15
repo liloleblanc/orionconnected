@@ -27574,7 +27574,18 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   gateMap._fidsLive = true;   // live map — the marker watchdog polices this one
   gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
   try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e) {}
-  gateMap.setView([planeLat, planeLng], zoom, { animate: false });
+  // v23175 — THE LIVE FOLLOW-CAMERA EASES; IT DOES NOT TELEPORT.
+  // v23174 put { animate: false } on every setView in this file at once. That
+  // is right for the ESTIMATE builders, where the call is the map ARRIVING at
+  // its one view. It is wrong here: this is the per-poll correction that keeps
+  // a GLIDING aircraft centred, so making it instant snapped the whole world
+  // sideways under a smoothly moving plane every poll. Pan only when the zoom
+  // is already correct (Leaflet cannot animate a pan and a zoom together), and
+  // fall back to the instant set when the zoom really has to change.
+  try {
+    if (gateMap.getZoom() === zoom) gateMap.panTo([planeLat, planeLng], { animate: true, duration: 0.45, easeLinearity: 0.25 });
+    else gateMap.setView([planeLat, planeLng], zoom, { animate: false });
+  } catch (e) { gateMap.setView([planeLat, planeLng], zoom, { animate: false }); }
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
   // (The old single ideal arc left any real-world deviation looking
@@ -36036,10 +36047,26 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 // (same Leaflet language as the mini map) beside the flight info table and
 // the aircraft. Honest by construction: with no live fix the plane glyph
 // sits at time-progress exactly like the mini map, captioned 'Estimated'.
-function _bigCraftTeardown() {
+// v23175 — keepSurface: a MID-DWELL REPAINT KEEPS THE MAP IT IS ALREADY SHOWING.
+//
+// v23166 spotted that every gate rebuild re-entered _renderBigCraft and stopped
+// the overlay REPLAYING ITS GROW. It did not stop this teardown, which ran
+// unconditionally one line later and destroyed window._bigCraftMap — so the
+// biggest panel on the display still threw its Leaflet map away, reloaded its
+// tiles and orphaned the glide's marker on 100% of draws, several times inside
+// one 45s dwell. Suppressing the animation while still rebuilding the thing
+// underneath is why the panel kept flashing after that "fix".
+//
+// It also made the v23106 in-place re-anchor in _bigMapCloneLive UNREACHABLE:
+// that guard requires window._bigCraftMap.getContainer() === mb, and mb was a
+// brand-new element every time. Dead code that read as a live optimisation.
+//
+// Callers that genuinely END the takeover still call this with no argument and
+// get the full teardown.
+function _bigCraftTeardown(keepSurface) {
   try { (window._bigCraftTimers || []).forEach(function (id) { clearTimeout(id); clearInterval(id); }); window._bigCraftTimers = []; } catch (e) {}
-  try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
-  try { if (window._bigCraftOverlay) { window._bigCraftOverlay.remove(); window._bigCraftOverlay = null; } } catch (e) {}
+  try { if (!keepSurface && window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
+  try { if (!keepSurface && window._bigCraftOverlay) { window._bigCraftOverlay.remove(); window._bigCraftOverlay = null; } } catch (e) {}
   try { document.querySelectorAll('.g8-bigcraft-active').forEach(function (w) { w.classList.remove('g8-bigcraft-active'); }); } catch (e) {}
   // v23101 — REBUILD THE MINI MAP THE MOMENT IT IS REVEALED. The bigcraft
   // class hides #gateMapBox for the slide's whole dwell; if a gate re-render
@@ -36082,7 +36109,7 @@ function _renderBigCraft(el, ctx) {
     && window._bigCraftVisitSlot === window._gateAdCurrentIdx
     && (Date.now() - window._bigCraftVisitStart) <= 120000
   );
-  if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown();
+  if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown(_bcContinuation);
   // Leg-aware: on the outbound fallback (ctx.out) the status/reg belong to
   // the departing flight, not the (absent) inbound.
   var inb = (ctx && ctx.out) ? (window._gateCurrentFlight || {}) : (window._gateInbound || {});
@@ -36131,8 +36158,18 @@ function _renderBigCraft(el, ctx) {
   // the panel — it IS the panel.
   var _bcWrapEl = el.closest ? (el.closest('.g8-wrap') || document.body) : document.body;
   var _bcElR = el.getBoundingClientRect(), _bcWrapR = _bcWrapEl.getBoundingClientRect();
-  var _bcOv = document.createElement('div');
-  _bcOv.className = 'bigcraft-overlay';
+  // v23175 — A CONTINUATION REUSES THE PANEL IT IS ALREADY SHOWING.
+  // Rebuilding the overlay rebuilt '#bigCraftMap' with it, which forced a fresh
+  // Leaflet map, a fresh tile load and a fresh plane marker on every repaint —
+  // the actual flash, and the reason the v23106 in-place re-anchor could never
+  // fire (it tests getContainer() === mb against an element born microseconds
+  // earlier). Keeping the node keeps the map, the loaded tiles and the glide's
+  // marker; only the caption can differ between repaints, so only it is synced.
+  var _bcReuse = !!(_bcContinuation && window._bigCraftOverlay
+                    && window._bigCraftOverlay.isConnected
+                    && window._bigCraftOverlay.querySelector('#bigCraftMap'));
+  var _bcOv = _bcReuse ? window._bigCraftOverlay : document.createElement('div');
+  if (!_bcReuse) _bcOv.className = 'bigcraft-overlay';
   // A continuation is already at full size on screen — suppress the entry grow
   // so a mid-dwell repaint is invisible instead of a 650ms pump (v23166).
   // The rule this overrides carries !important (display-overrides.css ~1791),
@@ -36147,14 +36184,31 @@ function _renderBigCraft(el, ctx) {
   // terrible transition'). Keep the previous ad visible UNDER the growing
   // overlay; clear it only once the opaque overlay has fully covered it.
   // Map only — the info lives in the REAL right-column panel beside it.
-  _bcOv.innerHTML =
-      '<div class="bigcraft-wrap bigcraft-wrap--maponly">'
-    +   '<div class="bigcraft-mapcol">'
-    +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
-    +     (ctx.estimated ? '<div class="bigcraft-est">Estimated position · Position estimée</div>' : '')
-    +   '</div>'
-    + '</div>';
-  _bcWrapEl.appendChild(_bcOv);
+  if (_bcReuse) {
+    // Keep the map node untouched — re-writing innerHTML here is exactly what
+    // destroyed it. Sync the one thing that can legitimately change.
+    try {
+      var _bcCol = _bcOv.querySelector('.bigcraft-mapcol');
+      var _bcEst = _bcOv.querySelector('.bigcraft-est');
+      if (ctx.estimated && !_bcEst && _bcCol) {
+        _bcEst = document.createElement('div');
+        _bcEst.className = 'bigcraft-est';
+        _bcEst.textContent = 'Estimated position · Position estimée';
+        _bcCol.appendChild(_bcEst);
+      } else if (!ctx.estimated && _bcEst) {
+        _bcEst.remove();
+      }
+    } catch (e) {}
+  } else {
+    _bcOv.innerHTML =
+        '<div class="bigcraft-wrap bigcraft-wrap--maponly">'
+      +   '<div class="bigcraft-mapcol">'
+      +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
+      +     (ctx.estimated ? '<div class="bigcraft-est">Estimated position · Position estimée</div>' : '')
+      +   '</div>'
+      + '</div>';
+    _bcWrapEl.appendChild(_bcOv);
+  }
   _bcWrapEl.classList.add('g8-bigcraft-active');
   window._bigCraftOverlay = _bcOv;
   // Free the old carousel content AFTER the grow finishes (overlay now opaque
@@ -36869,7 +36923,18 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   else if (nearDst < 0.06) zoom = 11;
   else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
-  window._bigCraftMap.setView([planeLat, planeLng], zoom, { animate: false });
+  // v23175 — THE LIVE FOLLOW-CAMERA EASES; IT DOES NOT TELEPORT.
+  // v23174 put { animate: false } on every setView in this file at once. That
+  // is right for the ESTIMATE builders, where the call is the map ARRIVING at
+  // its one view. It is wrong here: this is the per-poll correction that keeps
+  // a GLIDING aircraft centred, so making it instant snapped the whole world
+  // sideways under a smoothly moving plane every poll. Pan only when the zoom
+  // is already correct (Leaflet cannot animate a pan and a zoom together), and
+  // fall back to the instant set when the zoom really has to change.
+  try {
+    if (window._bigCraftMap.getZoom() === zoom) window._bigCraftMap.panTo([planeLat, planeLng], { animate: true, duration: 0.45, easeLinearity: 0.25 });
+    else window._bigCraftMap.setView([planeLat, planeLng], zoom, { animate: false });
+  } catch (e) { window._bigCraftMap.setView([planeLat, planeLng], zoom, { animate: false }); }
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
   // (The old single ideal arc left any real-world deviation looking
