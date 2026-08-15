@@ -190,10 +190,16 @@
   </style>
 </div>
 
-<script src="js/auth.js?v=35"></script>
+<script src="js/auth.js?v=23170"></script>
 <script>
   // ── Mode Detection ────────────────────────────────────────────────────
-  const mode = sessionStorage.getItem('fids_mode') || 'demo';
+  // v23170 — DEFAULT LIVE, matching the boards.
+  // gids/fids/bids.html all read `params.get('mode') || sessionStorage.getItem('fids_mode') || 'live'`
+  // under the v22832 rule "never silently demo — ?mode=demo is the only door".
+  // This line defaulted to 'demo' instead, so a fresh tab arriving at the
+  // picker was treated as a demo session while every board it launched
+  // considered itself live. Same storage key, opposite defaults.
+  const mode = sessionStorage.getItem('fids_mode') || 'live';
   const isLive = mode === 'live' && Auth.init();
 
   // Update badge
