@@ -186,7 +186,7 @@
   <link rel="stylesheet" href="css/airport-fonts.css?v=312">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
   <link rel="stylesheet" href="css/shared.css?v=23166">
-  <link rel="stylesheet" href="css/menu.css?v=21899-22">
+  <link rel="stylesheet" href="css/menu.css?v=23173">
   <link rel="stylesheet" href="css/fids.css?v=22852">
   <link rel="stylesheet" href="css/flight-display.css?v=22852">
   <link rel="stylesheet" href="css/baggage-display.css?v=322">
@@ -229,6 +229,30 @@
   #gateView, #baggageView { display:block !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; position:static !important; }
   #gateView > div, #baggageView > div { min-height:0 !important; height:auto !important; }
 }
+</style>
+<style id="fids-preflash-guard">
+/* v23172 — DO NOT PAINT THE MAIN-BOARD CHROME ON A GATE/BAGGAGE SCREEN.
+   (Nick: "there is stuff hidden I can see it when I load like banners that
+   were from a while back are still hidden behind")
+
+   This page ships the FULL main-board markup — the departures banner, the
+   column headers and the baggage ticker — because one page serves every screen
+   type. Those elements are visible in the markup, and script hides them once it
+   knows this is a gate/baggage screen. So on every single load they PAINT FIRST
+   and are removed a frame or two later: the "Time in Moncton" banner and the
+   Airline/Flight#/Gate header row appearing over the gate screen at boot.
+
+   Hiding them outright is not an option — the screen type can be switched to
+   the main board from the console, and then they are wanted.
+
+   So they are suppressed only for the window in which the answer is not known
+   yet. The moment script has applied the screen type it stamps
+   data-screen-ready on <html> and this rule stops applying, leaving whatever
+   was decided. Inline in <head> so it binds before any stylesheet arrives —
+   an external rule can itself be late enough to flash. */
+html:not([data-screen-ready]) #fidsBanner,
+html:not([data-screen-ready]) .ticker,
+html:not([data-screen-ready]) .content-area { display: none !important; }
 </style>
 </head>
 <body data-page="bids">
@@ -856,7 +880,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=5"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/fids-core.js?v=23172"></script>
+<script src="js/fids-core.js?v=23173"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
@@ -939,6 +963,10 @@ window.addEventListener("DOMContentLoaded", async function() {
     if (requestedBelt) {
       try { subScreenVal = String(requestedBelt).toUpperCase(); } catch (e) {}
     }
+
+    // The screen type is settled by this point — release the pre-flash
+    // guard in <head> so anything genuinely wanted can paint (v23172).
+    try { document.documentElement.setAttribute('data-screen-ready', '1'); } catch (e) {}
 
     if (startMode === 'live') {
       LIVE_MODE = true;
