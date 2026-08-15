@@ -16,10 +16,22 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 //   ADB_WEBHOOK_SECRET     — optional, for ADB webhook signature checks
 //   TIO_KEY                — Tomorrow.io API key (weather)
 //
-// REQUIRED bindings:
-//   FIDS_USERS, FIDS_AIRPORT_CONFIG, CITY_BG_CACHE, FIDS_MEDIA — KV namespaces
-//   FIDS_ASSETS                                                — R2 bucket
-//   AI                                                         — Workers AI
+// REQUIRED bindings (CORRECTED 2026-08-15 — see docs/OPERATIONS-BRIEF.md):
+//   FIDS_USERS         KV — users, airport config, airline overrides, media
+//   FIDS_LIVE_FLIGHTS  KV — webhook flight cache (36h TTL)
+//   CITY_BG_CACHE      KV — AI backgrounds + destination info
+//   FIDS_ASSETS        R2 — logos and uploaded media
+//   AI                    — Workers AI
+//
+// The previous version of this comment listed FIDS_AIRPORT_CONFIG and
+// FIDS_MEDIA, NEITHER OF WHICH EXISTS — the code never references them, and
+// everything goes into FIDS_USERS. It also omitted FIDS_LIVE_FLIGHTS, which IS
+// used. Deploying from that list bound two phantom namespaces and missed a real
+// one, which is part of why this worker had no committed deploy config for so
+// long. The authoritative config is now workers/wrangler.fids-proxy.jsonc.
+//
+// TIO_KEY is also listed below but no longer used — weather comes from
+// open-meteo, which needs no key.
 
 // ── PASSWORDS ─────────────────────────────────────────────────────────────
 // v23169. What was here was a bare SHA-256 of the password: no salt, no
@@ -1767,6 +1779,12 @@ var fids_proxy_default = {
       }
     }
 
+    // ⚠️ THIS GATE IS OPT-IN, NOT DEFAULT-DENY. It only protects paths under
+    // /auth/users or /api/. ANY route registered outside those prefixes is
+    // PUBLIC BY CONSTRUCTION — which is how six destructive endpoints ended up
+    // reachable with no credentials (fixed v23169; see docs/OPERATIONS-BRIEF.md).
+    // Put new admin routes UNDER /api/ so they inherit this, or guard them
+    // explicitly with requireOpsSecret(). Do not assume anything is protected.
     if (path.startsWith("/auth/users") || path.startsWith("/api/")) {
       const authHeader = request.headers.get("Authorization");
       if (!authHeader || !authHeader.startsWith("Bearer ")) {

@@ -22936,6 +22936,24 @@ function _crossTrackKm(plat, plng, alat, alng, blat, blng) {
 //
 // Rate discipline: one lookup per 60 s gate poll, plus a 45 s cache, so a
 // wall of screens on one gate makes one request per minute between them.
+// ⚠️ THIS FEED IS DEAD AS OF 2026-08-15 — see docs/OPERATIONS-BRIEF.md.
+// api.airplanes.live now RETURNS 403 ("contact us... include a link to your
+// project") to unregistered callers, AND sends no Access-Control-Allow-Origin,
+// so the browser blocks it regardless. The comment below claiming
+// "access-control-allow-origin:*" was true once and quietly stopped being true.
+//
+// Everything downstream of this therefore never runs, and each failure looks
+// like its own separate bug:
+//   • the map falls back to CLOCK-ESTIMATED positions, not real ones
+//   • the runway-aligned final approach can never draw (needs a live fix <25nm)
+//   • "landed" detection can never fire (needs a ground fix <6nm)
+//   • inb._liveTrack is never set, so _gateHeading() always falls back to the
+//     bearing toward the destination rather than the true track
+//
+// Fix = register with a provider (airplanes.live, adsb.fi, OpenSky,
+// FlightAware), then PROXY IT THROUGH fids-proxy. Calling it from the browser
+// means traffic scales with the number of viewers; server-side with a cache it
+// stays flat regardless of audience.
 var _ADSB_BASE = 'https://api.airplanes.live/v2';
 var _adsbCache = Object.create(null);
 var _ADSB_TTL_MS = 45000;
