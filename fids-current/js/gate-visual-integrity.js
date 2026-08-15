@@ -123,8 +123,29 @@
     });
   }
 
+  // v23166 — DO NOTHING WHILE THIS BOARD IS OFF SCREEN.
+  //
+  // This file measures where an advert's pixels actually land so the surround
+  // can be inset to match. Every part of that is only meaningful if someone can
+  // see the advert. But it ran unconditionally: a MutationObserver over the
+  // WHOLE document plus a 1s interval, each scheduling a pass that calls
+  // getBoundingClientRect on every image and video — a forced synchronous
+  // layout. rotate.html keeps three boards alive at once, so that cost was
+  // being paid three times over on a 2-vCPU host that is also running ffmpeg,
+  // and the board you were actually looking at had to fight the other two for
+  // the main thread. That contention is the stutter.
+  //
+  // window._ocIdle is published by fids-core for exactly this: it is true only
+  // when the rotator has told this frame it is hidden. A standalone display
+  // never receives that message, so _ocIdle stays false and behaviour there is
+  // unchanged. Coming back on screen fires a fresh pass via the load/mutation
+  // path before the fade finishes, so nothing is ever seen unmeasured.
+  function isOffScreen() {
+    try { return typeof window._ocIdle === 'function' && window._ocIdle(); } catch (e) { return false; }
+  }
+
   function scheduleUpdate() {
-    if (scheduled) return;
+    if (scheduled || isOffScreen()) return;
     scheduled = true;
     window.requestAnimationFrame(updateAdvertSafeZones);
   }
@@ -133,11 +154,28 @@
     if (event.target && /^(IMG|VIDEO)$/.test(event.target.tagName || '')) scheduleUpdate();
   }, true);
   window.addEventListener('resize', scheduleUpdate);
+  // v23166 — STOP WATCHING 'style'. This observer's job is to notice when an
+  // advert's MEDIA changes — a new slide (childList), a new source (src), a
+  // state class (class). It was also watching every inline `style` write in the
+  // entire document, and the gate's JS font fitters write inline style
+  // constantly: measured on the live board at ~18 writes per second with nothing
+  // happening on screen. Every one of those scheduled a pass that ran
+  // getBoundingClientRect over every image and video on the page.
+  //
+  // Worse, it was partly watching itself: updateAdvertSafeZones sets inline
+  // custom properties on the column, which is a 'style' mutation, which
+  // re-triggered this observer. A font size has nothing to do with where an
+  // advert's pixels land, so this was pure self-inflicted layout work.
+  //
+  // The signals that genuinely matter are all still covered: childList and src
+  // for a slide change, class for state, the capture-phase load listener for a
+  // decoded image, resize for the window, and the 1s interval as a backstop for
+  // anything that settles late.
   new MutationObserver(scheduleUpdate).observe(document.documentElement, {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['class', 'src', 'style']
+    attributeFilter: ['class', 'src']
   });
   window.setInterval(scheduleUpdate, 1000);
   scheduleUpdate();
