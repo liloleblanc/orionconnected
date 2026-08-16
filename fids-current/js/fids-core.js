@@ -9381,6 +9381,7 @@ function uxgGateHtml(ctx) {
   var row4Html = '';
   var boardActive = false;
   var finalActive = false;
+  var generalActive = false;   // v23178 — everyone may board, final imminent
 
   // Inbound info
   var inbPanelHtml = '';
@@ -9533,6 +9534,11 @@ function uxgGateHtml(ctx) {
       // Final call or gate closed
       finalActive = true;
       window._gateFinalStatus = stKey;
+    } else if (minsToDep <= 11) {
+      // v23178 — GENERAL BOARDING (Nick: "we forgot this one for everyone
+      // before final call ... general boarding for all then final"). The
+      // 11-minute threshold is a dial.
+      generalActive = true;
     } else {
       boardActive = true;
     }
@@ -9741,7 +9747,14 @@ function uxgGateHtml(ctx) {
     } catch (e) { _bwClock = '::MID::'; }
     // Middle: NOW BOARDING while boarding is actually on; Welcome otherwise.
     var _bwMidWords;
-    if (!(_opts && _opts.suppressBoarding)
+    if (String(_stripState || '') === 'general') {
+      // v23178 — GENERAL BOARDING (Nick's mockup): everyone may board, final
+      // call imminent — the strip carries the warning.
+      var _fcnO = _GATE_LBL.finalCallNext || {};
+      var _fcn1 = _fcnO[_bwL1] || _fcnO.en || 'Final Call Next';
+      var _fcn2 = _fcnO[_bwL2] || _fcn1;
+      _bwMidWords = _fcn1 + (_fcn2 !== _fcn1 ? ' <span class="g8-bw-sep">|</span> ' + _fcn2 : '');
+    } else if (!(_opts && _opts.suppressBoarding)
         && /^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))) {
       // Built from the LANGUAGE PAIR (var-hoisted from the clock block above),
       // not the dedup'd label helper — one selected language shows TWICE
@@ -9765,7 +9778,8 @@ function uxgGateHtml(ctx) {
       + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
     // v23178 — the strip wears its STATE: final call must read RED and the
     // CSS needs a hook to do it without JS repainting anything.
-    var _bwStateCls = /final/.test(String(_stripState || '')) ? ' g8-bw-state-final' : '';
+    var _bwStateCls = /general/.test(String(_stripState || '')) ? ' g8-bw-state-general'
+                    : /final/.test(String(_stripState || ''))   ? ' g8-bw-state-final' : '';
     return '<div class="g8-board-welcome g8-bw-clocked' + _bwStateCls + '">'
       + _bwClock.replace('::MID::', '<div class="g8-bw-mid">' + _bwMid + '</div>')
       + '</div>';
@@ -10054,6 +10068,8 @@ function uxgGateHtml(ctx) {
       + '</div>';
   }
 
+  if (typeof isGeneralPhase !== 'undefined' && isGeneralPhase) { generalHtml = finalHtml; finalHtml = ''; }
+
   // Build boarding panel HTML
   var boardHtml = '';
   if (boardActive) {
@@ -10156,13 +10172,14 @@ function uxgGateHtml(ctx) {
   }
 
   // Build final call HTML
-  var finalHtml = '';
-  if (finalActive) {
+  var finalHtml = '', generalHtml = '';
+  if (finalActive || generalActive) {
+    var isGeneralPhase = generalActive && !finalActive;
     var isGateClosed = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed');
     // v23130 — the header is a bilingual pair like every other sign line
     // (Nick: 'all needs to be in the 2 languages'). Each language is one
     // nowrap span; the pipe sits between; a narrow band stacks whole lines.
-    var finalHdr = _gateLbl(isGateClosed ? 'gateClosed' : 'finalCall', _frF,
+    var finalHdr = _gateLbl(isGeneralPhase ? 'generalBoarding' : (isGateClosed ? 'gateClosed' : 'finalCall'), _frF,
       function (w) { return '<span class="g8-lane-p">' + w + '</span>'; },
       '<span class="g8-lane-sep"> <span class="g8-bir-sep">|</span> </span>', true);
     if (!finalHdr) finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
@@ -10201,8 +10218,9 @@ function uxgGateHtml(ctx) {
       else _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
       // FINAL CALL replaces the Welcome strip (Nick) — one call-out where
       // the welcome sat, more room for the lane panels below.
-      finalHtml = '<div class="g8-final active">'
-        + _boardInfoRowHtml('final')
+      finalHtml = '<div class="g8-final active' + (isGeneralPhase ? ' g8-general' : '') + '">'
+        + _boardInfoRowHtml(isGeneralPhase ? 'boardnow' : 'final')
+        + (isGeneralPhase ? _boardWelcomeStripHtml('general') : '')
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
         + (_fcAcFam
           ? _acLanesBodyHtml(_fcExpress ? '3 • 4' : '3 • 4 • 5 • 6')
@@ -10293,6 +10311,8 @@ function uxgGateHtml(ctx) {
   // Determine which row4 content to show
   if (finalActive) {
     row4Html = finalHtml;
+  } else if (generalActive) {
+    row4Html = generalHtml;
   } else if (boardActive) {
     row4Html = boardHtml;
   } else if (showCountdown) {
@@ -10319,6 +10339,7 @@ function uxgGateHtml(ctx) {
   // Publishing state + html here lets the controller re-attach an UNCHANGED
   // takeover untouched (no repaint at all) and cross-fade only a real change.
   var _toState = finalActive ? 'final'
+               : generalActive ? 'general'
                : boardActive ? 'board'
                : showCountdown ? 'countdown'
                : 'inbound';
@@ -18316,6 +18337,8 @@ const LS = {
   depDelayed:{ en:'This flight has been delayed. Please check the updated departure time.',fr:'Ce vol est en retard. Veuillez vérifier l\'heure de départ mise à jour.',es:'Este vuelo ha sido retrasado. Por favor verifique la hora de salida actualizada.',de:'Dieser Flug hat Verspätung. Bitte prüfen Sie die aktualisierte Abflugzeit.',it:'Questo volo è in ritardo. Si prega di verificare l\'orario di partenza aggiornato.',pt:'Este voo está atrasado. Por favor verifique o horário de partida atualizado.',ja:'この便は遅延しています。出発時刻をご確認ください。',zh:'此航班已延误，请查看更新后的出发时间。',ar:'تأخرت هذه الرحلة. يرجى التحقق من وقت المغادرة المحدث.' },
   nowBoardMsg:{ en:'Now boarding. Please proceed to gate',fr:'Embarquement en cours. Veuillez vous diriger vers la porte',es:'Embarcando ahora. Diríjase a la puerta',de:'Jetzt Boarding. Bitte begeben Sie sich zum Gate',it:'Imbarco in corso. Procedere al gate',pt:'Embarque em curso. Dirija-se ao portão',ja:'搭乗中です。ゲートにお進みください',zh:'正在登机，请前往登机口',ar:'الصعود الآن. يرجى التوجه إلى البوابة' },
   boardApprox:{ en:'Your flight will board in approximately',fr:"L'embarquement de votre vol commencera dans environ",es:'Su vuelo embarcará en aproximadamente',de:'Das Boarding Ihres Fluges beginnt in ca.',it:"L'imbarco del vostro volo inizierà tra circa",pt:'O embarque do seu voo começará em aproximadamente',ja:'搭乗は約',zh:'您的航班将在约',ar:'سيبدأ صعود رحلتك خلال حوالي' },
+  finalCallNext: { en:'Final Call Next', fr:'Appel final bientôt', es:'Última llamada pronto', de:'Letzter Aufruf folgt', it:'Ultima chiamata a breve', pt:'Última chamada em breve', ja:'まもなく最終案内', zh:'即将最后广播', ar:'النداء الأخير قريباً' },
+  generalBoarding: { en:'General Boarding', fr:'Embarquement général', es:'Embarque general', de:'Allgemeines Boarding', it:'Imbarco generale', pt:'Embarque geral', ja:'一般搭乗', zh:'普通登机', ar:'الصعود العام' },
   finalCall: { en:'FINAL BOARDING CALL',fr:'DERNIER APPEL',es:'ÚLTIMA LLAMADA',de:'LETZTER AUFRUF',it:'ULTIMA CHIAMATA',pt:'ÚLTIMA CHAMADA',ja:'最終搭乗案内',zh:'最后登机广播',ar:'النداء الأخير للصعود' },
   gateClosed:{ en:'GATE CLOSED',fr:'PORTE FERMÉE',es:'PUERTA CERRADA',de:'GATE GESCHLOSSEN',it:'GATE CHIUSO',pt:'PORTÃO FECHADO',ja:'ゲート閉鎖',zh:'登机口已关闭',ar:'البوابة مغلقة' },
   next3days:{ en:'Next 3 Days',fr:'3 prochains jours',es:'Próximos 3 días',de:'Nächste 3 Tage',it:'Prossimi 3 giorni',pt:'Próximos 3 dias',ja:'3日間',zh:'未来3天',ar:'الأيام الثلاثة القادمة' },
@@ -18907,6 +18930,8 @@ var _GATE_LBL = {
   timeIn:    { en:'Time in',       fr:'Heure à',        es:'Hora en',      de:'Zeit in',     it:'Ora a',       pt:'Hora em',    ja:'現地時刻',  zh:'当地时间', ar:'التوقيت في' },
   time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
   zones:     { en:'Zones',         fr:'Zones',          es:'Zonas',        de:'Zonen',       it:'Zone',        pt:'Zonas',      ja:'ゾーン',    zh:'区域',   ar:'مناطق' },
+  finalCallNext: { en:'Final Call Next', fr:'Appel final bientôt', es:'Última llamada pronto', de:'Letzter Aufruf folgt', it:'Ultima chiamata a breve', pt:'Última chamada em breve', ja:'まもなく最終案内', zh:'即将最后广播', ar:'النداء الأخير قريباً' },
+  generalBoarding: { en:'General Boarding', fr:'Embarquement général', es:'Embarque general', de:'Allgemeines Boarding', it:'Imbarco generale', pt:'Embarque geral', ja:'一般搭乗', zh:'普通登机', ar:'الصعود العام' },
   finalCall: { en:'FINAL BOARDING CALL', fr:'DERNIER APPEL', es:'ÚLTIMA LLAMADA', de:'LETZTER AUFRUF', it:'ULTIMA CHIAMATA', pt:'ÚLTIMA CHAMADA', ja:'最終搭乗案内', zh:'最后登机广播', ar:'النداء الأخير للصعود' },
   gateClosed:{ en:'GATE CLOSED',   fr:'PORTE FERMÉE',   es:'PUERTA CERRADA', de:'GATE GESCHLOSSEN', it:'GATE CHIUSO', pt:'PORTÃO FECHADO', ja:'ゲート閉鎖', zh:'登机口已关闭', ar:'البوابة مغلقة' },
   useLane:   { en:'Use Lane',      fr:'Utilisez la voie', es:'Use carril',  de:'Spur nutzen', it:'Usa corsia',  pt:'Use faixa',  ja:'レーン',    zh:'通道',   ar:'استخدم الممر' },

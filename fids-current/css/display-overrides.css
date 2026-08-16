@@ -12834,3 +12834,10 @@ html body .g8-bw-clocked.g8-bw-state-final .g8-bw-pill {
   background: #ffffff !important; border-color: rgba(255,255,255,0.9) !important;
 }
 html body .g8-bw-clocked.g8-bw-state-final .g8-bw-pill .g8-bw-st-val { color: #b91c1c !important; }
+
+/* v23178 — GENERAL BOARDING strip state: the escalation step between the
+   white boarding strip and the red final strip. Amber band, dark type; the
+   pill stays readable on it. */
+html body .g8-bw-clocked.g8-bw-state-general { background: #f59e0b !important; }
+html body .g8-bw-clocked.g8-bw-state-general .g8-bw-text,
+html body .g8-bw-clocked.g8-bw-state-general .g8-bw-sep { color: #1a1206 !important; }
