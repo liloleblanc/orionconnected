@@ -276,6 +276,12 @@
 
     if (this.halftone) this._drawHalftone(g, W, H);
 
+    // Place names — from data, not tiles. Rank-gated by zoom so a world view
+    // shows only megacities and a final-approach view shows the local towns;
+    // greedy collision culling so labels never pile into each other. Important
+    // places are drawn first, so when two collide the bigger city wins.
+    if (this.places && global.WORLD_PLACES) this._drawPlaces(g, cx, cy, W, H);
+
     var R = this._route;
     if (R) {
       // WORLD-COPY ALIGNMENT. gcPoints() unwraps longitudes so the polyline is
@@ -341,6 +347,41 @@
     g.shadowColor = 'rgba(0,0,0,0.75)'; g.shadowBlur = 7;
     g.fill();
     g.restore();
+  };
+
+  OCGateMap.prototype._drawPlaces = function (g, cx, cy, W, H) {
+    var maxRank = Math.max(0, Math.min(5, Math.floor(this.zoom) - 2));
+    var scale = TILE * Math.pow(2, this.zoom);
+    var taken = [];                                   // drawn label boxes
+    var data = global.WORLD_PLACES;
+    g.textAlign = 'left'; g.textBaseline = 'middle';
+    for (var rank = 0; rank <= maxRank; rank++) {     // big cities claim space first
+      for (var i = 0; i < data.length; i++) {
+        var pl = data[i];
+        if (pl[3] !== rank) continue;
+        for (var wrap = -1; wrap <= 1; wrap++) {
+          var pr = project(pl[2], pl[1], this.zoom);
+          var x = pr.x - cx + W / 2 + wrap * scale, y = pr.y - cy + H / 2;
+          if (x < -80 || x > W + 20 || y < -20 || y > H + 20) continue;
+          var fs = rank <= 1 ? 13 : rank <= 3 ? 12 : 11;
+          g.font = '500 ' + fs + 'px system-ui, -apple-system, sans-serif';
+          var w = g.measureText(pl[0]).width + 14;
+          var clash = false;
+          for (var t = 0; t < taken.length; t++) {
+            var b = taken[t];
+            if (x < b[0] + b[2] && x + w > b[0] && y < b[1] + 16 && y + 16 > b[1]) { clash = true; break; }
+          }
+          if (clash) continue;
+          taken.push([x, y - 8, w]);
+          g.beginPath(); g.arc(x, y, 2, 0, Math.PI * 2);
+          g.fillStyle = this.theme.place; g.fill();
+          g.lineWidth = 3; g.strokeStyle = this.theme.labelHalo;
+          g.strokeText(pl[0], x + 6, y);
+          g.fillStyle = this.theme.place;
+          g.fillText(pl[0], x + 6, y);
+        }
+      }
+    }
   };
 
   // Halftone: a dot screen over the sea, the print-like texture Nick asked to
