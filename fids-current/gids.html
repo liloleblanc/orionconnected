@@ -141,7 +141,18 @@
           /* Tell the arriving page this is a rotation, not a cold boot, so it
              skips the welcome screen. See the head script above. */
           try { sessionStorage.setItem('fids_rot_hop', '1'); } catch (e) {}
-          window.location.href = next + window.location.search;
+          // v23176 — the rotator forwards the query string verbatim, which is
+          // deliberate: ?rot=, ?ap=, the filters and ?mode= must survive a board
+          // change. But ?theme= is a PREVIEW override, and riding along meant one
+          // preview URL turned every gate in the rotation Porter (Nick: "Every
+          // gate is now porter"). Strip it on the way out so it stays on the one
+          // board it was opened on and can never spread through a rotation.
+          var _rotQ = window.location.search;
+          try {
+            var _rp = new URLSearchParams(_rotQ);
+            if (_rp.has('theme')) { _rp.delete('theme'); _rotQ = _rp.toString(); _rotQ = _rotQ ? '?' + _rotQ : ''; }
+          } catch (e) {}
+          window.location.href = next + _rotQ;
         }, dwell * 1000);
       }
       window.addEventListener('fids:ready', _armRotation, { once: true });
@@ -871,7 +882,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/fids-core.js?v=23176m"></script>
+<script src="js/fids-core.js?v=23176n"></script>
 <script src="js/gate-visual-integrity.js?v=23166"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
