@@ -962,6 +962,24 @@ try {
 // Selected slide index in the current airline's rotation list.
 // 'auto' = rotate every ~10s; integer = static pick.
 // Persisted so it survives page reloads.
+// v23176 — ?theme=<IATA> — PREVIEW AN AIRLINE'S STYLING WITHOUT ITS FLIGHT.
+// Airline branding on the gate is derived from whichever flight is actually at
+// the gate, so checking a Porter or Delta change meant waiting for a Porter or
+// Delta departure. Every styling round-trip cost a real departure to verify,
+// which is how the Porter pattern ended up measured against a WestJet board.
+//
+// Preview aid ONLY. It is read from the URL and nothing else: with no ?theme=
+// in the query string this is '' and every derivation below behaves exactly as
+// before, so a kiosk can never enter this state by accident. It changes only
+// which brand the CHROME wears — flights, times, gates and statuses are still
+// the real ones.
+var GATE_THEME_OVERRIDE = '';
+try {
+  GATE_THEME_OVERRIDE = (new URLSearchParams(window.location.search).get('theme') || '').trim().toUpperCase();
+  if (GATE_THEME_OVERRIDE) {
+    try { console.log('[THEME] preview override active: ' + GATE_THEME_OVERRIDE + ' (chrome only — flight data is real)'); } catch (e) {}
+  }
+} catch (e) { GATE_THEME_OVERRIDE = ''; }
 var GATE_AIRLINE_BG_PICK = 'auto';
 try { GATE_AIRLINE_BG_PICK = localStorage.getItem('fids_airline_bg_pick') || 'auto'; } catch(e) {}
 var _airlineBgTimer = null;
@@ -2156,7 +2174,7 @@ async function setGateBg(bgDiv, locIata) {
     bgDiv.classList.remove('no-photo');
     // Read current airline from the globals the gate render publishes.
     var _currentFlight = window._gateCurrentFlight || null;
-    var _airlineCode = (window._gateCurrentAirline || (_currentFlight && _currentFlight.airline) || '').toUpperCase();
+    var _airlineCode = (GATE_THEME_OVERRIDE || window._gateCurrentAirline || (_currentFlight && _currentFlight.airline) || '').toUpperCase();
     // Hawaiian brand override (mirrors gate-screen behavior at line ~3193)
     if (_airlineCode === 'AS' && isHawaiianBrandedFlight(_currentFlight, locIata)) _airlineCode = 'HA';
     // Endeavor -> Delta, same fold as the gate itself (see uxgGateHtml).
@@ -8865,6 +8883,12 @@ function _buildV2MapCol(ctx, vars) {
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus' + _facingCls + '">'
         +   '<div id="gateCloudsBg"></div>'
+        // v23176 — Nick's plate gets its OWN host rather than borrowing a
+        // pseudo-element that already belongs to another layer. Placed here,
+        // BEFORE the aircraft, so it stacks behind the plane (Nick: "its in
+        // the front it shoudnt be") — the same plane the existing close
+        // clouds use, which pass behind the fuselage.
+        + '<div id="gateCloudsNick" aria-hidden="true"></div>'
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
               : _aircraftHoldHtml)
@@ -8893,6 +8917,12 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus">'
       +   '<div id="gateCloudsBg"></div>'
+        // v23176 — Nick's plate gets its OWN host rather than borrowing a
+        // pseudo-element that already belongs to another layer. Placed here,
+        // BEFORE the aircraft, so it stacks behind the plane (Nick: "its in
+        // the front it shoudnt be") — the same plane the existing close
+        // clouds use, which pass behind the fuselage.
+        + '<div id="gateCloudsNick" aria-hidden="true"></div>'
       +   _fallbackHold
       +   (/[?&]acsky=1\b/.test(window.location.search)
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
@@ -9078,7 +9108,7 @@ function uxgGateHtml(ctx) {
   // key on both the left rail and the right flight card.
   if (stKey === 'scheduled' || !stKey) stKey = 'ontime';
   var stLabel = SL(stKey) || stKey.toUpperCase();
-  var airlineCode = (currentFlight.airline || '').trim().toUpperCase();
+  var airlineCode = (GATE_THEME_OVERRIDE || currentFlight.airline || '').trim().toUpperCase();
   // Hawaiian brand override: AS flights on ex-HA equipment or Hawaii routes still wear
   // the Pualani livery — display them as HA so all downstream brand assets follow suit.
   if (isHawaiianBrandedFlight(currentFlight, locIata)) airlineCode = 'HA';
@@ -13416,7 +13446,7 @@ const gView = document.getElementById('gateView');
       // screen carried Hawaiian's purple (Nick: 'Hawaiian is def not the
       // right color ... its teal with purple its not their colors').
       try {
-        var _skinCode = String(currentFlight.airline || '').toUpperCase();
+        var _skinCode = String(GATE_THEME_OVERRIDE || currentFlight.airline || '').toUpperCase();
         if (_skinCode === 'AS' && typeof isHawaiianBrandedFlight === 'function'
             && isHawaiianBrandedFlight(currentFlight, window._gateIata || locIata)) _skinCode = 'HA';
         document.body.setAttribute('data-gate-airline', _skinCode);

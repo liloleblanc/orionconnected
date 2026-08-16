@@ -10766,7 +10766,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
 @keyframes g8SkyFront { from { transform: translate3d(0,0,0); } to { transform: translate3d(-2600px,0,0); } }
 @keyframes g8SkyRush  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-760px,0,0); } }
 @keyframes g8SkyFast  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
-@keyframes g8SkyNick  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1200px,0,0); } }
+@keyframes g8SkyNick  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-2600px,0,0); } }
 
 /* ── BACK: the still plate, drifting slowest ─────────────────────────────── */
 html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
@@ -12633,45 +12633,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   z-index: 3 !important;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   v23176 — PORTER GETS ITS OWN PATTERN BACK, NOT THE GLOBE
-   (Nick: "I dont see the Porter background".)
 
-   It was never missing — it was overridden. --wm-symbol correctly resolves to
-   /logos/Backgrounds/PD/porter-pattern-panel.png for PD, and the base rule
-   (gate-display.css ~3477) paints it. But the globe pin at ~1479/~2247 lists
-   g8-airline-PD explicitly and forces 3d_globe_desktop.svg over it with
-   !important. Measured on the live board: PD's ::before resolved to
-   3d_globe_desktop.svg, so Porter boards have been showing a grey globe where
-   the porter wordmark grid should be.
-
-   That pin was not careless — it existed to stop the LEGACY per-airline rules
-   tiling the globe (Porter repeat at 120%, KLM repeat-y), which is where the
-   "doubled globes" came from. The mistake was fixing that by giving everyone
-   the globe rather than by stopping the globe from being tiled. Tiling is
-   correct for Porter's asset: it IS a repeating wordmark grid, drawn to tile.
-
-   Same specificity as the pin (0,2,2 + element), later in the file, and this
-   file loads last — so it wins without another !important escalation.
-
-   NOT touched: AC and WestJet keep the v22930 kill (content:none) that removed
-   the globe from the two carriers carrying Nick's own line artwork. This rule
-   only restores PD's own asset; every other airline keeps the globe, which the
-   v22930 note records as deliberate design.
-   ═══════════════════════════════════════════════════════════════════════ */
-html .g8-wrap.g8-airline-PD .gad-map-col-v2::before {
-  background-image: var(--wm-symbol, url('../logos/Backgrounds/PD/porter-pattern-panel.png')) !important;
-  /* the grid is drawn to repeat — tile it rather than stretching one copy */
-  background-repeat: repeat !important;
-  background-position: center top !important;
-  background-size: 120% auto !important;
-  /* the artwork is navy on navy; greyscale/contrast were for the globe and
-     flatten this to mud. Let the pattern keep its own colour and sit back
-     on opacity alone. */
-  filter: none !important;
-  mix-blend-mode: normal !important;
-  opacity: 0.30 !important;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════
    v23176 — NICK'S FRONT CLOUD PLATE (add-on, nothing removed)
@@ -12694,38 +12656,83 @@ html .g8-wrap.g8-airline-PD .gad-map-col-v2::before {
    Every value here is a dial: saturation, opacity and scale are meant to be
    tuned against the live board.
    ═══════════════════════════════════════════════════════════════════════ */
-/* Nick's cloud plate, TILED like every other layer instead of a 3MB video.
-   Extracted one frame from his clouds.mp4 and mirrored it into a seamless
-   1200px tile: the sky was keyed out on COLOUR DISTANCE from the sampled sky
-   (RGB 170/206/218), not luminance — his cloud runs 0.35–0.85 luminance
-   against a 0.71 sky, so a brightness key threw away every dark underside and
-   never reached full opacity. Distance keying keeps the bright tops AND the
-   dark bellies. 548KB replaces 3.0MB, and there is no video decode at all.
 
-   Colour is left in — "you can add some color to the clouds its ok too" — so
-   the warm sunset tops survive rather than being desaturated to match the
-   cooler layers behind.
-
-   Near plane: drifts at 58s against mid's 130s, so it reads as closer by
-   parallax rather than by size. Translation equals the tile width exactly, the
-   same trick the other layers use to loop without a seam. */
-html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg::after {
-  content: '' !important;
-  position: absolute !important;
-  left: 0 !important; right: auto !important;
-  width: calc(100% + 1200px) !important;
-  top: 30% !important; bottom: -6% !important;
-  background: url('/textures/gate-clouds-nick.png?v=23176') 0 100% / 1200px 100% repeat-x !important;
-  opacity: .40 !important;
-  pointer-events: none !important;
-  z-index: 4 !important;
-  animation: g8SkyNick 58s linear infinite !important;
-  animation-delay: var(--g8-nick-delay, 0s) !important;
-  animation-direction: var(--g8-dir, reverse) !important;
-  will-change: transform;
-}
 
 /* A kiosk that cannot decode the plate must not leave a black box over the
    aircraft — an empty video element is invisible under screen blending, but
    this makes the intent explicit. */
 
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23176 — NICK'S CLOUD PLATE ON ITS OWN HOST, BEHIND THE AIRCRAFT
+   (Nick: "its in the front it shoudnt be".)
+
+   The first attempt hung this off #gateCloudsFg::after — which was ALREADY the
+   existing fast-cloud layer (gate-clouds-fast-v2.png, z:3, "ABOVE the
+   aircraft"). Appending later in the file overrode it, so that pass did not
+   add a layer, it REPLACED one, and inherited its in-front position. Exactly
+   what Nick asked not to happen. Both faults fixed here: the override is gone
+   (that layer is restored untouched) and this plate now owns #gateCloudsNick.
+
+   Behind the plane by construction: the host is emitted BEFORE the aircraft in
+   the shelf and carries z-index 0, so it layers above #gateCloudsBg and below
+   the aircraft (z:1) — the plane flies through it, which is how the other close
+   layers behave.
+
+   Still near by PARALLAX, not by size: 58s against the mid layer's 130s.
+   Translation equals the tile width so it loops seamlessly; phase comes from
+   --g8-nick-delay so a telemetry rebuild cannot snap it back to frame zero.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsNick {
+  position: absolute !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 2600px) !important;
+  /* spans the fuselage band so the puffs cross the plane, not the empty
+     sky above it */
+  top: 6% !important; bottom: 2% !important;
+  background: url('/textures/gate-clouds-nick.png?v=23176b') 0 50% / 2600px 100% repeat-x !important;
+  opacity: .52 !important;
+  pointer-events: none !important;
+  z-index: 5 !important;                       /* IN FRONT of the aircraft */
+  animation: g8SkyNick 58s linear infinite !important;
+  animation-delay: var(--g8-nick-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
+}
+/* Sky off => plate off, same as every other layer. */
+html body:not(.gate-acsky) .v2-rc-shelf-illus > #gateCloudsNick { display: none !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23176 — THE PORTER PATTERN BELONGS IN THE MIDDLE
+   Nick: "when I mean pattern i meant this one and it was meant for the
+   background in the middle not the sides".
+
+   Confirmed his image IS the existing asset — porter-pattern-panel.png, the
+   diagonal wordmark grid. Nothing new to import; this was only ever a
+   PLACEMENT question, and I had it on the wrong element.
+
+   Measured the real layout on the board (wrap = 800px):
+     gad-aircraft-col   0-23%    LEFT
+     gad-media-col     23-77%    MIDDLE   <- here
+     gad-map-col-v2    77-100%   RIGHT
+   My earlier fix put the pattern on gad-map-col-v2 — a side. Removed above;
+   that column keeps the globe it had.
+
+   Painted on the middle column AND on the row-4 takeover panel, because the
+   takeover replaces the split layout with one full-width panel — which is the
+   surface Nick's mockup actually shows the pattern across (behind "Boarding
+   Will Begin…" and the monogram).
+
+   Sits UNDER the content: the media/ad slot and the takeover text draw over
+   it, so this only fills the panel ground the way the mockup does.
+   ═══════════════════════════════════════════════════════════════════════ */
+html .g8-wrap.g8-airline-PD .gad-media-col,
+html .g8-wrap.g8-airline-PD .g8-r4 {
+  background-image: url('/logos/Backgrounds/PD/porter-pattern-panel.png?v=23176') !important;
+  background-repeat: repeat !important;
+  background-position: center top !important;
+  /* the grid is drawn to tile; 46% keeps the wordmarks at a modest size rather
+     than one blown-up copy stretched across the panel */
+  background-size: 46% auto !important;
+  background-blend-mode: normal !important;
+}
