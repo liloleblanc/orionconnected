@@ -1034,3 +1034,17 @@ body:not(.sidebar-open) #fidsBoard {
 #overlayMenu label > input[type="checkbox"] ~ * {
   color: var(--console-text);
 }
+
+/* ── v23179: signed-out gate, class-based ───────────────────────────────
+   body.oc-anon is stamped by _cuGateByAccess (menu.js). An !important
+   ancestor rule cannot be lost to the per-element style.display='' re-shows
+   scattered through the handlers — which is exactly how the old inline gate
+   leaked. Write access is separately blocked in the handlers themselves. */
+body.oc-anon [data-sec="look-basic"],
+body.oc-anon [data-sec="look-adv"],
+body.oc-anon [data-sec="display-opts"],
+body.oc-anon [data-sec="admin"],
+body.oc-anon [data-auth],
+body.oc-anon #cuThemeSelect,
+body.oc-anon #cuFontSelect,
+body.oc-anon #cuColorsWrap { display: none !important; }

@@ -59,6 +59,8 @@
   }
 
   function setLock(role) {
+    // v23179 — locking/unlocking a screen's role is itself a privileged act
+    if (typeof window._cuLookAllowed === 'function' && !window._cuLookAllowed()) return;
     try {
       if (RANK.hasOwnProperty(role) && role !== 'demo') {
         localStorage.setItem(LOCK_KEY, role);

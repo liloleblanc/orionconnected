@@ -26932,11 +26932,14 @@ function apAutoSearch(q, ctx) {
   function renderMatches(matches) {
     if (!matches.length) { dd.style.display='none'; return; }
     var isMenu = (ctx === 'menu');
-    var borderC = isMenu ? '#f4f4f5' : '#2a2a2e';
-    var textC   = isMenu ? '#3f3f46' : '#fff';
-    var codeC   = isMenu ? '#18181b' : '#eab308';
-    var nameC   = isMenu ? '#71717a' : 'rgba(255,255,255,0.85)';
-    var subC    = isMenu ? '#c4c4cc' : 'rgba(255,255,255,0.4)';
+    // menu ctx renders inside .mbar-panel / .settings-sidebar — both define
+    // the --console-* tokens for their own surface, so the items follow the
+    // panel instead of hardcoding light-console colours onto dark panels
+    var borderC = isMenu ? 'var(--console-border,#f4f4f5)' : '#2a2a2e';
+    var textC   = isMenu ? 'var(--console-text-2,#3f3f46)' : '#fff';
+    var codeC   = isMenu ? 'var(--console-text,#18181b)' : '#eab308';
+    var nameC   = isMenu ? 'var(--console-text-3,#71717a)' : 'rgba(255,255,255,0.85)';
+    var subC    = isMenu ? 'var(--console-text-muted,#c4c4cc)' : 'rgba(255,255,255,0.4)';
     dd.innerHTML = matches.map((a,i) => {
       const safeName = (a.n||'').replace(/'/g, "\\'");
       const safeCtx  = ctx || 'ctrl';

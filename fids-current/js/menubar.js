@@ -32,7 +32,15 @@
       + 'body.fids-light-board .mbar-title{color:#16283C;}'
       + 'body.fids-light-board .mbar-title:hover{background:rgba(13,36,64,.08);}'
       + 'body.fids-light-board .mbar-group.open .mbar-title{background:rgba(13,36,64,.12);color:#0d2440;}'
-      + 'body.fids-light-board .mbar-panel{background:#ffffff;border-color:#C7D2DD;box-shadow:0 12px 30px rgba(13,36,64,.25);}'
+      + 'body.fids-light-board .mbar-panel{background:#ffffff;border-color:#C7D2DD;box-shadow:0 12px 30px rgba(13,36,64,.25);'
+      +   'color:#16283C;'
+      +   '--console-text:#0f172a;--console-text-2:#334155;--console-text-3:#64748b;'
+      +   '--console-text-muted:#94a3b8;--console-surface:rgba(15,23,42,0.04);'
+      +   '--console-card:#ffffff;--console-border:rgba(15,23,42,0.12);'
+      +   '--console-accent:#b45309;--console-accent-tx:#b45309;}'
+      // signed-out gate, bar copy — the bar builds controls after menu.css
+      // loads, and belt-and-braces beats a stylesheet race either way
+      + 'body.oc-anon [data-auth]{display:none !important;}'
       + 'body.fids-light-board .mbar-link{color:#31435a;}'
       + 'body.fids-light-board .mbar-link:hover{background:rgba(13,36,64,.07);color:#0d2440;}'
       + 'body.fids-light-board .mbar-sec{color:#6b7c92;}'
@@ -56,7 +64,18 @@
       + '.mbar-title .car{opacity:.55;font-size:10px;margin-left:5px;}'
       + '.mbar-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;background:#1b2230;'
       +   'border:1px solid #313b4e;border-radius:11px;padding:12px;z-index:99999;min-width:250px;'
-      +   'box-shadow:0 12px 30px rgba(0,0,0,.5);}'
+      +   'box-shadow:0 12px 30px rgba(0,0,0,.5);color:#e7ecf3;'
+      // The console sections re-parented into these panels still reference
+      // var(--console-*) — which stopped following any theme the moment they
+      // left .settings-sidebar. The tokens now live ON the panel, dark here,
+      // light under body.fids-light-board below, so every var() resolves to
+      // the surface it actually sits on.
+      +   '--console-text:#f1f5f9;--console-text-2:#cbd5e1;--console-text-3:#94a3b8;'
+      +   '--console-text-muted:#8b96a5;--console-surface:rgba(255,255,255,0.05);'
+      +   '--console-card:rgba(255,255,255,0.06);--console-border:rgba(255,255,255,0.12);'
+      +   '--console-accent:#fbbf24;--console-accent-tx:#fbbf24;}'
+      + '.mbar-panel label{color:var(--console-text-2) !important;}'
+      + '.mbar-panel .sm-dropdown{background:var(--console-card) !important;border:1px solid var(--console-border) !important;}'
       + '.mbar-group.open .mbar-panel{display:flex;flex-direction:column;gap:9px;}'
       + '.mbar-panel select{width:100% !important;min-height:32px;}'
       + '.mbar-panel .btn{width:100%;text-align:left;}'
@@ -122,14 +141,20 @@
     move('subScreenSel', gDisplay.panel);
     var apBtn = document.getElementById('btnAirport');
     if (apBtn) { gDisplay.panel.appendChild(apBtn); }
-    move('ctrlBgGroup', gDisplay.panel, 'Background');
+    var _bgSec = null;
+    (function () {
+      var el = document.getElementById('ctrlBgGroup');
+      if (el) { var lb = document.createElement('div'); lb.className = 'mbar-sec'; lb.textContent = 'Background'; lb.setAttribute('data-auth','1'); gDisplay.panel.appendChild(lb); el.setAttribute('data-auth','1'); gDisplay.panel.appendChild(el); }
+    })();
     // Font — mirror the console's canonical list (brand fonts + AC Nord +
     // custom uploads) instead of the stale legacy #fontSel list; changes
     // proxy through cuFontChanged() so persistence stays canonical.
     (function () {
       var sec = document.createElement('div'); sec.className = 'mbar-sec'; sec.textContent = 'Font';
+      sec.setAttribute('data-auth', '1');
       gDisplay.panel.appendChild(sec);
       var fsel = document.createElement('select'); fsel.className = 'mbar-theme';
+      fsel.setAttribute('data-auth', '1');
       gDisplay.panel.appendChild(fsel);
       function syncFonts() {
         var src = document.getElementById('cuFontSelect');
@@ -146,11 +171,13 @@
     })();
 
     var gOps = group('Operations');
+    gOps.root.setAttribute('data-auth', '1'); // flight overrides are not a public control
     move('testFlightBtn', gOps.panel);
     move('overrideBtn', gOps.panel);
     link(gOps.panel, 'Refresh live data', function () { if (typeof window.fetchLive === 'function') window.fetchLive(); });
 
     var gOptions = group('Options');
+    gOptions.root.setAttribute('data-auth', '1'); // its only contents change the look
     // Theme lives RIGHT HERE — one click, no console detour (Nick).
     // 'Custom' is NOT in this quick list (Nick: picking it here just turned
     // the board black — the colour editor lives in the Customize dropdown,
@@ -215,6 +242,7 @@
           g.panel.appendChild(content);
           ctrl.insertBefore(g.root, gOptions.root);
           made[s.tab] = g;
+          if (s.tab === 'smTab_customize') g.root.setAttribute('data-auth', '1');
           if (s.gateBtn) g.root.style.display = 'none'; // until the gate says visible
           // The console modules LOAD their data on tab ACTIVATION
           // (smSwitchTab) — which the bar never fired, so Media opened to

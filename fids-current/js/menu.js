@@ -66,6 +66,7 @@ function smApplyTheme(theme) {
   if (btn) btn.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
 }
 function smToggleTheme() {
+  if (_cuLookDenied()) return;
   var panel = document.getElementById('overlayMenu');
   var current = (panel && panel.getAttribute('data-theme')) || 'light';
   var next = current === 'dark' ? 'light' : 'dark';
@@ -399,6 +400,7 @@ function menuToggleLang(l) {
 }
 
 function menuSetBg(mode) {
+  if (_cuLookDenied()) return;
   if (typeof setDedicatedBgMode === 'function') {
     setDedicatedBgMode(mode);
   } else {
@@ -1626,10 +1628,28 @@ function _cuPushToServer(prefs) {
 // nothing that repaints a terminal. Signed out, the look controls disappear;
 // the rest of the menu is untouched. Re-run on every menu open so a login or
 // logout mid-session takes effect immediately.
+// v23179 — WRITE-PATH GATE. The old gate hid elements one by one and lost
+// to every handler that re-shows them (the audit counted ten separate
+// signed-out paths into the look handlers, most of them the menu-bar
+// proxies that bypass the hidden elements entirely). So the gate moved to
+// the one place all of them funnel through: the handlers themselves.
+// Visibility hiding still happens (body.oc-anon + CSS), but even a fully
+// visible control changes nothing without a session.
+function _cuLookAllowed() {
+  try { return !!(typeof _acGetToken === 'function' && _acGetToken()); } catch (e) { return false; }
+}
+function _cuLookDenied() {
+  if (_cuLookAllowed()) return false;
+  if (!window._cuRestoring) { try { _cuFlashSaved('Sign in to change this display\u2019s look'); } catch (e) {} }
+  return true;
+}
+try { window._cuLookAllowed = _cuLookAllowed; } catch (e) {}
+
 function _cuGateByAccess() {
   var signedIn = false;
   try { signedIn = !!(typeof _acGetToken === 'function' && _acGetToken()); } catch (e) {}
   var hide = !signedIn;
+  try { document.body.classList.toggle('oc-anon', hide); } catch (e) {}
   try {
     document.querySelectorAll('[data-sec="look-basic"], [data-sec="look-adv"]').forEach(function (el) {
       el.style.display = hide ? 'none' : '';
@@ -1904,6 +1924,7 @@ function cuSetPositionUI(pos) {
   });
 }
 function cuSetPosition(pos) {
+  if (_cuLookDenied()) return;
   cuSetPositionUI(pos);
   cuApplyAndSave();
 }
@@ -1912,6 +1933,7 @@ function cuSetPosition(pos) {
 // Maps the dropdown value to a CSS font stack and writes it to
 // --font-primary on body. Persisted via cuApplyAndSave.
 function cuFontChanged() {
+  if (_cuLookDenied()) return;
   var sel = document.getElementById('cuFontSelect');
   if (!sel) return;
   _cuApplyFont(sel.value);
@@ -2090,6 +2112,7 @@ function _cuFontFlash(msg, kind) {
 }
 
 function cuSubmitFontUpload() {
+  if (_cuLookDenied()) return;
   var fileInput = document.getElementById('cuFontFile');
   var nameInput = document.getElementById('cuFontName');
   if (!fileInput || !fileInput.files || !fileInput.files[0]) {
@@ -2163,6 +2186,7 @@ function cuSetDisplayModeUI(mode) {
   });
 }
 function cuSetDisplayMode(mode) {
+  if (_cuLookDenied()) return;
   cuSetDisplayModeUI(mode);
   _cuApplyDisplayMode(mode);
   cuApplyAndSave();
@@ -2178,6 +2202,7 @@ function _cuApplyDisplayMode(mode) {
 // Save form, then re-apply config to the live board
 var _cuThemeExplicitDefault = false;
 function cuApplyAndSave() {
+  if (_cuLookDenied()) return;
   // MERGE the form over what's saved — an unsynced/untouched control must
   // never erase a saved setting (Nick: changing the FONT reverted the
   // THEME to teal, because the theme select was sitting on '' and the
@@ -2207,6 +2232,7 @@ function cuApplyAndSave() {
 
 // Wipe local overrides for this airport so admin defaults take over
 function cuResetAll() {
+  if (_cuLookDenied()) return;
   try { localStorage.removeItem(_cuStorageKey()); } catch (e) {}
   _cuPaintForm({});
   try {
@@ -2459,6 +2485,7 @@ function _flightToast(msg) {
 var _cuCurrentSize = '';
 
 function cuSetSize(size) {
+  if (_cuLookDenied()) return;
   _cuCurrentSize = size || '';
   ['Small','Medium','Large'].forEach(function(name) {
     var el = document.getElementById('cuSize' + name);
@@ -2563,6 +2590,7 @@ function _cuRenderPresetGroup() {
 }
 
 function cuThemeChanged() {
+  if (_cuLookDenied()) return;
   _cuDisarmSchedule('theme');
   var sel = document.getElementById('cuThemeSelect');
   if (!sel) return;
@@ -2639,6 +2667,7 @@ function _cuReadColorsFromEditor() {
 }
 
 function cuColorChanged(srcId, dstId) {
+  if (_cuLookDenied()) return;
   _cuDisarmSchedule('colors');
   var src = document.getElementById(srcId);
   var dst = document.getElementById(dstId);
