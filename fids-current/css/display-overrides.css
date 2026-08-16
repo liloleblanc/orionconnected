@@ -11121,8 +11121,10 @@ html body[data-fids-logo-size] #fidsTable tbody tr td > * {
 /* display:none rather than visibility — the tab is absolutely positioned and
    sized off --gate-rcw, so leaving it laid out would keep reserving the slot
    the lockup is meant to expand into. */
-html body .g8-wrap.g8-takeover .g8-r1-timebox,
-html body .g8-wrap.g8-takeover .octb-wrap {
+/* v23178 — the banner time STAYS during takeovers now that the strip's
+   clocks are gone (they were the reason v23115 hid this up here — two clocks
+   at once). Only the legacy skewed timebox stays hidden. */
+html body .g8-wrap.g8-takeover .g8-r1-timebox:not(.octb-wrap) {
   display: none !important;
 }
 /* The brushed lockup panel takes the width the clock gave up, stopping at the
@@ -12785,3 +12787,50 @@ html body .g8-bw-clocked .g8-bw-pill .g8-bw-st-val {
 html body .g8-bw-clocked .g8-bw-pill.g8-bw-st-delayed   { background: #d97706 !important; }
 html body .g8-bw-clocked .g8-bw-pill.g8-bw-st-cancelled { background: #dc2626 !important; }
 html body .g8-bw-clocked .g8-bw-pill.g8-bw-st-diverted  { background: #dc2626 !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23178 — PLAIN BANNER TIME (Nick: "no fancy borders or anything"; his
+   mockup: date + both clock formats, bare, beside the airport mark). The
+   box chrome comes off; the type does the work. ═══════════════════════ */
+html .octb-plain .octb {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: clamp(2px,0.4vh,5px) clamp(6px,0.7vw,12px) !important;
+}
+html .octb-plain .octb-clock  { font-size: clamp(22px,3.4vh,44px) !important; }
+html .octb-plain .octb-clock2 {
+  font-size: clamp(13px,1.9vh,24px) !important; font-weight: 800 !important;
+  color: rgba(255,255,255,0.85) !important; white-space: nowrap !important;
+  line-height: 1.05 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23178 — FINAL CALL: RED, AND NEVER CHOPPED (Nick: "FINAL BOARDING CALL
+   DERNIER APPEL is chopped off and it should be Red as final" + screenshot
+   showing the line bottom-clipped by the strip band).
+
+   The chop: .g8-bw-text is a viewport-height clamp (4.8vh -> 66px) inside a
+   band whose padding is a DIFFERENT clamp — on his panel the text outgrew
+   the band and the descenders clipped. The text now sizes from the BAND
+   itself (container units) with a hard fit, and the band may not clip.
+
+   The colour: final call is an urgency state — the whole strip goes red,
+   type white. On time stays the white strip; this only exists while
+   .g8-bw-state-final is on the wrapper. ═══════════════════════════════ */
+html body .g8-bw-clocked { container-type: size; }
+html body .g8-bw-clocked .g8-bw-text {
+  font-size: clamp(20px, min(62cqh, 3.4cqw), 66px) !important;
+  line-height: 1.02 !important;
+  overflow: visible !important;
+}
+html body .g8-bw-clocked { overflow: visible !important; }
+
+html body .g8-bw-clocked.g8-bw-state-final { background: #dc2626 !important; }
+html body .g8-bw-clocked.g8-bw-state-final .g8-bw-text,
+html body .g8-bw-clocked.g8-bw-state-final .g8-bw-sep { color: #ffffff !important; }
+/* the pill keeps meaning on red: white capsule, red text */
+html body .g8-bw-clocked.g8-bw-state-final .g8-bw-pill {
+  background: #ffffff !important; border-color: rgba(255,255,255,0.9) !important;
+}
+html body .g8-bw-clocked.g8-bw-state-final .g8-bw-pill .g8-bw-st-val { color: #b91c1c !important; }

@@ -9732,9 +9732,10 @@ function uxgGateHtml(ctx) {
           +   _fidsClockForLang(new Date(), _bwTz, lang)
           + '</span></div>';
         // status sits INBOARD of the clock on both ends (clock stays at the edge)
-        return '<div class="g8-bw-end ' + cls + '">'
-          + (cls === 'g8-bw-end-l' ? _clk + _stHtml : _stHtml + _clk)
-          + '</div>';
+        // v23178 — the clocks moved UP into the banner (Nick's mockup: the
+        // strip ends carry only the status pill; 'Current Time' captions and
+        // both strip clocks are gone with them).
+        return '<div class="g8-bw-end ' + cls + '">' + _stHtml + '</div>';
       };
       _bwClock = _bwSide(_bwL1, 'g8-bw-end-l') + '::MID::' + _bwSide(_bwL2, 'g8-bw-end-r');
     } catch (e) { _bwClock = '::MID::'; }
@@ -9762,7 +9763,10 @@ function uxgGateHtml(ctx) {
     var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
       + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
       + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
-    return '<div class="g8-board-welcome g8-bw-clocked">'
+    // v23178 — the strip wears its STATE: final call must read RED and the
+    // CSS needs a hook to do it without JS repainting anything.
+    var _bwStateCls = /final/.test(String(_stripState || '')) ? ' g8-bw-state-final' : '';
+    return '<div class="g8-board-welcome g8-bw-clocked' + _bwStateCls + '">'
       + _bwClock.replace('::MID::', '<div class="g8-bw-mid">' + _bwMid + '</div>')
       + '</div>';
   }
@@ -11140,13 +11144,26 @@ function uxgGateHtml(ctx) {
             // rewrote this markup outright and left the normal screen reading
             // '11:57am / August 11Halifax11 août'.) The takeover hides this
             // tab with CSS on .g8-wrap.g8-takeover instead.
-            var _tbL = ['', ''];
-            _gateLbl('timeIn', false, function(w,i){ _tbL[i?1:0] = '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; return ''; }, '');
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
+            // v23178 — PLAIN TIME + DATE, PER NICK'S MOCKUP ("move the time and
+            // date up by itself ... no fancy borders or anything"). The
+            // captions ('Time in <City>' / 'Heure à') are gone, the box chrome
+            // is stripped in CSS, and the clock shows BOTH conventions stacked
+            // — 6:04pm over 18:04 — each ticking through the same
+            // .v2-fi-clock-val updater the strip clocks used. data-bwlang is
+            // the load-bearing attribute: without it the generic en-US path
+            // rewrites the French 18:04 as 6:04pm five seconds after paint
+            // (the documented regression). data-mer must NOT be added.
+            var _tbLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en','fr'];
+            var _tbA = _tbLangs[0] || 'en', _tbB = _tbLangs[1] || null;
+            var _tbD0 = new Date();
+            function _tbClk(lang, cls) {
+              return '<span class="v2-fi-clock-val ' + cls + '" data-tz="' + _e(_tbTz) + '" data-bwlang="' + _e(lang) + '">'
+                + ((typeof _fidsClockForLang === 'function') ? _fidsClockForLang(_tbD0, _tbTz, lang) : _tbNow1) + '</span>';
+            }
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached octb-plain" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
               + '<div class="octb octb-tab octb-stack">'
-              +   _tbL[0]
-              +   '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
-              +   _tbL[1]
+              +   _tbClk(_tbA, 'octb-clock')
+              +   (_tbB && _tbB !== _tbA ? _tbClk(_tbB, 'octb-clock2') : '')
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
               + '</div>'
               + '</div>';
