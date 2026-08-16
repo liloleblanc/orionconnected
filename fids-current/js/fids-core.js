@@ -10191,7 +10191,13 @@ function uxgGateHtml(ctx) {
       var _grpValCls = _g8GrpValCls;
       var _fcNext, _fcNextLbl = _gateLbl('zones', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true);
       if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
-      else if (airlineCode === 'PD') { _fcNextLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); }
+      else if (airlineCode === 'PD' || airlineCode === 'PB' || airlineCode === 'SP') {
+        // v23178 — PAL boards by ROWS like Porter, and its FINAL CALL must
+        // say so too (Nick: "Final boarding still has zones"). Stacked per
+        // the separation rule.
+        _fcNextLbl = _gateLbl('rows', _frF, function(w){ return w; }, '<br>');
+        _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
+      }
       else _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
       // FINAL CALL replaces the Welcome strip (Nick) — one call-out where
       // the welcome sat, more room for the lane panels below.
