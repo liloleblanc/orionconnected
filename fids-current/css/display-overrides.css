@@ -10766,6 +10766,7 @@ html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg {
 @keyframes g8SkyFront { from { transform: translate3d(0,0,0); } to { transform: translate3d(-2600px,0,0); } }
 @keyframes g8SkyRush  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-760px,0,0); } }
 @keyframes g8SkyFast  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1000px,0,0); } }
+@keyframes g8SkyNick  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1200px,0,0); } }
 
 /* ── BACK: the still plate, drifting slowest ─────────────────────────────── */
 html body.gate-acsky:not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
@@ -12693,23 +12694,38 @@ html .g8-wrap.g8-airline-PD .gad-map-col-v2::before {
    Every value here is a dial: saturation, opacity and scale are meant to be
    tuned against the live board.
    ═══════════════════════════════════════════════════════════════════════ */
-.v2-rc-shelf-illus #gateCloudsFrontVid {
+/* Nick's cloud plate, TILED like every other layer instead of a 3MB video.
+   Extracted one frame from his clouds.mp4 and mirrored it into a seamless
+   1200px tile: the sky was keyed out on COLOUR DISTANCE from the sampled sky
+   (RGB 170/206/218), not luminance — his cloud runs 0.35–0.85 luminance
+   against a 0.71 sky, so a brightness key threw away every dark underside and
+   never reached full opacity. Distance keying keeps the bright tops AND the
+   dark bellies. 548KB replaces 3.0MB, and there is no video decode at all.
+
+   Colour is left in — "you can add some color to the clouds its ok too" — so
+   the warm sunset tops survive rather than being desaturated to match the
+   cooler layers behind.
+
+   Near plane: drifts at 58s against mid's 130s, so it reads as closer by
+   parallax rather than by size. Translation equals the tile width exactly, the
+   same trick the other layers use to loop without a seam. */
+html body.gate-acsky:not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsFg::after {
+  content: '' !important;
   position: absolute !important;
-  left: -6% !important;
-  right: -6% !important;
-  bottom: -4% !important;
-  width: 112% !important;
-  height: auto !important;
-  object-fit: cover !important;
-  /* nearest layer: above the aircraft art and the existing fg clouds */
-  z-index: 6 !important;
+  left: 0 !important; right: auto !important;
+  width: calc(100% + 1200px) !important;
+  top: 30% !important; bottom: -6% !important;
+  background: url('/textures/gate-clouds-nick.png?v=23176') 0 100% / 1200px 100% repeat-x !important;
+  opacity: .40 !important;
   pointer-events: none !important;
-  mix-blend-mode: screen !important;
-  filter: saturate(0.55) brightness(1.04) contrast(1.02) !important;
-  opacity: 0.42 !important;
+  z-index: 4 !important;
+  animation: g8SkyNick 58s linear infinite !important;
+  animation-delay: var(--g8-nick-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+  will-change: transform;
 }
 
 /* A kiosk that cannot decode the plate must not leave a black box over the
    aircraft — an empty video element is invisible under screen blending, but
    this makes the intent explicit. */
-.v2-rc-shelf-illus #gateCloudsFrontVid:not([src]) { display: none !important; }
+
