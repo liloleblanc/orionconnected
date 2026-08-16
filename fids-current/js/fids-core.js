@@ -24863,9 +24863,16 @@ function applyAirportConfigToBoard(iata) {
       // hardcoded linear-gradient background-image painted over it, and the
       // Departures block is a hardcoded red). Under a custom theme the
       // gradient comes off and the block follows the accent.
-      var _bannerCustomCss = _CA + '.fids-banner { background-image: none !important; }'
-        + _CA + '.fids-banner .fids-banner-board { background: var(--fids-banner-accent, #d21034) !important; }'
-        + _CA + '.fids-banner .fids-banner-chevrons { display: none !important; }';
+      // v23180 — EXCEPT where a named banner style paints the band itself
+      // (Nick: "My Acadian Flag is all gone"). Moncton's tricolore IS a
+      // linear-gradient in the silk-acadian rules, and the strip below was
+      // erasing it whenever the theme sat on custom. Banner STYLE and colour
+      // THEME are separate axes: a pinned silk band always outranks the
+      // custom-colour strip, which now only applies to the styleless banner.
+      var _CAB = 'html:not(#_):not(#_) body[data-fids-theme="custom"]:not([data-fids-banner^="silk"]):not(#_):not(#_) ';
+      var _bannerCustomCss = _CAB + '.fids-banner { background-image: none !important; }'
+        + _CAB + '.fids-banner .fids-banner-board { background: var(--fids-banner-accent, #d21034) !important; }'
+        + _CAB + '.fids-banner .fids-banner-chevrons { display: none !important; }';
       // Resolve every ground ONCE, then run each ink through the legibility
       // floor against the ground it actually lands on. Odd and even rows are
       // separate grounds, so the row ink is emitted twice — one white row
