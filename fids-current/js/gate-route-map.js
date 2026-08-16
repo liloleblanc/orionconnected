@@ -97,8 +97,7 @@
     // live outranks estimate: while a healthy same-leg glide is flying on
     // this surface, an estimate redraw is only ever a downgrade — skip it.
     var oT = look(org), dT = look(dst);
-    if (GL.raf && GL.views[kind] && oT && dT && sameLeg(GL.o, oT) && sameLeg(GL.d, dT)) return;
-    delete GL.views[kind];
+    if (GL.raf && GL.live && GL.views[kind] && oT && dT && sameLeg(GL.o, oT) && sameLeg(GL.d, dT)) return;
 
     var r = resolveOrFallback(kind, org, dst, function () { estimate(kind, org, dst, prog); });
     if (!r) return;
@@ -141,11 +140,18 @@
     } else {
       m.setView(center || planeLL || o, zoom);
     }
-    m.setRoute(o, d, p, { arc: showRoute ? arc : [[o[0], o[1]], [o[0], o[1]]],
-                          originCode: org, destCode: dst });
-    if (!showRoute && planeLL) m.setPlane(planeLL[0], planeLL[1],
-      g.OCGateMap.bearing(arc[Math.max(0, Math.min(Math.floor(p * (arc.length - 1)) - 3, arc.length - 1))],
-                          arc[Math.min(Math.floor(p * (arc.length - 1)) + 3, arc.length - 1)]), p);
+    m.setRoute(o, d, p, { arc: arc, originCode: org, destCode: dst });
+    // THE ESTIMATED PLANE FLIES TOO (Nick, reviewing the static version: "the
+    // plane doesnt move"). Live ADS-B is dead (403), so estimates are what the
+    // boards mostly show — a plane that only jumps on telemetry ticks reads as
+    // broken. Glide it at nominal cruise; every tick re-anchors the model to
+    // the schedule's real progress, so drift is bounded by one poll interval.
+    if (planeLL && p < 0.995) {
+      startGlide(kind, m, o, d, planeLL, arc, 450, dst, org, false);
+    } else {
+      delete GL.views[kind];
+      if (!Object.keys(GL.views).length) stopGlide();
+    }
   }
 
   // ── LIVE DRAW (real fix) ─────────────────────────────────────────────────
@@ -197,7 +203,7 @@
 
     m.setView([lat, lng], zoom);
     m.setRoute(o, d, 0, { arc: route, originCode: org, destCode: dst });
-    startGlide(kind, m, o, d, [lat, lng], route, spd, dst, org);
+    startGlide(kind, m, o, d, [lat, lng], route, spd, dst, org, true);
   }
 
   // ── THE GLIDE ────────────────────────────────────────────────────────────
@@ -218,7 +224,7 @@
   }
   g._stopGateMapGlide = stopGlide;
 
-  function startGlide(kind, map, o, d, fix, route, speedKts, destIata, orgIata) {
+  function startGlide(kind, map, o, d, fix, route, speedKts, destIata, orgIata, isLive) {
     // cumulative-distance table — position by distance, not vertex index
     var cum = [0];
     for (var i = 1; i < route.length; i++) cum.push(cum[i - 1] + nmDist(route[i - 1], route[i]));
@@ -239,6 +245,7 @@
     if (!isSame) GL.views = {};
     GL.views[kind] = true;
     GL.o = o; GL.d = d; GL.p = p; GL.at = Date.now();
+    GL.live = (isLive !== false);
     if (speedKts > 0) { GL.lastSpd = speedKts; GL.lastSpdAt = Date.now(); }
 
     // rate: base ground speed plus the owed error flown off over 45s.

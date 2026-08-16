@@ -109,6 +109,16 @@
 
     this._route = null;      // {o,d,p,arc}
     this._plane = null;      // {lat,lng,hdg}
+    // The CLASSIC OSM STREET BASE — Nick chose it in Jul 2026 ("wants the
+    // classic OpenStreetMap street map") and the first canvas cut wrongly
+    // dropped it, leaving an empty blue field at gate zooms ("a blue
+    // background with nothing and says nothing"). The canvas draws the same
+    // tiles the Leaflet layer did, from the same same-origin worker proxy —
+    // still one canvas, still no DOM churn, and the vector coast beneath
+    // covers the moment before tiles arrive (never Leaflet's grey ground).
+    this.tiles = opts.tiles !== false;
+    this._tileCache = {};    // "z/x/y" -> {img, ok}
+    this._tileKeys = [];     // LRU order, capped
     this._raf = null;
     this._anim = null;
 
@@ -297,13 +307,16 @@
       }
     }
 
-    if (this.halftone) this._drawHalftone(g, W, H);
+    var tilesCover = false;
+    if (this.tiles) tilesCover = this._drawTiles(g, cx, cy, W, H);
+
+    if (!tilesCover && this.halftone) this._drawHalftone(g, W, H);
 
     // Place names — from data, not tiles. Rank-gated by zoom so a world view
     // shows only megacities and a final-approach view shows the local towns;
     // greedy collision culling so labels never pile into each other. Important
     // places are drawn first, so when two collide the bigger city wins.
-    if (this.places && global.WORLD_PLACES) this._drawPlaces(g, cx, cy, W, H);
+    if (!tilesCover && this.places && global.WORLD_PLACES) this._drawPlaces(g, cx, cy, W, H);
 
     var R = this._route;
     if (R) {
@@ -359,7 +372,29 @@
     g.fillText(code, p[0], p[1] + 10);
   };
 
+  var PLANE_IMG = null, PLANE_OK = false;
+  function planeImg() {
+    if (PLANE_IMG) return PLANE_IMG;
+    PLANE_IMG = new Image();
+    PLANE_IMG.onload = function () { PLANE_OK = true; };
+    PLANE_IMG.src = '/logos/map-plane-jet.png';
+    return PLANE_IMG;
+  }
+
   OCGateMap.prototype._drawPlane = function (g, p, hdg) {
+    // Nick's real jet artwork — "the plane is not a real plane" was the
+    // review of the hand-drawn silhouette. The silhouette survives only as
+    // the first-frames fallback while the PNG decodes.
+    var img = planeImg();
+    if (PLANE_OK) {
+      g.save();
+      g.translate(p[0], p[1]);
+      g.rotate((hdg || 0) * Math.PI / 180);
+      g.shadowColor = 'rgba(0,0,0,0.75)'; g.shadowBlur = 7;
+      g.drawImage(img, -24, -24, 48, 48);
+      g.restore();
+      return;
+    }
     g.save();
     g.translate(p[0], p[1]);
     g.rotate((hdg || 0) * Math.PI / 180);
@@ -374,6 +409,44 @@
     g.shadowColor = 'rgba(0,0,0,0.75)'; g.shadowBlur = 7;
     g.fill();
     g.restore();
+  };
+
+  OCGateMap.prototype._drawTiles = function (g, cx, cy, W, H) {
+    var z = Math.round(this.zoom);
+    if (z < 0 || z > 19) return false;
+    var n = Math.pow(2, z);
+    var tx0 = Math.floor((cx - W / 2) / TILE), tx1 = Math.floor((cx + W / 2) / TILE);
+    var ty0 = Math.max(0, Math.floor((cy - H / 2) / TILE));
+    var ty1 = Math.min(n - 1, Math.floor((cy + H / 2) / TILE));
+    var self = this, all = true, drawn = 0, want = 0;
+    for (var tx = tx0; tx <= tx1; tx++) {
+      var wx = ((tx % n) + n) % n;                      // wrap E/W
+      for (var ty = ty0; ty <= ty1; ty++) {
+        want++;
+        var key = z + '/' + wx + '/' + ty;
+        var t = this._tileCache[key];
+        if (!t) {
+          t = this._tileCache[key] = { img: new Image(), ok: false };
+          this._tileKeys.push(key);
+          if (this._tileKeys.length > 220) {            // LRU cap — a kiosk
+            var old = this._tileKeys.shift();           // runs for months
+            delete this._tileCache[old];
+          }
+          t.img.onload = (function (tt) { return function () {
+            tt.ok = true; self.draw();                  // repaint as they land
+          }; })(t);
+          t.img.onerror = function () {};
+          t.img.src = '/tiles/osm/' + key + '.png';
+        }
+        if (t.ok) {
+          g.drawImage(t.img, tx * TILE - cx + W / 2, ty * TILE - cy + H / 2, TILE, TILE);
+          drawn++;
+        } else all = false;
+      }
+    }
+    // "covered" only when every visible tile painted — until then the vector
+    // coast beneath stays visible instead of a grey void
+    return all && drawn === want && want > 0;
   };
 
   OCGateMap.prototype._drawPlaces = function (g, cx, cy, W, H) {
