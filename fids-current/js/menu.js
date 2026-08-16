@@ -1863,6 +1863,7 @@ function _cuPaintForm(prefs) {
 // the schedule, which is why only that route appeared to work. Choosing a
 // theme or editing colours now unchecks the schedule, visibly, and says so.
 function _cuDisarmSchedule(reasonLbl) {
+  if (window._cuRestoring) return; // tab-open restore replays cuThemeChanged()
   try {
     var en = document.getElementById('cuDnEnabled');
     if (en && en.checked) {
@@ -2775,10 +2776,12 @@ function cuDeleteActivePreset() {
           // preset, silently undoing a Teal / Teal Deep pick.
           if (prefs.theme === 'custom' && prefs.themePresetId) {
             sel.value = 'preset:' + prefs.themePresetId;
-            cuThemeChanged();
+            window._cuRestoring = true;
+            try { cuThemeChanged(); } finally { window._cuRestoring = false; }
           } else if (prefs.theme) {
             sel.value = prefs.theme;
-            cuThemeChanged();
+            window._cuRestoring = true;
+            try { cuThemeChanged(); } finally { window._cuRestoring = false; }
           }
         }
         if (typeof cuRenderGidsBlocks === 'function') cuRenderGidsBlocks();
