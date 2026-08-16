@@ -12764,3 +12764,24 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val img,
 html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val .v2-rc-opby-logo {
   height: clamp(18px,3.2vh,38px) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23177 — THE STATUS PILL (Nick's Porter mockup, requirement 4: the green
+   rounded "On Time / À l'heure" capsule at both ends of the welcome strip).
+   Status colour IS the message: green on time, amber delayed, red cancelled
+   or diverted. Sits where the labelled status text used to. ═══════════════ */
+html body .g8-bw-clocked .g8-bw-status.g8-bw-pill {
+  display: inline-flex !important; align-items: center !important;
+  justify-content: center !important;
+  padding: 0.32em 1.05em !important;
+  border-radius: 999px !important;
+  background: #16a34a !important;            /* on time — green */
+  border: 2px solid rgba(255,255,255,0.55) !important;
+}
+html body .g8-bw-clocked .g8-bw-pill .g8-bw-st-val {
+  color: #ffffff !important; font-weight: 800 !important;
+  text-transform: none !important; line-height: 1.05 !important;
+}
+html body .g8-bw-clocked .g8-bw-pill.g8-bw-st-delayed   { background: #d97706 !important; }
+html body .g8-bw-clocked .g8-bw-pill.g8-bw-st-cancelled { background: #dc2626 !important; }
+html body .g8-bw-clocked .g8-bw-pill.g8-bw-st-diverted  { background: #dc2626 !important; }

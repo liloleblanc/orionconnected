@@ -5461,7 +5461,12 @@ function getAircraftCategory(code) {
   if (!code) return 'narrowbody';
   return AIRCRAFT_CATEGORY[code.toUpperCase()] || 'narrowbody';
 }
-function getBoardingLeadMins(aircraftCode) {
+function getBoardingLeadMins(aircraftCode, airline) {
+  // v23177 — AIRLINE POLICY OUTRANKS AIRCRAFT TYPE. PAL boards at 20 minutes
+  // (Nick: "PAL boarding is not 25 minutes, 20 minutes") — their Dash-8
+  // -100/-300s were falling into the generic regional 25.
+  var _al = String(airline || '').toUpperCase();
+  if (_al === 'PB' || _al === 'SP') return 20;
   var cat = getAircraftCategory(aircraftCode || '');
   // v22747 — the Q400 boards in 20 minutes, not the generic regional 25
   // (Nick, who works these gates: 'It's 20 minutes for the q400'). Covers
@@ -9196,7 +9201,7 @@ function uxgGateHtml(ctx) {
   }
 
   // Boarding time estimate (35 min before dep)
-  var boardLeadMins = getBoardingLeadMins(equipRaw);
+  var boardLeadMins = getBoardingLeadMins(equipRaw, airlineCode);
   var boardTimeHtml = '\u2014';
   // Keep boarding consistent with the DISPLAYED departure. effectiveDepTs is
   // (_revTs || _sortTs), but the Departure field shows the feed's revised time
@@ -9713,8 +9718,11 @@ function uxgGateHtml(ctx) {
         var _stHtml = '';
         if (_bwAbn) {
           var _stLbl = (_GATE_LBL.status && _GATE_LBL.status[lang]) || 'Status';
-          _stHtml = '<div class="g8-bw-status g8-bw-st-' + _bwStKey.replace(/[^a-z]/g, '') + '">'
-            + '<span class="g8-bw-clk-lbl">' + _stLbl + '</span>'
+          // v23177 — THE PILL from Nick's mockup ("I still dont see that pill
+          // I requested"): a rounded status-coloured capsule carrying the
+          // state word, no 'Status' caption — the colour IS the caption.
+          // Each end speaks its end's language, like the rest of the strip.
+          _stHtml = '<div class="g8-bw-status g8-bw-pill g8-bw-st-' + _bwStKey.replace(/[^a-z]/g, '') + '">'
             + '<span class="g8-bw-st-val">' + _bwStWord(lang) + '</span>'
             + '</div>';
         }
@@ -10020,6 +10028,25 @@ function uxgGateHtml(ctx) {
       + '</div>';
   }
 
+  // PAL lane sign (Nick: "they board by rows not groups" / "Now Boarding
+  // Rows 7 through ... that kind of thing, but also in the second language").
+  // LEFT half = priority on Lane 1; RIGHT half = the ROW BAND being called on
+  // Lane 2, rear-first, advancing to the front rows late in boarding. Row
+  // counts per Dash-8 variant; labels bilingual via _gateLbl like every other
+  // sign on this board — PAL runs a language board, nothing may be one-language.
+  var PB_MAX_ROW = { DH1: 10, DH2: 10, DH3: 13, DH8: 13, DH4: 20, SF3: 9 };
+  function _pbRowsBodyHtml(equip, late) {
+    var maxRow = PB_MAX_ROW[String(equip || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3)] || 13;
+    var mid = Math.max(3, Math.ceil(maxRow / 2) + 1);
+    var band = late ? ('2 \u2013 ' + (mid - 1)) : (mid + ' \u2013 ' + maxRow);
+    var _prioT = _gateLbl('priority', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
+    var _rowsLbl = _gateLbl('rows', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
+    return '<div class="g8-board-body g8-lanes-pd g8-lanes-pb">'
+      + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _gateLbl('priority', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
+      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num g8-grp-txt">' + band + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
+      + '</div>';
+  }
+
   // Build boarding panel HTML
   var boardHtml = '';
   if (boardActive) {
@@ -10099,7 +10126,11 @@ function uxgGateHtml(ctx) {
                     || airlineCode === 'WS' || airlineCode === 'WR');
     var _nowLbl = _acLanes ? '' : _grpLbl;
     var _nextLbl = _acLanes ? 'Zones' : _grpLbl;
-    var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>';
+    // v23177 — the g8-board-hdr row is DELETED, not conditional (Nick:
+    // "remove the second boarding message its obolete"). The welcome strip one
+    // row up already says Now Boarding bilingually; this row repeated it in
+    // ONE language (TL cycles) directly underneath. AC lanes never had it.
+    var _bHdr = '';
     boardHtml = '<div class="g8-board active">'
       + _boardInfoRowHtml('boarding')
       + _boardWelcomeStripHtml('boarding')
@@ -10107,6 +10138,8 @@ function uxgGateHtml(ctx) {
           ? _acLanesBodyHtml(_acZonesVal)
           : airlineCode === 'PD'
           ? _pdLanesBodyHtml(nowVal)
+          : (airlineCode === 'PB' || airlineCode === 'SP')
+          ? _pbRowsBodyHtml(equipRaw, lateBoarding)
           : _bHdr
             + '<div class="g8-board-body">'
             + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(nowVal) + '">' + nowVal + '</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
@@ -10277,7 +10310,13 @@ function uxgGateHtml(ctx) {
                : showCountdown ? 'countdown'
                : 'inbound';
   try {
-    window._gateTakeover = { state: _toState, html: row4Html };
+    // v23177 — the preservation key is STATE + AIRLINE + FLIGHT. State alone
+    // let a takeover node survive a FLIGHT change: a preserved Porter boarding
+    // panel came back untouched for an Air Canada flight, Porter logo and all
+    // (Nick: "the boarding for AC ... was showing the Porter logo"). Same
+    // state on a different flight is a different takeover.
+    var _toKey = _toState + '|' + (airlineCode || '') + '|' + String(currentFlight.flight || '');
+    window._gateTakeover = { state: _toKey, html: row4Html };
   } catch (e) {}
 
   // ── Next flight for footer
@@ -11173,7 +11212,7 @@ function uxgGateHtml(ctx) {
       // into this string; _gateTakeoverApply() owns it after the assignment, so
       // the takeover can persist across a rebuild or fade on a real change
       // without the banner and clock moving with it.
-      ? '<div class="g8-r4" data-takeover="' + _toState + '" style="flex:1;overflow:hidden;position:relative;z-index:2;"></div>'
+      ? '<div class="g8-r4" data-takeover="' + _toKey + '" style="flex:1;overflow:hidden;position:relative;z-index:2;"></div>'
       + (r3Left ? '<div class="g8-r3 g8-r3-bottom" style="background:rgba(0,0,0,0.85);border-top:2px solid ' + (accent || '#eab308') + ';flex-shrink:0;">' + r3Left + '</div>' : '')
       // ═══ IDLE MODE ═══
       : (
@@ -18661,8 +18700,19 @@ const SL = k => {
 // Bilingual variants — always show English · French together. The web cards
 // (mobile) otherwise show only the single rotation language; the boards are
 // already bilingual, so these bring the cards in line.
-const SLbi = k => { const o = SS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
-const TLbi = k => { const o = LS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
+// v23177 — these hardcoded o.en + o.fr, ignoring the LANGUAGE BOARD entirely
+// (Nick: "the Carousel 1 Carrousel is only English French ... remember it uses
+// a language board"). A Spanish/German pair still showed English·French. They
+// now read langs[0]/langs[1] like every other bilingual sign; en is only the
+// fallback when a language has no translation.
+const _biPair = o => {
+  const l1 = (typeof langs !== 'undefined' && langs[0]) || 'en';
+  const l2 = (typeof langs !== 'undefined' && langs[1]) || null;
+  const a = o[l1] || o.en; const b = l2 ? (o[l2] || o.en) : null;
+  return (b && b !== a) ? (a + ' · ' + b) : a;
+};
+const SLbi = k => { const o = SS[k] || {}; return _biPair(o) || k; };
+const TLbi = k => { const o = LS[k] || {}; return _biPair(o) || k; };
 
 // ── LANGUAGE ROTATION — flips between selected languages ─────────────────
 // ── v22949 — LANGUAGE ROTATION REMOVED (Nick: "It should be taken out",
