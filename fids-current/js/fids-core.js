@@ -10246,6 +10246,31 @@ function uxgGateHtml(ctx) {
     row4Html = inbPanelHtml;
   }
 
+  // ══════════════════════════════════════════════════════════════════════
+  // v23177 — THE TAKEOVER IS ITS OWN THING NOW, NOT CHARACTERS IN A STRING.
+  //
+  // The whole gate screen is assembled as one string and dropped in with a
+  // single gView.innerHTML assignment on every data-key change. The takeover
+  // lived INSIDE that string, so it could not enter or leave on its own: old
+  // screen in frame N, entirely different screen in frame N+1, nothing to fade
+  // between. That is the flash Nick reported on day one, and it is why the
+  // fade that used to exist was deleted rather than fixed — fading the one
+  // string pulsed the banner and the clock along with it.
+  //
+  // The state is what matters, not the markup. A status tick, an inbound poll
+  // or a language toggle rebuilds the screen many times while the takeover
+  // stays semantically identical; only these four transitions are real:
+  //     final -> board -> countdown -> inbound
+  // Publishing state + html here lets the controller re-attach an UNCHANGED
+  // takeover untouched (no repaint at all) and cross-fade only a real change.
+  var _toState = finalActive ? 'final'
+               : boardActive ? 'board'
+               : showCountdown ? 'countdown'
+               : 'inbound';
+  try {
+    window._gateTakeover = { state: _toState, html: row4Html };
+  } catch (e) {}
+
   // ── Next flight for footer
   var nextHtml = '';
   if (nextFlight) {
@@ -11135,7 +11160,11 @@ function uxgGateHtml(ctx) {
       // message bar sits at the VERY BOTTOM (Nick, ~5 times: 'put the delayed
       // banner below the flight number and times … actually at the very
       // bottom'), NOT between the banner and the info row. ═══
-      ? '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
+      // v23177 — EMPTY SHELL. The takeover content is no longer concatenated
+      // into this string; _gateTakeoverApply() owns it after the assignment, so
+      // the takeover can persist across a rebuild or fade on a real change
+      // without the banner and clock moving with it.
+      ? '<div class="g8-r4" data-takeover="' + _toState + '" style="flex:1;overflow:hidden;position:relative;z-index:2;"></div>'
       + (r3Left ? '<div class="g8-r3 g8-r3-bottom" style="background:rgba(0,0,0,0.85);border-top:2px solid ' + (accent || '#eab308') + ';flex-shrink:0;">' + r3Left + '</div>' : '')
       // ═══ IDLE MODE ═══
       : (
@@ -13211,6 +13240,15 @@ const gView = document.getElementById('gateView');
         // full opacity, no flash.
         gView.style.transition = 'none';
         gView.style.opacity = '1';
+        // v23177 — LIFT THE TAKEOVER OUT BEFORE THE WIPE.
+        // Same move the map and ad carousel already make above: innerHTML
+        // destroys everything, so anything that must SURVIVE a rebuild has to
+        // be detached first. Holding the live node is what lets an unchanged
+        // takeover come back without a repaint, and what gives a changed one
+        // something to fade FROM. Without this the panel would be rebuilt from
+        // scratch every telemetry tick and there would be nothing to fade.
+        var _savedTakeover = document.querySelector('.g8-r4');
+        if (_savedTakeover) { try { _savedTakeover.remove(); } catch (e) { _savedTakeover = null; } }
         // Mobile: render a clean phone-friendly gate view; desktop: use full TV layout
         var _isMobileGate = (window.innerWidth || document.documentElement.clientWidth) < 700;
         if (_isMobileGate) {
@@ -13219,6 +13257,11 @@ const gView = document.getElementById('gateView');
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
           gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs });
         }
+        // v23177 — the takeover decides its own fate now: re-attached untouched
+        // if its state did not change, cross-faded if it did. Runs immediately
+        // after the assignment, in the same task, so no frame is ever painted
+        // with an empty shell.
+        try { _gateTakeoverApply(_savedTakeover); } catch (e) {}
         // v23166 — store what we ACTUALLY painted. The builders above may have
         // settled fields the key reads (the inbound-delay carry-over onto
         // currentFlight.upd), so the pre-build key can already be stale. Re-read
@@ -18974,7 +19017,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23176';
+var FIDS_BUILD_TAG = 'v23177';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -36806,6 +36849,82 @@ function _renderWxCard(el) {
 // endpoint's pin connects on the primary world copy (tiles repeat, so both
 // copies land on basemap). Returns the continuous polyline — getLatLngs()
 // stays a flat array, so plane-position/bearing indexing works unchanged.
+// ══════════════════════════════════════════════════════════════════════════
+// v23177 — THE GATE TAKEOVER LIFECYCLE
+//
+// Owns the contents of .g8-r4. Called once immediately after the gate screen
+// is assigned, and it decides between three outcomes:
+//
+//   1. SAME STATE, node survived   -> put the live node straight back. No
+//      innerHTML write at all, so a playing video keeps playing and nothing
+//      repaints. This is the common case: status ticks and inbound polls
+//      rebuild the screen constantly while the takeover is unchanged.
+//   2. SAME STATE, no node         -> fill it. First paint of this state.
+//   3. STATE CHANGED               -> cross-fade. The outgoing content is
+//      lifted into an overlay pinned over the shell, the new content is put
+//      in underneath, then the overlay dissolves. The new panel is only ever
+//      revealed BY the old one fading — it is never shown bare first, which
+//      is the "double take" that made earlier attempts read as a flash.
+//
+// Deliberately NOT a fade of the whole screen. That is what existed before,
+// what pulsed the banner and clock on every telemetry tick, and what was
+// deleted rather than fixed. Only this element moves.
+//
+// Fails OPEN: any throw, and the content is assigned directly. A gate that
+// cannot animate must still show the right panel — never a blank or a
+// half-faded one.
+var _GATE_TO_FADE_MS = 520;
+function _gateTakeoverApply(preserved) {
+  var shell = document.querySelector('.g8-r4');
+  var want  = null;
+  try { want = window._gateTakeover || null; } catch (e) {}
+  if (!shell || !want) return;
+
+  var prevState = preserved && preserved.getAttribute
+      ? preserved.getAttribute('data-takeover') : null;
+
+  // ── 1. unchanged: hand the live node back, untouched
+  if (preserved && prevState === want.state && preserved.firstChild) {
+    try {
+      shell.parentNode.replaceChild(preserved, shell);
+      preserved.setAttribute('data-takeover', want.state);
+      return;
+    } catch (e) { /* fall through to a plain fill */ }
+  }
+
+  // ── 2. first paint of this state, or nothing to fade from
+  if (!preserved || !preserved.firstChild) {
+    try { shell.innerHTML = want.html; } catch (e) {}
+    return;
+  }
+
+  // ── 3. real state change: cross-fade, new revealed BY the old dissolving
+  try {
+    var ov = document.createElement('div');
+    ov.className = 'g8-r4-fading';
+    ov.setAttribute('aria-hidden', 'true');
+    ov.style.cssText = 'position:absolute;inset:0;z-index:9;pointer-events:none;'
+                     + 'opacity:1;transition:opacity ' + _GATE_TO_FADE_MS + 'ms ease-in-out;';
+    while (preserved.firstChild) ov.appendChild(preserved.firstChild);
+    shell.innerHTML = want.html;          // new panel lands UNDER the cover
+    shell.appendChild(ov);                // cover is already opaque over it
+    void ov.offsetWidth;                  // establish the start value
+    ov.style.opacity = '0';
+    var done = false;
+    var drop = function () {
+      if (done) return; done = true;
+      try { if (ov.parentNode) ov.remove(); } catch (e) {}
+    };
+    ov.addEventListener('transitionend', drop, { once: true });
+    // Fail-safe: a board whose tab is hidden never fires transitionend, and an
+    // orphaned overlay would sit on top of the live panel forever.
+    (window._bigCraftTimers = window._bigCraftTimers || []).push(
+      setTimeout(drop, _GATE_TO_FADE_MS + 400));
+  } catch (e) {
+    try { shell.innerHTML = want.html; } catch (e2) {}
+  }
+}
+
 // v23175 — the arc VERTICES, with no map and nothing added to one.
 // Split out of _gcAddArc so the camera can be aimed at the plane BEFORE any
 // layer exists. The old order was forced: Leaflet refuses layers until a view
