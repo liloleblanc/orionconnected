@@ -10043,8 +10043,11 @@ function uxgGateHtml(ctx) {
     var maxRow = PB_MAX_ROW[String(equip || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3)] || 13;
     var mid = Math.max(3, Math.ceil(maxRow / 2) + 1);
     var band = late ? ('2 \u2013 ' + (mid - 1)) : (mid + ' \u2013 ' + maxRow);
-    var _prioT = _gateLbl('priority', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
-    var _rowsLbl = _gateLbl('rows', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
+    // v23178 — Nick's separation rule: two languages on ONE line take the
+    // pipe; STACKED lines take no divider — the line break separates. These
+    // captions stack, like the WestJet panels beside them.
+    var _prioT = _gateLbl('priority', _frF, function (w) { return w; }, '<br>');
+    var _rowsLbl = _gateLbl('rows', _frF, function (w) { return w; }, '<br>');
     return '<div class="g8-board-body g8-lanes-pd g8-lanes-pb">'
       + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
       + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num g8-grp-txt">' + band + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
