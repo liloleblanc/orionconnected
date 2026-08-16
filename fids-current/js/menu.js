@@ -13,6 +13,11 @@
     container.innerHTML = html;
     // Insert before first child so the menu trigger/sidebar wrap the board
     document.body.insertBefore(container, document.body.firstChild);
+    // v23181 — announce the fragment so consumers can stop polling for it
+    try {
+      window._fidsMenuReady = true;
+      document.dispatchEvent(new CustomEvent('fids:menu-ready'));
+    } catch (e) {}
     // Initialize after insertion — menu elements now exist
     if (typeof _syncMenu === 'function') _syncMenu();
     if (typeof smRenderPresets === 'function') smRenderPresets();

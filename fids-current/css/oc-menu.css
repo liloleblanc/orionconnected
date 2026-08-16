@@ -1,0 +1,122 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   OC MENU SHELL — companion stylesheet to js/oc-menu.js.
+
+   The shell's panels OWN their surface: console tokens are defined on
+   .ocm-panel itself (dark set) and re-defined under body.fids-light-board
+   (light set), so every var(--console-*) in hosted console content
+   resolves against the panel it sits on — never against the board behind
+   it and never frozen at the :root light defaults. That one rule is what
+   the old bar was missing (white-on-white menu).
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* fids.css carries the legacy kill rule `.ctrl,.ap-panel{display:none
+   !important}` (pre-bar kiosk patch) — out-specify it, same as before. */
+body .ctrl.show { display: flex !important; }
+body .ap-panel:not(.hidden) { display: block !important; }
+
+/* the legacy ⚙ openers stay buried — the top hot-zone is the one way in */
+#menuBadge, #menuTrigger { display: none !important; }
+
+/* desktop retires the overlay console; mobile (<=700px) keeps it */
+@media (min-width: 701px) { #overlayMenu { display: none !important; } }
+
+/* ── slim visitor bar (approved look: the board owns the screen) ───── */
+.ctrl {
+  transition: transform .3s ease, opacity .3s ease;
+  padding: 3px 14px !important;
+  min-height: 34px !important;
+  gap: 3px 10px !important;
+  border-bottom-width: 1px !important;
+}
+.ctrl .search-wrap { padding: 2px 8px !important; }
+body.ocm-hidden .ctrl { transform: translateY(-115%); opacity: 0; pointer-events: none; }
+#ocmHotzone { position: fixed; top: 0; left: 0; right: 0; height: 14px; z-index: 99998; background: transparent; }
+
+/* ── groups & titles ───────────────────────────────────────────────── */
+.ocm-group { position: relative; display: inline-flex; }
+.ocm-title {
+  background: transparent; border: none; color: #e6e9ee;
+  font-weight: 700; font-size: 13px; letter-spacing: .6px;
+  padding: 4px 11px; cursor: pointer; border-radius: 7px;
+  font-family: inherit; white-space: nowrap;
+}
+.ocm-title:hover { background: rgba(255, 255, 255, .1); }
+.ocm-group.open .ocm-title { background: rgba(255, 255, 255, .14); color: #fff; }
+.ocm-car { opacity: .55; font-size: 10px; margin-left: 5px; }
+
+/* ── panels — dark surface, and the tokens live HERE ───────────────── */
+.ocm-panel {
+  display: none; position: absolute; top: calc(100% + 6px); left: 0;
+  background: #1b2230; border: 1px solid #313b4e; border-radius: 11px;
+  padding: 12px; z-index: 99999; min-width: 250px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .5);
+  color: #e7ecf3;
+  --console-text: #f1f5f9;
+  --console-text-2: #cbd5e1;
+  --console-text-3: #94a3b8;
+  --console-text-muted: #8b96a5;
+  --console-surface: rgba(255, 255, 255, 0.05);
+  --console-card: rgba(255, 255, 255, 0.06);
+  --console-border: rgba(255, 255, 255, 0.12);
+  --console-accent: #fbbf24;
+  --console-accent-tx: #fbbf24;
+}
+.ocm-group.open .ocm-panel { display: flex; flex-direction: column; gap: 9px; }
+.ocm-panel label { color: var(--console-text-2) !important; }
+.ocm-panel .sm-dropdown {
+  background: var(--console-card) !important;
+  border: 1px solid var(--console-border) !important;
+}
+.ocm-panel select { width: 100% !important; min-height: 32px; }
+.ocm-panel select.ocm-select { min-height: 32px; border-radius: 7px; }
+.ocm-panel .btn { width: 100%; text-align: left; }
+.ocm-sec {
+  font-size: 10px; letter-spacing: 1.2px; color: #8b96a5;
+  font-weight: 800; text-transform: uppercase; margin: 3px 0 -3px;
+}
+.ocm-link {
+  background: transparent; border: none; color: #cdd6e4; text-align: left;
+  font-size: 13px; font-weight: 600; padding: 7px 9px; border-radius: 7px;
+  cursor: pointer; font-family: inherit;
+}
+.ocm-link:hover { background: rgba(255, 255, 255, .09); color: #fff; }
+
+/* wide sections — the console's tabs, scrollable */
+.ocm-panel.ocm-wide {
+  width: 470px; max-width: min(94vw, 540px); max-height: 74vh;
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.ocm-panel.ocm-wide .sm-tab-content {
+  display: block !important; position: static !important;
+  max-height: none !important; overflow: visible !important; padding: 0 !important;
+}
+
+/* ── light-board variant (wordmark-luminance system) ───────────────── */
+body.fids-light-board .ctrl {
+  background: rgba(233, 238, 243, 0.97) !important;
+  box-shadow: 0 2px 12px rgba(13, 36, 64, 0.18) !important;
+}
+body.fids-light-board .ocm-title { color: #16283C; }
+body.fids-light-board .ocm-title:hover { background: rgba(13, 36, 64, .08); }
+body.fids-light-board .ocm-group.open .ocm-title { background: rgba(13, 36, 64, .12); color: #0d2440; }
+body.fids-light-board .ocm-link { color: #31435a; }
+body.fids-light-board .ocm-link:hover { background: rgba(13, 36, 64, .07); color: #0d2440; }
+body.fids-light-board .ocm-sec { color: #6b7c92; }
+body.fids-light-board .ocm-panel {
+  background: #ffffff; border-color: #C7D2DD;
+  box-shadow: 0 12px 30px rgba(13, 36, 64, .25);
+  color: #16283C;
+  --console-text: #0f172a;
+  --console-text-2: #334155;
+  --console-text-3: #64748b;
+  --console-text-muted: #94a3b8;
+  --console-surface: rgba(15, 23, 42, 0.04);
+  --console-card: #ffffff;
+  --console-border: rgba(15, 23, 42, 0.12);
+  --console-accent: #b45309;
+  --console-accent-tx: #b45309;
+}
+
+/* signed-out gate, shell copy — body.oc-anon is stamped by
+   _cuGateByAccess; belt-and-braces with the menu.css rule */
+body.oc-anon [data-auth] { display: none !important; }
