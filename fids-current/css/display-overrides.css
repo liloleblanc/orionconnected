@@ -12736,3 +12736,31 @@ html .g8-wrap.g8-airline-PD .g8-r4 {
   background-size: 46% auto !important;
   background-blend-mode: normal !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23177 — THE BOTTOM TYPE CELL SLIMS DOWN (Nick: "the one at the bottom is
+   bigger than it should ... too wide and too thick").
+   Measured before changing: the shelf proportions are IDENTICAL on
+   production v23175 and this branch (map 40% / info 26% / aircraft 17% /
+   type 17%) — this is a DESIGN correction to the standing layout, not a
+   regression fix. The shelf is flex:0 0 auto (content-sized), so thickness
+   is its type text + gaps: both come down ~25%, and side padding pulls the
+   plate in from the column edges so it stops reading full-bleed. The map
+   shelf above absorbs the freed height automatically (flex 2.6).
+   ═══════════════════════════════════════════════════════════════════════ */
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
+  padding: clamp(4px,0.7vh,10px) clamp(10px,1.2vw,20px) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-acb {
+  gap: clamp(3px,0.6vh,8px) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-actype-val {
+  font-size: clamp(13px,2.05vh,24px) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-lbl {
+  font-size: clamp(9px,1.2vh,13px) !important;
+}
+html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val img,
+html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val .v2-rc-opby-logo {
+  height: clamp(18px,3.2vh,38px) !important;
+}
