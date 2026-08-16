@@ -2370,8 +2370,7 @@ html .bidsv2-list-header > div {
    a light-traffic airport doesn't leave a grey gap under the last row.
    Everything else is inherited from the normal board untouched.
    ========================================================================== */
-html.fids-stream, html.fids-stream body,
-html.fids-stream .ocm-panel, html.fids-stream #ocmHotzone {
+html.fids-stream, html.fids-stream body {
   width: 100vw !important;
   height: 100vh !important;
   overflow: hidden !important;
@@ -2379,6 +2378,8 @@ html.fids-stream .ocm-panel, html.fids-stream #ocmHotzone {
 
 /* Clean capture — no menu bar, airport panel, modals, or login chip. */
 html.fids-stream .ctrl,
+html.fids-stream .ocm-panel,
+html.fids-stream #ocmHotzone,
 html.fids-stream .ap-panel,
 html.fids-stream #apPanel,
 html.fids-stream #ocAdminLogin,
