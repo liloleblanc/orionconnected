@@ -106,6 +106,32 @@
     if (!m) return;
     m._fidsLive = false;
 
+    // ── LANDING IS AERODATABOX'S CALL, NOT THE CLOCK'S ─────────────────────
+    // (Nick: "aerodatabox ... has the function for landing" — and his report
+    // watching the preview: "I just saw a plane in halifax landing it
+    // stoped".) Live positions are dead, so the glide flies on estimates; the
+    // tick stops re-anchoring past 98% and its fallback re-calls this builder
+    // with prog=-1. Two failures came from that: the plane froze just short
+    // of the field, and the -1 rebuilt the view at p=0 — a full-route yank in
+    // the middle of an approach. ADB's status is the authority on arrival:
+    // when it says arrived/landed, draw the LANDED scene; while the same-leg
+    // glide is finishing, refuse the -1 downgrade and let it land.
+    var _st = '';
+    try { _st = String((g._gateInbound && g._gateInbound.status) || '').toLowerCase(); } catch (e) {}
+    var _legMatches = sameLeg(GL.o, o) && sameLeg(GL.d, d);
+    if (/arriv|land/.test(_st) && look(org) && look(dst)) {
+      var arcL = g.OCGateMap.gcPoints(o, d, 160);
+      m.setView(d, 11);
+      m.setRoute(o, d, 1, { arc: arcL, originCode: org, destCode: dst });
+      m.setPlane(d[0], d[1], g.OCGateMap.bearing(arcL[arcL.length - 2], arcL[arcL.length - 1]), 1);
+      delete GL.views[kind];
+      if (!Object.keys(GL.views).length) stopGlide();
+      return;
+    }
+    if ((prog == null || prog < 0) && _legMatches && GL.raf && typeof GL.p === 'number' && GL.p > 0.9) {
+      return;   // the approach is finishing — a -1 sentinel must not yank it
+    }
+
     var p = Math.max(0, Math.min(1, prog || 0));
     var cz = cruiseZoomFor(o, d);
     var zoom, center;
@@ -201,6 +227,27 @@
       if (lp && lp.onGround === true) spd = 0;
     } catch (e) {}
 
+    // ── TOUCHDOWN BEFORE ADB SAYS SO ────────────────────────────────────
+    // (Nick, watching Halifax live: "I just saw a plane in halifax landing it
+    // stoped" — the card read Speed 257 kph / Altitude 0 ft while status was
+    // still 'Delayed'.) A fix that is ON THE GROUND within a few miles of the
+    // destination IS the landing; ADB's status flip arrives minutes later.
+    // Present landed now — plane held at its true stopping point on the
+    // field, route fully flown, camera in on the airport — instead of a
+    // frozen mid-glide frame. When ADB flips to arrived, the estimate path's
+    // landed scene takes over seamlessly.
+    var _lpL = null; try { _lpL = g._gateInboundLivePos; } catch (e) {}
+    var _onGnd = !!(_lpL && (_lpL.onGround === true ||
+                   (typeof _lpL.alt === 'number' && _lpL.alt < 150)));
+    if (_onGnd && nmDist([lat, lng], d) < 8) {
+      m.setView([lat, lng], Math.max(zoom, 13));
+      m.setRoute(o, d, 1, { arc: route, originCode: org, destCode: dst });
+      m.setPlane(lat, lng,
+        g.OCGateMap.bearing(route[route.length - 2], route[route.length - 1]), 1);
+      delete GL.views[kind];
+      if (!Object.keys(GL.views).length) stopGlide();
+      return;
+    }
     m.setView([lat, lng], zoom);
     m.setRoute(o, d, 0, { arc: route, originCode: org, destCode: dst });
     startGlide(kind, m, o, d, [lat, lng], route, spd, dst, org, true);
